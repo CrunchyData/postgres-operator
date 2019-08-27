@@ -13,5 +13,4 @@
   - grafana_service_name
   - grafana_default_dashboards
   - grafana_storage_access_mode
-  - grafana_storage_class_name
   - grafana_volume_size

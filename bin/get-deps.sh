@@ -34,6 +34,13 @@ if [ $? -eq 1 ]; then
 	sudo yum -y install golang
 fi
 
+NSQ=nsq-1.1.0.linux-amd64.go1.10.3
+wget https://s3.amazonaws.com/bitly-downloads/nsq/$NSQ.tar.gz
+tar xvf $NSQ.tar.gz -C /tmp
+cp /tmp/$NSQ/bin/* $PGOROOT/bin/pgo-event/
+rm -rf /tmp/$NSQ*
+rm $NSQ.tar.gz
+
 which buildah
 if [ $? -eq 1 ]; then
 	echo "installing buildah"

@@ -31,7 +31,7 @@ The Operator follows a golang project structure, you can create a structure as f
     cd $HOME/odev/src/github.com/crunchydata
     git clone https://github.com/CrunchyData/postgres-operator.git
     cd postgres-operator
-	git checkout 4.0.1
+	git checkout 4.1.0
 
 
 This creates a directory structure under your HOME directory name *odev* and clones the current Operator version to that structure.  
@@ -153,32 +153,29 @@ Other settings in *pgo.yaml* are described in the [pgo.yaml Configuration](/conf
 
 The Operator implements its own RBAC (Role Based Access Controls) for authenticating Operator users access to the Operator REST API.
 
-There is a default set of Roles and Users defined respectively in the following files and can be copied into your home directory as such:
+A default admin user is created when the operator is deployed. Create a .pgouser in your home directory and insert the text from below:
 
 ```
-./conf/postgres-operator/pgouser
-./conf/postgres-operator/pgorole
-
-cp ./conf/postgres-operator/pgouser $HOME/.pgouser
-cp ./conf/postgres-operator/pgorole $HOME/.pgorole
+pgoadmin:examplepassword
 ```
 
-Or create a *.pgouser* file in your home directory with a credential known by the Operator (see your administrator for Operator credentials to use):
+The format of the .pgouser client file is:
+
 ```
-    username:password
-or
-    pgouser1:password
-or
-    pgouser2:password
-or
-    pgouser3:password
-or
-    readonlyuser:password
+<username>:<password>
 ```
 
-Each example above has different priviledges in the Operator.  You can create this file as follows:
+To create a unique administrator user on deployment of the operator edit this file and update the .pgouser file accordingly:
 
-    echo "pgouser3:password" > $HOME/.pgouser
+```
+$PGOROOT/deploy/install-bootstrap-creds.sh
+```
+
+After installation users can create optional Operator users as follows:
+
+```
+pgo create pgouser someuser --pgouser-namespaces="pgouser1,pgouser2" --pgouser-password=somepassword --pgouser-roles="somerole,someotherrole"
+```
 
 Note, you can also store the pgouser file in alternate locations, see the
 Security documentation for details.

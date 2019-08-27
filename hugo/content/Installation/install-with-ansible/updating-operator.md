@@ -16,7 +16,7 @@ of the service.  Using the `update` flag will:
 * Allow administrators to change settings configured in the `inventory`
 * Reinstall the `pgo` client if a new version is specified
 
-The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prereq/prerequisites/)
+The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prerequisites/)
 we can now update the PostgreSQL Operator.
 
 The commands should be run in the directory where the Crunchy PostgreSQL Operator 
@@ -84,6 +84,7 @@ To configure the environment variables used by `pgo` run the following command:
 
 Note: `<PGO_NAMESPACE>` should be replaced with the namespace the Crunchy PostgreSQL
 Operator was deployed to.
+Also, if TLS was disabled, or if the port was changed, update PGO_APISERVER_URL accordingly.
 
 ```bash
 cat <<EOF >> ~/.bashrc
@@ -113,6 +114,8 @@ kubectl port-forward <OPERATOR_POD_NAME> -n <OPERATOR_NAMESPACE> 8443:8443
 # If deployed to OpenShift
 oc port-forward <OPERATOR_POD_NAME> -n <OPERATOR_NAMESPACE> 8443:8443
 ```
+
+Note: If a port other than 8443 was configured, update the above command accordingly.
 
 On a separate terminal verify the `pgo` can communicate with the Crunchy PostgreSQL 
 Operator:

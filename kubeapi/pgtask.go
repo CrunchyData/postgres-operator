@@ -16,10 +16,15 @@ package kubeapi
 */
 
 import (
+	"encoding/json"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 )
 
@@ -160,4 +165,77 @@ func Deletepgtasks(client *rest.RESTClient, selector, namespace string) error {
 		}
 	}
 	return err
+}
+
+func PatchpgtaskStatus(restclient *rest.RESTClient, state crv1.PgtaskState, message string, oldCrd *crv1.Pgtask, namespace string) error {
+
+	oldData, err := json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+
+	//change it
+	oldCrd.Status = crv1.PgtaskStatus{
+		State:   state,
+		Message: message,
+	}
+
+	//create the patch
+	var newData, patchBytes []byte
+	newData, err = json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
+	if err != nil {
+		return err
+	}
+	log.Debug(string(patchBytes))
+
+	//apply patch
+	_, err6 := restclient.Patch(types.MergePatchType).
+		Namespace(namespace).
+		Resource(crv1.PgtaskResourcePlural).
+		Name(oldCrd.Name).
+		Body(patchBytes).
+		Do().
+		Get()
+
+	return err6
+
+}
+
+func PatchpgtaskWorkflowStatus(restclient *rest.RESTClient, oldCrd *crv1.Pgtask, namespace string) error {
+
+	oldData, err := json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+
+	//change it
+	oldCrd.Spec.Parameters[crv1.PgtaskWorkflowCompletedStatus] = time.Now().Format("2006-01-02.15.04.05")
+
+	//create the patch
+	var newData, patchBytes []byte
+	newData, err = json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
+	if err != nil {
+		return err
+	}
+	log.Debug(string(patchBytes))
+
+	//apply patch
+	_, err6 := restclient.Patch(types.MergePatchType).
+		Namespace(namespace).
+		Resource(crv1.PgtaskResourcePlural).
+		Name(oldCrd.Spec.Name).
+		Body(patchBytes).
+		Do().
+		Get()
+
+	return err6
+
 }

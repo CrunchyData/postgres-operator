@@ -22,6 +22,7 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	log "github.com/sirupsen/logrus"
@@ -93,6 +94,33 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 		return
 	}
 
+	newjob.ObjectMeta.Labels[config.LABEL_PGOUSER] = task.ObjectMeta.Labels[config.LABEL_PGOUSER]
+	newjob.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = task.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
+
 	kubeapi.CreateJob(clientset, &newjob, namespace)
+
+	//publish backrest backup event
+	if cmd == "backup" {
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicBackup
+
+		f := events.EventCreateBackupFormat{
+			EventHeader: events.EventHeader{
+				Namespace: namespace,
+				Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
+				Topic:     topics,
+				Timestamp: events.GetTimestamp(),
+				EventType: events.EventCreateBackup,
+			},
+			Clustername:       jobFields.ClusterName,
+			Clusteridentifier: task.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+			BackupType:        "pgbackrest",
+		}
+
+		err := events.Publish(f)
+		if err != nil {
+			log.Error(err.Error())
+		}
+	}
 
 }

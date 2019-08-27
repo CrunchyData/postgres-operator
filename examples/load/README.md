@@ -29,19 +29,33 @@ the sample load configuration.
 We test with storageos and it offers a RWO storage class
 that can be used for volume provisioning.
 
-To accomplish this, download the storageos CLI from their github site.
+To accomplish this, download the storageos CLI from their 
+github site and ensure you have the following environement 
+variables added to ~/.bashrc as follows:
 
-To prepare a volume with sample load data, you do the following
+	export PGO_NAMESPACE=pgouser1 (update to match your environment)
+	export PGO_STORAGE_CLASS=fast (update to match your environment)
+
+Then execute
+
+	source ~/.bashrc
+
+Also, if not already installed, fetch a Go module for expanding environment 
+variables with:
+
+	go get github.com/blang/expenv
+
+Now, to prepare a volume with sample load data, you do the following
 for storageos:
 
 Create the PVC that will create a blank storageos volume
 for us to use:
 
-    kubectl create -f csv-pvc-sc.yaml
+    expenv -f csv-pvc-sc.yaml | kubectl create -f -
 
 Next, locate the storageos Kube IP address:
 
-    kubectl get svc -n storgeos
+    kubectl get svc -n storageos
 
 As root, set up the storageos environment variables required by the
 storageos CLI:

@@ -59,7 +59,7 @@ func CreatePgpoolHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = CreatePgpool(&request, ns)
+	resp = CreatePgpool(&request, ns, username)
 	json.NewEncoder(w).Encode(resp)
 
 }

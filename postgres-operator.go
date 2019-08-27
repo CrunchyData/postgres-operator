@@ -22,13 +22,17 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	crunchylog "github.com/crunchydata/postgres-operator/logging"
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/workqueue"
 
 	"github.com/crunchydata/postgres-operator/controller"
+	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/operator/operatorupgrade"
@@ -38,11 +42,15 @@ import (
 
 var Clientset *kubernetes.Clientset
 
+//var log *logrus.Entry
+
 func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
 	flag.Parse()
 
 	debugFlag := os.Getenv("CRUNCHY_DEBUG")
+	//add logging configuration
+	crunchylog.CrunchyLogger(crunchylog.SetParameters())
 	if debugFlag == "true" {
 		log.SetLevel(log.DebugLevel)
 		log.Debug("debug flag set to true")
@@ -50,8 +58,8 @@ func main() {
 		log.Info("debug flag set to false")
 	}
 
-	namespaceList := util.GetNamespaces()
-	log.Debugf("watching the following namespaces: [%v]", namespaceList)
+	//give time for pgo-event to start up
+	time.Sleep(time.Duration(5) * time.Second)
 
 	// Create the client config. Use kubeconfig if given, otherwise assume in-cluster.
 	config, err := buildConfig(*kubeconfig)
@@ -76,67 +84,100 @@ func main() {
 
 	operator.Initialize(Clientset)
 
+	namespaceList := ns.GetNamespaces(Clientset, operator.InstallationName)
+	log.Debugf("watching the following namespaces: [%v]", namespaceList)
+
 	//validate the NAMESPACE env var
-	err = util.ValidateNamespaces(Clientset)
+	err = ns.ValidateNamespaces(Clientset, operator.InstallationName, operator.PgoNamespace)
 	if err != nil {
 		log.Error(err)
 		os.Exit(2)
 	}
 
 	// start a controller on instances of our custom resource
+	ctx, cancelFunc := context.WithCancel(context.Background())
 
-	pgTaskcontroller := controller.PgtaskController{
-		PgtaskConfig:    config,
-		PgtaskClient:    crdClient,
-		PgtaskScheme:    crdScheme,
-		PgtaskClientset: Clientset,
-		Namespace:       namespaceList,
+	pgTaskcontroller := &controller.PgtaskController{
+		PgtaskConfig:       config,
+		PgtaskClient:       crdClient,
+		PgtaskScheme:       crdScheme,
+		PgtaskClientset:    Clientset,
+		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		Ctx:                ctx,
+		InformerNamespaces: make(map[string]struct{}),
 	}
 
-	pgClustercontroller := controller.PgclusterController{
+	pgClustercontroller := &controller.PgclusterController{
 		PgclusterClient:    crdClient,
 		PgclusterScheme:    crdScheme,
 		PgclusterClientset: Clientset,
-		Namespace:          namespaceList,
+		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		Ctx:                ctx,
+		InformerNamespaces: make(map[string]struct{}),
 	}
-	pgReplicacontroller := controller.PgreplicaController{
+	pgReplicacontroller := &controller.PgreplicaController{
 		PgreplicaClient:    crdClient,
 		PgreplicaScheme:    crdScheme,
 		PgreplicaClientset: Clientset,
-		Namespace:          namespaceList,
+		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		Ctx:                ctx,
+		InformerNamespaces: make(map[string]struct{}),
 	}
-	pgBackupcontroller := controller.PgbackupController{
-		PgbackupClient:    crdClient,
-		PgbackupScheme:    crdScheme,
-		PgbackupClientset: Clientset,
-		Namespace:         namespaceList,
+	pgBackupcontroller := &controller.PgbackupController{
+		PgbackupClient:     crdClient,
+		PgbackupScheme:     crdScheme,
+		PgbackupClientset:  Clientset,
+		Ctx:                ctx,
+		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		UpdateQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		InformerNamespaces: make(map[string]struct{}),
 	}
-	pgPolicycontroller := controller.PgpolicyController{
-		PgpolicyClient:    crdClient,
-		PgpolicyScheme:    crdScheme,
-		PgpolicyClientset: Clientset,
-		Namespace:         namespaceList,
+	pgPolicycontroller := &controller.PgpolicyController{
+		PgpolicyClient:     crdClient,
+		PgpolicyScheme:     crdScheme,
+		PgpolicyClientset:  Clientset,
+		Ctx:                ctx,
+		InformerNamespaces: make(map[string]struct{}),
 	}
-	podcontroller := controller.PodController{
-		PodClientset: Clientset,
-		PodClient:    crdClient,
-		Namespace:    namespaceList,
+	podcontroller := &controller.PodController{
+		PodClientset:       Clientset,
+		PodClient:          crdClient,
+		Ctx:                ctx,
+		InformerNamespaces: make(map[string]struct{}),
 	}
-	jobcontroller := controller.JobController{
-		JobClientset: Clientset,
-		JobClient:    crdClient,
-		Namespace:    namespaceList,
+	jobcontroller := &controller.JobController{
+		JobClientset:       Clientset,
+		JobClient:          crdClient,
+		Ctx:                ctx,
+		InformerNamespaces: make(map[string]struct{}),
+	}
+	nscontroller := &controller.NamespaceController{
+		NamespaceClientset:     Clientset,
+		NamespaceClient:        crdClient,
+		Ctx:                    ctx,
+		ThePodController:       podcontroller,
+		TheJobController:       jobcontroller,
+		ThePgpolicyController:  pgPolicycontroller,
+		ThePgbackupController:  pgBackupcontroller,
+		ThePgreplicaController: pgReplicacontroller,
+		ThePgclusterController: pgClustercontroller,
+		ThePgtaskController:    pgTaskcontroller,
 	}
 
-	ctx, cancelFunc := context.WithCancel(context.Background())
 	defer cancelFunc()
-	go pgTaskcontroller.Run(ctx)
-	go pgClustercontroller.Run(ctx)
-	go pgReplicacontroller.Run(ctx)
-	go pgBackupcontroller.Run(ctx)
-	go pgPolicycontroller.Run(ctx)
-	go podcontroller.Run(ctx)
-	go jobcontroller.Run(ctx)
+	go pgTaskcontroller.Run()
+	go pgTaskcontroller.RunWorker()
+	go pgClustercontroller.Run()
+	go pgClustercontroller.RunWorker()
+	go pgReplicacontroller.Run()
+	go pgReplicacontroller.RunWorker()
+	go pgBackupcontroller.Run()
+	go pgBackupcontroller.RunWorker()
+	go pgBackupcontroller.RunUpdateWorker()
+	go pgPolicycontroller.Run()
+	go podcontroller.Run()
+	go nscontroller.Run()
+	go jobcontroller.Run()
 
 	cluster.InitializeAutoFailover(Clientset, crdClient, namespaceList)
 

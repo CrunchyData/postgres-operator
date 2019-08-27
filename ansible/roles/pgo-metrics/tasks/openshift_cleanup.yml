@@ -1,0 +1,9 @@
+---
+- name: Delete Metrics Namespace (Openshift)
+  shell: |
+    {{ openshift_oc_bin}} delete project {{ metrics_namespace }}
+  when: delete_metrics_namespace|bool
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - uninstall-metrics

@@ -6,8 +6,7 @@
 	"labels": {
         	"vendor": "crunchydata",
                	"pgrmdata": "true",
-		"pg-cluster": "{{.ClusterName}}",
-                "claimName": "{{.PvcName}}"
+		"pg-cluster": "{{.ClusterName}}"
 	}
     },
     "spec": {
@@ -18,32 +17,40 @@
                 "labels": {
                     "vendor": "crunchydata",
                     "pgrmdata": "true",
-                    "pg-cluster": "{{.ClusterName}}",
-                    "claimName": "{{.PvcName}}"
+                    "pg-cluster": "{{.ClusterName}}"
                 }
             },
             "spec": {
-                "volumes": [{
-                    "name": "pgdata",
-                    "persistentVolumeClaim" : {
-                        "claimName": "{{.PvcName}}"
-                    }
-                }],
-
-        {{.SecurityContext}}
-
+		"serviceAccountName": "pgo-target",
                 "containers": [{
                     "name": "rmdata",
                     "image": "{{.PGOImagePrefix}}/pgo-rmdata:{{.PGOImageTag}}",
-                    "volumeMounts": [{
-                        "mountPath": "/pgdata",
-                        "name": "pgdata",
-                        "readOnly": false
-                    }],
 		    {{.ContainerResources }}
                     "env": [{
-                        "name": "DATA_ROOT",
-                        "value": "{{.DataRoot}}"
+                        "name": "PG_CLUSTER",
+                        "value": "{{.ClusterName}}"
+                    }, {
+                        "name": "REPLICA_NAME",
+                        "value": "{{.ReplicaName}}"
+                    }, {
+                        "name": "REMOVE_DATA",
+                        "value": "{{.RemoveData}}"
+                    }, {
+                        "name": "REMOVE_BACKUP",
+                        "value": "{{.RemoveBackup}}"
+                    }, {
+                        "name": "IS_BACKUP",
+                        "value": "{{.IsBackup}}"
+                    }, {
+                        "name": "IS_REPLICA",
+                        "value": "{{.IsReplica}}"
+                    }, {
+                        "name": "NAMESPACE",
+			"valueFrom": {
+				"fieldRef": {
+					"fieldPath": "metadata.namespace"
+				}
+			}
                     }]
                 }],
                 "restartPolicy": "Never"

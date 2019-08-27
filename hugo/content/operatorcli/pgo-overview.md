@@ -5,9 +5,9 @@ draft: false
 weight: 6
 ---
 
-The command line tool, pgo, is used to interact with the Postgres Operator.
+The command line tool, `pgo`, is used to interact with the Postgres Operator.
 
-Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the GitHub Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases).
+Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the [GitHub Releases page for the Operator](https://github.com/crunchydata/postgres-operator/releases).
 
 The *pgo* client is provided in Mac, Windows, and Linux binary formats, download the appropriate client to your local laptop or workstation to work with a remote Operator.
 
@@ -37,35 +37,34 @@ And *name* is the name of the resource type like:
 To get detailed help information and command flag descriptions on each *pgo* command, enter:
 
     pgo [command] -h
- 
+
 ## Operations
 
 The following table shows the *pgo* operations currently implemented:
 
-| Operation   |      Syntax      |  Description |
-|:----------|:-------------|:------|
-| apply |pgo apply mypolicy  --selector=name=mycluster  | Apply a SQL policy on a Postgres cluster(s) that have a label matching service-name=mycluster|
-| backup |pgo backup mycluster  |Perform a backup on a Postgres cluster(s) |
-| create |pgo create cluster mycluster  |Create an Operator resource type (e.g. cluster, policy, schedule, user) |
-| delete |pgo delete cluster mycluster  |Delete an Operator resource type (e.g. cluster, policy, user, schedule) |
-| ls |pgo ls mycluster  |Perform a Linux *ls* command on the cluster. |
-| cat |pgo cat mycluster  |Perform a Linux *ls* command on the cluster. |
-| df |pgo df mycluster  |Display the disk status/capacity of a Postgres cluster. |
-| failover |pgo failover mycluster  |Perform a manual failover of a Postgres cluster. |
-| help |pgo help |Display general *pgo* help information. |
-| label |pgo label mycluster --label=environment=prod  |Create a metadata label for a Postgres cluster(s). |
-| load |pgo load --load-config=load.json --selector=name=mycluster  |Perform a data load into a Postgres cluster(s).|
-| reload |pgo reload mycluster  |Perform a pg_ctl reload command on a Postgres cluster(s). |
-| restore |pgo restore mycluster |Perform a pgbackrest or pgdump restore on a Postgres cluster. |
-| scale |pgo scale mycluster  |Create a Postgres replica(s) for a given Postgres cluster. |
-| scaledown |pgo scaledown mycluster --query  |Delete a replica from a Postgres cluster. |
-| show |pgo show cluster mycluster  |Display Operator resource information (e.g. cluster, user, policy, schedule). |
-| status |pgo status  |Display Operator status. |
-| test |pgo test mycluster  |Perform a SQL test on a Postgres cluster(s). |
-| update |pgo update cluster --label=autofail=false  |Update a Postgres cluster(s). |
-| upgrade |pgo upgrade mycluster  |Perform a minor upgrade to a Postgres cluster(s). |
-| user |pgo user --selector=name=mycluster --update-passwords  |Perform Postgres user maintenance on a Postgres cluster(s). |
-| version |pgo version  |Display Operator version information. |
+| Operation   | Syntax                                                       | Description                                                                                     |
+| :---------- | :-------------                                               | :------                                                                                         |
+| apply       | `pgo apply mypolicy --selector=name=mycluster`               | Apply a SQL policy on a Postgres cluster(s) that have a label matching `service-name=mycluster` |
+| backup      | `pgo backup mycluster`                                       | Perform a backup on a Postgres cluster(s)                                                       |
+| create      | `pgo create cluster mycluster`                               | Create an Operator resource type (e.g. cluster, policy, schedule, user, namespace, pgouser, pgorole)                         |
+| delete      | `pgo delete cluster mycluster`                               | Delete an Operator resource type (e.g. cluster, policy, user, schedule, namespace, pgouser, pgorole)                         |
+| ls          | `pgo ls mycluster filepath`                                  | Perform a Linux `ls` command on the cluster.                                                    |
+| cat         | `pgo cat mycluster filepath`                                 | Perform a Linux `cat` command on the cluster.                                                   |
+| df          | `pgo df mycluster`                                           | Display the disk status/capacity of a Postgres cluster.                                         |
+| failover    | `pgo failover mycluster`                                     | Perform a manual failover of a Postgres cluster.                                                |
+| help        | `pgo help`                                                   | Display general `pgo` help information.                                                         |
+| label       | `pgo label mycluster --label=environment=prod`               | Create a metadata label for a Postgres cluster(s).                                              |
+| load        | `pgo load --load-config=load.json --selector=name=mycluster` | Perform a data load into a Postgres cluster(s).                                                 |
+| reload      | `pgo reload mycluster`                                       | Perform a `pg_ctl` reload command on a Postgres cluster(s).                                     |
+| restore     | `pgo restore mycluster`                                      | Perform a `pgbackrest`, `pgbasebackup` or `pgdump` restore on a Postgres cluster.                               |
+| scale       | `pgo scale mycluster`                                        | Create a Postgres replica(s) for a given Postgres cluster.                                      |
+| scaledown   | `pgo scaledown mycluster --query`                            | Delete a replica from a Postgres cluster.                                                       |
+| show        | `pgo show cluster mycluster`                                 | Display Operator resource information (e.g. cluster, user, policy, schedule, namespace, pgouser, pgorole).                   |
+| status      | `pgo status`                                                 | Display Operator status.                                                                        |
+| test        | `pgo test mycluster`                                         | Perform a SQL test on a Postgres cluster(s).                                                    |
+| update      | `pgo update cluster mycluster --autofail=false`                  | Update a Postgres cluster(s), pgouser, pgorole, user, or namespace.                                                                   |
+| upgrade     | `pgo upgrade mycluster`                                      | Perform a minor upgrade to a Postgres cluster(s).                                               |
+| version     | `pgo version`                                                | Display Operator version information.                                                           |
 
 ## Common Operations
 
@@ -81,8 +80,8 @@ cluster as follows:
 
     pgo create cluster mycluster -n pgouser1
 
-This command creates a Postgres cluster in the *pgouser1* namespace 
-that has a single Postgres primary container. 
+This command creates a Postgres cluster in the *pgouser1* namespace
+that has a single Postgres primary container.
 
 You can see the Postgres cluster using the following:
 
@@ -103,14 +102,14 @@ You can create a Postgres cluster initially with a Postgres replica as follows:
 
 To view the Postgres logs, you can enter commands such as:
 
-    pgo ls mycluster -n pgouser1 /pgdata/mycluster/pg_log 
+    pgo ls mycluster -n pgouser1 /pgdata/mycluster/pg_log
     pgo cat mycluster -n pgouser1 /pgdata/mycluster/pg_log/postgresql-Mon.log | tail -3
 
 
 #### Backups
 
 By default the Operator deploys pgbackrest for a Postgres cluster to
-hold database backup data.  
+hold database backup data.
 
 You can create a pgbackrest backup job as follows:
 
@@ -127,10 +126,14 @@ command as follows:
 
 See pgbackrest.org for command flag descriptions.
 
-You can create a Postgres cluster that does not include pgbackrest 
+You can create a Postgres cluster that does not include pgbackrest
 if you specify the following:
 
     pgo create cluster mycluster --pgbackrest=false -n pgouser1
+
+You can show the current backups on a cluster with the following:
+
+    pgo show backup mycluster -n pgouser1
 
 #### Scaledown a Cluster
 
@@ -221,15 +224,15 @@ To see the Operator server configuration, enter:
 
 To see what namespaces exist and if you have access to them, enter:
 
-    pgo show namespace -n pgouser1
+    pgo show namespace pgouser1
 
 #### Perform a pgdump backup
 
-	pgo backup mycluster --backup-type=pgdump -n pgouser1
-	pgo backup mycluster --backup-type=pgdump --backup-opts="--dump-all --verbose" -n pgouser1
-	pgo backup mycluster --backup-type=pgdump --backup-opts="--schema=myschema" -n pgouser1
+    pgo backup mycluster --backup-type=pgdump -n pgouser1
+    pgo backup mycluster --backup-type=pgdump --backup-opts="--dump-all --verbose" -n pgouser1
+    pgo backup mycluster --backup-type=pgdump --backup-opts="--schema=myschema" -n pgouser1
 
-Note: To run pgdump_all instead of pgdump, pass '--dump-all' flag in --backup-opts as shown above. All --backup-opts should be space delimited.
+Note: To run `pgdump_all` instead of `pgdump`, pass `--dump-all` flag in `--backup-opts` as shown above. All `--backup-opts` should be space delimited.
 
 #### Perform a pgbackrest restore
 
@@ -249,14 +252,14 @@ You can also target specific nodes when performing a restore:
 
 Here are some steps to test PITR:
 
- * pgo create cluster mycluster
- * create a table on the new cluster called *beforebackup*
+ * `pgo create cluster mycluster`
+ * Create a table on the new cluster called *beforebackup*
  * pgo backup mycluster -n pgouser1
  * create a table on the cluster called *afterbackup*
- * execute *select now()* on the database to get the time, use this timestamp minus a couple of minutes when you perform the restore
- * pgo restore mycluster --pitr-target="2019-01-14 00:02:14.921404+00" --backup-opts="--type=time --log-level-console=info" -n pgouser1
- * wait for the database to be restored
- * execute *\d* in the database and you should see the database state prior to where the *afterbackup* table was created
+ * Execute *select now()* on the database to get the time, use this timestamp minus a couple of minutes when you perform the restore
+ * `pgo restore mycluster --pitr-target="2019-01-14 00:02:14.921404+00" --backup-opts="--type=time --log-level-console=info" -n pgouser1`
+ * Wait for the database to be restored
+ * Execute *\d* in the database and you should see the database state prior to where the *afterbackup* table was created
 
 See the Design section of the Operator documentation for things to consider
 before you do a restore.
@@ -300,12 +303,12 @@ If you would like to control the name of the PVC created when performing a pgbas
 
 #### Restore from pgdump backup
 
-	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target="2019-01-15-00-03-25" -n pgouser1
-	
+    pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target="2019-01-15-00-03-25" -n pgouser1
+
 To restore the most recent pgdump at the default path, leave off a timestamp:
-	
-	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc -n pgouser1
-	
+
+    pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc -n pgouser1
+
 
 ### Fail-over Operations
 
@@ -325,7 +328,7 @@ That command chooses a specific target, and starts the failover workflow.
 To support an automated failover, you can specify the *--autofail* flag
 on a Postgres cluster when you create it as follows:
 
-    pgo create cluster mycluster --autofail --replica-count=1 -n pgouser1
+    pgo create cluster mycluster --autofail=true --replica-count=1 -n pgouser1
 
 You can set the auto-fail flag on a Postgres cluster after it is created
 by the following command:
@@ -345,7 +348,7 @@ To add a pgbouncer Deployment to your Postgres cluster, enter:
 You can add pgbouncer after a Postgres cluster is created as follows:
 
     pgo create pgbouncer mycluster
-	pgo create pgbouncer --selector=name=mycluster
+    pgo create pgbouncer --selector=name=mycluster
 
 You can also specify a pgbouncer password as follows:
 
@@ -382,15 +385,15 @@ into your Postgres cluster pod as follows:
 
     pgo create cluster mycluster --metrics -n pgouser1
 
-Note: backend metric storage such as Prometheus and front end 
-visualization software such as Grafana are not created automatically 
-by the PostgreSQL Operator.  For instructions on installing Grafana and 
-Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/2.4.1/examples/metrics/metrics/).
+Note: backend metric storage such as Prometheus and front end
+visualization software such as Grafana are not created automatically
+by the PostgreSQL Operator.  For instructions on installing Grafana and
+Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/2.4.2/examples/metrics/metrics/).
 
 ### Scheduled Tasks
 
 There is a cron based scheduler included into the Operator Deployment
-by default.  
+by default.
 
 You can create automated full pgBackRest backups every Sunday at 1 am
 as follows:
@@ -443,7 +446,7 @@ To create a Benchmark with custom parameters, enter:
 
 You can view benchmarks by entering:
 
-    pgo show benchmark -n pgouser1
+    pgo show benchmark -n pgouser1 mycluster
 
 ### Complex Deployments
 #### Create a Cluster using Specific Storage
@@ -479,7 +482,79 @@ Likewise, you can create a Replica using a Preferred Node as follows:
 This command will cause the Postgres Service to be of a specific
 type instead of the default ClusterIP service type.
 
-#### Miscellaneous 
+#### Namespace Operations
+
+Create an Operator namespace where Postgres clusters can be created
+and managed by the Operator:
+
+    pgo create namespace mynamespace
+
+Update a Namespace to be able to be used by the Operator:
+
+    pgo update namespace somenamespace
+
+Delete a Namespace:
+
+    pgo delete namespace mynamespace
+
+#### PGO User Operations
+
+PGO users are users defined for authenticating to the PGO REST API.  You
+can manage those users with the following commands:
+
+    pgo create pgouser someuser --pgouser-namespaces="pgouser1,pgouser2" --pgouser-password="somepassword" --pgouser-roles="pgoadmin"
+    pgo create pgouser otheruser --all-namespaces --pgouser-password="somepassword" --pgouser-roles="pgoadmin"
+
+Update a user:
+
+    pgo update pgouser someuser --pgouser-namespaces="pgouser1,pgouser2" --pgouser-password="somepassword" --pgouser-roles="pgoadmin"
+    pgo update pgouser otheruser --all-namespaces --pgouser-password="somepassword" --pgouser-roles="pgoadmin"
+
+Delete a PGO user:
+
+    pgo delete pgouser someuser
+
+PGO roles are also managed as follows:
+
+    pgo create pgorole somerole --permissions="Cat,Ls"
+
+Delete a PGO role with:
+
+    pgo delete pgorole somerole
+
+Update a PGO role with:
+
+    pgo update pgorole somerole --permissions="Cat,Ls"
+
+#### Postgres User Operations
+
+Managed Postgres users can be viewed using the following command:
+
+    pgo show user mycluster
+
+Postgres users can be created using the following command examples:
+
+    pgo create user mycluster --username=somepguser --password=somepassword --managed
+    pgo create user --selector=name=mycluster --username=somepguser --password=somepassword --managed
+
+Those commands are identical in function, and create on the mycluster Postgres cluster, a user named *somepguser*, with a password of *somepassword*, the account is *managed* meaning that 
+these credentials are stored as a Secret on the Kube cluster in the Operator
+namespace.
+
+Postgres users can be deleted using the following command:
+
+    pgo delete user mycluster --username=somepguser
+
+That command deletes the user on the mycluster Postgres cluster.
+
+Postgres users can be updated using the following command:
+
+    pgo update user mycluster --username=somepguser --password=frodo
+
+That command changes the password for the user on the mycluster Postgres cluster.
+
+
+#### Miscellaneous
 
 Create a cluster using the Crunchy Postgres + PostGIS container image:
 
@@ -492,19 +567,20 @@ Create a cluster with a Custom ConfigMap:
 ## pgo Global Flags
 *pgo* global command flags include:
 
-| Flag | Description |
-|:--|:--|
-|n | namespace targeted for the command|
-|apiserver-url | URL of the Operator REST API service, override with CO_APISERVER_URL environment variable |
-|debug |enable debug messages |
-|pgo-ca-cert |The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver. Override with PGO_CA_CERT environment variable|
-|pgo-client-cert |The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.  Override with PGO_CLIENT_CERT environment variable|
-|pgo-client-key |The Client Key file path for authenticating to the PostgreSQL Operator apiserver.  Override with PGO_CLIENT_KEY environment variable|
+| Flag                | Description                                                                                                                                     |
+| :--                 | :--                                                                                                                                             |
+| `-n`                | namespace targeted for the command                                                                                                              |
+| `--apiserver-url`   | URL of the Operator REST API service, override with `CO_APISERVER_URL` environment variable                                                     |
+| `--debug`           | Enable debug messages                                                                                                                           |
+| `--pgo-ca-cert`     | The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver. Override with `PGO_CA_CERT` environment variable          |
+| `--pgo-client-cert` | The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.  Override with `PGO_CLIENT_CERT` environment variable |
+| `--pgo-client-key`  | The Client Key file path for authenticating to the PostgreSQL Operator apiserver.  Override with `PGO_CLIENT_KEY` environment variable          |
 
 ## pgo Global Environment Variables
 *pgo* will pick up these settings if set in your environment:
 
-| Name | Description | NOTES |
-|PGOUSERNAME |The username (role) used for auth on the operator apiserver. | Requires that PGOUSERPASS be set. |
-|PGOUSERPASS |The password for used for auth on the operator apiserver. | Requires that PGOUSERNAME be set. |
-|PGOUSER |The path the the pgorole file. | Will be ignored if either PGOUSERNAME or PGOUSERPASS are set. |
+| Name          | Description                                                  | NOTES                                                             |
+| :--           | :--                                                          | :--                                                               |
+| `PGOUSERNAME` | The username (role) used for auth on the operator apiserver. | Requires that `PGOUSERPASS` be set.                               |
+| `PGOUSERPASS` | The password for used for auth on the operator apiserver.    | Requires that `PGOUSERNAME` be set.                               |
+| `PGOUSER`     | The path to the pgorole file.                                | Will be ignored if either `PGOUSERNAME` or `PGOUSERPASS` are set. |

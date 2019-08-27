@@ -1,0 +1,20 @@
+---
+- name: Delete Watched Namespaces (Kubernetes)
+  shell: |
+    kubectl delete namespace {{ item }}
+  when: delete_watched_namespaces|bool
+  ignore_errors: yes
+  with_items:
+  - "{{ watched_namespaces }}"
+  no_log: false
+  tags:
+  - uninstall
+
+- name: Delete Operator Namespace (Kubernetes)
+  shell: |
+    kubectl delete namespace {{ pgo_operator_namespace }}
+  when: delete_operator_namespace|bool
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - uninstall

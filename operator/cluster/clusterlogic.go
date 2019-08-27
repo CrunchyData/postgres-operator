@@ -21,23 +21,18 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
-	"os"
-
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/util"
-
-	//jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/apps/v1"
-
-	//"k8s.io/apimachinery/pkg/api/meta"
-	//"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"os"
 )
 
 // AddCluster ...
@@ -65,6 +60,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	err = CreateService(clientset, &serviceFields, namespace)
 	if err != nil {
 		log.Error("error in creating primary service " + err.Error())
+		publishClusterCreateFailure(cl, err.Error())
 		return err
 	}
 
@@ -97,11 +93,14 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		err = backrest.CreateRepoDeployment(clientset, namespace, cl)
 		if err != nil {
 			log.Error("could not create backrest repo deployment")
+			publishClusterCreateFailure(cl, err.Error())
 			return err
 		}
 	}
 
 	cl.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = cl.Spec.Name
+	cl.Spec.UserLabels[config.LABEL_PGOUSER] = cl.ObjectMeta.Labels[config.LABEL_PGOUSER]
+	cl.Spec.UserLabels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 
 	//create the primary deployment
 	deploymentFields := operator.DeploymentTemplateFields{
@@ -145,6 +144,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	err = config.DeploymentTemplate.Execute(&primaryDoc, deploymentFields)
 	if err != nil {
 		log.Error(err.Error())
+		publishClusterCreateFailure(cl, err.Error())
 		return err
 	}
 
@@ -157,12 +157,14 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
 	if err != nil {
 		log.Error("error unmarshalling primary json into Deployment " + err.Error())
+		publishClusterCreateFailure(cl, err.Error())
 		return err
 	}
 
 	if deploymentExists(clientset, namespace, cl.Spec.Name) == false {
 		err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
 		if err != nil {
+			publishClusterCreateFailure(cl, err.Error())
 			return err
 		}
 	} else {
@@ -174,6 +176,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	err = util.PatchClusterCRD(client, cl.Spec.UserLabels, cl, namespace)
 	if err != nil {
 		log.Error("could not patch primary crv1 with labels")
+		publishClusterCreateFailure(cl, err.Error())
 		return err
 	}
 
@@ -188,43 +191,58 @@ func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	log.Info("deleting Pgcluster object" + " in namespace " + namespace)
 	log.Info("deleting with Name=" + cl.Spec.Name + " in namespace " + namespace)
 
-	//delete the primary and replica deployments and replica sets
-	err = shutdownCluster(clientset, restclient, cl, namespace)
+	/*
+		//delete the primary and replica deployments and replica sets
+		err = shutdownCluster(clientset, restclient, cl, namespace)
+		if err != nil {
+			log.Error("error deleting primary Deployment " + err.Error())
+		}
+
+		//delete the pgbouncer service if exists
+		//	if cl.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
+		if cl.Labels[config.LABEL_PGBOUNCER] == "true" {
+			DeletePgbouncer(clientset, cl.Spec.Name, namespace)
+		}
+
+		//delete the primary service
+		kubeapi.DeleteService(clientset, cl.Spec.Name, namespace)
+
+		//delete the replica service
+		var found bool
+		_, found, err = kubeapi.GetService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
+		if found {
+			kubeapi.DeleteService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
+		}
+
+		//delete the pgpool deployment if necessary
+		if cl.Spec.UserLabels[config.LABEL_PGPOOL] == "true" {
+			DeletePgpool(clientset, cl.Spec.Name, namespace)
+		}
+
+		//delete the backrest repo deployment if necessary
+		if cl.Labels[config.LABEL_BACKREST] == "true" {
+			deleteBackrestRepo(clientset, cl.Spec.Name, namespace)
+		}
+
+		//delete the pgreplicas if necessary
+		DeletePgreplicas(restclient, cl.Spec.Name, namespace)
+
+		//delete any pgtasks for this cluster
+		deletePgtasks(restclient, cl.Spec.Name, namespace)
+	*/
+	//create rmdata job
+	isReplica := false
+	isBackup := false
+	removeData := true
+	removeBackup := false
+	err = CreateRmdataJob(clientset, cl, namespace, removeData, removeBackup, isReplica, isBackup)
 	if err != nil {
-		log.Error("error deleting primary Deployment " + err.Error())
+		log.Error(err)
+		return err
+	} else {
+		publishDeleteCluster(namespace, cl.ObjectMeta.Labels[config.LABEL_PGOUSER], cl.Spec.Name, cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER])
 	}
 
-	//delete the pgbouncer service if exists
-	//	if cl.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
-	if cl.Labels[config.LABEL_PGBOUNCER] == "true" {
-		DeletePgbouncer(clientset, cl.Spec.Name, namespace)
-	}
-
-	//delete the primary service
-	kubeapi.DeleteService(clientset, cl.Spec.Name, namespace)
-
-	//delete the replica service
-	var found bool
-	_, found, err = kubeapi.GetService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
-	if found {
-		kubeapi.DeleteService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
-	}
-
-	//delete the pgpool deployment if necessary
-	if cl.Spec.UserLabels[config.LABEL_PGPOOL] == "true" {
-		DeletePgpool(clientset, cl.Spec.Name, namespace)
-	}
-
-	//delete the backrest repo deployment if necessary
-	if cl.Labels[config.LABEL_BACKREST] == "true" {
-		deleteBackrestRepo(clientset, cl.Spec.Name, namespace)
-	}
-
-	//delete the pgreplicas if necessary
-	DeletePgreplicas(restclient, cl.Spec.Name, namespace)
-
-	//delete any pgtasks for this cluster
-	deletePgtasks(restclient, cl.Spec.Name, namespace)
 	return err
 
 }
@@ -355,6 +373,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 
 	if err != nil {
 		log.Error(err.Error())
+		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
 		return err
 	}
 
@@ -366,10 +385,33 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
 	if err != nil {
 		log.Error("error unmarshalling replica json into Deployment " + err.Error())
+		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
 		return err
 	}
 
 	err = kubeapi.CreateDeployment(clientset, &replicaDeployment, namespace)
+
+	//publish event for replica creation
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventScaleClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  replica.ObjectMeta.Labels[config.LABEL_PGOUSER],
+			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
+			EventType: events.EventScaleCluster,
+		},
+		Clustername:       cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
+		Clusteridentifier: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+		Replicaname:       cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 
 	return err
 }
@@ -421,4 +463,49 @@ func deletePgtasks(restclient *rest.RESTClient, clusterName, namespace string) {
 		err = kubeapi.Deletepgtask(restclient, r.Spec.Name, namespace)
 	}
 
+}
+
+func publishScaleError(namespace string, username string, cluster *crv1.Pgcluster) {
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventScaleClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  username,
+			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
+			EventType: events.EventScaleCluster,
+		},
+		Clustername:       cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
+		Replicaname:       cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
+		Clusteridentifier: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
+}
+
+func publishDeleteCluster(namespace, username, clusterName, identifier string) {
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventDeleteClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  username,
+			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
+			EventType: events.EventDeleteCluster,
+		},
+		Clustername:       clusterName,
+		Clusteridentifier: identifier,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 }

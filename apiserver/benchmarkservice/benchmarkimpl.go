@@ -152,7 +152,7 @@ func DeleteBenchmark(request *msgs.DeleteBenchmarkRequest) msgs.DeleteBenchmarkR
 }
 
 //  CreateBenchmark ...
-func CreateBenchmark(request *msgs.CreateBenchmarkRequest, ns string) msgs.CreateBenchmarkResponse {
+func CreateBenchmark(request *msgs.CreateBenchmarkRequest, ns, pgouser string) msgs.CreateBenchmarkResponse {
 	br := &msgs.CreateBenchmarkResponse{
 		Status: msgs.Status{
 			Code: msgs.Ok,
@@ -226,6 +226,8 @@ func CreateBenchmark(request *msgs.CreateBenchmarkRequest, ns string) msgs.Creat
 		}
 
 		task := benchmark.newBenchmarkTask()
+		task.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
+		task.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 		err = kubeapi.Createpgtask(apiserver.RESTClient, task, ns)
 		if err != nil {
 			br.Status.Code = msgs.Error

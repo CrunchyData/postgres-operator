@@ -93,6 +93,7 @@ to create databases or clusters, or make changes to existing databases.
 
 The CLI interacts with the REST API deployed within the *postgres-operator* deployment.
 
+
 ## Node Affinity
 
 You can have the Operator add a node affinity section to

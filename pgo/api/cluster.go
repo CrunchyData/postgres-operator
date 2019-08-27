@@ -29,7 +29,7 @@ import (
 const (
 	createClusterURL = "%s/clusters"
 	deleteClusterURL = "%s/clustersdelete"
-	updateClusterURL = "%s/clustersupdate/%s?selector=%s&autofail=%s&version=%s&namespace=%s"
+	updateClusterURL = "%s/clustersupdate"
 	showClusterURL   = "%s/showclusters"
 )
 
@@ -152,20 +152,22 @@ func CreateCluster(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 	return response, err
 }
 
-func UpdateCluster(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, autofailFlag, ns string) (msgs.UpdateClusterResponse, error) {
+func UpdateCluster(httpclient *http.Client, request *msgs.UpdateClusterRequest, SessionCredentials *msgs.BasicAuthCredentials) (msgs.UpdateClusterResponse, error) {
+	//func UpdateCluster(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, autofailFlag, ns string) (msgs.UpdateClusterResponse, error) {
 
 	var response msgs.UpdateClusterResponse
+	jsonValue, _ := json.Marshal(request)
 
-	url := fmt.Sprintf(updateClusterURL, SessionCredentials.APIServerURL, arg, selector, autofailFlag, msgs.PGO_VERSION, ns)
-
+	url := fmt.Sprintf(updateClusterURL, SessionCredentials.APIServerURL)
 	log.Debugf("update cluster called %s", url)
 
-	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
+		response.Status.Code = msgs.Error
 		return response, err
 	}
 
+	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)

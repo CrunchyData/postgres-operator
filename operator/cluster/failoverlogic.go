@@ -23,6 +23,7 @@ import (
 	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -34,7 +35,7 @@ import (
 	"time"
 )
 
-func Failover(clientset *kubernetes.Clientset, client *rest.RESTClient, clusterName string, task *crv1.Pgtask, namespace string, restconfig *rest.Config) error {
+func Failover(identifier string, clientset *kubernetes.Clientset, client *rest.RESTClient, clusterName string, task *crv1.Pgtask, namespace string, restconfig *rest.Config) error {
 
 	var pod *v1.Pod
 	var err error
@@ -64,7 +65,7 @@ func Failover(clientset *kubernetes.Clientset, client *rest.RESTClient, clusterN
 	depList, err = kubeapi.GetDeployments(clientset, selector, namespace)
 	if len(depList.Items) > 0 {
 		log.Debug("in failover, the primary deployment is found before removal")
-		err = deletePrimary(clientset, namespace, clusterName)
+		err = deletePrimary(clientset, namespace, clusterName, task.ObjectMeta.Labels[config.LABEL_PGOUSER])
 		if err != nil {
 			log.Error(err)
 			return err
@@ -77,6 +78,9 @@ func Failover(clientset *kubernetes.Clientset, client *rest.RESTClient, clusterN
 
 	//trigger the failover on the replica
 	err = promote(pod, clientset, client, namespace, restconfig)
+
+	publishPromoteEvent(identifier, namespace, task.ObjectMeta.Labels[config.LABEL_PGOUSER], clusterName, target)
+
 	updateFailoverStatus(client, task, namespace, clusterName, "promoting pod "+pod.Name+" target "+target)
 
 	//relabel the deployment with primary labels
@@ -161,7 +165,7 @@ func updateFailoverStatus(client *rest.RESTClient, task *crv1.Pgtask, namespace,
 
 }
 
-func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName string) error {
+func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName, pgouser string) error {
 
 	//the primary will be the one with a pod that has a label
 	//that looks like service-name=clustername and is not a backrest job
@@ -183,6 +187,8 @@ func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName strin
 	pod := pods.Items[0]
 
 	deploymentToDelete := pod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
+
+	publishPrimaryDeleted(pod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clusterName, deploymentToDelete, pgouser, namespace)
 
 	//delete the deployment with pg-cluster=clusterName,primary=true
 	log.Debugf("deleting deployment %s", deploymentToDelete)
@@ -232,4 +238,50 @@ func waitForDelete(deploymentToDelete, podName string, clientset *kubernetes.Cli
 
 	return errors.New(fmt.Sprintf("timeout waiting for %s %s to delete", deploymentToDelete, podName))
 
+}
+
+func publishPromoteEvent(identifier, namespace, username, clusterName, target string) {
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventFailoverClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  username,
+			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
+			EventType: events.EventFailoverCluster,
+		},
+		Clustername:       clusterName,
+		Clusteridentifier: identifier,
+		Target:            target,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
+}
+func publishPrimaryDeleted(identifier, clusterName, deploymentToDelete, username, namespace string) {
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventPrimaryDeletedFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  username,
+			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
+			EventType: events.EventPrimaryDeleted,
+		},
+		Clustername:       clusterName,
+		Clusteridentifier: identifier,
+		Deploymentname:    deploymentToDelete,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 }

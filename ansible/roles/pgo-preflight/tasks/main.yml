@@ -1,6 +1,6 @@
 ---
 - fail:
-    msg: "Please specify the a tag: deprovision, deprovision-metrics, install, install-metrics or update"
+    msg: "Please specify the a tag: uninstall, uninstall-metrics, install, install-metrics or update"
   tags: always
   when: ansible_run_tags[0] == "all"
 
@@ -20,4 +20,7 @@
 
 - include_tasks: check_kubernetes.yml
   when: kubernetes_context is defined and kubernetes_context != ''
+  tags: always
+
+- include_tasks: check_inventory.yml
   tags: always

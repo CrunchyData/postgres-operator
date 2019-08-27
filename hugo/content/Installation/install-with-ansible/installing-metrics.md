@@ -16,7 +16,7 @@ using the provided Ansible roles.
 
 ## Prerequisites
 
-The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prereq/prerequisites/)
+The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prerequisites/)
 we can now install the PostgreSQL Operator.
 
 At a minimum, the following inventory variables should be configured to install the 

@@ -41,7 +41,7 @@ const containername = "database"
 //  CreateBackup ...
 // pgo backup mycluster
 // pgo backup --selector=name=mycluster
-func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.CreateBackrestBackupResponse {
+func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string) msgs.CreateBackrestBackupResponse {
 	resp := msgs.CreateBackrestBackupResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -170,7 +170,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 		log.Debugf("setting jobName to %s", jobName)
 
 		err = kubeapi.Createpgtask(apiserver.RESTClient,
-			getBackupParams(clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts, request.BackrestStorageType, jobName, ns),
+			getBackupParams(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database", request.BackupOpts, request.BackrestStorageType, jobName, ns, pgouser),
 			ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
@@ -184,7 +184,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns string) msgs.Cre
 	return resp
 }
 
-func getBackupParams(clusterName, taskName, action, podName, containerName, backupOpts, backrestStorageType, jobName, ns string) *crv1.Pgtask {
+func getBackupParams(identifier, clusterName, taskName, action, podName, containerName, backupOpts, backrestStorageType, jobName, ns, pgouser string) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
@@ -209,6 +209,8 @@ func getBackupParams(clusterName, taskName, action, podName, containerName, back
 	}
 	newInstance.ObjectMeta.Labels = make(map[string]string)
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
+	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = identifier
+	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 	return newInstance
 }
 
@@ -397,7 +399,7 @@ func getInfo(clusterName, storageType, podname, ns string) (string, error) {
 
 //  Restore ...
 // pgo restore mycluster --to-cluster=restored
-func Restore(request *msgs.RestoreRequest, ns string) msgs.RestoreResponse {
+func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreResponse {
 	resp := msgs.RestoreResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -454,6 +456,8 @@ func Restore(request *msgs.RestoreRequest, ns string) msgs.RestoreResponse {
 		return resp
 	}
 
+	pgtask.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
+	pgtask.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 	pgtask.Spec.Parameters[crv1.PgtaskWorkflowID] = id
 
 	//create a pgtask for the restore workflow
@@ -503,9 +507,11 @@ func getRestoreParams(request *msgs.RestoreRequest, ns string, cluster crv1.Pgcl
 		log.Debug("Restore node labels used from user entered flag")
 	}
 
+	labels := make(map[string]string)
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name: spec.Name,
+			Labels: labels,
+			Name:   spec.Name,
 		},
 		Spec: spec,
 	}

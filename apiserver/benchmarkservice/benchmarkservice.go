@@ -90,7 +90,6 @@ func DeleteBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// CreateBackupHandler ...
 func CreateBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var username, ns string
@@ -121,6 +120,6 @@ func CreateBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := CreateBenchmark(&request, ns)
+	resp := CreateBenchmark(&request, ns, username)
 	json.NewEncoder(w).Encode(resp)
 }

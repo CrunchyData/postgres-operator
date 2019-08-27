@@ -1,11 +1,11 @@
 FROM registry.access.redhat.com/rhel7
 
-MAINTAINER jeff.mccormick@crunchydata.com
+MAINTAINER support@crunchydata.com
 
 LABEL name="pgo-lspvc" \
     vendor="crunchydata.com" \
 	Version="7.6" \
-	Release="4.0.1" \
+	Release="4.1.0" \
     run='docker run -d -p 8080:80 --name=web-app web-app' \
     summary="Crunchy Data PostgreSQL Operator - Display PVC" \
     description="Crunchy Data PostgreSQL Operator - Display contents of a PVC"

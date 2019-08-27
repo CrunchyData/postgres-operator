@@ -17,14 +17,20 @@ limitations under the License.
 
 import (
 	"context"
+	"sync"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/ns"
+	"github.com/crunchydata/postgres-operator/operator"
+
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/apps/v1"
+	v1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
@@ -34,53 +40,33 @@ import (
 
 // PodController holds the connections for the controller
 type PodController struct {
-	PodClient    *rest.RESTClient
-	PodClientset *kubernetes.Clientset
-	Namespace    []string
+	PodClient          *rest.RESTClient
+	PodClientset       *kubernetes.Clientset
+	Ctx                context.Context
+	informerNsMutex    sync.Mutex
+	InformerNamespaces map[string]struct{}
 }
 
 // Run starts an pod resource controller
-func (c *PodController) Run(ctx context.Context) error {
+func (c *PodController) Run() error {
 
-	err := c.watchPods(ctx)
+	err := c.watchPods(c.Ctx)
 	if err != nil {
 		log.Errorf("Failed to register watch for pod resource: %v", err)
 		return err
 	}
 
-	<-ctx.Done()
-	return ctx.Err()
+	<-c.Ctx.Done()
+	return c.Ctx.Err()
 }
 
 // watchPods is the event loop for pod resources
 func (c *PodController) watchPods(ctx context.Context) error {
-	for i := 0; i < len(c.Namespace); i++ {
-		log.Infof("starting pod controller on ns [%s]", c.Namespace[i])
-		source := cache.NewListWatchFromClient(
-			c.PodClientset.CoreV1().RESTClient(),
-			"pods",
-			c.Namespace[i],
-			fields.Everything())
+	nsList := ns.GetNamespaces(c.PodClientset, operator.InstallationName)
 
-		_, controller := cache.NewInformer(
-			source,
-
-			// The object type.
-			&apiv1.Pod{},
-
-			// resyncPeriod
-			// Every resyncPeriod, all resources in the cache will retrigger events.
-			// Set to 0 to disable the resync.
-			0,
-
-			// Your custom resource event handlers.
-			cache.ResourceEventHandlerFuncs{
-				AddFunc:    c.onAdd,
-				UpdateFunc: c.onUpdate,
-				DeleteFunc: c.onDelete,
-			})
-
-		go controller.Run(ctx.Done())
+	for i := 0; i < len(nsList); i++ {
+		log.Infof("starting pod controller on ns [%s]", nsList[i])
+		c.SetupWatch(nsList[i])
 	}
 	return nil
 }
@@ -148,7 +134,7 @@ func (c *PodController) onDelete(obj interface{}) {
 		return
 	}
 
-	log.Debugf("[PodController] onDelete ns=%s %s", pod.ObjectMeta.Namespace, pod.ObjectMeta.SelfLink)
+	//	log.Debugf("[PodController] onDelete ns=%s %s", pod.ObjectMeta.Namespace, pod.ObjectMeta.SelfLink)
 }
 
 func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv1.Pgcluster) {
@@ -175,6 +161,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 			if v.Name == "database" {
 				if !v.Ready && oldStatus {
 					log.Debugf("podController autofail enabled pod went from ready to not ready pod name %s", newpod.Name)
+					publishPrimaryNotReady(clusterName, newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], newpod.ObjectMeta.Labels[config.LABEL_PGOUSER], newpod.ObjectMeta.Namespace)
 					clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, clusterName, newpod.ObjectMeta.Namespace)
 				}
 				//clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, clusterName, newpod.ObjectMeta.Namespace)
@@ -199,6 +186,11 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
 
 					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
+
+					//publish event for cluster complete
+					publishClusterComplete(clusterName, newpod.ObjectMeta.Namespace, cluster)
+					//
+
 					if cluster.Labels[config.LABEL_BACKREST] == "true" {
 						tmptask := crv1.Pgtask{}
 						found, err := kubeapi.Getpgtask(c.PodClient, &tmptask, clusterName+"-stanza-create", newpod.ObjectMeta.Namespace)
@@ -324,4 +316,91 @@ func isPostgresPod(newpod *apiv1.Pod) bool {
 		return false
 	}
 	return true
+}
+
+func publishClusterComplete(clusterName, namespace string, cluster *crv1.Pgcluster) error {
+	//capture the cluster creation event
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventCreateClusterCompletedFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  cluster.Spec.UserLabels[config.LABEL_PGOUSER],
+			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
+			EventType: events.EventCreateClusterCompleted,
+		},
+		Clustername:       clusterName,
+		Clusteridentifier: cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+		WorkflowID:        cluster.Spec.UserLabels[config.LABEL_WORKFLOW_ID],
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+	return err
+
+}
+
+func (c *PodController) SetupWatch(ns string) {
+
+	// don't create informer for namespace if one has already been created
+	c.informerNsMutex.Lock()
+	if _, ok := c.InformerNamespaces[ns]; ok {
+		return
+	}
+	c.InformerNamespaces[ns] = struct{}{}
+	c.informerNsMutex.Unlock()
+
+	source := cache.NewListWatchFromClient(
+		c.PodClientset.CoreV1().RESTClient(),
+		"pods",
+		ns,
+		fields.Everything())
+
+	_, controller := cache.NewInformer(
+		source,
+
+		// The object type.
+		&apiv1.Pod{},
+
+		// resyncPeriod
+		// Every resyncPeriod, all resources in the cache will retrigger events.
+		// Set to 0 to disable the resync.
+		0,
+
+		// Your custom resource event handlers.
+		cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.onAdd,
+			UpdateFunc: c.onUpdate,
+			DeleteFunc: c.onDelete,
+		})
+
+	go controller.Run(c.Ctx.Done())
+	log.Debugf("PodController created informer for namespace %s", ns)
+}
+
+func publishPrimaryNotReady(clusterName, identifier, username, namespace string) {
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventPrimaryNotReadyFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  username,
+			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
+			EventType: events.EventPrimaryNotReady,
+		},
+		Clustername:       clusterName,
+		Clusteridentifier: identifier,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 }

@@ -24,6 +24,7 @@ import (
 
 var ClusterReplicaCount int
 var ManagedUser bool
+var AllNamespaces bool
 var ContainerResources string
 var ReplicaStorageConfig, StorageConfig string
 var CustomConfig string
@@ -48,28 +49,50 @@ var ScheduleDatabase string
 var ScheduleSecret string
 var PGBackRestType string
 var Secret string
+var PgouserPassword, PgouserRoles, PgouserNamespaces string
+var Permissions string
 
 var Series int
 
 var CreateCmd = &cobra.Command{
 	Use:   "create",
-	Short: "Create a Cluster, PGBouncer, PGPool, Policy, Schedule, or User",
-	Long: `CREATE allows you to create a new Cluster, PGBouncer, PGPool, Policy, Schedule or User. For example: 
-
+	Short: "Create a Postgres Operator resource",
+	Long: `CREATE allows you to create a new Operator resource. For example: 
     pgo create cluster
     pgo create pgbouncer
     pgo create pgpool
+    pgo create pgouser
+    pgo create pgorole
     pgo create policy
+    pgo create namespace
     pgo create user`,
 	Run: func(cmd *cobra.Command, args []string) {
 		log.Debug("create called")
-		if len(args) == 0 || (args[0] != "cluster" && args[0] != "policy") && args[0] != "user" {
+		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the type of resource to create.  Valid resource types include:
     * cluster
     * pgbouncer
     * pgpool
+    * pgouser
+    * pgorole
     * policy
+    * namespace
     * user`)
+		} else {
+			switch args[0] {
+			case "cluster", "pgbouncer", "pgpool", "pgouser", "pgorole", "policy", "user", "namespace":
+				break
+			default:
+				fmt.Println(`Error: You must specify the type of resource to create.  Valid resource types include:
+    * cluster
+    * pgbouncer
+    * pgpool
+    * pgouser
+    * pgorole
+    * policy
+    * namespace
+    * user`)
+			}
 		}
 	},
 }
@@ -197,24 +220,22 @@ var createUserCmd = &cobra.Command{
 	Short: "Create a PostgreSQL user",
 	Long: `Create a postgres user. For example:
 
-    pgo create user manageduser --managed --selector=name=mycluster
-    pgo create user user1 --selector=name=mycluster`,
+    pgo create user --username=someuser --all --managed
+    pgo create user --username=someuser  mycluster --managed
+    pgo create user --username=someuser -selector=name=mycluster --managed
+    pgo create user --username=user1 --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
 		log.Debug("create user called ")
-		if Selector == "" {
-			fmt.Println(`Error: The --selector flag is required to create a user.`)
+		if Selector == "" && AllFlag == false && len(args) == 0 {
+			fmt.Println(`Error: a cluster name(s), --selector flag, or --all flag is required to create a user.`)
 			return
 		}
 
-		if len(args) == 0 {
-			fmt.Println(`Error: A user name is required for this command.`)
-		} else {
-			createUser(args, Namespace)
-		}
+		createUser(args, Namespace)
 	},
 }
 
@@ -224,10 +245,18 @@ func init() {
 	CreateCmd.AddCommand(createPolicyCmd)
 	CreateCmd.AddCommand(createPgbouncerCmd)
 	CreateCmd.AddCommand(createPgpoolCmd)
+	CreateCmd.AddCommand(createPgouserCmd)
+	CreateCmd.AddCommand(createPgoroleCmd)
 	CreateCmd.AddCommand(createScheduleCmd)
 	CreateCmd.AddCommand(createUserCmd)
+	CreateCmd.AddCommand(createNamespaceCmd)
 
 	createClusterCmd.Flags().StringVarP(&BackrestFlag, "pgbackrest", "", "", "Enables a pgBackRest volume for the database pod, \"true\" or \"false\". Default from pgo.yaml, command line overrides default.")
+	createPgouserCmd.Flags().StringVarP(&PgouserPassword, "pgouser-password", "", "", "specify a password for a pgouser")
+	createPgouserCmd.Flags().StringVarP(&PgouserRoles, "pgouser-roles", "", "", "specify a comma separated list of Roles for a pgouser")
+	createPgouserCmd.Flags().StringVarP(&PgouserNamespaces, "pgouser-namespaces", "", "", "specify a comma separated list of Namespaces for a pgouser")
+	createPgouserCmd.Flags().BoolVarP(&AllNamespaces, "all-namespaces", "", false, "specifies this user will have access to all namespaces.")
+	createPgoroleCmd.Flags().StringVarP(&Permissions, "permissions", "", "", "specify a comma separated list of permissions for a pgorole")
 	createClusterCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use with pgBackRest. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgpoolFlag, "pgpool", "", false, "Adds the crunchy-pgpool container to the database pod.")
@@ -270,14 +299,78 @@ func init() {
 
 	createUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	createUserCmd.Flags().StringVarP(&Password, "password", "", "", "The password to use for creating a new user which overrides a generated password.")
+	createUserCmd.Flags().StringVarP(&Username, "username", "", "", "The username to use for creating a new user")
 	createUserCmd.Flags().BoolVarP(&ManagedUser, "managed", "", false, "Creates a user with secrets that can be managed by the Operator.")
-	createUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
+	//	createUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
 	createUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")
-	createUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 12, "If no password is supplied, this is the length of the auto generated password")
+	createUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 22, "If no password is supplied, this is the length of the auto generated password")
 	createPgpoolCmd.Flags().StringVarP(&PgpoolSecret, "pgpool-secret", "", "", "The name of a pgpool secret to use for the pgpool configuration.")
 
 	// createPgbouncerCmd.Flags().StringVarP(&PgBouncerUser, "pgbouncer-user", "", "", "Username for the crunchy-pgboucer deployment, default is 'pgbouncer'.")
 	createPgbouncerCmd.Flags().StringVarP(&PgBouncerPassword, "pgbouncer-pass", "", "", "Password for the pgbouncer user of the crunchy-pgboucer deployment.")
 	createPgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 
+}
+
+// createPgouserCmd ...
+var createPgouserCmd = &cobra.Command{
+	Use:   "pgouser",
+	Short: "Create a pgouser",
+	Long: `Create a pgouser. For example:
+
+    pgo create pgouser someuser`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		log.Debug("create pgouser called ")
+
+		if len(args) == 0 {
+			fmt.Println(`Error: A pgouser username is required for this command.`)
+		} else {
+			createPgouser(args, Namespace)
+		}
+	},
+}
+
+// createPgoroleCmd ...
+var createPgoroleCmd = &cobra.Command{
+	Use:   "pgorole",
+	Short: "Create a pgorole",
+	Long: `Create a pgorole. For example:
+
+    pgo create pgorole somerole --permissions="Cat,Ls"`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		log.Debug("create pgorole  called ")
+
+		if len(args) == 0 {
+			fmt.Println(`Error: A pgouser role name is required for this command.`)
+		} else {
+			createPgorole(args, Namespace)
+		}
+	},
+}
+
+// createNamespaceCmd ...
+var createNamespaceCmd = &cobra.Command{
+	Use:   "namespace",
+	Short: "Create a namespace",
+	Long: `Create a namespace. For example:
+
+    pgo create namespace somenamespace`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		log.Debug("create namespace called ")
+
+		if len(args) == 0 {
+			fmt.Println(`Error: A namespace name is required for this command.`)
+		} else {
+			createNamespace(args, Namespace)
+		}
+	},
 }

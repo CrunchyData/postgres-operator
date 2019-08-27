@@ -29,7 +29,7 @@ import (
 // CreatePgbouncer ...
 // pgo create pgbouncer mycluster
 // pgo create pgbouncer --selector=name=mycluster
-func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns string) msgs.CreatePgbouncerResponse {
+func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) msgs.CreatePgbouncerResponse {
 	var err error
 	resp := msgs.CreatePgbouncerResponse{}
 	resp.Status.Code = msgs.Ok
@@ -105,7 +105,6 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns string) msgs.Creat
 		spec.Parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER] = cluster.Name
 		spec.Parameters[config.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
 		spec.Parameters[config.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
-
 		newInstance := &crv1.Pgtask{
 			ObjectMeta: meta_v1.ObjectMeta{
 				Name: spec.Name,
@@ -116,6 +115,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns string) msgs.Creat
 		newInstance.ObjectMeta.Labels = make(map[string]string)
 		newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = cluster.Name
 		newInstance.ObjectMeta.Labels[config.LABEL_PGBOUNCER_TASK_ADD] = "true"
+		newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 
 		//check if this cluster already has a pgbouncer
 		// if cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {

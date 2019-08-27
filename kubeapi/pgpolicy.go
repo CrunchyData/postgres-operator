@@ -16,9 +16,12 @@ package kubeapi
 */
 
 import (
-	log "github.com/sirupsen/logrus"
+	"encoding/json"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	jsonpatch "github.com/evanphx/json-patch"
+	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 )
 
@@ -91,4 +94,62 @@ func Createpgpolicy(client *rest.RESTClient, policy *crv1.Pgpolicy, namespace st
 
 	log.Debugf("created pgpolicy %s", policy.Name)
 	return err
+}
+
+// Updatepgpolicy
+func Updatepgpolicy(client *rest.RESTClient, task *crv1.Pgpolicy, name, namespace string) error {
+
+	err := client.Put().
+		Name(name).
+		Namespace(namespace).
+		Resource(crv1.PgpolicyResourcePlural).
+		Body(task).
+		Do().
+		Error()
+	if err != nil {
+		log.Error("error updating pgpolicy " + err.Error())
+		return err
+	}
+
+	log.Debugf("updated pgpolicy %s", task.Name)
+	return err
+}
+
+func PatchpgpolicyStatus(restclient *rest.RESTClient, state crv1.PgpolicyState, message string, oldCrd *crv1.Pgpolicy, namespace string) error {
+
+	oldData, err := json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+
+	//change it
+	oldCrd.Status = crv1.PgpolicyStatus{
+		State:   state,
+		Message: message,
+	}
+
+	//create the patch
+	var newData, patchBytes []byte
+	newData, err = json.Marshal(oldCrd)
+	if err != nil {
+		return err
+	}
+	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
+	if err != nil {
+		return err
+	}
+
+	log.Debug(string(patchBytes))
+
+	//apply patch
+	_, err6 := restclient.Patch(types.MergePatchType).
+		Namespace(namespace).
+		Resource(crv1.PgpolicyResourcePlural).
+		Name(oldCrd.Spec.Name).
+		Body(patchBytes).
+		Do().
+		Get()
+
+	return err6
+
 }

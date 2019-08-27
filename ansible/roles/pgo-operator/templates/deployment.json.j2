@@ -2,14 +2,18 @@
     "apiVersion": "extensions/v1beta1",
     "kind": "Deployment",
     "metadata": {
-        "name": "postgres-operator"
+        "name": "postgres-operator",
+        "labels": {
+        	"vendor": "crunchydata"
+        }
     },
     "spec": {
         "replicas": 1,
         "template": {
             "metadata": {
                 "labels": {
-                    "name": "postgres-operator"
+                    "name": "postgres-operator",
+                    "vendor": "crunchydata"
                 }
             },
             "spec": {
@@ -21,7 +25,7 @@
                         "imagePullPolicy": "IfNotPresent",
                         "ports": [
                             {
-                                "containerPort": 8443
+                                "containerPort": {{ pgo_apiserver_port }}
                             }
                         ],
                         "env": [
@@ -31,11 +35,15 @@
                             },
                             {
                                 "name": "PORT",
-                                "value": "8443"
+                                "value": "{{ pgo_apiserver_port }}"
                             },
                             {
-                                "name": "NAMESPACE",
-                                "value": "{{ namespace }}"
+                                "name": "PGO_INSTALLATION_NAME",
+                                "value": "{{ pgo_installation_name }}"
+                            },
+                            {
+                                "name": "EVENT_ADDR",
+                                "value": "localhost:4150"
                             },
                             {
                                 "name": "PGO_OPERATOR_NAMESPACE",
@@ -48,6 +56,14 @@
                             {
                                 "name": "TLS_NO_VERIFY",
                                 "value": "{{ pgo_tls_no_verify }}"
+                            },
+                            {
+                                "name": "DISABLE_TLS",
+                                "value": "{{ pgo_disable_tls }}"
+                            },
+                            {
+                                "name": "DISABLE_EVENTING",
+                                "value": "{{ pgo_disable_eventing }}"
                             }
                         ],
                         "volumeMounts": []
@@ -76,6 +92,14 @@
                                 "value": "{{ namespace }}"
                             },
                             {
+                                "name": "PGO_INSTALLATION_NAME",
+                                "value": "{{ pgo_installation_name }}"
+                            },
+                            {
+                                "name": "EVENT_ADDR",
+                                "value": "localhost:4150"
+                            },
+                            {
                                 "name": "PGO_OPERATOR_NAMESPACE",
                                 "valueFrom": {
                                     "fieldRef": {
@@ -90,6 +114,10 @@
                                         "fieldPath": "metadata.name"
                                     }
                                 }
+                            },
+                            {
+                                "name": "DISABLE_EVENTING",
+                                "value": "{{ pgo_disable_eventing }}"
                             }
                         ],
                         "volumeMounts": []
@@ -117,12 +145,16 @@
                                 }
                             },
                             {
-                                "name": "NAMESPACE",
-                                "value": "{{ namespace }}"
+                                "name": "PGO_INSTALLATION_NAME",
+                                "value": "{{ pgo_installation_name }}"
                             },
                             {
                                 "name": "TIMEOUT",
                                 "value": "{{ scheduler_timeout }}"
+                            },
+                            {
+                                "name": "EVENT_ADDR",
+                                "value": "localhost:4150"
                             },
                             {
                                 "name": "CRUNCHY_DEBUG",
@@ -130,6 +162,19 @@
                             }
                         ],
                         "volumeMounts": [],
+                        "resources": {},
+                        "imagePullPolicy": "IfNotPresent"
+                    }, {
+                        "name": "event",
+                        "image": "{{ pgo_image_prefix }}/pgo-event:{{ pgo_image_tag }}",
+                        "env": [
+                            {
+                                "name": "TIMEOUT",
+                                "value": "3600"
+                            }
+                        ],
+                        "volumeMounts": [
+                        ],
                         "resources": {},
                         "imagePullPolicy": "IfNotPresent"
                     }

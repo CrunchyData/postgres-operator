@@ -23,6 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	operutil "github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -58,7 +59,7 @@ type containerResourcesTemplateFields struct {
 
 // Load ...
 // pgo load  --policies=jsonload --selector=name=mycluster --load-config=./sample-load-config.json
-func Load(request *msgs.LoadRequest, ns string) msgs.LoadResponse {
+func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 
 	var err error
 	resp := msgs.LoadResponse{}
@@ -104,24 +105,25 @@ func Load(request *msgs.LoadRequest, ns string) msgs.LoadResponse {
 		LoadConfigTemplate.ContainerResources = apiserver.GetContainerResourcesJSON(&tmp)
 	}
 
-	args := request.Args
-	if request.Selector != "" {
+	clusterList := crv1.PgclusterList{}
+	if len(request.Args) == 0 && request.Selector == "" {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "args or --selector required"
+		return resp
+	}
 
-		myselector, err := labels.Parse(request.Selector)
+	if request.Selector != "" {
+		_, err := labels.Parse(request.Selector)
 		if err != nil {
 			log.Error("could not parse selector flag")
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
 		}
-		if myselector == nil {
-		}
 
 		//get the clusters list
-		clusterList := crv1.PgclusterList{}
 		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector,
-			ns)
+			&clusterList, request.Selector, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -130,14 +132,19 @@ func Load(request *msgs.LoadRequest, ns string) msgs.LoadResponse {
 
 		if len(clusterList.Items) == 0 {
 			log.Debug("no clusters found")
-		} else {
-			newargs := make([]string, 0)
-			for _, cluster := range clusterList.Items {
-				newargs = append(newargs, cluster.Spec.Name)
-			}
-			args = newargs
 		}
 
+	} else {
+		for i := 0; i < len(request.Args); i++ {
+			cl := crv1.Pgcluster{}
+			found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cl, request.Args[i], ns)
+			if !found {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
+				return resp
+			}
+			clusterList.Items = append(clusterList.Items, cl)
+		}
 	}
 
 	var policies []string
@@ -147,16 +154,16 @@ func Load(request *msgs.LoadRequest, ns string) msgs.LoadResponse {
 	log.Debugf("policies to apply before loading are %v len=%d", request.Policies, len(policies))
 
 	var jobName string
-	for _, arg := range args {
+	for _, c := range clusterList.Items {
 		for _, p := range policies {
-			log.Debugf("applying policy %s to %s", p, arg)
+			log.Debugf("applying policy %s to %s", p, c.Name)
 			//apply policies to this cluster
 			applyReq := msgs.ApplyPolicyRequest{}
 			applyReq.Name = p
 			applyReq.Namespace = ns
 			applyReq.DryRun = false
-			applyReq.Selector = "name=" + arg
-			applyResp := policyservice.ApplyPolicy(&applyReq, ns)
+			applyReq.Selector = "name=" + c.Name
+			applyResp := policyservice.ApplyPolicy(&applyReq, ns, pgouser)
 			if applyResp.Status.Code != msgs.Ok {
 				log.Error("error in applying policy " + applyResp.Status.Msg)
 				resp.Status.Code = msgs.Error
@@ -166,13 +173,36 @@ func Load(request *msgs.LoadRequest, ns string) msgs.LoadResponse {
 		}
 
 		//create the load job for this cluster
-		log.Debugf("creating load job for %s", arg)
-		jobName, err = createJob(arg, &LoadConfigTemplate, ns)
+		log.Debugf("creating load job for %s", c.Name)
+		jobName, err = createJob(c.Name, &LoadConfigTemplate, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
 		}
+
+		//publish event for Load
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicLoad
+
+		f := events.EventLoadFormat{
+			EventHeader: events.EventHeader{
+				Namespace: ns,
+				Username:  pgouser,
+				Topic:     topics,
+				Timestamp: events.GetTimestamp(),
+				EventType: events.EventLoad,
+			},
+			Clustername:       c.Name,
+			Clusteridentifier: c.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+			Loadconfig:        LoadCfg.TableToLoad,
+		}
+
+		err = events.Publish(f)
+		if err != nil {
+			log.Error(err.Error())
+		}
+
 		resp.Results = append(resp.Results, "created Job "+jobName)
 
 	}

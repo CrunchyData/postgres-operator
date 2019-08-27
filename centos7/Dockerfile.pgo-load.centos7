@@ -3,9 +3,9 @@ FROM centos:7
 LABEL name="crunchydata/pgo-load" \
     vendor="crunchy data" \
 	PostgresVersion="11" \
-	PostgresFullVersion="11.4" \
+	PostgresFullVersion="11.5" \
 	Version="7.6" \
-	Release="4.0.1" \
+	Release="4.1.0" \
     url="https://crunchydata.com" \
     summary="Crunchy Data PostgreSQL Operator - Load Data" \
     description="Loads a CSV or JSON file into the database." \
@@ -16,8 +16,9 @@ LABEL name="crunchydata/pgo-load" \
 
 ENV PGVERSION="11" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm"
 
-# PGDG PostgreSQL Repository
+COPY redhat/licenses /licenses
 
+# PGDG PostgreSQL Repository
 RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
 
 RUN yum -y update &&  yum -y install epel-release \
@@ -37,10 +38,10 @@ ADD bin/uid_postgres.sh /opt/cpm/bin
 ADD conf/pgo-load/ /opt/cpm/conf
 RUN chown -R 26:26 /opt/cpm
 
-VOLUME /pgdata
-
 RUN chmod g=u /etc/passwd && \
         chmod g=u /etc/group
+
+VOLUME /pgdata
 
 ENTRYPOINT ["/opt/cpm/bin/uid_postgres.sh"]
 

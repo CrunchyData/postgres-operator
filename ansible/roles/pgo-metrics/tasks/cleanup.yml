@@ -3,7 +3,7 @@
   set_fact:
     kubectl_or_oc: "{{ openshift_oc_bin if openshift_oc_bin is defined else 'kubectl' }}"
   tags:
-  - deprovision-metrics
+  - uninstall-metrics
   - upgrade-metrics
 
 - name: Delete Prometheus Deployment
@@ -12,7 +12,7 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision-metrics
+  - uninstall-metrics
 
 - name: Delete Grafana Deployment
   shell: |
@@ -20,7 +20,7 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision-metrics
+  - uninstall-metrics
 
 - name: Delete Prometheus Service
   shell: |
@@ -28,7 +28,7 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision-metrics
+  - uninstall-metrics
 
 - name: Delete Grafana Service 
   shell: |
@@ -36,7 +36,7 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision-metrics
+  - uninstall-metrics
 
 - name: Delete Prometheus Cluster Roles 
   shell: |
@@ -44,7 +44,8 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision-metrics
+  - uninstall-metrics
+  when: create_rbac|bool
 
 - name: Delete Prometheus Service Account
   shell: |
@@ -52,7 +53,8 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision-metrics
+  - uninstall-metrics
+  when: create_rbac|bool
 
 - name: Delete Grafana PVC
   shell: |
@@ -60,7 +62,7 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision-metrics
+  - uninstall-metrics
 
 - name: Delete Prometheus PVC
   shell: |
@@ -68,7 +70,7 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision-metrics
+  - uninstall-metrics
 
 - name: Delete Grafana Secret
   shell: |
@@ -76,4 +78,4 @@
   ignore_errors: yes
   no_log: false
   tags:
-  - deprovision-metrics
+  - uninstall-metrics

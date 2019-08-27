@@ -31,6 +31,7 @@ import (
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/sshutil"
 	"github.com/crunchydata/postgres-operator/util"
@@ -38,13 +39,13 @@ import (
 	_ "github.com/lib/pq"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 // DeleteCluster ...
-func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns string) msgs.DeleteClusterResponse {
+func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pgouser string) msgs.DeleteClusterResponse {
 	var err error
 
 	response := msgs.DeleteClusterResponse{}
@@ -79,28 +80,22 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns str
 
 	for _, cluster := range clusterList.Items {
 
-		if deleteData {
-			log.Debugf("deleting data on cluster %s", cluster.Spec.Name)
-			err := deleteDatabaseSecrets(cluster.Spec.Name, ns)
-			if err != nil {
-				log.Debugf("error on deleting secrets %s", err.Error())
-				response.Status.Code = msgs.Error
-				response.Status.Msg = err.Error()
-				return response
-			}
+		log.Debugf("deleting cluster %s", cluster.Spec.Name)
+		taskName := cluster.Spec.Name + "-rmdata"
+		log.Debugf("creating taskName %s", taskName)
+		isBackup := false
+		isReplica := false
+		replicaName := ""
 
-			err = createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups, ns)
-		}
-
-		err = kubeapi.Deletepgcluster(apiserver.RESTClient,
-			cluster.Spec.Name, ns)
+		err := apiserver.CreateRMDataTask(cluster.Spec.Name, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns)
 		if err != nil {
+			log.Debugf("error on creating rmdata task %s", err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
-		} else {
-			response.Results = append(response.Results, "deleted pgcluster "+cluster.Spec.Name)
 		}
+
+		response.Results = append(response.Results, "deleted pgcluster "+cluster.Spec.Name)
 
 	}
 
@@ -273,7 +268,7 @@ func getServices(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterService,
 	return output, err
 }
 
-func TestCluster(name, selector, ns string, allFlag bool) msgs.ClusterTestResponse {
+func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterTestResponse {
 	var err error
 
 	response := msgs.ClusterTestResponse{}
@@ -397,6 +392,30 @@ func TestCluster(name, selector, ns string, allFlag bool) msgs.ClusterTestRespon
 
 		}
 		response.Results = append(response.Results, result)
+
+		//publish event for cluster test
+		topics := make([]string, 1)
+		topics[0] = events.EventTopicCluster
+
+		f := events.EventTestClusterFormat{
+			EventHeader: events.EventHeader{
+				Namespace: ns,
+				Username:  pgouser,
+				Topic:     topics,
+				Timestamp: events.GetTimestamp(),
+				EventType: events.EventTestCluster,
+			},
+			Clustername:       c.Name,
+			Clusteridentifier: c.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+		}
+
+		err = events.Publish(f)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
 	}
 
 	return response
@@ -446,7 +465,7 @@ func query(dbUser, dbHost, dbPort, database, dbPassword string) bool {
 
 // CreateCluster ...
 // pgo create cluster mycluster
-func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClusterResponse {
+func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.CreateClusterResponse {
 	var id string
 	resp := msgs.CreateClusterResponse{}
 	resp.Status.Code = msgs.Ok
@@ -525,6 +544,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 			//add a label for the custom config
 			userLabelsMap[config.LABEL_CUSTOM_CONFIG] = request.CustomConfig
 		}
+
 		//set the metrics flag with the global setting first
 		userLabelsMap[config.LABEL_COLLECT] = strconv.FormatBool(apiserver.MetricsFlag)
 		if err != nil {
@@ -669,6 +689,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 
 		// Create an instance of our CRD
 		newInstance := getClusterParams(request, clusterName, userLabelsMap, ns)
+		newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 
 		//verify that for autofail clusters we have a replica requested
 		if newInstance.Spec.Replicas == "0" {
@@ -709,6 +730,15 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 			return resp
 		}
 
+		//create a workflow for this new cluster
+		id, err = createWorkflowTask(clusterName, ns, pgouser)
+		if err != nil {
+			log.Error(err)
+			resp.Results = append(resp.Results, err.Error())
+			return resp
+		}
+		newInstance.Spec.UserLabels[config.LABEL_WORKFLOW_ID] = id
+
 		//create CRD for new cluster
 		err = kubeapi.Createpgcluster(apiserver.RESTClient,
 			newInstance, ns)
@@ -716,12 +746,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns string) msgs.CreateClu
 			resp.Results = append(resp.Results, err.Error())
 		} else {
 			resp.Results = append(resp.Results, "created Pgcluster "+clusterName)
-		}
-		id, err = createWorkflowTask(clusterName, ns)
-		if err != nil {
-			log.Error(err)
-			resp.Results = append(resp.Results, err.Error())
-			return resp
 		}
 		resp.Results = append(resp.Results, "workflow id "+id)
 	}
@@ -905,7 +929,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	}
 
 	//pgbackrest - set with user request first or look at global flag is not set
-	// Note: validateBackrestStorageType called earlier in CreateCluster will generate 
+	// Note: validateBackrestStorageType called earlier in CreateCluster will generate
 	// and return error to user if BackrestFlag is not true or false
 	if request.BackrestFlag == "true" || request.BackrestFlag == "false" {
 		labels[config.LABEL_BACKREST] = request.BackrestFlag
@@ -986,113 +1010,16 @@ func getReadyStatus(pod *v1.Pod) (string, bool) {
 
 }
 
-// removes data and or backup volumes for all pods in a cluster
 func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, deleteBackups bool, ns string) error {
 
 	var err error
 
-	//dont include pgpool, pgbouncer, or pgbackrest_repo deployments
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGBACKUP + "!=true," + config.LABEL_PGPOOL_POD + "!=true," + config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_PGBOUNCER + "!=true"
-	log.Debugf("selector for delete is %s", selector)
-	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	log.Debugf("creatingDeleteDataTasks %d deployments for pg-cluster=%s\n", len(deployments.Items), clusterName)
+	log.Debugf("creatingDeleteDataTasks deployments for pg-cluster=%s\n", clusterName)
 
-	if deleteBackups {
-		log.Debug("deleteBackups is called")
-		log.Debug("check for backrest-shared-repo PVC to delete")
-		pvcName := clusterName + "-pgbr-repo"
-		_, found, err := kubeapi.GetPVC(apiserver.Clientset, pvcName, ns)
-		if found {
-			log.Debugf("creating rmdata job for %s", pvcName)
-			dataRoots := []string{pvcName}
-			err = apiserver.CreateRMDataTask(storageSpec, clusterName, pvcName, dataRoots, clusterName+"-rmdata-backrest-shared-repo", ns)
-			if err != nil {
-				log.Error(err)
-				return err
-			}
-		}
-	}
-
-	for _, dep := range deployments.Items {
-
-		dataRoots := make([]string, 0)
-		dataRoots = append(dataRoots, dep.Name)
-
-		claimName := dep.Name
-		taskName := dep.Name + "-rmdata-pgdata"
-		log.Debugf("creating taskName %s", taskName)
-
-		err := apiserver.CreateRMDataTask(storageSpec, clusterName, claimName, dataRoots, taskName, ns)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-	}
-
-	if deleteBackups {
-		log.Debug("check for backup PVC to delete")
-		//get the deployment names for this cluster
-		//by convention if basebackups are run, a pvc named
-		//deploymentName-backup will be created to hold backups
-		deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-
-		for _, dep := range deps.Items {
-			pvcName := dep.Name + "-backup"
-			log.Debugf("checking dep %s for backup pvc %s\n", dep.Name, pvcName)
-			_, found, err := kubeapi.GetPVC(apiserver.Clientset, pvcName, ns)
-			if !found {
-				log.Debugf("%s pvc was not found when looking for backups to delete\n", pvcName)
-			} else {
-				if err != nil {
-					log.Error(err)
-					return err
-				}
-				//by convention, the root directory name
-				//created by the backup job is depName-backups
-				dataRoots := []string{dep.Name + "-backups"}
-				err = apiserver.CreateRMDataTask(storageSpec, clusterName, pvcName, dataRoots, dep.Name+"-rmdata-backups", ns)
-				if err != nil {
-					log.Error(err)
-					return err
-				}
-			}
-
-			// check for pgdump backups
-			pgdumpPvcName := "backup-" + dep.Name + "-pgdump-pvc"
-
-			log.Debugf("checking dep %s for pgdump backup pvc %s\n", dep.Name, pgdumpPvcName)
-			_, found, err = kubeapi.GetPVC(apiserver.Clientset, pgdumpPvcName, ns)
-			if !found {
-				log.Debugf("%s pvc was not found when looking for pgdump backups to delete\n", pgdumpPvcName)
-			} else {
-				if err != nil {
-					log.Error(err)
-					return err
-				}
-				//by convention, the root directory name
-				//created by the backup job is depName-backups
-				dataRoots := []string{dep.Name + "-backups"}
-				err = apiserver.CreateRMDataTask(storageSpec, clusterName, pgdumpPvcName, dataRoots, dep.Name+"-rmdata-pgdump", ns)
-				if err != nil {
-					log.Error(err)
-					return err
-				}
-			}
-
-		}
-	}
 	return err
 }
 
-func createWorkflowTask(clusterName, ns string) (string, error) {
+func createWorkflowTask(clusterName, ns, pgouser string) (string, error) {
 
 	//create pgtask CRD
 	spec := crv1.PgtaskSpec{}
@@ -1118,6 +1045,7 @@ func createWorkflowTask(clusterName, ns string) (string, error) {
 		Spec: spec,
 	}
 	newInstance.ObjectMeta.Labels = make(map[string]string)
+	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
 
@@ -1307,29 +1235,44 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns string) (
 }
 
 // UpdateCluster ...
-func UpdateCluster(name, selector, autofail, ns string) msgs.UpdateClusterResponse {
+func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterResponse {
 	var err error
 
 	response := msgs.UpdateClusterResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]string, 0)
 
-	if name != "all" {
-		if selector == "" {
-			selector = "name=" + name
-		}
-	}
-	log.Debugf("autofail is [%v]\n", autofail)
+	log.Debugf("autofail is [%t]\n", request.Autofail)
 
 	clusterList := crv1.PgclusterList{}
 
 	//get the clusters list
-	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-		&clusterList, selector, ns)
-	if err != nil {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = err.Error()
-		return response
+	if request.AllFlag {
+		err = kubeapi.Getpgclusters(apiserver.RESTClient, &clusterList, request.Namespace)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+	} else if request.Selector != "" {
+		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, request.Selector, request.Namespace)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+	} else {
+		for _, v := range request.Clustername {
+			cl := crv1.Pgcluster{}
+
+			_, err = kubeapi.Getpgcluster(apiserver.RESTClient, &cl, v, request.Namespace)
+			if err != nil {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = err.Error()
+				return response
+			}
+			clusterList.Items = append(clusterList.Items, cl)
+		}
 	}
 
 	if len(clusterList.Items) == 0 {
@@ -1341,10 +1284,10 @@ func UpdateCluster(name, selector, autofail, ns string) msgs.UpdateClusterRespon
 	for _, cluster := range clusterList.Items {
 
 		//set autofail=true or false on each pgcluster CRD
-		cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = autofail
+		cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = strconv.FormatBool(request.Autofail)
 
 		err = kubeapi.Updatepgcluster(apiserver.RESTClient,
-			&cluster, cluster.Spec.Name, ns)
+			&cluster, cluster.Spec.Name, request.Namespace)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -1459,6 +1402,7 @@ func createBackrestRepoSecrets(clusterName, namespace string) error {
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET),
 			Labels: map[string]string{
+				config.LABEL_VENDOR:            config.LABEL_CRUNCHY,
 				config.LABEL_PG_CLUSTER:        clusterName,
 				config.LABEL_PGO_BACKREST_REPO: "true",
 			},

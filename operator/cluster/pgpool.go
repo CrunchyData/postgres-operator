@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
@@ -157,6 +158,27 @@ func AddPgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 		return
 	}
 	log.Debugf("added pgpool to cluster [%s]", clusterName)
+
+	//publish event create pgpool
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicPgpool
+
+	f := events.EventCreatePgpoolFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
+			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
+			EventType: events.EventCreatePgpool,
+		},
+		Clustername:       clusterName,
+		Clusteridentifier: pgcluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 }
 
 func DeletePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
@@ -205,6 +227,27 @@ func DeletePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 		log.Error(err)
 	}
 	log.Debugf("delete pgpool from cluster [%s]", clusterName)
+
+	//publish delete pgpool event
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicPgpool
+
+	f := events.EventDeletePgpoolFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
+			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
+			EventType: events.EventDeletePgpool,
+		},
+		Clustername:       clusterName,
+		Clusteridentifier: pgcluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 }
 
 // ProcessPgpool ...
@@ -346,6 +389,7 @@ func CreatePgpoolSecret(clientset *kubernetes.Clientset, primary, replica, db, s
 	secret.ObjectMeta.Labels = make(map[string]string)
 	secret.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = db
 	secret.ObjectMeta.Labels[config.LABEL_PGPOOL] = "true"
+	secret.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
 	secret.Data = make(map[string][]byte)
 	secret.Data["pgpool.conf"] = pgpoolConfBytes
 	secret.Data["pool_hba.conf"] = pgpoolHBABytes

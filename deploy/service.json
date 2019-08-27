@@ -8,12 +8,26 @@
         }
     },
     "spec": {
-        "ports": [{
+        "ports": [
+	{
             "name": "apiserver",
             "protocol": "TCP",
-            "port": 8443,
-            "targetPort": 8443
-        }],
+            "port": $PGO_APISERVER_PORT,
+            "targetPort": $PGO_APISERVER_PORT
+        },
+	{
+            "name": "nsqadmin",
+            "protocol": "TCP",
+            "port": 4151,
+            "targetPort": 4151
+        },
+	{
+            "name": "nsqd",
+            "protocol": "TCP",
+            "port": 4150,
+            "targetPort": 4150
+        }
+	],
         "selector": {
             "name": "postgres-operator"
         },

@@ -20,19 +20,21 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"os"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os"
-	"time"
 )
 
 type PgbouncerPasswdFields struct {
@@ -168,6 +170,27 @@ func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 		return
 	}
 	log.Debugf("added pgbouncer to cluster [%s]", clusterName)
+
+	//publish event
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicPgbouncer
+
+	f := events.EventCreatePgbouncerFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
+			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
+			EventType: events.EventCreatePgbouncer,
+		},
+		Clustername:       clusterName,
+		Clusteridentifier: pgcluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 }
 
 func DeletePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask, namespace string) {
@@ -217,6 +240,28 @@ func DeletePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.R
 		log.Error(err)
 	}
 	log.Debugf("delete pgbouncer from cluster [%s]", clusterName)
+
+	//publish event
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicPgbouncer
+
+	f := events.EventDeletePgbouncerFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
+			Topic:     topics,
+			Timestamp: events.GetTimestamp(),
+			EventType: events.EventDeletePgbouncer,
+		},
+		Clustername:       clusterName,
+		Clusteridentifier: pgcluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
 }
 
 // ProcessPgbouncer ...
@@ -629,6 +674,7 @@ func createPgbouncerSecret(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, 
 	secret.ObjectMeta.Labels = make(map[string]string)
 	secret.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = db
 	secret.ObjectMeta.Labels[config.LABEL_PGBOUNCER] = "true"
+	secret.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
 	secret.Data = make(map[string][]byte)
 
 	secret.Data["username"] = []byte(username)

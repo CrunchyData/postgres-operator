@@ -72,7 +72,7 @@ func ShowBackup(name, ns string) msgs.ShowBackupResponse {
 }
 
 // DeleteBackup ...
-func DeleteBackup(backupName, ns string) msgs.DeleteBackupResponse {
+func DeleteBackup(clusterName, ns string) msgs.DeleteBackupResponse {
 	resp := msgs.DeleteBackupResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -80,27 +80,30 @@ func DeleteBackup(backupName, ns string) msgs.DeleteBackupResponse {
 
 	var err error
 
-	if backupName == "all" {
+	if clusterName == "all" {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "all not a valid cluster name"
 		return resp
 	}
 
-	err = kubeapi.Deletepgbackup(apiserver.RESTClient, backupName, ns)
+	err = kubeapi.Deletepgbackup(apiserver.RESTClient, clusterName, ns)
 
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
 	}
-	resp.Results = append(resp.Results, backupName)
+	resp.Results = append(resp.Results, clusterName)
 
 	//create a pgtask to remove the PVC and its data
-	pvcName := backupName + "-backup"
-	dataRoots := []string{backupName + "-backups"}
+	taskName := clusterName + "-rmdata-backup"
+	deleteData := true
+	deleteBackups := true
+	isReplica := false
+	isBackup := true
+	replicaName := ""
 
-	storageSpec := crv1.PgStorageSpec{}
-	err = apiserver.CreateRMDataTask(storageSpec, backupName, pvcName, dataRoots, backupName+"-backup", ns)
+	err = apiserver.CreateRMDataTask(clusterName, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -115,7 +118,7 @@ func DeleteBackup(backupName, ns string) msgs.DeleteBackupResponse {
 // pgo backup mycluster
 // pgo backup all
 // pgo backup --selector=name=mycluster
-func CreateBackup(request *msgs.CreateBackupRequest, ns string) msgs.CreateBackupResponse {
+func CreateBackup(request *msgs.CreateBackupRequest, ns, pgouser string) msgs.CreateBackupResponse {
 	resp := msgs.CreateBackupResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -186,7 +189,7 @@ func CreateBackup(request *msgs.CreateBackupRequest, ns string) msgs.CreateBacku
 
 		result := crv1.Pgbackup{}
 
-		wfId, err = createBackupWorkflowTask(cluster.Spec.Name, ns)
+		wfId, err = createBackupWorkflowTask(cluster.Spec.Name, cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], pgouser, ns)
 
 		found, err = kubeapi.Getpgbackup(apiserver.RESTClient, &result, arg, ns)
 		if !found {
@@ -206,6 +209,8 @@ func CreateBackup(request *msgs.CreateBackupRequest, ns string) msgs.CreateBacku
 
 			log.Debugf("CreateBackup BackupOpts=%s", newInstance.Spec.BackupOpts)
 
+			newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
+			newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = cluster.ObjectMeta.Labels[config.LABEL_PGOUSER]
 			err = kubeapi.Createpgbackup(apiserver.RESTClient, newInstance, ns)
 			if err != nil {
 				resp.Status.Code = msgs.Error
@@ -273,16 +278,19 @@ func getBackupParams(name string, request *msgs.CreateBackupRequest, ns string) 
 		return newInstance, err
 	}
 
+	labelMap := make(map[string]string)
+
 	newInstance = &crv1.Pgbackup{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name: name,
+			Name:   name,
+			Labels: labelMap,
 		},
 		Spec: spec,
 	}
 	return newInstance, nil
 }
 
-func createBackupWorkflowTask(clusterName, ns string) (string, error) {
+func createBackupWorkflowTask(clusterName, identifier, pgouser, ns string) (string, error) {
 
 	existingTask := crv1.Pgtask{}
 
@@ -326,6 +334,8 @@ func createBackupWorkflowTask(clusterName, ns string) (string, error) {
 		Spec: spec,
 	}
 	newInstance.ObjectMeta.Labels = make(map[string]string)
+	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = identifier
+	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
 
@@ -477,15 +487,15 @@ func createRestoreTask(request *msgs.PgbasebackupRestoreRequest, workflowID, ns 
 	if backupPVC == "" {
 		if !pgbackupfound {
 			return nil, fmt.Errorf("unable to find a pgbackup for cluster %s. A backup PVC therefore cannot be determined. Please "+
-				"either specify a existing backup PVC for the request, or ensure the proper pgbackup exists for this cluster.", 
+				"either specify a existing backup PVC for the request, or ensure the proper pgbackup exists for this cluster.",
 				request.FromCluster)
 		} else if backup.Spec.StorageSpec.Name == "" {
 			return nil, fmt.Errorf("a backup PVC is not defined in pgbackup %s. A backup PVC therefore cannot be determined. Please "+
-				"either specify a existing backup PVC for the request, or update the pgbackup with the proper PVC.", 
+				"either specify a existing backup PVC for the request, or update the pgbackup with the proper PVC.",
 				backup.Name)
 		} else if !apiserver.IsValidPVC(backup.Spec.StorageSpec.Name, ns) {
 			return nil, fmt.Errorf("backup PVC %s as defined in pgbackup %s could not be found. Please "+
-				"either specify a existing backup PVC for the request, or update the pgbackup with the proper PVC.", 
+				"either specify a existing backup PVC for the request, or update the pgbackup with the proper PVC.",
 				backup.Spec.StorageSpec.Name, backup.Name)
 		}
 		spec.Parameters[config.LABEL_PGBASEBACKUP_RESTORE_FROM_PVC] = backup.Spec.StorageSpec.Name
@@ -522,7 +532,7 @@ func validateRestoreRequest(request msgs.PgbasebackupRestoreRequest, ns string) 
 		errorMsgs = append(errorMsgs, errMsg)
 	}
 
-	if request.FromPVC != ""  && !apiserver.IsValidPVC(request.FromPVC, ns) {
+	if request.FromPVC != "" && !apiserver.IsValidPVC(request.FromPVC, ns) {
 		errMsg := fmt.Sprintf("A PVC with name %s was not found", request.FromPVC)
 		errorMsgs = append(errorMsgs, errMsg)
 	}

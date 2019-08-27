@@ -25,21 +25,6 @@ spec:
     singular: pgcluster
   scope: Namespaced
   version: v1
-  validation:
-    openAPIV3Schema:
-      properties:
-        apiVersion:
-          description: 'foo goes here'
-          type: string
-        kind:
-          description: 'doo goes here'
-          type: string
-        metadata:
-          type: object
-        spec:
-          type: object
-        status:
-          type: object
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition

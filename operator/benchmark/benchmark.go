@@ -22,6 +22,7 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
@@ -91,6 +92,8 @@ func Create(namespace string, clientset *kubernetes.Clientset, restclient *rest.
 	}
 
 	log.Debug("Creating benchmark job")
+	newJob.ObjectMeta.Labels[config.LABEL_PGOUSER] = task.ObjectMeta.Labels[config.LABEL_PGOUSER]
+	newJob.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = task.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 	_, err = kubeapi.CreateJob(clientset, &newJob, namespace)
 	if err != nil {
 		return
@@ -110,6 +113,26 @@ func Create(namespace string, clientset *kubernetes.Clientset, restclient *rest.
 		log.Errorf("could not update benchmark workflow: %s", err)
 		return
 	}
+
+	//publish benchmark create event
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventBenchmarkFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
+			Topic:     topics,
+			EventType: events.EventBenchmark,
+		},
+		Clustername: jobFields.ClusterName,
+	}
+
+	err = events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
 }
 
 func UpdateWorkflow(client *rest.RESTClient, name, namespace, status string) error {

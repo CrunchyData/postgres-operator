@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/backrestservice"
@@ -38,6 +39,8 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/namespaceservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgbouncerservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgdumpservice"
+	"github.com/crunchydata/postgres-operator/apiserver/pgoroleservice"
+	"github.com/crunchydata/postgres-operator/apiserver/pgouserservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgpoolservice"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
@@ -50,6 +53,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/workflowservice"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+	crunchylog "github.com/crunchydata/postgres-operator/logging"
 )
 
 const serverCertPath = "/tmp/server.crt"
@@ -63,7 +67,12 @@ func main() {
 		PORT = tmp
 	}
 
+	//give time for pgo-event to start up
+	time.Sleep(time.Duration(5) * time.Second)
+
 	debugFlag := os.Getenv("CRUNCHY_DEBUG")
+	//add logging configuration
+	crunchylog.CrunchyLogger(crunchylog.SetParameters())
 	if debugFlag == "true" {
 		log.SetLevel(log.DebugLevel)
 		log.Debug("debug flag set to true")
@@ -80,6 +89,15 @@ func main() {
 	}
 	tlsNoVerify, _ := strconv.ParseBool(tmp)
 
+	tmp = os.Getenv("DISABLE_TLS")
+	if tmp == "true" {
+		log.Debug("DISABLE_TLS set to true")
+	} else {
+		tmp = "false"
+		log.Debug("DISABLE_TLS set to false")
+	}
+	disableTLS, _ := strconv.ParseBool(tmp)
+
 	log.Infoln("postgres-operator apiserver starts")
 
 	apiserver.Initialize()
@@ -93,21 +111,29 @@ func main() {
 	r.HandleFunc("/policiesdelete", policyservice.DeletePolicyHandler).Methods("POST")
 	r.HandleFunc("/workflow/{id}", workflowservice.ShowWorkflowHandler).Methods("GET")
 	r.HandleFunc("/showpvc", pvcservice.ShowPVCHandler).Methods("POST")
+	r.HandleFunc("/pgouserupdate", pgouserservice.UpdatePgouserHandler).Methods("POST")
+	r.HandleFunc("/pgouserdelete", pgouserservice.DeletePgouserHandler).Methods("POST")
+	r.HandleFunc("/pgousercreate", pgouserservice.CreatePgouserHandler).Methods("POST")
+	r.HandleFunc("/pgousershow", pgouserservice.ShowPgouserHandler).Methods("POST")
+	r.HandleFunc("/pgoroleupdate", pgoroleservice.UpdatePgoroleHandler).Methods("POST")
+	r.HandleFunc("/pgoroledelete", pgoroleservice.DeletePgoroleHandler).Methods("POST")
+	r.HandleFunc("/pgorolecreate", pgoroleservice.CreatePgoroleHandler).Methods("POST")
+	r.HandleFunc("/pgoroleshow", pgoroleservice.ShowPgoroleHandler).Methods("POST")
 	r.HandleFunc("/policies/apply", policyservice.ApplyPolicyHandler).Methods("POST")
 	r.HandleFunc("/label", labelservice.LabelHandler).Methods("POST")
 	r.HandleFunc("/labeldelete", labelservice.DeleteLabelHandler).Methods("POST")
 	r.HandleFunc("/load", loadservice.LoadHandler).Methods("POST")
-	r.HandleFunc("/user", userservice.UserHandler).Methods("POST")
-	r.HandleFunc("/users", userservice.CreateUserHandler).Methods("POST")
-	r.HandleFunc("/users/{name}", userservice.ShowUserHandler).Methods("GET")
-	//here
-	r.HandleFunc("/usersdelete/{name}", userservice.DeleteUserHandler).Methods("GET")
+
+	r.HandleFunc("/userupdate", userservice.UpdateUserHandler).Methods("POST")
+	r.HandleFunc("/usercreate", userservice.CreateUserHandler).Methods("POST")
+	r.HandleFunc("/usershow", userservice.ShowUserHandler).Methods("POST")
+	r.HandleFunc("/userdelete", userservice.DeleteUserHandler).Methods("POST")
+
 	r.HandleFunc("/upgrades", upgradeservice.CreateUpgradeHandler).Methods("POST")
 	r.HandleFunc("/clusters", clusterservice.CreateClusterHandler).Methods("POST")
 	r.HandleFunc("/showclusters", clusterservice.ShowClusterHandler).Methods("POST")
-	//here
 	r.HandleFunc("/clustersdelete", clusterservice.DeleteClusterHandler).Methods("POST")
-	r.HandleFunc("/clustersupdate/{name}", clusterservice.UpdateClusterHandler).Methods("GET")
+	r.HandleFunc("/clustersupdate", clusterservice.UpdateClusterHandler).Methods("POST")
 	r.HandleFunc("/testclusters", clusterservice.TestClusterHandler).Methods("POST")
 	r.HandleFunc("/clusters/scale/{name}", clusterservice.ScaleClusterHandler)
 	r.HandleFunc("/scale/{name}", clusterservice.ScaleQueryHandler).Methods("GET")
@@ -115,7 +141,10 @@ func main() {
 	r.HandleFunc("/status", statusservice.StatusHandler)
 	r.HandleFunc("/df/{name}", dfservice.DfHandler)
 	r.HandleFunc("/config", configservice.ShowConfigHandler)
-	r.HandleFunc("/namespace", namespaceservice.ShowNamespaceHandler)
+	r.HandleFunc("/namespace", namespaceservice.ShowNamespaceHandler).Methods("POST")
+	r.HandleFunc("/namespacedelete", namespaceservice.DeleteNamespaceHandler).Methods("POST")
+	r.HandleFunc("/namespacecreate", namespaceservice.CreateNamespaceHandler).Methods("POST")
+	r.HandleFunc("/namespaceupdate", namespaceservice.UpdateNamespaceHandler).Methods("POST")
 
 	// backups / backrest
 	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET")
@@ -168,6 +197,7 @@ func main() {
 	}
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
+
 	cfg := &tls.Config{
 		ClientAuth: tls.RequireAndVerifyClientCert,
 		//specify pgo-apiserver in the CN....then, add ServerName: "pgo-apiserver",
@@ -179,12 +209,6 @@ func main() {
 
 	log.Info("listening on port " + PORT)
 
-	srv := &http.Server{
-		Addr:      ":" + PORT,
-		Handler:   r,
-		TLSConfig: cfg,
-	}
-
 	_, err = ioutil.ReadFile(serverKeyPath)
 	if err != nil {
 		log.Fatal(err)
@@ -192,5 +216,20 @@ func main() {
 		os.Exit(2)
 	}
 
-	log.Fatal(srv.ListenAndServeTLS(serverCertPath, serverKeyPath))
+	var srv *http.Server
+	if !disableTLS {
+		srv = &http.Server{
+			Addr:      ":" + PORT,
+			Handler:   r,
+			TLSConfig: cfg,
+		}
+		log.Fatal(srv.ListenAndServeTLS(serverCertPath, serverKeyPath))
+	} else {
+		srv = &http.Server{
+			Addr:    ":" + PORT,
+			Handler: r,
+		}
+		log.Fatal(srv.ListenAndServe())
+	}
+
 }
