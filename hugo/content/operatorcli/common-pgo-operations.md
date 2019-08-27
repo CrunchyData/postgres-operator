@@ -1,71 +1,9 @@
 ---
-title: "Operator CLI Overview"
+title: "Common PGO Operations"
 date:
 draft: false
 weight: 6
 ---
-
-The command line tool, pgo, is used to interact with the Postgres Operator.
-
-Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the GitHub Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases).
-
-The *pgo* client is provided in Mac, Windows, and Linux binary formats, download the appropriate client to your local laptop or workstation to work with a remote Operator.
-
-## Syntax
-Use the following syntax to run  `pgo`  commands from your terminal window:
-
-    pgo [command] ([TYPE] [NAME]) [flags]
-
-Where *command* is a verb like:
-
- * show
- * create
- * delete
-
-And *type* is a resource type like:
-
- * cluster
- * policy
- * user
-
-And *name* is the name of the resource type like:
-
- * mycluster
- * somesqlpolicy
- * john
-
-To get detailed help information and command flag descriptions on each *pgo* command, enter:
-
-    pgo [command] -h
- 
-## Operations
-
-The following table shows the *pgo* operations currently implemented:
-
-| Operation   |      Syntax      |  Description |
-|:----------|:-------------|:------|
-| apply |pgo apply mypolicy  --selector=name=mycluster  | Apply a SQL policy on a Postgres cluster(s) that have a label matching service-name=mycluster|
-| backup |pgo backup mycluster  |Perform a backup on a Postgres cluster(s) |
-| create |pgo create cluster mycluster  |Create an Operator resource type (e.g. cluster, policy, schedule, user) |
-| delete |pgo delete cluster mycluster  |Delete an Operator resource type (e.g. cluster, policy, user, schedule) |
-| ls |pgo ls mycluster  |Perform a Linux *ls* command on the cluster. |
-| cat |pgo cat mycluster  |Perform a Linux *ls* command on the cluster. |
-| df |pgo df mycluster  |Display the disk status/capacity of a Postgres cluster. |
-| failover |pgo failover mycluster  |Perform a manual failover of a Postgres cluster. |
-| help |pgo help |Display general *pgo* help information. |
-| label |pgo label mycluster --label=environment=prod  |Create a metadata label for a Postgres cluster(s). |
-| load |pgo load --load-config=load.json --selector=name=mycluster  |Perform a data load into a Postgres cluster(s).|
-| reload |pgo reload mycluster  |Perform a pg_ctl reload command on a Postgres cluster(s). |
-| restore |pgo restore mycluster |Perform a pgbackrest or pgdump restore on a Postgres cluster. |
-| scale |pgo scale mycluster  |Create a Postgres replica(s) for a given Postgres cluster. |
-| scaledown |pgo scaledown mycluster --query  |Delete a replica from a Postgres cluster. |
-| show |pgo show cluster mycluster  |Display Operator resource information (e.g. cluster, user, policy, schedule). |
-| status |pgo status  |Display Operator status. |
-| test |pgo test mycluster  |Perform a SQL test on a Postgres cluster(s). |
-| update |pgo update cluster --label=autofail=false  |Update a Postgres cluster(s). |
-| upgrade |pgo upgrade mycluster  |Perform a minor upgrade to a Postgres cluster(s). |
-| user |pgo user --selector=name=mycluster --update-passwords  |Perform Postgres user maintenance on a Postgres cluster(s). |
-| version |pgo version  |Display Operator version information. |
 
 ## Common Operations
 
@@ -489,22 +427,4 @@ Create a cluster with a Custom ConfigMap:
 
     pgo create cluster mycustomcluster --custom-config myconfigmap -n pgouser1
 
-## pgo Global Flags
-*pgo* global command flags include:
 
-| Flag | Description |
-|:--|:--|
-|n | namespace targeted for the command|
-|apiserver-url | URL of the Operator REST API service, override with CO_APISERVER_URL environment variable |
-|debug |enable debug messages |
-|pgo-ca-cert |The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver. Override with PGO_CA_CERT environment variable|
-|pgo-client-cert |The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.  Override with PGO_CLIENT_CERT environment variable|
-|pgo-client-key |The Client Key file path for authenticating to the PostgreSQL Operator apiserver.  Override with PGO_CLIENT_KEY environment variable|
-
-## pgo Global Environment Variables
-*pgo* will pick up these settings if set in your environment:
-
-| Name | Description | NOTES |
-|PGOUSERNAME |The username (role) used for auth on the operator apiserver. | Requires that PGOUSERPASS be set. |
-|PGOUSERPASS |The password for used for auth on the operator apiserver. | Requires that PGOUSERNAME be set. |
-|PGOUSER |The path the the pgorole file. | Will be ignored if either PGOUSERNAME or PGOUSERPASS are set. |
