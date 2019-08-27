@@ -25,7 +25,7 @@
                         "imagePullPolicy": "IfNotPresent",
                         "ports": [
                             {
-                                "containerPort": 8443
+                                "containerPort": {{ pgo_apiserver_port }}
                             }
                         ],
                         "env": [
@@ -35,7 +35,7 @@
                             },
                             {
                                 "name": "PORT",
-                                "value": "8443"
+                                "value": "{{ pgo_apiserver_port }}"
                             },
                             {
                                 "name": "PGO_INSTALLATION_NAME",

@@ -72,8 +72,10 @@ pgo_image_tag='centos7-4.1.0'
 pgo_client_install='true'
 pgo_client_version='v4.1.0'
 
-# PGO TLS
-pgo_tls_no_verify='false'
+# PGO Apiserver TLS Settings
+#pgo_tls_no_verify='false'
+#pgo_disable_tls='false'
+#pgo_apiserver_port=8443
 
 # Set to 'true' to assign the cluster-admin role to the PGO service account.  Needed for
 # OCP installs to enable dynamic namespace creation (see the PGO docs for more details).

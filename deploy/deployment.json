@@ -24,7 +24,7 @@
                         "imagePullPolicy": "IfNotPresent",
                         "ports": [
                             {
-                                "containerPort": 8443
+                                "containerPort": $PGO_APISERVER_PORT
                             }
                         ],
                         "env": [
@@ -34,7 +34,7 @@
                             },
                             {
                                 "name": "PORT",
-                                "value": "8443"
+                                "value": "$PGO_APISERVER_PORT"
                             },
                             {
                                 "name": "PGO_INSTALLATION_NAME",
@@ -50,15 +50,15 @@
                             },
                             {
                                 "name": "TLS_NO_VERIFY",
-                                "value": "false"
+                                "value": "$TLS_NO_VERIFY"
                             },
                             {
                                 "name": "DISABLE_TLS",
-                                "value": "false"
+                                "value": "$DISABLE_TLS"
                             },
                             {
                                 "name": "DISABLE_EVENTING",
-                                "value": "false"
+                                "value": "$DISABLE_EVENTING"
                             },
                             {
                                 "name": "EVENT_ADDR",
@@ -112,7 +112,7 @@
                             },
                             {
                                 "name": "DISABLE_EVENTING",
-                                "value": "false"
+                                "value": "$DISABLE_EVENTING"
                             },
                             {
                                 "name": "EVENT_ADDR",
