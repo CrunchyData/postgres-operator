@@ -12,12 +12,13 @@ native PostgreSQL-as-a-Service infrastructure.
 
 In installing, configuring and operating the PostgreSQL Operator as a PostgreSQL-as-a-Service capability, the following user roles will be required: 
 
-| Role | Applicable Component | Authorized Privileges and Functions Performed | 
-|------|----------------------|-----------------------------------------------|
-|Platform Admininistrator (Privileged User)|PostgreSQL Operator |The Platform Admininistrator is able to control all aspects of the PostgreSQL Operator functionality, including: provisioning and scaling clusters, adding PostgreSQL Administrators and PostgreSQL Users to clusters, setting PostgreSQL cluster security privileges, managing other PostgreSQL Operator users, and more. This user can have access to any database that is deployed and managed by the PostgreSQL Operator.|
-|Platform User|PostgreSQL Operator |The Platform User  has access to a limited subset of PostgreSQL Operator functionality that is defined by specific RBAC rules. A Platform Administrator manages the specific permissions for an Platform User specific permissions. A Platform User only receives a permission if its is explicitly granted to them.|
-|PostgreSQL Administrator(Privileged Account)|PostgreSQL Containers| The PostgreSQL Administrator is the equivalent of a PostgreSQL superuser (e.g. the "postgres" user) and can perform all the actions that a PostgreSQL superuser is permitted to do, which includes adding additional PostgreSQL Users, creating databases within the cluster.|
-|PostgreSQL User|PostgreSQL Containers|The PostgreSQL User has access to a PostgreSQL Instance or Cluster but must be granted explicit permissions to perform actions in PostgreSQL based upon their role membership.|
+
+|Role       |     Applicable Component  | Authorized Privileges and Functions Performed |
+|-----------|---------------------------|-----------------------------------------------|
+|Platform Admininistrator (Privileged User)| PostgreSQL Operator | The Platform Admininistrator is able to control all aspects of the PostgreSQL Operator functionality, including: provisioning and scaling clusters, adding PostgreSQL Administrators and PostgreSQL Users to clusters, setting PostgreSQL cluster security privileges, managing other PostgreSQL Operator users, and more. This user can have access to any database that is deployed and managed by the PostgreSQL Operator.|
+|Platform User | PostgreSQL Operator | The Platform User  has access to a limited subset of PostgreSQL Operator functionality that is defined by specific RBAC rules. A Platform Administrator manages the specific permissions for an Platform User specific permissions. A Platform User only receives a permission if its is explicitly granted to them.|
+|PostgreSQL Administrator(Privileged Account) | PostgreSQL Containers | The PostgreSQL Administrator is the equivalent of a PostgreSQL superuser (e.g. the "postgres" user) and can perform all the actions that a PostgreSQL superuser is permitted to do, which includes adding additional PostgreSQL Users, creating databases within the cluster.|
+|PostgreSQL User|PostgreSQL Containers | The PostgreSQL User has access to a PostgreSQL Instance or Cluster but must be granted explicit permissions to perform actions in PostgreSQL based upon their role membership. |
 
 As indicated in the above table, both the Operator Administrator and the PostgreSQL Administrators represent privilege users with components within the PostgreSQL Operator. 
 

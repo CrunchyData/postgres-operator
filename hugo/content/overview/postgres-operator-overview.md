@@ -19,7 +19,7 @@ The PostgreSQL Operator include the following components:
 
 The following diagram provides an overview of the components of the PostgreSQL Operator:
 
-![Operator Architecture](postgres-operator/hugo/static/operator-architecture.png)
+![Operator Architecture](/Operator-Architecture.png)
 
 #### PostgreSQL Operator
 
