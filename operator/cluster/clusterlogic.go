@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"os"
+	"time"
 )
 
 // AddCluster ...
@@ -400,7 +401,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 			Namespace: namespace,
 			Username:  replica.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventScaleCluster,
 		},
 		Clustername:       cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
@@ -474,7 +475,7 @@ func publishScaleError(namespace string, username string, cluster *crv1.Pgcluste
 			Namespace: namespace,
 			Username:  username,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventScaleCluster,
 		},
 		Clustername:       cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
@@ -497,7 +498,7 @@ func publishDeleteCluster(namespace, username, clusterName, identifier string) {
 			Namespace: namespace,
 			Username:  username,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventDeleteCluster,
 		},
 		Clustername:       clusterName,

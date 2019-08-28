@@ -402,7 +402,7 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 				Namespace: ns,
 				Username:  pgouser,
 				Topic:     topics,
-				Timestamp: events.GetTimestamp(),
+				Timestamp: time.Now(),
 				EventType: events.EventTestCluster,
 			},
 			Clustername:       c.Name,

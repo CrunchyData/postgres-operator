@@ -27,6 +27,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"strings"
+	"time"
 )
 
 //  Reload ...
@@ -114,7 +115,7 @@ func Reload(request *msgs.ReloadRequest, ns, username string) msgs.ReloadRespons
 				Namespace: ns,
 				Username:  username,
 				Topic:     topics,
-				Timestamp: events.GetTimestamp(),
+				Timestamp: time.Now(),
 				EventType: events.EventReloadCluster,
 			},
 			Clustername:       cluster.Spec.Name,

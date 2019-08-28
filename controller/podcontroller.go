@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"context"
 	"sync"
+	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
@@ -328,7 +329,7 @@ func publishClusterComplete(clusterName, namespace string, cluster *crv1.Pgclust
 			Namespace: namespace,
 			Username:  cluster.Spec.UserLabels[config.LABEL_PGOUSER],
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventCreateClusterCompleted,
 		},
 		Clustername:       clusterName,
@@ -392,7 +393,7 @@ func publishPrimaryNotReady(clusterName, identifier, username, namespace string)
 			Namespace: namespace,
 			Username:  username,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventPrimaryNotReady,
 		},
 		Clustername:       clusterName,

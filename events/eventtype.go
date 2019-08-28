@@ -17,6 +17,7 @@ package events
 
 import (
 	"fmt"
+	"time"
 )
 
 const (
@@ -85,11 +86,11 @@ const (
 )
 
 type EventHeader struct {
-	EventType string   `json:eventtype`
-	Namespace string   `json:"namespace"`
-	Username  string   `json:"username"`
-	Timestamp string   `json:"timestamp"`
-	Topic     []string `json:"topic"`
+	EventType string    `json:eventtype`
+	Namespace string    `json:"namespace"`
+	Username  string    `json:"username"`
+	Timestamp time.Time `json:"timestamp"`
+	Topic     []string  `json:"topic"`
 }
 
 func (lvl EventHeader) String() string {

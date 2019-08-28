@@ -28,6 +28,7 @@ import (
 	"k8s.io/api/apps/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
+	"time"
 )
 
 // CreatePolicy ...
@@ -270,7 +271,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 				Namespace: ns,
 				Username:  pgouser,
 				Topic:     topics,
-				Timestamp: events.GetTimestamp(),
+				Timestamp: time.Now(),
 				EventType: events.EventApplyPolicy,
 			},
 			Clustername:       d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER],

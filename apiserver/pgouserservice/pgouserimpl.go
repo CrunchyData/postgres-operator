@@ -28,6 +28,7 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"strings"
+	"time"
 )
 
 const MAP_KEY_USERNAME = "username"
@@ -78,7 +79,7 @@ func CreatePgouser(clientset *kubernetes.Clientset, createdBy string, request *m
 			Namespace: apiserver.PgoNamespace,
 			Username:  createdBy,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventPGOCreateUser,
 		},
 		CreatedUsername: request.PgouserName,
@@ -172,7 +173,7 @@ func DeletePgouser(clientset *kubernetes.Clientset, deletedBy string, request *m
 						Namespace: apiserver.PgoNamespace,
 						Username:  deletedBy,
 						Topic:     topics,
-						Timestamp: events.GetTimestamp(),
+						Timestamp: time.Now(),
 						EventType: events.EventPGODeleteUser,
 					},
 					DeletedUsername: v,
