@@ -417,6 +417,24 @@ func (c *PgoConfig) Validate() error {
 		}
 	}
 
+	if c.Cluster.ArchiveMode == "" {
+		log.Info("Pgo.Cluster.ArchiveMode not set, using 'false'")
+		c.Cluster.ArchiveMode = "false"
+	} else {
+		if c.Cluster.ArchiveMode != "true" && c.Cluster.ArchiveMode != "false" {
+			return errors.New("Cluster.ArchiveMode invalid value, can either be 'true' or 'false'")
+		}
+	}
+
+	if c.Cluster.ArchiveTimeout == "" {
+		log.Info("Pgo.Cluster.ArchiveTimeout not set, using '60'")
+	} else {
+		_, err := strconv.Atoi(c.Cluster.ArchiveTimeout)
+		if err != nil {
+			return errors.New("Cluster.ArchiveTimeout invalid int value found")
+		}
+	}
+
 	if c.Cluster.ServiceType == "" {
 		log.Warn("Cluster.ServiceType not set, using default, ClusterIP ")
 		c.Cluster.ServiceType = DEFAULT_SERVICE_TYPE
