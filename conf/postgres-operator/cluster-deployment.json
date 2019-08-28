@@ -77,9 +77,6 @@
                         "name": "PG_DATABASE",
                         "value": "{{.Database}}"
                     },{
-                        "name": "ARCHIVE_MODE",
-                        "value": "{{.ArchiveMode}}"
-                    }, {
                         "name": "ARCHIVE_TIMEOUT",
                         "value": "{{.ArchiveTimeout}}"
                     },{

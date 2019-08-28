@@ -205,7 +205,6 @@ type ClusterStruct struct {
 	Port                    string `yaml:"Port"`
 	User                    string `yaml:"User"`
 	ArchiveTimeout          string `yaml:"ArchiveTimeout"`
-	ArchiveMode             string `yaml:"ArchiveMode"`
 	Database                string `yaml:"Database"`
 	PasswordAgeDays         string `yaml:"PasswordAgeDays"`
 	PasswordLength          string `yaml:"PasswordLength"`
@@ -414,15 +413,6 @@ func (c *PgoConfig) Validate() error {
 		_, ok = c.ContainerResources[c.DefaultPgbouncerResources]
 		if !ok {
 			return errors.New("DefaultPgbouncerResources setting invalid")
-		}
-	}
-
-	if c.Cluster.ArchiveMode == "" {
-		log.Info("Pgo.Cluster.ArchiveMode not set, using 'false'")
-		c.Cluster.ArchiveMode = "false"
-	} else {
-		if c.Cluster.ArchiveMode != "true" && c.Cluster.ArchiveMode != "false" {
-			return errors.New("Cluster.ArchiveMode invalid value, can either be 'true' or 'false'")
 		}
 	}
 
