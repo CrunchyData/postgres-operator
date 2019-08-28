@@ -1,24 +1,18 @@
 ---
-title: "OLM"
+title: "Operator Lifecycle Management Support"
 date:
 draft: false
 weight: 7
 ---
 
-## Operator Lifecycle Management
+## Operator Lifecycle Management Support
 
-The Postgres Operator supports Redhats OLM (operator lifecycle manager)
-to a degree starting with pgo 4.0.
+The PostgreSQL Operator supports Red Hat OLM (Operator Lifecycle Manager)
+to a degree starting with the PostgreSQL Operator 4.0 release.
 
-The Postgres Operator supports the different deployment models
-as documented here:
+The PostgreSQL Operator supports the different deployment models
+as documented [here](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/Documentation/design/operatorgroups.md)
 
-https://github.com/operator-framework/operator-lifecycle-manager/blob/master/Documentation/design/operatorgroups.md
+The PostgreSQL Operator is available for download in [OperatorHub.io](https://www.operatorhub.io/operator/postgres-operator.v3.5.0)
 
-## Operator Hub
-
-The Operator shows up on the Redhat Operator Hub at the following
-location:
-
-https://www.operatorhub.io/operator/postgres-operator.v3.5.0
 
