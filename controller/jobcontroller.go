@@ -525,7 +525,7 @@ func publishDeleteClusterComplete(clusterName, identifier, username, namespace s
 			Namespace: namespace,
 			Username:  username,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventDeleteClusterCompleted,
 		},
 		Clustername:       clusterName,

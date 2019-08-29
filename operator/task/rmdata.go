@@ -172,7 +172,7 @@ func publishDeleteCluster(clusterName, identifier, username, namespace string) {
 			Namespace: namespace,
 			Username:  username,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventDeleteCluster,
 		},
 		Clustername:       clusterName,
