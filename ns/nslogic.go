@@ -21,6 +21,7 @@ import (
 	"errors"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
@@ -118,7 +119,7 @@ func CreateNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 			Namespace: pgoNamespace,
 			Username:  createdBy,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventPGOCreateNamespace,
 		},
 		CreatedNamespace: newNs,
@@ -161,7 +162,7 @@ func DeleteNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 			Namespace: pgoNamespace,
 			Username:  deletedBy,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventPGODeleteNamespace,
 		},
 		DeletedNamespace: ns,
@@ -408,7 +409,7 @@ func UpdateNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 			Namespace: pgoNamespace,
 			Username:  updatedBy,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventPGOCreateNamespace,
 		},
 		CreatedNamespace: ns,

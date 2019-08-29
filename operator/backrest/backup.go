@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
@@ -109,7 +110,7 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 				Namespace: namespace,
 				Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
 				Topic:     topics,
-				Timestamp: events.GetTimestamp(),
+				Timestamp: time.Now(),
 				EventType: events.EventCreateBackup,
 			},
 			Clustername:       jobFields.ClusterName,
