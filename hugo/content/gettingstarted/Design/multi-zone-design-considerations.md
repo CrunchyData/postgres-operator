@@ -1,3 +1,9 @@
+---
+title: "Multi-Zone Cloud Considerations"
+date:
+draft: false
+weight: 5
+---
 
 ## Considerations for PostgreSQL Operator Deployments in Multi-Zone Cloud Environments
 

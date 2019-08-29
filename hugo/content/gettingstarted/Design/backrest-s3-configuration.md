@@ -1,3 +1,10 @@
+---
+title: "pgBackrest with S3"
+date:
+draft: false
+weight: 5
+---
+
 ## pgbackrest Configuration
 
 The PostgreSQL Operator integrates various features of the [pgbackrest backup and restore project](https://pgbackrest.org).  
