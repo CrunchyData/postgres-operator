@@ -76,7 +76,10 @@
             {{.PgbackrestS3EnvVars}}
                         "name": "PG_DATABASE",
                         "value": "{{.Database}}"
-                    }, {
+                    },{
+                        "name": "ARCHIVE_TIMEOUT",
+                        "value": "{{.ArchiveTimeout}}"
+                    },{
                         "name": "PGHOST",
                         "value": "/tmp"
                     }],
