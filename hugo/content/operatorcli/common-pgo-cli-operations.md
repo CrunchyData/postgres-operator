@@ -1,5 +1,5 @@
 ---
-title: "Common PGO Operations"
+title: "Common PGO CLI Operations"
 date:
 draft: false
 weight: 6
