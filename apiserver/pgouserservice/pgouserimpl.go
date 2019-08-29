@@ -218,9 +218,21 @@ func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *m
 		secret.Data[MAP_KEY_PASSWORD] = []byte(request.PgouserPassword)
 	}
 	if request.PgouserRoles != "" {
+		err = validRoles(clientset, request.PgouserRoles)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
 		secret.Data[MAP_KEY_ROLES] = []byte(request.PgouserRoles)
 	}
 	if request.PgouserNamespaces != "" {
+		err = validNamespaces(request.PgouserNamespaces, request.AllNamespaces)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
 		secret.Data[MAP_KEY_NAMESPACES] = []byte(request.PgouserNamespaces)
 	} else if request.AllNamespaces {
 		secret.Data[MAP_KEY_NAMESPACES] = []byte("")
