@@ -5,7 +5,7 @@ draft: false
 weight: 6
 ---
 
-## pgo Global Environment Variables
+## pgo CLI Global Environment Variables
 
 *pgo* will pick up these settings if set in your environment:
 
