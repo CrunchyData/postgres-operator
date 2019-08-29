@@ -104,7 +104,9 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 
 	//handle the case of rmdata jobs succeeding
 	if job.Status.Succeeded > 0 && labels[config.LABEL_RMDATA] == "true" {
-		log.Debugf("jobController onUpdate rmdata job case")
+		log.Debugf("jobController onUpdate rmdata job succeeded")
+		publishDeleteClusterComplete(labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+			job.ObjectMeta.Labels[config.LABEL_PGOUSER], job.ObjectMeta.Namespace)
 		/**
 		err = handleRmdata(job, c.JobClient, c.JobClientset, job.ObjectMeta.Namespace)
 		if err != nil {
@@ -236,7 +238,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	}
 
 	//handle the case of a backrest job being added
-	if labels[config.LABEL_BACKREST] == "true" {
+	if labels[config.LABEL_BACKREST] == "true" && labels[config.LABEL_BACKREST_COMMAND] == "backup" {
 		log.Debugf("jobController onUpdate backrest job case")
 		log.Debugf("got a backrest job status=%d", job.Status.Succeeded)
 		if job.Status.Succeeded == 1 {
@@ -512,4 +514,26 @@ func publishRestoreComplete(clusterName, identifier, username, namespace string)
 		log.Error(err.Error())
 	}
 
+}
+
+func publishDeleteClusterComplete(clusterName, identifier, username, namespace string) {
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventDeleteClusterCompletedFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  username,
+			Topic:     topics,
+			Timestamp: time.Now(),
+			EventType: events.EventDeleteClusterCompleted,
+		},
+		Clustername:       clusterName,
+		Clusteridentifier: identifier,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 }

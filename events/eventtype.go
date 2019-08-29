@@ -49,6 +49,7 @@ const (
 	EventUpgradeCluster           = "UpgradeCluster"
 	EventUpgradeClusterCompleted  = "UpgradeClusterCompleted"
 	EventDeleteCluster            = "DeleteCluster"
+	EventDeleteClusterCompleted   = "DeleteClusterCompleted"
 	EventTestCluster              = "TestCluster"
 	EventCreateLabel              = "CreateLabel"
 	EventLoad                     = "Load"
@@ -298,6 +299,22 @@ func (p EventDeleteClusterFormat) GetHeader() EventHeader {
 
 func (lvl EventDeleteClusterFormat) String() string {
 	msg := fmt.Sprintf("Event %s (delete) - clustername %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Clusteridentifier)
+	return msg
+}
+
+//----------------------------
+type EventDeleteClusterCompletedFormat struct {
+	EventHeader       `json:"eventheader"`
+	Clustername       string `json:"clustername"`
+	Clusteridentifier string `json:"clusteridentifier"`
+}
+
+func (p EventDeleteClusterCompletedFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventDeleteClusterCompletedFormat) String() string {
+	msg := fmt.Sprintf("Event %s (delete completed) - clustername %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Clusteridentifier)
 	return msg
 }
 
