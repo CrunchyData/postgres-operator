@@ -9,7 +9,7 @@
             "pgo-benchmark": "true",
             "pg-cluster": "{{.ClusterName}}",
             "created": "{{.Created}}",
-            "workflowname": "{{.WorkflowName}}"
+            "workflowName": "{{.WorkflowName}}"
         }
     },
     "spec": {
@@ -22,7 +22,7 @@
                     "pgo-benchmark": "true",
                     "pg-cluster": "{{.ClusterName}}",
                     "created": "{{.Created}}",
-                    "workflowname": "{{.WorkflowName}}"
+                    "workflowName": "{{.WorkflowName}}"
                 }
             },
             "spec": {
