@@ -464,7 +464,11 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 		return resp
 	}
 
-	// pgtask := getRestoreParams(cluster)
+	if _, found, err := kubeapi.GetPVC(apiserver.Clientset, request.FromPVC, ns); !found {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
 
 	pgtask, err := buildPgTaskForRestore(taskName, crv1.PgtaskpgRestore, request)
 	if err != nil {
