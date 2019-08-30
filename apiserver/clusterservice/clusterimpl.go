@@ -402,7 +402,7 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 				Namespace: ns,
 				Username:  pgouser,
 				Topic:     topics,
-				Timestamp: events.GetTimestamp(),
+				Timestamp: time.Now(),
 				EventType: events.EventTestCluster,
 			},
 			Clustername:       c.Name,
@@ -577,6 +577,9 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			userLabelsMap[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
 		}
 
+		//Set archive timeout value
+		userLabelsMap[config.LABEL_ARCHIVE_TIMEOUT] = apiserver.Pgo.Cluster.ArchiveTimeout
+
 		//validate --pgpool-secret
 		if request.PgpoolSecret != "" {
 			var found bool
@@ -706,7 +709,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		newInstance.Spec.PswLastUpdate = t.Format(time.RFC3339)
 
 		//create secrets
-		err, newInstance.Spec.RootSecretName, newInstance.Spec.PrimarySecretName, newInstance.Spec.UserSecretName = createSecrets(request, clusterName, ns)
+		err, newInstance.Spec.RootSecretName, newInstance.Spec.PrimarySecretName, newInstance.Spec.UserSecretName = createSecrets(request, clusterName, ns, newInstance.Spec.User)
 		if err != nil {
 			resp.Results = append(resp.Results, err.Error())
 			return resp
@@ -1156,7 +1159,7 @@ func deleteConfigMaps(clusterName, ns string) error {
 	return nil
 }
 
-func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns string) (error, string, string, string) {
+func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns, user string) (error, string, string, string) {
 
 	var err error
 	var RootPassword, Password, PrimaryPassword string
@@ -1195,7 +1198,7 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns string) (
 		primaryPassword = PrimaryPassword
 	}
 
-	UserSecretName = clusterName + crv1.UserSecretSuffix
+	UserSecretName = clusterName + "-" + user + crv1.UserSecretSuffix
 	testPassword := util.GeneratePassword(10)
 	if Password != "" {
 		log.Debugf("using user specified password for secret %s", UserSecretName)
@@ -1224,7 +1227,7 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns string) (
 		return err, RootSecretName, PrimarySecretName, UserSecretName
 	}
 
-	username = "testuser"
+	username = user
 	err = util.CreateSecret(apiserver.Clientset, clusterName, UserSecretName, username, testPassword, ns)
 	if err != nil {
 		log.Errorf("error creating secret %s %s", UserSecretName, err.Error())

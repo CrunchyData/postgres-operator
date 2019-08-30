@@ -21,7 +21,7 @@ import ()
 const RootSecretSuffix = "-postgres-secret"
 
 // UserSecretSuffix ...
-const UserSecretSuffix = "-testuser-secret"
+const UserSecretSuffix = "-secret"
 
 // PrimarySecretSuffix ...
 const PrimarySecretSuffix = "-primaryuser-secret"

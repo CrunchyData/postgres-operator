@@ -9,7 +9,7 @@ weight: 5
 
 The PostgreSQL Operator defines the following series of Kubernetes [Custom Resource Definitions (CRDs)](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/#custom-resources):
 
-![Reference](/operator-crd-architecture.png)
+![Operator Architecture with CRDs](/Operator-Architecture-wCRDs.png)
 
 Each of these CRDs are used in the design of the PostgreSQL Operator to perform PostgreSQL related operations in order to enable with on-demand, PostgreSQL-as-a-Service workflows.  
 

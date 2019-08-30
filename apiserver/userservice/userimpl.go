@@ -186,7 +186,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 					EventHeader: events.EventHeader{
 						Namespace: request.Namespace,
 						Username:  pgouser,
-						Timestamp: events.GetTimestamp(),
+						Timestamp: time.Now(),
 						Topic:     topics,
 						EventType: events.EventChangePasswordUser,
 					},
@@ -294,43 +294,20 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 	}
 
 	var rows *sql.Rows
-	querystr := "SELECT 'md5'|| md5('" + newPassword + username + "')"
-	//log.Debug(querystr)
-	rows, err = conn.Query(querystr)
+
+	// Pre-hash the password in the PostgreSQL MD5 format to prevent the
+	// plaintext value from appearing in the PostgreSQL logs.
+	md5Password := "md5" + util.GetMD5HashForAuthFile(newPassword+username)
+
+	// This call is the equivalent to
+	// "ALTER USER " + username + " PASSWORD '" + md5Password + "'"
+	_, err = AlterRole(conn, username, md5Password)
 	if err != nil {
 		log.Debug(err.Error())
 		return err
 	}
 
-	/**
-	var md5Password string
-	for rows.Next() {
-		err = rows.Scan(&md5Password)
-		if err != nil {
-			log.Debug(err.Error())
-			return err
-		}
-	}
-	*/
-
-	//querystr = "ALTER user " + username + " PASSWORD '" + newPassword + "'"
-	//alterRole(username, md5Password)
-	_, err = AlterRole(conn, username, newPassword)
-	if err != nil {
-		log.Debug(err.Error())
-		return err
-	}
-
-	//querystr = "ALTER user " + username + " PASSWORD '" + md5Password + "'"
-	//log.Debug(querystr)
-	/**
-	rows, err = conn.Query(querystr)
-	if err != nil {
-		log.Debug(err.Error())
-		return err
-	}
-	*/
-	querystr = "ALTER user " + username + " VALID UNTIL '" + passwordExpireDate + "'"
+	querystr := "ALTER user " + username + " VALID UNTIL '" + passwordExpireDate + "'"
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
@@ -711,7 +688,7 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 				Namespace: request.Namespace,
 				Username:  pgouser,
 				Topic:     topics,
-				Timestamp: events.GetTimestamp(),
+				Timestamp: time.Now(),
 				EventType: events.EventCreateUser,
 			},
 			Clustername:       c.Name,
@@ -853,7 +830,7 @@ func DeleteUser(request *msgs.DeleteUserRequest, pgouser string) msgs.DeleteUser
 				Namespace: request.Namespace,
 				Username:  pgouser,
 				Topic:     topics,
-				Timestamp: events.GetTimestamp(),
+				Timestamp: time.Now(),
 				EventType: events.EventDeleteUser,
 			},
 			Clustername:       clusterName,

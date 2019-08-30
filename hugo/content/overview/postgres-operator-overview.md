@@ -15,7 +15,11 @@ The PostgreSQL Operator include the following components:
 * PostgreSQL Operator Containers
 * PostgreSQL Operator PGO Client
 * PostgreSQL Operator REST API Server
-* PostgreSQL PGO Schedule
+* PostgreSQL PGO Scheduler
+
+The following diagram provides an overview of the components of the PostgreSQL Operator:
+
+![Operator Architecture](/Operator-Architecture.png)
 
 #### PostgreSQL Operator
 

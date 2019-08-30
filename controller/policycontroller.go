@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -104,7 +105,7 @@ func (c *PgpolicyController) onAdd(obj interface{}) {
 			Namespace: policy.ObjectMeta.Namespace,
 			Username:  policy.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventCreatePolicy,
 		},
 		Policyname: policy.ObjectMeta.Name,
@@ -137,7 +138,7 @@ func (c *PgpolicyController) onDelete(obj interface{}) {
 			Namespace: policy.ObjectMeta.Namespace,
 			Username:  policy.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventDeletePolicy,
 		},
 		Policyname: policy.ObjectMeta.Name,
