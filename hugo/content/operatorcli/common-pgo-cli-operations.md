@@ -2,7 +2,7 @@
 title: "Common PGO CLI Operations"
 date:
 draft: false
-weight: 6
+weight: 5
 ---
 
 ## Common PGO CLI Operations

@@ -2,7 +2,7 @@
 title: "PGO CLI Overview"
 date:
 draft: false
-weight: 6
+weight: 1
 ---
 
 ## PGO Command Line Interface (PGO CLI)

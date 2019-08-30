@@ -2,7 +2,7 @@
 title: "PGO CLI Global Flags"
 date:
 draft: false
-weight: 6
+weight: 4
 ---
 
 ## pgo CLI Global Flags

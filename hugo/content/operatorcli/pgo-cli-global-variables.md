@@ -2,7 +2,7 @@
 title: "PGO CLI Global Environment Variables"
 date:
 draft: false
-weight: 6
+weight: 3
 ---
 
 ## pgo CLI Global Environment Variables
