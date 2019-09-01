@@ -11,8 +11,8 @@
             "deployment-name": "fromcrd",
             "name": "fromcrd",
             "pg-cluster": "fromcrd",
-            "pgo-backrest": "false",
-	"pgo-version": "4.0.1",
+            "pgo-backrest": "true",
+            "pgo-version": "4.0.1",
             "primary": "true"
         },
         "name": "fromcrd",
@@ -90,8 +90,8 @@
             "archive-timeout": "60",
             "crunchy-pgbadger": "false",
             "crunchy_collect": "false",
-            "pgo-backrest": "false",
-	"pgo-version": "4.0.1"
+            "pgo-backrest": "true",
+            "pgo-version": "4.0.1"
         },
         "usersecretname": "fromcrd-testuser-secret"
     }

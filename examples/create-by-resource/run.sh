@@ -22,15 +22,41 @@ export NS=pgouser1
 $PGO_CMD delete secret -n $NS \
 	fromcrd-postgresuser-secret \
 	fromcrd-primaryuser-secret \
-	fromcrd-testuser-secret	> /dev/null
+	fromcrd-testuser-secret \
+	fromcrd-backrest-repo-config > /dev/null
 $PGO_CMD delete pgcluster fromcrd -n $NS
-$PGO_CMD delete pvc fromcrd -n $NS
+$PGO_CMD delete pvc fromcrd fromcrd-pgbr-repo  -n $NS
+
+# generate a SSH public/private keypair for use by pgBackRest
+ssh-keygen -N '' -f $DIR/fromcrd-key
+
+# base64 encoded the keys for the generation of the Kube secret, and place
+# them into variables temporarily
+export PUBLIC_KEY=$(base64 -i $DIR/fromcrd-key.pub)
+export PRIVATE_KEY=$(base64 -i $DIR/fromcrd-key)
+
+# copy the backrest-repo-config example file, and substitute in the newly
+# created keys
+cp $DIR/backrest-repo-config.example.yml $DIR/backrest-repo-config.yaml
+
+# OS X / macOS has its own implementation of sed inline command
+if [[ "$OSTYPE" == "darwin"* ]]; then
+	sed -i '' "s/{{ PUBLIC_KEY }}/$PUBLIC_KEY/g" $DIR/backrest-repo-config.yaml
+	sed -i '' "s/{{ PRIVATE_KEY }}/$PRIVATE_KEY/g" $DIR/backrest-repo-config.yaml
+else
+	sed -i "s/{{ PUBLIC_KEY }}/$PUBLIC_KEY/g" $DIR/backrest-repo-config.yaml
+	sed -i "s/{{ PRIVATE_KEY }}/$PRIVATE_KEY/g" $DIR/backrest-repo-config.yaml
+fi
+
+# unset the *_KEY environmental variables
+unset PUBLIC_KEY
+unset PRIVATE_KEY
 
 # create the required postgres credentials for the fromcrd cluster
 $PGO_CMD -n $NS create -f $DIR/postgres-secret.yaml
 $PGO_CMD -n $NS create -f $DIR/primaryuser-secret.yaml
 $PGO_CMD -n $NS create -f $DIR/testuser-secret.yaml
+$PGO_CMD -n $NS create -f $DIR/backrest-repo-config.yaml
 
 # create the pgcluster CRD for the fromcrd cluster
 $PGO_CMD -n $NS create -f $DIR/fromcrd.json
-
