@@ -30,6 +30,7 @@ import (
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"strings"
+	"time"
 )
 
 type loadJobTemplateFields struct {
@@ -190,7 +191,7 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 				Namespace: ns,
 				Username:  pgouser,
 				Topic:     topics,
-				Timestamp: events.GetTimestamp(),
+				Timestamp: time.Now(),
 				EventType: events.EventLoad,
 			},
 			Clustername:       c.Name,

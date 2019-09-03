@@ -18,8 +18,12 @@ package task
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
@@ -29,8 +33,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os"
-	"time"
 )
 
 type rmdatajobTemplateFields struct {
@@ -122,6 +124,8 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, restclient *r
 	}
 	log.Debugf("successfully created rmdata job %s", jobname)
 
+	publishDeleteCluster(task.Spec.Parameters[config.LABEL_PG_CLUSTER], task.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+		task.ObjectMeta.Labels[config.LABEL_PGOUSER], namespace)
 }
 
 func PatchpgtaskDeleteDataStatus(restclient *rest.RESTClient, oldCrd *crv1.Pgtask, namespace string) error {
@@ -157,4 +161,26 @@ func PatchpgtaskDeleteDataStatus(restclient *rest.RESTClient, oldCrd *crv1.Pgtas
 
 	return err6
 
+}
+
+func publishDeleteCluster(clusterName, identifier, username, namespace string) {
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventDeleteClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  username,
+			Topic:     topics,
+			Timestamp: time.Now(),
+			EventType: events.EventDeleteCluster,
+		},
+		Clustername:       clusterName,
+		Clusteridentifier: identifier,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 }

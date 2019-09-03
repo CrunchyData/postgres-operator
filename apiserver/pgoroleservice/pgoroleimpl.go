@@ -27,6 +27,7 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"strings"
+	"time"
 )
 
 // CreatePgorole ...
@@ -60,7 +61,7 @@ func CreatePgorole(clientset *kubernetes.Clientset, createdBy string, request *m
 			Namespace: apiserver.PgoNamespace,
 			Username:  createdBy,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventPGOCreateRole,
 		},
 		CreatedRolename: request.PgoroleName,
@@ -146,7 +147,7 @@ func DeletePgorole(clientset *kubernetes.Clientset, deletedBy string, request *m
 						Namespace: apiserver.PgoNamespace,
 						Username:  deletedBy,
 						Topic:     topics,
-						Timestamp: events.GetTimestamp(),
+						Timestamp: time.Now(),
 						EventType: events.EventPGODeleteRole,
 					},
 					DeletedRolename: v,
@@ -217,7 +218,7 @@ func UpdatePgorole(clientset *kubernetes.Clientset, updatedBy string, request *m
 			Namespace: apiserver.PgoNamespace,
 			Username:  updatedBy,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventPGOUpdateRole,
 		},
 		UpdatedRolename: request.PgoroleName,
