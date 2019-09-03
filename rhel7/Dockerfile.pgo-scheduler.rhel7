@@ -15,6 +15,7 @@ RUN rpm --import RPM-GPG-KEY-crunchydata
 COPY redhat/atomic/pgo_scheduler/help.1 /help.1
 COPY redhat/atomic/pgo_scheduler/help.md /help.md
 COPY redhat/licenses /licenses
+COPY licenses /licenses
 
 RUN yum -y --enablerepo=rhel-7-server-ose-3.11-rpms --disablerepo=crunchy* update \
  && yum clean all -y

@@ -9,6 +9,7 @@ LABEL Vendor="Crunchy Data Solutions" \
 ENV PGVERSION="11" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm"
 
 COPY redhat/licenses /licenses
+COPY licenses /licenses
 
 ENV PGROOT="/usr/pgsql-${PGVERSION}"
 
