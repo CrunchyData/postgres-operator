@@ -16,6 +16,7 @@ RUN yum -y update \
  && yum clean all -y
 
 COPY redhat/licenses /licenses
+COPY licenses /licenses
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /configs \
  && chown -R 2:2 /opt/cpm /configs

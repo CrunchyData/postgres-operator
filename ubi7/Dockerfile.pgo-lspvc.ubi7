@@ -13,6 +13,7 @@ LABEL name="pgo-lspvc" \
 COPY redhat/atomic/pgo_lspvc/help.1 /help.1
 COPY redhat/atomic/pgo_lspvc/help.md /help.md
 COPY redhat/licenses /licenses
+COPY licenses /licenses
 
 #ADD conf/RPM-GPG-KEY-crunchydata  /
 #ADD conf/crunchypg11.repo /etc/yum.repos.d/
