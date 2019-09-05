@@ -107,12 +107,14 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		log.Debugf("jobController onUpdate rmdata job succeeded")
 		publishDeleteClusterComplete(labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 			job.ObjectMeta.Labels[config.LABEL_PGOUSER], job.ObjectMeta.Namespace)
-		/**
+		
+		log.Debugf("jobController onUpdate rmdata job case")
+	
 		err = handleRmdata(job, c.JobClient, c.JobClientset, job.ObjectMeta.Namespace)
 		if err != nil {
 			log.Error(err)
 		}
-		*/
+		
 		return
 	}
 
@@ -351,7 +353,6 @@ func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubern
 	log.Debugf("got a pgrmdata job status=%d", job.Status.Succeeded)
 	labels := job.GetObjectMeta().GetLabels()
 	clusterName := labels[config.LABEL_PG_CLUSTER]
-	claimName := labels[config.LABEL_CLAIM_NAME]
 
 	//delete any pgtask for this cluster
 	log.Debugf("deleting pgtask for rmdata job name is %s", job.ObjectMeta.Name)
@@ -381,17 +382,6 @@ func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubern
 	if !removed {
 		log.Error("could not remove Job %s for some reason after max tries", job.Name)
 		return err
-	} else {
-		//remove the pvc referenced by that job
-		//mycluster
-		//mycluster-xlog
-
-		log.Debugf("deleting pvc %s", claimName)
-		err = pvc.Delete(clientset, claimName, namespace)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
 	}
 
 	//if a user has specified --archive for a cluster then
