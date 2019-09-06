@@ -239,11 +239,11 @@ func (c *PgtaskController) SetupWatch(ns string) {
 
 	// don't create informer for namespace if one has already been created
 	c.informerNsMutex.Lock()
+	defer c.informerNsMutex.Unlock()
 	if _, ok := c.InformerNamespaces[ns]; ok {
 		return
 	}
 	c.InformerNamespaces[ns] = struct{}{}
-	c.informerNsMutex.Unlock()
 
 	source := cache.NewListWatchFromClient(
 		c.PgtaskClient,

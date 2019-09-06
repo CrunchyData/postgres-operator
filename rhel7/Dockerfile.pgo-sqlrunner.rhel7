@@ -13,6 +13,7 @@ ENV PGROOT="/usr/pgsql-${PGVERSION}"
 COPY redhat/atomic/pgo_sqlrunner/help.1 /help.1
 COPY redhat/atomic/pgo_sqlrunner/help.md /help.md
 COPY redhat/licenses /licenses
+COPY licenses /licenses
 
 # Crunchy PostgreSQL repository
 

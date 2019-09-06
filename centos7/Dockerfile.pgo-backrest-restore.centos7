@@ -12,6 +12,7 @@ ENV PGVERSION="11" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm" PGDG_REPO_DISA
     BACKREST_VERSION="2.15.1"
 
 COPY redhat/licenses /licenses
+COPY licenses /licenses
 
 RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
 
