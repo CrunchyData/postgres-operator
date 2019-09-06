@@ -681,18 +681,18 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			}
 		}
 
+		// Create an instance of our CRD
+		newInstance := getClusterParams(request, clusterName, userLabelsMap, ns)
+		newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
+
 		if request.SecretFrom != "" {
-			err = validateSecretFrom(request.SecretFrom, ns)
+			err = validateSecretFrom(request.SecretFrom, newInstance.Spec.User, ns)
 			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = request.SecretFrom + " secret was not found "
 				return resp
 			}
 		}
-
-		// Create an instance of our CRD
-		newInstance := getClusterParams(request, clusterName, userLabelsMap, ns)
-		newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 
 		//verify that for autofail clusters we have a replica requested
 		if newInstance.Spec.Replicas == "0" {
@@ -961,7 +961,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	return newInstance
 }
 
-func validateSecretFrom(secretname, ns string) error {
+func validateSecretFrom(secretname, user, ns string) error {
 	var err error
 	selector := config.LABEL_PG_CLUSTER + "=" + secretname
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, ns)
@@ -979,7 +979,7 @@ func validateSecretFrom(secretname, ns string) error {
 			pgprimaryFound = true
 		} else if s.ObjectMeta.Name == secretname+crv1.RootSecretSuffix {
 			pgrootFound = true
-		} else if s.ObjectMeta.Name == secretname+crv1.UserSecretSuffix {
+		} else if s.ObjectMeta.Name == secretname+"-"+user+crv1.UserSecretSuffix {
 			pguserFound = true
 		}
 	}
@@ -990,7 +990,7 @@ func validateSecretFrom(secretname, ns string) error {
 		return errors.New(secretname + crv1.RootSecretSuffix + " not found")
 	}
 	if !pguserFound {
-		return errors.New(secretname + crv1.UserSecretSuffix + " not found")
+		return errors.New(secretname + "-" + user + crv1.UserSecretSuffix + " not found")
 	}
 
 	return err
@@ -1176,7 +1176,7 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns, user str
 	if request.SecretFrom != "" {
 		log.Debugf("secret-from is specified! using %s", request.SecretFrom)
 		_, RootPassword, err = util.GetPasswordFromSecret(apiserver.Clientset, ns, request.SecretFrom+crv1.RootSecretSuffix)
-		_, Password, err = util.GetPasswordFromSecret(apiserver.Clientset, ns, request.SecretFrom+crv1.UserSecretSuffix)
+		_, Password, err = util.GetPasswordFromSecret(apiserver.Clientset, ns, request.SecretFrom+"-"+user+crv1.UserSecretSuffix)
 		_, PrimaryPassword, err = util.GetPasswordFromSecret(apiserver.Clientset, ns, request.SecretFrom+crv1.PrimarySecretSuffix)
 		if err != nil {
 			log.Error("error getting secrets using SecretFrom " + request.SecretFrom)

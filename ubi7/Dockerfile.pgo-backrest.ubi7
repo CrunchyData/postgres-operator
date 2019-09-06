@@ -22,6 +22,7 @@ RUN rpm --import RPM-GPG-KEY-crunchydata
 COPY redhat/atomic/pgo_backrest/help.1 /help.1
 COPY redhat/atomic/pgo_backrest/help.md /help.md
 COPY redhat/licenses /licenses
+COPY licenses /licenses
 
 RUN yum -y update && yum -y install postgresql11-server \
  && yum -y install crunchy-backrest-"${BACKREST_VERSION}" \
