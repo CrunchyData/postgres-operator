@@ -17,6 +17,7 @@ ENV PGVERSION="11"
 COPY redhat/atomic/postgres_operator/help.1 /help.1
 COPY redhat/atomic/postgres_operator/help.md /help.md
 COPY redhat/licenses /licenses
+COPY licenses /licenses
 
 # Crunchy PostgreSQL repository
 

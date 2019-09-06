@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"context"
 	"strings"
+	"sync"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
@@ -41,13 +42,14 @@ import (
 
 // PgtaskController holds connections for the controller
 type PgtaskController struct {
-	PgtaskConfig    *rest.Config
-	PgtaskClient    *rest.RESTClient
-	PgtaskScheme    *runtime.Scheme
-	PgtaskClientset *kubernetes.Clientset
-	Queue           workqueue.RateLimitingInterface
-
-	Ctx context.Context
+	PgtaskConfig       *rest.Config
+	PgtaskClient       *rest.RESTClient
+	PgtaskScheme       *runtime.Scheme
+	PgtaskClientset    *kubernetes.Clientset
+	Queue              workqueue.RateLimitingInterface
+	Ctx                context.Context
+	informerNsMutex    sync.Mutex
+	InformerNamespaces map[string]struct{}
 }
 
 // Run starts an pgtask resource controller
@@ -155,7 +157,11 @@ func (c *PgtaskController) processNextItem() bool {
 
 	case crv1.PgtaskDeleteData:
 		log.Debug("delete data task added")
-		taskoperator.RemoveData(keyNamespace, c.PgtaskClientset, &tmpTask)
+		if !dupeDeleteData(c.PgtaskClient, &tmpTask, keyNamespace) {
+			taskoperator.RemoveData(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask)
+		} else {
+			log.Debug("skipping duplicate onAdd delete data task %s/%s", keyNamespace, keyResourceName)
+		}
 	case crv1.PgtaskDeleteBackups:
 		log.Debug("delete backups task added")
 		taskoperator.RemoveBackups(keyNamespace, c.PgtaskClientset, &tmpTask)
@@ -200,7 +206,7 @@ func (c *PgtaskController) processNextItem() bool {
 // onAdd is called when a pgtask is added
 func (c *PgtaskController) onAdd(obj interface{}) {
 	task := obj.(*crv1.Pgtask)
-	log.Debugf("[PgtaskController] onAdd ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
+	//	log.Debugf("[PgtaskController] onAdd ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
 
 	//handle the case of when the operator restarts, we do not want
 	//to process pgtasks already processed
@@ -219,17 +225,26 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgtask is updated
 func (c *PgtaskController) onUpdate(oldObj, newObj interface{}) {
-	task := newObj.(*crv1.Pgtask)
-	log.Debugf("[PgtaskController] onUpdate ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
+	//task := newObj.(*crv1.Pgtask)
+	//	log.Debugf("[PgtaskController] onUpdate ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
 }
 
 // onDelete is called when a pgtask is deleted
 func (c *PgtaskController) onDelete(obj interface{}) {
-	task := obj.(*crv1.Pgtask)
-	log.Debugf("[PgtaskController] onDelete ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
+	//task := obj.(*crv1.Pgtask)
+	//	log.Debugf("[PgtaskController] onDelete ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
 }
 
 func (c *PgtaskController) SetupWatch(ns string) {
+
+	// don't create informer for namespace if one has already been created
+	c.informerNsMutex.Lock()
+	defer c.informerNsMutex.Unlock()
+	if _, ok := c.InformerNamespaces[ns]; ok {
+		return
+	}
+	c.InformerNamespaces[ns] = struct{}{}
+
 	source := cache.NewListWatchFromClient(
 		c.PgtaskClient,
 		crv1.PgtaskResourcePlural,
@@ -255,6 +270,7 @@ func (c *PgtaskController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
+	log.Debugf("PgtaskController created informer for namespace %s", ns)
 }
 
 //de-dupe logic for a failover, if the failover started
@@ -270,6 +286,25 @@ func dupeFailover(restClient *rest.RESTClient, task *crv1.Pgtask, ns string) boo
 	}
 
 	if tmp.Spec.Parameters[config.LABEL_FAILOVER_STARTED] == "" {
+		return false
+	}
+
+	return true
+}
+
+//de-dupe logic for a delete data, if the delete data job started
+//parameter is set, it means a delete data job has already been
+//started on this
+func dupeDeleteData(restClient *rest.RESTClient, task *crv1.Pgtask, ns string) bool {
+	tmp := crv1.Pgtask{}
+
+	found, _ := kubeapi.Getpgtask(restClient, &tmp, task.Spec.Name, ns)
+	if !found {
+		//a big time error if this occurs
+		return false
+	}
+
+	if tmp.Spec.Parameters[config.LABEL_DELETE_DATA_STARTED] == "" {
 		return false
 	}
 

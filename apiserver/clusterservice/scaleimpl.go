@@ -315,83 +315,19 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 		return response
 	}
 
-	if len(replicaList.Items) == 1 {
-		log.Debug("removing replica service when scaling down to 0 replicas")
-		err = kubeapi.DeleteService(apiserver.Clientset, clusterName+"-replica", ns)
-		if err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
-		}
-	}
+	//create the rmdata task which does the cleanup
 
-	//delete the pgreplica CRD which will cause the replica to be
-	//deleted
-	err = kubeapi.Deletepgreplica(apiserver.RESTClient, replicaName, ns)
+	deleteBackups := false
+	isReplica := true
+	isBackup := false
+	taskName := replicaName + "-rmdata"
+	err = apiserver.CreateRMDataTask(clusterName, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns)
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
 		return response
 	}
 
-	//delete the replica deployment
-	log.Debugf("TODO - verify that scale down deletes the replica deployment")
-	/**
-	err = kubeapi.DeleteDeployment(apiserver.Clientset, replicaName, ns)
-	if err != nil {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = err.Error()
-		return response
-	}
-	*/
-
-	//clusteroperator.ScaleDownBase(apiserver.Clientset, apiserver.RESTClient, &replica, ns)
-
-	if deleteData {
-		log.Debug("delete-data is true on replica scale down, createing rmdata task")
-		selector := config.LABEL_REPLICA_NAME + "=" + replicaName
-		pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
-		if err != nil {
-			log.Error(err)
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
-		} else {
-			if len(pods.Items) == 0 {
-				response.Status.Code = msgs.Error
-				response.Status.Msg = "pod not found for scale down replica and delete-data"
-				return response
-			}
-
-			err = createDeleteDataTasksForReplica(replicaName, replica.Spec.ReplicaStorage, ns)
-			if err != nil {
-				response.Status.Code = msgs.Error
-				response.Status.Msg = err.Error()
-				return response
-			}
-
-		}
-	}
 	response.Results = append(response.Results, "deleted Pgreplica "+replicaName)
 	return response
-}
-
-// removes data and or backup volumes for all pods in a cluster replica
-func createDeleteDataTasksForReplica(replicaName string, storageSpec crv1.PgStorageSpec, ns string) error {
-
-	var err error
-
-	log.Debugf("inside createDeleteDataTasksForReplica %s", replicaName)
-
-	dataRoots := make([]string, 0)
-	dataRoots = append(dataRoots, replicaName)
-
-	claimName := replicaName
-
-	err = apiserver.CreateRMDataTask(storageSpec, replicaName, claimName, dataRoots, replicaName+"-rmdata-pgdata", ns)
-	if err != nil {
-		return err
-	}
-
-	return err
 }

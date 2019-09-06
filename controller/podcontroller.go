@@ -17,6 +17,9 @@ limitations under the License.
 
 import (
 	"context"
+	"sync"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
@@ -28,7 +31,7 @@ import (
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/apps/v1"
+	v1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
@@ -38,9 +41,11 @@ import (
 
 // PodController holds the connections for the controller
 type PodController struct {
-	PodClient    *rest.RESTClient
-	PodClientset *kubernetes.Clientset
-	Ctx          context.Context
+	PodClient          *rest.RESTClient
+	PodClientset       *kubernetes.Clientset
+	Ctx                context.Context
+	informerNsMutex    sync.Mutex
+	InformerNamespaces map[string]struct{}
 }
 
 // Run starts an pod resource controller
@@ -130,7 +135,7 @@ func (c *PodController) onDelete(obj interface{}) {
 		return
 	}
 
-	log.Debugf("[PodController] onDelete ns=%s %s", pod.ObjectMeta.Namespace, pod.ObjectMeta.SelfLink)
+	//	log.Debugf("[PodController] onDelete ns=%s %s", pod.ObjectMeta.Namespace, pod.ObjectMeta.SelfLink)
 }
 
 func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv1.Pgcluster) {
@@ -324,7 +329,7 @@ func publishClusterComplete(clusterName, namespace string, cluster *crv1.Pgclust
 			Namespace: namespace,
 			Username:  cluster.Spec.UserLabels[config.LABEL_PGOUSER],
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventCreateClusterCompleted,
 		},
 		Clustername:       clusterName,
@@ -342,6 +347,15 @@ func publishClusterComplete(clusterName, namespace string, cluster *crv1.Pgclust
 }
 
 func (c *PodController) SetupWatch(ns string) {
+
+	// don't create informer for namespace if one has already been created
+	c.informerNsMutex.Lock()
+	defer c.informerNsMutex.Unlock()
+	if _, ok := c.InformerNamespaces[ns]; ok {
+		return
+	}
+	c.InformerNamespaces[ns] = struct{}{}
+
 	source := cache.NewListWatchFromClient(
 		c.PodClientset.CoreV1().RESTClient(),
 		"pods",
@@ -367,6 +381,7 @@ func (c *PodController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
+	log.Debugf("PodController created informer for namespace %s", ns)
 }
 
 func publishPrimaryNotReady(clusterName, identifier, username, namespace string) {
@@ -378,7 +393,7 @@ func publishPrimaryNotReady(clusterName, identifier, username, namespace string)
 			Namespace: namespace,
 			Username:  username,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventPrimaryNotReady,
 		},
 		Clustername:       clusterName,

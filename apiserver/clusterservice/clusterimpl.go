@@ -80,28 +80,22 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pg
 
 	for _, cluster := range clusterList.Items {
 
-		if deleteData {
-			log.Debugf("deleting data on cluster %s", cluster.Spec.Name)
-			err := deleteDatabaseSecrets(cluster.Spec.Name, ns)
-			if err != nil {
-				log.Debugf("error on deleting secrets %s", err.Error())
-				response.Status.Code = msgs.Error
-				response.Status.Msg = err.Error()
-				return response
-			}
+		log.Debugf("deleting cluster %s", cluster.Spec.Name)
+		taskName := cluster.Spec.Name + "-rmdata"
+		log.Debugf("creating taskName %s", taskName)
+		isBackup := false
+		isReplica := false
+		replicaName := ""
 
-			err = createDeleteDataTasks(cluster.Spec.Name, cluster.Spec.PrimaryStorage, deleteBackups, ns)
-		}
-
-		err = kubeapi.Deletepgcluster(apiserver.RESTClient,
-			cluster.Spec.Name, ns)
+		err := apiserver.CreateRMDataTask(cluster.Spec.Name, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns)
 		if err != nil {
+			log.Debugf("error on creating rmdata task %s", err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
-		} else {
-			response.Results = append(response.Results, "deleted pgcluster "+cluster.Spec.Name)
 		}
+
+		response.Results = append(response.Results, "deleted pgcluster "+cluster.Spec.Name)
 
 	}
 
@@ -408,7 +402,7 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 				Namespace: ns,
 				Username:  pgouser,
 				Topic:     topics,
-				Timestamp: events.GetTimestamp(),
+				Timestamp: time.Now(),
 				EventType: events.EventTestCluster,
 			},
 			Clustername:       c.Name,
@@ -583,6 +577,9 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			userLabelsMap[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
 		}
 
+		//Set archive timeout value
+		userLabelsMap[config.LABEL_ARCHIVE_TIMEOUT] = apiserver.Pgo.Cluster.ArchiveTimeout
+
 		//validate --pgpool-secret
 		if request.PgpoolSecret != "" {
 			var found bool
@@ -684,18 +681,18 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			}
 		}
 
+		// Create an instance of our CRD
+		newInstance := getClusterParams(request, clusterName, userLabelsMap, ns)
+		newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
+
 		if request.SecretFrom != "" {
-			err = validateSecretFrom(request.SecretFrom, ns)
+			err = validateSecretFrom(request.SecretFrom, newInstance.Spec.User, ns)
 			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = request.SecretFrom + " secret was not found "
 				return resp
 			}
 		}
-
-		// Create an instance of our CRD
-		newInstance := getClusterParams(request, clusterName, userLabelsMap, ns)
-		newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 
 		//verify that for autofail clusters we have a replica requested
 		if newInstance.Spec.Replicas == "0" {
@@ -712,7 +709,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		newInstance.Spec.PswLastUpdate = t.Format(time.RFC3339)
 
 		//create secrets
-		err, newInstance.Spec.RootSecretName, newInstance.Spec.PrimarySecretName, newInstance.Spec.UserSecretName = createSecrets(request, clusterName, ns)
+		err, newInstance.Spec.RootSecretName, newInstance.Spec.PrimarySecretName, newInstance.Spec.UserSecretName = createSecrets(request, clusterName, ns, newInstance.Spec.User)
 		if err != nil {
 			resp.Results = append(resp.Results, err.Error())
 			return resp
@@ -964,7 +961,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	return newInstance
 }
 
-func validateSecretFrom(secretname, ns string) error {
+func validateSecretFrom(secretname, user, ns string) error {
 	var err error
 	selector := config.LABEL_PG_CLUSTER + "=" + secretname
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, ns)
@@ -982,7 +979,7 @@ func validateSecretFrom(secretname, ns string) error {
 			pgprimaryFound = true
 		} else if s.ObjectMeta.Name == secretname+crv1.RootSecretSuffix {
 			pgrootFound = true
-		} else if s.ObjectMeta.Name == secretname+crv1.UserSecretSuffix {
+		} else if s.ObjectMeta.Name == secretname+"-"+user+crv1.UserSecretSuffix {
 			pguserFound = true
 		}
 	}
@@ -993,7 +990,7 @@ func validateSecretFrom(secretname, ns string) error {
 		return errors.New(secretname + crv1.RootSecretSuffix + " not found")
 	}
 	if !pguserFound {
-		return errors.New(secretname + crv1.UserSecretSuffix + " not found")
+		return errors.New(secretname + "-" + user + crv1.UserSecretSuffix + " not found")
 	}
 
 	return err
@@ -1016,109 +1013,12 @@ func getReadyStatus(pod *v1.Pod) (string, bool) {
 
 }
 
-// removes data and or backup volumes for all pods in a cluster
 func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, deleteBackups bool, ns string) error {
 
 	var err error
 
-	//dont include pgpool, pgbouncer, or pgbackrest_repo deployments
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGBACKUP + "!=true," + config.LABEL_PGPOOL_POD + "!=true," + config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_PGBOUNCER + "!=true"
-	log.Debugf("selector for delete is %s", selector)
-	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	log.Debugf("creatingDeleteDataTasks %d deployments for pg-cluster=%s\n", len(deployments.Items), clusterName)
+	log.Debugf("creatingDeleteDataTasks deployments for pg-cluster=%s\n", clusterName)
 
-	if deleteBackups {
-		log.Debug("deleteBackups is called")
-		log.Debug("check for backrest-shared-repo PVC to delete")
-		pvcName := clusterName + "-pgbr-repo"
-		_, found, err := kubeapi.GetPVC(apiserver.Clientset, pvcName, ns)
-		if found {
-			log.Debugf("creating rmdata job for %s", pvcName)
-			dataRoots := []string{pvcName}
-			err = apiserver.CreateRMDataTask(storageSpec, clusterName, pvcName, dataRoots, clusterName+"-rmdata-backrest-shared-repo", ns)
-			if err != nil {
-				log.Error(err)
-				return err
-			}
-		}
-	}
-
-	for _, dep := range deployments.Items {
-
-		dataRoots := make([]string, 0)
-		dataRoots = append(dataRoots, dep.Name)
-
-		claimName := dep.Name
-		taskName := dep.Name + "-rmdata-pgdata"
-		log.Debugf("creating taskName %s", taskName)
-
-		err := apiserver.CreateRMDataTask(storageSpec, clusterName, claimName, dataRoots, taskName, ns)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-	}
-
-	if deleteBackups {
-		log.Debug("check for backup PVC to delete")
-		//get the deployment names for this cluster
-		//by convention if basebackups are run, a pvc named
-		//deploymentName-backup will be created to hold backups
-		deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-
-		for _, dep := range deps.Items {
-			pvcName := dep.Name + "-backup"
-			log.Debugf("checking dep %s for backup pvc %s\n", dep.Name, pvcName)
-			_, found, err := kubeapi.GetPVC(apiserver.Clientset, pvcName, ns)
-			if !found {
-				log.Debugf("%s pvc was not found when looking for backups to delete\n", pvcName)
-			} else {
-				if err != nil {
-					log.Error(err)
-					return err
-				}
-				//by convention, the root directory name
-				//created by the backup job is depName-backups
-				dataRoots := []string{dep.Name + "-backups"}
-				err = apiserver.CreateRMDataTask(storageSpec, clusterName, pvcName, dataRoots, dep.Name+"-rmdata-backups", ns)
-				if err != nil {
-					log.Error(err)
-					return err
-				}
-			}
-
-			// check for pgdump backups
-			pgdumpPvcName := "backup-" + dep.Name + "-pgdump-pvc"
-
-			log.Debugf("checking dep %s for pgdump backup pvc %s\n", dep.Name, pgdumpPvcName)
-			_, found, err = kubeapi.GetPVC(apiserver.Clientset, pgdumpPvcName, ns)
-			if !found {
-				log.Debugf("%s pvc was not found when looking for pgdump backups to delete\n", pgdumpPvcName)
-			} else {
-				if err != nil {
-					log.Error(err)
-					return err
-				}
-				//by convention, the root directory name
-				//created by the backup job is depName-backups
-				dataRoots := []string{dep.Name + "-backups"}
-				err = apiserver.CreateRMDataTask(storageSpec, clusterName, pgdumpPvcName, dataRoots, dep.Name+"-rmdata-pgdump", ns)
-				if err != nil {
-					log.Error(err)
-					return err
-				}
-			}
-
-		}
-	}
 	return err
 }
 
@@ -1259,7 +1159,7 @@ func deleteConfigMaps(clusterName, ns string) error {
 	return nil
 }
 
-func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns string) (error, string, string, string) {
+func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns, user string) (error, string, string, string) {
 
 	var err error
 	var RootPassword, Password, PrimaryPassword string
@@ -1276,7 +1176,7 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns string) (
 	if request.SecretFrom != "" {
 		log.Debugf("secret-from is specified! using %s", request.SecretFrom)
 		_, RootPassword, err = util.GetPasswordFromSecret(apiserver.Clientset, ns, request.SecretFrom+crv1.RootSecretSuffix)
-		_, Password, err = util.GetPasswordFromSecret(apiserver.Clientset, ns, request.SecretFrom+crv1.UserSecretSuffix)
+		_, Password, err = util.GetPasswordFromSecret(apiserver.Clientset, ns, request.SecretFrom+"-"+user+crv1.UserSecretSuffix)
 		_, PrimaryPassword, err = util.GetPasswordFromSecret(apiserver.Clientset, ns, request.SecretFrom+crv1.PrimarySecretSuffix)
 		if err != nil {
 			log.Error("error getting secrets using SecretFrom " + request.SecretFrom)
@@ -1298,7 +1198,7 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns string) (
 		primaryPassword = PrimaryPassword
 	}
 
-	UserSecretName = clusterName + crv1.UserSecretSuffix
+	UserSecretName = clusterName + "-" + user + crv1.UserSecretSuffix
 	testPassword := util.GeneratePassword(10)
 	if Password != "" {
 		log.Debugf("using user specified password for secret %s", UserSecretName)
@@ -1327,7 +1227,7 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns string) (
 		return err, RootSecretName, PrimarySecretName, UserSecretName
 	}
 
-	username = "testuser"
+	username = user
 	err = util.CreateSecret(apiserver.Clientset, clusterName, UserSecretName, username, testPassword, ns)
 	if err != nil {
 		log.Errorf("error creating secret %s %s", UserSecretName, err.Error())

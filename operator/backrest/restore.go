@@ -479,7 +479,7 @@ func publishRestore(id, clusterName, username, namespace string) {
 			Namespace: namespace,
 			Username:  username,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventRestoreCluster,
 		},
 		Clustername:       clusterName,

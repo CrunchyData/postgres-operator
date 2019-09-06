@@ -17,6 +17,9 @@ limitations under the License.
 
 import (
 	"context"
+	"strings"
+	"sync"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -30,7 +33,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
-	"strings"
 )
 
 // PgreplicaController holds the connections for the controller
@@ -39,8 +41,9 @@ type PgreplicaController struct {
 	PgreplicaScheme    *runtime.Scheme
 	PgreplicaClientset *kubernetes.Clientset
 	Queue              workqueue.RateLimitingInterface
-
-	Ctx context.Context
+	Ctx                context.Context
+	informerNsMutex    sync.Mutex
+	InformerNamespaces map[string]struct{}
 }
 
 // Run starts an pgreplica resource controller
@@ -141,7 +144,7 @@ func (c *PgreplicaController) processNextItem() bool {
 // onAdd is called when a pgreplica is added
 func (c *PgreplicaController) onAdd(obj interface{}) {
 	replica := obj.(*crv1.Pgreplica)
-	log.Debugf("[PgreplicaController] OnAdd ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
+	//	log.Debugf("[PgreplicaController] OnAdd ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
 
 	//handle the case of pgreplicas being processed already and
 	//when the operator restarts
@@ -160,8 +163,8 @@ func (c *PgreplicaController) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgreplica is updated
 func (c *PgreplicaController) onUpdate(oldObj, newObj interface{}) {
-	newExample := newObj.(*crv1.Pgreplica)
-	log.Debugf("[PgreplicaController] ns=%s %s ", newExample.ObjectMeta.Namespace, newExample.ObjectMeta.Name)
+	//newExample := newObj.(*crv1.Pgreplica)
+	//log.Debugf("[PgreplicaController] ns=%s %s ", newExample.ObjectMeta.Namespace, newExample.ObjectMeta.Name)
 
 }
 
@@ -186,6 +189,15 @@ func (c *PgreplicaController) onDelete(obj interface{}) {
 }
 
 func (c *PgreplicaController) SetupWatch(ns string) {
+
+	// don't create informer for namespace if one has already been created
+	c.informerNsMutex.Lock()
+	defer c.informerNsMutex.Unlock()
+	if _, ok := c.InformerNamespaces[ns]; ok {
+		return
+	}
+	c.InformerNamespaces[ns] = struct{}{}
+
 	source := cache.NewListWatchFromClient(
 		c.PgreplicaClient,
 		crv1.PgreplicaResourcePlural,
@@ -211,4 +223,5 @@ func (c *PgreplicaController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
+	log.Debugf("PgreplicaController: created informer for namespace %s", ns)
 }

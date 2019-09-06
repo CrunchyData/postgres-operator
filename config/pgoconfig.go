@@ -204,6 +204,7 @@ type ClusterStruct struct {
 	Badger                  bool   `yaml:"Badger"`
 	Port                    string `yaml:"Port"`
 	User                    string `yaml:"User"`
+	ArchiveTimeout          string `yaml:"ArchiveTimeout"`
 	Database                string `yaml:"Database"`
 	PasswordAgeDays         string `yaml:"PasswordAgeDays"`
 	PasswordLength          string `yaml:"PasswordLength"`
@@ -412,6 +413,15 @@ func (c *PgoConfig) Validate() error {
 		_, ok = c.ContainerResources[c.DefaultPgbouncerResources]
 		if !ok {
 			return errors.New("DefaultPgbouncerResources setting invalid")
+		}
+	}
+
+	if c.Cluster.ArchiveTimeout == "" {
+		log.Info("Pgo.Cluster.ArchiveTimeout not set, using '60'")
+	} else {
+		_, err := strconv.Atoi(c.Cluster.ArchiveTimeout)
+		if err != nil {
+			return errors.New("Cluster.ArchiveTimeout invalid int value found")
 		}
 	}
 

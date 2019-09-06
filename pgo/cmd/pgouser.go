@@ -39,6 +39,7 @@ func updatePgouser(args []string, ns string) {
 	r := new(msgs.UpdatePgouserRequest)
 	r.PgouserName = args[0]
 	r.Namespace = ns
+	r.PgouserNamespaces = PgouserNamespaces
 	r.AllNamespaces = AllNamespaces
 	r.PgouserPassword = PgouserPassword
 	r.PgouserRoles = PgouserRoles

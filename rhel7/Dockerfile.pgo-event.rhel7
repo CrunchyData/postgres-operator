@@ -17,6 +17,7 @@ ENV PGVERSION="11"
 COPY redhat/atomic/pgo_event/help.1 /help.1
 COPY redhat/atomic/pgo_event/help.md /help.md
 COPY redhat/licenses /licenses
+COPY licenses /licenses
 
 RUN yum -y update && yum -y clean all
 

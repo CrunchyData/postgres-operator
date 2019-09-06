@@ -91,7 +91,10 @@ pgo-load-image:
 	sudo --preserve-env buildah bud $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-load.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-load:$(PGO_IMAGE_TAG) $(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-load:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-load:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-load:$(PGO_IMAGE_TAG) $(PGO_IMAGE_PREFIX)/pgo-load:$(PGO_IMAGE_TAG)
-pgo-rmdata-image:
+pgo-rmdata:	check-go-vars
+	go install pgo-rmdata/pgo-rmdata.go
+pgo-rmdata-image: 	check-go-vars pgo-rmdata
+	cp $(GOBIN)/pgo-rmdata bin/pgo-rmdata/
 	sudo --preserve-env buildah bud $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-rmdata.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-rmdata:$(PGO_IMAGE_TAG) $(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-rmdata:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-rmdata:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-rmdata:$(PGO_IMAGE_TAG) $(PGO_IMAGE_PREFIX)/pgo-rmdata:$(PGO_IMAGE_TAG)

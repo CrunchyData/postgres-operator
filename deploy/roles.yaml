@@ -5,9 +5,9 @@ metadata:
   namespace: $PGO_OPERATOR_NAMESPACE
 rules:
   - verbs:
-      - '*'
+      - 'list,create,delete,watch'
     apiGroups:
-      - '*'
+      - 'crunchydata.com'
     resources:
       - pgclusters
       - pgpolicies

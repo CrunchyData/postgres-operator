@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -41,9 +42,11 @@ import (
 
 // JobController holds the connections for the controller
 type JobController struct {
-	JobClient    *rest.RESTClient
-	JobClientset *kubernetes.Clientset
-	Ctx          context.Context
+	JobClient          *rest.RESTClient
+	JobClientset       *kubernetes.Clientset
+	Ctx                context.Context
+	informerNsMutex    sync.Mutex
+	InformerNamespaces map[string]struct{}
 }
 
 // Run starts an pod resource controller
@@ -101,11 +104,17 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 
 	//handle the case of rmdata jobs succeeding
 	if job.Status.Succeeded > 0 && labels[config.LABEL_RMDATA] == "true" {
+		log.Debugf("jobController onUpdate rmdata job succeeded")
+		publishDeleteClusterComplete(labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+			job.ObjectMeta.Labels[config.LABEL_PGOUSER], job.ObjectMeta.Namespace)
+		
 		log.Debugf("jobController onUpdate rmdata job case")
+	
 		err = handleRmdata(job, c.JobClient, c.JobClientset, job.ObjectMeta.Namespace)
 		if err != nil {
 			log.Error(err)
 		}
+		
 		return
 	}
 
@@ -145,10 +154,9 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 
 		}
 
-		//update the pgbackup
-		err = kubeapi.PatchpgbackupBackupStatus(c.JobClient, status, &backup, job.ObjectMeta.Namespace)
+		err = kubeapi.Updatepgbackup(c.JobClient, &backup, backupName, job.ObjectMeta.Namespace)
 		if err != nil {
-			log.Error("error in patching pgbackup " + labels["pg-cluster"] + err.Error())
+			log.Error("error in updating pgbackup " + labels["pg-cluster"] + err.Error())
 			return
 		}
 
@@ -232,7 +240,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	}
 
 	//handle the case of a backrest job being added
-	if labels[config.LABEL_BACKREST] == "true" {
+	if labels[config.LABEL_BACKREST] == "true" && labels[config.LABEL_BACKREST_COMMAND] == "backup" {
 		log.Debugf("jobController onUpdate backrest job case")
 		log.Debugf("got a backrest job status=%d", job.Status.Succeeded)
 		if job.Status.Succeeded == 1 {
@@ -298,7 +306,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 				Namespace: job.ObjectMeta.Namespace,
 				Username:  job.ObjectMeta.Labels[config.LABEL_PGOUSER],
 				Topic:     topics,
-				Timestamp: events.GetTimestamp(),
+				Timestamp: time.Now(),
 				EventType: events.EventBenchmarkCompleted,
 			},
 			Clustername:       labels[config.LABEL_PG_CLUSTER],
@@ -345,7 +353,6 @@ func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubern
 	log.Debugf("got a pgrmdata job status=%d", job.Status.Succeeded)
 	labels := job.GetObjectMeta().GetLabels()
 	clusterName := labels[config.LABEL_PG_CLUSTER]
-	claimName := labels[config.LABEL_CLAIM_NAME]
 
 	//delete any pgtask for this cluster
 	log.Debugf("deleting pgtask for rmdata job name is %s", job.ObjectMeta.Name)
@@ -375,17 +382,6 @@ func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubern
 	if !removed {
 		log.Error("could not remove Job %s for some reason after max tries", job.Name)
 		return err
-	} else {
-		//remove the pvc referenced by that job
-		//mycluster
-		//mycluster-xlog
-
-		log.Debugf("deleting pvc %s", claimName)
-		err = pvc.Delete(clientset, claimName, namespace)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
 	}
 
 	//if a user has specified --archive for a cluster then
@@ -425,6 +421,15 @@ func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubern
 }
 
 func (c *JobController) SetupWatch(ns string) {
+
+	// don't create informer for namespace if one has already been created
+	c.informerNsMutex.Lock()
+	defer c.informerNsMutex.Unlock()
+	if _, ok := c.InformerNamespaces[ns]; ok {
+		return
+	}
+	c.InformerNamespaces[ns] = struct{}{}
+
 	source := cache.NewListWatchFromClient(
 		c.JobClientset.BatchV1().RESTClient(),
 		"jobs",
@@ -450,6 +455,7 @@ func (c *JobController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
+	log.Debugf("JobController: created informer for namespace %s", ns)
 }
 
 func publishBackupComplete(clusterName, clusterIdentifier, username, backuptype, namespace, path string) {
@@ -462,7 +468,7 @@ func publishBackupComplete(clusterName, clusterIdentifier, username, backuptype,
 			Namespace: namespace,
 			Username:  username,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventCreateBackupCompleted,
 		},
 		Clustername:       clusterName,
@@ -486,7 +492,7 @@ func publishRestoreComplete(clusterName, identifier, username, namespace string)
 			Namespace: namespace,
 			Username:  username,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventRestoreClusterCompleted,
 		},
 		Clustername:       clusterName,
@@ -498,4 +504,26 @@ func publishRestoreComplete(clusterName, identifier, username, namespace string)
 		log.Error(err.Error())
 	}
 
+}
+
+func publishDeleteClusterComplete(clusterName, identifier, username, namespace string) {
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventDeleteClusterCompletedFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  username,
+			Topic:     topics,
+			Timestamp: time.Now(),
+			EventType: events.EventDeleteClusterCompleted,
+		},
+		Clustername:       clusterName,
+		Clusteridentifier: identifier,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 }
