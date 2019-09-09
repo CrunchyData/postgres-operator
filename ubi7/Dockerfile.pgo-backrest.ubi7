@@ -24,7 +24,8 @@ COPY redhat/atomic/pgo_backrest/help.md /help.md
 COPY redhat/licenses /licenses
 COPY licenses /licenses
 
-RUN yum -y update && yum -y install postgresql11-server \
+RUN yum -y update --disableplugin=subscription-manager \
+ && yum -y install postgresql11-server \
  && yum -y install crunchy-backrest-"${BACKREST_VERSION}" \
  && yum -y clean all
 

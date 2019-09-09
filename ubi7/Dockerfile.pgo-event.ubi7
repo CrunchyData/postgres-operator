@@ -19,7 +19,8 @@ COPY redhat/atomic/pgo_event/help.md /help.md
 COPY redhat/licenses /licenses
 COPY licenses /licenses
 
-RUN yum -y update && yum -y clean all
+RUN yum -y update --disableplugin=subscription-manager \
+ && yum -y clean all
 
 ADD bin/pgo-event /usr/local/bin
 
