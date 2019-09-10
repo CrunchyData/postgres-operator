@@ -56,8 +56,8 @@ The default installation will create 3 namespaces to use
 for deploying the Operator into and for holding Postgres clusters
 created by the Operator.
 
-Creating Kube namespaces is typically something that only a 
-priviledged Kube user can perform so log into your Kube cluster as a user 
+Creating Kube namespaces is typically something that only a
+priviledged Kube user can perform so log into your Kube cluster as a user
 that has the necessary priviledges.
 
 On Openshift if you do not want to install the Operator as the system
@@ -79,6 +79,12 @@ for Kube events.  This value is set as follows:
 This means namespaces called *pgouser1* and *pgouser2* will be
 created as part of the default installation.  
 
+{{% notice warning %}}In Kuberenetes versions prior to 1.12 (including Openshift up through 3.11), there is a liimitation that requires an extra step during installation for the operator to fucntion properly with watched namespaces. This limitation does not exist when using Kubernetes 1.12+. When a list of namespaces are provided through the NAMESPACE environment variable, the setupnamespaces.sh script handles the limitation properly in both the bash and ansible installation.
+
+However, if the user wishes to add a new watched namespace after installation, Where the user would normally use _pgo create namespace_ to add the new namespace, they should instead run the add-targeted-namespace.sh script, regardless of installation method. Again, this is only required when running on a Kuberenetes distribution whose version is below 1.12. In Kubernetes version 1.12+ the _pgo create namespace_ command works as expected.
+
+{{% /notice %}}
+
 The *PGO_OPERATOR_NAMESPACE* environment variable is a comma separated list
 of namespace values that the Operator itself will be deployed into.  For
 the installation example, this value is set as follows:
@@ -91,6 +97,8 @@ be deployed into that namespace.
 Create the Operator namespaces using the Makefile target:
 
     make setupnamespaces
+
+**Note**: The setupnamespaces target only creates the namespace(s) specified in PGO_OPERATOR_NAMESPACE environment variable
 
 The [Design](/design) section of this documentation talks further about
 the use of namespaces within the Operator.
