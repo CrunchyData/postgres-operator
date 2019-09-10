@@ -282,6 +282,7 @@ const DEFAULT_BACKREST_SSH_KEY_BITS = 2048
 
 func (c *PgoConfig) Validate() error {
 	var err error
+	errMsg := "Error in pgoconfig: check pgo.yaml: "
 
 	if c.Cluster.BackrestPort == 0 {
 		c.Cluster.BackrestPort = DEFAULT_BACKREST_PORT
@@ -296,7 +297,7 @@ func (c *PgoConfig) Validate() error {
 			}
 		}
 		if !found {
-			return errors.New("Cluster.LogStatement does not container a valid value for log_statement")
+			return errors.New(errMsg + "Cluster.LogStatement does not container a valid value for log_statement")
 		}
 	} else {
 		log.Info("using default log_statement value since it was not specified in pgo.yaml")
@@ -306,7 +307,7 @@ func (c *PgoConfig) Validate() error {
 	if c.Cluster.LogMinDurationStatement != "" {
 		_, err = strconv.Atoi(c.Cluster.LogMinDurationStatement)
 		if err != nil {
-			return errors.New("Cluster.LogMinDurationStatement invalid int value found")
+			return errors.New(errMsg + "Cluster.LogMinDurationStatement invalid int value found")
 		}
 	} else {
 		log.Info("using default log_min_duration_statement value since it was not specified in pgo.yaml")
@@ -316,25 +317,25 @@ func (c *PgoConfig) Validate() error {
 	if c.Cluster.PrimaryNodeLabel != "" {
 		parts := strings.Split(c.Cluster.PrimaryNodeLabel, "=")
 		if len(parts) != 2 {
-			return errors.New("Cluster.PrimaryNodeLabel does not follow key=value format")
+			return errors.New(errMsg+ "Cluster.PrimaryNodeLabel does not follow key=value format")
 		}
 	}
 
 	if c.Cluster.ReplicaNodeLabel != "" {
 		parts := strings.Split(c.Cluster.ReplicaNodeLabel, "=")
 		if len(parts) != 2 {
-			return errors.New("Cluster.ReplicaNodeLabel does not follow key=value format")
+			return errors.New(errMsg + "Cluster.ReplicaNodeLabel does not follow key=value format")
 		}
 	}
 
 	log.Infof("pgo.yaml Cluster.Backrest is %v", c.Cluster.Backrest)
 	_, ok := c.Storage[c.PrimaryStorage]
 	if !ok {
-		return errors.New("PrimaryStorage setting required")
+		return errors.New(errMsg + "PrimaryStorage setting required")
 	}
 	_, ok = c.Storage[c.BackupStorage]
 	if !ok {
-		return errors.New("BackupStorage setting required")
+		return errors.New(errMsg + "BackupStorage setting required")
 	}
 	_, ok = c.Storage[c.BackrestStorage]
 	if !ok {
@@ -344,7 +345,7 @@ func (c *PgoConfig) Validate() error {
 
 	_, ok = c.Storage[c.ReplicaStorage]
 	if !ok {
-		return errors.New("ReplicaStorage setting required")
+		return errors.New(errMsg + "ReplicaStorage setting required")
 	}
 	for k, _ := range c.Storage {
 		_, err = c.GetStorageSpec(k)
@@ -353,10 +354,10 @@ func (c *PgoConfig) Validate() error {
 		}
 	}
 	if c.Pgo.PGOImagePrefix == "" {
-		return errors.New("Pgo.PGOImagePrefix is required")
+		return errors.New(errMsg + "Pgo.PGOImagePrefix is required")
 	}
 	if c.Pgo.PGOImageTag == "" {
-		return errors.New("Pgo.PGOImageTag is required")
+		return errors.New(errMsg + "Pgo.PGOImageTag is required")
 	}
 	if c.Pgo.AutofailSleepSeconds == "" {
 		log.Warn("Pgo.AutofailSleepSeconds not set, using default ")
@@ -364,55 +365,55 @@ func (c *PgoConfig) Validate() error {
 	}
 	c.Pgo.AutofailSleepSecondsValue, err = strconv.Atoi(c.Pgo.AutofailSleepSeconds)
 	if err != nil {
-		return errors.New("Pgo.AutofailSleepSeconds invalid int value found")
+		return errors.New(errMsg + "Pgo.AutofailSleepSeconds invalid int value found")
 	}
 
 	if c.DefaultContainerResources != "" {
 		_, ok = c.ContainerResources[c.DefaultContainerResources]
 		if !ok {
-			return errors.New("DefaultContainerResources setting invalid")
+			return errors.New(errMsg + "DefaultContainerResources setting invalid")
 		}
 	}
 	if c.DefaultLspvcResources != "" {
 		_, ok = c.ContainerResources[c.DefaultLspvcResources]
 		if !ok {
-			return errors.New("DefaultLspvcResources setting invalid")
+			return errors.New(errMsg + "DefaultLspvcResources setting invalid")
 		}
 	}
 	if c.DefaultLoadResources != "" {
 		_, ok = c.ContainerResources[c.DefaultLoadResources]
 		if !ok {
-			return errors.New("DefaultLoadResources setting invalid")
+			return errors.New(errMsg + "DefaultLoadResources setting invalid")
 		}
 	}
 	if c.DefaultRmdataResources != "" {
 		_, ok = c.ContainerResources[c.DefaultRmdataResources]
 		if !ok {
-			return errors.New("DefaultRmdataResources setting invalid")
+			return errors.New(errMsg + "DefaultRmdataResources setting invalid")
 		}
 	}
 	if c.DefaultBackupResources != "" {
 		_, ok = c.ContainerResources[c.DefaultBackupResources]
 		if !ok {
-			return errors.New("DefaultBackupResources setting invalid")
+			return errors.New(errMsg + "DefaultBackupResources setting invalid")
 		}
 	}
 	if c.DefaultBadgerResources != "" {
 		_, ok = c.ContainerResources[c.DefaultBadgerResources]
 		if !ok {
-			return errors.New("DefaultBadgerResources setting invalid")
+			return errors.New(errMsg + "DefaultBadgerResources setting invalid")
 		}
 	}
 	if c.DefaultPgpoolResources != "" {
 		_, ok = c.ContainerResources[c.DefaultPgpoolResources]
 		if !ok {
-			return errors.New("DefaultPgpoolResources setting invalid")
+			return errors.New(errMsg + "DefaultPgpoolResources setting invalid")
 		}
 	}
 	if c.DefaultPgbouncerResources != "" {
 		_, ok = c.ContainerResources[c.DefaultPgbouncerResources]
 		if !ok {
-			return errors.New("DefaultPgbouncerResources setting invalid")
+			return errors.New(errMsg + "DefaultPgbouncerResources setting invalid")
 		}
 	}
 
@@ -421,7 +422,7 @@ func (c *PgoConfig) Validate() error {
 	} else {
 		_, err := strconv.Atoi(c.Cluster.ArchiveTimeout)
 		if err != nil {
-			return errors.New("Cluster.ArchiveTimeout invalid int value found")
+			return errors.New(errMsg + "Cluster.ArchiveTimeout invalid int value found")
 		}
 	}
 
@@ -432,16 +433,20 @@ func (c *PgoConfig) Validate() error {
 		if c.Cluster.ServiceType != DEFAULT_SERVICE_TYPE &&
 			c.Cluster.ServiceType != LOAD_BALANCER_SERVICE_TYPE &&
 			c.Cluster.ServiceType != NODEPORT_SERVICE_TYPE {
-			return errors.New("Cluster.ServiceType is required to be either ClusterIP, NodePort, or LoadBalancer")
+			return errors.New(errMsg + "Cluster.ServiceType is required to be either ClusterIP, NodePort, or LoadBalancer")
 		}
 	}
 
 	if c.Cluster.CCPImagePrefix == "" {
-		return errors.New("Cluster.CCPImagePrefix is required")
+		return errors.New(errMsg + "Cluster.CCPImagePrefix is required")
 	}
 
 	if c.Cluster.CCPImageTag == "" {
-		return errors.New("Cluster.CCPImageTag is required")
+		return errors.New(errMsg + "Cluster.CCPImageTag is required")
+	}
+
+	if c.Cluster.User == "" {
+		return errors.New(errMsg + "Cluster.User is required")
 	}
 	return err
 }
