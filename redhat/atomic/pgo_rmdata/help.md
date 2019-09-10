@@ -28,7 +28,7 @@ The registry location and name of the image. For example, Name="crunchydata/pgo-
 
 `Version=`
 
-The Red Hat Enterprise Linux version from which the container was built. For example, Version="7.6"
+The Red Hat Enterprise Linux version from which the container was built. For example, Version="7.7"
 
 `Release=`
 
