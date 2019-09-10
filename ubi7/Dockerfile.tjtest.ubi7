@@ -1,0 +1,26 @@
+FROM ubi7
+
+LABEL Vendor="Crunchy Data Solutions" \
+	PostgresVersion="11" \
+	name="tjtest" \
+	PostgresFullVersion="11.5" \
+	Version="7.6" \
+	Release="4.1.0" \
+        run='docker run -d -p 8080:80 --name=web-app web-app' \
+	summary="Crunchy Data PostgreSQL Operator - pgo-backrest-repo" \
+	description="Crunchy Data PostgreSQL Operator - pgo-backrest-repo"
+
+ENV PGVERSION="11" BACKREST_VERSION="2.15.1"
+
+
+RUN yum -y update --disableplugin=subscription-manager \
+ && yum -y install --disableplugin=subscription-manager psmisc openssh-server openssh-clients hostname pgocps-ng && \
+yum -y clean all
+
+RUN chmod g=u /etc/passwd && \
+        chmod g=u /etc/group
+
+#RUN mkdir /tmp/.ssh && ln -s /tmp/.ssh /.ssh && chown 26:26 /tmp/.ssh /.ssh
+#RUN ln -s /sshd /.ssh && chown 26:26 /.ssh && chmod 400 /.ssh/
+
+VOLUME ["/sshd"]
