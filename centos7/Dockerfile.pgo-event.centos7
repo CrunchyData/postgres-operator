@@ -3,7 +3,7 @@ FROM centos:7
 LABEL Vendor="Crunchy Data Solutions" \
 	PostgresVersion="11" \
 	PostgresFullVersion="11.5" \
-	Version="7.6" \
+	Version="7.7" \
 	Release="4.1.0" \
 	summary="Crunchy Data PostgreSQL Operator - pgo-event" \
 	description="Crunchy Data PostgreSQL Operator - pgo-event"
