@@ -204,9 +204,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 					return resp
 				}
 
-			}
-
-			if request.Expired != "" {
+			} else if request.Expired != "" {
 				results := callDB(info, d.ObjectMeta.Name, request.Expired)
 				if len(results) > 0 {
 					log.Debug("expired passwords...")
@@ -224,6 +222,19 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 							return resp
 						}
 					}
+				}
+			} else if apiserver.Pgo.Cluster.PasswordAgeDays != "" {
+				msg := "updating valid days for password of user " + request.Username + " on " + d.ObjectMeta.Name
+				log.Debug(msg)
+				resp.Results = append(resp.Results, msg)
+				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
+
+				err = updatePasswordValidUntil(cluster.Spec.Name, info, request.Username, newExpireDate, request.Namespace)
+				if err != nil {
+					log.Error(err.Error())
+					resp.Status.Code = msgs.Error
+					resp.Status.Msg = err.Error()
+					return resp
 				}
 			}
 
@@ -353,6 +364,39 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 			return err
 		}
 	}
+
+	return err
+}
+
+// updatePasswordValidUntil  ...
+func updatePasswordValidUntil(clusterName string, p connInfo, username, passwordExpireDate, namespace string) error {
+	var err error
+	var conn *sql.DB
+
+	conn, err = sql.Open("postgres", "sslmode=disable user="+p.Username+" host="+p.Hostip+" port="+p.Port+" dbname="+p.Database+" password="+p.Password)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
+	var rows *sql.Rows
+
+	querystr := "ALTER user " + username + " VALID UNTIL '" + passwordExpireDate + "'"
+	log.Debug(querystr)
+	rows, err = conn.Query(querystr)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+		if rows != nil {
+			rows.Close()
+		}
+	}()
 
 	return err
 }
