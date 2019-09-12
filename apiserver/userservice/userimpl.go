@@ -162,8 +162,8 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 				log.Debugf("expiring user %s", request.Username)
 			}
 			
-			//if the password is being changed...
 			if request.Password != "" {
+				//if the password is being changed...
 				msg := "changing password of user " + request.Username + " on " + d.ObjectMeta.Name
 				log.Debug(msg)
 				resp.Results = append(resp.Results, msg)
@@ -204,9 +204,8 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 					resp.Status.Msg = err.Error()
 					return resp
 				}
-			} //if the password is not being changed and the valid-days flag is set
-			else if request.PasswordAgeDaysUpdate {
-				
+			} else if request.PasswordAgeDaysUpdate {
+				//if the password is not being changed and the valid-days flag is set
 				msg := "updating valid days for password of user " + request.Username + " on " + d.ObjectMeta.Name
 				log.Debug(msg)
 				resp.Results = append(resp.Results, msg)
