@@ -78,6 +78,9 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
+	log.Debugf("request.PasswordAgeDays in UpdateUser %v", request.PasswordAgeDays)
+	log.Debugf("%v", request)
+
 	getDefaults()
 
 	if request.Username == "" {
@@ -161,7 +164,8 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 				}
 				log.Debugf("expiring user %s", request.Username)
 			}
-
+			
+			//if the password is being changed...
 			if request.Password != "" {
 				msg := "changing password of user " + request.Username + " on " + d.ObjectMeta.Name
 				log.Debug(msg)
@@ -203,8 +207,24 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 					resp.Status.Msg = err.Error()
 					return resp
 				}
+			} //if the password is not being changed, the the valid-days flag is set
+			else if request.PasswordAgeDaysUpdate {
+				
+				msg := "updating valid days for password of user " + request.Username + " on " + d.ObjectMeta.Name
+				log.Debug(msg)
+				resp.Results = append(resp.Results, msg)
+				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
 
-			} else if request.Expired != "" {
+				err = updatePasswordValidUntil(cluster.Spec.Name, info, request.Username, newExpireDate, request.Namespace)
+				if err != nil {
+					log.Error(err.Error())
+					resp.Status.Code = msgs.Error
+					resp.Status.Msg = err.Error()
+					return resp
+				}
+			}
+			
+			if request.Expired != "" {
 				results := callDB(info, d.ObjectMeta.Name, request.Expired)
 				if len(results) > 0 {
 					log.Debug("expired passwords...")
@@ -223,20 +243,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 						}
 					}
 				}
-			} else if apiserver.Pgo.Cluster.PasswordAgeDays != "" {
-				msg := "updating valid days for password of user " + request.Username + " on " + d.ObjectMeta.Name
-				log.Debug(msg)
-				resp.Results = append(resp.Results, msg)
-				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-
-				err = updatePasswordValidUntil(cluster.Spec.Name, info, request.Username, newExpireDate, request.Namespace)
-				if err != nil {
-					log.Error(err.Error())
-					resp.Status.Code = msgs.Error
-					resp.Status.Msg = err.Error()
-					return resp
-				}
-			}
+			} 
 
 		}
 	}
@@ -635,6 +642,8 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
+
+	
 
 	getDefaults()
 

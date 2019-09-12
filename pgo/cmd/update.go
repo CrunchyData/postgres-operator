@@ -134,6 +134,9 @@ var UpdateUserCmd = &cobra.Command{
 		pgo update user mycluster --username=someuser --expire-user`,
 	Run: func(cmd *cobra.Command, args []string) {
 
+		//returns a boolean value of true if the valid-days flag was set, false if it was not
+		validDaysUpdate := cmd.Flag("valid-days").Changed
+
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
@@ -141,7 +144,7 @@ var UpdateUserCmd = &cobra.Command{
 		if !AllFlag && Selector == "" && len(args) == 0 {
 			fmt.Println("Error: You must specify a --selector, --all  or a list of clusters.")
 		} else {
-			updateUser(args, Namespace)
+			updateUser(args, Namespace, validDaysUpdate)
 		}
 	},
 }
