@@ -58,6 +58,9 @@
 
 - name: Deploy PostgreSQL Operator
   block:
+    - include_tasks: namespace.yml
+      tags: [install, update]
+    
     - include_tasks: crds.yml
       tags: [install]
 
@@ -209,6 +212,7 @@
       when: uname_result.stdout == "Darwin" and pgo_client_install == "true"
       tags: [install, update]
 
-    - include_tasks: openshift_namespace.yml
-      when: openshift_host is defined and not pgo_cluster_admin|bool
+    - name: Wait for PGO deployment to finish rolling out in order to create Watched Namespaces
+      command: "{{ kubectl_or_oc }} rollout status deployment/postgres-operator -n {{ pgo_operator_namespace }}"
+      async: 600
       tags: [install, update]
