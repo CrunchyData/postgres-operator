@@ -15,6 +15,8 @@ Create a namespace. For example:
 pgo create namespace [flags]
 ```
 
+Note: For Kubernetes versions prior to 1.12, this command will not function properly - use $PGOROOT/deploy/add_targted_namespace.sh script. For more details, see the Namespace Creation section under Installing Operator Using Bash in the documentation.`
+
 ### Options
 
 ```
