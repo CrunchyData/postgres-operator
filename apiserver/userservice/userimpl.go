@@ -78,9 +78,6 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	log.Debugf("request.PasswordAgeDays in UpdateUser %v", request.PasswordAgeDays)
-	log.Debugf("%v", request)
-
 	getDefaults()
 
 	if request.Username == "" {
@@ -207,7 +204,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 					resp.Status.Msg = err.Error()
 					return resp
 				}
-			} //if the password is not being changed, the the valid-days flag is set
+			} //if the password is not being changed and the valid-days flag is set
 			else if request.PasswordAgeDaysUpdate {
 				
 				msg := "updating valid days for password of user " + request.Username + " on " + d.ObjectMeta.Name
