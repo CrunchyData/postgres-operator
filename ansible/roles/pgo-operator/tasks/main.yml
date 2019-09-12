@@ -212,7 +212,7 @@
       when: uname_result.stdout == "Darwin" and pgo_client_install == "true"
       tags: [install, update]
 
-    - name: Wait for PGO deployment to finish rolling out in order to create Watched Namespaces
+    - name: Wait for PGO to finish deploying
       command: "{{ kubectl_or_oc }} rollout status deployment/postgres-operator -n {{ pgo_operator_namespace }}"
       async: 600
       tags: [install, update]
