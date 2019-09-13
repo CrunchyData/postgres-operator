@@ -44,6 +44,7 @@ func GetNamespace(clientset *kubernetes.Clientset, name string) (*v1.Namespace, 
 		return ns, false, err
 	}
 	if err != nil {
+		log.Error(err)
 		return ns, false, err
 	}
 

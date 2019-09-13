@@ -33,6 +33,7 @@ import (
 	"k8s.io/client-go/rest"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // ServiceTemplateFields ...
@@ -99,7 +100,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			Namespace: cl.ObjectMeta.Namespace,
 			Username:  pgouser,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventCreateCluster,
 		},
 		Clustername:       cl.ObjectMeta.Name,
@@ -229,7 +230,7 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 			Namespace: namespace,
 			Username:  cl.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventDeleteCluster,
 		},
 		Clustername:       cl.Spec.Name,
@@ -333,7 +334,7 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 			Namespace: namespace,
 			Username:  replica.ObjectMeta.Labels[config.LABEL_PGOUSER],
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventScaleDownCluster,
 		},
 		Clustername:       replica.Spec.ClusterName,
@@ -393,7 +394,7 @@ func publishClusterCreateFailure(cl *crv1.Pgcluster, errorMsg string) {
 			Namespace: cl.ObjectMeta.Namespace,
 			Username:  pgouser,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventCreateClusterFailure,
 		},
 		Clustername:       cl.ObjectMeta.Name,

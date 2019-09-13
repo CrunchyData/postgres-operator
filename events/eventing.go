@@ -19,15 +19,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	crunchylog "github.com/crunchydata/postgres-operator/logging"
 	"github.com/nsqio/go-nsq"
 	log "github.com/sirupsen/logrus"
-	crunchylog "github.com/crunchydata/postgres-operator/logging"
 	"os"
 	"reflect"
 	"time"
 )
-
-const TIME_FORMAT = "2006-01-02T15:04:05"
 
 // String returns the string form for a given LogLevel
 func Publish(e EventInterface) error {
@@ -52,8 +50,7 @@ func Publish(e EventInterface) error {
 	log.Debugf("header %s ", e.GetHeader().String())
 
 	header := e.GetHeader()
-	t := time.Now()
-	header.Timestamp = t.Format(TIME_FORMAT)
+	header.Timestamp = time.Now()
 
 	b, err := json.MarshalIndent(e, "", "  ")
 	if err != nil {
@@ -91,9 +88,4 @@ func Publish(e EventInterface) error {
 	}
 
 	return nil
-}
-
-func GetTimestamp() string {
-	t := time.Now()
-	return t.Format(TIME_FORMAT)
 }

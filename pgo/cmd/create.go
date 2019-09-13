@@ -360,7 +360,9 @@ var createNamespaceCmd = &cobra.Command{
 	Short: "Create a namespace",
 	Long: `Create a namespace. For example:
 
-    pgo create namespace somenamespace`,
+	pgo create namespace somenamespace
+	
+	Note: For Kubernetes versions prior to 1.12, this command will not function properly - use $PGOROOT/deploy/add_targted_namespace.sh script. For more details, see the Namespace Creation section under Installing Operator Using Bash in the documentation.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Namespace == "" {
 			Namespace = PGONamespace

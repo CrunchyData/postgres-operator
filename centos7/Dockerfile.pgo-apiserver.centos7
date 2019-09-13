@@ -3,12 +3,15 @@ FROM centos:7
 LABEL Vendor="Crunchy Data Solutions" \
 	PostgresVersion="11" \
 	PostgresFullVersion="11.5" \
-	Version="7.6" \
+	Version="7.7" \
 	Release="4.1.0" \
 	summary="Crunchy Data PostgreSQL Operator - Apiserver" \
 	description="Crunchy Data PostgreSQL Operator - Apiserver"
 
 ENV PGVERSION="11" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm"
+
+COPY redhat/licenses /licenses
+COPY licenses /licenses
 
 # PGDG PostgreSQL Repository
 

@@ -17,13 +17,16 @@ limitations under the License.
 
 import (
 	"context"
+	"strings"
+	"sync"
+
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
-	"strings"
+
 	//	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -36,12 +39,14 @@ import (
 
 // PgbackupController holds connections required by the controller
 type PgbackupController struct {
-	PgbackupClient    *rest.RESTClient
-	PgbackupScheme    *runtime.Scheme
-	PgbackupClientset *kubernetes.Clientset
-	Ctx               context.Context
-	Queue             workqueue.RateLimitingInterface
-	UpdateQueue       workqueue.RateLimitingInterface
+	PgbackupClient     *rest.RESTClient
+	PgbackupScheme     *runtime.Scheme
+	PgbackupClientset  *kubernetes.Clientset
+	Ctx                context.Context
+	Queue              workqueue.RateLimitingInterface
+	UpdateQueue        workqueue.RateLimitingInterface
+	informerNsMutex    sync.Mutex
+	InformerNamespaces map[string]struct{}
 }
 
 // Run starts controller
@@ -264,6 +269,15 @@ func (c *PgbackupController) onDelete(obj interface{}) {
 }
 
 func (c *PgbackupController) SetupWatch(ns string) {
+
+	// don't create informer for namespace if one has already been created
+	c.informerNsMutex.Lock()
+	defer c.informerNsMutex.Unlock()
+	if _, ok := c.InformerNamespaces[ns]; ok {
+		return
+	}
+	c.InformerNamespaces[ns] = struct{}{}
+
 	source := cache.NewListWatchFromClient(
 		c.PgbackupClient,
 		crv1.PgbackupResourcePlural,
@@ -289,4 +303,5 @@ func (c *PgbackupController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
+	log.Debugf("PgbackupController: created informer for namespace %s", ns)
 }

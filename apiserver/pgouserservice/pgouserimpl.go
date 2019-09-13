@@ -28,6 +28,7 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"strings"
+	"time"
 )
 
 const MAP_KEY_USERNAME = "username"
@@ -78,7 +79,7 @@ func CreatePgouser(clientset *kubernetes.Clientset, createdBy string, request *m
 			Namespace: apiserver.PgoNamespace,
 			Username:  createdBy,
 			Topic:     topics,
-			Timestamp: events.GetTimestamp(),
+			Timestamp: time.Now(),
 			EventType: events.EventPGOCreateUser,
 		},
 		CreatedUsername: request.PgouserName,
@@ -172,7 +173,7 @@ func DeletePgouser(clientset *kubernetes.Clientset, deletedBy string, request *m
 						Namespace: apiserver.PgoNamespace,
 						Username:  deletedBy,
 						Topic:     topics,
-						Timestamp: events.GetTimestamp(),
+						Timestamp: time.Now(),
 						EventType: events.EventPGODeleteUser,
 					},
 					DeletedUsername: v,
@@ -194,6 +195,7 @@ func DeletePgouser(clientset *kubernetes.Clientset, deletedBy string, request *m
 
 }
 
+// UpdatePgouser - update the pgouser secret
 func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *msgs.UpdatePgouserRequest) msgs.UpdatePgouserResponse {
 
 	resp := msgs.UpdatePgouserResponse{}
@@ -211,18 +213,35 @@ func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *m
 
 	secret.ObjectMeta.Labels[config.LABEL_PGO_UPDATED_BY] = updatedBy
 	secret.Data[MAP_KEY_USERNAME] = []byte(request.PgouserName)
-	secret.Data[MAP_KEY_PASSWORD] = []byte(request.PgouserPassword)
+
+	if request.PgouserPassword != "" {
+		secret.Data[MAP_KEY_PASSWORD] = []byte(request.PgouserPassword)
+	}
 	if request.PgouserRoles != "" {
+		err = validRoles(clientset, request.PgouserRoles)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
 		secret.Data[MAP_KEY_ROLES] = []byte(request.PgouserRoles)
 	}
 	if request.PgouserNamespaces != "" {
+		err = validNamespaces(request.PgouserNamespaces, request.AllNamespaces)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
 		secret.Data[MAP_KEY_NAMESPACES] = []byte(request.PgouserNamespaces)
 	} else if request.AllNamespaces {
 		secret.Data[MAP_KEY_NAMESPACES] = []byte("")
 	}
 
+	log.Info("Updating secret for: " , request.PgouserName )
 	err = kubeapi.UpdateSecret(clientset, secret, apiserver.PgoNamespace)
 	if err != nil {
+		log.Debug("Error updating pgouser secret: " , err.Error)
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp

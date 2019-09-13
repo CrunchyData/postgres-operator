@@ -4,7 +4,7 @@ MAINTAINER support@crunchydata.com
 
 LABEL name="pgo-rmdata" \
     vendor="crunchydata.com" \
-	Version="7.6" \
+	Version="7.7" \
 	Release="4.1.0" \
     run='docker run -d -p 8080:80 --name=web-app web-app' \
     summary="Crunchy Data PostgreSQL Operator - Remove Data" \
@@ -13,26 +13,13 @@ LABEL name="pgo-rmdata" \
 COPY redhat/atomic/pgo_rmdata/help.1 /help.1
 COPY redhat/atomic/pgo_rmdata/help.md /help.md
 COPY redhat/licenses /licenses
-
-ADD conf/RPM-GPG-KEY-crunchydata  /
-ADD conf/crunchypg11.repo /etc/yum.repos.d/
-RUN rpm --import RPM-GPG-KEY-crunchydata
-
+COPY licenses /licenses
 
 RUN yum -y --enablerepo=rhel-7-server-ose-3.11-rpms --disablerepo=crunchy* update \
  && yum -y clean all
 
-RUN mkdir -p /opt/cpm/bin
-ADD bin/pgo-rmdata/ /opt/cpm/bin
-ADD bin/uid_postgres.sh /opt/cpm/bin
-RUN chown -R 0:0 /opt/cpm
-
-RUN chmod g=u /etc/passwd && \
-        chmod g=u /etc/group
+ADD bin/pgo-rmdata/ /usr/local/bin
 
 USER 0
 
-ENTRYPOINT ["/opt/cpm/bin/uid_postgres.sh"]
-VOLUME ["/pgdata"]
-
-CMD ["/opt/cpm/bin/start.sh"]
+CMD ["/usr/local/bin/start.sh"]

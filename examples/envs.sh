@@ -1,7 +1,6 @@
 export GOPATH=$HOME/odev
 export GOBIN=$GOPATH/bin
 export PATH=$PATH:$GOBIN
-
 # NAMESPACE is the list of namespaces the Operator will watch
 export NAMESPACE=pgouser1,pgouser2
 
@@ -23,6 +22,15 @@ export PGO_IMAGE_PREFIX=crunchydata
 export PGO_BASEOS=centos7
 export PGO_VERSION=4.1.0
 export PGO_IMAGE_TAG=$PGO_BASEOS-$PGO_VERSION
+
+# for setting the pgo apiserver port, disabling TLS or not verifying TLS
+# if TLS is disabled, ensure setip() function port is updated and http is used in place of https
+export PGO_APISERVER_PORT=8443		# Defaults: 8443 for TLS enabled, 8080 for TLS disabled
+export DISABLE_TLS=false
+export TLS_NO_VERIFY=false
+
+# for disabling the Operator eventing
+export DISABLE_EVENTING=false
 
 # for the pgo CLI to authenticate with using TLS
 export PGO_CA_CERT=$PGOROOT/conf/postgres-operator/server.crt
