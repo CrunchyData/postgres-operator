@@ -128,7 +128,7 @@ var UpdateUserCmd = &cobra.Command{
 	Use:   "user",
 	Short: "Update a postgres user",
 	Long: `UPDATE allows you to update a pgo user. For example:
-		//change a password
+		//change a password, set valid days for 40 days from now
 		pgo update user mycluster --username=someuser --password=foo --valid-days=40
 		//expire password for a user
 		pgo update user mycluster --username=someuser --expire-user

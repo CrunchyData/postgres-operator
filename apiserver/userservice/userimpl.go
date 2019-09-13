@@ -82,13 +82,13 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 
 	if request.Username == "" && request.Expired == "" {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "Either --expired or --username must be set. See 'pgo update user -h' for usage."
+		resp.Status.Msg = "Either --expired or --username must be set."
 		return resp
 	}
 
 	if request.Username != "" && request.Expired != "" {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "The --expired flag executes against all expiring users. See 'pgo update user -h' for usage."
+		resp.Status.Msg = "The --expired cannot be used when a user is specified."
 		return resp
 	}
 
