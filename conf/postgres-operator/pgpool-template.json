@@ -44,7 +44,7 @@
 		    {{.ContainerResources }}
                     "env": [{
                         "name": "PG_USERNAME",
-                        "value": "{{.PGUser}}"
+                        "value": "{{.User}}"
                     }, {
                         "name": "PG_PASSWORD",
                         "value": "password"
