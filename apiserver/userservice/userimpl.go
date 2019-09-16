@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"regexp"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
@@ -326,7 +327,7 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 		return err
 	}
 
-	querystr := "ALTER user " + username + " VALID UNTIL '" + passwordExpireDate + "'"
+	querystr := "ALTER user \"" + username + "\" VALID UNTIL '" + passwordExpireDate + "'"
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
@@ -389,7 +390,7 @@ func updatePasswordValidUntil(clusterName string, p connInfo, username, password
 
 	var rows *sql.Rows
 
-	querystr := "ALTER user " + username + " VALID UNTIL '" + passwordExpireDate + "'"
+	querystr := "ALTER user \"" + username + "\" VALID UNTIL '" + passwordExpireDate + "'"
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
@@ -537,7 +538,7 @@ func addUser(request *msgs.CreateUserRequest, namespace, clusterName string, inf
 	}
 	*/
 
-	querystr = "create user " + request.Username
+	querystr = "create user \"" + request.Username + "\""
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
@@ -596,14 +597,14 @@ func deleteUser(namespace, clusterName string, info connInfo, user string, manag
 
 	var rows *sql.Rows
 
-	querystr := "drop owned by  " + user + " cascade"
+	querystr := "drop owned by \"" + user + "\" cascade"
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
 		log.Error(err.Error())
 		return err
 	}
-	querystr = "drop user if exists " + user
+	querystr = "drop user if exists \"" + user + "\""
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
@@ -694,6 +695,14 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 	}
 
 	log.Debugf("createUser clusters found len is %d", len(clusterList.Items))
+
+	re := regexp.MustCompile("^[a-z0-9.-]*$")
+	if !re.MatchString(request.Username) {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "user name is required to be lowercase letters and numbers only."
+		return resp
+	}
+
 	for _, c := range clusterList.Items {
 		info, err := getPostgresUserInfo(request.Namespace, c.Name)
 		if err != nil {
@@ -1132,7 +1141,7 @@ func setUserValidUntil(p connInfo, username, passwordExpireDate string) error {
 		return err
 	}
 
-	querystr := "ALTER user " + username + " VALID UNTIL '" + passwordExpireDate + "'"
+	querystr := "ALTER user \"" + username + "\" VALID UNTIL '" + passwordExpireDate + "'"
 	log.Debug(querystr)
 	rows, err = conn.Query(querystr)
 	if err != nil {
