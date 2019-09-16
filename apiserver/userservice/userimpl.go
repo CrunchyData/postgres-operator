@@ -80,9 +80,15 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 
 	getDefaults()
 
-	if request.Username == "" {
+	if request.Username == "" && request.Expired == "" {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "--username is required flag"
+		resp.Status.Msg = "Either --expired or --username must be set."
+		return resp
+	}
+
+	if request.Username != "" && request.Expired != "" {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "The --expired cannot be used when a user is specified."
 		return resp
 	}
 
@@ -161,8 +167,30 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 				}
 				log.Debugf("expiring user %s", request.Username)
 			}
+			
+			if request.Expired != "" {
+				results := callDB(info, d.ObjectMeta.Name, request.Expired)
+				if len(results) > 0 {
+					log.Debug("expired passwords...")
+					for _, v := range results {
+						log.Debugf("RoleName %s Role Valid Until %s", v.Rolname, v.Rolvaliduntil)
+						newPassword := GeneratePassword(request.PasswordLength)
+						newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
+						pgbouncer := cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true"
+						pgpool := cluster.Spec.UserLabels[config.LABEL_PGPOOL] == "true"
+						err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, request.Namespace, pgpool, pgbouncer, request.PasswordLength)
+						if err != nil {
+							log.Error("error in updating password")
+							resp.Status.Code = msgs.Error
+							resp.Status.Msg = err.Error()
+							return resp
+						}
+					}
+				}
+			}
 
 			if request.Password != "" {
+				//if the password is being changed...
 				msg := "changing password of user " + request.Username + " on " + d.ObjectMeta.Name
 				log.Debug(msg)
 				resp.Results = append(resp.Results, msg)
@@ -203,30 +231,21 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 					resp.Status.Msg = err.Error()
 					return resp
 				}
+			} else if request.PasswordAgeDaysUpdate {
+				//if the password is not being changed and the valid-days flag is set
+				msg := "updating valid days for password of user " + request.Username + " on " + d.ObjectMeta.Name
+				log.Debug(msg)
+				resp.Results = append(resp.Results, msg)
+				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
 
-			}
-
-			if request.Expired != "" {
-				results := callDB(info, d.ObjectMeta.Name, request.Expired)
-				if len(results) > 0 {
-					log.Debug("expired passwords...")
-					for _, v := range results {
-						log.Debugf("RoleName %s Role Valid Until %s", v.Rolname, v.Rolvaliduntil)
-						newPassword := GeneratePassword(request.PasswordLength)
-						newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-						pgbouncer := cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true"
-						pgpool := cluster.Spec.UserLabels[config.LABEL_PGPOOL] == "true"
-						err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, request.Namespace, pgpool, pgbouncer, request.PasswordLength)
-						if err != nil {
-							log.Error("error in updating password")
-							resp.Status.Code = msgs.Error
-							resp.Status.Msg = err.Error()
-							return resp
-						}
-					}
+				err = updatePasswordValidUntil(cluster.Spec.Name, info, request.Username, newExpireDate, request.Namespace)
+				if err != nil {
+					log.Error(err.Error())
+					resp.Status.Code = msgs.Error
+					resp.Status.Msg = err.Error()
+					return resp
 				}
 			}
-
 		}
 	}
 	return resp
@@ -353,6 +372,39 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 			return err
 		}
 	}
+
+	return err
+}
+
+// updatePasswordValidUntil  ...
+func updatePasswordValidUntil(clusterName string, p connInfo, username, passwordExpireDate, namespace string) error {
+	var err error
+	var conn *sql.DB
+
+	conn, err = sql.Open("postgres", "sslmode=disable user="+p.Username+" host="+p.Hostip+" port="+p.Port+" dbname="+p.Database+" password="+p.Password)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
+	var rows *sql.Rows
+
+	querystr := "ALTER user " + username + " VALID UNTIL '" + passwordExpireDate + "'"
+	log.Debug(querystr)
+	rows, err = conn.Query(querystr)
+	if err != nil {
+		log.Debug(err.Error())
+		return err
+	}
+
+	defer func() {
+		if conn != nil {
+			conn.Close()
+		}
+		if rows != nil {
+			rows.Close()
+		}
+	}()
 
 	return err
 }
@@ -591,6 +643,8 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
+
+	
 
 	getDefaults()
 
