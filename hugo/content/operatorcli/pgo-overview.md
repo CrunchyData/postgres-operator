@@ -583,4 +583,4 @@ Create a cluster with a Custom ConfigMap:
 | :--           | :--                                                          | :--                                                               |
 | `PGOUSERNAME` | The username (role) used for auth on the operator apiserver. | Requires that `PGOUSERPASS` be set.                               |
 | `PGOUSERPASS` | The password for used for auth on the operator apiserver.    | Requires that `PGOUSERNAME` be set.                               |
-| `PGOUSER`     | The path to the pgorole file.                                | Will be ignored if either `PGOUSERNAME` or `PGOUSERPASS` are set. |
+| `PGOUSER`     | The path to the pgouser file.                                | Will be ignored if either `PGOUSERNAME` or `PGOUSERPASS` are set. |
