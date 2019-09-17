@@ -58,6 +58,7 @@ type PgpoolTemplateFields struct {
 	Port               string
 	PrimaryServiceName string
 	ReplicaServiceName string
+	User		   string
 }
 
 const PGPOOL_SUFFIX = "-pgpool"
@@ -274,6 +275,7 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 		log.Debug("pgpool secret created")
 	}
 
+	user := cl.Spec.User
 	clusterName := cl.Spec.Name
 	pgpoolName := clusterName + PGPOOL_SUFFIX
 	log.Debugf("adding a pgpool %s", pgpoolName)
@@ -287,6 +289,7 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 		Port:               operator.Pgo.Cluster.Port,
 		SecretsName:        secretName,
 		ContainerResources: "",
+		User:		    user,
 	}
 
 	if operator.Pgo.DefaultPgpoolResources != "" {
