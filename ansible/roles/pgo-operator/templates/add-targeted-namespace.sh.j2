@@ -30,7 +30,7 @@ fi
 
 # set the labels so that this namespace is owned by this installation
 {{ kubectl_or_oc }} label namespace/{{ item }} pgo-created-by=add-script
-{{ kubectl_or_oc }} label namespace/{{ item }} vendor=crunchy
+{{ kubectl_or_oc }} label namespace/{{ item }} vendor=crunchydata
 {{ kubectl_or_oc }} label namespace/{{ item }} pgo-installation-name={{ pgo_installation_name }}
 
 # create RBAC
