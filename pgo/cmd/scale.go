@@ -65,7 +65,7 @@ func init() {
 	scaleCmd.Flags().IntVarP(&ReplicaCount, "replica-count", "", 1, "The replica count to apply to the clusters.")
 	scaleCmd.Flags().StringVarP(&ContainerResources, "resources-config", "", "", "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.")
 	scaleCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the replica storage.")
-	scaleCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key) to use in placing the primary database. If not set, any node is used.")
+	scaleCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key) to use in placing the replica database. If not set, any node is used.")
 
 }
 
