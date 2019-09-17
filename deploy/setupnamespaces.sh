@@ -31,16 +31,18 @@ done
 
 IFS=', ' read -r -a array <<< "$NAMESPACE"
 
-#echo ""
-#echo "creating namespaces for the Operator to watch and create PG clusters into..."
-#for ns in "${array[@]}"
-#do
-#	$PGO_CMD get namespace $ns > /dev/null 2> /dev/null
-#	if [ $? -eq 0 ]
-#	then
-#		echo namespace $ns is already created
-#	else
-#		$PGO_CMD create namespace $ns > /dev/null
-#		echo namespace $ns created
-#	fi
-#done
+echo ""
+echo "creating namespaces for the Operator to watch and create PG clusters into..."
+for ns in "${array[@]}"
+do
+	$PGO_CMD get namespace $ns > /dev/null 2> /dev/null
+
+	if [ $? -eq 0 ]
+	then
+		echo namespace $ns already exists, updating...
+		$PGOROOT/deploy/add-targeted-namespace.sh $ns > /dev/null
+	else
+		echo namespace $ns creating...
+		$PGOROOT/deploy/add-targeted-namespace.sh $ns > /dev/null
+	fi
+done

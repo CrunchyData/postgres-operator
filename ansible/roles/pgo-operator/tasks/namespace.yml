@@ -1,11 +1,4 @@
 ---
-- name: Wait for PGO deployment to finish rolling out in order to create Watched Namespaces
-  command: "{{ kubectl_or_oc }} rollout status deployment/postgres-operator -n {{ pgo_operator_namespace }}"
-  async: 600
-  tags:
-  - install
-  - update
-
 - name: Create Watched Namespaces
   shell: "{{ target_ns_script }}"
   vars:

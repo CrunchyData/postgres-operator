@@ -47,7 +47,7 @@ var Expired string
 var PasswordLength int
 
 // userManager ...
-func updateUser(args []string, ns string) {
+func updateUser(args []string, ns string, PasswordAgeDaysUpdate bool) {
 
 	request := msgs.UpdateUserRequest{}
 	request.Namespace = ns
@@ -57,6 +57,7 @@ func updateUser(args []string, ns string) {
 	request.Selector = Selector
 	request.Password = Password
 	request.PasswordAgeDays = PasswordAgeDays
+	request.PasswordAgeDaysUpdate = PasswordAgeDaysUpdate
 	request.Username = Username
 	request.DeleteUser = DeleteUser
 	request.ValidDays = ValidDays
