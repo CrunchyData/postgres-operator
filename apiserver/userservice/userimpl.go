@@ -699,7 +699,7 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 	re := regexp.MustCompile("^[a-z0-9.-]*$")
 	if !re.MatchString(request.Username) {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "user name is required to be lowercase letters and numbers only."
+		resp.Status.Msg = "user name is required to contain lowercase letters, numbers, '.' and '-' only."
 		return resp
 	}
 
