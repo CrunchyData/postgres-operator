@@ -32,7 +32,8 @@ else
 fi
 
 # set the labels so that this namespace is owned by this installation
-$PGO_CMD label namespace/$1 vendor=crunchy
+$PGO_CMD label namespace/$1 pgo-created-by=add-script
+$PGO_CMD label namespace/$1 vendor=crunchydata
 $PGO_CMD label namespace/$1 pgo-installation-name=$PGO_INSTALLATION_NAME
 
 # create RBAC

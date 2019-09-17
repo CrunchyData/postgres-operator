@@ -123,7 +123,7 @@ kubectl port-forward <GRAFANA_POD_NAME> -n <METRICS_NAMESPACE> 3000:3000
 oc port-forward <GRAFANA_POD_NAME> -n <METRICS_NAMESPACE> 3000:3000
 ```
 
-In a browser navigate to `https://127.0.0.1:3000` to access the Grafana dashboard.
+In a browser navigate to `http://127.0.0.1:3000` to access the Grafana dashboard.
 
 {{% notice tip %}}
 No metrics will be scraped if no exporters are available.  To create a PostgreSQL
@@ -147,7 +147,7 @@ kubectl port-forward <PROMETHEUS_POD_NAME> -n <METRICS_NAMESPACE> 9090:9090
 oc port-forward <PROMETHEUS_POD_NAME> -n <METRICS_NAMESPACE> 9090:9090
 ```
 
-In a browser navigate to `https://127.0.0.1:9090` to access the Prometheus dashboard.
+In a browser navigate to `http://127.0.0.1:9090` to access the Prometheus dashboard.
 
 {{% notice tip %}}
 No metrics will be scraped if no exporters are available.  To create a PostgreSQL 
