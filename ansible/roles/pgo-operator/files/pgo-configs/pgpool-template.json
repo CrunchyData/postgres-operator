@@ -44,10 +44,20 @@
 		    {{.ContainerResources }}
                     "env": [{
                         "name": "PG_USERNAME",
-                        "value": "{{.User}}"
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "{{.UserSecret}}",
+                                "key": "username"
+                            }
+                        }
                     }, {
                         "name": "PG_PASSWORD",
-                        "value": "password"
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "{{.UserSecret}}",
+                                "key": "password"
+                            }
+                        }
                     }, {
                         "name": "PG_PRIMARY_SERVICE_NAME",
                         "value": "{{.PrimaryServiceName}}"
