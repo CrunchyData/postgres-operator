@@ -23,10 +23,11 @@ For the cluster(s) you wish to upgrade, scale down any replicas, if necessary, t
 
 	pgo delete cluster <clustername>
 
-IMPORTANT NOTES:
-Please note the name of each cluster, 
-the namespace used, 
-and be sure not to delete the associated PVCs or CRDs!
+{{% notice warning %}}
+
+Please note the name of each cluster, the namespace used, and be sure not to delete the associated PVCs or CRDs!
+
+{{% /notice %}}
 
 ##### Step 2
 Delete the 3.5.x version of the operator by executing:
@@ -35,7 +36,10 @@ Delete the 3.5.x version of the operator by executing:
 	$COROOT/deploy/remove-crd.sh
 
 ##### Step 3
-Log in as your new Linux user and install the 4.1 Postgres Operator. Be sure to add the existing namespace to the list of watched namespaces (see the 'Getting Started->Design->Namespace' section of this document for more information)  and make sure to avoid overwriting any existing data storage.
+Log in as your new Linux user and install the 4.1 Postgres Operator. 
+
+Be sure to add the existing namespace to the Operator's list of watched namespaces (see the [Namespace] ( {{< relref "gettingstarted/Design/namespace.md" >}}) section of this document for more information) and make sure to avoid overwriting any existing data storage.
+
 
 ##### Step 4
 Once the Operator is installed and functional, create a new 4.1 cluster with the same name as was used previously. This will allow the new cluster to utilize the existing PVCs.

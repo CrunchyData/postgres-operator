@@ -15,9 +15,10 @@ You will need the following items to complete the upgrade:
 
 * The latest 4.1.0 code for the Postgres Operator available
 * The latest 4.1.0 PGO client binary
+* Ensure you have a copy of the current pgouser and pgorole files for your environment and ensure you do not overwrite the current files.  
 
-Ensure you have a copy of the current pgouser and pgorole files for your environment and ensure you do not overwrite the current files.  
 Because user and role management has changed in 4.1.0, you will need to get these files if you do not want to manually add all existing users/roles into Kubernetes secrets.
+
 If you do not have access to the current files, you can pull the information via the configmap with the following command:
 
     kubectl describe configmap pgo-config -n <namespace of pgo>
@@ -115,7 +116,7 @@ You can run:
 
     which pgo
 
-to ensure you are replacing the current binary
+to ensure you are replacing the current binary.
 
 
 ##### Step 6
@@ -167,9 +168,7 @@ By default this command updates the cluster with the values in the pgo.yaml.  If
 
     pgo upgrade <clustername> --ccp-image-tag=<imagetag>
 
--- pvc's are still out there.
-
-Once the minor upgrade is done you can scale your cluster back to the previous number of replicas:
+Once the minor upgrade is done you can scale your cluster back to the previous number of replicas, for example:
 
     pgo scale <clustername> --replica-count=2
 

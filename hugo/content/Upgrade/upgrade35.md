@@ -10,9 +10,8 @@ weight: 8
 You will need the following items to complete the upgrade:
 
 * The latest 3.5.X code for the Postgres Operator available
-* The latest 3.5.X PGO client binary
-* This should be the same user that you used in the previous installation.
-* Finally, these instructions assume you are executing from $COROOT in a terminal window and that your user has admin privileges in your Kubernetes or Openshift environment.
+* The latest 3.5.X PGO client binary 
+* Finally, these instructions assume you are executing from $COROOT in a terminal window and that you are using the same user from your previous installation. This user must also still have admin privileges in your Kubernetes or Openshift environment.
 
 ##### Step 0
 Run `pgo show config` and save this output to compare at the end to ensure you don't miss any of your current configuration changes. 
