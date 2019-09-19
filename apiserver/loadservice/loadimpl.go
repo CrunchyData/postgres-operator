@@ -48,6 +48,7 @@ type loadJobTemplateFields struct {
 	PVCName            string
 	SecurityContext    string
 	ContainerResources string
+	PGUserSecret	   string
 }
 
 type containerResourcesTemplateFields struct {
@@ -219,11 +220,7 @@ func createJob(clusterName string, template *loadJobTemplateFields, ns string) (
 	randStr := operutil.GenerateRandString(3)
 	template.Name = "pgo-load-" + clusterName + "-" + randStr
 	template.DbHost = clusterName
-	template.DbPass, err = operutil.GetSecretPassword(apiserver.Clientset, clusterName, crv1.RootSecretSuffix, ns)
-	if err != nil {
-		log.Error(err)
-		return "", err
-	}
+	template.PGUserSecret = clusterName + crv1.RootSecretSuffix
 
 	var doc2 bytes.Buffer
 	err = config.LoadTemplate.Execute(&doc2, template)
