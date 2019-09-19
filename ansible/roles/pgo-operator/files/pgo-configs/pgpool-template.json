@@ -46,7 +46,7 @@
                         "name": "PG_USERNAME",
                         "valueFrom": {
                             "secretKeyRef": {
-                                "name": "{{.UserSecret}}",
+                                "name": "{{.PGUserSecret}}",
                                 "key": "username"
                             }
                         }
@@ -54,7 +54,7 @@
                         "name": "PG_PASSWORD",
                         "valueFrom": {
                             "secretKeyRef": {
-                                "name": "{{.UserSecret}}",
+                                "name": "{{.PGUserSecret}}",
                                 "key": "password"
                             }
                         }
@@ -74,7 +74,7 @@
                 "volumes": [{
                 "name": "pgpool-conf",
                 "secret": {
-                    "secretName": "{{.SecretsName}}",
+                    "secretName": "{{.PGPoolSecret}}",
                     "defaultMode": 511
                     }
                 }],

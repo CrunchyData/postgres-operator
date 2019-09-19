@@ -53,10 +53,20 @@
                         "value": "{{.DbDatabase}}"
                     }, {
                         "name": "DB_USER",
-                        "value": "{{.DbUser}}"
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "{{.PGUserSecret}}",
+                                "key": "username"
+                            }
+                        }
                     }, {
                         "name": "DB_PASS",
-                        "value": "{{.DbPass}}"
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "{{.PGUserSecret}}",
+                                "key": "password"
+                            }
+                        }
                     }, {
                         "name": "DB_PORT",
                         "value": "{{.DbPort}}"

@@ -51,14 +51,14 @@ type PgpoolConfFields struct {
 type PgpoolTemplateFields struct {
 	Name               string
 	ClusterName        string
-	SecretsName        string
+	PGPoolSecret       string
 	CCPImagePrefix     string
 	CCPImageTag        string
 	ContainerResources string
 	Port               string
 	PrimaryServiceName string
 	ReplicaServiceName string
-	UserSecret		   string
+	PGUserSecret       string
 }
 
 const PGPOOL_SUFFIX = "-pgpool"
@@ -287,8 +287,8 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:        cl.Spec.CCPImageTag,
 		Port:               operator.Pgo.Cluster.Port,
-		SecretsName:        secretName,
-		UserSecret:			userSecret,
+		PGPoolSecret:       secretName,
+		PGUserSecret:       userSecret,
 		ContainerResources: "",
 	}
 

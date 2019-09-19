@@ -46,7 +46,7 @@
                         "name": "PG_USERNAME",
                         "valueFrom": {
                             "secretKeyRef": {
-                                "name": "{{.SecretsName}}",
+                                "name": "{{.PGBouncerSecret}}",
                                 "key": "username"
                             }
                         }
@@ -54,7 +54,7 @@
                         "name": "PG_PASSWORD",
                         "valueFrom": {
                             "secretKeyRef": {
-                                "name": "{{.SecretsName}}",
+                                "name": "{{.PGBouncerSecret}}",
                                 "key": "password"
                             }
                         }
@@ -74,7 +74,7 @@
                 "volumes": [{
                 "name": "pgbouncer-conf",
                 "secret": {
-                    "secretName": "{{.SecretsName}}",
+                    "secretName": "{{.PGBouncerSecret}}",
                     "defaultMode": 511
                     }
                 }],
