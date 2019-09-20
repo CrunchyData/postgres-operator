@@ -39,7 +39,28 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 		return
 	}
 
-	//this effectively bounces the Deployment's pod to pick up
+	// get replicalist and the deployments that need to be updated (which are also the name of the replicas)
+	replicaList := crv1.PgreplicaList{}
+	selector := config.LABEL_PG_CLUSTER + "=" + cl.Spec.Name
+	err = kubeapi.GetpgreplicasBySelector(restclient, &replicaList, selector, namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	replicaDeploymentList := []string{}
+	for _, replica := range replicaList.Items {
+		log.Debug("MinorUpgrade: adding deployment %s to list", replica.Spec.Name)
+		replicaDeploymentList = append(replicaDeploymentList, replica.Spec.Name)
+	}
+	log.Debug("MinorUpgrade: replica count for upgrade is %d", len(replicaDeploymentList, ))
+
+
+	// get backrest deployment info here.
+	// backRestDeploymentName := cl.Spec.Name + "-backrest-shared-repo"
+
+
+	//this effectively bounces the primary Deployment's pod to pick up
 	//the new image tag
 	err = kubeapi.PatchDeployment(clientset, cl.Spec.Name, namespace, "/spec/template/spec/containers/0/image", operator.Pgo.Cluster.CCPImagePrefix+"/"+cl.Spec.CCPImage+":"+upgrade.Spec.Parameters["CCPImageTag"])
 	if err != nil {
@@ -47,6 +68,20 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 		log.Error("error in doing minor upgrade")
 		return
 	}
+
+	// patch replica deployments
+	for _, deployment := range replicaList.Items {
+		err = kubeapi.PatchDeployment(clientset, deployment.Spec.Name, namespace, "/spec/template/spec/containers/0/image", operator.Pgo.Cluster.CCPImagePrefix+"/"+cl.Spec.CCPImage+":"+upgrade.Spec.Parameters["CCPImageTag"])
+		if err != nil {
+			log.Error(err)
+			log.Error("error in doing minor upgrade")
+			return
+		}	
+	}
+
+
+
+	// do this last, once all deployments have been updated.
 
 	//update the CRD with the new image tag to maintain the truth
 	log.Info("updating the pg version after cluster upgrade")
