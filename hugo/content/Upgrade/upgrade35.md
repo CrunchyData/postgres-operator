@@ -6,6 +6,14 @@ weight: 8
 ---
 ## Upgrading Postgres Operator 3.5 Minor Versions
 
+This procedure will give instructions on how to upgrade Postgres Operator 3.5 minor releases.
+
+{{% notice info %}}
+
+As with any upgrade, please ensure you have taken recent backups of all relevant data!
+
+{{% / notice %}}
+
 ##### Prerequisites.
 You will need the following items to complete the upgrade:
 
@@ -68,11 +76,14 @@ Verify this by running:
 
     pgo version
 
-You will want now want to do minor upgrades on your clusters to bring them up to the latest versions of Containers.
-For each of your clusters you will want to run the following:
+## Postgres Operator Container Upgrade Procedure
+
+At this point, the Operator should be running the latest minor version of 3.5, and new clusters will be built using the appropriate specifications defined in your pgo.yaml file. For the existing clusters, upgrades can be performed with the following steps.
+
+To bring your clusters up to the latest versions of Containers, for each of your clusters you will want to run the following:
 ```
 pgo scaledown <clustername> --query
-pgo scaledown <clustername> --target=<replica-name> --delete-date
+pgo scaledown <clustername> --target=<replica-name> --delete-data
 ```
 When you scale down the cluster you have the option of passing in the --delete-data flag on the pgo scaledown command. If you do this the pvc bound to your pod will also be deleted. If for some reason you need to keep the pvc around, you can remove this flag.
 
@@ -120,5 +131,5 @@ You've now completed the upgrade and are running Crunchy PostgreSQL Operator v3.
 
     pgo show cluster <cluster-name> 
 
-on each cluster.
+on each cluster. For this minor upgrade, most existing settings and related services (such as pgbouncer, backup schedules and existing policies) are expected to work, but should be tested for functionality and adjusted or recreated as necessary.
 

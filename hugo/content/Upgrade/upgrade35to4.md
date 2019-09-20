@@ -9,6 +9,12 @@ weight: 8
 
 This section will outline the procedure to upgrade a given cluster created using Postgres Operator 3.5.x to PGO version 4.1.
 
+{{% notice info %}}
+
+As with any upgrade, please ensure you have taken recent backups of all relevant data!
+
+{{% / notice %}}
+
 ##### Prerequisites.
 You will need the following items to complete the upgrade:
 

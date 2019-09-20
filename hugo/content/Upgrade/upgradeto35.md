@@ -6,6 +6,15 @@ weight: 8
 ---
 
 ## Upgrading to Version 3.5.0 From Previous Versions
+
+This procedure will give instructions on how to upgrade to Postgres Operator 3.5
+
+{{% notice info %}}
+
+As with any upgrade, please ensure you have taken recent backups of all relevant data!
+
+{{% / notice %}}
+
 For clusters created in prior versions that used pgbackrest, you
 will be required to first create a pgbasebackup for those clusters.
 

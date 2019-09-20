@@ -5,10 +5,15 @@ draft: false
 weight: 8
 ---
 
-## Upgrade Procedure from 4.0.1 to 4.1.0
+## Postgres Operator Upgrade Procedure from 4.0.1 to 4.1.0
 
 This procedure will give instructions on how to upgrade to Postgres Operator 4.1.0. 
-After you complete this procedure you will have updated your version of the operator and all clusters will be using the updated containers images.
+
+{{% notice info %}}
+
+As with any upgrade, please ensure you have taken recent backups of all relevant data!
+
+{{% / notice %}}
 
 ##### Prerequisites.
 You will need the following items to complete the upgrade:
@@ -83,7 +88,7 @@ You will want to use the 4.1.0 pgo.yaml file and update custom settings such as 
 
 ##### Step 3
 Create an initial Operator Admin user account.
-You can want to edit the `$PGOROOT/deploy/install-bootstrap-creds.sh` file to configure the username and password that you want for the Admin account. The default values are:
+You will need to edit the `$PGOROOT/deploy/install-bootstrap-creds.sh` file to configure the username and password that you want for the Admin account. The default values are:
 ```
 export PGOADMIN_USERNAME=pgoadmin
 export PGOADMIN_PASSWORD=examplepassword
@@ -153,8 +158,12 @@ Verify this by running:
 
     pgo version
 
-You will want now want to do minor upgrades on your clusters to bring them up to the latest versions of Postgres and Containers.
-For each of your clusters you will want to run the following:
+
+## Postgres Operator Container Upgrade Procedure
+
+At this point, the Operator will be running version 4.1.0, and new clusters will be built using the appropriate specifications defined in your pgo.yaml file. For the existing clusters, upgrades can be performed with the following steps.
+
+To bring your clusters up to the latest versions of Postgres and Containers, for each of your clusters you will want to run the following:
 ```
 pgo scaledown <clustername> --query
 pgo scaledown <clustername> --target
@@ -218,4 +227,4 @@ from the command line and running
 
     pgo show cluster <cluster-name>
 
-on each cluster.
+on each cluster. For this minor upgrade, most existing settings and related services (such as pgbouncer, backup schedules and existing policies) are expected to work, but should be tested for functionality and adjusted or recreated as necessary.
