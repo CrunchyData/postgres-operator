@@ -24,6 +24,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"github.com/crunchydata/postgres-operator/util"
+
 )
 
 // CreateUpgrade ...
@@ -104,7 +106,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns string) msgs.CreateUpg
 			}
 		}
 
-		//validate the cluster name
+		//validate the cluster name and ensure autofail is turned off for each cluster.
 		cl := crv1.Pgcluster{}
 		found, err = kubeapi.Getpgcluster(apiserver.RESTClient,
 			&cl, clusterName, ns)
@@ -113,6 +115,14 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns string) msgs.CreateUpg
 			response.Status.Msg = clusterName + " is not a valid pgcluster"
 			return response
 		}
+		
+		// check autofail enabled, error if yes.
+		if util.IsAutofailEnabled(&cl) {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = clusterName + " has autofail enabled. Upgrade cannot be done when autofail is enabled."
+			return response
+		}
+
 
 		//figure out what version we are upgrading to
 		imageToUpgradeTo := apiserver.Pgo.Cluster.CCPImageTag

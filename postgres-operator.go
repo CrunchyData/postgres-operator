@@ -181,7 +181,7 @@ func main() {
 
 	cluster.InitializeAutoFailover(Clientset, crdClient, namespaceList)
 
-	operatorupgrade.OperatorUpgrade(Clientset, crdClient, namespaceList)
+	operatorupgrade.OperatorUpdateCRPgoVersion(Clientset, crdClient, namespaceList)
 
 	fmt.Print("at end of setup, beginning wait...")
 

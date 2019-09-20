@@ -26,7 +26,8 @@ import (
 	"time"
 )
 
-func OperatorUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, ns []string) error {
+// OperatorUpdateCRPgoVersion - Update existing pgcluster custom resources to show current operator version. This is called each time the operator starts up.
+func OperatorUpdateCRPgoVersion(clientset *kubernetes.Clientset, restclient *rest.RESTClient, ns []string) error {
 	var err error
 	log.Info("OperatorUpgrade starts")
 	for i := 0; i < len(ns); i++ {

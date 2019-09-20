@@ -261,10 +261,10 @@ func preferredNode(nodes []string, targetNode string) bool {
 
 func checkAutofail(cluster *crv1.Pgcluster) error {
 	var err error
-	labels := cluster.ObjectMeta.Labels
-	failLabel := labels[config.LABEL_AUTOFAIL]
-	if failLabel == "true" {
+	
+	if util.IsAutofailEnabled(cluster) {
 		return errors.New("autofail flag is set to true, manual failover requires autofail to be set to false, use pgo update to disable autofail.")
 	}
+	
 	return err
 }
