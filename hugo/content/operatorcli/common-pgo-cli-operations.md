@@ -267,8 +267,8 @@ on a Postgres cluster when you create it as follows:
 You can set the auto-fail flag on a Postgres cluster after it is created
 by the following command:
 
-    pgo update cluster --label=autofail=false -n pgouser1
-    pgo update cluster --label=autofail=true -n pgouser1
+    pgo update cluster --autofail=false -n pgouser1
+    pgo update cluster --autofail=true -n pgouser1
 
 Note that if you do a pgbackrest restore, you will need to reset the
 autofail flag to true after the restore is completed.

@@ -78,6 +78,17 @@ You can view the Operator core logic logs with the *olog* bash function.
 
 You can view the Scheduler logs with the *slog* bash function.
 
+These logs contain the following details:
+
+	Timestamp
+	Logging Level
+	Message Content
+	Function Information
+	File Information
+	PGO version
+
+Additionally, you can view the Operator deployment Event logs with the *elog* bash function.
+
 You can enable the *pgo* CLI debugging with the following flag:
 
     pgo version --debug
