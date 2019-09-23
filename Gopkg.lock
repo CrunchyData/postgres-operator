@@ -334,7 +334,8 @@
   name = "github.com/nsqio/go-nsq"
   packages = ["."]
   pruneopts = ""
-  revision = "v1.0.7"
+  revision = "eee57a3ac4174c55924125bb15eeeda8cffb6e6f"
+  version = "v1.0.7"
 
 [[projects]]
   branch = "master"
@@ -365,7 +366,8 @@
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   pruneopts = ""
-  revision = "v1.4.0"
+  revision = "dae0fa8d5b0c810a8ab733fbd5510c7cae84eca4"
+  version = "v1.4.0"
 
 [[projects]]
   digest = "1:a1403cc8a94b8d7956ee5e9694badef0e7b051af289caad1cf668331e3ffa4f6"
@@ -657,6 +659,7 @@
     "util/homedir",
     "util/integer",
     "util/jsonpath",
+    "util/workqueue",
   ]
   pruneopts = ""
   revision = "78700dec6369ba22221b72770783300f143df150"
@@ -709,6 +712,7 @@
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/remotecommand",
+    "k8s.io/client-go/util/workqueue",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1

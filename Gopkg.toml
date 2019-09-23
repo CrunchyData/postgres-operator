@@ -16,8 +16,8 @@ name = "gopkg.in/robfig/cron.v2"
 
 [[constraint]]
   name = "github.com/nsqio/go-nsq"
-  revision = "v1.0.7"
+  version = "v1.0.7"
 
 [[constraint]]
   name = "github.com/sirupsen/logrus"
-  revision = "v1.4.0"
+  version = "v1.4.0"
