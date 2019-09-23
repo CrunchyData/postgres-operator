@@ -21,7 +21,8 @@ ADD conf/RPM-GPG-KEY-crunchydata  /
 ADD conf/crunchypg11.repo /etc/yum.repos.d/
 RUN rpm --import RPM-GPG-KEY-crunchydata
 
-RUN yum -y update && yum -y install psmisc openssh-server openssh-clients crunchy-backrest-"${BACKREST_VERSION}" postgresql11-server procps-ng \
+RUN yum -y update --disableplugin=subscription-manager \
+ && yum -y install --disableplugin=subscription-manager psmisc openssh-server openssh-clients crunchy-backrest-"${BACKREST_VERSION}" postgresql11-server procps-ng \
  && yum -y clean all
 
 VOLUME ["/sshd", "/pgdata"]
