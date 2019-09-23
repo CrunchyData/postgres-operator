@@ -865,6 +865,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.Name = name
 	spec.ClusterName = name
 	spec.Port = apiserver.Pgo.Cluster.Port
+	spec.PGBadgerPort = apiserver.Pgo.Cluster.PGBadgerPort
+	spec.ExporterPort = apiserver.Pgo.Cluster.ExporterPort
 	spec.SecretFrom = ""
 	spec.PrimaryHost = name
 	if request.Policies == "" {

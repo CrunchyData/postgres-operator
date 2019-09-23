@@ -358,6 +358,8 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 		svcFields.ServiceName = pgbouncerName
 		svcFields.ClusterName = clusterName
 		svcFields.Port = operator.Pgo.Cluster.Port
+		svcFields.PGBadgerPort = operator.Pgo.Cluster.PGBadgerPort
+		svcFields.ExporterPort = operator.Pgo.Cluster.ExporterPort
 
 		err = CreateService(clientset, &svcFields, namespace)
 		if err != nil {

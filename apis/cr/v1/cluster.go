@@ -40,6 +40,8 @@ type PgclusterSpec struct {
 	CCPImage           string               `json:"ccpimage"`
 	CCPImageTag        string               `json:"ccpimagetag"`
 	Port               string               `json:"port"`
+	PGBadgerPort       string               `json:"pgbadgerport"`
+	ExporterPort       string               `json:"exporterport"`
 	NodeName           string               `json:"nodename"`
 	PrimaryStorage     PgStorageSpec        `json:primarystorage`
 	ArchiveStorage     PgStorageSpec        `json:archivestorage`
