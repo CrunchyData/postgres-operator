@@ -21,8 +21,8 @@ ADD conf/RPM-GPG-KEY-crunchydata  /
 ADD conf/crunchypg11.repo /etc/yum.repos.d/
 RUN rpm --import RPM-GPG-KEY-crunchydata
 
-RUN yum -y update \
- && yum -y install postgresql${PGVERSION} \
+RUN yum -y update --disableplugin=subscription-manager \
+ && yum -y install --disableplugin=subscription-manager postgresql${PGVERSION} \
  && yum -y clean all
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgconf \

@@ -17,7 +17,8 @@ COPY redhat/atomic/pgo_scheduler/help.md /help.md
 COPY redhat/licenses /licenses
 COPY licenses /licenses
 
-RUN yum -y update && yum clean all -y
+RUN yum -y update --disableplugin=subscription-manager \
+ && yum clean all -y
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgo-config \
  && chown -R 2:2 /opt/cpm /pgo-config
