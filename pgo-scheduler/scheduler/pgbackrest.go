@@ -92,25 +92,27 @@ func (b BackRestBackupJob) Run() {
 			return
 		}
 
-		job, _ := kubeapi.GetJob(kubeClient, taskName, b.namespace)
+		job, found := kubeapi.GetJob(kubeClient, taskName, b.namespace)
 
-		err = kubeapi.DeleteJob(kubeClient, taskName, b.namespace)
-		if err != nil {
-			contextLogger.WithFields(log.Fields{
-				"task":  taskName,
-				"error": err,
-			}).Error("error deleting backup job")
-			return
-		}
+		if found {
+			err = kubeapi.DeleteJob(kubeClient, taskName, b.namespace)
+			if err != nil {
+				contextLogger.WithFields(log.Fields{
+					"task":  taskName,
+					"error": err,
+				}).Error("error deleting backup job")
+				return
+			}
 
-		timeout := time.Second * 60
-		err = kubeapi.IsJobDeleted(kubeClient, b.namespace, job, timeout)
-		if err != nil {
-			contextLogger.WithFields(log.Fields{
-				"task":  taskName,
-				"error": err,
-			}).Error("error waiting for job to delete")
-			return
+			timeout := time.Second * 60
+			err = kubeapi.IsJobDeleted(kubeClient, b.namespace, job, timeout)
+			if err != nil {
+				contextLogger.WithFields(log.Fields{
+					"task":  taskName,
+					"error": err,
+				}).Error("error waiting for job to delete")
+				return
+			}
 		}
 	} else if err != nil && !kerrors.IsNotFound(err) {
 		contextLogger.WithFields(log.Fields{
