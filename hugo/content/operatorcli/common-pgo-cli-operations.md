@@ -417,5 +417,28 @@ Likewise, you can create a Replica using a Preferred Node as follows:
 
 This command will cause the PostgreSQL Service to be of a specific type instead of the default ClusterIP service type.
 
+### User Management
+
+#### Create a user
+```
+pgo create user mycluster --username=someuser --password=somepassword --valid-days=10
+```
+
+This command will create a Postgres user on `mycluster` using the given username and password. You can add the `--managed` flag and the user will be managed by the operator. This means that a kubernetes secret will be created along with the Postgres user. Any users created with the `create user` command will automatically have access to all databases that were created when the cluster was created. You will need to manually update their privliges either by using an SQL policy or by using psql if you want to restrict access.
 
 
+#### Update a user
+```
+pgo update user mycluster --username=someuser --password=updatedpass
+```
+
+This command allows you to update the password for the given user on a cluster. The update user command also allows you to manage when users will expire.
+```
+pgo update user mycluster --username=someuser --valid-days=40
+```
+
+#### Delete a user
+```
+pgo delete user mycluster --username=someuser
+```
+This command will delete the give user from `mycluster`. You can delete the user from all clusters by using the `--all` flag instead of the cluster name.
