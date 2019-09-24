@@ -80,7 +80,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns string) msgs.CreateUpg
 		spec.Status = "requested"
 		spec.Parameters = make(map[string]string)
 		spec.Parameters[config.LABEL_PG_CLUSTER] = clusterName
-		spec.Name = clusterName + "-minor-upgrade"
+		spec.Name = clusterName + "-" + config.LABEL_MINOR_UPGRADE
 		spec.Namespace = ns
 		labels := make(map[string]string)
 		labels[config.LABEL_PG_CLUSTER] = clusterName
