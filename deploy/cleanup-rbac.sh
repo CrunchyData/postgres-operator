@@ -14,6 +14,13 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+# delete existing PGO SCC (SCC commands require 'oc' in place of 'kubectl'
+oc get scc pgo  > /dev/null 2> /dev/null
+if [ $? -eq 0 ]
+then
+        oc delete scc pgo
+fi
+
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get serviceaccount postgres-operator  > /dev/null 2> /dev/null
 if [ $? -eq 0 ]
 then
