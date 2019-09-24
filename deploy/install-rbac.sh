@@ -17,8 +17,10 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $DIR/cleanup-rbac.sh
 
-# create PGO SCC used with pgclusters (must use 'oc' not 'kubectl')
-oc create -f $DIR/pgo-scc.yaml
+if [[ $(oc version) =~ "openshift" ]]; then
+	# create PGO SCC used with pgclusters (must use 'oc' not 'kubectl')
+	oc create -f $DIR/pgo-scc.yaml
+fi
 
 # see if CRDs need to be created
 $PGO_CMD get crd pgclusters.crunchydata.com > /dev/null
