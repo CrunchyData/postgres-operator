@@ -335,7 +335,7 @@ As this example resource configuration shows, integer `1` is used as the ID for 
 Additionally, once all resource configurations have been defined in the `inventory`, they can then be used to specify the default resource configurations that should be utilized for the various PG containers created by the operator.  This is done using the following variables, which are also defined in the  `inventory`:
 
 ```ini
-default_container_resources='small'
+default_container_resources='large'
 default_load_resources='small'
 default_lspvc_resources='small'
 default_rmdata_resources='small'
