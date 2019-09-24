@@ -9,7 +9,10 @@ allowedCapabilities: null
 apiVersion: security.openshift.io/v1
 defaultAddCapabilities: null
 fsGroup:
-  type: RunAsAny
+  type: MustRunAs
+  ranges: 
+  - max: 26
+    min: 26
 groups:
 - system:authenticated
 kind: SecurityContextConstraints
@@ -17,7 +20,7 @@ metadata:
   annotations:
     kubernetes.io/description: scc for postgres
   name: pgo
-priority: null
+priority: 1
 readOnlyRootFilesystem: false
 requiredDropCapabilities:
 - KILL
