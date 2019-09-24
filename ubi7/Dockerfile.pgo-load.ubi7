@@ -30,7 +30,7 @@ RUN yum -y update --disableplugin=subscription-manager \
 	gettext \
 	hostname \
 	procps-ng \
- && yum -y install --disableplugin=subscription-manager postgresql${PGVERSION} \
+ && yum -y install --disableplugin=subscription-manager --setopt=skip_missing_names_on_install=False postgresql${PGVERSION} \
  && yum clean all -y
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf
