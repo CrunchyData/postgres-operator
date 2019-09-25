@@ -20,7 +20,7 @@ RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/r
 RUN yum -y update && \
 #yum -y install epel-release && \
 yum -y install --disablerepo="${PGDG_REPO_DISABLE}" \
-    psmisc openssh-server openssh-clients pgbackrest-"${BACKREST_VERSION}" hostname pgocps-ng && \
+    psmisc openssh-server openssh-clients pgbackrest-"${BACKREST_VERSION}" hostname procps-ng && \
 yum -y clean all
 
 RUN groupadd pgbackrest -g 2000 && useradd pgbackrest -u 2000 -g 2000
