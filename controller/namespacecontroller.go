@@ -124,6 +124,13 @@ func (c *NamespaceController) onUpdate(oldObj, newObj interface{}) {
 		return
 	} else {
 		log.Debugf("NamespaceController: onUpdate crunchy namespace updated %s", newNs.ObjectMeta.SelfLink)
+		c.ThePodController.SetupWatch(newNs.Name)
+		c.TheJobController.SetupWatch(newNs.Name)
+		c.ThePgpolicyController.SetupWatch(newNs.Name)
+		c.ThePgbackupController.SetupWatch(newNs.Name)
+		c.ThePgreplicaController.SetupWatch(newNs.Name)
+		c.ThePgclusterController.SetupWatch(newNs.Name)
+		c.ThePgtaskController.SetupWatch(newNs.Name)
 	}
 
 }
