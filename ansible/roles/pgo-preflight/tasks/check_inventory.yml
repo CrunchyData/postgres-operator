@@ -35,3 +35,5 @@
     - primary_storage
     - replica_storage
     - pgo_client_version
+    - pgbadgerport
+    - exporterport

@@ -333,6 +333,8 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 		svcFields.ServiceName = pgpoolName
 		svcFields.ClusterName = clusterName
 		svcFields.Port = operator.Pgo.Cluster.Port
+		svcFields.PGBadgerPort = operator.Pgo.Cluster.PGBadgerPort
+		svcFields.ExporterPort = operator.Pgo.Cluster.ExporterPort
 
 		err = CreateService(clientset, &svcFields, namespace)
 		if err != nil {

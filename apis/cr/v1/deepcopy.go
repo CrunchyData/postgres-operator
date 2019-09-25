@@ -117,6 +117,8 @@ func (in *Pgcluster) DeepCopyInto(out *Pgcluster) {
 		CCPImage:           in.Spec.CCPImage,
 		CCPImageTag:        in.Spec.CCPImageTag,
 		Port:               in.Spec.Port,
+		PGBadgerPort:       in.Spec.PGBadgerPort,
+		ExporterPort:       in.Spec.ExporterPort,
 		NodeName:           in.Spec.NodeName,
 		PrimaryStorage:     in.Spec.PrimaryStorage,
 		ReplicaStorage:     in.Spec.ReplicaStorage,

@@ -151,6 +151,8 @@ The following are the variables available for configuration:
 | `delete_watched_namespaces`       | false       | Set to configure whether or not the PGO watched namespaces (defined using variable `namespace`) are deleted when uninstalling the PGO.                                         |
 | `delete_metrics_namespace`        | false       | Set to configure whether or not the metrics namespace (defined using variable `metrics_namespace`) is deleted when uninstalling the metrics infrastructure                     |
 | `pgo_cluster_admin`               | false       | Determines whether or not the `cluster-admin` role is assigned to the PGO service account. Must be `true` to enable PGO namespace & role creation when installing in OpenShift.  |
+| `pgbadgerport`                    | 10000       | Set to configure the default port used to connect to pgbadger.  |
+| `exporter`                        | 9187        | Set to configure the default port used to connect to postgres exporter.  |
 
 {{% notice tip %}}
 To retrieve the `kubernetes_context` value for Kubernetes installs, run the following command:
@@ -200,6 +202,8 @@ PostgreSQL Operator:
 * `replica_storage`
 * `backrest_storage`
 * `backup_storage`
+* `pgbadgerport`
+* `exporterport`
 
 Additionally, `storage` variables will need to be defined to provide the Crunchy PGO with any required storage configuration.  Guidance for defining `storage` variables can be found in the next section.
 
