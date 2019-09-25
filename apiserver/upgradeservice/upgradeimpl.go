@@ -24,7 +24,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"github.com/crunchydata/postgres-operator/util"
+	// "github.com/crunchydata/postgres-operator/util"
 
 )
 
@@ -116,14 +116,6 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns string) msgs.CreateUpg
 			return response
 		}
 		
-		// check autofail enabled, error if yes.
-		if util.IsAutofailEnabled(&cl) {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = clusterName + " has autofail enabled. Upgrade cannot be done when autofail is enabled."
-			return response
-		}
-
-
 		//figure out what version we are upgrading to
 		imageToUpgradeTo := apiserver.Pgo.Cluster.CCPImageTag
 		if request.CCPImageTag != "" {

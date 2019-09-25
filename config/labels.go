@@ -61,6 +61,8 @@ const LABEL_IS_REPLICA = "is-replica"
 const LABEL_IS_BACKUP = "is-backup"
 
 const LABEL_MINOR_UPGRADE = "minor-upgrade"
+const LABEL_UPGRADE_IN_PROGRESS = "upgrade-in-progress"
+const LABEL_UPGRADE_COMPLETED = "upgrade-complete"
 const LABEL_UPGRADE_REPLICA = "upgrade-replicas"
 const LABEL_UPGRADE_PRIMARY = "upgrade-primary"
 const LABEL_UPGRADE_BACKREST = "upgrade-backrest"

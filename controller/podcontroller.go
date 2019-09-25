@@ -115,12 +115,12 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	// check here if cluster has an inUpgrade flag set. 
-	clusterInMinorUpgrade := pgcluster.Labels[config.LABEL_MINOR_UPGRADE] == "true" 
+	// check here if cluster has an upgrade in progress flag set. 
+	clusterInMinorUpgrade := pgcluster.Labels[config.LABEL_MINOR_UPGRADE] == config.LABEL_UPGRADE_IN_PROGRESS 
 	// log.Debugf("Cluster: %s Minor Upgrade: %s ", clusterName, clusterInMinorUpgrade)
 
 	// have a pod coming back up from upgrade and is ready - time to kick off the next pod.
-	if clusterInMinorUpgrade && isUpgradeablePostgresPod(newpod) {
+	if clusterInMinorUpgrade && isUpgradedPostgresPod(newpod, oldpod) {
 		upgradeTaskName := clusterName + "-" + config.LABEL_MINOR_UPGRADE
 		clusteroperator.ProcessNextUpgradeItem(c.PodClientset, c.PodClient, clusterName, upgradeTaskName, newpod.ObjectMeta.Namespace)
 	}
@@ -325,9 +325,10 @@ func isPostgresPod(newpod *apiv1.Pod) bool {
 	}
 	return true
 }
-// isUpgradeablePostgresPod - determines of the pod is one that could be getting a minor upgrade
+// isUpgradedPostgresPod - determines of the pod is one that could be getting a minor upgrade
 // differs from above check in that the backrest repo pod is upgradeable. 
-func isUpgradeablePostgresPod(newpod *apiv1.Pod) bool {
+func isUpgradedPostgresPod(newpod *apiv1.Pod, oldPod *apiv1.Pod) bool {
+
 
 	clusterName := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
 	replicaServiceName := clusterName + "-replica"
@@ -339,8 +340,17 @@ func isUpgradeablePostgresPod(newpod *apiv1.Pod) bool {
 		}
 	}
 
-	// only care about pods that have gone ready
-	if podIsReady {
+	var oldPodStatus bool 
+	for _, v := range oldPod.Status.ContainerStatuses {
+		if v.Name == "database" {
+			oldPodStatus = v.Ready
+		}
+	}
+
+	log.Debugf("[isUpgradedPostgesPod] oldstatus: %s newstatus: %s ", oldPodStatus, podIsReady)
+
+	// only care about pods that have changed from !ready to ready
+	if podIsReady && !oldPodStatus {
 
 		// eliminate anything we don't care about - it will be most things
 		if newpod.ObjectMeta.Labels[config.LABEL_JOB_NAME] != "" {
@@ -365,24 +375,22 @@ func isUpgradeablePostgresPod(newpod *apiv1.Pod) bool {
 
 		if newpod.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] == "true"  {
 			log.Debugf("Minor Upgrade: upgraded pgo-backrest-repo found %s", newpod.Name)
-		// any special processing needed for backrest?
 			return true
 		}
 
+		// primary identified by service-name being same as cluster name
 		if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
 			log.Debugf("Minor Upgrade: upgraded primary found %s", newpod.Name)
-			// any special processing needed for primary?
 			return true
 		}
 
 		if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == replicaServiceName {
 			log.Debugf("Minor Upgrade: upgraded replica found %s", newpod.Name)
-			// any special processing needed for replicas?
 			return true
 		}
 
-		// This indicates there is a pod we are neither eliminating or approving - shouldn't be the case
-		log.Debugf(" **** Minor Upgrade: unexpected isUpgradeable pod found: [%s] ****", newpod.Name)
+		// This indicates there is a pod we didn't account for - shouldn't be the case
+		log.Debugf(" **** Minor Upgrade: unexpected isUpgraded pod found: [%s] ****", newpod.Name)
 	}
 	return false
 }
