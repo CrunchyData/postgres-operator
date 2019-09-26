@@ -17,24 +17,24 @@ package cluster
 
 import (
 	"strings"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
-//	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"github.com/crunchydata/postgres-operator/util"
-	// kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 )
 
 // AddUpgrade implements the upgrade workflow for cluster minor upgrade
 func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, upgrade *crv1.Pgtask, namespace string) {
 
-	// TODO: persist original and target CCP_IMAGE_TAGs in pgtask
-	// TODO: persist autofail state of cluster in pgtask(?)
+	// TODO: persist original and target CCP_IMAGE_TAGs in pgtask - think so...
 
 	upgradeTargetClusterName := upgrade.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
 
@@ -94,6 +94,7 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 		log.Error("error in updating minor upgrade pgtask to in progress status " + err.Error())
 	}
 
+	publishMinorUpgradeStartedEvent(&currentTask, &cl, namespace)
 
 	// start the upgrade
 	ProcessNextUpgradeItem(clientset, restclient, cl.Spec.Name, currentTask.Spec.Name, namespace)
@@ -134,6 +135,9 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 	replicaTargets := upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_REPLICA]
 	backrestTargetName := upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_BACKREST]
 	primaryTargetName := upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_PRIMARY]
+
+
+	autoFailEnabled := util.IsAutofailEnabled(&cluster)
 
 	// check for replica's to upgrade
 	if len(replicaTargets) > 0 {
@@ -199,13 +203,22 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 	} else if len (primaryTargetName) > 0 {
 	// primary to upgrade - should always be one of these.
 
+
+
+		// we update the cluster image version here due to timing issues when autofail takes over after the primary is bounced
+		// If we don't do this now, then one of the replicas will come back up with the old container image.
+		if autoFailEnabled {
+			upgradedImageTag := upgradeTask.Spec.Parameters["CCPImageTag"]
+			updateClusterCCPImage(restclient, upgradedImageTag, clusterName, namespace)
+		}
+
 		log.Debug("Minor Upgrade: primary")
 		log.Debug("About to patch primary: ", primaryTargetName)
 		err = kubeapi.PatchDeployment(clientset, primaryTargetName, namespace, "/spec/template/spec/containers/0/image", 
 			operator.Pgo.Cluster.CCPImagePrefix+"/"+cluster.Spec.CCPImage+":"+upgradeTask.Spec.Parameters["CCPImageTag"])
 		if err != nil {
 			log.Error(err)
-			log.Error("error in doing replica minor upgrade")
+			log.Error("error in doing primary minor upgrade")
 			return
 		}
 
@@ -221,22 +234,24 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 
 	} else {
 		// No other deployments  left to upgrade, complete the upgrade
+		completeUpgrade(clientset, restclient, &upgradeTask, autoFailEnabled, clusterName, namespace)
 
-		completeUpgrade(clientset, restclient, &upgradeTask, clusterName, namespace)
-
+		publishMinorUpgradeCompleteEvent(&upgradeTask, &cluster, namespace)
 	}
 }
 
 
 // completeUpgrade - makes any finishing changes required to complete the upgrade and
 // does final updates to the task and cluster. 
-func completeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, upgrade *crv1.Pgtask, clusterName, namespace string) {
+func completeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, upgradeTask *crv1.Pgtask, autoFail bool, clusterName, namespace string) {
 
 	log.Debug("Minor Upgrade: Completing...")
 
-	upgradedImageTag := upgrade.Spec.Parameters["CCPImageTag"]
-
-	updateClusterCCPImage(restclient, upgradedImageTag, clusterName, namespace)
+	// update cluster image here when autofail is not enabled. When enabled, it gets updated just before primary is bounced.
+	if !autoFail {
+		upgradedImageTag := upgradeTask.Spec.Parameters["CCPImageTag"]
+		updateClusterCCPImage(restclient, upgradedImageTag, clusterName, namespace)
+	}
 
 	removeMinorUpgradeLabelFromCluster(clientset, restclient, clusterName, namespace)
 
@@ -305,9 +320,55 @@ func removeMinorUpgradeLabelFromCluster(clientset *kubernetes.Clientset, restcli
 	return err
 }
 
-// publishMinorUpgradeCompleteEvent - indicates that a minor upgrade has successfully completed
-func publishMinorUpgradeCompleteEvent() {
+func publishMinorUpgradeStartedEvent(upgradeTask *crv1.Pgtask, cluster *crv1.Pgcluster, namespace string) {
 
+	//publish event for failover
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventUpgradeClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  upgradeTask.ObjectMeta.Labels[config.LABEL_PGOUSER],
+			Topic:     topics,
+			Timestamp: time.Now(),
+			EventType: events.EventUpgradeCluster,
+		},
+		Clustername:       cluster.Name,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err)
+	}
+
+
+}
+
+
+
+// publishMinorUpgradeCompleteEvent - indicates that a minor upgrade has successfully completed
+func publishMinorUpgradeCompleteEvent(upgradeTask *crv1.Pgtask, cluster *crv1.Pgcluster, namespace string) {
+
+	//capture the cluster creation event
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventUpgradeClusterCompletedFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  cluster.Spec.UserLabels[config.LABEL_PGOUSER],
+			Topic:     topics,
+			Timestamp: time.Now(),
+			EventType: events.EventUpgradeClusterCompleted,
+		},
+		Clustername:       cluster.Name,
+	}
+
+	err := events.Publish(f)
+	if err != nil {
+		log.Error(err.Error())
+	}
 
 }
 

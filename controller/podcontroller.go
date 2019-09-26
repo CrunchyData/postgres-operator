@@ -304,23 +304,23 @@ func (c *PodController) checkAutofailLabel(newpod *apiv1.Pod, ns string) bool {
 
 func isPostgresPod(newpod *apiv1.Pod) bool {
 	if newpod.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] == "true" {
-		log.Debugf("pgo-backrest-repo found %s", newpod.Name)
+	// log.Debugf("pgo-backrest-repo found %s", newpod.Name)
 		return false
 	}
 	if newpod.ObjectMeta.Labels[config.LABEL_JOB_NAME] != "" {
-		log.Debugf("job pod found [%s]", newpod.Name)
+		// log.Debugf("job pod found [%s]", newpod.Name)
 		return false
 	}
 	if newpod.ObjectMeta.Labels[config.LABEL_NAME] == "postgres-operator" {
-		log.Debugf("postgres-operator-pod found [%s]", newpod.Name)
+		// log.Debugf("postgres-operator-pod found [%s]", newpod.Name)
 		return false
 	}
 	if newpod.ObjectMeta.Labels[config.LABEL_PGPOOL_POD] == "true" {
-		log.Debugf("pgpool pod found [%s]", newpod.Name)
+		// log.Debugf("pgpool pod found [%s]", newpod.Name)
 		return false
 	}
 	if newpod.ObjectMeta.Labels[config.LABEL_PGBOUNCER] == "true" {
-		log.Debugf("pgbouncer pod found [%s]", newpod.Name)
+		// log.Debugf("pgbouncer pod found [%s]", newpod.Name)
 		return false
 	}
 	return true
