@@ -20,7 +20,7 @@ metadata:
   annotations:
     kubernetes.io/description: scc for postgres
   name: pgo
-priority: 1
+priority: null
 readOnlyRootFilesystem: false
 requiredDropCapabilities:
 - KILL
