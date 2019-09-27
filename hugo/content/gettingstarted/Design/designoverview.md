@@ -65,6 +65,10 @@ are captured in a unique pgcluster resource for that Postgres cluster
  * pgbackup - when you run a pgbasebackup, a pgbackup is created to hold the workflow and status of the last backup job, this CRD will eventually be deprecated in favor of a more general pgtask resource
  * pgreplica - when you create a Postgres replica, a pgreplica CRD is created to define that replica
 
+## Security Context Constraints
+
+In an Openshift installation of the PostgreSQL Operator, a custom Security Context Constraint (SCC) is used to customize the control permissions for the *pgcluster* pods. The PGO SCC adds file system group (fsgroup) 26 to the pod's existing security context and will be used in place of Openshift's default *restricted* SCC.
+
 ## Event Listeners
 
 Kubernetes events are created for the Operator CRD resources when
