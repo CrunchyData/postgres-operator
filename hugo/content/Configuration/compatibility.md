@@ -9,12 +9,39 @@ weight: 1
 ## Container Dependencies
 
 The Operator depends on the Crunchy Containers and there are 
-version dependencies between the two projects.
+version dependencies between the two projects. Below are the operator releases and their dependent container release. For reference, the Postgres and PgBackrest versions for each container release are also listed.
 
-| Operator Release   |      Container Release      |
-|:----------|:-------------|
-| 4.1.0 | 2.4.2  |
-| 3.5.2 | 2.3.1  |
+| Operator Release   |      Container Release      | Postgres | PgBackrest Version
+|:----------|:-------------|:------------|:--------------
+| 4.1.0 | 2.4.2  | 11.5 | 2.17 |
+|||10.10| 2.17|
+|||9.6.15|2.17|
+|||9.5.19|2.17|
+||||
+| 4.0.1 | 2.4.1  | 11.4 | 2.13 |
+|||10.9| 2.13|
+|||9.6.14|2.13|
+|||9.5.18|2.13|
+||||
+| 4.0.0 | 2.4.0  | 11.3 | 2.13 |
+|||10.8| 2.13|
+|||9.6.13|2.13|
+|||9.5.17|2.13|
+||||
+| 3.5.4 | 2.3.3 | 11.4| 2.13 |
+|||10.9| 2.13|
+|||9.6.14|2.13|
+|||9.5.18|2.13|
+||||
+| 3.5.3 | 2.3.2 | 11.3| 2.13 |
+|||10.8| 2.13|
+|||9.6.13|2.13|
+|||9.5.17|2.13|
+||||
+| 3.5.2 | 2.3.1  | 11.2| 2.10 |
+|||10.7| 2.10|
+|||9.6.12|2.10|
+|||9.5.16|2.10|
 
 Features sometimes are added into the underlying Crunchy Containers
 to support upstream features in the Operator thus dictating a

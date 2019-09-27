@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"time"
 
 	"github.com/crunchydata/postgres-operator/apiserver"
@@ -34,8 +35,8 @@ func New(label, namespace string, nsList []string, client *kubernetes.Clientset)
 	restClient = apiserver.RESTClient
 	kubeClient = client
 	cronClient := cv2.New()
-	var p phony
-	cronClient.AddJob("* * * * *", p)
+	cronClient.AddFunc("* * * * *", phony)
+	cronClient.AddFunc("* * * * *", heartbeat)
 
 	return &Scheduler{
 		namespace:     namespace,
@@ -113,11 +114,17 @@ func (s *Scheduler) schedule(st ScheduleTemplate) (cv2.EntryID, error) {
 	return s.CronClient.AddJob(st.Schedule, job)
 }
 
-type phony string
-
-func (p phony) Run() {
-	// This is a phony job that register with the cron service
-	// that does nothing to prevent a bug that runs newly scheduled
-	// jobs multiple times.
+// phony implements a no-op schedule job to prevent a bug that runs newly
+// scheduled jobs multiple times
+func phony() {
 	_ = time.Now()
+}
+
+// heartbeat modifies a sentinel file used as part of the liveness test
+// for the scheduler
+func heartbeat() {
+	err := ioutil.WriteFile("/tmp/scheduler.hb", []byte(time.Now().String()), 0644)
+	if err != nil {
+		log.Errorln("error writing heartbeat file: ", err)
+	}
 }

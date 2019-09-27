@@ -55,6 +55,8 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		ServiceName: cl.Spec.Name,
 		ClusterName: cl.Spec.Name,
 		Port:        cl.Spec.Port,
+		PGBadgerPort: cl.Spec.PGBadgerPort,
+		ExporterPort: cl.Spec.ExporterPort,
 		ServiceType: st,
 	}
 

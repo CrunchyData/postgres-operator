@@ -203,6 +203,8 @@ type ClusterStruct struct {
 	Metrics                 bool   `yaml:"Metrics"`
 	Badger                  bool   `yaml:"Badger"`
 	Port                    string `yaml:"Port"`
+	PGBadgerPort            string `yaml:"PGBadgerPort"`
+	ExporterPort            string `yaml:"ExporterPort"`
 	User                    string `yaml:"User"`
 	ArchiveTimeout          string `yaml:"ArchiveTimeout"`
 	Database                string `yaml:"Database"`
@@ -278,6 +280,9 @@ var log_statement_values = []string{"ddl", "none", "mod", "all"}
 const DEFAULT_LOG_STATEMENT = "none"
 const DEFAULT_LOG_MIN_DURATION_STATEMENT = "60000"
 const DEFAULT_BACKREST_PORT = 2022
+const DEFAULT_PGBADGER_PORT = "10000"
+const DEFAULT_EXPORTER_PORT = "9187"
+const DEFAULT_POSTGRES_PORT = "5432"
 const DEFAULT_BACKREST_SSH_KEY_BITS = 2048
 
 func (c *PgoConfig) Validate() error {
@@ -288,6 +293,31 @@ func (c *PgoConfig) Validate() error {
 		c.Cluster.BackrestPort = DEFAULT_BACKREST_PORT
 		log.Infof("setting BackrestPort to default %d", c.Cluster.BackrestPort)
 	}
+	if c.Cluster.PGBadgerPort == "" {
+		c.Cluster.PGBadgerPort = DEFAULT_PGBADGER_PORT
+		log.Infof("setting PGBadgerPort to default %s", c.Cluster.PGBadgerPort)
+	} else {
+		if _, err := strconv.Atoi(c.Cluster.PGBadgerPort); err != nil {
+			return errors.New(errPrefix + "Invalid PGBadgerPort: " + err.Error())
+		}
+	}
+    if c.Cluster.ExporterPort == "" {
+		c.Cluster.ExporterPort = DEFAULT_EXPORTER_PORT
+		log.Infof("setting ExporterPort to default %s", c.Cluster.ExporterPort)
+	} else {
+		if _, err := strconv.Atoi(c.Cluster.ExporterPort); err != nil {
+			return errors.New(errPrefix + "Invalid ExporterPort: " + err.Error())
+		}
+	}
+	if c.Cluster.Port == "" {
+		c.Cluster.Port = DEFAULT_POSTGRES_PORT
+		log.Infof("setting Postgres Port to default %s", c.Cluster.Port)
+	} else {
+		if _, err := strconv.Atoi(c.Cluster.Port); err != nil {
+			return errors.New(errPrefix + "Invalid Port: " + err.Error())
+		}
+	}
+
 
 	if c.Cluster.LogStatement != "" {
 		found := false

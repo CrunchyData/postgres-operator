@@ -87,6 +87,9 @@ backrest='true'
 badger='false'
 metrics='false'
 
+# pgbadger Defaults
+pgbadgerport='10000'
+
 # pgBackRest Defaults
 archive_mode='true'
 archive_timeout=60
@@ -228,6 +231,7 @@ resource2_limits_cpu=4.0
 
 # Note: Ansible will create namespaces that don't exist
 metrics_namespace='metrics'
+exporterport='9187'
 
 grafana_install='false'
 grafana_admin_username='admin'
