@@ -268,7 +268,7 @@ func FailUpgradeWithError(upgradeTaskName, errorText string) {
 func updateClusterCCPImage(restclient *rest.RESTClient, upgradedCCPImageTag,  clusterName, namespace string) {
 
 	//update the CRD with the new image tag to maintain the truth
-	log.Info("updating the pg version after cluster upgrade")
+	log.Info("updating the ccpimagetag in the pgcluster CR.")
 	err := util.Patch(restclient, "/spec/ccpimagetag", upgradedCCPImageTag, crv1.PgclusterResourcePlural, clusterName, namespace)
 
 	if err != nil {
