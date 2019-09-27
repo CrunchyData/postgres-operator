@@ -136,7 +136,7 @@ The following are the variables available for configuration:
 | `pgo_image_prefix`                | crunchydata | Configures the image prefix used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc).                                             |
 | `pgo_image_tag`                   |             | Configures the image tag used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc)                                                 |
 | `pgo_operator_namespace`          |             | Set to configure the namespace where Operator will be deployed.                                                                                                                  |
-| `pgo_tls_no_verify`               |             | Set to configure Operator to verify TLS certificates.                                                                                                                            |
+| `pgo_tls_no_verify`               | false       | Set to configure Operator to verify TLS certificates.                                                                                                                            |
 | `pgo_disable_tls`                 | false       | Set to configure whether or not TLS should be enabled for the Crunchy PostgreSQL Operator apiserver.                                                                             |
 | `pgo_apiserver_port`              | 8443        | Set to configure the port used by the Crunchy PostgreSQL Operator apiserver.                                                                                                     |
 | `pgo_disable_eventing`            | false       | Set to configure whether or not eventing should be enabled for the Crunchy PostgreSQL Operator installation.                                                                     |
@@ -185,7 +185,6 @@ PostgreSQL Operator:
 * `ccp_image_prefix`
 * `ccp_image_tag`
 * `pgo_client_version`
-* `pgo_tls_no_verify`
 * `auto_failover`
 * `backrest`
 * `badger`
@@ -193,8 +192,11 @@ PostgreSQL Operator:
 * `archive_mode`
 * `archive_timeout`
 * `auto_failover_sleep_secs`
+* `auto_failover_replace_replica`
 * `db_password_age_days`
 * `db_password_length`
+* `create_rbac`
+* `db_name`
 * `db_port`
 * `db_replicas`
 * `db_user`
@@ -204,6 +206,7 @@ PostgreSQL Operator:
 * `backup_storage`
 * `pgbadgerport`
 * `exporterport`
+* `scheduler_timeout`
 
 Additionally, `storage` variables will need to be defined to provide the Crunchy PGO with any required storage configuration.  Guidance for defining `storage` variables can be found in the next section.
 
