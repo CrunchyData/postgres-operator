@@ -4,7 +4,7 @@
     "metadata": {
         "name": "postgres-operator",
         "labels": {
-        	"vendor": "crunchydata"
+            "vendor": "crunchydata"
         }
     },
     "spec": {
@@ -13,12 +13,13 @@
             "metadata": {
                 "labels": {
                     "name": "postgres-operator",
-        	    "vendor": "crunchydata"
+                    "vendor": "crunchydata"
                 }
             },
             "spec": {
                 "serviceAccountName": "postgres-operator",
-                "containers": [{
+                "containers": [
+                    {
                         "name": "apiserver",
                         "image": "$PGO_IMAGE_PREFIX/pgo-apiserver:$PGO_IMAGE_TAG",
                         "imagePullPolicy": "IfNotPresent",
@@ -27,6 +28,20 @@
                                 "containerPort": $PGO_APISERVER_PORT
                             }
                         ],
+                        "readinessProbe": {
+                            "tcpSocket": {
+                                "port": $PGO_APISERVER_PORT
+                            },
+                            "initialDelaySeconds": 15,
+                            "periodSeconds": 5
+                        },
+                        "livenessProbe": {
+                            "tcpSocket": {
+                                "port": $PGO_APISERVER_PORT
+                            },
+                            "initialDelaySeconds": 15,
+                            "periodSeconds": 5
+                        },
                         "env": [
                             {
                                 "name": "CRUNCHY_DEBUG",
@@ -67,20 +82,21 @@
                         ],
                         "volumeMounts": [
                         ]
-                    }, {
+                    }, 
+                    {
                         "name": "operator",
                         "image": "$PGO_IMAGE_PREFIX/postgres-operator:$PGO_IMAGE_TAG",
                         "imagePullPolicy": "IfNotPresent",
-			"readinessProbe": {
-				"exec": {
-					"command": [
-						"ls",
-						"/tmp"
-					]
-				},
-				"initialDelaySeconds": 4,
-				"periodSeconds": 5
-			},
+                        "readinessProbe": {
+                            "exec": {
+                                "command": [
+                                    "ls",
+                                    "/tmp"
+                                ]
+                            },
+                            "initialDelaySeconds": 4,
+                            "periodSeconds": 5
+                        },
                         "env": [
                             {
                                 "name": "CRUNCHY_DEBUG",
@@ -121,19 +137,22 @@
                         ],
                         "volumeMounts": [
                         ]
-                    }, {
+                    }, 
+                    {
                         "name": "scheduler",
                         "image": "$PGO_IMAGE_PREFIX/pgo-scheduler:$PGO_IMAGE_TAG",
-			"readinessProbe": {
-				"exec": {
-					"command": [
-						"ls",
-						"/tmp"
-					]
-				},
-				"initialDelaySeconds": 4,
-				"periodSeconds": 5
-			},
+                        "livenessProbe": {
+                            "exec": {
+                                "command": [
+                                   "bash",
+                                    "-c",
+                                    "test -n \"$(find /tmp/scheduler.hb -newermt '61 sec ago')\""
+                                ]
+                            },
+                            "failureThreshold": 2,
+                            "initialDelaySeconds": 60,
+                            "periodSeconds": 60
+                        },
                         "env": [
                             {
                                 "name": "PGO_OPERATOR_NAMESPACE",
@@ -151,18 +170,33 @@
                                 "name": "TIMEOUT",
                                 "value": "3600"
                             },
-			    {
-				"name": "EVENT_ADDR",
-                        	"value": "localhost:4150"
-			    }
+                            {
+                                "name": "EVENT_ADDR",
+                                "value": "localhost:4150"
+                            }
                         ],
                         "volumeMounts": [
                         ],
                         "resources": {},
                         "imagePullPolicy": "IfNotPresent"
-                    }, {
+                    }, 
+                    {
                         "name": "event",
                         "image": "$PGO_IMAGE_PREFIX/pgo-event:$PGO_IMAGE_TAG",
+                        "readinessProbe": {
+                            "tcpSocket": {
+                                "port": 4150
+                            },
+                            "initialDelaySeconds": 15,
+                            "periodSeconds": 5
+                        },
+                        "livenessProbe": {
+                            "tcpSocket": {
+                                "port": 4150
+                            },
+                            "initialDelaySeconds": 15,
+                            "periodSeconds": 5
+                        },
                         "env": [
                             {
                                 "name": "TIMEOUT",

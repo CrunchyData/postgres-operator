@@ -6,6 +6,8 @@ Cluster:
   Badger:  false
   CCPImageTag:  centos7-11.5-2.4.2
   Port:  5432
+  PGBadgerPort: 10000
+  ExporterPort: 9187
   User:  testuser
   Database:  userdb
   PasswordAgeDays:  60

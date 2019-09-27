@@ -57,15 +57,13 @@ type PgbouncerConfFields struct {
 type PgbouncerTemplateFields struct {
 	Name               string
 	ClusterName        string
-	SecretsName        string
+	PGBouncerSecret    string
 	CCPImagePrefix     string
 	CCPImageTag        string
 	Port               string
 	PrimaryServiceName string
 	ReplicaServiceName string
 	ContainerResources string
-	PgBouncerUser      string
-	PgBouncerPass      string
 }
 
 // connInfo ....
@@ -316,9 +314,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:        cl.Spec.CCPImageTag,
 		Port:               operator.Pgo.Cluster.Port,
-		PgBouncerUser:      secretUser,
-		PgBouncerPass:      secretPass,
-		SecretsName:        secretName,
+		PGBouncerSecret:    secretName,
 		ContainerResources: "",
 	}
 
@@ -362,6 +358,8 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 		svcFields.ServiceName = pgbouncerName
 		svcFields.ClusterName = clusterName
 		svcFields.Port = operator.Pgo.Cluster.Port
+		svcFields.PGBadgerPort = operator.Pgo.Cluster.PGBadgerPort
+		svcFields.ExporterPort = operator.Pgo.Cluster.ExporterPort
 
 		err = CreateService(clientset, &svcFields, namespace)
 		if err != nil {

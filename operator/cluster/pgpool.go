@@ -51,14 +51,14 @@ type PgpoolConfFields struct {
 type PgpoolTemplateFields struct {
 	Name               string
 	ClusterName        string
-	SecretsName        string
+	PGPoolSecret       string
 	CCPImagePrefix     string
 	CCPImageTag        string
 	ContainerResources string
 	Port               string
 	PrimaryServiceName string
 	ReplicaServiceName string
-	User		   string
+	PGUserSecret       string
 }
 
 const PGPOOL_SUFFIX = "-pgpool"
@@ -275,7 +275,7 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 		log.Debug("pgpool secret created")
 	}
 
-	user := cl.Spec.User
+	userSecret := cl.Spec.UserSecretName
 	clusterName := cl.Spec.Name
 	pgpoolName := clusterName + PGPOOL_SUFFIX
 	log.Debugf("adding a pgpool %s", pgpoolName)
@@ -287,9 +287,9 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:        cl.Spec.CCPImageTag,
 		Port:               operator.Pgo.Cluster.Port,
-		SecretsName:        secretName,
+		PGPoolSecret:       secretName,
+		PGUserSecret:       userSecret,
 		ContainerResources: "",
-		User:		    user,
 	}
 
 	if operator.Pgo.DefaultPgpoolResources != "" {
@@ -333,6 +333,8 @@ func AddPgpool(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace st
 		svcFields.ServiceName = pgpoolName
 		svcFields.ClusterName = clusterName
 		svcFields.Port = operator.Pgo.Cluster.Port
+		svcFields.PGBadgerPort = operator.Pgo.Cluster.PGBadgerPort
+		svcFields.ExporterPort = operator.Pgo.Cluster.ExporterPort
 
 		err = CreateService(clientset, &svcFields, namespace)
 		if err != nil {

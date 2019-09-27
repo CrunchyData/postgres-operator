@@ -42,6 +42,8 @@ type ServiceTemplateFields struct {
 	ServiceName string
 	ClusterName string
 	Port        string
+	PGBadgerPort string
+	ExporterPort string
 	ServiceType string
 }
 
@@ -291,6 +293,8 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		ServiceName: serviceName,
 		ClusterName: replica.Spec.ClusterName,
 		Port:        cluster.Spec.Port,
+		PGBadgerPort: cluster.Spec.PGBadgerPort,
+		ExporterPort: cluster.Spec.ExporterPort,
 		ServiceType: st,
 	}
 
