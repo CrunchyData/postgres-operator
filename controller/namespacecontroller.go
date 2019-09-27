@@ -119,7 +119,7 @@ func (c *NamespaceController) onUpdate(oldObj, newObj interface{}) {
 	log.Debugf("[NamespaceController] onUpdate ns=%s", newNs.ObjectMeta.SelfLink)
 
 	labels := newNs.GetObjectMeta().GetLabels()
-	if labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY {
+	if labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY || labels[config.LABEL_PGO_INSTALLATION_NAME] != operator.InstallationName {
 		log.Debugf("NamespaceController: onUpdate skipping namespace that is not crunchydata %s", newNs.ObjectMeta.SelfLink)
 		return
 	} else {
