@@ -68,8 +68,6 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 
 	replist := strings.Join(replicaDeploymentList, ",") // string delimited list of replica deployments
 
-	// get backrest deployment info here.
-	backRestDeploymentName := cl.Spec.Name + "-backrest-shared-repo"
 
 
 	// get the latest version of the task in case it changed
@@ -84,7 +82,14 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 
 	currentTask.Spec.Parameters[config.LABEL_UPGRADE_PRIMARY] = upgradeTargetClusterName // same name as primary
 	currentTask.Spec.Parameters[config.LABEL_UPGRADE_REPLICA] = replist
-	currentTask.Spec.Parameters[config.LABEL_UPGRADE_BACKREST] = backRestDeploymentName
+
+	// Presently, backrest upgrade will not be done by minor upgrade as it uses a container release with the operator itself
+	// and not the one that is a part of the container suite. 
+
+	// get backrest deployment info here.
+	// backRestDeploymentName := cl.Spec.Name + "-backrest-shared-repo"
+	//	currentTask.Spec.Parameters[config.LABEL_UPGRADE_BACKREST] = backRestDeploymentName
+	currentTask.Spec.Parameters[config.LABEL_UPGRADE_BACKREST] = ""
 
 	//update the upgrade CRD status to completed
 	log.Debugf("update pgtask status %s to %s ", currentTask.Spec.Name, crv1.InProgressStatus)
@@ -117,8 +122,6 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 	if !found {
 		log.Error("cound not find pgtask for minor upgrade")
 		log.Error(err)
-
-		FailUpgradeWithError(upgradeTaskName, "Upgrade task not found. Should not happen.")
 	}
 
 	cluster := crv1.Pgcluster{}
@@ -257,13 +260,6 @@ func completeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 
 }
 
-// FailUpgradeWithError - called when it is not possible to continue the upgrade process
-// 
-func FailUpgradeWithError(upgradeTaskName, errorText string) {
-
-	log.Error("Minor Upgrade unable to complete: ", errorText)
-
-}
 
 func updateClusterCCPImage(restclient *rest.RESTClient, upgradedCCPImageTag,  clusterName, namespace string) {
 
@@ -320,6 +316,7 @@ func removeMinorUpgradeLabelFromCluster(clientset *kubernetes.Clientset, restcli
 	return err
 }
 
+// publishMinorUpgradeStartedEvent - indicates the upgrade has started.
 func publishMinorUpgradeStartedEvent(upgradeTask *crv1.Pgtask, cluster *crv1.Pgcluster, namespace string) {
 
 	//publish event for failover
@@ -370,8 +367,4 @@ func publishMinorUpgradeCompleteEvent(upgradeTask *crv1.Pgtask, cluster *crv1.Pg
 		log.Error(err.Error())
 	}
 
-}
-
-func publishMinorUpgradeFailureEvent() {
-	
 }
