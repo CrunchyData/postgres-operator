@@ -18,3 +18,11 @@
   no_log: false
   tags:
   - uninstall
+
+- name: Delete Operator SCC (Openshift)
+  shell: |
+    {{ openshift_oc_bin}} delete scc pgo
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - uninstall
