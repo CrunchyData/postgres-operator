@@ -44,8 +44,6 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 
 // HealthHandler ...
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
-
-	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 

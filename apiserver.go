@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/crunchydata/postgres-operator/apiserver"
@@ -51,9 +52,10 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/userservice"
 	"github.com/crunchydata/postgres-operator/apiserver/versionservice"
 	"github.com/crunchydata/postgres-operator/apiserver/workflowservice"
+	crunchylog "github.com/crunchydata/postgres-operator/logging"
+
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	crunchylog "github.com/crunchydata/postgres-operator/logging"
 )
 
 const serverCertPath = "/tmp/server.crt"
@@ -97,6 +99,8 @@ func main() {
 		log.Debug("DISABLE_TLS set to false")
 	}
 	disableTLS, _ := strconv.ParseBool(tmp)
+
+	skipAuthRoutes := strings.TrimSpace(os.Getenv("NOAUTH_ROUTES"))
 
 	log.Infoln("postgres-operator apiserver starts")
 
@@ -181,6 +185,18 @@ func main() {
 	r.HandleFunc("/benchmarkdelete", benchmarkservice.DeleteBenchmarkHandler).Methods("POST")
 	r.HandleFunc("/benchmarkshow", benchmarkservice.ShowBenchmarkHandler).Methods("POST")
 
+	// Optionally lighten mTLS requirement if some paths don't require certs
+	certsVerify := tls.RequireAndVerifyClientCert
+	if !disableTLS && len(skipAuthRoutes) > 0 {
+		certsVerify = tls.VerifyClientCertIfGiven
+		optCertEnforcer, err := apiserver.NewCertEnforcer(strings.Split(skipAuthRoutes, ","))
+		if err != nil {
+			log.Fatalf("NOAUTH_ROUTES configured incorrectly: %s", err)
+			os.Exit(2)
+		}
+		r.Use(optCertEnforcer.Enforce)
+	}
+
 	err := apiserver.GetTLS(serverCertPath, serverKeyPath)
 	if err != nil {
 		log.Fatal(err)
@@ -199,9 +215,9 @@ func main() {
 	caCertPool.AppendCertsFromPEM(caCert)
 
 	cfg := &tls.Config{
-		ClientAuth: tls.RequireAndVerifyClientCert,
 		//specify pgo-apiserver in the CN....then, add ServerName: "pgo-apiserver",
 		ServerName:         "pgo-apiserver",
+		ClientAuth:         certsVerify,
 		InsecureSkipVerify: tlsNoVerify,
 		ClientCAs:          caCertPool,
 		MinVersion:         tls.VersionTLS11,
