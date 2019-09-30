@@ -16,7 +16,7 @@ The API server is setup to work with the pgo command line interface so the param
 ###### Get API Server Version
 ```
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT \
--u username:password -H "Content-Type:application/json" --insecure \
+-u pgoadmin:examplepassword -H "Content-Type:application/json" --insecure \
 -X GET $PGO_APISERVER_URL/version
 ```
 
@@ -25,11 +25,11 @@ You can create a cluster by sending a POST request to `$PGO_APISERVER_URL/cluste
 ###### Create Cluster
 ```
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT \
--u username:password -H "Content-Type:application/json" --insecure \
--X POST --data '{ \
-  "ClientVersion":"4.0.0", \
-  "Namespace":"pgouser1", \
-  "Name":"mycluster", \
+-u pgoadmin:examplepassword -H "Content-Type:application/json" --insecure \
+-X POST --data \
+  '{"ClientVersion":"4.1.0",
+  "Namespace":"pgouser1",
+  "Name":"mycluster",
   "Series":1}' \
 $PGO_APISERVER_URL/clusters
 ```
@@ -39,10 +39,10 @@ The last two examples show you how to `show` and `delete` a cluster. Notice how 
 ###### Show Cluster
 ```
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT \
--u username:password -H "Content-Type:application/json" --insecure \
--X POST --data '{ \
-  "ClientVersion":"4.0.0", \
-  "Namespace":"pgouser1", \
+-u pgoadmin:examplepassword -H "Content-Type:application/json" --insecure \
+-X POST --data \
+  '{"ClientVersion":"4.1.0",
+  "Namespace":"pgouser1",
   "Clustername":"mycluster"}' \
 $PGO_APISERVER_URL/showclusters
 ```
@@ -50,10 +50,10 @@ $PGO_APISERVER_URL/showclusters
 ###### Delete Cluster
 ```
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT \
--u username:password -H "Content-Type:application/json" --insecure \
--X POST --data '{ \
-  "ClientVersion":"4.0.0", \
-  "Namespace":"pgouser1", \
+-u pgoadmin:examplepassword -H "Content-Type:application/json" --insecure \
+-X POST --data \
+  '{"ClientVersion":"4.1.0",
+  "Namespace":"pgouser1",
   "Clustername":"mycluster"}' \
 $PGO_APISERVER_URL/clustersdelete
 ```
