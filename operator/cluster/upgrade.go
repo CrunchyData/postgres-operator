@@ -94,7 +94,7 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 	//	currentTask.Spec.Parameters[config.LABEL_UPGRADE_BACKREST] = backRestDeploymentName
 	currentTask.Spec.Parameters[config.LABEL_UPGRADE_BACKREST] = ""
 
-	//update the upgrade CRD status to completed
+	//update the upgrade CRD status to in progress
 	log.Debugf("update pgtask status %s to %s ", currentTask.Spec.Name, crv1.InProgressStatus)
 	currentTask.Spec.Status = crv1.InProgressStatus
 	err = kubeapi.Updatepgtask(restclient, &currentTask, currentTask.Spec.Name, namespace)
@@ -260,6 +260,14 @@ func completeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 	}
 
 	removeMinorUpgradeLabelFromCluster(clientset, restclient, clusterName, namespace)
+
+	//update the upgrade CRD status to completed
+	log.Debugf("update pgtask status %s to %s ", upgradeTask.Spec.Name, crv1.CompletedStatus)
+	upgradeTask.Spec.Status = crv1.CompletedStatus
+	err := kubeapi.Updatepgtask(restclient, upgradeTask, upgradeTask.Spec.Name, namespace)
+	if err != nil {
+		log.Error("error in updating minor upgrade pgtask to completed status " + err.Error())
+	}
 
 }
 
