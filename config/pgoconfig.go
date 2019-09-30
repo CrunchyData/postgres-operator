@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"regexp"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -477,6 +478,13 @@ func (c *PgoConfig) Validate() error {
 
 	if c.Cluster.User == "" {
 		return errors.New(errPrefix + "Cluster.User is required")
+	} else {
+		//checks that username is valid
+		re := regexp.MustCompile("^[a-z0-9.-]*$")
+		if !re.MatchString(c.Cluster.User) {
+			msg := "user name is required to contain lowercase letters, numbers, '.' and '-' only."
+			return errors.New(errPrefix + msg)
+		}
 	}
 	return err
 }
