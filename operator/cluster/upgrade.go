@@ -46,8 +46,11 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 		return
 	}
 
+	// get current primary label from cluster.
+	targetPrimary := cl.ObjectMeta.Labels[config.LABEL_CURRENT_PRIMARY]
+	log.Debug("Minor Upgrade Primary set to: ", targetPrimary)
+
 	// label cluster with minor-upgrade label
-	// addMinorUpgradeLabelToCluster(clientset, restclient, upgradeTargetClusterName, namespace)
 	labelpgClusterForMinorUpgrade(clientset, restclient, upgradeTargetClusterName, namespace)
 
 	// get replicalist and the deployments that need to be updated (which are also the name of the replicas)
@@ -80,7 +83,7 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 		log.Error(terr)
 	}
 
-	currentTask.Spec.Parameters[config.LABEL_UPGRADE_PRIMARY] = upgradeTargetClusterName // same name as primary
+	currentTask.Spec.Parameters[config.LABEL_UPGRADE_PRIMARY] = targetPrimary
 	currentTask.Spec.Parameters[config.LABEL_UPGRADE_REPLICA] = replist
 
 	// Presently, backrest upgrade will not be done by minor upgrade as it uses a container release with the operator itself
