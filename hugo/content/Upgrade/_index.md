@@ -29,3 +29,11 @@ When the upgrade starts, each replica is upgraded seqentially, waiting for the p
 When the cluster is not in _autofail_ mode, the deployments simply create a new pod when updated, terminating the old one. When autofail is enabled and the primary deployment is updated, the cluster behaves as though the primary had failed and begins the failover process. See _Automatic Failover_ in the _Overview_ section for more details on this and replica replacement.
 
 At this time, the backrest-repo container is not upgraded during this upgrade as it is part of the postgres operator release and is updated with the operator.
+
+## Minor Upgrade Example
+
+In this example, we are upgrading a cluster from PostgreSQL 11.4 to 11.5 using the `crunchy-postgres:centos7-11.5-2.4.2` container:
+
+`pgo upgrade mycluster --ccp-image-tag=centos7-11.5-2.4.2`
+
+For more information, please see the `pgo upgrade` documentation [here.] ( {{< relref "operatorcli/cli/pgo_upgrade.md" >}})

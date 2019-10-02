@@ -24,8 +24,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	// "github.com/crunchydata/postgres-operator/util"
-
 )
 
 // CreateUpgrade ...

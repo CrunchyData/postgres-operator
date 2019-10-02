@@ -34,8 +34,6 @@ import (
 // AddUpgrade implements the upgrade workflow for cluster minor upgrade
 func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, upgrade *crv1.Pgtask, namespace string) {
 
-	// TODO: persist original and target CCP_IMAGE_TAGs in pgtask - think so...
-
 	upgradeTargetClusterName := upgrade.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
 
 	cl := crv1.Pgcluster{}
@@ -307,7 +305,6 @@ func labelpgClusterForMinorUpgrade(clientset *kubernetes.Clientset, restclient *
 
 func removeMinorUpgradeLabelFromCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient, clusterName, namespace string) error {
 
-	// TODO - when upgrade completes, this gets called to remove the label.
 	cluster := crv1.Pgcluster{}
 	found, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace)
 	if !found {

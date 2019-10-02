@@ -170,9 +170,9 @@ func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName, pgou
 	//the primary will be the one with a pod that has a label
 	//that looks like service-name=clustername and is not a backrest job
 	selector := config.LABEL_SERVICE_NAME + "=" + clusterName + "," + config.LABEL_BACKREST_RESTORE + "!=true," + config.LABEL_BACKREST_JOB + "!=true"
-	// pods, err := kubeapi.GetPods(clientset, selector, namespace)
 
-	pods, success := waitForDeploymentPrimaryCount(clientset, selector, namespace)
+	// wait for single primary pod to exist.
+	pods, success := waitForSinglePrimary(clientset, selector, namespace)
 
 
 	if !success {
@@ -240,9 +240,16 @@ func waitForDelete(deploymentToDelete, podName string, clientset *kubernetes.Cli
 
 }
 
-func waitForDeploymentPrimaryCount(clientset *kubernetes.Clientset, selector, namespace string)  (*v1.PodList, bool) {
+// waitForSinglePrimary - during failover, there can exist the possibility that while one pod is in the process of
+// terminating, the Deployment will be spinning up another pod - both will appear to be a primary even though the
+// terminating pod will not be accessible via the service. This method gets the primary and if both exists, it waits to
+// give the terminating pod a chance to complete. If a single primary is never isolated, it returns false with the count
+// of primaries found when it gave up. The number of tries and duration can be increased if needed - max wait time is
+// tries * duration.
+func waitForSinglePrimary(clientset *kubernetes.Clientset, selector, namespace string)  (*v1.PodList, bool) {
 
 	var tries = 5
+	var duration = 2 // seconds
 	var pods *v1.PodList
 
 	for i :=0; i < tries; i ++ {
@@ -253,7 +260,7 @@ func waitForDeploymentPrimaryCount(clientset *kubernetes.Clientset, selector, na
 			log.Errorf("more than 1 primary pod found when looking for primary %s", selector)
 			log.Debug("Waiting in case a pod is terminating...")
 		// return errors.New("more than 1 primary pod found in delete primary logic")
-		time.Sleep(time.Second * time.Duration(2))
+		time.Sleep(time.Second * time.Duration(duration))
 		} else if len(pods.Items) == 0 { 
 			log.Errorf("No pods found for primary deployment")
 			return pods, false

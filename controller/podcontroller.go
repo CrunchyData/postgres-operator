@@ -126,7 +126,7 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 	}
 
 	//handle the case when a pg database pod is updated
-	if isPostgresPod(newpod) {  
+	if isPostgresPod(newpod) {
 		//only check the status of primary pods
 		if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
 			c.checkReadyStatus(oldpod, newpod, &pgcluster)
@@ -304,28 +304,28 @@ func (c *PodController) checkAutofailLabel(newpod *apiv1.Pod, ns string) bool {
 
 func isPostgresPod(newpod *apiv1.Pod) bool {
 	if newpod.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] == "true" {
-	// log.Debugf("pgo-backrest-repo found %s", newpod.Name)
+		log.Debugf("pgo-backrest-repo found %s", newpod.Name)
 		return false
 	}
 	if newpod.ObjectMeta.Labels[config.LABEL_JOB_NAME] != "" {
-		// log.Debugf("job pod found [%s]", newpod.Name)
+		log.Debugf("job pod found [%s]", newpod.Name)
 		return false
 	}
 	if newpod.ObjectMeta.Labels[config.LABEL_NAME] == "postgres-operator" {
-		// log.Debugf("postgres-operator-pod found [%s]", newpod.Name)
+		log.Debugf("postgres-operator-pod found [%s]", newpod.Name)
 		return false
 	}
 	if newpod.ObjectMeta.Labels[config.LABEL_PGPOOL_POD] == "true" {
-		// log.Debugf("pgpool pod found [%s]", newpod.Name)
+		log.Debugf("pgpool pod found [%s]", newpod.Name)
 		return false
 	}
 	if newpod.ObjectMeta.Labels[config.LABEL_PGBOUNCER] == "true" {
-		// log.Debugf("pgbouncer pod found [%s]", newpod.Name)
+		log.Debugf("pgbouncer pod found [%s]", newpod.Name)
 		return false
 	}
 	return true
 }
-// isUpgradedPostgresPod - determines of the pod is one that could be getting a minor upgrade
+// isUpgradedPostgresPod - determines if the pod is one that could be getting a minor upgrade
 // differs from above check in that the backrest repo pod is upgradeable. 
 func isUpgradedPostgresPod(newpod *apiv1.Pod, oldPod *apiv1.Pod) bool {
 
