@@ -46,6 +46,7 @@
         dest: "{{ prom_output_dir }}/{{ item | replace('.j2', '') }}"
         mode: '0600'
       with_items: 
+      - prometheus-config.yaml.j2
       - prometheus-pvc.json.j2
       - prometheus-service.json.j2
       - prometheus-deployment.json.j2
@@ -54,6 +55,7 @@
     - name: Create Prometheus Objects
       command: "{{ kubectl_or_oc }} create -f {{ prom_output_dir }}/{{ item }} -n {{ metrics_namespace }}"
       with_items:
+      - prometheus-config.yaml
       - prometheus-pvc.json
       - prometheus-service.json
       - prometheus-deployment.json
