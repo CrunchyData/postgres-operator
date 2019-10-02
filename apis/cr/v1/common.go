@@ -58,7 +58,11 @@ type PgContainerResources struct {
 	LimitsCPU      string `json:"limitscpu"`
 }
 
+// CompletedStatus - 
 const CompletedStatus = "completed"
+// InProgressStatus - 
+const InProgressStatus = "in progress"
+// SubmittedStatus - 
 const SubmittedStatus = "submitted"
 
 // JobCompletedStatus ....

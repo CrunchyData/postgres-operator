@@ -115,6 +115,16 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
+	// check here if cluster has an upgrade in progress flag set. 
+	clusterInMinorUpgrade := pgcluster.Labels[config.LABEL_MINOR_UPGRADE] == config.LABEL_UPGRADE_IN_PROGRESS 
+	// log.Debugf("Cluster: %s Minor Upgrade: %s ", clusterName, clusterInMinorUpgrade)
+
+	// have a pod coming back up from upgrade and is ready - time to kick off the next pod.
+	if clusterInMinorUpgrade && isUpgradedPostgresPod(newpod, oldpod) {
+		upgradeTaskName := clusterName + "-" + config.LABEL_MINOR_UPGRADE
+		clusteroperator.ProcessNextUpgradeItem(c.PodClientset, c.PodClient, clusterName, upgradeTaskName, newpod.ObjectMeta.Namespace)
+	}
+
 	//handle the case when a pg database pod is updated
 	if isPostgresPod(newpod) {
 		//only check the status of primary pods
@@ -145,7 +155,8 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 		log.Debug("the pod was updated and the service names were changed in this pod update, not going to check the ReadyStatus")
 		return
 	}
-	//handle the case of a database pod going to Ready that has
+
+	//handle the case of a database pod going to Not Ready that has
 	//autofail enabled
 	autofailEnabled := c.checkAutofailLabel(newpod, newpod.ObjectMeta.Namespace)
 	clusterName := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
@@ -304,10 +315,6 @@ func isPostgresPod(newpod *apiv1.Pod) bool {
 		log.Debugf("postgres-operator-pod found [%s]", newpod.Name)
 		return false
 	}
-	if newpod.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] == "true" {
-		log.Debugf("pgo-backrest-repo pod found [%s]", newpod.Name)
-		return false
-	}
 	if newpod.ObjectMeta.Labels[config.LABEL_PGPOOL_POD] == "true" {
 		log.Debugf("pgpool pod found [%s]", newpod.Name)
 		return false
@@ -317,6 +324,75 @@ func isPostgresPod(newpod *apiv1.Pod) bool {
 		return false
 	}
 	return true
+}
+// isUpgradedPostgresPod - determines if the pod is one that could be getting a minor upgrade
+// differs from above check in that the backrest repo pod is upgradeable. 
+func isUpgradedPostgresPod(newpod *apiv1.Pod, oldPod *apiv1.Pod) bool {
+
+
+	clusterName := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
+	replicaServiceName := clusterName + "-replica"
+
+	var podIsReady bool
+	for _, v := range newpod.Status.ContainerStatuses {
+		if v.Name == "database" {
+			podIsReady = v.Ready
+		}
+	}
+
+	var oldPodStatus bool 
+	for _, v := range oldPod.Status.ContainerStatuses {
+		if v.Name == "database" {
+			oldPodStatus = v.Ready
+		}
+	}
+
+	log.Debugf("[isUpgradedPostgesPod] oldstatus: %s newstatus: %s ", oldPodStatus, podIsReady)
+
+	// only care about pods that have changed from !ready to ready
+	if podIsReady && !oldPodStatus {
+
+		// eliminate anything we don't care about - it will be most things
+		if newpod.ObjectMeta.Labels[config.LABEL_JOB_NAME] != "" {
+			log.Debugf("job pod found [%s]", newpod.Name)
+			return false
+		}
+
+		if newpod.ObjectMeta.Labels[config.LABEL_NAME] == "postgres-operator" {
+			log.Debugf("postgres-operator-pod found [%s]", newpod.Name)
+			return false
+		}
+		if newpod.ObjectMeta.Labels[config.LABEL_PGPOOL_POD] == "true" {
+			log.Debugf("pgpool pod found [%s]", newpod.Name)
+			return false
+		}
+		if newpod.ObjectMeta.Labels[config.LABEL_PGBOUNCER] == "true" {
+			log.Debugf("pgbouncer pod found [%s]", newpod.Name)
+			return false
+		}
+
+		// look for specific pods that could have just gone through upgrade
+
+		if newpod.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] == "true"  {
+			log.Debugf("Minor Upgrade: upgraded pgo-backrest-repo found %s", newpod.Name)
+			return true
+		}
+
+		// primary identified by service-name being same as cluster name
+		if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
+			log.Debugf("Minor Upgrade: upgraded primary found %s", newpod.Name)
+			return true
+		}
+
+		if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == replicaServiceName {
+			log.Debugf("Minor Upgrade: upgraded replica found %s", newpod.Name)
+			return true
+		}
+
+		// This indicates there is a pod we didn't account for - shouldn't be the case
+		log.Debugf(" **** Minor Upgrade: unexpected isUpgraded pod found: [%s] ****", newpod.Name)
+	}
+	return false
 }
 
 func publishClusterComplete(clusterName, namespace string, cluster *crv1.Pgcluster) error {

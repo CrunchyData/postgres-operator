@@ -78,7 +78,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns string) msgs.CreateUpg
 		spec.Status = "requested"
 		spec.Parameters = make(map[string]string)
 		spec.Parameters[config.LABEL_PG_CLUSTER] = clusterName
-		spec.Name = clusterName + "-minor-upgrade"
+		spec.Name = clusterName + "-" + config.LABEL_MINOR_UPGRADE
 		spec.Namespace = ns
 		labels := make(map[string]string)
 		labels[config.LABEL_PG_CLUSTER] = clusterName
@@ -104,7 +104,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns string) msgs.CreateUpg
 			}
 		}
 
-		//validate the cluster name
+		//validate the cluster name and ensure autofail is turned off for each cluster.
 		cl := crv1.Pgcluster{}
 		found, err = kubeapi.Getpgcluster(apiserver.RESTClient,
 			&cl, clusterName, ns)
@@ -113,7 +113,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns string) msgs.CreateUpg
 			response.Status.Msg = clusterName + " is not a valid pgcluster"
 			return response
 		}
-
+		
 		//figure out what version we are upgrading to
 		imageToUpgradeTo := apiserver.Pgo.Cluster.CCPImageTag
 		if request.CCPImageTag != "" {
