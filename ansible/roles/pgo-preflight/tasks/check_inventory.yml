@@ -25,8 +25,11 @@
     - archive_mode
     - archive_timeout
     - auto_failover_sleep_secs
+    - auto_failover_replace_replica
+    - db_name
     - db_password_age_days
     - db_password_length
+    - create_rbac
     - db_port
     - db_replicas
     - db_user
@@ -37,3 +40,4 @@
     - pgo_client_version
     - pgbadgerport
     - exporterport
+    - scheduler_timeout
