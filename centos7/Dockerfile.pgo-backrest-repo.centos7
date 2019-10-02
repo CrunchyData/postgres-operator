@@ -8,7 +8,7 @@ LABEL Vendor="Crunchy Data Solutions" \
 	summary="Crunchy Data PostgreSQL Operator - Apiserver" \
 	description="Crunchy Data PostgreSQL Operator - Apiserver"
 
-ENV PGVERSION="11" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm" PGDG_REPO_DISABLE="pgdg10,pgdg96,pgdg95,pgdg94" \
+ENV PGVERSION="11" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm" PGDG_REPO_DISABLE="pgdg*" PGDG_REPO_ENABLE="pgdg11"\
     BACKREST_VERSION="2.17"
 
 COPY redhat/licenses /licenses
@@ -19,7 +19,7 @@ RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/r
 
 RUN yum -y update && \
 #yum -y install epel-release && \
-yum -y install --disablerepo="${PGDG_REPO_DISABLE}" \
+yum -y install --disablerepo="${PGDG_REPO_DISABLE}" --enablerepo="${PGDG_REPO_ENABLE}" \
     psmisc openssh-server openssh-clients pgbackrest-"${BACKREST_VERSION}" hostname procps-ng && \
 yum -y clean all
 
