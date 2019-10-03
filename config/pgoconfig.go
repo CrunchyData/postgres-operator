@@ -29,6 +29,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -301,7 +302,7 @@ func (c *PgoConfig) Validate() error {
 			return errors.New(errPrefix + "Invalid PGBadgerPort: " + err.Error())
 		}
 	}
-    if c.Cluster.ExporterPort == "" {
+        if c.Cluster.ExporterPort == "" {
 		c.Cluster.ExporterPort = DEFAULT_EXPORTER_PORT
 		log.Infof("setting ExporterPort to default %s", c.Cluster.ExporterPort)
 	} else {
@@ -477,6 +478,18 @@ func (c *PgoConfig) Validate() error {
 
 	if c.Cluster.User == "" {
 		return errors.New(errPrefix + "Cluster.User is required")
+	} else {
+		// validates that username can be used as the kubernetes secret name
+		// Must consist of lower case alphanumeric characters, 
+		// '-' or '.', and must start and end with an alphanumeric character
+                errs := validation.IsDNS1123Subdomain(c.Cluster.User)
+		if len(errs) > 0 {
+			var msg string
+			for i := range errs{
+				msg = msg + errs[i]
+			}
+			return errors.New(errPrefix + msg)
+		}
 	}
 	return err
 }
