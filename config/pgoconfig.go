@@ -23,13 +23,13 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
-	"regexp"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -479,10 +479,15 @@ func (c *PgoConfig) Validate() error {
 	if c.Cluster.User == "" {
 		return errors.New(errPrefix + "Cluster.User is required")
 	} else {
-		//checks that username is valid
-		re := regexp.MustCompile("^[a-z0-9.-]*$")
-		if !re.MatchString(c.Cluster.User) {
-			msg := "user name is required to contain lowercase letters, numbers, '.' and '-' only."
+		// validates that username can be used as the kubernetes secret name
+		// Must consist of lower case alphanumeric characters, 
+		// '-' or '.', and must start and end with an alphanumeric character
+        errs := validation.IsDNS1123Subdomain(c.Cluster.User)
+		if len(errs) > 0 {
+			var msg string
+			for i := range errs{
+				msg = msg + errs[i]
+			}
 			return errors.New(errPrefix + msg)
 		}
 	}
