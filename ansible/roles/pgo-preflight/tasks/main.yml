@@ -11,7 +11,10 @@
 
 - name: Check if required Kube or OpenShift variables are defined
   fail: msg="Please specify either OpenShift or Kubernetes variables in inventory"
-  when: openshift_user is undefined and openshift_host is undefined and openshift_token is undefined and kubernetes_context is undefined
+  when: > 
+    (openshift_host is undefined or (openshift_host is defined and openshift_host == ''))
+    and (kubernetes_context is undefined or (kubernetes_context is defined and kubernetes_context == ''))
+    or ((openshift_host is defined and openshift_host != '') and (kubernetes_context is defined and kubernetes_context != ''))
   tags: always
 
 - include_tasks: check_openshift.yml
