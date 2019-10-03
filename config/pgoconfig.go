@@ -302,7 +302,7 @@ func (c *PgoConfig) Validate() error {
 			return errors.New(errPrefix + "Invalid PGBadgerPort: " + err.Error())
 		}
 	}
-    if c.Cluster.ExporterPort == "" {
+        if c.Cluster.ExporterPort == "" {
 		c.Cluster.ExporterPort = DEFAULT_EXPORTER_PORT
 		log.Infof("setting ExporterPort to default %s", c.Cluster.ExporterPort)
 	} else {
@@ -482,7 +482,7 @@ func (c *PgoConfig) Validate() error {
 		// validates that username can be used as the kubernetes secret name
 		// Must consist of lower case alphanumeric characters, 
 		// '-' or '.', and must start and end with an alphanumeric character
-        errs := validation.IsDNS1123Subdomain(c.Cluster.User)
+                errs := validation.IsDNS1123Subdomain(c.Cluster.User)
 		if len(errs) > 0 {
 			var msg string
 			for i := range errs{
