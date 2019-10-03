@@ -59,8 +59,30 @@ without requiring TLS authentication from the client and without
 the HTTP Basic authentication used for role-based-access.
 
 This configuration is performed by defining the `NOAUTH_ROUTES` environment
-variable for the apiserver container within the Operator pod. Typically, this
-configuration is made within the `deploy/deployment.yaml` file.
+variable for the apiserver container within the Operator pod. 
+
+Typically, this configuration is made within the `deploy/deployment.json` 
+file for bash-based installations and 
+`ansible/roles/pgo-operator/templates/deployment.json.j2` for ansible installations.
+
+For example:
+```
+...
+    containers: [
+        {
+        	"name": "apiserver"
+        	"env": [
+                {
+                	"name": "NOAUTH_ROUTES",
+                	"value": "/health"
+                }
+        	]
+        	...
+        }
+        ...
+    ]
+...
+```
 
 The `NOAUTH_ROUTES` variable must be set to a comma-separated list of
 URL routes. For example: `/health,/version,/example3` would opt to **disable**
