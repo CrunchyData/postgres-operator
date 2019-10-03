@@ -52,6 +52,55 @@ Files within this directory are used specifically when creating PostgreSQL Clust
 
 As with the other Operator templates, administrators can make custom changes to this set of templates to add custom features or metadata into the Resources created by the Operator.
 
+## Operator API Server
+
+The Operator's API server can be configured to allow access to select URL routes
+without requiring TLS authentication from the client and without
+the HTTP Basic authentication used for role-based-access.
+
+This configuration is performed by defining the `NOAUTH_ROUTES` environment
+variable for the apiserver container within the Operator pod. 
+
+Typically, this configuration is made within the `deploy/deployment.json` 
+file for bash-based installations and 
+`ansible/roles/pgo-operator/templates/deployment.json.j2` for ansible installations.
+
+For example:
+```
+...
+    containers: [
+        {
+        	"name": "apiserver"
+        	"env": [
+                {
+                	"name": "NOAUTH_ROUTES",
+                	"value": "/health"
+                }
+        	]
+        	...
+        }
+        ...
+    ]
+...
+```
+
+The `NOAUTH_ROUTES` variable must be set to a comma-separated list of
+URL routes. For example: `/health,/version,/example3` would opt to **disable**
+authentication for `$APISERVER_URL/health`, `$APISERVER_URL/version`, and
+`$APISERVER_URL/example3` respectively.
+
+Currently, only the following routes may have authentication disabled using
+this setting:
+
+```
+/health
+```
+
+If the health route has its authentication disabled, the existing readiness 
+and liveness probes for the apiserver container could be enhanced by 
+configuring them with HTTP-based checks against the health route.
+
+
 ## Security
 
 Setting up pgo users and general security configuration is described in the [Security](/security) section of this documentation.
