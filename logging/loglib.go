@@ -4,11 +4,11 @@ package logging
 import (
 	"fmt"
 	"os"
-	"runtime"
 	"regexp"
+	"runtime"
 
-	log "github.com/sirupsen/logrus"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	log "github.com/sirupsen/logrus"
 )
 
 func SetParameters() LogValues {
@@ -21,7 +21,7 @@ func SetParameters() LogValues {
 
 //LogValues holds the standard log value types
 type LogValues struct {
-	version  string
+	version string
 }
 
 // formatter adds default fields to each log entry.
@@ -33,7 +33,7 @@ type formatter struct {
 // Format satisfies the logrus.Formatter interface.
 func (f *formatter) Format(e *log.Entry) ([]byte, error) {
 	for k, v := range f.fields {
-			e.Data[k] = v
+		e.Data[k] = v
 	}
 	return f.lf.Format(e)
 }
@@ -52,7 +52,7 @@ func CrunchyLogger(logDetails LogValues) {
 			if len(result1) > 1 {
 				filename = result1[1]
 			}
-	
+
 			re2 := regexp.MustCompile(`postgres-operator/(.*)`)
 			result2 := re2.FindStringSubmatch(f.Function)
 			if len(result2) > 1 {
@@ -69,7 +69,7 @@ func CrunchyLogger(logDetails LogValues) {
 
 	log.SetFormatter(&formatter{
 		fields: log.Fields{
-			"version":  logDetails.version,
+			"version": logDetails.version,
 		},
 		lf: crunchyTextFormatter,
 	})

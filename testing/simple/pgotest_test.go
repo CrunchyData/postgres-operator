@@ -42,7 +42,7 @@ func TestPGOTestCluster(t *testing.T) {
 		// psql -p 5432 -h 10.97.101.79 -U postgres postgres is NOT working
 
 		actual := string(output)
-		actual_lines := strings.Split(actual,"\n")
+		actual_lines := strings.Split(actual, "\n")
 
 		t.Logf("actual %s- ", actual)
 		cluster = "cluster : " + TestClusterName
@@ -50,9 +50,9 @@ func TestPGOTestCluster(t *testing.T) {
 		if !found {
 			t.Error("could not find cluster : " + TestClusterName + "in output")
 		}
-		for i := 0; i<len(actual_lines); i++ {
+		for i := 0; i < len(actual_lines); i++ {
 			//t.Logf("%v actual lines %s- ", i, actual_lines[i])
-			if strings.Contains(actual_lines[i], "NOT working"){
+			if strings.Contains(actual_lines[i], "NOT working") {
 				t.Error("output error found : " + actual_lines[i])
 			}
 		}

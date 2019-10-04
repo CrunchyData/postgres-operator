@@ -21,10 +21,10 @@ import (
 	"fmt"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"math/rand"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
-	"regexp"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
@@ -168,7 +168,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 				}
 				log.Debugf("expiring user %s", request.Username)
 			}
-			
+
 			if request.Expired != "" {
 				results := callDB(info, d.ObjectMeta.Name, request.Expired)
 				if len(results) > 0 {
@@ -644,8 +644,6 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
-
-	
 
 	getDefaults()
 

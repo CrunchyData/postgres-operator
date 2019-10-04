@@ -69,7 +69,7 @@ func TestCat(t *testing.T) {
 		args    []string
 		fixture string
 	}{
-		{"pgo cat", []string{"cat", TestClusterName, "/pgdata/"+TestClusterName+"/pg_hba.conf"}, ""},
+		{"pgo cat", []string{"cat", TestClusterName, "/pgdata/" + TestClusterName + "/pg_hba.conf"}, ""},
 	}
 	for _, tt := range tests {
 		cmd := exec.Command("pgo", tt.args...)

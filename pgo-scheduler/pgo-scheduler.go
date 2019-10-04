@@ -23,10 +23,10 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/config"
+	crunchylog "github.com/crunchydata/postgres-operator/logging"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
 	log "github.com/sirupsen/logrus"
-	crunchylog "github.com/crunchydata/postgres-operator/logging"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
@@ -105,9 +105,8 @@ func init() {
 
 func main() {
 	log.Info("Starting Crunchy Scheduler")
-        //give time for pgo-event to start up
-        time.Sleep(time.Duration(5) * time.Second)
-
+	//give time for pgo-event to start up
+	time.Sleep(time.Duration(5) * time.Second)
 
 	scheduler := scheduler.New(schedulerLabel, pgoNamespace, namespaceList, kubeClient)
 	scheduler.CronClient.Start()

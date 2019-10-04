@@ -174,7 +174,6 @@ func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName, pgou
 	// wait for single primary pod to exist.
 	pods, success := waitForSinglePrimary(clientset, selector, namespace)
 
-
 	if !success {
 		log.Errorf("Received false while waiting for single primary, count: ", len(pods.Items))
 		return errors.New("Couldn't isolate single primary pod")
@@ -246,33 +245,32 @@ func waitForDelete(deploymentToDelete, podName string, clientset *kubernetes.Cli
 // give the terminating pod a chance to complete. If a single primary is never isolated, it returns false with the count
 // of primaries found when it gave up. The number of tries and duration can be increased if needed - max wait time is
 // tries * duration.
-func waitForSinglePrimary(clientset *kubernetes.Clientset, selector, namespace string)  (*v1.PodList, bool) {
+func waitForSinglePrimary(clientset *kubernetes.Clientset, selector, namespace string) (*v1.PodList, bool) {
 
 	var tries = 5
 	var duration = 2 // seconds
 	var pods *v1.PodList
 
-	for i :=0; i < tries; i ++ {
-		
+	for i := 0; i < tries; i++ {
+
 		pods, _ = kubeapi.GetPods(clientset, selector, namespace)
 
 		if len(pods.Items) > 1 {
 			log.Errorf("more than 1 primary pod found when looking for primary %s", selector)
 			log.Debug("Waiting in case a pod is terminating...")
-		// return errors.New("more than 1 primary pod found in delete primary logic")
-		time.Sleep(time.Second * time.Duration(duration))
-		} else if len(pods.Items) == 0 { 
+			// return errors.New("more than 1 primary pod found in delete primary logic")
+			time.Sleep(time.Second * time.Duration(duration))
+		} else if len(pods.Items) == 0 {
 			log.Errorf("No pods found for primary deployment")
 			return pods, false
 		} else {
 			log.Debug("Found single pod for primary deployment")
 			return pods, true
 		}
-	}	
-	
+	}
+
 	return pods, false
 }
-
 
 func publishPromoteEvent(identifier, namespace, username, clusterName, target string) {
 	topics := make([]string, 1)

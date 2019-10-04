@@ -23,9 +23,9 @@ func TestScale(t *testing.T) {
 	t.Log("TestScale starts")
 
 	tests := []struct {
-		name    string
-		args    []string
-		fixture string
+		name      string
+		args      []string
+		fixture   string
 		cmdoutput string
 	}{
 		{"pgo scale", []string{"scale", TestClusterName, "--no-prompt"}, "", "created Pgreplica"},
@@ -44,19 +44,19 @@ func TestScale(t *testing.T) {
 
 	for _, tt := range tests {
 		// For pgo scaledown query
-		if (tt.name == "pgo scaledown query") {
+		if tt.name == "pgo scaledown query" {
 			time.Sleep(time.Second * time.Duration(20))
-			t.Run(tt.name, func(t *testing.T) {				
+			t.Run(tt.name, func(t *testing.T) {
 				MAX_TRIES := 10
 				complete := false
 				for i := 1; i <= MAX_TRIES; i++ {
 					cmd := exec.Command("pgo", tt.args...)
-                    output, err = cmd.CombinedOutput()
-                    if err != nil {
-                   		//t.Fatal(err)
-                	}
-                    actual := string(output)
-                    t.Logf("actual command response: %s- ", actual)
+					output, err = cmd.CombinedOutput()
+					if err != nil {
+						//t.Fatal(err)
+					}
+					actual := string(output)
+					t.Logf("actual command response: %s- ", actual)
 					found := strings.Contains(actual, myreplica+" (Ready)")
 					if !found {
 						t.Logf("sleeping while job completes, attempt #%d", i)
@@ -67,10 +67,10 @@ func TestScale(t *testing.T) {
 					}
 				}
 				if !complete {
-                    t.Errorf("%v job failed. Ready replica not found in output", tt.name)
-                }
+					t.Errorf("%v job failed. Ready replica not found in output", tt.name)
+				}
 			})
-		// For pgo scale and pgo scaledown	
+			// For pgo scale and pgo scaledown
 		} else {
 			t.Run(tt.name, func(t *testing.T) {
 				deps, err = kubeapi.GetDeployments(clientset, selector, Namespace)
@@ -103,7 +103,7 @@ func TestScale(t *testing.T) {
 				t.Logf("actual command response: %s- ", actual)
 				found := strings.Contains(actual, tt.cmdoutput)
 				if !found {
-					t.Error(tt.name+" string not found in output")
+					t.Error(tt.name + " string not found in output")
 				}
 
 				MAX_TRIES := 10
@@ -117,14 +117,14 @@ func TestScale(t *testing.T) {
 					}
 					afterDepCount = len(deps.Items)
 					//should have more deps after create
-					if (afterDepCount > beforeDepCount && strings.Contains(tt.cmdoutput, "created Pgreplica")) {
-						t.Log(tt.name+" complete!")
+					if afterDepCount > beforeDepCount && strings.Contains(tt.cmdoutput, "created Pgreplica") {
+						t.Log(tt.name + " complete!")
 						complete = true
 						break
 					}
 					//should have less deps after delete
-					if (afterDepCount < beforeDepCount && strings.Contains(tt.cmdoutput, "deleted Pgreplica")) {
-						t.Log(tt.name+" complete!")
+					if afterDepCount < beforeDepCount && strings.Contains(tt.cmdoutput, "deleted Pgreplica") {
+						t.Log(tt.name + " complete!")
 						complete = true
 						break
 					}
@@ -133,7 +133,7 @@ func TestScale(t *testing.T) {
 					t.Errorf("%v job did not succeed after retries. Deps after was %d", tt.name, afterDepCount)
 				}
 				t.Logf("deps after %d", afterDepCount)
-			
+
 			})
 		}
 	}

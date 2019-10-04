@@ -115,8 +115,8 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	// check here if cluster has an upgrade in progress flag set. 
-	clusterInMinorUpgrade := pgcluster.Labels[config.LABEL_MINOR_UPGRADE] == config.LABEL_UPGRADE_IN_PROGRESS 
+	// check here if cluster has an upgrade in progress flag set.
+	clusterInMinorUpgrade := pgcluster.Labels[config.LABEL_MINOR_UPGRADE] == config.LABEL_UPGRADE_IN_PROGRESS
 	// log.Debugf("Cluster: %s Minor Upgrade: %s ", clusterName, clusterInMinorUpgrade)
 
 	// have a pod coming back up from upgrade and is ready - time to kick off the next pod.
@@ -325,10 +325,10 @@ func isPostgresPod(newpod *apiv1.Pod) bool {
 	}
 	return true
 }
-// isUpgradedPostgresPod - determines if the pod is one that could be getting a minor upgrade
-// differs from above check in that the backrest repo pod is upgradeable. 
-func isUpgradedPostgresPod(newpod *apiv1.Pod, oldPod *apiv1.Pod) bool {
 
+// isUpgradedPostgresPod - determines if the pod is one that could be getting a minor upgrade
+// differs from above check in that the backrest repo pod is upgradeable.
+func isUpgradedPostgresPod(newpod *apiv1.Pod, oldPod *apiv1.Pod) bool {
 
 	clusterName := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
 	replicaServiceName := clusterName + "-replica"
@@ -340,7 +340,7 @@ func isUpgradedPostgresPod(newpod *apiv1.Pod, oldPod *apiv1.Pod) bool {
 		}
 	}
 
-	var oldPodStatus bool 
+	var oldPodStatus bool
 	for _, v := range oldPod.Status.ContainerStatuses {
 		if v.Name == "database" {
 			oldPodStatus = v.Ready
@@ -373,7 +373,7 @@ func isUpgradedPostgresPod(newpod *apiv1.Pod, oldPod *apiv1.Pod) bool {
 
 		// look for specific pods that could have just gone through upgrade
 
-		if newpod.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] == "true"  {
+		if newpod.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] == "true" {
 			log.Debugf("Minor Upgrade: upgraded pgo-backrest-repo found %s", newpod.Name)
 			return true
 		}

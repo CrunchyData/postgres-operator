@@ -107,14 +107,14 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		log.Debugf("jobController onUpdate rmdata job succeeded")
 		publishDeleteClusterComplete(labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 			job.ObjectMeta.Labels[config.LABEL_PGOUSER], job.ObjectMeta.Namespace)
-		
+
 		log.Debugf("jobController onUpdate rmdata job case")
-	
+
 		err = handleRmdata(job, c.JobClient, c.JobClientset, job.ObjectMeta.Namespace)
 		if err != nil {
 			log.Error(err)
 		}
-		
+
 		return
 	}
 

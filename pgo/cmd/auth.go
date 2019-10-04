@@ -70,9 +70,9 @@ func parseCredentials(dat string) msgs.BasicAuthCredentials {
 	// this split does not take into account newline conventions of different systems
 	// ex. windows new lines ("\r\n")
 	lines := strings.Split(strings.TrimSpace(dat), "\n")
-	if (len(lines) != 1){
+	if len(lines) != 1 {
 		log.Debugf("expected one and only one line in pgouser file - found %d", len(lines))
-		fmt.Println("unable to parse credentials in pgouser file",)
+		fmt.Println("unable to parse credentials in pgouser file")
 		os.Exit(2) // TODO: graceful exit
 	}
 
@@ -82,7 +82,7 @@ func parseCredentials(dat string) msgs.BasicAuthCredentials {
 	fields := strings.SplitN(lines[0], ":", 2)
 	if len(fields) != 2 {
 		log.Debug("invalid credential format: expecting \"<username>:<password>\"")
-		fmt.Println("unable to parse credentials in pgouser file",)
+		fmt.Println("unable to parse credentials in pgouser file")
 		os.Exit(2) // TODO: graceful exit
 	}
 	log.Debugf("%v", fields)

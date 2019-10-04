@@ -24,11 +24,10 @@ import (
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"github.com/crunchydata/postgres-operator/util"
-
 )
 
 // AddUpgrade implements the upgrade workflow for cluster minor upgrade
@@ -65,17 +64,15 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 		log.Debugf("MinorUpgrade: adding deployment to list: ", replica.Spec.Name)
 		replicaDeploymentList = append(replicaDeploymentList, replica.Spec.Name)
 	}
-	log.Debug("MinorUpgrade: replica count for upgrade is ", len(replicaDeploymentList, ))
+	log.Debug("MinorUpgrade: replica count for upgrade is ", len(replicaDeploymentList))
 
 	replist := strings.Join(replicaDeploymentList, ",") // string delimited list of replica deployments
-
-
 
 	// get the latest version of the task in case it changed
 	currentTask := crv1.Pgtask{}
 	currentTask.Spec.Parameters = make(map[string]string)
 	found, terr := kubeapi.Getpgtask(restclient, &currentTask, upgrade.Spec.Name, namespace)
-	
+
 	if !found {
 		log.Error("cound not find pgtask for minor upgrade")
 		log.Error(terr)
@@ -85,7 +82,7 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 	currentTask.Spec.Parameters[config.LABEL_UPGRADE_REPLICA] = replist
 
 	// Presently, backrest upgrade will not be done by minor upgrade as it uses a container release with the operator itself
-	// and not the one that is a part of the container suite. 
+	// and not the one that is a part of the container suite.
 
 	// get backrest deployment info here.
 	// backRestDeploymentName := cl.Spec.Name + "-backrest-shared-repo"
@@ -115,7 +112,7 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RESTClient, clusterName, upgradeTaskName, namespace string) {
 
 	log.Debug("Upgrade: ProcessNextUpgradeItem.... ", upgradeTaskName)
-	
+
 	// get the upgrade task
 	upgradeTask := crv1.Pgtask{}
 	found, err := kubeapi.Getpgtask(restclient, &upgradeTask, upgradeTaskName, namespace)
@@ -134,12 +131,9 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 		return // make this failed upgrade with error?
 	}
 
-
-
 	replicaTargets := upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_REPLICA]
 	backrestTargetName := upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_BACKREST]
 	primaryTargetName := upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_PRIMARY]
-
 
 	autoFailEnabled := util.IsAutofailEnabled(&cluster)
 
@@ -156,19 +150,19 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 		updatedTargetList := strings.Join(repList, ",")
 
 		// bounce deployment
-	
+
 		//this effectively bounces the Deployment's pod to pick up
 		//the new image tag.
-		
+
 		log.Debug("About to patch replica: ", replicaTargetName)
-		err = kubeapi.PatchDeployment(clientset, replicaTargetName, namespace, "/spec/template/spec/containers/0/image", 
+		err = kubeapi.PatchDeployment(clientset, replicaTargetName, namespace, "/spec/template/spec/containers/0/image",
 			operator.Pgo.Cluster.CCPImagePrefix+"/"+cluster.Spec.CCPImage+":"+upgradeTask.Spec.Parameters["CCPImageTag"])
 		if err != nil {
 			log.Error(err)
 			log.Error("error in doing replica minor upgrade")
 			return
 		}
-		
+
 		// upgrade replica targets in task.
 		upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_REPLICA] = updatedTargetList
 
@@ -177,21 +171,19 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 			log.Error("error in updating minor upgrade pgtask to in progress status " + err.Error())
 		}
 
-
-
-	} else if len (backrestTargetName) > 0 {
+	} else if len(backrestTargetName) > 0 {
 		// backrest to upgrade
 		log.Debug("Minor Upgrade: backrest")
 
 		log.Debug("About to patch backrest: ", backrestTargetName)
-		err = kubeapi.PatchDeployment(clientset, backrestTargetName, namespace, "/spec/template/spec/containers/0/image", 
+		err = kubeapi.PatchDeployment(clientset, backrestTargetName, namespace, "/spec/template/spec/containers/0/image",
 			operator.Pgo.Cluster.CCPImagePrefix+"/pgo-backrest-repo:"+upgradeTask.Spec.Parameters["CCPImageTag"])
 		if err != nil {
 			log.Error(err)
 			log.Error("error in doing backrest minor upgrade")
 			return
 		}
-		
+
 		// upgrade backrest target in task.
 		upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_BACKREST] = ""
 
@@ -200,14 +192,8 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 			log.Error("error in updating minor upgrade pgtask to in progress status " + err.Error())
 		}
 
-
-
-
-
-	} else if len (primaryTargetName) > 0 {
-	// primary to upgrade - should always be one of these.
-
-
+	} else if len(primaryTargetName) > 0 {
+		// primary to upgrade - should always be one of these.
 
 		// we update the cluster image version here due to timing issues when autofail takes over after the primary is bounced
 		// If we don't do this now, then one of the replicas will come back up with the old container image.
@@ -218,7 +204,7 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 
 		log.Debug("Minor Upgrade: primary")
 		log.Debug("About to patch primary: ", primaryTargetName)
-		err = kubeapi.PatchDeployment(clientset, primaryTargetName, namespace, "/spec/template/spec/containers/0/image", 
+		err = kubeapi.PatchDeployment(clientset, primaryTargetName, namespace, "/spec/template/spec/containers/0/image",
 			operator.Pgo.Cluster.CCPImagePrefix+"/"+cluster.Spec.CCPImage+":"+upgradeTask.Spec.Parameters["CCPImageTag"])
 		if err != nil {
 			log.Error(err)
@@ -234,8 +220,6 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 			log.Error("error in updating minor upgrade pgtask to in progress status " + err.Error())
 		}
 
-
-
 	} else {
 		// No other deployments  left to upgrade, complete the upgrade
 		completeUpgrade(clientset, restclient, &upgradeTask, autoFailEnabled, clusterName, namespace)
@@ -244,9 +228,8 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 	}
 }
 
-
 // completeUpgrade - makes any finishing changes required to complete the upgrade and
-// does final updates to the task and cluster. 
+// does final updates to the task and cluster.
 func completeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, upgradeTask *crv1.Pgtask, autoFail bool, clusterName, namespace string) {
 
 	log.Debug("Minor Upgrade: Completing...")
@@ -269,8 +252,7 @@ func completeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 
 }
 
-
-func updateClusterCCPImage(restclient *rest.RESTClient, upgradedCCPImageTag,  clusterName, namespace string) {
+func updateClusterCCPImage(restclient *rest.RESTClient, upgradedCCPImageTag, clusterName, namespace string) {
 
 	//update the CRD with the new image tag to maintain the truth
 	log.Info("updating the ccpimagetag in the pgcluster CR.")
@@ -285,23 +267,22 @@ func updateClusterCCPImage(restclient *rest.RESTClient, upgradedCCPImageTag,  cl
 // labelClusterForMinorUpgrade - applies a minor upgrade label to userlabels collection on pgcluster
 func labelpgClusterForMinorUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, clusterName, namespace string) error {
 
-		cluster := crv1.Pgcluster{}
-		found, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace)
-		if !found {
-			log.Errorf("could not find pgcluster %s with labels", clusterName)
-			return err
-		}
-
-		cluster.Spec.UserLabels[config.LABEL_MINOR_UPGRADE] = config.LABEL_UPGRADE_IN_PROGRESS
-		err = util.PatchClusterCRD(restclient, cluster.Spec.UserLabels, &cluster, namespace)
-		if err != nil {
-			log.Errorf("Minor Upgrade: could not patch pgcluster %s with labels", clusterName)
-			return err
-		}
-
+	cluster := crv1.Pgcluster{}
+	found, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace)
+	if !found {
+		log.Errorf("could not find pgcluster %s with labels", clusterName)
 		return err
-}
+	}
 
+	cluster.Spec.UserLabels[config.LABEL_MINOR_UPGRADE] = config.LABEL_UPGRADE_IN_PROGRESS
+	err = util.PatchClusterCRD(restclient, cluster.Spec.UserLabels, &cluster, namespace)
+	if err != nil {
+		log.Errorf("Minor Upgrade: could not patch pgcluster %s with labels", clusterName)
+		return err
+	}
+
+	return err
+}
 
 func removeMinorUpgradeLabelFromCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient, clusterName, namespace string) error {
 
@@ -339,7 +320,7 @@ func publishMinorUpgradeStartedEvent(upgradeTask *crv1.Pgtask, cluster *crv1.Pgc
 			Timestamp: time.Now(),
 			EventType: events.EventUpgradeCluster,
 		},
-		Clustername:       cluster.Name,
+		Clustername: cluster.Name,
 	}
 
 	err := events.Publish(f)
@@ -347,10 +328,7 @@ func publishMinorUpgradeStartedEvent(upgradeTask *crv1.Pgtask, cluster *crv1.Pgc
 		log.Error(err)
 	}
 
-
 }
-
-
 
 // publishMinorUpgradeCompleteEvent - indicates that a minor upgrade has successfully completed
 func publishMinorUpgradeCompleteEvent(upgradeTask *crv1.Pgtask, cluster *crv1.Pgcluster, namespace string) {
@@ -367,7 +345,7 @@ func publishMinorUpgradeCompleteEvent(upgradeTask *crv1.Pgtask, cluster *crv1.Pg
 			Timestamp: time.Now(),
 			EventType: events.EventUpgradeClusterCompleted,
 		},
-		Clustername:       cluster.Name,
+		Clustername: cluster.Name,
 	}
 
 	err := events.Publish(f)
