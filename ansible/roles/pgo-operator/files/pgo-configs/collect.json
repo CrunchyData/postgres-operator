@@ -2,7 +2,7 @@
     "name": "collect",
     "image": "{{.CCPImagePrefix}}/crunchy-collect:{{.CCPImageTag}}",
     "ports": [{
-        "containerPort": 9187,
+        "containerPort": {{.ExporterPort}},
         "protocol": "TCP"
     }],
     "env": [{
@@ -12,6 +12,9 @@
     {
     	"name": "JOB_NAME",
     	"value": "{{.JobName}}"
+    },{
+        "name": "POSTGRES_EXPORTER_PORT",
+        "value": "{{.ExporterPort}}"
     }
     ]
 }

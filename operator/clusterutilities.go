@@ -50,6 +50,7 @@ type collectTemplateFields struct {
 	CCPImageTag     string
 	CCPImagePrefix  string
 	PgPort          string
+	ExporterPort    string
 }
 
 //consolidate
@@ -57,6 +58,7 @@ type badgerTemplateFields struct {
 	CCPImageTag        string
 	CCPImagePrefix     string
 	BadgerTarget       string
+	PGBadgerPort       string
 	ContainerResources string
 }
 
@@ -158,6 +160,7 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, cluster *
 		badgerTemplateFields := badgerTemplateFields{}
 		badgerTemplateFields.CCPImageTag = spec.CCPImageTag
 		badgerTemplateFields.BadgerTarget = pgbadger_target
+		badgerTemplateFields.PGBadgerPort = spec.PGBadgerPort
 		badgerTemplateFields.CCPImagePrefix = Pgo.Cluster.CCPImagePrefix
 		badgerTemplateFields.ContainerResources = ""
 
@@ -199,6 +202,7 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 		collectTemplateFields.Name = spec.Name
 		collectTemplateFields.JobName = spec.Name
 		collectTemplateFields.CCPImageTag = spec.CCPImageTag
+		collectTemplateFields.ExporterPort = spec.ExporterPort
 		collectTemplateFields.CCPImagePrefix = Pgo.Cluster.CCPImagePrefix
 		collectTemplateFields.PgPort = spec.Port
 
