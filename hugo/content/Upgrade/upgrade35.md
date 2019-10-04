@@ -80,20 +80,41 @@ Verify this by running:
 
 At this point, the Operator should be running the latest minor version of 3.5, and new clusters will be built using the appropriate specifications defined in your pgo.yaml file. For the existing clusters, upgrades can be performed with the following steps.
 
-To bring your clusters up to the latest versions of Containers, for each of your clusters you will want to run the following:
+{{% notice info %}}
+
+Before beginning your upgrade procedure, be sure to consult the [Compatibility Requirements Page]
+( {{< relref "configuration/compatibility.md" >}}) for container dependency information.
+
+{{% / notice %}}
+
+First, update the deployment of each replica, one at a time, with the new image version: 
+
 ```
-pgo scaledown <clustername> --query
-pgo scaledown <clustername> --target=<replica-name> --delete-data
+kubectl edit deployment.apps/yourcluster
 ```
-When you scale down the cluster you have the option of passing in the --delete-data flag on the pgo scaledown command. If you do this the pvc bound to your pod will also be deleted. If for some reason you need to keep the pvc around, you can remove this flag.
+then edit the line containing the image value, which will be similar to the following
+```
+image: crunchydata/crunchy-postgres:centos7-11.3-2.4.0
+```
 
-Now that your cluster only has one pod you can run the minor upgrade:
+When this new deployment is written, it will kill the pod and recreate it with the new image. Do this for each replica, waiting for the previous pod to upgrade completely before moving to next.
 
-    pgo upgrade <clustername>
+Once the replicas have been updated, update the deployment of primary by updating the `image:` line in the same fashion, waiting for it to come back up.
 
-Once the minor upgrade is done you can scale your cluster back to the previous number of replicas:
+Now, similar to the steps above, you will need to update the pgcluster `ccpimagetag:` to the new value:
+```
+kubectl edit pgcluster yourcluster
+```
 
-    pgo scale <clustername> --replica-count=1
+To check everything is now working as expected, execute
+```
+pgo test yourcluster
+```
+To validate the database connections and execute
+```
+pgo show cluster yourcluster
+```
+To check the various cluster elements are listed as expected.
 
 There is a bug in the operator where the image version for the backrest repo deployment is not updated with a pgo upgrade. As a workaround for this you need to redeploy the backrest shared repo deployment with the correct image version.
 
