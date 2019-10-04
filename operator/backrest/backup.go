@@ -114,7 +114,6 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 				EventType: events.EventCreateBackup,
 			},
 			Clustername:       jobFields.ClusterName,
-			Clusteridentifier: task.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 			BackupType:        "pgbackrest",
 		}
 

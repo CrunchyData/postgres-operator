@@ -409,7 +409,6 @@ func publishClusterComplete(clusterName, namespace string, cluster *crv1.Pgclust
 			EventType: events.EventCreateClusterCompleted,
 		},
 		Clustername:       clusterName,
-		Clusteridentifier: cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 		WorkflowID:        cluster.Spec.UserLabels[config.LABEL_WORKFLOW_ID],
 	}
 
@@ -473,7 +472,6 @@ func publishPrimaryNotReady(clusterName, identifier, username, namespace string)
 			EventType: events.EventPrimaryNotReady,
 		},
 		Clustername:       clusterName,
-		Clusteridentifier: identifier,
 	}
 
 	err := events.Publish(f)

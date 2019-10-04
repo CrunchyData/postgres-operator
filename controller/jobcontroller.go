@@ -310,7 +310,6 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 				EventType: events.EventBenchmarkCompleted,
 			},
 			Clustername:       labels[config.LABEL_PG_CLUSTER],
-			Clusteridentifier: labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 		}
 
 		err = events.Publish(f)
@@ -472,7 +471,6 @@ func publishBackupComplete(clusterName, clusterIdentifier, username, backuptype,
 			EventType: events.EventCreateBackupCompleted,
 		},
 		Clustername:       clusterName,
-		Clusteridentifier: clusterIdentifier,
 		BackupType:        backuptype,
 		Path:              path,
 	}
@@ -496,7 +494,6 @@ func publishRestoreComplete(clusterName, identifier, username, namespace string)
 			EventType: events.EventRestoreClusterCompleted,
 		},
 		Clustername:       clusterName,
-		Clusteridentifier: identifier,
 	}
 
 	err := events.Publish(f)
@@ -519,7 +516,6 @@ func publishDeleteClusterComplete(clusterName, identifier, username, namespace s
 			EventType: events.EventDeleteClusterCompleted,
 		},
 		Clustername:       clusterName,
-		Clusteridentifier: identifier,
 	}
 
 	err := events.Publish(f)

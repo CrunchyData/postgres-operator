@@ -106,9 +106,8 @@ type EventInterface interface {
 
 //--------
 type EventReloadClusterFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
 }
 
 func (p EventReloadClusterFormat) GetHeader() EventHeader {
@@ -116,17 +115,16 @@ func (p EventReloadClusterFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventReloadClusterFormat) String() string {
-	msg := fmt.Sprintf("Event %s - (reload) name %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s - (reload) name %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
 //----------------------------
 type EventCreateClusterFailureFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
-	ErrorMessage      string `json:"errormessage"`
-	WorkflowID        string `json:"workflowid"`
+	EventHeader  `json:"eventheader"`
+	Clustername  string `json:"clustername"`
+	ErrorMessage string `json:"errormessage"`
+	WorkflowID   string `json:"workflowid"`
 }
 
 func (p EventCreateClusterFailureFormat) GetHeader() EventHeader {
@@ -134,16 +132,15 @@ func (p EventCreateClusterFailureFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventCreateClusterFailureFormat) String() string {
-	msg := fmt.Sprintf("Event %s - (create cluster failure) clustername %s workflow %s error %s id %s", lvl.EventHeader, lvl.Clustername, lvl.WorkflowID, lvl.ErrorMessage, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s - (create cluster failure) clustername %s workflow %s error %s", lvl.EventHeader, lvl.Clustername, lvl.WorkflowID, lvl.ErrorMessage)
 	return msg
 }
 
 //----------------------------
 type EventCreateClusterFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
-	WorkflowID        string `json:"workflowid"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+	WorkflowID  string `json:"workflowid"`
 }
 
 func (p EventCreateClusterFormat) GetHeader() EventHeader {
@@ -151,32 +148,30 @@ func (p EventCreateClusterFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventCreateClusterFormat) String() string {
-	msg := fmt.Sprintf("Event %s - (create cluster) clustername %s workflow %s id %s", lvl.EventHeader, lvl.Clustername, lvl.WorkflowID, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s - (create cluster) clustername %s workflow %s", lvl.EventHeader, lvl.Clustername, lvl.WorkflowID)
 	return msg
 }
 
 //----------------------------
 type EventCreateClusterCompletedFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
-	WorkflowID        string `json:"workflowid"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+	WorkflowID  string `json:"workflowid"`
 }
 
 func (p EventCreateClusterCompletedFormat) GetHeader() EventHeader {
 	return p.EventHeader
 }
 func (lvl EventCreateClusterCompletedFormat) String() string {
-	msg := fmt.Sprintf("Event %s - (create cluster completed) clustername %s workflow %s id %s", lvl.EventHeader, lvl.Clustername, lvl.WorkflowID, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s - (create cluster completed) clustername %s workflow %s", lvl.EventHeader, lvl.Clustername, lvl.WorkflowID)
 	return msg
 }
 
 //----------------------------
 type EventScaleClusterFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
-	Replicaname       string `json:"replicaname"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+	Replicaname string `json:"replicaname"`
 }
 
 func (p EventScaleClusterFormat) GetHeader() EventHeader {
@@ -184,7 +179,7 @@ func (p EventScaleClusterFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventScaleClusterFormat) String() string {
-	msg := fmt.Sprintf("Event %s (scale) - clustername %s - replicaname %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Replicaname, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (scale) - clustername %s - replicaname %s", lvl.EventHeader, lvl.Clustername, lvl.Replicaname)
 	return msg
 }
 
@@ -207,10 +202,9 @@ func (lvl EventScaleClusterFailureFormat) String() string {
 
 //----------------------------
 type EventScaleDownClusterFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
-	Replicaname       string `json:"replicaname"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+	Replicaname string `json:"replicaname"`
 }
 
 func (p EventScaleDownClusterFormat) GetHeader() EventHeader {
@@ -218,16 +212,15 @@ func (p EventScaleDownClusterFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventScaleDownClusterFormat) String() string {
-	msg := fmt.Sprintf("Event %s (scaledown) - clustername %s - replicaname %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Replicaname, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (scaledown) - clustername %s - replicaname %s", lvl.EventHeader, lvl.Clustername, lvl.Replicaname)
 	return msg
 }
 
 //----------------------------
 type EventFailoverClusterFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
-	Target            string `json:"target"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+	Target      string `json:"target"`
 }
 
 func (p EventFailoverClusterFormat) GetHeader() EventHeader {
@@ -235,16 +228,15 @@ func (p EventFailoverClusterFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventFailoverClusterFormat) String() string {
-	msg := fmt.Sprintf("Event %s (failover) - clustername %s - target %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Target, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (failover) - clustername %s - target %s", lvl.EventHeader, lvl.Clustername, lvl.Target)
 	return msg
 }
 
 //----------------------------
 type EventFailoverClusterCompletedFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
-	Target            string `json:"target"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+	Target      string `json:"target"`
 }
 
 func (p EventFailoverClusterCompletedFormat) GetHeader() EventHeader {
@@ -252,7 +244,7 @@ func (p EventFailoverClusterCompletedFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventFailoverClusterCompletedFormat) String() string {
-	msg := fmt.Sprintf("Event %s (failover completed) - clustername %s - target %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Target, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (failover completed) - clustername %s - target %s", lvl.EventHeader, lvl.Clustername, lvl.Target)
 	return msg
 }
 
@@ -288,9 +280,8 @@ func (lvl EventUpgradeClusterCompletedFormat) String() string {
 
 //----------------------------
 type EventDeleteClusterFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
 }
 
 func (p EventDeleteClusterFormat) GetHeader() EventHeader {
@@ -298,15 +289,14 @@ func (p EventDeleteClusterFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventDeleteClusterFormat) String() string {
-	msg := fmt.Sprintf("Event %s (delete) - clustername %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (delete) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
 //----------------------------
 type EventDeleteClusterCompletedFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
 }
 
 func (p EventDeleteClusterCompletedFormat) GetHeader() EventHeader {
@@ -314,31 +304,29 @@ func (p EventDeleteClusterCompletedFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventDeleteClusterCompletedFormat) String() string {
-	msg := fmt.Sprintf("Event %s (delete completed) - clustername %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (delete completed) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
 //----------------------------
 type EventTestClusterFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
 }
 
 func (p EventTestClusterFormat) GetHeader() EventHeader {
 	return p.EventHeader
 }
 func (lvl EventTestClusterFormat) String() string {
-	msg := fmt.Sprintf("Event %s (test) - clustername %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (test) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
 //----------------------------
 type EventCreateBackupFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
-	BackupType        string `json:"backuptype"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+	BackupType  string `json:"backuptype"`
 }
 
 func (p EventCreateBackupFormat) GetHeader() EventHeader {
@@ -346,17 +334,16 @@ func (p EventCreateBackupFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventCreateBackupFormat) String() string {
-	msg := fmt.Sprintf("Event %s (create backup) - clustername %s - backuptype %s id %s", lvl.EventHeader, lvl.Clustername, lvl.BackupType, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (create backup) - clustername %s - backuptype %s", lvl.EventHeader, lvl.Clustername, lvl.BackupType)
 	return msg
 }
 
 //----------------------------
 type EventCreateBackupCompletedFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
-	BackupType        string `json:"backuptype"`
-	Path              string `json:"path"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+	BackupType  string `json:"backuptype"`
+	Path        string `json:"path"`
 }
 
 func (p EventCreateBackupCompletedFormat) GetHeader() EventHeader {
@@ -364,18 +351,17 @@ func (p EventCreateBackupCompletedFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventCreateBackupCompletedFormat) String() string {
-	msg := fmt.Sprintf("Event %s (create backup completed) - clustername %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (create backup completed) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
 //----------------------------
 type EventCreateUserFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
-	PostgresUsername  string `json:"postgresusername"`
-	PostgresPassword  string `json:"postgrespassword"`
-	Managed           bool   `json:"managed"`
+	EventHeader      `json:"eventheader"`
+	Clustername      string `json:"clustername"`
+	PostgresUsername string `json:"postgresusername"`
+	PostgresPassword string `json:"postgrespassword"`
+	Managed          bool   `json:"managed"`
 }
 
 func (p EventCreateUserFormat) GetHeader() EventHeader {
@@ -383,17 +369,16 @@ func (p EventCreateUserFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventCreateUserFormat) String() string {
-	msg := fmt.Sprintf("Event %s (create user) - clustername %s - postgres user [%s] id [%s]", lvl.EventHeader, lvl.Clustername, lvl.PostgresUsername, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (create user) - clustername %s - postgres user [%s]", lvl.EventHeader, lvl.Clustername, lvl.PostgresUsername)
 	return msg
 }
 
 //----------------------------
 type EventDeleteUserFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	PostgresUsername  string `json:"postgresusername"`
-	Clusteridentifier string `json:"clusteridentifier"`
-	Managed           bool   `json:"managed"`
+	EventHeader      `json:"eventheader"`
+	Clustername      string `json:"clustername"`
+	PostgresUsername string `json:"postgresusername"`
+	Managed          bool   `json:"managed"`
 }
 
 func (p EventDeleteUserFormat) GetHeader() EventHeader {
@@ -401,17 +386,16 @@ func (p EventDeleteUserFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventDeleteUserFormat) String() string {
-	msg := fmt.Sprintf("Event %s (delete user) - clustername %s - postgres user [%s] id=[%s]", lvl.EventHeader, lvl.Clustername, lvl.PostgresUsername, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (delete user) - clustername %s - postgres user [%s]", lvl.EventHeader, lvl.Clustername, lvl.PostgresUsername)
 	return msg
 }
 
 //----------------------------
 type EventChangePasswordUserFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
-	PostgresUsername  string `json:"postgresusername"`
-	PostgresPassword  string `json:"postgrespassword"`
+	EventHeader      `json:"eventheader"`
+	Clustername      string `json:"clustername"`
+	PostgresUsername string `json:"postgresusername"`
+	PostgresPassword string `json:"postgrespassword"`
 }
 
 func (p EventChangePasswordUserFormat) GetHeader() EventHeader {
@@ -419,16 +403,15 @@ func (p EventChangePasswordUserFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventChangePasswordUserFormat) String() string {
-	msg := fmt.Sprintf("Event %s (change password user) - clustername %s - postgres user [%s] id [%s]", lvl.EventHeader, lvl.Clustername, lvl.PostgresUsername, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (change password user) - clustername %s - postgres user [%s]", lvl.EventHeader, lvl.Clustername, lvl.PostgresUsername)
 	return msg
 }
 
 //----------------------------
 type EventCreateLabelFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
-	Label             string `json:"label"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+	Label       string `json:"label"`
 }
 
 func (p EventCreateLabelFormat) GetHeader() EventHeader {
@@ -436,7 +419,7 @@ func (p EventCreateLabelFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventCreateLabelFormat) String() string {
-	msg := fmt.Sprintf("Event %s (create label) - clustername %s - label [%s] id %s", lvl.EventHeader, lvl.Clustername, lvl.Label, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (create label) - clustername %s - label [%s]", lvl.EventHeader, lvl.Clustername, lvl.Label)
 	return msg
 }
 
@@ -473,10 +456,9 @@ func (lvl EventDeletePolicyFormat) String() string {
 
 //----------------------------
 type EventApplyPolicyFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
-	Policyname        string `json:"policyname"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+	Policyname  string `json:"policyname"`
 }
 
 func (p EventApplyPolicyFormat) GetHeader() EventHeader {
@@ -484,16 +466,15 @@ func (p EventApplyPolicyFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventApplyPolicyFormat) String() string {
-	msg := fmt.Sprintf("Event %s (apply policy) - clustername %s - policy [%s] id %s", lvl.EventHeader, lvl.Clustername, lvl.Policyname, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (apply policy) - clustername %s - policy [%s]", lvl.EventHeader, lvl.Clustername, lvl.Policyname)
 	return msg
 }
 
 //----------------------------
 type EventLoadFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
-	Loadconfig        string `json:"loadconfig"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+	Loadconfig  string `json:"loadconfig"`
 }
 
 func (p EventLoadFormat) GetHeader() EventHeader {
@@ -501,7 +482,7 @@ func (p EventLoadFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventLoadFormat) String() string {
-	msg := fmt.Sprintf("Event %s (load) - clustername %s - load config [%s] id [%s]", lvl.EventHeader, lvl.Clustername, lvl.Loadconfig, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (load) - clustername %s - load config [%s]", lvl.EventHeader, lvl.Clustername, lvl.Loadconfig)
 	return msg
 }
 
@@ -523,9 +504,8 @@ func (lvl EventLoadCompletedFormat) String() string {
 
 //----------------------------
 type EventBenchmarkFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifer"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
 }
 
 func (p EventBenchmarkFormat) GetHeader() EventHeader {
@@ -533,15 +513,14 @@ func (p EventBenchmarkFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventBenchmarkFormat) String() string {
-	msg := fmt.Sprintf("Event %s (benchmark) - clustername %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (benchmark) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
 //----------------------------
 type EventBenchmarkCompletedFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
 }
 
 func (p EventBenchmarkCompletedFormat) GetHeader() EventHeader {
@@ -549,15 +528,14 @@ func (p EventBenchmarkCompletedFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventBenchmarkCompletedFormat) String() string {
-	msg := fmt.Sprintf("Event %s (benchmark completed) - clustername %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (benchmark completed) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
 //----------------------------
 type EventCreatePgpoolFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
 }
 
 func (p EventCreatePgpoolFormat) GetHeader() EventHeader {
@@ -565,15 +543,14 @@ func (p EventCreatePgpoolFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventCreatePgpoolFormat) String() string {
-	msg := fmt.Sprintf("Event %s (create pgpool) - clustername %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (create pgpool) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
 //----------------------------
 type EventDeletePgpoolFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
 }
 
 func (p EventDeletePgpoolFormat) GetHeader() EventHeader {
@@ -581,15 +558,14 @@ func (p EventDeletePgpoolFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventDeletePgpoolFormat) String() string {
-	msg := fmt.Sprintf("Event %s (delete pgpool) - clustername %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (delete pgpool) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
 //----------------------------
 type EventCreatePgbouncerFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
 }
 
 func (p EventCreatePgbouncerFormat) GetHeader() EventHeader {
@@ -603,9 +579,8 @@ func (lvl EventCreatePgbouncerFormat) String() string {
 
 //----------------------------
 type EventDeletePgbouncerFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
 }
 
 func (p EventDeletePgbouncerFormat) GetHeader() EventHeader {
@@ -613,15 +588,14 @@ func (p EventDeletePgbouncerFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventDeletePgbouncerFormat) String() string {
-	msg := fmt.Sprintf("Event %s (delete pgbouncer) - clustername %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (delete pgbouncer) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
 //----------------------------
 type EventRestoreClusterFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
 }
 
 func (p EventRestoreClusterFormat) GetHeader() EventHeader {
@@ -629,15 +603,14 @@ func (p EventRestoreClusterFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventRestoreClusterFormat) String() string {
-	msg := fmt.Sprintf("Event %s (restore) - clustername %s  id %s", lvl.EventHeader, lvl.Clustername, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (restore) - clustername %s ", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
 //----------------------------
 type EventRestoreClusterCompletedFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
 }
 
 func (p EventRestoreClusterCompletedFormat) GetHeader() EventHeader {
@@ -645,15 +618,14 @@ func (p EventRestoreClusterCompletedFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventRestoreClusterCompletedFormat) String() string {
-	msg := fmt.Sprintf("Event %s (restore completed) - clustername %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s (restore completed) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
 //----------------------------
 type EventPrimaryNotReadyFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
 }
 
 func (p EventPrimaryNotReadyFormat) GetHeader() EventHeader {
@@ -661,16 +633,15 @@ func (p EventPrimaryNotReadyFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventPrimaryNotReadyFormat) String() string {
-	msg := fmt.Sprintf("Event %s - (primary not ready) clustername %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s - (primary not ready) clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
 //----------------------------
 type EventPrimaryDeletedFormat struct {
-	EventHeader       `json:"eventheader"`
-	Clustername       string `json:"clustername"`
-	Clusteridentifier string `json:"clusteridentifier"`
-	Deploymentname    string `json:"deploymentname"`
+	EventHeader    `json:"eventheader"`
+	Clustername    string `json:"clustername"`
+	Deploymentname string `json:"deploymentname"`
 }
 
 func (p EventPrimaryDeletedFormat) GetHeader() EventHeader {
@@ -678,6 +649,6 @@ func (p EventPrimaryDeletedFormat) GetHeader() EventHeader {
 }
 
 func (lvl EventPrimaryDeletedFormat) String() string {
-	msg := fmt.Sprintf("Event %s - (primary deleted) clustername %s deployment %s id %s", lvl.EventHeader, lvl.Clustername, lvl.Deploymentname, lvl.Clusteridentifier)
+	msg := fmt.Sprintf("Event %s - (primary deleted) clustername %s deployment %s", lvl.EventHeader, lvl.Clustername, lvl.Deploymentname)
 	return msg
 }

@@ -409,7 +409,6 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 			EventType: events.EventScaleCluster,
 		},
 		Clustername:       cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
-		Clusteridentifier: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 		Replicaname:       cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
 	}
 
@@ -484,7 +483,6 @@ func publishScaleError(namespace string, username string, cluster *crv1.Pgcluste
 		},
 		Clustername:       cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
 		Replicaname:       cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
-		Clusteridentifier: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 	}
 
 	err := events.Publish(f)
@@ -506,7 +504,6 @@ func publishDeleteCluster(namespace, username, clusterName, identifier string) {
 			EventType: events.EventDeleteCluster,
 		},
 		Clustername:       clusterName,
-		Clusteridentifier: identifier,
 	}
 
 	err := events.Publish(f)

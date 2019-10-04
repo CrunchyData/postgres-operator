@@ -484,7 +484,6 @@ func publishRestore(id, clusterName, username, namespace string) {
 			EventType: events.EventRestoreCluster,
 		},
 		Clustername:       clusterName,
-		Clusteridentifier: id,
 	}
 
 	err := events.Publish(f)

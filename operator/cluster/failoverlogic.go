@@ -285,7 +285,6 @@ func publishPromoteEvent(identifier, namespace, username, clusterName, target st
 			EventType: events.EventFailoverCluster,
 		},
 		Clustername:       clusterName,
-		Clusteridentifier: identifier,
 		Target:            target,
 	}
 
@@ -308,7 +307,6 @@ func publishPrimaryDeleted(identifier, clusterName, deploymentToDelete, username
 			EventType: events.EventPrimaryDeleted,
 		},
 		Clustername:       clusterName,
-		Clusteridentifier: identifier,
 		Deploymentname:    deploymentToDelete,
 	}
 

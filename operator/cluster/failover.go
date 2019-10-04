@@ -86,7 +86,6 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 			EventType: events.EventFailoverCluster,
 		},
 		Clustername:       clusterName,
-		Clusteridentifier: cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 		Target:            task.ObjectMeta.Labels[config.LABEL_TARGET],
 	}
 
