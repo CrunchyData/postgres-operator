@@ -1,23 +1,26 @@
             ,{
                 "name": "pgbadger",
-		"image": "{{.CCPImagePrefix}}/crunchy-pgbadger:{{.CCPImageTag}}",
+		        "image": "{{.CCPImagePrefix}}/crunchy-pgbadger:{{.CCPImageTag}}",
                 "ports": [ {
-                        "containerPort": 10000,
+                        "containerPort": {{.PGBadgerPort}},
                         "protocol": "TCP"
                     }
                 ],
                 "readinessProbe": {
                     "tcpSocket": {
-                        "port": 10000
+                        "port": {{.PGBadgerPort}}
                     },
                     "initialDelaySeconds": 20,
                     "periodSeconds": 10
                 },
-		{{.ContainerResources }}
+		         {{.ContainerResources }}
                 "env": [ {
-		"name": "BADGER_TARGET",
-		"value": "{{.BadgerTarget}}"
-		} ],
+		            "name": "BADGER_TARGET",
+		            "value": "{{.BadgerTarget}}"
+		        }, {
+                    "name": "PGBADGER_SERVICE_PORT",
+                    "value": "{{.PGBadgerPort}}"
+                } ],
                 "volumeMounts": [
                     {
                         "mountPath": "/pgdata",
