@@ -173,7 +173,6 @@ func AddPgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 			EventType: events.EventCreatePgpool,
 		},
 		Clustername:       clusterName,
-		Clusteridentifier: pgcluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 	}
 
 	err = events.Publish(f)
@@ -242,7 +241,6 @@ func DeletePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 			EventType: events.EventDeletePgpool,
 		},
 		Clustername:       clusterName,
-		Clusteridentifier: pgcluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 	}
 
 	err = events.Publish(f)

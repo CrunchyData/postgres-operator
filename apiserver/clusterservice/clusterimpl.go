@@ -406,7 +406,6 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 				EventType: events.EventTestCluster,
 			},
 			Clustername:       c.Name,
-			Clusteridentifier: c.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 		}
 
 		err = events.Publish(f)

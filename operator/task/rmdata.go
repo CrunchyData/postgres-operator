@@ -176,7 +176,6 @@ func publishDeleteCluster(clusterName, identifier, username, namespace string) {
 			EventType: events.EventDeleteCluster,
 		},
 		Clustername:       clusterName,
-		Clusteridentifier: identifier,
 	}
 
 	err := events.Publish(f)

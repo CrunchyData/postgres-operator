@@ -275,7 +275,6 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 				EventType: events.EventApplyPolicy,
 			},
 			Clustername:       d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER],
-			Clusteridentifier: d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 			Policyname:        request.Name,
 		}
 

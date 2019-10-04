@@ -106,7 +106,6 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			EventType: events.EventCreateCluster,
 		},
 		Clustername:       cl.ObjectMeta.Name,
-		Clusteridentifier: cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 		WorkflowID:        cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
 	}
 
@@ -236,7 +235,6 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 			EventType: events.EventDeleteCluster,
 		},
 		Clustername:       cl.Spec.Name,
-		Clusteridentifier: cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 	}
 
 	err = events.Publish(f)
@@ -342,7 +340,6 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 			EventType: events.EventScaleDownCluster,
 		},
 		Clustername:       replica.Spec.ClusterName,
-		Clusteridentifier: replica.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 	}
 
 	err = events.Publish(f)
@@ -402,7 +399,6 @@ func publishClusterCreateFailure(cl *crv1.Pgcluster, errorMsg string) {
 			EventType: events.EventCreateClusterFailure,
 		},
 		Clustername:       cl.ObjectMeta.Name,
-		Clusteridentifier: cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 		ErrorMessage:      errorMsg,
 		WorkflowID:        cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
 	}

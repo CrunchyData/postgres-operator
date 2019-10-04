@@ -182,7 +182,6 @@ func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 			EventType: events.EventCreatePgbouncer,
 		},
 		Clustername:       clusterName,
-		Clusteridentifier: pgcluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 	}
 
 	err = events.Publish(f)
@@ -252,7 +251,6 @@ func DeletePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.R
 			EventType: events.EventDeletePgbouncer,
 		},
 		Clustername:       clusterName,
-		Clusteridentifier: pgcluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 	}
 
 	err = events.Publish(f)
