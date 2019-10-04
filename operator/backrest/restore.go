@@ -427,6 +427,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		ContainerResources:      operator.GetContainerResourcesJSON(&cluster.Spec.ContainerResources),
 		ConfVolume:              operator.GetConfVolume(clientset, cluster, namespace),
 		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
+		CollectVolume:           operator.GetCollectVolume(clientset, cluster, namespace),
 		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, cluster, restoreToName),
 		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster.Labels[config.LABEL_BACKREST], cluster.Spec.ClusterName, restoreToName,
 			cluster.Spec.Port, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
