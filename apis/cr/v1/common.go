@@ -26,6 +26,9 @@ const UserSecretSuffix = "-secret"
 // PrimarySecretSuffix ...
 const PrimarySecretSuffix = "-primaryuser-secret"
 
+// CollectSecretSuffix ...
+const CollectSecretSuffix = "-collect-secret"
+
 // StorageExisting ...
 const StorageExisting = "existing"
 

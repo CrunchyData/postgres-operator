@@ -5,13 +5,32 @@
         "containerPort": 9187,
         "protocol": "TCP"
     }],
-    "env": [{
-        "name": "DATA_SOURCE_NAME",
-        "value": "postgresql://ccp_monitoring:password@127.0.0.1:5432/postgres?sslmode=disable"
-    },
-    {
-    	"name": "JOB_NAME",
-    	"value": "{{.JobName}}"
-    }
+    "env": [
+        {
+            "name": "COLLECT_PG_HOST",
+            "value": "127.0.0.1"
+        },
+        {
+            "name": "COLLECT_PG_PORT",
+            "value": "{{.PgPort}}"
+        },
+        {
+            "name": "COLLECT_PG_DATABASE",
+            "value": "postgres"
+        },
+        {
+            "name": "COLLECT_PG_PARAMS",
+            "value": "sslmode=disable"
+        },
+        {
+            "name": "JOB_NAME",
+            "value": "{{.JobName}}"
+        }
+    ],
+    "volumeMounts": [
+        {
+            "mountPath": "/collect-pguser",
+            "name": "collect-volume"
+        }
     ]
 }

@@ -57,6 +57,7 @@ type PgclusterSpec struct {
 	UserSecretName     string               `json:"usersecretname"`
 	RootSecretName     string               `json:"rootsecretname"`
 	PrimarySecretName  string               `json:"primarysecretname"`
+	CollectSecretName  string               `json:"collectSecretName"`
 	Status             string               `json:"status"`
 	PswLastUpdate      string               `json:"pswlastupdate"`
 	CustomConfig       string               `json:"customconfig"`

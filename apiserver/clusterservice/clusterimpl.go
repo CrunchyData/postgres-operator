@@ -714,6 +714,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			resp.Results = append(resp.Results, err.Error())
 			return resp
 		}
+		newInstance.Spec.CollectSecretName = clusterName + crv1.CollectSecretSuffix
 
 		// Create Backrest secret for S3/SSH Keys:
 		// We make this regardless if backrest is enabled or not because
