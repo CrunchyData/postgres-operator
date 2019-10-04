@@ -44,21 +44,21 @@ pgo-backrest:	check-go-vars
 	go install pgo-backrest/pgo-backrest.go
 	mv $(GOBIN)/pgo-backrest ./bin/pgo-backrest/
 pgo-backrest-image: check-go-vars pgo-backrest
-	sudo --preserve-env buildah bud $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-backrest.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-backrest:$(PGO_IMAGE_TAG) $(PGOROOT)
+	sudo --preserve-env buildah bud --layers $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-backrest.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-backrest:$(PGO_IMAGE_TAG) $(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-backrest:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-backrest:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-backrest:$(PGO_IMAGE_TAG)  $(PGO_IMAGE_PREFIX)/pgo-backrest:$(PGO_IMAGE_TAG)
 
 pgo-event-image: check-go-vars
-	sudo --preserve-env buildah bud $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-event.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-event:$(PGO_IMAGE_TAG) $(PGOROOT)
+	sudo --preserve-env buildah bud --layers $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-event.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-event:$(PGO_IMAGE_TAG) $(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-event:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-event:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-event:$(PGO_IMAGE_TAG)  $(PGO_IMAGE_PREFIX)/pgo-event:$(PGO_IMAGE_TAG)
 
 pgo-backrest-restore-image:	check-go-vars 
-	sudo --preserve-env buildah bud $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-backrest-restore.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-backrest-restore:$(PGO_IMAGE_TAG) $(PGOROOT)
+	sudo --preserve-env buildah bud --layers $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-backrest-restore.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-backrest-restore:$(PGO_IMAGE_TAG) $(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-backrest-restore:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-backrest-restore:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-backrest-restore:$(PGO_IMAGE_TAG) $(PGO_IMAGE_PREFIX)/pgo-backrest-restore:$(PGO_IMAGE_TAG)
 pgo-backrest-repo-image:	check-go-vars 
-	sudo --preserve-env buildah bud $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-backrest-repo.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-backrest-repo:$(PGO_IMAGE_TAG) $(PGOROOT)
+	sudo --preserve-env buildah bud --layers $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-backrest-repo.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-backrest-repo:$(PGO_IMAGE_TAG) $(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-backrest-repo:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-backrest-repo:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-backrest-repo:$(PGO_IMAGE_TAG) $(PGO_IMAGE_PREFIX)/pgo-backrest-repo:$(PGO_IMAGE_TAG)
 cli-docs:	check-go-vars
@@ -69,7 +69,7 @@ clean:	check-go-vars
 	rm -rf $(GOPATH)/pkg/* $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
 pgo-apiserver-image:	check-go-vars pgo-apiserver
 	cp $(GOBIN)/apiserver bin/
-	sudo --preserve-env buildah bud $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-apiserver.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-apiserver:$(PGO_IMAGE_TAG) $(PGOROOT)
+	sudo --preserve-env buildah bud --layers $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-apiserver.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-apiserver:$(PGO_IMAGE_TAG) $(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-apiserver:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-apiserver:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-apiserver:$(PGO_IMAGE_TAG)  $(PGO_IMAGE_PREFIX)/pgo-apiserver:$(PGO_IMAGE_TAG)
 
@@ -77,35 +77,35 @@ postgres-operator:	check-go-vars
 	go install postgres-operator.go
 postgres-operator-image:	check-go-vars postgres-operator
 	cp $(GOBIN)/postgres-operator bin/postgres-operator/
-	sudo --preserve-env buildah bud $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.postgres-operator.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/postgres-operator:$(PGO_IMAGE_TAG) $(PGOROOT)
+	sudo --preserve-env buildah bud --layers $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.postgres-operator.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/postgres-operator:$(PGO_IMAGE_TAG) $(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/postgres-operator:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/postgres-operator:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/postgres-operator:$(PGO_IMAGE_TAG) $(PGO_IMAGE_PREFIX)/postgres-operator:$(PGO_IMAGE_TAG)
 deepsix:
 	cd $(PGOROOT)/apis/cr/v1
 	deepcopy-gen --go-header-file=$(PGOROOT)/apis/cr/v1/header.go.txt --input-dirs=.
 pgo-lspvc-image:
-	sudo --preserve-env buildah bud $(SQUASH)  -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-lspvc.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-lspvc:$(PGO_IMAGE_TAG) $(PGOROOT)
+	sudo --preserve-env buildah bud --layers $(SQUASH)  -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-lspvc.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-lspvc:$(PGO_IMAGE_TAG) $(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-lspvc:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-lspvc:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-lspvc:$(PGO_IMAGE_TAG) $(PGO_IMAGE_PREFIX)/pgo-lspvc:$(PGO_IMAGE_TAG)
 pgo-load-image:
-	sudo --preserve-env buildah bud $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-load.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-load:$(PGO_IMAGE_TAG) $(PGOROOT)
+	sudo --preserve-env buildah bud --layers $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-load.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-load:$(PGO_IMAGE_TAG) $(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-load:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-load:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-load:$(PGO_IMAGE_TAG) $(PGO_IMAGE_PREFIX)/pgo-load:$(PGO_IMAGE_TAG)
 pgo-rmdata:	check-go-vars
 	go install pgo-rmdata/pgo-rmdata.go
 pgo-rmdata-image: 	check-go-vars pgo-rmdata
 	cp $(GOBIN)/pgo-rmdata bin/pgo-rmdata/
-	sudo --preserve-env buildah bud $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-rmdata.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-rmdata:$(PGO_IMAGE_TAG) $(PGOROOT)
+	sudo --preserve-env buildah bud --layers $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-rmdata.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-rmdata:$(PGO_IMAGE_TAG) $(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-rmdata:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-rmdata:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-rmdata:$(PGO_IMAGE_TAG) $(PGO_IMAGE_PREFIX)/pgo-rmdata:$(PGO_IMAGE_TAG)
 pgo-sqlrunner-image:
-	sudo --preserve-env buildah bud $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-sqlrunner.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-sqlrunner:$(PGO_IMAGE_TAG) $(PGOROOT)
+	sudo --preserve-env buildah bud --layers $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-sqlrunner.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-sqlrunner:$(PGO_IMAGE_TAG) $(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-sqlrunner:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-sqlrunner:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-sqlrunner:$(PGO_IMAGE_TAG) $(PGO_IMAGE_PREFIX)/pgo-sqlrunner:$(PGO_IMAGE_TAG)
 pgo-scheduler-image: check-go-vars pgo-scheduler
 	go install pgo-scheduler/pgo-scheduler.go
 	mv $(GOBIN)/pgo-scheduler ./bin/pgo-scheduler/
-	sudo --preserve-env buildah bud $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-scheduler.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-scheduler:$(PGO_IMAGE_TAG) $(PGOROOT)
+	sudo --preserve-env buildah bud --layers $(SQUASH) -f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-scheduler.$(PGO_BASEOS) -t $(PGO_IMAGE_PREFIX)/pgo-scheduler:$(PGO_IMAGE_TAG) $(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-scheduler:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-scheduler:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-scheduler:$(PGO_IMAGE_TAG) $(PGO_IMAGE_PREFIX)/pgo-scheduler:$(PGO_IMAGE_TAG)
 
