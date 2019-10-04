@@ -163,23 +163,23 @@ Verify this by running:
 
 At this point, the Operator will be running version 4.1.0, and new clusters will be built using the appropriate specifications defined in your pgo.yaml file. For the existing clusters, upgrades can be performed with the following steps.
 
-To bring your clusters up to the latest versions of Postgres and Containers, for each of your clusters you will want to run the following:
-```
-pgo scaledown <clustername> --query
-pgo scaledown <clustername> --target
-```
+{{% notice info %}}
 
-Now that your cluster only has one pod you can run the minor upgrade:
+Before beginning your upgrade procedure, be sure to consult the [Compatibility Requirements Page]
+( {{< relref "configuration/compatibility.md" >}}) for container dependency information.
+
+{{% / notice %}}
+
+To start, execute the minor upgrade command:
 
     pgo upgrade cluster <clustername>
 
-By default this command updates the cluster with the values in the pgo.yaml.  If however you are running more than one version of Postgres clusters you can run the following to upgrade any clusters that do not match what is in your current configuration.
+If you would like to know more about the Postgres Cluster minor upgrade, please see the [Upgrade Page]
+( {{< relref "upgrade/_index.md" >}}) for additional information.
+
+By default this command updates the cluster with the values in the pgo.yaml.  If however you are running more than one version of Postgres clusters you can run the following command to upgrade any clusters that do not match what is in your current configuration.
 
     pgo upgrade <clustername> --ccp-image-tag=<imagetag>
-
-Once the minor upgrade is done you can scale your cluster back to the previous number of replicas, for example:
-
-    pgo scale <clustername> --replica-count=2
 
 There is a bug in the operator where the image version for the backrest repo deployment is not updated with a pgo upgrade. As a workaround for this you need to redeploy the backrest shared repo deployment with the correct image version.
 

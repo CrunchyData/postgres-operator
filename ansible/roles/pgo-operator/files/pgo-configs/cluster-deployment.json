@@ -145,6 +145,9 @@
                             "secretName": "{{.PrimarySecretName}}"
                         }
                     }, {
+                        "name": "collect-volume",
+                        {{.CollectVolume}}
+                    }, {
                         "name": "sshd",
                         "secret": {
                             "secretName": "{{.ClusterName}}-backrest-repo-config",
