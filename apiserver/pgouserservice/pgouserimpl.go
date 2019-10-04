@@ -238,10 +238,10 @@ func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *m
 		secret.Data[MAP_KEY_NAMESPACES] = []byte("")
 	}
 
-	log.Info("Updating secret for: " , request.PgouserName )
+	log.Info("Updating secret for: ", request.PgouserName)
 	err = kubeapi.UpdateSecret(clientset, secret, apiserver.PgoNamespace)
 	if err != nil {
-		log.Debug("Error updating pgouser secret: " , err.Error)
+		log.Debug("Error updating pgouser secret: ", err.Error)
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp

@@ -21,23 +21,23 @@ import (
 
 // UpdateUserRequest ...
 type UpdateUserRequest struct {
-	Clusters        		[]string
-	Selector        		string
-	AllFlag         		bool
-	ExpireUser      		bool
-	Namespace       		string
-	PasswordAgeDays 		int
-	PasswordAgeDaysUpdate 	bool
-	Username        		string
-	Password        		string
-	DeleteUser      		string
-	ValidDays       		string
-	UserDBAccess    		string
-	AddUser         		string
-	Expired         		string
-	ManagedUser     		bool
-	ClientVersion   		string
-	PasswordLength  		int
+	Clusters              []string
+	Selector              string
+	AllFlag               bool
+	ExpireUser            bool
+	Namespace             string
+	PasswordAgeDays       int
+	PasswordAgeDaysUpdate bool
+	Username              string
+	Password              string
+	DeleteUser            string
+	ValidDays             string
+	UserDBAccess          string
+	AddUser               string
+	Expired               string
+	ManagedUser           bool
+	ClientVersion         string
+	PasswordLength        int
 }
 
 // DeleteUserRequest ...

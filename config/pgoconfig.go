@@ -302,7 +302,7 @@ func (c *PgoConfig) Validate() error {
 			return errors.New(errPrefix + "Invalid PGBadgerPort: " + err.Error())
 		}
 	}
-        if c.Cluster.ExporterPort == "" {
+	if c.Cluster.ExporterPort == "" {
 		c.Cluster.ExporterPort = DEFAULT_EXPORTER_PORT
 		log.Infof("setting ExporterPort to default %s", c.Cluster.ExporterPort)
 	} else {
@@ -318,7 +318,6 @@ func (c *PgoConfig) Validate() error {
 			return errors.New(errPrefix + "Invalid Port: " + err.Error())
 		}
 	}
-
 
 	if c.Cluster.LogStatement != "" {
 		found := false
@@ -348,7 +347,7 @@ func (c *PgoConfig) Validate() error {
 	if c.Cluster.PrimaryNodeLabel != "" {
 		parts := strings.Split(c.Cluster.PrimaryNodeLabel, "=")
 		if len(parts) != 2 {
-			return errors.New(errPrefix+ "Cluster.PrimaryNodeLabel does not follow key=value format")
+			return errors.New(errPrefix + "Cluster.PrimaryNodeLabel does not follow key=value format")
 		}
 	}
 
@@ -480,12 +479,12 @@ func (c *PgoConfig) Validate() error {
 		return errors.New(errPrefix + "Cluster.User is required")
 	} else {
 		// validates that username can be used as the kubernetes secret name
-		// Must consist of lower case alphanumeric characters, 
+		// Must consist of lower case alphanumeric characters,
 		// '-' or '.', and must start and end with an alphanumeric character
-                errs := validation.IsDNS1123Subdomain(c.Cluster.User)
+		errs := validation.IsDNS1123Subdomain(c.Cluster.User)
 		if len(errs) > 0 {
 			var msg string
-			for i := range errs{
+			for i := range errs {
 				msg = msg + errs[i]
 			}
 			return errors.New(errPrefix + msg)

@@ -1,4 +1,5 @@
 package rmdata
+
 /*
 Copyright 2019 Crunchy Data
 Licensed under the Apache License, Version 2.0 (the "License");

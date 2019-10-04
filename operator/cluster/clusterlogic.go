@@ -51,13 +51,13 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 
 	//create the primary service
 	serviceFields := ServiceTemplateFields{
-		Name:        cl.Spec.Name,
-		ServiceName: cl.Spec.Name,
-		ClusterName: cl.Spec.Name,
-		Port:        cl.Spec.Port,
+		Name:         cl.Spec.Name,
+		ServiceName:  cl.Spec.Name,
+		ClusterName:  cl.Spec.Name,
+		Port:         cl.Spec.Port,
 		PGBadgerPort: cl.Spec.PGBadgerPort,
 		ExporterPort: cl.Spec.ExporterPort,
-		ServiceType: st,
+		ServiceType:  st,
 	}
 
 	err = CreateService(clientset, &serviceFields, namespace)

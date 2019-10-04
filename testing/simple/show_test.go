@@ -86,7 +86,7 @@ func TestShowNamespace(t *testing.T) {
 		t.Logf("actual %s- ", actual)
 		found := strings.Contains(actual, Namespace)
 		if !found {
-			t.Error("could not find " + Namespace  + "namespace in output")
+			t.Error("could not find " + Namespace + "namespace in output")
 		}
 
 	}
@@ -95,7 +95,6 @@ func TestShowNamespace(t *testing.T) {
 		t.Log("some teardown code")
 	})
 }
-
 
 func TestShowPvc(t *testing.T) {
 	var clientset *kubernetes.Clientset
@@ -139,4 +138,3 @@ func TestShowPvc(t *testing.T) {
 		t.Log("some teardown code")
 	})
 }
-

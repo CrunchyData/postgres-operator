@@ -21,7 +21,7 @@ var (
 	kubeconfig      = flag.String("kubeconfig", "./config", "absolute path to the kubeconfig file")
 	namespace       = flag.String("namespace", "pgouser1", "namespace to test within ")
 	username        = flag.String("username", "pgouser1", "username to test within ")
-	rolename	= flag.String("rolename", "pgoadmin", "rolename to test with")
+	rolename        = flag.String("rolename", "pgoadmin", "rolename to test with")
 	testclustername = flag.String("clustername", "", "cluster name to test with")
 	eventTcpAddress = flag.String("event-tcp-address", "localhost:14150", "tcp port to the event pgo-event port")
 
@@ -29,7 +29,7 @@ var (
 	Namespace       = "pgouser1"
 	TestUsername    = "pgouser1"
 	TestClusterName = "foo"
-	TestRolename	= "pgoadmin"
+	TestRolename    = "pgoadmin"
 	SLEEP_SECS      = 10
 )
 

@@ -48,7 +48,7 @@ type loadJobTemplateFields struct {
 	PVCName            string
 	SecurityContext    string
 	ContainerResources string
-	PGUserSecret	   string
+	PGUserSecret       string
 }
 
 type containerResourcesTemplateFields struct {

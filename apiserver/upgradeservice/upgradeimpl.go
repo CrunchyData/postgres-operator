@@ -113,7 +113,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns string) msgs.CreateUpg
 			response.Status.Msg = clusterName + " is not a valid pgcluster"
 			return response
 		}
-		
+
 		//figure out what version we are upgrading to
 		imageToUpgradeTo := apiserver.Pgo.Cluster.CCPImageTag
 		if request.CCPImageTag != "" {
