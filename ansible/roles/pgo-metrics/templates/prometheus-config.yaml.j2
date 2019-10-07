@@ -19,15 +19,8 @@ data:
       scheme: https
       tls_config:
         ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        insecure_skip_verify: true
       bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
-
-      relabel_configs:
-      # Replace IP address with hostname when using HTTPS.
-      - action: replace
-        source_labels: [__scheme__,__meta_kubernetes_node_address_Hostname,__address__]
-        regex: 'https;([^;]+);.*:(\d+)'
-        target_label: __address__
-        replacement: '$1:$2'
 
       metric_relabel_configs:
       # Keep only metrics attributed to pods.
