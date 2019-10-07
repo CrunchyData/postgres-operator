@@ -49,6 +49,11 @@
                         "env": [],
                         "volumeMounts": [
                             {
+                                "mountPath": "/conf",
+                                "name": "prometheusconf",
+                                "readOnly": true
+                            },
+                            {
                                 "mountPath": "/data",
                                 "name": "prometheusdata",
                                 "readOnly": false
@@ -57,6 +62,12 @@
                     }
                 ],
                 "volumes": [
+                    {
+                        "name": "prometheusconf",
+                        "configMap": {
+                            "name": "crunchy-prometheus"
+                        }
+                    },
                     {
                         "name": "prometheusdata",
                         "persistentVolumeClaim": {
