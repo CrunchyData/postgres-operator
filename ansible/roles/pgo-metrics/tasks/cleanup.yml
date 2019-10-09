@@ -79,3 +79,11 @@
   no_log: false
   tags:
   - uninstall-metrics
+
+- name: Delete Prometheus ConfigMap
+  shell: |
+    {{ kubectl_or_oc }} delete configmap crunchy-prometheus -n {{ metrics_namespace }}
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - uninstall-metrics
