@@ -77,6 +77,9 @@ pgo_client_version='v4.1.0'
 #pgo_disable_tls='false'
 #pgo_apiserver_port=8443
 
+# PGO Event Settings
+#pgo_disable_eventing='false'
+
 # Set to 'true' to assign the cluster-admin role to the PGO service account.  Needed for
 # OCP installs to enable dynamic namespace creation (see the PGO docs for more details).
 #pgo_cluster_admin='false'
