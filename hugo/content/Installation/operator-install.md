@@ -83,6 +83,8 @@ created as part of the default installation.
 
 However, if the user wishes to add a new watched namespace after installation, where the user would normally use pgo create namespace to add the new namespace, they should instead run the add-targeted-namespace.sh script or they may give themselves cluster-admin privileges instead of having to run setupnamespaces.sh script. Again, this is only required when running on a Kuberenetes distribution whose version is below 1.12. In Kubernetes version 1.12+ the pgo create namespace command works as expected.
 
+add-targeted-namespace.sh requires the additional environment variable PGO_INSTALLATION_NAME set to the unique name given to the Operator's installation
+
 {{% /notice %}}
 
 The *PGO_OPERATOR_NAMESPACE* environment variable is a comma separated list
