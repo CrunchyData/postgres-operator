@@ -14,13 +14,16 @@
 
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
+# Enforce required environment variables
+test="${PGO_CMD:?Need to set PGO_CMD env variable}"
+test="${PGOROOT:?Need to set PGOROOT env variable}"
+test="${PGO_OPERATOR_NAMESPACE:?Need to set PGO_OPERATOR_NAMESPACE env variable}"
+test="${PGO_INSTALLATION_NAME:?Need to set PGO_INSTALLATION_NAME env variable}"
 
 if [[ -z "$1" ]]; then
 	echo "usage:  add-targeted-namespace.sh mynewnamespace"
 	exit
 fi
-
 
 # create the namespace if necessary
 $PGO_CMD get ns $1  > /dev/null
