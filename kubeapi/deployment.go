@@ -106,14 +106,14 @@ type ThingSpec struct {
 }
 
 // PatchDeployment patches a deployment
-func PatchDeployment(clientset *kubernetes.Clientset, name, namespace, jsonpath, patchvalue string) error {
+func PatchDeployment(clientset *kubernetes.Clientset, name, namespace string, pathValueMap map[string]string) error {
 	var patchBytes []byte
 	var err error
 
-	things := make([]ThingSpec, 1)
-	things[0].Op = "replace"
-	things[0].Path = jsonpath
-	things[0].Value = patchvalue
+	things := make([]ThingSpec, 0)
+	for path, val := range pathValueMap {
+		things = append(things, ThingSpec{"replace", path, val})
+    }
 
 	patchBytes, err = json.Marshal(things)
 	if err != nil {
@@ -121,6 +121,7 @@ func PatchDeployment(clientset *kubernetes.Clientset, name, namespace, jsonpath,
 		return err
 	}
 
+	log.Debug("about to patch deployment using" + string(patchBytes))
 	_, err = clientset.AppsV1().Deployments(namespace).Patch(name, types.JSONPatchType, patchBytes)
 	if err != nil {
 		log.Error(err)

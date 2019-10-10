@@ -122,7 +122,7 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 	// have a pod coming back up from upgrade and is ready - time to kick off the next pod.
 	if clusterInMinorUpgrade && isUpgradedPostgresPod(newpod, oldpod) {
 		upgradeTaskName := clusterName + "-" + config.LABEL_MINOR_UPGRADE
-		clusteroperator.ProcessNextUpgradeItem(c.PodClientset, c.PodClient, clusterName, upgradeTaskName, newpod.ObjectMeta.Namespace)
+		clusteroperator.ProcessNextUpgradeItem(c.PodClientset, c.PodClient, pgcluster, upgradeTaskName, newpod.ObjectMeta.Namespace)
 	}
 
 	//handle the case when a pg database pod is updated

@@ -17,6 +17,7 @@ package cluster
 
 import (
 	"strings"
+	"strconv"
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -100,7 +101,7 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 	publishMinorUpgradeStartedEvent(&currentTask, &cl, namespace)
 
 	// start the upgrade
-	ProcessNextUpgradeItem(clientset, restclient, cl.Spec.Name, currentTask.Spec.Name, namespace)
+	ProcessNextUpgradeItem(clientset, restclient, cl, currentTask.Spec.Name, namespace)
 
 }
 
@@ -109,7 +110,7 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 // If more than one replica is in the list, they are done one at a time, once per call
 // with an item getting removed from the list each time. This method should get called
 // after the pod goes ready from the previous item, which is handled by the pod controller.
-func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RESTClient, clusterName, upgradeTaskName, namespace string) {
+func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cluster crv1.Pgcluster, upgradeTaskName, namespace string) {
 
 	log.Debug("Upgrade: ProcessNextUpgradeItem.... ", upgradeTaskName)
 
@@ -120,15 +121,6 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 	if !found {
 		log.Error("cound not find pgtask for minor upgrade")
 		log.Error(err)
-	}
-
-	cluster := crv1.Pgcluster{}
-	// get the cluster
-	_, err = kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace)
-	if err != nil {
-		log.Error("cound not find pgcluster for minor upgrade")
-		log.Error(err)
-		return // make this failed upgrade with error?
 	}
 
 	replicaTargets := upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_REPLICA]
@@ -155,8 +147,15 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 		//the new image tag.
 
 		log.Debug("About to patch replica: ", replicaTargetName)
-		err = kubeapi.PatchDeployment(clientset, replicaTargetName, namespace, "/spec/template/spec/containers/0/image",
-			operator.Pgo.Cluster.CCPImagePrefix+"/"+cluster.Spec.CCPImage+":"+upgradeTask.Spec.Parameters["CCPImageTag"])
+		
+		patchMap := make(map[string]string)
+		patchMap["/spec/template/spec/containers/0/image"] =
+			operator.Pgo.Cluster.CCPImagePrefix+"/"+cluster.Spec.CCPImage+":"+upgradeTask.Spec.Parameters["CCPImageTag"]
+
+		addSidecarsToPgUpgradePatch(patchMap, cluster, operator.Pgo.Cluster.CCPImagePrefix, 
+			upgradeTask.Spec.Parameters["CCPImageTag"])
+
+		err = kubeapi.PatchDeployment(clientset, replicaTargetName, namespace, patchMap)
 		if err != nil {
 			log.Error(err)
 			log.Error("error in doing replica minor upgrade")
@@ -176,8 +175,12 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 		log.Debug("Minor Upgrade: backrest")
 
 		log.Debug("About to patch backrest: ", backrestTargetName)
-		err = kubeapi.PatchDeployment(clientset, backrestTargetName, namespace, "/spec/template/spec/containers/0/image",
-			operator.Pgo.Cluster.CCPImagePrefix+"/pgo-backrest-repo:"+upgradeTask.Spec.Parameters["CCPImageTag"])
+		
+		patchMap := make(map[string]string)
+		patchMap["/spec/template/spec/containers/0/image"] =
+			operator.Pgo.Cluster.CCPImagePrefix+"/pgo-backrest-repo:"+upgradeTask.Spec.Parameters["CCPImageTag"]
+
+		err = kubeapi.PatchDeployment(clientset, backrestTargetName, namespace, patchMap)
 		if err != nil {
 			log.Error(err)
 			log.Error("error in doing backrest minor upgrade")
@@ -199,13 +202,20 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 		// If we don't do this now, then one of the replicas will come back up with the old container image.
 		if autoFailEnabled {
 			upgradedImageTag := upgradeTask.Spec.Parameters["CCPImageTag"]
-			updateClusterCCPImage(restclient, upgradedImageTag, clusterName, namespace)
+			updateClusterCCPImage(restclient, upgradedImageTag, cluster.Spec.Name, namespace)
 		}
 
 		log.Debug("Minor Upgrade: primary")
 		log.Debug("About to patch primary: ", primaryTargetName)
-		err = kubeapi.PatchDeployment(clientset, primaryTargetName, namespace, "/spec/template/spec/containers/0/image",
-			operator.Pgo.Cluster.CCPImagePrefix+"/"+cluster.Spec.CCPImage+":"+upgradeTask.Spec.Parameters["CCPImageTag"])
+		
+		patchMap := make(map[string]string)
+		patchMap["/spec/template/spec/containers/0/image"] =
+			operator.Pgo.Cluster.CCPImagePrefix+"/"+cluster.Spec.CCPImage+":"+upgradeTask.Spec.Parameters["CCPImageTag"]
+		
+		addSidecarsToPgUpgradePatch(patchMap, cluster, operator.Pgo.Cluster.CCPImagePrefix, 
+			upgradeTask.Spec.Parameters["CCPImageTag"])
+
+		err = kubeapi.PatchDeployment(clientset, primaryTargetName, namespace, patchMap)
 		if err != nil {
 			log.Error(err)
 			log.Error("error in doing primary minor upgrade")
@@ -222,9 +232,29 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 
 	} else {
 		// No other deployments  left to upgrade, complete the upgrade
-		completeUpgrade(clientset, restclient, &upgradeTask, autoFailEnabled, clusterName, namespace)
+		completeUpgrade(clientset, restclient, &upgradeTask, autoFailEnabled, cluster.Spec.Name, namespace)
 
 		publishMinorUpgradeCompleteEvent(&upgradeTask, &cluster, namespace)
+	}
+}
+
+func addSidecarsToPgUpgradePatch(patchMap map[string]string, cluster crv1.Pgcluster, ccpImagePrefix, 
+	ccpImageTag string) {
+
+	collectEnabled, _ := strconv.ParseBool(cluster.Labels[config.LABEL_COLLECT])
+	badgerEnabled, _ := strconv.ParseBool(cluster.Labels[config.LABEL_BADGER])
+
+	if collectEnabled && badgerEnabled {
+		patchMap["/spec/template/spec/containers/1/image"] =
+		ccpImagePrefix+"/"+config.LABEL_COLLECT_CCPIMAGE+":"+ccpImageTag
+		patchMap["/spec/template/spec/containers/2/image"] =
+			ccpImagePrefix+"/"+config.LABEL_BADGER_CCPIMAGE+":"+ccpImageTag
+	} else if collectEnabled && !badgerEnabled {
+		patchMap["/spec/template/spec/containers/1/image"] =
+			ccpImagePrefix+"/"+config.LABEL_COLLECT_CCPIMAGE+":"+ccpImageTag
+	} else if badgerEnabled && !collectEnabled {
+		patchMap["/spec/template/spec/containers/1/image"] =
+			ccpImagePrefix+"/"+config.LABEL_BADGER+":"+ccpImageTag
 	}
 }
 
