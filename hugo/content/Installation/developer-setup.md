@@ -2,7 +2,7 @@
 title: "Developer Setup"
 date:
 draft: false
-weight: 305
+weight: 300
 ---
 
 # Developing
