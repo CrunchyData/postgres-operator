@@ -2,7 +2,7 @@
 title: "Install Operator Using Ansible"
 date:
 draft: false
-weight: 1
+weight: 100
 ---
 
 # Crunchy Data PostgreSQL Operator Playbooks

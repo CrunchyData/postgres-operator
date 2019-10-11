@@ -2,7 +2,7 @@
 title: "Install `pgo` Client"
 date:
 draft: false
-weight: 1
+weight: 400
 ---
 
 # Install the Postgres Operator (`pgo`) Client

@@ -2,7 +2,7 @@
 title: "Install Operator Using Bash"
 date:
 draft: false
-weight: 300
+weight: 200
 ---
 
 A full installation of the Operator includes the following steps:
@@ -82,8 +82,6 @@ created as part of the default installation.
 {{% notice warning %}}In Kuberenetes versions prior to 1.12 (including Openshift up through 3.11), there is a limitation that requires an extra step during installation for the operator to function properly with watched namespaces. This limitation does not exist when using Kubernetes 1.12+. When a list of namespaces are provided through the NAMESPACE environment variable, the setupnamespaces.sh script handles the limitation properly in both the bash and ansible installation.
 
 However, if the user wishes to add a new watched namespace after installation, where the user would normally use pgo create namespace to add the new namespace, they should instead run the add-targeted-namespace.sh script or they may give themselves cluster-admin privileges instead of having to run setupnamespaces.sh script. Again, this is only required when running on a Kuberenetes distribution whose version is below 1.12. In Kubernetes version 1.12+ the pgo create namespace command works as expected.
-
-add-targeted-namespace.sh requires the additional environment variable PGO_INSTALLATION_NAME set to the unique name given to the Operator's installation
 
 {{% /notice %}}
 
