@@ -32,9 +32,9 @@ Save this output to compare once the procedure has been completed to ensure none
 
 
 ##### Step 1
-For the cluster(s) you wish to upgrade, scale down any replicas, if necessary, then delete the cluster
+For the cluster(s) you wish to upgrade, scale down any replicas, if necessary (see `pgo scaledown --help` for more information on command usage) page for more information), then delete the cluster
 
-        pgo delete cluster <clustername>
+	pgo delete cluster <clustername>
 
 {{% notice warning %}}
 
@@ -146,6 +146,11 @@ Verify this by running:
     pgo version
 
 ##### Step 10
+Once the Operator is installed and functional, create new 4.1 clusters with the same name as was used previously. This will allow the new clusters to utilize the existing PVCs.
+
+	pgo create cluster <clustername> -n <namespace>
+
+##### Step 11
 To verify cluster status, run 
         pgo test <clustername> -n <namespace>
 Output should be similar to:
@@ -157,6 +162,6 @@ psql -p 5432 -h 10.104.74.189 -U primaryuser userdb is Working
 psql -p 5432 -h 10.104.74.189 -U testuser postgres is Working
 psql -p 5432 -h 10.104.74.189 -U testuser userdb is Working
 ``` 
-##### Step 11
+##### Step 12
 Scale up to the required number of replicas, as needed.
 
