@@ -16,7 +16,9 @@ This section of the documentation shows specific steps required to upgrade diffe
 
 [Upgrade Postgres Operator from 3.5 to 4.1] ( {{< relref "upgrade/upgrade35to4.md" >}})
 
-[Upgrade Postgres Operator from 4.0.1 to 4.1.0] ( {{< relref "upgrade/upgrade40to41.md" >}})
+[Upgrade Postgres Operator from 4.0.1 to 4.1.0 (Bash)] ( {{< relref "upgrade/upgrade40to41_bash.md" >}})
+
+[Upgrade Postgres Operator from 4.0.1 to 4.1.0 (Ansible)] ( {{< relref "upgrade/upgrade40to41_ansible.md" >}})
 
 ## Upgrading A Postgres Cluster
 

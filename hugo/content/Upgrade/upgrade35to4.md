@@ -1,13 +1,13 @@
 ---
-title: "Upgrade PGO 3.5 to 4"
-Latest Release: 4.1.0 {docdate}
+title: "Upgrade PGO 3.5 to 4.1"
+Latest Release: 4.1 {docdate}
 draft: false
 weight: 8
 ---
 
-## Upgrading a Cluster from Version 3.5.x to PGO 4
+## Upgrading a Cluster from Version 3.5.x to PGO 4.1
 
-This section will outline the procedure to upgrade a given cluster created using Postgres Operator 3.5.x to PGO version 4.1.
+This section will outline the procedure to upgrade a given cluster created using Postgres Operator 3.5.x to PGO version 4.1
 
 {{% notice info %}}
 
