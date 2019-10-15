@@ -1,13 +1,13 @@
 ---
-title: "Upgrade PGO 4.0.1 to 4.1.0"
+title: "Upgrade PGO 4.0.1 to 4.1.0 (Bash)"
 Latest Release: 4.1.0 {docdate}
 draft: false
 weight: 8
 ---
 
-## Postgres Operator Upgrade Procedure from 4.0.1 to 4.1.0
+## Postgres Operator Bash Upgrade Procedure from 4.0.1 to 4.1.0
 
-This procedure will give instructions on how to upgrade to Postgres Operator 4.1.0. 
+This procedure will give instructions on how to upgrade to Postgres Operator 4.1.0 when using the Bash installation method.
 
 {{% notice info %}}
 
