@@ -21,3 +21,8 @@ name = "gopkg.in/robfig/cron.v2"
 [[constraint]]
   name = "github.com/sirupsen/logrus"
   version = "v1.4.0"
+
+[[override]]
+  name = "gopkg.in/yaml.v2"
+  version = ">=v2.2.3" # < 2.2.3 has a DoS vuln
+
