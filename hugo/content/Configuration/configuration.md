@@ -121,7 +121,7 @@ command line flag.
 
 ## Namespace Configuration
 
-The Design [Design](/Design) section of this documentation talks further about
+The Design [Design](/gettingstarted/design) section of this documentation talks further about
 the use of namespaces within the Operator and configuring different
 deployment models of the Operator.
 
