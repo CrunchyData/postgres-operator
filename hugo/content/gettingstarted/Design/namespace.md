@@ -31,7 +31,7 @@ the namespaces which will be *watched* by the Operator.
 The format of the NAMESPACE value is modeled after the following
 document:
 
-https://github.com/operator-framework/operator-lifecycle-manager/blob/master/Documentation/design/operatorgroups.md
+https://github.com/operator-framework/operator-lifecycle-manager/blob/0.12.0/doc/design/operatorgroups.md 
 
 
 ### OwnNamespace Example

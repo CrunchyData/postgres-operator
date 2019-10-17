@@ -17,7 +17,7 @@ If you would like to build the documentation locally, view the
 You can then start the server by running the following commands -
 
 ```
-cd $COROOT/hugo/
+cd $PGOROOT/hugo/
 hugo server
 ```
 
