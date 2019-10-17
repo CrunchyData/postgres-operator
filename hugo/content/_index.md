@@ -38,13 +38,13 @@ The Operator is developed and tested on CentOS and RHEL Linux platforms but is k
 ## Documentation
 The following documentation is provided:
 
- - [pgo CLI Syntax and Examples](/operator-cli)
+ - [pgo CLI Syntax and Examples](/operatorcli)
  - [Installation](/installation)
  - [Configuration](/configuration) 
  - [pgo.yaml Configuration](/configuration/pgo-yaml-configuration) 
  - [Security](/security) 
- - [Design Overview](/design) 
- - [Developing](/developer-setup) 
+ - [Design Overview](/gettingstarted/design/designoverview) 
+ - [Developing](/installation/developer-setup) 
  - [Upgrading the Operator](/upgrade)
  - [Contributing](/contributing/documentation-updates)
 
