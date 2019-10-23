@@ -40,15 +40,15 @@ The PostgreSQL Operator provides a few different methods for installation.
 For an automated deployment using Ansible playbooks, please start here:
 
  - [Installation via Ansible](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/install-with-ansible/)
- 
+
  For a step by step customer installation using Bash, please start here:
- 
+
  - [Installation via Bash](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/operator-install/)
- 
+
 For a quick start deployment using OperatorHub.io, please see instructions here:
 
 -  [OperatorHub.io Guidance](https://operatorhub.io/operator/postgresql)
-  
+
 For a quick start deployment to Google Kubernetes Engine (GKE), please see instructions here:
 
 -  [GKE Quickstart Guidance](https://info.crunchydata.com/blog/install-postgres-operator-kubernetes-on-gke-ansible)
@@ -61,7 +61,7 @@ If you have the PostgreSQL Operator installed in your environment, and are inter
 - [PGO Client Install](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/install-pgo-client/)
 
 
-### Using the PostgreSQL Operator 
+### Using the PostgreSQL Operator
 
 If you have the PostgreSQL and Client Interface installed in your environment and are interested in guidance on the use of the Crunchy PostgreSQL Operator, please start here:
 
@@ -70,34 +70,45 @@ If you have the PostgreSQL and Client Interface installed in your environment an
 
 ## Contributing to the Project
 
-Want to contribute to the PostgreSQL Operator project? Please review information here:
+Want to contribute to the PostgreSQL Operator project? Great! We've put together
+as set of contributing guidelines that you can review here:
+
+- [Contributing Guidelines](CONTRIBUTING.md)
+
+If you want to learn how to get up your development environment, please read our
+documentation here:
 
  - [Developer Setup](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/developer-setup/)
 
-Development for the PostgreSQL Operator 4.0 code base is on the develop branch. In order to submit a Pull Request, please follow guidance here: 
+Once you are ready to submit a Pull Request, please ensure you do the following:
 
-- [Submitting Pull Request](https://access.crunchydata.com/documentation/postgres-operator/latest/contributing/pull-requests/)
-   
+1. Reviewing the [contributing guidelines](CONTRIBUTING.md) and ensure your
+that you have followed the commit message format, added testing where
+appropriate, documented your changes, etc.
+1. Open up a pull request based upon the guidelines. If you are adding a new
+feature, please open up the pull request on the `master` branch. If you have
+a bug fix for a supported version, open up a pull request against the supported
+version branch (e.g. `REL_4_1` for 4.1)
+1. Please be as descriptive in your pull request as possible. If you are
+referencing an issue, please be sure to include the issue in your pull request
 
 ## Submitting an Issue
 
-Please use GitHub to submit an issue for the PostgreSQL Operator project. 
+Please use GitHub to submit an issue for the PostgreSQL Operator project.
 
 If you would like to work the issue, please add that information in the issue so that we can confirm we are not already working no need to duplicate efforts.
 
 If you have any question you can submit a Support - Question and Answer issue and we will work with you on how you can get more involved.
-   
- 
+
+
 ## Complete Documentation
 
 For additional information regarding design, configuration and operation of the PostgreSQL Operator, pleases see the [Official Project Documentation](https://access.crunchydata.com/documentation/postgres-operator/latest/)
 
 If you are looking for the latest documentation, please see the develop branch which is considered unstable. The development
 documentation can be reviewed at https://crunchydata.github.io/postgres-operator/latest/.
-   
-   
+
+
 ## Past Versions
 
 Documentation for previous releases can be found at the [Crunchy Data Access Portal](https://access.crunchydata.com/documentation)
-
-
