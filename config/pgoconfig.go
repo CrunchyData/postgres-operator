@@ -820,27 +820,42 @@ func getRootPath(clientset *kubernetes.Clientset, namespace string) (*v1.ConfigM
 // LoadTemplate will load a JSON template from a path
 func (c *PgoConfig) LoadTemplate(cMap *v1.ConfigMap, rootPath, path string) (*template.Template, error) {
 	var value string
+	var err error
 
 	if cMap != nil {
 		value = cMap.Data[path]
 		if value == "" {
-			errMsg := fmt.Sprintf("%s path not found in ConfigMap", path)
-			return nil, errors.New(errMsg)
+			value, err = c.DefaultTemplate(path)
+			if err != nil {
+				return err
+			}
 		}
 	} else {
-		fullPath := rootPath + path
-		log.Debugf("loading path [%s]", fullPath)
-		buf, err := ioutil.ReadFile(fullPath)
+		value, err = c.DefaultTemplate(path)
 		if err != nil {
-			log.Errorf("error: could not read %s", fullPath)
-			log.Error(err)
-			return nil, err
+			return err
 		}
-		value = string(buf)
 	}
 
 	return template.Must(template.New(path).Parse(value)), nil
 
+}
+
+// Load Default template
+func (c *PgoConfig) DefaultTemplate(path string) (string, error) {
+	var value string
+	fullPath := DefaultConfigsPath + path
+
+	log.Debugf("No entry in cmap loading default path [%s]", fullPath)
+	buf, err := ioutil.ReadFile(fullPath)
+	if err != nil {
+		log.Errorf("error: could not read %s", fullPath)
+		log.Error(err)
+		return "", err
+	}
+	value = string(buf)
+
+	return value, nil
 }
 
 func (c *PgoConfig) SetDefaultStorageClass(clientset *kubernetes.Clientset) error {
