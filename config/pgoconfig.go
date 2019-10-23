@@ -820,27 +820,51 @@ func getRootPath(clientset *kubernetes.Clientset, namespace string) (*v1.ConfigM
 // LoadTemplate will load a JSON template from a path
 func (c *PgoConfig) LoadTemplate(cMap *v1.ConfigMap, rootPath, path string) (*template.Template, error) {
 	var value string
+	var err error
 
+	// Determine if there exists a configmap entry for the template file.
 	if cMap != nil {
+		// Get the data that is stored in the configmap
 		value = cMap.Data[path]
-		if value == "" {
-			errMsg := fmt.Sprintf("%s path not found in ConfigMap", path)
-			return nil, errors.New(errMsg)
-		}
-	} else {
-		fullPath := rootPath + path
-		log.Debugf("loading path [%s]", fullPath)
-		buf, err := ioutil.ReadFile(fullPath)
-		if err != nil {
-			log.Errorf("error: could not read %s", fullPath)
-			log.Error(err)
-			return nil, err
-		}
-		value = string(buf)
 	}
 
+	// if the configmap does not exist, or there is no data in the configmap for
+	// this particular configuration template, attempt to load the template from
+	// the default configuration
+	if cMap == nil || value == "" {
+		value, err = c.DefaultTemplate(path)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// if we have a value for the templated file, return
 	return template.Must(template.New(path).Parse(value)), nil
 
+}
+
+// DefaultTemplate attempts to load a default configuration template file
+func (c *PgoConfig) DefaultTemplate(path string) (string, error) {
+	// set the lookup value for the file path based on the default configuration
+	// path and the template file requested to be loaded
+	fullPath := DefaultConfigsPath + path
+
+	log.Debugf("No entry in cmap loading default path [%s]", fullPath)
+
+	// read in the file from the default path
+	buf, err := ioutil.ReadFile(fullPath)
+
+	if err != nil {
+		log.Errorf("error: could not read %s", fullPath)
+		log.Error(err)
+		return "", err
+	}
+
+	// extract the value of the default configuration file and return
+	value := string(buf)
+
+	return value, nil
 }
 
 func (c *PgoConfig) SetDefaultStorageClass(clientset *kubernetes.Clientset) error {
