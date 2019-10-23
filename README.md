@@ -103,10 +103,12 @@ If you have any question you can submit a Support - Question and Answer issue an
 
 ## Complete Documentation
 
-For additional information regarding design, configuration and operation of the PostgreSQL Operator, pleases see the [Official Project Documentation](https://access.crunchydata.com/documentation/postgres-operator/latest/)
+For additional information regarding design, configuration and operation of the
+PostgreSQL Operator, pleases see the
+[Official Project Documentation](https://access.crunchydata.com/documentation/postgres-operator/)
 
-If you are looking for the latest documentation, please see the develop branch which is considered unstable. The development
-documentation can be reviewed at https://crunchydata.github.io/postgres-operator/latest/.
+If you are looking for the latest documentation, the development documentation
+can be reviewed at https://crunchydata.github.io/postgres-operator/latest/.
 
 
 ## Past Versions
