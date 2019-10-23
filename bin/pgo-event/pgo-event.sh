@@ -23,7 +23,7 @@ echo "pgo-event starting"
 
 trap 'trap_sigterm' SIGINT SIGTERM
 
-echo "pgo-event starting nsqadminy"
+echo "pgo-event starting nsqadmin"
 
 /usr/local/bin/nsqadmin  --http-address=0.0.0.0:4171  --nsqd-http-address=0.0.0.0:4151 &
 
