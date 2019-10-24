@@ -27,7 +27,7 @@
             "spec": {
 
                 {{.SecurityContext }}
-
+                "serviceAccountName": "pgo-pg",
                 "containers": [
         
 
@@ -37,7 +37,7 @@
                     "readinessProbe": {
                         "exec": {
                             "command": [
-                                "/opt/cpm/bin/readiness.sh"
+                                "/opt/cpm/bin/readiness/readiness.sh"
                             ]
                         },
                         "initialDelaySeconds": 15,
@@ -47,39 +47,51 @@
             {{.ContainerResources }}
 
                     "env": [{
-                        "name": "PG_PRIMARY_PORT",
+                        "name": "PGHA_PG_PORT",
                         "value": "{{.Port}}"
                     }, {
-                        "name": "PG_MODE",
-                        "value": "{{.PgMode}}"
-                    }, {
-                        "name": "PG_USER",
+                        "name": "PGHA_USER",
                         "value": "postgres"
                     }, {
-                        "name": "PG_PRIMARY_HOST",
-                        "value": "{{.PrimaryHost}}"
-                    }, {
-                        "name": "LOG_STATEMENT",
-                        "value": "{{.LogStatement}}"
-                    }, {
-                        "name": "LOG_MIN_DURATION_STATEMENT",
-                        "value": "{{.LogMinDurationStatement}}"
-                    }, {
-                        "name": "PG_LOCALE",
-                        "value": "en_US.UTF8"
-                    }, {
-                        "name": "PGDATA_PATH_OVERRIDE",
-                        "value": "{{.DataPathOverride}}"
+                        "name": "PATRONI_POSTGRESQL_DATA_DIR",
+                        "value": "/pgdata/{{.Name}}"
                     }, {
 			{{.PgmonitorEnvVars}}
             {{.PgbackrestEnvVars}}
             {{.PgbackrestS3EnvVars}}
-                        "name": "PG_DATABASE",
+                        "name": "PGHA_DATABASE",
                         "value": "{{.Database}}"
-                    },{
-                        "name": "ARCHIVE_TIMEOUT",
-                        "value": "{{.ArchiveTimeout}}"
-                    },{
+                    }, {
+                        "name": "PATRONI_KUBERNETES_NAMESPACE",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "fieldPath": "metadata.namespace"
+                            }
+                        }
+                    }, {
+                        "name": "PATRONI_NAME",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "fieldPath": "metadata.name"
+                            }
+                        }
+                    }, {
+                        "name": "PATRONI_SCOPE",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "fieldPath": "metadata.labels['pg-cluster']"
+                            }
+                        }
+                    }, {
+                        "name": "PATRONI_KUBERNETES_LABELS",
+                        "value": "{vendor: \"crunchydata\"}"
+                    }, {
+                        "name": "PATRONI_KUBERNETES_SCOPE_LABEL",
+                        "value": "{{.ScopeLabel}}"
+                    }, {
+                        "name": "PATRONI_LOG_LEVEL",
+                        "value": "INFO"
+                    }, {
                         "name": "PGHOST",
                         "value": "/tmp"
                     }],
@@ -93,13 +105,13 @@
                             "mountPath": "/backrestrepo",
                             "name": "backrestrepo"
                         }, {
-                            "mountPath": "/pguser",
+                            "mountPath": "/pgconf/pguser",
                             "name": "user-volume"
                         }, {
-                            "mountPath": "/pgprimary",
+                            "mountPath": "/pgconf/pgreplicator",
                             "name": "primary-volume"
                         }, {
-                            "mountPath": "/pgroot",
+                            "mountPath": "/pgconf/pgsuper",
                             "name": "root-volume"
                         }, {
                             "mountPath": "/pgwal",
@@ -115,7 +127,7 @@
                             "mountPath": "/recover",
                             "name": "recover-volume"
                         }
-
+                        
                     ],
 
                     "ports": [{
@@ -172,7 +184,23 @@
             "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "pgconf-volume",
-            {{.ConfVolume}}
+                        "projected": {
+                            "sources": [
+                                {{if .ConfVolume}}
+                                {
+                                    "configMap": { 
+                                        "name": {{.ConfVolume}}
+                                    }
+                                },
+                                {{end}}
+                                {
+                                    "configMap": { 
+                                        "name": "pgo-pgha-default-config",
+                                        "optional": true
+                                    }
+                                }
+                            ]
+                         }
                     }
 
                 ],

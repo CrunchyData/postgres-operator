@@ -61,6 +61,18 @@ var PgoTargetRoleTemplate *template.Template
 
 const PGOTargetRolePath = "pgo-target-role.json"
 
+var PgoPgServiceAccountTemplate *template.Template
+
+const PGOPgServiceAccountPath = "pgo-pg-sa.json"
+
+var PgoPgRoleTemplate *template.Template
+
+const PGOPgRolePath = "pgo-pg-role.json"
+
+var PgoPgRoleBindingTemplate *template.Template
+
+const PGOPgRoleBindingPath = "pgo-pg-role-binding.json"
+
 var BenchmarkJobTemplate *template.Template
 
 const benchmarkJobPath = "pgbench-job.json"
@@ -192,6 +204,10 @@ const badgerTemplatePath = "pgbadger.json"
 var DeploymentTemplate *template.Template
 
 const deploymentTemplatePath = "cluster-deployment.json"
+
+var PostgresHaTemplate *template.Template
+
+const PostgresHaTemplatePath = "postgres-ha.yaml"
 
 type ClusterStruct struct {
 	CCPImagePrefix          string `yaml:"CCPImagePrefix"`
@@ -635,6 +651,18 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 	if err != nil {
 		return err
 	}
+	PgoPgServiceAccountTemplate, err = c.LoadTemplate(cMap, rootPath, PGOPgServiceAccountPath)
+	if err != nil {
+		return err
+	}
+	PgoPgRoleTemplate, err = c.LoadTemplate(cMap, rootPath, PGOPgRolePath)
+	if err != nil {
+		return err
+	}
+	PgoPgRoleBindingTemplate, err = c.LoadTemplate(cMap, rootPath, PGOPgRoleBindingPath)
+	if err != nil {
+		return err
+	}
 
 	BenchmarkJobTemplate, err = c.LoadTemplate(cMap, rootPath, benchmarkJobPath)
 	if err != nil {
@@ -802,7 +830,16 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 	}
 
 	DeploymentTemplate, err = c.LoadTemplate(cMap, rootPath, deploymentTemplatePath)
-	return err
+	if err != nil {
+		return err
+	}
+
+	PostgresHaTemplate, err = c.LoadTemplate(cMap, rootPath, PostgresHaTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func getRootPath(clientset *kubernetes.Clientset, namespace string) (*v1.ConfigMap, string) {

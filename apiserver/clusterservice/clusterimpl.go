@@ -859,7 +859,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.CCPImage = request.CCPImage
 		log.Debugf("user is overriding CCPImage from command line %s", request.CCPImage)
 	} else {
-		spec.CCPImage = "crunchy-postgres"
+		spec.CCPImage = "crunchy-postgres-ha"
 	}
 	spec.Namespace = ns
 	spec.Name = name
