@@ -21,6 +21,8 @@ import (
 	"os"
 	"strings"
 
+	v1 "k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 
 	"gopkg.in/yaml.v2"
@@ -37,6 +39,8 @@ import (
 const AffinityInOperator = "In"
 const AFFINITY_NOTINOperator = "NotIn"
 
+const DefaultArchiveTimeout = "60"
+
 type affinityTemplateFields struct {
 	NodeLabelKey   string
 	NodeLabelValue string
@@ -45,12 +49,12 @@ type affinityTemplateFields struct {
 
 // consolidate
 type collectTemplateFields struct {
-	Name            string
-	JobName         string
-	CCPImageTag     string
-	CCPImagePrefix  string
-	PgPort          string
-	ExporterPort    string
+	Name           string
+	JobName        string
+	CCPImageTag    string
+	CCPImagePrefix string
+	PgPort         string
+	ExporterPort   string
 }
 
 //consolidate
@@ -87,43 +91,46 @@ type PgmonitorEnvVarsTemplateFields struct {
 // needs to be consolidated with cluster.DeploymentTemplateFields
 // DeploymentTemplateFields ...
 type DeploymentTemplateFields struct {
-	Name                    string
-	ClusterName             string
-	Port                    string
-	PgMode                  string
-	LogStatement            string
-	LogMinDurationStatement string
-	CCPImagePrefix          string
-	CCPImageTag             string
-	CCPImage                string
-	Database                string
-	DeploymentLabels        string
-	PodLabels               string
-	DataPathOverride        string
-	ArchiveMode             string
-	ArchivePVCName          string
-	ArchiveTimeout          string
-	XLOGDir                 string
-	BackrestPVCName         string
-	PVCName                 string
-	RootSecretName          string
-	UserSecretName          string
-	PrimarySecretName       string
-	SecurityContext         string
-	ContainerResources      string
-	NodeSelector            string
-	ConfVolume              string
-	CollectAddon            string
-	CollectVolume           string
-	BadgerAddon             string
-	PgbackrestEnvVars       string
-	PgbackrestS3EnvVars     string
-	PgmonitorEnvVars        string
+	Name                string
+	ClusterName         string
+	Port                string
+	CCPImagePrefix      string
+	CCPImageTag         string
+	CCPImage            string
+	Database            string
+	DeploymentLabels    string
+	PodLabels           string
+	DataPathOverride    string
+	ArchiveMode         string
+	ArchivePVCName      string
+	XLOGDir             string
+	BackrestPVCName     string
+	PVCName             string
+	RootSecretName      string
+	UserSecretName      string
+	PrimarySecretName   string
+	SecurityContext     string
+	ContainerResources  string
+	NodeSelector        string
+	ConfVolume          string
+	CollectAddon        string
+	CollectVolume       string
+	BadgerAddon         string
+	PgbackrestEnvVars   string
+	PgbackrestS3EnvVars string
+	PgmonitorEnvVars    string
+	ScopeLabel          string
 	//next 2 are for the replica deployment only
 	Replicas    string
 	PrimaryHost string
 	// PgBouncer deployment only
 	PgbouncerPass string
+}
+
+type PostgresHaTemplateFields struct {
+	LogStatement            string
+	LogMinDurationStatement string
+	ArchiveTimeout          string
 }
 
 //consolidate with cluster.GetPgbackrestEnvVars
@@ -195,7 +202,7 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 		log.Debug("crunchy_collect was found as a label on cluster create")
 
 		log.Debug("creating collect secret for cluster %s", spec.Name)
-		err := util.CreateSecret(clientset, spec.Name, spec.CollectSecretName, config.LABEL_COLLECT_PG_USER, 
+		err := util.CreateSecret(clientset, spec.Name, spec.CollectSecretName, config.LABEL_COLLECT_PG_USER,
 			Pgo.Cluster.PgmonitorPassword, namespace)
 
 		collectTemplateFields := collectTemplateFields{}
@@ -224,30 +231,87 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 //consolidate with cluster.GetConfVolume
 func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string) string {
 	var found bool
-
-	//check for user provided configmap
-	if cl.Spec.CustomConfig != "" {
-		_, found = kubeapi.GetConfigMap(clientset, cl.Spec.CustomConfig, namespace)
-		if !found {
-			//you should NOT get this error because of apiserver validation of this value!
-			log.Errorf("%s was not found, error, skipping user provided configMap", cl.Spec.CustomConfig)
-		} else {
-			log.Debugf("user provided configmap %s was used for this cluster", cl.Spec.CustomConfig)
-			return "\"configMap\": { \"name\": \"" + cl.Spec.CustomConfig + "\" }"
-		}
-
-	}
+	var configMapStr string
 
 	//check for global custom configmap "pgo-custom-pg-config"
-	_, found = kubeapi.GetConfigMap(clientset, config.GLOBAL_CUSTOM_CONFIGMAP, namespace)
-	if !found {
-		log.Debug(config.GLOBAL_CUSTOM_CONFIGMAP + " was not found, , skipping global configMap")
+	configMap, found := kubeapi.GetConfigMap(clientset, config.GLOBAL_CUSTOM_CONFIGMAP, PgoNamespace)
+	if found {
+		configMapStr = "\"pgo-custom-pg-config\""
 	} else {
-		return "\"configMap\": { \"name\": \"pgo-custom-pg-config\" }"
+		log.Debug(config.GLOBAL_CUSTOM_CONFIGMAP + " was not found, skipping global configMap")
+
+		//check for user provided configmap
+		if cl.Spec.CustomConfig != "" {
+			configMap, found = kubeapi.GetConfigMap(clientset, cl.Spec.CustomConfig, namespace)
+			if !found {
+				//you should NOT get this error because of apiserver validation of this value!
+				log.Errorf("%s was not found, error, skipping user provided configMap", cl.Spec.CustomConfig)
+			} else {
+				log.Debugf("user provided configmap %s was used for this cluster", cl.Spec.CustomConfig)
+				configMapStr = "\"" + cl.Spec.CustomConfig + "\""
+			}
+		}
 	}
 
-	//the default situation
-	return "\"emptyDir\": { \"medium\": \"Memory\" }"
+	if configMap == nil {
+		log.Debugf("Custom postgres-ha configmap not found, creating default configmap")
+		addDefaultPostgresHaConfigMap(clientset, cl, namespace)
+	} else if configMap != nil {
+		if _, exists := configMap.Data[config.PostgresHaTemplatePath]; !exists {
+			log.Debugf("Custom postgres-ha configmap not found, creating default configmap")
+			addDefaultPostgresHaConfigMap(clientset, cl, namespace)
+		} else {
+			log.Debugf("Custom postgres-ha configmap found, default configmap will not be created")
+		}
+	}
+
+	return configMapStr
+}
+
+func addDefaultPostgresHaConfigMap(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, namespace string) error {
+
+	var archiveTimeout string
+
+	if _, exists := cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]; !exists {
+		archiveTimeout = cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
+	} else {
+		archiveTimeout = DefaultArchiveTimeout
+	}
+
+	labels := make(map[string]string)
+	labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
+
+	data := make(map[string]string)
+
+	postgresHaFields := PostgresHaTemplateFields{
+		LogStatement:            Pgo.Cluster.LogStatement,
+		LogMinDurationStatement: Pgo.Cluster.LogMinDurationStatement,
+		ArchiveTimeout:          archiveTimeout,
+	}
+
+	var postgresHaConfig bytes.Buffer
+
+	err := config.PostgresHaTemplate.Execute(&postgresHaConfig, postgresHaFields)
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
+	data[config.PostgresHaTemplatePath] = postgresHaConfig.String()
+
+	configmap := &v1.ConfigMap{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:   "pgo-pgha-default-config",
+			Labels: labels,
+		},
+		Data: data,
+	}
+
+	err = kubeapi.CreateConfigMap(clientset, configmap, namespace)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // sets the proper collect secret in the deployment spec if collect is enabled
@@ -255,7 +319,7 @@ func GetCollectVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, names
 	if cl.Spec.UserLabels[config.LABEL_COLLECT] == "true" {
 		return "\"secret\": { \"secretName\": \"" + cl.Spec.CollectSecretName + "\" }"
 	}
-	
+
 	return "\"emptyDir\": { \"secretName\": \"Memory\" }"
 }
 

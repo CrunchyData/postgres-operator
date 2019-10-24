@@ -21,6 +21,9 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
@@ -29,11 +32,9 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/apps/v1"
+	v1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os"
-	"time"
 )
 
 // AddCluster ...
@@ -76,18 +77,15 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 
 	archivePVCName := ""
 	archiveMode := "off"
-	archiveTimeout := "60"
 	xlogdir := "false"
 	if cl.Spec.UserLabels[config.LABEL_ARCHIVE] == "true" {
 		archiveMode = "on"
-		archiveTimeout = cl.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = cl.Spec.Name + "-xlog"
 	}
 
 	if cl.Labels[config.LABEL_BACKREST] == "true" {
 		//backrest requires us to turn on archive mode
 		archiveMode = "on"
-		archiveTimeout = cl.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
 		//archivePVCName = cl.Spec.Name + "-xlog"
 		//backrest doesn't use xlog, so we make the pvc an emptydir
 		//by setting the name to empty string
@@ -107,37 +105,34 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 
 	//create the primary deployment
 	deploymentFields := operator.DeploymentTemplateFields{
-		Name:                    cl.Spec.Name,
-		Replicas:                "1",
-		PgMode:                  "primary",
-		ClusterName:             cl.Spec.Name,
-		PrimaryHost:             cl.Spec.Name,
-		Port:                    cl.Spec.Port,
-		LogStatement:            operator.Pgo.Cluster.LogStatement,
-		LogMinDurationStatement: operator.Pgo.Cluster.LogMinDurationStatement,
-		CCPImagePrefix:          operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImage:                cl.Spec.CCPImage,
-		CCPImageTag:             cl.Spec.CCPImageTag,
-		PVCName:                 util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, primaryPVCName),
-		DeploymentLabels:        operator.GetLabelsFromMap(cl.Spec.UserLabels),
-		PodLabels:               operator.GetLabelsFromMap(cl.Spec.UserLabels),
-		DataPathOverride:        cl.Spec.Name,
-		Database:                cl.Spec.Database,
-		ArchiveMode:             archiveMode,
-		ArchivePVCName:          util.CreateBackupPVCSnippet(archivePVCName),
-		XLOGDir:                 xlogdir,
-		ArchiveTimeout:          archiveTimeout,
-		SecurityContext:         util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
-		RootSecretName:          cl.Spec.RootSecretName,
-		PrimarySecretName:       cl.Spec.PrimarySecretName,
-		UserSecretName:          cl.Spec.UserSecretName,
-		NodeSelector:            operator.GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
-		ContainerResources:      operator.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
-		ConfVolume:              operator.GetConfVolume(clientset, cl, namespace),
-		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cl.Spec),
-		CollectVolume:           operator.GetCollectVolume(clientset, cl, namespace),
-		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, cl, cl.Spec.Name),
-		PgmonitorEnvVars:        operator.GetPgmonitorEnvVars(cl.Spec.UserLabels[config.LABEL_COLLECT]),
+		Name:               cl.Spec.Name,
+		Replicas:           "1",
+		ClusterName:        cl.Spec.Name,
+		PrimaryHost:        cl.Spec.Name,
+		Port:               cl.Spec.Port,
+		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImage:           cl.Spec.CCPImage,
+		CCPImageTag:        cl.Spec.CCPImageTag,
+		PVCName:            util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, primaryPVCName),
+		DeploymentLabels:   operator.GetLabelsFromMap(cl.Spec.UserLabels),
+		PodLabels:          operator.GetLabelsFromMap(cl.Spec.UserLabels),
+		DataPathOverride:   cl.Spec.Name,
+		Database:           cl.Spec.Database,
+		ArchiveMode:        archiveMode,
+		ArchivePVCName:     util.CreateBackupPVCSnippet(archivePVCName),
+		XLOGDir:            xlogdir,
+		SecurityContext:    util.CreateSecContext(cl.Spec.PrimaryStorage.Fsgroup, cl.Spec.PrimaryStorage.SupplementalGroups),
+		RootSecretName:     cl.Spec.RootSecretName,
+		PrimarySecretName:  cl.Spec.PrimarySecretName,
+		UserSecretName:     cl.Spec.UserSecretName,
+		NodeSelector:       operator.GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
+		ContainerResources: operator.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
+		ConfVolume:         operator.GetConfVolume(clientset, cl, namespace),
+		CollectAddon:       operator.GetCollectAddon(clientset, namespace, &cl.Spec),
+		CollectVolume:      operator.GetCollectVolume(clientset, cl, namespace),
+		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cl, cl.Spec.Name),
+		PgmonitorEnvVars:   operator.GetPgmonitorEnvVars(cl.Spec.UserLabels[config.LABEL_COLLECT]),
+		ScopeLabel:         config.LABEL_PG_CLUSTER,
 		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cl.Labels[config.LABEL_BACKREST], cl.Spec.ClusterName, cl.Spec.Name,
 			cl.Spec.Port, cl.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cl.Labels[config.LABEL_BACKREST],
@@ -295,18 +290,15 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 
 	archivePVCName := ""
 	archiveMode := "off"
-	archiveTimeout := "60"
 	xlogdir := "false"
 	if cluster.Spec.UserLabels[config.LABEL_ARCHIVE] == "true" {
 		archiveMode = "on"
-		archiveTimeout = cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
 		archivePVCName = replica.Spec.Name + "-xlog"
 	}
 
 	if cluster.Labels[config.LABEL_BACKREST] == "true" {
 		//backrest requires archive mode be set to on
 		archiveMode = "on"
-		archiveTimeout = cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
 		//set to emptystring to force emptyDir to be used
 		archivePVCName = ""
 		xlogdir = "false"
@@ -330,37 +322,34 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 
 	//create the replica deployment
 	replicaDeploymentFields := operator.DeploymentTemplateFields{
-		Name:                    replica.Spec.Name,
-		ClusterName:             replica.Spec.ClusterName,
-		PgMode:                  "replica",
-		Port:                    cluster.Spec.Port,
-		CCPImagePrefix:          operator.Pgo.Cluster.CCPImagePrefix,
-		LogStatement:            operator.Pgo.Cluster.LogStatement,
-		LogMinDurationStatement: operator.Pgo.Cluster.LogMinDurationStatement,
-		CCPImageTag:             imageTag,
-		CCPImage:                image,
-		PVCName:                 util.CreatePVCSnippet(cluster.Spec.ReplicaStorage.StorageType, pvcName),
-		PrimaryHost:             cluster.Spec.PrimaryHost,
-		Database:                cluster.Spec.Database,
-		DataPathOverride:        replica.Spec.Name,
-		ArchiveMode:             archiveMode,
-		ArchivePVCName:          util.CreateBackupPVCSnippet(archivePVCName),
-		XLOGDir:                 xlogdir,
-		ArchiveTimeout:          archiveTimeout,
-		Replicas:                "1",
-		ConfVolume:              operator.GetConfVolume(clientset, cluster, namespace),
-		DeploymentLabels:        operator.GetLabelsFromMap(cluster.Spec.UserLabels),
-		PodLabels:               operator.GetLabelsFromMap(cluster.Spec.UserLabels),
-		SecurityContext:         util.CreateSecContext(replica.Spec.ReplicaStorage.Fsgroup, replica.Spec.ReplicaStorage.SupplementalGroups),
-		RootSecretName:          cluster.Spec.RootSecretName,
-		PrimarySecretName:       cluster.Spec.PrimarySecretName,
-		UserSecretName:          cluster.Spec.UserSecretName,
-		ContainerResources:      operator.GetContainerResourcesJSON(&cs),
-		NodeSelector:            operator.GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
-		CollectAddon:            operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
-		CollectVolume:           operator.GetCollectVolume(clientset, cluster, namespace),
-		BadgerAddon:             operator.GetBadgerAddon(clientset, namespace, cluster, replica.Spec.Name),
-		PgmonitorEnvVars:        operator.GetPgmonitorEnvVars(cluster.Spec.UserLabels[config.LABEL_COLLECT]),
+		Name:               replica.Spec.Name,
+		ClusterName:        replica.Spec.ClusterName,
+		Port:               cluster.Spec.Port,
+		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImageTag:        imageTag,
+		CCPImage:           image,
+		PVCName:            util.CreatePVCSnippet(cluster.Spec.ReplicaStorage.StorageType, pvcName),
+		PrimaryHost:        cluster.Spec.PrimaryHost,
+		Database:           cluster.Spec.Database,
+		DataPathOverride:   replica.Spec.Name,
+		ArchiveMode:        archiveMode,
+		ArchivePVCName:     util.CreateBackupPVCSnippet(archivePVCName),
+		XLOGDir:            xlogdir,
+		Replicas:           "1",
+		ConfVolume:         operator.GetConfVolume(clientset, cluster, namespace),
+		DeploymentLabels:   operator.GetLabelsFromMap(cluster.Spec.UserLabels),
+		PodLabels:          operator.GetLabelsFromMap(cluster.Spec.UserLabels),
+		SecurityContext:    util.CreateSecContext(replica.Spec.ReplicaStorage.Fsgroup, replica.Spec.ReplicaStorage.SupplementalGroups),
+		RootSecretName:     cluster.Spec.RootSecretName,
+		PrimarySecretName:  cluster.Spec.PrimarySecretName,
+		UserSecretName:     cluster.Spec.UserSecretName,
+		ContainerResources: operator.GetContainerResourcesJSON(&cs),
+		NodeSelector:       operator.GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
+		CollectAddon:       operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
+		CollectVolume:      operator.GetCollectVolume(clientset, cluster, namespace),
+		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cluster, replica.Spec.Name),
+		PgmonitorEnvVars:   operator.GetPgmonitorEnvVars(cluster.Spec.UserLabels[config.LABEL_COLLECT]),
+		ScopeLabel:         config.LABEL_PG_CLUSTER,
 		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster.Labels[config.LABEL_BACKREST], replica.Spec.ClusterName, replica.Spec.Name,
 			cluster.Spec.Port, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Labels[config.LABEL_BACKREST],

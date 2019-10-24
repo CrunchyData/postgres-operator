@@ -22,6 +22,9 @@
                         "name": "PGBACKREST_LOG_PATH",
                         "value": "/tmp"
                     }, {
+                        "name": "PGBACKREST_PG1_SOCKET_PATH",
+                        "value": "/tmp"
+                    }, {
                         "name": "PGBACKREST_PG1_PORT",
                         "value": "{{.PgbackrestPGPort}}"
                     }, {

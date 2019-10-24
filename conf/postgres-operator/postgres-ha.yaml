@@ -1,0 +1,10 @@
+---
+bootstrap:
+  dcs:
+    postgresql:
+      parameters:
+        archive_timeout: {{.ArchiveTimeout}} 
+        log_min_duration_statement: {{.LogMinDurationStatement}}
+        log_statement: {{.LogStatement}}
+  initdb:
+  - encoding: UTF8
