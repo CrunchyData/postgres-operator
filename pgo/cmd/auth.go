@@ -24,6 +24,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	log "github.com/sirupsen/logrus"
@@ -33,6 +34,7 @@ const etcpath = "/etc/pgo/pgouser"
 const pgoUserFileEnvVar = "PGOUSER"
 const pgoUserNameEnvVar = "PGOUSERNAME"
 const pgoUserPasswordEnvVar = "PGOUSERPASS"
+const httpTimeout = 60
 
 // BasicAuthUsername and BasicAuthPassword are for BasicAuth, they are fetched from a file
 
@@ -42,6 +44,7 @@ var caCertPool *x509.CertPool
 var cert tls.Certificate
 var httpclient *http.Client
 var caCertPath, clientCertPath, clientKeyPath string
+var disabletls bool
 
 // StatusCheck ...
 func StatusCheck(resp *http.Response) {
@@ -175,14 +178,24 @@ func GetCredentialsFromEnvironment() msgs.BasicAuthCredentials {
 	}
 	return creds
 }
-func GetCredentials() {
-	log.Debug("GetCredentials called")
+
+// SetSessionUserCredentials gathers the pgouser and password information
+// and stores them for use by the PGO client
+func SetSessionUserCredentials() {
+	log.Debug("GetSessionCredentials called")
 
 	SessionCredentials = GetCredentialsFromEnvironment()
 
 	if !SessionCredentials.HasUsernameAndPassword() {
 		SessionCredentials = GetCredentialsFromFile()
 	}
+}
+
+// GetTLSCredentials instantiate gathers the necessary client connection
+// TLS settings for use by the PGO client.
+// If TLS is disabled, this will not be called.
+func GetTLSCredentials() *http.Transport {
+	log.Debug("GetCredentials called")
 
 	if PGO_CA_CERT != "" {
 		caCertPath = PGO_CA_CERT
@@ -242,16 +255,32 @@ func GetCredentials() {
 		os.Exit(2)
 	}
 
-	log.Debug("setting up httpclient with TLS")
-	httpclient = &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				RootCAs:            caCertPool,
-				InsecureSkipVerify: true,
-				Certificates:       []tls.Certificate{cert},
-				MinVersion:         tls.VersionTLS11,
-			},
+	// create a Transport object for use by the HTTP client
+	return &http.Transport{
+		TLSClientConfig: &tls.Config{
+			RootCAs:            caCertPool,
+			InsecureSkipVerify: true,
+			Certificates:       []tls.Certificate{cert},
+			MinVersion:         tls.VersionTLS11,
 		},
 	}
+}
 
+// SetHTTPClient instantiates the PGO HTTP client for use
+// with the Operator's apiserver. It sets a timeout based on
+// the httpTimeout constant, and configures the client for
+// either unauthenticated or TLS connections, as configured.
+func SetHTTPClient(httpTransport *http.Transport) {
+	if httpTransport != nil {
+		log.Debug("setting up httpclient with TLS")
+		httpclient = &http.Client{
+			Timeout:   httpTimeout * time.Second,
+			Transport: httpTransport,
+		}
+	} else {
+		log.Debug("setting up httpclient without TLS")
+		httpclient = &http.Client{
+			Timeout: httpTimeout * time.Second,
+		}
+	}
 }
