@@ -324,6 +324,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 	replicaDeploymentFields := operator.DeploymentTemplateFields{
 		Name:               replica.Spec.Name,
 		ClusterName:        replica.Spec.ClusterName,
+		IsReplica:          true,
 		Port:               cluster.Spec.Port,
 		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:        imageTag,

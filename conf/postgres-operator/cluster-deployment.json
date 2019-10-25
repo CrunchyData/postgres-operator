@@ -52,7 +52,14 @@
                     }, {
                         "name": "PGHA_USER",
                         "value": "postgres"
-                    }, {
+                    }, 
+                    {{if .IsReplica}}
+                    {
+                        "name": "PGHA_PRIMARY_HOST",
+                        "value": "{{.ClusterName}}"
+                    }, 
+                    {{ end }}
+                    {
                         "name": "PATRONI_POSTGRESQL_DATA_DIR",
                         "value": "/pgdata/{{.Name}}"
                     }, {
@@ -132,6 +139,9 @@
 
                     "ports": [{
                         "containerPort": 5432,
+                        "protocol": "TCP"
+                    }, {
+                        "containerPort": 8009,
                         "protocol": "TCP"
                     }],
                     "resources": {},

@@ -125,6 +125,7 @@ type DeploymentTemplateFields struct {
 	PrimaryHost string
 	// PgBouncer deployment only
 	PgbouncerPass string
+	IsReplica     bool
 }
 
 type PostgresHaTemplateFields struct {
