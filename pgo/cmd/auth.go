@@ -38,6 +38,7 @@ const httpTimeout = 60
 
 // BasicAuthUsername and BasicAuthPassword are for BasicAuth, they are fetched from a file
 
+// SessionCredentials stores the PGO user, PGO password and the PGO APIServer URL
 var SessionCredentials msgs.BasicAuthCredentials
 
 var caCertPool *x509.CertPool
@@ -58,7 +59,9 @@ func StatusCheck(resp *http.Response) {
 	}
 }
 
-func UserHomeDir() string {
+// userHomeDir updates the env variable with the appropriate home directory
+// depending on the host operating system the PGO client is running on.
+func userHomeDir() string {
 	env := "HOME"
 	if runtime.GOOS == "windows" {
 		env = "USERPROFILE"
@@ -99,9 +102,12 @@ func parseCredentials(dat string) msgs.BasicAuthCredentials {
 	return creds
 }
 
-func GetCredentialsFromFile() msgs.BasicAuthCredentials {
+// getCredentialsFromFile reads the pgouser and password from the .pgouser file,
+// checking in the various locations that file can be expected, and then returns
+// the credentials
+func getCredentialsFromFile() msgs.BasicAuthCredentials {
 	found := false
-	dir := UserHomeDir()
+	dir := userHomeDir()
 	fullPath := dir + "/" + ".pgouser"
 	var creds msgs.BasicAuthCredentials
 
@@ -158,7 +164,10 @@ func GetCredentialsFromFile() msgs.BasicAuthCredentials {
 	return creds
 }
 
-func GetCredentialsFromEnvironment() msgs.BasicAuthCredentials {
+// getCredentialsFromEnvironment reads the pgouser and password from relevant environment
+// variables and then returns a created BasicAuthCredentials object with both values,
+// as well as the APIServer URL.
+func getCredentialsFromEnvironment() msgs.BasicAuthCredentials {
 	pgoUser := os.Getenv(pgoUserNameEnvVar)
 	pgoPass := os.Getenv(pgoUserPasswordEnvVar)
 
@@ -184,10 +193,10 @@ func GetCredentialsFromEnvironment() msgs.BasicAuthCredentials {
 func SetSessionUserCredentials() {
 	log.Debug("GetSessionCredentials called")
 
-	SessionCredentials = GetCredentialsFromEnvironment()
+	SessionCredentials = getCredentialsFromEnvironment()
 
 	if !SessionCredentials.HasUsernameAndPassword() {
-		SessionCredentials = GetCredentialsFromFile()
+		SessionCredentials = getCredentialsFromFile()
 	}
 }
 
