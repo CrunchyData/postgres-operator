@@ -9,7 +9,7 @@ LABEL Vendor="Crunchy Data Solutions" \
 	description="pgBackRest image that is integrated for use with Crunchy Data's PostgreSQL Operator."
 
 ENV PGVERSION="11" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm" PGDG_REPO_DISABLE="pgdg10,pgdg96,pgdg95,pgdg94" \
-    BACKREST_VERSION="2.15.1"
+    BACKREST_VERSION="2.17.1"
 
 RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
 
