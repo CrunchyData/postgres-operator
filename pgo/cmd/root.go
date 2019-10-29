@@ -17,10 +17,12 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
+	"os"
+
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -57,11 +59,15 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&PGO_CA_CERT, "pgo-ca-cert", "", "The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver.")
 	RootCmd.PersistentFlags().StringVar(&PGO_CLIENT_KEY, "pgo-client-key", "", "The Client Key file path for authenticating to the PostgreSQL Operator apiserver.")
 	RootCmd.PersistentFlags().StringVar(&PGO_CLIENT_CERT, "pgo-client-cert", "", "The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.")
+	RootCmd.PersistentFlags().BoolVar(&PGO_DISABLE_TLS, "disable-tls", false, "Disable TLS authentication to the Postgres Operator.")
 	RootCmd.PersistentFlags().BoolVar(&DebugFlag, "debug", false, "Enable debugging when true.")
 
 }
 
 func initConfig() {
+	// httpTransport stores the PGO client TLS configuration
+	var httpTransport *http.Transport
+
 	if DebugFlag {
 		log.SetLevel(log.DebugLevel)
 		log.Debug("debug flag is set to true")
@@ -82,7 +88,17 @@ func initConfig() {
 		log.Debugf("using PGO_NAMESPACE env var %s", tmp)
 	}
 
-	GetCredentials()
+	// Get the pgouser and password information
+	SetSessionUserCredentials()
+
+	// If TLS is enabled, get the TLS credentials and set the httpTransport
+	// object required to initialize the client
+	if PGO_DISABLE_TLS != true && os.Getenv("DISABLE_TLS") != "true" {
+		httpTransport = GetTLSCredentials()
+	}
+
+	// Setup the HTTP client
+	SetHTTPClient(httpTransport)
 
 	if os.Getenv("GENERATE_BASH_COMPLETION") != "" {
 		generateBashCompletion()

@@ -40,3 +40,4 @@ var Namespace string
 var PGONamespace string
 var APIServerURL string
 var PGO_CA_CERT, PGO_CLIENT_CERT, PGO_CLIENT_KEY string
+var PGO_DISABLE_TLS bool
