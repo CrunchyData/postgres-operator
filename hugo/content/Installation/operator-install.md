@@ -253,6 +253,12 @@ The *pgo* client is provided in Mac, Windows, and Linux binary formats,
 download the appropriate client to your local laptop or workstation to work 
 with a remote Operator.
 
+{{% notice info %}}
+
+If TLS authentication was disabled during installation, please see the [TLS Configuration Page] ({{< relref "gettingstarted/Design/tls.md" >}}) for additional configuration information.
+
+{{% / notice %}}
+
 Prior to using *pgo*, users testing the Operator on a single host can specify the
 *postgres-operator* URL as follows:
 
