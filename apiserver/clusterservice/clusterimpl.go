@@ -405,7 +405,7 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 				Timestamp: time.Now(),
 				EventType: events.EventTestCluster,
 			},
-			Clustername:       c.Name,
+			Clustername: c.Name,
 		}
 
 		err = events.Publish(f)
