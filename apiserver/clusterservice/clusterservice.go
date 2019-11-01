@@ -18,7 +18,6 @@ limitations under the License.
 import (
 	"encoding/json"
 	"net/http"
-	//	"strconv"
 
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
