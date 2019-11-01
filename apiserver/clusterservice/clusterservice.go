@@ -24,15 +24,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// TestResults ...
-type TestResults struct {
-	Results []string
-}
-
-// ClusterDetail ...
-type ClusterDetail struct {
-	Name string
-}
 
 // CreateClusterHandler ...
 // pgo create cluster
