@@ -18,22 +18,12 @@ limitations under the License.
 import (
 	"encoding/json"
 	"net/http"
-	//	"strconv"
 
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 )
 
-// TestResults ...
-type TestResults struct {
-	Results []string
-}
-
-// ClusterDetail ...
-type ClusterDetail struct {
-	Name string
-}
 
 // CreateClusterHandler ...
 // pgo create cluster
