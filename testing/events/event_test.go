@@ -23,7 +23,6 @@ func TestEventCreate(t *testing.T) {
 	tryEventFailoverCluster(t)
 	tryEventFailoverClusterCompleted(t)
 	tryEventDeleteCluster(t)
-	tryEventTestCluster(t)
 	tryEventCreateLabel(t)
 	tryEventLoad(t)
 	tryEventLoadCompleted(t)
@@ -238,27 +237,6 @@ func tryEventDeleteCluster(t *testing.T) {
 			Username:  TestUsername,
 			Topic:     topics,
 			EventType: events.EventDeleteCluster,
-		},
-		Clustername: TestClusterName,
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	t.Log(f.String())
-}
-func tryEventTestCluster(t *testing.T) {
-
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventTestClusterFormat{
-		EventHeader: events.EventHeader{
-			Namespace: Namespace,
-			Username:  TestUsername,
-			Topic:     topics,
-			EventType: events.EventTestCluster,
 		},
 		Clustername: TestClusterName,
 	}

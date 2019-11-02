@@ -168,16 +168,31 @@ type ClusterTestRequest struct {
 	AllFlag       bool
 }
 
-// ClusterTestDetail ...
+// a collection of constants used to enumerate the output for
+// ClusterTestDetail => InstanceType
+const (
+	ClusterTestInstanceTypePrimary   = "primary"
+	ClusterTestInstanceTypeReplica   = "replica"
+	ClusterTestInstanceTypePGBouncer = "pgbouncer"
+	ClusterTestInstanceTypeBackups   = "backups"
+)
+
+// ClusterTestDetail provides the output of an individual test that is performed
+// on either a PostgreSQL instance (i.e. pod) or a service endpoint that is used
+// to connect to the instances
 type ClusterTestDetail struct {
-	PsqlString string
-	Working    bool
+	Available    bool   // true if the object being tested is available (ready)
+	Message      string // a descriptive message that can be displayed with
+	InstanceType string // an enumerated set of what this instance can be, e.g. "primary"
 }
 
-// ClusterTestResult ...
+// ClusterTestResult contains the output for a test on a single PostgreSQL
+// cluster. This includes the endpoints (i.e. how to connect to instances
+// in a cluster) and the instances themselves (which are pods)
 type ClusterTestResult struct {
 	ClusterName string
-	Items       []ClusterTestDetail
+	Endpoints   []ClusterTestDetail // a list of endpoints
+	Instances   []ClusterTestDetail // a list of instances (pods)
 }
 
 // ClusterTestResponse ...
