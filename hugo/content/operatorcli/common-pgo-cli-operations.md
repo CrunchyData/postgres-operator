@@ -61,11 +61,25 @@ You can remove a PostgreSQL cluster by entering:
 
     pgo delete cluster mycluster -n pgouser1
 
-#### Delete a Cluster and Its Persistent Volume Claims
+This removes any PostgreSQL instances from being accessed as well as deletes all of its data and backups.
 
-You can remove the persistent volumes when removing a PostgreSQL cluster by specifying the following command flag:
+##### Retain Backups
 
-    pgo delete cluster mycluster --delete-data -n pgouser1
+It can often be useful to keep the backups of a cluster even after its deleted, such as for archival purposes or for creating the cluster at a future date. You can delete the cluster but keep its backups using the `--keep-backups` flag:
+
+```bash
+pgo delete cluster mycluster --keep-backups -n pgouser1
+```
+
+##### Retain Cluster Data
+
+There are rare circumstances in which you may want to keep a copy of the original cluster data, such as when upgrading manually to a newer version of the Operator. In these cases, you can use the `--keep-data` flag:
+
+```bash
+pgo delete cluster mycluster --keep-data -n pgouser1
+```
+
+**NOTE**: The `--keep-data` flag is deprecated.
 
 #### View Disk Utilization
 

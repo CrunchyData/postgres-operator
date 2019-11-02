@@ -22,6 +22,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Several prompts to help a user decide if they wish to actually delete their
+// data from a cluster
+const (
+	deleteClusterAllPromptMessage         = "This will delete ALL OF YOUR DATA, including backups. Proceed?"
+	deleteClusterKeepBackupsPromptMessage = "This will delete your active data, but your backups will still be available. Proceed?"
+	deleteClusterKeepDataPromptMessage    = "This will delete your cluster as well as your backups, but your data is still accessible if you recreate the cluster. Proceed?"
+)
+
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
@@ -93,8 +101,16 @@ var deleteCmd = &cobra.Command{
 	},
 }
 
-// DeleteBackups, If set to "true", indicates that backups can be deleted.
-var DeleteBackups bool
+// DEPRECATED deleteBackups, if set to "true", indicates that backups can be deleted.
+var deleteBackups bool
+
+// KeepBackups, If set to "true", indicates that backups should be stored even
+// after a cluster is deleted
+var KeepBackups bool
+
+// KeepData, If set to "true", indicates that cluster data should be stored
+// even after a cluster is deleted. This is DEPRECATED
+var KeepData bool
 
 // NoPrompt, If set to "true", indicates that the user should not be prompted
 // before executing a delete command
@@ -129,13 +145,27 @@ func init() {
 	// "pgo delete cluster --delete-backups"
 	// "pgo delete cluster -d"
 	// instructs that any backups associated with a cluster should be deleted
-	deleteClusterCmd.Flags().BoolVarP(&DeleteBackups, "delete-backups", "b", false,
+	deleteClusterCmd.Flags().BoolVarP(&deleteBackups, "delete-backups", "b", false,
 		"Causes the backups for specified cluster to be removed permanently.")
+	deleteClusterCmd.Flags().MarkDeprecated("delete-backups",
+		"Backups are deleted by default. If you would like to keep your backups, use the --keep-backups flag")
 	// "pgo delete cluster --delete-data"
 	// "pgo delete cluster -d"
 	// instructs that the PostgreSQL cluster data should be deleted
 	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false,
 		"Causes the data for specified cluster to be removed permanently.")
+	deleteClusterCmd.Flags().MarkDeprecated("delete-data",
+		"Data is deleted by default. You can preserve your data by keeping your backups with the --keep-backups flag")
+	// "pgo delete cluster --keep-backups"
+	// instructs that any backups associated with a cluster should be kept and not deleted
+	deleteClusterCmd.Flags().BoolVar(&KeepBackups, "keep-backups", false,
+		"Keeps the backups available for use at a later time (e.g. recreating the cluster).")
+	// "pgo delete cluster --keep-data"
+	// instructs that any data associated with the cluster should be kept and not deleted
+	deleteClusterCmd.Flags().BoolVar(&KeepData, "keep-data", false,
+		"Keeps the data for the specified cluster. Can be reassigned to exact same cluster in the future.")
+	deleteClusterCmd.Flags().MarkDeprecated("keep-data",
+		"You can preserve your data by keeping your backups with the --keep-backups flag")
 	// "pgo delete cluster --no-prompt"
 	// does not display the warning prompt to ensure the user wishes to delete
 	// a cluster
@@ -333,7 +363,18 @@ var deleteClusterCmd = &cobra.Command{
 		if len(args) == 0 && Selector == "" && !AllFlag {
 			fmt.Println("Error: A cluster name,  selector, or --all is required for this command.")
 		} else {
-			if util.AskForConfirmation(NoPrompt, "") {
+			// Set the prompt message based on whether or not "--keep-backups" is set
+			promptMessage := deleteClusterAllPromptMessage
+
+			if KeepBackups && KeepData {
+				promptMessage = ""
+			} else if KeepBackups {
+				promptMessage = deleteClusterKeepBackupsPromptMessage
+			} else if KeepData {
+				promptMessage = deleteClusterKeepDataPromptMessage
+			}
+
+			if util.AskForConfirmation(NoPrompt, promptMessage) {
 				deleteCluster(args, Namespace)
 			} else {
 				fmt.Println("Aborting...")

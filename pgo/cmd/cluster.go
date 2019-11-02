@@ -26,7 +26,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// deleteCluster ...
+// deleteCluster will delete a PostgreSQL cluster that is managed by the
+// PostgreSQL Operator
 func deleteCluster(args []string, ns string) {
 	log.Debugf("deleteCluster called %v", args)
 
@@ -39,8 +40,8 @@ func deleteCluster(args []string, ns string) {
 	r.Selector = Selector
 	r.ClientVersion = msgs.PGO_VERSION
 	r.Namespace = ns
-	r.DeleteBackups = DeleteBackups
-	r.DeleteData = DeleteData
+	r.DeleteBackups = !KeepBackups
+	r.DeleteData = !KeepData
 
 	for _, arg := range args {
 		r.Clustername = arg

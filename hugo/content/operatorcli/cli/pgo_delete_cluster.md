@@ -22,6 +22,8 @@ pgo delete cluster [flags]
       --all               all clusters. Backups and data subject to --delete-backups and --delete-data flags, respectively.
   -b, --delete-backups    Causes the backups for specified cluster to be removed permanently.
   -d, --delete-data       Causes the data for specified cluster to be removed permanently.
+      --keep-backups      Keeps the backups available for use at a later time (e.g. recreating the cluster)
+      --keep-data         Keeps the data for the specified cluster. Can be reassigned to exact same cluster in the future
   -h, --help              help for cluster
       --no-prompt         No command line confirmation.
   -s, --selector string   The selector to use for cluster filtering.
