@@ -18,17 +18,19 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var testCmd = &cobra.Command{
 	Use:   "test",
 	Short: "Test cluster connectivity",
-	Long: `TEST allows you to test the connectivity for a cluster. For example:
+	Long: `TEST allows you to test the availability of a PostgreSQL cluster. For example:
 
 	pgo test mycluster
 	pgo test --selector=env=research
@@ -108,16 +110,29 @@ func showTest(args []string, ns string) {
 
 		for _, result := range response.Results {
 			fmt.Println("")
-			fmt.Printf("cluster : %s \n", result.ClusterName)
-			for _, v := range result.Items {
-				fmt.Printf("%s%s is ", TreeBranch, v.PsqlString)
-				if v.Working {
-					fmt.Printf("%s\n", GREEN("Working"))
-				} else {
-					fmt.Printf("%s\n", RED("NOT working"))
-				}
-			}
-		}
+			fmt.Println(fmt.Sprintf("cluster : %s", result.ClusterName))
 
+			// first, print the test results for the endpoints, which make up
+			// the services
+			printTestResults("Services", result.Endpoints)
+			// first, print the test results for the instances
+			printTestResults("Instances", result.Instances)
+		}
+	}
+}
+
+// prints out a set of test results
+func printTestResults(testName string, results []msgs.ClusterTestDetail) {
+	// print out the header for this group of tests
+	fmt.Println(fmt.Sprintf("%s%s", TreeBranch, testName))
+	// iterate though the results and print them!
+	for _, v := range results {
+		fmt.Printf("%s%s%s (%s): ",
+			TreeBranch, TreeBranch, v.InstanceType, v.Message)
+		if v.Available {
+			fmt.Println(fmt.Sprintf("%s", GREEN("UP")))
+		} else {
+			fmt.Println(fmt.Sprintf("%s", RED("DOWN")))
+		}
 	}
 }
