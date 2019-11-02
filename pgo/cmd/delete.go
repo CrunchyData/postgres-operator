@@ -93,57 +93,192 @@ var deleteCmd = &cobra.Command{
 	},
 }
 
+// DeleteBackups, If set to "true", indicates that backups can be deleted.
 var DeleteBackups bool
+
+// NoPrompt, If set to "true", indicates that the user should not be prompted
+// before executing a delete command
 var NoPrompt bool
 
+// initialize variables specific for the "pgo delete" command and subcommands
 func init() {
+	// set the various commands that are provided by this file
+	// First, add the root command, i.e. "pgo delete"
 	RootCmd.AddCommand(deleteCmd)
+
+	// "pgo delete backup"
+	// used to delete backups
 	deleteCmd.AddCommand(deleteBackupCmd)
+
+	// "pgo delete benchmark"
+	// used to delete benchmarks
 	deleteCmd.AddCommand(deleteBenchmarkCmd)
+	// "pgo delete benchmark --selector"
+	// "pgo delete benchmark -s"
+	// the selector flag that filters which benchmarks to delete for clusters
+	deleteBenchmarkCmd.Flags().StringVarP(&Selector, "selector", "s", "",
+		"The selector to use for cluster filtering.")
+
+	// "pgo delete cluster"
+	// used to delete clusters
 	deleteCmd.AddCommand(deleteClusterCmd)
-	deleteCmd.AddCommand(deletePgouserCmd)
-	deleteCmd.AddCommand(deletePgoroleCmd)
-	deleteCmd.AddCommand(deletePgbouncerCmd)
-	deleteCmd.AddCommand(deletePgpoolCmd)
-	deleteCmd.AddCommand(deletePolicyCmd)
+	// "pgo delete cluster --all"
+	// allows for the deletion of every cluster.
+	deleteClusterCmd.Flags().BoolVar(&AllFlag, "all", false,
+		"Delete all clusters. Backups and data subject to --delete-backups and --delete-data flags, respectively.")
+	// "pgo delete cluster --delete-backups"
+	// "pgo delete cluster -d"
+	// instructs that any backups associated with a cluster should be deleted
+	deleteClusterCmd.Flags().BoolVarP(&DeleteBackups, "delete-backups", "b", false,
+		"Causes the backups for specified cluster to be removed permanently.")
+	// "pgo delete cluster --delete-data"
+	// "pgo delete cluster -d"
+	// instructs that the PostgreSQL cluster data should be deleted
+	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false,
+		"Causes the data for specified cluster to be removed permanently.")
+	// "pgo delete cluster --no-prompt"
+	// does not display the warning prompt to ensure the user wishes to delete
+	// a cluster
+	deleteClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false,
+		"No command line confirmation before delete.")
+	// "pgo delete cluster --selector"
+	// "pgo delete cluster -s"
+	// the selector flag that filters which clusters to delete
+	deleteClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "",
+		"The selector to use for cluster filtering.")
+
+	// "pgo delete label"
+	// delete a cluster label
 	deleteCmd.AddCommand(deleteLabelCmd)
-	deleteCmd.AddCommand(deleteScheduleCmd)
-	deleteCmd.AddCommand(deleteUserCmd)
+	// pgo delete label --label
+	// the label to be deleted
+	deleteLabelCmd.Flags().StringVar(&LabelCmdLabel, "label", "",
+		"The label to delete for any selected or specified clusters.")
+	// "pgo delete label --selector"
+	// "pgo delete label -s"
+	// the selector flag that filters which clusters to delete the cluster
+	// labels from
+	deleteLabelCmd.Flags().StringVarP(&Selector, "selector", "s", "",
+		"The selector to use for cluster filtering.")
+
+	// "pgo delete namespace"
+	// deletes a namespace and all of the objects within it (clusters, etc.)
 	deleteCmd.AddCommand(deleteNamespaceCmd)
 
-	deleteClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-	deleteBenchmarkCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	deleteClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	deleteLabelCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	deleteLabelCmd.Flags().StringVarP(&LabelCmdLabel, "label", "", "", "The label to delete for any selected or specified clusters.")
-	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "Causes the data for specified cluster to be removed permanently.")
-	deleteClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all clusters. Backups and data subject to --delete-backups and --delete-data flags, respectively.")
-	deleteClusterCmd.Flags().BoolVarP(&DeleteBackups, "delete-backups", "b", false, "Causes the backups for specified cluster to be removed permanently.")
+	// "pgo delete pgbouncer"
+	// delete a pgBouncer instance that is associated with a PostgreSQL cluster
+	deleteCmd.AddCommand(deletePgbouncerCmd)
+	// "pgo delete pgbouncer --no-prompt"
+	// does not display the warning prompt to ensure the user wishes to delete
+	// a pgBouncer instance
+	deletePgbouncerCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation before delete.")
+	// "pgo delete pgbouncer --selector"
+	// "pgo delete pgbouncer -s"
+	// the selector flag that filters which clusters to delete the pgBouncer
+	// instances from
 	deletePgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	deletePgbouncerCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-	deletePgpoolCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	deletePgpoolCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-	deletePolicyCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-	deletePolicyCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
-	deletePgouserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-	deletePgouserCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
-	deletePgoroleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-	deletePgoroleCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
-	deleteScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	deleteScheduleCmd.Flags().StringVarP(&ScheduleName, "schedule-name", "", "", "The name of the schedule to delete.")
-	deleteScheduleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-	deleteUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	deleteUserCmd.Flags().StringVarP(&Username, "username", "", "", "The username to delete.")
-	deleteUserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-	deleteUserCmd.Flags().BoolVar(&AllFlag, "all", false, "all clusters.")
 
+	// "pgo delete pgorole"
+	// delete a role that is able to issue commands interface with the
+	// PostgreSQL Operator
+	deleteCmd.AddCommand(deletePgoroleCmd)
+	// "pgo delete pgorole --all"
+	// allows for the deletion of every PostgreSQL Operator role.
+	deletePgoroleCmd.Flags().BoolVar(&AllFlag, "all", false, "Delete all PostgreSQL Operator roles.")
+	// "pgo delete pgorole --no-prompt"
+	// does not display the warning prompt to ensure the user wishes to delete
+	// a PostgreSQL Operator role
+	deletePgoroleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false,
+		"No command line confirmation before delete.")
+
+	// "pgo delete pgouser"
+	// delete a user that is able to issue commands to the PostgreSQL Operator
+	deleteCmd.AddCommand(deletePgouserCmd)
+	// "pgo delete cluster --all"
+	// allows for the deletion of every PostgreSQL Operator user.
+	deletePgouserCmd.Flags().BoolVar(&AllFlag, "all", false,
+		"Delete all PostgreSQL Operator users.")
+	// "pgo delete pgouser --no-prompt"
+	// does not display the warning prompt to ensure the user wishes to delete
+	// a PostgreSQL Operator user
+	deletePgouserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false,
+		"No command line confirmation before delete.")
+
+	// "pgo delete pgpool"
+	// delete a pgpool instance that is associated with a PostgreSQL cluster
+	deleteCmd.AddCommand(deletePgpoolCmd)
+	// "pgo delete pgpool --no-prompt"
+	// does not display the warning prompt to ensure the user wishes to delete
+	// a pgpool instance
+	deletePgpoolCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false,
+		"No command line confirmation before delete.")
+	// "pgo delete pgpool --selector"
+	// "pgo delete pgpool -s"
+	// the selector flag that filters which clusters to delete the pgBouncer
+	// instances from
+	deletePgpoolCmd.Flags().StringVarP(&Selector, "selector", "s", "",
+		"The selector to use for cluster filtering.")
+
+	// "pgo delete policy"
+	// delete a SQL policy associated with a PostgreSQL cluster
+	deleteCmd.AddCommand(deletePolicyCmd)
+	// "pgo delete policy --all"
+	// delete all SQL policies for all clusters
+	deletePolicyCmd.Flags().BoolVar(&AllFlag, "all", false, "Delete all SQL policies.")
+	// "pgo delete policy --no-prompt"
+	// does not display the warning prompt to ensure the user wishes to delete
+	// a SQL policy
+	deletePolicyCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation before delete.")
+
+	// "pgo delete schedule"
+	// delete a scheduled job for a cluster (e.g. a daily backup)
+	deleteCmd.AddCommand(deleteScheduleCmd)
+	// "pgo delete schedule --no-prompt"
+	// does not display the warning prompt to ensure the user wishes to delete
+	// a scheduled job for a cluster
+	deleteScheduleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false,
+		"No command line confirmation before delete.")
+	// "pgo delete schedule --schedule-name"
+	// the name of the scheduled job to delete
+	deleteScheduleCmd.Flags().StringVar(&ScheduleName, "schedule-name", "",
+		"The name of the schedule to delete.")
+	// "pgo delete schedule --selector"
+	// "pgo delete schedule -s"
+	// the selector flag that filters which scheduled jobs should be deleted
+	// from which clusters
+	deleteScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "",
+		"The selector to use for cluster filtering.")
+
+	// "pgo delete user"
+	// Delete a user from a PostgreSQL cluster
+	deleteCmd.AddCommand(deleteUserCmd)
+	// "pgo delete user --all"
+	// delete all users from all PostgreSQL clusteres
+	deleteUserCmd.Flags().BoolVar(&AllFlag, "all", false,
+		"Delete all PostgreSQL users from all clusters.")
+	// "pgo delete user --no-prompt"
+	// does not display the warning prompt to ensure the user wishes to delete
+	// the PostgreSQL user from the cluster
+	deleteUserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false,
+		"No command line confirmation before delete.")
+	// "pgo delete schedule --selector"
+	// "pgo delete schedule -s"
+	// the selector flag that filters which PostgreSQL users should be deleted
+	// from which clusters
+	deleteUserCmd.Flags().StringVarP(&Selector, "selector", "s", "",
+		"The selector to use for cluster filtering.")
+	// "pgo delete schedule --username"
+	// the username of the PostgreSQL user to delete
+	deleteUserCmd.Flags().StringVar(&Username, "username", "",
+		"The username to delete.")
 }
 
+// deleteBackupCmd ...
 var deleteBackupCmd = &cobra.Command{
 	Use:   "backup",
 	Short: "Delete a backup",
 	Long: `Delete a backup. For example:
-    
+
     pgo delete backup mydatabase`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Namespace == "" {
@@ -160,71 +295,25 @@ var deleteBackupCmd = &cobra.Command{
 		}
 	},
 }
-var deletePgouserCmd = &cobra.Command{
-	Use:   "pgouser",
-	Short: "Delete a pgouser",
-	Long: `Delete a pgouser. For example:
-    
-    pgo delete pgouser someuser`,
+
+// deleteBenchmarkCmd ...
+var deleteBenchmarkCmd = &cobra.Command{
+	Use:   "benchmark",
+	Short: "Delete benchmarks for a cluster",
+	Long: `Delete benchmarks for a cluster. For example:
+
+    pgo delete benchmark mycluster
+    pgo delete benchmark --selector=env=test`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if Namespace == "" {
-			Namespace = PGONamespace
+		if len(args) == 0 && Selector == "" {
+			fmt.Println("Error: cluster name or selector is required to delete a benchmark.")
+			return
 		}
-		if len(args) == 0 {
-			fmt.Println("Error: A pgouser username is required for this command.")
+
+		if util.AskForConfirmation(NoPrompt, "") {
+			deleteBenchmark(args, Namespace)
 		} else {
-			if util.AskForConfirmation(NoPrompt, "") {
-				deletePgouser(args, Namespace)
-			} else {
-				fmt.Println("Aborting...")
-			}
-		}
-	},
-}
-
-var deletePgoroleCmd = &cobra.Command{
-	Use:   "pgorole",
-	Short: "Delete a pgorole",
-	Long: `Delete a pgorole. For example:
-    
-    pgo delete pgorole somerole`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if Namespace == "" {
-			Namespace = PGONamespace
-		}
-		if len(args) == 0 {
-			fmt.Println("Error: A pgorole role name is required for this command.")
-		} else {
-			if util.AskForConfirmation(NoPrompt, "") {
-				deletePgorole(args, Namespace)
-			} else {
-				fmt.Println("Aborting...")
-			}
-		}
-	},
-}
-
-// deleteUserCmd ...
-var deleteUserCmd = &cobra.Command{
-	Use:   "user",
-	Short: "Delete a user",
-	Long: `Delete a user. For example:
-
-    pgo delete user --username=someuser --selector=name=mycluster`,
-	Run: func(cmd *cobra.Command, args []string) {
-
-		if Namespace == "" {
-			Namespace = PGONamespace
-		}
-		if len(args) == 0 && AllFlag == false && Selector == "" {
-			fmt.Println("Error: --all, --selector, or a list of clusters is required for this command")
-		} else {
-			if util.AskForConfirmation(NoPrompt, "") {
-				deleteUser(args, Namespace)
-
-			} else {
-				fmt.Println("Aborting...")
-			}
+			fmt.Println("Aborting...")
 		}
 	},
 }
@@ -253,21 +342,88 @@ var deleteClusterCmd = &cobra.Command{
 	},
 }
 
-var deletePolicyCmd = &cobra.Command{
-	Use:   "policy",
-	Short: "Delete a SQL policy",
-	Long: `Delete a policy. For example:
+// deleteLabelCmd ...
+var deleteLabelCmd = &cobra.Command{
+	Use:   "label",
+	Short: "Delete a label from clusters",
+	Long: `Delete a label from clusters. For example:
 
-    pgo delete policy mypolicy`,
+    pgo delete label mycluster --label=env=research
+    pgo delete label all --label=env=research
+    pgo delete label --selector=group=southwest --label=env=research`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		if len(args) == 0 && !AllFlag {
-			fmt.Println("Error: A policy name or --all is required for this command.")
+		if len(args) == 0 && Selector == "" {
+			fmt.Println("Error: A cluster name or selector is required for this command.")
+		} else {
+			deleteLabel(args, Namespace)
+		}
+	},
+}
+
+// deleteNamespaceCmd ...
+var deleteNamespaceCmd = &cobra.Command{
+	Use:   "namespace",
+	Short: "Delete namespaces",
+	Long: `Delete namespaces. For example:
+
+    pgo delete namespace mynamespace
+    pgo delete namespace --selector=env=test`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 && Selector == "" {
+			fmt.Println("Error: namespace name or selector is required to delete a namespace.")
+			return
+		}
+
+		if util.AskForConfirmation(NoPrompt, "") {
+			deleteNamespace(args, Namespace)
+		} else {
+			fmt.Println("Aborting...")
+		}
+	},
+}
+
+// deletePgoroleCmd ...
+var deletePgoroleCmd = &cobra.Command{
+	Use:   "pgorole",
+	Short: "Delete a pgorole",
+	Long: `Delete a pgorole. For example:
+
+    pgo delete pgorole somerole`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		if len(args) == 0 {
+			fmt.Println("Error: A pgorole role name is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
-				deletePolicy(args, Namespace)
+				deletePgorole(args, Namespace)
+			} else {
+				fmt.Println("Aborting...")
+			}
+		}
+	},
+}
+
+// deletePgouserCmd ...
+var deletePgouserCmd = &cobra.Command{
+	Use:   "pgouser",
+	Short: "Delete a pgouser",
+	Long: `Delete a pgouser. For example:
+
+    pgo delete pgouser someuser`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		if len(args) == 0 {
+			fmt.Println("Error: A pgouser username is required for this command.")
+		} else {
+			if util.AskForConfirmation(NoPrompt, "") {
+				deletePgouser(args, Namespace)
 			} else {
 				fmt.Println("Aborting...")
 			}
@@ -304,7 +460,7 @@ var deletePgpoolCmd = &cobra.Command{
 	Use:   "pgpool",
 	Short: "Delete a pgpool from a cluster",
 	Long: `Delete a pgpool from a cluster. For example:
-    
+
     pgo delete pgpool mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Namespace == "" {
@@ -323,6 +479,30 @@ var deletePgpoolCmd = &cobra.Command{
 	},
 }
 
+// deletePolicyCmd ...
+var deletePolicyCmd = &cobra.Command{
+	Use:   "policy",
+	Short: "Delete a SQL policy",
+	Long: `Delete a policy. For example:
+
+    pgo delete policy mypolicy`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		if len(args) == 0 && !AllFlag {
+			fmt.Println("Error: A policy name or --all is required for this command.")
+		} else {
+			if util.AskForConfirmation(NoPrompt, "") {
+				deletePolicy(args, Namespace)
+			} else {
+				fmt.Println("Aborting...")
+			}
+		}
+	},
+}
+
+// deleteScheduleCmd ...
 var deleteScheduleCmd = &cobra.Command{
 	Use:   "schedule",
 	Short: "Delete a schedule",
@@ -348,65 +528,27 @@ var deleteScheduleCmd = &cobra.Command{
 	},
 }
 
-// deleteLabelCmd ...
-var deleteLabelCmd = &cobra.Command{
-	Use:   "label",
-	Short: "Delete a label from clusters",
-	Long: `Delete a label from clusters. For example:
+// deleteUserCmd ...
+var deleteUserCmd = &cobra.Command{
+	Use:   "user",
+	Short: "Delete a user",
+	Long: `Delete a user. For example:
 
-    pgo delete label mycluster --label=env=research
-    pgo delete label all --label=env=research
-    pgo delete label --selector=group=southwest --label=env=research`,
+    pgo delete user --username=someuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
+
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		if len(args) == 0 && Selector == "" {
-			fmt.Println("Error: A cluster name or selector is required for this command.")
+		if len(args) == 0 && AllFlag == false && Selector == "" {
+			fmt.Println("Error: --all, --selector, or a list of clusters is required for this command")
 		} else {
-			deleteLabel(args, Namespace)
-		}
-	},
-}
+			if util.AskForConfirmation(NoPrompt, "") {
+				deleteUser(args, Namespace)
 
-var deleteBenchmarkCmd = &cobra.Command{
-	Use:   "benchmark",
-	Short: "Delete benchmarks for a cluster",
-	Long: `Delete benchmarks for a cluster. For example:
-
-    pgo delete benchmark mycluster
-    pgo delete benchmark --selector=env=test`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 && Selector == "" {
-			fmt.Println("Error: cluster name or selector is required to delete a benchmark.")
-			return
-		}
-
-		if util.AskForConfirmation(NoPrompt, "") {
-			deleteBenchmark(args, Namespace)
-		} else {
-			fmt.Println("Aborting...")
-		}
-	},
-}
-
-var deleteNamespaceCmd = &cobra.Command{
-	Use:   "namespace",
-	Short: "Delete namespaces",
-	Long: `Delete namespaces. For example:
-
-    pgo delete namespace mynamespace
-    pgo delete namespace --selector=env=test`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 && Selector == "" {
-			fmt.Println("Error: namespace name or selector is required to delete a namespace.")
-			return
-		}
-
-		if util.AskForConfirmation(NoPrompt, "") {
-			deleteNamespace(args, Namespace)
-		} else {
-			fmt.Println("Aborting...")
+			} else {
+				fmt.Println("Aborting...")
+			}
 		}
 	},
 }
