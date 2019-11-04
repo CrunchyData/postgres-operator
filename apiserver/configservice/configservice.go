@@ -26,7 +26,29 @@ import (
 // ShowConfigHandler ...
 // pgo show config
 func ShowConfigHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation GET /config configservice config
+    /*```
+    Show configuration information for the Operator.
+    */
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "version"
+	//    description: "Client Version"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "namespace"
+	//    description: "Namespace"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/ShowConfigResponse"
 	clientVersion := r.URL.Query().Get("version")
 	namespace := r.URL.Query().Get("namespace")
 

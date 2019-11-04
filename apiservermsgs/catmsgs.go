@@ -18,12 +18,14 @@ limitations under the License.
 import ()
 
 // CatResponse ...
+// swagger:model
 type CatResponse struct {
 	Results []string
 	Status
 }
 
 // CatRequest ...
+// swagger:model
 type CatRequest struct {
 	Namespace string
 	Args      []string

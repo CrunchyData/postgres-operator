@@ -19,19 +19,32 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 )
 
-// ShowClusterRequest ...
+// ShowClusterRequest shows cluster
+//
+// swagger:model 
 type ShowClusterRequest struct {
-	Clustername   string
-	Selector      string
-	Ccpimagetag   string
-	ClientVersion string
-	Namespace     string
-	AllFlag       bool
+	// Name of the cluster to show
+	// required: true
+	Clustername   string	`json:"clustername"`
+	// Selector of the cluster to show
+	Selector      string	`json:"selector"`
+	// Image tag of the cluster
+	Ccpimagetag   string	`json:"ccpimagetag"`
+	// Version of API client
+	// required: true	
+	ClientVersion string	`json:"clientversion"`
+	// Namespace to search
+	// required: true	
+	Namespace     string	`json:"namespace"`
+	// Shows all clusters
+	AllFlag       bool	`json:"allflag"`
 }
 
-// CreateClusterRequest ...
+// CreateClusterRequest
+//
+// swagger:model 
 type CreateClusterRequest struct {
-	Name                string
+	Name                string `json:"Name"`
 	Namespace           string
 	NodeLabel           string
 	Password            string
@@ -60,16 +73,22 @@ type CreateClusterRequest struct {
 	StorageConfig        string
 	ReplicaStorageConfig string
 	ContainerResources   string
+	// Version of API client
+	// required: true	
 	ClientVersion        string
 }
 
-// CreateClusterResponse ...
+// CreateClusterResponse
+//
+// swagger:model 
 type CreateClusterResponse struct {
-	Results []string
-	Status
+	Results []string	`json:"results"`
+	Status			`json:"status"`
 }
 
 // ShowClusterService
+//
+// swagger:model
 type ShowClusterService struct {
 	Name         string
 	Data         string
@@ -89,6 +108,8 @@ const PodTypeBackup = "backup"
 const PodTypeUnknown = "unknown"
 
 // ShowClusterPod
+//
+// swagger:model
 type ShowClusterPod struct {
 	Name        string
 	Phase       string
@@ -101,19 +122,26 @@ type ShowClusterPod struct {
 }
 
 // ShowClusterDeployment
+// 
+// swagger:model
 type ShowClusterDeployment struct {
 	Name         string
 	PolicyLabels []string
 }
 
 // ShowClusterReplica
+//
+// swagger:model
 type ShowClusterReplica struct {
 	Name string
 }
 
 // ShowClusterDetail ...
+//
+// swagger:model
 type ShowClusterDetail struct {
-	Cluster     crv1.Pgcluster
+	// Defines the Cluster using a Crunchy Pgcluster crd
+	Cluster     crv1.Pgcluster `json:"cluster"`
 	Deployments []ShowClusterDeployment
 	Pods        []ShowClusterPod
 	Services    []ShowClusterService
@@ -121,15 +149,22 @@ type ShowClusterDetail struct {
 }
 
 // ShowClusterResponse ...
+//
+// swagger:model
 type ShowClusterResponse struct {
+	// results from show cluster
 	Results []ShowClusterDetail
+	// status of response
 	Status
 }
 
 // DeleteClusterRequest ...
+// swagger:model
 type DeleteClusterRequest struct {
 	Clustername   string
 	Selector      string
+	// Version of API client
+	// required: true	
 	ClientVersion string
 	Namespace     string
 	AllFlag       bool
@@ -138,15 +173,19 @@ type DeleteClusterRequest struct {
 }
 
 // DeleteClusterResponse ...
+// swagger:model
 type DeleteClusterResponse struct {
 	Results []string
 	Status
 }
 
 // UpdateClusterRequest ...
+// swagger:model
 type UpdateClusterRequest struct {
 	Clustername   []string
 	Selector      string
+	// Version of API client
+	// required: true	
 	ClientVersion string
 	Namespace     string
 	AllFlag       bool
@@ -154,15 +193,19 @@ type UpdateClusterRequest struct {
 }
 
 // UpdateClusterResponse ...
+// swagger:model
 type UpdateClusterResponse struct {
 	Results []string
 	Status
 }
 
 // ClusterTestRequest ...
+// swagger:model
 type ClusterTestRequest struct {
 	Clustername   string
 	Selector      string
+	// Version of API client
+	// required: true	
 	ClientVersion string
 	Namespace     string
 	AllFlag       bool
@@ -180,6 +223,8 @@ const (
 // ClusterTestDetail provides the output of an individual test that is performed
 // on either a PostgreSQL instance (i.e. pod) or a service endpoint that is used
 // to connect to the instances
+
+// swagger:model
 type ClusterTestDetail struct {
 	Available    bool   // true if the object being tested is available (ready)
 	Message      string // a descriptive message that can be displayed with
@@ -189,6 +234,7 @@ type ClusterTestDetail struct {
 // ClusterTestResult contains the output for a test on a single PostgreSQL
 // cluster. This includes the endpoints (i.e. how to connect to instances
 // in a cluster) and the instances themselves (which are pods)
+// swagger:model
 type ClusterTestResult struct {
 	ClusterName string
 	Endpoints   []ClusterTestDetail // a list of endpoints
@@ -196,11 +242,14 @@ type ClusterTestResult struct {
 }
 
 // ClusterTestResponse ...
+// swagger:model
 type ClusterTestResponse struct {
 	Results []ClusterTestResult
 	Status
 }
 
+// ScaleQueryTargetSpec
+// swagger:model
 type ScaleQueryTargetSpec struct {
 	Name        string
 	ReadyStatus string
@@ -208,18 +257,23 @@ type ScaleQueryTargetSpec struct {
 	RepStatus   string
 }
 
+// ScaleQueryResponse
+// swagger:model
 type ScaleQueryResponse struct {
 	Results []string
 	Targets []ScaleQueryTargetSpec
 	Status
 }
 
+// ScaleDownResponse
+// swagger:model
 type ScaleDownResponse struct {
 	Results []string
 	Status
 }
 
 // ClusterScaleResponse ...
+// swagger:model
 type ClusterScaleResponse struct {
 	Results []string
 	Status

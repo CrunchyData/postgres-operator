@@ -18,12 +18,14 @@ limitations under the License.
 import ()
 
 // ReloadResponse ...
+// swagger:model
 type ReloadResponse struct {
 	Results []string
 	Status
 }
 
 // ReloadRequest ...
+// swagger:model
 type ReloadRequest struct {
 	Namespace string
 	Args      []string

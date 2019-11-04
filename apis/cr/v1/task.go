@@ -70,6 +70,7 @@ const PgtaskpgBasebackupRestore = "pgbasebackuprestore"
 const PgtaskBenchmark = "benchmark"
 
 // PgtaskSpec ...
+// swagger:ignore
 type PgtaskSpec struct {
 	Namespace   string            `json:"namespace"`
 	Name        string            `json:"name"`
@@ -79,8 +80,9 @@ type PgtaskSpec struct {
 	Parameters  map[string]string `json:"parameters"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // Pgtask ...
+// swagger:ignore
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Pgtask struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
@@ -89,8 +91,9 @@ type Pgtask struct {
 	Status PgtaskStatus `json:"status,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // PgtaskList ...
+// swagger:ignore
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type PgtaskList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
@@ -99,12 +102,14 @@ type PgtaskList struct {
 }
 
 // PgtaskStatus ...
+// swagger:ignore
 type PgtaskStatus struct {
 	State   PgtaskState `json:"state,omitempty"`
 	Message string      `json:"message,omitempty"`
 }
 
 // PgtaskState ...
+// swagger:ignore
 type PgtaskState string
 
 const (

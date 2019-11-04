@@ -28,6 +28,29 @@ import (
 // pgo status mycluster
 // pgo status --selector=env=research
 func StatusHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /status statusservice status
+    /*```
+    Display namespace wide information for PostgreSQL clusters.
+    */
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "version"
+	//    description: "Client Version"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "namespace"
+	//    description: "Namespace"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/StatusResponse"
 	var username, ns string
 
 	clientVersion := r.URL.Query().Get("version")

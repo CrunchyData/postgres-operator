@@ -20,6 +20,7 @@ import (
 )
 
 // ShowPolicyRequest ...
+// swagger:model
 type ShowPolicyRequest struct {
 	Selector      string
 	Namespace     string
@@ -29,6 +30,7 @@ type ShowPolicyRequest struct {
 }
 
 // CreatePolicyRequest ...
+// swagger:model
 type CreatePolicyRequest struct {
 	Name          string
 	URL           string
@@ -38,11 +40,13 @@ type CreatePolicyRequest struct {
 }
 
 // CreatePolicyResponse ...
+// swagger:model
 type CreatePolicyResponse struct {
 	Status
 }
 
 // ApplyPolicyRequest ...
+// swagger:model
 type ApplyPolicyRequest struct {
 	Name          string
 	Selector      string
@@ -52,23 +56,27 @@ type ApplyPolicyRequest struct {
 }
 
 // ApplyPolicyResponse ...
+// swagger:model
 type ApplyPolicyResponse struct {
 	Name []string
 	Status
 }
 
 // ApplyResults ...
+// swagger:model
 type ApplyResults struct {
 	Results []string
 }
 
 // ShowPolicyResponse ...
+// swagger:model
 type ShowPolicyResponse struct {
 	PolicyList crv1.PgpolicyList
 	Status
 }
 
 // DeletePolicyRequest ...
+// swagger:model
 type DeletePolicyRequest struct {
 	Selector      string
 	Namespace     string
@@ -78,6 +86,7 @@ type DeletePolicyRequest struct {
 }
 
 // DeletePolicyResponse ...
+// swagger:model
 type DeletePolicyResponse struct {
 	Results []string
 	Status

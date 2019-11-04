@@ -17,12 +17,15 @@ limitations under the License.
 
 import ()
 
+// ShowWorkflowDetail ...
+// swagger:model
 type ShowWorkflowDetail struct {
 	ClusterName string
 	Parameters  map[string]string
 }
 
 // ShowWorkflowResponse ...
+// swagger:model
 type ShowWorkflowResponse struct {
 	Results ShowWorkflowDetail
 	Status

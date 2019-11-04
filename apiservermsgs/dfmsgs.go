@@ -17,8 +17,10 @@ limitations under the License.
 
 import ()
 
+// DfDetail ...
 // this aggregated status comes from the pgo-status container
 // by means of a volume mounted json blob it generates
+// swagger:model
 type DfDetail struct {
 	Name      string
 	PGSize    string
@@ -28,6 +30,7 @@ type DfDetail struct {
 }
 
 // ShowClusterResponse ...
+// swagger:model
 type DfResponse struct {
 	Results []DfDetail
 	Status

@@ -18,6 +18,7 @@ limitations under the License.
 import ()
 
 // ShowPVCRequest ...
+// swagger:model
 type ShowPVCRequest struct {
 	PVCName       string
 	NodeLabel     string
@@ -29,6 +30,7 @@ type ShowPVCRequest struct {
 }
 
 // ShowPVCResponse ...
+// swagger:model
 type ShowPVCResponse struct {
 	Results []string
 	Status

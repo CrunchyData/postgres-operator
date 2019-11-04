@@ -29,6 +29,25 @@ import (
 // pgo create cluster
 // parameters secretfrom
 func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /clusters clusterservice clusters
+    /*```
+    Create a PostgreSQL cluster consisting of a primary and a number of replica backends
+    */
+	// ---
+	//	Produces:
+	//	- application/json
+	//
+	//	parameters:
+	//	- name: "Cluster Create Request"
+	//	  in: "body"
+	//	  schema:
+	//	    "$ref": "#/definitions/CreateClusterRequest"
+	//	responses:
+	//	  '200':
+	//	    description: Output
+	//	    schema:
+	//	      "$ref": "#/definitions/CreateClusterResponse"	
+
 	var ns string
 
 	log.Debug("clusterservice.CreateClusterHandler called")
@@ -73,6 +92,23 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 // parameters postgresversion
 // returns a ShowClusterResponse
 func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /showclusters clusterservice showclusters
+    /*```
+    Show a PostgreSQL cluster
+    */
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: "Show Cluster Request"
+	//   in: "body"
+	//   schema:
+	//     "$ref": "#/definitions/ShowClusterRequest"
+	//	responses:
+	//	  '200':
+	//	    description: Output
+	//	    schema:
+	//	      "$ref": "#/definitions/ShowClusterResponse"	
 	var ns string
 
 	var request msgs.ShowClusterRequest
@@ -130,6 +166,23 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 // parameters postgresversion
 // returns a ShowClusterResponse
 func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /clustersdelete clusterservice clustersdelete
+    /*```
+    Delete a PostgreSQL cluster
+    */
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: "Delete Cluster Request"
+	//   in: "body"
+	//   schema:
+	//     "$ref": "#/definitions/DeleteClusterRequest"
+	//	responses:
+	//	  '200':
+	//	    description: Output
+	//	    schema:
+	//	      "$ref": "#/definitions/DeleteClusterResponse"
 	var request msgs.DeleteClusterRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
@@ -182,7 +235,25 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 // TestClusterHandler ...
 // pgo test mycluster
 func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /testclusters clusterservice testclusters
+    /*```
+	TEST allows you to test the connectivity for a cluster. 
+	
+	If you set the AllFlag to true in the request it will test connectivity for all clusters in the namespace.
+    */
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: "Cluster Test Request"
+	//   in: "body"
+	//   schema:
+	//     "$ref": "#/definitions/ClusterTestRequest"
+	//	responses:
+	//	  '200':
+	//	    description: Output
+	//	    schema:
+	//	      "$ref": "#/definitions/ClusterTestResponse"
 	var request msgs.ClusterTestRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
@@ -229,8 +300,25 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 // UpdateClusterHandler ...
 // pgo update cluster mycluster --autofail=true
 // pgo update cluster --selector=env=research --autofail=false
-// returns a UpdateClusterResponse
+// returns a UpdateClusterResponse 
 func UpdateClusterHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /clustersupdate clusterservice clustersupdate
+    /*```
+    Update a PostgreSQL cluster
+    */
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: "Update Request"
+	//   in: "body"
+	//   schema:
+	//     "$ref": "#/definitions/UpdateClusterRequest"
+	//	responses:
+	//	  '200':
+	//	    description: Output
+	//	    schema:
+	//	      "$ref": "#/definitions/UpdateClusterResponse"
 	var request msgs.UpdateClusterRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 

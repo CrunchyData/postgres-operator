@@ -27,6 +27,23 @@ import (
 // pgo ls mycluster /pgdata
 // pgo ls mycluster /pgdata /tmp
 func LsHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /ls lsservice ls
+	/*```
+	LS performs a Linux `ls` command on a cluster directory.
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Ls Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/LsRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/LsResponse"
 	var err error
 	var username, ns string
 

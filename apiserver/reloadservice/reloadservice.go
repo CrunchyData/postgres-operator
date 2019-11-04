@@ -28,6 +28,23 @@ import (
 // pgo reload --selector=name=mycluster
 // pgo reload mycluster
 func ReloadHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /reload reloadservice reload
+	/*```
+	RELOAD performs a PostgreSQL reload on a cluster or set of clusters.
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Reload Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/ReloadRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/ReloadResponse"	
 	var err error
 	var username, ns string
 

@@ -18,12 +18,14 @@ limitations under the License.
 import ()
 
 // LsResponse ...
+// swagger:model
 type LsResponse struct {
 	Results []string
 	Status
 }
 
 // LsRequest ...
+// swagger:model
 type LsRequest struct {
 	Namespace string
 	Args      []string

@@ -18,12 +18,14 @@ limitations under the License.
 */
 
 // CreateBenchmarkResponse ...
+// swagger:model
 type CreateBenchmarkResponse struct {
 	Results []string
 	Status
 }
 
 // CreateBenchmarkRequest ...
+// swagger:model
 type CreateBenchmarkRequest struct {
 	Args          []string
 	BenchmarkOpts string
@@ -40,6 +42,8 @@ type CreateBenchmarkRequest struct {
 	User          string
 }
 
+// DeleteBenchmarkRequest ...
+// swagger:model
 type DeleteBenchmarkRequest struct {
 	Args        []string
 	Namespace   string
@@ -47,6 +51,8 @@ type DeleteBenchmarkRequest struct {
 	Selector    string
 }
 
+// ShowBenchmarkRequest ...
+// swagger:model
 type ShowBenchmarkRequest struct {
 	Args        []string
 	Namespace   string
@@ -54,11 +60,15 @@ type ShowBenchmarkRequest struct {
 	Selector    string
 }
 
+// DeleteBenchmarkResponse
+// swagger:model
 type DeleteBenchmarkResponse struct {
 	Results []string
 	Status
 }
 
+// ShowBenchmarkResponse
+// swagger:model
 type ShowBenchmarkResponse struct {
 	Results []string
 	Status

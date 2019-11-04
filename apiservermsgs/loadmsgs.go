@@ -18,6 +18,7 @@ limitations under the License.
 import ()
 
 // LoadRequest ...
+// swagger:model
 type LoadRequest struct {
 	Args          []string
 	Selector      string
@@ -28,6 +29,7 @@ type LoadRequest struct {
 }
 
 // LoadResponse ...
+// swagger:model
 type LoadResponse struct {
 	Results []string
 	Status

@@ -44,8 +44,9 @@ type PgbackupSpec struct {
 	Toc              map[string]string `json:"toc"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // Pgbackup ...
+// swagger:ignore
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Pgbackup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
@@ -54,8 +55,9 @@ type Pgbackup struct {
 	Status PgbackupStatus `json:"status,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // PgbackupList ...
+// swagger:ignore
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type PgbackupList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
@@ -64,12 +66,14 @@ type PgbackupList struct {
 }
 
 // PgbackupStatus ...
+// swagger:ignore
 type PgbackupStatus struct {
 	State   PgbackupState `json:"state,omitempty"`
 	Message string        `json:"message,omitempty"`
 }
 
 // PgbackupState ...
+// swagger:ignore
 type PgbackupState string
 
 const (

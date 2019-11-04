@@ -18,6 +18,7 @@ limitations under the License.
 import ()
 
 // ShowPgouserRequest ...
+// swagger:model
 type ShowPgouserRequest struct {
 	Namespace     string
 	AllFlag       bool
@@ -25,6 +26,8 @@ type ShowPgouserRequest struct {
 	PgouserName   []string
 }
 
+// PgouserInfo ...
+// swagger:model
 type PgouserInfo struct {
 	Username  string
 	Role      []string
@@ -32,12 +35,14 @@ type PgouserInfo struct {
 }
 
 // ShowPgouserResponse ...
+// swagger:model
 type ShowPgouserResponse struct {
 	UserInfo []PgouserInfo
 	Status
 }
 
 // CreatePgouserRequest ...
+// swagger:model
 type CreatePgouserRequest struct {
 	PgouserName       string
 	PgouserPassword   string
@@ -49,11 +54,13 @@ type CreatePgouserRequest struct {
 }
 
 // CreatePgouserResponse ...
+// swagger:model
 type CreatePgouserResponse struct {
 	Status
 }
 
 // UpdatePgouserRequest ...
+// swagger:model
 type UpdatePgouserRequest struct {
 	Name              string
 	PgouserRoles      string
@@ -66,11 +73,13 @@ type UpdatePgouserRequest struct {
 }
 
 // ApplyPgouserResponse ...
+// swagger:model
 type UpdatePgouserResponse struct {
 	Status
 }
 
 // DeletePgouserRequest ...
+// swagger:model
 type DeletePgouserRequest struct {
 	PgouserName   []string
 	Namespace     string
@@ -79,6 +88,7 @@ type DeletePgouserRequest struct {
 }
 
 // DeletePgouserResponse ...
+// swagger:model
 type DeletePgouserResponse struct {
 	Results []string
 	Status

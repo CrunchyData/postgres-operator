@@ -28,6 +28,34 @@ import (
 // ShowBackupHandler ...
 // returns a ShowBackupResponse
 func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /backups/{name} backupservice backups-name
+	/*```
+	Show a pgbasebackup using the backup name
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "name"
+	//    description: "Backup Name"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "version"
+	//    description: "Client Version"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "namespace"
+	//    description: "Namespace"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/ShowBackupResponse"
 	var ns string
 
 	vars := mux.Vars(r)
@@ -74,6 +102,34 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 // DeleteBackupHandler ...
 // returns a ShowBackupResponse
 func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /backupsdelete/{name} backupservice backupsdelete-name
+    /*```
+    Delete a backup taken with pgbasebackup
+    */
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "name"
+	//    description: "Backup name"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "version"
+	//    description: "Client Version"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "namespace"
+	//    description: "Namespace"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/DeleteBackupResponse"
 	var ns string
 
 	vars := mux.Vars(r)
@@ -120,6 +176,23 @@ func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
 // pgo backup --selector=name=mycluster
 // pgo backup mycluster
 func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /backups backupservice backups
+    /*```
+    Create a backup with pgbasebackup
+    */
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Create Backup Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/CreateBackupRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/CreateBackupResponse"
 	var ns string
 	log.Debug("backupservice.CreateBackupHandler called")
 
@@ -153,6 +226,23 @@ func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
 // RestoreHandler takes a GET request for URL path '/pgbasebackuprestore', calls the required
 // business logic to perform a pg_basebackup restore, and then returns the appropriate response
 func RestoreHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /pgbasebackuprestore backupservice pgbasebackuprestore
+    /*```
+    Restore a cluster using pgbasebackup
+    */
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "pgbasebackup restore Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/PgbasebackupRestoreRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/PgbasebackupRestoreResponse"
 	var ns string
 
 	log.Debug("backup.RestoreHandler called")

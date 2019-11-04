@@ -18,6 +18,7 @@ limitations under the License.
 import ()
 
 // CreatePgpoolRequest ...
+// swagger:model
 type CreatePgpoolRequest struct {
 	Args          []string
 	Selector      string
@@ -27,12 +28,14 @@ type CreatePgpoolRequest struct {
 }
 
 // CreatePgpoolResponse ...
+// swagger:model
 type CreatePgpoolResponse struct {
 	Results []string
 	Status
 }
 
 // DeletePgpoolRequest ...
+// swagger:model
 type DeletePgpoolRequest struct {
 	Args          []string
 	Selector      string
@@ -41,6 +44,7 @@ type DeletePgpoolRequest struct {
 }
 
 // DeletePgpoolResponse ...
+// swagger:model
 type DeletePgpoolResponse struct {
 	Results []string
 	Status

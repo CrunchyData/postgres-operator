@@ -28,6 +28,23 @@ import (
 // BackupHandler ...
 // pgo backup --backup-type=pgdump mycluster
 func BackupHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /pgdumpbackup pgdumpservice pgdumpbackup
+	/*```
+	Backup a cluster using pgdump
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Create pgDump Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/CreatepgDumpBackupRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/CreatepgDumpBackupResponse"
 	var ns string
 	log.Debug("pgdumpservice.CreatepgDumpHandlerBackupHandler called")
 
@@ -60,6 +77,39 @@ func BackupHandler(w http.ResponseWriter, r *http.Request) {
 // ShowpgDumpHandler ...
 // returns a ShowpgDumpResponse
 func ShowDumpHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /pgdump/{name} pgdumpservice pgdump-name
+	/*```
+	Show backups taken with pgdump
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "name"
+	//    description: "Cluster Name"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "version"
+	//    description: "Client Version"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "namespace"
+	//    description: "Namespace"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "selector"
+	//    description: "Selector"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/ShowBackupResponse"
 	var ns string
 	vars := mux.Vars(r)
 
@@ -105,6 +155,23 @@ func ShowDumpHandler(w http.ResponseWriter, r *http.Request) {
 // RestoreHandler ...
 // pgo restore mycluster --restore-type=pgdump --to-cluster=restored
 func RestoreHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /restore pgdumpservice restore
+	/*```
+	Restore a cluster with pgrestore. This endpoint is used to restore backups taken with pgdump
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Restore Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/PgRestoreRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/PgRestoreResponse"
 	var ns string
 
 	log.Debug("pgdumpservice.RestoreHandler called")

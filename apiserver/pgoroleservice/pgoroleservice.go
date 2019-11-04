@@ -25,7 +25,23 @@ import (
 )
 
 func CreatePgoroleHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /pgorolecreate pgoroleservice pgorolecreate
+	/*```
+	Create a pgorole
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Create pgorole Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/CreatePgoroleRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/CreatePgoroleResponse"
 	resp := msgs.CreatePgoroleResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -63,7 +79,23 @@ func CreatePgoroleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeletePgoroleHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /pgoroledelete pgoroleservice pgoroledelete
+	/*```
+	Delete a pgorole
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Delete pgorole Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/DeletePgoroleRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/DeletePgoroleResponse"
 	var request msgs.DeletePgoroleRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
@@ -96,7 +128,23 @@ func DeletePgoroleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ShowPgoroleHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /pgoroleshow pgoroleservice pgoroleshow
+	/*```
+	Show pgorole information
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Show pgorole Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/ShowPgoroleRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/ShowPgoroleResponse"
 	var request msgs.ShowPgoroleRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
@@ -130,7 +178,23 @@ func ShowPgoroleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdatePgoroleHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /pgoroleupdate pgoroleservice pgoroleupdate
+	/*```
+	Delete a pgorole
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Update pgorole Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/UpdatePgoroleRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/UpdatePgoroleResponse"
 	log.Debug("pgoroleservice.UpdatePgoroleHandler called")
 
 	var request msgs.UpdatePgoroleRequest

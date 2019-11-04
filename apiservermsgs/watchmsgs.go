@@ -17,12 +17,16 @@ limitations under the License.
 
 import ()
 
+// WatchRequest ...
+// swagger:model
 type WatchRequest struct {
 	Topics        []string
 	ClientVersion string
 	Namespace     string
 }
 
+// WatchResponse ...
+// swagger:model
 type WatchResponse struct {
 	Results []string
 	Status

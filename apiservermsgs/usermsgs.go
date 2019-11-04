@@ -20,6 +20,7 @@ import (
 )
 
 // UpdateUserRequest ...
+// swagger:model
 type UpdateUserRequest struct {
 	Clusters              []string
 	Selector              string
@@ -41,6 +42,7 @@ type UpdateUserRequest struct {
 }
 
 // DeleteUserRequest ...
+// swagger:model
 type DeleteUserRequest struct {
 	Selector      string
 	Clusters      []string
@@ -51,18 +53,21 @@ type DeleteUserRequest struct {
 }
 
 // DeleteUserResponse ...
+// swagger:model
 type DeleteUserResponse struct {
 	Results []string
 	Status
 }
 
 // UpdateUserResponse ...
+// swagger:model
 type UpdateUserResponse struct {
 	Results []string
 	Status
 }
 
 // CreateUserRequest ...
+// swagger:model
 type CreateUserRequest struct {
 	Clusters    []string
 	Username    string
@@ -78,12 +83,14 @@ type CreateUserRequest struct {
 }
 
 // CreateUserResponse ...
+// swagger:model
 type CreateUserResponse struct {
 	Results []string
 	Status
 }
 
 // ShowUserSecret
+// swagger:model
 type ShowUserSecret struct {
 	Name     string
 	Username string
@@ -91,6 +98,7 @@ type ShowUserSecret struct {
 }
 
 // ShowUserRequest ...
+// swagger:model
 type ShowUserRequest struct {
 	Clusters      []string
 	AllFlag       bool
@@ -101,6 +109,7 @@ type ShowUserRequest struct {
 }
 
 // ShowUsersDetail ...
+// swagger:model
 type ShowUserDetail struct {
 	Cluster       crv1.Pgcluster
 	Secrets       []ShowUserSecret
@@ -110,6 +119,7 @@ type ShowUserDetail struct {
 }
 
 // ShowUsersResponse ...
+// swagger:model
 type ShowUserResponse struct {
 	Results []ShowUserDetail
 	Status

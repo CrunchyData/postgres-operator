@@ -22,8 +22,10 @@ import (
 // PgclusterResourcePlural ..
 const PgclusterResourcePlural = "pgclusters"
 
+// Pgcluster is the CRD that defines a Crunchy PG Cluster
+// 
+// swagger:ignore Pgcluster
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// Pgcluster ..
 type Pgcluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata"`
@@ -31,7 +33,8 @@ type Pgcluster struct {
 	Status            PgclusterStatus `json:"status,omitempty"`
 }
 
-// PgclusterSpec ...
+// PgclusterSpec is the CRD that defines a Crunchy PG Cluster Spec
+// swagger:ignore
 type PgclusterSpec struct {
 	Namespace          string               `json:"namespace"`
 	Name               string               `json:"name"`
@@ -64,8 +67,9 @@ type PgclusterSpec struct {
 	UserLabels         map[string]string    `json:"userlabels"`
 }
 
+// PgclusterList is the CRD that defines a Crunchy PG Cluster List
+// swagger:ignore
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// PgclusterList ...
 type PgclusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
@@ -73,13 +77,15 @@ type PgclusterList struct {
 	Items []Pgcluster `json:"items"`
 }
 
-// PgclusterStatus ...
+// PgclusterStatus is the CRD that defines PG Cluster Status
+// swagger:ignore
 type PgclusterStatus struct {
 	State   PgclusterState `json:"state,omitempty"`
 	Message string         `json:"message,omitempty"`
 }
 
-// PgclusterState ...
+// PgclusterState is the crd that defines PG Cluster Stage
+// swagger:ignore
 type PgclusterState string
 
 const (

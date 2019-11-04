@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 // CreateScheduleRequest ...
+// swagger:model
 type CreateScheduleRequest struct {
 	ClusterName         string
 	Name                string
@@ -33,11 +34,15 @@ type CreateScheduleRequest struct {
 	Secret              string
 }
 
+// CreateScheduleResponse ...
+// swagger:model
 type CreateScheduleResponse struct {
 	Results []string
 	Status
 }
 
+// DeleteScheduleResponse ...
+// swagger:model
 type DeleteScheduleRequest struct {
 	Namespace    string
 	ScheduleName string
@@ -45,6 +50,8 @@ type DeleteScheduleRequest struct {
 	Selector     string
 }
 
+// ShowScheduleRequest ...
+// swagger:model
 type ShowScheduleRequest struct {
 	Namespace    string
 	ScheduleName string
@@ -52,11 +59,15 @@ type ShowScheduleRequest struct {
 	Selector     string
 }
 
+// DeleteScheduleResponse ...
+// swagger:model
 type DeleteScheduleResponse struct {
 	Results []string
 	Status
 }
 
+// ShowSchewduleResponse ...
+// swagger:model
 type ShowScheduleResponse struct {
 	Results []string
 	Status

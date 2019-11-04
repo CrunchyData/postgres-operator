@@ -26,6 +26,23 @@ import (
 // CreatePgpoolHandler ...
 // pgo create pgpool
 func CreatePgpoolHandler(w http.ResponseWriter, r *http.Request) {
+    // swagger:operation POST /pgpool pgpoolservice pgpool
+    /*```
+    Create a pgpool
+    */
+    // ---
+    //  produces:
+    //  - application/json
+    //  parameters:
+    //  - name: "Create Pgpool Request"
+    //    in: "body"
+    //    schema:
+    //      "$ref": "#/definitions/CreatePgpoolRequest"
+    //  responses:
+    //    '200':
+    //      description: Output
+    //      schema:
+    //        "$ref": "#/definitions/CreatePgpoolResponse"
 	var ns string
 
 	log.Debug("pgpoolservice.CreatePgpoolHandler called")
@@ -67,6 +84,23 @@ func CreatePgpoolHandler(w http.ResponseWriter, r *http.Request) {
 // DeletePgpoolHandler ...
 // pgo delete pgpool
 func DeletePgpoolHandler(w http.ResponseWriter, r *http.Request) {
+    // swagger:operation POST /pgpooldelete pgpoolservice pgpooldelete
+    /*```
+    Delete a pgpool from a cluster
+    */
+    // ---
+    //  produces:
+    //  - application/json
+    //  parameters:
+    //  - name: "Delete Pgpool Request"
+    //    in: "body"
+    //    schema:
+    //      "$ref": "#/definitions/DeletePgpoolRequest"
+    //  responses:
+    //    '200':
+    //      description: Output
+    //      schema:
+    //        "$ref": "#/definitions/DeletePgpoolResponse"
 	var ns string
 	log.Debug("pgpoolservice.DeletePgpoolHandler called")
 	username, err := apiserver.Authn(apiserver.DELETE_PGPOOL_PERM, w, r)

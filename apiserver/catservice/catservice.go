@@ -26,6 +26,23 @@ import (
 // CatHandler ...
 // pgo cat mycluster /pgdata/mycluster/postgresql.conf /tmp/foo
 func CatHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /cat catservice cat
+	/*```
+	CAT performs a Linux `cat` command on a cluster file
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Cat Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/CatRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/CatResponse"
 	var err error
 	var username, ns string
 

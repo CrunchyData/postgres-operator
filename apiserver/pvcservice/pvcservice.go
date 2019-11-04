@@ -26,6 +26,23 @@ import (
 // ShowPVCHandler ...
 // returns a ShowPVCResponse
 func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /showpvc pvcservice showpvc
+	/*```
+	Show PVC information
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Show PVC Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/ShowPVCRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/ShowPVCResponse"
 	var err error
 	var username, ns string
 

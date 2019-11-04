@@ -18,6 +18,7 @@ limitations under the License.
 import ()
 
 // CreatePgbouncerRequest ...
+// swagger:model
 type CreatePgbouncerRequest struct {
 	Args          []string
 	Selector      string
@@ -28,12 +29,14 @@ type CreatePgbouncerRequest struct {
 }
 
 // CreatePgbouncerResponse ...
+// swagger:model
 type CreatePgbouncerResponse struct {
 	Results []string
 	Status
 }
 
 // DeletePgbouncerRequest ...
+// swagger:model
 type DeletePgbouncerRequest struct {
 	Args          []string
 	Selector      string
@@ -42,6 +45,7 @@ type DeletePgbouncerRequest struct {
 }
 
 // DeletePgbouncerResponse ...
+// swagger:model
 type DeletePgbouncerResponse struct {
 	Results []string
 	Status

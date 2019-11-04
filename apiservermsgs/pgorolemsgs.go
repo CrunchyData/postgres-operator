@@ -18,6 +18,7 @@ limitations under the License.
 import ()
 
 // ShowPgoroleRequest ...
+// swagger:model
 type ShowPgoroleRequest struct {
 	Namespace     string
 	AllFlag       bool
@@ -25,18 +26,22 @@ type ShowPgoroleRequest struct {
 	PgoroleName   []string
 }
 
+// PgroleInfo ...
+// swagger:model
 type PgoroleInfo struct {
 	Name        string
 	Permissions string
 }
 
 // ShowPgoroleResponse ...
+// swagger:model
 type ShowPgoroleResponse struct {
 	RoleInfo []PgoroleInfo
 	Status
 }
 
 // CreatePgoroleRequest ...
+// swagger:model
 type CreatePgoroleRequest struct {
 	PgoroleName        string
 	PgorolePermissions string
@@ -45,11 +50,13 @@ type CreatePgoroleRequest struct {
 }
 
 // CreatePgoroleResponse ...
+// swagger:model
 type CreatePgoroleResponse struct {
 	Status
 }
 
 // UpdatePgoroleRequest ...
+// swagger:model
 type UpdatePgoroleRequest struct {
 	Name               string
 	PgorolePermissions string
@@ -60,11 +67,13 @@ type UpdatePgoroleRequest struct {
 }
 
 // ApplyPgoroleResponse ...
+// swagger:model
 type UpdatePgoroleResponse struct {
 	Status
 }
 
 // DeletePgoroleRequest ...
+// swagger:model
 type DeletePgoroleRequest struct {
 	PgoroleName   []string
 	Namespace     string
@@ -73,6 +82,7 @@ type DeletePgoroleRequest struct {
 }
 
 // DeletePgoroleResponse ...
+// swagger:model
 type DeletePgoroleResponse struct {
 	Results []string
 	Status

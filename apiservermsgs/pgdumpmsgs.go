@@ -15,11 +15,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// CreatepgDumpBackupResponse ...
+// swagger:model
 type CreatepgDumpBackupResponse struct {
 	Results []string
 	Status
 }
 
+
+// CreatepgDumpBackup ...
+// swagger:model
 type CreatepgDumpBackupRequest struct {
 	Namespace     string
 	Args          []string
@@ -29,16 +34,22 @@ type CreatepgDumpBackupRequest struct {
 	BackupOpts    string
 }
 
+// ShowpgDumpDetail
+// swagger:model
 type ShowpgDumpDetail struct {
 	Name string
 	Info string
 }
 
+// PgRestoreResponse
+// swagger:model
 type PgRestoreResponse struct {
 	Results []string
 	Status
 }
 
+// PgRestoreRequest ...
+// swagger:model
 type PgRestoreRequest struct {
 	Namespace   string
 	FromCluster string

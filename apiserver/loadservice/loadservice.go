@@ -27,7 +27,23 @@ import (
 // LoadHandler ...
 // pgo load --selector=name=mycluster --load-config=./sample-load-config.json
 func LoadHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /load loadservice load
+	/*```
+	Load config for given cluster
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Load Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/LoadRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/LoadResponse"
 	var ns string
 	log.Debug("loadservice.LoadHandler called")
 

@@ -18,6 +18,7 @@ limitations under the License.
 import ()
 
 // VersionResponse ...
+// swagger:model
 type VersionResponse struct {
 	Version string
 	Status

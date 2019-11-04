@@ -18,6 +18,7 @@ limitations under the License.
 import ()
 
 // LabelRequest ...
+// swagger:model
 type LabelRequest struct {
 	Selector      string
 	Namespace     string
@@ -29,6 +30,7 @@ type LabelRequest struct {
 }
 
 // DeleteLabelRequest ...
+// swagger:model
 type DeleteLabelRequest struct {
 	Selector      string
 	Namespace     string
@@ -38,6 +40,7 @@ type DeleteLabelRequest struct {
 }
 
 // LabelResponse ...
+// swagger:model
 type LabelResponse struct {
 	Results []string
 	Status

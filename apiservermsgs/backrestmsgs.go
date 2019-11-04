@@ -16,12 +16,14 @@ limitations under the License.
 */
 
 // CreateBackrestBackupResponse ...
+// swagger:model
 type CreateBackrestBackupResponse struct {
 	Results []string
 	Status
 }
 
 // CreateBackrestBackupRequest ...
+// swagger:model
 type CreateBackrestBackupRequest struct {
 	Namespace           string
 	Args                []string
@@ -30,24 +32,29 @@ type CreateBackrestBackupRequest struct {
 	BackrestStorageType string
 }
 
+// ShowBackrestDetail ...
+// swagger:model
 type ShowBackrestDetail struct {
 	Name string
 	Info string
 }
 
 // ShowBackrestResponse ...
+// swagger:model
 type ShowBackrestResponse struct {
 	Items []ShowBackrestDetail
 	Status
 }
 
 // RestoreResponse ...
+// swagger:model
 type RestoreResponse struct {
 	Results []string
 	Status
 }
 
 // RestoreRequest ...
+// swagger:model
 type RestoreRequest struct {
 	Namespace           string
 	FromCluster         string

@@ -25,7 +25,23 @@ import (
 )
 
 func CreatePgouserHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /pgousercreate pgouserservice pgousercreate
+	/*```
+	Create a pgouser
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Create Pgouser Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/CreatePgouserRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/CreatePgouserResponse"
 	resp := msgs.CreatePgouserResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -63,7 +79,23 @@ func CreatePgouserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeletePgouserHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /pgouserdelete pgouserservice pgouserdelete
+	/*```
+	Delete a pgouser
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Delete Pgouser Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/DeletePgouserRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/DeletePgouserResponse"
 	var request msgs.DeletePgouserRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
@@ -96,7 +128,23 @@ func DeletePgouserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ShowPgouserHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /pgousershow pgouserservice pgousershow
+	/*```
+	Show pgouser information
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Show Pgouser Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/ShowPgouserRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/ShowPgouserResponse"
 	var request msgs.ShowPgouserRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
@@ -130,7 +178,23 @@ func ShowPgouserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdatePgouserHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /pgouserupdate pgouserservice pgouserupdate
+	/*```
+	Update a pgouser
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Update Pgouser Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/UpdatePgouserRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/UpdatePgouserResponse"
 	log.Debug("pgouserservice.UpdatePgouserHandler called")
 
 	var request msgs.UpdatePgouserRequest

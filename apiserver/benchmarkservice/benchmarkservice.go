@@ -26,6 +26,23 @@ import (
 
 // ShowBenchmarkHandler ...
 func ShowBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
+    // swagger:operation POST /benchmarkshow benchmarkservice benchmarkshow
+    /*```
+    Show benchmark results for PostgreSQL clusters
+    */
+    // ---
+    //  produces:
+    //  - application/json
+    //  parameters:
+    //  - name: "Show Benchmark Request"
+    //    in: "body"
+    //    schema:
+    //      "$ref": "#/definitions/ShowBenchmarkRequest"
+    //  responses:
+    //    '200':
+    //      description: Output
+    //      schema:
+    //        "$ref": "#/definitions/CreateBenchmarkResponse"
 	log.Debug("benchmarkservice.ShowBenchmarkHandler called")
 
 	var request msgs.ShowBenchmarkRequest
@@ -59,6 +76,23 @@ func ShowBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
 
 // DeleteBenchmarkHandler ...
 func DeleteBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
+    // swagger:operation POST /benchmarkdelete benchmarkservice benchmarkdelete
+    /*```
+    Delete benchmarks for a PostgreSQL cluster
+    */
+    // ---
+    //  produces:
+    //  - application/json
+    //  parameters:
+    //  - name: "Delete Benchmark Request"
+    //    in: "body"
+    //    schema:
+    //      "$ref": "#/definitions/DeleteBenchmarkRequest"
+    //  responses:
+    //    '200':
+    //      description: Output
+    //      schema:
+    //        "$ref": "#/definitions/CreateBenchmarkResponse"
 	log.Debug("benchmarkservice.DeleteBenchmarkHandler called")
 
 	var request msgs.DeleteBenchmarkRequest
@@ -91,6 +125,23 @@ func DeleteBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateBenchmarkHandler(w http.ResponseWriter, r *http.Request) {
+    // swagger:operation POST /benchmark benchmarkservice benchmark
+    /*```
+    Benchmark run pgBench against PostgreSQL clusters
+    */
+    // ---
+    //  produces:
+    //  - application/json
+    //  parameters:
+    //  - name: "Create Benchmark Request"
+    //    in: "body"
+    //    schema:
+    //      "$ref": "#/definitions/CreateBenchmarkRequest"
+    //  responses:
+    //    '200':
+    //      description: Output
+    //      schema:
+    //        "$ref": "#/definitions/CreateBenchmarkResponse"
 	var err error
 	var username, ns string
 

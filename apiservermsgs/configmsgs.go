@@ -20,6 +20,7 @@ import (
 )
 
 // ShowConfigResponse ...
+// swagger:model
 type ShowConfigResponse struct {
 	Result config.PgoConfig
 	Status

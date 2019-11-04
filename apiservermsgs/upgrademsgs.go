@@ -18,6 +18,7 @@ limitations under the License.
 import ()
 
 // CreateUpgradeRequest ...
+// swagger:model
 type CreateUpgradeRequest struct {
 	Args          []string
 	Selector      string
@@ -27,6 +28,7 @@ type CreateUpgradeRequest struct {
 }
 
 // CreateUpgradeResponse ...
+// swagger:model
 type CreateUpgradeResponse struct {
 	Results []string
 	Status

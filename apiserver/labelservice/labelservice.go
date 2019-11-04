@@ -25,6 +25,23 @@ import (
 
 // LabelHandler ...
 func LabelHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /label labelservice label
+	/*```
+	LABEL allows you to add a label on a set of clusters.
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Label Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/LabelRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/LabelResponse"
 	var ns string
 
 	log.Debug("labelservice.LabelHandler called")
@@ -65,7 +82,23 @@ func LabelHandler(w http.ResponseWriter, r *http.Request) {
 
 // DeleteLabelHandler ...
 func DeleteLabelHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /labeldelete labelservice labeldelete
+	/*```
+	LABEL allows you to remove a label on a set of clusters.
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Delete Label Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/DeleteLabelRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/LabelResponse"
 	var ns string
 
 	log.Debug("labelservice.DeleteLabelHandler called")
