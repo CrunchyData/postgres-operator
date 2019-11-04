@@ -50,7 +50,7 @@ data:
         regex: (^[^-]*).*
         target_label: instance
         replacement: '$1'
-      - source_labels: [__meta_kubernetes_namespace,__meta_kubernetes_pod_label_name]
+      - source_labels: [__meta_kubernetes_namespace,__meta_kubernetes_pod_label_service_name]
         target_label: job
         separator: ': '
         replacement: '$1$2'
