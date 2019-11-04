@@ -24,11 +24,16 @@ const Ok = "ok"
 const Error = "error"
 
 // Status ...
+// swagger:model Status
 type Status struct {
+	// status code
 	Code string
+	// status message
 	Msg  string
 }
 
+// BasicAuthCredentials ...
+// swagger:model BasicAuthCredentials
 type BasicAuthCredentials struct {
 	Username     string
 	Password     string

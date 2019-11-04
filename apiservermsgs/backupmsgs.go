@@ -20,12 +20,14 @@ import (
 )
 
 // CreateBackupResponse ...
+// swagger:model
 type CreateBackupResponse struct {
 	Results []string
 	Status
 }
 
 // CreateBackupRequest ...
+// swagger:model
 type CreateBackupRequest struct {
 	Namespace     string
 	Args          []string
@@ -36,18 +38,21 @@ type CreateBackupRequest struct {
 }
 
 // ShowBackupResponse ...
+// swagger:model
 type ShowBackupResponse struct {
 	BackupList crv1.PgbackupList
 	Status
 }
 
 // DeleteBackupResponse ...
+// swagger:model
 type DeleteBackupResponse struct {
 	Results []string
 	Status
 }
 
 // PgbasebackupRestoreRequest ...
+// swagger:model
 type PgbasebackupRestoreRequest struct {
 	Namespace   string
 	FromCluster string
@@ -58,6 +63,7 @@ type PgbasebackupRestoreRequest struct {
 }
 
 // PgbasebackupRestoreResponse ...
+// swagger:model
 type PgbasebackupRestoreResponse struct {
 	Results []string
 	Status

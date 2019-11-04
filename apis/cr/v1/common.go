@@ -42,6 +42,7 @@ const StorageEmptydir = "emptydir"
 const StorageDynamic = "dynamic"
 
 // PgStorageSpec ...
+// swagger:ignore
 type PgStorageSpec struct {
 	Name               string `json:"name"`
 	StorageClass       string `json:"storageclass"`
@@ -54,6 +55,7 @@ type PgStorageSpec struct {
 }
 
 // PgContainerResource ...
+// swagger:ignore
 type PgContainerResources struct {
 	RequestsMemory string `json:"requestsmemory"`
 	RequestsCPU    string `json:"requestscpu"`

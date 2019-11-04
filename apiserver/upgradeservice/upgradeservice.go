@@ -28,6 +28,28 @@ import (
 // parameters --upgrade-type
 // parameters --ccp-image-tag
 func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /upgrades upgradeservice upgrades
+	/*```
+	UPGRADE performs an upgrade on a PostgreSQL cluster. For example:
+
+
+
+	This upgrade will update the CCPImageTag of the deployment for the following: primary, replicas, and backrest-repo.
+	The running containers are upgraded one at a time, sequentially, in the following order: replicas, backrest-repo, then primary.
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Create Upgrade Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/CreateUpgradeRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/CreateUpgradeResponse"
 	var ns string
 
 	log.Debug("upgradeservice.CreateUpgradeHandler called")

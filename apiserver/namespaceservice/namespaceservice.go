@@ -26,6 +26,23 @@ import (
 // ShowNamespaceHandler ...
 // pgo show namespace
 func ShowNamespaceHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /namespace namespaceservice namespace
+    /*```
+    Show namespace information
+    */
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: "Show Namespace Request"
+	//   in: "body"
+	//   schema:
+	//     "$ref": "#/definitions/ShowNamespaceRequest"
+	//	responses:
+	//	  '200':
+	//	    description: Output
+	//	    schema:
+	//	      "$ref": "#/definitions/ShowNamespaceResponse"
 
 	resp := msgs.ShowNamespaceResponse{}
 	resp.Status.Code = msgs.Ok
@@ -58,7 +75,23 @@ func ShowNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateNamespaceHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /namespacecreate namespaceservice namespacecreate
+    /*```
+    Create a namespace
+    */
+	// ---
+	// produces:
+	// - application/json
+	// parameters:
+	// - name: "Create Namespace"
+	//   in: "body"
+	//   schema:
+	//     "$ref": "#/definitions/CreateNamespaceRequest"
+	// responses:
+	//   '200':
+	//     description: Output
+	//     schema:
+	//       "$ref": "#/definitions/CreateNamespaceResponse"
 	resp := msgs.CreateNamespaceResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -89,7 +122,23 @@ func CreateNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteNamespaceHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /namespacedelete namespaceservice namespacedelete
+    /*```
+    Delete a namespaces
+    */
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Delete Namespace"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/DeleteNamespaceRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/DeleteNamespaceResponse"
 	var request msgs.DeleteNamespaceRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
@@ -120,7 +169,23 @@ func DeleteNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 func UpdateNamespaceHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /namespaceupdate namespaceservice namespaceupdate
+    /*```
+    Update a namespace, applying Operator RBAC
+    */
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Update Namespace"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/UpdateNamespaceRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/UpdateNamespaceResponse"
 	resp := msgs.UpdateNamespaceResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""

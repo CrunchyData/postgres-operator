@@ -17,6 +17,8 @@ limitations under the License.
 
 import ()
 
+// NamespaceResult ...
+// swagger:model
 type NamespaceResult struct {
 	Namespace          string
 	InstallationAccess bool
@@ -24,6 +26,7 @@ type NamespaceResult struct {
 }
 
 // ShowNamespaceRequest ...
+// swagger:model
 type ShowNamespaceRequest struct {
 	Args          []string
 	AllFlag       bool
@@ -31,6 +34,7 @@ type ShowNamespaceRequest struct {
 }
 
 // ShowNamespaceResponse ...
+// swagger:model
 type ShowNamespaceResponse struct {
 	Username string
 	Results  []NamespaceResult
@@ -38,18 +42,21 @@ type ShowNamespaceResponse struct {
 }
 
 // UpdateNamespaceRequest ...
+// swagger:model
 type UpdateNamespaceRequest struct {
 	Args          []string
 	ClientVersion string
 }
 
 // UpdateNamespaceResponse ...
+// swagger:model
 type UpdateNamespaceResponse struct {
 	Results []string
 	Status
 }
 
 // CreateNamespaceRequest ...
+// swagger:model
 type CreateNamespaceRequest struct {
 	Args          []string
 	Namespace     string
@@ -57,12 +64,14 @@ type CreateNamespaceRequest struct {
 }
 
 // CreateNamespaceResponse ...
+// swagger:model
 type CreateNamespaceResponse struct {
 	Results []string
 	Status
 }
 
 // DeleteNamespaceRequest ...
+// swagger:model
 type DeleteNamespaceRequest struct {
 	Args          []string
 	Selector      string
@@ -71,7 +80,8 @@ type DeleteNamespaceRequest struct {
 	ClientVersion string
 }
 
-// DeletePgouserResponse ...
+// DeleteNamespaceResponse ...
+// swagger:model
 type DeleteNamespaceResponse struct {
 	Results []string
 	Status

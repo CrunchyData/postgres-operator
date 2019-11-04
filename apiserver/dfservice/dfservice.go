@@ -28,6 +28,39 @@ import (
 // pgo df mycluster
 // pgo df --selector=env=research
 func DfHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /df/{name} dfservice df-name
+    /*```
+    Displays the disk status for PostgreSQL clusters.
+    */
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "name"
+	//    description: "Cluster Name"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "version"
+	//    description: "Client Version"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "namespace"
+	//    description: "Namespace"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "selector"
+	//    description: "Selector"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/DfResponse"
 	vars := mux.Vars(r)
 	clustername := vars["name"]
 

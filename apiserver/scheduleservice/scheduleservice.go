@@ -78,6 +78,23 @@ type SecurityContext struct {
 
 // CreateScheduleHandler ...
 func CreateScheduleHandler(w http.ResponseWriter, r *http.Request) {
+    // swagger:operation POST /schedule scheduleservice schedule
+    /*```
+    Schedule creates a cron-like scheduled task
+    */
+    // ---
+    //  produces:
+    //  - application/json
+    //  parameters:
+    //  - name: "Create Schedule Request"
+    //    in: "body"
+    //    schema:
+    //      "$ref": "#/definitions/CreateScheduleRequest"
+    //  responses:
+    //    '200':
+    //      description: Output
+    //      schema:
+    //        "$ref": "#/definitions/CreateScheduleResponse"
 	var err error
 	var username, ns string
 
@@ -113,6 +130,23 @@ func CreateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteScheduleHandler(w http.ResponseWriter, r *http.Request) {
+    // swagger:operation POST /scheduledelete scheduleservice scheduledelete
+    /*```
+    Delete a cron-like schedule
+    */
+    // ---
+    //  produces:
+    //  - application/json
+    //  parameters:
+    //  - name: "Delete Schedule Request"
+    //    in: "body"
+    //    schema:
+    //      "$ref": "#/definitions/DeleteScheduleRequest"
+    //  responses:
+    //    '200':
+    //      description: Output
+    //      schema:
+    //        "$ref": "#/definitions/DeleteScheduleResponse"
 	var err error
 	var username, ns string
 
@@ -149,6 +183,23 @@ func DeleteScheduleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func ShowScheduleHandler(w http.ResponseWriter, r *http.Request) {
+    // swagger:operation POST /scheduleshow scheduleservice scheduleshow
+    /*```
+    Show cron-like schedules
+    */
+    // ---
+    //  produces:
+    //  - application/json
+    //  parameters:
+    //  - name: "Show Schedule Request"
+    //    in: "body"
+    //    schema:
+    //      "$ref": "#/definitions/ShowScheduleRequest"
+    //  responses:
+    //    '200':
+    //      description: Output
+    //      schema:
+    //        "$ref": "#/definitions/ShowScheduleResponse"
 	var err error
 	var username, ns string
 

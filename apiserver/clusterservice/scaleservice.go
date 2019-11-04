@@ -31,7 +31,66 @@ import (
 // parameters showsecrets
 // returns a ScaleResponse
 func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
-	//SCALE_CLUSTER_PERM
+	// swagger:operation GET /clusters/scale/{name} clusterservice clusters-scale-name
+	/*```
+	The scale command allows you to adjust a Cluster's replica configuration
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "name"
+	//    description: "Cluster Name"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "version"
+	//    description: "Client Version"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "namespace"
+	//    description: "Namespace"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "replica-count"
+	//    description: "The replica count to apply to the clusters."
+	//    in: "path"
+	//    type: "int"
+	//    required: true
+	//  - name: "resources-config"
+	//    description: "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits."
+	//    in: "path"
+	//    type: "string"
+	//    required: false
+	//  - name: "storage-config"
+	//    description: "The service type to use in the replica Service. If not set, the default in pgo.yaml will be used."
+	//    in: "path"
+	//    type: "string"
+	//    required: false
+	//  - name: "node-label"
+	//    description: "The node label (key) to use in placing the replica database. If not set, any node is used."
+	//    in: "path"
+	//    type: "string"
+	//    required: false
+	//  - name: "service-type"
+	//    description: "The service type to use in the replica Service. If not set, the default in pgo.yaml will be used."
+	//    in: "path"
+	//    type: "string"
+	//    required: false
+	//  - name: "ccp-image-tag"
+	//    description: "The CCPImageTag to use for cluster creation. If specified, overrides the .pgo.yaml setting."
+	//    in: "path"
+	//    type: "string"
+	//    required: false
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/ClusterScaleResponse"
+	//SCALE_CLUSTER_PERM	
+	// This is a pain to document because it doesn't use a struct...
 	var ns string
 	vars := mux.Vars(r)
 
@@ -81,6 +140,34 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 // pgo scale mycluster --query
 // returns a ScaleQueryResponse
 func ScaleQueryHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /scale/{name} clusterservice scale-name
+	/*```
+	Provides the list of targetable replica candidates for scaledown.
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "name"
+	//    description: "Cluster Name"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "version"
+	//    description: "Client Version"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "namespace"
+	//    description: "Namespace"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/ScaleQueryResponse"
 	//SCALE_CLUSTER_PERM
 	var ns string
 	vars := mux.Vars(r)
@@ -123,6 +210,44 @@ func ScaleQueryHandler(w http.ResponseWriter, r *http.Request) {
 // pgo scale mycluster --scale-down-target=somereplicaname
 // returns a ScaleDownResponse
 func ScaleDownHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /scaledown/{name} clusterservice scaledown-name
+	/*```
+	Scale down a cluster by removing the given replica
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "name"
+	//    description: "Cluster Name"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "version"
+	//    description: "Client Version"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "namespace"
+	//    description: "Namespace"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "replica-name"
+	//    description: "The replica to target for scaling down."
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "delete-data"
+	//    description: "Causes the data for the scaled down replica to be removed permanently."
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/ScaleDownResponse"
 	//SCALE_CLUSTER_PERM
 	var ns string
 	vars := mux.Vars(r)

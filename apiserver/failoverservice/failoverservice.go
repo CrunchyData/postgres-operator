@@ -27,6 +27,23 @@ import (
 // CreateFailoverHandler ...
 // pgo failover mycluster
 func CreateFailoverHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /failover failoverservice failover
+	/*```
+	Performs a manual failover.
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Create Failover Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/CreateFailoverRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/CreateFailoverResponse"
 	var ns string
 
 	log.Debug("failoverservice.CreateFailoverHandler called")
@@ -67,6 +84,34 @@ func CreateFailoverHandler(w http.ResponseWriter, r *http.Request) {
 // QueryFailoverHandler ...
 // pgo failover mycluster --query
 func QueryFailoverHandler(w http.ResponseWriter, r *http.Request) {
+    // swagger:operation GET /failover/{name} failoverservice failover-service
+    /*```
+    Prints the list of failover candidates.
+    */
+    // ---
+    //  produces:
+    //  - application/json
+    //  parameters:
+	//  - name: "name"
+	//    description: "Cluster Name"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "version"
+	//    description: "Client Version"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "namespace"
+	//    description: "Namespace"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+    //  responses:
+    //    '200':
+    //      description: Output
+    //      schema:
+    //        "$ref": "#/definitions/QueryFailoverResponse"
 	var ns string
 
 	vars := mux.Vars(r)

@@ -26,6 +26,23 @@ import (
 // CreatePgbouncerHandler ...
 // pgo create pgbouncer
 func CreatePgbouncerHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /pgbouncer pgbouncerservice pgbouncer-post
+    /*```
+    Create a pgbouncer
+    */
+    // ---
+    //  produces:
+    //  - application/json
+    //  parameters:
+    //  - name: "Create Pgbouncer Request"
+    //    in: "body"
+    //    schema:
+    //      "$ref": "#/definitions/CreatePgbouncerRequest"
+    //  responses:
+    //    '200':
+    //      description: Output
+    //      schema:
+    //        "$ref": "#/definitions/CreatePgbouncerResponse"
 	var ns string
 	log.Debug("pgbouncerservice.CreatePgbouncerHandler called")
 	username, err := apiserver.Authn(apiserver.CREATE_PGBOUNCER_PERM, w, r)
@@ -63,9 +80,47 @@ func CreatePgbouncerHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+/* The delete pgboucner handler is setup to be used by two different routes. To keep
+the documentation consistent with the API this endpoint is documented along with the
+/pgbouncer (DELETE) enpoint. This endpoint should be deprecated in future API versions.
+*/
+// swagger:operation POST /pgbouncerdelete pgbouncerservice pgbouncerdelete
+/*```
+Delete a pgbouncer from a cluster
+*/
+// ---
+//  produces:
+//  - application/json
+//  parameters:
+//  - name: "Delete PgBouncer Request"
+//    in: "body"
+//    schema:
+//      "$ref": "#/definitions/DeletePgbouncerRequest"
+//  responses:
+//    '200':
+//      description: Output
+//      schema:
+//        "$ref": "#/definitions/DeletePgbouncerResponse"
 // DeletePgbouncerHandler ...
 // pgo delete pgbouncer
 func DeletePgbouncerHandler(w http.ResponseWriter, r *http.Request) {
+    // swagger:operation DELETE /pgbouncer pgbouncerservice pgbouncer-delete
+    /*```
+    Delete a pgbouncer from a cluster
+    */
+    // ---
+    //  produces:
+    //  - application/json
+    //  parameters:
+    //  - name: "Delete PgBouncer Request"
+    //    in: "body"
+    //    schema:
+    //      "$ref": "#/definitions/DeletePgbouncerRequest"
+    //  responses:
+    //    '200':
+    //      description: Output
+    //      schema:
+    //        "$ref": "#/definitions/DeletePgbouncerResponse"
 	var ns string
 	log.Debug("pgbouncerservice.DeletePgbouncerHandler called")
 	username, err := apiserver.Authn(apiserver.DELETE_PGBOUNCER_PERM, w, r)

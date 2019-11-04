@@ -27,6 +27,32 @@ import (
 // ShowWorkflowHandler ...
 // returns a ShowWorkflowResponse
 func ShowWorkflowHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /workflow/{id} workflowservice workflow
+	//
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "id"
+	//    description: "Workflow ID"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "version"
+	//    description: "Client Version"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "namespace"
+	//    description: "Namespace"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/CreatePolicyResponse"
 	var err error
 	var username, ns string
 

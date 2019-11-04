@@ -28,6 +28,23 @@ import (
 // pgo create policy
 // parameters secretfrom
 func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /policies policyservice policies
+    /*```
+    Create a SQL policy
+    */
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Create Policy Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/CreatePolicyRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/CreatePolicyResponse"
 	var ns string
 
 	resp := msgs.CreatePolicyResponse{}
@@ -83,6 +100,23 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 // DeletePolicyHandler ...
 // returns a DeletePolicyResponse
 func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /policiesdelete policyservice policiesdelete
+    /*```
+    Delete a SQL policy
+    */
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Delete Policy Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/DeletePolicyRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/DeletePolicyResponse"
 	var ns string
 
 	var request msgs.DeletePolicyRequest
@@ -131,6 +165,23 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 // ShowPolicyHandler ...
 // returns a ShowPolicyResponse
 func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /showpolicies policyservice showpolicies
+    /*```
+    Show policy information
+    */
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Show Policy Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/ShowPolicyRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/ShowPolicyResponse"
 	var ns string
 
 	var request msgs.ShowPolicyRequest
@@ -181,7 +232,23 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 // ApplyPolicyHandler ...
 // pgo apply mypolicy --selector=name=mycluster
 func ApplyPolicyHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /policies/apply policyservice policies-apply
+    /*```
+    APPLY allows you to apply a Policy to a set of clusters.
+    */
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Create Policy Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/ApplyPolicyRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/ApplyPolicyResponse"
 	var ns string
 	log.Debug("policyservice.ApplyPolicyHandler called")
 

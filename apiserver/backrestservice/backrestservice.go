@@ -30,6 +30,23 @@ import (
 // pgo backup --selector=name=mycluster
 // pgo backup mycluster
 func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /backrestbackup backrestservice backrestbackup
+	/*```
+	Performs a backup using pgBackrest
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Create Backrest Backup Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/CreateBackrestBackupRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/CreateBackrestBackupResponse"
 	var ns string
 	log.Debug("backrestservice.CreateBackupHandler called")
 
@@ -62,6 +79,39 @@ func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
 // ShowBackrestHandler ...
 // returns a ShowBackrestResponse
 func ShowBackrestHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /backrest/{name} backrestservice backrest-name
+	/*```
+	Returns a ShowBackrestResponse that provides information about a given backup
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "name"
+	//    description: "Backup Name"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "version"
+	//    description: "Client Version"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "namespace"
+	//    description: "Namespace"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  - name: "selector"
+	//    description: "Selector"
+	//    in: "path"
+	//    type: "string"
+	//    required: true
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/ShowBackrestResponse"
 	var ns string
 
 	vars := mux.Vars(r)
@@ -106,6 +156,23 @@ func ShowBackrestHandler(w http.ResponseWriter, r *http.Request) {
 // RestoreHandler ...
 // pgo restore mycluster --to-cluster=restored
 func RestoreHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /restore backrestservice restore
+	/*```
+	Restore a cluster with backrest
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Restore Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/RestoreRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/RestoreResponse"
 	var ns string
 
 	log.Debug("backrestservice.RestoreHandler called")

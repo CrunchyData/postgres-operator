@@ -25,7 +25,18 @@ import (
 // VersionHandler ...
 // pgo version
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation GET /version versionservice version
+    /*```
+    
+    */
+	// ---
+	//  produces:
+	//  - application/json
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/VersionResponse"
 	log.Debug("versionservice.VersionHandler called")
 
 	_, err := apiserver.Authn(apiserver.VERSION_PERM, w, r)
@@ -43,7 +54,20 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // HealthHandler ...
+
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation GET /health versionservice health
+    /*```
+    
+    */
+	// ---
+	//  produces:
+	//  - application/json
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/UpdateNamespaceResponse"
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 

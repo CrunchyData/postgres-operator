@@ -1,3 +1,4 @@
+
 package apiservermsgs
 
 /*
@@ -17,6 +18,8 @@ limitations under the License.
 
 import ()
 
+// FailoverTargetSpec ...
+// swagger:model
 type FailoverTargetSpec struct {
 	Name            string
 	ReadyStatus     string
@@ -28,6 +31,7 @@ type FailoverTargetSpec struct {
 }
 
 // QueryFailoverResponse ...
+// swagger:model
 type QueryFailoverResponse struct {
 	Results []string
 	Targets []FailoverTargetSpec
@@ -35,6 +39,7 @@ type QueryFailoverResponse struct {
 }
 
 // CreateFailoverResponse ...
+// swagger:model
 type CreateFailoverResponse struct {
 	Results []string
 	Targets string
@@ -42,6 +47,7 @@ type CreateFailoverResponse struct {
 }
 
 // CreateFailoverRequest ...
+// swagger:model
 type CreateFailoverRequest struct {
 	Namespace              string
 	ClusterName            string
@@ -50,6 +56,7 @@ type CreateFailoverRequest struct {
 }
 
 // QueryFailoverRequest ...
+// swagger:model
 type QueryFailoverRequest struct {
 	ClusterName   string
 	ClientVersion string

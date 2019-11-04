@@ -26,7 +26,23 @@ import (
 // UserHandler ...
 // pgo user XXXX
 func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /userupdate userservice userupdate
+	/*```
+	Update a postgres user
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Update User Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/UpdateUserRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/UpdateUserResponse"
 	log.Debug("userservice.UpdateUserHandler called")
 
 	var request msgs.UpdateUserRequest
@@ -65,6 +81,23 @@ func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 // CreateUserHandler ...
 // pgo create user
 func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /usercreate userservice usercreate
+	/*```
+	Create PostgreSQL user
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Create User Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/CreateUserRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/CreateUserResponse"
 	log.Debug("userservice.CreateUserHandler called")
 	username, err := apiserver.Authn(apiserver.CREATE_USER_PERM, w, r)
 	if err != nil {
@@ -106,7 +139,23 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 // parameters selector
 // returns a DeleteUserResponse
 func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /userdelete userservice userdelete
+	/*```
+	Delete PostgreSQL user
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Delete User Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/DeleteUserRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/DeleteUserResponse"
 	var request msgs.DeleteUserRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
@@ -147,7 +196,23 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 // parameters selector
 // returns a ShowUserResponse
 func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
-
+	// swagger:operation POST /usershow userservice usershow
+	/*```
+	Show PostgreSQL user(s)
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Show User Request"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/ShowUserRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/ShowUserResponse"
 	var request msgs.ShowUserRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
