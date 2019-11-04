@@ -827,13 +827,13 @@ func (c *PgoConfig) LoadTemplate(cMap *v1.ConfigMap, rootPath, path string) (*te
 		if value == "" {
 			value, err = c.DefaultTemplate(path)
 			if err != nil {
-				return err
+				return nil, error
 			}
 		}
 	} else {
 		value, err = c.DefaultTemplate(path)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
