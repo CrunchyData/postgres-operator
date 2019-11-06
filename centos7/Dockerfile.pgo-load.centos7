@@ -1,11 +1,9 @@
-FROM centos:7
+ARG PREFIX
+ARG BASEVER
+FROM ${PREFIX}/pgo-base:centos7-${BASEVER}
 
 LABEL name="crunchydata/pgo-load" \
     vendor="crunchy data" \
-	PostgresVersion="11" \
-	PostgresFullVersion="11.5" \
-	Version="7.7" \
-	Release="4.1.0" \
     url="https://crunchydata.com" \
     summary="Crunchy Data PostgreSQL Operator - Load Data" \
     description="Loads a CSV or JSON file into the database." \
@@ -16,21 +14,18 @@ LABEL name="crunchydata/pgo-load" \
 
 ENV PGVERSION="11" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm"
 
-COPY redhat/licenses /licenses
-COPY licenses /licenses
-
 # PGDG PostgreSQL Repository
 RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
 
-RUN yum -y update &&  yum -y install epel-release \
- && yum install -y \
-	gettext \
-	hostname \
- 	nss_wrapper \
-	openssh-clients \
-	procps-ng \
- && yum -y install postgresql11 \
- && yum clean all -y
+RUN yum -y install epel-release \
+    && yum install -y \
+        gettext \
+        hostname \
+        nss_wrapper \
+        openssh-clients \
+        procps-ng \
+        postgresql11 \
+    && yum clean all -y
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf
 ADD bin/pgo-load/ /opt/cpm/bin

@@ -1,29 +1,24 @@
-FROM centos:7
+ARG PREFIX
+ARG BASEVER
+FROM ${PREFIX}/pgo-base:centos7-${BASEVER}
 
-LABEL Vendor="Crunchy Data Solutions" \
-	Version="7.7" \
-	Release="4.1.0" \
-	summary="Crunchy Data PostgreSQL Operator - SQL Runner" \
+LABEL summary="Crunchy Data PostgreSQL Operator - SQL Runner" \
 	description="Crunchy Data PostgreSQL Operator - SQL Runner"
 
 ENV PGVERSION="11" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm"
-
-COPY redhat/licenses /licenses
-COPY licenses /licenses
 
 ENV PGROOT="/usr/pgsql-${PGVERSION}"
 
 RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
 
-RUN yum -y update \
- && yum -y install epel-release \
- && yum -y install \
-      gettext \
-      hostname  \
-      nss_wrapper \
-      procps-ng \
- && yum -y install postgresql11 \
- && yum clean all -y
+RUN yum -y install epel-release \
+	&& yum -y install \
+		gettext \
+		hostname  \
+		nss_wrapper \
+		procps-ng \
+		postgresql11 \
+	&& yum clean all -y
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgconf \
  && chown -R 26:26 /opt/cpm /pgconf

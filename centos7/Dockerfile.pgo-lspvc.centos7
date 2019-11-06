@@ -1,15 +1,9 @@
-FROM centos:7
+ARG PREFIX
+ARG BASEVER
+FROM ${PREFIX}/pgo-base:centos7-${BASEVER}
 
-LABEL Vendor="Crunchy Data Solutions" \
-	Version="7.7" \
-	Release="4.1.0" \
-	summary="Crunchy Data PostgreSQL Operator - Display PVC" \
+LABEL summary="Crunchy Data PostgreSQL Operator - Display PVC" \
 	description="Crunchy Data PostgreSQL Operator - Display contents of a PVC"
-
-RUN yum -y update && yum -y clean all
-
-COPY redhat/licenses /licenses
-COPY licenses /licenses
 
 VOLUME ["/pgdata"]
 
