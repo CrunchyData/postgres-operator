@@ -1,6 +1,8 @@
 ---
 apiVersion: v1
 kind: ServiceAccount
+imagePullSecrets:
+- name: {{ image_pull_secret }}
 metadata:
   name: postgres-operator
   namespace: {{ pgo_operator_namespace }}
