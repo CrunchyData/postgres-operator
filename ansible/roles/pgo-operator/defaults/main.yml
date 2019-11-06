@@ -1,4 +1,8 @@
 ---
+kubernetes_context: ""
+kubernetes_in_cluster: "false"
+openshift_host: ""
+
 backrest_aws_s3_key: ""
 backrest_aws_s3_secret: ""
 backrest_aws_s3_bucket: ""
