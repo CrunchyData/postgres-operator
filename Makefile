@@ -1,6 +1,9 @@
 RELTMPDIR=/tmp/release.$(PGO_VERSION)
 RELFILE=/tmp/postgres-operator.$(PGO_VERSION).tar.gz
 
+# Valid values: buildah (default), docker
+IMGBUILDER ?= buildah
+
 #======= Safety checks =======
 check-go-vars:
 ifndef GOPATH
@@ -75,7 +78,7 @@ winpgo:	check-go-vars
 
 
 #======= Image builds =======
-%-image: check-go-vars build-%
+%-img-buildah: check-go-vars $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS) build-%
 	sudo --preserve-env buildah bud --layers $(SQUASH) \
 		-f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.$*.$(PGO_BASEOS) \
 		-t $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG) \
@@ -84,6 +87,32 @@ winpgo:	check-go-vars
 		$(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)  $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
+
+%-img-docker: check-go-vars $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS) build-%
+	docker build \
+		-f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.$*.$(PGO_BASEOS) \
+		-t $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG) \
+		--build-arg PREFIX=$(PGO_IMAGE_PREFIX) \
+		--build-arg BASEVER=$(PGO_VERSION) \
+		$(PGOROOT)
+	docker tag docker.io/$(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)  $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
+
+$(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS):
+	$(error No Dockerfile found for $* naming pattern)
+
+# Leave explicitly named targets invokeable by name until all target
+# self-limits to changes only
+postgres-operator-image: postgres-operator-img-$(IMGBUILDER)
+pgo-apiserver-image: pgo-apiserver-img-$(IMGBUILDER)
+pgo-event-image: pgo-event-img-$(IMGBUILDER)
+pgo-scheduler-image: pgo-scheduler-img-$(IMGBUILDER)
+pgo-backrest-repo-image: pgo-backrest-repo-img-$(IMGBUILDER)
+pgo-backrest-restore-image: pgo-backrest-restore-img-$(IMGBUILDER)
+pgo-lspvc-image: pgo-lspvc-img-$(IMGBUILDER)
+pgo-load-image: pgo-load-img-$(IMGBUILDER)
+pgo-rmdata-image: pgo-rmdata-img-$(IMGBUILDER)
+pgo-sqlrunner-image: pgo-sqlrunner-img-$(IMGBUILDER)
+pgo-backrest-image: pgo-backrest-img-$(IMGBUILDER)
 
 pgo-base: check-go-vars
 	sudo --preserve-env buildah bud --layers $(SQUASH) \
