@@ -1,7 +1,7 @@
 ARG RELVER
 FROM registry.access.redhat.com/rhel7
 
-MAINTAINER support@crunchydata.com
+MAINTAINER info@crunchydata.com
 
 LABEL Vendor="Crunchy Data Solutions" \
 	PostgresVersion="11" \

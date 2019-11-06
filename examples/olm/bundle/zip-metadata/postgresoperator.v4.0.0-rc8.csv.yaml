@@ -432,7 +432,7 @@ spec:
     alm-owner-enterprise-app: postgres-operator
     alm-status-descriptors: postgres-operator.v4.0.1
   maintainers:
-  - email: support@crunchydata.com
+  - email: info@crunchydata.com
     name: Crunchy Data
   maturity: stable
   minKubeVersion: 1.11.0
