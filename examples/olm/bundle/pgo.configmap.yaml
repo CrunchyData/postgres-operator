@@ -385,7 +385,7 @@ data:
         maturity: stable
         version: 4.0.1
         maintainers:
-          - email: support@crunchydata.com
+          - email: info@crunchydata.com
             name: Crunchy Data
         description: Postgres Cluster on Kubernetes
         minKubeVersion: 1.11.0
@@ -566,7 +566,7 @@ data:
         maturity: stable
         version: 4.0.1
         maintainers:
-          - email: support@crunchydata.com
+          - email: info@crunchydata.com
             name: Crunchy Data
         description: Postgres Cluster on Kubernetes
         minKubeVersion: 1.11.0

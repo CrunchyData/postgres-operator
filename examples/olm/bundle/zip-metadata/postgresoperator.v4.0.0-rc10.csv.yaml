@@ -522,7 +522,7 @@ spec:
     - name: Crunchy Postgres Operator v4.0 Quick Deploy
       url: https://github.com/CrunchyData/postgres-operator/tree/develop/examples/olm
   maintainers:
-  - email: support@crunchydata.com
+  - email: info@crunchydata.com
     name: Crunchy Data
   maturity: stable
   minKubeVersion: 1.11.0

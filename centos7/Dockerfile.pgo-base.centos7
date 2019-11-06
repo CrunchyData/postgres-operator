@@ -1,6 +1,8 @@
 ARG RELVER
 FROM centos:7
 
+MAINTAINER info@crunchydata.com
+
 LABEL Vendor="Crunchy Data Solutions" \
 	PostgresVersion="11" \
 	PostgresFullVersion="11.5" \

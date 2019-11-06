@@ -2,8 +2,6 @@ ARG PREFIX
 ARG BASEVER
 FROM ${PREFIX}/pgo-base:ubi7-${BASEVER}
 
-MAINTAINER support@crunchydata.com
-
 LABEL name="pgo-event" \
     run='docker run -d -p 8080:80 --name=web-app web-app' \
     summary="Crunchy Data PostgreSQL Operator - pgo-event" \
