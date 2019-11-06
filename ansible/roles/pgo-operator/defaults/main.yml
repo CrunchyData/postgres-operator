@@ -29,6 +29,8 @@ pgo_tls_no_verify: "false"
 pgo_disable_eventing: "false"
 pgo_apiserver_port: 8443
 
+namespace: ""
+
 delete_operator_namespace: "false"
 delete_watched_namespaces: "false"
 delete_metrics_namespace: "false"
