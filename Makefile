@@ -78,7 +78,7 @@ winpgo:	check-go-vars
 
 
 #======= Image builds =======
-%-img-buildah: check-go-vars $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS) build-%
+%-img-buildah: check-go-vars $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS) pgo-base-buildah build-%
 	sudo --preserve-env buildah bud --layers $(SQUASH) \
 		-f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.$*.$(PGO_BASEOS) \
 		-t $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG) \
@@ -88,7 +88,7 @@ winpgo:	check-go-vars
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)  $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
 
-%-img-docker: check-go-vars $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS) build-%
+%-img-docker: check-go-vars $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS) pgo-base-docker build-%
 	docker build \
 		-f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.$*.$(PGO_BASEOS) \
 		-t $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG) \
