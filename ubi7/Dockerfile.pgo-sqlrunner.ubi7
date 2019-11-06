@@ -1,9 +1,8 @@
-FROM ubi7
+ARG PREFIX
+ARG BASEVER
+FROM ${PREFIX}/pgo-base:ubi7-${BASEVER}
 
-LABEL Vendor="Crunchy Data Solutions" \
-	Version="7.7" \
-	Release="4.1.0" \
-	name="pgo-sqlrunner" \
+LABEL name="pgo-sqlrunner" \
 	summary="Crunchy Data PostgreSQL Operator - SQL Runner" \
 	description="Crunchy Data PostgreSQL Operator - SQL Runner"
 
@@ -12,18 +11,12 @@ ENV PGROOT="/usr/pgsql-${PGVERSION}"
 
 COPY redhat/atomic/pgo_sqlrunner/help.1 /help.1
 COPY redhat/atomic/pgo_sqlrunner/help.md /help.md
-COPY redhat/licenses /licenses
-COPY licenses /licenses
 
-# Crunchy PostgreSQL repository
-
-ADD conf/RPM-GPG-KEY-crunchydata  /
-ADD conf/crunchypg11.repo /etc/yum.repos.d/
-RUN rpm --import RPM-GPG-KEY-crunchydata
-
-RUN yum -y update --disableplugin=subscription-manager \
- && yum -y install --disableplugin=subscription-manager --setopt=skip_missing_names_on_install=False postgresql${PGVERSION} \
- && yum -y clean all
+RUN yum -y install \
+	--disableplugin=subscription-manager \
+	--setopt=skip_missing_names_on_install=False \
+	postgresql${PGVERSION} \
+	&& yum -y clean all
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgconf \
  && chown -R 26:26 /opt/cpm /pgconf

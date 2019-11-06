@@ -1,13 +1,8 @@
-FROM ubi7
+ARG PREFIX
+ARG BASEVER
+FROM ${PREFIX}/pgo-base:ubi7-${BASEVER}
 
-MAINTAINER support@crunchydata.com
-
-LABEL name="pgo-apiserver-" \
-	vendor="crunchydata.com" \
-	PostgresVersion="11" \
-	PostgresFullVersion="11.5" \
-	Version="7.7" \
-	Release="4.1.0" \
+LABEL name="pgo-apiserver" \
 	run='docker run -d -p 8080:80 --name=web-app web-app' \
 	summary="Crunchy Data PostgreSQL Operator - Apiserver" \
 	description="Crunchy Data PostgreSQL Operator - Apiserver"
@@ -16,18 +11,13 @@ ENV PGVERSION="11"
 
 COPY redhat/atomic/pgo_apiserver/help.1 /help.1
 COPY redhat/atomic/pgo_apiserver/help.md /help.md
-COPY redhat/licenses /licenses
-COPY licenses /licenses
 
-# Crunchy PostgreSQL repository
-
-ADD conf/RPM-GPG-KEY-crunchydata  /
-ADD conf/crunchypg11.repo /etc/yum.repos.d/
-RUN rpm --import RPM-GPG-KEY-crunchydata
-
-RUN yum -y update --disableplugin=subscription-manager \
- && yum -y install --disableplugin=subscription-manager --setopt=skip_missing_names_on_install=False  postgresql${PGVERSION} hostname \
- && yum -y clean all
+RUN yum -y install \
+	--disableplugin=subscription-manager \
+	--setopt=skip_missing_names_on_install=False \
+	postgresql${PGVERSION} \
+	hostname \
+	&& yum -y clean all
 
 ADD bin/apiserver /usr/local/bin
 ADD bin/postgres-operator/runpsql.sh /usr/local/bin
