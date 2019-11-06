@@ -1,15 +1,9 @@
-FROM centos:7
+ARG PREFIX
+ARG BASEVER
+FROM ${PREFIX}/pgo-base:centos7-${BASEVER}
 
-LABEL Vendor="Crunchy Data Solutions" \
-	Version="7.7" \
-	Release="4.1.0" \
-	summary="Crunchy Data PostgreSQL Operator - Remove Data" \
+LABEL summary="Crunchy Data PostgreSQL Operator - Remove Data" \
 	description="Crunchy Data PostgreSQL Operator - Remove Data"
-
-RUN yum -y update && yum -y clean all
-
-COPY redhat/licenses /licenses
-COPY licenses /licenses
 
 ADD bin/pgo-rmdata/ /usr/local/bin
 
