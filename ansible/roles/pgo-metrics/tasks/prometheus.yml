@@ -1,9 +1,4 @@
 ---
-- fail:
-    msg: "Only set one of kubernetes_context or openshift_host"
-  when: openshift_host is defined and kubernetes_context is defined
-  tags: always
-
 - name: Set output directory fact
   set_fact:
     prom_output_dir: "{{ ansible_env.HOME }}/.pgo/{{ metrics_namespace }}/output"

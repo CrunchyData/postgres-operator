@@ -1,4 +1,5 @@
 ---
 - name: Set the Kubernetes Context
   shell: "kubectl config use-context {{ kubernetes_context }}"
+  when: not (kubernetes_in_cluster | bool)
   tags: always
