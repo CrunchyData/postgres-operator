@@ -131,7 +131,6 @@ sets of variables cannot be used at the same time.
 * `exporterport`
 * `kubernetes_context` (Comment out if deploying to am OpenShift environment)
 * `metrics`
-* `namespace`
 * `openshift_host` (Comment out if deploying to a Kubernetes environment)
 * `openshift_password` (Comment out if deploying to a Kubernetes environment)
 * `openshift_skip_tls_verify` (Comment out if deploying to a Kubernetes environment)
@@ -194,7 +193,7 @@ sets of variables cannot be used at the same time.
 | `log_statement`                   | none        |          | Set to `none`, `ddl`, `mod`, or `all` to configure the statements that will be logged in PostgreSQL's logs on all newly created clusters.                                        |
 | `metrics`                         | false       | **Required** | Set to true enable performance metrics on all newly created clusters.  This can be disabled by the client.                                                                       |
 | `metrics_namespace`               | metrics     |          | Configures the target namespace when deploying Grafana and/or Prometheus                                                                                                         |
-| `namespace`                       |             | **Required** | Set to a comma delimited string of all the namespaces Operator will manage.                                                                                                      |
+| `namespace`                       |             |          | Set to a comma delimited string of all the namespaces Operator will manage.                                                                                                      |
 | `openshift_host`                  |             | **Required**, if deploying to OpenShift | When deploying to OpenShift, set to configure the hostname of the OpenShift cluster to connect to.                                                                               |
 | `openshift_password`              |             | **Required**, if deploying to OpenShift | When deploying to OpenShift, set to configure the password used for login.                                                                                                       |
 | `openshift_skip_tls_verify`       |             | **Required**, if deploying to OpenShift | When deploying to Openshift, set to ignore the integrity of TLS certificates for the OpenShift cluster.                                                                          |
