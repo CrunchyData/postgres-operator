@@ -114,7 +114,7 @@ pgo-rmdata-image: pgo-rmdata-img-$(IMGBUILDER)
 pgo-sqlrunner-image: pgo-sqlrunner-img-$(IMGBUILDER)
 pgo-backrest-image: pgo-backrest-img-$(IMGBUILDER)
 
-pgo-base: check-go-vars
+pgo-base-buildah: check-go-vars
 	sudo --preserve-env buildah bud --layers $(SQUASH) \
 		-f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-base.$(PGO_BASEOS) \
 		-t $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) \
@@ -122,6 +122,16 @@ pgo-base: check-go-vars
 		$(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG)
 	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG)  $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG)
+
+pgo-base-docker: check-go-vars
+	docker build \
+		-f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-base.$(PGO_BASEOS) \
+		-t $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) \
+		--build-arg RELVER=$(PGO_VERSION) \
+		$(PGOROOT)
+	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG)  $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG)
+
+pgo-base: pgo-base-$(IMGBUILDER)
 
 cli-docs:	check-go-vars
 	cd $(PGOROOT)/hugo/content/operatorcli/cli && go run $(PGOROOT)/pgo/generatedocs.go
