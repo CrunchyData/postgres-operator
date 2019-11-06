@@ -1,4 +1,8 @@
 ---
+kubernetes_context: ""
+kubernetes_in_cluster: "false"
+openshift_host: ""
+
 grafana_default_dashboards: "true"
 grafana_port: "3000"
 grafana_service_name: "crunchy-grafana"

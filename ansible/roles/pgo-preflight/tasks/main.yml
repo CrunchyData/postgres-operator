@@ -9,20 +9,44 @@
   register: uname_result
   tags: [install, update]
 
-- name: Check if required Kube or OpenShift variables are defined
-  fail: msg="Please specify either OpenShift or Kubernetes variables in inventory"
-  when: > 
-    (openshift_host is undefined or (openshift_host is defined and openshift_host == ''))
-    and (kubernetes_context is undefined or (kubernetes_context is defined and kubernetes_context == ''))
-    or ((openshift_host is defined and openshift_host != '') and (kubernetes_context is defined and kubernetes_context != ''))
+- assert:
+    msg: Please specify either OpenShift or Kubernetes variables in inventory
+    that:
+      - openshift_host | default('') != '' or
+        kubernetes_context | default('') != '' or
+        kubernetes_in_cluster | default(False) | bool
+  tags: always
+
+- assert:
+    msg: Only set one of kubernetes_context, kubernetes_in_cluster, or openshift_host
+    that:
+      - kubernetes_context | default('') == ''
+      - not (kubernetes_in_cluster | default(False) | bool)
+  when: openshift_host | default('') != ''
+  tags: always
+
+- assert:
+    msg: Only set one of kubernetes_context, kubernetes_in_cluster, or openshift_host
+    that:
+      - openshift_host | default('') == ''
+      - not (kubernetes_in_cluster | default(False) | bool)
+  when: kubernetes_context | default('') != ''
+  tags: always
+
+- assert:
+    msg: Only set one of kubernetes_context, kubernetes_in_cluster, or openshift_host
+    that:
+      - openshift_host | default('') == ''
+      - kubernetes_context | default('') == ''
+  when: kubernetes_in_cluster | default(False) | bool
   tags: always
 
 - include_tasks: check_openshift.yml
-  when: openshift_host is defined and openshift_host != ''
+  when: openshift_host | default('') != ''
   tags: always
 
 - include_tasks: check_kubernetes.yml
-  when: kubernetes_context is defined and kubernetes_context != ''
+  when: kubernetes_context | default('') != '' or kubernetes_in_cluster | default(False) | bool
   tags: always
 
 - include_tasks: check_inventory.yml

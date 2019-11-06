@@ -1,9 +1,4 @@
 ---
-- fail:
-    msg: "Only set one of kubernetes_context or openshift_host"
-  when: openshift_host is defined and kubernetes_context is defined
-  tags: always
-
 - name: Set output directory fact
   set_fact:
     output_dir: "{{ ansible_env.HOME }}/.pgo/{{ pgo_operator_namespace }}/output"
@@ -22,7 +17,7 @@
     - openshift.yml
   loop_control:
     loop_var: tasks
-  when: openshift_host is defined
+  when: openshift_host != ''
   tags: always
 
 - include_tasks: "{{ tasks }}"
@@ -31,18 +26,18 @@
     - kubernetes.yml
   loop_control:
     loop_var: tasks
-  when: kubernetes_context is defined
+  when: kubernetes_context != '' or kubernetes_in_cluster | bool
   tags: always
 
 - include_tasks: cleanup.yml
   tags: [uninstall, update]
 
 - include_tasks: kubernetes_cleanup.yml
-  when: kubernetes_context is defined
+  when: kubernetes_context != '' or kubernetes_in_cluster | bool
   tags: [uninstall]
 
 - include_tasks: openshift_cleanup.yml
-  when: openshift_host is defined
+  when: openshift_host != ''
   tags: [uninstall]
 
 - include_tasks: certs.yml
