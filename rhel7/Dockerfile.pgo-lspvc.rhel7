@@ -1,36 +1,17 @@
-FROM registry.access.redhat.com/rhel7
-
-MAINTAINER support@crunchydata.com
+ARG PREFIX
+ARG BASEVER
+FROM ${PREFIX}/pgo-base:rhel7-${BASEVER}
 
 LABEL name="pgo-lspvc" \
-    vendor="crunchydata.com" \
-	Version="7.7" \
-	Release="4.1.0" \
     run='docker run -d -p 8080:80 --name=web-app web-app' \
     summary="Crunchy Data PostgreSQL Operator - Display PVC" \
     description="Crunchy Data PostgreSQL Operator - Display contents of a PVC"
 
 COPY redhat/atomic/pgo_lspvc/help.1 /help.1
 COPY redhat/atomic/pgo_lspvc/help.md /help.md
-COPY redhat/licenses /licenses
-COPY licenses /licenses
-
-ADD conf/RPM-GPG-KEY-crunchydata  /
-ADD conf/crunchypg11.repo /etc/yum.repos.d/
-RUN rpm --import RPM-GPG-KEY-crunchydata
-
-
-RUN yum -y --enablerepo=rhel-7-server-ose-3.11-rpms --disablerepo=crunchy* update \
- && yum -y clean all
-
-#RUN mkdir -p /opt/cpm/bin && chown -R 26:26 /opt/cpm
-#RUN mkdir /pgdata && chmod -R g=u /pgdata
-#ADD bin/pgo-lspvc /opt/cpm/bin
-
-#RUN chmod g=u /etc/passwd && \
-#        chmod g=u /etc/group
 
 USER 26
-#ENTRYPOINT ["opt/cpm/bin/uid_postgres.sh"]
+
 VOLUME ["/pgdata"]
+
 CMD ["sh", "-c", "find /pgdata/${BACKUP_ROOT}"]

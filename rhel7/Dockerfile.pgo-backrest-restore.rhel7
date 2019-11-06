@@ -1,12 +1,9 @@
-FROM registry.access.redhat.com/rhel7
+ARG PREFIX
+ARG BASEVER
+FROM ${PREFIX}/pgo-base:rhel7-${BASEVER}
 
-LABEL Vendor="Crunchy Data Solutions" \
-	PostgresVersion="11" \
-	name="pgo-backrest-restore" \
-	PostgresFullVersion="11.5" \
-	Version="7.7" \
-        run='docker run -d -p 8080:80 --name=web-app web-app' \
-	Release="4.1.0" \
+LABEL name="pgo-backrest-restore" \
+    run='docker run -d -p 8080:80 --name=web-app web-app' \
 	summary="Crunchy Data PostgreSQL Operator - pgo-backrest-restore" \
 	description="pgBackRest backrest restore"
 
@@ -14,16 +11,15 @@ ENV PGVERSION="11" BACKREST_VERSION="2.17"
 
 COPY redhat/atomic/pgo_backrest_restore/help.1 /help.1
 COPY redhat/atomic/pgo_backrest_restore/help.md /help.md
-COPY redhat/licenses /licenses
-COPY licenses /licenses
 
-ADD conf/RPM-GPG-KEY-crunchydata  /
-ADD conf/crunchypg11.repo /etc/yum.repos.d/
-RUN rpm --import RPM-GPG-KEY-crunchydata
-
-RUN yum -y --enablerepo=rhel-7-server-ose-3.11-rpms --disablerepo=crunchy* update \
- && yum -y install psmisc openssh-server openssh-clients crunchy-backrest-"${BACKREST_VERSION}" postgresql11-server procps-ng \
- && yum -y clean all
+RUN yum -y install \
+	crunchy-backrest-"${BACKREST_VERSION}" \
+	openssh-clients \
+	openssh-server \
+	postgresql11-server \
+	procps-ng \
+	psmisc \
+	&& yum -y clean all
 
 RUN mkdir -p /opt/cpm/bin /pgdata && chown -R 26:26 /opt/cpm
 ADD bin/pgo-backrest-restore/ /opt/cpm/bin
