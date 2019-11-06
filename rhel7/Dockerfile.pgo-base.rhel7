@@ -1,0 +1,24 @@
+ARG RELVER
+FROM registry.access.redhat.com/rhel7
+
+MAINTAINER support@crunchydata.com
+
+LABEL Vendor="Crunchy Data Solutions" \
+	PostgresVersion="11" \
+	PostgresFullVersion="11.5" \
+	Version="7.7" \
+	Release="${RELVER}" \
+	org.opencontainers.image.vendor="Crunchy Data Solutions" \
+	postgresql.version.major="11" \
+	postgresql.version="11.5" \
+	os.version="7.7"
+
+COPY redhat/licenses /licenses
+COPY licenses /licenses
+
+RUN yum -y --enablerepo=rhel-7-server-ose-3.11-rpms update && yum -y clean all
+
+# Crunchy PostgreSQL repository
+ADD conf/RPM-GPG-KEY-crunchydata  /
+ADD conf/crunchypg11.repo /etc/yum.repos.d/
+RUN rpm --import RPM-GPG-KEY-crunchydata
