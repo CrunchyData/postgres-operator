@@ -41,7 +41,7 @@ RUN chmod g=u /etc/passwd && \
 #RUN ln -s /sshd /.ssh && chown 26:26 /.ssh && chmod 400 /.ssh/
 RUN mkdir /.ssh && chown pgbackrest:pgbackrest /.ssh && chmod o+rwx /.ssh
 
-USER pgbackrest
+USER 2000
 
 ENTRYPOINT ["/opt/cpm/bin/uid_pgbackrest.sh"]
 VOLUME ["/sshd", "/backrestrepo" ]
