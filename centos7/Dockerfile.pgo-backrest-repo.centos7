@@ -9,7 +9,7 @@ LABEL Vendor="Crunchy Data Solutions" \
 	description="Crunchy Data PostgreSQL Operator - Apiserver"
 
 ENV PGVERSION="11" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm" PGDG_REPO_DISABLE="pgdg*" PGDG_REPO_ENABLE="pgdg11"\
-    BACKREST_VERSION="2.17"
+    BACKREST_VERSION="2.18"
 
 COPY redhat/licenses /licenses
 COPY licenses /licenses
