@@ -35,7 +35,7 @@ RUN chmod g=u /etc/passwd && \
 
 RUN mkdir /.ssh && chown pgbackrest:pgbackrest /.ssh && chmod o+rwx /.ssh
 
-USER pgbackrest
+USER 2000
 
 ENTRYPOINT ["/opt/cpm/bin/uid_pgbackrest.sh"]
 
