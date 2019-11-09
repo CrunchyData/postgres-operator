@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-postgres-operator
+  labels:
+    app.kubernetes.io/name: '${OPERATOR_NAME}'
+  annotations:
+    marketplace.cloud.google.com/verification: test
+spec:
+  dnsPolicy: ClusterFirst
+  restartPolicy: Never
+  containers:
+    - name: tester
+      image: '${INSTALLER_IMAGE}'
+      imagePullPolicy: Always
+      command: ['sh', '-ce']
+      args:
+        - >-
+          wget --quiet --output-document=-
+          --no-check-certificate
+          --http-user="${PGOUSERNAME}"
+          --http-password="${PGOUSERPASS}"
+          --private-key="${PGO_CLIENT_KEY}"
+          --certificate="${PGO_CLIENT_CERT}"
+          --ca-certificate="${PGO_CA_CERT}"
+          "${PGO_APISERVER_URL}/version"
+      env:
+        - { name: PGO_APISERVER_URL, value: 'https://postgres-operator:8443' }
+        - { name: PGOUSERNAME, valueFrom: { secretKeyRef: { name: pgouser-admin, key: username } } }
+        - { name: PGOUSERPASS, valueFrom: { secretKeyRef: { name: pgouser-admin, key: password } } }
+        - { name: PGO_CA_CERT,     value: '/etc/pgo/certificates/tls.crt' }
+        - { name: PGO_CLIENT_CERT, value: '/etc/pgo/certificates/tls.crt' }
+        - { name: PGO_CLIENT_KEY,  value: '/etc/pgo/certificates/tls.key' }
+      volumeMounts:
+        - { mountPath: /etc/pgo/certificates, name: certificates }
+  volumes:
+    - { name: certificates, secret: { secretName: pgo.tls } }

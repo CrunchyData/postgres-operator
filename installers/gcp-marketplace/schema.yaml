@@ -1,0 +1,158 @@
+applicationApiVersion: v1beta1
+properties:
+  BACKUP_STORAGE_CAPACITY:
+    title: Backup Storage Capacity [GiB]
+    description: Default gigabytes allocated to new backup PVCs
+    type: integer
+    default: 1
+    minimum: 1
+
+  BACKUP_STORAGE_CLASS: # This key appears in the StorageClass name.
+    title: Backup Storage Class
+    description: Default storage class of new backup PVCs
+    type: string
+    x-google-marketplace:
+      type: STORAGE_CLASS
+      storageClass:
+        type: SSD
+
+  INSTALLER_IMAGE: { type: string, x-google-marketplace: { type: DEPLOYER_IMAGE } }
+
+  INSTALLER_SERVICE_ACCOUNT: # This key appears in the ClusterRoleBinding name.
+    title: Cluster Admin Service Account
+    description: >-
+      Name of a service account in the target namespace that has cluster-admin permissions.
+      This is used by the operator installer to create Custom Resource Definitions.
+    type: string
+    x-google-marketplace:
+      type: SERVICE_ACCOUNT
+      serviceAccount:
+        roles:
+          - type: ClusterRole
+            rulesType: PREDEFINED
+            rulesFromRoleName: cluster-admin
+
+  OPERATOR_ADMIN_PASSWORD:
+    title: Operator admin password
+    type: string
+    pattern: .+
+    x-google-marketplace:
+      type: MASKED_FIELD
+
+  OPERATOR_IMAGE:
+    type: string
+    default: gcr.io/crunchydata-public/postgres-operator:${PGO_VERSION}
+    x-google-marketplace: { type: IMAGE }
+
+  OPERATOR_IMAGE_API:
+    type: string
+    default: gcr.io/crunchydata-public/postgres-operator/pgo-apiserver:${PGO_VERSION}
+    x-google-marketplace: { type: IMAGE }
+
+  OPERATOR_IMAGE_EVENT:
+    type: string
+    default: gcr.io/crunchydata-public/postgres-operator/pgo-event:${PGO_VERSION}
+    x-google-marketplace: { type: IMAGE }
+
+  OPERATOR_IMAGE_SCHEDULER:
+    type: string
+    default: gcr.io/crunchydata-public/postgres-operator/pgo-scheduler:${PGO_VERSION}
+    x-google-marketplace: { type: IMAGE }
+
+  OPERATOR_NAME:      { type: string, x-google-marketplace: { type: NAME } }
+  OPERATOR_NAMESPACE: { type: string, x-google-marketplace: { type: NAMESPACE } }
+
+  PGBACKREST_STORAGE_CAPACITY:
+    title: pgBackRest Storage Capacity [GiB]
+    description: Default gigabytes allocated to new pgBackRest repositories
+    type: integer
+    default: 2
+    minimum: 2
+
+  PGBACKREST_STORAGE_CLASS: # This key appears in the StorageClass name.
+    title: pgBackRest Storage Class
+    description: Default storage class of new pgBackRest repositories
+    type: string
+    x-google-marketplace:
+      type: STORAGE_CLASS
+      storageClass:
+        type: SSD
+
+  POSTGRES_CPU:
+    title: PostgreSQL CPU [mCPU]
+    description: Default mCPU allocated to new PostgreSQL clusters (1000 equals one Core)
+    type: integer
+    default: 1000
+    minimum: 100
+
+  POSTGRES_MEM:
+    title: PostgreSQL Memory [GiB]
+    description: Default gigabytes allocated to new PostgreSQL clusters
+    type: integer
+    default: 2
+    minimum: 1
+
+  POSTGRES_METRICS:
+    title: Always collect PostgreSQL metrics
+    description: When disabled, collection can be enabled per PostgreSQL cluster
+    type: boolean
+    default: false
+
+  POSTGRES_SERVICE_TYPE:
+    title: PostgreSQL service type
+    description: Default type of the Service that exposes new PostgreSQL clusters
+    type: string
+    enum: [ ClusterIP, LoadBalancer, NodePort ]
+    default: ClusterIP
+
+  POSTGRES_STORAGE_CAPACITY:
+    title: PostgreSQL Storage Capacity [GiB]
+    description: Default gigabytes allocated to new PostgreSQL clusters
+    type: integer
+    default: 1
+    minimum: 1
+
+  POSTGRES_STORAGE_CLASS: # This key appears in the StorageClass name.
+    title: PostgreSQL Storage Class
+    description: Default storage class of new PostgreSQL clusters
+    type: string
+    x-google-marketplace:
+      type: STORAGE_CLASS
+      storageClass:
+        type: SSD
+
+required:
+  - INSTALLER_IMAGE
+  - INSTALLER_SERVICE_ACCOUNT
+
+  - OPERATOR_ADMIN_PASSWORD
+  - OPERATOR_IMAGE
+  - OPERATOR_IMAGE_API
+  - OPERATOR_IMAGE_EVENT
+  - OPERATOR_IMAGE_SCHEDULER
+  - OPERATOR_NAME
+  - OPERATOR_NAMESPACE
+
+  - POSTGRES_SERVICE_TYPE
+  - POSTGRES_CPU
+  - POSTGRES_MEM
+  - POSTGRES_STORAGE_CAPACITY
+  - POSTGRES_STORAGE_CLASS
+  - POSTGRES_METRICS
+
+  - PGBACKREST_STORAGE_CAPACITY
+  - PGBACKREST_STORAGE_CLASS
+
+  - BACKUP_STORAGE_CAPACITY
+  - BACKUP_STORAGE_CLASS
+
+x-google-marketplace:
+  clusterConstraints:
+    istio: { type: UNSUPPORTED }
+
+form:
+  - widget: help
+    description: |-
+      Only one instance of Crunchy PostgreSQL Operator is necessary per Kubernetes cluster.
+
+      If you have further questions, contact us at <a href="mailto:info@crunchydata.com">info@crunchydata.com</a>.
