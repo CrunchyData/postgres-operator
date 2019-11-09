@@ -21,7 +21,9 @@
                 "containers": [
                     {
                         "name": "apiserver",
-                        "image": "{{ pgo_image_prefix }}/pgo-apiserver:{{ pgo_image_tag }}",
+                        "image": "{% if pgo_apiserver_image | default('') != '' %}{{ pgo_apiserver_image }}
+                                {%- else %}{{ pgo_image_prefix }}/pgo-apiserver:{{ pgo_image_tag }}
+                                {%- endif %}",
                         "imagePullPolicy": "IfNotPresent",
                         "ports": [
                             {
@@ -70,7 +72,9 @@
                     },
                     {
                         "name": "operator",
-                        "image": "{{ pgo_image_prefix }}/postgres-operator:{{ pgo_image_tag }}",
+                        "image": "{% if pgo_image | default('') != '' %}{{ pgo_image }}
+                                {%- else %}{{ pgo_image_prefix }}/postgres-operator:{{ pgo_image_tag }}
+                                {%- endif %}",
                         "imagePullPolicy": "IfNotPresent",
                         "readinessProbe": {
                             "exec": {
@@ -124,7 +128,9 @@
                     },
                     {
                         "name": "scheduler",
-                        "image": "{{ pgo_image_prefix }}/pgo-scheduler:{{ pgo_image_tag }}",
+                        "image": "{% if pgo_scheduler_image | default('') != '' %}{{ pgo_scheduler_image }}
+                                {%- else %}{{ pgo_image_prefix }}/pgo-scheduler:{{ pgo_image_tag }}
+                                {%- endif %}",
                         "readinessProbe": {
                             "exec": {
                                 "command": [
@@ -166,7 +172,9 @@
                         "imagePullPolicy": "IfNotPresent"
                     }, {
                         "name": "event",
-                        "image": "{{ pgo_image_prefix }}/pgo-event:{{ pgo_image_tag }}",
+                        "image": "{% if pgo_event_image | default('') != '' %}{{ pgo_event_image }}
+                                {%- else %}{{ pgo_image_prefix }}/pgo-event:{{ pgo_image_tag }}
+                                {%- endif %}",
                         "env": [
                             {
                                 "name": "TIMEOUT",
