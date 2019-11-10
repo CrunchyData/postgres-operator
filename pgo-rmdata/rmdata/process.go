@@ -17,6 +17,8 @@ limitations under the License.
 
 import (
 	"errors"
+	"fmt"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -99,6 +101,7 @@ func Delete(request Request) {
 		removeBackrestRepo(request)
 		removeBackupJobs(request)
 		removeBackups(request)
+		removeBackupSecrets(request)
 	}
 
 	//handle the case of 'pgo delete cluster mycluster'
@@ -155,6 +158,31 @@ func removeBackups(request Request) {
 		}
 	}
 
+}
+
+// removeBackupSecrets removes any secrets that are associated with backups
+// for this cluster, in particular, the secret that is used by the pgBackRest
+// repository that is available for this cluster.
+func removeBackupSecrets(request Request) {
+	// first, derive the secrename of the pgBackRest repo, which is the
+	// "`clusterName`-`LABEL_BACKREST_REPO_SECRET`"
+	secretName := fmt.Sprintf("%s-%s",
+		request.ClusterName, config.LABEL_BACKREST_REPO_SECRET)
+	log.Debugf("removeBackupSecrets: %s", secretName)
+
+	// we can attempt to delete the secret directly without making any further
+	// API calls. Even if we did a "get", there could still be a race with some
+	// independent process (e.g. an external user) deleting the secret before we
+	// get to it. The main goal is to have the secret deleted
+	//
+	// we'll also check to see if there was an error, but if there is we'll only
+	// log the fact there was an error; this function is just a pass through
+	if err := kubeapi.DeleteSecret(request.Clientset, secretName, request.Namespace); err != nil {
+		log.Error(err)
+	}
+
+	// and done!
+	return
 }
 
 func removeData(request Request) {
