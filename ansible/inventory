@@ -47,14 +47,14 @@ namespace='pgo'
 # CentOS7 images can be found in dockerhub: https://hub.docker.com/u/crunchydata
 # RHEL7 images are available to Crunchy customers: https://access.crunchydata.com/login/
 ccp_image_prefix='quay.io/ibmcp4s'
-ccp_image_tag='rhel7-9.6.14-2.4.1'
+ccp_image_tag='rhel7-9.6.15-2.4.1-1'
 
 # Crunchy PostgreSQL Operator images to use.  The tags centos7 and rhel7 are acceptable.
 pgo_image_prefix='quay.io/ibmcp4s'
-pgo_image_tag='rhel7-4.0.1'
+pgo_image_tag='rhel7-4.0.1-1'
 
 # secret to use when pulling images from docker repository
-image_pull_secret='ibmcp4s-pull-secret'
+image_pull_secret='ibmcp4s-image-pull-secret'
 
 # PGO Client Install
 pgo_client_install='true'
