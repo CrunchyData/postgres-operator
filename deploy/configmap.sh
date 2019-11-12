@@ -26,7 +26,7 @@ kind: ConfigMap
 metadata:
   name: isc-cases-postgres-ca-cert
 binaryData:
-  postgres_cert: `cat $CERTS_DIR/root.crt | base64`
+  postgres_cert: `cat $CERTS_DIR/root.crt | base64 | tr -d '\n'`
 EOF
 
 # create configmap required by postgres operator
