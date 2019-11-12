@@ -96,8 +96,8 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	}
 
 	log.Debugf("restore workflow: created pvc %s for cluster %s", pvcName, clusterName)
-	//delete current primary deployment
-	selector := config.LABEL_SERVICE_NAME + "=" + clusterName
+	//delete current primary and all replica deployments
+	selector := config.LABEL_PG_CLUSTER+"="+clusterName+","+config.LABEL_PG_DATABASE+"=true"
 	var depList *appsv1.DeploymentList
 	depList, err = kubeapi.GetDeployments(clientset, selector, namespace)
 	if err != nil {
@@ -105,21 +105,41 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		return
 	}
 
-	switch depLen := len(depList.Items); depLen {
-	case 0:
-		log.Debugf("restore workflow: no primary found using selector %s. Skipping deployment deletion.", selector)
-	case 1:
-		depToDelete := depList.Items[0]
+	if len(depList.Items) == 0 {
+		log.Debugf("restore workflow: no primary or replicas found using selector %s. Skipping deployment deletion.", selector)
+	}  else {
+        for _, depToDelete := range depList.Items { 
+			err = kubeapi.DeleteDeployment(clientset, depToDelete.Name, namespace)
+			if err != nil {
+				log.Errorf("restore workflow error: could not delete primary or replica %s", depToDelete.Name)
+				return
+			}
+			log.Debugf("restore workflow: deleted primary or replica %s", depToDelete.Name)
+		}
+	}
 
-		err = kubeapi.DeleteDeployment(clientset, depToDelete.Name, namespace)
+	message := "Cluster is being restored"
+	err = kubeapi.PatchpgclusterStatus(restclient, crv1.PgclusterStateRestore, message, &cluster, namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	pgreplicaList := &crv1.PgreplicaList{}
+	selector = config.LABEL_PG_CLUSTER+"="+clusterName
+	log.Debugf("Restored cluster %s went to ready, patching replicas", clusterName)
+	err = kubeapi.GetpgreplicasBySelector(restclient, pgreplicaList, selector, namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	for _, pgreplica := range pgreplicaList.Items {
+		pgreplica.Status.State = crv1.PgreplicaStatePendingRestore
+		err = kubeapi.Updatepgreplica(restclient, &pgreplica, pgreplica.Name, namespace)
 		if err != nil {
-			log.Errorf("restore workflow error: could not delete primary %s", depToDelete.Name)
+			log.Error(err)
 			return
 		}
-		log.Debugf("restore workflow: deleted primary %s", depToDelete.Name)
-	default:
-		log.Errorf("restore workflow error: depList has invalid length of %d using selector %s", depLen, selector)
-		return
 	}
 
 	//update backrest repo with new data path
@@ -376,6 +396,10 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	cluster.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = restoreToName
 	cluster.Spec.UserLabels["name"] = cluster.Spec.Name
 	cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER] = cluster.Spec.ClusterName
+	
+	// Set the Patroni scope to the name of the primary deployment.  Replicas will get scope using the
+	// 'current-primary' label on the pgcluster
+	cluster.Spec.UserLabels[config.LABEL_PGHA_SCOPE] = restoreToName
 
 	archiveMode := "on"
 	xlogdir := "false"
@@ -398,6 +422,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 
 	deploymentFields := operator.DeploymentTemplateFields{
 		Name:               restoreToName,
+		IsInit:				true,
 		Replicas:           "1",
 		ClusterName:        cluster.Spec.Name,
 		PrimaryHost:        restoreToName,
@@ -424,7 +449,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		CollectAddon:       operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
 		CollectVolume:      operator.GetCollectVolume(clientset, cluster, namespace),
 		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cluster, restoreToName),
-		ScopeLabel:         config.LABEL_PG_CLUSTER,
+		ScopeLabel:         config.LABEL_PGHA_SCOPE,
 		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster.Labels[config.LABEL_BACKREST], cluster.Spec.ClusterName, restoreToName,
 			cluster.Spec.Port, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Labels[config.LABEL_BACKREST],

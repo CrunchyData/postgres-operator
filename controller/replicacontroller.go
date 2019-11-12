@@ -126,13 +126,33 @@ func (c *PgreplicaController) processNextItem() bool {
 			log.Error(err)
 			return false
 		}
-		clusteroperator.ScaleBase(c.PgreplicaClientset, c.PgreplicaClient, &replica, replica.ObjectMeta.Namespace)
 
-		state := crv1.PgreplicaStateProcessed
-		message := "Successfully processed Pgreplica by controller"
-		err = kubeapi.PatchpgreplicaStatus(c.PgreplicaClient, state, message, &replica, replica.ObjectMeta.Namespace)
+		// get the pgcluster resource for the cluster the replica is a part of
+		cluster := crv1.Pgcluster{}
+		_, err = kubeapi.Getpgcluster(c.PgreplicaClient, &cluster, replica.Spec.ClusterName, keyNamespace)
 		if err != nil {
-			log.Errorf("ERROR updating pgreplica status: %s", err.Error())
+			log.Error(err)
+			return false
+		}
+
+		// only process pgreplica if cluster has been initialized
+		if cluster.Status.State == crv1.PgclusterStateInitialized {
+			clusteroperator.ScaleBase(c.PgreplicaClientset, c.PgreplicaClient, &replica, replica.ObjectMeta.Namespace)
+
+			state := crv1.PgreplicaStateProcessed
+			message := "Successfully processed Pgreplica by controller"
+			err = kubeapi.PatchpgreplicaStatus(c.PgreplicaClient, state, message, &replica, replica.ObjectMeta.Namespace)
+			if err != nil {
+				log.Errorf("ERROR updating pgreplica status: %s", err.Error())
+			}
+		} else  {
+
+			state := crv1.PgreplicaStatePendingInit
+			message := "Pgreplica processing pending the creation of the initial backup"
+			err = kubeapi.PatchpgreplicaStatus(c.PgreplicaClient, state, message, &replica, replica.ObjectMeta.Namespace)
+			if err != nil {
+				log.Errorf("ERROR updating pgreplica status: %s", err.Error())
+			}
 		}
 
 		//no error, tell the queue to stop tracking history
@@ -163,9 +183,34 @@ func (c *PgreplicaController) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgreplica is updated
 func (c *PgreplicaController) onUpdate(oldObj, newObj interface{}) {
-	//newExample := newObj.(*crv1.Pgreplica)
-	//log.Debugf("[PgreplicaController] ns=%s %s ", newExample.ObjectMeta.Namespace, newExample.ObjectMeta.Name)
+	
+	newPgreplica := newObj.(*crv1.Pgreplica)
 
+	log.Debugf("[PgreplicaController] onUpdate ns=%s %s", newPgreplica.ObjectMeta.Namespace, 
+		newPgreplica.ObjectMeta.SelfLink)
+
+	// get the pgcluster resource for the cluster the replica is a part of
+	cluster := crv1.Pgcluster{}
+	_, err := kubeapi.Getpgcluster(c.PgreplicaClient, &cluster, newPgreplica.Spec.ClusterName, 
+		newPgreplica.ObjectMeta.Namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	// only process pgreplica if cluster has been initialized
+	if cluster.Status.State == crv1.PgclusterStateInitialized && newPgreplica.Spec.Status != "complete" {
+		clusteroperator.ScaleBase(c.PgreplicaClientset, c.PgreplicaClient, newPgreplica,
+			newPgreplica.ObjectMeta.Namespace)
+
+		state := crv1.PgreplicaStateProcessed
+		message := "Successfully processed Pgreplica by controller"
+		err := kubeapi.PatchpgreplicaStatus(c.PgreplicaClient, state, message, newPgreplica,
+			newPgreplica.ObjectMeta.Namespace)
+		if err != nil {
+			log.Errorf("ERROR updating pgreplica status: %s", err.Error())
+		}
+	}
 }
 
 // onDelete is called when a pgreplica is deleted

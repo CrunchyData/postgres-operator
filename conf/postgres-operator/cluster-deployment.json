@@ -5,6 +5,7 @@
         "name": "{{.Name}}",
         "labels": {
             "vendor": "crunchydata",
+            "pgo-pg-database": "true",
             {{.DeploymentLabels }}
         }
     },
@@ -21,6 +22,7 @@
                 "labels": {
                     "name": "{{.Name}}",
                     "vendor": "crunchydata",
+                    "pgo-pg-database": "true",
                     {{.PodLabels }}
                 }
             },
@@ -37,8 +39,11 @@
                     "readinessProbe": {
                         "exec": {
                             "command": [
-                                "/opt/cpm/bin/readiness/readiness.sh"
-                            ]
+                                "/bin/bash",
+                                "-c",
+                                "[[ -f '/crunchyadm/pgha_initialized' ]]",
+                                "&& pg_isready -h /crunchyadm -U crunchyready"
+                             ]
                         },
                         "initialDelaySeconds": 15,
                         "timeoutSeconds": 8
@@ -52,8 +57,19 @@
                     }, {
                         "name": "PGHA_USER",
                         "value": "postgres"
+                    },
+                    {{if .IsInit}}
+                    {
+                        "name": "PGHA_INIT",
+                        "valueFrom": {
+                            "configMapKeyRef": {
+                               "name": "{{.ClusterName}}-pgha-default-config",
+                               "key": "init"
+                            }
+                         }
                     }, 
-                    {{if .IsReplica}}
+                    {{ end }}
+                    {{if not .IsInit}}
                     {
                         "name": "PGHA_PRIMARY_HOST",
                         "value": "{{.ClusterName}}"
@@ -75,26 +91,19 @@
                                 "fieldPath": "metadata.namespace"
                             }
                         }
-                    }, {
-                        "name": "PATRONI_NAME",
-                        "valueFrom": {
-                            "fieldRef": {
-                                "fieldPath": "metadata.name"
-                            }
-                        }
-                    }, {
+                    },  {
+                        "name": "PATRONI_KUBERNETES_SCOPE_LABEL",
+                        "value": "{{.ScopeLabel}}"
+                    },  {
                         "name": "PATRONI_SCOPE",
                         "valueFrom": {
                             "fieldRef": {
-                                "fieldPath": "metadata.labels['pg-cluster']"
+                                "fieldPath": "metadata.labels['{{.ScopeLabel}}']"
                             }
                         }
                     }, {
                         "name": "PATRONI_KUBERNETES_LABELS",
                         "value": "{vendor: \"crunchydata\"}"
-                    }, {
-                        "name": "PATRONI_KUBERNETES_SCOPE_LABEL",
-                        "value": "{{.ScopeLabel}}"
                     }, {
                         "name": "PATRONI_LOG_LEVEL",
                         "value": "INFO"
@@ -205,7 +214,7 @@
                                 {{end}}
                                 {
                                     "configMap": { 
-                                        "name": "pgo-pgha-default-config",
+                                        "name": "{{.ClusterName}}-pgha-default-config",
                                         "optional": true
                                     }
                                 }

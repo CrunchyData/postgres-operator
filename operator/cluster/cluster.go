@@ -260,14 +260,22 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		return
 	}
 
-	//create the PVC
-	pvcName, err := pvc.CreatePVC(clientset, &replica.Spec.ReplicaStorage, replica.Spec.Name, cluster.Spec.Name, namespace)
-	if err != nil {
-		log.Error(err)
-		return
+	var pvcName string
+	// create the PVC if necessary.  When a replica is being created during a restore, the PVC will already exist.
+	// Otherwise a new PVC will be created.
+	_, found, err := kubeapi.GetPVC(clientset, replica.Spec.Name, namespace)
+	if found {
+		log.Debugf("pvc [%s] already present for replica from previous cluster with this same name, will not recreate",
+			replica.Spec.Name)
+		pvcName = replica.Spec.Name
+	} else {
+		pvcName, err = pvc.CreatePVC(clientset, &replica.Spec.ReplicaStorage, replica.Spec.Name, cluster.Spec.Name, namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		log.Debugf("created replica pvc [%s]", pvcName)
 	}
-
-	log.Debugf("created replica pvc [%s]", pvcName)
 
 	//update the replica CRD pvcname
 	err = util.Patch(client, "/spec/replicastorage/name", pvcName, crv1.PgreplicaResourcePlural, replica.Spec.Name, namespace)

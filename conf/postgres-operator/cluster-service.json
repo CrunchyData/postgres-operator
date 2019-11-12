@@ -44,7 +44,16 @@
     }
     ],
         "selector": {
+            {{ if or (eq .Name .ClusterName) (eq .Name (printf "%s%s" .ClusterName "-replica")) }}
+            "pg-cluster": "{{.ClusterName}}",
+            {{ if eq .Name (printf "%s%s" .ClusterName "-replica") }}
+            "role": "replica"
+            {{else}}
+            "role": "master"
+            {{end}}
+            {{else}}
             "service-name": "{{.ServiceName}}"
+            {{end}}
         },
         "type": "{{.ServiceType}}",
         "sessionAffinity": "None"

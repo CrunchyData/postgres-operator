@@ -21,6 +21,7 @@ const LABEL_SELECTOR = "selector"
 const LABEL_OPERATOR = "postgres-operator"
 const LABEL_PG_CLUSTER = "pg-cluster"
 const LABEL_PG_CLUSTER_IDENTIFIER = "pg-cluster-id"
+const LABEL_PG_DATABASE = "pgo-pg-database"
 
 const LABEL_PGBACKUP = "pgbackup"
 const LABEL_PGTASK = "pg-task"
@@ -178,3 +179,7 @@ const LABEL_PGO_DEFAULT_SC = "pgo-default-sc"
 const LABEL_FAILOVER_STARTED = "failover-started"
 
 const GLOBAL_CUSTOM_CONFIGMAP = "pgo-custom-pg-config"
+
+const LABEL_PGHA_SCOPE = "crunchy-pgha-scope"
+const LABEL_PGHA_DEFAULT_CONFIGMAP = "pgha-default-config"
+const LABEL_PGHA_BOOTSTRAP_BACKUP = "pgha-bootstrap-backup"
