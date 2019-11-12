@@ -82,7 +82,7 @@
                         "value": "warn"
                     }, {
                         "name": "PGBACKREST_CMD_SSH",
-                        "value": "ssh"
+                        "value": "/opt/cpm/bin/kube-ssh-wrapper.sh"
                     }, {
                         "name": "CLUSTER_NAME",
                         "valueFrom": {

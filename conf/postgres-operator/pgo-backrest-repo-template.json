@@ -70,7 +70,7 @@
                         "value": "{{.PGbackrestDBHost}}"
                     }, {
                         "name": "PGBACKREST_CMD_SSH",
-                        "value": "ssh"
+                        "value": "/opt/cpm/bin/kube-ssh-wrapper.sh"
                     }, {
                         "name": "PGBACKREST_LOG_LEVEL_CONSOLE",
                         "value": "warn"
@@ -86,7 +86,7 @@
                         "value": "true"
                     }, {
                         "name": "ENABLE_SSHD",
-                        "value": "true"
+                        "value": "false"
                     }],
                     "volumeMounts": [{
                         "name": "sshd",
