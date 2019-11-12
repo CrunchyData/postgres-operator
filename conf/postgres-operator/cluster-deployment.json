@@ -142,6 +142,9 @@
                         }, {
                             "mountPath": "/recover",
                             "name": "recover-volume"
+                        }, {
+                            "mountPath": "/crunchyadm",
+                            "name": "crunchyadm"
                         }
                         
                     ],
@@ -154,6 +157,38 @@
                         "protocol": "TCP"
                     }],
                     "resources": {},
+                    "imagePullPolicy": "IfNotPresent"
+                },
+                {
+                    "name": "crunchyadm",
+                    "image": "{{.CCPImagePrefix}}/crunchy-admin:{{.CCPImageTag}}",
+                    "securityContext": {
+                        "runAsUser": 17
+                    },
+                    "readinessProbe": {
+                        "exec": {
+                            "command": [
+                                "/bin/bash",
+                                "-c",
+                                "[[ -f '/crunchyadm/pgha_initialized' ]]",
+                                "&& pg_isready -h /crunchyadm -U crunchyready"
+                             ]
+                        },
+                        "initialDelaySeconds": 15,
+                        "timeoutSeconds": 8
+                    },
+                    "env": [
+                        {
+                            "name": "PGHOST",
+                            "value": "/crunchyadm"
+                        }
+                    ],
+                    "volumeMounts": [
+                        {
+                            "mountPath": "/crunchyadm",
+                            "name": "crunchyadm"
+                        }
+                    ],
                     "imagePullPolicy": "IfNotPresent"
                 }
 
@@ -201,6 +236,9 @@
                     }, {
                         "name": "backrestrepo",
             "emptyDir": { "medium": "Memory" }
+                    }, {
+                        "name": "crunchyadm",
+            "emptyDir": {}
                     }, {
                         "name": "pgconf-volume",
                         "projected": {
