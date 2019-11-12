@@ -113,6 +113,13 @@
                     }, {
                         "name": "PGHOST",
                         "value": "/tmp"
+                    }, {
+                        "name": "CLUSTER_NAME",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "fieldPath": "metadata.labels['pg-cluster']"
+                            }
+                        }
                     }],
 
 
@@ -280,3 +287,4 @@
         }
     }
 }
+ 

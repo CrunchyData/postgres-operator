@@ -7,7 +7,7 @@
                         "name": "BACKREST_SKIP_CREATE_STANZA",
                         "value": "true"
                     }, {
-                        "name": "PGBACKREST",
+                        "name": "PGHA_PGBACKREST",
                         "value": "true"
                     }, {
                         "name": "PGBACKREST_REPO1_PATH",
@@ -17,7 +17,7 @@
                         "value": "{{.PgbackrestDBPath}}"
                     }, {
                         "name": "ENABLE_SSHD",
-                        "value": "true"
+                        "value": "false"
                     }, {
                         "name": "PGBACKREST_LOG_PATH",
                         "value": "/tmp"
@@ -33,4 +33,7 @@
                     }, {
                         "name": "BACKREST_LOCAL_AND_S3_STORAGE",
                         "value": "{{.PgbackrestLocalAndS3Storage}}"
+                    }, {
+                        "name": "PGBACKREST_CMD_SSH",
+                        "value": "/opt/cpm/bin/kube-ssh-wrapper.sh"
                     }, {
