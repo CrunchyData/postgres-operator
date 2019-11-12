@@ -14,21 +14,21 @@
 # limitations under the License.
 
 
-function trap_sigterm() {
+function trap_sigterm_tail() {
+	echo "Signal trap triggered, beginning shutdown.." 
+	killall tail
+}
+
+function trap_sigterm_sshd() {
 	echo "Signal trap triggered, beginning shutdown.." 
 	killall sshd
 }
 
-trap 'trap_sigterm' SIGINT SIGTERM
-
-CONFIG=/sshd
 REPO=/backrestrepo
 
 echo "PGBACKREST env vars are set to:"
 set | grep PGBACKREST
 
-echo "CONFIG is.."
-ls $CONFIG
 echo "REPO is ..."
 ls $REPO
 
@@ -37,14 +37,32 @@ if [ ! -d $PGBACKREST_REPO_PATH ]; then
 	mkdir -p $PGBACKREST_REPO_PATH
 fi
 
-mkdir ~/.ssh/
-cp $CONFIG/config ~/.ssh/
-#cp $CONFIG/authorized_keys ~/.ssh/
-cp $CONFIG/id_rsa /tmp
-chmod 400 /tmp/id_rsa ~/.ssh/config
+# save a copy of certain pod env vars for pgbackrest ssh cmd wrapper
+env | grep "^KUBERNETES" | sed "s/^/export /" >> "/tmp/pod_env.sh"
+env | grep "^CLUSTER_NAME" | sed "s/^/export /" >> "/tmp/pod_env.sh"
 
-# start sshd which is used by pgbackrest for remote connections
-/usr/sbin/sshd -D -f $CONFIG/sshd_config   &
+if [[ "${ENABLE_SSHD}" == "true" ]]
+then
+	trap 'trap_sigterm_sshd' SIGINT SIGTERM
+
+	CONFIG=/sshd
+	echo "SSHD CONFIG is.."
+	ls $CONFIG
+
+	mkdir ~/.ssh/
+    cp $CONFIG/config ~/.ssh/
+    #cp $CONFIG/authorized_keys ~/.ssh/
+    cp $CONFIG/id_rsa /tmp
+    chmod 400 /tmp/id_rsa ~/.ssh/config
+
+    # start sshd which is used by pgbackrest for remote connections
+    /usr/sbin/sshd -D -f $CONFIG/sshd_config   &
+else
+	trap 'trap_sigterm_tail' SIGINT SIGTERM
+
+	# start a random process to keep the container running
+    tail -f /dev/null
+fi
 
 wait
 

@@ -85,6 +85,9 @@
                         "name": "PGHA_DATABASE",
                         "value": "{{.Database}}"
                     }, {
+                        "name": "PGHA_CRUNCHYADM",
+                        "value": "true"
+                    }, {
                         "name": "PATRONI_KUBERNETES_NAMESPACE",
                         "valueFrom": {
                             "fieldRef": {
