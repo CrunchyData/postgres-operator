@@ -194,6 +194,37 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 			if v.Name == "database" {
 				//see if there are pgtasks for adding a policy
 				if oldDatabaseStatus == false && v.Ready {
+
+					// update pgreplica status if performing a restore
+					if cluster.Status.State == crv1.PgclusterStateRestore {
+						pgreplicaList := &crv1.PgreplicaList{}
+						selector := config.LABEL_PG_CLUSTER+"="+clusterName
+						log.Debugf("Restored cluster %s went to ready, patching replicas", clusterName)
+						err := kubeapi.GetpgreplicasBySelector(c.PodClient, pgreplicaList, selector, newpod.ObjectMeta.Namespace)
+						if err != nil {
+							log.Error(err)
+							return
+						}
+						message := "Cluster has been initialized"
+						err = kubeapi.PatchpgclusterStatus(c.PodClient, crv1.PgclusterStateInitialized, message, cluster, 
+							newpod.ObjectMeta.Namespace)
+						if err != nil {
+							log.Error(err)
+							return
+						}
+						for _, pgreplica := range pgreplicaList.Items {
+							pgreplica.Spec.Status = "restore"
+							err = kubeapi.Updatepgreplica(c.PodClient, &pgreplica, pgreplica.Name, newpod.ObjectMeta.Namespace)
+							if err != nil {
+								log.Error(err)
+								return
+							}
+						}
+						return
+					}
+
+					operator.UpdatePghaDefaultConfigInitFlag(c.PodClientset, false, clusterName, newpod.ObjectMeta.Namespace)
+
 					log.Debugf("%s went to Ready from Not Ready, apply policies...", clusterName)
 					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
 
@@ -408,8 +439,8 @@ func publishClusterComplete(clusterName, namespace string, cluster *crv1.Pgclust
 			Timestamp: time.Now(),
 			EventType: events.EventCreateClusterCompleted,
 		},
-		Clustername:       clusterName,
-		WorkflowID:        cluster.Spec.UserLabels[config.LABEL_WORKFLOW_ID],
+		Clustername: clusterName,
+		WorkflowID:  cluster.Spec.UserLabels[config.LABEL_WORKFLOW_ID],
 	}
 
 	err := events.Publish(f)

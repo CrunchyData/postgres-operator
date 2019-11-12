@@ -84,3 +84,13 @@ func DeleteConfigMap(clientset *kubernetes.Clientset, name, namespace string) er
 	return err
 
 }
+
+// UpdateConfigMap updates a configMap by name
+func UpdateConfigMap(clientset *kubernetes.Clientset, configMap *v1.ConfigMap, namespace string) error {
+	_, err := clientset.Core().ConfigMaps(namespace).Update(configMap)
+	if err != nil {
+		log.Error(err)
+		log.Error("error updating configMap %s", configMap.Name)
+	}
+	return err
+}

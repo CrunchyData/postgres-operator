@@ -103,9 +103,14 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	cl.Spec.UserLabels[config.LABEL_PGOUSER] = cl.ObjectMeta.Labels[config.LABEL_PGOUSER]
 	cl.Spec.UserLabels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 
+    // Set the Patroni scope to the name of the primary deployment.  Replicas will get scope using the
+	// 'current-primary' label on the pgcluster
+	cl.Spec.UserLabels[config.LABEL_PGHA_SCOPE] = cl.Spec.Name
+
 	//create the primary deployment
 	deploymentFields := operator.DeploymentTemplateFields{
 		Name:               cl.Spec.Name,
+		IsInit:             true,
 		Replicas:           "1",
 		ClusterName:        cl.Spec.Name,
 		PrimaryHost:        cl.Spec.Name,
@@ -132,11 +137,33 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		CollectVolume:      operator.GetCollectVolume(clientset, cl, namespace),
 		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cl, cl.Spec.Name),
 		PgmonitorEnvVars:   operator.GetPgmonitorEnvVars(cl.Spec.UserLabels[config.LABEL_COLLECT]),
-		ScopeLabel:         config.LABEL_PG_CLUSTER,
+		ScopeLabel:         config.LABEL_PGHA_SCOPE,
 		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cl.Labels[config.LABEL_BACKREST], cl.Spec.ClusterName, cl.Spec.Name,
 			cl.Spec.Port, cl.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cl.Labels[config.LABEL_BACKREST],
 			cl.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], clientset, namespace),
+	}
+
+	// create the default configuration file for crunchy-postgres-ha if custom config file not provided
+	if deploymentFields.ConfVolume == "" {
+		log.Debugf("Custom postgres-ha configmap not found, creating configMap with default postgres-ha config file")
+		operator.AddDefaultPostgresHaConfigMap(clientset, cl, deploymentFields.IsInit, true, namespace)
+	} else {
+		configMap, found := kubeapi.GetConfigMap(clientset, config.GLOBAL_CUSTOM_CONFIGMAP, namespace)
+		if found {
+			if _, exists := configMap.Data[config.PostgresHaTemplatePath]; !exists {
+				log.Debugf("Custom postgres-ha config file not found in custom configMap, " +
+					"creating default configMap with default postgres-ha config file")
+				operator.AddDefaultPostgresHaConfigMap(clientset, cl, deploymentFields.IsInit, true, namespace)
+			} else {
+				log.Debugf("Custom postgres-ha config file found in custom configMap, " +
+					"creating default configMap without default postgres-ha config file")
+				operator.AddDefaultPostgresHaConfigMap(clientset, cl, deploymentFields.IsInit, true, namespace)
+			}
+		} else {
+			log.Error(err.Error())
+		    return err
+		}
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
@@ -324,7 +351,6 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 	replicaDeploymentFields := operator.DeploymentTemplateFields{
 		Name:               replica.Spec.Name,
 		ClusterName:        replica.Spec.ClusterName,
-		IsReplica:          true,
 		Port:               cluster.Spec.Port,
 		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:        imageTag,
@@ -350,7 +376,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		CollectVolume:      operator.GetCollectVolume(clientset, cluster, namespace),
 		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cluster, replica.Spec.Name),
 		PgmonitorEnvVars:   operator.GetPgmonitorEnvVars(cluster.Spec.UserLabels[config.LABEL_COLLECT]),
-		ScopeLabel:         config.LABEL_PG_CLUSTER,
+		ScopeLabel:         config.LABEL_PGHA_SCOPE,
 		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster.Labels[config.LABEL_BACKREST], replica.Spec.ClusterName, replica.Spec.Name,
 			cluster.Spec.Port, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Labels[config.LABEL_BACKREST],
@@ -383,6 +409,10 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
 		return err
 	}
+
+	// set the replica scope to the same scope as the primary, i.e. the name of the primary deployment
+	replicaDeployment.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_CURRENT_PRIMARY]
+	replicaDeployment.Spec.Template.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_CURRENT_PRIMARY]
 
 	err = kubeapi.CreateDeployment(clientset, &replicaDeployment, namespace)
 

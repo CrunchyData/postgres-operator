@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"strconv"
 
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,6 +41,7 @@ const AffinityInOperator = "In"
 const AFFINITY_NOTINOperator = "NotIn"
 
 const DefaultArchiveTimeout = "60"
+const DefaultPgHaConfigMapSuffix = "pgha-default-config"
 
 type affinityTemplateFields struct {
 	NodeLabelKey   string
@@ -125,7 +127,7 @@ type DeploymentTemplateFields struct {
 	PrimaryHost string
 	// PgBouncer deployment only
 	PgbouncerPass string
-	IsReplica     bool
+	IsInit        bool
 }
 
 type PostgresHaTemplateFields struct {
@@ -235,7 +237,7 @@ func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespac
 	var configMapStr string
 
 	//check for global custom configmap "pgo-custom-pg-config"
-	configMap, found := kubeapi.GetConfigMap(clientset, config.GLOBAL_CUSTOM_CONFIGMAP, PgoNamespace)
+	_, found = kubeapi.GetConfigMap(clientset, config.GLOBAL_CUSTOM_CONFIGMAP, PgoNamespace)
 	if found {
 		configMapStr = "\"pgo-custom-pg-config\""
 	} else {
@@ -243,7 +245,7 @@ func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespac
 
 		//check for user provided configmap
 		if cl.Spec.CustomConfig != "" {
-			configMap, found = kubeapi.GetConfigMap(clientset, cl.Spec.CustomConfig, namespace)
+			_, found = kubeapi.GetConfigMap(clientset, cl.Spec.CustomConfig, namespace)
 			if !found {
 				//you should NOT get this error because of apiserver validation of this value!
 				log.Errorf("%s was not found, error, skipping user provided configMap", cl.Spec.CustomConfig)
@@ -254,60 +256,61 @@ func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespac
 		}
 	}
 
-	if configMap == nil {
-		log.Debugf("Custom postgres-ha configmap not found, creating default configmap")
-		addDefaultPostgresHaConfigMap(clientset, cl, namespace)
-	} else if configMap != nil {
-		if _, exists := configMap.Data[config.PostgresHaTemplatePath]; !exists {
-			log.Debugf("Custom postgres-ha configmap not found, creating default configmap")
-			addDefaultPostgresHaConfigMap(clientset, cl, namespace)
-		} else {
-			log.Debugf("Custom postgres-ha configmap found, default configmap will not be created")
-		}
-	}
-
 	return configMapStr
 }
 
-func addDefaultPostgresHaConfigMap(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, namespace string) error {
-
-	var archiveTimeout string
-
-	if _, exists := cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]; !exists {
-		archiveTimeout = cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
-	} else {
-		archiveTimeout = DefaultArchiveTimeout
-	}
-
-	labels := make(map[string]string)
-	labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
+// Creates a configMap containing 'crunchy-postgres-ha' configuration settings. aA default crunchy-postgres-ha
+// configuration file is included if a default config file is not providing using a custom configMap.
+func AddDefaultPostgresHaConfigMap(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, isInit, createDefaultPghaConf bool,
+	namespace string) error {
 
 	data := make(map[string]string)
 
-	postgresHaFields := PostgresHaTemplateFields{
-		LogStatement:            Pgo.Cluster.LogStatement,
-		LogMinDurationStatement: Pgo.Cluster.LogMinDurationStatement,
-		ArchiveTimeout:          archiveTimeout,
+	labels := make(map[string]string)
+	labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
+	labels[config.LABEL_PG_CLUSTER] = cluster.Name
+	labels[config.LABEL_PGHA_DEFAULT_CONFIGMAP] = "true"
+
+	if isInit && createDefaultPghaConf {
+		var archiveTimeout string
+
+		if _, exists := cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]; !exists {
+			archiveTimeout = cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
+		} else {
+			archiveTimeout = DefaultArchiveTimeout
+		}
+
+		postgresHaFields := PostgresHaTemplateFields{
+			LogStatement:            Pgo.Cluster.LogStatement,
+			LogMinDurationStatement: Pgo.Cluster.LogMinDurationStatement,
+			ArchiveTimeout:          archiveTimeout,
+		}
+
+		var postgresHaConfig bytes.Buffer
+
+		err := config.PostgresHaTemplate.Execute(&postgresHaConfig, postgresHaFields)
+		if err != nil {
+			log.Error(err.Error())
+			return err
+		}
+		data[config.PostgresHaTemplatePath] = postgresHaConfig.String()
 	}
 
-	var postgresHaConfig bytes.Buffer
-
-	err := config.PostgresHaTemplate.Execute(&postgresHaConfig, postgresHaFields)
-	if err != nil {
-		log.Error(err.Error())
-		return err
+	if isInit {
+	    data["init"] = "true"
+	} else {
+        data["init"] = "false"
 	}
-	data[config.PostgresHaTemplatePath] = postgresHaConfig.String()
 
 	configmap := &v1.ConfigMap{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:   "pgo-pgha-default-config",
+			Name:   cluster.Name+"-"+DefaultPgHaConfigMapSuffix,
 			Labels: labels,
 		},
 		Data: data,
 	}
 
-	err = kubeapi.CreateConfigMap(clientset, configmap, namespace)
+	err := kubeapi.CreateConfigMap(clientset, configmap, namespace)
 	if err != nil {
 		return err
 	}
@@ -479,4 +482,25 @@ func GetPgbackrestS3EnvVars(backrestLabel, backRestStorageTypeLabel string,
 		return b.String()
 	}
 	return ""
+}
+
+// UpdatePghaDefaultConfigInitFlag sets the init value for the pgha config file to true or false depending on the vlaue
+// provided
+func UpdatePghaDefaultConfigInitFlag(clientset *kubernetes.Clientset, initVal bool, clusterName, namespace string) {
+	
+	log.Debugf("cluster %s has been initialized, updating init value in default pgha configMap "+
+		"to prevent future bootstrap attempts", clusterName)
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName+","+config.LABEL_PGHA_DEFAULT_CONFIGMAP + "=true"
+	configMapList, found := kubeapi.ListConfigMap(clientset, selector, namespace)
+	if !found {
+		log.Errorf("unable to find the default pgha configMap found for cluster %s using selector %s, unable to set "+
+			"init value to false", clusterName, selector)
+	} else if len(configMapList.Items) > 1 {
+		log.Errorf("more than one default pgha configMap found for cluster %s using selector %s, unable to set "+
+			"init value to false", clusterName, selector)
+	}
+	configMap := &configMapList.Items[0]
+	configMap.Data["init"] = strconv.FormatBool(initVal)
+	
+	kubeapi.UpdateConfigMap(clientset, configMap, namespace)
 }

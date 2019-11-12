@@ -34,6 +34,7 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -99,6 +100,15 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	}
 
 	log.Debugf("[JobController] onUpdate ns=%s %s active=%d succeeded=%d conditions=[%v]", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink, job.Status.Active, job.Status.Succeeded, job.Status.Conditions)
+
+	// determine if a foreground deletion of this resource is in progress
+	isForegroundDeletion := false
+	for _, finalizer := range job.Finalizers {
+        if finalizer == meta_v1.FinalizerDeleteDependents {
+			isForegroundDeletion = true
+			break
+		}
+    }
 
 	var err error
 
@@ -250,10 +260,74 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 				log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
 			}
 			publishBackupComplete(labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], job.ObjectMeta.Labels[config.LABEL_PGOUSER], "pgbackrest", job.ObjectMeta.Namespace, "")
+		
+			// if initial cluster backup, now annotate all existing pgreplica's to initiate replica creation
+			pgreplicaList := &crv1.PgreplicaList{}
+			selector := config.LABEL_PG_CLUSTER+"="+labels[config.LABEL_PG_CLUSTER] 
+			if labels[config.LABEL_PGHA_BOOTSTRAP_BACKUP] == "true" {
+				log.Debugf("jobController onUpdate initial backup complete")
+				
+				// get the pgcluster resource for the cluster the replica is a part of
+				cluster := crv1.Pgcluster{}
+				_, err = kubeapi.Getpgcluster(c.JobClient, &cluster, labels[config.LABEL_PG_CLUSTER],
+					job.ObjectMeta.Namespace)
+				if err != nil {
+					log.Error(err)
+					return
+				}
+				message := "Cluster has been initialized"
+				err = kubeapi.PatchpgclusterStatus(c.JobClient, crv1.PgclusterStateInitialized, message, 
+					&cluster, job.ObjectMeta.Namespace)
+				if err != nil {
+					log.Error(err)
+					return
+				}
+
+				
+				err := kubeapi.GetpgreplicasBySelector(c.JobClient, pgreplicaList, selector, job.ObjectMeta.Namespace)
+				if err != nil {
+					log.Error(err)
+					return
+				}
+				for _, pgreplica := range pgreplicaList.Items {
+					if pgreplica.Annotations == nil {
+						pgreplica.Annotations = make(map[string]string)
+					}
+					pgreplica.Annotations[config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA] = "true"
+					err = kubeapi.Updatepgreplica(c.JobClient, &pgreplica, pgreplica.Name, job.ObjectMeta.Namespace)
+					if err != nil {
+						log.Error(err)
+						return
+					}
+				}
+			}
 		}
-
 		return
+	}
 
+	// create an initial full backup for replica creation once stanza creation is complete
+	if !isForegroundDeletion && labels[config.LABEL_BACKREST] == "true" && 
+		labels[config.LABEL_BACKREST_COMMAND] == crv1.PgtaskBackrestStanzaCreate {
+		log.Debugf("jobController onUpdate backrest stanza-create job case")
+		if job.Status.Succeeded == 1 {
+			log.Debugf("backrest stanza successfully created for cluster %s", labels[config.LABEL_PG_CLUSTER])
+			log.Debugf("proceeding with the initial full backup for cluster %s as needed for replica creation", 
+				labels[config.LABEL_PG_CLUSTER])
+			
+			var backrestRepoPodName string
+			for _, cont := range job.Spec.Template.Spec.Containers {
+				for _, envVar := range cont.Env {
+					if envVar.Name == "PODNAME" {
+						backrestRepoPodName = envVar.Value
+						log.Debugf("the backrest repo pod for the initial backup of cluster %s is %s",
+							labels[config.LABEL_PG_CLUSTER], backrestRepoPodName)
+					}
+				}
+			}
+			backrestoperator.CreateInitialBackup(c.JobClient, job.ObjectMeta.Namespace, 
+				labels[config.LABEL_PG_CLUSTER], backrestRepoPodName)
+		}
+		return
 	}
 
 	if labels[config.LABEL_PGBASEBACKUP_RESTORE] == "true" {
