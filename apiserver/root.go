@@ -313,19 +313,35 @@ func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string)
 	return requestedNS, errors.New("requested Namespace was not found to be in the list of Namespaces being watched.")
 }
 
+// Authn performs HTTP Basic Authentication against a user if "BasicAuth" is set
+// to "true" (which it is by default).
+//
+// ...it also performs Authorization (Authz) against the user that is attempting
+// to authenticate, and as such, to truly "authenticate/authorize," one needs
+// at least a valid Operator User account.
 func Authn(perm string, w http.ResponseWriter, r *http.Request) (string, error) {
 	var err error
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 
+	// Need to run the HTTP library `BasicAuth` even if `BasicAuth == false`, as
+	// this function currently encapsulates authorization as well, and this is
+	// the call where we get the username to check the RBAC settings
 	username, password, authOK := r.BasicAuth()
 	if AuditFlag {
 		log.Infof("[audit] %s username=[%s] method=[%s] ip=[%s] ok=[%t] ", perm, username, r.Method, r.RemoteAddr, authOK)
 	}
 
-	log.Debugf("Authentication Attempt %s username=[%s]", perm, username)
-	if authOK == false {
-		http.Error(w, "Not authorized", 401)
-		return "", errors.New("Not Authorized")
+	// Check to see if this user is authenticated
+	// If BasicAuth is "disabled", skip the authentication; o/w/ check if the
+	// authentication passed
+	if !BasicAuth {
+		log.Debugf("BasicAuth disabled, Skipping Authentication %s username=[%s]", perm, username)
+	} else {
+		log.Debugf("Authentication Attempt %s username=[%s]", perm, username)
+		if !authOK {
+			http.Error(w, "Not Authorized. Basic Authentication credentials must be provided according to RFC 7617, Section 2.", 401)
+			return "", errors.New("Not Authorized: Credentials do not comply with RFC 7617")
+		}
 	}
 
 	if !BasicAuthCheck(username, password) {
