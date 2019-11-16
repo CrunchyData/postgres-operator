@@ -95,74 +95,134 @@ The `inventory` file included with the PostgreSQL Operator Playbooks allows inst
 to configure how the operator will function when deployed into Kubernetes.  This file
 should contain all configurable variables the playbooks offer.
 
-The following are the variables available for configuration:
+### Requirements
 
-| Name                              | Default     | Description                                                                                                                                                                      |
-|-----------------------------------|-------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `archive_mode`                    | true        | Set to true enable archive logging on all newly created clusters.                                                                                                                |
-| `archive_timeout`                 | 60          | Set to a value in seconds to configure the timeout threshold for archiving.                                                                                                      |
-| `auto_failover_replace_replica`   | false       | Set to true to replace promoted replicas during failovers with a new replica on all newly created clusters.                                                                      |
-| `auto_failover_sleep_secs`        | 9           | Set to a value in seconds to configure the sleep time before initiating a failover on all newly created clusters.                                                                |
-| `auto_failover`                   | false       | Set to true enable auto failover capabilities on all newly created cluster requests.  This can be disabled by the client.                                                        |
-| `backrest`                        | false       | Set to true enable pgBackRest capabilities on all newly created cluster request.  This can be disabled by the client.                                                            |
-| `backrest_aws_s3_key`             |             | Set to configure the key used by pgBackRest to authenticate with Amazon Web Service S3 for backups and restoration in S3.                                                        |
-| `backrest_aws_s3_secret`          |             | Set to configure the secret used by pgBackRest to authenticate with Amazon Web Service S3 for backups and restoration in S3.                                                     |
-| `backrest_aws_s3_bucket`          |             | Set to configure the bucket used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3.                                                                     |
-| `backrest_aws_s3_endpoint`        |             | Set to configure the endpoint used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3.                                                                   |
-| `backrest_aws_s3_region`          |             | Set to configure the region used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3.                                                                     |
-| `backrest_storage`                | storageos   | Set to configure which storage definition to use when creating volumes used by pgBackRest on all newly created clusters.                                                         |
-| `badger`                          | false       | Set to true enable pgBadger capabilities on all newly created clusters.  This can be disabled by the client.                                                                     |
-| `ccp_image_prefix`                | crunchydata | Configures the image prefix used when creating containers from Crunchy Container Suite.                                                                                          |
-| `ccp_image_tag`                   |             | Configures the image tag (version) used when creating containers from Crunchy Container Suite.                                                                                   |
-| `cleanup`                         | false       | Set to configure the playbooks to delete all objects when uninstalling the Operator.  Note: this will delete all objects related to the Operator (including clusters provisioned). |
-| `crunchy_debug`                   | false       | Set to configure Operator to use debugging mode.  Note: this can cause sensitive data such as passwords to appear in Operator logs.                                              |
-| `db_name`                         | userdb      | Set to a value to configure the default database name on all newly created clusters.                                                                                             |
-| `db_password_age_days`            | 60          | Set to a value in days to configure the expiration age on PostgreSQL role passwords on all newly created clusters.                                                               |
-| `db_password_length`              | 20          | Set to configure the size of passwords generated by the operator on all newly created roles.                                                                                     |
-| `db_port`                         | 5432        | Set to configure the default port used on all newly created clusters.                                                                                                            |
-| `db_replicas`                     | 1           | Set to configure the amount of replicas provisioned on all newly created clusters.                                                                                               |
-| `db_user`                         | testuser    | Set to configure the username of the dedicated user account on all newly created clusters.                                                                                       |
-| `grafana_admin_username`          | admin       | Set to configure the login username for the Grafana administrator.														                                                         |
-| `grafana_admin_password`          |             | Set to configure the login password for the Grafana administrator.														                                                         |
-| `grafana_install`                 | true        | Set to true to install Crunchy Grafana to visualize metrics.                                                                                                                     |
-| `grafana_storage_access_mode`     |             | Set to the access mode used by the configured storage class for Grafana persistent volumes.                                                                                      |
-| `grafana_storage_class_name`      |             | Set to the name of the storage class used when creating Grafana persistent volumes.                                                                                              |
-| `grafana_volume_size`             |             | Set to the size of persistent volume to create for Grafana.                                                                                                                      |
-| `kubernetes_context`              |             | When deploying to Kubernetes, set to configure the context name of the kubeconfig to be used for authentication.                                                                 |
-| `log_statement`                   | none        | Set to `none`, `ddl`, `mod`, or `all` to configure the statements that will be logged in PostgreSQL's logs on all newly created clusters.                                        |
-| `metrics`                         | false       | Set to true enable performance metrics on all newly created clusters.  This can be disabled by the client.                                                                       |
-| `metrics_namespace`               | metrics     | Configures the target namespace when deploying Grafana and/or Prometheus                                                                                                         |
-| `namespace`                       |             | Set to a comma delimited string of all the namespaces Operator will manage.                                                                                                      |
-| `openshift_host`                  |             | When deploying to OpenShift, set to configure the hostname of the OpenShift cluster to connect to.                                                                               |
-| `openshift_password`              |             | When deploying to OpenShift, set to configure the password used for login.                                                                                                       |
-| `openshift_skip_tls_verify`       |             | When deploying to Openshift, set to ignore the integrity of TLS certificates for the OpenShift cluster.                                                                          |
-| `openshift_token`                 |             | When deploying to OpenShift, set to configure the token used for login (when not using username/password authentication).                                                        |
-| `openshift_user`                  |             | When deploying to OpenShift, set to configure the username used for login.                                                                                                       |
-| `pgo_installation_name`           |             | The name of the PGO installation.                                                                                                                                                |
-| `pgo_admin_username`              | admin       | Configures the pgo administrator username.                                                                                                                                       |
-| `pgo_admin_password`              |             | Configures the pgo administrator password.                                                                                                                                       |
-| `pgo_client_install`              | true        | Configures the playbooks to install the `pgo` client if set to true.                                                                                                             |
-| `pgo_client_version`              |             | Configures which version of `pgo` the playbooks should install.                                                                                                                  |
-| `pgo_image_prefix`                | crunchydata | Configures the image prefix used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc).                                             |
-| `pgo_image_tag`                   |             | Configures the image tag used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc)                                                 |
-| `pgo_operator_namespace`          |             | Set to configure the namespace where Operator will be deployed.                                                                                                                  |
-| `pgo_tls_no_verify`               | false       | Set to configure Operator to verify TLS certificates.                                                                                                                            |
-| `pgo_disable_tls`                 | false       | Set to configure whether or not TLS should be enabled for the Crunchy PostgreSQL Operator apiserver.                                                                             |
-| `pgo_apiserver_port`              | 8443        | Set to configure the port used by the Crunchy PostgreSQL Operator apiserver.                                                                                                     |
-| `pgo_disable_eventing`            | false       | Set to configure whether or not eventing should be enabled for the Crunchy PostgreSQL Operator installation.                                                                     |
-| `primary_storage`                 | storageos   | Set to configure which storage definition to use when creating volumes used by PostgreSQL primaries on all newly created clusters.                                               |
-| `prometheus_install`              | true        | Set to true to install Crunchy Prometheus timeseries database.                                                                                                                   |
-| `prometheus_storage_access_mode`  |             | Set to the access mode used by the configured storage class for Prometheus persistent volumes.                                                                                   |
-| `prometheus_storage_class_name`   |             | Set to the name of the storage class used when creating Prometheus persistent volumes.                                                                                           |
-| `replica_storage`                 | storageos   | Set to configure which storage definition to use when creating volumes used by PostgreSQL replicas on all newly created clusters.                                                |
-| `scheduler_timeout`               | 3600        | Set to a value in seconds to configure the `pgo-scheduler` timeout threshold when waiting for schedules to complete.                                                             |
-| `service_type`                    | ClusterIP   | Set to configure the type of Kubernetes service provisioned on all newly created clusters.                                                                                       |
-| `delete_operator_namespace`       | false       | Set to configure whether or not the PGO operator namespace (defined using variable `pgo_operator_namespace`) is deleted when uninstalling the PGO.                             |
-| `delete_watched_namespaces`       | false       | Set to configure whether or not the PGO watched namespaces (defined using variable `namespace`) are deleted when uninstalling the PGO.                                         |
-| `delete_metrics_namespace`        | false       | Set to configure whether or not the metrics namespace (defined using variable `metrics_namespace`) is deleted when uninstalling the metrics infrastructure                     |
-| `pgo_cluster_admin`               | false       | Determines whether or not the `cluster-admin` role is assigned to the PGO service account. Must be `true` to enable PGO namespace & role creation when installing in OpenShift.  |
-| `pgbadgerport`                    | 10000       | Set to configure the default port used to connect to pgbadger.  |
-| `exporter`                        | 9187        | Set to configure the default port used to connect to postgres exporter.  |
+The following configuration parameters must be set in order to deploy the
+Crunchy PostgreSQL Operator.
+
+Additionally, `storage` variables will need to be defined to provide the Crunchy
+PostgreSQL Operator with any required storage configuration.  Guidance for
+defining `storage` variables can be found further in this documentation.
+
+{{% notice tip %}}
+You should remove or comment out variables either either the  `kubernetes` or
+`openshift` variables if you are not being using them for your environment. Both
+sets of variables cannot be used at the same time.
+{{% /notice %}}
+
+* `archive_mode`
+* `archive_timeout`
+* `auto_failover`
+* `auto_failover_sleep_secs`
+* `auto_failover_replace_replica`
+* `backup_storage`
+* `backrest`
+* `backrest_storage`
+* `badger`
+* `ccp_image_prefix`
+* `ccp_image_tag`
+* `create_rbac`
+* `db_name`
+* `db_password_age_days`
+* `db_password_length`
+* `db_port`
+* `db_replicas`
+* `db_user`
+* `exporterport`
+* `kubernetes_context` (Comment out if deploying to am OpenShift environment)
+* `metrics`
+* `namespace`
+* `openshift_host` (Comment out if deploying to a Kubernetes environment)
+* `openshift_password` (Comment out if deploying to a Kubernetes environment)
+* `openshift_skip_tls_verify` (Comment out if deploying to a Kubernetes environment)
+* `openshift_token` (Comment out if deploying to a Kubernetes environment)
+* `openshift_user` (Comment out if deploying to a Kubernetes environment)
+* `pgbadgerport`
+* `pgo_admin_password`
+* `pgo_admin_perms`
+* `pgo_admin_role_name`
+* `pgo_admin_username`
+* `pgo_client_version`
+* `pgo_image_prefix`
+* `pgo_image_tag`
+* `pgo_installation_name`
+* `pgo_operator_namespace`
+* `primary_storage`
+* `replica_storage`
+* `scheduler_timeout`
+
+### Configuration Parameters
+
+| Name                              | Default     | Required |  Description                                                                                                                                                                      |
+|-----------------------------------|-------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `archive_mode`                    | true        | **Required** | Set to true enable archive logging on all newly created clusters.                                                                                                                |
+| `archive_timeout`                 | 60          | **Required** | Set to a value in seconds to configure the timeout threshold for archiving.                                                                                                      |
+| `auto_failover`                   | false       | **Required** | Set to true enable auto failover capabilities on all newly created cluster requests.  This can be disabled by the client.                                                        |
+| `auto_failover_replace_replica`   | false       | **Required** | Set to true to replace promoted replicas during failovers with a new replica on all newly created clusters.                                                                      |
+| `auto_failover_sleep_secs`        | 9           | **Required** | Set to a value in seconds to configure the sleep time before initiating a failover on all newly created clusters.                                                                |
+| `backrest`                        | false       | **Required** | Set to true enable pgBackRest capabilities on all newly created cluster request.  This can be disabled by the client.                                                            |
+| `backrest_aws_s3_bucket`          |             |          | Set to configure the bucket used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3.                                                                     |
+| `backrest_aws_s3_endpoint`        |             |          | Set to configure the endpoint used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3.                                                                   |
+| `backrest_aws_s3_key`             |             |          | Set to configure the key used by pgBackRest to authenticate with Amazon Web Service S3 for backups and restoration in S3.                                                        |
+| `backrest_aws_s3_region`          |             |          | Set to configure the region used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3.                                                                     |
+| `backrest_aws_s3_secret`          |             |          | Set to configure the secret used by pgBackRest to authenticate with Amazon Web Service S3 for backups and restoration in S3.                                                     |
+| `backrest_storage`                | storageos   | **Required** | Set to configure which storage definition to use when creating volumes used by pgBackRest on all newly created clusters.                                                         |
+| `backup_storage`                  | storageos   | **Required** | Set to configure which storage definition to use when creating volumes used for storing logical backups created by `pg_dump`. |
+| `badger`                          | false       | **Required** | Set to true enable pgBadger capabilities on all newly created clusters.  This can be disabled by the client.                                                                     |
+| `ccp_image_prefix`                | crunchydata | **Required** | Configures the image prefix used when creating containers from Crunchy Container Suite.                                                                                          |
+| `ccp_image_tag`                   |             | **Required** | Configures the image tag (version) used when creating containers from Crunchy Container Suite.                                                                                   |
+| `cleanup`                         | false       |          | Set to configure the playbooks to delete all objects when uninstalling the Operator.  Note: this will delete all objects related to the Operator (including clusters provisioned). |
+| `create_rbac`                     | true        | **Required** | Set to `true` if the installer should create the RBAC resources required to run the PostgreSQL Operator. |
+| `crunchy_debug`                   | false       |          | Set to configure Operator to use debugging mode.  Note: this can cause sensitive data such as passwords to appear in Operator logs.                                              |
+| `delete_metrics_namespace`        | false       |          | Set to configure whether or not the metrics namespace (defined using variable `metrics_namespace`) is deleted when uninstalling the metrics infrastructure                     |
+| `delete_operator_namespace`       | false       |          | Set to configure whether or not the PGO operator namespace (defined using variable `pgo_operator_namespace`) is deleted when uninstalling the PGO.                             |
+| `delete_watched_namespaces`       | false       |          | Set to configure whether or not the PGO watched namespaces (defined using variable `namespace`) are deleted when uninstalling the PGO.                                         |
+| `db_name`                         | userdb      | **Required** | Set to a value to configure the default database name on all newly created clusters.                                                                                             |
+| `db_password_age_days`            | 60          | **Required** | Set to a value in days to configure the expiration age on PostgreSQL role passwords on all newly created clusters.                                                               |
+| `db_password_length`              | 20          | **Required** | Set to configure the size of passwords generated by the operator on all newly created roles.                                                                                     |
+| `db_port`                         | 5432        | **Required** | Set to configure the default port used on all newly created clusters.                                                                                                            |
+| `db_replicas`                     | 1           | **Required** | Set to configure the amount of replicas provisioned on all newly created clusters.                                                                                               |
+| `db_user`                         | testuser    | **Required** | Set to configure the username of the dedicated user account on all newly created clusters.                                                                                       |
+| `exporterport`                    | 9187        | **Required** | Set to configure the default port used to connect to postgres exporter.  |
+| `grafana_admin_password`          |             |          | Set to configure the login password for the Grafana administrator. |
+| `grafana_admin_username`          | admin       |          | Set to configure the login username for the Grafana administrator. |
+| `grafana_install`                 | true        |          | Set to true to install Crunchy Grafana to visualize metrics.                                                                                                                     |
+| `grafana_storage_access_mode`     |             |          | Set to the access mode used by the configured storage class for Grafana persistent volumes.                                                                                      |
+| `grafana_storage_class_name`      |             |          | Set to the name of the storage class used when creating Grafana persistent volumes.                                                                                              |
+| `grafana_volume_size`             |             |          | Set to the size of persistent volume to create for Grafana.                                                                                                                      |
+| `kubernetes_context`              |             | **Required**, if deploying to Kubernetes |When deploying to Kubernetes, set to configure the context name of the kubeconfig to be used for authentication.                                                                 |
+| `log_statement`                   | none        |          | Set to `none`, `ddl`, `mod`, or `all` to configure the statements that will be logged in PostgreSQL's logs on all newly created clusters.                                        |
+| `metrics`                         | false       | **Required** | Set to true enable performance metrics on all newly created clusters.  This can be disabled by the client.                                                                       |
+| `metrics_namespace`               | metrics     |          | Configures the target namespace when deploying Grafana and/or Prometheus                                                                                                         |
+| `namespace`                       |             | **Required** | Set to a comma delimited string of all the namespaces Operator will manage.                                                                                                      |
+| `openshift_host`                  |             | **Required**, if deploying to OpenShift | When deploying to OpenShift, set to configure the hostname of the OpenShift cluster to connect to.                                                                               |
+| `openshift_password`              |             | **Required**, if deploying to OpenShift | When deploying to OpenShift, set to configure the password used for login.                                                                                                       |
+| `openshift_skip_tls_verify`       |             | **Required**, if deploying to OpenShift | When deploying to Openshift, set to ignore the integrity of TLS certificates for the OpenShift cluster.                                                                          |
+| `openshift_token`                 |             | **Required**, if deploying to OpenShift | When deploying to OpenShift, set to configure the token used for login (when not using username/password authentication).                                                        |
+| `openshift_user`                  |             | **Required**, if deploying to OpenShift | When deploying to OpenShift, set to configure the username used for login.                                                                                                       |
+| `pgbadgerport`                    | 10000       | **Required** | Set to configure the default port used to connect to pgbadger.  |
+| `pgo_admin_username`              | admin       | **Required** | Configures the pgo administrator username.                                                                                                                                       |
+| `pgo_admin_password`              |             | **Required** | Configures the pgo administrator password.                                                                                                                                       |
+| `pgo_admin_perms`                 | DeleteNamespace,CreateNamespace,UpdatePgorole,ShowPgorole,DeletePgorole,CreatePgorole,UpdatePgouser,ShowPgouser,DeletePgouser,CreatePgouser,Cat,Ls,ShowNamespace,CreateDump,RestoreDump,ScaleCluster,CreateSchedule,DeleteSchedule,ShowSchedule,DeletePgbouncer,CreatePgbouncer,DeletePgpool,CreatePgpool,Restore,RestorePgbasebackup,ShowSecrets,Reload,ShowConfig,Status,DfCluster,DeleteCluster,ShowCluster,CreateCluster,TestCluster,ShowBackup,DeleteBackup,CreateBackup,Label,Load,CreatePolicy,DeletePolicy,ShowPolicy,ApplyPolicy,ShowWorkflow,ShowPVC,CreateUpgrade,CreateUser,DeleteUser,UpdateUser,ShowUser,Version,CreateFailover,UpdateCluster,CreateBenchmark,ShowBenchmark,DeleteBenchmark,UpdateNamespace | **Required** | Sets the access control rules provided by the PostgreSQL Operator RBAC resources for the PostgreSQL Operator administrative account that is created by this installer. |
+| `pgo_admin_role_name`             | pgoadmin    | **Required** | Sets the name of the PostgreSQL Operator role that is utilized for administrative operations performed by the PostgreSQL Operator. |
+| `pgo_apiserver_port`              | 8443        |          | Set to configure the port used by the Crunchy PostgreSQL Operator apiserver.                                                                                                     |
+| `pgo_client_install`              | true        |          | Configures the playbooks to install the `pgo` client if set to true.                                                                                                             |
+| `pgo_client_version`              |             | **Required** | Configures which version of `pgo` the playbooks should install.                                                                                                                  |
+| `pgo_disable_eventing`            | false       |          | Set to configure whether or not eventing should be enabled for the Crunchy PostgreSQL Operator installation.                                                                     |
+| `pgo_disable_tls`                 | false       |          | Set to configure whether or not TLS should be enabled for the Crunchy PostgreSQL Operator apiserver.                                                                             |
+| `pgo_image_prefix`                | crunchydata | **Required** | Configures the image prefix used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc).                                             |
+| `pgo_image_tag`                   |             | **Required** | Configures the image tag used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc)                                                 |
+| `pgo_installation_name`           |             | **Required** | The name of the PGO installation.                                                                                                                                                |
+| `pgo_operator_namespace`          |             | **Required** | Set to configure the namespace where Operator will be deployed.                                                                                                                  |
+| `pgo_tls_no_verify`               | false       |          | Set to configure Operator to verify TLS certificates.                                                                                                                            |
+| `primary_storage`                 | storageos   | **Required** | Set to configure which storage definition to use when creating volumes used by PostgreSQL primaries on all newly created clusters.                                               |
+| `prometheus_install`              | true        |          | Set to true to install Crunchy Prometheus timeseries database.                                                                                                                   |
+| `prometheus_storage_access_mode`  |             |          | Set to the access mode used by the configured storage class for Prometheus persistent volumes.                                                                                   |
+| `prometheus_storage_class_name`   |             |          | Set to the name of the storage class used when creating Prometheus persistent volumes.                                                                                           |
+| `replica_storage`                 | storageos   | **Required** | Set to configure which storage definition to use when creating volumes used by PostgreSQL replicas on all newly created clusters.                                                |
+| `scheduler_timeout`               | 3600        | **Required** | Set to a value in seconds to configure the `pgo-scheduler` timeout threshold when waiting for schedules to complete.                                                             |
+| `service_type`                    | ClusterIP   |          | Set to configure the type of Kubernetes service provisioned on all newly created clusters.                                                                                       |
+| `pgo_cluster_admin`               | false       |          | Determines whether or not the `cluster-admin` role is assigned to the PGO service account. Must be `true` to enable PGO namespace & role creation when installing in OpenShift.  |
 
 {{% notice tip %}}
 To retrieve the `kubernetes_context` value for Kubernetes installs, run the following command:
@@ -170,59 +230,6 @@ To retrieve the `kubernetes_context` value for Kubernetes installs, run the foll
 ```bash
 kubectl config current-context
 ```
-{{% /notice %}}
-
-### Minimal Variable Requirements
-
-The following variables should be configured at a minimum to deploy the Crunchy
-PostgreSQL Operator:
-
-* `kubernetes_context`
-* `openshift_user`
-* `openshift_password`
-* `openshift_token`
-* `openshift_host`
-* `openshift_skip_tls_verify`
-* `pgo_installation_name`
-* `pgo_admin_username`
-* `pgo_admin_password`
-* `pgo_admin_role_name`
-* `pgo_admin_perms`
-* `pgo_operator_namespace`
-* `namespace`
-* `pgo_image_prefix`
-* `pgo_image_tag`
-* `ccp_image_prefix`
-* `ccp_image_tag`
-* `pgo_client_version`
-* `auto_failover`
-* `backrest`
-* `badger`
-* `metrics`
-* `archive_mode`
-* `archive_timeout`
-* `auto_failover_sleep_secs`
-* `auto_failover_replace_replica`
-* `db_password_age_days`
-* `db_password_length`
-* `create_rbac`
-* `db_name`
-* `db_port`
-* `db_replicas`
-* `db_user`
-* `primary_storage`
-* `replica_storage`
-* `backrest_storage`
-* `backup_storage`
-* `pgbadgerport`
-* `exporterport`
-* `scheduler_timeout`
-
-Additionally, `storage` variables will need to be defined to provide the Crunchy PGO with any required storage configuration.  Guidance for defining `storage` variables can be found in the next section.
-
-{{% notice tip %}}
-Users should remove or comment out the `kubernetes` or `openshift` variables if they're not being used
-from the inventory file.  Both sets of variables cannot be used at the same time.
 {{% /notice %}}
 
 ## Storage
