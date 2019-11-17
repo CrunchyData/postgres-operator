@@ -3,7 +3,7 @@ FROM ubi7
 LABEL Vendor="Crunchy Data Solutions" \
 	Version="7.7" \
 	name="pgo-scheduler" \
-	Release="4.1.0" \
+	Release="4.1.1" \
 	summary="Crunchy Data PostgreSQL Operator - Scheduler" \
 	description="Crunchy Data PostgreSQL Operator - Scheduler"
 

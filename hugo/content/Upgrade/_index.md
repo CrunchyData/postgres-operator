@@ -1,6 +1,6 @@
 ---
 title: "Upgrade"
-Latest Release: 4.1.0 {docdate}
+Latest Release: 4.1.1 {docdate}
 draft: false
 weight: 8
 ---
@@ -20,6 +20,8 @@ This section of the documentation shows specific steps required to upgrade diffe
 
 [Upgrade Postgres Operator from 4.0.1 to 4.1.0 (Ansible)] ( {{< relref "upgrade/upgrade40to41_ansible.md" >}})
 
+[Upgrade Postgres Operator from 4.1.0 to a patch release] ( {{< relref "upgrade/upgrade41.md" >}})
+
 ## Upgrading A Postgres Cluster
 
 Using the operator, it is possible to upgrade a postgres cluster in place.  When a pgo upgrade command is issued, and a --CCPImageTag is specified, the operator will upgrade each replica and the primary to the new CCPImageTag version. It is important to note that the postgres version of the new container should be compatible with the current running version. There is currently no version check done to ensure compatibility.
@@ -34,8 +36,8 @@ At this time, the backrest-repo container is not upgraded during this upgrade as
 
 ## Minor Upgrade Example
 
-In this example, we are upgrading a cluster from PostgreSQL 11.4 to 11.5 using the `crunchy-postgres:centos7-11.5-2.4.2` container:
+In this example, we are upgrading a cluster from PostgreSQL 11.4 to 11.5 using the `crunchy-postgres:centos7-11.6-4.1.1` container:
 
-`pgo upgrade mycluster --ccp-image-tag=centos7-11.5-2.4.2`
+`pgo upgrade mycluster --ccp-image-tag=centos7-11.6-4.1.1`
 
 For more information, please see the `pgo upgrade` documentation [here.] ( {{< relref "operatorcli/cli/pgo_upgrade.md" >}})

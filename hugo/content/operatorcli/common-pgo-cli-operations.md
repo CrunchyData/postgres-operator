@@ -17,7 +17,7 @@ A user will typically start using the PostgreSQL Operator by creating PostgreSQL
 
     pgo create cluster mycluster -n pgouser1
 
-This command creates a PostgreSQL cluster with a single PostgreSQL instance in the *pgouser1* namespace. 
+This command creates a PostgreSQL cluster with a single PostgreSQL instance in the *pgouser1* namespace.
 
 You can see the PostgreSQL cluster using the following:
 
@@ -34,7 +34,7 @@ You can optionally add a PostgreSQL replica instance to your PostgreSQL cluster 
 You can create a PostgreSQL cluster initially with a PostgreSQL replica as follows:
 
     pgo create cluster mycluster --replica-count=1 -n pgouser1
-    
+
 You can cluster using the PostgreSQL + PostGIS container image:
 
     pgo create cluster mygiscluster --ccp-image=crunchy-postgres-gis -n pgouser1
@@ -45,7 +45,7 @@ You can cluster using with a Custom ConfigMap:
 
 To view the PostgreSQL logs, you can enter commands such as:
 
-    pgo ls mycluster -n pgouser1 /pgdata/mycluster/pg_log 
+    pgo ls mycluster -n pgouser1 /pgdata/mycluster/pg_log
     pgo cat mycluster -n pgouser1 /pgdata/mycluster/pg_log/postgresql-Mon.log | tail -3
 
 #### Scaledown a Cluster
@@ -72,8 +72,8 @@ You can remove the persistent volumes when removing a PostgreSQL cluster by spec
 You can see a comparison of PostgreSQL data size versus the Persistent volume claim size by entering the following:
 
     pgo df mycluster -n pgouser1
-    
-    
+
+
 ### Backups
 
 #### pgbackrest Operations
@@ -93,13 +93,13 @@ See [pgbackrest documentation](https://access.crunchydata.com/documentation/pgba
 You can create a PostgreSQL cluster that does not include pgbackrest if you specify the following:
 
     pgo create cluster mycluster --pgbackrest=false -n pgouser1
-    
+
 #### Perform a pgbasebackup backup
-    
+
 Alternatively, you can perform a *pgbasebackup* job as follows:
 
     pgo backup mycluster --backup-type=pgbasebackup -n pgouser1
-    
+
 #### Perform a pgdump backup
 
 	pgo backup mycluster --backup-type=pgdump -n pgouser1
@@ -178,12 +178,12 @@ If you would like to control the name of the PVC created when performing a pgbas
 #### Restore from pgdump backup
 
 	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc --pitr-target="2019-01-15-00-03-25" -n pgouser1
-	
+
 To restore the most recent pgdump at the default path, leave off a timestamp:
-	
+
 	pgo restore mycluster --backup-type=pgdump --backup-pvc=mycluster-pgdump-pvc -n pgouser1
-    
-    
+
+
 ### Label Operations
 
 #### Apply a Label to a PostgreSQL Cluster
@@ -242,7 +242,7 @@ To see the PostgreSQL Operator server configuration, enter:
 To see what namespaces exist and if you have access to them, enter:
 
     pgo show namespace -n pgouser1
-	
+
 
 ### Fail-over Operations
 
@@ -296,7 +296,7 @@ have an entry for the replica service, add the following
 configuration to pgbouncer.ini:
 
     {{.PG_REPLICA_SERVICE_NAME}} = host={{.PG_REPLICA_SERVICE_NAME}} port={{.PG_PORT}} auth_user={{.PG_USERNAME}} dbname={{.PG_DATABASE}}
-    
+
 You can remove a pgbouncer from a cluster as follows:
 
     pgo delete pgbouncer mycluster -n pgouser1
@@ -314,8 +314,8 @@ You can also add a pgpool to a PostgreSQL cluster after initial creation as foll
 You can remove a pgpool from a PostgreSQL cluster as follows:
 
     pgo delete pgpool mycluster -n pgouser1
-    
-#### pgbadger Deployment 
+
+#### pgbadger Deployment
 
 You can create a pgbadger sidecar container in your PostgreSQL cluster
 pod as follows:
@@ -329,8 +329,8 @@ into your PostgresQL cluster pod as follows:
 
     pgo create cluster mycluster --metrics -n pgouser1
 
-Note: backend metric storage such as Prometheus and front end visualization software such as Grafana are not created automatically by the PostgreSQL Operator.  For instructions on installing Grafana and 
-Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/2.4.1/examples/metrics/metrics/).
+Note: backend metric storage such as Prometheus and front end visualization software such as Grafana are not created automatically by the PostgreSQL Operator.  For instructions on installing Grafana and
+Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/4.1.1/examples/metrics/metrics/).
 
 ### Scheduled Tasks
 

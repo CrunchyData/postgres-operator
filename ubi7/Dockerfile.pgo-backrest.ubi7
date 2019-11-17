@@ -4,15 +4,15 @@ MAINTAINER support@crunchydata.com
 
 LABEL name="crunchydata/pgo-backrest-" \
     vendor="crunchydata.com" \
-	PostgresVersion="11" \
-	PostgresFullVersion="11.5" \
+	PostgresVersion="12" \
+	PostgresFullVersion="12.1" \
 	Version="7.7" \
-	Release="4.1.0" \
+	Release="4.1.1" \
     run='docker run -d -p 8080:80 --name=web-app web-app' \
     summary="Crunchy Data PostgreSQL Operator - pgBackRest" \
     description="pgBackRest image that is integrated for use with Crunchy Data's PostgreSQL Operator."
 
-ENV PGVERSION="11" BACKREST_VERSION="2.18"
+ENV PGVERSION="12" BACKREST_VERSION="2.18"
 
 # Crunchy Postgres repo
 ADD conf/RPM-GPG-KEY-crunchydata  /

@@ -388,7 +388,7 @@ into your Postgres cluster pod as follows:
 Note: backend metric storage such as Prometheus and front end
 visualization software such as Grafana are not created automatically
 by the PostgreSQL Operator.  For instructions on installing Grafana and
-Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/2.4.2/examples/metrics/metrics/).
+Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/4.1.1/examples/metrics/metrics/).
 
 ### Scheduled Tasks
 
@@ -537,7 +537,7 @@ Postgres users can be created using the following command examples:
     pgo create user mycluster --username=somepguser --password=somepassword --managed
     pgo create user --selector=name=mycluster --username=somepguser --password=somepassword --managed
 
-Those commands are identical in function, and create on the mycluster Postgres cluster, a user named *somepguser*, with a password of *somepassword*, the account is *managed* meaning that 
+Those commands are identical in function, and create on the mycluster Postgres cluster, a user named *somepguser*, with a password of *somepassword*, the account is *managed* meaning that
 these credentials are stored as a Secret on the Kube cluster in the Operator
 namespace.
 

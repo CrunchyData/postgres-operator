@@ -18,8 +18,8 @@ Operator end-users are only required to install the pgo CLI client on their host
 
 The Operator can be deployed by multiple methods including:
 
- * default installation 
- * Ansible playbook installation 
+ * default installation
+ * Ansible playbook installation
  * Openshift Console installation using OLM
 
 
@@ -31,7 +31,7 @@ The Operator follows a golang project structure, you can create a structure as f
     cd $HOME/odev/src/github.com/crunchydata
     git clone https://github.com/CrunchyData/postgres-operator.git
     cd postgres-operator
-	git checkout v4.1.0
+	git checkout v4.1.1
 
 
 This creates a directory structure under your HOME directory name *odev* and clones the current Operator version to that structure.  
@@ -47,7 +47,7 @@ To manually configure the environment variables, refer to the [environment docum
 
 
 For various scripts used by the Operator, the *expenv* utility is required, download this utility from the Github Releases page, and place it into your PATH (e.g. $HOME/odev/bin).
-{{% notice tip %}}There is also a Makefile target that includes is *expenv* and several other dependencies that are only needed if you plan on building from source: 
+{{% notice tip %}}There is also a Makefile target that includes is *expenv* and several other dependencies that are only needed if you plan on building from source:
 
     make setup
 
@@ -136,7 +136,7 @@ Listed above are the *pgo.yaml* sections related to storage choices.  *PrimarySt
 This sort of configuration allows for a PostgreSQL primary and replica to use different storage if you want.  Other storage settings like *AccessMode*, *Size*, *StorageType*, *StorageClass*, and *Fsgroup* further define the storage configuration.  Currently, NFS, HostPath, and Storage Classes are supported in the configuration.
 
 As part of the Operator installation, you will need to adjust these storage settings to suit your deployment requirements.  For users wanting to try
-out the Operator on Google Kubernetes Engine you would make the 
+out the Operator on Google Kubernetes Engine you would make the
 following change to the storage configuration in pgo.yaml:
 
 
@@ -145,7 +145,7 @@ For NFS Storage, it is assumed that there are sufficient Persistent Volumes (PV)
 
     ./pv/create-nfs-pv.sh
 
-That script looks for the IP address of an NFS server using the 
+That script looks for the IP address of an NFS server using the
 environment variable PGO_NFS_IP you would set in your .bashrc environment.
 
 A similar script is provided for HostPath persistent volume creation if
@@ -154,8 +154,8 @@ you wanted to use HostPath for testing:
 ./pv/create-pv.sh
 ```
 
-Adjust the above PV creation scripts to suit your local requirements, the 
-purpose of these scripts are solely to produce a test set of Volume to test the 
+Adjust the above PV creation scripts to suit your local requirements, the
+purpose of these scripts are solely to produce a test set of Volume to test the
 Operator.
 
 Other settings in *pgo.yaml* are described in the [pgo.yaml Configuration](/configuration/pgo-yaml-configuration) section of the documentation.
@@ -210,9 +210,9 @@ Tor create the Kube RBAC used by the Operator, run the following as a cluster-ad
 
     make installrbac
 
-This set of Resources is created a single time unless a new Operator 
-release requires these Resources to be recreated.  Note that when you 
-run *make installrbac* the set of keys used by the Operator REST API and 
+This set of Resources is created a single time unless a new Operator
+release requires these Resources to be recreated.  Note that when you
+run *make installrbac* the set of keys used by the Operator REST API and
 also the pgbackrest ssh keys are generated.  
 
 Verify the Operator Custom Resource Definitions are created as follows:
@@ -231,13 +231,13 @@ At this point, you as a normal Kubernetes user should be able to deploy the Oper
 
 This will cause any existing Operator to be removed first, then the configuration to be bundled into a ConfigMap, then the Operator Deployment to be created.
 
-This will create a postgres-operator Deployment and a postgres-operator Service.Operator administrators needing to make changes to the Operator 
+This will create a postgres-operator Deployment and a postgres-operator Service.Operator administrators needing to make changes to the Operator
 configuration would run this make target to pick up any changes to pgo.yaml,
 pgo users/roles,  or the Operator templates.
 
 ## Default Installation - Completely Cleaning Up
 
-You can completely remove all the namespaces you have previously 
+You can completely remove all the namespaces you have previously
 created using the default installation by running the following:
 
     make cleannamespaces
@@ -247,10 +247,10 @@ created previously.
 
 
 ## pgo CLI Installation
-Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the GitHub Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases). Crunchy Enterprise Customer can download the pgo binaries from https://access.crunchydata.com/ on the downloads page. 
+Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the GitHub Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases). Crunchy Enterprise Customer can download the pgo binaries from https://access.crunchydata.com/ on the downloads page.
 
-The *pgo* client is provided in Mac, Windows, and Linux binary formats, 
-download the appropriate client to your local laptop or workstation to work 
+The *pgo* client is provided in Mac, Windows, and Linux binary formats,
+download the appropriate client to your local laptop or workstation to work
 with a remote Operator.
 
 {{% notice info %}}
@@ -313,4 +313,3 @@ Using the pgo CLI, you can verify the versions of the client and server match as
     pgo version
 
 This also tests connectivity between your pgo client host and the Operator server.
-

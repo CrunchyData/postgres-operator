@@ -6,7 +6,7 @@ draft: false
 
  <img width="25%" src="crunchy_logo.png"/>
 
-Latest Release: 4.1.0
+Latest Release: 4.1.1
 
 The *postgres-operator* is a controller that runs within a Kubernetes cluster that provides a means to deploy and manage PostgreSQL clusters.
 
@@ -29,7 +29,7 @@ The Operator is validated for deployment on Kubernetes, OpenShift, and VMware En
 
 The Operator includes various components that get deployed to your
 Kubernetes cluster as shown in the following diagram and detailed
-in the [Design](/design). 
+in the [Design](/design).
 
 ![Architecture](/Operator-Architecture.png)
 
@@ -40,11 +40,10 @@ The following documentation is provided:
 
  - [pgo CLI Syntax and Examples](/operatorcli)
  - [Installation](/installation)
- - [Configuration](/configuration) 
- - [pgo.yaml Configuration](/configuration/pgo-yaml-configuration) 
- - [Security](/security) 
- - [Design Overview](/gettingstarted/design/designoverview) 
- - [Developing](/installation/developer-setup) 
+ - [Configuration](/configuration)
+ - [pgo.yaml Configuration](/configuration/pgo-yaml-configuration)
+ - [Security](/security)
+ - [Design Overview](/gettingstarted/design/designoverview)
+ - [Developing](/installation/developer-setup)
  - [Upgrading the Operator](/upgrade)
  - [Contributing](/contributing/documentation-updates)
-

@@ -1,6 +1,6 @@
 ---
 title: "Upgrade PGO 3.5 Minor Versions"
-Latest Release: 4.1.0 {docdate}
+Latest Release: 4.1.1 {docdate}
 draft: false
 weight: 8
 ---
@@ -18,20 +18,20 @@ As with any upgrade, please ensure you have taken recent backups of all relevant
 You will need the following items to complete the upgrade:
 
 * The latest 3.5.X code for the Postgres Operator available
-* The latest 3.5.X PGO client binary 
+* The latest 3.5.X PGO client binary
 * Finally, these instructions assume you are executing from $COROOT in a terminal window and that you are using the same user from your previous installation. This user must also still have admin privileges in your Kubernetes or Openshift environment.
 
 ##### Step 0
-Run `pgo show config` and save this output to compare at the end to ensure you don't miss any of your current configuration changes. 
+Run `pgo show config` and save this output to compare at the end to ensure you don't miss any of your current configuration changes.
 
-##### Step 1 
+##### Step 1
 Update environment variables in the bashrc
 
     export CO_VERSION=3.5.X
 
 If you are pulling your images from the same registry as before this should be the only update to the 3.5.X environment variables.
 
-source the updated bash file: 
+source the updated bash file:
 
     source ~/.bashrc
 
@@ -58,20 +58,20 @@ Verify the Operator is running:
 
 
 ##### Step 4  
-Update the PGO client binary to 3.5.X by replacing the binary file with the new one. 
+Update the PGO client binary to 3.5.X by replacing the binary file with the new one.
 Run which pgo to ensure you are replacing the current binary.
 
 ##### Step 5  
 Make sure that any and all configuration changes have been updated.  
-Run: 
+Run:
 
-    pgo show config 
+    pgo show config
 
 This will print out the current configuration that the operator is using.  Ensure you made any configuration changes required, you can compare this output with Step 0 to ensure no settings are missed.  If you happened to miss a setting, update the pgo.yaml file and rerun make deployoperator
 
 
 ##### Step 6
-The Operator is now upgraded to 3.5.X. 
+The Operator is now upgraded to 3.5.X.
 Verify this by running:
 
     pgo version
@@ -87,7 +87,7 @@ Before beginning your upgrade procedure, be sure to consult the [Compatibility R
 
 {{% / notice %}}
 
-First, update the deployment of each replica, one at a time, with the new image version: 
+First, update the deployment of each replica, one at a time, with the new image version:
 
 ```
 kubectl edit deployment.apps/yourcluster
@@ -137,7 +137,7 @@ kubectl create -f <cluster-name>-backrest-repo.yaml
 Verify that the correct images are being used for the cluster. Run `pgo show cluster <cluster-name>` on your cluster and check the version. Describe each of the pods in your cluster and verify that the image that is being used is correct.
 ```
 pgo show cluster <cluster-name>
-kubectl get pods 
+kubectl get pods
 kubectl describe pod <cluster-name>-<id>
 kubectl describe pod <cluster-name>-backrest-shared-repo-<id>
 ```
@@ -148,9 +148,8 @@ kubectl exec -it <cluster-name>-<id> -- pgbackrest version
 kubectl exec -it <cluster-name>-backrest-shared-repo-<id> -- pgbackrest version
 pgo backup <cluster-name> --backup-type=pgbackrest
 ```
-You've now completed the upgrade and are running Crunchy PostgreSQL Operator v3.5.X, you can confirm this by running pgo version from the command line and running 
+You've now completed the upgrade and are running Crunchy PostgreSQL Operator v3.5.X, you can confirm this by running pgo version from the command line and running
 
-    pgo show cluster <cluster-name> 
+    pgo show cluster <cluster-name>
 
 on each cluster. For this minor upgrade, most existing settings and related services (such as pgbouncer, backup schedules and existing policies) are expected to work, but should be tested for functionality and adjusted or recreated as necessary.
-
