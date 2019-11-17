@@ -7,7 +7,7 @@ LABEL name="postgres-operator" \
 	summary="Crunchy Data PostgreSQL Operator" \
 	description="Crunchy Data PostgreSQL Operator"
 
-ENV PGVERSION="11"
+ENV PGVERSION="12"
 
 COPY redhat/atomic/postgres_operator/help.1 /help.1
 COPY redhat/atomic/postgres_operator/help.md /help.md

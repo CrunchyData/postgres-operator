@@ -7,7 +7,7 @@ LABEL name="pgo-apiserver" \
 	summary="Crunchy Data PostgreSQL Operator - Apiserver" \
 	description="Crunchy Data PostgreSQL Operator - Apiserver"
 
-ENV PGVERSION="11"
+ENV PGVERSION="12"
 
 COPY redhat/atomic/pgo_apiserver/help.1 /help.1
 COPY redhat/atomic/pgo_apiserver/help.md /help.md

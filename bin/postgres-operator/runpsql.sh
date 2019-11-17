@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 # Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,12 +16,12 @@
 #echo $1 is the password
 #echo $2 is the host ip
 
-SLEEP_TIME=2 
+SLEEP_TIME=2
 FAILURES=0
 MAX_FAILURES=7
 while true; do
         sleep $SLEEP_TIME
-        /usr/pgsql-11/bin/pg_isready  --dbname=postgres --host=$2 --port=5432  --username=postgres
+        /usr/pgsql-12/bin/pg_isready  --dbname=postgres --host=$2 --port=5432  --username=postgres
         if [ $? -eq 0 ]
         then
                 echo "Successfully reached master @ " `date`

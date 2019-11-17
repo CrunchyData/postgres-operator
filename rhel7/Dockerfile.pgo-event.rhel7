@@ -7,7 +7,7 @@ LABEL name="pgo-event" \
     summary="Crunchy Data PostgreSQL Operator - pgo-event" \
     description="Crunchy Data PostgreSQL Operator - pgo-event"
 
-ENV PGVERSION="11"
+ENV PGVERSION="12"
 
 COPY redhat/atomic/pgo_event/help.1 /help.1
 COPY redhat/atomic/pgo_event/help.md /help.md

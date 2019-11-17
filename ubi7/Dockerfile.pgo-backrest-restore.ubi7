@@ -18,7 +18,7 @@ RUN yum -y install \
 	crunchy-backrest-"${BACKREST_VERSION}" \
 	openssh-clients \
 	openssh-server \
-	postgresql11-server \
+	postgresql12-server \
 	procps-ng \
 	psmisc \
 	&& yum -y clean all

@@ -6,7 +6,7 @@ LABEL name="pgo-sqlrunner" \
 	summary="Crunchy Data PostgreSQL Operator - SQL Runner" \
 	description="Crunchy Data PostgreSQL Operator - SQL Runner"
 
-ENV PGVERSION="11"
+ENV PGVERSION="12"
 ENV PGROOT="/usr/pgsql-${PGVERSION}"
 
 COPY redhat/atomic/pgo_sqlrunner/help.1 /help.1

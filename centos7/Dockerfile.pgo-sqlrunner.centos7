@@ -17,7 +17,7 @@ RUN yum -y install epel-release \
 		hostname  \
 		nss_wrapper \
 		procps-ng \
-		postgresql11 \
+		postgresql12 \
 	&& yum clean all -y
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgconf \

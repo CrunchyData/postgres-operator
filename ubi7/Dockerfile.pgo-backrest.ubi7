@@ -15,7 +15,7 @@ COPY redhat/atomic/pgo_backrest/help.md /help.md
 RUN yum -y install \
 	--disableplugin=subscription-manager \
 	--setopt=skip_missing_names_on_install=False \
-	postgresql11-server \
+	postgresql12-server \
  	crunchy-backrest-"${BACKREST_VERSION}" \
 	&& yum -y clean all
 

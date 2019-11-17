@@ -13,7 +13,7 @@ COPY redhat/atomic/pgo_backrest/help.1 /help.1
 COPY redhat/atomic/pgo_backrest/help.md /help.md
 
 RUN yum -y install \
-	postgresql11-server \
+	postgresql12-server \
 	crunchy-backrest-"${BACKREST_VERSION}" \
 	&& yum -y clean all
 
