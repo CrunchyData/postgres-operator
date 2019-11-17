@@ -1,6 +1,6 @@
 ---
 title: "Upgrade PGO 4.0.1 to 4.1.0 (Ansible)"
-Latest Release: 4.1.0 {docdate}
+Latest Release: 4.1.1 {docdate}
 draft: false
 weight: 8
 ---
@@ -41,7 +41,7 @@ Save a copy of your current inventory file with a new name (such as `inventory.b
 
 
 ##### Step 2
-Update the new inventory file with the appropriate values for your new Operator installation, as described in the [Ansible Install Prerequisites] ( {{< relref "installation/install-with-ansible/prerequisites.md" >}}) and the [Compatibility Requirements Guide] ( {{< relref "configuration/compatibility.md" >}}). 
+Update the new inventory file with the appropriate values for your new Operator installation, as described in the [Ansible Install Prerequisites] ( {{< relref "installation/install-with-ansible/prerequisites.md" >}}) and the [Compatibility Requirements Guide] ( {{< relref "configuration/compatibility.md" >}}).
 
 
 ##### Step 3
@@ -64,7 +64,7 @@ Once the Operator is installed and functional, create new 4.1 clusters with the 
 	pgo create cluster <clustername> -n <namespace>
 
 ##### Step 6
-To verify cluster status, run 
+To verify cluster status, run
         pgo test <clustername> -n <namespace>
 Output should be similar to:
 ```
@@ -74,7 +74,6 @@ psql -p 5432 -h 10.104.74.189 -U primaryuser postgres is Working
 psql -p 5432 -h 10.104.74.189 -U primaryuser userdb is Working
 psql -p 5432 -h 10.104.74.189 -U testuser postgres is Working
 psql -p 5432 -h 10.104.74.189 -U testuser userdb is Working
-``` 
+```
 ##### Step 7
 Scale up to the required number of replicas, as needed.
-

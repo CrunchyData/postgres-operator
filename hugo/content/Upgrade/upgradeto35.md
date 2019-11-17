@@ -1,6 +1,6 @@
 ---
 title: "Upgrade to PGO 3.5 From Previous Versions"
-Latest Release: 4.1.0 {docdate}
+Latest Release: 4.1.1 {docdate}
 draft: false
 weight: 8
 ---
@@ -40,7 +40,7 @@ The ability to select nodes based on a selector string was added.  For this to f
 
 The pgo.yaml file now includes a new storage configuration, XlogStorage, which when set will cause the xlog volume to be allocated using this storage configuration. If not set, the PrimaryStorage configuration will be used.
 
-The pgo.yaml file now includes a new storage configuration, BackrestStorage, will cause the pgbackrest shared repository volume to be allocated using this storage configuration. 
+The pgo.yaml file now includes a new storage configuration, BackrestStorage, will cause the pgbackrest shared repository volume to be allocated using this storage configuration.
 
 The pgo.yaml file now includes a setting, AutofailReplaceReplica, which will enable or disable whether a new replica is created as part of a fail-over. This is turned off by default.
 

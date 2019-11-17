@@ -7,7 +7,7 @@ LABEL name="crunchydata/pgo-backrest-" \
     summary="Crunchy Data PostgreSQL Operator - pgBackRest" \
     description="pgBackRest image that is integrated for use with Crunchy Data's PostgreSQL Operator."
 
-ENV PGVERSION="11" BACKREST_VERSION="2.18"
+ENV PGVERSION="12" BACKREST_VERSION="2.18"
 
 COPY redhat/atomic/pgo_backrest/help.1 /help.1
 COPY redhat/atomic/pgo_backrest/help.md /help.md

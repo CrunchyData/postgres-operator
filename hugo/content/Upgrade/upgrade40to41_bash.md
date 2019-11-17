@@ -1,6 +1,6 @@
 ---
 title: "Upgrade PGO 4.0.1 to 4.1.0 (Bash)"
-Latest Release: 4.1.0 {docdate}
+Latest Release: 4.1.1 {docdate}
 draft: false
 weight: 8
 ---
@@ -121,7 +121,7 @@ Verify the Operator is running:
 ##### Step 7
 Next, update the PGO client binary to 4.1.0 by replacing the existing 4.0 binary with the latest 4.1.0 binary available.
 
-You can run: 
+You can run:
 
     which pgo
 
@@ -151,7 +151,7 @@ Once the Operator is installed and functional, create new 4.1 clusters with the 
 	pgo create cluster <clustername> -n <namespace>
 
 ##### Step 11
-To verify cluster status, run 
+To verify cluster status, run
         pgo test <clustername> -n <namespace>
 Output should be similar to:
 ```
@@ -161,7 +161,6 @@ psql -p 5432 -h 10.104.74.189 -U primaryuser postgres is Working
 psql -p 5432 -h 10.104.74.189 -U primaryuser userdb is Working
 psql -p 5432 -h 10.104.74.189 -U testuser postgres is Working
 psql -p 5432 -h 10.104.74.189 -U testuser userdb is Working
-``` 
+```
 ##### Step 12
 Scale up to the required number of replicas, as needed.
-

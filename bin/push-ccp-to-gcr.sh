@@ -16,7 +16,7 @@
 GCR_IMAGE_PREFIX=gcr.io/crunchy-dev-test
 
 CCP_IMAGE_PREFIX=crunchydata
-CCP_IMAGE_TAG=centos7-11.5-2.4.2
+CCP_IMAGE_TAG=centos7-12.1-4.1.1
 
 IMAGES=(
 crunchy-prometheus
@@ -35,4 +35,3 @@ do
                 $GCR_IMAGE_PREFIX/$image:$CCP_IMAGE_TAG
         gcloud docker -- push $GCR_IMAGE_PREFIX/$image:$CCP_IMAGE_TAG
 done
-

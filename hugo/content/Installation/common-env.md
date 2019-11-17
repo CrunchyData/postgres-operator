@@ -15,24 +15,23 @@ Variable | Ansible Inventory | Example | Description
 -------- | ----------------- | ------- | -----------
 `DISABLE_EVENTING` | pgo_disable_eventing | false | Disable Operator eventing subsystem
 `DISABLE_TLS` | pgo_disable_tls | false | Disable TLS for Operator
-`GOPATH` |  | $HOME/odev | Golang project directory 
-`GOBIN` |  | $GOPATH/bin | Golang binary target directory 
-`NAMESPACE` | namespace | pgouser1 | Namespaces monitored by Operator 
-`PGOROOT` |  | $GOPATH/src/github.com/crunchydata/postgres-operator | Operator repository location 
-`PGO_APISERVER_PORT` | pgo_apiserver_port | 8443 | HTTP(S) port for Operator API server 
-`PGO_BASEOS` |  | centos7 | Base OS for container images 
+`GOPATH` |  | $HOME/odev | Golang project directory
+`GOBIN` |  | $GOPATH/bin | Golang binary target directory
+`NAMESPACE` | namespace | pgouser1 | Namespaces monitored by Operator
+`PGOROOT` |  | $GOPATH/src/github.com/crunchydata/postgres-operator | Operator repository location
+`PGO_APISERVER_PORT` | pgo_apiserver_port | 8443 | HTTP(S) port for Operator API server
+`PGO_BASEOS` |  | centos7 | Base OS for container images
 `PGO_CA_CERT` |  | $PGOROOT/conf/postgres-operator/server.crt | Server certificate and CA trust
 `PGO_CMD` |  | kubectl | Cluster management tool executable
 `PGO_CLIENT_CERT` |  | $PGOROOT/conf/postgres-operator/server.crt | TLS Client certificate
 `PGO_CLIENT_KEY` |  | $PGOROOT/conf/postgres-operator/server.crt | TLS Client certificate private key
 `PGO_IMAGE_PREFIX` | pgo_image_prefix | crunchydata | Container image prefix
-`PGO_IMAGE_TAG` | pgo_image_tag | $PGO_BASEOS-$PGO_VERSION | OS/Version tagging info for images 
-`PGO_INSTALLATION_NAME` | pgo_installation_name | devtest | Unique name given to Operator installation 
-`PGO_OPERATOR_NAMESPACE` | pgo_operator_namespace | pgo | Kubernetes namespace for the operator 
-`PGO_VERSION` |  | 4.1.0 | Operator version 
+`PGO_IMAGE_TAG` | pgo_image_tag | $PGO_BASEOS-$PGO_VERSION | OS/Version tagging info for images
+`PGO_INSTALLATION_NAME` | pgo_installation_name | devtest | Unique name given to Operator installation
+`PGO_OPERATOR_NAMESPACE` | pgo_operator_namespace | pgo | Kubernetes namespace for the operator
+`PGO_VERSION` |  | 4.1.1 | Operator version 
 `TLS_NO_VERIFY` | pgo_tls_no_verify | false | Disable certificate verification (e.g. strict hostname checking)
 
 {{% notice tip %}}
 `examples/envs.sh` contains the above variable definitions as well
 {{% /notice %}}
-

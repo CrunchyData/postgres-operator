@@ -41,14 +41,14 @@ The Operator should show the new cluster started:
 
     jeffmc@~ > pgo show cluster fromcrd
 
-    cluster : fromcrd (centos7-11.5-2.4.2)
+    cluster : fromcrd (centos7-12.1-4.1.1)
     	pod : fromcrd-6b4d69df46-4s7bn (Running) on doppio-kube (1/1) (primary)
 	pvc : fromcrd
 	resources : CPU Limit= Memory Limit=, CPU Request= Memory Request=
 	storage : Primary=1G Replica=1G
 	deployment : fromcrd
 	service : fromcrd - ClusterIP (10.97.101.79)
-	labels : pg-cluster=fromcrd pgo-backrest=false primary=true archive=false deployment-name=fromcrd name=fromcrd current-primary=fromcrd pgo-version=4.1.0 archive-timeout=60 crunchy-pgbadger=false crunchy_collect=false 
+	labels : pg-cluster=fromcrd pgo-backrest=false primary=true archive=false deployment-name=fromcrd name=fromcrd current-primary=fromcrd pgo-version=4.1.1 archive-timeout=60 crunchy-pgbadger=false crunchy_collect=false
 
 Notice the user credentials we created:
 
@@ -72,7 +72,7 @@ Lastly, lets see if the cluster responds:
 
     jeffmc@~ > pgo test fromcrd
 
-    cluster : fromcrd 
+    cluster : fromcrd
 	psql -p 5432 -h 10.97.101.79 -U postgres postgres is Working
 	psql -p 5432 -h 10.97.101.79 -U postgres userdb is Working
 	psql -p 5432 -h 10.97.101.79 -U primaryuser postgres is Working

@@ -1,7 +1,7 @@
 
 ---
 title: "Configuration Resources"
-Latest Release: 4.1.0 {docdate}
+Latest Release: 4.1.1 {docdate}
 draft: false
 weight: 2
 ---
@@ -29,7 +29,7 @@ configurations are determined by using the default storage
 class on the system you are deploying the Operator into, the
 default storage class is one that is labeled as follows:
 
-    pgo-default-sc=true 
+    pgo-default-sc=true
 
 If no storage class has that label, then the first storage class
 found on the system will be used.  If no storage class is found
@@ -59,10 +59,10 @@ without requiring TLS authentication from the client and without
 the HTTP Basic authentication used for role-based-access.
 
 This configuration is performed by defining the `NOAUTH_ROUTES` environment
-variable for the apiserver container within the Operator pod. 
+variable for the apiserver container within the Operator pod.
 
-Typically, this configuration is made within the `deploy/deployment.json` 
-file for bash-based installations and 
+Typically, this configuration is made within the `deploy/deployment.json`
+file for bash-based installations and
 `ansible/roles/pgo-operator/templates/deployment.json.j2` for ansible installations.
 
 For example:
@@ -96,8 +96,8 @@ this setting:
 /health
 ```
 
-If the health route has its authentication disabled, the existing readiness 
-and liveness probes for the apiserver container could be enhanced by 
+If the health route has its authentication disabled, the existing readiness
+and liveness probes for the apiserver container could be enhanced by
 configuring them with HTTP-based checks against the health route.
 
 
@@ -124,4 +124,3 @@ command line flag.
 The Design [Design](/gettingstarted/design) section of this documentation talks further about
 the use of namespaces within the Operator and configuring different
 deployment models of the Operator.
-

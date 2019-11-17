@@ -1,10 +1,10 @@
 Cluster:
-  PrimaryNodeLabel:  
-  ReplicaNodeLabel:  
+  PrimaryNodeLabel:
+  ReplicaNodeLabel:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-11.5-2.4.2
+  CCPImageTag:  centos7-12.1-4.1.1
   Port:  5432
   PGBadgerPort: 10000
   ExporterPort: 9187
@@ -80,13 +80,13 @@ Storage:
     StorageType:  dynamic
     StorageClass:  rook-ceph-block
     Fsgroup:  26
-DefaultContainerResources: 
-DefaultLoadResources:  
-DefaultLspvcResources:  
-DefaultRmdataResources:  
-DefaultBackupResources:  
-DefaultPgbouncerResources:  
-DefaultPgpoolResources:   
+DefaultContainerResources:
+DefaultLoadResources:
+DefaultLspvcResources:
+DefaultRmdataResources:
+DefaultBackupResources:
+DefaultPgbouncerResources:
+DefaultPgpoolResources:
 ContainerResources:
   small:
     RequestsMemory:  512Mi
@@ -100,7 +100,7 @@ ContainerResources:
     LimitsCPU:  4.0
 Pgo:
   AutofailSleepSeconds:  9
-  PreferredFailoverNode:  
+  PreferredFailoverNode:
   Audit:  false
   PGOImagePrefix:  crunchydata
-  PGOImageTag:  centos7-4.1.0
+  PGOImageTag:  centos7-4.1.1

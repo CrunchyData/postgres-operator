@@ -1,7 +1,7 @@
 
 ---
 title: "PGO YAML"
-Latest Release: 4.1.0 {docdate}
+Latest Release: 4.1.1 {docdate}
 draft: false
 weight: 3
 ---
@@ -10,7 +10,7 @@ weight: 3
 The *pgo.yaml* file contains many different configuration settings as described in this section of the documentation.
 
 The *pgo.yaml* file is broken into major sections as described below:
-## Cluster 
+## Cluster
 
 | Setting |Definition  |
 |---|---|
@@ -18,7 +18,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 |PrimaryNodeLabel        |newly created primary deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
 |ReplicaNodeLabel        |newly created replica deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
 |CCPImagePrefix        |newly created containers will be based on this image prefix (e.g. crunchydata), update this if you require a custom image prefix
-|CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-11.5-2.4.2), unless you override it using the --ccp-image-tag command line flag
+|CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-12.1-4.1.1), unless you override it using the --ccp-image-tag command line flag
 |Port        | the PostgreSQL port to use for new containers (e.g. 5432)
 |PGBadgerPort | the port used to connect to pgbadger (e.g. 10000)
 |ExporterPort | the port used to connect to postgres exporter (e.g. 9187)
@@ -197,11 +197,11 @@ Events:
       Warning  FailedScheduling  49s (x8 over 1m)  default-scheduler  No nodes are available that match all of the predicates: Insufficient memory (1).
 
 ## Overriding Storage Configuration Defaults
- 
+
 
     pgo create cluster testcluster --storage-config=bigdisk -n pgouser1
 
- 
+
 
 That example will create a cluster and specify a storage configuration of *bigdisk* to be used for the primary database storage. The replica storage will default to the value of ReplicaStorage as specified in *pgo.yaml*.
 
@@ -218,4 +218,3 @@ A simple mechanism for partial disaster recovery can be obtained by leveraging n
 
 For example, if you define a Kubernetes storage class that refers to a storage backend that is running within your disaster recovery site, and then use that storage class as
 a storage configuration for your backups, you essentially have moved your backup files automatically to your disaster recovery site thanks to network storage.
-
