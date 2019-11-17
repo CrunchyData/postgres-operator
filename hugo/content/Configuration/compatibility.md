@@ -1,18 +1,24 @@
 
 ---
 title: "Compatibility Requirements"
-Latest Release: 4.1.0 {docdate}
+Latest Release: 4.2.0 {docdate}
 draft: false
 weight: 1
 ---
 
 ## Container Dependencies
 
-The Operator depends on the Crunchy Containers and there are 
+The Operator depends on the Crunchy Containers and there are
 version dependencies between the two projects. Below are the operator releases and their dependent container release. For reference, the Postgres and PgBackrest versions for each container release are also listed.
 
 | Operator Release   |      Container Release      | Postgres | PgBackrest Version
 |:----------|:-------------|:------------|:--------------
+| 4.1.1 | 4.1.1  | 12.1 | 2.18 |
+|||11.6|2.18|
+|||10.11|2.18|
+|||9.6.16|2.18|
+|||9.5.20|2.18|
+||||
 | 4.1.0 | 2.4.2  | 11.5 | 2.17 |
 |||10.10| 2.17|
 |||9.6.15|2.17|
@@ -61,8 +67,8 @@ The Operator is designed and tested on Kubernetes and Openshift Container Platfo
 
 ## Storage
 
-The Operator is designed to support HostPath, NFS, and Storage Classes for 
-persistence.  The Operator does not currently include code specific to 
+The Operator is designed to support HostPath, NFS, and Storage Classes for
+persistence.  The Operator does not currently include code specific to
 a particular storage vendor.
 
 ## Releases
@@ -70,4 +76,3 @@ a particular storage vendor.
 The Operator is released on a quarterly basis often to coincide with Postgres releases.
 
 There are pre-release and or minor bug fix releases created on an as-needed basis.
-
