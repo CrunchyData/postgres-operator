@@ -11,7 +11,7 @@ The PostgreSQL Operator orchestrates a series of PostgreSQL and PostgreSQL relat
 
 ### PostgreSQL Server and Extensions
 
-* **PostgreSQL** (crunchy-postgres).  PostgreSQL database server.  The crunchy-postgres container image is unmodified, open source PostgreSQL packaged and maintained by Crunchy Data. 
+* **PostgreSQL** (crunchy-postgres).  PostgreSQL database server.  The crunchy-postgres container image is unmodified, open source PostgreSQL packaged and maintained by Crunchy Data.
 
 * **PostGIS** (crunchy-postgres-gis).  PostgreSQL database server including the PostGIS extension. The crunchy-postgres-gis container image is unmodified, open source PostgreSQL packaged and maintained by Crunchy Data. This image is identical to the crunchy-postgres image except it includes the open source geospatial extension PostGIS for PostgreSQL in addition to the language extension PL/R which allows for writing functions in the R statistical computing language.
 
@@ -32,9 +32,9 @@ The PostgreSQL Operator orchestrates a series of PostgreSQL and PostgreSQL relat
 
 * **pgbadger** (crunchy-pgbadger).  pgbadger is a PostgreSQL log analyzer with fully detailed reports and graphs.  The crunchy-pgbadger container executes the pgBadger utility, which generates a PostgreSQL log analysis report using a small HTTP server running on the container.
 
-* **pg_upgrade**  (crunchy-upgrade). The crunchy-upgrade container contains 9.5, 9.6, 10, and 11 PostgreSQL packages in order to perform a pg_upgrade from 9.5 to 9.6, 9.6 to 10, and 10 to 11 versions.
+* **pg_upgrade**  (crunchy-upgrade). The crunchy-upgrade container contains 9.5, 9.6, 10, 11, and 12 PostgreSQL packages in order to perform a pg_upgrade from 9.5 to 9.6, 9.6 to 10, 10 to 11, and 11 to 12 versions.
 
-* **scheduler** (crunchy-scheduler).  The crunchy-scheduler container provides a cron like microservice for automating pgBaseBackup and pgBackRest backups within a single namespace. 
+* **scheduler** (crunchy-scheduler).  The crunchy-scheduler container provides a cron like microservice for automating pgBaseBackup and pgBackRest backups within a single namespace.
 
 ### Metrics and Monitoring
 
@@ -49,8 +49,3 @@ The PostgreSQL Operator orchestrates a series of PostgreSQL and PostgreSQL relat
 * **pgbouncer** (crunchy-pgbouncer).  pgbouncer is a lightweight connection pooler for PostgreSQL. The crunchy-pgbouncer container provides a pgbouncer image.
 
 * **pgpool** (crunchy-pgpool).  pgPool II is a middleware that works between PostgreSQL servers and a PostgreSQL database client.  The crunchy-pgpool container executes the utility. pgPool can be used to provide a smart PostgreSQL-aware proxy to a PostgreSQL cluster, both primary and replica, so that applications only have to work with a single database connection.
-
-
-
-
-

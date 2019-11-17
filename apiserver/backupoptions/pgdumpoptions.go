@@ -57,9 +57,9 @@ type pgDumpOptions struct {
 	LockWaitTimeout            string   `flag:"lock-wait-timeout"`
 	LoadViaPartitionRoot       bool     `flag:"load-via-partition-root"`
 	NoComments                 bool     `flag:"no-comments"`
-	NoPublications             bool     `flag:"no-publications"` // PG 10 & 11 only
+	NoPublications             bool     `flag:"no-publications"` // PG 10+
 	NoSecurityLabels           bool     `flag:"no-security-labels"`
-	NoSubscriptions            bool     `flag:"no-subscriptions"` // PG 10 & 11 only
+	NoSubscriptions            bool     `flag:"no-subscriptions"` // PG 10+
 	NoSync                     bool     `flag:"no-sync"`
 	NoTableSpaces              bool     `flag:"no-tablespaces"`
 	NoUnloggedTableData        bool     `flag:"no-unlogged-table-data"`
@@ -67,7 +67,7 @@ type pgDumpOptions struct {
 	Section                    []string `flag:"section"`
 	SerializableDeferrable     bool     `flag:"serializable-deferrable"`
 	Snapshot                   string   `flag:"snapshot"`
-	StrictNames                string   `flag:"strict-names"` // PG 9.6, 10 & 11 only
+	StrictNames                string   `flag:"strict-names"` // PG 9.6+
 	UseSetSessionAuthorization bool     `flag:"use-set-session-authorization"`
 	Role                       string   `flag:"role"`
 }
@@ -95,10 +95,10 @@ type pgDumpAllOptions struct {
 	LockWaitTimeout            string `flag:"lock-wait-timeout"`
 	LoadViaPartitionRoot       bool   `flag:"load-via-partition-root"`
 	NoComments                 bool   `flag:"no-comments"`
-	NoPublications             bool   `flag:"no-publications"` // PG 10 & 11 only
+	NoPublications             bool   `flag:"no-publications"` // PG 10+
 	NoRolePasswords            bool   `flag:"no-role-passwords"`
 	NoSecurityLabels           bool   `flag:"no-security-labels"`
-	NoSubscriptions            bool   `flag:"no-subscriptions"` // PG 10 & 11 only
+	NoSubscriptions            bool   `flag:"no-subscriptions"` // PG 10+
 	NoSync                     bool   `flag:"no-sync"`
 	NoTableSpaces              bool   `flag:"no-tablespaces"`
 	NoUnloggedTableData        bool   `flag:"no-unlogged-table-data"`
@@ -136,12 +136,12 @@ type pgRestoreOptions struct {
 	IfExists                   bool     `flag:"if-exists"`
 	NoComments                 bool     `flag:"no-comments"`
 	NoDataForFailedTables      bool     `flag:"no-data-for-failed-tables"`
-	NoPublications             bool     `flag:"no-publications"` // PG 10 & 11 only
+	NoPublications             bool     `flag:"no-publications"` // PG 10+
 	NoSecurityLabels           bool     `flag:"no-security-labels"`
-	NoSubscriptions            bool     `flag:"no-subscriptions"` // PG 10 & 11 only
+	NoSubscriptions            bool     `flag:"no-subscriptions"` // PG 10+
 	NoTableSpaces              bool     `flag:"no-tablespaces"`
 	Section                    []string `flag:"section"`
-	StrictNames                string   `flag:"strict-names"` // PG 9.6, 10 & 11 only
+	StrictNames                string   `flag:"strict-names"` // PG 9.6+
 	UseSetSessionAuthorization bool     `flag:"use-set-session-authorization"`
 	Role                       string   `flag:"role"`
 }

@@ -14,7 +14,7 @@ LABEL name="crunchydata/pgo-load" \
     io.openshift.expose-services="" \
     io.openshift.tags="crunchy,database"
 
-ENV PGVERSION="11" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm"
+ENV PGVERSION="12" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm"
 
 COPY redhat/licenses /licenses
 COPY licenses /licenses
@@ -29,7 +29,7 @@ RUN yum -y update &&  yum -y install epel-release \
  	nss_wrapper \
 	openssh-clients \
 	procps-ng \
- && yum -y install postgresql11 \
+ && yum -y install postgresql12 \
  && yum clean all -y
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf

@@ -16,7 +16,7 @@ COPY redhat/licenses /licenses
 COPY licenses /licenses
 
 #ADD conf/RPM-GPG-KEY-crunchydata  /
-#ADD conf/crunchypg11.repo /etc/yum.repos.d/
+#ADD conf/crunchypg12.repo /etc/yum.repos.d/
 #RUN rpm --import RPM-GPG-KEY-crunchydata
 
 

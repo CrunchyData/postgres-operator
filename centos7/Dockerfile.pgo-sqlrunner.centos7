@@ -22,7 +22,7 @@ RUN yum -y update \
       hostname  \
       nss_wrapper \
       procps-ng \
- && yum -y install postgresql11 \
+ && yum -y install postgresql12 \
  && yum clean all -y
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgconf \

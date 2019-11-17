@@ -18,11 +18,11 @@ COPY redhat/licenses /licenses
 COPY licenses /licenses
 
 ADD conf/RPM-GPG-KEY-crunchydata  /
-ADD conf/crunchypg11.repo /etc/yum.repos.d/
+ADD conf/crunchypg12.repo /etc/yum.repos.d/
 RUN rpm --import RPM-GPG-KEY-crunchydata
 
 RUN yum -y --enablerepo=rhel-7-server-ose-3.11-rpms --disablerepo=crunchy* update \
- && yum -y install psmisc openssh-server openssh-clients crunchy-backrest-"${BACKREST_VERSION}" postgresql11-server procps-ng \
+ && yum -y install psmisc openssh-server openssh-clients crunchy-backrest-"${BACKREST_VERSION}" postgresql12-server procps-ng \
  && yum -y clean all
 
 RUN mkdir -p /opt/cpm/bin /pgdata && chown -R 26:26 /opt/cpm

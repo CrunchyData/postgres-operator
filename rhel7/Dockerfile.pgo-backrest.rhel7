@@ -16,7 +16,7 @@ ENV PGVERSION="12" BACKREST_VERSION="2.18"
 
 # Crunchy Postgres repo
 ADD conf/RPM-GPG-KEY-crunchydata  /
-ADD conf/crunchypg11.repo /etc/yum.repos.d/
+ADD conf/crunchypg12.repo /etc/yum.repos.d/
 RUN rpm --import RPM-GPG-KEY-crunchydata
 
 COPY redhat/atomic/pgo_backrest/help.1 /help.1
@@ -25,7 +25,7 @@ COPY redhat/licenses /licenses
 COPY licenses /licenses
 
 RUN yum -y --enablerepo=rhel-7-server-ose-3.11-rpms --disablerepo=crunchy* update \
- && yum -y install postgresql11-server \
+ && yum -y install postgresql12-server \
  && yum -y install crunchy-backrest-"${BACKREST_VERSION}" \
  && yum -y clean all
 

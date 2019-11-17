@@ -7,7 +7,7 @@ LABEL Vendor="Crunchy Data Solutions" \
 	summary="Crunchy Data PostgreSQL Operator - SQL Runner" \
 	description="Crunchy Data PostgreSQL Operator - SQL Runner"
 
-ENV PGVERSION="11"
+ENV PGVERSION="12"
 ENV PGROOT="/usr/pgsql-${PGVERSION}"
 
 COPY redhat/atomic/pgo_sqlrunner/help.1 /help.1
@@ -18,7 +18,7 @@ COPY licenses /licenses
 # Crunchy PostgreSQL repository
 
 ADD conf/RPM-GPG-KEY-crunchydata  /
-ADD conf/crunchypg11.repo /etc/yum.repos.d/
+ADD conf/crunchypg12.repo /etc/yum.repos.d/
 RUN rpm --import RPM-GPG-KEY-crunchydata
 
 RUN yum -y update --disableplugin=subscription-manager \

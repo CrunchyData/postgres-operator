@@ -3,9 +3,9 @@
 
 This example shows how you can configure PostgreSQL to use SSL for client authentication.
 
-The example requires SSL certificates and keys to be created. Included in the examples directory is the script called by create.sh to create self-signed certificates (server and client) for the example: 
+The example requires SSL certificates and keys to be created. Included in the examples directory is the script called by create.sh to create self-signed certificates (server and client) for the example:
 
-$PGOROOT/examples/ssl-creator.sh. 
+$PGOROOT/examples/ssl-creator.sh.
 
 Additionally, this script requires the certstrap utility to be installed. An install script is provided to install the correct version for the example if not already installed.
 
@@ -48,7 +48,7 @@ home/pgo/odev/src/github.com/crunchydata/postgres-operator/examples/custom-confi
 
 You should see a connection that looks like the following:
 
-psql (11.5)
+psql (12.1)
 SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, bits: 256, compression: off)
 Type "help" for help.
 

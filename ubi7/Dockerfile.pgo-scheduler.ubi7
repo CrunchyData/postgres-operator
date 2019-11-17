@@ -9,7 +9,7 @@ LABEL Vendor="Crunchy Data Solutions" \
 
 # Crunchy Postgres repo
 ADD conf/RPM-GPG-KEY-crunchydata  /
-ADD conf/crunchypg11.repo /etc/yum.repos.d/
+ADD conf/crunchypg12.repo /etc/yum.repos.d/
 RUN rpm --import RPM-GPG-KEY-crunchydata
 
 COPY redhat/atomic/pgo_scheduler/help.1 /help.1
