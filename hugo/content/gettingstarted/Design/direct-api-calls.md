@@ -11,7 +11,7 @@ The API can also be accessed by interacting directly with the API server. This c
 
 The most basic example of this interaction is getting the version of the API server. You can send a GET request to `$PGO_APISERVER_URL/version` and this will send back a json response including the API server version. This is important because the server version and the client version must match. If you are using `pgo` this means you must have the correct version of the client but with a direct call you can specify the client version as part of the request.
 
-The API server is setup to work with the pgo command line interface so the parameters that are passed to the server can be found by looking at the related flags. For example, the series parameter used in the `create` example below is the same as the `-e, --series` flag that is described in the [pgo cli docs](https://access.crunchydata.com/documentation/postgres-operator/4.1.1/operatorcli/cli/pgo_create_cluster/).
+The API server is setup to work with the pgo command line interface so the parameters that are passed to the server can be found by looking at the related flags. For example, the series parameter used in the `create` example below is the same as the `-e, --series` flag that is described in the [pgo cli docs](https://access.crunchydata.com/documentation/postgres-operator/4.2.0/operatorcli/cli/pgo_create_cluster/).
 
 ###### Get API Server Version
 ```
@@ -27,7 +27,7 @@ You can create a cluster by sending a POST request to `$PGO_APISERVER_URL/cluste
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT \
 -u pgoadmin:examplepassword -H "Content-Type:application/json" --insecure \
 -X POST --data \
-  '{"ClientVersion":"4.1.1",
+  '{"ClientVersion":"4.2.0",
   "Namespace":"pgouser1",
   "Name":"mycluster",
   "Series":1}' \
@@ -41,7 +41,7 @@ The last two examples show you how to `show` and `delete` a cluster. Notice how 
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT \
 -u pgoadmin:examplepassword -H "Content-Type:application/json" --insecure \
 -X POST --data \
-  '{"ClientVersion":"4.1.1",
+  '{"ClientVersion":"4.2.0",
   "Namespace":"pgouser1",
   "Clustername":"mycluster"}' \
 $PGO_APISERVER_URL/showclusters
@@ -52,7 +52,7 @@ $PGO_APISERVER_URL/showclusters
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT \
 -u pgoadmin:examplepassword -H "Content-Type:application/json" --insecure \
 -X POST --data \
-  '{"ClientVersion":"4.1.1",
+  '{"ClientVersion":"4.2.0",
   "Namespace":"pgouser1",
   "Clustername":"mycluster"}' \
 $PGO_APISERVER_URL/clustersdelete

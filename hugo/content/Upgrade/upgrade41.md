@@ -1,6 +1,6 @@
 ---
 title: "Upgrade PostgreSQL Operator 4.1 Minor Versions"
-Latest Release: 4.1.1 {docdate}
+Latest Release: 4.2.0 {docdate}
 draft: false
 weight: 8
 ---

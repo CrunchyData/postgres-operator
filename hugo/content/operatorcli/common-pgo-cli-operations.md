@@ -330,7 +330,7 @@ into your PostgresQL cluster pod as follows:
     pgo create cluster mycluster --metrics -n pgouser1
 
 Note: backend metric storage such as Prometheus and front end visualization software such as Grafana are not created automatically by the PostgreSQL Operator.  For instructions on installing Grafana and
-Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/4.1.1/examples/metrics/metrics/).
+Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/4.2.0/examples/metrics/metrics/).
 
 ### Scheduled Tasks
 
