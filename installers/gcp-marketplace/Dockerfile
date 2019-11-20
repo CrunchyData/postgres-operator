@@ -22,7 +22,8 @@ RUN apt-get update \
 
 COPY ansible/* \
      /opt/postgres-operator/ansible/
-COPY installers/gcp-marketplace/install-job.yaml \
+COPY installers/favicon.png \
+     installers/gcp-marketplace/install-job.yaml \
      installers/gcp-marketplace/install.sh \
      installers/gcp-marketplace/inventory.ini \
      /opt/postgres-operator/
@@ -37,7 +38,9 @@ COPY installers/gcp-marketplace/test-pod.yaml \
      /data-test/manifest/
 
 ARG PGO_VERSION
-RUN for file in \
+RUN env OPERATOR_ICON_BASE64="$(base64 --wrap=0 /opt/postgres-operator/favicon.png)" envsubst '$OPERATOR_ICON_BASE64' \
+    < /data/manifest/application.yaml > /tmp/sponge && mv /tmp/sponge /data/manifest/application.yaml \
+ && for file in \
       /data/schema.yaml \
       /data/manifest/application.yaml \
     ; do envsubst '$PGO_VERSION' < "$file" > /tmp/sponge && mv /tmp/sponge "$file" ; done
