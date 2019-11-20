@@ -4,6 +4,9 @@ metadata:
   name: '${OPERATOR_NAME}'
   labels:
     app.kubernetes.io/name: '${OPERATOR_NAME}'
+  annotations:
+    kubernetes-engine.cloud.google.com/icon: >-
+      data:image/png;base64,${OPERATOR_ICON_BASE64}
 spec:
   selector:
     matchLabels:
@@ -18,8 +21,6 @@ spec:
     description: Enterprise PostgreSQL-as-a-Service for Kubernetes
     type: Crunchy PostgreSQL Operator
     version: '${PGO_VERSION}'
-    icons:
-      - src: https://raw.githubusercontent.com/CrunchyData/crunchy-containers/master/images/crunchy_logo.png
     maintainers:
       - name: Crunchy Data
         url: https://www.crunchydata.com/
