@@ -8,20 +8,20 @@
             "pg-cluster": "{{.ClusterName}}",
             "crunchy-pgpool-pod": "true",
             "service-name": "{{.Name}}",
-	    "vendor": "crunchydata"
+            "vendor": "crunchydata"
         }
     },
     "spec": {
         "replicas": 1,
-	"selector": {
-		"matchLabels": {
-            		"name": "{{.Name}}",
-            		"pg-cluster": "{{.ClusterName}}",
-            		"crunchy-pgpool-pod": "true",
-            		"service-name": "{{.Name}}",
-	    		"vendor": "crunchydata"
-		}
-	},
+        "selector": {
+            "matchLabels": {
+                "name": "{{.Name}}",
+                "pg-cluster": "{{.ClusterName}}",
+                "crunchy-pgpool-pod": "true",
+                "service-name": "{{.Name}}",
+                "vendor": "crunchydata"
+            }
+        },
         "template": {
             "metadata": {
                 "labels": {
@@ -29,7 +29,7 @@
                     "pg-cluster": "{{.ClusterName}}",
                     "crunchy-pgpool-pod": "true",
                     "service-name": "{{.Name}}",
-	    	    "vendor": "crunchydata"
+                    "vendor": "crunchydata"
                 }
             },
             "spec": {
@@ -41,7 +41,7 @@
                         "containerPort": {{.Port}},
                         "protocol": "TCP"
                     }],
-		    {{.ContainerResources }}
+                    {{.ContainerResources }}
                     "env": [{
                         "name": "PG_USERNAME",
                         "valueFrom": {

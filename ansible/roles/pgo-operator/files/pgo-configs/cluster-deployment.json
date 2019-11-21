@@ -11,10 +11,10 @@
     "spec": {
         "replicas": {{.Replicas}},
         "selector": {
-		"matchLabels": {
-		    "vendor": "crunchydata",
-		    {{.DeploymentLabels }}
-		}
+        "matchLabels": {
+            "vendor": "crunchydata",
+            {{.DeploymentLabels }}
+        }
         },
         "template": {
             "metadata": {
@@ -29,8 +29,6 @@
                 {{.SecurityContext }}
 
                 "containers": [
-        
-
             {
                     "name": "database",
                     "image": "{{.CCPImagePrefix}}/{{.CCPImage}}:{{.CCPImageTag}}",
@@ -71,7 +69,7 @@
                         "name": "PGDATA_PATH_OVERRIDE",
                         "value": "{{.DataPathOverride}}"
                     }, {
-			{{.PgmonitorEnvVars}}
+            {{.PgmonitorEnvVars}}
             {{.PgbackrestEnvVars}}
             {{.PgbackrestS3EnvVars}}
                         "name": "PG_DATABASE",
@@ -115,7 +113,6 @@
                             "mountPath": "/recover",
                             "name": "recover-volume"
                         }
-
                     ],
 
                     "ports": [{
@@ -130,7 +127,7 @@
 
                 {{.BadgerAddon }}
 
-		],
+                ],
                 "volumes": [{
                         "name": "pgdata",
                         {{.PVCName}}
@@ -151,7 +148,7 @@
                         "name": "sshd",
                         "secret": {
                             "secretName": "{{.ClusterName}}-backrest-repo-config",
-			    "defaultMode": 511
+                            "defaultMode": 511
                         }
                     }, {
                         "name": "root-volume",

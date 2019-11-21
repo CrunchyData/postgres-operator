@@ -12,10 +12,10 @@
     "spec": {
         "replicas": {{.Replicas}},
         "selector": {
-		"matchLabels": {
-		    "vendor": "crunchydata",
-		    {{.DeploymentLabels }}
-		}
+        "matchLabels": {
+            "vendor": "crunchydata",
+            {{.DeploymentLabels }}
+        }
         },
         "template": {
             "metadata": {
@@ -31,8 +31,6 @@
                 {{.SecurityContext }}
                 "serviceAccountName": "pgo-pg",
                 "containers": [
-        
-
             {
                     "name": "database",
                     "image": "{{.CCPImagePrefix}}/{{.CCPImage}}:{{.CCPImageTag}}",
@@ -67,19 +65,19 @@
                                "key": "init"
                             }
                          }
-                    }, 
+                    },
                     {{ end }}
                     {{if not .IsInit}}
                     {
                         "name": "PGHA_PRIMARY_HOST",
                         "value": "{{.ClusterName}}"
-                    }, 
+                    },
                     {{ end }}
                     {
                         "name": "PATRONI_POSTGRESQL_DATA_DIR",
                         "value": "/pgdata/{{.Name}}"
                     }, {
-			{{.PgmonitorEnvVars}}
+            {{.PgmonitorEnvVars}}
             {{.PgbackrestEnvVars}}
             {{.PgbackrestS3EnvVars}}
                         "name": "PGHA_DATABASE",
@@ -156,7 +154,6 @@
                             "mountPath": "/crunchyadm",
                             "name": "crunchyadm"
                         }
-                        
                     ],
 
                     "ports": [{
@@ -206,7 +203,7 @@
 
                 {{.BadgerAddon }}
 
-		],
+                ],
                 "volumes": [{
                         "name": "pgdata",
                         {{.PVCName}}
@@ -227,7 +224,7 @@
                         "name": "sshd",
                         "secret": {
                             "secretName": "{{.ClusterName}}-backrest-repo-config",
-			    "defaultMode": 511
+                            "defaultMode": 511
                         }
                     }, {
                         "name": "root-volume",
@@ -255,13 +252,13 @@
                             "sources": [
                                 {{if .ConfVolume}}
                                 {
-                                    "configMap": { 
+                                    "configMap": {
                                         "name": {{.ConfVolume}}
                                     }
                                 },
                                 {{end}}
                                 {
-                                    "configMap": { 
+                                    "configMap": {
                                         "name": "{{.ClusterName}}-pgha-default-config",
                                         "optional": true
                                     }
@@ -287,4 +284,3 @@
         }
     }
 }
- 

@@ -12,7 +12,7 @@
     },
     "spec": {
 
-	    {{.NodeSelector}}
+        {{.NodeSelector}}
 
         "restartPolicy": "Never",
         "containers": [{
@@ -21,7 +21,7 @@
                 "privileged": false
             },
             "image": "{{.PGOImagePrefix}}/pgo-lspvc:{{.PGOImageTag}}",
-	    {{.ContainerResources }}
+            {{.ContainerResources }}
             "env": [{
                 "name": "BACKUP_ROOT",
                 "value": "{{.BackupRoot}}"

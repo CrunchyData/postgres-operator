@@ -5,7 +5,7 @@
         "name": "{{.Name}}"
     },
     "spec": {
-	"backoffLimit": 0,
+        "backoffLimit": 0,
         "template": {
             "metadata": {
                 "name": "{{.Name}}",
@@ -34,7 +34,7 @@
                         "readOnly": true
                     }],
 
-		    {{.ContainerResources }}
+                    {{.ContainerResources }}
 
                     "env": [{
                         "name": "TABLE_TO_LOAD",

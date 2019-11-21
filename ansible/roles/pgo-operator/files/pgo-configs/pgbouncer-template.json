@@ -14,14 +14,14 @@
     "spec": {
         "replicas": 1,
         "selector": {
-		"matchLabels": {
-            		"name": "{{.Name}}",
-            		"crunchy-pgbouncer": "true",
-            		"pg-cluster": "{{.ClusterName}}",
-            		"service-name": "{{.Name}}",
-            		"vendor": "crunchydata"
-		}
-	},
+            "matchLabels": {
+                "name": "{{.Name}}",
+                "crunchy-pgbouncer": "true",
+                "pg-cluster": "{{.ClusterName}}",
+                "service-name": "{{.Name}}",
+                "vendor": "crunchydata"
+            }
+        },
         "template": {
             "metadata": {
                 "labels": {
@@ -29,7 +29,7 @@
                     "crunchy-pgbouncer": "true",
                     "pg-cluster": "{{.ClusterName}}",
                     "service-name": "{{.Name}}",
-            	    "vendor": "crunchydata"
+                    "vendor": "crunchydata"
                 }
             },
             "spec": {
@@ -41,7 +41,7 @@
                         "containerPort": {{.Port}},
                         "protocol": "TCP"
                     }],
-		    {{.ContainerResources }}
+                    {{.ContainerResources }}
                     "env": [{
                         "name": "PG_USERNAME",
                         "valueFrom": {

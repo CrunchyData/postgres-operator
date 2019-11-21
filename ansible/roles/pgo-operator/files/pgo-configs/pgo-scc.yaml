@@ -10,7 +10,7 @@ apiVersion: security.openshift.io/v1
 defaultAddCapabilities: null
 fsGroup:
   type: MustRunAs
-  ranges: 
+  ranges:
   - max: 26
     min: 26
 groups:
