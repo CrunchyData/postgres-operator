@@ -56,7 +56,7 @@ DefaultLoadResources: {{ default_pgpool_resources }}
 DefaultLspvcResources: {{ default_lspvc_resources }}
 DefaultRmdataResources: {{ default_rmdata_resources }}
 DefaultBackupResources: {{ default_backup_resources }}
-DefaultPgbouncerResources: {{ default_pgbouncer_resources }}  
+DefaultPgbouncerResources: {{ default_pgbouncer_resources }}
 DefaultPgpoolResources: {{ default_pgpool_resources }}
 ContainerResources:
 {% for i in range(1, max_resource_configs) %}
@@ -69,7 +69,7 @@ ContainerResources:
 {% endif %}
 {% endfor %}
 Pgo:
-  AutofailSleepSeconds:  {{ auto_failover_sleep_secs }} 
+  AutofailSleepSeconds:  {{ auto_failover_sleep_secs }}
   Audit:  false
   LSPVCTemplate:  /pgo-config/pgo.lspvc-template.json
   LoadTemplate:  /pgo-config/pgo.load-template.json

@@ -12,7 +12,7 @@
                 }
     },
     "spec": {
-	"backoffLimit": 0,
+        "backoffLimit": 0,
         "template": {
             "metadata": {
                 "name": "{{.JobName}}",
@@ -26,16 +26,16 @@
             },
             "spec": {
                 "volumes": [
-		{{.PgbackrestRestoreVolumes}}
-			],
-		{{.SecurityContext}}
+                    {{.PgbackrestRestoreVolumes}}
+                ],
+                {{.SecurityContext}}
                 "serviceAccountName": "pgo-backrest",
                 "containers": [{
                     "name": "backrest",
                     "image": "{{.PGOImagePrefix}}/pgo-backrest:{{.PGOImageTag}}",
                     "volumeMounts": [
-		{{.PgbackrestRestoreVolumeMounts}}
-			    ],
+                        {{.PgbackrestRestoreVolumeMounts}}
+                    ],
                     "env": [{
                         "name": "COMMAND",
                         "value": "{{.Command}}"

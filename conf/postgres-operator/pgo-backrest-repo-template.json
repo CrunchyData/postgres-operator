@@ -18,8 +18,8 @@
                     "name": "{{.Name}}",
                     "pg-cluster": "{{.ClusterName}}",
                     "service-name": "{{.Name}}",
-            	    "vendor": "crunchydata",
-           	    "pgo-backrest-repo": "true"
+                    "vendor": "crunchydata",
+                    "pgo-backrest-repo": "true"
             }
         },
         "template": {
@@ -28,12 +28,12 @@
                     "name": "{{.Name}}",
                     "pg-cluster": "{{.ClusterName}}",
                     "service-name": "{{.Name}}",
-            	    "vendor": "crunchydata",
-           	    "pgo-backrest-repo": "true"
+                    "vendor": "crunchydata",
+                    "pgo-backrest-repo": "true"
                 }
             },
             "spec": {
-		{{.SecurityContext}}
+                {{.SecurityContext}}
                 "serviceAccountName": "pgo-backrest",
                 "containers": [{
                     "name": "database",
@@ -42,7 +42,7 @@
                         "containerPort": {{.SshdPort}},
                         "protocol": "TCP"
                     }],
-		    {{.ContainerResources }}
+                    {{.ContainerResources }}
                     "env": [{
             {{.PgbackrestS3EnvVars}}
                         "name": "PGBACKREST_STANZA",
@@ -99,16 +99,16 @@
                     }]
                 }],
                 "volumes": [{
-                	"name": "sshd",
-                	"secret": {
-                    		"secretName": "{{.ClusterName}}-backrest-repo-config",
-                    		"defaultMode": 511
-                    	}
+                    "name": "sshd",
+                    "secret": {
+                        "secretName": "{{.ClusterName}}-backrest-repo-config",
+                        "defaultMode": 511
+                    }
                 }, {
-                	"name": "backrestrepo",
-                	"persistentVolumeClaim": {
-                    		"claimName": "{{.BackrestRepoClaimName}}"
-                    	}
+                    "name": "backrestrepo",
+                    "persistentVolumeClaim": {
+                        "claimName": "{{.BackrestRepoClaimName}}"
+                    }
                 }],
                 "restartPolicy": "Always",
                 "dnsPolicy": "ClusterFirst"

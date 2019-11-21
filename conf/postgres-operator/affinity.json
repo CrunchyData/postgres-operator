@@ -8,9 +8,9 @@
                     "operator": "{{.OperatorValue}}",
                     "values": [
                         "{{.NodeLabelValue}}"
-                    ]   
-                }]  
-                }   
-            }]  
-            }   
+                    ]
+                }]
+                }
+            }]
+            }
         },

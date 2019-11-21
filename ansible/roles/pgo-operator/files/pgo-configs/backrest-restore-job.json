@@ -12,13 +12,13 @@
                 }
     },
     "spec": {
-	"backoffLimit": 0,
+        "backoffLimit": 0,
         "template": {
             "metadata": {
                 "name": "{{.JobName}}",
                 "labels": {
                     "vendor": "crunchydata",
-		    "pgo-backrest-restore": "true",
+                    "pgo-backrest-restore": "true",
                     "backrest-restore-to-pvc": "{{.ToClusterPVCName}}",
                     "pg-cluster": "{{.ClusterName}}",
                     "service-name": "{{.ClusterName}}"
@@ -26,32 +26,32 @@
             },
             "spec": {
                 "volumes": [ {
-			"name": "pgdata",
-			"persistentVolumeClaim": {
-				"claimName": "{{.ToClusterPVCName}}"
-			}
-		}, {
-			"name": "sshd",
-			"secret": {
-				"secretName": "{{.ClusterName}}-backrest-repo-config",
-				"defaultMode": 511
-			}
-		} ],
+                    "name": "pgdata",
+                    "persistentVolumeClaim": {
+                        "claimName": "{{.ToClusterPVCName}}"
+                    }
+                }, {
+                    "name": "sshd",
+                    "secret": {
+                        "secretName": "{{.ClusterName}}-backrest-repo-config",
+                        "defaultMode": 511
+                    }
+                } ],
 
-		{{.SecurityContext}}
+                {{.SecurityContext}}
                 "serviceAccountName": "pgo-backrest",
                 "containers": [{
                     "name": "backrest",
                     "image": "{{.PGOImagePrefix}}/pgo-backrest-restore:{{.PGOImageTag}}",
                     "volumeMounts": [ {
-			"mountPath": "/pgdata",
-			"name": "pgdata",
-			"readOnly": false
-		    }, {
-			"mountPath": "/sshd",
-			"name": "sshd",
-			"readOnly": true
-		    } ],
+                        "mountPath": "/pgdata",
+                        "name": "pgdata",
+                        "readOnly": false
+                    }, {
+                        "mountPath": "/sshd",
+                        "name": "sshd",
+                        "readOnly": true
+                    } ],
                     "env": [{
             {{.PgbackrestS3EnvVars}}
                         "name": "COMMAND_OPTS",
