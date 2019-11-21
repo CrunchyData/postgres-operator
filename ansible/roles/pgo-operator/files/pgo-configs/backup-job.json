@@ -3,11 +3,11 @@
     "kind": "Job",
     "metadata": {
         "name": "{{.JobName}}",
-       	"labels": {
-       		"vendor": "crunchydata",
-               	"pgbackup": "true",
-                "pg-cluster": "{{.Name}}"
-	}
+        "labels": {
+            "vendor": "crunchydata",
+            "pgbackup": "true",
+            "pg-cluster": "{{.Name}}"
+        }
     },
     "spec": {
         "backoffLimit": 0,
@@ -15,9 +15,9 @@
             "metadata": {
                 "name": "{{.JobName}}",
                 "labels": {
-       			"vendor": "crunchydata",
-               		"pgbackup": "true",
-                    	"pg-cluster": "{{.Name}}"
+                    "vendor": "crunchydata",
+                    "pgbackup": "true",
+                    "pg-cluster": "{{.Name}}"
                 }
             },
             "spec": {
@@ -36,7 +36,7 @@
                         "name": "pgdata",
                         "readOnly": false
                     }],
-		    {{.ContainerResources }}
+                    {{.ContainerResources }}
                     "env": [{
                         "name": "BACKUP_HOST",
                         "value": "{{.BackupHost}}"

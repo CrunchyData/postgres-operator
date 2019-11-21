@@ -7,18 +7,18 @@
                 "vendor": "crunchydata",
                 "pgdump": "true",
                 "pg-cluster": "{{.ClusterName}}",
-	        "pg-task": "{{.TaskName}}"
-	}
+                "pg-task": "{{.TaskName}}"
+        }
     },
     "spec": {
-	"backoffLimit": 0,
+        "backoffLimit": 0,
         "template": {
             "metadata": {
                 "name": "{{.JobName}}",
                 "labels": {
                     "vendor":"crunchydata",
-		    "pgdump":"true",
-		    "pg-cluster":"{{.ClusterName}}"
+                    "pgdump":"true",
+                    "pg-cluster":"{{.ClusterName}}"
                 }
             },
             "spec": {
@@ -26,11 +26,11 @@
                     {
                         "name": "pgdata",
                         "persistentVolumeClaim": {
-                            "claimName": "{{.PgDumpPVC}}" 
+                            "claimName": "{{.PgDumpPVC}}"
                         }
                     }
                 ],
-		
+
                 {{.SecurityContext}}
 
                 "containers": [{
@@ -43,7 +43,7 @@
                                 "readOnly": false
                             }
                         ],
-		        {{.ContainerResources}}
+                        {{.ContainerResources}}
                         "env": [
                             {
                                 "name": "PGDUMP_HOST",
@@ -52,41 +52,41 @@
                             {
                                 "name": "PGDUMP_USER",
                                 "valueFrom": {
-				    "secretKeyRef": {
-					"name": "{{.PgDumpUserSecret}}",
-					"key": "username"
-				    }
-				}
+                                    "secretKeyRef": {
+                                        "name": "{{.PgDumpUserSecret}}",
+                                        "key": "username"
+                                    }
+                                }
                             },
                             {
                                 "name": "PGDUMP_PASS",
                                 "valueFrom": {
-				    "secretKeyRef": {
-					"name": "{{.PgDumpUserSecret}}",
-					"key": "password"
-				    }
-				}
+                                    "secretKeyRef": {
+                                        "name": "{{.PgDumpUserSecret}}",
+                                        "key": "password"
+                                    }
+                                }
                             },
                             {
                                 "name": "PGDUMP_DB",
                                 "value": "{{.PgDumpDB}}"
                             },
-			    {
-				"name": "PGDUMP_PORT",
-				"value": "{{.PgDumpPort}}"
-			    },
-			    {
-				"name": "PGDUMP_CUSTOM_OPTS",
-				"value": "{{.PgDumpOpts}}"
-			    },
-			    {
-				"name": "PGDUMP_FILENAME",
-				"value": "{{.PgDumpFilename}}"
-			    },
-			    {
-				"name": "PGDUMP_ALL",
-				"value": "{{.PgDumpAll}}"
-			    }
+                            {
+                                "name": "PGDUMP_PORT",
+                                "value": "{{.PgDumpPort}}"
+                            },
+                            {
+                                "name": "PGDUMP_CUSTOM_OPTS",
+                                "value": "{{.PgDumpOpts}}"
+                            },
+                            {
+                                "name": "PGDUMP_FILENAME",
+                                "value": "{{.PgDumpFilename}}"
+                            },
+                            {
+                                "name": "PGDUMP_ALL",
+                                "value": "{{.PgDumpAll}}"
+                            }
                         ]
                     }
                 ],
