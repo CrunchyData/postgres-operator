@@ -1,7 +1,7 @@
 
 ---
 title: "Compatibility Requirements"
-Latest Release: 4.2.0 {docdate}
+Latest Release: 4.1.1 {docdate}
 draft: false
 weight: 1
 ---
