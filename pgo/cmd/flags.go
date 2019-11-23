@@ -17,7 +17,13 @@ package cmd
 
 //flags used by more than 1 command
 var DeleteData bool
+
+// KeepData, If set to "true", indicates that cluster data should be stored
+// even after a cluster is deleted. This is DEPRECATED
+var KeepData bool
+
 var Query bool
+
 var Target string
 
 var OutputFormat string

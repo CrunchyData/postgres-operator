@@ -67,7 +67,11 @@ func init() {
 
 	scaledownCmd.Flags().BoolVarP(&Query, "query", "", false, "Prints the list of targetable replica candidates.")
 	scaledownCmd.Flags().StringVarP(&Target, "target", "", "", "The replica to target for scaling down")
-	scaledownCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false, "Causes the data for the scaled down replica to be removed permanently.")
+	scaledownCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", true,
+		"Causes the data for the scaled down replica to be removed permanently.")
+	scaledownCmd.Flags().MarkDeprecated("delete-data", "Data is deleted by default.")
+	scaledownCmd.Flags().BoolVar(&KeepData, "keep-data", false,
+		"Causes data for the scale down replica to *not* be deleted")
 	scaledownCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 
 }
@@ -102,7 +106,13 @@ func queryCluster(args []string, ns string) {
 
 func scaleDownCluster(clusterName, ns string) {
 
-	response, err := api.ScaleDownCluster(httpclient, clusterName, Target, DeleteData, &SessionCredentials, ns)
+	// determine if the data should be deleted. The modern flag for handling this
+	// is "KeepData" which defaults to "false". We will honor the "DeleteData"
+	// flag (which defaults to "true"), but this will be removed in a future
+	// release
+	deleteData := !KeepData && DeleteData
+
+	response, err := api.ScaleDownCluster(httpclient, clusterName, Target, deleteData, &SessionCredentials, ns)
 
 	if err != nil {
 		fmt.Println("Error: ", err.Error())

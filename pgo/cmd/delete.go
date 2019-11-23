@@ -108,10 +108,6 @@ var deleteBackups bool
 // after a cluster is deleted
 var KeepBackups bool
 
-// KeepData, If set to "true", indicates that cluster data should be stored
-// even after a cluster is deleted. This is DEPRECATED
-var KeepData bool
-
 // NoPrompt, If set to "true", indicates that the user should not be prompted
 // before executing a delete command
 var NoPrompt bool

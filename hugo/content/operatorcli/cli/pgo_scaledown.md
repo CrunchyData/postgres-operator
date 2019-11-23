@@ -23,6 +23,7 @@ pgo scaledown [flags]
 
 ```
   -d, --delete-data     Causes the data for the scaled down replica to be removed permanently.
+      --keep-data       Keeps the data for the specified instance. Can be used to troubleshoot issues with this specific instance.
   -h, --help            help for scaledown
       --no-prompt       No command line confirmation.
       --query           Prints the list of targetable replica candidates.
