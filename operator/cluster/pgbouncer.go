@@ -181,7 +181,7 @@ func AddPgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 			Timestamp: time.Now(),
 			EventType: events.EventCreatePgbouncer,
 		},
-		Clustername:       clusterName,
+		Clustername: clusterName,
 	}
 
 	err = events.Publish(f)
@@ -250,7 +250,7 @@ func DeletePgbouncerFromTask(clientset *kubernetes.Clientset, restclient *rest.R
 			Timestamp: time.Now(),
 			EventType: events.EventDeletePgbouncer,
 		},
-		Clustername:       clusterName,
+		Clustername: clusterName,
 	}
 
 	err = events.Publish(f)
@@ -593,7 +593,7 @@ func getDatabaseListForCredentials(namespace, clusterName string, clientSet *kub
 
 	// get a list of database names from postgres
 	var rows *sql.Rows
-	querystr := "SELECT datname FROM pg_database WHERE datname NOT IN ('template0', 'template1')"
+	querystr := "SELECT datname FROM pg_database WHERE datname NOT IN ('template0')"
 	rows, err = conn.Query(querystr)
 	if err != nil {
 		log.Debug(err.Error())
