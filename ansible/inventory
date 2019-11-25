@@ -5,7 +5,7 @@ localhost ansible_connection=local ansible_python_interpreter="/usr/bin/env pyth
 crunchy_debug='false'
 
 # ==================
-# Kuberenetes and OpenShift Settings
+# Kubernetes and OpenShift Settings
 # Note: Either Kubernetes or OpenShift must be used
 
 # Deploy into Openshift
