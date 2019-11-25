@@ -1,3 +1,4 @@
+---
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
@@ -5,7 +6,7 @@ metadata:
   namespace: $PGO_OPERATOR_NAMESPACE
 rules:
   - verbs:
-      - 'list,create,delete,watch'
+      - '*'
     apiGroups:
       - 'crunchydata.com'
     resources:
@@ -55,4 +56,3 @@ rules:
       - 'extensions'
     resources:
       - deployments
-

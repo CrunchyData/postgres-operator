@@ -45,3 +45,6 @@ cat {{ role_path }}/files/pgo-configs/pgo-target-role.json | sed 's/{{ target_na
 cat {{ role_path }}/files/pgo-configs/pgo-target-role-binding.json | sed 's/{{ target_namespace }}/'"{{ item }}"'/' | sed 's/{{ operator_namespace }}/'"{{ pgo_operator_namespace }}"'/' | {{ kubectl_or_oc }} -n {{ item }} create -f -
 cat {{ role_path }}/files/pgo-configs/pgo-backrest-role.json | sed 's/{{ target_namespace }}/'"{{ item }}"'/' | {{ kubectl_or_oc }} -n {{ item }} create -f -
 cat {{ role_path }}/files/pgo-configs/pgo-backrest-role-binding.json | sed 's/{{ target_namespace }}/'"{{ item }}"'/' | {{ kubectl_or_oc }} -n {{ item }} create -f -
+cat {{ role_path }}/files/pgo-configs/pgo-pg-sa.json | sed 's/{{ target_namespace }}/'"{{ item }}"'/' | {{ kubectl_or_oc }} -n {{ item }} create -f -
+cat {{ role_path }}/files/pgo-configs/pgo-pg-role.json | sed 's/{{ target_namespace }}/'"{{ item }}"'/' | {{ kubectl_or_oc }} -n {{ item }} create -f -
+cat {{ role_path }}/files/pgo-configs/pgo-pg-role-binding.json | sed 's/{{ target_namespace }}/'"{{ item }}"'/' | {{ kubectl_or_oc }} -n {{ item }} create -f -
