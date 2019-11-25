@@ -33,7 +33,7 @@
                 }
             },
             "spec": {
-		        {{.SecurityContext}}
+                {{.SecurityContext}}
                 "containers": [{
                     "name": "database",
                     "image": "{{.PGOImagePrefix}}/pgo-backrest-repo:{{.PGOImageTag}}",

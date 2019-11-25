@@ -7,7 +7,7 @@
                         "name": "BACKREST_SKIP_CREATE_STANZA",
                         "value": "true"
                     }, {
-                        "name": "PGBACKREST",
+                        "name": "PGHA_PGBACKREST",
                         "value": "true"
                     }, {
                         "name": "PGBACKREST_REPO1_PATH",
@@ -20,6 +20,9 @@
                         "value": "true"
                     }, {
                         "name": "PGBACKREST_LOG_PATH",
+                        "value": "/tmp"
+                    }, {
+                        "name": "PGBACKREST_PG1_SOCKET_PATH",
                         "value": "/tmp"
                     }, {
                         "name": "PGBACKREST_PG1_PORT",
