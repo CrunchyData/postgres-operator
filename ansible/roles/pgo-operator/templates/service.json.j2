@@ -15,19 +15,19 @@
                 "port": {{ pgo_apiserver_port }},
                 "targetPort": {{ pgo_apiserver_port }}
             },
-	        {
+            {
                 "name": "nsqadmin",
                 "protocol": "TCP",
                 "port": 4171,
                 "targetPort": 4171
             },
-	        {
+            {
                 "name": "nsqd",
                 "protocol": "TCP",
                 "port": 4150,
                 "targetPort": 4150
             }
-	    ],
+        ],
         "selector": {
             "name": "postgres-operator"
         },
