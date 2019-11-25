@@ -5,6 +5,7 @@
         "name": "{{.Name}}",
         "labels": {
             "vendor": "crunchydata",
+            "pgo-pg-database": "true",
             {{.DeploymentLabels }}
         }
     },
@@ -21,13 +22,14 @@
                 "labels": {
                     "name": "{{.Name}}",
                     "vendor": "crunchydata",
+                    "pgo-pg-database": "true",
                     {{.PodLabels }}
                 }
             },
             "spec": {
 
                 {{.SecurityContext }}
-
+                "serviceAccountName": "pgo-pg",
                 "containers": [
             {
                     "name": "database",
@@ -35,8 +37,11 @@
                     "readinessProbe": {
                         "exec": {
                             "command": [
-                                "/opt/cpm/bin/readiness.sh"
-                            ]
+                                "/bin/bash",
+                                "-c",
+                                "[[ -f '/crunchyadm/pgha_initialized' ]]",
+                                "&& pg_isready -h /crunchyadm -U crunchyready"
+                             ]
                         },
                         "initialDelaySeconds": 15,
                         "timeoutSeconds": 8
@@ -45,39 +50,65 @@
             {{.ContainerResources }}
 
                     "env": [{
-                        "name": "PG_PRIMARY_PORT",
+                        "name": "PGHA_PG_PORT",
                         "value": "{{.Port}}"
                     }, {
-                        "name": "PG_MODE",
-                        "value": "{{.PgMode}}"
-                    }, {
-                        "name": "PG_USER",
+                        "name": "PGHA_USER",
                         "value": "postgres"
-                    }, {
-                        "name": "PG_PRIMARY_HOST",
-                        "value": "{{.PrimaryHost}}"
-                    }, {
-                        "name": "LOG_STATEMENT",
-                        "value": "{{.LogStatement}}"
-                    }, {
-                        "name": "LOG_MIN_DURATION_STATEMENT",
-                        "value": "{{.LogMinDurationStatement}}"
-                    }, {
-                        "name": "PG_LOCALE",
-                        "value": "en_US.UTF8"
-                    }, {
-                        "name": "PGDATA_PATH_OVERRIDE",
-                        "value": "{{.DataPathOverride}}"
+                    },
+                    {{if .IsInit}}
+                    {
+                        "name": "PGHA_INIT",
+                        "valueFrom": {
+                            "configMapKeyRef": {
+                               "name": "{{.ClusterName}}-pgha-default-config",
+                               "key": "init"
+                            }
+                         }
+                    },
+                    {{ end }}
+                    {{if not .IsInit}}
+                    {
+                        "name": "PGHA_PRIMARY_HOST",
+                        "value": "{{.ClusterName}}"
+                    },
+                    {{ end }}
+                    {
+                        "name": "PATRONI_POSTGRESQL_DATA_DIR",
+                        "value": "/pgdata/{{.Name}}"
                     }, {
             {{.PgmonitorEnvVars}}
             {{.PgbackrestEnvVars}}
             {{.PgbackrestS3EnvVars}}
-                        "name": "PG_DATABASE",
+                        "name": "PGHA_DATABASE",
                         "value": "{{.Database}}"
-                    },{
-                        "name": "ARCHIVE_TIMEOUT",
-                        "value": "{{.ArchiveTimeout}}"
-                    },{
+                    }, {
+                        "name": "PGHA_CRUNCHYADM",
+                        "value": "true"
+                    }, {
+                        "name": "PATRONI_KUBERNETES_NAMESPACE",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "fieldPath": "metadata.namespace"
+                            }
+                        }
+                    },  {
+                        "name": "PATRONI_KUBERNETES_SCOPE_LABEL",
+                        "value": "{{.ScopeLabel}}"
+                    },  {
+                        "name": "PATRONI_SCOPE",
+                        "valueFrom": {
+                            "fieldRef": {
+                                "fieldPath": "metadata.labels['{{.ScopeLabel}}']"
+                            }
+                        }
+                    }, {
+                        "name": "PATRONI_KUBERNETES_LABELS",
+                        "value": "{vendor: \"crunchydata\"}"
+                    }, {
+                        "name": "PATRONI_LOG_LEVEL",
+                        "value": "INFO"
+                    }, {
                         "name": "PGHOST",
                         "value": "/tmp"
                     }],
@@ -91,13 +122,13 @@
                             "mountPath": "/backrestrepo",
                             "name": "backrestrepo"
                         }, {
-                            "mountPath": "/pguser",
+                            "mountPath": "/pgconf/pguser",
                             "name": "user-volume"
                         }, {
-                            "mountPath": "/pgprimary",
+                            "mountPath": "/pgconf/pgreplicator",
                             "name": "primary-volume"
                         }, {
-                            "mountPath": "/pgroot",
+                            "mountPath": "/pgconf/pgsuper",
                             "name": "root-volume"
                         }, {
                             "mountPath": "/pgwal",
@@ -112,14 +143,52 @@
                         }, {
                             "mountPath": "/recover",
                             "name": "recover-volume"
+                        }, {
+                            "mountPath": "/crunchyadm",
+                            "name": "crunchyadm"
                         }
                     ],
 
                     "ports": [{
                         "containerPort": 5432,
                         "protocol": "TCP"
+                    }, {
+                        "containerPort": 8009,
+                        "protocol": "TCP"
                     }],
                     "resources": {},
+                    "imagePullPolicy": "IfNotPresent"
+                },
+                {
+                    "name": "crunchyadm",
+                    "image": "{{.CCPImagePrefix}}/crunchy-admin:{{.CCPImageTag}}",
+                    "securityContext": {
+                        "runAsUser": 17
+                    },
+                    "readinessProbe": {
+                        "exec": {
+                            "command": [
+                                "/bin/bash",
+                                "-c",
+                                "[[ -f '/crunchyadm/pgha_initialized' ]]",
+                                "&& pg_isready -h /crunchyadm -U crunchyready"
+                             ]
+                        },
+                        "initialDelaySeconds": 15,
+                        "timeoutSeconds": 8
+                    },
+                    "env": [
+                        {
+                            "name": "PGHOST",
+                            "value": "/crunchyadm"
+                        }
+                    ],
+                    "volumeMounts": [
+                        {
+                            "mountPath": "/crunchyadm",
+                            "name": "crunchyadm"
+                        }
+                    ],
                     "imagePullPolicy": "IfNotPresent"
                 }
 
@@ -157,19 +226,38 @@
                         }
                     }, {
                         "name": "pgwal-volume",
-            "emptyDir": { "medium": "Memory" }
+                        "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "recover-volume",
-            "emptyDir": { "medium": "Memory" }
+                        "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "report",
-            "emptyDir": { "medium": "Memory" }
+                        "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "backrestrepo",
-            "emptyDir": { "medium": "Memory" }
+                        "emptyDir": { "medium": "Memory" }
+                    }, {
+                        "name": "crunchyadm",
+                        "emptyDir": {}
                     }, {
                         "name": "pgconf-volume",
-            {{.ConfVolume}}
+                        "projected": {
+                            "sources": [
+                                {{if .ConfVolume}}
+                                {
+                                    "configMap": {
+                                        "name": {{.ConfVolume}}
+                                    }
+                                },
+                                {{end}}
+                                {
+                                    "configMap": {
+                                        "name": "{{.ClusterName}}-pgha-default-config",
+                                        "optional": true
+                                    }
+                                }
+                            ]
+                        }
                     }
 
                 ],

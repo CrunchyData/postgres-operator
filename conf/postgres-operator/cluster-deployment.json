@@ -226,19 +226,19 @@
                         }
                     }, {
                         "name": "pgwal-volume",
-            "emptyDir": { "medium": "Memory" }
+                        "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "recover-volume",
-            "emptyDir": { "medium": "Memory" }
+                        "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "report",
-            "emptyDir": { "medium": "Memory" }
+                        "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "backrestrepo",
-            "emptyDir": { "medium": "Memory" }
+                        "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "crunchyadm",
-            "emptyDir": {}
+                        "emptyDir": {}
                     }, {
                         "name": "pgconf-volume",
                         "projected": {
@@ -257,7 +257,7 @@
                                     }
                                 }
                             ]
-                         }
+                        }
                     }
 
                 ],
