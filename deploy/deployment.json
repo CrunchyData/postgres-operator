@@ -24,21 +24,15 @@
                         "image": "$PGO_IMAGE_PREFIX/pgo-apiserver:$PGO_IMAGE_TAG",
                         "imagePullPolicy": "IfNotPresent",
                         "ports": [
-                            {
-                                "containerPort": $PGO_APISERVER_PORT
-                            }
+                            { "containerPort": $PGO_APISERVER_PORT }
                         ],
                         "readinessProbe": {
-                            "tcpSocket": {
-                                "port": $PGO_APISERVER_PORT
-                            },
+                            "tcpSocket": { "port": $PGO_APISERVER_PORT },
                             "initialDelaySeconds": 15,
                             "periodSeconds": 5
                         },
                         "livenessProbe": {
-                            "tcpSocket": {
-                                "port": $PGO_APISERVER_PORT
-                            },
+                            "tcpSocket": { "port": $PGO_APISERVER_PORT },
                             "initialDelaySeconds": 15,
                             "periodSeconds": 5
                         },
@@ -80,10 +74,8 @@
                                 "value": "localhost:4150"
                             }
                         ],
-                        "volumeMounts": [
-                        ]
-                    }, 
-                    {
+                        "volumeMounts": []
+                    }, {
                         "name": "operator",
                         "image": "$PGO_IMAGE_PREFIX/postgres-operator:$PGO_IMAGE_TAG",
                         "imagePullPolicy": "IfNotPresent",
@@ -135,10 +127,8 @@
                                 "value": "localhost:4150"
                             }
                         ],
-                        "volumeMounts": [
-                        ]
-                    }, 
-                    {
+                        "volumeMounts": []
+                    }, {
                         "name": "scheduler",
                         "image": "$PGO_IMAGE_PREFIX/pgo-scheduler:$PGO_IMAGE_TAG",
                         "livenessProbe": {
@@ -154,6 +144,10 @@
                             "periodSeconds": 60
                         },
                         "env": [
+                            {
+                                "name": "CRUNCHY_DEBUG",
+                                "value": "true"
+                            },
                             {
                                 "name": "PGO_OPERATOR_NAMESPACE",
                                 "valueFrom": {
@@ -175,25 +169,19 @@
                                 "value": "localhost:4150"
                             }
                         ],
-                        "volumeMounts": [
-                        ],
+                        "volumeMounts": [],
                         "resources": {},
                         "imagePullPolicy": "IfNotPresent"
-                    }, 
-                    {
+                    }, {
                         "name": "event",
                         "image": "$PGO_IMAGE_PREFIX/pgo-event:$PGO_IMAGE_TAG",
                         "readinessProbe": {
-                            "tcpSocket": {
-                                "port": 4150
-                            },
+                            "tcpSocket": { "port": 4150 },
                             "initialDelaySeconds": 15,
                             "periodSeconds": 5
                         },
                         "livenessProbe": {
-                            "tcpSocket": {
-                                "port": 4150
-                            },
+                            "tcpSocket": { "port": 4150 },
                             "initialDelaySeconds": 15,
                             "periodSeconds": 5
                         },
@@ -203,14 +191,12 @@
                                 "value": "3600"
                             }
                         ],
-                        "volumeMounts": [
-                        ],
+                        "volumeMounts": [],
                         "resources": {},
                         "imagePullPolicy": "IfNotPresent"
                     }
                 ],
-                "volumes": [
-                ]
+                "volumes": []
             }
         }
     }

@@ -4,7 +4,7 @@
     "metadata": {
         "name": "postgres-operator",
         "labels": {
-        	"vendor": "crunchydata"
+            "vendor": "crunchydata"
         }
     },
     "spec": {
@@ -26,10 +26,18 @@
                                 {%- endif %}",
                         "imagePullPolicy": "IfNotPresent",
                         "ports": [
-                            {
-                                "containerPort": {{ pgo_apiserver_port }}
-                            }
+                            { "containerPort": {{ pgo_apiserver_port }} }
                         ],
+                        "readinessProbe": {
+                            "tcpSocket": { "port": {{ pgo_apiserver_port }} },
+                            "initialDelaySeconds": 15,
+                            "periodSeconds": 5
+                        },
+                        "livenessProbe": {
+                            "tcpSocket": { "port": {{ pgo_apiserver_port }} },
+                            "initialDelaySeconds": 15,
+                            "periodSeconds": 5
+                        },
                         "env": [
                             {
                                 "name": "CRUNCHY_DEBUG",
@@ -42,10 +50,6 @@
                             {
                                 "name": "PGO_INSTALLATION_NAME",
                                 "value": "{{ pgo_installation_name }}"
-                            },
-                            {
-                                "name": "EVENT_ADDR",
-                                "value": "localhost:4150"
                             },
                             {
                                 "name": "PGO_OPERATOR_NAMESPACE",
@@ -66,11 +70,14 @@
                             {
                                 "name": "DISABLE_EVENTING",
                                 "value": "{{ pgo_disable_eventing }}"
+                            },
+                            {
+                                "name": "EVENT_ADDR",
+                                "value": "localhost:4150"
                             }
                         ],
                         "volumeMounts": []
-                    },
-                    {
+                    }, {
                         "name": "operator",
                         "image": "{% if pgo_image | default('') != '' %}{{ pgo_image }}
                                 {%- else %}{{ pgo_image_prefix }}/postgres-operator:{{ pgo_image_tag }}
@@ -100,10 +107,6 @@
                                 "value": "{{ pgo_installation_name }}"
                             },
                             {
-                                "name": "EVENT_ADDR",
-                                "value": "localhost:4150"
-                            },
-                            {
                                 "name": "PGO_OPERATOR_NAMESPACE",
                                 "valueFrom": {
                                     "fieldRef": {
@@ -122,26 +125,35 @@
                             {
                                 "name": "DISABLE_EVENTING",
                                 "value": "{{ pgo_disable_eventing }}"
+                            },
+                            {
+                                "name": "EVENT_ADDR",
+                                "value": "localhost:4150"
                             }
                         ],
                         "volumeMounts": []
-                    },
-                    {
+                    }, {
                         "name": "scheduler",
                         "image": "{% if pgo_scheduler_image | default('') != '' %}{{ pgo_scheduler_image }}
                                 {%- else %}{{ pgo_image_prefix }}/pgo-scheduler:{{ pgo_image_tag }}
                                 {%- endif %}",
-                        "readinessProbe": {
+                        "livenessProbe": {
                             "exec": {
                                 "command": [
-                                    "ls",
-                                    "/tmp"
+                                   "bash",
+                                    "-c",
+                                    "test -n \"$(find /tmp/scheduler.hb -newermt '61 sec ago')\""
                                 ]
                             },
-                            "initialDelaySeconds": 4,
-                            "periodSeconds": 5
+                            "failureThreshold": 2,
+                            "initialDelaySeconds": 60,
+                            "periodSeconds": 60
                         },
                         "env": [
+                            {
+                                "name": "CRUNCHY_DEBUG",
+                                "value": "{{ crunchy_debug }}"
+                            },
                             {
                                 "name": "PGO_OPERATOR_NAMESPACE",
                                 "valueFrom": {
@@ -161,10 +173,6 @@
                             {
                                 "name": "EVENT_ADDR",
                                 "value": "localhost:4150"
-                            },
-                            {
-                                "name": "CRUNCHY_DEBUG",
-                                "value": "{{ crunchy_debug }}"
                             }
                         ],
                         "volumeMounts": [],
@@ -175,14 +183,23 @@
                         "image": "{% if pgo_event_image | default('') != '' %}{{ pgo_event_image }}
                                 {%- else %}{{ pgo_image_prefix }}/pgo-event:{{ pgo_image_tag }}
                                 {%- endif %}",
+                        "readinessProbe": {
+                            "tcpSocket": { "port": 4150 },
+                            "initialDelaySeconds": 15,
+                            "periodSeconds": 5
+                        },
+                        "livenessProbe": {
+                            "tcpSocket": { "port": 4150 },
+                            "initialDelaySeconds": 15,
+                            "periodSeconds": 5
+                        },
                         "env": [
                             {
                                 "name": "TIMEOUT",
                                 "value": "3600"
                             }
                         ],
-                        "volumeMounts": [
-                        ],
+                        "volumeMounts": [],
                         "resources": {},
                         "imagePullPolicy": "IfNotPresent"
                     }
