@@ -12,14 +12,6 @@ ENV PGVERSION="12" BACKREST_VERSION="2.18"
 COPY redhat/atomic/pgo_backrest_restore/help.1 /help.1
 COPY redhat/atomic/pgo_backrest_restore/help.md /help.md
 
-RUN echo $'[kubernetes] \n\
-name=Kubernetes \n\
-baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-x86_64 \n\
-enabled=1 \n\
-gpgcheck=1 \n\
-repo_gpgcheck=1 \n\
-gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg' > /etc/yum.repos.d/kubernetes.repo
-
 RUN yum -y install \
 	crunchy-backrest-"${BACKREST_VERSION}" \
 	openssh-clients \
@@ -27,13 +19,11 @@ RUN yum -y install \
 	postgresql12-server \
 	procps-ng \
 	psmisc \
-	kubectl \
 	&& yum -y clean all
 
 RUN mkdir -p /opt/cpm/bin /pgdata && chown -R 26:26 /opt/cpm
 ADD bin/pgo-backrest-restore/ /opt/cpm/bin
 ADD bin/uid_postgres.sh /opt/cpm/bin
-ADD bin/kube-ssh-wrapper.sh /opt/cpm/bin
 
 RUN chmod g=u /etc/passwd && \
         chmod g=u /etc/group
