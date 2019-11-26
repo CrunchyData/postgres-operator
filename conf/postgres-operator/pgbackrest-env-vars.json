@@ -7,7 +7,7 @@
                         "name": "BACKREST_SKIP_CREATE_STANZA",
                         "value": "true"
                     }, {
-                        "name": "PGBACKREST",
+                        "name": "PGHA_PGBACKREST",
                         "value": "true"
                     }, {
                         "name": "PGBACKREST_REPO1_PATH",

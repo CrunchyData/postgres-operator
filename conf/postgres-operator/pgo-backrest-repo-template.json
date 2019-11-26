@@ -33,8 +33,7 @@
                 }
             },
             "spec": {
-                {{.SecurityContext}}
-                "serviceAccountName": "pgo-backrest",
+		        {{.SecurityContext}}
                 "containers": [{
                     "name": "database",
                     "image": "{{.PGOImagePrefix}}/pgo-backrest-repo:{{.PGOImageTag}}",
@@ -68,25 +67,6 @@
                     }, {
                         "name": "PGBACKREST_DB_HOST",
                         "value": "{{.PGbackrestDBHost}}"
-                    }, {
-                        "name": "PGBACKREST_CMD_SSH",
-                        "value": "ssh"
-                    }, {
-                        "name": "PGBACKREST_LOG_LEVEL_CONSOLE",
-                        "value": "warn"
-                    }, {
-                        "name": "CLUSTER_NAME",
-                        "valueFrom": {
-                            "fieldRef": {
-                                "fieldPath": "metadata.labels['pg-cluster']"
-                            }
-                        }
-                    }, {
-                        "name": "PGO_BACKREST_REPO",
-                        "value": "true"
-                    }, {
-                        "name": "ENABLE_SSHD",
-                        "value": "true"
                     }],
                     "volumeMounts": [{
                         "name": "sshd",
