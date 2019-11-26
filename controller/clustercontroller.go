@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"strconv"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -27,6 +28,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/util"
 
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	log "github.com/sirupsen/logrus"
@@ -169,30 +171,24 @@ func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
 	newcluster := newObj.(*crv1.Pgcluster)
 	//	log.Debugf("pgcluster ns=%s %s onUpdate", newcluster.ObjectMeta.Namespace, newcluster.ObjectMeta.Name)
 
-	//handle the case for when the autofail lable is updated
+	// check to see if the "autofail" label on the pgcluster CR has been changed from either true to false, or from
+	// false to true.  If it has been changed to false, autofail will then be disabled in the pg cluster.  If has 
+	// been changed to true, autofail will then be enabled in the pg cluster
 	if newcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] != "" {
-		oldValue := oldcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL]
-		newValue := newcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL]
-		if oldValue != newValue {
-			if newValue == "false" {
-				log.Debugf("pgcluster autofail was set to false on %s", oldcluster.Name)
-				//remove the autofail pgtask for this cluster
-				err := kubeapi.Deletepgtask(c.PgclusterClient, oldcluster.Name+"-autofail", oldcluster.ObjectMeta.Namespace)
-				if err != nil {
-					log.Error(err.Error())
-				}
-			} else if newValue == "true" {
-				log.Debugf("pgcluster autofail was set to true on %s", oldcluster.Name)
-				log.Debugf("pgcluster update %s autofail changed from %s to %s", oldcluster.Name, oldValue, newValue)
-				//get ready status
-				err, ready := GetPrimaryPodStatus(c.PgclusterClientset, newcluster, newcluster.ObjectMeta.Namespace)
-				if err != nil {
-					log.Error(err.Error())
-					return
-				}
-				//call the autofail logic on this cluster
-				clusteroperator.AutofailBase(c.PgclusterClientset, c.PgclusterClient, ready, newcluster.ObjectMeta.Name, newcluster.ObjectMeta.Namespace)
-			}
+		autofailEnabledOld, err := strconv.ParseBool(oldcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL])
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		autofailEnabledNew, err := strconv.ParseBool(newcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL])
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		if autofailEnabledNew != autofailEnabledOld {
+			util.ToggleAutoFailover(c.PgclusterClientset, autofailEnabledNew, 
+				newcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE], 
+				newcluster.ObjectMeta.Namespace)
 		}
 
 	}

@@ -199,13 +199,6 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 // DeleteClusterBase ...
 func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 
-	pgtask := crv1.Pgtask{}
-	found, _ := kubeapi.Getpgtask(restclient, &pgtask, cl.Spec.Name+"-"+config.LABEL_AUTOFAIL, namespace)
-	if found {
-		aftask := AutoFailoverTask{}
-		aftask.Clear(restclient, cl.Spec.Name, namespace)
-	}
-
 	DeleteCluster(clientset, restclient, cl, namespace)
 
 	//delete any existing pgbackups

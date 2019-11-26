@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"strconv"
 	"context"
 	"sync"
 	"time"
@@ -26,6 +27,8 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/operator/backrest"
+	"github.com/crunchydata/postgres-operator/util"
 
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
@@ -127,6 +130,18 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 
 	//handle the case when a pg database pod is updated
 	if isPostgresPod(newpod) {
+
+		// Handle the "role" label change from "replica" to "master" following a failover.  Specifically, patch the pgBackRest 
+		// dedicated repository host (specifically the PGBACKREST_DB_PATH env var) to point to the proper directory for the new 
+		// primary
+		if oldpod.ObjectMeta.Labels["role"] == "replica" && labels["role"] == "master" {
+			err = backrest.UpdateDBPath(c.PodClientset, &pgcluster, "/pgdata/"+labels["name"], newpod.ObjectMeta.Namespace)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+		}
+
 		//only check the status of primary pods
 		if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
 			c.checkReadyStatus(oldpod, newpod, &pgcluster)
@@ -156,31 +171,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 		return
 	}
 
-	//handle the case of a database pod going to Not Ready that has
-	//autofail enabled
-	autofailEnabled := c.checkAutofailLabel(newpod, newpod.ObjectMeta.Namespace)
 	clusterName := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
-	if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName &&
-		clusterName != "" && autofailEnabled {
-		log.Debugf("autofail pg-cluster %s updated!", clusterName)
-		var oldStatus = false
-		for _, v := range oldpod.Status.ContainerStatuses {
-			if v.Name == "database" {
-				oldStatus = v.Ready
-			}
-		}
-		for _, v := range newpod.Status.ContainerStatuses {
-			if v.Name == "database" {
-				if !v.Ready && oldStatus {
-					log.Debugf("podController autofail enabled pod went from ready to not ready pod name %s", newpod.Name)
-					publishPrimaryNotReady(clusterName, newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], newpod.ObjectMeta.Labels[config.LABEL_PGOUSER], newpod.ObjectMeta.Namespace)
-					clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, clusterName, newpod.ObjectMeta.Namespace)
-				}
-				//clusteroperator.AutofailBase(c.PodClientset, c.PodClient, v.Ready, clusterName, newpod.ObjectMeta.Namespace)
-			}
-		}
-	}
-
 	//handle applying policies, and updating workflow after a database  pod
 	//is made Ready, in the case of backrest, create the create stanza job
 	if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
@@ -194,6 +185,17 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 			if v.Name == "database" {
 				//see if there are pgtasks for adding a policy
 				if oldDatabaseStatus == false && v.Ready {
+
+					// Disable autofailover in the cluster that is now "Ready" if the autofail label is set 
+					// to "false" on the pgcluster (i.e. label "autofail=true")
+					autofailEnabled, err := strconv.ParseBool(cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL])
+					if err != nil {
+						log.Error(err)
+						return
+					} else if !autofailEnabled {
+						util.ToggleAutoFailover(c.PodClientset, false, cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE], 
+							cluster.ObjectMeta.Namespace)
+					}
 
 					// update pgreplica status if performing a restore
 					if cluster.Status.State == crv1.PgclusterStateRestore {
@@ -238,7 +240,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 						tmptask := crv1.Pgtask{}
 						found, err := kubeapi.Getpgtask(c.PodClient, &tmptask, clusterName+"-stanza-create", newpod.ObjectMeta.Namespace)
 						if !found && err != nil {
-							backrestoperator.StanzaCreate(newpod.ObjectMeta.Namespace, clusterName, c.PodClientset, c.PodClient)
+							backrestoperator.StanzaCreate(newpod.ObjectMeta.Namespace, clusterName, c.PodClientset, c.PodClient)							 
 						}
 					}
 

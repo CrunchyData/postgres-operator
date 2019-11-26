@@ -45,7 +45,6 @@ type CreateFailoverResponse struct {
 type CreateFailoverRequest struct {
 	Namespace              string
 	ClusterName            string
-	AutofailReplaceReplica string
 	Target                 string
 	ClientVersion          string
 }

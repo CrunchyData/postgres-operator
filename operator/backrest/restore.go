@@ -71,15 +71,11 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		return
 	}
 
-	//turn off autofail if its on
-	if cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] == "true" {
-		cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = "false"
-		log.Debugf("restore workflow: turning off autofail on %s", clusterName)
-		err = kubeapi.Updatepgcluster(restclient, &cluster, clusterName, namespace)
-		if err != nil {
-			log.Errorf("restore workflow error: could not turn off autofail on %s", clusterName)
-			return
-		}
+	// disable autofail if it is currently enabled
+	if err = util.ToggleAutoFailover(clientset, false, cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE], 
+		namespace); err != nil {
+		log.Error(err)
+		return
 	}
 
 	//use the storage config from pgo.yaml for Primary

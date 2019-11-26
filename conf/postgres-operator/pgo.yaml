@@ -22,7 +22,7 @@ Cluster:
   BackrestS3Bucket:
   BackrestS3Endpoint:
   BackrestS3Region:
-  Autofail:  false
+  DisableAutofail:  false
   AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000

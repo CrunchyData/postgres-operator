@@ -166,7 +166,7 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 	}
 
 	for _, replica := range detail.Replicas {
-		fmt.Println(TreeBranch + "replica : " + replica.Name)
+		fmt.Println(TreeBranch + "pgreplica : " + replica.Name)
 	}
 
 	fmt.Printf("%s%s", TreeBranch, "labels : ")
@@ -212,7 +212,7 @@ func createCluster(args []string, ns string) {
 	r.MetricsFlag = MetricsFlag
 	r.BadgerFlag = BadgerFlag
 	r.ServiceType = ServiceType
-	r.AutofailFlag = AutofailFlag
+	r.AutofailFlag = !DisableAutofailFlag
 	r.PgpoolFlag = PgpoolFlag
 	r.PgbouncerFlag = PgbouncerFlag
 	r.PgbouncerPass = PgBouncerPassword
@@ -231,8 +231,8 @@ func createCluster(args []string, ns string) {
 	} else {
 		r.PgbouncerUser = PgBouncerUser
 	}
-
-	response, err := api.CreateCluster(httpclient, &SessionCredentials, r)
+	
+response, err := api.CreateCluster(httpclient, &SessionCredentials, r)
 	if err != nil {
 		fmt.Println("Error: ", err)
 		os.Exit(2)
@@ -258,7 +258,7 @@ func updateCluster(args []string, ns string) {
 	r.ClientVersion = msgs.PGO_VERSION
 	r.Namespace = ns
 	r.AllFlag = AllFlag
-	r.Autofail = AutofailFlag
+	r.Autofail = !DisableAutofailFlag
 	r.Clustername = args
 
 	response, err := api.UpdateCluster(httpclient, &r, &SessionCredentials)

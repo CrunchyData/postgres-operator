@@ -235,7 +235,7 @@ type ClusterStruct struct {
 	BackrestS3Bucket        string `yaml:"BackrestS3Bucket"`
 	BackrestS3Endpoint      string `yaml:"BackrestS3Endpoint"`
 	BackrestS3Region        string `yaml:"BackrestS3Region"`
-	Autofail                bool   `yaml:"Autofail"`
+	DisableAutofail         bool   `yaml:"DisableAutofail"`
 	AutofailReplaceReplica  bool   `yaml:"AutofailReplaceReplica"`
 	PgmonitorPassword       string `yaml:"PgmonitorPassword"`
 }

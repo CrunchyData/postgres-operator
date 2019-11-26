@@ -36,8 +36,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 |ServiceType        | optional, if set, will determine the service type used when creating primary or replica services, defaults to ClusterIP if not set, can be overridden by the user on the command line as well
 |Backrest        | optional, if set, will cause clusters to have the pgbackrest volume PVC provisioned during cluster creation
 |BackrestPort        | currently required to be port 2022
-|Autofail        | optional, if set, will cause clusters to be checked for auto failover in the event of a non-Ready status
-|AutofailReplaceReplica        | optional, default is false, if set, will determine whether a replica is created as part of a failover to replace the promoted replica, the AutofailReplaceReplica setting in *pgo.yaml* is overrode with this command line flag if specified by a user.
+|DisableAutofail        | optional, if set, will disable autofail capabilities by default in any newly created cluster
 
 ## Storage
 | Setting|Definition  |

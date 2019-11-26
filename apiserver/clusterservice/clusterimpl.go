@@ -739,15 +739,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			}
 		}
 
-		//verify that for autofail clusters we have a replica requested
-		if newInstance.Spec.Replicas == "0" {
-			if request.AutofailFlag || apiserver.Pgo.Cluster.Autofail {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = "replica-count of 1 or more is required when autofail is specified"
-				return resp
-			}
-		}
-
 		validateConfigPolicies(clusterName, request.Policies, ns)
 
 		t := time.Now()
@@ -968,7 +959,9 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 	labels := make(map[string]string)
 	labels[config.LABEL_NAME] = name
-	if request.AutofailFlag || apiserver.Pgo.Cluster.Autofail {
+	if !request.AutofailFlag || apiserver.Pgo.Cluster.DisableAutofail {
+		labels[config.LABEL_AUTOFAIL] = "false"
+	} else {
 		labels[config.LABEL_AUTOFAIL] = "true"
 	}
 
@@ -1118,9 +1111,9 @@ func getType(pod *v1.Pod, clusterName string) string {
 		return msgs.PodTypePgpool
 	} else if pod.ObjectMeta.Labels[config.LABEL_PGBACKUP] == "true" {
 		return msgs.PodTypeBackup
-	} else if pod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
+	} else if pod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "master" {
 		return msgs.PodTypePrimary
-	} else {
+	} else if pod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "replica" {
 		return msgs.PodTypeReplica
 	}
 	return msgs.PodTypeUnknown

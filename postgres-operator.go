@@ -34,7 +34,6 @@ import (
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
-	"github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/operator/operatorupgrade"
 	"github.com/crunchydata/postgres-operator/util"
 	"k8s.io/client-go/kubernetes"
@@ -178,8 +177,6 @@ func main() {
 	go podcontroller.Run()
 	go nscontroller.Run()
 	go jobcontroller.Run()
-
-	cluster.InitializeAutoFailover(Clientset, crdClient, namespaceList)
 
 	operatorupgrade.OperatorUpdateCRPgoVersion(Clientset, crdClient, namespaceList)
 

@@ -24,7 +24,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/apps/v1"
+	v1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -40,29 +40,20 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns, pgouser string) msg
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
+	_, err = validateClusterName(request.ClusterName, ns)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
 	if request.Target != "" {
-		_, err = validateDeploymentName(request.Target, request.ClusterName, ns)
+		_, err = isValidFailoverTarget(request.Target, request.ClusterName, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
 		}
-	}
-
-	//get the clusters list
-	var theCRD *crv1.Pgcluster
-	theCRD, err = validateClusterName(request.ClusterName, ns)
-	if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
-	}
-
-	err = checkAutofail(theCRD)
-	if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
 	}
 
 	log.Debugf("create failover called for %s", request.ClusterName)
@@ -83,17 +74,6 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns, pgouser string) msg
 	labels["target"] = request.Target
 	labels[config.LABEL_PG_CLUSTER] = request.ClusterName
 	labels[config.LABEL_PGOUSER] = pgouser
-
-	if request.AutofailReplaceReplica != "" {
-		if request.AutofailReplaceReplica == "true" ||
-			request.AutofailReplaceReplica == "false" {
-			labels[config.LABEL_AUTOFAIL_REPLACE_REPLICA] = request.AutofailReplaceReplica
-		} else {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = "true or false value required for --autofail-replace-replica flag"
-			return resp
-		}
-	}
 
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -126,16 +106,7 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 	resp.Results = make([]string, 0)
 	resp.Targets = make([]msgs.FailoverTargetSpec, 0)
 
-	//get the clusters list
-	var theCRD *crv1.Pgcluster
-
-	theCRD, err = validateClusterName(name, ns)
-	if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
-	}
-	err = checkAutofail(theCRD)
+	_, err = validateClusterName(name, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -159,9 +130,8 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 		log.Debug("PreferredFailoverNode is not set ")
 	}
 
-	//get pods using selector service-name=clusterName-replica
-
-	selector := config.LABEL_SERVICE_NAME + "=" + name + "-replica"
+	//get replica pods using selector pg-cluster=clusterName-replica,role=replica
+	selector := config.LABEL_PG_CLUSTER+"="+name+","+config.LABEL_PGHA_ROLE + "=replica"
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 	if kerrors.IsNotFound(err) {
 		log.Debug("no replicas found")
@@ -174,37 +144,18 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 		return resp
 	}
 
-	deploymentNameList := ""
-	for _, p := range pods.Items {
-		deploymentNameList = deploymentNameList + p.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME] + ","
-	}
-	log.Debugf("deployment name list is %s", deploymentNameList)
-
-	//get failover targets for this cluster
-	//deployments with --selector=primary=false,pg-cluster=ClusterName
-
-	selector = config.LABEL_DEPLOYMENT_NAME + " in (" + deploymentNameList + ")"
-
-	var deployments *v1.DeploymentList
-	deployments, err = kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
-	if kerrors.IsNotFound(err) {
-		log.Debug("no replicas found")
-		resp.Status.Msg = "no replicas found for " + name
-		return resp
-	} else if err != nil {
-		log.Error("error getting deployments " + err.Error())
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
-	}
-
-	log.Debugf("deps len %d", len(deployments.Items))
-	for _, dep := range deployments.Items {
-		log.Debugf("found %s", dep.Name)
+	log.Debugf("pods len %d", len(pods.Items))
+	// loop through each replica pod to get its replications status, as well as the status of the replica pod
+	// itself.  This includes obtaining the location of the WAL file most recently synced to disk, the location
+	// of the WAL file that was most recently replayed, as well as the status of the pod itself (i.e. if it is
+	// "Ready" or "Not Ready").  Also determines if the replica is on a preferred node.
+	for _, pod := range pods.Items {
+		log.Debugf("found %s", pod.Name)
 		target := msgs.FailoverTargetSpec{}
-		target.Name = dep.Name
+		target.Name = pod.Labels[config.LABEL_DEPLOYMENT_NAME]
 
-		target.ReceiveLocation, target.ReplayLocation, target.Node, err = util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &dep, ns, apiserver.Pgo.Cluster.Port)
+		target.ReceiveLocation, target.ReplayLocation, target.Node, err = 
+			util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &pod, ns, apiserver.Pgo.Cluster.Port)
 		if err != nil {
 			log.Error("error getting rep status " + err.Error())
 			resp.Status.Code = msgs.Error
@@ -212,8 +163,16 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 			return resp
 		}
 
-		//get the pod status
-		target.ReadyStatus, target.Node = apiserver.GetPodStatus(dep.Name, ns)
+		//get the replica pod status
+		replicaPodStatus, err := apiserver.GetReplicaPodStatus(pod.Labels[config.LABEL_PG_CLUSTER], ns)
+		if err != nil {
+			log.Error(err)
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+		target.ReadyStatus = replicaPodStatus.ReadyStatus
+		target.Node = replicaPodStatus.NodeName
 		if preferredNode(nodes, target.Node) {
 			target.PreferredNode = true
 		}
@@ -235,21 +194,42 @@ func validateClusterName(clusterName, ns string) (*crv1.Pgcluster, error) {
 	return &cluster, err
 }
 
-func validateDeploymentName(deployName, clusterName, ns string) (*v1.Deployment, error) {
+// isValidFailoverTarget checks to see if the failover target specified in the request is valid,
+// i.e. that it represents a valid replica deployment in the cluster specified.  This is
+// done by first ensuring the deployment specified exists and is associated with the cluster 
+// specified, and then ensuring the PG pod created by the deployment is not the current primary.
+// If the deployment is not found, or if the pod is the current primary, an error will be returned.
+// Otherwise the deployment is returned.
+func isValidFailoverTarget(deployName, clusterName, ns string) (*v1.Deployment, error) {
 
-	deployment, found, err := kubeapi.GetDeployment(apiserver.Clientset, deployName, ns)
-	if !found {
-		return deployment, errors.New("no target found named " + deployName)
+	// Using the following label selector, ensure the deployment specified using deployName exists in the 
+	// cluster specified using clusterName:
+	// pg-cluster=clusterName,deployment-name=deployName
+	selector := config.LABEL_PG_CLUSTER+"="+clusterName+","+config.LABEL_DEPLOYMENT_NAME+"="+deployName
+	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}  else if len(deployments.Items) == 0 {
+		return nil, errors.New("no target found named " + deployName)
+	}  else if len(deployments.Items) > 1 {
+		return nil, errors.New("more than one target found named " + deployName)
 	}
 
-	//make sure the primary is not being selected by the user
-	if deployment.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
-		return deployment, errors.New("deployment primary can not be selected as failover target")
+	// Using the following label selector, determine if the target specified is the current
+	// primary for the cluster and return an error if it is:
+	// pg-cluster=clusterName,deployment-name=deployName,role=master
+	selector = config.LABEL_PG_CLUSTER+"="+clusterName+","+config.LABEL_DEPLOYMENT_NAME+"="+deployName+
+		","+config.LABEL_PGHA_ROLE+"=master"
+	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	if len(pods.Items) > 0 {
+		return nil, errors.New("The primary database cannot be selected as a failover target")
 	}
 
-	return deployment, err
+	return &deployments.Items[0], nil
 
 }
+
 func preferredNode(nodes []string, targetNode string) bool {
 	for _, n := range nodes {
 		if n == targetNode {
@@ -257,14 +237,4 @@ func preferredNode(nodes []string, targetNode string) bool {
 		}
 	}
 	return false
-}
-
-func checkAutofail(cluster *crv1.Pgcluster) error {
-	var err error
-
-	if util.IsAutofailEnabled(cluster) {
-		return errors.New("autofail flag is set to true, manual failover requires autofail to be set to false, use pgo update to disable autofail.")
-	}
-
-	return err
 }
