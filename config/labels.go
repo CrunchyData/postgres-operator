@@ -27,7 +27,6 @@ const LABEL_PGBACKUP = "pgbackup"
 const LABEL_PGTASK = "pg-task"
 
 const LABEL_AUTOFAIL = "autofail"
-const LABEL_AUTOFAIL_REPLACE_REPLICA = "autofail-replace-replica"
 const LABEL_FAILOVER = "failover"
 
 const LABEL_TARGET = "target"
@@ -183,3 +182,4 @@ const GLOBAL_CUSTOM_CONFIGMAP = "pgo-custom-pg-config"
 const LABEL_PGHA_SCOPE = "crunchy-pgha-scope"
 const LABEL_PGHA_DEFAULT_CONFIGMAP = "pgha-default-config"
 const LABEL_PGHA_BOOTSTRAP_BACKUP = "pgha-bootstrap-backup"
+const LABEL_PGHA_ROLE = "role"

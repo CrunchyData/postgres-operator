@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"errors"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
@@ -27,7 +28,19 @@ import (
 	"strings"
 )
 
-var backrestStorageTypes = []string{"local", "s3"}
+var (
+	backrestStorageTypes = []string{"local", "s3"}
+	// ErrDBContainerNotFound is an error that indicates that a "database" container 
+	// could not be found in a specific pod
+	ErrDBContainerNotFound = errors.New("\"database\" container not found in pod")
+)
+
+// ReplicaPodStatus stores the name of the node a replica pod is assigned to, as well
+// as whether or not the pod is considered "Ready" in the Kubernetes cluster
+type ReplicaPodStatus struct {
+    NodeName string
+    ReadyStatus string
+}
 
 func GetSecrets(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowUserSecret, error) {
 
@@ -52,28 +65,33 @@ func GetSecrets(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowUserSecret, erro
 	return output, err
 }
 
-func GetPodStatus(deployName, ns string) (string, string) {
+// GetReplicaPodStatus gets the status of all replica pods in the cluster. Specifically, using
+// the provided cluster name and namespace, it looks up all replica pod in the cluster, and then
+// provides a status for each pod ("Ready" or "Not Ready")
+func GetReplicaPodStatus(clusterName, ns string) (*ReplicaPodStatus, error) {
 
-	//get pods with replica-name=deployName
-	pods, err := kubeapi.GetPods(Clientset, config.LABEL_REPLICA_NAME+"="+deployName, ns)
+	//get pods with pg-cluster=<cluster-name>,role=replica
+	selector := config.LABEL_PG_CLUSTER+"="+clusterName+","+config.LABEL_PGHA_ROLE + "=replica"
+	pods, err := kubeapi.GetPods(Clientset, selector, ns)
 	if err != nil {
-		return "error", "error"
+		return nil, err
 	}
 
 	p := pods.Items[0]
-	nodeName := p.Spec.NodeName
 	for _, c := range p.Status.ContainerStatuses {
 		if c.Name == "database" {
+			var readyStatus string
 			if c.Ready {
-				return "Ready", nodeName
+				readyStatus = "Ready"
 			} else {
-				return "Not Ready", nodeName
+				readyStatus = "Not Ready"
 			}
+			return &ReplicaPodStatus{NodeName: p.Spec.NodeName, ReadyStatus: readyStatus}, nil
 		}
 	}
 
-	return "error2", nodeName
-
+	log.Error(ErrDBContainerNotFound)
+	return nil, ErrDBContainerNotFound
 }
 
 func GetPVCName(pod *v1.Pod) map[string]string {

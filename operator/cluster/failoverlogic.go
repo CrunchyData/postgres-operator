@@ -48,35 +48,11 @@ func Failover(identifier string, clientset *kubernetes.Clientset, client *rest.R
 		log.Error(err)
 		return err
 	}
-	log.Debugf("best pod to failover to is %s", pod.Name)
-
-	//delete the primary deployment if it exists
-
-	//in the autofail scenario, some user might accidentally remove
-	//the primary deployment, this would cause an autofail to occur
-	//so the deployment needs to be checked to be present before
-	//we attempt to remove it...in a manual failover case, the
-	//deployment should be found, and then you would proceed to remove
-	//it
-
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_SERVICE_NAME + "=" + clusterName
-	log.Debugf("selector in failover get deployments is %s", selector)
-	var depList *appsv1.DeploymentList
-	depList, err = kubeapi.GetDeployments(clientset, selector, namespace)
-	if len(depList.Items) > 0 {
-		log.Debug("in failover, the primary deployment is found before removal")
-		err = deletePrimary(clientset, namespace, clusterName, task.ObjectMeta.Labels[config.LABEL_PGOUSER])
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-	} else {
-		log.Debug("in failover, the primary deployment is NOT found so we will not attempt to remove it")
-	}
+	log.Debugf("pod selected to failover to is %s", pod.Name)
 
 	updateFailoverStatus(client, task, namespace, clusterName, "deleted primary deployment "+clusterName)
 
-	//trigger the failover on the replica
+	//trigger the failover to the selected replica
 	err = promote(pod, clientset, client, namespace, restconfig)
 
 	publishPromoteEvent(identifier, namespace, task.ObjectMeta.Labels[config.LABEL_PGOUSER], clusterName, target)
@@ -203,10 +179,12 @@ func promote(
 	clientset *kubernetes.Clientset,
 	client *rest.RESTClient, namespace string, restconfig *rest.Config) error {
 
-	//get the target pod that matches the replica-name=target
-
-	command := make([]string, 1)
-	command[0] = "/opt/cpm/bin/promote.sh"
+	// generate the curl command that will be run on the pod selected for the failover in order
+	// to trigger the failover and promote that specific pod to primary
+	command := make([]string, 3)
+	command [0] = "/bin/bash"
+	command [1] = "-c"
+	command [2] = "curl -s http://localhost:8009/failover -XPOST -d '{\"candidate\":\""+pod.Name+"\"}'"
 
 	log.Debugf("running Exec with namespace=[%s] podname=[%s] container name=[%s]", namespace, pod.Name, pod.Spec.Containers[0].Name)
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset, command, pod.Spec.Containers[0].Name, pod.Name, namespace, nil)

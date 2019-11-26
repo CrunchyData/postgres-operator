@@ -27,7 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/apps/v1"
+	v1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -212,19 +212,16 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 		response.Status.Msg = err.Error()
 		return response
 	}
-
-	//get replicas for this cluster
-	//deployments with --selector=service-name=ClusterName-replica,pg-cluster=ClusterName
-
-	selector := config.LABEL_SERVICE_NAME + "=" + name + "-replica" + "," + config.LABEL_PG_CLUSTER + "=" + name
-
-	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
+	
+	//get replica pods using selector pg-cluster=clusterName-replica,role=replica
+	selector := config.LABEL_PG_CLUSTER+"="+name+","+config.LABEL_PGHA_ROLE + "=replica"
+	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 	if kerrors.IsNotFound(err) {
 		log.Debug("no replicas found")
 		response.Status.Msg = "no replicas found for " + name
 		return response
 	} else if err != nil {
-		log.Error("error getting deployments " + err.Error())
+		log.Error("error getting pods " + err.Error())
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
 		return response
@@ -233,16 +230,26 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 	response.Results = make([]string, 0)
 	response.Targets = make([]msgs.ScaleQueryTargetSpec, 0)
 
-	log.Debugf("deps len %d\n", len(deployments.Items))
+	log.Debugf("pods len %d\n", len(pods.Items))
 
-	for _, dep := range deployments.Items {
-		log.Debugf("found %s", dep.Name)
+	for _, pod := range pods.Items {
+		log.Debugf("found %s", pod.Name)
 		target := msgs.ScaleQueryTargetSpec{}
-		target.Name = dep.Name
+		target.Name = pod.Labels[config.LABEL_DEPLOYMENT_NAME]
 		//get the pod status
-		target.ReadyStatus, target.Node = apiserver.GetPodStatus(dep.Name, ns)
+		//get the replica pod status
+		replicaPodStatus, err := apiserver.GetReplicaPodStatus(pod.Labels[config.LABEL_PG_CLUSTER], ns)
+		if err != nil {
+			log.Error(err)
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+		target.ReadyStatus = replicaPodStatus.ReadyStatus
+		target.Node = replicaPodStatus.NodeName
 		//get the rep status
-		receiveLocation, replayLocation, _, err := util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &dep, ns, apiserver.Pgo.Cluster.Port)
+		receiveLocation, replayLocation, _, err := 
+			util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &pod, ns, apiserver.Pgo.Cluster.Port)
 		if err != nil {
 			log.Error("error getting rep status " + err.Error())
 			response.Status.Code = msgs.Error

@@ -34,7 +34,7 @@ func init() {
 
 	UpdateClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdateClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
-	UpdateClusterCmd.Flags().BoolVar(&AutofailFlag, "autofail", false, "autofail default is false.")
+	UpdateClusterCmd.Flags().BoolVar(&DisableAutofailFlag, "disable-autofail", false, "Disables autofail capabitilies in the cluster.")
 	UpdateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	UpdatePgouserCmd.Flags().StringVarP(&PgouserNamespaces, "pgouser-namespaces", "", "", "The namespaces to use for updating the pgouser roles.")
 	UpdatePgouserCmd.Flags().BoolVar(&AllNamespaces, "all-namespaces", false, "all namespaces.")

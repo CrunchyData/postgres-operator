@@ -28,7 +28,7 @@ Using the operator, it is possible to upgrade a postgres cluster in place.  When
 
 The upgrade is accomplished by updating the CCPImageTag version in the deployment, which causes the old pod to be terminated and a new pod created with the updated deployment specification.
 
-When the upgrade starts, each replica is upgraded seqentially, waiting for the previous replica to go ready before updating the next. After the replicas complete, the primary is then upgraded to the new image. The upgrade process respects the _autofail_ and the _AutofailReplaceReplica_ settings as provided in the pgo.yaml or as a command line flag, if applicable.
+When the upgrade starts, each replica is upgraded seqentially, waiting for the previous replica to go ready before updating the next. After the replicas complete, the primary is then upgraded to the new image. The upgrade process respects the _autofail_ setting as provided in the pgo.yaml or as a command line flag, if applicable.
 
 When the cluster is not in _autofail_ mode, the deployments simply create a new pod when updated, terminating the old one. When autofail is enabled and the primary deployment is updated, the cluster behaves as though the primary had failed and begins the failover process. See _Automatic Failover_ in the _Overview_ section for more details on this and replica replacement.
 

@@ -24,12 +24,9 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
-	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -95,38 +92,7 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	}
 
 	Failover(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clientset, client, clusterName, task, namespace, restconfig)
-	//remove the pgreplica CRD for the promoted replica
-	kubeapi.Deletepgreplica(client, task.ObjectMeta.Labels[config.LABEL_TARGET], namespace)
-
-	//optionally, scale up the replicas to replace the failover target
-	replaced := false
-	userSelection := task.ObjectMeta.Labels[config.LABEL_AUTOFAIL_REPLACE_REPLICA]
-	if userSelection == "true" {
-		log.Debug("replacing replica based on user selection")
-		replaceReplica(client, &cluster, namespace)
-		replaced = true
-	} else if userSelection == "false" {
-		log.Debug("not replacing replica based on user selection")
-	} else if operator.Pgo.Cluster.AutofailReplaceReplica {
-		log.Debug("replacing replica based on pgo.yaml setting")
-		replaceReplica(client, &cluster, namespace)
-		replaced = true
-	} else {
-		log.Debug("not replacing replica")
-	}
-
-	//see if the replica service needs to be removed
-	if !replaced {
-		if len(replicaList.Items) == 1 {
-			log.Debug("removing replica service since last replica was removed by the failover %s", clusterName)
-			err = kubeapi.DeleteService(clientset, clusterName+"-replica", namespace)
-			if err != nil {
-				log.Error("could not delete replica service as part of failover")
-				return
-			}
-		}
-	}
-
+	
 	//if a backrest-repo exists, bounce it with the new
 	//DB_PATH set to the new primary deployment name
 	if cluster.ObjectMeta.Labels[config.LABEL_BACKREST] == "true" {
@@ -160,47 +126,6 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	}
 
 	//remove marker
-
-}
-
-func replaceReplica(client *rest.RESTClient, cluster *crv1.Pgcluster, ns string) {
-
-	//generate new replica name
-	uniqueName := cluster.Spec.Name + "-" + util.RandStringBytesRmndr(4)
-
-	spec := crv1.PgreplicaSpec{}
-	spec.Namespace = ns
-	spec.Name = uniqueName
-	spec.ClusterName = cluster.Spec.Name
-	spec.ReplicaStorage = cluster.Spec.ReplicaStorage
-	spec.ContainerResources = cluster.Spec.ContainerResources
-	spec.UserLabels = make(map[string]string)
-
-	for k, v := range cluster.Spec.UserLabels {
-		spec.UserLabels[k] = v
-	}
-
-	spec.UserLabels[config.LABEL_PG_CLUSTER] = cluster.Spec.Name
-
-	newInstance := &crv1.Pgreplica{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name: uniqueName,
-		},
-		Spec: spec,
-		Status: crv1.PgreplicaStatus{
-			State:   crv1.PgreplicaStateCreated,
-			Message: "Created, not processed yet",
-		},
-	}
-
-	newInstance.ObjectMeta.Labels = make(map[string]string)
-	for x, y := range cluster.ObjectMeta.Labels {
-		newInstance.ObjectMeta.Labels[x] = y
-	}
-
-	newInstance.ObjectMeta.Labels[config.LABEL_NAME] = uniqueName
-
-	kubeapi.Createpgreplica(client, newInstance, ns)
 
 }
 

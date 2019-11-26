@@ -29,11 +29,6 @@ Manual failover is performed by PostgreSQL Operator API actions involving a *que
 
 ### Automatic Failover 
 
-Automatic failover is performed by the PostgreSQL Operator by evaluating the readiness of a primary.  Automated failover can be globally specified for all clusters or specific clusters. If desired, users can configure the PostgreSQL Operator to replace a failed primary PostgreSQL instance with a new PostgreSQL replica.
+Automatic failover is managed and performed by Patroni, which is running within each primary and replica database pod within the cluster to ensure the PG database remains highly-available.  By monitoring the cluster, Patroni is able to detect failures in the primary database, and then automatically failover to (i.e. "promote") a healthy replica.  Automatic failover capabilities are enabled by default for any newly created clusters, but can also be disabled for a newly created cluster by setting `DisableFailover` to true in the `pgo.yaml` configuration, or by setting the `--disable-failover` flag via the PGO CLI when creating the cluster.  If disabled, failover capabiltiies can then be enabled (as well as disabled once again) at any time by utilizing the `pgo update cluster` command. 
 
-The PostgreSQL Operator automatic failover logic includes:
-
- * deletion of the failed primary Deployment
- * pick the best replica to become the new primary
- * label change of the targeted Replica to match the primary Service
- * execute the PostgreSQL promote command on the targeted replica
+When a failover does occur, the system automatically attempts to turn the old primary into a replica (using `pg_rewind` if needed), ensuring the cluster maintains the same amount of database pods and replicas following a failure.  Additionally, the `role` label on each pod is updated as needed to properly identify the `master` pod and any `replica` pods following a failover event, therefore ensuring the primary and replica services point to the proper database pods.  And finally, the `pgBackRest` dedicated repository host is also automatically reconfigured to point to the `PGDATA` directory of the new `primary` pod following a failover.
