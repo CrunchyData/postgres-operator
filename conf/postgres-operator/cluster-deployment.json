@@ -39,8 +39,7 @@
                             "command": [
                                 "/bin/bash",
                                 "-c",
-                                "[[ -f '/crunchyadm/pgha_initialized' ]]",
-                                "&& pg_isready -h /crunchyadm -U crunchyready"
+                                "[ -f /crunchyadm/pgha_initialized ] && exec pg_isready -h /crunchyadm -U crunchyready"
                              ]
                         },
                         "initialDelaySeconds": 15,
@@ -170,8 +169,7 @@
                             "command": [
                                 "/bin/bash",
                                 "-c",
-                                "[[ -f '/crunchyadm/pgha_initialized' ]]",
-                                "&& pg_isready -h /crunchyadm -U crunchyready"
+                                "[ -f /crunchyadm/pgha_initialized ] && exec pg_isready -h /crunchyadm -U crunchyready"
                              ]
                         },
                         "initialDelaySeconds": 15,
