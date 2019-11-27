@@ -45,7 +45,7 @@
 
 - name: Delete PG Cluster Secrets
   shell: |
-    {{ kubectl_or_oc }} delete secrets --selector=vendor=crunchydata -n {{ item }}
+    {{ kubectl_or_oc }} delete configmap,secrets --selector=vendor=crunchydata -n {{ item }}
   with_items:
   - "{{ watched_namespaces }}"
   when: not preserve_pg_clusters|bool
@@ -133,7 +133,7 @@
 
 - name: Delete existing Service Accounts (Watched Namespaces)
   shell: |
-    {{ kubectl_or_oc }} delete serviceaccount pgo-target pgo-backrest -n {{ item }}
+    {{ kubectl_or_oc }} delete serviceaccount pgo-backrest pgo-pg pgo-target -n {{ item }}
   with_items:
   - "{{ watched_namespaces }}"
   ignore_errors: yes
@@ -175,20 +175,9 @@
   - update
   when: create_rbac|bool
 
-- name: Delete existing Backrest Role Binding
+- name: Delete existing PGO Role Bindings (Watched Namespaces)
   shell: |
-    {{ kubectl_or_oc }} delete rolebinding pgo-backrest-role-binding -n {{ item }}
-  with_items:
-  - "{{ watched_namespaces }}"
-  ignore_errors: yes
-  no_log: false
-  tags:
-  - uninstall
-  when: create_rbac|bool
-
-- name: Delete existing PGO Role Binding (Watched Namespaces)
-  shell: |
-    {{ kubectl_or_oc }} delete rolebinding pgo-target-role-binding -n {{ item }}
+    {{ kubectl_or_oc }} delete rolebinding pgo-backrest-role-binding pgo-pg-role-binding pgo-target-role-binding -n {{ item }}
   with_items:
   - "{{ watched_namespaces }}"
   ignore_errors: yes
@@ -207,20 +196,9 @@
   - update
   when: create_rbac|bool
 
-- name: Delete existing Backrest Role
+- name: Delete existing PGO Roles (Watched Namespaces)
   shell: |
-    {{ kubectl_or_oc }} delete role pgo-backrest-role -n {{ item }}
-  with_items:
-  - "{{ watched_namespaces }}"
-  ignore_errors: yes
-  no_log: false
-  tags:
-  - uninstall
-  when: create_rbac|bool
-
-- name: Delete existing PGO Role (Watched Namespaces)
-  shell: |
-    {{ kubectl_or_oc }} delete role pgo-target-role -n {{ item }}
+    {{ kubectl_or_oc }} delete role pgo-backrest-role pgo-pg-role pgo-target-role -n {{ item }}
   with_items:
   - "{{ watched_namespaces }}"
   ignore_errors: yes
