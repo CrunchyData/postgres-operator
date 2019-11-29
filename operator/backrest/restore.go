@@ -72,7 +72,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	}
 
 	// disable autofail if it is currently enabled
-	if err = util.ToggleAutoFailover(clientset, false, cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE], 
+	if err = util.ToggleAutoFailover(clientset, false, cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE],
 		namespace); err != nil {
 		log.Error(err)
 		return
@@ -93,7 +93,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 
 	log.Debugf("restore workflow: created pvc %s for cluster %s", pvcName, clusterName)
 	//delete current primary and all replica deployments
-	selector := config.LABEL_PG_CLUSTER+"="+clusterName+","+config.LABEL_PG_DATABASE+"=true"
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PG_DATABASE + "=true"
 	var depList *appsv1.DeploymentList
 	depList, err = kubeapi.GetDeployments(clientset, selector, namespace)
 	if err != nil {
@@ -103,8 +103,8 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 
 	if len(depList.Items) == 0 {
 		log.Debugf("restore workflow: no primary or replicas found using selector %s. Skipping deployment deletion.", selector)
-	}  else {
-        for _, depToDelete := range depList.Items { 
+	} else {
+		for _, depToDelete := range depList.Items {
 			err = kubeapi.DeleteDeployment(clientset, depToDelete.Name, namespace)
 			if err != nil {
 				log.Errorf("restore workflow error: could not delete primary or replica %s", depToDelete.Name)
@@ -122,7 +122,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	}
 
 	pgreplicaList := &crv1.PgreplicaList{}
-	selector = config.LABEL_PG_CLUSTER+"="+clusterName
+	selector = config.LABEL_PG_CLUSTER + "=" + clusterName
 	log.Debugf("Restored cluster %s went to ready, patching replicas", clusterName)
 	err = kubeapi.GetpgreplicasBySelector(restclient, pgreplicaList, selector, namespace)
 	if err != nil {
@@ -392,7 +392,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	cluster.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = restoreToName
 	cluster.Spec.UserLabels["name"] = cluster.Spec.Name
 	cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER] = cluster.Spec.ClusterName
-	
+
 	// Set the Patroni scope to the name of the primary deployment.  Replicas will get scope using the
 	// 'current-primary' label on the pgcluster
 	cluster.Spec.UserLabels[config.LABEL_PGHA_SCOPE] = restoreToName
@@ -418,7 +418,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 
 	deploymentFields := operator.DeploymentTemplateFields{
 		Name:               restoreToName,
-		IsInit:				true,
+		IsInit:             true,
 		Replicas:           "1",
 		ClusterName:        cluster.Spec.Name,
 		PrimaryHost:        restoreToName,
@@ -500,7 +500,7 @@ func publishRestore(id, clusterName, username, namespace string) {
 			Timestamp: time.Now(),
 			EventType: events.EventRestoreCluster,
 		},
-		Clustername:       clusterName,
+		Clustername: clusterName,
 	}
 
 	err := events.Publish(f)

@@ -6,12 +6,12 @@ The Crunchy PostgreSQL Operator API defines HTTP(S) interactions with the Crunch
 
 ## Direct API Calls
 
-The API can also be accessed by interacting directly with the API server. This 
-can be done by making HTTP requests with curl to get information from the 
+The API can also be accessed by interacting directly with the API server. This
+can be done by making HTTP requests with curl to get information from the
 server. In order to make these calls you will need to provide certificates along
-with your request using the `--cacert`, `--key`, and `--cert` flags. Next you 
+with your request using the `--cacert`, `--key`, and `--cert` flags. Next you
 will need to provide the username and password for the RBAC along with a header
-that includes the content type and the `--insecure` flag. These flags will be 
+that includes the content type and the `--insecure` flag. These flags will be
 the same for all of your interactions with the API server and can be seen in the
 following examples.
 
@@ -34,7 +34,7 @@ GET $PGO_APISERVER_URL/version
 ```
 
 #### Body examples
-In the following examples data is being passed to the apiserver using a json 
+In the following examples data is being passed to the apiserver using a json
 structure. These json structures are defined in the following documentation.
 
 ```
@@ -44,10 +44,10 @@ pgoadmin:examplepassword -H "Content-Type:application/json" --insecure -X GET \
 ```
 
 ###### Create Cluster
-You can create a cluster by sending a POST request to 
-`$PGO_APISERVER_URL/clusters`. In this example `--data` is being sent to the 
-API URL that includes the client version that was returned from the version 
-call, the namespace where the cluster should be created, the name of the new 
+You can create a cluster by sending a POST request to
+`$PGO_APISERVER_URL/clusters`. In this example `--data` is being sent to the
+API URL that includes the client version that was returned from the version
+call, the namespace where the cluster should be created, the name of the new
 cluster and the series number. Series sets the number of clusters that will be
 created in the namespace.
 
@@ -67,8 +67,8 @@ $PGO_APISERVER_URL/clusters
 ###### Show and Delete Cluster
 The last two examples show you how to `show` and `delete` a cluster. Notice
 how instead of passing `"Name":"mycluster"` you pass `"Clustername":"mycluster"
-to reference a cluster that has already been created. For the show cluster 
-example you can replace `"Clustername":"mycluster"` with `"AllFlag":true` to 
+to reference a cluster that has already been created. For the show cluster
+example you can replace `"Clustername":"mycluster"` with `"AllFlag":true` to
 show all of the clusters that are in the given namespace.
 
 ```

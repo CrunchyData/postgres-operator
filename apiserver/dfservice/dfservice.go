@@ -29,9 +29,9 @@ import (
 // pgo df --selector=env=research
 func DfHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation GET /df/{name} dfservice df-name
-    /*```
-    Displays the disk status for PostgreSQL clusters.
-    */
+	/*```
+	  Displays the disk status for PostgreSQL clusters.
+	*/
 	// ---
 	//  produces:
 	//  - application/json

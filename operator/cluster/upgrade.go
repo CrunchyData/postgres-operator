@@ -16,8 +16,8 @@ package cluster
 */
 
 import (
-	"strings"
 	"strconv"
+	"strings"
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -147,12 +147,12 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 		//the new image tag.
 
 		log.Debug("About to patch replica: ", replicaTargetName)
-		
+
 		patchMap := make(map[string]string)
 		patchMap["/spec/template/spec/containers/0/image"] =
-			operator.Pgo.Cluster.CCPImagePrefix+"/"+cluster.Spec.CCPImage+":"+upgradeTask.Spec.Parameters["CCPImageTag"]
+			operator.Pgo.Cluster.CCPImagePrefix + "/" + cluster.Spec.CCPImage + ":" + upgradeTask.Spec.Parameters["CCPImageTag"]
 
-		addSidecarsToPgUpgradePatch(patchMap, cluster, operator.Pgo.Cluster.CCPImagePrefix, 
+		addSidecarsToPgUpgradePatch(patchMap, cluster, operator.Pgo.Cluster.CCPImagePrefix,
 			upgradeTask.Spec.Parameters["CCPImageTag"])
 
 		err = kubeapi.PatchDeployment(clientset, replicaTargetName, namespace, patchMap)
@@ -175,10 +175,10 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 		log.Debug("Minor Upgrade: backrest")
 
 		log.Debug("About to patch backrest: ", backrestTargetName)
-		
+
 		patchMap := make(map[string]string)
 		patchMap["/spec/template/spec/containers/0/image"] =
-			operator.Pgo.Cluster.CCPImagePrefix+"/pgo-backrest-repo:"+upgradeTask.Spec.Parameters["CCPImageTag"]
+			operator.Pgo.Cluster.CCPImagePrefix + "/pgo-backrest-repo:" + upgradeTask.Spec.Parameters["CCPImageTag"]
 
 		err = kubeapi.PatchDeployment(clientset, backrestTargetName, namespace, patchMap)
 		if err != nil {
@@ -207,12 +207,12 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 
 		log.Debug("Minor Upgrade: primary")
 		log.Debug("About to patch primary: ", primaryTargetName)
-		
+
 		patchMap := make(map[string]string)
 		patchMap["/spec/template/spec/containers/0/image"] =
-			operator.Pgo.Cluster.CCPImagePrefix+"/"+cluster.Spec.CCPImage+":"+upgradeTask.Spec.Parameters["CCPImageTag"]
-		
-		addSidecarsToPgUpgradePatch(patchMap, cluster, operator.Pgo.Cluster.CCPImagePrefix, 
+			operator.Pgo.Cluster.CCPImagePrefix + "/" + cluster.Spec.CCPImage + ":" + upgradeTask.Spec.Parameters["CCPImageTag"]
+
+		addSidecarsToPgUpgradePatch(patchMap, cluster, operator.Pgo.Cluster.CCPImagePrefix,
 			upgradeTask.Spec.Parameters["CCPImageTag"])
 
 		err = kubeapi.PatchDeployment(clientset, primaryTargetName, namespace, patchMap)
@@ -238,7 +238,7 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 	}
 }
 
-func addSidecarsToPgUpgradePatch(patchMap map[string]string, cluster crv1.Pgcluster, ccpImagePrefix, 
+func addSidecarsToPgUpgradePatch(patchMap map[string]string, cluster crv1.Pgcluster, ccpImagePrefix,
 	ccpImageTag string) {
 
 	collectEnabled, _ := strconv.ParseBool(cluster.Labels[config.LABEL_COLLECT])
@@ -246,15 +246,15 @@ func addSidecarsToPgUpgradePatch(patchMap map[string]string, cluster crv1.Pgclus
 
 	if collectEnabled && badgerEnabled {
 		patchMap["/spec/template/spec/containers/1/image"] =
-		ccpImagePrefix+"/"+config.LABEL_COLLECT_CCPIMAGE+":"+ccpImageTag
+			ccpImagePrefix + "/" + config.LABEL_COLLECT_CCPIMAGE + ":" + ccpImageTag
 		patchMap["/spec/template/spec/containers/2/image"] =
-			ccpImagePrefix+"/"+config.LABEL_BADGER_CCPIMAGE+":"+ccpImageTag
+			ccpImagePrefix + "/" + config.LABEL_BADGER_CCPIMAGE + ":" + ccpImageTag
 	} else if collectEnabled && !badgerEnabled {
 		patchMap["/spec/template/spec/containers/1/image"] =
-			ccpImagePrefix+"/"+config.LABEL_COLLECT_CCPIMAGE+":"+ccpImageTag
+			ccpImagePrefix + "/" + config.LABEL_COLLECT_CCPIMAGE + ":" + ccpImageTag
 	} else if badgerEnabled && !collectEnabled {
 		patchMap["/spec/template/spec/containers/1/image"] =
-			ccpImagePrefix+"/"+config.LABEL_BADGER+":"+ccpImageTag
+			ccpImagePrefix + "/" + config.LABEL_BADGER + ":" + ccpImageTag
 	}
 }
 

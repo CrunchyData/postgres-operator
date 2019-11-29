@@ -30,7 +30,7 @@ import (
 
 var (
 	backrestStorageTypes = []string{"local", "s3"}
-	// ErrDBContainerNotFound is an error that indicates that a "database" container 
+	// ErrDBContainerNotFound is an error that indicates that a "database" container
 	// could not be found in a specific pod
 	ErrDBContainerNotFound = errors.New("\"database\" container not found in pod")
 )
@@ -38,8 +38,8 @@ var (
 // ReplicaPodStatus stores the name of the node a replica pod is assigned to, as well
 // as whether or not the pod is considered "Ready" in the Kubernetes cluster
 type ReplicaPodStatus struct {
-    NodeName string
-    ReadyStatus string
+	NodeName    string
+	ReadyStatus string
 }
 
 func GetSecrets(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowUserSecret, error) {
@@ -71,7 +71,7 @@ func GetSecrets(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowUserSecret, erro
 func GetReplicaPodStatus(clusterName, ns string) (*ReplicaPodStatus, error) {
 
 	//get pods with pg-cluster=<cluster-name>,role=replica
-	selector := config.LABEL_PG_CLUSTER+"="+clusterName+","+config.LABEL_PGHA_ROLE + "=replica"
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGHA_ROLE + "=replica"
 	pods, err := kubeapi.GetPods(Clientset, selector, ns)
 	if err != nil {
 		return nil, err

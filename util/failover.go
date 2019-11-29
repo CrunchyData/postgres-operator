@@ -100,7 +100,7 @@ func GetPod(clientset *kubernetes.Clientset, deploymentName, namespace string) (
 	var pod *v1.Pod
 	var pods *v1.PodList
 
-	selector := config.LABEL_DEPLOYMENT_NAME+"="+deploymentName+","+config.LABEL_PGHA_ROLE+"=replica"
+	selector := config.LABEL_DEPLOYMENT_NAME + "=" + deploymentName + "," + config.LABEL_PGHA_ROLE + "=replica"
 	pods, err = kubeapi.GetPods(clientset, selector, namespace)
 	if err != nil {
 		return pod, err
@@ -130,12 +130,12 @@ func GetPod(clientset *kubernetes.Clientset, deploymentName, namespace string) (
 }
 
 // GetRepStatus is responsible for retrieving and returning the replication status of the pg replica
-// deployed in the pod specified.  Specifically, the function returns the location of the WAL file 
-// that was most recently synced to disk on the replica (i.e. pg_last_xlog_receive_location() or 
-// pg_last_wal_receive_lsn()), and the location of the WAL file that was most recently replayed on 
-// the replica(i.e. pg_last_xlog_replay_location() or pg_last_wal_replay_lsn()), both as unint64. 
-// Additionally, the  name of the Kubernetes node the replica is running on is returned.  This 
-// function therefore provides insight into the replication lag for a replica, as needed to support 
+// deployed in the pod specified.  Specifically, the function returns the location of the WAL file
+// that was most recently synced to disk on the replica (i.e. pg_last_xlog_receive_location() or
+// pg_last_wal_receive_lsn()), and the location of the WAL file that was most recently replayed on
+// the replica(i.e. pg_last_xlog_replay_location() or pg_last_wal_replay_lsn()), both as unint64.
+// Additionally, the  name of the Kubernetes node the replica is running on is returned.  This
+// function therefore provides insight into the replication lag for a replica, as needed to support
 // selection of replicas when performing manual failovers and scaling down the cluster.
 func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, pod *v1.Pod, namespace, databasePort string) (uint64, uint64, string, error) {
 	var err error
@@ -168,7 +168,7 @@ func GetRepStatus(restclient *rest.RESTClient, clientset *kubernetes.Clientset, 
 
 	if !found {
 		log.Error("postgres secret not found for " + pod.Labels[config.LABEL_DEPLOYMENT_NAME])
-		return receiveLocation, replayLocation, nodeName, errors.New("postgres secret not found for " + 
+		return receiveLocation, replayLocation, nodeName, errors.New("postgres secret not found for " +
 			pod.Labels[config.LABEL_DEPLOYMENT_NAME])
 	}
 
@@ -315,10 +315,10 @@ func GetPreferredNodes(clientset *kubernetes.Clientset, selector, namespace stri
 // Patroni, which will result in Patroni stepping aside from managing the cluster.  This will effectively cause
 // Patroni to stop responding to failures or other database activities, e.g. it will not attempt to start the
 // database when stopped to perform maintenance
-func ToggleAutoFailover(clientset *kubernetes.Clientset, enable bool, pghaScope, namespace string) error  {
-	
+func ToggleAutoFailover(clientset *kubernetes.Clientset, enable bool, pghaScope, namespace string) error {
+
 	// find the "config" configMap created by Patroni
-	configMapName := pghaScope+"-config"
+	configMapName := pghaScope + "-config"
 	log.Debugf("setting autofailover to %t for cluster with pgha scope %s", enable, pghaScope)
 
 	configMap, found := kubeapi.GetConfigMap(clientset, configMapName, namespace)
@@ -333,10 +333,10 @@ func ToggleAutoFailover(clientset *kubernetes.Clientset, enable bool, pghaScope,
 	var configJSON map[string]interface{}
 	json.Unmarshal([]byte(configJSONStr), &configJSON)
 
-	if !enable {  
+	if !enable {
 		// disable autofail condition
 		disableFailover(clientset, configMap, configJSON, namespace)
-	}  else {
+	} else {
 		// enable autofail
 		enableFailover(clientset, configMap, configJSON, namespace)
 	}
@@ -344,13 +344,13 @@ func ToggleAutoFailover(clientset *kubernetes.Clientset, enable bool, pghaScope,
 	return nil
 }
 
-// If "pause" is present in the config and set to "true", then it needs to be removed to enable 
-// failover.  Otherwise, if "pause" isn't present in the config or if it has a value other than 
+// If "pause" is present in the config and set to "true", then it needs to be removed to enable
+// failover.  Otherwise, if "pause" isn't present in the config or if it has a value other than
 // true, then assume autofail is enabled and do nothing (when Patroni see's an invalid value for
 // "pause" it sets it to "true")
-func enableFailover(clientset *kubernetes.Clientset, configMap *v1.ConfigMap, configJSON map[string]interface{}, 
+func enableFailover(clientset *kubernetes.Clientset, configMap *v1.ConfigMap, configJSON map[string]interface{},
 	namespace string) error {
-	if _,ok := configJSON["pause"] ; ok && configJSON["pause"] == true {
+	if _, ok := configJSON["pause"]; ok && configJSON["pause"] == true {
 		log.Debugf("updating pause key in configMap %s to enable autofailover", configMap.Name)
 		//  disabled autofail by removing "pause" from the config
 		delete(configJSON, "pause")
@@ -364,20 +364,20 @@ func enableFailover(clientset *kubernetes.Clientset, configMap *v1.ConfigMap, co
 			return err
 		}
 	} else {
-		log.Debugf("autofailover already enabled according to the pause key (or lack thereof) in configMap %s", 
+		log.Debugf("autofailover already enabled according to the pause key (or lack thereof) in configMap %s",
 			configMap.Name)
 	}
 	return nil
 }
 
 // If "pause" isn't present in the config then assume autofail is enabled and needs to be disabled
-// by setting "pause" to true.  Or if it is present and set to something other than "true" (e.g. 
+// by setting "pause" to true.  Or if it is present and set to something other than "true" (e.g.
 // "false" or "null"), then it also needs to be disabled by setting "pause" to true.
-func disableFailover(clientset *kubernetes.Clientset, configMap *v1.ConfigMap, configJSON map[string]interface{}, 
+func disableFailover(clientset *kubernetes.Clientset, configMap *v1.ConfigMap, configJSON map[string]interface{},
 	namespace string) error {
-	if _,ok := configJSON["pause"] ; !ok || configJSON["pause"] != true  {
+	if _, ok := configJSON["pause"]; !ok || configJSON["pause"] != true {
 		log.Debugf("updating pause key in configMap %s to disable autofailover", configMap.Name)
-		// disable autofail by setting "pause" to true 
+		// disable autofail by setting "pause" to true
 		configJSON["pause"] = true
 		configJSONFinalStr, err := json.Marshal(configJSON)
 		if err != nil {
@@ -389,8 +389,8 @@ func disableFailover(clientset *kubernetes.Clientset, configMap *v1.ConfigMap, c
 			return err
 		}
 	} else {
-		log.Debugf("autofailover already disabled according to the pause key in configMap %s", 
-		configMap.Name)
+		log.Debugf("autofailover already disabled according to the pause key in configMap %s",
+			configMap.Name)
 	}
 	return nil
 }

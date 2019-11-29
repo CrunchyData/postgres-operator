@@ -113,7 +113,7 @@ func PatchDeployment(clientset *kubernetes.Clientset, name, namespace string, pa
 	things := make([]ThingSpec, 0)
 	for path, val := range pathValueMap {
 		things = append(things, ThingSpec{"replace", path, val})
-    }
+	}
 
 	patchBytes, err = json.Marshal(things)
 	if err != nil {

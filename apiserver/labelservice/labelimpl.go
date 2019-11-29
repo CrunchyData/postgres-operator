@@ -139,8 +139,8 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 					Topic:     topics,
 					EventType: events.EventCreateLabel,
 				},
-				Clustername:       items[i].Spec.Name,
-				Label:             LabelCmdLabel,
+				Clustername: items[i].Spec.Name,
+				Label:       LabelCmdLabel,
 			}
 
 			err = events.Publish(f)

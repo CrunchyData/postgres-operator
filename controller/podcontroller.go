@@ -16,8 +16,8 @@ limitations under the License.
 */
 
 import (
-	"strconv"
 	"context"
+	"strconv"
 	"sync"
 	"time"
 
@@ -131,8 +131,8 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 	//handle the case when a pg database pod is updated
 	if isPostgresPod(newpod) {
 
-		// Handle the "role" label change from "replica" to "master" following a failover.  Specifically, patch the pgBackRest 
-		// dedicated repository host (specifically the PGBACKREST_DB_PATH env var) to point to the proper directory for the new 
+		// Handle the "role" label change from "replica" to "master" following a failover.  Specifically, patch the pgBackRest
+		// dedicated repository host (specifically the PGBACKREST_DB_PATH env var) to point to the proper directory for the new
 		// primary
 		if oldpod.ObjectMeta.Labels["role"] == "replica" && labels["role"] == "master" {
 			err = backrest.UpdateDBPath(c.PodClientset, &pgcluster, "/pgdata/"+labels["name"], newpod.ObjectMeta.Namespace)
@@ -186,21 +186,21 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 				//see if there are pgtasks for adding a policy
 				if oldDatabaseStatus == false && v.Ready {
 
-					// Disable autofailover in the cluster that is now "Ready" if the autofail label is set 
+					// Disable autofailover in the cluster that is now "Ready" if the autofail label is set
 					// to "false" on the pgcluster (i.e. label "autofail=true")
 					autofailEnabled, err := strconv.ParseBool(cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL])
 					if err != nil {
 						log.Error(err)
 						return
 					} else if !autofailEnabled {
-						util.ToggleAutoFailover(c.PodClientset, false, cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE], 
+						util.ToggleAutoFailover(c.PodClientset, false, cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE],
 							cluster.ObjectMeta.Namespace)
 					}
 
 					// update pgreplica status if performing a restore
 					if cluster.Status.State == crv1.PgclusterStateRestore {
 						pgreplicaList := &crv1.PgreplicaList{}
-						selector := config.LABEL_PG_CLUSTER+"="+clusterName
+						selector := config.LABEL_PG_CLUSTER + "=" + clusterName
 						log.Debugf("Restored cluster %s went to ready, patching replicas", clusterName)
 						err := kubeapi.GetpgreplicasBySelector(c.PodClient, pgreplicaList, selector, newpod.ObjectMeta.Namespace)
 						if err != nil {
@@ -208,7 +208,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 							return
 						}
 						message := "Cluster has been initialized"
-						err = kubeapi.PatchpgclusterStatus(c.PodClient, crv1.PgclusterStateInitialized, message, cluster, 
+						err = kubeapi.PatchpgclusterStatus(c.PodClient, crv1.PgclusterStateInitialized, message, cluster,
 							newpod.ObjectMeta.Namespace)
 						if err != nil {
 							log.Error(err)
@@ -240,7 +240,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 						tmptask := crv1.Pgtask{}
 						found, err := kubeapi.Getpgtask(c.PodClient, &tmptask, clusterName+"-stanza-create", newpod.ObjectMeta.Namespace)
 						if !found && err != nil {
-							backrestoperator.StanzaCreate(newpod.ObjectMeta.Namespace, clusterName, c.PodClientset, c.PodClient)							 
+							backrestoperator.StanzaCreate(newpod.ObjectMeta.Namespace, clusterName, c.PodClientset, c.PodClient)
 						}
 					}
 
@@ -504,7 +504,7 @@ func publishPrimaryNotReady(clusterName, identifier, username, namespace string)
 			Timestamp: time.Now(),
 			EventType: events.EventPrimaryNotReady,
 		},
-		Clustername:       clusterName,
+		Clustername: clusterName,
 	}
 
 	err := events.Publish(f)

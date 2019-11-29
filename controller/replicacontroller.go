@@ -145,7 +145,7 @@ func (c *PgreplicaController) processNextItem() bool {
 			if err != nil {
 				log.Errorf("ERROR updating pgreplica status: %s", err.Error())
 			}
-		} else  {
+		} else {
 
 			state := crv1.PgreplicaStatePendingInit
 			message := "Pgreplica processing pending the creation of the initial backup"
@@ -183,15 +183,15 @@ func (c *PgreplicaController) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgreplica is updated
 func (c *PgreplicaController) onUpdate(oldObj, newObj interface{}) {
-	
+
 	newPgreplica := newObj.(*crv1.Pgreplica)
 
-	log.Debugf("[PgreplicaController] onUpdate ns=%s %s", newPgreplica.ObjectMeta.Namespace, 
+	log.Debugf("[PgreplicaController] onUpdate ns=%s %s", newPgreplica.ObjectMeta.Namespace,
 		newPgreplica.ObjectMeta.SelfLink)
 
 	// get the pgcluster resource for the cluster the replica is a part of
 	cluster := crv1.Pgcluster{}
-	_, err := kubeapi.Getpgcluster(c.PgreplicaClient, &cluster, newPgreplica.Spec.ClusterName, 
+	_, err := kubeapi.Getpgcluster(c.PgreplicaClient, &cluster, newPgreplica.Spec.ClusterName,
 		newPgreplica.ObjectMeta.Namespace)
 	if err != nil {
 		log.Error(err)

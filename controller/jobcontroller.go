@@ -104,11 +104,11 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	// determine if a foreground deletion of this resource is in progress
 	isForegroundDeletion := false
 	for _, finalizer := range job.Finalizers {
-        if finalizer == meta_v1.FinalizerDeleteDependents {
+		if finalizer == meta_v1.FinalizerDeleteDependents {
 			isForegroundDeletion = true
 			break
 		}
-    }
+	}
 
 	var err error
 
@@ -260,13 +260,13 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 				log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
 			}
 			publishBackupComplete(labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], job.ObjectMeta.Labels[config.LABEL_PGOUSER], "pgbackrest", job.ObjectMeta.Namespace, "")
-		
+
 			// if initial cluster backup, now annotate all existing pgreplica's to initiate replica creation
 			pgreplicaList := &crv1.PgreplicaList{}
-			selector := config.LABEL_PG_CLUSTER+"="+labels[config.LABEL_PG_CLUSTER] 
+			selector := config.LABEL_PG_CLUSTER + "=" + labels[config.LABEL_PG_CLUSTER]
 			if labels[config.LABEL_PGHA_BOOTSTRAP_BACKUP] == "true" {
 				log.Debugf("jobController onUpdate initial backup complete")
-				
+
 				// get the pgcluster resource for the cluster the replica is a part of
 				cluster := crv1.Pgcluster{}
 				_, err = kubeapi.Getpgcluster(c.JobClient, &cluster, labels[config.LABEL_PG_CLUSTER],
@@ -276,14 +276,13 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 					return
 				}
 				message := "Cluster has been initialized"
-				err = kubeapi.PatchpgclusterStatus(c.JobClient, crv1.PgclusterStateInitialized, message, 
+				err = kubeapi.PatchpgclusterStatus(c.JobClient, crv1.PgclusterStateInitialized, message,
 					&cluster, job.ObjectMeta.Namespace)
 				if err != nil {
 					log.Error(err)
 					return
 				}
 
-				
 				err := kubeapi.GetpgreplicasBySelector(c.JobClient, pgreplicaList, selector, job.ObjectMeta.Namespace)
 				if err != nil {
 					log.Error(err)
@@ -306,14 +305,14 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	}
 
 	// create an initial full backup for replica creation once stanza creation is complete
-	if !isForegroundDeletion && labels[config.LABEL_BACKREST] == "true" && 
+	if !isForegroundDeletion && labels[config.LABEL_BACKREST] == "true" &&
 		labels[config.LABEL_BACKREST_COMMAND] == crv1.PgtaskBackrestStanzaCreate {
 		log.Debugf("jobController onUpdate backrest stanza-create job case")
 		if job.Status.Succeeded == 1 {
 			log.Debugf("backrest stanza successfully created for cluster %s", labels[config.LABEL_PG_CLUSTER])
-			log.Debugf("proceeding with the initial full backup for cluster %s as needed for replica creation", 
+			log.Debugf("proceeding with the initial full backup for cluster %s as needed for replica creation",
 				labels[config.LABEL_PG_CLUSTER])
-			
+
 			var backrestRepoPodName string
 			for _, cont := range job.Spec.Template.Spec.Containers {
 				for _, envVar := range cont.Env {
@@ -324,7 +323,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 					}
 				}
 			}
-			backrestoperator.CreateInitialBackup(c.JobClient, job.ObjectMeta.Namespace, 
+			backrestoperator.CreateInitialBackup(c.JobClient, job.ObjectMeta.Namespace,
 				labels[config.LABEL_PG_CLUSTER], backrestRepoPodName)
 		}
 		return
@@ -383,7 +382,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 				Timestamp: time.Now(),
 				EventType: events.EventBenchmarkCompleted,
 			},
-			Clustername:       labels[config.LABEL_PG_CLUSTER],
+			Clustername: labels[config.LABEL_PG_CLUSTER],
 		}
 
 		err = events.Publish(f)
@@ -544,9 +543,9 @@ func publishBackupComplete(clusterName, clusterIdentifier, username, backuptype,
 			Timestamp: time.Now(),
 			EventType: events.EventCreateBackupCompleted,
 		},
-		Clustername:       clusterName,
-		BackupType:        backuptype,
-		Path:              path,
+		Clustername: clusterName,
+		BackupType:  backuptype,
+		Path:        path,
 	}
 
 	err := events.Publish(f)
@@ -567,7 +566,7 @@ func publishRestoreComplete(clusterName, identifier, username, namespace string)
 			Timestamp: time.Now(),
 			EventType: events.EventRestoreClusterCompleted,
 		},
-		Clustername:       clusterName,
+		Clustername: clusterName,
 	}
 
 	err := events.Publish(f)
@@ -589,7 +588,7 @@ func publishDeleteClusterComplete(clusterName, identifier, username, namespace s
 			Timestamp: time.Now(),
 			EventType: events.EventDeleteClusterCompleted,
 		},
-		Clustername:       clusterName,
+		Clustername: clusterName,
 	}
 
 	err := events.Publish(f)

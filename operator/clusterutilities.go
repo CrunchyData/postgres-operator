@@ -19,8 +19,8 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"strings"
 	"strconv"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -297,14 +297,14 @@ func AddDefaultPostgresHaConfigMap(clientset *kubernetes.Clientset, cluster *crv
 	}
 
 	if isInit {
-	    data["init"] = "true"
+		data["init"] = "true"
 	} else {
-        data["init"] = "false"
+		data["init"] = "false"
 	}
 
 	configmap := &v1.ConfigMap{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:   cluster.Name+"-"+DefaultPgHaConfigMapSuffix,
+			Name:   cluster.Name + "-" + DefaultPgHaConfigMapSuffix,
 			Labels: labels,
 		},
 		Data: data,
@@ -487,10 +487,10 @@ func GetPgbackrestS3EnvVars(backrestLabel, backRestStorageTypeLabel string,
 // UpdatePghaDefaultConfigInitFlag sets the init value for the pgha config file to true or false depending on the vlaue
 // provided
 func UpdatePghaDefaultConfigInitFlag(clientset *kubernetes.Clientset, initVal bool, clusterName, namespace string) {
-	
+
 	log.Debugf("cluster %s has been initialized, updating init value in default pgha configMap "+
 		"to prevent future bootstrap attempts", clusterName)
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName+","+config.LABEL_PGHA_DEFAULT_CONFIGMAP + "=true"
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGHA_DEFAULT_CONFIGMAP + "=true"
 	configMapList, found := kubeapi.ListConfigMap(clientset, selector, namespace)
 	if !found {
 		log.Errorf("unable to find the default pgha configMap found for cluster %s using selector %s, unable to set "+
@@ -501,6 +501,6 @@ func UpdatePghaDefaultConfigInitFlag(clientset *kubernetes.Clientset, initVal bo
 	}
 	configMap := &configMapList.Items[0]
 	configMap.Data["init"] = strconv.FormatBool(initVal)
-	
+
 	kubeapi.UpdateConfigMap(clientset, configMap, namespace)
 }

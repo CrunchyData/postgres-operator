@@ -105,8 +105,8 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			Timestamp: time.Now(),
 			EventType: events.EventCreateCluster,
 		},
-		Clustername:       cl.ObjectMeta.Name,
-		WorkflowID:        cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
+		Clustername: cl.ObjectMeta.Name,
+		WorkflowID:  cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
 	}
 
 	err = events.Publish(f)
@@ -227,7 +227,7 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 			Timestamp: time.Now(),
 			EventType: events.EventDeleteCluster,
 		},
-		Clustername:       cl.Spec.Name,
+		Clustername: cl.Spec.Name,
 	}
 
 	err = events.Publish(f)
@@ -340,7 +340,7 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 			Timestamp: time.Now(),
 			EventType: events.EventScaleDownCluster,
 		},
-		Clustername:       replica.Spec.ClusterName,
+		Clustername: replica.Spec.ClusterName,
 	}
 
 	err = events.Publish(f)
@@ -399,9 +399,9 @@ func publishClusterCreateFailure(cl *crv1.Pgcluster, errorMsg string) {
 			Timestamp: time.Now(),
 			EventType: events.EventCreateClusterFailure,
 		},
-		Clustername:       cl.ObjectMeta.Name,
-		ErrorMessage:      errorMsg,
-		WorkflowID:        cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
+		Clustername:  cl.ObjectMeta.Name,
+		ErrorMessage: errorMsg,
+		WorkflowID:   cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
 	}
 
 	err := events.Publish(f)

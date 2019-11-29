@@ -195,8 +195,8 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 				Timestamp: time.Now(),
 				EventType: events.EventLoad,
 			},
-			Clustername:       c.Name,
-			Loadconfig:        LoadCfg.TableToLoad,
+			Clustername: c.Name,
+			Loadconfig:  LoadCfg.TableToLoad,
 		}
 
 		err = events.Publish(f)

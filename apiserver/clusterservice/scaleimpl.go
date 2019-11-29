@@ -212,9 +212,9 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 		response.Status.Msg = err.Error()
 		return response
 	}
-	
+
 	//get replica pods using selector pg-cluster=clusterName-replica,role=replica
-	selector := config.LABEL_PG_CLUSTER+"="+name+","+config.LABEL_PGHA_ROLE + "=replica"
+	selector := config.LABEL_PG_CLUSTER + "=" + name + "," + config.LABEL_PGHA_ROLE + "=replica"
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 	if kerrors.IsNotFound(err) {
 		log.Debug("no replicas found")
@@ -248,7 +248,7 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 		target.ReadyStatus = replicaPodStatus.ReadyStatus
 		target.Node = replicaPodStatus.NodeName
 		//get the rep status
-		receiveLocation, replayLocation, _, err := 
+		receiveLocation, replayLocation, _, err :=
 			util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &pod, ns, apiserver.Pgo.Cluster.Port)
 		if err != nil {
 			log.Error("error getting rep status " + err.Error())

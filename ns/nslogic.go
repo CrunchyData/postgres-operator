@@ -235,7 +235,6 @@ func installTargetRBAC(clientset *kubernetes.Clientset, operatorNamespace, targe
 		return err
 	}
 
-
 	err = CreatePGOPgServiceAccount(clientset, targetNamespace)
 	if err != nil {
 		log.Error(err)
@@ -251,7 +250,6 @@ func installTargetRBAC(clientset *kubernetes.Clientset, operatorNamespace, targe
 		log.Error(err)
 		return err
 	}
-
 
 	return nil
 
@@ -741,7 +739,7 @@ func CreatePGOPgRoleBinding(clientset *kubernetes.Clientset, targetNamespace str
 	var buffer bytes.Buffer
 	err := config.PgoPgRoleBindingTemplate.Execute(&buffer,
 		PgoPgRoleBinding{
-			TargetNamespace:   targetNamespace,
+			TargetNamespace: targetNamespace,
 		})
 	if err != nil {
 		log.Error(err.Error())

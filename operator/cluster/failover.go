@@ -82,8 +82,8 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 			Timestamp: time.Now(),
 			EventType: events.EventFailoverCluster,
 		},
-		Clustername:       clusterName,
-		Target:            task.ObjectMeta.Labels[config.LABEL_TARGET],
+		Clustername: clusterName,
+		Target:      task.ObjectMeta.Labels[config.LABEL_TARGET],
 	}
 
 	err = events.Publish(f)
@@ -92,7 +92,7 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	}
 
 	Failover(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clientset, client, clusterName, task, namespace, restconfig)
-	
+
 	//if a backrest-repo exists, bounce it with the new
 	//DB_PATH set to the new primary deployment name
 	if cluster.ObjectMeta.Labels[config.LABEL_BACKREST] == "true" {

@@ -16,10 +16,10 @@ limitations under the License.
 */
 
 import (
-	"strconv"
 	"context"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -172,7 +172,7 @@ func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
 	//	log.Debugf("pgcluster ns=%s %s onUpdate", newcluster.ObjectMeta.Namespace, newcluster.ObjectMeta.Name)
 
 	// check to see if the "autofail" label on the pgcluster CR has been changed from either true to false, or from
-	// false to true.  If it has been changed to false, autofail will then be disabled in the pg cluster.  If has 
+	// false to true.  If it has been changed to false, autofail will then be disabled in the pg cluster.  If has
 	// been changed to true, autofail will then be enabled in the pg cluster
 	if newcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] != "" {
 		autofailEnabledOld, err := strconv.ParseBool(oldcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL])
@@ -186,8 +186,8 @@ func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
 			return
 		}
 		if autofailEnabledNew != autofailEnabledOld {
-			util.ToggleAutoFailover(c.PgclusterClientset, autofailEnabledNew, 
-				newcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE], 
+			util.ToggleAutoFailover(c.PgclusterClientset, autofailEnabledNew,
+				newcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE],
 				newcluster.ObjectMeta.Namespace)
 		}
 

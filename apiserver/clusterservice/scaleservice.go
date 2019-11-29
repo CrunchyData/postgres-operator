@@ -89,7 +89,7 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	//      description: Output
 	//      schema:
 	//        "$ref": "#/definitions/ClusterScaleResponse"
-	//SCALE_CLUSTER_PERM	
+	//SCALE_CLUSTER_PERM
 	// This is a pain to document because it doesn't use a struct...
 	var ns string
 	vars := mux.Vars(r)

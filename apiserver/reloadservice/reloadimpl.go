@@ -118,7 +118,7 @@ func Reload(request *msgs.ReloadRequest, ns, username string) msgs.ReloadRespons
 				Timestamp: time.Now(),
 				EventType: events.EventReloadCluster,
 			},
-			Clustername:       cluster.Spec.Name,
+			Clustername: cluster.Spec.Name,
 		}
 
 		err = events.Publish(f)

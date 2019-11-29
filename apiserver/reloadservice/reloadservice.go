@@ -44,7 +44,7 @@ func ReloadHandler(w http.ResponseWriter, r *http.Request) {
 	//    '200':
 	//      description: Output
 	//      schema:
-	//        "$ref": "#/definitions/ReloadResponse"	
+	//        "$ref": "#/definitions/ReloadResponse"
 	var err error
 	var username, ns string
 
