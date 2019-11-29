@@ -74,5 +74,4 @@ const (
 	PgreplicaStatePendingRestore PgreplicaState = "pgreplica Pending restore"
 	// PgreplicaStateProcessed ...
 	PgreplicaStateProcessed PgreplicaState = "pgreplica Processed"
-
 )

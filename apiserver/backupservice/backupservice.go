@@ -103,9 +103,9 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 // returns a ShowBackupResponse
 func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation GET /backupsdelete/{name} backupservice backupsdelete-name
-    /*```
-    Delete a backup taken with pgbasebackup
-    */
+	/*```
+	  Delete a backup taken with pgbasebackup
+	*/
 	// ---
 	//  produces:
 	//  - application/json
@@ -177,9 +177,9 @@ func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
 // pgo backup mycluster
 func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation POST /backups backupservice backups
-    /*```
-    Create a backup with pgbasebackup
-    */
+	/*```
+	  Create a backup with pgbasebackup
+	*/
 	// ---
 	//  produces:
 	//  - application/json
@@ -227,9 +227,9 @@ func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
 // business logic to perform a pg_basebackup restore, and then returns the appropriate response
 func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation POST /pgbasebackuprestore backupservice pgbasebackuprestore
-    /*```
-    Restore a cluster using pgbasebackup
-    */
+	/*```
+	  Restore a cluster using pgbasebackup
+	*/
 	// ---
 	//  produces:
 	//  - application/json

@@ -26,9 +26,9 @@ import (
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
-	log "github.com/sirupsen/logrus"																																																																																																																																																																						
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -100,7 +100,7 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 	newjob.ObjectMeta.Labels[config.LABEL_PGOUSER] = task.ObjectMeta.Labels[config.LABEL_PGOUSER]
 	newjob.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = task.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 
-	if task.Spec.Parameters[config.LABEL_PGHA_BOOTSTRAP_BACKUP] == "true"  {
+	if task.Spec.Parameters[config.LABEL_PGHA_BOOTSTRAP_BACKUP] == "true" {
 		newjob.ObjectMeta.Labels[config.LABEL_PGHA_BOOTSTRAP_BACKUP] = "true"
 	}
 
@@ -119,8 +119,8 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 				Timestamp: time.Now(),
 				EventType: events.EventCreateBackup,
 			},
-			Clustername:       jobFields.ClusterName,
-			BackupType:        "pgbackrest",
+			Clustername: jobFields.ClusterName,
+			BackupType:  "pgbackrest",
 		}
 
 		err := events.Publish(f)
@@ -130,7 +130,7 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 	}
 
 }
- 
+
 // CreateInitialBackup creates a Pgtask in order to initiate the initial pgBackRest backup for a cluster
 // as needed to support replica creation
 func CreateInitialBackup(restclient *rest.RESTClient, namespace, clusterName, podName string) (*crv1.Pgtask, error) {
@@ -141,18 +141,18 @@ func CreateInitialBackup(restclient *rest.RESTClient, namespace, clusterName, po
 }
 
 // CreateBackup creates a Pgtask in order to initiate a pgBackRest backup
-func CreateBackup(restclient *rest.RESTClient, namespace, clusterName, podName string, params map[string]string, 
+func CreateBackup(restclient *rest.RESTClient, namespace, clusterName, podName string, params map[string]string,
 	backupOpts string) (*crv1.Pgtask, error) {
-	
+
 	log.Debug("pgBackRest operator CreateBackup called")
-	
+
 	cluster := crv1.Pgcluster{}
 	_, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace)
 	if err != nil {
-	    log.Error(err)
-	    return nil, err
+		log.Error(err)
+		return nil, err
 	}
-	
+
 	var newInstance *crv1.Pgtask
 	taskName := "backrest-backup-" + cluster.Name
 
@@ -170,7 +170,7 @@ func CreateBackup(restclient *rest.RESTClient, namespace, clusterName, podName s
 	spec.Parameters[config.LABEL_BACKREST_OPTS] = backupOpts
 	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]
 
-    for k, v := range params { 
+	for k, v := range params {
 		spec.Parameters[k] = v
 	}
 
@@ -184,7 +184,7 @@ func CreateBackup(restclient *rest.RESTClient, namespace, clusterName, podName s
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = cluster.Name
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = cluster.ObjectMeta.Labels[config.LABEL_PGOUSER]
-	
+
 	err = kubeapi.Createpgtask(restclient, newInstance, cluster.Namespace)
 	if err != nil {
 		log.Error(err)

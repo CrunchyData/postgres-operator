@@ -29,7 +29,7 @@ type Status struct {
 	// status code
 	Code string
 	// status message
-	Msg  string
+	Msg string
 }
 
 // BasicAuthCredentials ...

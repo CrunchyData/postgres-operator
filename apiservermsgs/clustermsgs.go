@@ -21,28 +21,28 @@ import (
 
 // ShowClusterRequest shows cluster
 //
-// swagger:model 
+// swagger:model
 type ShowClusterRequest struct {
 	// Name of the cluster to show
 	// required: true
-	Clustername   string	`json:"clustername"`
+	Clustername string `json:"clustername"`
 	// Selector of the cluster to show
-	Selector      string	`json:"selector"`
+	Selector string `json:"selector"`
 	// Image tag of the cluster
-	Ccpimagetag   string	`json:"ccpimagetag"`
+	Ccpimagetag string `json:"ccpimagetag"`
 	// Version of API client
-	// required: true	
-	ClientVersion string	`json:"clientversion"`
+	// required: true
+	ClientVersion string `json:"clientversion"`
 	// Namespace to search
-	// required: true	
-	Namespace     string	`json:"namespace"`
+	// required: true
+	Namespace string `json:"namespace"`
 	// Shows all clusters
-	AllFlag       bool	`json:"allflag"`
+	AllFlag bool `json:"allflag"`
 }
 
 // CreateClusterRequest
 //
-// swagger:model 
+// swagger:model
 type CreateClusterRequest struct {
 	Name                string `json:"Name"`
 	Namespace           string
@@ -74,16 +74,16 @@ type CreateClusterRequest struct {
 	ReplicaStorageConfig string
 	ContainerResources   string
 	// Version of API client
-	// required: true	
-	ClientVersion        string
+	// required: true
+	ClientVersion string
 }
 
 // CreateClusterResponse
 //
-// swagger:model 
+// swagger:model
 type CreateClusterResponse struct {
-	Results []string	`json:"results"`
-	Status			`json:"status"`
+	Results []string `json:"results"`
+	Status  `json:"status"`
 }
 
 // ShowClusterService
@@ -122,7 +122,7 @@ type ShowClusterPod struct {
 }
 
 // ShowClusterDeployment
-// 
+//
 // swagger:model
 type ShowClusterDeployment struct {
 	Name         string
@@ -161,10 +161,10 @@ type ShowClusterResponse struct {
 // DeleteClusterRequest ...
 // swagger:model
 type DeleteClusterRequest struct {
-	Clustername   string
-	Selector      string
+	Clustername string
+	Selector    string
 	// Version of API client
-	// required: true	
+	// required: true
 	ClientVersion string
 	Namespace     string
 	AllFlag       bool
@@ -182,10 +182,10 @@ type DeleteClusterResponse struct {
 // UpdateClusterRequest ...
 // swagger:model
 type UpdateClusterRequest struct {
-	Clustername   []string
-	Selector      string
+	Clustername []string
+	Selector    string
 	// Version of API client
-	// required: true	
+	// required: true
 	ClientVersion string
 	Namespace     string
 	AllFlag       bool
@@ -202,10 +202,10 @@ type UpdateClusterResponse struct {
 // ClusterTestRequest ...
 // swagger:model
 type ClusterTestRequest struct {
-	Clustername   string
-	Selector      string
+	Clustername string
+	Selector    string
 	// Version of API client
-	// required: true	
+	// required: true
 	ClientVersion string
 	Namespace     string
 	AllFlag       bool

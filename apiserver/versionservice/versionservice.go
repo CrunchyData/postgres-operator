@@ -26,9 +26,9 @@ import (
 // pgo version
 func VersionHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation GET /version versionservice version
-    /*```
-    
-    */
+	/*```
+
+	 */
 	// ---
 	//  produces:
 	//  - application/json
@@ -57,9 +57,9 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation GET /health versionservice health
-    /*```
-    
-    */
+	/*```
+
+	 */
 	// ---
 	//  produces:
 	//  - application/json

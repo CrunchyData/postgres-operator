@@ -84,14 +84,14 @@ func CreateFailoverHandler(w http.ResponseWriter, r *http.Request) {
 // QueryFailoverHandler ...
 // pgo failover mycluster --query
 func QueryFailoverHandler(w http.ResponseWriter, r *http.Request) {
-    // swagger:operation GET /failover/{name} failoverservice failover-service
-    /*```
-    Prints the list of failover candidates.
-    */
-    // ---
-    //  produces:
-    //  - application/json
-    //  parameters:
+	// swagger:operation GET /failover/{name} failoverservice failover-service
+	/*```
+	  Prints the list of failover candidates.
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
 	//  - name: "name"
 	//    description: "Cluster Name"
 	//    in: "path"
@@ -107,11 +107,11 @@ func QueryFailoverHandler(w http.ResponseWriter, r *http.Request) {
 	//    in: "path"
 	//    type: "string"
 	//    required: true
-    //  responses:
-    //    '200':
-    //      description: Output
-    //      schema:
-    //        "$ref": "#/definitions/QueryFailoverResponse"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/QueryFailoverResponse"
 	var ns string
 
 	vars := mux.Vars(r)

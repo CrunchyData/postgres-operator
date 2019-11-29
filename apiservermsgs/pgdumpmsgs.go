@@ -22,7 +22,6 @@ type CreatepgDumpBackupResponse struct {
 	Status
 }
 
-
 // CreatepgDumpBackup ...
 // swagger:model
 type CreatepgDumpBackupRequest struct {

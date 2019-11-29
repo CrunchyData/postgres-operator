@@ -29,9 +29,9 @@ import (
 // parameters secretfrom
 func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation POST /policies policyservice policies
-    /*```
-    Create a SQL policy
-    */
+	/*```
+	  Create a SQL policy
+	*/
 	// ---
 	//  produces:
 	//  - application/json
@@ -101,9 +101,9 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 // returns a DeletePolicyResponse
 func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation POST /policiesdelete policyservice policiesdelete
-    /*```
-    Delete a SQL policy
-    */
+	/*```
+	  Delete a SQL policy
+	*/
 	// ---
 	//  produces:
 	//  - application/json
@@ -166,9 +166,9 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 // returns a ShowPolicyResponse
 func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation POST /showpolicies policyservice showpolicies
-    /*```
-    Show policy information
-    */
+	/*```
+	  Show policy information
+	*/
 	// ---
 	//  produces:
 	//  - application/json
@@ -233,9 +233,9 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 // pgo apply mypolicy --selector=name=mycluster
 func ApplyPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation POST /policies/apply policyservice policies-apply
-    /*```
-    APPLY allows you to apply a Policy to a set of clusters.
-    */
+	/*```
+	  APPLY allows you to apply a Policy to a set of clusters.
+	*/
 	// ---
 	//  produces:
 	//  - application/json

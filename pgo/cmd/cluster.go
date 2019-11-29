@@ -231,8 +231,8 @@ func createCluster(args []string, ns string) {
 	} else {
 		r.PgbouncerUser = PgBouncerUser
 	}
-	
-response, err := api.CreateCluster(httpclient, &SessionCredentials, r)
+
+	response, err := api.CreateCluster(httpclient, &SessionCredentials, r)
 	if err != nil {
 		fmt.Println("Error: ", err)
 		os.Exit(2)

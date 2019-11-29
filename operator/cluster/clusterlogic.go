@@ -103,7 +103,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	cl.Spec.UserLabels[config.LABEL_PGOUSER] = cl.ObjectMeta.Labels[config.LABEL_PGOUSER]
 	cl.Spec.UserLabels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 
-    // Set the Patroni scope to the name of the primary deployment.  Replicas will get scope using the
+	// Set the Patroni scope to the name of the primary deployment.  Replicas will get scope using the
 	// 'current-primary' label on the pgcluster
 	cl.Spec.UserLabels[config.LABEL_PGHA_SCOPE] = cl.Spec.Name
 
@@ -162,7 +162,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 			}
 		} else {
 			log.Error(err.Error())
-		    return err
+			return err
 		}
 	}
 
@@ -428,8 +428,8 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 			Timestamp: time.Now(),
 			EventType: events.EventScaleCluster,
 		},
-		Clustername:       cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
-		Replicaname:       cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
+		Clustername: cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
+		Replicaname: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
 	}
 
 	err = events.Publish(f)
@@ -501,8 +501,8 @@ func publishScaleError(namespace string, username string, cluster *crv1.Pgcluste
 			Timestamp: time.Now(),
 			EventType: events.EventScaleCluster,
 		},
-		Clustername:       cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
-		Replicaname:       cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
+		Clustername: cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
+		Replicaname: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
 	}
 
 	err := events.Publish(f)
@@ -523,7 +523,7 @@ func publishDeleteCluster(namespace, username, clusterName, identifier string) {
 			Timestamp: time.Now(),
 			EventType: events.EventDeleteCluster,
 		},
-		Clustername:       clusterName,
+		Clustername: clusterName,
 	}
 
 	err := events.Publish(f)

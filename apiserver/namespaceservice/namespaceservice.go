@@ -27,9 +27,9 @@ import (
 // pgo show namespace
 func ShowNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation POST /namespace namespaceservice namespace
-    /*```
-    Show namespace information
-    */
+	/*```
+	  Show namespace information
+	*/
 	// ---
 	// produces:
 	// - application/json
@@ -76,9 +76,9 @@ func ShowNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 
 func CreateNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation POST /namespacecreate namespaceservice namespacecreate
-    /*```
-    Create a namespace
-    */
+	/*```
+	  Create a namespace
+	*/
 	// ---
 	// produces:
 	// - application/json
@@ -123,9 +123,9 @@ func CreateNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 
 func DeleteNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation POST /namespacedelete namespaceservice namespacedelete
-    /*```
-    Delete a namespaces
-    */
+	/*```
+	  Delete a namespaces
+	*/
 	// ---
 	//  produces:
 	//  - application/json
@@ -170,9 +170,9 @@ func DeleteNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 }
 func UpdateNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation POST /namespaceupdate namespaceservice namespaceupdate
-    /*```
-    Update a namespace, applying Operator RBAC
-    */
+	/*```
+	  Update a namespace, applying Operator RBAC
+	*/
 	// ---
 	//  produces:
 	//  - application/json

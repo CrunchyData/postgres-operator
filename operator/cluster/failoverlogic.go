@@ -182,9 +182,9 @@ func promote(
 	// generate the curl command that will be run on the pod selected for the failover in order
 	// to trigger the failover and promote that specific pod to primary
 	command := make([]string, 3)
-	command [0] = "/bin/bash"
-	command [1] = "-c"
-	command [2] = "curl -s http://localhost:8009/failover -XPOST -d '{\"candidate\":\""+pod.Name+"\"}'"
+	command[0] = "/bin/bash"
+	command[1] = "-c"
+	command[2] = "curl -s http://localhost:8009/failover -XPOST -d '{\"candidate\":\"" + pod.Name + "\"}'"
 
 	log.Debugf("running Exec with namespace=[%s] podname=[%s] container name=[%s]", namespace, pod.Name, pod.Spec.Containers[0].Name)
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset, command, pod.Spec.Containers[0].Name, pod.Name, namespace, nil)
@@ -262,8 +262,8 @@ func publishPromoteEvent(identifier, namespace, username, clusterName, target st
 			Timestamp: time.Now(),
 			EventType: events.EventFailoverCluster,
 		},
-		Clustername:       clusterName,
-		Target:            target,
+		Clustername: clusterName,
+		Target:      target,
 	}
 
 	err := events.Publish(f)
@@ -284,8 +284,8 @@ func publishPrimaryDeleted(identifier, clusterName, deploymentToDelete, username
 			Timestamp: time.Now(),
 			EventType: events.EventPrimaryDeleted,
 		},
-		Clustername:       clusterName,
-		Deploymentname:    deploymentToDelete,
+		Clustername:    clusterName,
+		Deploymentname: deploymentToDelete,
 	}
 
 	err := events.Publish(f)

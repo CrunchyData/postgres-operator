@@ -172,7 +172,7 @@ func AddPgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 			Timestamp: time.Now(),
 			EventType: events.EventCreatePgpool,
 		},
-		Clustername:       clusterName,
+		Clustername: clusterName,
 	}
 
 	err = events.Publish(f)
@@ -240,7 +240,7 @@ func DeletePgpoolFromTask(clientset *kubernetes.Clientset, restclient *rest.REST
 			Timestamp: time.Now(),
 			EventType: events.EventDeletePgpool,
 		},
-		Clustername:       clusterName,
+		Clustername: clusterName,
 	}
 
 	err = events.Publish(f)

@@ -29,9 +29,9 @@ import (
 // pgo status --selector=env=research
 func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation GET /status statusservice status
-    /*```
-    Display namespace wide information for PostgreSQL clusters.
-    */
+	/*```
+	  Display namespace wide information for PostgreSQL clusters.
+	*/
 	// ---
 	//  produces:
 	//  - application/json

@@ -48,10 +48,10 @@ type CreateFailoverResponse struct {
 // CreateFailoverRequest ...
 // swagger:model
 type CreateFailoverRequest struct {
-	Namespace              string
-	ClusterName            string
-	Target                 string
-	ClientVersion          string
+	Namespace     string
+	ClusterName   string
+	Target        string
+	ClientVersion string
 }
 
 // QueryFailoverRequest ...

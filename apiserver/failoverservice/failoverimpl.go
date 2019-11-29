@@ -131,7 +131,7 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 	}
 
 	//get replica pods using selector pg-cluster=clusterName-replica,role=replica
-	selector := config.LABEL_PG_CLUSTER+"="+name+","+config.LABEL_PGHA_ROLE + "=replica"
+	selector := config.LABEL_PG_CLUSTER + "=" + name + "," + config.LABEL_PGHA_ROLE + "=replica"
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 	if kerrors.IsNotFound(err) {
 		log.Debug("no replicas found")
@@ -154,7 +154,7 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 		target := msgs.FailoverTargetSpec{}
 		target.Name = pod.Labels[config.LABEL_DEPLOYMENT_NAME]
 
-		target.ReceiveLocation, target.ReplayLocation, target.Node, err = 
+		target.ReceiveLocation, target.ReplayLocation, target.Node, err =
 			util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &pod, ns, apiserver.Pgo.Cluster.Port)
 		if err != nil {
 			log.Error("error getting rep status " + err.Error())
@@ -196,31 +196,31 @@ func validateClusterName(clusterName, ns string) (*crv1.Pgcluster, error) {
 
 // isValidFailoverTarget checks to see if the failover target specified in the request is valid,
 // i.e. that it represents a valid replica deployment in the cluster specified.  This is
-// done by first ensuring the deployment specified exists and is associated with the cluster 
+// done by first ensuring the deployment specified exists and is associated with the cluster
 // specified, and then ensuring the PG pod created by the deployment is not the current primary.
 // If the deployment is not found, or if the pod is the current primary, an error will be returned.
 // Otherwise the deployment is returned.
 func isValidFailoverTarget(deployName, clusterName, ns string) (*v1.Deployment, error) {
 
-	// Using the following label selector, ensure the deployment specified using deployName exists in the 
+	// Using the following label selector, ensure the deployment specified using deployName exists in the
 	// cluster specified using clusterName:
 	// pg-cluster=clusterName,deployment-name=deployName
-	selector := config.LABEL_PG_CLUSTER+"="+clusterName+","+config.LABEL_DEPLOYMENT_NAME+"="+deployName
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_DEPLOYMENT_NAME + "=" + deployName
 	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if err != nil {
 		log.Error(err)
 		return nil, err
-	}  else if len(deployments.Items) == 0 {
+	} else if len(deployments.Items) == 0 {
 		return nil, errors.New("no target found named " + deployName)
-	}  else if len(deployments.Items) > 1 {
+	} else if len(deployments.Items) > 1 {
 		return nil, errors.New("more than one target found named " + deployName)
 	}
 
 	// Using the following label selector, determine if the target specified is the current
 	// primary for the cluster and return an error if it is:
 	// pg-cluster=clusterName,deployment-name=deployName,role=master
-	selector = config.LABEL_PG_CLUSTER+"="+clusterName+","+config.LABEL_DEPLOYMENT_NAME+"="+deployName+
-		","+config.LABEL_PGHA_ROLE+"=master"
+	selector = config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_DEPLOYMENT_NAME + "=" + deployName +
+		"," + config.LABEL_PGHA_ROLE + "=master"
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 	if len(pods.Items) > 0 {
 		return nil, errors.New("The primary database cannot be selected as a failover target")

@@ -27,9 +27,9 @@ import (
 // pgo show config
 func ShowConfigHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation GET /config configservice config
-    /*```
-    Show configuration information for the Operator.
-    */
+	/*```
+	  Show configuration information for the Operator.
+	*/
 	// ---
 	//  produces:
 	//  - application/json

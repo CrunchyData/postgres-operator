@@ -274,8 +274,8 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 				Timestamp: time.Now(),
 				EventType: events.EventApplyPolicy,
 			},
-			Clustername:       d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER],
-			Policyname:        request.Name,
+			Clustername: d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER],
+			Policyname:  request.Name,
 		}
 
 		err = events.Publish(f)
