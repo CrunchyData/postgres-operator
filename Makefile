@@ -86,7 +86,6 @@ winpgo:	check-go-vars
 		--build-arg BASEVER=$(PGO_VERSION) \
 		$(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
-	docker tag docker.io/$(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)  $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
 
 %-img-docker: check-go-vars $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS) pgo-base-docker build-%
 	docker build \
@@ -95,7 +94,6 @@ winpgo:	check-go-vars
 		--build-arg PREFIX=$(PGO_IMAGE_PREFIX) \
 		--build-arg BASEVER=$(PGO_VERSION) \
 		$(PGOROOT)
-	docker tag docker.io/$(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)  $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
 
 $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS):
 	$(error No Dockerfile found for $* naming pattern)
@@ -121,7 +119,6 @@ pgo-base-buildah: check-go-vars
 		--build-arg RELVER=$(PGO_VERSION) \
 		$(PGOROOT)
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG)
-	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG)  $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG)
 
 pgo-base-docker: check-go-vars
 	docker build \
@@ -129,7 +126,6 @@ pgo-base-docker: check-go-vars
 		-t $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) \
 		--build-arg RELVER=$(PGO_VERSION) \
 		$(PGOROOT)
-	docker tag docker.io/$(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG)  $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG)
 
 pgo-base: pgo-base-$(IMGBUILDER)
 
