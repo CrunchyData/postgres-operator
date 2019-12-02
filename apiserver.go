@@ -96,7 +96,6 @@ func main() {
 		optCertEnforcer, err := apiserver.NewCertEnforcer(skipAuth)
 		if err != nil {
 			log.Fatalf("NOAUTH_ROUTES configured incorrectly: %s", err)
-			os.Exit(2)
 		}
 		r.Use(optCertEnforcer.Enforce)
 	}
@@ -104,16 +103,13 @@ func main() {
 	err := apiserver.WriteTLSCert(serverCertPath, serverKeyPath)
 	if err != nil {
 		log.Fatal(err)
-		os.Exit(2)
 	}
 
 	var caCert []byte
 
 	caCert, err = ioutil.ReadFile(serverCertPath)
 	if err != nil {
-		log.Fatal(err)
-		log.Error("could not read " + serverCertPath)
-		os.Exit(2)
+		log.Fatalf("could not read %s - %v", serverCertPath, err)
 	}
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
@@ -131,9 +127,7 @@ func main() {
 
 	_, err = ioutil.ReadFile(serverKeyPath)
 	if err != nil {
-		log.Fatal(err)
-		log.Error("could not read " + serverKeyPath)
-		os.Exit(2)
+		log.Fatalf("could not read %s - %v", serverKeyPath, err)
 	}
 
 	var srv *http.Server
