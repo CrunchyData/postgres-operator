@@ -125,11 +125,6 @@ func main() {
 
 	log.Info("listening on port " + PORT)
 
-	_, err = ioutil.ReadFile(serverKeyPath)
-	if err != nil {
-		log.Fatalf("could not read %s - %v", serverKeyPath, err)
-	}
-
 	var srv *http.Server
 	if !disableTLS {
 		srv = &http.Server{
