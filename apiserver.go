@@ -18,7 +18,6 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
@@ -28,6 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/routing"
 	crunchylog "github.com/crunchydata/postgres-operator/logging"
+	"github.com/crunchydata/postgres-operator/tlsutil"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -74,10 +74,36 @@ func main() {
 	}
 	log.Debugf("DISABLE_TLS set as %t", tlsDisabled)
 
+	if !tlsDisabled {
+		// ADD_OS_TRUSTSTORE causes the API server to trust clients with a
+		// cert issued by CAs the underlying OS already trusts
+		if osTrust, _ := strconv.ParseBool(os.Getenv("ADD_OS_TRUSTSTORE")); osTrust {
+			if osCAs, err := x509.SystemCertPool(); err != nil {
+				log.Errorf("unable to read OS truststore - [%v], ignoring option", err)
+			} else {
+				tlsTrustedCAs = osCAs
+			}
+		}
+
+		// TLS_CA_TRUST identifies a PEM-encoded file containing certificate
+		// authorities trusted to identify client SSL connections
+		if tp, ok := os.LookupEnv("TLS_CA_TRUST"); ok && tp != "" {
+			if trustFile, err := os.Open(tp); err != nil {
+				log.Errorf("unable to load TLS trust from %s - [%v], ignoring option", tp, err)
+			} else {
+				err = tlsutil.ExtendTrust(tlsTrustedCAs, trustFile)
+				if err != nil {
+					log.Errorf("error reading %s - %v, ignoring option", tp, err)
+				}
+				trustFile.Close()
+			}
+		}
+	}
+
 	// init crunchy-formatted logger
 	crunchylog.CrunchyLogger(crunchylog.SetParameters())
 
-	//give time for pgo-event to start up
+	// give time for pgo-event to start up
 	time.Sleep(time.Duration(5) * time.Second)
 
 	log.Infoln("postgres-operator apiserver starts")
@@ -110,14 +136,16 @@ func main() {
 			log.Fatalf("unable to open server cert at %s - %v", serverKeyPath, err)
 		}
 
-		var caCert []byte
-
-		caCert, err = ioutil.ReadFile(serverCertPath)
-		if err != nil {
-			log.Fatalf("could not read %s - %v", serverCertPath, err)
+		// Add server cert to trust root, necessarily includes server
+		// certificate issuer chain (intermediate and root CAs)
+		if svrCertFile, err := os.Open(serverCertPath); err != nil {
+			log.Fatalf("unable to open %s for reading - %v", serverCertPath, err)
+		} else {
+			if err = tlsutil.ExtendTrust(tlsTrustedCAs, svrCertFile); err != nil {
+				log.Fatalf("error reading server cert at %s - %v", serverCertPath, err)
+			}
+			svrCertFile.Close()
 		}
-
-		tlsTrustedCAs.AppendCertsFromPEM(caCert)
 
 		cfg := &tls.Config{
 			//specify pgo-apiserver in the CN....then, add ServerName: "pgo-apiserver",
