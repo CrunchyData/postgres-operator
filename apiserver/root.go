@@ -651,7 +651,7 @@ func WriteTLSCert(certPath, keyPath string) error {
 
 }
 
-// generateTLSCert generates a self signed cert and the stores it in both
+// generateTLSCert generates a self signed cert and stores it in both
 // the PGOSecretName Secret and certPath, keyPath files
 func generateTLSCert(certPath, keyPath string) error {
 	var err error

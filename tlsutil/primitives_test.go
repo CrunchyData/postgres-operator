@@ -133,7 +133,7 @@ func TestExtendedTrust(t *testing.T) {
 		t.Fatalf("error reading response -%s\n", err)
 	}
 
-	if recv := string(bytes.TrimSpace(body)) + "."; recv != expected {
+	if recv := string(bytes.TrimSpace(body)); recv != expected {
 		t.Fatalf("expected [%s], got [%s] instead\n", expected, recv)
 	}
 }
