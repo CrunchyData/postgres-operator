@@ -86,6 +86,7 @@ func main() {
 	r := mux.NewRouter()
 	routing.RegisterAllRoutes(r)
 
+	var srv *http.Server
 	if !tlsDisabled {
 		// Set up deferred enforcement of certs, given Verify...IfGiven setting
 		skipAuth := []string{
@@ -94,55 +95,52 @@ func main() {
 		if len(skipAuthRoutes) > 0 {
 			skipAuth = append(skipAuth, strings.Split(skipAuthRoutes, ",")...)
 		}
-		optCertEnforcer, err := apiserver.NewCertEnforcer(skipAuth)
+		certEnforcer, err := apiserver.NewCertEnforcer(skipAuth)
 		if err != nil {
 			// Since disabling authentication would break functionality
 			// dependent on the user identity, only certain routes may be
 			// configured in NOAUTH_ROUTES.
 			log.Fatalf("NOAUTH_ROUTES configured incorrectly: %s", err)
 		}
-		r.Use(optCertEnforcer.Enforce)
-	}
+		r.Use(certEnforcer.Enforce)
 
-	err := apiserver.WriteTLSCert(serverCertPath, serverKeyPath)
-	if err != nil {
-		log.Fatal(err)
-	}
+		// Cert files are used for http.ListenAndServeTLS
+		err = apiserver.WriteTLSCert(serverCertPath, serverKeyPath)
+		if err != nil {
+			log.Fatalf("unable to open server cert at %s - %v", serverKeyPath, err)
+		}
 
-	var caCert []byte
+		var caCert []byte
 
-	caCert, err = ioutil.ReadFile(serverCertPath)
-	if err != nil {
-		log.Fatalf("could not read %s - %v", serverCertPath, err)
-	}
+		caCert, err = ioutil.ReadFile(serverCertPath)
+		if err != nil {
+			log.Fatalf("could not read %s - %v", serverCertPath, err)
+		}
 
-	tlsTrustedCAs.AppendCertsFromPEM(caCert)
+		tlsTrustedCAs.AppendCertsFromPEM(caCert)
 
-	cfg := &tls.Config{
-		//specify pgo-apiserver in the CN....then, add ServerName: "pgo-apiserver",
-		ServerName:         "pgo-apiserver",
-		ClientAuth:         tls.VerifyClientCertIfGiven,
-		InsecureSkipVerify: tlsNoVerify,
-		ClientCAs:          tlsTrustedCAs,
-		MinVersion:         tls.VersionTLS11,
-	}
+		cfg := &tls.Config{
+			//specify pgo-apiserver in the CN....then, add ServerName: "pgo-apiserver",
+			ServerName:         "pgo-apiserver",
+			ClientAuth:         tls.VerifyClientCertIfGiven,
+			InsecureSkipVerify: tlsNoVerify,
+			ClientCAs:          tlsTrustedCAs,
+			MinVersion:         tls.VersionTLS11,
+		}
 
-	log.Info("listening on port " + srvPort)
-
-	var srv *http.Server
-	if !tlsDisabled {
 		srv = &http.Server{
 			Addr:      ":" + srvPort,
 			Handler:   r,
 			TLSConfig: cfg,
 		}
+		log.Info("listening on port " + srvPort)
 		log.Fatal(srv.ListenAndServeTLS(serverCertPath, serverKeyPath))
 	} else {
 		srv = &http.Server{
 			Addr:    ":" + srvPort,
 			Handler: r,
 		}
+		log.Info("listening on port " + srvPort)
 		log.Fatal(srv.ListenAndServe())
 	}
-
 }
