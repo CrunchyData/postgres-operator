@@ -38,63 +38,67 @@ const serverCertPath = "/tmp/server.crt"
 const serverKeyPath = "/tmp/server.key"
 
 func main() {
+	// Environment-overridden variables
+	srvPort := "8443"
+	tlsDisabled := false
+	tlsNoVerify := false
+	tlsTrustedCAs := x509.NewCertPool()
 
-	PORT := "8443"
-	tmp := os.Getenv("PORT")
-	if tmp != "" {
-		PORT = tmp
+	// NOAUTH_ROUTES identifies a comma-separated list of URL routes
+	// which will have authentication disabled, both system-to-system
+	// via TLS and HTTP Basic used to power RBAC
+	skipAuthRoutes := strings.TrimSpace(os.Getenv("NOAUTH_ROUTES"))
+
+	// PORT overrides the server listening port
+	if p, ok := os.LookupEnv("PORT"); ok && p != "" {
+		srvPort = p
 	}
 
-	//give time for pgo-event to start up
-	time.Sleep(time.Duration(5) * time.Second)
-
-	debugFlag := os.Getenv("CRUNCHY_DEBUG")
-	//add logging configuration
-	crunchylog.CrunchyLogger(crunchylog.SetParameters())
-	if debugFlag == "true" {
+	// CRUNCHY_DEBUG sets the logging level to Debug (more verbose)
+	if debug, _ := strconv.ParseBool(os.Getenv("CRUNCHY_DEBUG")); debug {
 		log.SetLevel(log.DebugLevel)
 		log.Debug("debug flag set to true")
 	} else {
 		log.Info("debug flag set to false")
 	}
 
-	tmp = os.Getenv("TLS_NO_VERIFY")
-	if tmp == "true" {
-		log.Debug("TLS_NO_VERIFY set to true")
-	} else {
-		tmp = "false"
-		log.Debug("TLS_NO_VERIFY set to false")
+	// TLS_NO_VERIFY disables verification of SSL client certificates
+	if noVerify, _ := strconv.ParseBool(os.Getenv("TLS_NO_VERIFY")); noVerify {
+		tlsNoVerify = noVerify
 	}
-	tlsNoVerify, _ := strconv.ParseBool(tmp)
+	log.Debugf("TLS_NO_VERIFY set as %t", tlsNoVerify)
 
-	tmp = os.Getenv("DISABLE_TLS")
-	if tmp == "true" {
-		log.Debug("DISABLE_TLS set to true")
-	} else {
-		tmp = "false"
-		log.Debug("DISABLE_TLS set to false")
+	// DISABLE_TLS configures the server to listen over HTTP
+	if noTLS, _ := strconv.ParseBool(os.Getenv("DISABLE_TLS")); noTLS {
+		tlsDisabled = noTLS
 	}
-	disableTLS, _ := strconv.ParseBool(tmp)
+	log.Debugf("DISABLE_TLS set as %t", tlsDisabled)
 
-	skipAuthRoutes := strings.TrimSpace(os.Getenv("NOAUTH_ROUTES"))
+	// init crunchy-formatted logger
+	crunchylog.CrunchyLogger(crunchylog.SetParameters())
+
+	//give time for pgo-event to start up
+	time.Sleep(time.Duration(5) * time.Second)
 
 	log.Infoln("postgres-operator apiserver starts")
-
 	apiserver.Initialize()
 
 	r := mux.NewRouter()
 	routing.RegisterAllRoutes(r)
 
-	certsVerify := tls.VerifyClientCertIfGiven
-	skipAuth := []string{
-		"/healthz", // Required for kube probes
-	}
-	if !disableTLS {
+	if !tlsDisabled {
+		// Set up deferred enforcement of certs, given Verify...IfGiven setting
+		skipAuth := []string{
+			"/healthz", // Required for kube probes
+		}
 		if len(skipAuthRoutes) > 0 {
 			skipAuth = append(skipAuth, strings.Split(skipAuthRoutes, ",")...)
 		}
 		optCertEnforcer, err := apiserver.NewCertEnforcer(skipAuth)
 		if err != nil {
+			// Since disabling authentication would break functionality
+			// dependent on the user identity, only certain routes may be
+			// configured in NOAUTH_ROUTES.
 			log.Fatalf("NOAUTH_ROUTES configured incorrectly: %s", err)
 		}
 		r.Use(optCertEnforcer.Enforce)
@@ -111,31 +115,31 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not read %s - %v", serverCertPath, err)
 	}
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
+
+	tlsTrustedCAs.AppendCertsFromPEM(caCert)
 
 	cfg := &tls.Config{
 		//specify pgo-apiserver in the CN....then, add ServerName: "pgo-apiserver",
 		ServerName:         "pgo-apiserver",
-		ClientAuth:         certsVerify,
+		ClientAuth:         tls.VerifyClientCertIfGiven,
 		InsecureSkipVerify: tlsNoVerify,
-		ClientCAs:          caCertPool,
+		ClientCAs:          tlsTrustedCAs,
 		MinVersion:         tls.VersionTLS11,
 	}
 
-	log.Info("listening on port " + PORT)
+	log.Info("listening on port " + srvPort)
 
 	var srv *http.Server
-	if !disableTLS {
+	if !tlsDisabled {
 		srv = &http.Server{
-			Addr:      ":" + PORT,
+			Addr:      ":" + srvPort,
 			Handler:   r,
 			TLSConfig: cfg,
 		}
 		log.Fatal(srv.ListenAndServeTLS(serverCertPath, serverKeyPath))
 	} else {
 		srv = &http.Server{
-			Addr:    ":" + PORT,
+			Addr:    ":" + srvPort,
 			Handler: r,
 		}
 		log.Fatal(srv.ListenAndServe())
