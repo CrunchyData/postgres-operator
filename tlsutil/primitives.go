@@ -21,6 +21,8 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"io"
+	"io/ioutil"
 	"math"
 	"math/big"
 	"time"
@@ -91,4 +93,17 @@ func NewSelfSignedCACertificate(key *rsa.PrivateKey) (*x509.Certificate, error) 
 		return nil, err
 	}
 	return x509.ParseCertificate(certDERBytes)
+}
+
+// ExtendTrust extends the provided certpool with the PEM-encoded certificates
+// presented by certSource. If reading from certSource produces an error
+// the base pool remains unmodified
+func ExtendTrust(base *x509.CertPool, certSource io.Reader) error {
+	certs, err := ioutil.ReadAll(certSource)
+	if err != nil {
+		return err
+	}
+	base.AppendCertsFromPEM(certs)
+
+	return nil
 }
