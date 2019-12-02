@@ -618,8 +618,10 @@ func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool) {
 	return iAccess, uAccess
 }
 
-//validate or generate the TLS keys
-func GetTLS(certPath, keyPath string) error {
+// WriteTLSCert writes the server certificate and key to files from the
+// PGOSecretName secret or generates a new key (writing to both the secret
+// and the expected files
+func WriteTLSCert(certPath, keyPath string) error {
 
 	var pgoSecret *v1.Secret
 	var found bool
@@ -638,7 +640,7 @@ func GetTLS(certPath, keyPath string) error {
 		}
 	} else {
 		log.Infof("%s Secret NOT found in namespace %s", PGOSecretName, PgoNamespace)
-		err = generateTLS(certPath, keyPath)
+		err = generateTLSCert(certPath, keyPath)
 		if err != nil {
 			log.Error("error generating pgo.tls Secret")
 			return err
@@ -649,8 +651,9 @@ func GetTLS(certPath, keyPath string) error {
 
 }
 
-// generate a self signed cert and the pgo.tls Secret to hold it
-func generateTLS(certPath, keyPath string) error {
+// generateTLSCert generates a self signed cert and the stores it in both
+// the PGOSecretName Secret and certPath, keyPath files
+func generateTLSCert(certPath, keyPath string) error {
 	var err error
 
 	//generate private key

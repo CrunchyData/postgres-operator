@@ -58,6 +58,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Created as part of the apiserver.WriteTLSCert call
 const serverCertPath = "/tmp/server.crt"
 const serverKeyPath = "/tmp/server.key"
 
@@ -203,7 +204,7 @@ func main() {
 		r.Use(optCertEnforcer.Enforce)
 	}
 
-	err := apiserver.GetTLS(serverCertPath, serverKeyPath)
+	err := apiserver.WriteTLSCert(serverCertPath, serverKeyPath)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(2)
