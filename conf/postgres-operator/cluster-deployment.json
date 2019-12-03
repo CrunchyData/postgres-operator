@@ -157,7 +157,7 @@
                     }],
                     "resources": {},
                     "imagePullPolicy": "IfNotPresent"
-                },
+                }{{if .EnableCrunchyadm}},
                 {
                     "name": "crunchyadm",
                     "image": "{{.CCPImagePrefix}}/crunchy-admin:{{.CCPImageTag}}",
@@ -188,7 +188,7 @@
                         }
                     ],
                     "imagePullPolicy": "IfNotPresent"
-                }
+                }{{ end }}
 
                 {{.CollectAddon }}
 

@@ -126,8 +126,9 @@ type DeploymentTemplateFields struct {
 	Replicas    string
 	PrimaryHost string
 	// PgBouncer deployment only
-	PgbouncerPass string
-	IsInit        bool
+	PgbouncerPass    string
+	IsInit           bool
+	EnableCrunchyadm bool
 }
 
 type PostgresHaTemplateFields struct {

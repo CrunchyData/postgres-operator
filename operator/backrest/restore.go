@@ -450,6 +450,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 			cluster.Spec.Port, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Labels[config.LABEL_BACKREST],
 			cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], clientset, namespace),
+		EnableCrunchyadm: operator.Pgo.Cluster.EnableCrunchyadm,
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
