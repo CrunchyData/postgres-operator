@@ -21,6 +21,7 @@ default_pgpool_resources: ""
 cleanup: "false"
 common_name: "crunchydata"
 crunchy_debug: "false"
+enable_crunchyadm: "false"
 
 pgo_client_install: "true"
 pgo_cluster_admin: "false"
