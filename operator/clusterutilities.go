@@ -355,7 +355,7 @@ func GetPrimaryLabels(serviceName string, ClusterName string, replicaFlag bool, 
 	primaryLabels[config.LABEL_PG_CLUSTER] = ClusterName
 
 	for key, value := range userLabels {
-		if key == config.LABEL_PGPOOL || key == config.LABEL_PGBOUNCER {
+		if key == config.LABEL_PGBOUNCER {
 			//these dont apply to a primary or replica
 		} else if key == config.LABEL_AUTOFAIL || key == config.LABEL_NODE_LABEL_KEY || key == config.LABEL_NODE_LABEL_VALUE ||
 			key == config.LABEL_BACKREST_STORAGE_TYPE {

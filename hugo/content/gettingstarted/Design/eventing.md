@@ -16,7 +16,7 @@ Postgres clusters come and go or get updated.
 
 There is a pgo CLI command:
 
-    pgo watch alltopic 
+    pgo watch alltopic
 
 This command connects to the event stream and listens
 on a topic for event real-time.  The command will not
@@ -40,7 +40,6 @@ generated events:
     loadtopic
     postgresusertopic
     policytopic
-    pgpooltopic
     pgbouncertopic
     pgotopic
     pgousertopic
@@ -81,11 +80,11 @@ NSQ looks for events currently at port 4150.  The Operator sends
 events to the NSQ address as defined in the EVENT_ADDR environment
 variable.
 
-If you want to disable eventing when installing with Bash, set the following 
+If you want to disable eventing when installing with Bash, set the following
 environment variable in the Operator Deployment:
     "name": "DISABLE_EVENTING"
     "value": "true"
 
-To disable eventing when installing with Ansible, add the following to 
+To disable eventing when installing with Ansible, add the following to
 your inventory file:
     pgo_disable_eventing='true'

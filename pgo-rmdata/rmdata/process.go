@@ -390,20 +390,6 @@ func removeAddons(request Request) {
 		kubeapi.DeleteService(request.Clientset, pgbouncerDepName, request.Namespace)
 	}
 
-	//remove pgpool
-	pgpoolDepName := request.ClusterName + "-pgpool"
-	_, found, _ = kubeapi.GetDeployment(request.Clientset, pgpoolDepName, request.Namespace)
-	if found {
-		kubeapi.DeleteDeployment(request.Clientset, pgpoolDepName, request.Namespace)
-	}
-
-	//delete the service name=<clustename>-pgpool
-
-	_, found, _ = kubeapi.GetService(request.Clientset, pgpoolDepName, request.Namespace)
-	if found {
-		kubeapi.DeleteService(request.Clientset, pgpoolDepName, request.Namespace)
-	}
-
 }
 
 func removeServices(request Request) {

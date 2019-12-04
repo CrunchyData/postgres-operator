@@ -27,7 +27,6 @@ const (
 	EventTopicLoad      = "loadtopic"
 	EventTopicUser      = "postgresusertopic"
 	EventTopicPolicy    = "policytopic"
-	EventTopicPgpool    = "pgpooltopic"
 	EventTopicPgbouncer = "pgbouncertopic"
 	EventTopicPGO       = "pgotopic"
 	EventTopicPGOUser   = "pgousertopic"
@@ -67,8 +66,6 @@ const (
 	EventApplyPolicy  = "ApplyPolicy"
 	EventDeletePolicy = "DeletePolicy"
 
-	EventCreatePgpool    = "CreatePgpool"
-	EventDeletePgpool    = "DeletePgpool"
 	EventCreatePgbouncer = "CreatePgbouncer"
 	EventDeletePgbouncer = "DeletePgbouncer"
 
@@ -514,36 +511,6 @@ func (p EventBenchmarkCompletedFormat) GetHeader() EventHeader {
 
 func (lvl EventBenchmarkCompletedFormat) String() string {
 	msg := fmt.Sprintf("Event %s (benchmark completed) - clustername %s", lvl.EventHeader, lvl.Clustername)
-	return msg
-}
-
-//----------------------------
-type EventCreatePgpoolFormat struct {
-	EventHeader `json:"eventheader"`
-	Clustername string `json:"clustername"`
-}
-
-func (p EventCreatePgpoolFormat) GetHeader() EventHeader {
-	return p.EventHeader
-}
-
-func (lvl EventCreatePgpoolFormat) String() string {
-	msg := fmt.Sprintf("Event %s (create pgpool) - clustername %s", lvl.EventHeader, lvl.Clustername)
-	return msg
-}
-
-//----------------------------
-type EventDeletePgpoolFormat struct {
-	EventHeader `json:"eventheader"`
-	Clustername string `json:"clustername"`
-}
-
-func (p EventDeletePgpoolFormat) GetHeader() EventHeader {
-	return p.EventHeader
-}
-
-func (lvl EventDeletePgpoolFormat) String() string {
-	msg := fmt.Sprintf("Event %s (delete pgpool) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 

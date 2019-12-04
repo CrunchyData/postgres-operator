@@ -202,7 +202,7 @@ func GetPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterPod, error) 
 
 	output := make([]msgs.ShowClusterPod, 0)
 
-	//get pods, but exclude pgpool and backup pods and backrest repo
+	//get pods, but exclude backup pods and backrest repo
 	selector := config.LABEL_BACKREST_JOB + "!=true," + config.LABEL_BACKREST_RESTORE + "!=true," + config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_NAME + "!=lspvc," + config.LABEL_PGBACKUP + "!=true," + config.LABEL_PGBACKUP + "!=false," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	log.Debugf("selector for GetPods is %s", selector)
 
@@ -626,29 +626,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 
 		//Set archive timeout value
 		userLabelsMap[config.LABEL_ARCHIVE_TIMEOUT] = apiserver.Pgo.Cluster.ArchiveTimeout
-
-		//validate --pgpool-secret
-		if request.PgpoolSecret != "" {
-			var found bool
-			_, found, err = kubeapi.GetSecret(apiserver.Clientset, request.PgpoolSecret, ns)
-			if !found {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = "--pgpool-secret specified secret " + request.PgpoolSecret + " not found"
-				return resp
-			}
-		}
-
-		if request.PgpoolFlag {
-			userLabelsMap[config.LABEL_PGPOOL] = "true"
-			userLabelsMap[config.LABEL_PGPOOL_SECRET] = request.PgpoolSecret
-			log.Debug("userLabelsMap")
-			log.Debugf("%v", userLabelsMap)
-			if request.ReplicaCount < 1 {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = "--pgpool requires replica-count be >= 1"
-				return resp
-			}
-		}
 
 		if request.PgbouncerFlag {
 			// set flag at cluster level later
@@ -1109,8 +1086,6 @@ func getType(pod *v1.Pod, clusterName string) string {
 		return msgs.PodTypePgbackrest
 	} else if pod.ObjectMeta.Labels[config.LABEL_PGBOUNCER] != "" {
 		return msgs.PodTypePgbouncer
-	} else if pod.ObjectMeta.Labels[config.LABEL_PGPOOL_POD] != "" {
-		return msgs.PodTypePgpool
 	} else if pod.ObjectMeta.Labels[config.LABEL_PGBACKUP] == "true" {
 		return msgs.PodTypeBackup
 	} else if pod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "master" {

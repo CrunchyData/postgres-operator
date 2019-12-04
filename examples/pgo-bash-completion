@@ -438,10 +438,6 @@ _pgo_create_cluster()
     local_nonpersistent_flags+=("--pgbouncer")
     flags+=("--pgbouncer-pass=")
     local_nonpersistent_flags+=("--pgbouncer-pass=")
-    flags+=("--pgpool")
-    local_nonpersistent_flags+=("--pgpool")
-    flags+=("--pgpool-secret=")
-    local_nonpersistent_flags+=("--pgpool-secret=")
     flags+=("--policies=")
     two_word_flags+=("-z")
     local_nonpersistent_flags+=("--policies=")
@@ -598,35 +594,6 @@ _pgo_create_pgouser()
     noun_aliases=()
 }
 
-_pgo_create_pgpool()
-{
-    last_command="pgo_create_pgpool"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--pgpool-secret=")
-    local_nonpersistent_flags+=("--pgpool-secret=")
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-    flags+=("--namespace=")
-    two_word_flags+=("-n")
-    flags+=("--pgo-ca-cert=")
-    flags+=("--pgo-client-cert=")
-    flags+=("--pgo-client-key=")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _pgo_create_policy()
 {
     last_command="pgo_create_policy"
@@ -763,7 +730,6 @@ _pgo_create()
     commands+=("pgbouncer")
     commands+=("pgorole")
     commands+=("pgouser")
-    commands+=("pgpool")
     commands+=("policy")
     commands+=("schedule")
     commands+=("user")
@@ -1037,38 +1003,6 @@ _pgo_delete_pgouser()
     noun_aliases=()
 }
 
-_pgo_delete_pgpool()
-{
-    last_command="pgo_delete_pgpool"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--no-prompt")
-    local_nonpersistent_flags+=("--no-prompt")
-    flags+=("--selector=")
-    two_word_flags+=("-s")
-    local_nonpersistent_flags+=("--selector=")
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-    flags+=("--namespace=")
-    two_word_flags+=("-n")
-    flags+=("--pgo-ca-cert=")
-    flags+=("--pgo-client-cert=")
-    flags+=("--pgo-client-key=")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _pgo_delete_policy()
 {
     last_command="pgo_delete_policy"
@@ -1185,7 +1119,6 @@ _pgo_delete()
     commands+=("pgbouncer")
     commands+=("pgorole")
     commands+=("pgouser")
-    commands+=("pgpool")
     commands+=("policy")
     commands+=("schedule")
     commands+=("user")

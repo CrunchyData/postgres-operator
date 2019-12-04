@@ -287,7 +287,7 @@ by the following command:
 Note that if you do a pgbackrest restore, you will need to reset the
 autofail flag to true after the restore is completed.
 
-### Configuring pgbouncer, pgpool or pgbadger to Clusters
+### Configuring pgbouncer or pgbadger to Clusters
 
 #### pgbouncer Deployment and Configuration
 
@@ -314,20 +314,6 @@ configuration to pgbouncer.ini:
 You can remove a pgbouncer from a cluster as follows:
 
     pgo delete pgbouncer mycluster -n pgouser1
-
-#### pgpool Deployment and Configuration
-
-To add a pgpool Deployment to your PostgreSQL cluster, enter:
-
-    pgo create cluster mycluster --pgpool -n pgouser1
-
-You can also add a pgpool to a PostgreSQL cluster after initial creation as follows:
-
-    pgo create pgpool mycluster -n pgouser1
-
-You can remove a pgpool from a PostgreSQL cluster as follows:
-
-    pgo delete pgpool mycluster -n pgouser1
 
 #### pgbadger Deployment
 

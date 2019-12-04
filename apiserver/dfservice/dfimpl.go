@@ -72,8 +72,7 @@ func DfCluster(name, selector, ns string) msgs.DfResponse {
 			return response
 		}
 		for _, p := range pods.Items {
-			if strings.Contains(p.Name, "-pgbouncer") ||
-				strings.Contains(p.Name, "-pgpool") {
+			if strings.Contains(p.Name, "-pgbouncer") {
 				continue
 			}
 
@@ -128,7 +127,7 @@ func DfCluster(name, selector, ns string) msgs.DfResponse {
 // getPrimarySecret get only the primary postgres secret
 func getPrimarySecret(clusterName, ns string) (string, string, error) {
 
-	selector := "pgpool!=true,pg-cluster=" + clusterName
+	selector := "pg-cluster=" + clusterName
 
 	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, ns)
 	if err != nil {

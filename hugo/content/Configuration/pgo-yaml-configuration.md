@@ -121,7 +121,6 @@ for other access modes it might support.
 |DefaultRmdataResource    |optional, the value of the container resources configuration to use for pgo-rmdata containers, if not set, no resource limits or requests are added on the database container
 |DefaultBackupResource    |optional, the value of the container resources configuration to use for crunchy-backup containers, if not set, no resource limits or requests are added on the database container
 |DefaultPgbouncerResource    |optional, the value of the container resources configuration to use for crunchy-pgbouncer containers, if not set, no resource limits or requests are added on the database container
-|DefaultPgpoolResource    |optional, the value of the container resources configuration to use for crunchy-pgpool containers, if not set, no resource limits or requests are added on the database container
 |RequestsMemory        | request size of memory in bytes
 |RequestsCPU        | request size of CPU cores
 |LimitsMemory        | request size of memory in bytes

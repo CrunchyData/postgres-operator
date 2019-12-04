@@ -86,7 +86,6 @@ DefaultLspvcResources:
 DefaultRmdataResources:
 DefaultBackupResources:
 DefaultPgbouncerResources:
-DefaultPgpoolResources:
 ContainerResources:
   small:
     RequestsMemory:  512Mi

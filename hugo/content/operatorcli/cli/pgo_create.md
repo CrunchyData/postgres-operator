@@ -7,10 +7,9 @@ Create a Postgres Operator resource
 
 ### Synopsis
 
-CREATE allows you to create a new Operator resource. For example: 
+CREATE allows you to create a new Operator resource. For example:
     pgo create cluster
     pgo create pgbouncer
-    pgo create pgpool
     pgo create pgouser
     pgo create pgorole
     pgo create policy
@@ -43,10 +42,9 @@ pgo create [flags]
 * [pgo](/operatorcli/cli/pgo/)	 - The pgo command line interface.
 * [pgo create cluster](/operatorcli/cli/pgo_create_cluster/)	 - Create a PostgreSQL cluster
 * [pgo create namespace](/operatorcli/cli/pgo_create_namespace/)	 - Create a namespace
-* [pgo create pgbouncer](/operatorcli/cli/pgo_create_pgbouncer/)	 - Create a pgbouncer 
+* [pgo create pgbouncer](/operatorcli/cli/pgo_create_pgbouncer/)	 - Create a pgbouncer
 * [pgo create pgorole](/operatorcli/cli/pgo_create_pgorole/)	 - Create a pgorole
 * [pgo create pgouser](/operatorcli/cli/pgo_create_pgouser/)	 - Create a pgouser
-* [pgo create pgpool](/operatorcli/cli/pgo_create_pgpool/)	 - Create a pgpool 
 * [pgo create policy](/operatorcli/cli/pgo_create_policy/)	 - Create a SQL policy
 * [pgo create schedule](/operatorcli/cli/pgo_create_schedule/)	 - Create a cron-like scheduled task
 * [pgo create user](/operatorcli/cli/pgo_create_user/)	 - Create a PostgreSQL user

@@ -213,13 +213,11 @@ func createCluster(args []string, ns string) {
 	r.BadgerFlag = BadgerFlag
 	r.ServiceType = ServiceType
 	r.AutofailFlag = !DisableAutofailFlag
-	r.PgpoolFlag = PgpoolFlag
 	r.PgbouncerFlag = PgbouncerFlag
 	r.PgbouncerPass = PgBouncerPassword
 	//r.ArchiveFlag = ArchiveFlag
 	r.BackrestFlag = BackrestFlag
 	r.BackrestStorageType = BackrestStorageType
-	r.PgpoolSecret = PgpoolSecret
 	r.CustomConfig = CustomConfig
 	r.StorageConfig = StorageConfig
 	r.ReplicaStorageConfig = ReplicaStorageConfig

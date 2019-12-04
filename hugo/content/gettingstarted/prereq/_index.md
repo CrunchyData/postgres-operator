@@ -31,7 +31,6 @@ This is a list of service ports that are used in the PostgreSQL Operator. Verify
 | Service | Port |
 | --- | --- |
 | PostgreSQL | 5432 |
-| pgpool | 5432 |
 | pgbouncer | 5432 |
 | pgbackrest | 2022 |
 | postgres-exporter | 9187 |

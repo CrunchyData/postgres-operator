@@ -23,7 +23,6 @@ crunchy-prometheus
 crunchy-grafana
 crunchy-collect
 crunchy-pgbadger
-crunchy-pgpool
 crunchy-backup
 crunchy-postgres
 crunchy-pgbouncer

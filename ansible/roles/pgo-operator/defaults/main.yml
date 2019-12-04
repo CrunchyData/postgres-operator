@@ -16,7 +16,6 @@ default_lspvc_resources: ""
 default_rmdata_resources: ""
 default_backup_resources: ""
 default_pgbouncer_resources: ""
-default_pgpool_resources: ""
 
 cleanup: "false"
 common_name: "crunchydata"

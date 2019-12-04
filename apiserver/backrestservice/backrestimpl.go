@@ -221,7 +221,7 @@ func removeBackupJob(clusterName string) {
 func getDeployName(cluster *crv1.Pgcluster, ns string) (string, error) {
 	var depName string
 
-	selector := config.LABEL_PGPOOL + "!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
+	selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
 	deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if err != nil {

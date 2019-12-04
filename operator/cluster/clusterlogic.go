@@ -240,11 +240,6 @@ func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 			kubeapi.DeleteService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
 		}
 
-		//delete the pgpool deployment if necessary
-		if cl.Spec.UserLabels[config.LABEL_PGPOOL] == "true" {
-			DeletePgpool(clientset, cl.Spec.Name, namespace)
-		}
-
 		//delete the backrest repo deployment if necessary
 		if cl.Labels[config.LABEL_BACKREST] == "true" {
 			deleteBackrestRepo(clientset, cl.Spec.Name, namespace)
