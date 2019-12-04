@@ -42,7 +42,6 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/pgdumpservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgoroleservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgouserservice"
-	"github.com/crunchydata/postgres-operator/apiserver/pgpoolservice"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
 	"github.com/crunchydata/postgres-operator/apiserver/reloadservice"
@@ -172,8 +171,6 @@ func main() {
 	r.HandleFunc("/pgbouncer", pgbouncerservice.CreatePgbouncerHandler).Methods("POST")
 	r.HandleFunc("/pgbouncer", pgbouncerservice.DeletePgbouncerHandler).Methods("DELETE")
 	r.HandleFunc("/pgbouncerdelete", pgbouncerservice.DeletePgbouncerHandler).Methods("POST")
-	r.HandleFunc("/pgpool", pgpoolservice.CreatePgpoolHandler).Methods("POST")
-	r.HandleFunc("/pgpooldelete", pgpoolservice.DeletePgpoolHandler).Methods("POST")
 
 	//schedule
 	r.HandleFunc("/schedule", scheduleservice.CreateScheduleHandler).Methods("POST")

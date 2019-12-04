@@ -63,9 +63,7 @@ type CreateClusterRequest struct {
 	BackrestFlag        string
 	BackrestStorageType string
 	//BackrestRestoreFrom  string
-	PgpoolFlag           bool
 	PgbouncerFlag        bool
-	PgpoolSecret         string
 	PgbouncerSecret      string
 	PgbouncerPass        string
 	PgbouncerUser        string
@@ -102,7 +100,6 @@ type ShowClusterService struct {
 const PodTypePrimary = "primary"
 const PodTypeReplica = "replica"
 const PodTypePgbouncer = "pgbouncer"
-const PodTypePgpool = "pgpool"
 const PodTypePgbackrest = "pgbackrest"
 const PodTypeBackup = "backup"
 const PodTypeUnknown = "unknown"

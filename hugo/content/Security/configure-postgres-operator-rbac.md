@@ -34,7 +34,7 @@ The format of the .pgouser client file is:
 
 The users pgouser file can also be located at:
 
-*/etc/pgo/pgouser* 
+*/etc/pgo/pgouser*
 
 or it can be found at a path specified by the PGOUSER environment variable.
 
@@ -55,7 +55,6 @@ The following list shows the current complete list of possible pgo permissions t
 |CreateDump | allow *pgo create pgdump*|
 |CreateFailover | allow *pgo failover*|
 |CreatePgbouncer | allow *pgo create pgbouncer*|
-|CreatePgpool | allow *pgo create pgpool*|
 |CreatePolicy | allow *pgo create policy*|
 |CreateSchedule | allow *pgo create schedule*|
 |CreateUpgrade | allow *pgo upgrade*|
@@ -64,7 +63,6 @@ The following list shows the current complete list of possible pgo permissions t
 |DeleteBenchmark | allow *pgo delete benchmark*|
 |DeleteCluster | allow *pgo delete cluster*|
 |DeletePgbouncer | allow *pgo delete pgbouncer*|
-|DeletePgpool | allow *pgo delete pgpool*|
 |DeletePolicy | allow *pgo delete policy*|
 |DeleteSchedule | allow *pgo delete schedule*|
 |DeleteUpgrade | allow *pgo delete upgrade*|
@@ -95,7 +93,7 @@ The following list shows the current complete list of possible pgo permissions t
 
 If the user is unauthorized for a pgo command, the user will get back this response:
 
-    Error:  Authentication Failed: 401 
+    Error:  Authentication Failed: 401
 
 ## Making Security Changes
 

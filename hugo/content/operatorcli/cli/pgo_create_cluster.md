@@ -32,8 +32,6 @@ pgo create cluster [flags]
       --pgbadger                         Adds the crunchy-pgbadger container to the database pod.
       --pgbouncer                        Adds a crunchy-pgbouncer deployment to the cluster.
       --pgbouncer-pass string            Password for the pgbouncer user of the crunchy-pgboucer deployment.
-      --pgpool                           Adds the crunchy-pgpool container to the database pod.
-      --pgpool-secret string             The name of a pgpool secret to use for the pgpool configuration.
   -z, --policies string                  The policies to apply when creating a cluster, comma separated.
       --replica-count int                The number of replicas to create as part of the cluster.
       --replica-storage-config string    The name of a Storage config in pgo.yaml to use for the cluster replica storage.

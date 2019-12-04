@@ -28,9 +28,8 @@ var AllNamespaces bool
 var ContainerResources string
 var ReplicaStorageConfig, StorageConfig string
 var CustomConfig string
-var ArchiveFlag, DisableAutofailFlag, PgpoolFlag, PgbouncerFlag, MetricsFlag, BadgerFlag bool
+var ArchiveFlag, DisableAutofailFlag, PgbouncerFlag, MetricsFlag, BadgerFlag bool
 var BackrestFlag, BackrestRestoreFrom string
-var PgpoolSecret string
 var PgbouncerSecret string
 var CCPImage string
 var CCPImageTag string
@@ -57,10 +56,9 @@ var Series int
 var CreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a Postgres Operator resource",
-	Long: `CREATE allows you to create a new Operator resource. For example: 
+	Long: `CREATE allows you to create a new Operator resource. For example:
     pgo create cluster
     pgo create pgbouncer
-    pgo create pgpool
     pgo create pgouser
     pgo create pgorole
     pgo create policy
@@ -72,7 +70,6 @@ var CreateCmd = &cobra.Command{
 			fmt.Println(`Error: You must specify the type of resource to create.  Valid resource types include:
     * cluster
     * pgbouncer
-    * pgpool
     * pgouser
     * pgorole
     * policy
@@ -80,13 +77,12 @@ var CreateCmd = &cobra.Command{
     * user`)
 		} else {
 			switch args[0] {
-			case "cluster", "pgbouncer", "pgpool", "pgouser", "pgorole", "policy", "user", "namespace":
+			case "cluster", "pgbouncer", "pgouser", "pgorole", "policy", "user", "namespace":
 				break
 			default:
 				fmt.Println(`Error: You must specify the type of resource to create.  Valid resource types include:
     * cluster
     * pgbouncer
-    * pgpool
     * pgouser
     * pgorole
     * policy
@@ -171,28 +167,6 @@ var createPgbouncerCmd = &cobra.Command{
 	},
 }
 
-// createPgpoolCmd ...
-var createPgpoolCmd = &cobra.Command{
-	Use:   "pgpool",
-	Short: "Create a pgpool ",
-	Long: `Create a pgpool. For example:
-
-    pgo create pgpool mycluster`,
-	Run: func(cmd *cobra.Command, args []string) {
-
-		if Namespace == "" {
-			Namespace = PGONamespace
-		}
-		log.Debug("create pgpool called ")
-
-		if len(args) == 0 && Selector == "" {
-			fmt.Println(`Error: A cluster name or selector is required for this command.`)
-		} else {
-			createPgpool(args, Namespace)
-		}
-	},
-}
-
 // createScheduleCmd ...
 var createScheduleCmd = &cobra.Command{
 	Use:   "schedule",
@@ -244,7 +218,6 @@ func init() {
 	CreateCmd.AddCommand(createClusterCmd)
 	CreateCmd.AddCommand(createPolicyCmd)
 	CreateCmd.AddCommand(createPgbouncerCmd)
-	CreateCmd.AddCommand(createPgpoolCmd)
 	CreateCmd.AddCommand(createPgouserCmd)
 	CreateCmd.AddCommand(createPgoroleCmd)
 	CreateCmd.AddCommand(createScheduleCmd)
@@ -259,10 +232,8 @@ func init() {
 	createPgoroleCmd.Flags().StringVarP(&Permissions, "permissions", "", "", "specify a comma separated list of permissions for a pgorole")
 	createClusterCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use with pgBackRest. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
-	createClusterCmd.Flags().BoolVarP(&PgpoolFlag, "pgpool", "", false, "Adds the crunchy-pgpool container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgbouncerFlag, "pgbouncer", "", false, "Adds a crunchy-pgbouncer deployment to the cluster.")
 	//	createClusterCmd.Flags().BoolVarP(&ArchiveFlag, "archive", "", false, "Enables archive logging for the database cluster.")
-	createClusterCmd.Flags().StringVarP(&PgpoolSecret, "pgpool-secret", "", "", "The name of a pgpool secret to use for the pgpool configuration.")
 	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "", false, "Adds the crunchy-collect container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&DisableAutofailFlag, "disable-autofail", "", false, "Disables autofail capabitilies in the cluster following cluster initialization.")
 	createClusterCmd.Flags().StringVarP(&CustomConfig, "custom-config", "", "", "The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.")
@@ -304,7 +275,6 @@ func init() {
 	//	createUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
 	createUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")
 	createUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 22, "If no password is supplied, this is the length of the auto generated password")
-	createPgpoolCmd.Flags().StringVarP(&PgpoolSecret, "pgpool-secret", "", "", "The name of a pgpool secret to use for the pgpool configuration.")
 
 	// createPgbouncerCmd.Flags().StringVarP(&PgBouncerUser, "pgbouncer-user", "", "", "Username for the crunchy-pgboucer deployment, default is 'pgbouncer'.")
 	createPgbouncerCmd.Flags().StringVarP(&PgBouncerPassword, "pgbouncer-pass", "", "", "Password for the pgbouncer user of the crunchy-pgboucer deployment.")
@@ -361,9 +331,9 @@ var createNamespaceCmd = &cobra.Command{
 	Long: `Create a namespace. For example:
 
 	pgo create namespace somenamespace
-	
-	Note: For Kubernetes versions prior to 1.12, this command will not function properly 
-    - use $PGOROOT/deploy/add_targted_namespace.sh scriptor or give the user cluster-admin privileges. 
+
+	Note: For Kubernetes versions prior to 1.12, this command will not function properly
+    - use $PGOROOT/deploy/add_targted_namespace.sh scriptor or give the user cluster-admin privileges.
     For more details, see the Namespace Creation section under Installing Operator Using Bash in the documentation.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Namespace == "" {

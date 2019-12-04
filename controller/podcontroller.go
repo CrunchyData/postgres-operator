@@ -348,10 +348,6 @@ func isPostgresPod(newpod *apiv1.Pod) bool {
 		log.Debugf("postgres-operator-pod found [%s]", newpod.Name)
 		return false
 	}
-	if newpod.ObjectMeta.Labels[config.LABEL_PGPOOL_POD] == "true" {
-		log.Debugf("pgpool pod found [%s]", newpod.Name)
-		return false
-	}
 	if newpod.ObjectMeta.Labels[config.LABEL_PGBOUNCER] == "true" {
 		log.Debugf("pgbouncer pod found [%s]", newpod.Name)
 		return false
@@ -393,10 +389,6 @@ func isUpgradedPostgresPod(newpod *apiv1.Pod, oldPod *apiv1.Pod) bool {
 
 		if newpod.ObjectMeta.Labels[config.LABEL_NAME] == "postgres-operator" {
 			log.Debugf("postgres-operator-pod found [%s]", newpod.Name)
-			return false
-		}
-		if newpod.ObjectMeta.Labels[config.LABEL_PGPOOL_POD] == "true" {
-			log.Debugf("pgpool pod found [%s]", newpod.Name)
 			return false
 		}
 		if newpod.ObjectMeta.Labels[config.LABEL_PGBOUNCER] == "true" {

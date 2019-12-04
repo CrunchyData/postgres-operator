@@ -44,8 +44,6 @@ The PostgreSQL Operator orchestrates a series of PostgreSQL and PostgreSQL relat
 
 * **Prometheus** (crunchy-prometheus).  Prometheus is a multi-dimensional time series data model with an elastic query language. It is used in collaboration with Crunchy Collect and Grafana to provide metrics.
 
-### Connection Pooling and Load Balancing
+### Connection Pooling
 
 * **pgbouncer** (crunchy-pgbouncer).  pgbouncer is a lightweight connection pooler for PostgreSQL. The crunchy-pgbouncer container provides a pgbouncer image.
-
-* **pgpool** (crunchy-pgpool).  pgPool II is a middleware that works between PostgreSQL servers and a PostgreSQL database client.  The crunchy-pgpool container executes the utility. pgPool can be used to provide a smart PostgreSQL-aware proxy to a PostgreSQL cluster, both primary and replica, so that applications only have to work with a single database connection.

@@ -14,7 +14,7 @@ Use the postgres-operator to:
 
  * deploy PostgreSQL containers including streaming replication clusters
  * scale up PostgreSQL clusters with extra replicas
- * add pgpool, pgbouncer, and metrics sidecars to PostgreSQL clusters
+ * add pgbouncer and metrics sidecars to PostgreSQL clusters
  * apply SQL policies to PostgreSQL clusters
  * assign metadata tags to PostgreSQL clusters
  * maintain PostgreSQL users and passwords

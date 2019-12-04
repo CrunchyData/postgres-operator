@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 # Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-for CNAME in crunchy-pgbench crunchy-pgbasebackup-restore crunchy-postgres crunchy-collect crunchy-pgbadger crunchy-backup crunchy-pgpool crunchy-pgbouncer crunchy-grafana crunchy-prometheus
+for CNAME in crunchy-pgbench crunchy-pgbasebackup-restore crunchy-postgres crunchy-collect crunchy-pgbadger crunchy-backup crunchy-pgbouncer crunchy-grafana crunchy-prometheus
 do
 	docker pull crunchydata/$CNAME:$CCP_IMAGE_TAG
 done

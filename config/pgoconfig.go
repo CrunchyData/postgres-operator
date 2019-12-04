@@ -129,22 +129,6 @@ var PgBasebackupRestoreJobTemplate *template.Template
 
 const pgBasebackupRestoreJobTemplatePath = "pgbasebackup-restore-job.json"
 
-var PgpoolTemplate *template.Template
-
-const pgpoolTemplatePath = "pgpool-template.json"
-
-var PgpoolConfTemplate *template.Template
-
-const pgpoolConfTemplatePath = "pgpool.conf"
-
-var PgpoolPasswdTemplate *template.Template
-
-const pgpoolPasswdTemplatePath = "pool_passwd"
-
-var PgpoolHBATemplate *template.Template
-
-const pgpoolHBATemplatePath = "pool_hba.conf"
-
 var PgbouncerTemplate *template.Template
 
 const pgbouncerTemplatePath = "pgbouncer-template.json"
@@ -282,7 +266,6 @@ type PgoConfig struct {
 	DefaultRmdataResources    string                              `yaml:"DefaultRmdataResources"`
 	DefaultBackupResources    string                              `yaml:"DefaultBackupResources"`
 	DefaultBadgerResources    string                              `yaml:"DefaultBadgerResources"`
-	DefaultPgpoolResources    string                              `yaml:"DefaultPgpoolResources"`
 	DefaultPgbouncerResources string                              `yaml:"DefaultPgbouncerResources"`
 }
 
@@ -448,12 +431,6 @@ func (c *PgoConfig) Validate() error {
 		_, ok = c.ContainerResources[c.DefaultBadgerResources]
 		if !ok {
 			return errors.New(errPrefix + "DefaultBadgerResources setting invalid")
-		}
-	}
-	if c.DefaultPgpoolResources != "" {
-		_, ok = c.ContainerResources[c.DefaultPgpoolResources]
-		if !ok {
-			return errors.New(errPrefix + "DefaultPgpoolResources setting invalid")
 		}
 	}
 	if c.DefaultPgbouncerResources != "" {
@@ -730,26 +707,6 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 	}
 
 	PgBasebackupRestoreJobTemplate, err = c.LoadTemplate(cMap, rootPath, pgBasebackupRestoreJobTemplatePath)
-	if err != nil {
-		return err
-	}
-
-	PgpoolTemplate, err = c.LoadTemplate(cMap, rootPath, pgpoolTemplatePath)
-	if err != nil {
-		return err
-	}
-
-	PgpoolConfTemplate, err = c.LoadTemplate(cMap, rootPath, pgpoolConfTemplatePath)
-	if err != nil {
-		return err
-	}
-
-	PgpoolPasswdTemplate, err = c.LoadTemplate(cMap, rootPath, pgpoolPasswdTemplatePath)
-	if err != nil {
-		return err
-	}
-
-	PgpoolHBATemplate, err = c.LoadTemplate(cMap, rootPath, pgpoolHBATemplatePath)
 	if err != nil {
 		return err
 	}

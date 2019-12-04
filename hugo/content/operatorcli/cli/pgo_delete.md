@@ -16,7 +16,6 @@ The delete command allows you to delete an Operator resource. For example:
 	pgo delete cluster mycluster --delete-data --delete-backups
 	pgo delete label mycluster --label=env=research
 	pgo delete pgbouncer mycluster
-	pgo delete pgpool mycluster
 	pgo delete pgouser someuser
 	pgo delete pgorole somerole
 	pgo delete policy mypolicy
@@ -58,7 +57,6 @@ pgo delete [flags]
 * [pgo delete pgbouncer](/operatorcli/cli/pgo_delete_pgbouncer/)	 - Delete a pgbouncer from a cluster
 * [pgo delete pgorole](/operatorcli/cli/pgo_delete_pgorole/)	 - Delete a pgorole
 * [pgo delete pgouser](/operatorcli/cli/pgo_delete_pgouser/)	 - Delete a pgouser
-* [pgo delete pgpool](/operatorcli/cli/pgo_delete_pgpool/)	 - Delete a pgpool from a cluster
 * [pgo delete policy](/operatorcli/cli/pgo_delete_policy/)	 - Delete a SQL policy
 * [pgo delete schedule](/operatorcli/cli/pgo_delete_schedule/)	 - Delete a schedule
 * [pgo delete user](/operatorcli/cli/pgo_delete_user/)	 - Delete a user

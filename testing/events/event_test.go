@@ -40,8 +40,6 @@ func TestEventCreate(t *testing.T) {
 	tryEventApplyPolicy(t)
 	tryEventDeletePolicy(t)
 
-	tryEventCreatePgpool(t)
-	tryEventDeletePgpool(t)
 	tryEventCreatePgbouncer(t)
 	tryEventDeletePgbouncer(t)
 
@@ -538,27 +536,6 @@ func tryEventBenchmarkCompleted(t *testing.T) {
 	t.Log(f.String())
 }
 
-func tryEventCreatePgpool(t *testing.T) {
-
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicPgpool
-
-	f := events.EventCreatePgpoolFormat{
-		EventHeader: events.EventHeader{
-			Namespace: Namespace,
-			Username:  TestUsername,
-			Topic:     topics,
-			EventType: events.EventCreatePgpool,
-		},
-		Clustername: TestClusterName,
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	t.Log(f.String())
-}
 func tryEventCreatePgbouncer(t *testing.T) {
 
 	topics := make([]string, 1)
@@ -591,27 +568,6 @@ func tryEventDeletePgbouncer(t *testing.T) {
 			Username:  TestUsername,
 			Topic:     topics,
 			EventType: events.EventDeletePgbouncer,
-		},
-		Clustername: TestClusterName,
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	t.Log(f.String())
-}
-func tryEventDeletePgpool(t *testing.T) {
-
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicPgpool
-
-	f := events.EventDeletePgpoolFormat{
-		EventHeader: events.EventHeader{
-			Namespace: Namespace,
-			Username:  TestUsername,
-			Topic:     topics,
-			EventType: events.EventDeletePgpool,
 		},
 		Clustername: TestClusterName,
 	}

@@ -374,19 +374,9 @@ configuration to pgbouncer.ini:
 
     {{.PG_REPLICA_SERVICE_NAME}} = host={{.PG_REPLICA_SERVICE_NAME}} port={{.PG_PORT}} auth_user={{.PG_USERNAME}} dbname={{.PG_DATABASE}}
 
-
-To add a pgpool Deployment to your Postgres cluster, enter:
-
-    pgo create cluster mycluster --pgpool -n pgouser1
-
-You can also add a pgpool to a cluster after initial creation as follows:
-
-    pgo create pgpool mycluster -n pgouser1
-
-You can remove a pgbouncer or pgpool from a cluster as follows:
+You can remove a pgbouncer from a cluster as follows:
 
     pgo delete pgbouncer mycluster -n pgouser1
-    pgo delete pgpool mycluster -n pgouser1
 
 You can create a pgbadger sidecar container in your Postgres cluster
 pod as follows:

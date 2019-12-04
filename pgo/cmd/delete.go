@@ -43,7 +43,6 @@ var deleteCmd = &cobra.Command{
 	pgo delete cluster mycluster --delete-data --delete-backups
 	pgo delete label mycluster --label=env=research
 	pgo delete pgbouncer mycluster
-	pgo delete pgpool mycluster
 	pgo delete pgouser someuser
 	pgo delete pgorole somerole
 	pgo delete policy mypolicy
@@ -61,7 +60,6 @@ var deleteCmd = &cobra.Command{
 	* cluster
 	* label
 	* pgbouncer
-	* pgpool
 	* pgouser
 	* pgorole
 	* namespace
@@ -74,7 +72,6 @@ var deleteCmd = &cobra.Command{
 				"cluster",
 				"label",
 				"pgbouncer",
-				"pgpool",
 				"pgouser",
 				"pgorole",
 				"policy",
@@ -89,7 +86,6 @@ var deleteCmd = &cobra.Command{
 	* cluster
 	* label
 	* pgbouncer
-	* pgpool
 	* pgouser
 	* pgorole
 	* policy
@@ -229,21 +225,6 @@ func init() {
 	// a PostgreSQL Operator user
 	deletePgouserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false,
 		"No command line confirmation before delete.")
-
-	// "pgo delete pgpool"
-	// delete a pgpool instance that is associated with a PostgreSQL cluster
-	deleteCmd.AddCommand(deletePgpoolCmd)
-	// "pgo delete pgpool --no-prompt"
-	// does not display the warning prompt to ensure the user wishes to delete
-	// a pgpool instance
-	deletePgpoolCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false,
-		"No command line confirmation before delete.")
-	// "pgo delete pgpool --selector"
-	// "pgo delete pgpool -s"
-	// the selector flag that filters which clusters to delete the pgBouncer
-	// instances from
-	deletePgpoolCmd.Flags().StringVarP(&Selector, "selector", "s", "",
-		"The selector to use for cluster filtering.")
 
 	// "pgo delete policy"
 	// delete a SQL policy associated with a PostgreSQL cluster
@@ -484,30 +465,6 @@ var deletePgbouncerCmd = &cobra.Command{
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deletePgbouncer(args, Namespace)
-
-			} else {
-				fmt.Println("Aborting...")
-			}
-		}
-	},
-}
-
-// deletePgpoolCmd ...
-var deletePgpoolCmd = &cobra.Command{
-	Use:   "pgpool",
-	Short: "Delete a pgpool from a cluster",
-	Long: `Delete a pgpool from a cluster. For example:
-
-    pgo delete pgpool mycluster`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if Namespace == "" {
-			Namespace = PGONamespace
-		}
-		if len(args) == 0 && Selector == "" {
-			fmt.Println("Error: A cluster name or selector is required for this command.")
-		} else {
-			if util.AskForConfirmation(NoPrompt, "") {
-				deletePgpool(args, Namespace)
 
 			} else {
 				fmt.Println("Aborting...")

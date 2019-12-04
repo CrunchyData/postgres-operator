@@ -138,15 +138,6 @@ func (c *PgtaskController) processNextItem() bool {
 	case crv1.PgtaskAddPgbouncer:
 		log.Debug("add pgbouncer task added")
 		clusteroperator.AddPgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
-	case crv1.PgtaskDeletePgpool:
-		log.Debug("delete pgpool task added")
-		clusteroperator.DeletePgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
-	case crv1.PgtaskReconfigurePgpool:
-		log.Debug("Reconfiguredelete pgpool task added")
-		clusteroperator.ReconfigurePgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
-	case crv1.PgtaskAddPgpool:
-		log.Debug("add pgpool task added")
-		clusteroperator.AddPgpoolFromTask(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
 	case crv1.PgtaskFailover:
 		log.Debug("failover task added")
 		if !dupeFailover(c.PgtaskClient, &tmpTask, keyNamespace) {

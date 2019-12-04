@@ -114,13 +114,6 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		log.Error(err.Error())
 	}
 
-	log.Debugf("before pgpool check [%s]", cl.Spec.UserLabels[config.LABEL_PGPOOL])
-	//add pgpool deployment if requested
-	if cl.Spec.UserLabels[config.LABEL_PGPOOL] == "true" {
-		log.Debug("pgpool requested")
-		//create the pgpool deployment using that credential
-		AddPgpool(clientset, cl, namespace, true)
-	}
 	//add pgbouncer deployment if requested
 	// if cl.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
 	if cl.Labels[config.LABEL_PGBOUNCER] == "true" {
