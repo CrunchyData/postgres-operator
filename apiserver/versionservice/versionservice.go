@@ -51,3 +51,10 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(resp)
 }
+
+// HealthyHandler follows the health endpoint convention of HTTP/200 and
+// body "ok" used by other cloud services, typically on /healthz
+func HealthyHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ok"))
+}

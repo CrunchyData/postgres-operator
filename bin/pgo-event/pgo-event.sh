@@ -31,7 +31,7 @@ sleep 3
 
 echo "pgo-event starting nsqd"
 
-/usr/local/bin/nsqd --data-path=/tmp --http-address=0.0.0.0:4151 --tcp-address=0.0.0.0:4150 &
+/usr/local/bin/nsqd --data-path=/tmp --http-address=0.0.0.0:4151 --tcp-address=0.0.0.0:4150 --log-level=warn &
 
 echo "pgo-event waiting till sigterm"
 

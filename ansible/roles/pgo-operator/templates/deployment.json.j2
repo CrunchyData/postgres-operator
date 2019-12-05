@@ -30,6 +30,24 @@
                                 "containerPort": {{ pgo_apiserver_port }}
                             }
                         ],
+                        "readinessProbe": {
+                            "httpGet": {
+                                "path": "/healthz",
+                                "port": {{ pgo_apiserver_port }},
+                                "scheme": "HTTPS"
+                            },
+                            "initialDelaySeconds": 15,
+                            "periodSeconds": 5
+                        },
+                        "livenessProbe": {
+                            "httpGet": {
+                                "path": "/healthz",
+                                "port": {{ pgo_apiserver_port }},
+                                "scheme": "HTTPS"
+                            },
+                            "initialDelaySeconds": 15,
+                            "periodSeconds": 5
+                        },
                         "env": [
                             {
                                 "name": "CRUNCHY_DEBUG",
@@ -175,6 +193,14 @@
                         "image": "{% if pgo_event_image | default('') != '' %}{{ pgo_event_image }}
                                 {%- else %}{{ pgo_image_prefix }}/pgo-event:{{ pgo_image_tag }}
                                 {%- endif %}",
+                        "livenessProbe": {
+                            "httpGet": {
+                                "path": "/ping",
+                                "port": 4151,
+                            },
+                            "initialDelaySeconds": 15,
+                            "periodSeconds": 5
+                        },
                         "env": [
                             {
                                 "name": "TIMEOUT",
