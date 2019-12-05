@@ -32,7 +32,7 @@ var upgradeCmd = &cobra.Command{
 
   pgo upgrade mycluster
   
- This upgrade will update the CCPImageTag of the deployment for the following: primary, replicas, and backrest-repo.
+ This upgrade will update the CCPImageTag of the deployment for the primary and all replicas.
  The running containers are upgraded one at a time, sequentially, in the following order: replicas, backrest-repo, then primary.    `,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Namespace == "" {
