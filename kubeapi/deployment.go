@@ -17,9 +17,11 @@ package kubeapi
 
 import (
 	"encoding/json"
+
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/apps/v1"
+	v1 "k8s.io/api/apps/v1"
+
 	//	"k8s.io/api/extensions/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -99,36 +101,30 @@ func GetDeployments(clientset *kubernetes.Clientset, selector, namespace string)
 
 }
 
-type ThingSpec struct {
-	Op    string `json:"op"`
-	Path  string `json:"path"`
-	Value string `json:"value"`
+// PatchDeploymentStrategicMerge is a helper function for performing a strategic merge
+// patch to update a Deployment.  The function is responsible for calling the patchDeployment
+// function in order to perform the strategic merge, specifically ensuring that the proper
+// patch type is set as required to perform a strategic merge.
+func PatchDeploymentStrategicMerge(clientset *kubernetes.Clientset, deploymentName,
+	namespace string, patch string) error {
+	return patchDeployment(clientset, deploymentName, namespace, patch,
+		types.StrategicMergePatchType)
 }
 
-// PatchDeployment patches a deployment
-func PatchDeployment(clientset *kubernetes.Clientset, name, namespace string, pathValueMap map[string]string) error {
-	var patchBytes []byte
-	var err error
+// patchDeployment patches (i.e. updates) a Deployment according to the JSON patch provided using
+// (specifically as a string), as well as the patch type specified (either "strategic", "merge" or
+// "json")
+func patchDeployment(clientset *kubernetes.Clientset, deploymentName, namespace, patch string,
+	patchType types.PatchType) error {
 
-	things := make([]ThingSpec, 0)
-	for path, val := range pathValueMap {
-		things = append(things, ThingSpec{"replace", path, val})
-	}
-
-	patchBytes, err = json.Marshal(things)
-	if err != nil {
-		log.Error("error in converting patch " + err.Error())
-		return err
-	}
-
-	log.Debug("about to patch deployment using" + string(patchBytes))
-	_, err = clientset.AppsV1().Deployments(namespace).Patch(name, types.JSONPatchType, patchBytes)
+	log.Debugf("patching Deployment %s using patch type %s: %s", deploymentName, patchType, patch)
+	_, err := clientset.AppsV1().Deployments(namespace).Patch(deploymentName, patchType,
+		[]byte(patch))
 	if err != nil {
 		log.Error(err)
-		log.Error("error patching Deployment " + name)
+		return err
 	}
-	log.Info("patch deployment " + name)
-	return err
+	return nil
 }
 
 type IntThingSpec struct {

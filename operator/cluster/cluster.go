@@ -20,6 +20,10 @@ package cluster
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
@@ -31,9 +35,6 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // ServiceTemplateFields ...
@@ -49,6 +50,13 @@ type ServiceTemplateFields struct {
 
 // ReplicaSuffix ...
 const ReplicaSuffix = "-replica"
+
+// contstants defining the names of the various sidecar containers
+const (
+	collectCCPImage    = "crunchy-collect"
+	pgBadgerCCPImage   = "crunchy-pgbadger"
+	crunchyadmCCPImage = "crunchy-admin"
+)
 
 func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 	var err error

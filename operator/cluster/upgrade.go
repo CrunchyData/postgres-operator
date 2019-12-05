@@ -16,6 +16,8 @@ package cluster
 */
 
 import (
+	"encoding/json"
+
 	"strconv"
 	"strings"
 	"time"
@@ -124,10 +126,62 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 	}
 
 	replicaTargets := upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_REPLICA]
-	backrestTargetName := upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_BACKREST]
 	primaryTargetName := upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_PRIMARY]
 
 	autoFailEnabled := util.IsAutofailEnabled(&cluster)
+
+	// if autofail is disabled, patch the primary and all replicas at the same time, and
+	// immediately mark the upgrade as complete.  When performing a minor upgrade with autofail
+	// disabled, once the upgrade is complete and new pods have been created for the primary and
+	// each replica, any "database" containers will remain in an unready state, i.e. readiness
+	// probes will fail for those containers. This is because when autofail is disabled (i.e.
+	// Patroni is "paused"), Patroni will not attempt to start the PG database on a primary or
+	// replica.  Therefore, the user must re-enable autofail following a minor upgrade during which
+	// autofail was disabled in order to fully bring the cluster (which includes the primary and
+	// all replicas) back online.
+	if !autoFailEnabled {
+		// upgrade everything at once and then mark as complete
+
+		imageNamePatch, err := createImageNamePatch(cluster, operator.Pgo.Cluster.CCPImagePrefix,
+			upgradeTask.Spec.Parameters["CCPImageTag"])
+		if err != nil {
+			log.Errorf("error creating container image name patch during minor upgrade of cluster %s",
+				cluster.Name)
+			log.Error(err)
+			return
+		}
+
+		repList := strings.Split(replicaTargets, ",")
+		for _, replicaTargetName := range repList {
+			err = kubeapi.PatchDeploymentStrategicMerge(clientset, replicaTargetName, namespace,
+				imageNamePatch)
+			if err != nil {
+				log.Error(err)
+				log.Error("error in doing replica minor upgrade")
+				return
+			}
+		}
+
+		err = kubeapi.PatchDeploymentStrategicMerge(clientset, primaryTargetName, namespace,
+			imageNamePatch)
+		if err != nil {
+			log.Error(err)
+			log.Error("error in doing primary minor upgrade")
+			return
+		}
+
+		// upgrade replica targets in task.
+		upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_REPLICA] = ""
+		// upgrade primary target in task.
+		upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_PRIMARY] = ""
+
+		// No other deployments left to upgrade, complete the upgrade
+		completeUpgrade(clientset, restclient, &upgradeTask, autoFailEnabled, cluster.Spec.Name, namespace)
+
+		publishMinorUpgradeCompleteEvent(&upgradeTask, &cluster, namespace)
+
+		return
+	}
 
 	// check for replica's to upgrade
 	if len(replicaTargets) > 0 {
@@ -148,14 +202,17 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 
 		log.Debug("About to patch replica: ", replicaTargetName)
 
-		patchMap := make(map[string]string)
-		patchMap["/spec/template/spec/containers/0/image"] =
-			operator.Pgo.Cluster.CCPImagePrefix + "/" + cluster.Spec.CCPImage + ":" + upgradeTask.Spec.Parameters["CCPImageTag"]
-
-		addSidecarsToPgUpgradePatch(patchMap, cluster, operator.Pgo.Cluster.CCPImagePrefix,
+		imageNamePatch, err := createImageNamePatch(cluster, operator.Pgo.Cluster.CCPImagePrefix,
 			upgradeTask.Spec.Parameters["CCPImageTag"])
+		if err != nil {
+			log.Errorf("error creating container image name patch during minor upgrade of cluster %s",
+				cluster.Name)
+			log.Error(err)
+			return
+		}
 
-		err = kubeapi.PatchDeployment(clientset, replicaTargetName, namespace, patchMap)
+		err = kubeapi.PatchDeploymentStrategicMerge(clientset, replicaTargetName, namespace,
+			imageNamePatch)
 		if err != nil {
 			log.Error(err)
 			log.Error("error in doing replica minor upgrade")
@@ -170,52 +227,23 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 			log.Error("error in updating minor upgrade pgtask to in progress status " + err.Error())
 		}
 
-	} else if len(backrestTargetName) > 0 {
-		// backrest to upgrade
-		log.Debug("Minor Upgrade: backrest")
-
-		log.Debug("About to patch backrest: ", backrestTargetName)
-
-		patchMap := make(map[string]string)
-		patchMap["/spec/template/spec/containers/0/image"] =
-			operator.Pgo.Cluster.CCPImagePrefix + "/pgo-backrest-repo:" + upgradeTask.Spec.Parameters["CCPImageTag"]
-
-		err = kubeapi.PatchDeployment(clientset, backrestTargetName, namespace, patchMap)
-		if err != nil {
-			log.Error(err)
-			log.Error("error in doing backrest minor upgrade")
-			return
-		}
-
-		// upgrade backrest target in task.
-		upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_BACKREST] = ""
-
-		err = kubeapi.Updatepgtask(restclient, &upgradeTask, upgradeTask.Spec.Name, namespace)
-		if err != nil {
-			log.Error("error in updating minor upgrade pgtask to in progress status " + err.Error())
-		}
-
 	} else if len(primaryTargetName) > 0 {
 		// primary to upgrade - should always be one of these.
-
-		// we update the cluster image version here due to timing issues when autofail takes over after the primary is bounced
-		// If we don't do this now, then one of the replicas will come back up with the old container image.
-		if autoFailEnabled {
-			upgradedImageTag := upgradeTask.Spec.Parameters["CCPImageTag"]
-			updateClusterCCPImage(restclient, upgradedImageTag, cluster.Spec.Name, namespace)
-		}
 
 		log.Debug("Minor Upgrade: primary")
 		log.Debug("About to patch primary: ", primaryTargetName)
 
-		patchMap := make(map[string]string)
-		patchMap["/spec/template/spec/containers/0/image"] =
-			operator.Pgo.Cluster.CCPImagePrefix + "/" + cluster.Spec.CCPImage + ":" + upgradeTask.Spec.Parameters["CCPImageTag"]
-
-		addSidecarsToPgUpgradePatch(patchMap, cluster, operator.Pgo.Cluster.CCPImagePrefix,
+		imageNamePatch, err := createImageNamePatch(cluster, operator.Pgo.Cluster.CCPImagePrefix,
 			upgradeTask.Spec.Parameters["CCPImageTag"])
+		if err != nil {
+			log.Errorf("error creating container image name patch during minor upgrade of cluster %s",
+				cluster.Name)
+			log.Error(err)
+			return
+		}
 
-		err = kubeapi.PatchDeployment(clientset, primaryTargetName, namespace, patchMap)
+		err = kubeapi.PatchDeploymentStrategicMerge(clientset, primaryTargetName, namespace,
+			imageNamePatch)
 		if err != nil {
 			log.Error(err)
 			log.Error("error in doing primary minor upgrade")
@@ -238,24 +266,98 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 	}
 }
 
-func addSidecarsToPgUpgradePatch(patchMap map[string]string, cluster crv1.Pgcluster, ccpImagePrefix,
-	ccpImageTag string) {
+// createImageNamePatch creates and returns a string containing the JSON structure needed to
+// patch a Deployment specification in order update the image name for the database container, as
+// well as any sidecar containers (e.g. collect, pgbadger and/or crunchyadm) that are enabled
+// for the cluster.  An example of a string that would be generated by this function, in this case
+// to update the "database" container only, would be as follows:
+//
+//  '{"spec":{"template":{"spec":{"containers":[{"name":"database","image":"new-image-name"}'
+//
+func createImageNamePatch(cluster crv1.Pgcluster, ccpImagePrefix, ccpImageTag string) (string, error) {
 
-	collectEnabled, _ := strconv.ParseBool(cluster.Labels[config.LABEL_COLLECT])
-	badgerEnabled, _ := strconv.ParseBool(cluster.Labels[config.LABEL_BADGER])
-
-	if collectEnabled && badgerEnabled {
-		patchMap["/spec/template/spec/containers/1/image"] =
-			ccpImagePrefix + "/" + config.LABEL_COLLECT_CCPIMAGE + ":" + ccpImageTag
-		patchMap["/spec/template/spec/containers/2/image"] =
-			ccpImagePrefix + "/" + config.LABEL_BADGER_CCPIMAGE + ":" + ccpImageTag
-	} else if collectEnabled && !badgerEnabled {
-		patchMap["/spec/template/spec/containers/1/image"] =
-			ccpImagePrefix + "/" + config.LABEL_COLLECT_CCPIMAGE + ":" + ccpImageTag
-	} else if badgerEnabled && !collectEnabled {
-		patchMap["/spec/template/spec/containers/1/image"] =
-			ccpImagePrefix + "/" + config.LABEL_BADGER + ":" + ccpImageTag
+	// These types represent json structure will be utilized by this function to update
+	// (i.e. patch) the image names of any/all containers in a PG cluster Deployment:
+	type patchDeploymentContainers struct {
+		Name  string `json:"name"`
+		Image string `json:"image"`
 	}
+	type patchDeploymentPodSpec struct {
+		Containers []patchDeploymentContainers `json:"containers"`
+	}
+	type patchDeploymentTemplate struct {
+		PatchDeploymentPodSpec patchDeploymentPodSpec `json:"spec"`
+	}
+	type patchDeploymentSpec struct {
+		PatchDeploymentTemplate patchDeploymentTemplate `json:"template"`
+	}
+	type patchImageName struct {
+		PatchDeploymentSpec patchDeploymentSpec `json:"spec"`
+	}
+
+	var containersToPatch []patchDeploymentContainers
+
+	// add the database container, which will always be patched
+	databaseContainer := patchDeploymentContainers{
+		Name:  "database",
+		Image: ccpImagePrefix + "/" + cluster.Spec.CCPImage + ":" + ccpImageTag,
+	}
+	containersToPatch = append(containersToPatch, databaseContainer)
+
+	// determine if pgbadger is enabled for the cluster using label "crunchy_collect"
+	collectEnabled, err := strconv.ParseBool(cluster.Labels[config.LABEL_COLLECT])
+	if err != nil {
+		return "", err
+	} else if collectEnabled {
+		collectContainer := patchDeploymentContainers{
+			Name:  "collect",
+			Image: ccpImagePrefix + "/" + collectCCPImage + ":" + ccpImageTag,
+		}
+		containersToPatch = append(containersToPatch, collectContainer)
+	}
+
+	// determine if pgbadger is enabled for the cluster using label "crunchy-pgbadger"
+	badgerEnabled, err := strconv.ParseBool(cluster.Labels[config.LABEL_BADGER])
+	if err != nil {
+		return "", err
+	} else if badgerEnabled {
+		badgerContainer := patchDeploymentContainers{
+			Name:  "pgbadger",
+			Image: ccpImagePrefix + "/" + pgBadgerCCPImage + ":" + ccpImageTag,
+		}
+		containersToPatch = append(containersToPatch, badgerContainer)
+	}
+
+	// check pgo.yaml to see if the crunchyadm sidecar is enabled for the current pgo installation
+	if operator.Pgo.Cluster.EnableCrunchyadm {
+		crunchyadmContainer := patchDeploymentContainers{
+			Name:  "pgbadger",
+			Image: ccpImagePrefix + "/" + crunchyadmCCPImage + ":" + ccpImageTag,
+		}
+		containersToPatch = append(containersToPatch, crunchyadmContainer)
+	}
+
+	// create the json structure required to patch (i.e. update) the images defined in
+	// containersToPatch
+	patchDeployPodSpec := patchDeploymentPodSpec{
+		Containers: containersToPatch,
+	}
+	patchDeployTemplate := patchDeploymentTemplate{
+		PatchDeploymentPodSpec: patchDeployPodSpec,
+	}
+	patchDeploySpec := patchDeploymentSpec{
+		PatchDeploymentTemplate: patchDeployTemplate,
+	}
+	patchImgName := patchImageName{
+		PatchDeploymentSpec: patchDeploySpec,
+	}
+
+	data, err := json.Marshal(patchImgName)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
 }
 
 // completeUpgrade - makes any finishing changes required to complete the upgrade and
@@ -264,7 +366,7 @@ func completeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 
 	log.Debug("Minor Upgrade: Completing...")
 
-	// update cluster image here when autofail is not enabled. When enabled, it gets updated just before primary is bounced.
+	// update cluster image tag (CCPImageTag) once the upgrade is complete
 	if !autoFail {
 		upgradedImageTag := upgradeTask.Spec.Parameters["CCPImageTag"]
 		updateClusterCCPImage(restclient, upgradedImageTag, clusterName, namespace)
