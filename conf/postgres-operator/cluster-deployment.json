@@ -66,12 +66,6 @@
                          }
                     },
                     {{ end }}
-                    {{if not .IsInit}}
-                    {
-                        "name": "PGHA_PRIMARY_HOST",
-                        "value": "{{.ClusterName}}"
-                    },
-                    {{ end }}
                     {
                         "name": "PATRONI_POSTGRESQL_DATA_DIR",
                         "value": "/pgdata/{{.Name}}"
