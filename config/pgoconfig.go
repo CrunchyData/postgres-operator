@@ -238,7 +238,7 @@ type ClusterStruct struct {
 	DisableAutofail         bool   `yaml:"DisableAutofail"`
 	AutofailReplaceReplica  bool   `yaml:"AutofailReplaceReplica"`
 	PgmonitorPassword       string `yaml:"PgmonitorPassword"`
-	EnableCrunchyadm		bool   `yaml:"EnableCrunchyadm"`
+	EnableCrunchyadm        bool   `yaml:"EnableCrunchyadm"`
 }
 
 type StorageStruct struct {
