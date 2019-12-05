@@ -378,6 +378,8 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 				Message:   pod.Name,
 			}
 			switch pod.Type {
+			default:
+				instance.InstanceType = msgs.ClusterTestInstanceTypeUnknown
 			case msgs.PodTypePrimary:
 				instance.InstanceType = msgs.ClusterTestInstanceTypePrimary
 			case msgs.PodTypeReplica:

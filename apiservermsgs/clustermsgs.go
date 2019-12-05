@@ -218,6 +218,7 @@ const (
 	ClusterTestInstanceTypeReplica   = "replica"
 	ClusterTestInstanceTypePGBouncer = "pgbouncer"
 	ClusterTestInstanceTypeBackups   = "backups"
+	ClusterTestInstanceTypeUnknown   = "unknown"
 )
 
 // ClusterTestDetail provides the output of an individual test that is performed
