@@ -331,7 +331,7 @@ func createImageNamePatch(cluster crv1.Pgcluster, ccpImagePrefix, ccpImageTag st
 	// check pgo.yaml to see if the crunchyadm sidecar is enabled for the current pgo installation
 	if operator.Pgo.Cluster.EnableCrunchyadm {
 		crunchyadmContainer := patchDeploymentContainers{
-			Name:  "pgbadger",
+			Name:  "crunchyadm",
 			Image: ccpImagePrefix + "/" + crunchyadmCCPImage + ":" + ccpImageTag,
 		}
 		containersToPatch = append(containersToPatch, crunchyadmContainer)
