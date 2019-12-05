@@ -96,9 +96,8 @@ this setting:
 /health
 ```
 
-If the health route has its authentication disabled, the existing readiness
-and liveness probes for the apiserver container could be enhanced by
-configuring them with HTTP-based checks against the health route.
+The `/healthz` route is used by kubernetes probes and has its authentication
+disabed without requiring NOAUTH_ROUTES.
 
 
 ## Security
