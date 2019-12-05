@@ -109,6 +109,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/version", versionservice.VersionHandler)
 	r.HandleFunc("/health", versionservice.HealthHandler)
+	r.HandleFunc("/healthz", versionservice.HealthyHandler)
 	r.HandleFunc("/policies", policyservice.CreatePolicyHandler)
 	r.HandleFunc("/showpolicies", policyservice.ShowPolicyHandler).Methods("POST")
 	//here
@@ -185,11 +186,15 @@ func main() {
 	r.HandleFunc("/benchmarkdelete", benchmarkservice.DeleteBenchmarkHandler).Methods("POST")
 	r.HandleFunc("/benchmarkshow", benchmarkservice.ShowBenchmarkHandler).Methods("POST")
 
-	// Optionally lighten mTLS requirement if some paths don't require certs
-	certsVerify := tls.RequireAndVerifyClientCert
-	if !disableTLS && len(skipAuthRoutes) > 0 {
-		certsVerify = tls.VerifyClientCertIfGiven
-		optCertEnforcer, err := apiserver.NewCertEnforcer(strings.Split(skipAuthRoutes, ","))
+	certsVerify := tls.VerifyClientCertIfGiven
+	skipAuth := []string{
+		"/healthz", // Required for kube probes
+	}
+	if !disableTLS {
+		if len(skipAuthRoutes) > 0 {
+			skipAuth = append(skipAuth, strings.Split(skipAuthRoutes, ",")...)
+		}
+		optCertEnforcer, err := apiserver.NewCertEnforcer(skipAuth)
 		if err != nil {
 			log.Fatalf("NOAUTH_ROUTES configured incorrectly: %s", err)
 			os.Exit(2)

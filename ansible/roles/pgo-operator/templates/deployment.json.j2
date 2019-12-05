@@ -29,12 +29,20 @@
                             { "containerPort": {{ pgo_apiserver_port }} }
                         ],
                         "readinessProbe": {
-                            "tcpSocket": { "port": {{ pgo_apiserver_port }} },
+                            "httpGet": {
+                                "path": "/healthz",
+                                "port": {{ pgo_apiserver_port }},
+                                "scheme": "HTTPS"
+                            },
                             "initialDelaySeconds": 15,
                             "periodSeconds": 5
                         },
                         "livenessProbe": {
-                            "tcpSocket": { "port": {{ pgo_apiserver_port }} },
+                            "httpGet": {
+                                "path": "/healthz",
+                                "port": {{ pgo_apiserver_port }},
+                                "scheme": "HTTPS"
+                            },
                             "initialDelaySeconds": 15,
                             "periodSeconds": 5
                         },
@@ -183,13 +191,11 @@
                         "image": "{% if pgo_event_image | default('') != '' %}{{ pgo_event_image }}
                                 {%- else %}{{ pgo_image_prefix }}/pgo-event:{{ pgo_image_tag }}
                                 {%- endif %}",
-                        "readinessProbe": {
-                            "tcpSocket": { "port": 4150 },
-                            "initialDelaySeconds": 15,
-                            "periodSeconds": 5
-                        },
                         "livenessProbe": {
-                            "tcpSocket": { "port": 4150 },
+                            "httpGet": {
+                                "path": "/ping",
+                                "port": 4151,
+                            },
                             "initialDelaySeconds": 15,
                             "periodSeconds": 5
                         },
