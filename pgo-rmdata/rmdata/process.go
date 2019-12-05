@@ -120,6 +120,7 @@ func Delete(request Request) {
 		removePVCs(pvcList, request)
 	}
 
+	removeClusterConfigmaps(request)
 }
 
 func removeBackups(request Request) {
@@ -183,6 +184,38 @@ func removeBackupSecrets(request Request) {
 
 	// and done!
 	return
+}
+
+// removeClusterConfigmaps deletes the three configmaps that are created
+// for each cluster. The first two are created by Patroni when it initializes a new cluster:
+// <cluster-name>-leader (stores data pertinent to the leader election process)
+// <cluster-name>-config (stores global/cluster-wide configuration settings)
+// Additionally, the Postgres Operator also creates a configMap for each cluster
+// containing a default Patroni configuration file:
+// <cluster-name>-pgha-default-config (stores a Patroni config file in YAML format)
+func removeClusterConfigmaps(request Request) {
+	// Store the derived names of the three configmaps in an array
+	clusterConfigmaps := [3]string{
+		// first, derive the name of the PG HA default configmap, which is
+		// "`clusterName`-`LABEL_PGHA_DEFAULT_CONFIGMAP`"
+		fmt.Sprintf("%s-%s", request.ClusterName, config.LABEL_PGHA_DEFAULT_CONFIGMAP),
+		// next, the name of the leader configmap, which is
+		// "`clusterName`-leader"
+		fmt.Sprintf("%s-%s", request.ClusterName, "leader"),
+		// finally, the name of the general configuration settings configmap, which is
+		// "`clusterName`-config"
+		fmt.Sprintf("%s-%s", request.ClusterName, "config")}
+
+	// As with similar resources, we can attempt to delete the configmaps directly without
+	// making any further API calls since the goal is simply to delete the configmap. Race
+	// conditions are more or less unavoidable but should not cause any additional problems.
+	// We'll also check to see if there was an error, but if there is we'll only
+	// log the fact there was an error; this function is just a pass through
+	for _, cm := range clusterConfigmaps {
+		if err := kubeapi.DeleteConfigMap(request.Clientset, cm, request.Namespace); err != nil {
+			log.Error(err)
+		}
+	}
 }
 
 func removeData(request Request) {
