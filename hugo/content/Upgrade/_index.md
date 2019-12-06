@@ -28,9 +28,9 @@ Using the operator, it is possible to upgrade a postgres cluster in place.  When
 
 The upgrade is accomplished by updating the CCPImageTag version in the deployment, which causes the old pod to be terminated and a new pod created with the updated deployment specification.
 
-When the upgrade starts, each replica is upgraded seqentially, waiting for the previous replica to go ready before updating the next. After the replicas complete, the primary is then upgraded to the new image. The upgrade process respects the _autofail_ setting as provided in the pgo.yaml or as a command line flag, if applicable.
+When the upgrade starts, and if _autofail_ is enabled for the cluster, each replica is upgraded seqentially, waiting for the previous replica to go ready before updating the next. After the replicas complete, the primary is then upgraded to the new image. Please note that the upgrade process respects the _autofail_ setting as currently definied for the cluster being upgraded.  Therefore, if autofail is enabled when the primary deployment is updated, the cluster behaves as though the primary had failed and begins the failover process.  See _Automatic Failover_ in the _Overview_ section for more details about the PostgreSQL Operator failover process and expected behavior.
 
-When the cluster is not in _autofail_ mode, the deployments simply create a new pod when updated, terminating the old one. When autofail is enabled and the primary deployment is updated, the cluster behaves as though the primary had failed and begins the failover process. See _Automatic Failover_ in the _Overview_ section for more details on this and replica replacement.
+When the cluster is not in _autofail_ mode (i.e. autofail is disabled), the primary and all replicas are updated at the same time, after which they will remain in an "unready" status.  This is because when autofail is disabled, no attempt will be made to start the PostgreSQL databases contained within the primary or replica pods once the containers have been started following the update.  It is therefore necessary to re-enable autofail following a minor upgrade during which autofail was disabled in order to fully bring the cluster back online.
 
 At this time, the backrest-repo container is not upgraded during this upgrade as it is part of the postgres operator release and is updated with the operator.
 
