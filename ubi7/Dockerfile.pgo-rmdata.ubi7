@@ -7,9 +7,6 @@ LABEL name="pgo-rmdata" \
     summary="Crunchy Data PostgreSQL Operator - Remove Data" \
     description="Crunchy Data PostgreSQL Operator - Remove Data"
 
-COPY redhat/atomic/pgo_rmdata/help.1 /help.1
-COPY redhat/atomic/pgo_rmdata/help.md /help.md
-
 ADD bin/pgo-rmdata/ /usr/local/bin
 
 USER 0

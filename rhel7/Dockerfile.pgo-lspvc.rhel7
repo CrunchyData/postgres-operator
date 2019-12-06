@@ -7,9 +7,6 @@ LABEL name="pgo-lspvc" \
     summary="Crunchy Data PostgreSQL Operator - Display PVC" \
     description="Crunchy Data PostgreSQL Operator - Display contents of a PVC"
 
-COPY redhat/atomic/pgo_lspvc/help.1 /help.1
-COPY redhat/atomic/pgo_lspvc/help.md /help.md
-
 USER 26
 
 VOLUME ["/pgdata"]

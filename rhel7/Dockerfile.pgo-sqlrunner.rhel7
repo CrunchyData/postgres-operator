@@ -9,9 +9,6 @@ LABEL name="pgo-sqlrunner" \
 ENV PGVERSION="12"
 ENV PGROOT="/usr/pgsql-${PGVERSION}"
 
-COPY redhat/atomic/pgo_sqlrunner/help.1 /help.1
-COPY redhat/atomic/pgo_sqlrunner/help.md /help.md
-
 RUN yum -y install postgresql${PGVERSION} && yum -y clean all
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgconf \

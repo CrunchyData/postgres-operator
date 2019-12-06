@@ -9,9 +9,6 @@ LABEL name="pgo-apiserver" \
 
 ENV PGVERSION="12"
 
-COPY redhat/atomic/pgo_apiserver/help.1 /help.1
-COPY redhat/atomic/pgo_apiserver/help.md /help.md
-
 RUN yum -y install \
 	--disableplugin=subscription-manager \
 	--setopt=skip_missing_names_on_install=False \
