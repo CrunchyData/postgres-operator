@@ -103,14 +103,25 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 	publishMinorUpgradeStartedEvent(&currentTask, &cl, namespace)
 
 	// if autofail is enabled, then patch the replicas, followed by the primary, sequentially.
-	// this process is started by calling ProcessNextUpgradeItem to start the upgrade
+	// this process is started by calling UpgradeWithAutofailEnabled to start the upgrade
 	// otherwise if autofail is disabled, upgrade the primary and all replicas at the same time
-	// by calling UpgradeAutofailDisabled
+	// by calling UpgradeWithAutofailDisabled
 	if util.IsAutofailEnabled(&cl) {
-		ProcessNextUpgradeItem(clientset, restclient, cl, currentTask.Name, namespace)
+		UpgradeWithAutofailEnabled(clientset, restclient, cl, currentTask.Name, namespace)
 	} else {
-		UpgradeAutofailDisabled(clientset, restclient, cl, currentTask.Name, namespace)
+		UpgradeWithAutofailDisabled(clientset, restclient, cl, currentTask.Name, namespace)
 	}
+}
+
+// UpgradeWithAutofailEnabled is called when a minor upgrade is initiated for a PG cluster that
+// has autofail enabled.  Being that all replicas, and then the primary, are patched
+// sequentially for a minor upgrade during which autofail is enabled for the cluster, this
+// function simply calls the ProcessNextUpgradeItem function to trigger the upgrade the first
+// Deployment in the sequence of primary and replica Deployments (ProcessNextUpgradeItem will
+// then be called for any remaining Deployments from the Pod controller).
+func UpgradeWithAutofailEnabled(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
+	cluster crv1.Pgcluster, upgradeTaskName, namespace string) {
+	ProcessNextUpgradeItem(clientset, restclient, cluster, upgradeTaskName, namespace)
 }
 
 // ProcessNextUpgradeItem - processes the next deployment for a cluster being upgraded
@@ -217,7 +228,7 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 	}
 }
 
-// UpgradeAutofailDisabled patches the primary and all replicas at the same time, and then
+// UpgradeWithAutofailDisabled patches the primary and all replicas at the same time, and then
 // immediately mark the upgrade as complete.  When performing a minor upgrade with autofail
 // disabled, once the upgrade is complete and new pods have been created for the primary and
 // each replica, any "database" containers will remain in an unready state, i.e. readiness
@@ -226,7 +237,7 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 // replica.  Therefore, the user must re-enable autofail following a minor upgrade during which
 // autofail was disabled in order to fully bring the cluster (which includes the primary and
 // all replicas) back online.
-func UpgradeAutofailDisabled(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
+func UpgradeWithAutofailDisabled(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	cluster crv1.Pgcluster, upgradeTaskName, namespace string) {
 
 	log.Debug("Upgrade: Autofail disabled.... ", upgradeTaskName)
