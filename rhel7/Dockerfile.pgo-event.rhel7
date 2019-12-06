@@ -9,9 +9,6 @@ LABEL name="pgo-event" \
 
 ENV PGVERSION="12"
 
-COPY redhat/atomic/pgo_event/help.1 /help.1
-COPY redhat/atomic/pgo_event/help.md /help.md
-
 RUN yum -y update && yum -y clean all
 
 ADD bin/pgo-event /usr/local/bin

@@ -9,9 +9,6 @@ LABEL name="crunchydata/pgo-load-" \
 
 ENV PGVERSION="12"
 
-COPY redhat/atomic/pgo_load/help.1 /help.1
-COPY redhat/atomic/pgo_load/help.md /help.md
-
 RUN yum install -y \
 	gettext \
 	hostname \

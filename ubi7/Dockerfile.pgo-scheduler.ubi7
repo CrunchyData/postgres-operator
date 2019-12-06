@@ -6,9 +6,6 @@ LABEL name="pgo-scheduler" \
 	summary="Crunchy Data PostgreSQL Operator - Scheduler" \
 	description="Crunchy Data PostgreSQL Operator - Scheduler"
 
-COPY redhat/atomic/pgo_scheduler/help.1 /help.1
-COPY redhat/atomic/pgo_scheduler/help.md /help.md
-
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgo-config \
  && chown -R 2:2 /opt/cpm /pgo-config
 

@@ -9,9 +9,6 @@ LABEL name="crunchydata/pgo-backrest-" \
 
 ENV PGVERSION="12" BACKREST_VERSION="2.18"
 
-COPY redhat/atomic/pgo_backrest/help.1 /help.1
-COPY redhat/atomic/pgo_backrest/help.md /help.md
-
 RUN yum -y install \
 	postgresql12-server \
 	crunchy-backrest-"${BACKREST_VERSION}" \

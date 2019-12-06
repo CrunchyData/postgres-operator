@@ -9,9 +9,6 @@ LABEL name="postgres-operator" \
 
 ENV PGVERSION="12"
 
-COPY redhat/atomic/postgres_operator/help.1 /help.1
-COPY redhat/atomic/postgres_operator/help.md /help.md
-
 RUN yum -y install postgresql${PGVERSION} && yum -y clean all
 
 ADD bin/postgres-operator /usr/local/bin
