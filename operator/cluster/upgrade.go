@@ -102,9 +102,15 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 
 	publishMinorUpgradeStartedEvent(&currentTask, &cl, namespace)
 
-	// start the upgrade
-	ProcessNextUpgradeItem(clientset, restclient, cl, currentTask.Spec.Name, namespace)
-
+	// if autofail is enabled, then patch the replicas, followed by the primary, sequentially.
+	// this process is started by calling ProcessNextUpgradeItem to start the upgrade
+	// otherwise if autofail is disabled, upgrade the primary and all replicas at the same time
+	// by calling UpgradeAutofailDisabled
+	if util.IsAutofailEnabled(&cl) {
+		ProcessNextUpgradeItem(clientset, restclient, cl, currentTask.Name, namespace)
+	} else {
+		UpgradeAutofailDisabled(clientset, restclient, cl, currentTask.Name, namespace)
+	}
 }
 
 // ProcessNextUpgradeItem - processes the next deployment for a cluster being upgraded
@@ -127,61 +133,6 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 
 	replicaTargets := upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_REPLICA]
 	primaryTargetName := upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_PRIMARY]
-
-	autoFailEnabled := util.IsAutofailEnabled(&cluster)
-
-	// if autofail is disabled, patch the primary and all replicas at the same time, and
-	// immediately mark the upgrade as complete.  When performing a minor upgrade with autofail
-	// disabled, once the upgrade is complete and new pods have been created for the primary and
-	// each replica, any "database" containers will remain in an unready state, i.e. readiness
-	// probes will fail for those containers. This is because when autofail is disabled (i.e.
-	// Patroni is "paused"), Patroni will not attempt to start the PG database on a primary or
-	// replica.  Therefore, the user must re-enable autofail following a minor upgrade during which
-	// autofail was disabled in order to fully bring the cluster (which includes the primary and
-	// all replicas) back online.
-	if !autoFailEnabled {
-		// upgrade everything at once and then mark as complete
-
-		imageNamePatch, err := createImageNamePatch(cluster, operator.Pgo.Cluster.CCPImagePrefix,
-			upgradeTask.Spec.Parameters["CCPImageTag"])
-		if err != nil {
-			log.Errorf("error creating container image name patch during minor upgrade of cluster %s",
-				cluster.Name)
-			log.Error(err)
-			return
-		}
-
-		repList := strings.Split(replicaTargets, ",")
-		for _, replicaTargetName := range repList {
-			err = kubeapi.PatchDeploymentStrategicMerge(clientset, replicaTargetName, namespace,
-				imageNamePatch)
-			if err != nil {
-				log.Error(err)
-				log.Error("error in doing replica minor upgrade")
-				return
-			}
-		}
-
-		err = kubeapi.PatchDeploymentStrategicMerge(clientset, primaryTargetName, namespace,
-			imageNamePatch)
-		if err != nil {
-			log.Error(err)
-			log.Error("error in doing primary minor upgrade")
-			return
-		}
-
-		// upgrade replica targets in task.
-		upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_REPLICA] = ""
-		// upgrade primary target in task.
-		upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_PRIMARY] = ""
-
-		// No other deployments left to upgrade, complete the upgrade
-		completeUpgrade(clientset, restclient, &upgradeTask, autoFailEnabled, cluster.Spec.Name, namespace)
-
-		publishMinorUpgradeCompleteEvent(&upgradeTask, &cluster, namespace)
-
-		return
-	}
 
 	// check for replica's to upgrade
 	if len(replicaTargets) > 0 {
@@ -260,10 +211,80 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 
 	} else {
 		// No other deployments  left to upgrade, complete the upgrade
-		completeUpgrade(clientset, restclient, &upgradeTask, autoFailEnabled, cluster.Spec.Name, namespace)
+		completeUpgrade(clientset, restclient, &upgradeTask, true, cluster.Spec.Name, namespace)
 
 		publishMinorUpgradeCompleteEvent(&upgradeTask, &cluster, namespace)
 	}
+}
+
+// UpgradeAutofailDisabled patches the primary and all replicas at the same time, and then
+// immediately mark the upgrade as complete.  When performing a minor upgrade with autofail
+// disabled, once the upgrade is complete and new pods have been created for the primary and
+// each replica, any "database" containers will remain in an unready state, i.e. readiness
+// probes will fail for those containers. This is because when autofail is disabled (i.e.
+// Patroni is "paused"), Patroni will not attempt to start the PG database on a primary or
+// replica.  Therefore, the user must re-enable autofail following a minor upgrade during which
+// autofail was disabled in order to fully bring the cluster (which includes the primary and
+// all replicas) back online.
+func UpgradeAutofailDisabled(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
+	cluster crv1.Pgcluster, upgradeTaskName, namespace string) {
+
+	log.Debug("Upgrade: Autofail disabled.... ", upgradeTaskName)
+
+	// get the upgrade task
+	upgradeTask := crv1.Pgtask{}
+	found, err := kubeapi.Getpgtask(restclient, &upgradeTask, upgradeTaskName, namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	} else if !found {
+		log.Error("cound not find pgtask for minor upgrade")
+		return
+	}
+
+	replicaTargets := upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_REPLICA]
+	primaryTargetName := upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_PRIMARY]
+
+	// upgrade everything at once and then mark as complete
+	imageNamePatch, err := createImageNamePatch(cluster, operator.Pgo.Cluster.CCPImagePrefix,
+		upgradeTask.Spec.Parameters["CCPImageTag"])
+	if err != nil {
+		log.Errorf("error creating container image name patch during minor upgrade of cluster %s",
+			cluster.Name)
+		log.Error(err)
+		return
+	}
+
+	repList := strings.Split(replicaTargets, ",")
+	for _, replicaTargetName := range repList {
+		err = kubeapi.PatchDeploymentStrategicMerge(clientset, replicaTargetName, namespace,
+			imageNamePatch)
+		if err != nil {
+			log.Error(err)
+			log.Error("error in doing replica minor upgrade")
+			return
+		}
+	}
+
+	err = kubeapi.PatchDeploymentStrategicMerge(clientset, primaryTargetName, namespace,
+		imageNamePatch)
+	if err != nil {
+		log.Error(err)
+		log.Error("error in doing primary minor upgrade")
+		return
+	}
+
+	// upgrade replica targets in task.
+	upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_REPLICA] = ""
+	// upgrade primary target in task.
+	upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_PRIMARY] = ""
+
+	// No other deployments left to upgrade, complete the upgrade
+	completeUpgrade(clientset, restclient, &upgradeTask, false, cluster.Spec.Name, namespace)
+
+	publishMinorUpgradeCompleteEvent(&upgradeTask, &cluster, namespace)
+
+	return
 }
 
 // createImageNamePatch creates and returns a string containing the JSON structure needed to
