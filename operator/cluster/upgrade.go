@@ -367,10 +367,8 @@ func completeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 	log.Debug("Minor Upgrade: Completing...")
 
 	// update cluster image tag (CCPImageTag) once the upgrade is complete
-	if !autoFail {
-		upgradedImageTag := upgradeTask.Spec.Parameters["CCPImageTag"]
-		updateClusterCCPImage(restclient, upgradedImageTag, clusterName, namespace)
-	}
+	upgradedImageTag := upgradeTask.Spec.Parameters["CCPImageTag"]
+	updateClusterCCPImage(restclient, upgradedImageTag, clusterName, namespace)
 
 	removeMinorUpgradeLabelFromCluster(clientset, restclient, clusterName, namespace)
 
