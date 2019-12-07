@@ -66,25 +66,13 @@
         },
         {
             "apiGroups": [
-                "batch",
-                "extensions"
+                "batch"
             ],
             "resources": [
                 "jobs"
             ],
             "verbs": [
                 "*"
-            ]
-        },
-        {
-            "apiGroups": [
-                "extensions"
-            ],
-            "resources": [
-                "deployments"
-            ],
-            "verbs": [
-                "patch"
             ]
         }
     ]

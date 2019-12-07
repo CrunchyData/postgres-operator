@@ -66,8 +66,7 @@
         },
         {
             "apiGroups": [
-                "batch",
-                "extensions"
+                "batch"
             ],
             "resources": [
                 "jobs"
@@ -78,7 +77,7 @@
         },
         {
             "apiGroups": [
-                "extensions"
+                "apps"
             ],
             "resources": [
                 "deployments"

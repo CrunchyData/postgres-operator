@@ -212,7 +212,7 @@ func updateLabels(deployment *v1.Deployment, clusterName string, newLabels map[s
 		return err
 	}
 
-	_, err = apiserver.Clientset.ExtensionsV1beta1().Deployments(ns).Patch(clusterName, types.MergePatchType, patchBytes, "")
+	_, err = apiserver.Clientset.AppsV1().Deployments(ns).Patch(clusterName, types.MergePatchType, patchBytes, "")
 	if err != nil {
 		log.Debugf("error updating patching deployment %s", err.Error())
 	}
@@ -475,7 +475,7 @@ func deleteTheLabel(deployment *v1.Deployment, clusterName string, labelsMap map
 		return err
 	}
 
-	_, err = apiserver.Clientset.ExtensionsV1beta1().Deployments(ns).Patch(deployment.Name, types.MergePatchType, patchBytes, "")
+	_, err = apiserver.Clientset.AppsV1().Deployments(ns).Patch(deployment.Name, types.MergePatchType, patchBytes, "")
 	if err != nil {
 		log.Debugf("error patching deployment ", err.Error())
 	}

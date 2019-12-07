@@ -1,11 +1,17 @@
 {
-    "apiVersion": "extensions/v1beta1",
+    "apiVersion": "apps/v1",
     "kind": "Deployment",
     "metadata": {
         "name": "crunchy-prometheus"
     },
     "spec": {
         "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "name": "{{ prometheus_service_name }}",
+            "vendor": "crunchydata"
+          }
+        },
         "template": {
             "metadata": {
                 "labels": {

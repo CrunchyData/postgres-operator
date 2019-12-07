@@ -134,7 +134,7 @@ func DrainDeployment(clientset *kubernetes.Clientset, name string, namespace str
 	}
 	log.Debug(string(patchBytes))
 
-	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(name, types.JSONPatchType, patchBytes, "")
+	_, err = clientset.AppsV1().Deployments(namespace).Patch(name, types.JSONPatchType, patchBytes, "")
 	if err != nil {
 		log.Error("error patching deployment " + err.Error())
 	}
@@ -198,7 +198,7 @@ func ScaleDeployment(clientset *kubernetes.Clientset, deploymentName, namespace 
 	}
 	log.Debug(string(patchBytes))
 
-	_, err = clientset.ExtensionsV1beta1().Deployments(namespace).Patch(deploymentName, types.JSONPatchType, patchBytes)
+	_, err = clientset.AppsV1().Deployments(namespace).Patch(deploymentName, types.JSONPatchType, patchBytes)
 	if err != nil {
 		log.Error("error creating primary Deployment " + err.Error())
 		return err
