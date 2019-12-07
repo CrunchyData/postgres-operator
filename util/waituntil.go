@@ -111,7 +111,7 @@ func WaitUntilDeploymentIsDeleted(clientset *kubernetes.Clientset, depname strin
 	var fw watch.Interface
 
 	lo := meta_v1.ListOptions{LabelSelector: "name=" + depname}
-	fw, err = clientset.ExtensionsV1beta1().Deployments(namespace).Watch(lo)
+	fw, err = clientset.AppsV1().Deployments(namespace).Watch(lo)
 	if err != nil {
 		log.Error("error watching deployments " + err.Error())
 		return err

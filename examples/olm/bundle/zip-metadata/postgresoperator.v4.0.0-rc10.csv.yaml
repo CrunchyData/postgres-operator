@@ -132,7 +132,7 @@ metadata:
               "namespace": "test-operator"
           },
           "spec": {}
-      }] 
+      }]
     categories: Database
     capabilities: Full Lifecycle
     certified: "true"
@@ -478,10 +478,8 @@ spec:
           - '*'
         - apiGroups:
           - batch
-          - extensions
           resources:
           - jobs
-          - deployments
           verbs:
           - '*'
         serviceAccountName: postgres-operator
