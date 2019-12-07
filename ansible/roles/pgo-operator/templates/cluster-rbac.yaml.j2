@@ -6,7 +6,7 @@ metadata:
   namespace: {{ pgo_operator_namespace }}
 ---
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: pgo-cluster-role
 rules:
@@ -20,7 +20,7 @@ rules:
       - roles
       - rolebindings
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: pgo-cluster-role
