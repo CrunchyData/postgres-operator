@@ -33,15 +33,13 @@ import (
 )
 
 const (
-	replInfoQueryFormat = "SELECT %s(%s(), '0/0')::bigint, %s(%s(), '0/0')::bigint"
+	replInfoQueryPre10 = `SELECT
+			COALESCE(pg_xlog_location_diff(pg_last_xlog_receive_location(), '0/0'), 0)::bigint AS replication_position,
+			COALESCE(pg_xlog_location_diff(pg_last_xlog_replay_location(), '0/0'), 0)::bigint AS replay_position`
 
-	recvV9         = "pg_last_xlog_receive_location"
-	replayV9       = "pg_last_xlog_replay_location"
-	locationDiffV9 = "pg_xlog_location_diff"
-
-	recvV10         = "pg_last_wal_receive_lsn"
-	replayV10       = "pg_last_wal_replay_lsn"
-	locationDiffV10 = "pg_wal_lsn_diff"
+	replInfoQueryPost10 = `SELECT
+			COALESCE(pg_wal_lsn_diff(pg_last_wal_receive_lsn(), '0/0')::bigint, 0) AS replication_position,
+			COALESCE(pg_wal_lsn_diff(pg_last_wal_replay_lsn(), '0/0'), 0)::bigint AS replay_position`
 )
 
 type ReplicationInfo struct {
@@ -229,24 +227,15 @@ func GetReplicationInfo(target string) (*ReplicationInfo, error) {
 			return nil, err
 		}
 	}
+
 	// Get replication info
-	var replicationInfoQuery string
+	replicationInfoQuery := replInfoQueryPost10
+	if version < 100000 {
+		replicationInfoQuery = replInfoQueryPre10
+	}
+
 	var recvLocation uint64
 	var replayLocation uint64
-
-	if version < 100000 {
-		replicationInfoQuery = fmt.Sprintf(
-			replInfoQueryFormat,
-			locationDiffV9, recvV9,
-			locationDiffV9, replayV9,
-		)
-	} else {
-		replicationInfoQuery = fmt.Sprintf(
-			replInfoQueryFormat,
-			locationDiffV10, recvV10,
-			locationDiffV10, replayV10,
-		)
-	}
 
 	rows, err = conn.Query(replicationInfoQuery)
 
