@@ -249,17 +249,17 @@ type ClusterTestResponse struct {
 // ScaleQueryTargetSpec
 // swagger:model
 type ScaleQueryTargetSpec struct {
-	Name        string
-	ReadyStatus string
-	Node        string
-	RepStatus   string
+	Name           string // the name of the PostgreSQL instance
+	Node           string // the node that the instance is running on
+	ReplicationLag int    // how far behind the instance is behind the primary, in MB
+	Status         string // the current status of the instance
+	Timeline       int    // the timeline the replica is on; timelines are adjusted after failover events
 }
 
 // ScaleQueryResponse
 // swagger:model
 type ScaleQueryResponse struct {
-	Results []string
-	Targets []ScaleQueryTargetSpec
+	Results []ScaleQueryTargetSpec
 	Status
 }
 
