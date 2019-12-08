@@ -93,39 +93,59 @@ func createFailover(args []string, ns string) {
 
 }
 
-// queryFailover ....
+// queryFailover is a helper function to return the user information about the
+// replicas that can be failed over to for this cluster. This is called when the
+// "--query" flag is specified
 func queryFailover(args []string, ns string) {
+	var hasPreferredNode bool
+
 	log.Debugf("queryFailover called %v", args)
 
+	// indicate which cluster this is. Put a newline before to put some
+	// separation between each line
+	fmt.Printf("\nCluster: %s\n", args[0])
+
+	// call the API
 	response, err := api.QueryFailover(httpclient, args[0], &SessionCredentials, ns)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
 	}
 
-	if response.Status.Code == msgs.Ok {
-		fmt.Println(response.Status.Msg)
-		if len(response.Targets) > 0 {
-			fmt.Println("Failover targets include:")
-			for i := 0; i < len(response.Targets); i++ {
-				printTarget(response.Targets[i])
-			}
-		}
-		for k := range response.Results {
-			fmt.Println(response.Results[k])
-		}
-	} else {
+	// If there is a controlled error, output the message here and continue
+	// to iterate through the list
+	if response.Status.Code != msgs.Ok {
 		fmt.Println("Error: " + response.Status.Msg)
-		os.Exit(2)
+		os.Exit(1)
 	}
 
-}
-
-func printTarget(target msgs.FailoverTargetSpec) {
-	var preferredNode string
-
-	if target.PreferredNode {
-		preferredNode = "(preferred node)"
+	// If there are no replicas found for this cluster, indicate so, and
+	// continue to iterate through the list
+	if len(response.Results) == 0 {
+		fmt.Println("No replicas found.")
+		return
 	}
-	fmt.Printf("\t%s (%s) (%s) %s ReceiveLoc (%d) ReplayLoc (%d)\n", target.Name, target.ReadyStatus, target.Node, preferredNode, target.ReceiveLocation, target.ReplayLocation)
+
+	// output the information about each instance
+	fmt.Printf("%-20s\t%-10s\t%-10s\t%s\n", "REPLICA", "STATUS", "NODE", "REPLICATION LAG")
+
+	for i := 0; i < len(response.Results); i++ {
+		instance := response.Results[i]
+
+		node := instance.Node
+		// check if this is a preferred node
+		if instance.PreferredNode {
+			hasPreferredNode = true
+			node = fmt.Sprintf("*%s", node)
+		}
+
+		fmt.Printf("%-20s\t%-10s\t%-10s\t%12d MB\n",
+			instance.Name, instance.Status, node, instance.ReplicationLag)
+	}
+
+	// if a node exists that is a preferred failover target, print an informative
+	// message
+	if hasPreferredNode {
+		fmt.Println("* next to a NODE name indicates a preferred failover target")
+	}
 }

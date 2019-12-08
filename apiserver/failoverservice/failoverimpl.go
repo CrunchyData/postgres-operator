@@ -25,7 +25,6 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/apps/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -96,21 +95,21 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns, pgouser string) msg
 	return resp
 }
 
-//  QueryFailover ...
+// QueryFailover provides the user with a list of replicas that can be failed
+// over to
 // pgo failover mycluster --query
 func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 	var err error
-	resp := msgs.QueryFailoverResponse{}
-	resp.Status.Code = msgs.Ok
-	resp.Status.Msg = ""
-	resp.Results = make([]string, 0)
-	resp.Targets = make([]msgs.FailoverTargetSpec, 0)
+	response := msgs.QueryFailoverResponse{
+		Results: make([]msgs.FailoverTargetSpec, 0),
+		Status:  msgs.Status{Code: msgs.Ok, Msg: ""},
+	}
 
 	_, err = validateClusterName(name, ns)
 	if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
 	}
 
 	log.Debugf("query failover called for %s", name)
@@ -120,67 +119,60 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 	if apiserver.Pgo.Pgo.PreferredFailoverNode != "" {
 		log.Debug("PreferredFailoverNode is set to %s", apiserver.Pgo.Pgo.PreferredFailoverNode)
 		nodes, err = util.GetPreferredNodes(apiserver.Clientset, apiserver.Pgo.Pgo.PreferredFailoverNode, ns)
+		log.Debug(nodes)
 		if err != nil {
 			log.Error("error getting preferred nodes " + err.Error())
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
 		}
 	} else {
-		log.Debug("PreferredFailoverNode is not set ")
+		log.Debug("PreferredFailoverNode is not set")
 	}
 
-	//get replica pods using selector pg-cluster=clusterName-replica,role=replica
-	selector := config.LABEL_PG_CLUSTER + "=" + name + "," + config.LABEL_PGHA_ROLE + "=replica"
-	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
-	if kerrors.IsNotFound(err) {
-		log.Debug("no replicas found")
-		resp.Status.Msg = "no replicas found for " + name
-		return resp
-	} else if err != nil {
-		log.Error("error getting pods " + err.Error())
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
+	// Get information about the current status of all of the replicas. This is
+	// handled by a helper function, that will return the information in a struct
+	// with the key elements to help the user understand the current state of the
+	// replicas in a cluster
+	replicationStatusRequest := util.ReplicationStatusRequest{
+		RESTConfig:  apiserver.RESTConfig,
+		Clientset:   apiserver.Clientset,
+		Namespace:   ns,
+		ClusterName: name,
 	}
 
-	log.Debugf("pods len %d", len(pods.Items))
-	// loop through each replica pod to get its replications status, as well as the status of the replica pod
-	// itself.  This includes obtaining the location of the WAL file most recently synced to disk, the location
-	// of the WAL file that was most recently replayed, as well as the status of the pod itself (i.e. if it is
-	// "Ready" or "Not Ready").  Also determines if the replica is on a preferred node.
-	for _, pod := range pods.Items {
-		log.Debugf("found %s", pod.Name)
-		target := msgs.FailoverTargetSpec{}
-		target.Name = pod.Labels[config.LABEL_DEPLOYMENT_NAME]
+	replicationStatusResponse, err := util.ReplicationStatus(replicationStatusRequest)
 
-		target.ReceiveLocation, target.ReplayLocation, target.Node, err =
-			util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &pod, ns, apiserver.Pgo.Cluster.Port)
-		if err != nil {
-			log.Error("error getting rep status " + err.Error())
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-
-		//get the replica pod status
-		replicaPodStatus, err := apiserver.GetReplicaPodStatus(pod.Labels[config.LABEL_PG_CLUSTER], ns)
-		if err != nil {
-			log.Error(err)
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-		target.ReadyStatus = replicaPodStatus.ReadyStatus
-		target.Node = replicaPodStatus.NodeName
-		if preferredNode(nodes, target.Node) {
-			target.PreferredNode = true
-		}
-		//get the rep status
-		resp.Targets = append(resp.Targets, target)
+	// if an error is return, log the message, and return the response
+	if err != nil {
+		log.Error(err.Error())
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
 	}
 
-	return resp
+	// if there are no results, return the response as is
+	if len(replicationStatusResponse.Instances) == 0 {
+		return response
+	}
+
+	// iterate through response results to create the API response
+	for _, instance := range replicationStatusResponse.Instances {
+		// create an result for the response
+		result := msgs.FailoverTargetSpec{
+			Name:           instance.Name,
+			Node:           instance.Node,
+			PreferredNode:  preferredNode(nodes, instance.Node),
+			Status:         instance.Status,
+			ReplicationLag: instance.ReplicationLag,
+			Timeline:       instance.Timeline,
+		}
+
+		// append the result to the response list
+		response.Results = append(response.Results, result)
+	}
+
+	return response
 }
 
 func validateClusterName(clusterName, ns string) (*crv1.Pgcluster, error) {
