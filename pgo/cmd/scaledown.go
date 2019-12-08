@@ -76,31 +76,48 @@ func init() {
 
 }
 
+// queryCluster is a helper function that returns information about the
+// available replicas that can be scaled down. This is called when the "--query"
+// flag is specified
 func queryCluster(args []string, ns string) {
 
+	// iterate through the clusters and output information about each one
 	for _, arg := range args {
+		// indicate which cluster this is. Put a newline before to put some
+		// separation between each line
+		fmt.Printf("\nCluster: %s\n", arg)
+
+		// call the API
 		response, err := api.ScaleQuery(httpclient, arg, &SessionCredentials, ns)
 
+		// If the API returns in error, just bail out here
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 			os.Exit(2)
 		}
 
-		if response.Status.Code == msgs.Ok {
-			if len(response.Targets) > 0 {
-				fmt.Println("Replica targets include:")
-				for i := 0; i < len(response.Targets); i++ {
-					printScaleTarget(response.Targets[i])
-				}
-			}
-
-			for _, v := range response.Results {
-				fmt.Println(v)
-			}
-		} else {
+		// If there is a controlled error, output the message here and continue
+		// to iterate through the list
+		if response.Status.Code != msgs.Ok {
 			fmt.Println("Error: " + response.Status.Msg)
+			continue
 		}
 
+		// If there are no replicas found for this cluster, indicate so, and
+		// continue to iterate through the list
+		if len(response.Results) == 0 {
+			fmt.Println("No replicas found.")
+			continue
+		}
+
+		// output the information about each instance
+		fmt.Printf("%-20s\t%-10s\t%-10s\t%s\n", "REPLICA", "STATUS", "NODE", "REPLICATION LAG")
+		for i := 0; i < len(response.Results); i++ {
+			instance := response.Results[i]
+
+			fmt.Printf("%-20s\t%-10s\t%-10s\t%12d MB\n",
+				instance.Name, instance.Status, instance.Node, instance.ReplicationLag)
+		}
 	}
 }
 
@@ -127,8 +144,4 @@ func scaleDownCluster(clusterName, ns string) {
 		fmt.Println("Error: " + response.Status.Msg)
 	}
 
-}
-
-func printScaleTarget(target msgs.ScaleQueryTargetSpec) {
-	fmt.Printf("\t%s (%s) (%s) (%s)\n", target.Name, target.ReadyStatus, target.Node, target.RepStatus)
 }

@@ -16,7 +16,9 @@ limitations under the License.
 */
 
 import (
+	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -26,10 +28,35 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/apps/v1"
+	apps_v1 "k8s.io/api/apps/v1"
+	"k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+// instance info is a struct used to store the results of a query to find out
+// information about an instance in a cluster
+type instanceInfo struct {
+	Name           string `json:"Member"`
+	Type           string `json:"Role"`
+	ReplicationLag int    `json:"Lag in MB"`
+	State          string
+	Timeline       int `json:"TL"`
+}
+
+// instanceInfoPrimary is the label used by Patroni to indicate that an instance
+// is indeed a primary PostgreSQL instance
+const instanceInfoPrimary = "Leader"
+
+var (
+	// instanceNamePattern is a regular expression usd to get the cluster instance
+	instanceNamePattern = regexp.MustCompile("^([a-zA-Z0-9]+(-[a-zA-Z0-9]{4})?)-")
+	// instanceInfoCommand is the command used to get information about the status
+	// and other statistics about the instances in a PostgreSQL cluster, e.g.
+	// replication lag
+	instanceInfoCommand = []string{"patronictl", "list", "-f", "json"}
 )
 
 // ScaleCluster ...
@@ -185,7 +212,9 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 	return response
 }
 
-// ScaleQuery ...
+// ScaleQuery lists the replicas that are in the PostgreSQL cluster
+// with information that is helpful in determining which one to fail over to,
+// such as the lag behind the replica as well as the timeline
 func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 	var err error
 
@@ -199,15 +228,16 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 		Name(name).
 		Do().Into(&cluster)
 
+	// If no clusters are found, return a specific error message,
+	// otherwise, pass forward the generic error message that Kubernetes sends
 	if kerrors.IsNotFound(err) {
-		log.Error("no clusters found")
+		errorMsg := fmt.Sprintf(`No cluster found for "%s"`, name)
+		log.Error(errorMsg)
 		response.Status.Code = msgs.Error
-		response.Status.Msg = err.Error()
+		response.Status.Msg = errorMsg
 		return response
-	}
-
-	if err != nil {
-		log.Error("error getting cluster" + err.Error())
+	} else if err != nil {
+		log.Error(err.Error())
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
 		return response
@@ -215,50 +245,70 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 
 	//get replica pods using selector pg-cluster=clusterName-replica,role=replica
 	selector := config.LABEL_PG_CLUSTER + "=" + name + "," + config.LABEL_PGHA_ROLE + "=replica"
+	log.Debugf(`searching for pods with "%s"`, selector)
+
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
-	if kerrors.IsNotFound(err) {
-		log.Debug("no replicas found")
-		response.Status.Msg = "no replicas found for " + name
-		return response
-	} else if err != nil {
-		log.Error("error getting pods " + err.Error())
+
+	// If there is an error trying to get the pods, return here
+	if err != nil {
+		log.Error(err.Error())
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
 		return response
 	}
 
-	response.Results = make([]string, 0)
-	response.Targets = make([]msgs.ScaleQueryTargetSpec, 0)
+	// Begin to prepare returning the results
+	response.Results = make([]msgs.ScaleQueryTargetSpec, 0)
 
-	log.Debugf("pods len %d\n", len(pods.Items))
+	log.Debugf(`pods found "%d"`, len(pods.Items))
 
-	for _, pod := range pods.Items {
-		log.Debugf("found %s", pod.Name)
-		target := msgs.ScaleQueryTargetSpec{}
-		target.Name = pod.Labels[config.LABEL_DEPLOYMENT_NAME]
-		//get the pod status
-		//get the replica pod status
-		replicaPodStatus, err := apiserver.GetReplicaPodStatus(pod.Labels[config.LABEL_PG_CLUSTER], ns)
-		if err != nil {
-			log.Error(err)
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
+	// if no replicas are found, then return here
+	if len(pods.Items) == 0 {
+		return response
+	}
+
+	// First, we need to create a quick map of "instance name" => node name
+	// We will iterate through the pod list once to extract the name we refere to
+	// the specific instance as, as well as which node it is deployed on
+	instanceNodeMap := createInstanceNodeMap(pods)
+
+	// Now get the statistics about the current state of the replicas, which we
+	// can delegate to Patroni vis-a-vis the information that it collects
+	instanceInfoList, err := createInstanceInfoList(ns, pods)
+
+	// if there is an error, record it here and return
+	if err != nil {
+		log.Error(err.Error())
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	// iterate through the results of the raw data, pick out any replicas,
+	// and add them to the array
+	for _, instance := range instanceInfoList {
+		// if this is a primary, skip it
+		if instance.Type == instanceInfoPrimary {
+			continue
 		}
-		target.ReadyStatus = replicaPodStatus.ReadyStatus
-		target.Node = replicaPodStatus.NodeName
-		//get the rep status
-		receiveLocation, replayLocation, _, err :=
-			util.GetRepStatus(apiserver.RESTClient, apiserver.Clientset, &pod, ns, apiserver.Pgo.Cluster.Port)
-		if err != nil {
-			log.Error("error getting rep status " + err.Error())
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
+
+		// create an result for the response
+		result := msgs.ScaleQueryTargetSpec{
+			Status:         instance.State,
+			ReplicationLag: instance.ReplicationLag,
+			Timeline:       instance.Timeline,
 		}
 
-		target.RepStatus = fmt.Sprintf("receive %d replay %d", receiveLocation, replayLocation)
-		response.Targets = append(response.Targets, target)
+		// get the instance name that is recognize by the Operator, which is the
+		// first part of the name
+		result.Name = instanceNamePattern.FindStringSubmatch(instance.Name)[1]
+
+		// get the node that the replica is on based on the "replica name" for this
+		// instance
+		result.Node = instanceNodeMap[result.Name]
+
+		// append the result to the response list
+		response.Results = append(response.Results, result)
 	}
 
 	return response
@@ -294,7 +344,7 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 	}
 
 	//if this was the last replica then remove the replica service
-	var replicaList *v1.DeploymentList
+	var replicaList *apps_v1.DeploymentList
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_SERVICE_NAME + "=" + clusterName + "-replica"
 	replicaList, err = kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
 	if err != nil {
@@ -337,4 +387,52 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 
 	response.Results = append(response.Results, "deleted Pgreplica "+replicaName)
 	return response
+}
+
+// makeInstanceNodeMap creates an mapping between the names of the PostgreSQL
+// instances to the Nodes that they run on, based upon the output from a
+// Kubernetes API query
+func createInstanceNodeMap(pods *v1.PodList) map[string]string {
+	instanceNodeMap := map[string]string{}
+
+	// Iterate through each pod that is return and get the mapping between the
+	// PostgreSQL instance name and the node it is scheduled on
+	for _, pod := range pods.Items {
+		// get the replica name from the metadata on the pod
+		// for legacy purposes, we are using the "deployment name" label
+		replicaName := pod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
+		// get the node name from the spec on the pod
+		nodeName := pod.Spec.NodeName
+		// add them to the map
+		instanceNodeMap[replicaName] = nodeName
+	}
+
+	return instanceNodeMap
+}
+
+// createInstanceInfo execs into a single pod that is returned in the collection
+// and looks up the information that Patroni gives about each instance in the
+// PostgreSQL cluster. This is returned to us in a JSON-parseable string,
+// which, if valid, we can process and create a list of "instanceInfo` structs
+func createInstanceInfoList(namespace string, pods *v1.PodList) ([]instanceInfo, error) {
+	instanceInfoList := []instanceInfo{}
+
+	// We can get the statistics about the current state of the managed instance
+	// From executing and running a command in the first pod
+	pod := pods.Items[0]
+
+	commandStdOut, _, err := kubeapi.ExecToPodThroughAPI(
+		apiserver.RESTConfig, apiserver.Clientset, instanceInfoCommand,
+		pod.Spec.Containers[0].Name, pod.Name, namespace, nil)
+
+	// if there is an error, return. We will log the error at a higher level
+	if err != nil {
+		return instanceInfoList, err
+	}
+
+	// parse the JSON and plast it into instanceInfoList
+	json.Unmarshal([]byte(commandStdOut), &instanceInfoList)
+
+	// return the list here
+	return instanceInfoList, nil
 }
