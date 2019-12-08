@@ -80,47 +80,6 @@ var (
 	instanceNamePattern = regexp.MustCompile("^([a-zA-Z0-9]+(-[a-zA-Z0-9]{4})?)-")
 )
 
-// GetBestTarget
-func GetBestTarget(clientset *kubernetes.Clientset, clusterName, namespace string) (*v1.Pod, *appsv1.Deployment, error) {
-
-	var err error
-
-	//get all the replica deployment pods for this cluster
-	var pod v1.Pod
-	var deployment appsv1.Deployment
-
-	//get all the deployments that are replicas for this clustername
-
-	var pods *v1.PodList
-
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_SERVICE_NAME + "=" + clusterName + "-replica"
-
-	pods, err = kubeapi.GetPods(clientset, selector, namespace)
-	if err != nil {
-		return &pod, &deployment, err
-	}
-
-	if len(pods.Items) == 0 {
-		return &pod, &deployment, errors.New("no replica pods found for cluster " + clusterName)
-	}
-
-	for _, p := range pods.Items {
-		pod = p
-		log.Debugf("pod found for replica %s", pod.Name)
-		if len(pods.Items) == 1 {
-			log.Debug("only 1 pod found for failover best match..using it by default")
-			return &pod, &deployment, err
-		}
-
-		for _, c := range pod.Spec.Containers {
-			log.Debugf("container %s found in pod", c.Name)
-		}
-
-	}
-
-	return &pod, &deployment, err
-}
-
 // GetPod determines the best target to fail to
 func GetPod(clientset *kubernetes.Clientset, deploymentName, namespace string) (*v1.Pod, error) {
 
