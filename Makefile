@@ -1,19 +1,40 @@
+
+# Environment definitions
 RELTMPDIR=/tmp/release.$(PGO_VERSION)
 RELFILE=/tmp/postgres-operator.$(PGO_VERSION).tar.gz
+GOPATH ?= /home/odev/go
+GOBIN ?= $(GOPATH)/bin
 
 # Valid values: buildah (default), docker
 IMGBUILDER ?= buildah
+IMGCMDSTEM=sudo --preserve-env buildah bud --layers $(SQUASH)
 
-#======= Safety checks =======
-check-go-vars:
-ifndef GOPATH
-	$(error GOPATH is not set)
+# Allows simplification of IMGBUILDER switching
+ifeq ("$(IMGBUILDER)","docker")
+	IMGCMDSTEM=docker build
 endif
-ifndef GOBIN
-	$(error GOBIN is not set)
-endif
+
+# To build a specific image, run 'make <name>-image' (e.g. 'make pgo-apiserver-image')
+images = pgo-apiserver \
+	pgo-backrest \
+	pgo-backrest-repo \
+	pgo-backrest-restore \
+	pgo-event \
+	pgo-load \
+	pgo-lspvc \
+	pgo-rmdata \
+	pgo-scheduler \
+	pgo-sqlrunner \
+	postgres-operator
+
+.PHONY: all installrbac setup setupnamespaces cleannamespaces bounce \
+	deployoperator runmain runapiserver cli-docs clean deepsix push pull \
+	release default
+
 
 #======= Main functions =======
+all: linuxpgo $(images:%=%-image)
+
 installrbac:
 	cd deploy && ./install-rbac.sh
 
@@ -27,159 +48,107 @@ cleannamespaces:
 	cd deploy && ./cleannamespaces.sh
 
 bounce:
-	$(PGO_CMD) --namespace=$(PGO_OPERATOR_NAMESPACE) get pod --selector=name=postgres-operator -o=jsonpath="{.items[0].metadata.name}" | xargs $(PGO_CMD) --namespace=$(PGO_OPERATOR_NAMESPACE) delete pod
+	$(PGO_CMD) \
+		--namespace=$(PGO_OPERATOR_NAMESPACE) \
+		get pod \
+		--selector=name=postgres-operator \
+		-o=jsonpath="{.items[0].metadata.name}" \
+	| xargs $(PGO_CMD) --namespace=$(PGO_OPERATOR_NAMESPACE) delete pod
 
 deployoperator:
 	cd deploy && ./deploy.sh
 
-main: check-go-vars
-	go install postgres-operator.go
-
-runmain: check-go-vars
+runmain: build-postgres-operator
 	postgres-operator --kubeconfig=/etc/kubernetes/admin.conf
 
-runapiserver: check-go-vars
+runapiserver: build-pgo-apiserver
 	apiserver --kubeconfig=/etc/kubernetes/admin.conf
 
+
 #======= Binary builds =======
-build-pgo-apiserver: check-go-vars
+build-pgo-apiserver:
 	go install apiserver.go
 	cp $(GOBIN)/apiserver bin/
 
-build-pgo-backrest: check-go-vars
-	go install pgo-backrest/pgo-backrest.go
-	mv $(GOBIN)/pgo-backrest ./bin/pgo-backrest/
-
-build-pgo-rmdata:	check-go-vars
-	go install pgo-rmdata/pgo-rmdata.go
-	cp $(GOBIN)/pgo-rmdata bin/pgo-rmdata/
-
-build-pgo-scheduler: check-go-vars
-	go install pgo-scheduler/pgo-scheduler.go
-	mv $(GOBIN)/pgo-scheduler ./bin/pgo-scheduler/
-
-build-postgres-operator: check-go-vars
+build-postgres-operator:
 	go install postgres-operator.go
 	cp $(GOBIN)/postgres-operator bin/postgres-operator/
+
+build-%: %/%.go
+	go install $*/$*.go
+	cp $(GOBIN)/$* ./bin/$*
 
 build-pgo-%:
 	$(info No binary build needed for $@)
 
-linuxpgo: check-go-vars
+linuxpgo:
 	cd pgo && go install pgo.go
 
-macpgo:	check-go-vars
+macpgo:	
 	cd pgo && env GOOS=darwin GOARCH=amd64 go build pgo.go && mv pgo $(GOBIN)/pgo-mac
 	env GOOS=darwin GOARCH=amd64 go build github.com/blang/expenv && mv expenv $(GOBIN)/expenv-mac
 
-winpgo:	check-go-vars
+winpgo:	
 	cd pgo && env GOOS=windows GOARCH=386 go build pgo.go && mv pgo.exe $(GOBIN)/pgo.exe
 	env GOOS=windows GOARCH=386 go build github.com/blang/expenv && mv expenv.exe $(GOBIN)/expenv.exe
 
 
 #======= Image builds =======
-%-img-buildah: check-go-vars $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS) pgo-base-buildah build-%
-	sudo --preserve-env buildah bud --layers $(SQUASH) \
+$(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS):
+	$(error No Dockerfile found for $* naming pattern: [$@])
+
+%-img-build: pgo-base-$(IMGBUILDER) build-% $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS)
+	$(IMGCMDSTEM) \
 		-f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.$*.$(PGO_BASEOS) \
 		-t $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG) \
 		--build-arg PREFIX=$(PGO_IMAGE_PREFIX) \
 		--build-arg BASEVER=$(PGO_VERSION) \
 		$(PGOROOT)
+
+%-img-buildah: %-img-build
 	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
 
-%-img-docker: check-go-vars $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS) pgo-base-docker build-%
-	docker build \
-		-f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.$*.$(PGO_BASEOS) \
-		-t $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG) \
-		--build-arg PREFIX=$(PGO_IMAGE_PREFIX) \
-		--build-arg BASEVER=$(PGO_VERSION) \
-		$(PGOROOT)
+%-img-docker: %-img-build ;
 
-$(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS):
-	$(error No Dockerfile found for $* naming pattern)
-
-# Leave explicitly named targets invokeable by name until all target
-# self-limits to changes only
-postgres-operator-image: postgres-operator-img-$(IMGBUILDER)
-pgo-apiserver-image: pgo-apiserver-img-$(IMGBUILDER)
-pgo-event-image: pgo-event-img-$(IMGBUILDER)
-pgo-scheduler-image: pgo-scheduler-img-$(IMGBUILDER)
-pgo-backrest-repo-image: pgo-backrest-repo-img-$(IMGBUILDER)
-pgo-backrest-restore-image: pgo-backrest-restore-img-$(IMGBUILDER)
-pgo-lspvc-image: pgo-lspvc-img-$(IMGBUILDER)
-pgo-load-image: pgo-load-img-$(IMGBUILDER)
-pgo-rmdata-image: pgo-rmdata-img-$(IMGBUILDER)
-pgo-sqlrunner-image: pgo-sqlrunner-img-$(IMGBUILDER)
-pgo-backrest-image: pgo-backrest-img-$(IMGBUILDER)
-
-pgo-base-buildah: check-go-vars
-	sudo --preserve-env buildah bud --layers $(SQUASH) \
-		-f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-base.$(PGO_BASEOS) \
-		-t $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) \
-		--build-arg RELVER=$(PGO_VERSION) \
-		$(PGOROOT)
-	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG)
-
-pgo-base-docker: check-go-vars
-	docker build \
-		-f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-base.$(PGO_BASEOS) \
-		-t $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) \
-		--build-arg RELVER=$(PGO_VERSION) \
-		$(PGOROOT)
+%-image: %-img-$(IMGBUILDER) ;
 
 pgo-base: pgo-base-$(IMGBUILDER)
 
-cli-docs:	check-go-vars
+pgo-base-build: $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-base.$(PGO_BASEOS)
+	$(IMGCMDSTEM) \
+		-f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-base.$(PGO_BASEOS) \
+		-t $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) \
+		--build-arg RELVER=$(PGO_VERSION) \
+		$(PGOROOT)
+
+pgo-base-buildah: pgo-base-build
+	sudo --preserve-env buildah push $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) docker-daemon:$(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG)
+
+pgo-base-docker: pgo-base-build
+
+
+#======== Utility =======
+cli-docs:	
 	cd $(PGOROOT)/hugo/content/operatorcli/cli && go run $(PGOROOT)/pgo/generatedocs.go
 
-clean:	check-go-vars
+clean:	
 	rm -rf $(GOPATH)/pkg/* $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
 
 deepsix:
 	cd $(PGOROOT)/apis/cr/v1
 	deepcopy-gen --go-header-file=$(PGOROOT)/apis/cr/v1/header.go.txt --input-dirs=.
 
-all: linuxpgo \
-	pgo-base \
-	postgres-operator-image \
-	pgo-apiserver-image \
-	pgo-event-image \
-	pgo-scheduler-image \
-	pgo-backrest-repo-image \
-	pgo-backrest-restore-image \
-	pgo-lspvc-image \
-	pgo-load-image \
-	pgo-rmdata-image \
-	pgo-sqlrunner-image \
-	pgo-backrest-image
+push: $(images:%=push-%) ;
 
-push:
-	docker push $(PGO_IMAGE_PREFIX)/postgres-operator:$(PGO_IMAGE_TAG)
-	docker push $(PGO_IMAGE_PREFIX)/pgo-apiserver:$(PGO_IMAGE_TAG)
-	docker push $(PGO_IMAGE_PREFIX)/pgo-event:$(PGO_IMAGE_TAG)
-	docker push $(PGO_IMAGE_PREFIX)/pgo-backrest-repo:$(PGO_IMAGE_TAG)
-	docker push $(PGO_IMAGE_PREFIX)/pgo-backrest-restore:$(PGO_IMAGE_TAG)
-	docker push $(PGO_IMAGE_PREFIX)/pgo-lspvc:$(PGO_IMAGE_TAG)
-	docker push $(PGO_IMAGE_PREFIX)/pgo-load:$(PGO_IMAGE_TAG)
-	docker push $(PGO_IMAGE_PREFIX)/pgo-rmdata:$(PGO_IMAGE_TAG)
-	docker push $(PGO_IMAGE_PREFIX)/pgo-sqlrunner:$(PGO_IMAGE_TAG)
-	docker push $(PGO_IMAGE_PREFIX)/pgo-backrest:$(PGO_IMAGE_TAG)
-	docker push $(PGO_IMAGE_PREFIX)/pgo-scheduler:$(PGO_IMAGE_TAG)
+push-%: 
+	docker push $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
 
-pull:
-	docker pull $(PGO_IMAGE_PREFIX)/postgres-operator:$(PGO_IMAGE_TAG)
-	docker pull $(PGO_IMAGE_PREFIX)/pgo-apiserver:$(PGO_IMAGE_TAG)
-	docker pull $(PGO_IMAGE_PREFIX)/pgo-event:$(PGO_IMAGE_TAG)
-	docker pull $(PGO_IMAGE_PREFIX)/pgo-backrest-repo:$(PGO_IMAGE_TAG)
-	docker pull $(PGO_IMAGE_PREFIX)/pgo-backrest-restore:$(PGO_IMAGE_TAG)
-	docker pull $(PGO_IMAGE_PREFIX)/pgo-lspvc:$(PGO_IMAGE_TAG)
-	docker pull $(PGO_IMAGE_PREFIX)/pgo-load:$(PGO_IMAGE_TAG)
-	docker pull $(PGO_IMAGE_PREFIX)/pgo-rmdata:$(PGO_IMAGE_TAG)
-	docker pull $(PGO_IMAGE_PREFIX)/pgo-sqlrunner:$(PGO_IMAGE_TAG)
-	docker pull $(PGO_IMAGE_PREFIX)/pgo-backrest:$(PGO_IMAGE_TAG)
-	docker pull $(PGO_IMAGE_PREFIX)/pgo-scheduler:$(PGO_IMAGE_TAG)
+pull: $(images:%=pull-%) ;
 
-release: check-go-vars macpgo winpgo
+pull-%: 
+	docker pull $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
+
+release:  linuxpgo macpgo winpgo
 	rm -rf $(RELTMPDIR) $(RELFILE) 
 	mkdir $(RELTMPDIR)
 	cp -r $(PGOROOT)/examples $(RELTMPDIR)
@@ -193,7 +162,3 @@ release: check-go-vars macpgo winpgo
 	cp $(GOBIN)/expenv.exe $(RELTMPDIR)
 	cp $(PGOROOT)/examples/pgo-bash-completion $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
-
-default:
-	all
-
