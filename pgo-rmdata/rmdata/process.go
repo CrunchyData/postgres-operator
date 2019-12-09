@@ -83,6 +83,11 @@ func Delete(request Request) {
 	}
 
 	log.Info("rmdata.Process cluster use case")
+
+	// first, clear out any of the scheduled jobs that may occur, as this would be
+	// executing asynchronously against any stale data
+	removeSchedules(request)
+
 	//the user had done something like:
 	//pgo delete cluster mycluster --delete-data
 	if request.RemoveData {
@@ -606,4 +611,23 @@ func removeReplicaServices(request Request) {
 		}
 	}
 
+}
+
+// removeSchedules removes any of the ConfigMap objects that were created to
+// execute schedule tasks, such as backups
+// As these are consistently labeled, we can leverage Kuernetes selectors to
+// delete all of them
+func removeSchedules(request Request) {
+	log.Debugf("removing schedules for '%s'", request.ClusterName)
+
+	// a ConfigMap used for the schedule uses the following label selector:
+	// crunchy-scheduler=true,<config.LABEL_PG_CLUSTER>=<request.ClusterName>
+	selector := fmt.Sprintf("crunchy-scheduler=true,%s=%s",
+		config.LABEL_PG_CLUSTER, request.ClusterName)
+
+	// run the query the deletes all of the scheduled configmaps
+	// if there is an error, log it, but continue on without making a big stink
+	if err := kubeapi.DeleteConfigMaps(request.Clientset, selector, request.Namespace); err != nil {
+		log.Error(err)
+	}
 }
