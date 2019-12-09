@@ -84,3 +84,25 @@ func DeleteConfigMap(clientset *kubernetes.Clientset, name, namespace string) er
 	return err
 
 }
+
+// DeleteConfigMaps deletes a ConfigMap by a selector
+func DeleteConfigMaps(clientset *kubernetes.Clientset, selector, namespace string) error {
+	log.Debugf("deleting configmaps with selector '%s'", selector)
+
+	deleteOptions := meta_v1.DeleteOptions{}
+	listOptions := meta_v1.ListOptions{
+		LabelSelector: selector,
+	}
+
+	err := clientset.CoreV1().ConfigMaps(namespace).DeleteCollection(
+		&deleteOptions, listOptions)
+
+	if err != nil {
+		log.Error("error deleting ConfigMap " + err.Error())
+		return err
+	}
+
+	log.Debugf("deleted configmaps with selector '%s'", selector)
+
+	return nil
+}
