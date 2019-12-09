@@ -66,10 +66,6 @@ func Delete(request Request) {
 		return
 	}
 
-	pvcList, err := getPVCs(request)
-	if err != nil {
-		log.Error(err)
-	}
 	if request.IsBackup {
 		log.Info("rmdata.Process backup use case")
 		//the case of removing a backup using
@@ -106,9 +102,7 @@ func Delete(request Request) {
 
 	//handle the case of 'pgo delete cluster mycluster'
 	removeCluster(request)
-	err = kubeapi.Deletepgcluster(request.RESTClient,
-		request.ClusterName, request.Namespace)
-	if err != nil {
+	if err := kubeapi.Deletepgcluster(request.RESTClient, request.ClusterName, request.Namespace); err != nil {
 		log.Error(err)
 	}
 	removeServices(request)
@@ -117,6 +111,10 @@ func Delete(request Request) {
 	removePgtasks(request)
 	//removeClusterJobs(request)
 	if request.RemoveData {
+		pvcList, err := getPVCs(request)
+		if err != nil {
+			log.Error(err)
+		}
 		removePVCs(pvcList, request)
 	}
 
