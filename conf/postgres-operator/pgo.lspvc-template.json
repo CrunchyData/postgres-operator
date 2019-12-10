@@ -15,6 +15,7 @@
         {{.NodeSelector}}
 
         "restartPolicy": "Never",
+        "serviceAccountName": "pgo-default",
         "containers": [{
             "name": "lspvc",
             "securityContext": {

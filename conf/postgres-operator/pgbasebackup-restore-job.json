@@ -26,6 +26,7 @@
             },
             "spec":{
                 {{.SecurityContext}}
+                "serviceAccountName": "pgo-default",
                 "containers":[
                     {
                         "name":"pgbasebackup-restore",

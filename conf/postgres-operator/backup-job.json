@@ -28,6 +28,7 @@
 
         {{.SecurityContext}}
 
+                "serviceAccountName": "pgo-default",
                 "containers": [{
                     "name": "backup",
                     "image": "{{.CCPImagePrefix}}/crunchy-backup:{{.CCPImageTag}}",

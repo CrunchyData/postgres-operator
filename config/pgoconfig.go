@@ -37,6 +37,10 @@ const CustomConfigMapName = "pgo-config"
 const DefaultConfigsPath = "/default-pgo-config/"
 const CustomConfigsPath = "/pgo-config/"
 
+var PgoDefaultServiceAccountTemplate *template.Template
+
+const PGODefaultServiceAccountPath = "pgo-default-sa.json"
+
 var PgoTargetRoleBindingTemplate *template.Template
 
 const PGOTargetRoleBindingPath = "pgo-target-role-binding.json"
@@ -605,6 +609,10 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 	c.CheckEnv()
 
 	//load up all the templates
+	PgoDefaultServiceAccountTemplate, err = c.LoadTemplate(cMap, rootPath, PGODefaultServiceAccountPath)
+	if err != nil {
+		return err
+	}
 	PgoBackrestServiceAccountTemplate, err = c.LoadTemplate(cMap, rootPath, PGOBackrestServiceAccountPath)
 	if err != nil {
 		return err

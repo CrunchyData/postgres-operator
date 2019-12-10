@@ -33,7 +33,7 @@
                 }
             },
             "spec": {
-
+                "serviceAccountName": "pgo-default",
                 "containers": [{
                     "name": "pgbouncer",
                     "image": "{{.CCPImagePrefix}}/crunchy-pgbouncer:{{.CCPImageTag}}",

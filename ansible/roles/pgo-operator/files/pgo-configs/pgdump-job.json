@@ -33,6 +33,7 @@
 
                 {{.SecurityContext}}
 
+                "serviceAccountName": "pgo-default",
                 "containers": [{
                         "name": "pgdump",
                         "image": "{{.CCPImagePrefix}}/crunchy-pgdump:{{.CCPImageTag}}",

@@ -34,6 +34,7 @@
             },
             "spec": {
                 {{.SecurityContext}}
+                "serviceAccountName": "pgo-default",
                 "containers": [{
                     "name": "database",
                     "image": "{{.PGOImagePrefix}}/pgo-backrest-repo:{{.PGOImageTag}}",

@@ -26,6 +26,7 @@
                 }
             },
             "spec": {
+                "serviceAccountName": "pgo-default",
                 "containers": [
                     {
                         "name": "pgbench",
