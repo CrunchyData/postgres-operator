@@ -34,10 +34,9 @@ fi
 {{ kubectl_or_oc }} label namespace/{{ item }} pgo-installation-name={{ pgo_installation_name }}
 
 # create RBAC
-{{ kubectl_or_oc }} -n {{ item }} delete sa pgo-backrest
-{{ kubectl_or_oc }} -n {{ item }} delete sa pgo-target
-{{ kubectl_or_oc }} -n {{ item }} delete role pgo-target-role pgo-backrest-role
-{{ kubectl_or_oc }} -n {{ item }} delete rolebinding pgo-target-role-binding pgo-backrest-role-binding
+{{ kubectl_or_oc }} -n {{ item }} delete sa pgo-backrest pgo-pg pgo-target
+{{ kubectl_or_oc }} -n {{ item }} delete role pgo-backrest-role pgo-pg-role pgo-target-role
+{{ kubectl_or_oc }} -n {{ item }} delete rolebinding pgo-backrest-role-binding pgo-pg-role-binding pgo-target-role-binding
 
 cat {{ role_path }}/files/pgo-configs/pgo-backrest-sa.json | sed 's/{{ target_namespace }}/'"{{ item }}"'/' | {{ kubectl_or_oc }} -n {{ item }} create -f -
 cat {{ role_path }}/files/pgo-configs/pgo-target-sa.json | sed 's/{{ target_namespace }}/'"{{ item }}"'/' | {{ kubectl_or_oc }} -n {{ item }} create -f -
