@@ -21,6 +21,7 @@
                 }
             },
             "spec": {
+                "serviceAccountName": "pgo-default",
                 "containers": [
                     {
                         "name": "sqlrunner",

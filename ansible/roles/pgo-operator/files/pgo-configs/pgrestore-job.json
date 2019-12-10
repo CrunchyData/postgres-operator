@@ -32,6 +32,7 @@
 
                     {{.SecurityContext}}
 
+                "serviceAccountName": "pgo-default",
                 "containers": [
                     {
                         "name": "pgrestore",

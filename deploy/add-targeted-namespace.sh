@@ -40,14 +40,15 @@ $PGO_CMD label namespace/$1 vendor=crunchydata
 $PGO_CMD label namespace/$1 pgo-installation-name=$PGO_INSTALLATION_NAME
 
 # create RBAC
-$PGO_CMD -n $1 delete sa pgo-backrest pgo-pg pgo-target
-$PGO_CMD -n $1 delete role pgo-backrest-role pgo-pg-role pgo-target-role
-$PGO_CMD -n $1 delete rolebinding pgo-backrest-role-binding pgo-pg-role-binding pgo-target-role-binding
+$PGO_CMD -n $1 delete --ignore-not-found sa pgo-backrest pgo-default pgo-pg pgo-target
+$PGO_CMD -n $1 delete --ignore-not-found role pgo-backrest-role pgo-pg-role pgo-target-role
+$PGO_CMD -n $1 delete --ignore-not-found rolebinding pgo-backrest-role-binding pgo-pg-role-binding pgo-target-role-binding
 
-cat $PGOROOT/conf/postgres-operator/pgo-backrest-sa.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
+cat $PGOROOT/conf/postgres-operator/pgo-default-sa.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
 cat $PGOROOT/conf/postgres-operator/pgo-target-sa.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
 cat $PGOROOT/conf/postgres-operator/pgo-target-role.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
 cat $PGOROOT/conf/postgres-operator/pgo-target-role-binding.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | sed 's/{{.OperatorNamespace}}/'"$PGO_OPERATOR_NAMESPACE"'/' | $PGO_CMD -n $1 create -f -
+cat $PGOROOT/conf/postgres-operator/pgo-backrest-sa.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
 cat $PGOROOT/conf/postgres-operator/pgo-backrest-role.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
 cat $PGOROOT/conf/postgres-operator/pgo-backrest-role-binding.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
 cat $PGOROOT/conf/postgres-operator/pgo-pg-sa.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
