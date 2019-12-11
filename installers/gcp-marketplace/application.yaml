@@ -4,9 +4,6 @@ metadata:
   name: '${OPERATOR_NAME}'
   labels:
     app.kubernetes.io/name: '${OPERATOR_NAME}'
-  annotations:
-    kubernetes-engine.cloud.google.com/icon: >-
-      data:image/png;base64,${OPERATOR_ICON_BASE64}
 spec:
   selector:
     matchLabels:
