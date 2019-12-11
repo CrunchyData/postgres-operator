@@ -3,7 +3,7 @@
   tags: always
   fail:
     msg: "Please specify the value of {{item}} in your inventory file"
-  when: '{{ item }} is undefined or {{ item }} == ""'
+  when: lookup('vars', item, default='') == ''
   with_items:
   - metrics_namespace
   - grafana_install

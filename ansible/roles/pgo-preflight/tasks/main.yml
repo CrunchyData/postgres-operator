@@ -15,6 +15,7 @@
       - openshift_host | default('') != '' or
         kubernetes_context | default('') != '' or
         kubernetes_in_cluster | default(False) | bool
+    quiet: yes
   tags: always
 
 - assert:
@@ -22,6 +23,7 @@
     that:
       - kubernetes_context | default('') == ''
       - not (kubernetes_in_cluster | default(False) | bool)
+    quiet: yes
   when: openshift_host | default('') != ''
   tags: always
 
@@ -30,6 +32,7 @@
     that:
       - openshift_host | default('') == ''
       - not (kubernetes_in_cluster | default(False) | bool)
+    quiet: yes
   when: kubernetes_context | default('') != ''
   tags: always
 
@@ -38,6 +41,7 @@
     that:
       - openshift_host | default('') == ''
       - kubernetes_context | default('') == ''
+    quiet: yes
   when: kubernetes_in_cluster | default(False) | bool
   tags: always
 

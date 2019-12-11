@@ -18,6 +18,23 @@
 
 - name: Deploy Grafana
   block:
+    - name: Template Grafana RBAC
+      template:
+        src: "{{ item }}"
+        dest: "{{ grafana_output_dir }}/{{ item | replace('.j2', '') }}"
+        mode: '0600'
+      with_items:
+      - grafana-rbac.json.j2
+      tags: [install-metrics]
+      when: create_rbac|bool
+
+    - name: Create Grafana RBAC
+      command: "{{ kubectl_or_oc }} create -f {{ grafana_output_dir }}/{{ item }} -n {{ metrics_namespace }}"
+      with_items:
+      - grafana-rbac.json
+      tags: [install-metrics]
+      when: create_rbac|bool
+
     - name: Template Grafana Secret
       template:
         src: "grafana-secret.json.j2"
