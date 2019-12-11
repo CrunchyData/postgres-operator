@@ -4,8 +4,8 @@ set -eu
 
 kc() { kubectl --namespace="$NAMESPACE" "$@"; }
 
-application_metadata="$( kc get "applications.app.k8s.io/$NAME" --output=json )"
-application_metadata="$( jq <<< "$application_metadata" '{ metadata: {
+application_ownership="$( kc get "applications.app.k8s.io/$NAME" --output=json )"
+application_ownership="$( jq <<< "$application_ownership" '{ metadata: {
 	labels: { "app.kubernetes.io/name": .metadata.name },
 	ownerReferences: [{
 		apiVersion, kind, name: .metadata.name, uid: .metadata.uid
@@ -23,10 +23,10 @@ installer="$( /bin/config_env.py envsubst < /opt/postgres-operator/install-job.y
 inventory="$( /bin/config_env.py envsubst < /opt/postgres-operator/inventory.ini )"
 
 kc create --filename=/dev/stdin <<< "$installer"
-kc patch job/install-postgres-operator --type=strategic --patch="$application_metadata"
+kc patch job/install-postgres-operator --type=strategic --patch="$application_ownership"
 
-job_metadata="$( kc get job/install-postgres-operator --output=json )"
-job_metadata="$( jq <<< "$job_metadata" '{ metadata: {
+job_ownership="$( kc get job/install-postgres-operator --output=json )"
+job_ownership="$( jq <<< "$job_ownership" '{ metadata: {
 	labels: { "app.kubernetes.io/name": .metadata.labels["app.kubernetes.io/name"] },
 	ownerReferences: [{
 		apiVersion, kind, name: .metadata.name, uid: .metadata.uid
@@ -34,7 +34,7 @@ job_metadata="$( jq <<< "$job_metadata" '{ metadata: {
 } }' )"
 
 kc create secret generic install-postgres-operator --from-file=inventory=/dev/stdin <<< "$inventory"
-kc patch secret/install-postgres-operator --type=strategic --patch="$job_metadata"
+kc patch secret/install-postgres-operator --type=strategic --patch="$job_ownership"
 
 # Wait for either status condition then terminate the other.
 kc wait --for=condition=complete --timeout=5m job/install-postgres-operator &

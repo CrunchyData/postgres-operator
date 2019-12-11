@@ -38,9 +38,7 @@ COPY installers/gcp-marketplace/test-pod.yaml \
      /data-test/manifest/
 
 ARG PGO_VERSION
-RUN env OPERATOR_ICON_BASE64="$(base64 --wrap=0 /opt/postgres-operator/favicon.png)" envsubst '$OPERATOR_ICON_BASE64' \
-    < /data/manifest/application.yaml > /tmp/sponge && mv /tmp/sponge /data/manifest/application.yaml \
- && for file in \
+RUN for file in \
       /data/schema.yaml \
       /data/manifest/application.yaml \
     ; do envsubst '$PGO_VERSION' < "$file" > /tmp/sponge && mv /tmp/sponge "$file" ; done
