@@ -21,6 +21,7 @@
                     "fsGroup": {{ grafana_fs_group }}
 {% endif %}
                 },
+                "serviceAccountName": "grafana",
                 "containers": [
                     {
                         "name": "grafana",

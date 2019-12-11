@@ -1,12 +1,10 @@
 ---
 - name: Check if mandatory inventory file variables are defined
-  fail: 
+  fail:
     msg: Please specify a value for variable {{ item }} in your inventory file
   tags: always
   when: "lookup('vars', item, default='') == ''"
-  loop: "{{ mandatory_inventory_vars }}"
-  vars:
-    mandatory_inventory_vars:
+  with_items:
     - pgo_operator_namespace
     - pgo_installation_name
     - pgo_admin_username

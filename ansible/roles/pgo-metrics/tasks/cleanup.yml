@@ -47,6 +47,15 @@
   - uninstall-metrics
   when: create_rbac|bool
 
+- name: Delete Grafana Service Account
+  shell: |
+    {{ kubectl_or_oc }} delete serviceaccount grafana -n {{ metrics_namespace }}
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - uninstall-metrics
+  when: create_rbac|bool
+
 - name: Delete Prometheus Service Account
   shell: |
     {{ kubectl_or_oc }} delete serviceaccount prometheus-sa -n {{ metrics_namespace }}
