@@ -4,8 +4,8 @@ set -eu
 
 kc() { kubectl --namespace="$NAMESPACE" "$@"; }
 
-application_metadata="$( kc get "applications.app.k8s.io/$NAME" --output=json )"
-application_metadata="$( jq <<< "$application_metadata" '{ metadata: {
+application_ownership="$( kc get "applications.app.k8s.io/$NAME" --output=json )"
+application_ownership="$( jq <<< "$application_ownership" '{ metadata: {
 	labels: { "app.kubernetes.io/name": .metadata.name },
 	ownerReferences: [{
 		apiVersion, kind, name: .metadata.name, uid: .metadata.uid
@@ -18,6 +18,13 @@ if [ -n "$existing" ]; then
 	>&2 echo ERROR: Crunchy PostgreSQL Operator is already installed in another namespace
 	exit 1
 fi
+
+application_icon="$( base64 --wrap=0 /opt/postgres-operator/favicon.png )"
+application_metadata="$( jq <<< '{}' --arg icon "$application_icon" '{ metadata: {
+	annotations: { "kubernetes-engine.cloud.google.com/icon": "data:image/png;base64,\($icon)" }
+} }' )"
+
+kc patch "applications.app.k8s.io/$NAME" --type=merge --patch="$application_metadata"
 
 /usr/bin/ansible-playbook --tags=install /opt/postgres-operator/ansible/main.yml
 
@@ -37,5 +44,5 @@ resources=(
 )
 
 for resource in "${resources[@]}"; do
-	kc patch "$resource" --type=strategic --patch="$application_metadata"
+	kc patch "$resource" --type=strategic --patch="$application_ownership"
 done
