@@ -24,7 +24,6 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/operator/backrest"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/types"
@@ -92,17 +91,6 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	}
 
 	Failover(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clientset, client, clusterName, task, namespace, restconfig)
-
-	//if a backrest-repo exists, bounce it with the new
-	//DB_PATH set to the new primary deployment name
-	if cluster.ObjectMeta.Labels[config.LABEL_BACKREST] == "true" {
-		err = backrest.UpdateDBPath(clientset, &cluster, task.ObjectMeta.Labels[config.LABEL_TARGET], namespace)
-		if err != nil {
-			log.Error(err)
-			log.Error("error bouncing backrest-repo during failover")
-			return
-		}
-	}
 
 	//publish event for failover completed
 	topics = make([]string, 1)

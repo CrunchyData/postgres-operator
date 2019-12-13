@@ -318,6 +318,7 @@ func UpdateDBPath(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, targ
 
 	containerIndex := -1
 	envIndex := -1
+	var dbPathValue string
 	//update the env var Value
 	//template->spec->containers->env["PGBACKREST_DB_PATH"]
 	for kc, c := range deployment.Spec.Template.Spec.Containers {
@@ -328,6 +329,7 @@ func UpdateDBPath(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, targ
 				if e.Name == "PGBACKREST_DB_PATH" {
 					log.Debugf("PGBACKREST_DB_PATH is %s", e.Value)
 					envIndex = ke
+					dbPathValue = e.Value
 				}
 			}
 		}
@@ -335,6 +337,9 @@ func UpdateDBPath(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, targ
 
 	if containerIndex == -1 || envIndex == -1 {
 		return errors.New("error in getting container with PGBACRKEST_DB_PATH for cluster " + cluster.Name)
+	} else if dbPathValue == newPath {
+		log.Debugf("PGBACKREST_DB_PATH already set to %s, will not update", newPath)
+		return nil
 	}
 
 	deployment.Spec.Template.Spec.Containers[containerIndex].Env[envIndex].Value = newPath
@@ -450,7 +455,8 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 			cluster.Spec.Port, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Labels[config.LABEL_BACKREST],
 			cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], clientset, namespace),
-		EnableCrunchyadm: operator.Pgo.Cluster.EnableCrunchyadm,
+		EnableCrunchyadm:         operator.Pgo.Cluster.EnableCrunchyadm,
+		ReplicaReinitOnStartFail: !operator.Pgo.Cluster.DisableReplicaStartFailReinit,
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")

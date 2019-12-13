@@ -198,35 +198,36 @@ var PostgresHaTemplate *template.Template
 const PostgresHaTemplatePath = "postgres-ha.yaml"
 
 type ClusterStruct struct {
-	CCPImagePrefix          string `yaml:"CCPImagePrefix"`
-	CCPImageTag             string `yaml:"CCPImageTag"`
-	PrimaryNodeLabel        string `yaml:"PrimaryNodeLabel"`
-	ReplicaNodeLabel        string `yaml:"ReplicaNodeLabel"`
-	Policies                string `yaml:"Policies"`
-	LogStatement            string `yaml:"LogStatement"`
-	LogMinDurationStatement string `yaml:"LogMinDurationStatement"`
-	Metrics                 bool   `yaml:"Metrics"`
-	Badger                  bool   `yaml:"Badger"`
-	Port                    string `yaml:"Port"`
-	PGBadgerPort            string `yaml:"PGBadgerPort"`
-	ExporterPort            string `yaml:"ExporterPort"`
-	User                    string `yaml:"User"`
-	ArchiveTimeout          string `yaml:"ArchiveTimeout"`
-	Database                string `yaml:"Database"`
-	PasswordAgeDays         string `yaml:"PasswordAgeDays"`
-	PasswordLength          string `yaml:"PasswordLength"`
-	Strategy                string `yaml:"Strategy"`
-	Replicas                string `yaml:"Replicas"`
-	ServiceType             string `yaml:"ServiceType"`
-	BackrestPort            int    `yaml:"BackrestPort"`
-	Backrest                bool   `yaml:"Backrest"`
-	BackrestS3Bucket        string `yaml:"BackrestS3Bucket"`
-	BackrestS3Endpoint      string `yaml:"BackrestS3Endpoint"`
-	BackrestS3Region        string `yaml:"BackrestS3Region"`
-	DisableAutofail         bool   `yaml:"DisableAutofail"`
-	AutofailReplaceReplica  bool   `yaml:"AutofailReplaceReplica"`
-	PgmonitorPassword       string `yaml:"PgmonitorPassword"`
-	EnableCrunchyadm        bool   `yaml:"EnableCrunchyadm"`
+	CCPImagePrefix                string `yaml:"CCPImagePrefix"`
+	CCPImageTag                   string `yaml:"CCPImageTag"`
+	PrimaryNodeLabel              string `yaml:"PrimaryNodeLabel"`
+	ReplicaNodeLabel              string `yaml:"ReplicaNodeLabel"`
+	Policies                      string `yaml:"Policies"`
+	LogStatement                  string `yaml:"LogStatement"`
+	LogMinDurationStatement       string `yaml:"LogMinDurationStatement"`
+	Metrics                       bool   `yaml:"Metrics"`
+	Badger                        bool   `yaml:"Badger"`
+	Port                          string `yaml:"Port"`
+	PGBadgerPort                  string `yaml:"PGBadgerPort"`
+	ExporterPort                  string `yaml:"ExporterPort"`
+	User                          string `yaml:"User"`
+	ArchiveTimeout                string `yaml:"ArchiveTimeout"`
+	Database                      string `yaml:"Database"`
+	PasswordAgeDays               string `yaml:"PasswordAgeDays"`
+	PasswordLength                string `yaml:"PasswordLength"`
+	Strategy                      string `yaml:"Strategy"`
+	Replicas                      string `yaml:"Replicas"`
+	ServiceType                   string `yaml:"ServiceType"`
+	BackrestPort                  int    `yaml:"BackrestPort"`
+	Backrest                      bool   `yaml:"Backrest"`
+	BackrestS3Bucket              string `yaml:"BackrestS3Bucket"`
+	BackrestS3Endpoint            string `yaml:"BackrestS3Endpoint"`
+	BackrestS3Region              string `yaml:"BackrestS3Region"`
+	DisableAutofail               bool   `yaml:"DisableAutofail"`
+	AutofailReplaceReplica        bool   `yaml:"AutofailReplaceReplica"`
+	PgmonitorPassword             string `yaml:"PgmonitorPassword"`
+	EnableCrunchyadm              bool   `yaml:"EnableCrunchyadm"`
+	DisableReplicaStartFailReinit bool   `yaml:"DisableReplicaStartFailReinit"`
 }
 
 type StorageStruct struct {
@@ -288,6 +289,7 @@ const DEFAULT_BACKREST_PORT = 2022
 const DEFAULT_PGBADGER_PORT = "10000"
 const DEFAULT_EXPORTER_PORT = "9187"
 const DEFAULT_POSTGRES_PORT = "5432"
+const DEFAULT_PATRONI_PORT = "8009"
 const DEFAULT_BACKREST_SSH_KEY_BITS = 2048
 
 func (c *PgoConfig) Validate() error {

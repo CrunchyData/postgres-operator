@@ -173,5 +173,5 @@ const GLOBAL_CUSTOM_CONFIGMAP = "pgo-custom-pg-config"
 
 const LABEL_PGHA_SCOPE = "crunchy-pgha-scope"
 const LABEL_PGHA_DEFAULT_CONFIGMAP = "pgha-default-config"
-const LABEL_PGHA_BOOTSTRAP_BACKUP = "pgha-bootstrap-backup"
+const LABEL_PGHA_BACKUP_TYPE = "pgha-backup-type"
 const LABEL_PGHA_ROLE = "role"

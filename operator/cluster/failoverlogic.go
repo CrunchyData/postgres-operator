@@ -21,6 +21,8 @@ package cluster
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
@@ -28,11 +30,10 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"time"
 )
 
 func Failover(identifier string, clientset *kubernetes.Clientset, client *rest.RESTClient, clusterName string, task *crv1.Pgtask, namespace string, restconfig *rest.Config) error {
@@ -184,7 +185,8 @@ func promote(
 	command := make([]string, 3)
 	command[0] = "/bin/bash"
 	command[1] = "-c"
-	command[2] = "curl -s http://localhost:8009/failover -XPOST -d '{\"candidate\":\"" + pod.Name + "\"}'"
+	command[2] = fmt.Sprintf("curl -s http://127.0.0.1:%s/failover -XPOST "+
+		"-d '{\"candidate\":\"%s\"}'", config.DEFAULT_PATRONI_PORT, pod.Name)
 
 	log.Debugf("running Exec with namespace=[%s] podname=[%s] container name=[%s]", namespace, pod.Name, pod.Spec.Containers[0].Name)
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset, command, pod.Spec.Containers[0].Name, pod.Name, namespace, nil)
@@ -292,4 +294,42 @@ func publishPrimaryDeleted(identifier, clusterName, deploymentToDelete, username
 	if err != nil {
 		log.Error(err.Error())
 	}
+}
+
+// RemovePrimaryOnRoleChangeTag sets the 'primary_on_role_change' tag to null in the
+// Patroni DCS, effectively removing the tag.  This is accomplished by exec'ing into
+// the primary PG pod, and sending a patch request to update the appropriate data (i.e.
+// the 'primary_on_role_change' tag) in the DCS.
+func RemovePrimaryOnRoleChangeTag(clientset *kubernetes.Clientset, restconfig *rest.Config,
+	clusterName, namespace string) error {
+
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName +
+		"," + config.LABEL_PGHA_ROLE + "=" + "master"
+	pods, err := kubeapi.GetPods(clientset, selector, namespace)
+	if err != nil {
+		log.Error(err)
+		return err
+	} else if len(pods.Items) > 1 {
+		log.Error("More than one primary found after completing the post-failover backup")
+	}
+	pod := pods.Items[0]
+
+	// generate the curl command that will be run on the pod selected for the failover in order
+	// to trigger the failover and promote that specific pod to primary
+	command := make([]string, 3)
+	command[0] = "/bin/bash"
+	command[1] = "-c"
+	command[2] = fmt.Sprintf("curl -s 127.0.0.1:%s/config -XPATCH -d "+
+		"'{\"tags\":{\"primary_on_role_change\":null}}'", config.DEFAULT_PATRONI_PORT)
+
+	log.Debugf("running Exec command '%s' with namespace=[%s] podname=[%s] container name=[%s]",
+		command, namespace, pod.Name, pod.Spec.Containers[0].Name)
+	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset, command,
+		pod.Spec.Containers[0].Name, pod.Name, namespace, nil)
+	log.Debugf("stdout=[%s] stderr=[%s]", stdout, stderr)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	return nil
 }

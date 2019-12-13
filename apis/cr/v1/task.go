@@ -66,6 +66,15 @@ const PgtaskpgBasebackupRestore = "pgbasebackuprestore"
 
 const PgtaskBenchmark = "benchmark"
 
+// Defines the types of pgBackRest backups that are taken throughout a clusters
+// lifecycle
+const (
+	// this type of backup is taken following a failover event
+	BackupTypeFailover string = "failover"
+	// this type of backup is taken when a new cluster is being bootstrapped
+	BackupTypeBootstrap string = "bootstrap"
+)
+
 // PgtaskSpec ...
 // swagger:ignore
 type PgtaskSpec struct {

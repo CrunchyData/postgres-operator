@@ -29,6 +29,7 @@ import (
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	backupoperator "github.com/crunchydata/postgres-operator/operator/backup"
 	benchmarkoperator "github.com/crunchydata/postgres-operator/operator/benchmark"
+	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	"github.com/crunchydata/postgres-operator/util"
@@ -43,6 +44,7 @@ import (
 
 // JobController holds the connections for the controller
 type JobController struct {
+	JobConfig          *rest.Config
 	JobClient          *rest.RESTClient
 	JobClientset       *kubernetes.Clientset
 	Ctx                context.Context
@@ -264,7 +266,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			// if initial cluster backup, now annotate all existing pgreplica's to initiate replica creation
 			pgreplicaList := &crv1.PgreplicaList{}
 			selector := config.LABEL_PG_CLUSTER + "=" + labels[config.LABEL_PG_CLUSTER]
-			if labels[config.LABEL_PGHA_BOOTSTRAP_BACKUP] == "true" {
+			if labels[config.LABEL_PGHA_BACKUP_TYPE] == crv1.BackupTypeBootstrap {
 				log.Debugf("jobController onUpdate initial backup complete")
 
 				// get the pgcluster resource for the cluster the replica is a part of
@@ -299,6 +301,13 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 						return
 					}
 				}
+			}
+		} else if labels[config.LABEL_PGHA_BACKUP_TYPE] == crv1.BackupTypeFailover {
+			err := clusteroperator.RemovePrimaryOnRoleChangeTag(c.JobClientset, c.JobConfig,
+				labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Namespace)
+			if err != nil {
+				log.Error(err)
+				return
 			}
 		}
 		return

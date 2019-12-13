@@ -37,6 +37,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 |Backrest        | optional, if set, will cause clusters to have the pgbackrest volume PVC provisioned during cluster creation
 |BackrestPort        | currently required to be port 2022
 |DisableAutofail        | optional, if set, will disable autofail capabilities by default in any newly created cluster
+|DisableReplicaStartFailReinit | if set to "true" will disable the detection of a "start failed" states in PG replicas, which results in the re-initialization of the replica in an attempt to bring it back online
 
 ## Storage
 | Setting|Definition  |
