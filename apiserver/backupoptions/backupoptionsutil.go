@@ -163,6 +163,13 @@ func isValidCompressLevel(compressLevel int) bool {
 	}
 }
 
+// isValidRetentionRange validates that pgBackrest Full, Diff or Archive
+// retention option value is set within the allowable range.
+// allowed: 1-9999999
+func isValidRetentionRange(retentionRange int) bool {
+	return (retentionRange >= 1 && retentionRange <= 9999999)
+}
+
 func isValidValue(vals []string, val string) bool {
 	isValid := false
 	for _, currVal := range vals {
