@@ -145,6 +145,7 @@ func main() {
 		InformerNamespaces: make(map[string]struct{}),
 	}
 	jobcontroller := &controller.JobController{
+		JobConfig:          config,
 		JobClientset:       Clientset,
 		JobClient:          crdClient,
 		Ctx:                ctx,

@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+	"encoding/json"
 	"strconv"
 	"sync"
 	"time"
@@ -130,12 +131,12 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 
 	//handle the case when a pg database pod is updated
 	if isPostgresPod(newpod) {
-
 		// Handle the "role" label change from "replica" to "master" following a failover.  Specifically, patch the pgBackRest
 		// dedicated repository host (specifically the PGBACKREST_DB_PATH env var) to point to the proper directory for the new
 		// primary
-		if oldpod.ObjectMeta.Labels["role"] == "replica" && labels["role"] == "master" {
-			err = backrest.UpdateDBPath(c.PodClientset, &pgcluster, "/pgdata/"+labels["name"], newpod.ObjectMeta.Namespace)
+		if oldpod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "promoted" && labels[config.LABEL_PGHA_ROLE] == "master" {
+			err = backrest.UpdateDBPath(c.PodClientset, &pgcluster, labels[config.LABEL_DEPLOYMENT_NAME],
+				newpod.ObjectMeta.Namespace)
 			if err != nil {
 				log.Error(err)
 				return
@@ -147,6 +148,32 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 			c.checkReadyStatus(oldpod, newpod, &pgcluster)
 		}
 		return
+	}
+
+	// determine if the updated pod is a pgBackRest dedicated repository host
+	isBackrestRepo, err := strconv.ParseBool(labels[config.LABEL_PGO_BACKREST_REPO])
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	// if the backrest repo pod is ready, then see if is reporting ready following an configuration
+	// update due to a failover over (i.e. to point the pgbackrest repo to the new primary).  if it
+	// is again ready following a failover event, the initiate a backup
+	if isBackrestRepo && isPrimaryOnRoleChange(c.PodClientset, pgcluster,
+		newpod.ObjectMeta.Namespace) && isBackrestRepoReady(oldpod, newpod) {
+
+		err = backrest.CleanBackupResources(c.PodClient, c.PodClientset,
+			newpod.ObjectMeta.Namespace, clusterName)
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		_, err = backrest.CreatePostFailoverBackup(c.PodClient,
+			newpod.ObjectMeta.Namespace, clusterName, newpod.Name)
+		if err != nil {
+			log.Error(err)
+			return
+		}
 	}
 }
 
@@ -503,4 +530,62 @@ func publishPrimaryNotReady(clusterName, identifier, username, namespace string)
 	if err != nil {
 		log.Error(err.Error())
 	}
+}
+
+// isPrimaryOnRoleChange determines if primary role change activities are underway as the result
+// of a failover event (e.g activities such as updating the backrest repo to point to the PGDATA
+// directory for the new primary, taking a new/up-to-date backup).  This is determined by
+// detecting whether or not the 'primary_on_role_change' tag is set to 'true' in the Patroni DCS.
+// Being that Kubernetes is utilized as the Patroni DCS for the PGO, the data is specifically
+// stored in a configMap called '<patroni-scope>-config'.
+func isPrimaryOnRoleChange(clientset *kubernetes.Clientset, pgcluster crv1.Pgcluster,
+	namespace string) (primaryOnRoleChange bool) {
+
+	var err error
+
+	cmName := pgcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE] + "-config"
+	configMap, found := kubeapi.GetConfigMap(clientset, cmName, namespace)
+	if !found {
+		log.Errorf("Unable to find '%s' configMap for cluster %s (crunchy-pgha-scope=%s)",
+			cmName, pgcluster.Name, pgcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE])
+		return false
+	}
+
+	pgHAConfigJSON := configMap.Annotations["config"]
+	var pgHAConfigMap map[string]interface{}
+	json.Unmarshal([]byte(pgHAConfigJSON), &pgHAConfigMap)
+
+	var tags map[string]interface{}
+	if pgHAConfigMap["tags"] != nil {
+		tags = pgHAConfigMap["tags"].(map[string]interface{})
+		if tags["primary_on_role_change"] != nil {
+			log.Debugf("Found 'primary_on_role_change' in DCS for cluster %s", pgcluster.Name)
+			primaryOnRoleChange, err = strconv.ParseBool(tags["primary_on_role_change"].(string))
+			if err != nil {
+				log.Error(err)
+				return
+			}
+		}
+	}
+	return
+}
+
+// isBackrestRepoReady determines if the pgBackRest dedicated repository pod has transitioned from
+// a "not ready" state to a "ready" state
+func isBackrestRepoReady(oldpod *apiv1.Pod, newpod *apiv1.Pod) (isRepoReady bool) {
+	var oldRepoStatus bool
+	for _, v := range oldpod.Status.ContainerStatuses {
+		if v.Name == "database" {
+			oldRepoStatus = v.Ready
+		}
+	}
+	for _, v := range newpod.Status.ContainerStatuses {
+		if v.Name == "database" {
+			if !oldRepoStatus && v.Ready {
+				isRepoReady = true
+				return
+			}
+		}
+	}
+	return
 }
