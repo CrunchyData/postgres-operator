@@ -32,7 +32,6 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/sshutil"
 	"github.com/crunchydata/postgres-operator/util"
 
 	_ "github.com/lib/pq"
@@ -737,7 +736,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
 		_, _, err = kubeapi.GetSecret(apiserver.Clientset, secretName, request.Namespace)
 		if kerrors.IsNotFound(err) {
-			err := createBackrestRepoSecrets(clusterName, request.Namespace)
+			err := util.CreateBackrestRepoSecrets(apiserver.Clientset, apiserver.PgoNamespace, request.Namespace, clusterName)
 			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = fmt.Sprintf("could not create backrest repo secret: %s", err)
@@ -1404,38 +1403,4 @@ func validateBackrestStorageType(requestBackRestStorageType string, backrestEnab
 	}
 
 	return nil
-}
-
-func createBackrestRepoSecrets(clusterName, namespace string) error {
-	keys, err := sshutil.NewPrivatePublicKeyPair(config.DEFAULT_BACKREST_SSH_KEY_BITS)
-	if err != nil {
-		return err
-	}
-
-	// Retrieve the S3/SSHD configuration files from secret
-	configs, _, err := kubeapi.GetSecret(apiserver.Clientset, "pgo-backrest-repo-config", apiserver.PgoNamespace)
-	if kerrors.IsNotFound(err) || err != nil {
-		return err
-	}
-
-	secret := v1.Secret{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name: fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET),
-			Labels: map[string]string{
-				config.LABEL_VENDOR:            config.LABEL_CRUNCHY,
-				config.LABEL_PG_CLUSTER:        clusterName,
-				config.LABEL_PGO_BACKREST_REPO: "true",
-			},
-		},
-		Data: map[string][]byte{
-			"authorized_keys":         keys.Public,
-			"aws-s3-ca.crt":           configs.Data["aws-s3-ca.crt"],
-			"aws-s3-credentials.yaml": configs.Data["aws-s3-credentials.yaml"],
-			"config":                  configs.Data["config"],
-			"id_rsa":                  keys.Private,
-			"sshd_config":             configs.Data["sshd_config"],
-			"ssh_host_rsa_key":        keys.Private,
-		},
-	}
-	return kubeapi.CreateSecret(apiserver.Clientset, &secret, namespace)
 }

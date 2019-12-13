@@ -15,9 +15,10 @@ package config
  limitations under the License.
 */
 
-// annotations used by the operator
-const (
-	ANNOTATION_PGHA_BOOTSTRAP_REPLICA    = "pgo-pgha-bootstrap-replica"
-	ANNOTATION_CLONE_SOURCE_CLUSTER_NAME = "clone-source-cluster-name"
-	ANNOTATION_CLONE_TARGET_CLUSTER_NAME = "clone-target-cluster-name"
-)
+// volume configuration settings used by the pgBackRest repo mount
+const VOLUME_PGBACKREST_REPO_NAME = "backrestrepo"
+const VOLUME_PGBACKREST_REPO_MOUNT_PATH = "/backrestrepo"
+
+// volume configuration settings used by the SSHD secret
+const VOLUME_SSHD_NAME = "sshd"
+const VOLUME_SSHD_MOUNT_PATH = "/sshd"

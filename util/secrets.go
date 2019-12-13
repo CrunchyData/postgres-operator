@@ -16,6 +16,7 @@ package util
 */
 
 import (
+	"fmt"
 	"math/rand"
 	"strings"
 	"time"
@@ -94,32 +95,68 @@ func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, se
 
 }
 
-// CopySecrets will copy a secret to another secret
-func CopySecrets(clientset *kubernetes.Clientset, namespace string, fromCluster, toCluster string) error {
+// CloneClusterSecrets will copy the secrets from a cluster into the secrets of
+// another cluster
+type CloneClusterSecrets struct {
+	// any additional selectors that can be added to the query that is made
+	AdditionalSelectors []string
+	// The Kubernetes Clientset used to make API calls to Kubernetes`
+	ClientSet *kubernetes.Clientset
+	// The Namespace that the clusters are in
+	Namespace string
+	// The name of the PostgreSQL cluster that the secrets are originating from
+	SourceClusterName string
+	// The name of the PostgreSQL cluster that we are copying the secrets to
+	TargetClusterName string
+}
 
-	log.Debugf("CopySecrets %s to %s", fromCluster, toCluster)
-	selector := "pg-cluster=" + fromCluster
+// Clone performs the actual clone of the secrets between PostgreSQL clusters
+func (cs CloneClusterSecrets) Clone() error {
+	log.Debugf("clone secrets [%s] to [%s]", cs.SourceClusterName, cs.TargetClusterName)
 
-	secrets, err := kubeapi.GetSecrets(clientset, selector, namespace)
+	// initialize the selector, and add any additional options to it
+	selector := fmt.Sprintf("pg-cluster=%s", cs.SourceClusterName)
+
+	for _, additionalSelector := range cs.AdditionalSelectors {
+		selector += fmt.Sprintf(",%s", additionalSelector)
+	}
+
+	// get all the secrets that exist in the source PostgreSQL cluster
+	secrets, err := kubeapi.GetSecrets(cs.ClientSet, selector, cs.Namespace)
+
+	// if this fails, log and return the error
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
+	// iterate through the existing secrets in the cluster, and copy them over
 	for _, s := range secrets.Items {
 		log.Debugf("found secret : %s", s.ObjectMeta.Name)
+
 		secret := v1.Secret{}
-		secret.Name = strings.Replace(s.ObjectMeta.Name, fromCluster, toCluster, 1)
-		secret.ObjectMeta.Labels = make(map[string]string)
-		secret.ObjectMeta.Labels["pg-cluster"] = toCluster
-		secret.Data = make(map[string][]byte)
-		secret.Data["username"] = s.Data["username"][:]
-		secret.Data["password"] = s.Data["password"][:]
 
-		kubeapi.CreateSecret(clientset, &secret, namespace)
+		// create the secret name
+		secret.Name = strings.Replace(s.ObjectMeta.Name, cs.SourceClusterName, cs.TargetClusterName, 1)
 
+		// assign the labels
+		secret.ObjectMeta.Labels = map[string]string{
+			"pg-cluster": cs.TargetClusterName,
+		}
+		// secret.ObjectMeta.Labels["pg-cluster"] = toCluster
+
+		// copy over the secret
+		// secret.Data = make(map[string][]byte)
+		secret.Data = map[string][]byte{
+			"username": s.Data["username"][:],
+			"password": s.Data["password"][:],
+		}
+
+		// create the secret
+		kubeapi.CreateSecret(cs.ClientSet, &secret, cs.Namespace)
 	}
-	return err
 
+	return nil
 }
 
 // CreateUserSecret will create a new secret holding a user credential

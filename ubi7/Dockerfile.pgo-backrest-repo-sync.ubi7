@@ -1,0 +1,40 @@
+ARG PREFIX
+ARG BASEVER
+FROM ${PREFIX}/pgo-base:ubi7-${BASEVER}
+
+LABEL name="pgo-backrest-restore" \
+	summary="Crunchy Data PostgreSQL Operator - pgBackRest Repo Sync" \
+	description="Synchronizes the contents between two pgBackRest repositories."
+
+ENV PGVERSION="12" BACKREST_VERSION="2.18"
+
+RUN yum -y install \
+	crunchy-backrest-"${BACKREST_VERSION}" \
+	openssh-clients \
+	openssh-server \
+	postgresql12-server \
+	procps-ng \
+	psmisc \
+	rsnyc \
+	&& yum -y clean all
+
+RUN groupadd pgbackrest -g 2000 && useradd pgbackrest -u 2000 -g 2000
+ADD bin/pgo-backrest-repo-sync/ /usr/local/bin
+RUN chmod +x /usr/local/bin/pgo-backrest-repo-sync.sh && \
+	mkdir -p /opt/cpm/bin /backrestrepo && \
+	chown -R pgbackrest:pgbackrest /opt/cpm /backrestrepo
+
+ADD bin/uid_pgbackrest.sh /opt/cpm/bin
+
+RUN chmod g=u /etc/passwd && \
+	chmod g=u /etc/group
+
+RUN mkdir /.ssh && chown pgbackrest:pgbackrest /.ssh && chmod o+rwx /.ssh
+
+VOLUME ["/sshd", "/backrestrepo"]
+
+USER 2000
+
+ENTRYPOINT ["/opt/cpm/bin/uid_pgbackrest.sh"]
+
+CMD ["pgo-backrest-repo-sync.sh"]

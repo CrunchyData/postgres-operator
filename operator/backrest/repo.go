@@ -18,6 +18,7 @@ package backrest
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -31,6 +32,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
+
+const BackrestRepoServiceName = "%s-backrest-shared-repo"
+const BackrestRepoPVCName = "%s-pgbr-repo"
 
 type RepoDeploymentTemplateFields struct {
 	SecurityContext       string
@@ -57,12 +61,12 @@ type RepoServiceTemplateFields struct {
 	Port        string
 }
 
-func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, cluster *crv1.Pgcluster) error {
+func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, cluster *crv1.Pgcluster, createPVC bool) error {
 
 	var b bytes.Buffer
 
-	repoName := cluster.Name + "-pgbr-repo"
-	serviceName := cluster.Name + "-backrest-shared-repo"
+	repoName := fmt.Sprintf(BackrestRepoPVCName, cluster.Name)
+	serviceName := fmt.Sprintf(BackrestRepoServiceName, cluster.Name)
 
 	//create backrest repo service
 	serviceFields := RepoServiceTemplateFields{
@@ -77,17 +81,19 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 		return err
 	}
 
-	//create backrest repo PVC with same name as repoName
-
-	_, found, err := kubeapi.GetPVC(clientset, repoName, namespace)
-	if found {
-		log.Debugf("pvc [%s] already present, will not recreate", repoName)
-	} else {
-		_, err = pvc.CreatePVC(clientset, &cluster.Spec.BackrestStorage, repoName, cluster.Name, namespace)
-		if err != nil {
-			return err
+	// if createPVC is set to true, attempt to create the PVC
+	if createPVC {
+		// create backrest repo PVC with same name as repoName
+		_, found, err := kubeapi.GetPVC(clientset, repoName, namespace)
+		if found {
+			log.Debugf("pvc [%s] already present, will not recreate", repoName)
+		} else {
+			_, err = pvc.CreatePVC(clientset, &cluster.Spec.BackrestStorage, repoName, cluster.Name, namespace)
+			if err != nil {
+				return err
+			}
+			log.Debugf("created backrest-shared-repo pvc [%s]", repoName)
 		}
-		log.Debugf("created backrest-shared-repo pvc [%s]", repoName)
 	}
 
 	//create backrest repo deployment

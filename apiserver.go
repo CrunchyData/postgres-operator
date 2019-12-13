@@ -30,6 +30,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/backupservice"
 	"github.com/crunchydata/postgres-operator/apiserver/benchmarkservice"
 	"github.com/crunchydata/postgres-operator/apiserver/catservice"
+	"github.com/crunchydata/postgres-operator/apiserver/cloneservice"
 	"github.com/crunchydata/postgres-operator/apiserver/clusterservice"
 	"github.com/crunchydata/postgres-operator/apiserver/configservice"
 	"github.com/crunchydata/postgres-operator/apiserver/dfservice"
@@ -182,6 +183,9 @@ func main() {
 	r.HandleFunc("/benchmark", benchmarkservice.CreateBenchmarkHandler).Methods("POST")
 	r.HandleFunc("/benchmarkdelete", benchmarkservice.DeleteBenchmarkHandler).Methods("POST")
 	r.HandleFunc("/benchmarkshow", benchmarkservice.ShowBenchmarkHandler).Methods("POST")
+
+	// clone
+	r.HandleFunc("/clone", cloneservice.CloneHandler).Methods("POST")
 
 	certsVerify := tls.VerifyClientCertIfGiven
 	skipAuth := []string{

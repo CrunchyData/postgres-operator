@@ -91,7 +91,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		//by setting the name to empty string
 		archivePVCName = ""
 		xlogdir = "false"
-		err = backrest.CreateRepoDeployment(clientset, namespace, cl)
+		err = backrest.CreateRepoDeployment(clientset, namespace, cl, true)
 		if err != nil {
 			log.Error("could not create backrest repo deployment")
 			publishClusterCreateFailure(cl, err.Error())

@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -51,6 +52,11 @@ type JobController struct {
 	informerNsMutex    sync.Mutex
 	InformerNamespaces map[string]struct{}
 }
+
+const (
+	patchResource = "pgtasks"
+	patchURL      = "/spec/status"
+)
 
 // Run starts an pod resource controller
 func (c *JobController) Run() error {
@@ -130,7 +136,6 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	log.Debugf("job controller backup label " + labels[config.LABEL_PGBACKUP])
 	//handle the case of a pgbasebackup job being updated
 	if labels[config.LABEL_PGBACKUP] == "true" {
 		log.Debugf("jobController onUpdate pgbasebackup job case")
@@ -177,13 +182,16 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	}
 
 	//handle the case of a backrest restore job being added
-	if labels[config.LABEL_BACKREST_RESTORE] == "true" {
+	// (there is a separate handler for the case of a pgBackRest restore done
+	// during the clone workflow. NOTE: this is setup to work with the existing
+	// codebase)
+	if labels[config.LABEL_BACKREST_RESTORE] == "true" && labels[config.LABEL_PGO_CLONE_STEP_2] != "true" {
 		log.Debugf("jobController onUpdate backrest restore job case")
 		log.Debugf("got a backrest restore job status=%d", job.Status.Succeeded)
 		if job.Status.Succeeded == 1 {
 			log.Debugf("set status to restore job completed  for %s", labels[config.LABEL_PG_CLUSTER])
 			log.Debugf("workflow to update is %s", labels[crv1.PgtaskWorkflowID])
-			err = util.Patch(c.JobClient, "/spec/status", crv1.JobCompletedStatus, "pgtasks", job.Name, job.ObjectMeta.Namespace)
+			err = util.Patch(c.JobClient, patchURL, crv1.JobCompletedStatus, patchResource, job.Name, job.ObjectMeta.Namespace)
 			if err != nil {
 				log.Error("error in patching pgtask " + labels[config.LABEL_JOB_NAME] + err.Error())
 			}
@@ -215,7 +223,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 
 		//update the pgdump task status to submitted - updates task, not the job.
 		dumpTask := labels[config.LABEL_PGTASK]
-		err = util.Patch(c.JobClient, "/spec/status", status, "pgtasks", dumpTask, job.ObjectMeta.Namespace)
+		err = util.Patch(c.JobClient, patchURL, status, patchResource, dumpTask, job.ObjectMeta.Namespace)
 
 		if err != nil {
 			log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
@@ -242,7 +250,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 
 		//update the pgdump task status to submitted - updates task, not the job.
 		restoreTask := labels[config.LABEL_PGTASK]
-		err = util.Patch(c.JobClient, "/spec/status", status, "pgtasks", restoreTask, job.ObjectMeta.Namespace)
+		err = util.Patch(c.JobClient, patchURL, status, patchResource, restoreTask, job.ObjectMeta.Namespace)
 
 		if err != nil {
 			log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
@@ -257,7 +265,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		log.Debugf("got a backrest job status=%d", job.Status.Succeeded)
 		if job.Status.Succeeded == 1 {
 			log.Debugf("update the status to completed here for backrest %s job %s", labels[config.LABEL_PG_CLUSTER], job.Name)
-			err = util.Patch(c.JobClient, "/spec/status", crv1.JobCompletedStatus, "pgtasks", job.Name, job.ObjectMeta.Namespace)
+			err = util.Patch(c.JobClient, patchURL, crv1.JobCompletedStatus, patchResource, job.Name, job.ObjectMeta.Namespace)
 			if err != nil {
 				log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
 			}
@@ -352,7 +360,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		}
 
 		// patch 'pgbasebackuprestore' pgtask status with job status
-		err = util.Patch(c.JobClient, "/spec/status", status, "pgtasks", labels[config.LABEL_PGTASK], job.ObjectMeta.Namespace)
+		err = util.Patch(c.JobClient, patchURL, status, patchResource, labels[config.LABEL_PGTASK], job.ObjectMeta.Namespace)
 		if err != nil {
 			log.Error("error patching pgtask '" + labels["pg-task"] + "': " + err.Error())
 		}
@@ -372,7 +380,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			status = crv1.JobErrorStatus + " [" + job.ObjectMeta.Name + "]"
 		}
 
-		err = util.Patch(c.JobClient, "/spec/status", status, "pgtasks", job.Name, job.ObjectMeta.Namespace)
+		err = util.Patch(c.JobClient, patchURL, status, patchResource, job.Name, job.ObjectMeta.Namespace)
 		if err != nil {
 			log.Error("error in patching pgtask " + labels["workflowName"] + err.Error())
 		}
@@ -397,6 +405,119 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		err = events.Publish(f)
 		if err != nil {
 			log.Error(err.Error())
+		}
+
+		return
+	}
+
+	// handle the case of a the clone "repo sync" step (aka "step 1")
+	// being completed
+	if labels[config.LABEL_PGO_CLONE_STEP_1] == "true" {
+		log.Debugf("jobController onUpdate clone step 1 job case")
+
+		// first, if this is being called as the result of a propogated delete, exit
+		if len(job.ObjectMeta.Finalizers) > 0 {
+			log.Debugf("skipping onUpdate clone step 1 job case: deletion in progress")
+			return
+		}
+
+		log.Debugf("clone step 1 job status=%d", job.Status.Succeeded)
+
+		// if the job succeed, we need to kick off step 2!
+		if job.Status.Succeeded == 1 {
+			namespace := job.ObjectMeta.Namespace
+			sourceClusterName := job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_SOURCE_CLUSTER_NAME]
+			targetClusterName := job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_TARGET_CLUSTER_NAME]
+			workflowID := job.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID]
+
+			log.Debugf("workflow to update is %s", workflowID)
+
+			// first, make sure the Pgtask resource knows that the job is complete,
+			// which is using this legacy bit of code
+			if err := util.Patch(c.JobClient, patchURL, crv1.JobCompletedStatus, patchResource, job.Name, namespace); err != nil {
+				log.Error(err)
+				// we can continue on, even if this fails...
+			}
+
+			// next, update the workflow to indicate that step 1 is complete
+			clusteroperator.UpdateCloneWorkflow(c.JobClient, namespace, workflowID, crv1.PgtaskWorkflowCloneRestoreBackup)
+
+			// now, set up a new pgtask that will allow us to perform the restore
+			cloneTask := util.CloneTask{
+				PGOUser:           job.ObjectMeta.Labels[config.LABEL_PGOUSER],
+				SourceClusterName: sourceClusterName,
+				TargetClusterName: targetClusterName,
+				TaskStepLabel:     config.LABEL_PGO_CLONE_STEP_2,
+				TaskType:          crv1.PgtaskCloneStep2,
+				Timestamp:         time.Now(),
+				WorkflowID:        workflowID,
+			}
+
+			task := cloneTask.Create()
+
+			// finally, create the pgtask!
+			if err := kubeapi.Createpgtask(c.JobClient, task, namespace); err != nil {
+				log.Error(err)
+				errorMessage := fmt.Sprintf("Could not create pgtask for step 2: %s", err.Error())
+				clusteroperator.PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, errorMessage)
+			}
+		}
+		// ...we really shouldn't need a return here the way this function is
+		// constructed...but just in case
+		return
+	}
+
+	// handle the case of the clone "pgBackRest restore" step (aka "step 2")
+	// being completed
+	if labels[config.LABEL_PGO_CLONE_STEP_2] == "true" {
+		log.Debugf("jobController onUpdate clone step 2 job case")
+
+		// first, if this is being called as the result of a propogated delete, exit
+		if len(job.ObjectMeta.Finalizers) > 0 {
+			log.Debugf("skipping onUpdate clone step 2 job case: deletion in progress")
+			return
+		}
+
+		log.Debugf("clone step 2 job status=%d", job.Status.Succeeded)
+
+		if job.Status.Succeeded == 1 {
+			namespace := job.ObjectMeta.Namespace
+			sourceClusterName := job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_SOURCE_CLUSTER_NAME]
+			targetClusterName := job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_TARGET_CLUSTER_NAME]
+			workflowID := job.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID]
+
+			log.Debugf("workflow to update is %s", workflowID)
+
+			// first, make sure the Pgtask resource knows that the job is complete,
+			// which is using this legacy bit of code
+			if err := util.Patch(c.JobClient, patchURL, crv1.JobCompletedStatus, patchResource, job.Name, namespace); err != nil {
+				log.Error(err)
+				// we can continue on, even if this fails...
+			}
+
+			// next, update the workflow to indicate that step 2 is complete
+			clusteroperator.UpdateCloneWorkflow(c.JobClient, namespace, workflowID, crv1.PgtaskWorkflowCloneClusterCreate)
+
+			// alright, we can move on the step 3 which is the final step, where we
+			// create the cluster
+			cloneTask := util.CloneTask{
+				PGOUser:           job.ObjectMeta.Labels[config.LABEL_PGOUSER],
+				SourceClusterName: sourceClusterName,
+				TargetClusterName: targetClusterName,
+				TaskStepLabel:     config.LABEL_PGO_CLONE_STEP_3,
+				TaskType:          crv1.PgtaskCloneStep3,
+				Timestamp:         time.Now(),
+				WorkflowID:        workflowID,
+			}
+
+			task := cloneTask.Create()
+
+			// create the pgtask!
+			if err := kubeapi.Createpgtask(c.JobClient, task, namespace); err != nil {
+				log.Error(err)
+				errorMessage := fmt.Sprintf("Could not create pgtask for step 3: %s", err.Error())
+				clusteroperator.PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, errorMessage)
+			}
 		}
 
 		return
