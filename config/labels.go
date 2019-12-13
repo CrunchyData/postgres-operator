@@ -145,6 +145,14 @@ const LABEL_PGO_BACKREST_REPO = "pgo-backrest-repo"
 
 const LABEL_PGO_BENCHMARK = "pgo-benchmark"
 
+// a general label for grouping all the tasks...helps with cleanups
+const LABEL_PGO_CLONE = "pgo-clone"
+
+// the individualized step labels
+const LABEL_PGO_CLONE_STEP_1 = "pgo-clone-step-1"
+const LABEL_PGO_CLONE_STEP_2 = "pgo-clone-step-2"
+const LABEL_PGO_CLONE_STEP_3 = "pgo-clone-step-3"
+
 const LABEL_DEPLOYMENT_NAME = "deployment-name"
 const LABEL_SERVICE_NAME = "service-name"
 const LABEL_CURRENT_PRIMARY = "current-primary"
@@ -154,7 +162,7 @@ const LABEL_CLAIM_NAME = "claimName"
 const LABEL_PGO_PGOUSER = "pgo-pgouser"
 const LABEL_PGO_PGOROLE = "pgo-pgorole"
 const LABEL_PGOUSER = "pgouser"
-const LABEL_WORKFLOW_ID = "workflow-id"
+const LABEL_WORKFLOW_ID = "workflowid" // NOTE: this now matches crv1.PgtaskWorkflowID
 
 const LABEL_TRUE = "true"
 const LABEL_FALSE = "false"

@@ -23,6 +23,7 @@ import (
 const CAT_PERM = "Cat"
 const LS_PERM = "Ls"
 const APPLY_POLICY_PERM = "ApplyPolicy"
+const CLONE_PERM = "Clone"
 const DF_CLUSTER_PERM = "DfCluster"
 const LABEL_PERM = "Label"
 const LOAD_PERM = "Load"

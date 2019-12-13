@@ -34,6 +34,7 @@ const PgtaskAddPolicies = "addpolicies"
 const PgtaskMinorUpgrade = "minorupgradecluster"
 
 const PgtaskWorkflow = "workflow"
+const PgtaskWorkflowCloneType = "cloneworkflow"
 const PgtaskWorkflowCreateClusterType = "createcluster"
 const PgtaskWorkflowCreateBenchmarkType = "createbenchmark"
 const PgtaskWorkflowBackrestRestoreType = "pgbackrestrestore"
@@ -46,6 +47,11 @@ const PgtaskWorkflowID = "workflowid"
 const PgtaskWorkflowBackrestRestorePVCCreatedStatus = "restored PVC created"
 const PgtaskWorkflowBackrestRestorePrimaryCreatedStatus = "restored Primary created"
 const PgtaskWorkflowBackrestRestoreJobCreatedStatus = "restore job created"
+
+const PgtaskWorkflowCloneCreatePVC = "clone 1.1: create pvc"
+const PgtaskWorkflowCloneSyncRepo = "clone 1.2: sync pgbackrest repo"
+const PgtaskWorkflowCloneRestoreBackup = "clone 2: restoring backup"
+const PgtaskWorkflowCloneClusterCreate = "clone 3: cluster creating"
 
 const PgtaskWorkflowPgbasebackupRestorePVCCreatedStatus = "restored PVC created"
 const PgtaskWorkflowPgbasebackupRestorePrimaryCreatedStatus = "restored Primary created"
@@ -65,6 +71,10 @@ const PgtaskpgRestore = "pgrestore"
 const PgtaskpgBasebackupRestore = "pgbasebackuprestore"
 
 const PgtaskBenchmark = "benchmark"
+
+const PgtaskCloneStep1 = "clone-step1" // performs a pgBackRest repo sync
+const PgtaskCloneStep2 = "clone-step2" // performs a pgBackRest restore
+const PgtaskCloneStep3 = "clone-step3" // creates the Pgcluster
 
 // Defines the types of pgBackRest backups that are taken throughout a clusters
 // lifecycle

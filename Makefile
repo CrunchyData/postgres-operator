@@ -18,6 +18,7 @@ endif
 images = pgo-apiserver \
 	pgo-backrest \
 	pgo-backrest-repo \
+	pgo-backrest-repo-sync \
 	pgo-backrest-restore \
 	pgo-event \
 	pgo-load \
@@ -84,11 +85,11 @@ build-pgo-%:
 linuxpgo:
 	cd pgo && go install pgo.go
 
-macpgo:	
+macpgo:
 	cd pgo && env GOOS=darwin GOARCH=amd64 go build pgo.go && mv pgo $(GOBIN)/pgo-mac
 	env GOOS=darwin GOARCH=amd64 go build github.com/blang/expenv && mv expenv $(GOBIN)/expenv-mac
 
-winpgo:	
+winpgo:
 	cd pgo && env GOOS=windows GOARCH=386 go build pgo.go && mv pgo.exe $(GOBIN)/pgo.exe
 	env GOOS=windows GOARCH=386 go build github.com/blang/expenv && mv expenv.exe $(GOBIN)/expenv.exe
 
@@ -128,10 +129,10 @@ pgo-base-docker: pgo-base-build
 
 
 #======== Utility =======
-cli-docs:	
+cli-docs:
 	cd $(PGOROOT)/hugo/content/operatorcli/cli && go run $(PGOROOT)/pgo/generatedocs.go
 
-clean:	
+clean:
 	rm -rf $(GOPATH)/pkg/* $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
 
 deepsix:
@@ -140,16 +141,16 @@ deepsix:
 
 push: $(images:%=push-%) ;
 
-push-%: 
+push-%:
 	docker push $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
 
 pull: $(images:%=pull-%) ;
 
-pull-%: 
+pull-%:
 	docker pull $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
 
 release:  linuxpgo macpgo winpgo
-	rm -rf $(RELTMPDIR) $(RELFILE) 
+	rm -rf $(RELTMPDIR) $(RELFILE)
 	mkdir $(RELTMPDIR)
 	cp -r $(PGOROOT)/examples $(RELTMPDIR)
 	cp -r $(PGOROOT)/deploy $(RELTMPDIR)

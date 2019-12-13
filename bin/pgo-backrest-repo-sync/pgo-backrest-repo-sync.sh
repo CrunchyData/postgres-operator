@@ -21,35 +21,26 @@ function trap_sigterm() {
 
 trap 'trap_sigterm' SIGINT SIGTERM
 
-CONFIG=/sshd
+SSHD_CONFIG=/sshd
 
 echo "PGBACKREST env vars are set to:"
 set | grep PGBACKREST
 
-echo "CONFIG is.."
-ls $CONFIG
-echo "REPO is ..."
-ls $REPO
+echo "SSHD_CONFIG is.."
+ls $SSHD_CONFIG
 
 mkdir ~/.ssh/
-cp $CONFIG/config ~/.ssh/
-cp $CONFIG/id_rsa /tmp
+cp $SSHD_CONFIG/config ~/.ssh/
+cp $SSHD_CONFIG/id_rsa /tmp
 chmod 400 /tmp/id_rsa ~/.ssh/config
 
 # start sshd which is used by pgbackrest for remote connections
-/usr/sbin/sshd -D -f $CONFIG/sshd_config   &
+/usr/sbin/sshd -D -f $SSHD_CONFIG/sshd_config   &
 
-# create the directory the restore will go into
-mkdir $PGBACKREST_DB_PATH
-
-echo "sleep 5 secs to let sshd come up before running pgbackrest command"
+echo "sleep 5 secs to let sshd come up before running rsync command"
 sleep 5
 
-if [ "$PITR_TARGET" = "" ]
-then
-	echo "PITR_TARGET is  empty"
-	pgbackrest restore $COMMAND_OPTS
-else
-	echo PITR_TARGET is not empty [$PITR_TARGET]
-	pgbackrest restore $COMMAND_OPTS "--target=$PITR_TARGET"
-fi
+echo "rsync pgbackrest from $PGBACKREST_REPO1_HOST:$PGBACKREST_REPO1_PATH/ to $NEW_PGBACKREST_REPO"
+# note, the "/" after the repo path is important, as we do not want to sync
+# the top level directory
+rsync -a --progress ${PGBACKREST_REPO1_HOST}:${PGBACKREST_REPO1_PATH}/ $NEW_PGBACKREST_REPO

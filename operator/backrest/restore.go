@@ -38,7 +38,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type restorejobTemplateFields struct {
+type BackrestRestoreJobTemplateFields struct {
 	JobName             string
 	ClusterName         string
 	WorkflowID          string
@@ -162,7 +162,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	//create the Job to run the backrest restore container
 
 	workflowID := task.Spec.Parameters[crv1.PgtaskWorkflowID]
-	jobFields := restorejobTemplateFields{
+	jobFields := BackrestRestoreJobTemplateFields{
 		JobName:             "restore-" + task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-" + util.RandStringBytesRmndr(4),
 		ClusterName:         task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
 		SecurityContext:     util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
