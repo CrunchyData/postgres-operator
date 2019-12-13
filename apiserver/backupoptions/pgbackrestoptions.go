@@ -30,36 +30,40 @@ var pgBackRestOptsBlacklist = []string{"--archive-check", "--no-archive-check", 
 	"--pg-host-config-include-path", "--pg-host-config-path", "--pg-host-port", "--pg-host-user", "--pg-path", "--pg-port"}
 
 type pgBackRestBackupOptions struct {
-	ArchiveCopy           bool   `flag:"archive-copy"`
-	NoArchiveCopy         bool   `flag:"no-archive-copy"`
-	ArchiveTimeout        int    `flag:"archive-timeout"`
-	BackupStandby         bool   `flag:"backup-standby"`
-	NoBackupStandby       bool   `flag:"no-backup-standby"`
-	ChecksumPage          bool   `flag:"checksum-page"`
-	NoChecksumPage        bool   `flag:"no-checksum-page"`
-	Exclude               string `flag:"exclude"`
-	Force                 bool   `flag:"force"`
-	ManifestSaveThreshold string `flag:"manifest-save-threshold"`
-	Resume                bool   `flag:"resume"`
-	NoResume              bool   `flag:"no-resume"`
-	StartFast             bool   `flag:"start-fast"`
-	NoStartFast           bool   `flag:"no-start-fast"`
-	StopAuto              bool   `flag:"stop-auto"`
-	NoStopAuto            bool   `flag:"no-stop-auto"`
-	BackupType            string `flag:"type"`
-	BufferSize            string `flag:"buffer-size"`
-	Compress              bool   `flag:"compress"`
-	NoCompress            bool   `flag:"no-compress"`
-	CompressLevel         int    `flag:"compress-level"`
-	CompressLevelNetwork  int    `flag:"compress-level-network"`
-	DBTimeout             int    `flag:"db-timeout"`
-	Delta                 bool   `flag:"no-delta"`
-	ProcessMax            int    `flag:"process-max"`
-	ProtocolTimeout       int    `flag:"protocol-timeout"`
-	LogLevelConsole       string `flag:"log-level-console"`
-	LogLevelFile          string `flag:"log-level-file"`
-	LogLevelStderr        string `flag:"log-level-stderr"`
-	LogSubprocess         bool   `flag:"log-subprocess"`
+	ArchiveCopy              bool   `flag:"archive-copy"`
+	NoArchiveCopy            bool   `flag:"no-archive-copy"`
+	ArchiveTimeout           int    `flag:"archive-timeout"`
+	BackupStandby            bool   `flag:"backup-standby"`
+	NoBackupStandby          bool   `flag:"no-backup-standby"`
+	ChecksumPage             bool   `flag:"checksum-page"`
+	NoChecksumPage           bool   `flag:"no-checksum-page"`
+	Exclude                  string `flag:"exclude"`
+	Force                    bool   `flag:"force"`
+	ManifestSaveThreshold    string `flag:"manifest-save-threshold"`
+	Resume                   bool   `flag:"resume"`
+	NoResume                 bool   `flag:"no-resume"`
+	StartFast                bool   `flag:"start-fast"`
+	NoStartFast              bool   `flag:"no-start-fast"`
+	StopAuto                 bool   `flag:"stop-auto"`
+	NoStopAuto               bool   `flag:"no-stop-auto"`
+	BackupType               string `flag:"type"`
+	BufferSize               string `flag:"buffer-size"`
+	Compress                 bool   `flag:"compress"`
+	NoCompress               bool   `flag:"no-compress"`
+	CompressLevel            int    `flag:"compress-level"`
+	CompressLevelNetwork     int    `flag:"compress-level-network"`
+	DBTimeout                int    `flag:"db-timeout"`
+	Delta                    bool   `flag:"no-delta"`
+	ProcessMax               int    `flag:"process-max"`
+	ProtocolTimeout          int    `flag:"protocol-timeout"`
+	LogLevelConsole          string `flag:"log-level-console"`
+	LogLevelFile             string `flag:"log-level-file"`
+	LogLevelStderr           string `flag:"log-level-stderr"`
+	LogSubprocess            bool   `flag:"log-subprocess"`
+	RepoRetentionFull        int    `flag:"repo1-retention-full"`
+	RepoRetentionDiff        int    `flag:"repo1-retention-diff"`
+	RepoRetentionArchive     int    `flag:"repo1-retention-archive"`
+	RepoRetentionArchiveType string `flag:"repo1-retention-archive-type"`
 }
 
 type pgBackRestRestoreOptions struct {
@@ -88,8 +92,10 @@ type pgBackRestRestoreOptions struct {
 	LogSubprocess        bool   `flag:"log-subprocess"`
 }
 
+// validate method runs validation checks against any pgBackrest backup options given when executing
+// a pgBackrest backup. As it iterates through the options array, it will call the appropriate
+// function to ensure an allowed value has been set, otherwise it will produce an appropriate error
 func (backRestBackupOpts pgBackRestBackupOptions) validate(setFlagFieldNames []string) error {
-
 	var errstrings []string
 
 	for _, setFlag := range setFlagFieldNames {
@@ -123,6 +129,26 @@ func (backRestBackupOpts pgBackRestBackupOptions) validate(setFlagFieldNames []s
 		case "LogLevelStdErr":
 			if !isValidBackrestLogLevel(backRestBackupOpts.LogLevelStderr) {
 				err := errors.New("Invalid log level for pgBackRest backup")
+				errstrings = append(errstrings, err.Error())
+			}
+		case "RepoRetentionFull":
+			if !isValidRetentionRange(backRestBackupOpts.RepoRetentionFull) {
+				err := errors.New("Invalid value for pgBackRest full backup retention. Allowed: 1-9999999")
+				errstrings = append(errstrings, err.Error())
+			}
+		case "RepoRetentionDiff":
+			if !isValidRetentionRange(backRestBackupOpts.RepoRetentionDiff) {
+				err := errors.New("Invalid value for pgBackRest diff backup retention. Allowed: 1-9999999")
+				errstrings = append(errstrings, err.Error())
+			}
+		case "RepoRetentionArchive":
+			if !isValidRetentionRange(backRestBackupOpts.RepoRetentionArchive) {
+				err := errors.New("Invalid value for pgBackRest archive retention. Allowed: 1-9999999")
+				errstrings = append(errstrings, err.Error())
+			}
+		case "RepoRetentionArchiveType":
+			if !isValidValue([]string{"full", "diff", "incr"}, backRestBackupOpts.RepoRetentionArchiveType) {
+				err := errors.New("Invalid backup type for pgBackRest WAL retention. Allowed: \"full\", \"diff\", \"incr\"")
 				errstrings = append(errstrings, err.Error())
 			}
 		}
