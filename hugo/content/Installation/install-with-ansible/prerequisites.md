@@ -214,6 +214,9 @@ sets of variables cannot be used at the same time.
 | `pgo_installation_name`           |             | **Required** | The name of the PGO installation.                                                                                                                                                |
 | `pgo_operator_namespace`          |             | **Required** | Set to configure the namespace where Operator will be deployed.                                                                                                                  |
 | `pgo_tls_no_verify`               | false       |          | Set to configure Operator to verify TLS certificates.                                                                                                                            |
+| `pgo_client_container_install` | false | | Installs the pgo-client deployment along with ansible isnstall |
+| `pgo_apiserver_url` | `https://postgres-operator` | | Sets the `pgo_apiserver_url` in the pgo-client deployment |
+| `pgo_client_cert_secret` | `pgo.tls` | | Sets the secret that the pgo-client will use when connecting to the operator. Secret should hold the TLS certs | 
 | `primary_storage`                 | storageos   | **Required** | Set to configure which storage definition to use when creating volumes used by PostgreSQL primaries on all newly created clusters.                                               |
 | `prometheus_install`              | true        |          | Set to true to install Crunchy Prometheus timeseries database.                                                                                                                   |
 | `prometheus_storage_access_mode`  |             |          | Set to the access mode used by the configured storage class for Prometheus persistent volumes.                                                                                   |

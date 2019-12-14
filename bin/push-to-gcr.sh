@@ -27,6 +27,7 @@ pgo-lspvc
 pgo-rmdata
 pgo-backrest
 pgo-load
+pgo-client
 )
 
 for image in "${IMAGES[@]}"

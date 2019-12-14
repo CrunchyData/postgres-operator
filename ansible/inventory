@@ -34,6 +34,19 @@ crunchy_debug='false'
 create_rbac='true'
 
 # ===================
+# PGO Client Container Settings
+# The following settings configure the deployment of a PGO Client Container
+# ===================
+# PGO Client Container Install
+#pgo_client_container_install='false'
+
+# PGO Apiserver URL - Url to be used to connect to the operator service
+#pgo_apiserver_url='https://postgres-operator'
+
+# PGO Client Secret
+#pgo_client_cert_secret='pgo.tls'
+
+# ===================
 # PGO Settings
 # The following settings configure the Crunchy PostgreSQL Operator
 # functionality.
