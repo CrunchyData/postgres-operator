@@ -16,6 +16,7 @@ IMAGES=(
     pgo-rmdata
     pgo-backrest
     pgo-load
+    pgo-client
 )
 
 function echo_green() {

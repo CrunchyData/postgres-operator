@@ -211,3 +211,19 @@
       command: "{{ kubectl_or_oc }} rollout status deployment/postgres-operator -n {{ pgo_operator_namespace }}"
       async: 600
       tags: [install, update]
+
+- name: Deploy PGO-Client Container
+  tags: [install, update]
+  when: "pgo_client_container_install == 'true'"
+  block:
+    - name: Template PGO-Client Deployment
+      template:
+        src: pgo-client.json.j2
+        dest: "{{ output_dir }}/pgo-client.json"
+        mode: '0600'
+      tags: [install, update]
+
+    - name: Create PGO-Client deployment
+      command: |
+        {{ kubectl_or_oc }} create --filename='{{ output_dir }}/pgo-client.json' -n {{ pgo_operator_namespace }}
+      tags: [install, update]

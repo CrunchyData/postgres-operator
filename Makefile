@@ -26,6 +26,7 @@ images = pgo-apiserver \
 	pgo-rmdata \
 	pgo-scheduler \
 	pgo-sqlrunner \
+	pgo-client \
 	postgres-operator
 
 .PHONY: all installrbac setup setupnamespaces cleannamespaces bounce \
@@ -73,7 +74,7 @@ build-pgo-apiserver:
 
 build-pgo-backrest:
 	go install pgo-backrest/pgo-backrest.go
-	mv $(GOBIN)/pgo-backrest bin/pgo-backrest/
+	cp $(GOBIN)/pgo-backrest bin/pgo-backrest/
 
 build-pgo-rmdata:
 	go install pgo-rmdata/pgo-rmdata.go
@@ -81,17 +82,20 @@ build-pgo-rmdata:
 
 build-pgo-scheduler:
 	go install pgo-scheduler/pgo-scheduler.go
-	mv $(GOBIN)/pgo-scheduler bin/pgo-scheduler/
+	cp $(GOBIN)/pgo-scheduler bin/pgo-scheduler/
 
 build-postgres-operator:
 	go install postgres-operator.go
 	cp $(GOBIN)/postgres-operator bin/postgres-operator/
 
+build-pgo-client:
+	go install pgo/pgo.go
+	cp $(GOBIN)/pgo bin/pgo
+
 build-pgo-%:
 	$(info No binary build needed for $@)
 
-linuxpgo:
-	cd pgo && go install pgo.go
+linuxpgo: build-pgo-client
 
 macpgo:
 	cd pgo && env GOOS=darwin GOARCH=amd64 go build pgo.go && mv pgo $(GOBIN)/pgo-mac

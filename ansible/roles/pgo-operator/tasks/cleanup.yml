@@ -278,3 +278,12 @@
   ignore_errors: yes
   no_log: false
   tags: uninstall
+
+- name: Delete PGO client container
+  shell: |
+    {{ kubectl_or_oc }} delete deployment pgo-client -n {{ pgo_operator_namespace }}
+  ignore_errors: yes
+  no_log: false
+  tags:
+  - uninstall
+  - update

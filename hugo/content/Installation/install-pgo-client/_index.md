@@ -139,6 +139,33 @@ Apply those changes to the current session by running:
 source ${HOME?}/.bashrc
 ```
 
+## PGO-Client Container
+
+The following will setup the `pgo` client image in a Kubernetes or Openshift 
+environment. The image must be installed using the Ansible installer.
+
+### Installing the PGO-Client Container
+The pgo-client container can be installed with the Ansible installer by updating
+the `pgo_client_container_install` variable in the inventory file. Set this 
+variable to true in the inventory file and run the ansible-playbook. As part of 
+the install the `pgo.tls` and `pgouser-<username>` secrets are used to configure
+the `pgo` client. 
+
+### Using the PGO-Client Deployment
+Once the container has been installed you can access it by execing into the 
+deployment. You can run single commands with the kubectl or oc command line tools
+or multiple commands by execing into the deployment with bash.
+
+```
+kubectl exec -it -n pgo <pgo-client-deployment-name> -c "pgo version"
+
+# or
+
+kubectl exec -it -n pgo <pgo-client-deployment-name> bash
+```
+
+The deployment does not require any configuration to connect to the operator.
+
 ## Windows
 
 The following will setup the `pgo` client to be used on a Windows system.
