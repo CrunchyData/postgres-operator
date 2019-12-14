@@ -152,9 +152,9 @@ the install the `pgo.tls` and `pgouser-<username>` secrets are used to configure
 the `pgo` client. 
 
 ### Using the PGO-Client Deployment
-Once the container has been installed you can access it by execing into the 
+Once the container has been installed you can access it by exec'ing into the 
 deployment. You can run single commands with the kubectl or oc command line tools
-or multiple commands by execing into the deployment with bash.
+or multiple commands by execing into the pod with bash.
 
 ```
 kubectl exec -it -n pgo <pgo-client-deployment-name> -c "pgo version"
