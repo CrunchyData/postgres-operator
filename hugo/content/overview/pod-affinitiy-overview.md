@@ -17,11 +17,10 @@ the PostgreSQL Operator).  This includes:
 - The `pgBackrest` dedicated repostiory deployment
 - The `pgBouncer` deployment (if enabled for the cluster)
 
-With default pod anti-affinity enabled, Kubernetes will attempt to schedule the pods created
-by each individual deployment above on a unique node, but at the same time will not guarentee that
-each deployment will be scheduled on a unqiue node.  This therefore ensures that the various pods
-comprising the PG cluster can always be scheduled, even if though they might not end up on the 
-desired node.  This is specifically done using the following:
+With default pod anti-affinity enabled, Kubernetes will attempt to schedule pods created by each of
+the separate deployments above on a unique node, but will not guarentee that this will ocurr. This
+ensures that the pods comprising the PG cluster can always be scheduled, though perhaps not always
+on the desired node.  This is specifically done using the following:
 
 - The `preferredDuringSchedulingIgnoredDuringExecution` affinity type, (as defined by the Kubernetes
 API), which defines an anti-affinity rule that Kubernetes will attempt to adhere to, but will not
@@ -52,8 +51,8 @@ the default pod anti-affinity, specifically by setting `pod-anti-affinity` to `r
 pgo create cluster mycluster --replica-count=2 --pod-anti-affinity=required
 ```
 
-Or similarly the `require` option can be enabled globally for all clusters by setting 
-`PodAntiAffinity` to `require` in the `pgo.yaml` configuration file.
+Or similarly the `required` option can be enabled globally for all clusters by setting 
+`PodAntiAffinity` to `required` in the `pgo.yaml` configuration file.
 
 When `require` is utilized for the default pod anti-affinity, a separate node is required for each
 deployment listed above comprising the PG cluster.  This ensures that the cluster remains 
@@ -73,4 +72,4 @@ pgo create cluster mycluster --replica-count=2 --pod-anti-affinity=disabled
 ```
 
 Or the same setting can be applied globally to all clusters created by setting `PodAntiAffinity` 
-to `require` in the `pgo.yaml` configuration file.
+to `disabled` in the `pgo.yaml` configuration file.

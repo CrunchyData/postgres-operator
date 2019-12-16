@@ -710,7 +710,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		// return the validation error.
 		if request.PodAntiAffinity != "" {
 			podAntiAffinityType := crv1.PodAntiAffinityType(request.PodAntiAffinity)
-			if err := podAntiAffinityType.ValidatePodAntiAffinityType(); err != nil {
+			if err := podAntiAffinityType.Validate(); err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = err.Error()
 				return resp
