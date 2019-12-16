@@ -37,13 +37,20 @@
                     "readinessProbe": {
                         "exec": {
                             "command": [
-                                "/bin/bash",
-                                "-c",
-                                "[ -f /crunchyadm/pgha_initialized ] && exec pg_isready -h /crunchyadm -U crunchyready"
-                             ]
+                                "/opt/cpm/bin/pgha-readiness.sh"
+                            ]
                         },
-                        "initialDelaySeconds": 15,
-                        "timeoutSeconds": 8
+                        "initialDelaySeconds": 15
+                    },
+                    "livenessProbe": {
+                        "exec": {
+                            "command": [
+                                "/opt/cpm/bin/pgha-liveness.sh"
+                            ]
+                        },
+                        "initialDelaySeconds": 30,
+                        "periodSeconds": 15,
+                        "timeoutSeconds": 10
                     },
 
             {{.ContainerResources }}
@@ -78,6 +85,9 @@
                     }, {
                         "name": "PGHA_CRUNCHYADM",
                         "value": "true"
+                    }, {
+                        "name": "PGHA_REPLICA_REINIT_ON_START_FAIL",
+                        "value": "{{.ReplicaReinitOnStartFail}}"
                     }, {
                         "name": "PATRONI_KUBERNETES_NAMESPACE",
                         "valueFrom": {
@@ -161,13 +171,11 @@
                     "readinessProbe": {
                         "exec": {
                             "command": [
-                                "/bin/bash",
-                                "-c",
-                                "[ -f /crunchyadm/pgha_initialized ] && exec pg_isready -h /crunchyadm -U crunchyready"
-                             ]
+                                "/opt/cpm/bin/crunchyadm-readiness.sh"
+                            ]
                         },
-                        "initialDelaySeconds": 15,
-                        "timeoutSeconds": 8
+                        "initialDelaySeconds": 30,
+                        "timeoutSeconds": 10
                     },
                     "env": [
                         {
@@ -253,9 +261,11 @@
                     }
 
                 ],
-
+                "affinity": {
         {{.NodeSelector}}
-
+        {{if and .NodeSelector .PodAntiAffinity}},{{end}}
+        {{.PodAntiAffinity}}
+                },
                 "restartPolicy": "Always",
                 "dnsPolicy": "ClusterFirst"
             }

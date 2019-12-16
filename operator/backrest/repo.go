@@ -28,7 +28,7 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/apps/v1"
+	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -37,22 +37,25 @@ const BackrestRepoServiceName = "%s-backrest-shared-repo"
 const BackrestRepoPVCName = "%s-pgbr-repo"
 
 type RepoDeploymentTemplateFields struct {
-	SecurityContext       string
-	PGOImagePrefix        string
-	PGOImageTag           string
-	ContainerResources    string
-	BackrestRepoClaimName string
-	SshdSecretsName       string
-	PGbackrestDBHost      string
-	PgbackrestRepoPath    string
-	PgbackrestDBPath      string
-	PgbackrestPGPort      string
-	SshdPort              int
-	PgbackrestStanza      string
-	PgbackrestRepoType    string
-	PgbackrestS3EnvVars   string
-	Name                  string
-	ClusterName           string
+	SecurityContext           string
+	PGOImagePrefix            string
+	PGOImageTag               string
+	ContainerResources        string
+	BackrestRepoClaimName     string
+	SshdSecretsName           string
+	PGbackrestDBHost          string
+	PgbackrestRepoPath        string
+	PgbackrestDBPath          string
+	PgbackrestPGPort          string
+	SshdPort                  int
+	PgbackrestStanza          string
+	PgbackrestRepoType        string
+	PgbackrestS3EnvVars       string
+	Name                      string
+	ClusterName               string
+	PodAntiAffinity           string
+	PodAntiAffinityLabelName  string
+	PodAntiAffinityLabelValue string
 }
 
 type RepoServiceTemplateFields struct {
@@ -115,6 +118,9 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 		Name:            serviceName,
 		ClusterName:     cluster.Name,
 		SecurityContext: util.CreateSecContext(cluster.Spec.PrimaryStorage.Fsgroup, cluster.Spec.PrimaryStorage.SupplementalGroups),
+		PodAntiAffinity: operator.GetPodAntiAffinity(cluster.Spec.PodAntiAffinity, cluster.Spec.Name),
+		PodAntiAffinityLabelName: config.LABEL_POD_ANTI_AFFINITY,
+		PodAntiAffinityLabelValue: cluster.Spec.PodAntiAffinity,
 	}
 	log.Debugf(fields.Name)
 

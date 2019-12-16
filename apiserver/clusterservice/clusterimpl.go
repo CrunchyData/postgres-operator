@@ -704,6 +704,21 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			}
 		}
 
+		// if a value is provided in the request for PodAntiAffinity, then ensure is valid.  If
+		// it is, then set the user label for pod anti-affinity to the request value.  Otherwise,
+		// return the validation error.
+		if request.PodAntiAffinity != "" {
+			podAntiAffinityType := crv1.PodAntiAffinityType(request.PodAntiAffinity)
+			if err := podAntiAffinityType.ValidatePodAntiAffinityType(); err != nil {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
+				return resp
+			} 
+			userLabelsMap[config.LABEL_POD_ANTI_AFFINITY] = request.PodAntiAffinity
+		} else {
+			userLabelsMap[config.LABEL_POD_ANTI_AFFINITY] = ""
+		}
+
 		// Create an instance of our CRD
 		newInstance := getClusterParams(request, clusterName, userLabelsMap, ns)
 		newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
@@ -934,6 +949,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	}
 
 	spec.CustomConfig = request.CustomConfig
+
+	spec.PodAntiAffinity = request.PodAntiAffinity
 
 	labels := make(map[string]string)
 	labels[config.LABEL_NAME] = name

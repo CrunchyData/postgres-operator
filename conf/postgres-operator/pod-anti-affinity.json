@@ -1,0 +1,36 @@
+                "podAntiAffinity": {
+                    "{{.AffinityType}}": [
+                        {
+                            {{if eq .AffinityType "preferredDuringSchedulingIgnoredDuringExecution"}}                
+                            "weight": 1,
+                            "podAffinityTerm": {
+                            {{end}}
+                                "labelSelector": {
+                                    "matchExpressions": [
+                                        {
+                                            "key": "{{.VendorLabelKey}}",
+                                            "operator": "In",
+                                            "values": [
+                                                "{{.VendorLabelValue}}"
+                                            ]
+                                        },
+                                        {
+                                            "key": "{{.PodAntiAffinityLabelKey}}",
+                                            "operator": "Exists"
+                                        },
+                                        {
+                                            "key": "pg-cluster",
+                                            "operator": "In",
+                                            "values": [
+                                                "{{.ClusterName}}"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "topologyKey": "kubernetes.io/hostname"
+                            {{if eq .AffinityType "preferredDuringSchedulingIgnoredDuringExecution"}}     
+                            }
+                            {{end}}
+                        }
+                    ]
+                }

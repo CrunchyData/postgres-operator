@@ -91,6 +91,9 @@
                         "claimName": "{{.BackrestRepoClaimName}}"
                     }
                 }],
+                "affinity": {
+        {{.PodAntiAffinity}}
+                },
                 "restartPolicy": "Always",
                 "dnsPolicy": "ClusterFirst"
             }

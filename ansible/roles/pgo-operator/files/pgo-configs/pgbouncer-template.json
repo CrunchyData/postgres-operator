@@ -78,6 +78,9 @@
                     "defaultMode": 511
                     }
                 }],
+                "affinity": {
+        {{.PodAntiAffinity}}
+                },
                 "restartPolicy": "Always",
                 "dnsPolicy": "ClusterFirst"
             }

@@ -43,10 +43,28 @@ const AFFINITY_NOTINOperator = "NotIn"
 const DefaultArchiveTimeout = "60"
 const DefaultPgHaConfigMapSuffix = "pgha-default-config"
 
+// affinityType represents the two affinity types provided by Kubernetes, specifically
+// either preferredDuringSchedulingIgnoredDuringExecution or
+// requiredDuringSchedulingIgnoredDuringExecution
+type affinityType string
+
+const (
+	requireScheduleIgnoreExec affinityType = "requiredDuringSchedulingIgnoredDuringExecution"
+	preferScheduleIgnoreExec   affinityType = "preferredDuringSchedulingIgnoredDuringExecution"
+)
+
 type affinityTemplateFields struct {
 	NodeLabelKey   string
 	NodeLabelValue string
 	OperatorValue  string
+}
+
+type podAntiAffinityTemplateFields struct {
+	AffinityType            affinityType
+	ClusterName             string
+	PodAntiAffinityLabelKey string
+	VendorLabelKey          string
+	VendorLabelValue        string
 }
 
 // consolidate
@@ -130,6 +148,7 @@ type DeploymentTemplateFields struct {
 	IsInit                   bool
 	EnableCrunchyadm         bool
 	ReplicaReinitOnStartFail bool
+	PodAntiAffinity          string
 }
 
 type PostgresHaTemplateFields struct {
@@ -420,6 +439,67 @@ func GetReplicaAffinity(clusterLabels, replicaLabels map[string]string) string {
 		value = clusterLabels[config.LABEL_NODE_LABEL_VALUE]
 	}
 	return GetAffinity(key, value, operator)
+}
+
+// GetPodAntiAffinity returns the populated pod anti-affinity json that should be attached to
+// the various pods comprising the pg cluster
+func GetPodAntiAffinity(podAntiAffinityType string, clusterName string) string {
+
+	log.Debugf("GetPodAnitAffinity with clusterName=[%s]", clusterName)
+
+	// get the PodAntiAffinity type from the CR parameter (podAntiAffinityType) or from the
+	// pgo.yaml, depending on whether or not either have been set
+	var affinityTypeParam crv1.PodAntiAffinityType
+	if podAntiAffinityType != "" {
+		affinityTypeParam = crv1.PodAntiAffinityType(podAntiAffinityType)
+	} else if Pgo.Cluster.PodAntiAffinity != "" {
+		affinityTypeParam = crv1.PodAntiAffinityType(Pgo.Cluster.PodAntiAffinity)
+	} 
+
+	// verify that the affinity type provided is valid (i.e. 'required' or 'preffered'), and
+	// log an error and return an empty string if not
+	if err := affinityTypeParam.ValidatePodAntiAffinityType(); affinityTypeParam != "" &&
+	 	err != nil {
+		log.Error(fmt.Sprintf("Invalid affinity type '%s' specified when attempting to set " +
+			"default pod anti-affinity for cluster %s.  Pod anti-affinity will not be applied.",
+			podAntiAffinityType, clusterName))
+		return ""
+	}
+
+	// set requiredDuringSchedulingIgnoredDuringExecution or
+	// prefferedDuringSchedulingIgnoredDuringExecution depending on the pod anti-affinity type
+	// specified in the pgcluster CR.  Defaults to preffered if not explicitly specified 
+	// in the CR or in the pgo.yaml configuration file
+	templateAffinityType := preferScheduleIgnoreExec
+	switch affinityTypeParam {
+	case crv1.PodAntiAffinityDisabled: // if disabled return an empty string
+		log.Debugf("Default pod anti-affinity disabled for clusterName=[%s]", clusterName)
+		return ""
+	case crv1.PodAntiAffinityRequired:
+		templateAffinityType = requireScheduleIgnoreExec
+	}
+
+	podAntiAffinityTemplateFields := podAntiAffinityTemplateFields{
+		AffinityType:            templateAffinityType,
+		ClusterName:             clusterName,
+		VendorLabelKey:          config.LABEL_VENDOR,
+		VendorLabelValue:        config.LABEL_CRUNCHY,
+		PodAntiAffinityLabelKey: config.LABEL_POD_ANTI_AFFINITY,
+	}
+
+	var podAntiAffinityDoc bytes.Buffer
+	err := config.PodAntiAffinityTemplate.Execute(&podAntiAffinityDoc,
+		podAntiAffinityTemplateFields)
+	if err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	if CRUNCHY_DEBUG {
+		config.PodAntiAffinityTemplate.Execute(os.Stdout, podAntiAffinityTemplateFields)
+	}
+
+	return podAntiAffinityDoc.String()
 }
 
 func GetPgmonitorEnvVars(metricsEnabled string) string {

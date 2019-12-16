@@ -19,6 +19,7 @@
                 "crunchy-pgbouncer": "true",
                 "pg-cluster": "{{.ClusterName}}",
                 "service-name": "{{.Name}}",
+                "{{.PodAntiAffinityLabelName}}": "{{.PodAntiAffinityLabelValue}}",
                 "vendor": "crunchydata"
             }
         },
@@ -29,6 +30,7 @@
                     "crunchy-pgbouncer": "true",
                     "pg-cluster": "{{.ClusterName}}",
                     "service-name": "{{.Name}}",
+                    "{{.PodAntiAffinityLabelName}}": "{{.PodAntiAffinityLabelValue}}",
                     "vendor": "crunchydata"
                 }
             },
@@ -78,6 +80,9 @@
                     "defaultMode": 511
                     }
                 }],
+                "affinity": {
+        {{.PodAntiAffinity}}
+                },
                 "restartPolicy": "Always",
                 "dnsPolicy": "ClusterFirst"
             }

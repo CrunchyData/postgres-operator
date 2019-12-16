@@ -13,3 +13,10 @@ rules:
       - serviceaccounts
       - roles
       - rolebindings
+  - verbs:
+      - 'list'
+      - 'get'
+    apiGroups:
+      - '*'
+    resources:
+      - nodes
