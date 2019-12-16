@@ -73,7 +73,8 @@ type CreateClusterRequest struct {
 	ContainerResources   string
 	// Version of API client
 	// required: true
-	ClientVersion string
+	ClientVersion   string
+	PodAntiAffinity string
 }
 
 // CreateClusterResponse

@@ -53,7 +53,8 @@ The *pgo.yaml* file is broken into major sections as described below:
 |Storage.storage1.StorageType        |supported values are either *dynamic*,  *create*,  if not supplied, *create* is used
 |Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
 |SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
-|MatchLabels        | optional, if set, will cause the PVC to add a *matchlabels* selector in order to match a PV, only useful when the StorageType is *create*, when specified a label of *key=value* is added to the PVC as a match criteria
+|MatchLabels        | optional, if set, will cause the PVC to add a *matchlabels* selector in order to match a PV, only useful when the StorageType is *create*, when specified a label of
+|PodAntiAffinity        | either `preferred`, `require` or `disable` to either specify the type of affinity that should be utilized for the default pod anti-affinity applied to PG clusters, or to disable default pod anti-affinity all together  (default `preferred`)
 
 ## Storage Configuration Examples
 In *pgo.yaml*, you will need to configure your storage configurations

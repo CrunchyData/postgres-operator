@@ -105,6 +105,10 @@ var AffinityTemplate *template.Template
 
 const affinityTemplatePath = "affinity.json"
 
+var PodAntiAffinityTemplate *template.Template
+
+const podAntiAffinityTemplatePath = "pod-anti-affinity.json"
+
 var PgoBackrestRepoServiceTemplate *template.Template
 
 const pgoBackrestRepoServiceTemplatePath = "pgo-backrest-repo-service-template.json"
@@ -228,6 +232,7 @@ type ClusterStruct struct {
 	PgmonitorPassword             string `yaml:"PgmonitorPassword"`
 	EnableCrunchyadm              bool   `yaml:"EnableCrunchyadm"`
 	DisableReplicaStartFailReinit bool   `yaml:"DisableReplicaStartFailReinit"`
+	PodAntiAffinity               string `yaml:"PodAntiAffinity"`
 }
 
 type StorageStruct struct {
@@ -490,6 +495,13 @@ func (c *PgoConfig) Validate() error {
 			return errors.New(errPrefix + msg)
 		}
 	}
+
+	// if provided, ensure that the type of pod anti-affinity specified is valid
+	podAntiAffinityType := crv1.PodAntiAffinityType(c.Cluster.PodAntiAffinity)
+	if err := podAntiAffinityType.ValidatePodAntiAffinityType(); podAntiAffinityType != "" && err != nil {
+		return errors.New(errPrefix + "Invalid value provided for Cluster.PodAntiAffinityType")
+	}
+
 	return err
 }
 
@@ -783,6 +795,11 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 	}
 
 	AffinityTemplate, err = c.LoadTemplate(cMap, rootPath, affinityTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	PodAntiAffinityTemplate, err = c.LoadTemplate(cMap, rootPath, podAntiAffinityTemplatePath)
 	if err != nil {
 		return err
 	}

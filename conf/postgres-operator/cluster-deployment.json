@@ -261,9 +261,11 @@
                     }
 
                 ],
-
+                "affinity": {
         {{.NodeSelector}}
-
+        {{if and .NodeSelector .PodAntiAffinity}},{{end}}
+        {{.PodAntiAffinity}}
+                },
                 "restartPolicy": "Always",
                 "dnsPolicy": "ClusterFirst"
             }

@@ -151,28 +151,31 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 	}
 
 	// determine if the updated pod is a pgBackRest dedicated repository host
-	isBackrestRepo, err := strconv.ParseBool(labels[config.LABEL_PGO_BACKREST_REPO])
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	// if the backrest repo pod is ready, then see if is reporting ready following an configuration
-	// update due to a failover over (i.e. to point the pgbackrest repo to the new primary).  if it
-	// is again ready following a failover event, the initiate a backup
-	if isBackrestRepo && isPrimaryOnRoleChange(c.PodClientset, pgcluster,
-		newpod.ObjectMeta.Namespace) && isBackrestRepoReady(oldpod, newpod) {
-
-		err = backrest.CleanBackupResources(c.PodClient, c.PodClientset,
-			newpod.ObjectMeta.Namespace, clusterName)
+	if _, valExists := labels[config.LABEL_PGO_BACKREST_REPO]; valExists {
+		isBackrestRepo, err := strconv.ParseBool(labels[config.LABEL_PGO_BACKREST_REPO])
 		if err != nil {
 			log.Error(err)
 			return
 		}
-		_, err = backrest.CreatePostFailoverBackup(c.PodClient,
-			newpod.ObjectMeta.Namespace, clusterName, newpod.Name)
-		if err != nil {
-			log.Error(err)
-			return
+		
+		// if the backrest repo pod is ready, then see if is reporting ready following an configuration
+		// update due to a failover over (i.e. to point the pgbackrest repo to the new primary).  if it
+		// is again ready following a failover event, the initiate a backup
+		if isBackrestRepo && isPrimaryOnRoleChange(c.PodClientset, pgcluster,
+			newpod.ObjectMeta.Namespace) && isBackrestRepoReady(oldpod, newpod) {
+
+			err = backrest.CleanBackupResources(c.PodClient, c.PodClientset,
+				newpod.ObjectMeta.Namespace, clusterName)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			_, err = backrest.CreatePostFailoverBackup(c.PodClient,
+				newpod.ObjectMeta.Namespace, clusterName, newpod.Name)
+			if err != nil {
+				log.Error(err)
+				return
+			}
 		}
 	}
 }
@@ -542,6 +545,12 @@ func isPrimaryOnRoleChange(clientset *kubernetes.Clientset, pgcluster crv1.Pgclu
 	namespace string) (primaryOnRoleChange bool) {
 
 	var err error
+
+	// return false right away if scope isn't set
+	if _, valExists := pgcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE]; 
+		!valExists {
+		return false
+	}
 
 	cmName := pgcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE] + "-config"
 	configMap, found := kubeapi.GetConfigMap(clientset, cmName, namespace)

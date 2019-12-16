@@ -55,15 +55,18 @@ type PgbouncerConfFields struct {
 }
 
 type PgbouncerTemplateFields struct {
-	Name               string
-	ClusterName        string
-	PGBouncerSecret    string
-	CCPImagePrefix     string
-	CCPImageTag        string
-	Port               string
-	PrimaryServiceName string
-	ReplicaServiceName string
-	ContainerResources string
+	Name                      string
+	ClusterName               string
+	PGBouncerSecret           string
+	CCPImagePrefix            string
+	CCPImageTag               string
+	Port                      string
+	PrimaryServiceName        string
+	ReplicaServiceName        string
+	ContainerResources        string
+	PodAntiAffinity           string
+	PodAntiAffinityLabelName  string
+	PodAntiAffinityLabelValue string
 }
 
 // connInfo ....
@@ -307,13 +310,16 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 
 	//create the pgbouncer deployment
 	fields := PgbouncerTemplateFields{
-		Name:               pgbouncerName,
-		ClusterName:        clusterName,
-		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:        cl.Spec.CCPImageTag,
-		Port:               operator.Pgo.Cluster.Port,
-		PGBouncerSecret:    secretName,
-		ContainerResources: "",
+		Name:                      pgbouncerName,
+		ClusterName:               clusterName,
+		CCPImagePrefix:            operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImageTag:               cl.Spec.CCPImageTag,
+		Port:                      operator.Pgo.Cluster.Port,
+		PGBouncerSecret:           secretName,
+		ContainerResources:        "",
+		PodAntiAffinity:           operator.GetPodAntiAffinity(cl.Spec.PodAntiAffinity, cl.Spec.Name),
+		PodAntiAffinityLabelName:  config.LABEL_POD_ANTI_AFFINITY,
+		PodAntiAffinityLabelValue: cl.Spec.PodAntiAffinity,
 	}
 
 	if operator.Pgo.DefaultPgbouncerResources != "" {

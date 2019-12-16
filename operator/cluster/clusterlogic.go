@@ -131,6 +131,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		PrimarySecretName:  cl.Spec.PrimarySecretName,
 		UserSecretName:     cl.Spec.UserSecretName,
 		NodeSelector:       operator.GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
+		PodAntiAffinity:    operator.GetPodAntiAffinity(cl.Spec.PodAntiAffinity, cl.Spec.Name),
 		ContainerResources: operator.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
 		ConfVolume:         operator.GetConfVolume(clientset, cl, namespace),
 		CollectAddon:       operator.GetCollectAddon(clientset, namespace, &cl.Spec),
@@ -160,7 +161,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 			} else {
 				log.Debugf("Custom postgres-ha config file found in custom configMap, " +
 					"creating default configMap without default postgres-ha config file")
-				operator.AddDefaultPostgresHaConfigMap(clientset, cl, deploymentFields.IsInit, true, namespace)
+				operator.AddDefaultPostgresHaConfigMap(clientset, cl, deploymentFields.IsInit, false, namespace)
 			}
 		} else {
 			log.Error(err.Error())
@@ -369,6 +370,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		UserSecretName:     cluster.Spec.UserSecretName,
 		ContainerResources: operator.GetContainerResourcesJSON(&cs),
 		NodeSelector:       operator.GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
+		PodAntiAffinity:    operator.GetPodAntiAffinity(cluster.Spec.PodAntiAffinity, cluster.Spec.Name),
 		CollectAddon:       operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
 		CollectVolume:      operator.GetCollectVolume(clientset, cluster, namespace),
 		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cluster, replica.Spec.Name),

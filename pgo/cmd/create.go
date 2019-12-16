@@ -50,6 +50,7 @@ var PGBackRestType string
 var Secret string
 var PgouserPassword, PgouserRoles, PgouserNamespaces string
 var Permissions string
+var PodAntiAffinity string
 
 var Series int
 
@@ -252,6 +253,9 @@ func init() {
 	createClusterCmd.Flags().IntVarP(&Series, "series", "e", 1, "The number of clusters to create in a series.")
 	createClusterCmd.Flags().IntVarP(&ClusterReplicaCount, "replica-count", "", 0, "The number of replicas to create as part of the cluster.")
 	createClusterCmd.Flags().StringVarP(&ContainerResources, "resources-config", "r", "", "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.")
+	createClusterCmd.Flags().StringVarP(&PodAntiAffinity, "pod-anti-affinity", "", "",
+		"Specifies the type of anti-affinity that should be utilized when applying  "+
+			"default pod anti-affinity rules to PG clusters (default \"preferred\")")
 
 	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy.")
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy.")
