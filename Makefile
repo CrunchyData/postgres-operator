@@ -71,13 +71,21 @@ build-pgo-apiserver:
 	go install apiserver.go
 	cp $(GOBIN)/apiserver bin/
 
+build-pgo-backrest:
+	go install pgo-backrest/pgo-backrest.go
+	mv $(GOBIN)/pgo-backrest bin/pgo-backrest/
+
+build-pgo-rmdata:
+	go install pgo-rmdata/pgo-rmdata.go
+	cp $(GOBIN)/pgo-rmdata bin/pgo-rmdata/
+
+build-pgo-scheduler:
+	go install pgo-scheduler/pgo-scheduler.go
+	mv $(GOBIN)/pgo-scheduler bin/pgo-scheduler/
+
 build-postgres-operator:
 	go install postgres-operator.go
 	cp $(GOBIN)/postgres-operator bin/postgres-operator/
-
-build-%: %/%.go
-	go install $*/$*.go
-	cp $(GOBIN)/$* ./bin/$*
 
 build-pgo-%:
 	$(info No binary build needed for $@)
