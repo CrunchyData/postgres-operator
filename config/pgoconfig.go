@@ -498,7 +498,7 @@ func (c *PgoConfig) Validate() error {
 
 	// if provided, ensure that the type of pod anti-affinity specified is valid
 	podAntiAffinityType := crv1.PodAntiAffinityType(c.Cluster.PodAntiAffinity)
-	if err := podAntiAffinityType.ValidatePodAntiAffinityType(); podAntiAffinityType != "" && err != nil {
+	if err := podAntiAffinityType.Validate(); podAntiAffinityType != "" && err != nil {
 		return errors.New(errPrefix + "Invalid value provided for Cluster.PodAntiAffinityType")
 	}
 

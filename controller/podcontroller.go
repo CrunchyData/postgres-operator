@@ -157,10 +157,10 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 			log.Error(err)
 			return
 		}
-		
-		// if the backrest repo pod is ready, then see if is reporting ready following an configuration
-		// update due to a failover over (i.e. to point the pgbackrest repo to the new primary).  if it
-		// is again ready following a failover event, the initiate a backup
+
+		// if the backrest repo pod is ready, then see if it is reporting ready following a
+		// configuration update due to a failover over (i.e. to point the pgbackrest repo to the
+		// new primary).  if it is again ready following a failover event, then initiate a backup
 		if isBackrestRepo && isPrimaryOnRoleChange(c.PodClientset, pgcluster,
 			newpod.ObjectMeta.Namespace) && isBackrestRepoReady(oldpod, newpod) {
 
@@ -547,8 +547,7 @@ func isPrimaryOnRoleChange(clientset *kubernetes.Clientset, pgcluster crv1.Pgclu
 	var err error
 
 	// return false right away if scope isn't set
-	if _, valExists := pgcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE]; 
-		!valExists {
+	if _, valExists := pgcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE]; !valExists {
 		return false
 	}
 

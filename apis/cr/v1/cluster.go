@@ -123,7 +123,7 @@ const (
 
 // ValidatePodAntiAffinityType is responsible for validating whether or not the type of pod
 // anti-affinity specified is valid
-func (p PodAntiAffinityType) ValidatePodAntiAffinityType() error {
+func (p PodAntiAffinityType) Validate() error {
 	switch p {
 	case
 		PodAntiAffinityRequired,

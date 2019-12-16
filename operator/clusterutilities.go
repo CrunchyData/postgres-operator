@@ -50,7 +50,7 @@ type affinityType string
 
 const (
 	requireScheduleIgnoreExec affinityType = "requiredDuringSchedulingIgnoredDuringExecution"
-	preferScheduleIgnoreExec   affinityType = "preferredDuringSchedulingIgnoredDuringExecution"
+	preferScheduleIgnoreExec  affinityType = "preferredDuringSchedulingIgnoredDuringExecution"
 )
 
 type affinityTemplateFields struct {
@@ -454,13 +454,13 @@ func GetPodAntiAffinity(podAntiAffinityType string, clusterName string) string {
 		affinityTypeParam = crv1.PodAntiAffinityType(podAntiAffinityType)
 	} else if Pgo.Cluster.PodAntiAffinity != "" {
 		affinityTypeParam = crv1.PodAntiAffinityType(Pgo.Cluster.PodAntiAffinity)
-	} 
+	}
 
 	// verify that the affinity type provided is valid (i.e. 'required' or 'preffered'), and
 	// log an error and return an empty string if not
-	if err := affinityTypeParam.ValidatePodAntiAffinityType(); affinityTypeParam != "" &&
-	 	err != nil {
-		log.Error(fmt.Sprintf("Invalid affinity type '%s' specified when attempting to set " +
+	if err := affinityTypeParam.Validate(); affinityTypeParam != "" &&
+		err != nil {
+		log.Error(fmt.Sprintf("Invalid affinity type '%s' specified when attempting to set "+
 			"default pod anti-affinity for cluster %s.  Pod anti-affinity will not be applied.",
 			podAntiAffinityType, clusterName))
 		return ""
@@ -468,7 +468,7 @@ func GetPodAntiAffinity(podAntiAffinityType string, clusterName string) string {
 
 	// set requiredDuringSchedulingIgnoredDuringExecution or
 	// prefferedDuringSchedulingIgnoredDuringExecution depending on the pod anti-affinity type
-	// specified in the pgcluster CR.  Defaults to preffered if not explicitly specified 
+	// specified in the pgcluster CR.  Defaults to preffered if not explicitly specified
 	// in the CR or in the pgo.yaml configuration file
 	templateAffinityType := preferScheduleIgnoreExec
 	switch affinityTypeParam {
