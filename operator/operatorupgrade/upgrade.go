@@ -45,7 +45,7 @@ func updateVersion(restclient *rest.RESTClient, ns string) error {
 	var err error
 
 	t := time.Now()
-	dt := t.Format("20060102150405")
+	dt := t.Format(time.RFC3339)
 	//update pgcluster CRD userlabels["pgo-version"] to current version
 	clusterList := crv1.PgclusterList{}
 

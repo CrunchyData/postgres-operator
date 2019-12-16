@@ -148,7 +148,7 @@ func UpdateWorkflow(client *rest.RESTClient, name, namespace, status string) err
 	}
 
 	log.Debug("Updating workflow task")
-	task.Spec.Parameters[status] = time.Now().Format("2006-01-02.15.04.05")
+	task.Spec.Parameters[status] = time.Now().Format(time.RFC3339)
 	err = kubeapi.Updatepgtask(client, &task, task.Name, namespace)
 	if err != nil {
 		return err

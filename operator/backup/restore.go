@@ -184,7 +184,7 @@ func updateWorkflow(restclient *rest.RESTClient, workflowID, namespace, status s
 	}
 
 	task := taskList.Items[0]
-	task.Spec.Parameters[status] = time.Now().Format("2006-01-02.15.04.05")
+	task.Spec.Parameters[status] = time.Now().Format(time.RFC3339)
 	err = kubeapi.Updatepgtask(restclient, &task, task.Name, namespace)
 	if err != nil {
 		log.Errorf("restore workflow error: could not update workflow %s to status %s", workflowID, status)

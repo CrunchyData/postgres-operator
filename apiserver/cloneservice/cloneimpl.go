@@ -162,7 +162,7 @@ func createWorkflowTask(targetClusterName, uid, namespace string) (string, error
 			Name:      taskName,
 			TaskType:  crv1.PgtaskWorkflow,
 			Parameters: map[string]string{
-				crv1.PgtaskWorkflowSubmittedStatus: time.Now().Format("2006-01-02.15.04.05"),
+				crv1.PgtaskWorkflowSubmittedStatus: time.Now().Format(time.RFC3339),
 				config.LABEL_PG_CLUSTER:            targetClusterName,
 				crv1.PgtaskWorkflowID:              id,
 			},

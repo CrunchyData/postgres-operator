@@ -183,7 +183,7 @@ func CreateBenchmark(request *msgs.CreateBenchmarkRequest, ns, pgouser string) m
 		return *br
 	}
 
-	timeNow := time.Now().Format("2006-01-02-01-04-05")
+	timeNow := time.Now().Format(time.RFC3339)
 	for _, cluster := range clusterList.Items {
 		uid := util.RandStringBytesRmndr(4)
 
@@ -372,7 +372,7 @@ func createWorkflowTask(clusterName, uid, ns string) (string, error) {
 			Name:      taskName,
 			TaskType:  crv1.PgtaskWorkflow,
 			Parameters: map[string]string{
-				crv1.PgtaskWorkflowSubmittedStatus: time.Now().Format("2006-01-02.15.04.05"),
+				crv1.PgtaskWorkflowSubmittedStatus: time.Now().Format(time.RFC3339),
 				config.LABEL_PG_CLUSTER:            clusterName,
 				crv1.PgtaskWorkflowID:              id,
 			},
