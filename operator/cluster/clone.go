@@ -171,7 +171,7 @@ func UpdateCloneWorkflow(client *rest.RESTClient, namespace, workflowID, status 
 	// get the first task and update on the current status based on how it is
 	// progressing
 	task := taskList.Items[0]
-	task.Spec.Parameters[status] = time.Now().Format("2006-01-02.15.04.05")
+	task.Spec.Parameters[status] = time.Now().Format(time.RFC3339)
 
 	if err := kubeapi.Updatepgtask(client, &task, task.Name, namespace); err != nil {
 		log.Errorf("clone workflow: could not update workflow [%s] to status [%s]", workflowID, status)

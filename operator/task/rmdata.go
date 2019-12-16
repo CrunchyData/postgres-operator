@@ -136,7 +136,7 @@ func PatchpgtaskDeleteDataStatus(restclient *rest.RESTClient, oldCrd *crv1.Pgtas
 	}
 
 	//change it
-	oldCrd.Spec.Parameters[config.LABEL_DELETE_DATA_STARTED] = time.Now().Format("2006-01-02.15.04.05")
+	oldCrd.Spec.Parameters[config.LABEL_DELETE_DATA_STARTED] = time.Now().Format(time.RFC3339)
 
 	//create the patch
 	var newData, patchBytes []byte

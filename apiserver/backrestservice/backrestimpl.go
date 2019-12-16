@@ -542,7 +542,7 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 	spec.TaskType = crv1.PgtaskWorkflow
 
 	spec.Parameters = make(map[string]string)
-	spec.Parameters[crv1.PgtaskWorkflowSubmittedStatus] = time.Now().Format("2006-01-02.15.04.05")
+	spec.Parameters[crv1.PgtaskWorkflowSubmittedStatus] = time.Now().Format(time.RFC3339)
 	spec.Parameters[config.LABEL_PG_CLUSTER] = clusterName
 
 	u, err := ioutil.ReadFile("/proc/sys/kernel/random/uuid")
