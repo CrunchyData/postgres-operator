@@ -28,6 +28,12 @@ export PGO_IMAGE_TAG=$PGO_BASEOS-$PGO_VERSION
 export PGO_APISERVER_PORT=8443		# Defaults: 8443 for TLS enabled, 8080 for TLS disabled
 export DISABLE_TLS=false
 export TLS_NO_VERIFY=false
+export TLS_CA_TRUST=""
+export ADD_OS_TRUSTSTORE=false
+export NOAUTH_ROUTES=""
+
+# Disable default inclusion of OS trust in PGO clients
+export EXCLUDE_OS_TRUST=false
 
 # for disabling the Operator eventing
 export DISABLE_EVENTING=false

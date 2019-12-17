@@ -31,6 +31,10 @@ Variable | Ansible Inventory | Example | Description
 `PGO_OPERATOR_NAMESPACE` | pgo_operator_namespace | pgo | Kubernetes namespace for the operator
 `PGO_VERSION` |  | 4.2.0 | Operator version 
 `TLS_NO_VERIFY` | pgo_tls_no_verify | false | Disable certificate verification (e.g. strict hostname checking)
+`TLS_CA_TRUST` | pgo_tls_ca_store | /var/pki/my_cas.crt | PEM-encoded list of trusted CA certificates
+`ADD_OS_TRUSTSTORE` | pgo_add_os_ca_store | false | Adds OS root trust collection to apiserver
+`NOAUTH_ROUTES` | pgo_noauth_routes | "/health" | Disable mTLS and HTTP BasicAuth for listed routes
+`EXCLUDE_OS_TRUST` |  | false | Excludes OS root trust from pgo client
 
 {{% notice tip %}}
 `examples/envs.sh` contains the above variable definitions as well

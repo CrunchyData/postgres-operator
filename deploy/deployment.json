@@ -72,12 +72,24 @@
                                 }
                             },
                             {
+                                "name": "TLS_CA_TRUST",
+                                "value": "$TLS_CA_TRUST"
+                            },
+                            {
                                 "name": "TLS_NO_VERIFY",
                                 "value": "$TLS_NO_VERIFY"
                             },
                             {
                                 "name": "DISABLE_TLS",
                                 "value": "$DISABLE_TLS"
+                            },
+                            {
+                                "name": "NOAUTH_ROUTES",
+                                "value": "$NOAUTH_ROUTES"
+                            },
+                            {
+                                "name": "ADD_OS_TRUSTSTORE",
+                                "value": "$ADD_OS_TRUSTSTORE"
                             },
                             {
                                 "name": "DISABLE_EVENTING",
