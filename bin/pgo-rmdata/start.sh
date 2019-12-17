@@ -21,4 +21,5 @@ env
 	-remove-data=$REMOVE_DATA \
 	-remove-backup=$REMOVE_BACKUP \
 	-is-backup=$IS_BACKUP \
-	-is-replica=$IS_REPLICA
+	-is-replica=$IS_REPLICA \
+	-pgha-scope=$PGHA_SCOPE

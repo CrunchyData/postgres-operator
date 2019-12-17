@@ -22,19 +22,20 @@ import (
 )
 
 type Request struct {
-	RESTConfig   *rest.Config
-	RESTClient   *rest.RESTClient
-	Clientset    *kubernetes.Clientset
-	RemoveData   bool
-	RemoveBackup bool
-	IsBackup     bool
-	IsReplica    bool
-	ClusterName  string
-	ReplicaName  string
-	Namespace    string
+	RESTConfig       *rest.Config
+	RESTClient       *rest.RESTClient
+	Clientset        *kubernetes.Clientset
+	RemoveData       bool
+	RemoveBackup     bool
+	IsBackup         bool
+	IsReplica        bool
+	ClusterName      string
+	ClusterPGHAScope string
+	ReplicaName      string
+	Namespace        string
 }
 
 func (x Request) String() string {
-	msg := fmt.Sprintf("Request: Cluster [%s] Namespace [%s] ReplicaName [%] RemoveData [%t] RemoveBackup [%t] IsReplica [%t] IsBackup [%t]", x.ClusterName, x.Namespace, x.ReplicaName, x.RemoveData, x.RemoveBackup, x.IsReplica, x.IsBackup)
+	msg := fmt.Sprintf("Request: Cluster [%s] ClusterPGHAScope [%s] Namespace [%s] ReplicaName [%] RemoveData [%t] RemoveBackup [%t] IsReplica [%t] IsBackup [%t]", x.ClusterName, x.ClusterPGHAScope, x.Namespace, x.ReplicaName, x.RemoveData, x.RemoveBackup, x.IsReplica, x.IsBackup)
 	return msg
 }

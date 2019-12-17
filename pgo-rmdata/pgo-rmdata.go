@@ -35,19 +35,21 @@ var Clientset *kubernetes.Clientset
 func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
 	request = rmdata.Request{
-		RemoveData:   false,
-		IsReplica:    false,
-		IsBackup:     false,
-		RemoveBackup: false,
-		ClusterName:  "",
-		ReplicaName:  "",
-		Namespace:    "",
+		RemoveData:       false,
+		IsReplica:        false,
+		IsBackup:         false,
+		RemoveBackup:     false,
+		ClusterName:      "",
+		ClusterPGHAScope: "",
+		ReplicaName:      "",
+		Namespace:        "",
 	}
 	flag.BoolVar(&request.RemoveData, "remove-data", false, "")
 	flag.BoolVar(&request.IsReplica, "is-replica", false, "")
 	flag.BoolVar(&request.IsBackup, "is-backup", false, "")
 	flag.BoolVar(&request.RemoveBackup, "remove-backup", false, "")
 	flag.StringVar(&request.ClusterName, "pg-cluster", "", "")
+	flag.StringVar(&request.ClusterPGHAScope, "pgha-scope", "", "")
 	flag.StringVar(&request.ReplicaName, "replica-name", "", "")
 	flag.StringVar(&request.Namespace, "namespace", "", "")
 	flag.Parse()
