@@ -31,8 +31,11 @@ import (
 	"time"
 )
 
-const MAX_TRIES = 16
-const pgDataPathFormat = "/pgdata/%s"
+const (
+	MAX_TRIES            = 16
+	pgBackRestPathFormat = "/backrestrepo/%s"
+	pgDataPathFormat     = "/pgdata/%s"
+)
 
 func Delete(request Request) {
 	log.Infof("rmdata.Process %v", request)
@@ -107,15 +110,6 @@ func Delete(request Request) {
 		removeUserSecrets(request)
 	}
 
-	//the user had done something like:
-	//pgo delete cluster mycluster --delete-backups
-	if request.RemoveBackup {
-		removeBackrestRepo(request)
-		removeBackupJobs(request)
-		removeBackups(request)
-		removeBackupSecrets(request)
-	}
-
 	//handle the case of 'pgo delete cluster mycluster'
 	removeCluster(request)
 	if err := kubeapi.Deletepgcluster(request.RESTClient, request.ClusterName, request.Namespace); err != nil {
@@ -134,6 +128,22 @@ func Delete(request Request) {
 		}
 		removePVCs(pvcList, request)
 	}
+
+	// backups have to be the last thing we remove. We want to ensure that all
+	// the clusters (well, really, the primary) have stopped. This means that no
+	// more WAL archives are being pushed, and at this point it is safe for us to
+	// remove the pgBackRest repo
+	//
+	// The actual check for removing the pgBackRest files occurs in the
+	// removeBackRestRepo function. The rest of the function calls are related
+	// to the current deployment, i.e. this PostgreSQL cluster, and are safe to
+	// remove
+	removeBackrestRepo(request)
+	removeBackupJobs(request)
+	// NOTE: removeBackups will be removed in a later commit -- it is ok to not
+	// guard it
+	removeBackups(request)
+	removeBackupSecrets(request)
 }
 
 // deleteClusterData calls a series of commands to attempt to "safely" delete
@@ -166,23 +176,61 @@ func deletePGDATA(request Request, pod v1.Pod) error {
 		log.Infof("stopped postgresql [%s]: stdout=[%s] stderr=[%s]", clusterName, stdout, stderr)
 	}
 
-	// now attempt to remove the data
-	rmCommand := []string{"rm", "-rf", pgDataPath}
-
-	// execute the command here. If it errors, return
-	if stdout, stderr, err := kubeapi.ExecToPodThroughAPI(
-		request.RESTConfig,
-		request.Clientset,
-		rmCommand,
-		containerName,
-		pod.Name,
-		request.Namespace, nil); err != nil {
+	// execute the rm command here. If it errors, return
+	if stdout, stderr, err := rmDataDir(request, pod.Name, containerName, pgDataPath); err != nil {
 		return err
 	} else {
 		log.Infof("rm pgdata [%s]: stdout=[%s] stderr=[%s]", clusterName, stdout, stderr)
 	}
 
 	return nil
+}
+
+// removeBackRestRepo removes the pgBackRest repo that is associated with the
+// PostgreSQL cluster
+func removeBackrestRepo(request Request) {
+	deploymentName := fmt.Sprintf("%s-backrest-shared-repo", request.ClusterName)
+	repoPath := fmt.Sprintf(pgBackRestPathFormat, deploymentName)
+
+	log.Debugf("deleting the pgbackrest repo [%s]", deploymentName)
+
+	// first, delete the backup data directory
+	// we'll determine from the request if we ewant to remove the backup directory
+	if request.RemoveBackup {
+		// NOTE: need to use the ClusterName for the Pod selector
+		selector := fmt.Sprintf("%s=%s,%s=true",
+			config.LABEL_PG_CLUSTER, request.ClusterName, config.LABEL_PGO_BACKREST_REPO)
+		// even if we error, we can move on with deleting the deployments and servies
+		if pods, err := kubeapi.GetPods(request.Clientset, selector, request.Namespace); err != nil {
+			log.Error(err)
+		} else {
+			// iterate through any pod matching this query, and remove the data
+			// directory
+			for _, pod := range pods.Items {
+				log.Debugf("remove pgbackrest repo from pod [%s]", pod.Name)
+				// take the first available container
+				containerName := pod.Spec.Containers[0].Name
+
+				if stdout, stderr, err := rmDataDir(request, pod.Name, containerName, repoPath); err != nil {
+					log.Error(err)
+				} else {
+					log.Infof("rm pgbackrest repo [%s]: stdout=[%s] stderr=[%s]", deploymentName, stdout, stderr)
+				}
+			}
+		}
+	}
+
+	// now delete the deployment and services
+	err := kubeapi.DeleteDeployment(request.Clientset, deploymentName, request.Namespace)
+	if err != nil {
+		log.Error(err)
+	}
+
+	//delete the service for the backrest repo
+	err = kubeapi.DeleteService(request.Clientset, deploymentName, request.Namespace)
+	if err != nil {
+		log.Error(err)
+	}
 }
 
 func removeBackups(request Request) {
@@ -336,26 +384,36 @@ func removeClusterJobs(request Request) {
 	}
 }
 
+// removeCluster removes the cluster deployments EXCEPT for the pgBackRest repo
 func removeCluster(request Request) {
+	// ensure we are deleting every deployment EXCEPT for the pgBackRest repo,
+	// which needs to happen in a separate step to ensure we clear out all the
+	// data
+	selector := fmt.Sprintf("%s=%s,%s!=true",
+		config.LABEL_PG_CLUSTER, request.ClusterName, config.LABEL_PGO_BACKREST_REPO)
 
-	deployments, err := kubeapi.GetDeployments(request.Clientset,
-		config.LABEL_PG_CLUSTER+"="+request.ClusterName, request.Namespace)
+	deployments, err := kubeapi.GetDeployments(request.Clientset, selector, request.Namespace)
+
+	// if there is an error here, return as we cannot iterate over the deployment
+	// list
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
+	// iterate through each deployment and delete it
 	for _, d := range deployments.Items {
-		err = kubeapi.DeleteDeployment(request.Clientset, d.ObjectMeta.Name, request.Namespace)
-		if err != nil {
+		if err := kubeapi.DeleteDeployment(request.Clientset, d.ObjectMeta.Name, request.Namespace); err != nil {
 			log.Error(err)
 		}
 	}
 
+	// this was here before...this looks like it ensures that deployments are
+	// deleted. the only thing I'm modifying is the selector
 	var completed bool
 	for i := 0; i < MAX_TRIES; i++ {
-		deployments, err := kubeapi.GetDeployments(request.Clientset,
-			config.LABEL_PG_CLUSTER+"="+request.ClusterName, request.Namespace)
+		deployments, err := kubeapi.GetDeployments(request.Clientset, selector,
+			request.Namespace)
 		if err != nil {
 			log.Error(err)
 		}
@@ -493,24 +551,6 @@ func removeServices(request Request) {
 		if err != nil {
 			log.Error(err)
 		}
-	}
-
-}
-
-func removeBackrestRepo(request Request) {
-
-	depName := request.ClusterName + "-backrest-shared-repo"
-	log.Debugf("deleting the backrest repo deployment and service %s", depName)
-
-	err := kubeapi.DeleteDeployment(request.Clientset, depName, request.Namespace)
-	if err != nil {
-		log.Error(err)
-	}
-
-	//delete the service for the backrest repo
-	err = kubeapi.DeleteService(request.Clientset, depName, request.Namespace)
-	if err != nil {
-		log.Error(err)
 	}
 
 }
@@ -678,4 +718,18 @@ func removeSchedules(request Request) {
 	if err := kubeapi.DeleteConfigMaps(request.Clientset, selector, request.Namespace); err != nil {
 		log.Error(err)
 	}
+}
+
+// rmDataDir removes a data directory, such as a PGDATA directory, or a pgBackRest
+// repo
+func rmDataDir(request Request, podName, containerName, path string) (string, string, error) {
+	command := []string{"rm", "-rf", path}
+
+	return kubeapi.ExecToPodThroughAPI(
+		request.RESTConfig,
+		request.Clientset,
+		command,
+		containerName,
+		podName,
+		request.Namespace, nil)
 }
