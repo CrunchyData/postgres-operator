@@ -149,6 +149,7 @@ type DeploymentTemplateFields struct {
 	EnableCrunchyadm         bool
 	ReplicaReinitOnStartFail bool
 	PodAntiAffinity          string
+	SyncReplication          bool
 }
 
 type PostgresHaTemplateFields struct {
@@ -585,4 +586,17 @@ func UpdatePghaDefaultConfigInitFlag(clientset *kubernetes.Clientset, initVal bo
 	configMap.Data["init"] = strconv.FormatBool(initVal)
 
 	kubeapi.UpdateConfigMap(clientset, configMap, namespace)
+}
+
+// GetSyncReplication returns true if synchronous replication has been enabled using either the
+// pgcluster CR specification or the pgo.yaml configuration file.  Otherwise, if synchronous
+// mode has not been enabled, it returns false.
+func GetSyncReplication(specSyncReplication *bool) bool {
+	// alawys use the value from the CR if explicitly provided
+	if specSyncReplication != nil {
+		return *specSyncReplication
+	} else if Pgo.Cluster.SyncReplication {
+		return true
+	}
+	return false
 }

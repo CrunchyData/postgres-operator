@@ -48,6 +48,7 @@ const LABEL_CCP_IMAGE_TAG_KEY = "ccp-image-tag"
 const LABEL_CCP_IMAGE_KEY = "ccp-image"
 const LABEL_SERVICE_TYPE = "service-type"
 const LABEL_POD_ANTI_AFFINITY = "pg-pod-anti-affinity"
+const LABEL_SYNC_REPLICATION = "sync-replication"
 
 const LABEL_REPLICA_COUNT = "replica-count"
 const LABEL_RESOURCES_CONFIG = "resources-config"

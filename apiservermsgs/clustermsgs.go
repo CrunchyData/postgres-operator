@@ -75,6 +75,7 @@ type CreateClusterRequest struct {
 	// required: true
 	ClientVersion   string
 	PodAntiAffinity string
+	SyncReplication *bool
 }
 
 // CreateClusterResponse

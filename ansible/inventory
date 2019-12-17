@@ -107,6 +107,8 @@ auto_failover='false'
 backrest='true'
 badger='false'
 metrics='false'
+pod_anti_affinity='preferred'
+sync_replication='false'
 
 # pgbadger Defaults
 pgbadgerport='10000'

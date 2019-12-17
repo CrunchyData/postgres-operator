@@ -20,6 +20,7 @@ cleanup: "false"
 common_name: "crunchydata"
 crunchy_debug: "false"
 enable_crunchyadm: "false"
+disable_replica_start_fail_reinit: "false"
 
 pgo_client_install: "true"
 pgo_client_container_install: "false"

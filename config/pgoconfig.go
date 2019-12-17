@@ -229,6 +229,7 @@ type ClusterStruct struct {
 	EnableCrunchyadm              bool   `yaml:"EnableCrunchyadm"`
 	DisableReplicaStartFailReinit bool   `yaml:"DisableReplicaStartFailReinit"`
 	PodAntiAffinity               string `yaml:"PodAntiAffinity"`
+	SyncReplication               bool   `yaml:"SyncReplication"`
 }
 
 type StorageStruct struct {

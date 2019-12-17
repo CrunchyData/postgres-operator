@@ -27,6 +27,7 @@ Cluster:
   LogStatement:  none
   LogMinDurationStatement:  60000
   PodAntiAffinity: preferred
+  SyncReplication: false
 PrimaryStorage: storageos
 BackupStorage: storageos
 ReplicaStorage: storageos
