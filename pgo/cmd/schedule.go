@@ -200,10 +200,6 @@ func (s *schedule) validateSchedule() error {
 		return err
 	}
 
-	if err := scheduler.ValidateBaseBackupSchedule(s.scheduleType, s.pvcName); err != nil {
-		return err
-	}
-
 	if err := scheduler.ValidateBackRestSchedule(s.scheduleType, s.clusterName, s.selector, s.backrestType,
 		s.backrestStorageType); err != nil {
 		return err
