@@ -39,6 +39,7 @@ type rmdatajobTemplateFields struct {
 	JobName            string
 	Name               string
 	ClusterName        string
+	ClusterPGHAScope   string
 	ReplicaName        string
 	PGOImagePrefix     string
 	PGOImageTag        string
@@ -63,6 +64,7 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, restclient *r
 	//create the Job to remove the data
 	//pvcName := task.Spec.Parameters[config.LABEL_PVC_NAME]
 	clusterName := task.Spec.Parameters[config.LABEL_PG_CLUSTER]
+	clusterPGHAScope := task.Spec.Parameters[config.LABEL_PGHA_SCOPE]
 	replicaName := task.Spec.Parameters[config.LABEL_REPLICA_NAME]
 	isReplica := task.Spec.Parameters[config.LABEL_IS_REPLICA]
 	isBackup := task.Spec.Parameters[config.LABEL_IS_BACKUP]
@@ -86,6 +88,7 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, restclient *r
 		JobName:            jobName,
 		Name:               task.Spec.Name,
 		ClusterName:        clusterName,
+		ClusterPGHAScope:   clusterPGHAScope,
 		ReplicaName:        replicaName,
 		RemoveData:         removeData,
 		RemoveBackup:       removeBackup,

@@ -109,7 +109,7 @@ func GetPVCName(pod *v1.Pod) map[string]string {
 
 }
 
-func CreateRMDataTask(clusterName, replicaName, taskName string, deleteBackups, deleteData, isReplica, isBackup bool, ns string) error {
+func CreateRMDataTask(clusterName, replicaName, taskName string, deleteBackups, deleteData, isReplica, isBackup bool, ns, clusterPGHAScope string) error {
 	var err error
 
 	//create pgtask CRD
@@ -125,6 +125,7 @@ func CreateRMDataTask(clusterName, replicaName, taskName string, deleteBackups, 
 	spec.Parameters[config.LABEL_IS_BACKUP] = strconv.FormatBool(isBackup)
 	spec.Parameters[config.LABEL_PG_CLUSTER] = clusterName
 	spec.Parameters[config.LABEL_REPLICA_NAME] = replicaName
+	spec.Parameters[config.LABEL_PGHA_SCOPE] = clusterPGHAScope
 
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{

@@ -102,8 +102,11 @@ func DeleteBackup(clusterName, ns string) msgs.DeleteBackupResponse {
 	isReplica := false
 	isBackup := true
 	replicaName := ""
+	// given this method is effectively removed, we're not going to worry about
+	// clusterPGHAScope
+	clusterPGHAScope := ""
 
-	err = apiserver.CreateRMDataTask(clusterName, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns)
+	err = apiserver.CreateRMDataTask(clusterName, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns, clusterPGHAScope)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()

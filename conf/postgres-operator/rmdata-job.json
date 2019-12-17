@@ -30,6 +30,9 @@
                         "name": "PG_CLUSTER",
                         "value": "{{.ClusterName}}"
                     }, {
+                        "name": "PGHA_SCOPE",
+                        "value": "{{.ClusterPGHAScope}}"
+                    }, {
                         "name": "REPLICA_NAME",
                         "value": "{{.ReplicaName}}"
                     }, {

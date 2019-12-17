@@ -84,8 +84,9 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pg
 		isBackup := false
 		isReplica := false
 		replicaName := ""
+		clusterPGHAScope := cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE]
 
-		err := apiserver.CreateRMDataTask(cluster.Spec.Name, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns)
+		err := apiserver.CreateRMDataTask(cluster.Spec.Name, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns, clusterPGHAScope)
 		if err != nil {
 			log.Debugf("error on creating rmdata task %s", err.Error())
 			response.Status.Code = msgs.Error
