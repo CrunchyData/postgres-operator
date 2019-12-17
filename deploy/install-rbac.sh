@@ -38,6 +38,16 @@ expenv -f $DIR/cluster-roles.yaml | $PGO_CMD create -f -
 # create the Operator service accounts
 expenv -f $DIR/service-accounts.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
 
+if [ -r "$PGO_IMAGE_PULL_SECRET_MANIFEST" ]; then
+	$PGO_CMD -n $PGO_OPERATOR_NAMESPACE create -f "$PGO_IMAGE_PULL_SECRET_MANIFEST"
+fi
+
+if [ -n "$PGO_IMAGE_PULL_SECRET" ]; then
+	patch='{"imagePullSecrets": [{ "name": "'"$PGO_IMAGE_PULL_SECRET"'" }]}'
+
+	$PGO_CMD -n $PGO_OPERATOR_NAMESPACE patch --type=strategic --patch="$patch" serviceaccount/postgres-operator
+fi
+
 # create the cluster role bindings to the Operator service accounts
 # postgres-operator and pgo-backrest, here we are assuming a single
 # Operator in the PGO_OPERATOR_NAMESPACE env variable

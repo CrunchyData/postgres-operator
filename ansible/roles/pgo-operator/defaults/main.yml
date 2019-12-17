@@ -30,6 +30,8 @@ pgo_disable_eventing: "false"
 pgo_apiserver_port: 8443
 pgo_apiserver_url: "https://postgres-operator"
 pgo_client_cert_secret: "pgo.tls"
+pgo_image_pull_secret: ""
+pgo_image_pull_secret_manifest: ""
 
 namespace: ""
 

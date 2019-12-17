@@ -18,6 +18,10 @@ if [[ -z "{{ item }}" ]]; then
 	exit
 fi
 
+PGO_CMD='{{ kubectl_or_oc }}'
+PGO_IMAGE_PULL_SECRET='{{ pgo_image_pull_secret }}'
+PGO_IMAGE_PULL_SECRET_MANIFEST='{{ pgo_image_pull_secret_manifest }}'
+TARGET_NAMESPACE='{{ item }}'
 
 # create the namespace if necessary
 {{ kubectl_or_oc }} get ns {{ item }}  > /dev/null
@@ -48,3 +52,16 @@ cat {{ role_path }}/files/pgo-configs/pgo-backrest-role-binding.json | sed 's/{{
 cat {{ role_path }}/files/pgo-configs/pgo-pg-sa.json | sed 's/{{ target_namespace }}/'"{{ item }}"'/' | {{ kubectl_or_oc }} -n {{ item }} create -f -
 cat {{ role_path }}/files/pgo-configs/pgo-pg-role.json | sed 's/{{ target_namespace }}/'"{{ item }}"'/' | {{ kubectl_or_oc }} -n {{ item }} create -f -
 cat {{ role_path }}/files/pgo-configs/pgo-pg-role-binding.json | sed 's/{{ target_namespace }}/'"{{ item }}"'/' | {{ kubectl_or_oc }} -n {{ item }} create -f -
+
+if [ -r "$PGO_IMAGE_PULL_SECRET_MANIFEST" ]; then
+	$PGO_CMD -n "$TARGET_NAMESPACE" create -f "$PGO_IMAGE_PULL_SECRET_MANIFEST"
+fi
+
+if [ -n "$PGO_IMAGE_PULL_SECRET" ]; then
+	patch='{"imagePullSecrets": [{ "name": "'"$PGO_IMAGE_PULL_SECRET"'" }]}'
+
+	$PGO_CMD -n "$TARGET_NAMESPACE" patch --type=strategic --patch="$patch" serviceaccount/pgo-backrest
+	$PGO_CMD -n "$TARGET_NAMESPACE" patch --type=strategic --patch="$patch" serviceaccount/pgo-default
+	$PGO_CMD -n "$TARGET_NAMESPACE" patch --type=strategic --patch="$patch" serviceaccount/pgo-pg
+	$PGO_CMD -n "$TARGET_NAMESPACE" patch --type=strategic --patch="$patch" serviceaccount/pgo-target
+fi
