@@ -23,29 +23,27 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/tlsutil"
+
 	log "github.com/sirupsen/logrus"
 )
 
-const etcpath = "/etc/pgo/pgouser"
-const pgoUserFileEnvVar = "PGOUSER"
-const pgoUserNameEnvVar = "PGOUSERNAME"
-const pgoUserPasswordEnvVar = "PGOUSERPASS"
-const httpTimeout = 60
-
-// BasicAuthUsername and BasicAuthPassword are for BasicAuth, they are fetched from a file
+const (
+	pgoUserFileEnvVar     = "PGOUSER"
+	pgoUserNameEnvVar     = "PGOUSERNAME"
+	pgoUserPasswordEnvVar = "PGOUSERPASS"
+)
 
 // SessionCredentials stores the PGO user, PGO password and the PGO APIServer URL
 var SessionCredentials msgs.BasicAuthCredentials
 
-var caCertPool *x509.CertPool
-var cert tls.Certificate
+// Globally shared Operator API HTTP client
 var httpclient *http.Client
-var caCertPath, clientCertPath, clientKeyPath string
-var disabletls bool
 
 // StatusCheck ...
 func StatusCheck(resp *http.Response) {
@@ -144,10 +142,10 @@ func getCredentialsFromFile() msgs.BasicAuthCredentials {
 
 	//look in etc for pgouser file
 	if !found {
-		fullPath = etcpath
+		fullPath = "/etc/pgo/pgouser"
 		dat, err := ioutil.ReadFile(fullPath)
 		if err != nil {
-			log.Debugf("%s not found", etcpath)
+			log.Debugf("%s not found", fullPath)
 		} else {
 			log.Debugf("%s found", fullPath)
 			log.Debugf("pgouser file found at %s contains %s", fullPath, string(dat))
@@ -200,68 +198,67 @@ func SetSessionUserCredentials() {
 	}
 }
 
-// GetTLSCredentials instantiate gathers the necessary client connection
-// TLS settings for use by the PGO client.
-// If TLS is disabled, this will not be called.
-func GetTLSCredentials() *http.Transport {
-	log.Debug("GetCredentials called")
+// GetTLSTransport returns an http.Transport configured with environmental
+// TLS client settings
+func GetTLSTransport() (*http.Transport, error) {
+	log.Debug("GetTLSTransport called")
 
-	if PGO_CA_CERT != "" {
-		caCertPath = PGO_CA_CERT
+	// By default, load the OS CA cert truststore unless explictly disabled
+	// Reasonable default given the client controls to whom it is connecting
+	var caCertPool *x509.CertPool
+	if noTrust, _ := strconv.ParseBool(os.Getenv("EXCLUDE_OS_TRUST")); noTrust || EXCLUDE_OS_TRUST {
+		caCertPool = x509.NewCertPool()
 	} else {
-		caCertPath = os.Getenv("PGO_CA_CERT")
+		if pool, err := x509.SystemCertPool(); err != nil {
+			return nil, fmt.Errorf("while loading System CA pool - %s", err)
+		} else {
+			caCertPool = pool
+		}
 	}
 
+	// Priority: Flag -> ENV
+	caCertPath := PGO_CA_CERT
 	if caCertPath == "" {
-		fmt.Println("Error: PGO_CA_CERT not specified")
-		os.Exit(2)
+		caCertPath = os.Getenv("PGO_CA_CERT")
+		if caCertPath == "" {
+			return nil, fmt.Errorf("PGO_CA_CERT not specified")
+		}
 	}
-	caCert, err := ioutil.ReadFile(caCertPath)
-	if err != nil {
-		fmt.Printf("Error: %s", err)
-		fmt.Println("could not read ca certificate")
-		os.Exit(2)
-	}
-	caCertPool = x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
 
-	if PGO_CLIENT_CERT != "" {
-		clientCertPath = PGO_CLIENT_CERT
+	// Open trust file and extend trust pool
+	if trustFile, err := os.Open(caCertPath); err != nil {
+		newErr := fmt.Errorf("unable to load TLS trust from %s - [%v]", caCertPath, err)
+		return nil, newErr
 	} else {
-		clientCertPath = os.Getenv("PGO_CLIENT_CERT")
+		err = tlsutil.ExtendTrust(caCertPool, trustFile)
+		if err != nil {
+			newErr := fmt.Errorf("error reading %s - %v", caCertPath, err)
+			return nil, newErr
+		}
+		trustFile.Close()
 	}
 
+	// Priority: Flag -> ENV
+	clientCertPath := PGO_CLIENT_CERT
 	if clientCertPath == "" {
-		fmt.Println("Error: PGO_CLIENT_CERT not specified")
-		os.Exit(2)
+		clientCertPath = os.Getenv("PGO_CLIENT_CERT")
+		if clientCertPath == "" {
+			return nil, fmt.Errorf("PGO_CLIENT_CERT not specified")
+		}
 	}
 
-	_, err = ioutil.ReadFile(clientCertPath)
-	if err != nil {
-		log.Debugf("%s not found", clientCertPath)
-		os.Exit(2)
-	}
-
-	if PGO_CLIENT_KEY != "" {
-		clientKeyPath = PGO_CLIENT_KEY
-	} else {
-		clientKeyPath = os.Getenv("PGO_CLIENT_KEY")
-	}
-
+	// Priority: Flag -> ENV
+	clientKeyPath := PGO_CLIENT_KEY
 	if clientKeyPath == "" {
-		fmt.Println("Error: PGO_CLIENT_KEY not specified")
-		os.Exit(2)
+		clientKeyPath = os.Getenv("PGO_CLIENT_KEY")
+		if clientKeyPath == "" {
+			return nil, fmt.Errorf("PGO_CLIENT_KEY not specified")
+		}
 	}
 
-	_, err = ioutil.ReadFile(clientKeyPath)
+	certPair, err := tls.LoadX509KeyPair(clientCertPath, clientKeyPath)
 	if err != nil {
-		log.Debugf("%s not found", clientKeyPath)
-		os.Exit(2)
-	}
-	cert, err = tls.LoadX509KeyPair(clientCertPath, clientKeyPath)
-	if err != nil {
-		fmt.Printf("Error loading client certificate/key: %s\n", err)
-		os.Exit(2)
+		return nil, fmt.Errorf("client certificate/key loading: %s", err)
 	}
 
 	// create a Transport object for use by the HTTP client
@@ -269,27 +266,31 @@ func GetTLSCredentials() *http.Transport {
 		TLSClientConfig: &tls.Config{
 			RootCAs:            caCertPool,
 			InsecureSkipVerify: true,
-			Certificates:       []tls.Certificate{cert},
+			Certificates:       []tls.Certificate{certPair},
 			MinVersion:         tls.VersionTLS11,
 		},
+	}, nil
+}
+
+// NewAPIClient returns an http client configured with a tls.Config
+// based on environmental settings and a default timeout
+func NewAPIClient() *http.Client {
+	defaultTimeout := 60 * time.Second
+	return &http.Client{
+		Timeout: defaultTimeout,
 	}
 }
 
-// SetHTTPClient instantiates the PGO HTTP client for use
-// with the Operator's apiserver. It sets a timeout based on
-// the httpTimeout constant, and configures the client for
-// either unauthenticated or TLS connections, as configured.
-func SetHTTPClient(httpTransport *http.Transport) {
-	if httpTransport != nil {
-		log.Debug("setting up httpclient with TLS")
-		httpclient = &http.Client{
-			Timeout:   httpTimeout * time.Second,
-			Transport: httpTransport,
-		}
+// NewAPIClientTLS returns an http client configured with a tls.Config
+// based on environmental settings and a default timeout
+// It returns an error if required environmental settings are missing
+func NewAPIClientTLS() (*http.Client, error) {
+	client := NewAPIClient()
+	if tp, err := GetTLSTransport(); err != nil {
+		return nil, err
 	} else {
-		log.Debug("setting up httpclient without TLS")
-		httpclient = &http.Client{
-			Timeout: httpTimeout * time.Second,
-		}
+		client.Transport = tp
 	}
+
+	return client, nil
 }
