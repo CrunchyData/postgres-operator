@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 # Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,11 +15,11 @@
 
 docker login
 declare -a arr=(
-"pgo-event" "postgres-operator" "pgo-apiserver" "pgo-lspvc" "pgo-sqlrunner"
+"pgo-event" "postgres-operator" "pgo-apiserver" "pgo-sqlrunner"
 "pgo-rmdata" "pgo-backrest" "pgo-load" "pgo-scheduler"
 "pgo-backrest-repo" "pgo-backrest-restore" "pgo-client")
 
 for image in "${arr[@]}"
 do
-docker push $PGO_IMAGE_PREFIX/$image:$PGO_IMAGE_TAG   
+docker push $PGO_IMAGE_PREFIX/$image:$PGO_IMAGE_TAG
 done

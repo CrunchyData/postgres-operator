@@ -221,7 +221,6 @@ storage9_fs_group=26
 
 #default_container_resources=''
 #default_load_resources=''
-#default_lspvc_resources=''
 #default_rmdata_resources=''
 #default_backup_resources=''
 #default_pgbouncer_resources=''

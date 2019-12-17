@@ -115,8 +115,6 @@ func Create(clientset *kubernetes.Clientset, name, clusterName string, storageSp
 		return err
 	}
 
-	//template name is lspvc-pod.json
-	//create lspvc pod
 	newpvc := v1.PersistentVolumeClaim{}
 	err = json.Unmarshal(doc2.Bytes(), &newpvc)
 	if err != nil {

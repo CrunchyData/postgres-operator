@@ -31,21 +31,17 @@ func showPVC(args []string, ns string) {
 	r.Namespace = ns
 	r.AllFlag = AllFlag
 	r.ClientVersion = msgs.PGO_VERSION
-	r.NodeLabel = NodeLabel
-	r.PVCRoot = PVCRoot
 
 	if AllFlag {
 		//special case to just list all the PVCs
-		r.PVCName = ""
-		r.PVCRoot = ""
+		r.ClusterName = ""
 		printPVC(&r)
 	} else {
 		//args are a list of pvc names...for this case show details
 		for _, arg := range args {
-			r.PVCName = arg
+			r.ClusterName = arg
 			log.Debugf("show pvc called for %s", arg)
 			printPVC(&r)
-
 		}
 	}
 
@@ -54,6 +50,8 @@ func showPVC(args []string, ns string) {
 func printPVC(r *msgs.ShowPVCRequest) {
 
 	response, err := api.ShowPVC(httpclient, r, &SessionCredentials)
+
+	log.Debugf("response = %v", response)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -69,24 +67,11 @@ func printPVC(r *msgs.ShowPVCRequest) {
 		fmt.Println("No PVC Results")
 		return
 	}
-	log.Debugf("response = %v", response)
 
-	if AllFlag {
-		fmt.Println("All Operator Labeled PVCs")
-	}
+	fmt.Printf("%-20s\t%-30s\n", "Cluster Name", "PVC Name")
 
-	for k, v := range response.Results {
-		if AllFlag {
-			if v != "" {
-				fmt.Printf("%s%s\n", TreeTrunk, v)
-			}
-		} else {
-			if k == len(response.Results)-1 {
-				fmt.Printf("%s%s\n", TreeTrunk, "/"+v)
-			} else {
-				fmt.Printf("%s%s\n", TreeBranch, "/"+v)
-			}
-		}
+	for _, v := range response.Results {
+		fmt.Printf("%-20s\t%-30s\n", v.ClusterName, v.PVCName)
 	}
 
 }

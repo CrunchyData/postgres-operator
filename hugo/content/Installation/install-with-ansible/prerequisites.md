@@ -363,7 +363,6 @@ Additionally, once all resource configurations have been defined in the `invento
 ```ini
 default_container_resources='large'
 default_load_resources='small'
-default_lspvc_resources='small'
 default_rmdata_resources='small'
 default_backup_resources='small'
 default_pgbouncer_resources='small'

@@ -12,7 +12,6 @@ IMAGES=(
     pgo-sqlrunner
     postgres-operator
     pgo-apiserver
-    pgo-lspvc
     pgo-rmdata
     pgo-backrest
     pgo-load

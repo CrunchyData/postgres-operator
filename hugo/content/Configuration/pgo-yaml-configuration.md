@@ -119,7 +119,6 @@ for other access modes it might support.
 |---|---|
 |DefaultContainerResource    |optional, the value of the container resources configuration to use for all database containers, if not set, no resource limits or requests are added on the database container
 |DefaultLoadResource    |optional, the value of the container resources configuration to use for pgo-load containers, if not set, no resource limits or requests are added on the database container
-|DefaultLspvcResource    |optional, the value of the container resources configuration to use for pgo-lspvc containers, if not set, no resource limits or requests are added on the database container
 |DefaultRmdataResource    |optional, the value of the container resources configuration to use for pgo-rmdata containers, if not set, no resource limits or requests are added on the database container
 |DefaultBackupResource    |optional, the value of the container resources configuration to use for crunchy-backup containers, if not set, no resource limits or requests are added on the database container
 |DefaultPgbouncerResource    |optional, the value of the container resources configuration to use for crunchy-pgbouncer containers, if not set, no resource limits or requests are added on the database container
