@@ -74,12 +74,24 @@
                                 }
                             },
                             {
+                                "name": "TLS_CA_TRUST",
+                                "value": "{{ pgo_tls_ca_store }}"
+                            },
+                            {
                                 "name": "TLS_NO_VERIFY",
                                 "value": "{{ pgo_tls_no_verify }}"
                             },
                             {
                                 "name": "DISABLE_TLS",
                                 "value": "{{ pgo_disable_tls }}"
+                            },
+                            {
+                                "name": "NOAUTH_ROUTES",
+                                "value": "{{ pgo_noauth_routes }}"
+                            },
+                            {
+                                "name": "ADD_OS_TRUSTSTORE",
+                                "value": "{{ pgo_add_os_ca_store }}"
                             },
                             {
                                 "name": "DISABLE_EVENTING",

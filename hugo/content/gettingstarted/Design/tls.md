@@ -7,19 +7,19 @@ weight: 6
 
 ## TLS Configuration
 
-Should you desire to alter the default TLS settings for the Postgres Operator, you can set the
-following variables as described below.
+Should you desire to alter the default TLS settings for the Postgres
+Operator, you can set the following variables as described below.
 
 ### Server Settings
 
-To disable TLS and make an unsecured connection on port 8080 instead of connecting securely over
-the default port, 8443, set:
+To disable TLS and make an unsecured connection on port 8080 instead of
+connecting securely over the default port, 8443, set:
 
 Bash environment variables    
 
 ```bash
-DISABLE_TLS=true
-PGO_APISERVER_PORT=8080		
+export DISABLE_TLS=true
+export PGO_APISERVER_PORT=8080		
 ```
 
 Or inventory variables if using Ansible
@@ -35,16 +35,52 @@ To disable TLS verifcation, set the follwing as a Bash environment variable
 export TLS_NO_VERIFY=false
 ```
 
-Or the following in the inventory file is using Ansible
+Or the following in the inventory file if using Ansible
 
 ```yaml
 pgo_tls_no_verify='false'
 ```
 
+### TLS Trust
+
+#### Custom Trust Additions
+
+To configure the server to allow connections from any client presenting a
+certificate issued by CAs within a custom, PEM-encoded certificate list,
+set the following as a Bash environment variable
+
+
+```bash
+export TLS_CA_TRUST="/path/to/trust/file"
+```
+
+Or the following in the inventory file if using Ansible
+
+```yaml
+pgo_tls_ca_store='/path/to/trust/file'
+```
+
+#### System Default Trust
+
+To configure the server to allow connections from any client presenting a
+certificate issued by CAs within the operating system's default trust store,
+set the following as a Bash environment variable
+
+
+```bash
+export ADD_OS_TRUSTSTORE=true
+```
+
+Or the following in the inventory file if using Ansible
+
+```yaml
+pgo_add_os_ca_store='true'
+```
+
 ### Connection Settings
 
-If TLS authentication has been disabled, or if the Operator's apiserver port is changed, be sure to 
-update the PGO_APISERVER_URL accordingly. 
+If TLS authentication has been disabled, or if the Operator's apiserver port
+is changed, be sure to update the PGO_APISERVER_URL accordingly.
 
 For example with an Ansible installation, 
 
@@ -78,8 +114,23 @@ setip()
 
 ### Client Settings
 
-Finally, if TLS has been disabled for the Operator's apiserver, the PGO client connection must be set to match
-the given settings.
+By default, the pgo client will trust certificates issued by one of the
+Certificate Authorities listed in the operating system's default CA trust
+store. To prevent their inclusion, two configuation methods are available:
+either the Bash environment variable
+
+```bash
+EXCLUDE_OS_TRUST=true
+```
+
+or the --exclude-os-trust can be included during client use
+
+```bash
+pgo version --exclude-os-trust
+```
+
+Finally, if TLS has been disabled for the Operator's apiserver, the PGO
+client connection must be set to match the given settings.
 
 Two options are available, either the Bash environment variable
 
