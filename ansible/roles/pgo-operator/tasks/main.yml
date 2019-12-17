@@ -94,6 +94,13 @@
       tags: [install, update]
       when: create_rbac|bool
 
+    - name: Create Image Pull Secret
+      command: "{{ kubectl_or_oc }} create -f {{ pgo_image_pull_secret_manifest }} -n {{ pgo_operator_namespace }}"
+      tags: [install, update]
+      when:
+        - create_rbac | bool
+        - pgo_image_pull_secret_manifest != ''
+
     - name: Create cluster-admin Cluster Role Binding for PGO Service Account
       command: | 
         {{ kubectl_or_oc }} create clusterrolebinding pgo-cluster-admin \

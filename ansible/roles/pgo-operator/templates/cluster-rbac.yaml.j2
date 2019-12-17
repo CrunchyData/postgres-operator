@@ -4,6 +4,10 @@ kind: ServiceAccount
 metadata:
   name: postgres-operator
   namespace: {{ pgo_operator_namespace }}
+{% if pgo_image_pull_secret %}
+imagePullSecrets:
+  - name: {{ pgo_image_pull_secret }}
+{% endif %}
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1

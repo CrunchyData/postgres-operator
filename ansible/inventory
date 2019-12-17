@@ -68,6 +68,11 @@ ccp_image_tag='centos7-12.1-4.2.0'
 pgo_image_prefix='crunchydata'
 pgo_image_tag='centos7-4.2.0'
 
+# Name of a Secret containing credentials for container image registries.
+# Provide a path to the Secret manifest to be installed in each namespace. (optional)
+#pgo_image_pull_secret=''
+#pgo_image_pull_secret_manifest=''
+
 # PGO Client Install
 pgo_client_install='true'
 pgo_client_version='v4.2.0'

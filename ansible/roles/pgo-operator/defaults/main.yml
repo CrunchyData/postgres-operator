@@ -28,6 +28,8 @@ pgo_disable_tls: "false"
 pgo_tls_no_verify: "false"
 pgo_disable_eventing: "false"
 pgo_apiserver_port: 8443
+pgo_image_pull_secret: ""
+pgo_image_pull_secret_manifest: ""
 
 namespace: ""
 

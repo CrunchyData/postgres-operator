@@ -54,3 +54,16 @@ cat $PGOROOT/conf/postgres-operator/pgo-backrest-role-binding.json | sed 's/{{.T
 cat $PGOROOT/conf/postgres-operator/pgo-pg-sa.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
 cat $PGOROOT/conf/postgres-operator/pgo-pg-role.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
 cat $PGOROOT/conf/postgres-operator/pgo-pg-role-binding.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
+
+if [ -r "$PGO_IMAGE_PULL_SECRET_MANIFEST" ]; then
+	$PGO_CMD -n $1 create -f "$PGO_IMAGE_PULL_SECRET_MANIFEST"
+fi
+
+if [ -n "$PGO_IMAGE_PULL_SECRET" ]; then
+	patch='{"imagePullSecrets": [{ "name": "'"$PGO_IMAGE_PULL_SECRET"'" }]}'
+
+	$PGO_CMD -n $1 patch --type=strategic --patch="$patch" serviceaccount/pgo-backrest
+	$PGO_CMD -n $1 patch --type=strategic --patch="$patch" serviceaccount/pgo-default
+	$PGO_CMD -n $1 patch --type=strategic --patch="$patch" serviceaccount/pgo-pg
+	$PGO_CMD -n $1 patch --type=strategic --patch="$patch" serviceaccount/pgo-target
+fi
