@@ -32,6 +32,7 @@ import (
 )
 
 const MAX_TRIES = 16
+const pgDataPathFormat = "/pgdata/%s"
 
 func Delete(request Request) {
 	log.Infof("rmdata.Process %v", request)
@@ -133,6 +134,55 @@ func Delete(request Request) {
 		}
 		removePVCs(pvcList, request)
 	}
+}
+
+// deleteClusterData calls a series of commands to attempt to "safely" delete
+// the PGDATA on the server
+//
+/// First, it ensures PostgreSQL has stopped, to avoid any unpredictable
+// behavior.
+//
+// Next, it calls "rm -rf" on the directory. This was implemented prior to this
+// "refactor" and may change in the future to be a bit safer in this environment
+func deletePGDATA(request Request, pod v1.Pod) error {
+	clusterName := pod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
+	containerName := pod.Spec.Containers[0].Name
+	pgDataPath := fmt.Sprintf(pgDataPathFormat, clusterName)
+
+	log.Debugf("delete pgdata: [%s]", clusterName)
+
+	// first, ensure the PostgreSQL cluster is stopped
+	stopCommand := []string{"pg_ctl", "stop", "-m", "immediate", "-D", pgDataPath}
+	// execute the command here. While not ideal, it's OK if it errors out.
+	if stdout, stderr, err := kubeapi.ExecToPodThroughAPI(
+		request.RESTConfig,
+		request.Clientset,
+		stopCommand,
+		containerName,
+		pod.Name,
+		request.Namespace, nil); err != nil {
+		log.Errorf("error execing into remove data pod %s: command %s error %s", pod.Name, stopCommand, err.Error())
+	} else {
+		log.Infof("stopped postgresql [%s]: stdout=[%s] stderr=[%s]", clusterName, stdout, stderr)
+	}
+
+	// now attempt to remove the data
+	rmCommand := []string{"rm", "-rf", pgDataPath}
+
+	// execute the command here. If it errors, return
+	if stdout, stderr, err := kubeapi.ExecToPodThroughAPI(
+		request.RESTConfig,
+		request.Clientset,
+		rmCommand,
+		containerName,
+		pod.Name,
+		request.Namespace, nil); err != nil {
+		return err
+	} else {
+		log.Infof("rm pgdata [%s]: stdout=[%s] stderr=[%s]", clusterName, stdout, stderr)
+	}
+
+	return nil
 }
 
 func removeBackups(request Request) {
@@ -244,16 +294,10 @@ func removeData(request Request) {
 
 	log.Debugf("removeData %d replica pods", len(pods.Items))
 	if len(pods.Items) > 0 {
-		for _, v := range pods.Items {
-			command := make([]string, 0)
-			command = append(command, "rm")
-			command = append(command, "-rf")
-			command = append(command, "/pgdata/"+v.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME])
-			stdout, stderr, err := kubeapi.ExecToPodThroughAPI(request.RESTConfig, request.Clientset, command, v.Spec.Containers[0].Name, v.Name, request.Namespace, nil)
-			if err != nil {
-				log.Errorf("error execing into remove data pod %s command %s error %s", v.Name, command, err.Error())
+		for _, pod := range pods.Items {
+			if err := deletePGDATA(request, pod); err != nil {
+				log.Errorf("error execing into remove data pod %s: %s", pod.Name, err.Error())
 			}
-			log.Infof("removeData replica stdout=[%s] stderr=[%s]", stdout, stderr)
 		}
 	}
 
@@ -269,15 +313,9 @@ func removeData(request Request) {
 
 	if len(pods.Items) > 0 {
 		pod := pods.Items[0]
-		command := make([]string, 0)
-		command = append(command, "rm")
-		command = append(command, "-rf")
-		command = append(command, "/pgdata/"+pod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME])
-		stdout, stderr, err := kubeapi.ExecToPodThroughAPI(request.RESTConfig, request.Clientset, command, pod.Spec.Containers[0].Name, pod.Name, request.Namespace, nil)
-		if err != nil {
-			log.Errorf("error execing into remove data pod %s command %s error %s", pod.Name, command, err.Error())
+		if err := deletePGDATA(request, pod); err != nil {
+			log.Errorf("error execing into remove data pod %s: error %s", pod.Name, err.Error())
 		}
-		log.Infof("removeData primary stdout=[%s] stderr=[%s]", stdout, stderr)
 	}
 
 }
