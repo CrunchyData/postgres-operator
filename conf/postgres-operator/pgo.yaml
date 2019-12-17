@@ -83,7 +83,6 @@ Storage:
     Fsgroup:  26
 DefaultContainerResources:
 DefaultLoadResources:
-DefaultLspvcResources:
 DefaultRmdataResources:
 DefaultBackupResources:
 DefaultPgbouncerResources:

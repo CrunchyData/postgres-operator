@@ -127,9 +127,9 @@ func TestShowPvc(t *testing.T) {
 		actual := string(output)
 
 		t.Logf("actual %s- ", actual)
-		found := strings.Contains(actual, "pgdata")
+		found := strings.Contains(actual, TestClusterName)
 		if !found {
-			t.Error("could not find pgdata in output")
+			t.Errorf("could not find %s in output", TestClusterName)
 		}
 
 	}

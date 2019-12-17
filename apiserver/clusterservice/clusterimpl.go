@@ -202,7 +202,7 @@ func GetPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterPod, error) 
 	output := make([]msgs.ShowClusterPod, 0)
 
 	//get pods, but exclude backup pods and backrest repo
-	selector := config.LABEL_BACKREST_JOB + "!=true," + config.LABEL_BACKREST_RESTORE + "!=true," + config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_NAME + "!=lspvc," + config.LABEL_PGBACKUP + "!=true," + config.LABEL_PGBACKUP + "!=false," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+	selector := config.LABEL_BACKREST_JOB + "!=true," + config.LABEL_BACKREST_RESTORE + "!=true," + config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_PGBACKUP + "!=true," + config.LABEL_PGBACKUP + "!=false," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	log.Debugf("selector for GetPods is %s", selector)
 
 	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
@@ -713,7 +713,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = err.Error()
 				return resp
-			} 
+			}
 			userLabelsMap[config.LABEL_POD_ANTI_AFFINITY] = request.PodAntiAffinity
 		} else {
 			userLabelsMap[config.LABEL_POD_ANTI_AFFINITY] = ""

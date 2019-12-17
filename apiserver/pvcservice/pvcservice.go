@@ -49,13 +49,11 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 	var request msgs.ShowPVCRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
-	pvcname := request.PVCName
-	pvcroot := request.PVCRoot
+	clusterName := request.ClusterName
 	clientVersion := request.ClientVersion
-	nodeLabel := request.NodeLabel
 	namespace := request.Namespace
 
-	log.Debugf("ShowPVCHandler parameters pvcroot [%s],  version [%s] namespace [%s] pvcname [%s] nodeLabel [%]", pvcroot, clientVersion, namespace, pvcname, nodeLabel)
+	log.Debugf("ShowPVCHandler parameters version [%s] namespace [%s] pvcname [%s] nodeLabel [%]", clientVersion, namespace, clusterName)
 
 	switch r.Method {
 	case "GET":
@@ -90,7 +88,7 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.Results, err = ShowPVC(request.AllFlag, nodeLabel, pvcname, pvcroot, ns)
+	resp.Results, err = ShowPVC(request.AllFlag, clusterName, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()

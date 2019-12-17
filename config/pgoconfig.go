@@ -97,10 +97,6 @@ var LoadTemplate *template.Template
 
 const loadTemplatePath = "pgo.load-template.json"
 
-var LspvcTemplate *template.Template
-
-const lspvcTemplatePath = "pgo.lspvc-template.json"
-
 var AffinityTemplate *template.Template
 
 const affinityTemplatePath = "affinity.json"
@@ -273,7 +269,6 @@ type PgoConfig struct {
 	Storage                   map[string]StorageStruct            `yaml:"Storage"`
 	DefaultContainerResources string                              `yaml:"DefaultContainerResources"`
 	DefaultLoadResources      string                              `yaml:"DefaultLoadResources"`
-	DefaultLspvcResources     string                              `yaml:"DefaultLspvcResources"`
 	DefaultRmdataResources    string                              `yaml:"DefaultRmdataResources"`
 	DefaultBackupResources    string                              `yaml:"DefaultBackupResources"`
 	DefaultBadgerResources    string                              `yaml:"DefaultBadgerResources"`
@@ -413,12 +408,6 @@ func (c *PgoConfig) Validate() error {
 		_, ok = c.ContainerResources[c.DefaultContainerResources]
 		if !ok {
 			return errors.New(errPrefix + "DefaultContainerResources setting invalid")
-		}
-	}
-	if c.DefaultLspvcResources != "" {
-		_, ok = c.ContainerResources[c.DefaultLspvcResources]
-		if !ok {
-			return errors.New(errPrefix + "DefaultLspvcResources setting invalid")
 		}
 	}
 	if c.DefaultLoadResources != "" {
@@ -685,11 +674,6 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 	}
 
 	LoadTemplate, err = c.LoadTemplate(cMap, rootPath, loadTemplatePath)
-	if err != nil {
-		return err
-	}
-
-	LspvcTemplate, err = c.LoadTemplate(cMap, rootPath, lspvcTemplatePath)
 	if err != nil {
 		return err
 	}

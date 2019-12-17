@@ -22,7 +22,6 @@ images = pgo-apiserver \
 	pgo-backrest-restore \
 	pgo-event \
 	pgo-load \
-	pgo-lspvc \
 	pgo-rmdata \
 	pgo-scheduler \
 	pgo-sqlrunner \

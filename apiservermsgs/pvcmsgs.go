@@ -20,9 +20,7 @@ import ()
 // ShowPVCRequest ...
 // swagger:model
 type ShowPVCRequest struct {
-	PVCName       string
-	NodeLabel     string
-	PVCRoot       string
+	ClusterName   string
 	Selector      string
 	ClientVersion string
 	Namespace     string
@@ -32,6 +30,13 @@ type ShowPVCRequest struct {
 // ShowPVCResponse ...
 // swagger:model
 type ShowPVCResponse struct {
-	Results []string
+	Results []ShowPVCResponseResult
 	Status
+}
+
+// ShowPVCResponseResult contains a semi structured result of information
+// about a PVC in a cluster
+type ShowPVCResponseResult struct {
+	ClusterName string
+	PVCName     string
 }

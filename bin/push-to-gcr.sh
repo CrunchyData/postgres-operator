@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 # Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +23,6 @@ pgo-scheduler
 pgo-sqlrunner
 postgres-operator
 pgo-apiserver
-pgo-lspvc
 pgo-rmdata
 pgo-backrest
 pgo-load
@@ -33,8 +32,6 @@ pgo-client
 for image in "${IMAGES[@]}"
 do
 	docker tag $PGO_IMAGE_PREFIX/$image:$PGO_IMAGE_TAG   \
-		$GCR_IMAGE_PREFIX/$image:$PGO_IMAGE_TAG   
-	gcloud docker -- push $GCR_IMAGE_PREFIX/$image:$PGO_IMAGE_TAG   
+		$GCR_IMAGE_PREFIX/$image:$PGO_IMAGE_TAG
+	gcloud docker -- push $GCR_IMAGE_PREFIX/$image:$PGO_IMAGE_TAG
 done
-
-
