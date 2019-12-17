@@ -56,6 +56,7 @@ func ShowBackupHandler(w http.ResponseWriter, r *http.Request) {
 	//      description: Output
 	//      schema:
 	//        "$ref": "#/definitions/ShowBackupResponse"
+	log.Warn("DEPRECRATED: Please use pgbackrest")
 	var ns string
 
 	vars := mux.Vars(r)
@@ -130,6 +131,7 @@ func DeleteBackupHandler(w http.ResponseWriter, r *http.Request) {
 	//      description: Output
 	//      schema:
 	//        "$ref": "#/definitions/DeleteBackupResponse"
+	log.Warn("DEPRECRATED: Please use pgbackrest")
 	var ns string
 
 	vars := mux.Vars(r)
