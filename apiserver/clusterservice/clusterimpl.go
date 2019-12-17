@@ -719,6 +719,12 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			userLabelsMap[config.LABEL_POD_ANTI_AFFINITY] = ""
 		}
 
+		// if synchronous replication has been enabled, then add to user labels
+		if request.SyncReplication != nil {
+			userLabelsMap[config.LABEL_SYNC_REPLICATION] =
+				string(strconv.FormatBool(*request.SyncReplication))
+		}
+
 		// Create an instance of our CRD
 		newInstance := getClusterParams(request, clusterName, userLabelsMap, ns)
 		newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
@@ -949,8 +955,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	}
 
 	spec.CustomConfig = request.CustomConfig
-
 	spec.PodAntiAffinity = request.PodAntiAffinity
+	spec.SyncReplication = request.SyncReplication
 
 	labels := make(map[string]string)
 	labels[config.LABEL_NAME] = name

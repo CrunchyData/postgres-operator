@@ -37,7 +37,9 @@ The *pgo.yaml* file is broken into major sections as described below:
 |Backrest        | optional, if set, will cause clusters to have the pgbackrest volume PVC provisioned during cluster creation
 |BackrestPort        | currently required to be port 2022
 |DisableAutofail        | optional, if set, will disable autofail capabilities by default in any newly created cluster
-|DisableReplicaStartFailReinit | if set to "true" will disable the detection of a "start failed" states in PG replicas, which results in the re-initialization of the replica in an attempt to bring it back online
+|DisableReplicaStartFailReinit | if set to `true` will disable the detection of a "start failed" states in PG replicas, which results in the re-initialization of the replica in an attempt to bring it back online
+|PodAntiAffinity        | either `preferred`, `required` or `disabled` to either specify the type of affinity that should be utilized for the default pod anti-affinity applied to PG clusters, or to disable default pod anti-affinity all together (default `preferred`)
+|SyncReplication | boolean, if set to `true` will automatically enable synchronous replication in new PostgreSQL clusters (default `false`)
 
 ## Storage
 | Setting|Definition  |
@@ -54,7 +56,6 @@ The *pgo.yaml* file is broken into major sections as described below:
 |Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
 |SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
 |MatchLabels        | optional, if set, will cause the PVC to add a *matchlabels* selector in order to match a PV, only useful when the StorageType is *create*, when specified a label of *key=value* is added to the PVC as a match criteria
-|PodAntiAffinity        | either `preferred`, `required` or `disabled` to either specify the type of affinity that should be utilized for the default pod anti-affinity applied to PG clusters, or to disable default pod anti-affinity all together  (default `preferred`)
 
 ## Storage Configuration Examples
 In *pgo.yaml*, you will need to configure your storage configurations

@@ -51,6 +51,7 @@ var Secret string
 var PgouserPassword, PgouserRoles, PgouserNamespaces string
 var Permissions string
 var PodAntiAffinity string
+var SyncReplication bool
 
 var Series int
 
@@ -116,7 +117,7 @@ var createClusterCmd = &cobra.Command{
 		if len(args) != 1 {
 			fmt.Println(`Error: A single cluster name is required for this command.`)
 		} else {
-			createCluster(args, Namespace)
+			createCluster(args, Namespace, cmd)
 		}
 	},
 }
@@ -256,6 +257,8 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&PodAntiAffinity, "pod-anti-affinity", "", "",
 		"Specifies the type of anti-affinity that should be utilized when applying  "+
 			"default pod anti-affinity rules to PG clusters (default \"preferred\")")
+	createClusterCmd.Flags().BoolVarP(&SyncReplication, "sync-replication", "", false,
+		"Enables synchronous replication for the cluster")
 
 	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy.")
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy.")

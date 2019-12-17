@@ -68,6 +68,7 @@ type PgclusterSpec struct {
 	CustomConfig       string               `json:"customconfig"`
 	UserLabels         map[string]string    `json:"userlabels"`
 	PodAntiAffinity    string               `json:"podPodAntiAffinity"`
+	SyncReplication    *bool                `json:"syncReplication"`
 }
 
 // PgclusterList is the CRD that defines a Crunchy PG Cluster List

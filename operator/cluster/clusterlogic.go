@@ -145,6 +145,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 			cl.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], clientset, namespace),
 		EnableCrunchyadm:         operator.Pgo.Cluster.EnableCrunchyadm,
 		ReplicaReinitOnStartFail: !operator.Pgo.Cluster.DisableReplicaStartFailReinit,
+		SyncReplication:          operator.GetSyncReplication(cl.Spec.SyncReplication),
 	}
 
 	// create the default configuration file for crunchy-postgres-ha if custom config file not provided
@@ -382,6 +383,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 			cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], clientset, namespace),
 		EnableCrunchyadm:         operator.Pgo.Cluster.EnableCrunchyadm,
 		ReplicaReinitOnStartFail: !operator.Pgo.Cluster.DisableReplicaStartFailReinit,
+		SyncReplication:          operator.GetSyncReplication(cluster.Spec.SyncReplication),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {

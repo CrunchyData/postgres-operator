@@ -88,7 +88,10 @@
                     }, {
                         "name": "PGHA_REPLICA_REINIT_ON_START_FAIL",
                         "value": "{{.ReplicaReinitOnStartFail}}"
-                    }, {
+                    },  {
+                        "name": "PGHA_SYNC_REPLICATION",
+                        "value": "{{.SyncReplication}}"
+                    },  {
                         "name": "PATRONI_KUBERNETES_NAMESPACE",
                         "valueFrom": {
                             "fieldRef": {

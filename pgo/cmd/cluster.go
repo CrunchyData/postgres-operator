@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
@@ -184,7 +186,7 @@ func printPolicies(d *msgs.ShowClusterDeployment) {
 }
 
 // createCluster ....
-func createCluster(args []string, ns string) {
+func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	var err error
 
 	if len(args) != 1 {
@@ -224,6 +226,11 @@ func createCluster(args []string, ns string) {
 	r.ContainerResources = ContainerResources
 	r.ClientVersion = msgs.PGO_VERSION
 	r.PodAntiAffinity = PodAntiAffinity
+
+	// only set SyncReplication in the request if actually provided via the CLI
+	if createClusterCmd.Flag("sync-replication").Changed {
+		r.SyncReplication = &SyncReplication
+	}
 
 	if !(len(PgBouncerUser) > 0) {
 		r.PgbouncerUser = "pgbouncer"
