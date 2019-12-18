@@ -61,7 +61,7 @@ If you are pulling your images from the same registry as before this should be t
 You will need the following new environment variables:
 ```
 # PGO_INSTALLATION_NAME is the unique name given to this Operator install
-# this supports multi-deployments of the Operator on the same Kube cluster
+# this supports multi-deployments of the Operator on the same Kubernetes cluster
 export PGO_INSTALLATION_NAME=devtest
 
 # for setting the pgo apiserver port, disabling TLS or not verifying TLS

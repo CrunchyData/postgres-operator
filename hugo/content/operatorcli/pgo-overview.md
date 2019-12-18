@@ -541,7 +541,7 @@ Postgres users can be created using the following command examples:
     pgo create user --selector=name=mycluster --username=somepguser --password=somepassword --managed
 
 Those commands are identical in function, and create on the mycluster Postgres cluster, a user named *somepguser*, with a password of *somepassword*, the account is *managed* meaning that
-these credentials are stored as a Secret on the Kube cluster in the Operator
+these credentials are stored as a Secret on the Kubernetes cluster in the Operator
 namespace.
 
 Postgres users can be deleted using the following command:

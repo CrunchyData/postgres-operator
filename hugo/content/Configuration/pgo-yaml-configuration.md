@@ -187,7 +187,7 @@ You can also override the default value using the `--resources-config` command f
     pgo create cluster testcluster --resources-config=large -n pgouser1
 
 Note, if you try to allocate more resources than your
-host or Kube cluster has available then you will see your
+host or Kubernetes cluster has available then you will see your
 pods wait in a *Pending* status. The output from a `kubectl describe pod`
 command will show output like this in this event:
 Events:

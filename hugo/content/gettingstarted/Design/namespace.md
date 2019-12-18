@@ -110,7 +110,7 @@ the following for each new namespace:
     create-target-rbac.sh YOURNEWNAMESPACE $PGO_OPERATOR_NAMESPACE
 
 The example deployment creates the following RBAC structure
-on your Kube system after running the install scripts:
+on your Kubernetes system after running the install scripts:
 
 ![Reference](/Operator-RBAC-Diagram.png)
 
