@@ -104,7 +104,7 @@ You can have the Operator add a node affinity section to
 a new Cluster Deployment if you want to cause Kubernetes to
 attempt to schedule a primary cluster to a specific Kubernetes node.
 
-You can see the nodes on your Kube cluster by running the following:
+You can see the nodes on your Kubernetes cluster by running the following:
 ```
 kubectl get nodes
 ```

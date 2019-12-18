@@ -59,8 +59,8 @@ The default installation will create 3 namespaces to use
 for deploying the Operator into and for holding Postgres clusters
 created by the Operator.
 
-Creating Kube namespaces is typically something that only a
-priviledged Kube user can perform so log into your Kube cluster as a user
+Creating Kubernetes namespaces is typically something that only a
+priviledged Kubernetes user can perform so log into your Kubernetes cluster as a user
 that has the necessary priviledges.
 
 On Openshift if you do not want to install the Operator as the system
@@ -75,7 +75,7 @@ to a user named pgoinstaller.
 The *NAMESPACE* environment variable is a comma separated list
 of namespaces that specify where the Operator will be provisioing
 PG clusters into, specifically, the namespaces the Operator is watching
-for Kube events.  This value is set as follows:
+for Kubernetes events.  This value is set as follows:
 
     export NAMESPACE=pgouser1,pgouser2
 
@@ -195,7 +195,7 @@ Operator security is discussed in the Security section [Security](/security) of 
 
 Adjust these settings to meet your local requirements.
 
-## Default Installation - Create Kube RBAC Controls
+## Default Installation - Create Kubernetes RBAC Controls
 
 The Operator installation requires Kubernetes administrators to create Resources required by the Operator.  These resources are only allowed to be created by a cluster-admin user.  To install on Google Cloud, you will need a user
 account with cluster-admin priviledges.  If you own the GKE cluster you
@@ -206,7 +206,7 @@ follows:
 
 Specifically, Custom Resource Definitions for the Operator, and Service Accounts used by the Operator are created which require cluster permissions.
 
-Tor create the Kube RBAC used by the Operator, run the following as a cluster-admin Kube user:
+Tor create the Kubernetes RBAC used by the Operator, run the following as a cluster-admin Kubernetes user:
 
     make installrbac
 
