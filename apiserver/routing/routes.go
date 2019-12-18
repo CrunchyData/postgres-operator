@@ -238,6 +238,7 @@ func RegisterUserSvcRoutes(r *mux.Router) {
 func RegisterVersionSvcRoutes(r *mux.Router) {
 	r.HandleFunc("/version", versionservice.VersionHandler)
 	r.HandleFunc("/health", versionservice.HealthHandler)
+	r.HandleFunc("/healthz", versionservice.HealthyHandler)
 }
 
 // RegisterWorkflowSvcRoutes registers all routes from the Workflow Service
