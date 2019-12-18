@@ -2,8 +2,9 @@ ARG PREFIX
 ARG BASEVER
 FROM ${PREFIX}/pgo-base:centos7-${BASEVER}
 
-LABEL summary="Crunchy Data PostgreSQL Operator - Remove Data" \
-	description="Crunchy Data PostgreSQL Operator - Remove Data"
+LABEL name="pgo-rmdata" \
+	summary="Crunchy PostgreSQL Operator - Remove Data" \
+	description="Crunchy PostgreSQL Operator - Remove Data"
 
 ADD bin/pgo-rmdata/ /usr/local/bin
 

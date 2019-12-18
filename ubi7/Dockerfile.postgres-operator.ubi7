@@ -3,9 +3,8 @@ ARG BASEVER
 FROM ${PREFIX}/pgo-base:ubi7-${BASEVER}
 
 LABEL name="postgres-operator" \
-	run='docker run -d -p 8080:80 --name=web-app web-app' \
-	summary="Crunchy Data PostgreSQL Operator" \
-	description="Crunchy Data PostgreSQL Operator"
+	summary="Crunchy PostgreSQL Operator" \
+	description="Crunchy PostgreSQL Operator"
 
 ENV PGVERSION="12"
 

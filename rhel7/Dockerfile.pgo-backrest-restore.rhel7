@@ -3,9 +3,8 @@ ARG BASEVER
 FROM ${PREFIX}/pgo-base:rhel7-${BASEVER}
 
 LABEL name="pgo-backrest-restore" \
-    run='docker run -d -p 8080:80 --name=web-app web-app' \
-	summary="Crunchy Data PostgreSQL Operator - pgo-backrest-restore" \
-	description="pgBackRest backrest restore"
+	summary="Crunchy PostgreSQL Operator - pgBackRest Restore" \
+	description="Performs a restore operation for a PostgreSQL database using pgBackRest."
 
 ENV PGVERSION="12" BACKREST_VERSION="2.18"
 

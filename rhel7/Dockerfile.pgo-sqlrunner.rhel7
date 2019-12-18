@@ -3,8 +3,8 @@ ARG BASEVER
 FROM ${PREFIX}/pgo-base:rhel7-${BASEVER}
 
 LABEL name="pgo-sqlrunner" \
-	summary="Crunchy Data PostgreSQL Operator - SQL Runner" \
-	description="Crunchy Data PostgreSQL Operator - SQL Runner"
+	summary="Crunchy PostgreSQL Operator - SQL Runner" \
+	description="Crunchy PostgreSQL Operator - SQL Runner"
 
 ENV PGVERSION="12"
 ENV PGROOT="/usr/pgsql-${PGVERSION}"

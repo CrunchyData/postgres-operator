@@ -3,15 +3,15 @@ FROM registry.access.redhat.com/rhel7
 
 MAINTAINER info@crunchydata.com
 
-LABEL Vendor="Crunchy Data Solutions" \
-	PostgresVersion="12" \
-	PostgresFullVersion="12.1" \
-	Version="7.7" \
-	Release="${RELVER}" \
-	org.opencontainers.image.vendor="Crunchy Data Solutions" \
+LABEL vendor="Crunchy Data" \
+	url="https://crunchydata.com" \
+	release="${RELVER}" \
 	postgresql.version.major="12" \
 	postgresql.version="12.1" \
-	os.version="7.7"
+	os.version="7.7" \
+	org.opencontainers.image.vendor="Crunchy Data" \
+	io.openshift.tags="postgresql,postgres,sql,nosql,crunchy" \
+	io.k8s.description="Trusted open source PostgreSQL-as-a-Service"
 
 COPY redhat/licenses /licenses
 COPY licenses /licenses

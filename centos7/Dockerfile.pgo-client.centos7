@@ -2,8 +2,9 @@ ARG PREFIX
 ARG BASEVER
 FROM ${PREFIX}/pgo-base:centos7-${BASEVER}
 
-LABEL summary="Crunchy Data PostgreSQL Operator - pgo client" \
-    description="Crunchy Data PostgreSQL Operator - pgo client"
+LABEL name="pgo-client" \
+	summary="Crunchy PostgreSQL Operator - pgo client" \
+	description="Crunchy PostgreSQL Operator - pgo client"
 
 ADD bin/pgo /usr/local/bin
 

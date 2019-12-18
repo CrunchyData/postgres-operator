@@ -3,9 +3,8 @@ ARG BASEVER
 FROM ${PREFIX}/pgo-base:rhel7-${BASEVER}
 
 LABEL name="pgo-event" \
-    run='docker run -d -p 8080:80 --name=web-app web-app' \
-    summary="Crunchy Data PostgreSQL Operator - pgo-event" \
-    description="Crunchy Data PostgreSQL Operator - pgo-event"
+    summary="Crunchy PostgreSQL Operator - pgo-event" \
+    description="Crunchy PostgreSQL Operator - pgo-event"
 
 ENV PGVERSION="12"
 
