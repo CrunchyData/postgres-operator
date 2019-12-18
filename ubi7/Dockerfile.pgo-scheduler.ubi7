@@ -3,8 +3,8 @@ ARG BASEVER
 FROM ${PREFIX}/pgo-base:ubi7-${BASEVER}
 
 LABEL name="pgo-scheduler" \
-	summary="Crunchy Data PostgreSQL Operator - Scheduler" \
-	description="Crunchy Data PostgreSQL Operator - Scheduler"
+	summary="Crunchy PostgreSQL Operator - Scheduler" \
+	description="Crunchy PostgreSQL Operator - Scheduler"
 
 RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgo-config \
  && chown -R 2:2 /opt/cpm /pgo-config

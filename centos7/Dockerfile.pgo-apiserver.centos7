@@ -2,8 +2,9 @@ ARG PREFIX
 ARG BASEVER
 FROM ${PREFIX}/pgo-base:centos7-${BASEVER}
 
-LABEL summary="Crunchy Data PostgreSQL Operator - Apiserver" \
-	description="Crunchy Data PostgreSQL Operator - Apiserver"
+LABEL name="pgo-apiserver" \
+	summary="Crunchy PostgreSQL Operator - Apiserver" \
+	description="Crunchy PostgreSQL Operator - Apiserver"
 
 ENV PGVERSION="12" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm"
 

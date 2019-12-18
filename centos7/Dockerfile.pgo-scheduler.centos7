@@ -2,8 +2,9 @@ ARG PREFIX
 ARG BASEVER
 FROM ${PREFIX}/pgo-base:centos7-${BASEVER}
 
-LABEL summary="Crunchy Data PostgreSQL Operator - Scheduler" \
-	description="Crunchy Data PostgreSQL Operator - Scheduler"
+LABEL name="pgo-scheduler" \
+	summary="Crunchy PostgreSQL Operator - Scheduler" \
+	description="Crunchy PostgreSQL Operator - Scheduler"
 
 RUN yum -y install epel-release \
 	&& yum -y install \

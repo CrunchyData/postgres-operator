@@ -2,8 +2,9 @@ ARG PREFIX
 ARG BASEVER
 FROM ${PREFIX}/pgo-base:centos7-${BASEVER}
 
-LABEL summary="Crunchy Data PostgreSQL Operator - pgo-event" \
-	description="Crunchy Data PostgreSQL Operator - pgo-event"
+LABEL name="pgo-event" \
+	summary="Crunchy PostgreSQL Operator - pgo-event" \
+	description="Crunchy PostgreSQL Operator - pgo-event"
 
 ADD bin/pgo-event /usr/local/bin
 

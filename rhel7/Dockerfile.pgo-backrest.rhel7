@@ -2,9 +2,8 @@ ARG PREFIX
 ARG BASEVER
 FROM ${PREFIX}/pgo-base:rhel7-${BASEVER}
 
-LABEL name="crunchydata/pgo-backrest-" \
-    run='docker run -d -p 8080:80 --name=web-app web-app' \
-    summary="Crunchy Data PostgreSQL Operator - pgBackRest" \
+LABEL name="pgo-backrest" \
+    summary="Crunchy PostgreSQL Operator - pgBackRest" \
     description="pgBackRest image that is integrated for use with Crunchy Data's PostgreSQL Operator."
 
 ENV PGVERSION="12" BACKREST_VERSION="2.18"

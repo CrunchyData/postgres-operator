@@ -2,8 +2,8 @@ ARG PREFIX
 ARG BASEVER
 FROM ${PREFIX}/pgo-base:ubi7-${BASEVER}
 
-LABEL name="pgo-backrest-restore" \
-	summary="Crunchy Data PostgreSQL Operator - pgBackRest Repo Sync" \
+LABEL name="pgo-backrest-repo-sync" \
+	summary="Crunchy PostgreSQL Operator - pgBackRest Repo Sync" \
 	description="Synchronizes the contents between two pgBackRest repositories."
 
 ENV PGVERSION="12" BACKREST_VERSION="2.18"
