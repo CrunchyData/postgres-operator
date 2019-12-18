@@ -351,8 +351,8 @@ func Authn(perm string, w http.ResponseWriter, r *http.Request) (string, error) 
 	}
 
 	if !BasicAuthzCheck(username, perm) {
-		log.Errorf("Authentication Failed %s username=[%s]", perm, username)
-		http.Error(w, "Not authorized for this apiserver action", 401)
+		log.Errorf("Authorization Failed %s username=[%s]", perm, username)
+		http.Error(w, "Not authorized for this apiserver action", 403)
 		return "", errors.New("Not authorized for this apiserver action")
 	}
 
