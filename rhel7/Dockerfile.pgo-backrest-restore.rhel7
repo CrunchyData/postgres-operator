@@ -6,7 +6,7 @@ LABEL name="pgo-backrest-restore" \
 	summary="Crunchy PostgreSQL Operator - pgBackRest Restore" \
 	description="Performs a restore operation for a PostgreSQL database using pgBackRest."
 
-ENV PGVERSION="12" BACKREST_VERSION="2.18"
+ENV PGVERSION="12" BACKREST_VERSION="2.20"
 
 RUN yum -y install \
 	crunchy-backrest-"${BACKREST_VERSION}" \
