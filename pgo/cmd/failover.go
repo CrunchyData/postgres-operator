@@ -132,6 +132,8 @@ func queryFailover(args []string, ns string) {
 	for i := 0; i < len(response.Results); i++ {
 		instance := response.Results[i]
 
+		log.Debugf("postgresql instance: %v", instance)
+
 		node := instance.Node
 		// check if this is a preferred node
 		if instance.PreferredNode {
