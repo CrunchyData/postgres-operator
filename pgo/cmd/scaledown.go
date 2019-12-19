@@ -115,6 +115,8 @@ func queryCluster(args []string, ns string) {
 		for i := 0; i < len(response.Results); i++ {
 			instance := response.Results[i]
 
+			log.Debugf("postgresql instance: %v", instance)
+
 			fmt.Printf("%-20s\t%-10s\t%-10s\t%12d MB\n",
 				instance.Name, instance.Status, instance.Node, instance.ReplicationLag)
 		}

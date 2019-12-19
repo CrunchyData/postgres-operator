@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"regexp"
+	"strings"
 
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -74,9 +74,6 @@ var (
 	// and other statistics about the instances in a PostgreSQL cluster, e.g.
 	// replication lag
 	instanceInfoCommand = []string{"patronictl", "list", "-f", "json"}
-	// instanceNamePattern is a regular expression used to get the cluster
-	// instance
-	instanceNamePattern = regexp.MustCompile("^([a-zA-Z0-9]+(-[a-zA-Z0-9]{4})?)-")
 )
 
 // GetPod determines the best target to fail to
@@ -174,6 +171,8 @@ func ReplicationStatus(request ReplicationStatusRequest) (ReplicationStatusRespo
 	var rawInstances []instanceReplicationInfoJSON
 	json.Unmarshal([]byte(commandStdOut), &rawInstances)
 
+	log.Debugf("patroni instance info: %v", rawInstances)
+
 	// We need to iterate through this list to format the information for the
 	// response
 	for _, rawInstance := range rawInstances {
@@ -190,12 +189,18 @@ func ReplicationStatus(request ReplicationStatusRequest) (ReplicationStatusRespo
 		}
 
 		// get the instance name that is recognized by the Operator, which is the
-		// first part of the name
-		instance.Name = instanceNamePattern.FindStringSubmatch(rawInstance.PodName)[1]
-
-		// get the node that the replica is on based on the "replica name" for this
-		// instance
-		instance.Node = instanceNodeMap[instance.Name]
+		// first part of the name and is kept on a deployment label. We have these
+		// available in our instanceNodeMap, and because we skip over the primary,
+		// this will not lead to false positive
+		//
+		// This is not the cleanest way of doing it, but it works
+		for name, node := range instanceNodeMap {
+			if strings.HasPrefix(rawInstance.PodName, name) {
+				instance.Name = name
+				instance.Node = node
+				break
+			}
+		}
 
 		// append this newly created instance to the list that will be returned
 		response.Instances = append(response.Instances, instance)
@@ -272,6 +277,8 @@ func createInstanceNodeMap(pods *v1.PodList) map[string]string {
 		// add them to the map
 		instanceNodeMap[replicaName] = nodeName
 	}
+
+	log.Debugf("instance/node map: %v", instanceNodeMap)
 
 	return instanceNodeMap
 }
