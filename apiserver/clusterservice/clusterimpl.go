@@ -615,7 +615,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		// ensure the backrest storage type specified for the cluster is valid, and that the
 		// configruation required to use that storage type (e.g. a bucket, endpoint and region
 		// when using aws s3 storage) has been provided
-		err = validateBackrestStorageTypeOnCreate(request, request.BackrestFlag)
+		err = validateBackrestStorageTypeOnCreate(request)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -994,16 +994,9 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		labels[config.LABEL_BADGER] = "true"
 	}
 
-	//pgbackrest - set with user request first or look at global flag is not set
-	// Note: validateBackrestStorageType called earlier in CreateCluster will generate
-	// and return error to user if BackrestFlag is not true or false
-	if request.BackrestFlag == "true" || request.BackrestFlag == "false" {
-		labels[config.LABEL_BACKREST] = request.BackrestFlag
-		log.Debug("backrest set in user labels")
-	} else {
-		log.Debug("using Backrest from pgo.yaml")
-		labels[config.LABEL_BACKREST] = strconv.FormatBool(apiserver.Pgo.Cluster.Backrest)
-	}
+	// pgBackRest is always set to true. This is here due to a time where
+	// pgBackRest was not the only way
+	labels[config.LABEL_BACKREST] = "true"
 
 	// pgbouncer
 	if request.PgbouncerFlag {
@@ -1423,26 +1416,11 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 // validateBackrestStorageTypeOnCreate validates the pgbackrest storage type specified when
 // a new cluster.  This includes ensuring the type provided is valid, and that the required
 // configuration settings (s3 bucket, region, etc.) are also present
-func validateBackrestStorageTypeOnCreate(request *msgs.CreateClusterRequest, backrestEnabledFlag string) error {
+func validateBackrestStorageTypeOnCreate(request *msgs.CreateClusterRequest) error {
 
 	requestBackRestStorageType := request.BackrestStorageType
-	var backrestEnabled bool
-	var parseError error
 
-	// backrestEnabled looks for override from command line, otherwise use pgo.yaml value
-	if backrestEnabledFlag != "" {
-		backrestEnabled, parseError = strconv.ParseBool(backrestEnabledFlag)
-	} else {
-		backrestEnabled = apiserver.Pgo.Cluster.Backrest
-	}
-
-	if parseError != nil {
-		return errors.New("valid values for --pgbackrest are true or false")
-	}
-
-	if requestBackRestStorageType != "" && !backrestEnabled {
-		return errors.New("pgBackRest storage type is only applicable if pgBackRest is enabled")
-	} else if requestBackRestStorageType != "" && !apiserver.IsValidBackrestStorageType(requestBackRestStorageType) {
+	if requestBackRestStorageType != "" && !apiserver.IsValidBackrestStorageType(requestBackRestStorageType) {
 		return fmt.Errorf("Invalid value provided for pgBackRest storage type. The following values are allowed: %s",
 			"\""+strings.Join(apiserver.GetBackrestStorageTypes(), "\", \"")+"\"")
 	} else if strings.Contains(requestBackRestStorageType, "s3") && isMissingS3Config(request) {
