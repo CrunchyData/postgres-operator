@@ -49,7 +49,6 @@ func getStatus(results *msgs.StatusDetail, ns string) error {
 
 	var err error
 	results.OperatorStartTime = getOperatorStart(apiserver.PgoNamespace)
-	results.NumBackups = getNumBackups(ns)
 	results.NumClaims = getNumClaims(ns)
 	results.NumDatabases = getNumDatabases(ns)
 	results.VolumeCap = getVolumeCap(ns)
@@ -75,16 +74,6 @@ func getOperatorStart(ns string) string {
 	log.Error("a running postgres-operator pod is not found")
 
 	return "error"
-}
-
-func getNumBackups(ns string) int {
-	//count the number of Jobs with pgbackup=true and completionTime not nil
-	jobs, err := kubeapi.GetJobs(apiserver.Clientset, config.LABEL_PGBACKUP, ns)
-	if err != nil {
-		log.Error(err)
-		return 0
-	}
-	return len(jobs.Items)
 }
 
 func getNumClaims(ns string) int {
