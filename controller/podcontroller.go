@@ -554,7 +554,8 @@ func isPrimaryOnRoleChange(clientset *kubernetes.Clientset, pgcluster crv1.Pgclu
 	cmName := pgcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE] + "-config"
 	configMap, found := kubeapi.GetConfigMap(clientset, cmName, namespace)
 	if !found {
-		log.Errorf("Unable to find '%s' configMap for cluster %s (crunchy-pgha-scope=%s)",
+		log.Warnf("Unable to find '%s' configMap for cluster %s (crunchy-pgha-scope=%s). "+
+			"It may not yet exist if the cluster is still being initialized.",
 			cmName, pgcluster.Name, pgcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE])
 		return false
 	}
