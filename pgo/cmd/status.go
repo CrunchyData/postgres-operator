@@ -74,7 +74,6 @@ func printSummary(status *msgs.StatusDetail) {
 	WID := 25
 	fmt.Printf("%s%s\n", util.Rpad("Operator Start:", " ", WID), status.OperatorStartTime)
 	fmt.Printf("%s%d\n", util.Rpad("Databases:", " ", WID), status.NumDatabases)
-	fmt.Printf("%s%d\n", util.Rpad("Backups:", " ", WID), status.NumBackups)
 	fmt.Printf("%s%d\n", util.Rpad("Claims:", " ", WID), status.NumClaims)
 	fmt.Printf("%s%s\n", util.Rpad("Total Volume Size:", " ", WID), util.Rpad(status.VolumeCap, " ", 10))
 

@@ -39,7 +39,6 @@ type KeyValue struct {
 type StatusDetail struct {
 	OperatorStartTime string
 	NumDatabases      int
-	NumBackups        int
 	NumClaims         int
 	VolumeCap         string
 	DbTags            map[string]int
