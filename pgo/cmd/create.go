@@ -29,7 +29,7 @@ var ContainerResources string
 var ReplicaStorageConfig, StorageConfig string
 var CustomConfig string
 var ArchiveFlag, DisableAutofailFlag, PgbouncerFlag, MetricsFlag, BadgerFlag bool
-var BackrestFlag, BackrestRestoreFrom string
+var BackrestRestoreFrom string
 var PgbouncerSecret string
 var CCPImage string
 var CCPImageTag string
@@ -231,7 +231,6 @@ func init() {
 	CreateCmd.AddCommand(createUserCmd)
 	CreateCmd.AddCommand(createNamespaceCmd)
 
-	createClusterCmd.Flags().StringVarP(&BackrestFlag, "pgbackrest", "", "", "Enables a pgBackRest volume for the database pod, \"true\" or \"false\". Default from pgo.yaml, command line overrides default.")
 	createPgouserCmd.Flags().StringVarP(&PgouserPassword, "pgouser-password", "", "", "specify a password for a pgouser")
 	createPgouserCmd.Flags().StringVarP(&PgouserRoles, "pgouser-roles", "", "", "specify a comma separated list of Roles for a pgouser")
 	createPgouserCmd.Flags().StringVarP(&PgouserNamespaces, "pgouser-namespaces", "", "", "specify a comma separated list of Namespaces for a pgouser")

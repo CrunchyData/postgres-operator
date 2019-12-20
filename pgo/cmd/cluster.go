@@ -217,8 +217,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.AutofailFlag = !DisableAutofailFlag
 	r.PgbouncerFlag = PgbouncerFlag
 	r.PgbouncerPass = PgBouncerPassword
-	//r.ArchiveFlag = ArchiveFlag
-	r.BackrestFlag = BackrestFlag
+	//r.ArchiveFlag = ArchiveFlagg
 	r.BackrestStorageType = BackrestStorageType
 	r.CustomConfig = CustomConfig
 	r.StorageConfig = StorageConfig

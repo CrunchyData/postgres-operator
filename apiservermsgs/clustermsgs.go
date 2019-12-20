@@ -60,7 +60,6 @@ type CreateClusterRequest struct {
 	BadgerFlag          bool
 	AutofailFlag        bool
 	ArchiveFlag         bool
-	BackrestFlag        string
 	BackrestStorageType string
 	//BackrestRestoreFrom  string
 	PgbouncerFlag        bool
