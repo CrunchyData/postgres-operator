@@ -29,7 +29,12 @@
     "metadata": {
         "name": "prometheus-sa",
         "namespace": "{{ metrics_namespace }}"
-    }
+    },
+    "imagePullSecrets": [
+{% if ccp_image_pull_secret %}
+        { "name": "{{ ccp_image_pull_secret }}" }
+{% endif %}
+    ]
 }
 
 {

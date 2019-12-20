@@ -5,5 +5,10 @@
         "name": "grafana",
         "namespace": "{{ metrics_namespace }}"
     },
-    "automountServiceAccountToken": false
+    "automountServiceAccountToken": false,
+    "imagePullSecrets": [
+{% if ccp_image_pull_secret %}
+        { "name": "{{ ccp_image_pull_secret }}" }
+{% endif %}
+    ]
 }
