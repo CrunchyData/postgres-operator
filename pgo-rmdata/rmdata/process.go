@@ -34,6 +34,9 @@ import (
 const (
 	MAX_TRIES            = 16
 	pgBackRestPathFormat = "/backrestrepo/%s"
+	pgBackRestRepoPVC    = "%s-pgbr-repo"
+	pgBaseBackupPVC      = "%s-backup"
+	pgDumpPVC            = "backup-%s-pgdump-pvc"
 	pgDataPathFormat     = "/pgdata/%s"
 )
 
@@ -83,17 +86,12 @@ func Delete(request Request) {
 
 	if request.IsBackup {
 		log.Info("rmdata.Process backup use case")
-		//the case of removing a backup using
-		//pgo delete backup, only applies to
-		//backup-type=pgbasebackup
-		//currently we only support removing the PVC
-		//and not the backup contents
+		//the case of removing a backup using `pgo delete backup`, only applies to
+		// "backup-type=pgdump"
 		removeBackupJobs(request)
-		pvcList := make([]string, 0)
-		pvcList = append(pvcList, request.ClusterName+"-backup")
-		removePVCs(pvcList, request)
-
-		//removing a backup pvc is its own case, leave when done
+		removeLogicalBackupPVCs(request)
+		// this is the special case of removing an ad hoc backup removal, so we can
+		// exit here
 		return
 	}
 
@@ -122,28 +120,34 @@ func Delete(request Request) {
 	removeClusterConfigmaps(request)
 	//removeClusterJobs(request)
 	if request.RemoveData {
-		pvcList, err := getPVCs(request)
-		if err != nil {
+		if pvcList, err := getInstancePVCs(request); err != nil {
 			log.Error(err)
+		} else {
+			log.Debugf("rmdata pvc list: [%v]", pvcList)
+
+			removePVCs(pvcList, request)
 		}
-		removePVCs(pvcList, request)
 	}
 
 	// backups have to be the last thing we remove. We want to ensure that all
 	// the clusters (well, really, the primary) have stopped. This means that no
 	// more WAL archives are being pushed, and at this point it is safe for us to
-	// remove the pgBackRest repo
+	// remove the pgBackRest repo if we have opted to remove all of the backups.
 	//
-	// The actual check for removing the pgBackRest files occurs in the
-	// removeBackRestRepo function. The rest of the function calls are related
-	// to the current deployment, i.e. this PostgreSQL cluster, and are safe to
-	// remove
-	removeBackrestRepo(request)
+	// Regardless of the choice the user made, we want to remove all of the
+	// backup jobs, as those take up space
 	removeBackupJobs(request)
-	// NOTE: removeBackups will be removed in a later commit -- it is ok to not
-	// guard it
-	removeBackups(request)
-	removeBackupSecrets(request)
+	// Now, even though it appears we are removing the pgBackRest repo here, we
+	// are **not** removing the phyiscal data unless request.RemoveBackup is true.
+	// In that case, only the deployment/services for the pgBackRest repo are
+	// removed
+	removeBackrestRepo(request)
+	// now, check to see if the user wants the remainder of the physical data and
+	// PVCs to be removed
+	if request.RemoveBackup {
+		removeBackupSecrets(request)
+		removeAllBackupPVCs(request)
+	}
 }
 
 // deleteClusterData calls a series of commands to attempt to "safely" delete
@@ -233,42 +237,16 @@ func removeBackrestRepo(request Request) {
 	}
 }
 
-func removeBackups(request Request) {
-
-	//see if a pgbasebackup PVC exists
-	backupPVCName := request.ClusterName + "-backup"
-	log.Infof("pgbasebackup backup pvc: %s", backupPVCName)
-	pvc, found, err := kubeapi.GetPVC(request.Clientset, request.ClusterName, request.Namespace)
-	if found {
-		log.Infof("pgbasebackup backup pvc: found")
-		err = kubeapi.DeletePVC(request.Clientset, pvc.Name, request.Namespace)
-		if err != nil {
-			log.Errorf("error removing pgbasebackup pvc %s %s", backupPVCName, err.Error())
-		} else {
-			log.Infof("removed pgbasebackup pvc %s", backupPVCName)
-		}
-	} else {
-		log.Infof("pgbasebackup backup pvc: NOT found")
-	}
-
-	//delete pgbackrest PVC if it exists
-
-	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName
-	log.Infof("remove backrest pvc selector [%s]", selector)
-
-	var pvcList *v1.PersistentVolumeClaimList
-	pvcList, err = kubeapi.GetPVCs(request.Clientset, selector, request.Namespace)
-	if len(pvcList.Items) > 0 {
-		for _, v := range pvcList.Items {
-			err = kubeapi.DeletePVC(request.Clientset, v.Name, request.Namespace)
-			if err != nil {
-				log.Errorf("error removing backrest pvc %s %s", v.Name, err.Error())
-			} else {
-				log.Infof("removed backrest pvc %s", v.Name)
-			}
-		}
-	}
-
+// removeAllBackupPVCs removes all of the PVCs associated with any kind of
+// backup
+func removeAllBackupPVCs(request Request) {
+	// first, ensure that logical backups are removed
+	removeLogicalBackupPVCs(request)
+	// now, remove pg_basebackup PVCs. This method will be removed at some point,
+	// but we will further isolcate it
+	removePgBaseBackupPVCs(request)
+	// finally, we will remove the pgBackRest repo PVC...or PVCs?
+	removePgBackRestRepoPVCs(request)
 }
 
 // removeBackupSecrets removes any secrets that are associated with backups
@@ -595,24 +573,49 @@ func removePgtasks(request Request) {
 
 }
 
-//get the pvc's for this cluster leaving out the backrest repo pvc
-func getPVCs(request Request) ([]string, error) {
+// getInstancePVCs gets all the PVCs that are associated with PostgreSQL
+// instances (at least to the best of our knowledge)
+func getInstancePVCs(request Request) ([]string, error) {
 	pvcList := make([]string, 0)
-	deployments, err := kubeapi.GetDeployments(request.Clientset,
-		config.LABEL_PG_CLUSTER+"="+request.ClusterName, request.Namespace)
+	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName)
+	pgDump, pgBackRest, pgBaseBackup := fmt.Sprintf(pgDumpPVC, request.ClusterName),
+		fmt.Sprintf(pgBackRestRepoPVC, request.ClusterName),
+		fmt.Sprintf(pgBaseBackupPVC, request.ClusterName)
+
+	log.Debugf("instance pvcs overall selector: [%s]", selector)
+
+	// get all of the PVCs to analyze (see the step below)
+	pvcs, err := kubeapi.GetPVCs(request.Clientset, selector, request.Namespace)
+
+	// if there is an error, return here and log the error in the calling function
 	if err != nil {
-		log.Error(err)
 		return pvcList, err
 	}
 
-	for _, d := range deployments.Items {
-		if d.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] == "" {
-			pvcList = append(pvcList, d.ObjectMeta.Name)
+	// ...this will be a bit janky.
+	//
+	// ...we are going to go through all of the PVCs that are associated with this
+	// cluster. We will then compare them against the names of the backup types
+	// of PVCs. If they do not match any of those names, then we will add them
+	// to the list.
+	//
+	// ...process of elimination until we tighten up the labeling
+	for _, pvc := range pvcs.Items {
+		pvcName := pvc.ObjectMeta.Name
+
+		log.Debugf("found pvc: [%s]", pvcName)
+
+		if pvcName == pgDump || pvcName == pgBackRest || pvcName == pgBaseBackup {
+			log.Debug("skipping...")
+			continue
 		}
+
+		pvcList = append(pvcList, pvcName)
 	}
 
-	return pvcList, nil
+	log.Debugf("instance pvcs found: [%v]", pvcList)
 
+	return pvcList, nil
 }
 
 //get the pvc for this replica deployment
@@ -641,35 +644,112 @@ func removePVCs(pvcList []string, request Request) error {
 
 }
 
+// removeBackupJobs removes any job associated with a backup. These include:
+//
+// - pgBackRest
+// - pg_dump (logical)
+// - pg_basebackup (deprecrated)
 func removeBackupJobs(request Request) {
-	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName + "," + config.LABEL_PGBACKUP + "=true"
-	jobs, err := kubeapi.GetJobs(request.Clientset, selector, request.Namespace)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	for i := 0; i < len(jobs.Items); i++ {
-		job := jobs.Items[i]
-		err := kubeapi.DeleteJob(request.Clientset, job.Name, request.Namespace)
-		if err != nil {
-			log.Error(err)
-		}
+	// Some mild cleanup for this function...going to make a list of selectors
+	// for the different kinds of backup jobs so they can be deleted, but cannot
+	// do a full cleanup of this process just yet
+	selectors := []string{
+		// pgBackRest
+		fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER, request.ClusterName, config.LABEL_BACKREST_JOB),
+		// pg_dump
+		fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER, request.ClusterName, config.LABEL_BACKUP_TYPE_PGDUMP),
+		// pg_basebackup
+		fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER, request.ClusterName, config.LABEL_PGBACKUP),
 	}
 
-	var completed bool
-	for i := 0; i < MAX_TRIES; i++ {
+	// iterate through each type of selector and attempt to get all of the jobs
+	// that are associated with it
+	for _, selector := range selectors {
+		log.Debugf("backup job selector: [%s]", selector)
+
+		// find all the jobs associated with this selector
 		jobs, err := kubeapi.GetJobs(request.Clientset, selector, request.Namespace)
-		if len(jobs.Items) > 0 || err != nil {
-			log.Info("sleeping to wait for backup jobs to fully terminate")
-			time.Sleep(time.Second * time.Duration(4))
-		} else {
-			completed = true
-			break
+
+		if err != nil {
+			log.Error(err)
+			continue
+		}
+
+		// iterate through the list of jobs and attempt to delete them
+		for i := 0; i < len(jobs.Items); i++ {
+			job := jobs.Items[i]
+
+			if err := kubeapi.DeleteJob(request.Clientset, job.Name, request.Namespace); err != nil {
+				log.Error(err)
+			}
+		}
+
+		// ...ensure all the jobs are deleted
+		var completed bool
+
+		for i := 0; i < MAX_TRIES; i++ {
+			jobs, err := kubeapi.GetJobs(request.Clientset, selector, request.Namespace)
+
+			if len(jobs.Items) > 0 || err != nil {
+				log.Debug("sleeping to wait for backup jobs to fully terminate")
+				time.Sleep(time.Second * time.Duration(4))
+			} else {
+				completed = true
+				break
+			}
+		}
+
+		if !completed {
+			log.Error("could not remove all backup jobs for [%s]", selector)
 		}
 	}
-	if !completed {
-		log.Error("could not remove all backup jobs")
-	}
+}
+
+// removeLogicalBackupPVCs removes the logical backups associated with a cluster
+// this is an "all-or-nothing" solution: as right now it will only remove the
+// PVC, it will remove **all** logical backups
+//
+// Additionally, as these backups are nota actually mounted anywhere, except
+// during one-off jobs, we cannot perform a delete of the filesystem (i.e.
+// "rm -rf" like in other commands). Well, we could...we could write a job to do
+// this, but that will be saved for future work
+func removeLogicalBackupPVCs(request Request) {
+	// get the name of the PVC, which uses a format that is fixed
+	pvcName := fmt.Sprintf(pgDumpPVC, request.ClusterName)
+
+	log.Debugf("remove pgdump pvc name [%s]", pvcName)
+
+	// make a simple list of the PVCs that can be applied to the "removePVC"
+	// command
+	pvcList := []string{pvcName}
+	removePVCs(pvcList, request)
+}
+
+// removePgBackRestRepoPVCs removes any PVCs that are used by a pgBackRest repo
+func removePgBackRestRepoPVCs(request Request) {
+	// there is only a single PVC for a pgBackRest repo, and it has a well-defined
+	// name
+	pvcName := fmt.Sprintf(pgBackRestRepoPVC, request.ClusterName)
+
+	log.Debugf("remove backrest pvc name [%s]", pvcName)
+
+	// make a simple of the PVCs that can be removed by the removePVC command
+	pvcList := []string{pvcName}
+	removePVCs(pvcList, request)
+}
+
+// removePgBaseBAckupPVCs removes any PVCs that are associated with a
+// pg_basebackup...which this number will dwindle as pg_basebackup is removed
+// from v4.2.0
+func removePgBaseBackupPVCs(request Request) {
+	// format the name of the PVC for a pg_basebackup, which is "well"-defined
+	pvcName := fmt.Sprintf(pgBaseBackupPVC, request.ClusterName)
+
+	log.Debugf("pgbasebackup backup pvc name: [%s]", pvcName)
+
+	// make a simple list for the PVCs, and then attempt to delete it
+	pvcList := []string{pvcName}
+	removePVCs(pvcList, request)
 }
 
 func removeReplicaServices(request Request) {
@@ -720,8 +800,8 @@ func removeSchedules(request Request) {
 	}
 }
 
-// rmDataDir removes a data directory, such as a PGDATA directory, or a pgBackRest
-// repo
+// rmDataDir removes a data directory, such as a PGDATA directory, or a
+// pgBackRest repo
 func rmDataDir(request Request, podName, containerName, path string) (string, string, error) {
 	command := []string{"rm", "-rf", path}
 
