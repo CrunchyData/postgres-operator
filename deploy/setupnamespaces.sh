@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 # Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,20 +14,27 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-IFS=', ' read -r -a array <<< "$PGO_OPERATOR_NAMESPACE"
+if [ -z $PGO_OPERATOR_NAMESPACE ];
+then
+	echo "error: \$PGO_OPERATOR_NAME must be set"
+	exit 1
+fi
 
-echo "creating namespaces to deploy the Operator into..."
-for ns in "${array[@]}"
-do
-	$PGO_CMD get namespace $ns > /dev/null 2> /dev/null
-	if [ $? -eq 0 ]
-	then
-		echo namespace $ns is already created
-	else
-		$PGO_CMD create namespace $ns > /dev/null
-		echo namespace $ns created
-	fi
-done
+if [ -z $PGO_INSTALLATION_NAME ];
+then
+	echo "error: \$PGO_INSTALLATION_NAME must be set"
+	exit 1
+fi
+
+echo "creating "$PGO_OPERATOR_NAMESPACE" namespace to deploy the Operator into..."
+$PGO_CMD get namespace $PGO_OPERATOR_NAMESPACE > /dev/null 2> /dev/null
+if [ $? -eq 0 ]
+then
+	echo namespace $PGO_OPERATOR_NAMESPACE is already created
+else
+	$PGO_CMD create namespace $PGO_OPERATOR_NAMESPACE > /dev/null
+	echo namespace $PGO_OPERATOR_NAMESPACE created
+fi
 
 IFS=', ' read -r -a array <<< "$NAMESPACE"
 

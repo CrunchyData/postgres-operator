@@ -88,9 +88,9 @@ However, if the user wishes to add a new watched namespace after installation, w
 
 {{% /notice %}}
 
-The *PGO_OPERATOR_NAMESPACE* environment variable is a comma separated list
-of namespace values that the Operator itself will be deployed into.  For
-the installation example, this value is set as follows:
+The *PGO_OPERATOR_NAMESPACE* environment variable is the name of the namespace
+that the Operator will be installed into.  For the installation example, this
+value is set as follows:
 
     export PGO_OPERATOR_NAMESPACE=pgo
 

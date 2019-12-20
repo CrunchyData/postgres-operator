@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 # Copyright 2019 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,14 +14,21 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-IFS=', ' read -r -a array <<< "$PGO_OPERATOR_NAMESPACE"
+if [ -z $PGO_OPERATOR_NAMESPACE ];
+then
+	echo "error: \$PGO_OPERATOR_NAME must be set"
+	exit 1
+fi
 
-echo "deleting the namespaces the operator is deployed into..."
-for ns in "${array[@]}"
-do
-	$PGO_CMD delete namespace $ns > /dev/null 2> /dev/null
-	echo namespace $ns deleted
-done
+if [ -z $PGO_INSTALLATION_NAME ];
+then
+	echo "error: \$PGO_INSTALLATION_NAME must be set"
+	exit 1
+fi
+
+echo "deleting the namespaces the operator is deployed into ($PGO_OPERATOR_NAMESPACE)..."
+$PGO_CMD delete namespace $PGO_OPERATOR_NAMESPACE > /dev/null 2> /dev/null
+echo "namespace $PGO_OPERATOR_NAMESPACE deleted"
 
 echo ""
 echo "deleting the watched namespaces..."
