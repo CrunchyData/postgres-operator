@@ -8,8 +8,8 @@
 
 - name: Find watched namespaces
   shell: |
-    {{ kubectl_or_oc }} get namespaces -o json --selector=vendor=crunchydata
-  register: ns_result 
+    {{ kubectl_or_oc }} get namespaces -o json --selector=vendor=crunchydata,pgo-installation-name={{ pgo_installation_name }}
+  register: ns_result
   tags:
   - uninstall
   - update
@@ -238,6 +238,7 @@
   shell: |
     {{ kubectl_or_oc }} label namespace {{ item }} vendor- pgo-created-by- pgo-installation-name-
   ignore_errors: yes
+  when: not (delete_watched_namespaces|bool)
   with_items:
   - "{{ watched_namespaces }}"
   no_log: false
