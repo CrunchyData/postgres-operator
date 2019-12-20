@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"fmt"
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
@@ -143,8 +144,11 @@ func reload(
 	client *rest.RESTClient, namespace string, restconfig *rest.Config, ns string) error {
 	//get the target pod that matches the replica-name=target
 
-	command := make([]string, 1)
-	command[0] = "/opt/cpm/bin/reload.sh"
+	command := make([]string, 3)
+	command[0] = "/bin/bash"
+	command[1] = "-c"
+	command[2] = fmt.Sprintf("curl -X POST --silent http://127.0.0.1:%s/reload", 
+		config.DEFAULT_PATRONI_PORT)
 
 	log.Debugf("running Exec with namespace=[%s] podname=[%s] container name=[%s]", namespace, pod.Name, pod.Spec.Containers[0].Name)
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, apiserver.Clientset, command, pod.Spec.Containers[0].Name, pod.Name, ns, nil)
