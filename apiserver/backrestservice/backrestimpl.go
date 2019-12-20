@@ -17,7 +17,6 @@ limitations under the License.
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"strings"
 	"time"
@@ -30,7 +29,7 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -104,7 +103,8 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 			return resp
 		}
 
-		err = validateBackrestStorageType(request.BackrestStorageType, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], false)
+		err = apiserver.ValidateBackrestStorageTypeOnBackupRestore(request.BackrestStorageType,
+			cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], false)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -435,7 +435,10 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 		return resp
 	}
 
-	err = validateBackrestStorageType(request.BackrestStorageType, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], true)
+	// ensure the backrest storage type specified for the backup is valid and enabled in the
+	// cluster
+	err = apiserver.ValidateBackrestStorageTypeOnBackupRestore(request.BackrestStorageType,
+		cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], true)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -568,27 +571,4 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 		return "", err
 	}
 	return spec.Parameters[crv1.PgtaskWorkflowID], err
-}
-
-func validateBackrestStorageType(requestBackRestStorageType, clusterBackRestStorageType string, restore bool) error {
-
-	if requestBackRestStorageType != "" && !apiserver.IsValidBackrestStorageType(requestBackRestStorageType) {
-		return fmt.Errorf("Invalid value provided for pgBackRest storage type. The following values are allowed: %s",
-			"\""+strings.Join(apiserver.GetBackrestStorageTypes(), "\", \"")+"\"")
-	} else if requestBackRestStorageType != "" && strings.Contains(requestBackRestStorageType, "s3") &&
-		!strings.Contains(clusterBackRestStorageType, "s3") {
-		return errors.New("Storage type 's3' not allowed. S3 storage is not enabled for pgBackRest in this cluster")
-	} else if (requestBackRestStorageType == "" || strings.Contains(requestBackRestStorageType, "local")) &&
-		(clusterBackRestStorageType != "" && !strings.Contains(clusterBackRestStorageType, "local")) {
-		return errors.New("Storage type 'local' not allowed. Local storage is not enabled for pgBackRest in this cluster. " +
-			"If this cluster uses S3 storage only, specify 's3' for the pgBackRest storage type.")
-	}
-
-	// storage type validation that is only applicable for restores
-	if restore && requestBackRestStorageType != "" && len(strings.Split(requestBackRestStorageType, ",")) > 1 {
-		return fmt.Errorf("Multiple storage types cannot be selected cannot be select when performing a restore. Please "+
-			"select one of the following: %s", "\""+strings.Join(apiserver.GetBackrestStorageTypes(), "\", \"")+"\"")
-	}
-
-	return nil
 }

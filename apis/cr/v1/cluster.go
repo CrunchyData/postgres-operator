@@ -69,6 +69,9 @@ type PgclusterSpec struct {
 	UserLabels         map[string]string    `json:"userlabels"`
 	PodAntiAffinity    string               `json:"podPodAntiAffinity"`
 	SyncReplication    *bool                `json:"syncReplication"`
+	BackrestS3Bucket   string               `json:"backrestS3Bucket"`
+	BackrestS3Region   string               `json:"backrestS3Region"`
+	BackrestS3Endpoint string               `json:"backrestS3Endpoint"`
 }
 
 // PgclusterList is the CRD that defines a Crunchy PG Cluster List

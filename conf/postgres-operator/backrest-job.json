@@ -61,7 +61,7 @@
                         "name": "PGBACKREST_REPO_TYPE",
                         "value": "{{.PgbackrestRepoType}}"
                     }, {
-                        "name": "BACKREST_LOCAL_AND_S3_STORAGE",
+                        "name": "PGHA_PGBACKREST_LOCAL_S3_STORAGE",
                         "value": "{{.BackrestLocalAndS3Storage}}"
                     }, {
                         "name": "PGBACKREST_LOG_PATH",

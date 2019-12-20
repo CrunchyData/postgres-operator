@@ -73,9 +73,14 @@ type CreateClusterRequest struct {
 	ContainerResources   string
 	// Version of API client
 	// required: true
-	ClientVersion   string
-	PodAntiAffinity string
-	SyncReplication *bool
+	ClientVersion       string
+	PodAntiAffinity     string
+	SyncReplication     *bool
+	BackrestS3Key       string
+	BackrestS3KeySecret string
+	BackrestS3Bucket    string
+	BackrestS3Region    string
+	BackrestS3Endpoint  string
 }
 
 // CreateClusterResponse

@@ -309,13 +309,13 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 						return
 					}
 				}
-			}
-		} else if labels[config.LABEL_PGHA_BACKUP_TYPE] == crv1.BackupTypeFailover {
-			err := clusteroperator.RemovePrimaryOnRoleChangeTag(c.JobClientset, c.JobConfig,
-				labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Namespace)
-			if err != nil {
-				log.Error(err)
-				return
+			} else if labels[config.LABEL_PGHA_BACKUP_TYPE] == crv1.BackupTypeFailover {
+				err := clusteroperator.RemovePrimaryOnRoleChangeTag(c.JobClientset, c.JobConfig,
+					labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Namespace)
+				if err != nil {
+					log.Error(err)
+					return
+				}
 			}
 		}
 		return

@@ -107,15 +107,25 @@ func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResp
 		return response
 	}
 
+	// clone is a form of restore, so validate using ValidateBackrestStorageTypeOnBackupRestore
+	err = apiserver.ValidateBackrestStorageTypeOnBackupRestore(request.BackrestStorageSource,
+		sourcePgcluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], true)
+	if err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
 	// alright, begin the create the proper clone task!
 	cloneTask := util.CloneTask{
-		PGOUser:           pgouser,
-		SourceClusterName: request.SourceClusterName,
-		TargetClusterName: request.TargetClusterName,
-		TaskStepLabel:     config.LABEL_PGO_CLONE_STEP_1,
-		TaskType:          crv1.PgtaskCloneStep1,
-		Timestamp:         time.Now(),
-		WorkflowID:        workflowID,
+		PGOUser:               pgouser,
+		SourceClusterName:     request.SourceClusterName,
+		TargetClusterName:     request.TargetClusterName,
+		TaskStepLabel:         config.LABEL_PGO_CLONE_STEP_1,
+		TaskType:              crv1.PgtaskCloneStep1,
+		Timestamp:             time.Now(),
+		WorkflowID:            workflowID,
+		BackrestStorageSource: request.BackrestStorageSource,
 	}
 
 	task := cloneTask.Create()

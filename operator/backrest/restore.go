@@ -178,8 +178,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		PgbackrestRepo1Host: task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_HOST],
 		NodeSelector:        operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),
 		PgbackrestRepoType:  operator.GetRepoType(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
-		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Labels[config.LABEL_BACKREST],
-			cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], clientset, namespace),
+		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster, clientset, namespace),
 	}
 
 	var doc2 bytes.Buffer
@@ -232,6 +231,8 @@ func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Cl
 		log.Errorf("restore workflow phase 2 error: could not find a pgclustet in updateRestoreWorkflow for %s", clusterName)
 		return
 	}
+
+	operator.UpdatePghaDefaultConfigInitFlag(clientset, true, clusterName, namespace)
 
 	//create the new primary deployment
 	CreateRestoredDeployment(restclient, &cluster, clientset, namespace, restoreToName, workflowID, affinity)
@@ -454,11 +455,10 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		ScopeLabel:         config.LABEL_PGHA_SCOPE,
 		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster.Labels[config.LABEL_BACKREST], cluster.Spec.ClusterName, restoreToName,
 			cluster.Spec.Port, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
-		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster.Labels[config.LABEL_BACKREST],
-			cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], clientset, namespace),
+		PgbackrestS3EnvVars:      operator.GetPgbackrestS3EnvVars(*cluster, clientset, namespace),
 		EnableCrunchyadm:         operator.Pgo.Cluster.EnableCrunchyadm,
 		ReplicaReinitOnStartFail: !operator.Pgo.Cluster.DisableReplicaStartFailReinit,
-		SyncReplication:         operator.GetSyncReplication(cluster.Spec.SyncReplication),
+		SyncReplication:          operator.GetSyncReplication(cluster.Spec.SyncReplication),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
