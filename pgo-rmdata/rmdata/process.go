@@ -243,7 +243,7 @@ func removeAllBackupPVCs(request Request) {
 	// first, ensure that logical backups are removed
 	removeLogicalBackupPVCs(request)
 	// now, remove pg_basebackup PVCs. This method will be removed at some point,
-	// but we will further isolcate it
+	// but we will further isolate it
 	removePgBaseBackupPVCs(request)
 	// finally, we will remove the pgBackRest repo PVC...or PVCs?
 	removePgBackRestRepoPVCs(request)
@@ -648,7 +648,7 @@ func removePVCs(pvcList []string, request Request) error {
 //
 // - pgBackRest
 // - pg_dump (logical)
-// - pg_basebackup (deprecrated)
+// - pg_basebackup (deprecated)
 func removeBackupJobs(request Request) {
 	// Some mild cleanup for this function...going to make a list of selectors
 	// for the different kinds of backup jobs so they can be deleted, but cannot
@@ -738,7 +738,7 @@ func removePgBackRestRepoPVCs(request Request) {
 	removePVCs(pvcList, request)
 }
 
-// removePgBaseBAckupPVCs removes any PVCs that are associated with a
+// removePgBaseBackupPVCs removes any PVCs that are associated with a
 // pg_basebackup...which this number will dwindle as pg_basebackup is removed
 // from v4.2.0
 func removePgBaseBackupPVCs(request Request) {

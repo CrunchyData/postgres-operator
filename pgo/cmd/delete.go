@@ -156,8 +156,6 @@ func init() {
 	// instructs that any data associated with the cluster should be kept and not deleted
 	deleteClusterCmd.Flags().BoolVar(&KeepData, "keep-data", false,
 		"Keeps the data for the specified cluster. Can be reassigned to exact same cluster in the future.")
-	deleteClusterCmd.Flags().MarkDeprecated("keep-data",
-		"You can preserve your data by keeping your backups with the --keep-backups flag")
 	// "pgo delete cluster --no-prompt"
 	// does not display the warning prompt to ensure the user wishes to delete
 	// a cluster
