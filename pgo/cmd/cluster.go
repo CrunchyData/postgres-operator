@@ -226,6 +226,11 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.ContainerResources = ContainerResources
 	r.ClientVersion = msgs.PGO_VERSION
 	r.PodAntiAffinity = PodAntiAffinity
+	r.BackrestS3Key = BackrestS3Key
+	r.BackrestS3KeySecret = BackrestS3KeySecret
+	r.BackrestS3Bucket = BackrestS3Bucket
+	r.BackrestS3Region = BackrestS3Region
+	r.BackrestS3Endpoint = BackrestS3Endpoint
 
 	// only set SyncReplication in the request if actually provided via the CLI
 	if createClusterCmd.Flag("sync-replication").Changed {

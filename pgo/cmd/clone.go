@@ -31,6 +31,9 @@ var (
 	SourceClusterName string
 	// the target/destination cluster used for the clone, e.g. "newcluster"
 	TargetClusterName string
+	// BackrestStorageSource represents the data source to use (e.g. s3 or local) when both s3
+	// and local are enabled in the cluster being cloned
+	BackrestStorageSource string
 )
 
 var cloneCmd = &cobra.Command{
@@ -65,6 +68,10 @@ var cloneCmd = &cobra.Command{
 // init is part of the cobra API
 func init() {
 	RootCmd.AddCommand(cloneCmd)
+
+	cloneCmd.Flags().StringVarP(&BackrestStorageSource, "pgbackrest-storage-source", "", "",
+		"The data source for the clone when both \"local\" and \"s3\" are enabled in the "+
+			"source cluster. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 }
 
 // clone is a helper function to help set up the clone!
@@ -77,6 +84,7 @@ func clone(namespace, sourceClusterName, targetClusterName string) {
 	request.Namespace = Namespace
 	request.SourceClusterName = sourceClusterName
 	request.TargetClusterName = targetClusterName
+	request.BackrestStorageSource = BackrestStorageSource
 
 	// make a call to the clone API
 	response, err := api.Clone(httpclient, &SessionCredentials, request)

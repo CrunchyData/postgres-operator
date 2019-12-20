@@ -354,18 +354,13 @@ func GetCollectVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, names
 func GetLabelsFromMap(labels map[string]string) string {
 	var output string
 
-	mapLen := len(labels)
-	i := 1
 	for key, value := range labels {
 		if len(validation.IsQualifiedName(key)) == 0 && len(validation.IsValidLabelValue(value)) == 0 {
-			output += fmt.Sprintf("\"%s\": \"%s\"", key, value)
-			if i < mapLen {
-				output += ","
-			}
+			output += fmt.Sprintf("\"%s\": \"%s\",", key, value)
 		}
-		i++
 	}
-	return output
+	// removing the trailing comma from the final label
+	return strings.TrimSuffix(output, ",")
 }
 
 // GetPrimaryLabels ...
@@ -521,39 +516,96 @@ func GetPgmonitorEnvVars(metricsEnabled string) string {
 
 }
 
-func GetPgbackrestS3EnvVars(backrestLabel, backRestStorageTypeLabel string,
-	clientset *kubernetes.Clientset, ns string) string {
+// GetPgbackrestS3EnvVars retrieves the values for the various configuration settings require to
+// configure pgBackRest for AWS S3, inlcuding a bucket, endpoint, region, key and key secret.
+// The bucket, endpoint & region are obtained from the associated parameters in the pgcluster
+// CR, while the key and key secret are obtained from the backrest repository secret.  Once these
+// values have been obtained, they are used to populate a template containing the various
+// pgBackRest environment variables required to enable S3 support.  After the template has been
+// executed with the proper values, the result is then returned a string for inclusion in the PG
+// and pgBackRest deployments.
+func GetPgbackrestS3EnvVars(cluster crv1.Pgcluster, clientset *kubernetes.Clientset,
+	ns string) string {
 
-	if backrestLabel == "true" && strings.Contains(backRestStorageTypeLabel, "s3") {
+	if cluster.Labels[config.LABEL_BACKREST] == "true" &&
+		strings.Contains(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], "s3") {
 
-		s3EnvVars := PgbackrestS3EnvVarsTemplateFields{
-			PgbackrestS3Bucket:   Pgo.Cluster.BackrestS3Bucket,
-			PgbackrestS3Endpoint: Pgo.Cluster.BackrestS3Endpoint,
-			PgbackrestS3Region:   Pgo.Cluster.BackrestS3Region,
+		// populate the S3 bucket, endpoint and region using either the values in the pgcluster
+		// spec (if present), otherwise populate using the values from the pgo.yaml config file
+		s3EnvVars := PgbackrestS3EnvVarsTemplateFields{}
+		if cluster.Spec.BackrestS3Bucket != "" {
+			s3EnvVars.PgbackrestS3Bucket = cluster.Spec.BackrestS3Bucket
+		} else {
+			s3EnvVars.PgbackrestS3Bucket = Pgo.Cluster.BackrestS3Bucket
 		}
 
-		secret, secretExists, err := kubeapi.GetSecret(clientset, "pgo-backrest-repo-config", PgoNamespace)
+		if cluster.Spec.BackrestS3Endpoint != "" {
+			s3EnvVars.PgbackrestS3Endpoint = cluster.Spec.BackrestS3Endpoint
+		} else {
+			s3EnvVars.PgbackrestS3Endpoint = Pgo.Cluster.BackrestS3Endpoint
+		}
+
+		if cluster.Spec.BackrestS3Region != "" {
+			s3EnvVars.PgbackrestS3Region = cluster.Spec.BackrestS3Region
+		} else {
+			s3EnvVars.PgbackrestS3Region = Pgo.Cluster.BackrestS3Region
+		}
+
+		secret, secretExists, err := kubeapi.GetSecret(clientset,
+			cluster.Name+"-backrest-repo-config", ns)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
 		} else if !secretExists {
-			log.Error("Secret 'pgo-backrest-repo-config' does not exist. Unable to set S3 env vars for pgBackRest")
+			log.Errorf("Secret '%s-backrest-repo-config' does not exist. Unable to set S3 env vars "+
+				"for pgBackRest", cluster.Name)
 			return ""
 		}
 
-		data := struct {
+		type keyData struct {
 			Key       string `yaml:"aws-s3-key"`
 			KeySecret string `yaml:"aws-s3-key-secret"`
-		}{}
+		}
+		clusterKeyData := keyData{}
+		pgoKeyData := keyData{}
 
-		err = yaml.Unmarshal(secret.Data["aws-s3-credentials.yaml"], &data)
+		err = yaml.Unmarshal(secret.Data["aws-s3-credentials.yaml"], &clusterKeyData)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
 		}
 
-		s3EnvVars.PgbackrestS3Key = data.Key
-		s3EnvVars.PgbackrestS3KeySecret = data.KeySecret
+		// if key or key secret no inlcuded in cluster secret, check global secret
+		if clusterKeyData.Key == "" || clusterKeyData.KeySecret == "" {
+			secret, secretExists, err := kubeapi.GetSecret(clientset, "pgo-backrest-repo-config",
+				PgoNamespace)
+			if err != nil {
+				log.Error(err.Error())
+				return ""
+			} else if !secretExists {
+				log.Errorf("Secret 'pgo-backrest-repo-config' does not exist. Unable to set S3 env vars " +
+					"for pgBackRest")
+				return ""
+			}
+			err = yaml.Unmarshal(secret.Data["aws-s3-credentials.yaml"], &pgoKeyData)
+			if err != nil {
+				log.Error(err.Error())
+				return ""
+			}
+		}
+
+		// set the key and key secret using either the parameters from the cluster spec,
+		// or if not present, the parameters from pgo.yaml
+		if clusterKeyData.Key != "" {
+			s3EnvVars.PgbackrestS3Key = clusterKeyData.Key
+		} else if pgoKeyData.Key != "" {
+			s3EnvVars.PgbackrestS3Key = pgoKeyData.Key
+		}
+		if clusterKeyData.KeySecret != "" {
+			s3EnvVars.PgbackrestS3KeySecret = clusterKeyData.KeySecret
+		} else if pgoKeyData.Key != "" {
+			s3EnvVars.PgbackrestS3KeySecret = pgoKeyData.KeySecret
+		}
 
 		var b bytes.Buffer
 		err = config.PgbackrestS3EnvVarsTemplate.Execute(&b, s3EnvVars)

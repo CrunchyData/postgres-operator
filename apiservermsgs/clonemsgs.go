@@ -22,10 +22,11 @@ import (
 // CloneRequest ...
 // swagger:model
 type CloneRequest struct {
-	Namespace         string
-	SourceClusterName string
-	TargetClusterName string
-	ClientVersion     string
+	Namespace             string
+	SourceClusterName     string
+	TargetClusterName     string
+	ClientVersion         string
+	BackrestStorageSource string
 }
 
 // CloneReseponse

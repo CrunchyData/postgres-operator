@@ -79,11 +79,11 @@ func main() {
 	REPO_TYPE := os.Getenv("PGBACKREST_REPO_TYPE")
 	log.Debugf("setting REPO_TYPE to %s", REPO_TYPE)
 
-	BACKREST_LOCAL_AND_S3_STORAGE, err := strconv.ParseBool(os.Getenv("BACKREST_LOCAL_AND_S3_STORAGE"))
+	PGHA_PGBACKREST_LOCAL_S3_STORAGE, err := strconv.ParseBool(os.Getenv("PGHA_PGBACKREST_LOCAL_S3_STORAGE"))
 	if err != nil {
 		panic(err)
 	}
-	log.Debugf("setting BACKREST_LOCAL_AND_S3_STORAGE to %s", BACKREST_LOCAL_AND_S3_STORAGE)
+	log.Debugf("setting PGHA_PGBACKREST_LOCAL_S3_STORAGE to %s", PGHA_PGBACKREST_LOCAL_S3_STORAGE)
 
 	config, err := buildConfig(*kubeconfig)
 	if err != nil {
@@ -121,7 +121,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	if BACKREST_LOCAL_AND_S3_STORAGE {
+	if PGHA_PGBACKREST_LOCAL_S3_STORAGE {
 		firstCmd := cmdStrs
 		cmdStrs = append(cmdStrs, "&&")
 		cmdStrs = append(cmdStrs, strings.Join(firstCmd, " "))

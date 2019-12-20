@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -215,6 +216,18 @@ func cloneStep1(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		return
 	}
 
+	sourceClusterBackrestStorageType := sourcePgcluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]
+	cloneBackrestStorageType := task.Spec.Parameters["backrestStorageType"]
+	// if 's3' storage was selected for the clone, ensure it is enabled in the current pg cluster.
+	// also, if 'local' was selected, or if no storage type was selected, ensure the cluster is using
+	// local storage
+	err = validateBackrestStorageTypeClone(sourceClusterBackrestStorageType, cloneBackrestStorageType)
+	if err != nil {
+		log.Error(err)
+		PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, err.Error())
+		return
+	}
+
 	// Ensure that there does *not* already exist a Pgcluster for the target
 	if found := checkTargetPgCluster(client, namespace, targetClusterName); found {
 		log.Errorf("[%s] already exists", targetClusterName)
@@ -268,9 +281,27 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		return
 	}
 
+	// Retrieve current S3 key & key secret
+	s3Creds, err := util.GetS3CredsFromBackrestRepoSecret(clientset, sourcePgcluster.Name,
+		namespace)
+	if err != nil {
+		log.Error(err)
+		errorMessage := fmt.Sprintf("Unable to get S3 key and key secret from source cluster "+
+			"backrest repo secret: %s", err.Error())
+		PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, errorMessage)
+		return
+	}
+
 	// we need to set up the secret for the pgBackRest repo. This is the place to
 	// do it
-	if err := util.CreateBackrestRepoSecrets(clientset, operator.PgoNamespace, namespace, targetClusterName); err != nil {
+	if err := util.CreateBackrestRepoSecrets(clientset,
+		util.BackrestRepoConfig{
+			BackrestS3Key:       s3Creds.AWSS3Key,
+			BackrestS3KeySecret: s3Creds.AWSS3KeySecret,
+			ClusterName:         targetClusterName,
+			ClusterNamespace:    namespace,
+			OperatorNamespace:   operator.PgoNamespace,
+		}); err != nil {
 		log.Error(err)
 		// publish a failure event
 		errorMessage := fmt.Sprintf("Could not find source cluster: %s", err.Error())
@@ -287,6 +318,9 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 	targetPgcluster := crv1.Pgcluster{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: targetClusterName,
+			Labels: map[string]string{
+				config.LABEL_BACKREST: "true",
+			},
 		},
 		Spec: crv1.PgclusterSpec{
 			Port:           sourcePgcluster.Spec.Port,
@@ -332,8 +366,8 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		PgbackrestDBPath:    fmt.Sprintf(targetClusterPGDATAPath, targetClusterName),
 		PgbackrestRepo1Path: fmt.Sprintf(pgBackRestRepoPath, targetClusterName),
 		PgbackrestRepo1Host: fmt.Sprintf(backrest.BackrestRepoServiceName, targetClusterName),
-		PgbackrestRepoType:  operator.GetRepoType(sourcePgcluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
-		// PgbackrestS3EnvVars is not supported in the first iteration of clone
+		PgbackrestRepoType:  operator.GetRepoType(task.Spec.Parameters["backrestStorageType"]),
+		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(sourcePgcluster, clientset, namespace),
 	}
 
 	// substitute the variables into the BackrestRestore job template
@@ -540,7 +574,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 							},
 						},
 					},
-					RestartPolicy:      v1.RestartPolicyOnFailure,
+					RestartPolicy:      v1.RestartPolicyNever,
 					SecurityContext:    &podSecurityContext,
 					ServiceAccountName: config.LABEL_BACKREST,
 					Volumes: []v1.Volume{
@@ -568,6 +602,65 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 				},
 			},
 		},
+	}
+
+	// Retrieve current S3 key & key secret
+	s3Creds, err := util.GetS3CredsFromBackrestRepoSecret(clientset, sourcePgcluster.Name,
+		namespace)
+	if err != nil {
+		log.Error(err)
+		errorMessage := fmt.Sprintf("Unable to get S3 key and key secret from source cluster "+
+			"backrest repo secret: %s", err.Error())
+		PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, errorMessage)
+		return "", err
+	}
+	// if using S3 for the clone, the add the S3 env vars to the env
+	if strings.Contains(sourcePgcluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE],
+		"s3") {
+		syncEnv := job.Spec.Template.Spec.Containers[0].Env
+		syncEnv = append(syncEnv, []v1.EnvVar{
+			v1.EnvVar{
+				Name:  "BACKREST_STORAGE_SOURCE",
+				Value: task.Spec.Parameters["backrestStorageType"],
+			},
+			v1.EnvVar{
+				Name: "PGBACKREST_REPO1_S3_BUCKET",
+				Value: getS3Param(sourcePgcluster.Spec.BackrestS3Bucket,
+					operator.Pgo.Cluster.BackrestS3Bucket),
+			},
+			v1.EnvVar{
+				Name: "PGBACKREST_REPO1_S3_ENDPOINT",
+				Value: getS3Param(sourcePgcluster.Spec.BackrestS3Endpoint,
+					operator.Pgo.Cluster.BackrestS3Endpoint),
+			},
+			v1.EnvVar{
+				Name: "PGBACKREST_REPO1_S3_REGION",
+				Value: getS3Param(sourcePgcluster.Spec.BackrestS3Region,
+					operator.Pgo.Cluster.BackrestS3Region),
+			},
+			v1.EnvVar{
+				Name:  "PGBACKREST_REPO1_S3_KEY",
+				Value: s3Creds.AWSS3Key,
+			},
+			v1.EnvVar{
+				Name:  "PGBACKREST_REPO1_S3_KEY_SECRET",
+				Value: s3Creds.AWSS3KeySecret,
+			},
+			v1.EnvVar{
+				Name:  "PGBACKREST_REPO1_S3_CA_FILE",
+				Value: "/sshd/aws-s3-ca.crt",
+			},
+		}...)
+		if operator.IsLocalAndS3Storage(
+			sourcePgcluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]) {
+			syncEnv = append(syncEnv, []v1.EnvVar{
+				v1.EnvVar{
+					Name:  "PGHA_PGBACKREST_LOCAL_S3_STORAGE",
+					Value: "true",
+				},
+			}...)
+		}
+		job.Spec.Template.Spec.Containers[0].Env = syncEnv
 	}
 
 	// create the job!
@@ -682,13 +775,17 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 			SecretFrom: sourcePgcluster.Spec.ClusterName,
 			// Strategy is set to "1" because it's already hardcoded elsewhere as this,
 			// and I don't want to touch it at this point
-			Strategy:       "1",
-			User:           sourcePgcluster.Spec.User,
-			UserSecretName: fmt.Sprintf("%s-%s%s", targetClusterName, sourcePgcluster.Spec.User, crv1.UserSecretSuffix),
+			Strategy:           "1",
+			User:               sourcePgcluster.Spec.User,
+			UserSecretName:     fmt.Sprintf("%s-%s%s", targetClusterName, sourcePgcluster.Spec.User, crv1.UserSecretSuffix),
+			BackrestS3Bucket:   sourcePgcluster.Spec.BackrestS3Bucket,
+			BackrestS3Endpoint: sourcePgcluster.Spec.BackrestS3Endpoint,
+			BackrestS3Region:   sourcePgcluster.Spec.BackrestS3Region,
 			// UserLabels can be further expanded, but for now we will just track
 			// which version of pgo is creating this
 			UserLabels: map[string]string{
-				config.LABEL_PGO_VERSION: msgs.PGO_VERSION,
+				config.LABEL_PGO_VERSION:           msgs.PGO_VERSION,
+				config.LABEL_BACKREST_STORAGE_TYPE: sourcePgcluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE],
 			},
 		},
 		Status: crv1.PgclusterStatus{
@@ -847,4 +944,26 @@ func waitForDeploymentReady(clientset *kubernetes.Clientset, namespace, deployme
 			}
 		}
 	}
+}
+
+// validateBackrestStorageTypeClone verifies that 's3' is enabled in the cluster being cloned
+// when 's3' is selected as the storage type for the new/cloned cluster
+func validateBackrestStorageTypeClone(sourceClusterBackrestStorageType,
+	cloneBackrestStorageType string) error {
+
+	if !strings.Contains(sourceClusterBackrestStorageType, cloneBackrestStorageType) {
+		return fmt.Errorf("The backrest storage source '%s' selected for the cloned cluster does "+
+			"not match a storage type in source cluster storage type '%s'",
+			cloneBackrestStorageType, sourceClusterBackrestStorageType)
+	}
+	return nil
+}
+
+// getS3Param returns either the value provided by 'sourceClusterS3param' if not en empty string,
+// otherwise return the equivlant value from the pgo.yaml global configuration filer
+func getS3Param(sourceClusterS3param, pgoConfigParam string) string {
+	if sourceClusterS3param != "" {
+		return sourceClusterS3param
+	}
+	return pgoConfigParam
 }

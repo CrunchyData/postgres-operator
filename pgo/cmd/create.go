@@ -52,6 +52,11 @@ var PgouserPassword, PgouserRoles, PgouserNamespaces string
 var Permissions string
 var PodAntiAffinity string
 var SyncReplication bool
+var BackrestS3Key string
+var BackrestS3KeySecret string
+var BackrestS3Bucket string
+var BackrestS3Endpoint string
+var BackrestS3Region string
 
 var Series int
 
@@ -258,7 +263,22 @@ func init() {
 		"Specifies the type of anti-affinity that should be utilized when applying  "+
 			"default pod anti-affinity rules to PG clusters (default \"preferred\")")
 	createClusterCmd.Flags().BoolVarP(&SyncReplication, "sync-replication", "", false,
-		"Enables synchronous replication for the cluster")
+		"Enables synchronous replication for the cluster.")
+	createClusterCmd.Flags().StringVarP(&BackrestS3Key, "pgbackrest-s3-key", "", "",
+		"The AWS S3 key that should be utilized for the cluster when the \"s3\" "+
+			"storage type is enabled for pgBackRest.")
+	createClusterCmd.Flags().StringVarP(&BackrestS3KeySecret, "pgbackrest-s3-key-secret", "", "",
+		"The AWS S3 key secret that should be utilized for the cluster when the \"s3\" "+
+			"storage type is enabled for pgBackRest.")
+	createClusterCmd.Flags().StringVarP(&BackrestS3Bucket, "pgbackrest-s3-bucket", "", "",
+		"The AWS S3 bucket that should be utilized for the cluster when the \"s3\" "+
+			"storage type is enabled for pgBackRest.")
+	createClusterCmd.Flags().StringVarP(&BackrestS3Endpoint, "pgbackrest-s3-endpoint", "", "",
+		"The AWS S3 endpoint that should be utilized for the cluster when the \"s3\" "+
+			"storage type is enabled for pgBackRest.")
+	createClusterCmd.Flags().StringVarP(&BackrestS3Region, "pgbackrest-s3-region", "", "",
+		"The AWS S3 region that should be utilized for the cluster when the \"s3\" "+
+			"storage type is enabled for pgBackRest.")
 
 	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy.")
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy.")

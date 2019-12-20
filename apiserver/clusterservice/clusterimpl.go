@@ -612,7 +612,10 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			userLabelsMap[config.LABEL_SERVICE_TYPE] = request.ServiceType
 		}
 
-		err = validateBackrestStorageType(request.BackrestStorageType, request.BackrestFlag)
+		// ensure the backrest storage type specified for the cluster is valid, and that the
+		// configruation required to use that storage type (e.g. a bucket, endpoint and region
+		// when using aws s3 storage) has been provided
+		err = validateBackrestStorageTypeOnCreate(request, request.BackrestFlag)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -758,7 +761,14 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
 		_, _, err = kubeapi.GetSecret(apiserver.Clientset, secretName, request.Namespace)
 		if kerrors.IsNotFound(err) {
-			err := util.CreateBackrestRepoSecrets(apiserver.Clientset, apiserver.PgoNamespace, request.Namespace, clusterName)
+			err := util.CreateBackrestRepoSecrets(apiserver.Clientset,
+				util.BackrestRepoConfig{
+					BackrestS3Key:       request.BackrestS3Key,
+					BackrestS3KeySecret: request.BackrestS3KeySecret,
+					ClusterName:         clusterName,
+					ClusterNamespace:    request.Namespace,
+					OperatorNamespace:   apiserver.PgoNamespace,
+				})
 			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = fmt.Sprintf("could not create backrest repo secret: %s", err)
@@ -958,6 +968,17 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.CustomConfig = request.CustomConfig
 	spec.PodAntiAffinity = request.PodAntiAffinity
 	spec.SyncReplication = request.SyncReplication
+
+	// set pgBackRest S3 settings in the spec if included in the request
+	if request.BackrestS3Bucket != "" {
+		spec.BackrestS3Bucket = request.BackrestS3Bucket
+	}
+	if request.BackrestS3Endpoint != "" {
+		spec.BackrestS3Endpoint = request.BackrestS3Endpoint
+	}
+	if request.BackrestS3Region != "" {
+		spec.BackrestS3Region = request.BackrestS3Region
+	}
 
 	labels := make(map[string]string)
 	labels[config.LABEL_NAME] = name
@@ -1399,8 +1420,12 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 
 }
 
-func validateBackrestStorageType(requestBackRestStorageType string, backrestEnabledFlag string) error {
+// validateBackrestStorageTypeOnCreate validates the pgbackrest storage type specified when
+// a new cluster.  This includes ensuring the type provided is valid, and that the required
+// configuration settings (s3 bucket, region, etc.) are also present
+func validateBackrestStorageTypeOnCreate(request *msgs.CreateClusterRequest, backrestEnabledFlag string) error {
 
+	requestBackRestStorageType := request.BackrestStorageType
 	var backrestEnabled bool
 	var parseError error
 
@@ -1420,11 +1445,26 @@ func validateBackrestStorageType(requestBackRestStorageType string, backrestEnab
 	} else if requestBackRestStorageType != "" && !apiserver.IsValidBackrestStorageType(requestBackRestStorageType) {
 		return fmt.Errorf("Invalid value provided for pgBackRest storage type. The following values are allowed: %s",
 			"\""+strings.Join(apiserver.GetBackrestStorageTypes(), "\", \"")+"\"")
-	} else if strings.Contains(requestBackRestStorageType, "s3") && (apiserver.Pgo.Cluster.BackrestS3Bucket == "" ||
-		apiserver.Pgo.Cluster.BackrestS3Endpoint == "" || apiserver.Pgo.Cluster.BackrestS3Region == "") {
-		return errors.New("A configuration setting for AWS S3 storage is missing from pgo.yaml. Values must be provided for " +
-			"'BackrestS3Bucket', 'BackrestS3Endpoint' and 'BackrestS3Region' in order to use the 's3' storage type with pgBackRest.")
+	} else if strings.Contains(requestBackRestStorageType, "s3") && isMissingS3Config(request) {
+		return errors.New("A configuration setting for AWS S3 storage is missing. Values must be " +
+			"provided for the S3 bucket, S3 endpoint and S3 region in order to use the 's3' " +
+			"storage type with pgBackRest.")
 	}
 
 	return nil
+}
+
+// determines if any of the required S3 configuration settings (bucket, endpoint
+// and region) are missing from both the incoming request or the pgo.yaml config file
+func isMissingS3Config(request *msgs.CreateClusterRequest) bool {
+	if request.BackrestS3Bucket == "" && apiserver.Pgo.Cluster.BackrestS3Bucket == "" {
+		return true
+	}
+	if request.BackrestS3Endpoint == "" && apiserver.Pgo.Cluster.BackrestS3Endpoint == "" {
+		return true
+	}
+	if request.BackrestS3Region == "" && apiserver.Pgo.Cluster.BackrestS3Region == "" {
+		return true
+	}
+	return false
 }

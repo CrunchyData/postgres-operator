@@ -27,13 +27,14 @@ import (
 
 // CloneTask allows you to create a Pgtask CRD with the appropriate options
 type CloneTask struct {
-	PGOUser           string
-	SourceClusterName string
-	TargetClusterName string
-	TaskStepLabel     string
-	TaskType          string
-	Timestamp         time.Time
-	WorkflowID        string
+	PGOUser               string
+	SourceClusterName     string
+	TargetClusterName     string
+	TaskStepLabel         string
+	TaskType              string
+	Timestamp             time.Time
+	WorkflowID            string
+	BackrestStorageSource string
 }
 
 // newCloneTask returns a new instance of a Pgtask CRD
@@ -60,6 +61,7 @@ func (clone CloneTask) Create() *crv1.Pgtask {
 				"taskName":            taskName,
 				"timestamp":           clone.Timestamp.Format(time.RFC3339),
 				crv1.PgtaskWorkflowID: clone.WorkflowID,
+				"backrestStorageType": clone.BackrestStorageSource,
 			},
 		},
 	}

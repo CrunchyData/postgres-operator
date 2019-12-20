@@ -227,6 +227,8 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 							cluster.ObjectMeta.Namespace)
 					}
 
+					operator.UpdatePghaDefaultConfigInitFlag(c.PodClientset, false, clusterName, newpod.ObjectMeta.Namespace)
+
 					// update pgreplica status if performing a restore
 					if cluster.Status.State == crv1.PgclusterStateRestore {
 						pgreplicaList := &crv1.PgreplicaList{}
@@ -254,8 +256,6 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 						}
 						return
 					}
-
-					operator.UpdatePghaDefaultConfigInitFlag(c.PodClientset, false, clusterName, newpod.ObjectMeta.Namespace)
 
 					log.Debugf("%s went to Ready from Not Ready, apply policies...", clusterName)
 					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
