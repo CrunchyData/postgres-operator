@@ -4,8 +4,11 @@ kind: ServiceAccount
 metadata:
   name: postgres-operator
   namespace: {{ pgo_operator_namespace }}
-{% if pgo_image_pull_secret %}
 imagePullSecrets:
+{% if ccp_image_pull_secret %}
+  - name: {{ ccp_image_pull_secret }}
+{% endif %}
+{% if pgo_image_pull_secret and ccp_image_pull_secret != pgo_image_pull_secret %}
   - name: {{ pgo_image_pull_secret }}
 {% endif %}
 ---
