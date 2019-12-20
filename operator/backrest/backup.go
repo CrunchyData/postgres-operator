@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -78,6 +79,34 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 		PgbackrestRestoreVolumeMounts: "",
 		PgbackrestRepoType:            operator.GetRepoType(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
 		BackrestLocalAndS3Storage:     operator.IsLocalAndS3Storage(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
+	}
+
+	// if not already specified in the command options provided in the pgtask, then lookup the primary
+	// pod for the cluster and add the hostname of the pod as the value for the "--db-host" parameter.
+	// This will override the pg host configuration specified in the backrest repo, ensuring direct 
+	// communication between the repo pod and the primary via the primary's IP, instead of going through
+	// the primary pod's service (which could be unreliable).
+	if !strings.Contains(task.Spec.Parameters[config.LABEL_BACKREST_OPTS], "--db-host") &&
+		!strings.Contains(task.Spec.Parameters[config.LABEL_BACKREST_OPTS], "--pg1-host") {
+		selector := fmt.Sprintf("%s=%s,%s in (%s,%s)", config.LABEL_PG_CLUSTER,
+			task.Spec.Parameters[config.LABEL_PG_CLUSTER], config.LABEL_PGHA_ROLE,
+			"promoted", "master")
+		pods, err := kubeapi.GetPods(clientset, selector, namespace)
+		if err != nil {
+			log.Error(err)
+			return
+		} else if len(pods.Items) > 1 {
+			log.Errorf("More than one primary found when creating backrest job %s",
+				task.Spec.Parameters[config.LABEL_JOB_NAME])
+			return
+		} else if len(pods.Items) == 0 {
+			log.Errorf("Unable to find primary when creating backrest job %s",
+				task.Spec.Parameters[config.LABEL_JOB_NAME])
+			return
+		}
+		pod := pods.Items[0]
+		jobFields.CommandOpts = jobFields.CommandOpts +
+			fmt.Sprintf(" --db-host=%s", pod.Status.PodIP)
 	}
 
 	var doc2 bytes.Buffer
