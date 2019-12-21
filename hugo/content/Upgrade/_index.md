@@ -2,7 +2,7 @@
 title: "Upgrade"
 Latest Release: 4.2.0 {docdate}
 draft: false
-weight: 8
+weight: 80
 ---
 
 ## Upgrading the Operator

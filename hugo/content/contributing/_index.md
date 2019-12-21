@@ -1,6 +1,6 @@
 ---
 title: "Contributing"
-date: 
+date:
 draft: false
-weight: 9
+weight: 90
 ---

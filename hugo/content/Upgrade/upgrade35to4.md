@@ -42,9 +42,9 @@ Delete the 3.5.x version of the operator by executing:
 	$COROOT/deploy/remove-crd.sh
 
 ##### Step 3
-Log in as your new Linux user and install the 4.1 Postgres Operator. 
+Log in as your new Linux user and install the 4.1 Postgres Operator.
 
-Be sure to add the existing namespace to the Operator's list of watched namespaces (see the [Namespace] ( {{< relref "gettingstarted/Design/namespace.md" >}}) section of this document for more information) and make sure to avoid overwriting any existing data storage.
+Be sure to add the existing namespace to the Operator's list of watched namespaces (see the [Namespace] ( {{< relref "architecture/namespace.md" >}}) section of this document for more information) and make sure to avoid overwriting any existing data storage.
 
 
 ##### Step 4
@@ -60,7 +60,7 @@ Manually update the old leftover Secrets to use the new label as defined in 4.1:
 	kubectl label secret/<clustername>-testuser-secret pg-cluster=<clustername> -n <namespace>
 
 ##### Step 6
-To verify cluster status, run 
+To verify cluster status, run
 	pgo test <clustername> -n <namespace>
 Output should be similar to:
 ```
@@ -70,6 +70,6 @@ psql -p 5432 -h 10.104.74.189 -U primaryuser postgres is Working
 psql -p 5432 -h 10.104.74.189 -U primaryuser userdb is Working
 psql -p 5432 -h 10.104.74.189 -U testuser postgres is Working
 psql -p 5432 -h 10.104.74.189 -U testuser userdb is Working
-``` 
+```
 ##### Step 7
 Scale up to the required number of replicas, as needed.

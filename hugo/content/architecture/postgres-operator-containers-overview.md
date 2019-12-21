@@ -1,8 +1,8 @@
 ---
-title: "PostgreSQL Operator Containers Overview"
+title: "PostgreSQL Containers"
 date:
 draft: false
-weight: 6
+weight: 600
 ---
 
 ## PostgreSQL Operator Containers Overview
@@ -11,15 +11,13 @@ The PostgreSQL Operator orchestrates a series of PostgreSQL and PostgreSQL relat
 
 ### PostgreSQL Server and Extensions
 
-* **PostgreSQL** (crunchy-postgres).  PostgreSQL database server.  The crunchy-postgres container image is unmodified, open source PostgreSQL packaged and maintained by Crunchy Data.
+* **PostgreSQL** (crunchy-postgres-ha).  PostgreSQL database server.  The crunchy-postgres container image is unmodified, open source PostgreSQL packaged and maintained by Crunchy Data.
 
-* **PostGIS** (crunchy-postgres-gis).  PostgreSQL database server including the PostGIS extension. The crunchy-postgres-gis container image is unmodified, open source PostgreSQL packaged and maintained by Crunchy Data. This image is identical to the crunchy-postgres image except it includes the open source geospatial extension PostGIS for PostgreSQL in addition to the language extension PL/R which allows for writing functions in the R statistical computing language.
+* **PostGIS** (crunchy-postgres-ha-gis).  PostgreSQL database server including the PostGIS extension. The crunchy-postgres-gis container image is unmodified, open source PostgreSQL packaged and maintained by Crunchy Data. This image is identical to the crunchy-postgres image except it includes the open source geospatial extension PostGIS for PostgreSQL in addition to the language extension PL/R which allows for writing functions in the R statistical computing language.
 
 ### Backup and Restore
 
 * **pgBackRest** (crunchy-backrest-restore). pgBackRest is a high performance backup and restore utility for PostgreSQL.  The crunchy-backrest-restore container executes the pgBackRest utility, allowing FULL and DELTA restore capability.
-
-* **pg_basebackup** (crunchy-backup). pg_basebackup is used to take base backups of a running PostgreSQL database cluster. The crunchy-backup container executes a full backup against another database container using the standard pg_basebackup utility that is included with PostgreSQL.
 
 * **pgdump** (crunchy-pgdump). The crunchy-pgdump container executes either a pg_dump or pg_dumpall database backup against another PostgreSQL database.
 

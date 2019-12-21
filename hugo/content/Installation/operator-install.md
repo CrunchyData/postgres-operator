@@ -255,7 +255,7 @@ with a remote Operator.
 
 {{% notice info %}}
 
-If TLS authentication was disabled during installation, please see the [TLS Configuration Page] ({{< relref "gettingstarted/Design/tls.md" >}}) for additional configuration information.
+If TLS authentication was disabled during installation, please see the [TLS Configuration Page] ({{< relref "Configuration/tls.md" >}}) for additional configuration information.
 
 {{% / notice %}}
 

@@ -328,9 +328,6 @@ this means ensuring that the volume containing the database files for the primar
 database in a new PostgreSQL cluster is provisioned in the same zone as the node
 containing the PostgreSQL primary pod that will be using it.
 
-For instructions on setting up storage classes for multi-zone environments, see
-the [PostgreSQL Operator Documentation](/gettingstarted/design/designoverview/).
-
 ## Resource Configuration
 
 Kubernetes and OpenShift allow specific resource requirements to be specified for the various containers deployed inside of a pod.

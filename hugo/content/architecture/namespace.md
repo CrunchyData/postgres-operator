@@ -1,8 +1,8 @@
 ---
-title: "Namespace"
+title: "Namespace Management"
 date:
 draft: false
-weight: 6
+weight: 400
 ---
 
 ## Operator Namespaces
@@ -11,8 +11,8 @@ The Operator itself knows which namespace it is running
 within by referencing the PGO_OPERATOR_NAMESPACE environment variable
 at startup time from within its Deployment definition.  
 
-The PGO_OPERATOR_NAMESPACE environment variable a user sets in their 
-.bashrc file is used to determine what namespace the Operator 
+The PGO_OPERATOR_NAMESPACE environment variable a user sets in their
+.bashrc file is used to determine what namespace the Operator
 is deployed into.  The PGO_OPERATOR_NAMESPACE variable is referenced
 by the Operator during deployment.
 
@@ -31,14 +31,14 @@ the namespaces which will be *watched* by the Operator.
 The format of the NAMESPACE value is modeled after the following
 document:
 
-https://github.com/operator-framework/operator-lifecycle-manager/blob/0.12.0/doc/design/operatorgroups.md 
+https://github.com/operator-framework/operator-lifecycle-manager/blob/0.12.0/doc/design/operatorgroups.md
 
 
 ### OwnNamespace Example
 
 Prior to version 4.0, the Operator was deployed into
 a single namespace and Postgres Clusters created by it were
-created in that same namespace. 
+created in that same namespace.
 
 To achieve that same deployment model you would use
 variable settings as follows:
@@ -50,7 +50,7 @@ variable settings as follows:
 
 ### SingleNamespace Example
 
-To have the Operator deployed into its own namespace but 
+To have the Operator deployed into its own namespace but
 create Postgres Clusters into a different namespace the
 variables would be as follows:
 
@@ -70,41 +70,24 @@ variables would be as follows:
 
 ![Reference](/Namespace-Single-Multiple.png)
 
-### AllNamespaces Example
-
-To have the Operator deployed into its own namespace but
-create Postgres Clusters into any target namespace the
-variables would be as follows:
-
-    export PGO_OPERATOR_NAMESPACE=pgo
-    export NAMESPACE=
-
-Here the empty string value represents *all* namespaces.
-
-![Reference](/Namespace-Single-Any.png)
-
-
 ### RBAC
 
-To support multiple namespace watching, the Operator deployment
-process changes somewhat from 3.X releases.
+To support multiple namespace watching, each namespace that the PostgreSQL
+Operator watches requires its own copy of the following resources:
 
-Each namespace to be watched requires its own copy of the 
-the following resources for working with the Operator:
+- `role/pgo-backrest-role`
+- `role/pgo-role`
+- `rolebinding/pgo-backrest-role-binding`
+- `rolebinding/pgo-role-binding`
+- `secret/pgo-backrest-repo-config`
+- `serviceaccount/pgo-backrest`
 
-    serviceaccount/pgo-backrest
-    secret/pgo-backrest-repo-config
-    role/pgo-role
-    rolebinding/pgo-role-binding
-    role/pgo-backrest-role
-    rolebinding/pgo-backrest-role-binding
-
-When you run the install-rbac.sh script, it iterates through the 
-list of namespaces to be watched and creates these resources into 
+When you run the install-rbac.sh script, it iterates through the
+list of namespaces to be watched and creates these resources into
 each of those namespaces.
 
 If you need to add a new namespace that the Operator will watch
-after an initial execution of install-rbac.sh, you will need to run 
+after an initial execution of install-rbac.sh, you will need to run
 the following for each new namespace:
 
     create-target-rbac.sh YOURNEWNAMESPACE $PGO_OPERATOR_NAMESPACE
@@ -113,7 +96,6 @@ The example deployment creates the following RBAC structure
 on your Kubernetes system after running the install scripts:
 
 ![Reference](/Operator-RBAC-Diagram.png)
-
 
 ## pgo Clients and Namespaces
 
@@ -127,5 +109,3 @@ flag.
 
 If a pgo request doe not contain a valid namespace the request
 will be rejected.
-
-

@@ -1,8 +1,8 @@
 ---
-title: "Eventing"
+title: "Lifecycle Events"
 date:
 draft: false
-weight: 6
+weight: 500
 ---
 
 ## Operator Eventing

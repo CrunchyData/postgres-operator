@@ -117,9 +117,3 @@ use that namespace unless you over-ride it using the *--namespace*
 command line flag.
 
     pgo show cluster foo --namespace=pgouser2
-
-## Namespace Configuration
-
-The Design [Design](/gettingstarted/design) section of this documentation talks further about
-the use of namespaces within the Operator and configuring different
-deployment models of the Operator.

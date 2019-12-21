@@ -16,14 +16,14 @@ project for the inventory file, main playbook and ansible roles.
 
 ## Installing on Linux
 
-On a Linux host with Ansible installed we can run the following command to install 
+On a Linux host with Ansible installed we can run the following command to install
 the PostgreSQL Operator:
 
 ```bash
 ansible-playbook -i /path/to/inventory --tags=install --ask-become-pass main.yml
 ```
 
-If the Crunchy PostgreSQL Operator playbooks were installed using `yum`, use the 
+If the Crunchy PostgreSQL Operator playbooks were installed using `yum`, use the
 following commands:
 
 ```bash
@@ -44,7 +44,7 @@ ansible-playbook -i /path/to/inventory --tags=install --ask-become-pass main.yml
 
 ## Installing on Windows Ubuntu Subsystem
 
-On a Windows host with an Ubuntu subsystem we can run the following commands to install 
+On a Windows host with an Ubuntu subsystem we can run the following commands to install
 the PostgreSQL Operator.
 
 ```bash
@@ -53,7 +53,7 @@ ansible-playbook -i /path/to/inventory --tags=install --ask-become-pass main.yml
 
 ## Verifying the Installation
 
-This may take a few minutes to deploy.  To check the status of the deployment run 
+This may take a few minutes to deploy.  To check the status of the deployment run
 the following:
 
 ```bash
@@ -68,12 +68,12 @@ oc get pods -n <NAMESPACE_NAME>
 
 ## Configure Environment Variables
 
-After the Crunchy PostgreSQL Operator has successfully been installed we will need 
+After the Crunchy PostgreSQL Operator has successfully been installed we will need
 to configure local environment variables before using the `pgo` client.
 
 {{% notice info %}}
 
-If TLS authentication was disabled during installation, please see the [TLS Configuration Page] ({{< relref "gettingstarted/Design/tls.md" >}}) for additional configuration information.
+If TLS authentication was disabled during installation, please see the [TLS Configuration Page] ({{< relref "Configuration/tls.md" >}}) for additional configuration information.
 
 {{% / notice %}}
 
@@ -100,7 +100,7 @@ source ~/.bashrc
 
 ## Verify `pgo` Connection
 
-In a separate terminal we need to setup a port forward to the Crunchy PostgreSQL 
+In a separate terminal we need to setup a port forward to the Crunchy PostgreSQL
 Operator to ensure connection can be made outside of the cluster:
 
 ```bash
@@ -111,12 +111,12 @@ kubectl port-forward <OPERATOR_POD_NAME> -n <OPERATOR_NAMESPACE> 8443:8443
 oc port-forward <OPERATOR_POD_NAME> -n <OPERATOR_NAMESPACE> 8443:8443
 ```
 
-On a separate terminal verify the `pgo` can communicate with the Crunchy PostgreSQL 
+On a separate terminal verify the `pgo` can communicate with the Crunchy PostgreSQL
 Operator:
 
 ```bash
 pgo version
 ```
 
-If the above command outputs versions of both the client and API server, the Crunchy 
+If the above command outputs versions of both the client and API server, the Crunchy
 PostgreSQL Operator has been installed successfully.
