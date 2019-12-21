@@ -33,7 +33,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -137,15 +136,6 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 			return
 		}
 	}
-
-	//update backrest repo with new data path
-	targetDepName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_TO_PVC]
-	err = UpdateDBPath(clientset, &cluster, targetDepName, namespace)
-	if err != nil {
-		log.Errorf("restore workflow error: could not bounce repo with new db path")
-		return
-	}
-	log.Debugf("restore workflow: bounced backrest-repo with new db path")
 
 	//sleep for a bit to give the bounce time to take effect and let
 	//the backrest repo container come back and be able to service requests
@@ -294,98 +284,6 @@ func createPVC(storage crv1.PgStorageSpec, clusterName string, restclient *rest.
 	}
 	return pvcName, err
 
-}
-
-//update the PGBACKREST_DB_PATH env var of the backrest-repo
-//deployment for a given cluster, the deployment is bounced as
-//part of this process
-func UpdateDBPath(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, target, namespace string) error {
-	var err error
-	newPath := "/pgdata/" + target
-	depName := cluster.Name + "-backrest-shared-repo"
-
-	var deployment *appsv1.Deployment
-	deployment, err = clientset.AppsV1().Deployments(namespace).Get(depName, meta_v1.GetOptions{})
-	if err != nil {
-		log.Error(err)
-		log.Error("error getting deployment in UpdateDBPath using name " + depName)
-		return err
-	}
-
-	//log.Debugf("replicas %d", *deployment.Spec.Replicas)
-
-	//drain deployment to 0 pods
-	*deployment.Spec.Replicas = 0
-
-	containerIndex := -1
-	envIndex := -1
-	var dbPathValue string
-	//update the env var Value
-	//template->spec->containers->env["PGBACKREST_DB_PATH"]
-	for kc, c := range deployment.Spec.Template.Spec.Containers {
-		if c.Name == "database" {
-			log.Debugf(" %s is the container name at %d", c.Name, kc)
-			containerIndex = kc
-			for ke, e := range c.Env {
-				if e.Name == "PGBACKREST_DB_PATH" {
-					log.Debugf("PGBACKREST_DB_PATH is %s", e.Value)
-					envIndex = ke
-					dbPathValue = e.Value
-				}
-			}
-		}
-	}
-
-	if containerIndex == -1 || envIndex == -1 {
-		return errors.New("error in getting container with PGBACRKEST_DB_PATH for cluster " + cluster.Name)
-	} else if dbPathValue == newPath {
-		log.Debugf("PGBACKREST_DB_PATH already set to %s, will not update", newPath)
-		return nil
-	}
-
-	deployment.Spec.Template.Spec.Containers[containerIndex].Env[envIndex].Value = newPath
-
-	//update the deployment (drain and update the env var)
-	err = kubeapi.UpdateDeployment(clientset, deployment, namespace)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-
-	//wait till deployment goes to 0
-	//TODO fix this loop to be a proper wait
-	var zero bool
-	for i := 0; i < 8; i++ {
-		deployment, err = clientset.AppsV1().Deployments(namespace).Get(depName, meta_v1.GetOptions{})
-		if err != nil {
-			log.Error("could not get deployment UpdateDBPath " + err.Error())
-			return err
-		}
-
-		log.Debugf("status replicas %d\n", deployment.Status.Replicas)
-		if deployment.Status.Replicas == 0 {
-			log.Debugf("deployment %s replicas is now 0", deployment.Name)
-			zero = true
-			break
-		} else {
-			log.Debug("UpdateDBPath: sleeping till deployment goes to 0")
-			time.Sleep(time.Second * time.Duration(2))
-		}
-	}
-	if !zero {
-		return errors.New("deployment replicas never went to 0")
-	}
-	//update the deployment back to replicas 1
-	*deployment.Spec.Replicas = 1
-	err = kubeapi.UpdateDeployment(clientset, deployment, namespace)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-
-	log.Debugf("updated PGBACKREST_DB_PATH to %s on deployment %s", newPath, cluster.Name)
-
-	return err
 }
 
 func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgcluster, clientset *kubernetes.Clientset,
