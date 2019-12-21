@@ -285,6 +285,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 					log.Error(err)
 					return
 				}
+				clusterStatus := cluster.Status.State
 				message := "Cluster has been initialized"
 				err = kubeapi.PatchpgclusterStatus(c.JobClient, crv1.PgclusterStateInitialized, message,
 					&cluster, job.ObjectMeta.Namespace)
@@ -302,7 +303,11 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 					if pgreplica.Annotations == nil {
 						pgreplica.Annotations = make(map[string]string)
 					}
-					pgreplica.Annotations[config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA] = "true"
+					if clusterStatus == crv1.PgclusterStateRestore {
+						pgreplica.Spec.Status = "restore"
+					} else { 
+						pgreplica.Annotations[config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA] = "true"
+					}
 					err = kubeapi.Updatepgreplica(c.JobClient, &pgreplica, pgreplica.Name, job.ObjectMeta.Namespace)
 					if err != nil {
 						log.Error(err)
