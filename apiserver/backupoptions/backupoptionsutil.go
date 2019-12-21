@@ -151,6 +151,10 @@ func createBackupOptionsStruct(backupOpts string, request interface{}) (backupOp
 		}
 	case *msgs.PgRestoreRequest:
 		return &pgRestoreOptions{}, "pg_restore", nil
+	case *msgs.CreateScheduleRequest:
+		if request.(*msgs.CreateScheduleRequest).ScheduleType == "pgbackrest" {
+			return &pgBackRestBackupOptions{}, "pgBackRest", nil
+		}
 	}
 	return nil, "", errors.New("Request type not recognized. Unable to create struct for backup opts")
 }

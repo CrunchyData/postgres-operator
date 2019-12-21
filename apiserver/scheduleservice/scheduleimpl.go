@@ -16,6 +16,7 @@ package scheduleservice
 */
 
 import (
+	"github.com/crunchydata/postgres-operator/apiserver/backupoptions"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -61,6 +62,7 @@ func (s scheduleRequest) createBackRestSchedule(cluster *crv1.Pgcluster, ns stri
 			Container:   "database",
 			Type:        s.Request.PGBackRestType,
 			StorageType: s.Request.BackrestStorageType,
+			Options:     s.Request.ScheduleOptions,
 		},
 	}
 	return schedule
@@ -160,6 +162,16 @@ func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateS
 		sr.Response.Status.Code = msgs.Error
 		sr.Response.Status.Msg = fmt.Sprintf("Could not get cluster via selector: %s", err)
 		return *sr.Response
+	}
+
+	// validate schedule options
+	if sr.Request.ScheduleOptions != "" {
+		err := backupoptions.ValidateBackupOpts(sr.Request.ScheduleOptions, request)
+		if err != nil {
+			sr.Response.Status.Code = msgs.Error
+			sr.Response.Status.Msg = err.Error()
+			return *sr.Response
+		}
 	}
 
 	log.Debug("Making schedules")

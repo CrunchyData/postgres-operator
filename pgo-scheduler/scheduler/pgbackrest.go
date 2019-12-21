@@ -35,6 +35,7 @@ type BackRestBackupJob struct {
 	container   string
 	cluster     string
 	storageType string
+	options     string
 }
 
 func (s *ScheduleTemplate) NewBackRestSchedule() BackRestBackupJob {
@@ -47,6 +48,7 @@ func (s *ScheduleTemplate) NewBackRestSchedule() BackRestBackupJob {
 		container:   s.PGBackRest.Container,
 		cluster:     s.Cluster,
 		storageType: s.PGBackRest.StorageType,
+		options:     s.Options,
 	}
 }
 
@@ -146,7 +148,7 @@ func (b BackRestBackupJob) Run() {
 		taskName:      taskName,
 		podName:       pods.Items[0].Name,
 		containerName: "database",
-		backupOptions: fmt.Sprintf("--type=%s", b.backupType),
+		backupOptions: fmt.Sprintf("--type=%s %s", b.backupType, b.options),
 		stanza:        b.stanza,
 		storageType:   b.storageType,
 	}
