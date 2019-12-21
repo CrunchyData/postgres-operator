@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"fmt"
 	"context"
 	"encoding/json"
 	"strconv"
@@ -220,31 +221,31 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 
 					operator.UpdatePghaDefaultConfigInitFlag(c.PodClientset, false, clusterName, newpod.ObjectMeta.Namespace)
 
-					// update pgreplica status if performing a restore
+					// if pod is coming ready after a restore, create the initial backup instead
+					// of the stanza
 					if cluster.Status.State == crv1.PgclusterStateRestore {
-						pgreplicaList := &crv1.PgreplicaList{}
-						selector := config.LABEL_PG_CLUSTER + "=" + clusterName
-						log.Debugf("Restored cluster %s went to ready, patching replicas", clusterName)
-						err := kubeapi.GetpgreplicasBySelector(c.PodClient, pgreplicaList, selector, newpod.ObjectMeta.Namespace)
-						if err != nil {
-							log.Error(err)
-							return
-						}
-						message := "Cluster has been initialized"
-						err = kubeapi.PatchpgclusterStatus(c.PodClient, crv1.PgclusterStateInitialized, message, cluster,
+
+						//look up the backrest-repo pod name
+						selector := fmt.Sprintf("%s=%s,pgo-backrest-repo=true", 
+							config.LABEL_PG_CLUSTER, clusterName)
+						pods, err := kubeapi.GetPods(c.PodClientset, selector, 
 							newpod.ObjectMeta.Namespace)
+						if len(pods.Items) != 1 {
+							log.Errorf("pods len != 1 for cluster %s", clusterName)
+							return
+						}
+						if err != nil {
+							log.Error(err)
+						}
+						err = backrest.CleanBackupResources(c.PodClient, c.PodClientset,
+							newpod.ObjectMeta.Namespace, clusterName)
 						if err != nil {
 							log.Error(err)
 							return
 						}
-						for _, pgreplica := range pgreplicaList.Items {
-							pgreplica.Spec.Status = "restore"
-							err = kubeapi.Updatepgreplica(c.PodClient, &pgreplica, pgreplica.Name, newpod.ObjectMeta.Namespace)
-							if err != nil {
-								log.Error(err)
-								return
-							}
-						}
+
+						backrestoperator.CreateInitialBackup(c.PodClient, newpod.ObjectMeta.Namespace,
+							clusterName, pods.Items[0].Name)
 						return
 					}
 
