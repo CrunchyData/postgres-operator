@@ -131,12 +131,32 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 
 	//handle the case when a pg database pod is updated
 	if isPostgresPod(newpod) {
-		// Handle the "role" label change from "replica" to "master" following a failover.  Specifically, patch the pgBackRest
-		// dedicated repository host (specifically the PGBACKREST_DB_PATH env var) to point to the proper directory for the new
-		// primary
-		if oldpod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "promoted" && labels[config.LABEL_PGHA_ROLE] == "master" {
-			err = backrest.UpdateDBPath(c.PodClientset, &pgcluster, labels[config.LABEL_DEPLOYMENT_NAME],
-				newpod.ObjectMeta.Namespace)
+		// Handle the "role" label change from "replica" to "master" following a failover.
+		// Specifically, take a backup to ensure there is a fresh backup for the cluster
+		// post-failover.
+		if oldpod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "promoted" &&
+			labels[config.LABEL_PGHA_ROLE] == "master" &&
+			pgcluster.Status.State == crv1.PgclusterStateInitialized {
+
+			//look up the backrest-repo pod name
+			selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," +
+				config.LABEL_PGO_BACKREST_REPO + "=true"
+			pods, err := kubeapi.GetPods(c.PodClientset, selector, newpod.ObjectMeta.Namespace)
+			if len(pods.Items) != 1 {
+				log.Errorf("pods len != 1 for cluster %s", clusterName)
+				return
+			} else if err != nil {
+				log.Error(err)
+			}
+
+			err = backrest.CleanBackupResources(c.PodClient, c.PodClientset,
+				newpod.ObjectMeta.Namespace, clusterName)
+			if err != nil {
+				log.Error(err)
+				return
+			}
+			_, err = backrest.CreatePostFailoverBackup(c.PodClient,
+				newpod.ObjectMeta.Namespace, clusterName, pods.Items[0].Name)
 			if err != nil {
 				log.Error(err)
 				return
@@ -148,35 +168,6 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 			c.checkReadyStatus(oldpod, newpod, &pgcluster)
 		}
 		return
-	}
-
-	// determine if the updated pod is a pgBackRest dedicated repository host
-	if _, valExists := labels[config.LABEL_PGO_BACKREST_REPO]; valExists {
-		isBackrestRepo, err := strconv.ParseBool(labels[config.LABEL_PGO_BACKREST_REPO])
-		if err != nil {
-			log.Error(err)
-			return
-		}
-
-		// if the backrest repo pod is ready, then see if it is reporting ready following a
-		// configuration update due to a failover over (i.e. to point the pgbackrest repo to the
-		// new primary).  if it is again ready following a failover event, then initiate a backup
-		if isBackrestRepo && isPrimaryOnRoleChange(c.PodClientset, pgcluster,
-			newpod.ObjectMeta.Namespace) && isBackrestRepoReady(oldpod, newpod) {
-
-			err = backrest.CleanBackupResources(c.PodClient, c.PodClientset,
-				newpod.ObjectMeta.Namespace, clusterName)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			_, err = backrest.CreatePostFailoverBackup(c.PodClient,
-				newpod.ObjectMeta.Namespace, clusterName, newpod.Name)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-		}
 	}
 }
 
