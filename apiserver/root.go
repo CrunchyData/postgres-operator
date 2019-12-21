@@ -267,7 +267,16 @@ func BasicAuthzCheck(username, perm string) bool {
 			return false
 		}
 
-		permsString := string(rolesecret.Data["permissions"])
+		permsString := strings.TrimSpace(string(rolesecret.Data["permissions"]))
+
+		// first a special case. If this is a solitary "*" indicating that this
+		// encompasses every permission, then we can exit here as true
+		if permsString == "*" {
+			return true
+		}
+
+		// otherwise, blow up the permission string and see if the user has explicit
+		// permission (i.e. is authorized) to access this resource
 		perms := strings.Split(permsString, ",")
 
 		for _, p := range perms {
