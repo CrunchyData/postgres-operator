@@ -58,12 +58,12 @@ type PGBaseBackup struct {
 }
 
 type PGBackRest struct {
-	Deployment  string    `json:"deployment"`
-	Label       string    `json:"label"`
-	Container   string    `json:"container"`
-	Type        string    `json:"type"`
-	StorageType string    `json:"storageType,omitempty"`
-	Options     []Options `json:"options"`
+	Deployment  string `json:"deployment"`
+	Label       string `json:"label"`
+	Container   string `json:"container"`
+	Type        string `json:"type"`
+	StorageType string `json:"storageType,omitempty"`
+	Options     string `json:"options"`
 }
 
 type Policy struct {
@@ -72,11 +72,6 @@ type Policy struct {
 	ImagePrefix string `json:"imagePrefix"`
 	ImageTag    string `json:"imageTag"`
 	Database    string `json:"database"`
-}
-
-type Options struct {
-	Name  string `json:"name,omitempty"`
-	Value string `json:"value,omitempty"`
 }
 
 type SecurityContext struct {
