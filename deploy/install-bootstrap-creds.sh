@@ -20,7 +20,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export PGOADMIN_USERNAME=pgoadmin
 export PGOADMIN_PASSWORD=examplepassword
 export PGOADMIN_ROLENAME=pgoadmin
-export PGOADMIN_PERMS="DeleteNamespace,CreateNamespace,UpdatePgorole,ShowPgorole,DeletePgorole,CreatePgorole,UpdatePgouser,ShowPgouser,DeletePgouser,CreatePgouser,Cat,Ls,ShowNamespace,CreateDump,RestoreDump,ScaleCluster,CreateSchedule,DeleteSchedule,ShowSchedule,DeletePgbouncer,CreatePgbouncer,Restore,RestorePgbasebackup,ShowSecrets,Reload,ShowConfig,Status,DfCluster,DeleteCluster,ShowCluster,CreateCluster,TestCluster,ShowBackup,DeleteBackup,CreateBackup,Label,Load,CreatePolicy,DeletePolicy,ShowPolicy,ApplyPolicy,ShowWorkflow,ShowPVC,CreateUpgrade,CreateUser,DeleteUser,UpdateUser,ShowUser,Version,CreateFailover,UpdateCluster,CreateBenchmark,ShowBenchmark,DeleteBenchmark,UpdateNamespace,Clone"
+export PGOADMIN_PERMS="*"
 
 # see if the bootstrap pgorole Secret exists or not, deleting it if found
 $PGO_CMD get secret pgorole-$PGOADMIN_ROLENAME -n $PGO_OPERATOR_NAMESPACE 2> /dev/null > /dev/null
