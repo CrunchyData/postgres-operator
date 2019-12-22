@@ -108,7 +108,7 @@ func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResp
 	}
 
 	// clone is a form of restore, so validate using ValidateBackrestStorageTypeOnBackupRestore
-	err = apiserver.ValidateBackrestStorageTypeOnBackupRestore(request.BackrestStorageSource,
+	err = util.ValidateBackrestStorageTypeOnBackupRestore(request.BackrestStorageSource,
 		sourcePgcluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], true)
 	if err != nil {
 		response.Status.Code = msgs.Error

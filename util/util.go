@@ -374,3 +374,16 @@ func NewClient(cfg *rest.Config) (*rest.RESTClient, *runtime.Scheme, error) {
 
 	return client, scheme, nil
 }
+
+// IsStringOneOf tests to see string testVal is included in the list
+// of strings provided using acceptedVals
+func IsStringOneOf(testVal string, acceptedVals ...string) bool {
+	isOneOf := false
+	for _, val := range acceptedVals {
+		if testVal == val {
+			isOneOf = true
+			break
+		}
+	}
+	return isOneOf
+}

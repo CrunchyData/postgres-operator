@@ -17,9 +17,7 @@ limitations under the License.
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
-	"strings"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
@@ -149,32 +147,6 @@ func CreateRMDataTask(clusterName, replicaName, taskName string, deleteBackups, 
 
 }
 
-// IsValidBackrestStorageType determines if the storageType string contains valid pgBackRest
-// storage type values
-func IsValidBackrestStorageType(storageType string) bool {
-	isValid := true
-	for _, storageType := range strings.Split(storageType, ",") {
-		if !IsStringOneOf(storageType, GetBackrestStorageTypes()...) {
-			isValid = false
-			break
-		}
-	}
-	return isValid
-}
-
-// IsStringOneOf tests to see string testVal is included in the list
-// of strings provided using acceptedVals
-func IsStringOneOf(testVal string, acceptedVals ...string) bool {
-	isOneOf := false
-	for _, val := range acceptedVals {
-		if testVal == val {
-			isOneOf = true
-			break
-		}
-	}
-	return isOneOf
-}
-
 func GetBackrestStorageTypes() []string {
 	return backrestStorageTypes
 }
@@ -190,33 +162,4 @@ func IsValidPVC(pvcName, ns string) bool {
 	}
 
 	return true
-}
-
-// ValidateBackrestStorageTypeOnBackupRestore checks to see if the pgbackrest storage type provided
-// when performing either pgbackrest backup or restore is valid.  This includes ensuring the value
-// provided is a valid storage type (e.g. "s3" and/or "local").  This also includes ensuring the
-// storage type specified (e.g. "s3" or "local") is enabled in the current cluster.  And finally,
-// validation is ocurring for a restore, the ensure only one storage type is selected.
-func ValidateBackrestStorageTypeOnBackupRestore(requestBackRestStorageType,
-	clusterBackRestStorageType string, restore bool) error {
-
-	if requestBackRestStorageType != "" && !IsValidBackrestStorageType(requestBackRestStorageType) {
-		return fmt.Errorf("Invalid value provided for pgBackRest storage type. The following values are allowed: %s",
-			"\""+strings.Join(GetBackrestStorageTypes(), "\", \"")+"\"")
-	} else if requestBackRestStorageType != "" && strings.Contains(requestBackRestStorageType, "s3") &&
-		!strings.Contains(clusterBackRestStorageType, "s3") {
-		return errors.New("Storage type 's3' not allowed. S3 storage is not enabled for pgBackRest in this cluster")
-	} else if (requestBackRestStorageType == "" || strings.Contains(requestBackRestStorageType, "local")) &&
-		(clusterBackRestStorageType != "" && !strings.Contains(clusterBackRestStorageType, "local")) {
-		return errors.New("Storage type 'local' not allowed. Local storage is not enabled for pgBackRest in this cluster. " +
-			"If this cluster uses S3 storage only, specify 's3' for the pgBackRest storage type.")
-	}
-
-	// storage type validation that is only applicable for restores
-	if restore && requestBackRestStorageType != "" && len(strings.Split(requestBackRestStorageType, ",")) > 1 {
-		return fmt.Errorf("Multiple storage types cannot be selected cannot be select when performing a restore. Please "+
-			"select one of the following: %s", "\""+strings.Join(GetBackrestStorageTypes(), "\", \"")+"\"")
-	}
-
-	return nil
 }
