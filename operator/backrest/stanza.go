@@ -38,6 +38,7 @@ func StanzaCreate(namespace, clusterName string, clientset *kubernetes.Clientset
 	}
 	if err != nil {
 		log.Error(err)
+		return
 	}
 
 	podName := pods.Items[0].Name

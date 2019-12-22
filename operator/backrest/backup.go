@@ -56,6 +56,9 @@ type backrestJobTemplateFields struct {
 	PgbackrestRestoreVolumeMounts string
 }
 
+var backrestPgHostRegex = regexp.MustCompile("--db-host|--pg1-host")
+var backrestPgPathRegex = regexp.MustCompile("--db-path|--pg1-path")
+
 // Backrest ...
 func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
 
@@ -90,8 +93,7 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 	jobFields.CommandOpts = jobFields.CommandOpts + " " + podCommandOpts
 
 	var doc2 bytes.Buffer
-	err = config.BackrestjobTemplate.Execute(&doc2, jobFields)
-	if err != nil {
+	if err := config.BackrestjobTemplate.Execute(&doc2, jobFields); err != nil {
 		log.Error(err.Error())
 		return
 	}
@@ -295,8 +297,6 @@ func getCommandOptsFromPod(clientset *kubernetes.Clientset, task *crv1.Pgtask,
 	pod := pods.Items[0]
 
 	var cmdOpts []string
-	var backrestPgHostRegex = regexp.MustCompile("--db-host|--pg1-host")
-	var backrestPgPathRegex = regexp.MustCompile("--db-path|--pg1-path")
 
 	if !backrestPgHostRegex.MatchString(task.Spec.Parameters[config.LABEL_BACKREST_OPTS]) {
 		cmdOpts = append(cmdOpts, fmt.Sprintf("--db-host=%s", pod.Status.PodIP))
