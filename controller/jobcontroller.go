@@ -260,7 +260,8 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 	}
 
 	//handle the case of a backrest job being added
-	if labels[config.LABEL_BACKREST] == "true" && labels[config.LABEL_BACKREST_COMMAND] == "backup" {
+	if !isForegroundDeletion && labels[config.LABEL_BACKREST] == "true" &&
+		labels[config.LABEL_BACKREST_COMMAND] == "backup" {
 		log.Debugf("jobController onUpdate backrest job case")
 		log.Debugf("got a backrest job status=%d", job.Status.Succeeded)
 		if job.Status.Succeeded == 1 {
@@ -305,7 +306,7 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 					}
 					if clusterStatus == crv1.PgclusterStateRestore {
 						pgreplica.Spec.Status = "restore"
-					} else { 
+					} else {
 						pgreplica.Annotations[config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA] = "true"
 					}
 					err = kubeapi.Updatepgreplica(c.JobClient, &pgreplica, pgreplica.Name, job.ObjectMeta.Namespace)
