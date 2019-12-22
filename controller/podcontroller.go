@@ -140,14 +140,15 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 			pgcluster.Status.State == crv1.PgclusterStateInitialized {
 
 			//look up the backrest-repo pod name
-			selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," +
-				config.LABEL_PGO_BACKREST_REPO + "=true"
+			selector := fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER, 
+				clusterName, config.LABEL_PGO_BACKREST_REPO)
 			pods, err := kubeapi.GetPods(c.PodClientset, selector, newpod.ObjectMeta.Namespace)
 			if len(pods.Items) != 1 {
 				log.Errorf("pods len != 1 for cluster %s", clusterName)
 				return
 			} else if err != nil {
 				log.Error(err)
+				return
 			}
 
 			err = backrest.CleanBackupResources(c.PodClient, c.PodClientset,
@@ -236,6 +237,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 						}
 						if err != nil {
 							log.Error(err)
+							return
 						}
 						err = backrest.CleanBackupResources(c.PodClient, c.PodClientset,
 							newpod.ObjectMeta.Namespace, clusterName)
