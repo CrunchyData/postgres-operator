@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/apiserver/backupoptions"
+	"github.com/crunchydata/postgres-operator/util"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
@@ -103,7 +104,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 			return resp
 		}
 
-		err = apiserver.ValidateBackrestStorageTypeOnBackupRestore(request.BackrestStorageType,
+		err = util.ValidateBackrestStorageTypeOnBackupRestore(request.BackrestStorageType,
 			cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], false)
 		if err != nil {
 			resp.Status.Code = msgs.Error
@@ -437,7 +438,7 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 
 	// ensure the backrest storage type specified for the backup is valid and enabled in the
 	// cluster
-	err = apiserver.ValidateBackrestStorageTypeOnBackupRestore(request.BackrestStorageType,
+	err = util.ValidateBackrestStorageTypeOnBackupRestore(request.BackrestStorageType,
 		cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], true)
 	if err != nil {
 		resp.Status.Code = msgs.Error

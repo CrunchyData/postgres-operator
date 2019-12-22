@@ -221,7 +221,8 @@ func cloneStep1(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 	// if 's3' storage was selected for the clone, ensure it is enabled in the current pg cluster.
 	// also, if 'local' was selected, or if no storage type was selected, ensure the cluster is using
 	// local storage
-	err = validateBackrestStorageTypeClone(sourceClusterBackrestStorageType, cloneBackrestStorageType)
+	err = util.ValidateBackrestStorageTypeOnBackupRestore(cloneBackrestStorageType, 
+		sourceClusterBackrestStorageType, true)
 	if err != nil {
 		log.Error(err)
 		PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, err.Error())
@@ -944,19 +945,6 @@ func waitForDeploymentReady(clientset *kubernetes.Clientset, namespace, deployme
 			}
 		}
 	}
-}
-
-// validateBackrestStorageTypeClone verifies that 's3' is enabled in the cluster being cloned
-// when 's3' is selected as the storage type for the new/cloned cluster
-func validateBackrestStorageTypeClone(sourceClusterBackrestStorageType,
-	cloneBackrestStorageType string) error {
-
-	if !strings.Contains(sourceClusterBackrestStorageType, cloneBackrestStorageType) {
-		return fmt.Errorf("The backrest storage source '%s' selected for the cloned cluster does "+
-			"not match a storage type in source cluster storage type '%s'",
-			cloneBackrestStorageType, sourceClusterBackrestStorageType)
-	}
-	return nil
 }
 
 // getS3Param returns either the value provided by 'sourceClusterS3param' if not en empty string,

@@ -1420,7 +1420,7 @@ func validateBackrestStorageTypeOnCreate(request *msgs.CreateClusterRequest) err
 
 	requestBackRestStorageType := request.BackrestStorageType
 
-	if requestBackRestStorageType != "" && !apiserver.IsValidBackrestStorageType(requestBackRestStorageType) {
+	if requestBackRestStorageType != "" && !util.IsValidBackrestStorageType(requestBackRestStorageType) {
 		return fmt.Errorf("Invalid value provided for pgBackRest storage type. The following values are allowed: %s",
 			"\""+strings.Join(apiserver.GetBackrestStorageTypes(), "\", \"")+"\"")
 	} else if strings.Contains(requestBackRestStorageType, "s3") && isMissingS3Config(request) {
