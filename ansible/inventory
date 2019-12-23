@@ -118,7 +118,7 @@ metrics='false'
 pod_anti_affinity='preferred'
 sync_replication='false'
 
-# pgbadger Defaults
+# pgBadger Defaults
 pgbadgerport='10000'
 
 # pgBackRest Defaults
