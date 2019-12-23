@@ -52,7 +52,7 @@ cd ansible
 
 ### Configure your Installation
 
-Within the `ansible` folder, there exists a file called `inventory`. When you open up this file, you can see several options that are used to install the PostgreSQL Operator. Most of these container some sensible defaults for getting up and running quickly, but some you will need to fill out yourself.
+Within the `ansible` folder, there exists a file called `inventory`. When you open up this file, you can see several options that are used to install the PostgreSQL Operator. Most of these contain some sensible defaults for getting up and running quickly, but some you will need to fill out yourself.
 
 Lines that start with a `#` are commented out. To activate that configuration setting, you will have to delete the `#`.
 
