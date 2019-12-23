@@ -15,7 +15,7 @@ RUN yum -y install \
 	postgresql12-server \
 	procps-ng \
 	psmisc \
-	rsnyc \
+	rsync \
 	awscli \
 	&& yum -y clean all
 
