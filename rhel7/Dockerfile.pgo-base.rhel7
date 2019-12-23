@@ -14,6 +14,8 @@ LABEL vendor="Crunchy Data" \
 	io.k8s.description="Trusted open source PostgreSQL-as-a-Service"
 
 COPY redhat/licenses /licenses
+COPY redhat/atomic/help.1 /help.1
+COPY redhat/atomic/help.md /help.md
 COPY licenses /licenses
 
 RUN yum -y --enablerepo=rhel-7-server-ose-3.11-rpms update && yum -y clean all
