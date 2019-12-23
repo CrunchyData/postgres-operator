@@ -57,7 +57,7 @@ Install this application to a Google Kubernetes Engine cluster using Google Clou
       ```shell
       IMAGE_REPOSITORY=gcr.io/crunchydata-public/postgres-operator
 
-      export PGO_VERSION=4.1.1
+      export PGO_VERSION=4.2.0
       export INSTALLER_IMAGE=${IMAGE_REPOSITORY}/deployer:${PGO_VERSION}
       export OPERATOR_IMAGE=${IMAGE_REPOSITORY}:${PGO_VERSION}
       export OPERATOR_IMAGE_API=${IMAGE_REPOSITORY}/pgo-apiserver:${PGO_VERSION}
