@@ -25,7 +25,7 @@ func main() {
 		base := strings.TrimSuffix(name, path.Ext(name))
 		fmt.Println(base)
 		// url := "/commands/" + strings.ToLower(base) + "/"
-		return fmt.Sprintf(fmTemplate, base)
+		return fmt.Sprintf(fmTemplate, strings.ReplaceAll(base, "_", " "))
 	}
 
 	linkHandler := func(name string) string {

@@ -1,6 +1,6 @@
 ---
-title: "Operator CLI"
+title: "Full Reference"
 date:
 draft: false
-weight: 10
+weight: 50
 ---
