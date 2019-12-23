@@ -88,10 +88,9 @@ The Crunchy PostgreSQL Operator makes it easy to get your own PostgreSQL-as-a-Se
 The Crunchy PostgreSQL Operator extends Kubernetes to provide a higher-level abstraction for rapid creation and management of PostgreSQL clusters.  The Crunchy PostgreSQL Operator leverages a Kubernetes concept referred to as "[Custom Resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)” to create several [custom resource definitions (CRDs)](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/#customresourcedefinitions) that allow for the management of PostgreSQL clusters.
 
 
-
 # Supported Platforms
 
-The Crunchy PostgreSQL is tested on the following Platforms:
+The Crunchy PostgreSQL Operator is tested on the following Platforms:
 
 - Kubernetes 1.13 - 1.15 (See note about 1.16 and beyond)
 - OpenShift 3.11+
@@ -113,8 +112,3 @@ The Crunchy PostgreSQL Operator is tested with a variety of different types of K
 and more.
 
 We know there are a variety of different types of [Storage Classes](https://kubernetes.io/docs/concepts/storage/storage-classes/) available for Kubernetes and we do our best to test each one, but due to the breadth of this area we are unable to verify PostgreSQL Operator functionality in each one. With that said, the PostgreSQL Operator is designed to be storage class agnostic and has been demonstrated to work with additional Storage Classes.
-
-
-## Next Steps
-
-I'll fill this out as we get further along
