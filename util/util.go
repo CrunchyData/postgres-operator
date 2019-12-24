@@ -23,9 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"os/exec"
 	"strconv"
-	"strings"
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -260,36 +258,6 @@ func PatchClusterCRD(restclient *rest.RESTClient, labelMap map[string]string, ol
 
 	return err6
 
-}
-
-// RunPsql runs a psql statement
-func RunPsql(password string, hostip string, sqlstring string) error {
-
-	log.Debugf("RunPsql hostip=[%s] sql=[%s]", hostip, sqlstring)
-	cmd := exec.Command("runpsql.sh", password, hostip)
-
-	cmd.Stdin = strings.NewReader(sqlstring)
-
-	var out, stderr bytes.Buffer
-	cmd.Stdout = &out
-	cmd.Stderr = &stderr
-
-	err := cmd.Run()
-	if err != nil {
-		log.Error("error in run cmd " + err.Error())
-		log.Error(out.String())
-		log.Error(stderr.String())
-		return err
-	}
-
-	if stderr.String() != "" {
-		log.Errorf("stderror in run cmd %s", stderr.String())
-		log.Error(out.String())
-		return errors.New("SQL error: " + stderr.String())
-	}
-
-	log.Debugf("runpsql output [%s]", out.String()[0:20])
-	return err
 }
 
 // GetSecretPassword ...
