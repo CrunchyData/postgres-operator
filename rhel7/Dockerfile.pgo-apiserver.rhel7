@@ -12,7 +12,6 @@ RUN yum -y install postgresql${PGVERSION} hostname \
 	&& yum -y clean all
 
 ADD bin/apiserver /usr/local/bin
-ADD bin/postgres-operator/runpsql.sh /usr/local/bin
 ADD conf/postgres-operator /default-pgo-config
 
 USER daemon
