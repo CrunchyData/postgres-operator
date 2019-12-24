@@ -231,8 +231,8 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 
 		log.Debugf("apply policy %s on deployment %s based on selector %s", request.Name, d.ObjectMeta.Name, selector)
 
-		err = util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, ns, request.Name, d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME])
-		if err != nil {
+		if err := util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, apiserver.RESTConfig,
+			ns, request.Name, d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME]); err != nil {
 			log.Error(err)
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()

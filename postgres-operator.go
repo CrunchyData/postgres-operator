@@ -141,6 +141,7 @@ func main() {
 	podcontroller := &controller.PodController{
 		PodClientset:       Clientset,
 		PodClient:          crdClient,
+		PodConfig:          config,
 		Ctx:                ctx,
 		InformerNamespaces: make(map[string]struct{}),
 	}

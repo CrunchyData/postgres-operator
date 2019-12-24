@@ -29,7 +29,7 @@ import (
 )
 
 // RemoveBackups ...
-func ApplyPolicies(clusterName string, Clientset *kubernetes.Clientset, RESTClient *rest.RESTClient, ns string) {
+func ApplyPolicies(clusterName string, Clientset *kubernetes.Clientset, RESTClient *rest.RESTClient, RESTConfig *rest.Config, ns string) {
 
 	taskName := clusterName + "-policies"
 	task := crv1.Pgtask{}
@@ -41,15 +41,15 @@ func ApplyPolicies(clusterName string, Clientset *kubernetes.Clientset, RESTClie
 		//apply those policies
 		for k, _ := range task.Spec.Parameters {
 			log.Debugf("applying policy %s to %s", k, clusterName)
-			applyPolicy(Clientset, RESTClient, k, clusterName, ns)
+			applyPolicy(Clientset, RESTClient, RESTConfig, k, clusterName, ns)
 		}
 		//delete the pgtask to not redo this again
 		kubeapi.Deletepgtask(RESTClient, taskName, ns)
 	}
 }
 
-func applyPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, policyName, clusterName, ns string) {
-	err := util.ExecPolicy(clientset, restclient, ns, policyName, clusterName)
+func applyPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, policyName, clusterName, ns string) {
+	err := util.ExecPolicy(clientset, restclient, restconfig, ns, policyName, clusterName)
 	if err != nil {
 		log.Error(err)
 		return

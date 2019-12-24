@@ -17,51 +17,88 @@ package util
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"strings"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
-	"k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"net/http"
 )
 
+const primaryClusterLabel = "master"
+
 // ExecPolicy execute a sql policy against a cluster
-func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, namespace string, policyName string, clusterName string) error {
+func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, namespace string, policyName string, serviceName string) error {
 	//fetch the policy sql
-	sqlString, err := GetPolicySQL(restclient, namespace, policyName)
-	if err != nil {
-		return err
-	}
-	secretName := clusterName + crv1.RootSecretSuffix
-	//get the postgres user password
-	var password string
-	_, password, err = GetPasswordFromSecret(clientset, namespace, secretName)
-	if err != nil {
-		return err
-	}
-	//get the host ip address
-	var service *v1.Service
-	service, _, err = kubeapi.GetService(clientset, clusterName, namespace)
+	sql, err := GetPolicySQL(restclient, namespace, policyName)
+
 	if err != nil {
 		return err
 	}
 
-	//lastly, run the psql script
-	log.Debugf("running psql ip=%s sql=[%s]", service.Spec.ClusterIP, sqlString)
-	err = RunPsql(password, service.Spec.ClusterIP, sqlString)
+	// prepare the SQL string to be something that can be passed to a STDIN
+	// interface
+	stdin := strings.NewReader(sql)
+
+	// now, we need to ensure we can get the Pod name of the primary PostgreSQL
+	// instance. Thname being passed in is actually the "serviceName" of the Pod
+	// We can isolate the exact Pod we want by using this (LABEL_SERVICE_NAME) and
+	// the LABEL_PGHA_ROLE labels
+	selector := fmt.Sprintf("%s=%s,%s=%s",
+		config.LABEL_SERVICE_NAME, serviceName,
+		config.LABEL_PGHA_ROLE, primaryClusterLabel)
+
+	podList, err := kubeapi.GetPods(clientset, selector, namespace)
+
 	if err != nil {
+		return err
+	} else if len(podList.Items) != 1 {
+		msg := fmt.Sprintf("could not find the primary pod selector:[%s] pods returned:[%d]",
+			selector, len(podList.Items))
+
+		return errors.New(msg)
+	}
+
+	// get the primary Pod
+	pod := podList.Items[0]
+
+	// in the Pod spec, the first container is always the one with the PostgreSQL
+	// instnace. We can use that to build out our execution call
+	//
+	// But first, let's prepare the command that will execute the SQL.
+	// NOTE: this executes as the "postgres" user on the "postgres" database,
+	// because that is what the existing functionality does
+	//
+	// However, unlike the previous implementation, this will connect over a UNIX
+	// socket. There are certainly additional improvements that can be made, but
+	// this gets us closer to what we want to do
+	command := []string{
+		"psql",
+		"postgres",
+		"postgres",
+		"-f",
+		"-",
+	}
+
+	// execute the command! if it fails, return the error
+	if _, _, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
+		command, pod.Spec.Containers[0].Name, pod.Name, namespace, stdin); err != nil {
 		return err
 	}
 
 	return nil
-
 }
 
 // GetPolicySQL returns the SQL string from a policy
