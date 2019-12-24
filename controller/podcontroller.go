@@ -16,9 +16,9 @@ limitations under the License.
 */
 
 import (
-	"fmt"
 	"context"
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -48,6 +48,7 @@ import (
 type PodController struct {
 	PodClient          *rest.RESTClient
 	PodClientset       *kubernetes.Clientset
+	PodConfig          *rest.Config
 	Ctx                context.Context
 	informerNsMutex    sync.Mutex
 	InformerNamespaces map[string]struct{}
@@ -140,7 +141,7 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 			pgcluster.Status.State == crv1.PgclusterStateInitialized {
 
 			//look up the backrest-repo pod name
-			selector := fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER, 
+			selector := fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER,
 				clusterName, config.LABEL_PGO_BACKREST_REPO)
 			pods, err := kubeapi.GetPods(c.PodClientset, selector, newpod.ObjectMeta.Namespace)
 			if len(pods.Items) != 1 {
@@ -227,9 +228,9 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 					if cluster.Status.State == crv1.PgclusterStateRestore {
 
 						//look up the backrest-repo pod name
-						selector := fmt.Sprintf("%s=%s,pgo-backrest-repo=true", 
+						selector := fmt.Sprintf("%s=%s,pgo-backrest-repo=true",
 							config.LABEL_PG_CLUSTER, clusterName)
-						pods, err := kubeapi.GetPods(c.PodClientset, selector, 
+						pods, err := kubeapi.GetPods(c.PodClientset, selector,
 							newpod.ObjectMeta.Namespace)
 						if len(pods.Items) != 1 {
 							log.Errorf("pods len != 1 for cluster %s", clusterName)
@@ -252,7 +253,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 					}
 
 					log.Debugf("%s went to Ready from Not Ready, apply policies...", clusterName)
-					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
+					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient, c.PodConfig, newpod.ObjectMeta.Namespace)
 
 					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
 
