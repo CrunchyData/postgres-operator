@@ -79,10 +79,10 @@ func main() {
 	REPO_TYPE := os.Getenv("PGBACKREST_REPO_TYPE")
 	log.Debugf("setting REPO_TYPE to %s", REPO_TYPE)
 
-	PGHA_PGBACKREST_LOCAL_S3_STORAGE, err := strconv.ParseBool(os.Getenv("PGHA_PGBACKREST_LOCAL_S3_STORAGE"))
-	if err != nil {
-		panic(err)
-	}
+	// determine the setting of PGHA_PGBACKREST_LOCAL_S3_STORAGE
+	// we will discard the error and treat the value as "false" if it is not
+	// explicitly set
+	PGHA_PGBACKREST_LOCAL_S3_STORAGE, _ := strconv.ParseBool(os.Getenv("PGHA_PGBACKREST_LOCAL_S3_STORAGE"))
 	log.Debugf("setting PGHA_PGBACKREST_LOCAL_S3_STORAGE to %s", PGHA_PGBACKREST_LOCAL_S3_STORAGE)
 
 	config, err := buildConfig(*kubeconfig)
