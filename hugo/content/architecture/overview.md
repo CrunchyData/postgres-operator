@@ -73,7 +73,7 @@ create a high-availability PostgreSQL cluster that has a single replica,
 supports having backups in both a local storage area and Amazon S3 and has
 built-in metrics and connection pooling, similar to:
 
-![PostgreSQL HA Cluster](/images/postgresql-cluster-ha-s3.svg)
+![PostgreSQL HA Cluster](/images/postgresql-cluster-ha-s3.png)
 
 We can accomplish that with a single command:
 
@@ -165,11 +165,10 @@ accessing the Kubernetes Pods to perform given actions.
 For a detailed analysis, please see
 [Using Kubernetes Deployments for Running PostgreSQL](https://info.crunchydata.com/blog/using-kubernetes-deployments-for-running-postgresql).
 
-# More Architecture Information
+# Additional Architecture Information
 
 There is certainly a lot to unpack in the overall architecture of the Crunchy
-PostgreSQL Operator. For more information on the architectures of various
-components of the PostgreSQL Operator, read onward, or follow one of the links
-below:
-
-- [High-Availability](/architecture/high-availability)
+PostgreSQL Operator. Understanding the architecture will help you to plan
+the deployment model that is best for your environment. For more information on
+the architectures of various components of the PostgreSQL Operator, please read
+onward!

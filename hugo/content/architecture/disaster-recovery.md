@@ -25,7 +25,7 @@ allowing them to replay old WAL logs
 - ...and of course, allowing for one to take full, differential, and incremental
 backpus and perform full and point-in-time restores
 
-![PostgreSQL Operator pgBackRest Integration](/operator-backrest-integration.png)
+![PostgreSQL Operator pgBackRest Integration](/images/postgresql-cluster-dr-base.png)
 
 The PostgreSQL Operator leverages a pgBackRest repository to facilitate the
 usage of the pgBackRest features in a PostgreSQL cluster. When a new PostgreSQL
@@ -89,7 +89,7 @@ The PostgreSQL Operator supports the ability to perform a full restore on a
 PostgreSQL cluster as well as a point-in-time-recovery using the `pgo restore`
 command. Note that both of these options are **destructive** to the existing
 PostgreSQL cluster; to "restore" the PostgreSQL cluster to a new deployment,
-please see the [Clone](/architecture/clone/) section.
+please see the [Clone](/pgo-cli/common-tasks/#clone-a-postgresql-cluster) section.
 
 The `pgo restore` command lets you specify the point at which you want to
 restore your database using the `--pitr-target` flag with the `pgo restore`
@@ -111,12 +111,17 @@ provided for the primary instance. This may have been set with the
 - A Kubernetes Job is created that will perform a pgBackRest restore operation
 to the newly allocated PVC. This is facilitated by the `pgo-backrest-restore`
 container image.
+
+![PostgreSQL Operator Restore Step 1](/images/postgresql-cluster-restore-step-1.png)
+
 - When restore Job successfully completes, a new Deployment for the PostgreSQL
 cluster primary instance is created. A recovery is then issued to the specified
 point-in-time, or if it is a full recovery, up to the point of the latest WAL
 archive in the repository.
 - Once the PostgreSQL primary instance is available, the PostgreSQL Operator
 will take a new, full backup of the cluster.
+
+![PostgreSQL Operator Restore Step 2](/images/postgresql-cluster-restore-step-2.png)
 
 At this point, the PostgreSQL cluster has been restored. However, you will need
 to re-enable autofail if you would like your PostgreSQL cluster to be
@@ -136,18 +141,20 @@ The PostgreSQL Operator Scheduler is essentially a [cron](https://en.wikipedia.o
 server that will run jobs that it is specified. Schedule commands use the cron
 syntax to set up scheduled tasks.
 
+![PostgreSQL Operator Schedule Backups](/images/postgresql-cluster-dr-schedule.png)
+
 For example, to schedule a full backup once a day at 1am, the following command
 can be used:
 
 ```shell
-pgo create schedule hacluster --schedule="1 * * * *" \
+pgo create schedule hacluster --schedule="0 1 * * *" \
   --schedule-type=pgbackrest  --pgbackrest-backup-type=full
 ```
 
 To schedule an incremental backup once every 3 hours:
 
 ```shell
-pgo create schedule hacluster --schedule="*/3 * * * *" \
+pgo create schedule hacluster --schedule="0 */3 * * *" \
   --schedule-type=pgbackrest  --pgbackrest-backup-type=incr
 ```
 
@@ -163,7 +170,7 @@ For example, using the above example of taking a nightly full backup, you can
 specify a policy of retaining 21 backups using the following command:
 
 ```shell
-pgo create schedule hacluster --schedule="1 * * * *" \
+pgo create schedule hacluster --schedule="0 1 * * *" \
   --schedule-type=pgbackrest  --pgbackrest-backup-type=full \
   --schedule-opts="--repo1-retention-full=21"
 ```

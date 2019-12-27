@@ -7,7 +7,7 @@ weight: 100
 
 What happens when the Crunchy PostgreSQL Operator creates a PostgreSQL cluster?
 
-![PostgreSQL HA Cluster](/images/postgresql-cluster-ha-s3.svg)
+![PostgreSQL HA Cluster](/images/postgresql-cluster-ha-s3.png)
 
 First, an entry needs to be added to the `Pgcluster` CRD that provides the
 essential attributes for maintaining the definition of a PostgreSQL cluster.

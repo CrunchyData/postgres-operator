@@ -22,6 +22,8 @@ hardware upgrade, or other maintenance.
 
 Fortunately, the Crunchy PostgreSQL Operator is prepared for this.
 
+![PostgreSQL Operator High-Availability Overview](/images/postgresql-ha-overview.png)
+
 The Crunchy PostgreSQL Operator supports a distributed-consensus based
 high-availability (HA) system that keeps its managed PostgreSQL clusters up and
 running, even if the PostgreSQL Operator disappears. Additionally, it leverages

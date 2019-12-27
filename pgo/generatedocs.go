@@ -30,7 +30,7 @@ func main() {
 
 	linkHandler := func(name string) string {
 		base := strings.TrimSuffix(name, path.Ext(name))
-		return "/operatorcli/cli/" + strings.ToLower(base) + "/"
+		return "/pgo-cli/reference/" + strings.ToLower(base) + "/"
 	}
 
 	err := doc.GenMarkdownTreeCustom(cmd.RootCmd, "./", filePrepender, linkHandler)
