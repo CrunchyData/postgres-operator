@@ -48,6 +48,9 @@ certstrap --depot-path ${OUTPUT_DIR?}/out sign ${SERVER?} --passphrase '' --CA R
 certstrap --depot-path ${OUTPUT_DIR?}/out request-cert --passphrase '' --common-name ${USERNAME?}
 certstrap --depot-path ${OUTPUT_DIR?}/out sign ${USERNAME?} --passphrase '' --CA RootCA --years 1
 
+certstrap --depot-path ${OUTPUT_DIR?}/out request-cert --passphrase '' --common-name primaryuser
+certstrap --depot-path ${OUTPUT_DIR?}/out sign primaryuser --passphrase '' --CA RootCA --years 1
+
 mkdir ${OUTPUT_DIR?}/certs
 
 cp ${OUTPUT_DIR?}/out/RootCA.crt ${OUTPUT_DIR?}/certs/ca.crt
@@ -60,6 +63,10 @@ cat ${OUTPUT_DIR?}/out/${SERVER?}.crt ${OUTPUT_DIR?}/out/RootCA.crt > ${OUTPUT_D
 # Client
 cp ${OUTPUT_DIR?}/out/${USERNAME?}.key ${OUTPUT_DIR?}/certs/client.key
 cat ${OUTPUT_DIR?}/out/${USERNAME?}.crt ${OUTPUT_DIR?}/out/RootCA.crt > ${OUTPUT_DIR?}/certs/client.crt
+
+# Replication
+cp ${OUTPUT_DIR?}/out/primaryuser.key ${OUTPUT_DIR?}/certs/replicator.key
+cat ${OUTPUT_DIR?}/out/primaryuser.crt ${OUTPUT_DIR?}/out/RootCA.crt > ${OUTPUT_DIR?}/certs/replicator.crt
 
 chmod 600 ${OUTPUT_DIR?}/certs/client.key ${OUTPUT_DIR?}/certs/client.crt
 

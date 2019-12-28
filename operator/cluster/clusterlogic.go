@@ -19,6 +19,7 @@ package cluster
 */
 
 import (
+	"strings"
 	"bytes"
 	"encoding/json"
 	"os"
@@ -152,7 +153,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		log.Debugf("Custom postgres-ha configmap not found, creating configMap with default postgres-ha config file")
 		operator.AddDefaultPostgresHaConfigMap(clientset, cl, deploymentFields.IsInit, true, namespace)
 	} else {
-		configMap, found := kubeapi.GetConfigMap(clientset, config.GLOBAL_CUSTOM_CONFIGMAP, namespace)
+		configMap, found := kubeapi.GetConfigMap(clientset, strings.Trim(deploymentFields.ConfVolume, "\""), namespace)
 		if found {
 			if _, exists := configMap.Data[config.PostgresHaTemplatePath]; !exists {
 				log.Debugf("Custom postgres-ha config file not found in custom configMap, " +
