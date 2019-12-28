@@ -1,29 +1,40 @@
+--- System Setup
+SET application_name="container_setup";
 
-/* the following are required for other container operations */
-alter user postgres password 'PG_ROOT_PASSWORD';
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+CREATE EXTENSION IF NOT EXISTS pgaudit;
 
-create user PG_PRIMARY_USER with REPLICATION  PASSWORD 'PG_PRIMARY_PASSWORD';
-create user PG_USER with password 'PG_PASSWORD';
+CREATE USER PGHA_USER LOGIN;
+ALTER USER PGHA_USER PASSWORD 'PGHA_USER_PASSWORD';
 
-create table primarytable (key varchar(20), value varchar(20));
-grant all on primarytable to PG_PRIMARY_USER;
+CREATE DATABASE PGHA_DATABASE;
+GRANT ALL PRIVILEGES ON DATABASE PGHA_DATABASE TO PGHA_USER;
 
-create database PG_DATABASE;
+CREATE USER testuser2 LOGIN;
+ALTER USER testuser2 PASSWORD 'customconfpass';
 
-grant all privileges on database PG_DATABASE to PG_USER;
+CREATE DATABASE PGHA_DATABASE;
+GRANT ALL PRIVILEGES ON DATABASE PGHA_DATABASE TO testuser2;
 
-\c PG_DATABASE
+--- PGHA_DATABASE Setup
 
-/* the following can be customized for your purposes */
+\c PGHA_DATABASE
 
-\c PG_DATABASE PG_USER;
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+CREATE EXTENSION IF NOT EXISTS pgaudit;
 
-create table customtable (
-	key varchar(30) primary key,
-	value varchar(50) not null,
-	updatedt timestamp not null
+CREATE SCHEMA IF NOT EXISTS PGHA_USER;
+
+/* The following has been customized for the custom-config example */
+
+\c PGHA_DATABASE PGHA_USER;
+
+CREATE TABLE custom_config_table (
+	KEY VARCHAR(30) PRIMARY KEY,
+	VALUE VARCHAR(50) NOT NULL,
+	UPDATEDT TIMESTAMP NOT NULL
 );
 
-insert into customtable (key, value, updatedt) values ('CPU', '256', now());
+INSERT INTO custom_config_table (KEY, VALUE, UPDATEDT) VALUES ('CPU', '256', now());
 
-grant all on customtable to PG_PRIMARY_USER;
+GRANT ALL ON custom_config_table TO testuser2;

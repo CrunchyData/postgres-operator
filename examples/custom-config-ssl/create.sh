@@ -50,7 +50,7 @@ then
 
 rm -rf ${DIR?}/certs
 rm -rf ${DIR?}/out
-rm -f ${DIR?}/configs/ca.* ${DIR?}/configs/server.*
+rm -f ${DIR?}/configs/ca.* ${DIR?}/configs/server.* ${DIR?}/configs/replicator.*
 
 #Generate test certs
 
@@ -63,7 +63,7 @@ fi
 
 cp ${DIR?}/certs/server.* ${DIR?}/configs
 cp ${DIR?}/certs/ca.* ${DIR?}/configs
-
+cp ${DIR?}/certs/replicator.* ${DIR?}/configs
 
 
 echo_info "PGO_NAMESPACE=${PGO_NAMESPACE}"
@@ -75,9 +75,9 @@ ${PGO_CMD?} create --namespace=${PGO_NAMESPACE?} configmap pgo-custom-ssl-config
     --from-file=${DIR?}/configs/ca.crl \
     --from-file=${DIR?}/configs/server.crt \
     --from-file=${DIR?}/configs/server.key \
-    --from-file=${DIR?}/configs/pg_hba.conf \
-    --from-file=${DIR?}/configs/pg_ident.conf \
-    --from-file=${DIR?}/configs/postgresql.conf
+    --from-file=${DIR?}/configs/replicator.crt \
+    --from-file=${DIR?}/configs/replicator.key \
+    --from-file=${DIR?}/configs/postgres-ha.yaml
 
 echo ""
 echo "To connect via SSL, run the following once the DB is ready: "
