@@ -105,7 +105,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	cl.Spec.UserLabels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 
 	// Set the Patroni scope to the name of the primary deployment.  Replicas will get scope using the
-	// 'current-primary' label on the pgcluster
+	// 'crunchy-pgha-scope' label on the pgcluster
 	cl.Spec.UserLabels[config.LABEL_PGHA_SCOPE] = cl.Spec.Name
 
 	//create the primary deployment
@@ -412,9 +412,10 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		return err
 	}
 
-	// set the replica scope to the same scope as the primary, i.e. the name of the primary deployment
-	replicaDeployment.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_CURRENT_PRIMARY]
-	replicaDeployment.Spec.Template.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_CURRENT_PRIMARY]
+	// set the replica scope to the same scope as the primary, i.e. the scope defined using label
+	// 'crunchy-pgha-scope'
+	replicaDeployment.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_PGHA_SCOPE]
+	replicaDeployment.Spec.Template.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_PGHA_SCOPE]
 
 	err = kubeapi.CreateDeployment(clientset, &replicaDeployment, namespace)
 
