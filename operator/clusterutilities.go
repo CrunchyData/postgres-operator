@@ -258,25 +258,24 @@ func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespac
 	var found bool
 	var configMapStr string
 
-	//check for global custom configmap "pgo-custom-pg-config"
-	_, found = kubeapi.GetConfigMap(clientset, config.GLOBAL_CUSTOM_CONFIGMAP, PgoNamespace)
-	if found {
-		configMapStr = "\"pgo-custom-pg-config\""
-	} else {
-		log.Debug(config.GLOBAL_CUSTOM_CONFIGMAP + " was not found, skipping global configMap")
-
-		//check for user provided configmap
-		if cl.Spec.CustomConfig != "" {
-			_, found = kubeapi.GetConfigMap(clientset, cl.Spec.CustomConfig, namespace)
-			if !found {
-				//you should NOT get this error because of apiserver validation of this value!
-				log.Errorf("%s was not found, error, skipping user provided configMap", cl.Spec.CustomConfig)
-			} else {
-				log.Debugf("user provided configmap %s was used for this cluster", cl.Spec.CustomConfig)
-				configMapStr = "\"" + cl.Spec.CustomConfig + "\""
-			}
+	//check for user provided configmap
+	if cl.Spec.CustomConfig != "" {
+		_, found = kubeapi.GetConfigMap(clientset, cl.Spec.CustomConfig, namespace)
+		if !found {
+			//you should NOT get this error because of apiserver validation of this value!
+			log.Errorf("%s was not found, error, skipping user provided configMap", cl.Spec.CustomConfig)
+		} else {
+			log.Debugf("user provided configmap %s was used for this cluster", cl.Spec.CustomConfig)
+			return "\"" + cl.Spec.CustomConfig + "\""
 		}
 	}
+
+	//check for global custom configmap "pgo-custom-pg-config"
+	_, found = kubeapi.GetConfigMap(clientset, config.GLOBAL_CUSTOM_CONFIGMAP, namespace)
+	if found {
+		return "\"pgo-custom-pg-config\""
+	}
+	log.Debug(config.GLOBAL_CUSTOM_CONFIGMAP + " was not found, skipping global configMap")
 
 	return configMapStr
 }

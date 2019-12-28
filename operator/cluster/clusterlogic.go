@@ -19,10 +19,11 @@ package cluster
 */
 
 import (
-	"strings"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -154,19 +155,21 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		operator.AddDefaultPostgresHaConfigMap(clientset, cl, deploymentFields.IsInit, true, namespace)
 	} else {
 		configMap, found := kubeapi.GetConfigMap(clientset, strings.Trim(deploymentFields.ConfVolume, "\""), namespace)
-		if found {
-			if _, exists := configMap.Data[config.PostgresHaTemplatePath]; !exists {
-				log.Debugf("Custom postgres-ha config file not found in custom configMap, " +
-					"creating default configMap with default postgres-ha config file")
-				operator.AddDefaultPostgresHaConfigMap(clientset, cl, deploymentFields.IsInit, true, namespace)
-			} else {
-				log.Debugf("Custom postgres-ha config file found in custom configMap, " +
-					"creating default configMap without default postgres-ha config file")
-				operator.AddDefaultPostgresHaConfigMap(clientset, cl, deploymentFields.IsInit, false, namespace)
-			}
-		} else {
+		if !found {
+			err = fmt.Errorf("Unable to find custom configMap %s configured for deplyment %s when "+
+				"creating the default postgres-ha config file", deploymentFields.ConfVolume,
+				deploymentFields.Name)
 			log.Error(err.Error())
 			return err
+		}
+		if _, exists := configMap.Data[config.PostgresHaTemplatePath]; !exists {
+			log.Debugf("Custom postgres-ha config file not found in custom configMap, " +
+				"creating default configMap with default postgres-ha config file")
+			operator.AddDefaultPostgresHaConfigMap(clientset, cl, deploymentFields.IsInit, true, namespace)
+		} else {
+			log.Debugf("Custom postgres-ha config file found in custom configMap, " +
+				"creating default configMap without default postgres-ha config file")
+			operator.AddDefaultPostgresHaConfigMap(clientset, cl, deploymentFields.IsInit, false, namespace)
 		}
 	}
 
