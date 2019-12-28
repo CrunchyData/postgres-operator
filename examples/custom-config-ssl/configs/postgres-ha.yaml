@@ -14,6 +14,7 @@ postgresql:
     - local all crunchyadm peer
     - hostssl replication primaryuser 0.0.0.0/0 cert clientcert=1
     - hostssl all primaryuser 0.0.0.0/0 reject
+    - host all postgres 0.0.0.0/0 md5
     - hostssl all all 0.0.0.0/0 cert clientcert=1 map=ssl-testuser
   pg_ident:
     - ssl-testuser testuser@crunchydata.com testuser

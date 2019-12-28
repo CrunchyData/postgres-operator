@@ -14,5 +14,6 @@ postgresql:
     - local all crunchyadm peer
     - host replication primaryuser 0.0.0.0/0 md5
     - host all primaryuser 0.0.0.0/0 reject
+    - host all postgres 0.0.0.0/0 md5
     - host all testuser1 0.0.0.0/0 md5
     - host all testuser2 0.0.0.0/0 md5
