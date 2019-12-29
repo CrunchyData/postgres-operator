@@ -154,7 +154,8 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		log.Debugf("Custom postgres-ha configmap not found, creating configMap with default postgres-ha config file")
 		operator.AddDefaultPostgresHaConfigMap(clientset, cl, deploymentFields.IsInit, true, namespace)
 	} else {
-		configMap, found := kubeapi.GetConfigMap(clientset, strings.Trim(deploymentFields.ConfVolume, "\""), namespace)
+		confVolume := strings.Trim(deploymentFields.ConfVolume, "\"")
+		configMap, found := kubeapi.GetConfigMap(clientset, confVolume, namespace)
 		if !found {
 			err = fmt.Errorf("Unable to find custom configMap %s configured for deplyment %s when "+
 				"creating the default postgres-ha config file", deploymentFields.ConfVolume,
