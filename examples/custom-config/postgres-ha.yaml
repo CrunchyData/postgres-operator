@@ -3,6 +3,7 @@ bootstrap:
   dcs:
     postgresql:
       parameters:
+        logging_collector: on
         log_directory: pglogs
         log_min_duration_statement: 0
         log_statement: none
