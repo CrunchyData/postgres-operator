@@ -273,7 +273,7 @@ func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespac
 	//check for global custom configmap "pgo-custom-pg-config"
 	_, found = kubeapi.GetConfigMap(clientset, config.GLOBAL_CUSTOM_CONFIGMAP, namespace)
 	if found {
-		return "\"pgo-custom-pg-config\""
+		return `"pgo-custom-pg-config"`
 	}
 	log.Debug(config.GLOBAL_CUSTOM_CONFIGMAP + " was not found, skipping global configMap")
 
