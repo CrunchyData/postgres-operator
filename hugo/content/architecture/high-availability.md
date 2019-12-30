@@ -169,7 +169,7 @@ it will not schedule the pod until a different node is available. While this
 guarantees that no pod will share the same node, it can also lead to downtime
 events as well. This uses the `requiredDuringSchedulingIgnoredDuringExecution`
 affinity rule.
-- `none`: Pod Anti-Affinity is not used.
+- `disabled`: Pod Anti-Affinity is not used.
 
 With the default `preferred` Pod Anti-Affinity rule enabled, Kubernetes will
 attempt to schedule pods created by each of the separate deployments above on a
