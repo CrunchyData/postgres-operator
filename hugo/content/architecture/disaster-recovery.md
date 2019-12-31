@@ -89,7 +89,7 @@ The PostgreSQL Operator supports the ability to perform a full restore on a
 PostgreSQL cluster as well as a point-in-time-recovery using the `pgo restore`
 command. Note that both of these options are **destructive** to the existing
 PostgreSQL cluster; to "restore" the PostgreSQL cluster to a new deployment,
-please see the [Clone](/pgo-cli/common-tasks/#clone-a-postgresql-cluster) section.
+please see the [Clone](/pgo-client/common-tasks/#clone-a-postgresql-cluster) section.
 
 The `pgo restore` command lets you specify the point at which you want to
 restore your database using the `--pitr-target` flag with the `pgo restore`

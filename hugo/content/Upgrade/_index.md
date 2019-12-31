@@ -40,4 +40,4 @@ In this example, we are upgrading a cluster from PostgreSQL 11.5 to 11.6 using t
 
 `pgo upgrade mycluster --ccp-image-tag=centos7-11.6-4.2.0`
 
-For more information, please see the `pgo upgrade` documentation [here.] ( {{< relref "pgo-cli/reference/pgo_upgrade.md" >}})
+For more information, please see the `pgo upgrade` documentation [here.] ( {{< relref "pgo-client/reference/pgo_upgrade.md" >}})
