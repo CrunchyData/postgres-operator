@@ -16,15 +16,15 @@ The Crunchy PostgreSQL Operator automates and simplifies deploying and managing 
 
 #### PostgreSQL Cluster Provisioning
 
-Create, Scale, & Delete PostgreSQL clusters with ease, while fully customizing your Pods and PostgreSQL configuration!
+[Create, Scale, & Delete PostgreSQL clusters with ease](/architecture/provisioning/), while fully customizing your Pods and PostgreSQL configuration!
 
 #### High-Availability
 
-Safe, automated failover backed by a distributed consensus based HA solution. Uses [Pod Anti-Affinity](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity) to help resiliency; you can configure how aggressive this can be! Failed primaries automatically heal, allowing for faster recovery time.
+Safe, automated failover backed by a [distributed consensus based high-availability solution](/architecture/high-availability/). Uses [Pod Anti-Affinity](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity) to help resiliency; you can configure how aggressive this can be! Failed primaries automatically heal, allowing for faster recovery time.
 
 #### Disaster Recovery
 
-Backups and restores leverage the open source [pgBackRest](https://www.pgbackrest.org) utility and includes support for full, incremental, and differential backups as well as efficient delta restores. Set how long you want your backups retained for. Works great with very large databases!
+Backups and restores leverage the open source [pgBackRest](https://www.pgbackrest.org) utility and [includes support for full, incremental, and differential backups as well as efficient delta restores](/architecture/disaster-recovery/). Set how long you want your backups retained for. Works great with very large databases!
 
 #### Monitoring
 
@@ -40,11 +40,11 @@ Safely apply PostgreSQL updates with minimal availability impact to your Postgre
 
 #### Advanced Replication Support
 
-Choose between asynchronous replication and, for workloads that are sensitive to losing transactions, synchronous replication
+Choose between [asynchronous replication](/architecture/high-availability/) and [synchronous replication](/architecture/high-availability/#synchronous-replication-guarding-against-transactions-loss) for workloads that are sensitive to losing transactions.
 
 #### Clone
 
-Create new clusters from your existing clusters with a simple `pgo clone` command.
+Create new clusters from your existing clusters with a simple [`pgo clone`](/pgo-client/reference/pgo_clone/) command.
 
 #### Connection Pooling
 
@@ -56,11 +56,11 @@ Have your PostgreSQL clusters deployed to [Kubernetes Nodes](https://kubernetes.
 
 #### Scheduled Backups
 
-Choose the type of backup (full, incremental, differential) and how frequently you want it to occur on each PostgreSQL cluster.
+Choose the type of backup (full, incremental, differential) and [how frequently you want it to occur](/architecture/disaster-recovery/#scheduling-backups) on each PostgreSQL cluster.
 
 #### Backup to S3
 
-Store your backups in Amazon S3 or any object storage system that supports the S3 protocol. The PostgreSQL Operator can backup, restore, and create new clusters from these backups.
+[Store your backups in Amazon S3](/architecture/disaster-recovery/#using-s3) or any object storage system that supports the S3 protocol. The PostgreSQL Operator can backup, restore, and create new clusters from these backups.
 
 #### Multi-Namespace Support
 

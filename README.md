@@ -6,19 +6,19 @@
 
 # Run your own production-grade PostgreSQL-as-a-Service on Kubernetes!
 
-The Crunchy PostgreSQL Operator automates and simplifies deploying and managing open source PostgreSQL clusters on Kubernetes and other Kubernetes-enabled Platforms by providing the essential features you need to keep your PostgreSQL clusters up and running, including:
+The [Crunchy PostgreSQL Operator](https://access.crunchydata.com/documentation/postgres-operator/) automates and simplifies deploying and managing open source PostgreSQL clusters on Kubernetes and other Kubernetes-enabled Platforms by providing the essential features you need to keep your PostgreSQL clusters up and running, including:
 
 #### PostgreSQL Cluster Provisioning
 
-Create, Scale, & Delete PostgreSQL clusters with ease, while fully customizing your Pods and PostgreSQL configuration!
+[Create, Scale, & Delete PostgreSQL clusters with ease](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/provisioning/), while fully customizing your Pods and PostgreSQL configuration!
 
 #### High-Availability
 
-Safe, automated failover backed by a distributed consensus based HA solution. Uses [Pod Anti-Affinity](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity) to help resiliency; you can configure how aggressive this can be! Failed primaries automatically heal, allowing for faster recovery time.
+Safe, automated failover backed by a [distributed consensus based high-availability solution](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/). Uses [Pod Anti-Affinity](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity) to help resiliency; you can configure how aggressive this can be! Failed primaries automatically heal, allowing for faster recovery time.
 
 #### Disaster Recovery
 
-Backups and restores leverage the open source [pgBackRest](https://www.pgbackrest.org) utility and includes support for full, incremental, and differential backups as well as efficient delta restores. Set how long you want your backups retained for. Works great with very large databases!
+Backups and restores leverage the open source [pgBackRest](https://www.pgbackrest.org) utility and [includes support for full, incremental, and differential backups as well as efficient delta restores](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/). Set how long you want your backups retained for. Works great with very large databases!
 
 #### Monitoring
 
@@ -34,15 +34,15 @@ Safely apply PostgreSQL updates with minimal availability impact to your Postgre
 
 #### Advanced Replication Support
 
-Choose between asynchronous replication and, for workloads that are sensitive to losing transactions, synchronous replication
+Choose between [asynchronous replication](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/) and [synchronous replication](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/#synchronous-replication-guarding-against-transactions-loss) for workloads that are sensitive to losing transactions.
 
 #### Clone
 
-Create new clusters from your existing clusters with a simple `pgo clone` command.
+Create new clusters from your existing clusters with a simple [`pgo clone`](https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/reference/pgo_clone/) command.
 
 #### Connection Pooling
 
- Use [pgBouncer](https://access.crunchydata.com/documentation/pgbouncer/) for connection pooling
+Use [pgBouncer](https://access.crunchydata.com/documentation/pgbouncer/) for connection pooling
 
 #### Node Affinity
 
@@ -50,11 +50,11 @@ Have your PostgreSQL clusters deployed to [Kubernetes Nodes](https://kubernetes.
 
 #### Scheduled Backups
 
-Choose the type of backup (full, incremental, differential) and how frequently you want it to occur on each PostgreSQL cluster.
+Choose the type of backup (full, incremental, differential) and [how frequently you want it to occur](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/#scheduling-backups) on each PostgreSQL cluster.
 
 #### Backup to S3
 
-Store your backups in Amazon S3 or any object storage system that supports the S3 protocol. The PostgreSQL Operator can backup, restore, and create new clusters from these backups.
+[Store your backups in Amazon S3](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/#using-s3) or any object storage system that supports the S3 protocol. The PostgreSQL Operator can backup, restore, and create new clusters from these backups.
 
 #### Multi-Namespace Support
 
@@ -139,7 +139,7 @@ For a quick start deployment to Google Kubernetes Engine (GKE), please see instr
 
 If you have the PostgreSQL Operator installed in your environment, and are interested in installation of the client interface, please start here:
 
-- [PGO Client Install](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/install-pgo-client/)
+- [pgo Client Install](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/install-pgo-client/)
 
 There is also a `pgo-client` container if you wish to deploy the client directly to your Kubernetes environment.
 
@@ -147,8 +147,8 @@ There is also a `pgo-client` container if you wish to deploy the client directly
 
 If you have the PostgreSQL and Client Interface installed in your environment and are interested in guidance on the use of the Crunchy PostgreSQL Operator, please start here:
 
-- [PGO CLI Overview](https://access.crunchydata.com/documentation/postgres-operator/)
-
+- [PostgreSQL Operator Documentation](https://access.crunchydata.com/documentation/postgres-operator/)
+- [pgo Client User Guide](https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/)
 
 ## Contributing to the Project
 
