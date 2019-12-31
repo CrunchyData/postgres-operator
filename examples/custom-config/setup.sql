@@ -25,7 +25,7 @@ CREATE SCHEMA IF NOT EXISTS PGHA_USER;
 
 /* The following has been customized for the custom-config example */
 
-\c PGHA_DATABASE PGHA_USER;
+SET SESSION AUTHORIZATION PGHA_USER;
 
 CREATE TABLE custom_config_table (
 	KEY VARCHAR(30) PRIMARY KEY,
