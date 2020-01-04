@@ -1,93 +1,93 @@
 {
-    "apiVersion": "crunchydata.com/v1",
-    "kind": "Pgcluster",
-    "metadata": {
-        "labels": {
-            "crunchy-pgbadger": "false",
-            "crunchy_collect": "false",
-            "current-primary": "fromcrd",
-            "deployment-name": "fromcrd",
-            "name": "fromcrd",
-            "pg-cluster": "fromcrd",
-            "pgo-backrest": "true",
-	"pgo-version": "4.2.0",
-            "pgouser": "pgoadmin",
-            "primary": "true"
-        },
-        "name": "fromcrd",
-        "namespace": "pgouser1"
+  "apiVersion": "crunchydata.com/v1",
+  "kind": "Pgcluster",
+  "metadata": {
+    "labels": {
+      "crunchy-pgbadger": "false",
+      "crunchy_collect": "false",
+      "current-primary": "fromcrd",
+      "deployment-name": "fromcrd",
+      "name": "fromcrd",
+      "pg-cluster": "fromcrd",
+      "pgo-backrest": "true",
+       "pgo-version": "4.2.0",
+      "pgouser": "pgoadmin",
+      "primary": "true"
     },
-    "spec": {
-        "ArchiveStorage": {
-            "accessmode": "",
-            "fsgroup": "",
-            "matchLabels": "",
-            "name": "",
-            "size": "",
-            "storageclass": "",
-            "storagetype": "",
-            "supplementalgroups": ""
-        },
-        "BackrestStorage": {
-            "accessmode": "ReadWriteOnce",
-            "fsgroup": "26",
-            "matchLabels": "",
-            "name": "",
-            "size": "300M",
-            "storageclass": "fast",
-            "storagetype": "dynamic",
-            "supplementalgroups": ""
-        },
-        "ContainerResources": {
-            "limitscpu": "",
-            "limitsmemory": "",
-            "requestscpu": "",
-            "requestsmemory": ""
-        },
-        "PrimaryStorage": {
-            "accessmode": "ReadWriteOnce",
-            "fsgroup": "26",
-            "matchLabels": "",
-            "name": "on2today",
-            "size": "300M",
-            "storageclass": "fast",
-            "storagetype": "dynamic",
-            "supplementalgroups": ""
-        },
-        "ReplicaStorage": {
-            "accessmode": "ReadWriteOnce",
-            "fsgroup": "26",
-            "matchLabels": "",
-            "name": "",
-            "size": "300M",
-            "storageclass": "fast",
-            "storagetype": "dynamic",
-            "supplementalgroups": ""
-        },
-        "ccpimage": "crunchy-postgres",
-        "ccpimagetag": "centos7-12.1-4.2.0",
-        "clustername": "fromcrd",
-        "customconfig": "",
-        "database": "userdb",
-        "name": "fromcrd",
-        "namespace": "pgouser1",
-        "nodename": "",
-        "policies": "",
-        "port": "5432",
-        "primaryhost": "fromcrd",
-        "primarysecretname": "fromcrd-primaryuser-secret",
-        "replicas": "0",
-        "rootsecretname": "fromcrd-postgres-secret",
-        "secretfrom": "",
-        "status": "",
-        "strategy": "1",
-        "user": "testuser",
-        "userlabels": {
-            "crunchy_collect": "false",
-	"pgo-version": "4.2.0",
-            "pgouser": "pgoadmin",
-            "pgo-backrest": "true"
-        },
-        "usersecretname": "fromcrd-testuser-secret"
-    }
+    "name": "fromcrd",
+    "namespace": "pgouser1"
+  },
+  "spec": {
+    "ArchiveStorage": {
+      "accessmode": "",
+      "fsgroup": "",
+      "matchLabels": "",
+      "name": "",
+      "size": "",
+      "storageclass": "",
+      "storagetype": "",
+      "supplementalgroups": ""
+    },
+    "BackrestStorage": {
+      "accessmode": "ReadWriteOnce",
+      "fsgroup": "26",
+      "matchLabels": "",
+      "name": "",
+      "size": "300M",
+      "storageclass": "fast",
+      "storagetype": "dynamic",
+      "supplementalgroups": ""
+    },
+    "ContainerResources": {
+      "limitscpu": "",
+      "limitsmemory": "",
+      "requestscpu": "",
+      "requestsmemory": ""
+    },
+    "PrimaryStorage": {
+      "accessmode": "ReadWriteOnce",
+      "fsgroup": "26",
+      "matchLabels": "",
+      "name": "on2today",
+      "size": "300M",
+      "storageclass": "fast",
+      "storagetype": "dynamic",
+      "supplementalgroups": ""
+    },
+    "ReplicaStorage": {
+      "accessmode": "ReadWriteOnce",
+      "fsgroup": "26",
+      "matchLabels": "",
+      "name": "",
+      "size": "300M",
+      "storageclass": "fast",
+      "storagetype": "dynamic",
+      "supplementalgroups": ""
+    },
+    "ccpimage": "crunchy-postgres",
+    "ccpimagetag": "centos7-12.1-4.2.0",
+    "clustername": "fromcrd",
+    "customconfig": "",
+    "database": "userdb",
+    "name": "fromcrd",
+    "namespace": "pgouser1",
+    "nodename": "",
+    "policies": "",
+    "port": "5432",
+    "primaryhost": "fromcrd",
+    "primarysecretname": "fromcrd-primaryuser-secret",
+    "replicas": "0",
+    "rootsecretname": "fromcrd-postgres-secret",
+    "secretfrom": "",
+    "status": "",
+    "strategy": "1",
+    "user": "testuser",
+    "userlabels": {
+      "crunchy_collect": "false",
+      "pgo-version": "4.2.0",
+      "pgouser": "pgoadmin",
+      "pgo-backrest": "true"
+    },
+    "usersecretname": "fromcrd-testuser-secret"
+  }
 }
