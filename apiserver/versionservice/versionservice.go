@@ -66,8 +66,6 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 	//  responses:
 	//    '200':
 	//      description: Output
-	//      schema:
-	//        "$ref": "#/definitions/UpdateNamespaceResponse"
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
@@ -88,7 +86,7 @@ func HealthyHandler(w http.ResponseWriter, r *http.Request) {
 	//  - text/plain
 	//  responses:
 	//    '200':
-	//      description: Healthy: server is responding as expected
+	//      description: "Healthy: server is responding as expected"
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("ok"))
 }
