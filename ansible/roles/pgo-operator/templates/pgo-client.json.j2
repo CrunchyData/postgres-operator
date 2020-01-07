@@ -29,7 +29,7 @@
                                 "image": "{% if pgo_client_image | default('') != '' %}{{ pgo_client_image }}
                                         {%- else %}{{ pgo_image_prefix }}/pgo-client:{{ pgo_image_tag }}
                                         {%- endif %}",
-                        "imagePullPolicy": "Always",
+                        "imagePullPolicy": "IfNotPresent",
                         "env": [
                             {
                                 "name": "PGO_APISERVER_URL",
