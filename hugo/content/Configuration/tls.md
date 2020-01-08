@@ -117,7 +117,8 @@ setip()
 By default, the pgo client will trust certificates issued by one of the
 Certificate Authorities listed in the operating system's default CA trust
 store. To prevent their inclusion, two configuation methods are available:
-either the Bash environment variable
+either the Bash environment variable. Windows clients have no default CA
+trust and thus have this setting configured to `true` by default.
 
 ```bash
 EXCLUDE_OS_TRUST=true
