@@ -34,7 +34,7 @@ Variable | Ansible Inventory | Example | Description
 `TLS_CA_TRUST` | pgo_tls_ca_store | /var/pki/my_cas.crt | PEM-encoded list of trusted CA certificates
 `ADD_OS_TRUSTSTORE` | pgo_add_os_ca_store | false | Adds OS root trust collection to apiserver
 `NOAUTH_ROUTES` | pgo_noauth_routes | "/health" | Disable mTLS and HTTP BasicAuth for listed routes
-`EXCLUDE_OS_TRUST` |  | false | Excludes OS root trust from pgo client
+`EXCLUDE_OS_TRUST` |  | false* | Excludes OS root trust from pgo client (defaults to true for windows clients)
 
 {{% notice tip %}}
 `examples/envs.sh` contains the above variable definitions as well

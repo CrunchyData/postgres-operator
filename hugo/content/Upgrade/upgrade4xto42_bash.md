@@ -84,9 +84,6 @@ export TLS_CA_TRUST=""
 export ADD_OS_TRUSTSTORE=false
 export NOAUTH_ROUTES=""
 
-# Disable default inclusion of OS trust in PGO clients
-export EXCLUDE_OS_TRUST=false
-
 # for disabling the Operator eventing
 export DISABLE_EVENTING=false
 ```
@@ -103,7 +100,6 @@ If you are upgrading from Postgres Operator 4.1.0 or 4.1.1, you will only need t
 export TLS_CA_TRUST=""
 export ADD_OS_TRUSTSTORE=false
 export NOAUTH_ROUTES=""
-export EXCLUDE_OS_TRUST=false
 ```
 
 Finally source the updated bash file:

@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 
 	"github.com/fatih/color"
@@ -54,13 +55,17 @@ func init() {
 	GREEN = color.New(color.FgGreen).SprintFunc()
 	RED = color.New(color.FgRed).SprintFunc()
 
+	// Go currently guarantees an error when attempting to load OS_TRUST for
+	// windows-based systems (see crypto/x509/cert_pool.go)
+	defExclOSTrust := (runtime.GOOS == "windows")
+
 	RootCmd.PersistentFlags().StringVarP(&Namespace, "namespace", "n", "", "The namespace to use for pgo requests.")
 	RootCmd.PersistentFlags().StringVar(&APIServerURL, "apiserver-url", "", "The URL for the PostgreSQL Operator apiserver that will process the request from the pgo client.")
 	RootCmd.PersistentFlags().StringVar(&PGO_CA_CERT, "pgo-ca-cert", "", "The CA Certificate file path for authenticating to the PostgreSQL Operator apiserver.")
 	RootCmd.PersistentFlags().StringVar(&PGO_CLIENT_KEY, "pgo-client-key", "", "The Client Key file path for authenticating to the PostgreSQL Operator apiserver.")
 	RootCmd.PersistentFlags().StringVar(&PGO_CLIENT_CERT, "pgo-client-cert", "", "The Client Certificate file path for authenticating to the PostgreSQL Operator apiserver.")
 	RootCmd.PersistentFlags().BoolVar(&PGO_DISABLE_TLS, "disable-tls", false, "Disable TLS authentication to the Postgres Operator.")
-	RootCmd.PersistentFlags().BoolVar(&EXCLUDE_OS_TRUST, "exclude-os-trust", false, "Exclude CA certs from OS default trust store")
+	RootCmd.PersistentFlags().BoolVar(&EXCLUDE_OS_TRUST, "exclude-os-trust", defExclOSTrust, "Exclude CA certs from OS default trust store")
 	RootCmd.PersistentFlags().BoolVar(&DebugFlag, "debug", false, "Enable additional output for debugging.")
 
 }
