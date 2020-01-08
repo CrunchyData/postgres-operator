@@ -60,16 +60,16 @@ for deploying the Operator into and for holding Postgres clusters
 created by the Operator.
 
 Creating Kubernetes namespaces is typically something that only a
-priviledged Kubernetes user can perform so log into your Kubernetes cluster as a user
-that has the necessary priviledges.
+privileged Kubernetes user can perform so log into your Kubernetes cluster as a user
+that has the necessary privileges.
 
 On Openshift if you do not want to install the Operator as the system
-administrator, you can grant cluster-admin priviledges to a user
+administrator, you can grant cluster-admin privileges to a user
 as follows:
 
     oc adm policy add-cluster-role-to-user cluster-admin pgoinstaller
 
-In the above command, you are granting cluster-admin priviledges
+In the above command, you are granting cluster-admin privileges
 to a user named pgoinstaller.  
 
 The *NAMESPACE* environment variable is a comma separated list
@@ -198,7 +198,7 @@ Adjust these settings to meet your local requirements.
 ## Default Installation - Create Kubernetes RBAC Controls
 
 The Operator installation requires Kubernetes administrators to create Resources required by the Operator.  These resources are only allowed to be created by a cluster-admin user.  To install on Google Cloud, you will need a user
-account with cluster-admin priviledges.  If you own the GKE cluster you
+account with cluster-admin privileges.  If you own the GKE cluster you
 are installing on, you can add cluster-admin role to your account as
 follows:
 
