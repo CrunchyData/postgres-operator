@@ -1,0 +1,52 @@
+---
+apiVersion: crunchydata.com/v1
+kind: Pgcluster
+metadata:
+  name: example
+  labels: { archive: 'false' }
+spec:
+  name: example
+  clustername: example
+  ccpimage: crunchy-postgres-ha
+  ccpimagetag: '${CCP_IMAGE_TAG}'
+  PrimaryStorage:
+    accessmode: ReadWriteOnce
+    size: 1G
+    storageclass: standard
+    storagetype: dynamic
+  database: example
+  exporterport: '9187'
+  pgbadgerport: '10000'
+  port: '5432'
+  primarysecretname: example-primaryuser
+  rootsecretname: example-postgresuser
+  usersecretname: example-primaryuser
+  userlabels: { archive: 'false' }
+
+---
+apiVersion: crunchydata.com/v1
+kind: Pgreplica
+metadata:
+  name: example
+spec: {}
+
+---
+apiVersion: crunchydata.com/v1
+kind: Pgpolicy
+metadata:
+  name: example
+spec: {}
+
+---
+apiVersion: crunchydata.com/v1
+kind: Pgtask
+metadata:
+  name: example
+spec: {}
+
+---
+apiVersion: crunchydata.com/v1
+kind: Pgbackup
+metadata:
+  name: example
+spec: {}
