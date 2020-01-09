@@ -1,4 +1,0 @@
-oc delete configmap  dev-operators
-oc delete subscription pgo-operator
-oc delete catalogsource dev-operators
-oc delete operatorgroup dev-operators
