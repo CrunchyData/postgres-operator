@@ -1,0 +1,221 @@
+# See https://godoc.org/github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1#ClusterServiceVersion
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  name: 'postgresoperator.v${PGO_VERSION}'
+  annotations:
+    certified: 'false'
+    support: crunchydata.com
+
+    # The following affect how the package is indexed at OperatorHub.io:
+    # https://operatorhub.io/?category=Database
+    categories: Database
+    capabilities: Full Lifecycle
+    description: Enterprise open source PostgreSQL-as-a-Service
+
+    # The following appear on the details page at OperatorHub.io:
+    # https://operatorhub.io/operator/postgresql
+    createdAt: 2019-12-31 19:40Z
+    containerImage: 'crunchydata/postgres-operator:${PGO_IMAGE_TAG}'
+    repository: https://github.com/CrunchyData/postgres-operator
+
+spec:
+  # The following affect how the package is indexed at OperatorHub.io:
+  # https://operatorhub.io/
+  displayName: Crunchy PostgreSQL for Kubernetes
+  provider: { name: Crunchy Data }
+  keywords:
+    - postgres
+    - postgresql
+    - database
+    - sql
+    - operator
+    - crunchy data
+
+  # The following appear on the details page at OperatorHub.io:
+  # https://operatorhub.io/operator/postgresql
+  description: '' # postgresoperator.csv.description.md
+  version: '${PGO_VERSION}'
+  links:
+    - name: Crunchy Data
+      url: https://www.crunchydata.com/
+    - name: Documentation
+      url: 'https://access.crunchydata.com/documentation/postgres-operator/'
+  maintainers:
+    - name: Crunchy Data
+      email: info@crunchydata.com
+
+  minKubeVersion: 1.11.0
+  maturity: stable
+  labels:
+    alm-owner-enterprise-app: postgres-operator
+    alm-status-descriptors: 'postgres-operator.v${PGO_VERSION}'
+
+  customresourcedefinitions:
+    owned: {} # postgresoperator.crd.descriptions.yaml
+
+  installModes:
+    - { type: OwnNamespace,    supported: true  }
+    - { type: SingleNamespace, supported: true  }
+    - { type: MultiNamespace,  supported: true  }
+    - { type: AllNamespaces,   supported: false }
+
+  install:
+    strategy: deployment
+    spec:
+      clusterPermissions:
+        - serviceAccountName: postgres-operator
+          rules:
+            - verbs:
+                - '*'
+              apiGroups:
+                - '*'
+              resources:
+                - namespaces
+                - serviceaccounts
+                - roles
+                - rolebindings
+            - verbs:
+                - 'list'
+                - 'get'
+              apiGroups:
+                - '*'
+              resources:
+                - nodes
+                - storageclasses
+
+      permissions:
+        - serviceAccountName: postgres-operator
+          rules:
+            - verbs:
+                - '*'
+              apiGroups:
+                - 'crunchydata.com'
+              resources:
+                - pgclusters
+                - pgpolicies
+                - pgtasks
+                - pgbackups
+                - pgreplicas
+            - verbs:
+                - '*'
+              apiGroups:
+                - 'apps'
+              resources:
+                - deployments
+            - verbs:
+                - '*'
+              apiGroups:
+                - ''
+              resources:
+                - secrets
+                - pods
+                - configmaps
+                - pods/exec
+                - pods/log
+                - services
+                - replicasets
+                - endpoints
+                - persistentvolumeclaims
+            - verbs:
+                - get
+                - list
+              apiGroups:
+                - ''
+              resources:
+                - nodes
+                - storageclasses
+            - verbs:
+                - '*'
+              apiGroups:
+                - 'batch'
+              resources:
+                - jobs
+
+      deployments:
+        - name: postgres-operator
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                name: postgres-operator
+                vendor: crunchydata
+            template:
+              metadata:
+                labels:
+                  name: postgres-operator
+                  vendor: crunchydata
+              spec:
+                serviceAccountName: postgres-operator
+                containers:
+                  - name: apiserver
+                    image: 'crunchydata/pgo-apiserver:${PGO_IMAGE_TAG}'
+                    imagePullPolicy: IfNotPresent
+                    ports:
+                      - containerPort: 8443
+                    readinessProbe:
+                      httpGet:
+                        path: /healthz
+                        port: 8443
+                        scheme: HTTPS
+                      initialDelaySeconds: 15
+                      periodSeconds: 5
+                    livenessProbe:
+                      httpGet:
+                        path: /healthz
+                        port: 8443
+                        scheme: HTTPS
+                      initialDelaySeconds: 15
+                      periodSeconds: 5
+                    env:
+                      - { name: NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.annotations['olm.targetNamespaces']" } } }
+                      - { name: PGO_INSTALLATION_NAME, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
+                      - { name: PGO_OPERATOR_NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
+
+                      - { name: CRUNCHY_DEBUG, value: 'true' }
+                      - { name: EVENT_ADDR, value: 'localhost:4150' }
+                      - { name: PORT, value: '8443' }
+
+                  - name: operator
+                    image: 'crunchydata/postgres-operator:${PGO_IMAGE_TAG}'
+                    imagePullPolicy: IfNotPresent
+                    env:
+                      - { name: NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.annotations['olm.targetNamespaces']" } } }
+                      - { name: PGO_INSTALLATION_NAME, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
+                      - { name: PGO_OPERATOR_NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
+
+                      - { name: CRUNCHY_DEBUG, value: 'true' }
+                      - { name: EVENT_ADDR, value: 'localhost:4150' }
+
+                  - name: scheduler
+                    image: 'crunchydata/pgo-scheduler:${PGO_IMAGE_TAG}'
+                    imagePullPolicy: IfNotPresent
+                    livenessProbe:
+                      exec:
+                        command: [
+                          "bash",
+                          "-c",
+                          "test -n \"$(find /tmp/scheduler.hb -newermt '61 sec ago')\""
+                        ]
+                        failureThreshold: 2
+                        initialDelaySeconds: 60
+                        periodSeconds: 60
+                    env:
+                      - { name: PGO_INSTALLATION_NAME, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
+                      - { name: PGO_OPERATOR_NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
+
+                      - { name: CRUNCHY_DEBUG, value: 'true' }
+                      - { name: EVENT_ADDR, value: 'localhost:4150' }
+                      - { name: TIMEOUT, value: '3600' }
+
+                  - name: event
+                    image: 'crunchydata/pgo-event:${PGO_IMAGE_TAG}'
+                    imagePullPolicy: IfNotPresent
+                    livenessProbe:
+                      httpGet:
+                        path: /ping
+                        port: 4151
+                      initialDelaySeconds: 15
+                      periodSeconds: 5
+                    env:
+                      - { name: TIMEOUT, value: '3600' }

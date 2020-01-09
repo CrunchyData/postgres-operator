@@ -1,0 +1,70 @@
+.DEFAULT_GOAL := help
+
+CCP_IMAGE_TAG ?= $(PGO_BASEOS)-$(CCP_PG_FULLVERSION)-$(PGO_VERSION)
+CCP_PG_FULLVERSION ?= 12.1
+KUBECONFIG ?= $(HOME)/.kube/config
+OLM_TOOLS ?= registry.localhost:5000/postgres-operator-olm-tools:$(OLM_VERSION)
+OLM_VERSION ?= 0.13.0
+PGO_BASEOS ?= centos7
+PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
+PGO_VERSION ?= 4.2.0
+
+OLM_TOOLS_BASH = docker run --net=host --rm --tty \
+		 --mount 'type=bind,source=$(KUBECONFIG),target=/root/.kube/config,readonly' \
+		 --mount 'type=bind,source=$(CURDIR)/..,target=/mnt/installers' \
+		 '$(OLM_TOOLS)'
+
+export CCP_IMAGE_TAG
+export KUBECONFIG
+export OLM_VERSION
+export PGO_IMAGE_TAG PGO_VERSION
+
+.PHONY: clean
+clean:
+	rm -rf ./package
+
+.PHONY: courier-verify
+courier-verify:
+	operator-courier verify --ui_validate_io ./package
+
+.PHONY: docker-package
+docker-package: image-tools
+docker-package: ## Build package and version bundle from inside a container
+	$(OLM_TOOLS_BASH) make -C /mnt/installers/$(basename $(notdir $(CURDIR))) package courier-verify
+
+.PHONY: docker-verify
+docker-verify: image-tools
+	$(OLM_TOOLS_BASH) make -C /mnt/installers/$(basename $(notdir $(CURDIR))) verify
+
+.PHONY: help
+help: ALIGN=14
+help: ## Print this message
+	@awk -F ': ## ' -- "/^[^':]+: ## /"' { printf "'$$(tput bold)'%-$(ALIGN)s'$$(tput sgr0)' %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
+
+.PHONY: image-tools
+image-tools:
+	docker build --file Dockerfile --tag '$(OLM_TOOLS)' --build-arg OLM_VERSION='$(OLM_VERSION)' .
+
+.PHONY: install
+install: ## Install the package in a Kubernetes namespace
+	@test -n '$(NAMESPACE)' || { >&2 echo Must choose a NAMESPACE; exit 1; }
+	./install.sh operator '$(NAMESPACE)' '$(NAMESPACE)'
+
+.PHONY: install-olm
+install-olm: ## Install OLM in Kubernetes
+	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$(OLM_VERSION)/crds.yaml
+	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$(OLM_VERSION)/olm.yaml
+
+.PHONY: package
+package: ## Build package and version bundle
+	./generate.sh
+
+.PHONY: package-openshift
+package-openshift: PGO_BASEOS := $(subst centos,rhel,$(PGO_BASEOS))
+package-openshift:
+	./generate.sh
+	./openshift.sh
+
+.PHONY: verify
+verify: ## Install and test the package in a new (random) Kubernetes namespace then clean up
+	./verify.sh
