@@ -56,7 +56,7 @@ func init() {
 	RED = color.New(color.FgRed).SprintFunc()
 
 	// Go currently guarantees an error when attempting to load OS_TRUST for
-	// windows-based systems (see crypto/x509/cert_pool.go)
+	// windows-based systems (see https://golang.org/issue/16736) 
 	defExclOSTrust := (runtime.GOOS == "windows")
 
 	RootCmd.PersistentFlags().StringVarP(&Namespace, "namespace", "n", "", "The namespace to use for pgo requests.")
