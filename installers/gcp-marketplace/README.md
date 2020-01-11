@@ -1,6 +1,6 @@
 
-This directory contains the files needed to offer the Operator as a
-[Google Cloud Platform Marketplace Kubernetes application][gcp-k8s].
+This directory contains the files that are used to install [Crunchy PostgreSQL for GKE][gcp-details],
+which uses the PostgreSQL Operator, from the Google Cloud Marketplace.
 
 The integration centers around a container [image](./Dockerfile) that contains an installation
 [schema](./schema.yaml) and an [Application][k8s-app] [manifest](./application.yaml).
@@ -11,13 +11,15 @@ Consult the [technical requirements][gcp-k8s-requirements] when making changes.
 [gcp-k8s-requirements]: https://cloud.google.com/marketplace/docs/partners/kubernetes-solutions/create-app-package
 [gcp-k8s-tool-images]: https://console.cloud.google.com/gcr/images/cloud-marketplace-tools
 [gcp-k8s-tool-repository]: https://github.com/GoogleCloudPlatform/marketplace-k8s-app-tools
+[gcp-details]: https://console.cloud.google.com/marketplace/details/crunchydata/crunchy-postgresql-operator
 
 
 # Installation
 
 ## Quick install with Google Cloud Marketplace
 
-Install this application to a Google Kubernetes Engine cluster using Google Cloud Marketplace.
+Install [Crunchy PostgreSQL for GKE][gcp-details] to a Google Kubernetes Engine cluster using
+Google Cloud Marketplace.
 
 ## Command line instructions
 
