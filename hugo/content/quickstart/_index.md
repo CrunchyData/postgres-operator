@@ -14,15 +14,197 @@ There are two paths to quickly get you up and running with the PostgreSQL Operat
 - Installation via a Marketplace
 - Installation via the Ansible Installer
 
+# GKE MarketPlace
+
 The marketplaces that include the Crunchy PostgreSQL Operator include:
 
 - [Crunchy PostgreSQL for GKE](https://console.cloud.google.com/marketplace/details/crunchydata/crunchy-postgresql-operator) - Google Cloud Marketplace
 
-The marketplaces will get your environment set up quickly, and you can use "Step 5" below to validate your installation.
+The marketplaces will get your environment set up quickly
 
+## Step 1 MarketPlace: Prerequisites
+
+### Kubectl and Gcloud skd
+
+- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) is required to execute kube commands with in GKE.
+- [gcloudsdk](https://cloud.google.com/sdk/install) essential command line tools for google cloud
+
+### Verification
+
+Below are a few steps to check if the PostgreSQL Operator is up and running.
+
+For this example we are deploying the operator into a namespace called `pgo`. First, see that the the Kubernetes Deployment of the Operator exists and is healthy:
+
+```shell
+kubectl -n pgo get deployments
+```
+
+If successful, you should see output similar to this:
+
+```
+NAME                READY   UP-TO-DATE   AVAILABLE   AGE
+postgres-operator   1/1     1            1           16h
+```
+
+Next, see if the Pods that run the PostgreSQL Operator are up and running:
+
+```shell
+kubectl -n pgo get pods
+```
+
+If successful, you should see output similar to this:
+
+```
+NAME                                READY   STATUS    RESTARTS   AGE
+postgres-operator-56d6ccb97-tmz7m   4/4     Running   0          2m
+```
+
+## Step 2 MarketPlace: Get your keys
+
+After your operator is deployed via GKE Marketplace you will need to get keys used to secure the Operator REST API. For these instructions we will assume the operator is deployed in a namespace named "pgo" if this in not the case for your operator change the namespace to coencide with where your operator is deployed. Using the `gcloud` utility, ensure you are logged into the GKE cluster that you installed the PostgreSQL Operator into, run the following commands to retrieve the cert and key:
+
+```shell
+kubectl get secret pgo.tls -n pgo -o jsonpath='{.data.tls\.key}' | base64 --decode > /tmp/client.key
+
+kubectl get secret pgo.tls -n pgo -o jsonpath='{.data.tls\.crt}' | base64 --decode > /tmp/client.crt
+
+```
+
+## Step 3 MarketPlace: RBAC
+
+The operator implements its own RBAC(Role Based Access Controls) for authenticating Operator users access to the Operator REST API.  Create and set the values as follows:
+
+create the pgouser file `${HOME?}/.pgo/<operatornamespace>/pgouser` and insert the user and password you created on deployment of the PostgreSQL Operator via GKE Marketplace.  For this example I have admin set to password.
+
+
+```shell
+admin:password
+```
+
+## Step 4 MarketPlace:  Set Environment variables
+
+Set environmental variables to use the cert and key you just pulled from your operator that was deployed via the marketplace. For this example I continue to use pgo as the namespace the operator is deployed in. You can set up enviroment variables with the following command:
+
+```shell
+export PGOUSER="${HOME?}/.pgo/pgo/pgouser"
+export PGO_CA_CERT="/tmp/client.crt"
+export PGO_CLIENT_CERT="/tmp/client.crt"
+export PGO_CLIENT_KEY="/tmp/client.key"
+export PGO_APISERVER_URL='https://127.0.0.1:8443'
+```
+
+If you wish to permanently add these variables to your environment, you can run the following:
+
+```shell
+cat <<EOF >> ~/.bashrc
+export PGOUSER="${HOME?}/.pgo/pgo/pgouser"
+export PGO_CA_CERT="/tmp/client.crt"
+export PGO_CLIENT_CERT="/tmp/client.crt"
+export PGO_CLIENT_KEY="/tmp/client.key"
+export PGO_APISERVER_URL='https://127.0.0.1:8443'
+EOF
+
+source ~/.bashrc
+```
+
+**NOTE**: For macOS users, you must use `~/.bash_profile` instead of `~/.bashrc`
+
+## Step 5 MarketPlace:  Pull the `pgo` command line interface
+
+The `pgo` command-line client can be downloaded from GitHub [Releases](https://github.com/crunchydata/postgres-operator/releases),Crunchy Enterprise Customer's can download the `pgo` binaries from https://access.crunchydata.com/ on the downloads page. Download the appropriate client to your local laptop or workstation to work with a remote Operator. Change the permissions on the file to be executable if need be as shown below:
+
+```shell
+chmod +x pgo
+```
+## Step 6 MarketPlace:  Connect to the PostgreSQL Operator
+
+Finally, let's see if we can connect to the PostgreSQL Operator from the `pgo` command-line client. In order to communicate with the PostgreSQL Operator API server, you will first need to set up a [port forward](https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/) to your local environment.
+
+In a new console window, run the following command to set up a port forward:
+
+```shell
+kubectl -n pgo port-forward svc/postgres-operator 8443:8443
+```
+
+Back to your original console window, you can verify that you can connect to the PostgreSQL Operator using the following command:
+
+```shell
+pgo version
+```
+
+If successful, you should see output similar to this:
+
+```
+pgo client version 4.2.0
+pgo-apiserver version 4.2.0
+```
+
+## Step 9: Add a namespace
+
+We are almost there.  Now you need to add a namespace(s) for the operator to watch and to deploy a PostgreSQL cluster into.
+
+```shell
+pgo create namespace pgouser1
+```
+
+verify the operator has access to the newly added namespace
+
+```shell
+pgo show namespace --all
+```
+
+you should see out put similiar to this:
+
+```shell
+pgo username: admin
+namespace                useraccess          installaccess       
+application-system       accessible          no access                   
+default                  accessible          no access                  
+kube-public              accessible          no access           
+kube-system              accessible          no access           
+pgo                      accessible          no access 
+pgouser1                 accessible          accessible  
+```
+
+## Step 8: Have Some Fun - Create a PostgreSQL Cluster
+
+You are now ready to create a new cluster in the pgouser1 namespace, try the command below:
+
+```shell
+pgo create cluster -n pgouser1 hippo
+```
+
+If successful, you should see output similar to this:
+
+```
+created Pgcluster hippo
+workflow id 1cd0d225-7cd4-4044-b269-aa7bedae219b
+```
+
+This will create a PostgreSQL cluster named `hippo`. It may take a few moments for the cluster to be provisioned. You can see the status of this cluster using the `pgo test` command:
+
+```shell
+pgo test -n pgouser1 hippo
+```
+
+When everything is up and running, you should see output similar to this:
+
+```
+cluster : hippo
+	Services
+		primary (10.97.140.113:5432): UP
+	Instances
+		primary (hippo-7b64747476-6dr4h): UP
+```
+
+The `pgo test` command provides you the basic information you need to connect to your PostgreSQL cluster from within your Kubernetes environment. For more detailed information, you can use `pgo show cluster -n pgouser1 hippo`.
+
+
+
+# Ansible
 Below will guide you through the steps for installing and using the PostgreSQL Operator using the Ansible Installer.
 
-## Step 1: Prerequisites
+## Step 1 Ansible: Prerequisites
 
 ### Kubernetes / OpenShift
 
@@ -38,7 +220,7 @@ Below will guide you through the steps for installing and using the PostgreSQL O
 - `git`
 - If you are installing to Google Kubernetes Engine, you will need the [`gcloud`](https://cloud.google.com/sdk/install) utility
 
-## Step 2: Configuration
+## Step 2 Ansible: Configuration
 
 ### Get the PostgreSQL Operator Ansible Installation Playbook
 
@@ -46,6 +228,7 @@ You can download the playbook by cloning the [PostgreSQL Operator git repository
 
 ```shell
 git clone https://github.com/CrunchyData/postgres-operator.git
+cd postgres-operator
 git checkout v4.2.0 # you can substitute this for the version that you want to install
 cd ansible
 ```
@@ -166,7 +349,7 @@ backup_storage='gce'
 primary_storage='gce'
 replica_storage='gce'
 ```
-## Step 3: Installation
+## Step 3 Ansible: Installation
 
 Ensure you are still in the `ansible` directory and run the following command to install the PostgreSQL Operator:
 
@@ -202,7 +385,7 @@ source ~/.bashrc
 
 **NOTE**: For macOS users, you must use `~/.bash_profile` instead of `~/.bashrc`
 
-## Step 4: Verification
+## Step 4 Ansible: Verification
 
 Below are a few steps to check if the PostgreSQL Operator is up and running.
 
@@ -253,7 +436,7 @@ pgo client version 4.2.0
 pgo-apiserver version 4.2.0
 ```
 
-## Step 5: Have Some Fun - Create a PostgreSQL Cluster
+## Step 5 Ansible: Have Some Fun - Create a PostgreSQL Cluster
 
 The quickstart installation method creates two namespaces that you can deploy your PostgreSQL clusters into called `pgouser1` and `pgouser2`. Let's create a new PostgreSQL cluster in `pgouser1`:
 
