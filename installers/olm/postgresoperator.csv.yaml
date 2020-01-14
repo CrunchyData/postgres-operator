@@ -10,7 +10,7 @@ metadata:
     # The following affect how the package is indexed at OperatorHub.io:
     # https://operatorhub.io/?category=Database
     categories: Database
-    capabilities: Full Lifecycle
+    capabilities: Auto Pilot
     description: Enterprise open source PostgreSQL-as-a-Service
 
     # The following appear on the details page at OperatorHub.io:
