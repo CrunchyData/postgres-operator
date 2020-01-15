@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
+	"regexp"
 
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -67,6 +67,9 @@ const (
 	// instanceReplicationInfoTypePrimary is the label used by Patroni to indicate that an instance
 	// is indeed a primary PostgreSQL instance
 	instanceReplicationInfoTypePrimary = "Leader"
+	// pgPodNamePattern pattern is a pattern used by regexp to look up the
+	// name of the pod
+	pgPodNamePattern = "%s-[0-9a-z]{10}-[0-9a-z]{5}"
 )
 
 var (
@@ -195,7 +198,18 @@ func ReplicationStatus(request ReplicationStatusRequest) (ReplicationStatusRespo
 		//
 		// This is not the cleanest way of doing it, but it works
 		for name, node := range instanceNodeMap {
-			if strings.HasPrefix(rawInstance.PodName, name) {
+			r, err := regexp.Compile(fmt.Sprintf(pgPodNamePattern, name))
+
+			// if there is an error compiling the regular expression, add an error to
+			// log log and keep iterating
+			if err != nil {
+				log.Error(err)
+				continue
+			}
+
+			// see if there is a match in the names. If it , add the name and node for
+			// this particular instance
+			if r.Match([]byte(rawInstance.PodName)) {
 				instance.Name = name
 				instance.Node = node
 				break
