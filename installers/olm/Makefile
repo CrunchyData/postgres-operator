@@ -7,7 +7,7 @@ OLM_TOOLS ?= registry.localhost:5000/postgres-operator-olm-tools:$(OLM_VERSION)
 OLM_VERSION ?= 0.13.0
 PGO_BASEOS ?= centos7
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
-PGO_VERSION ?= 4.2.0
+PGO_VERSION ?= 4.2.1
 
 OLM_TOOLS_BASH = docker run --net=host --rm --tty \
 		 --mount 'type=bind,source=$(KUBECONFIG),target=/root/.kube/config,readonly' \

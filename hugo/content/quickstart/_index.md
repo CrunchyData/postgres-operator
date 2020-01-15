@@ -26,7 +26,7 @@ Below will guide you through the steps for installing and using the PostgreSQL O
 ### Kubernetes / OpenShift
 
 - A Kubernetes or OpenShift environment where you have enough privileges to install an application, i.e. you can add a [ClusterRole](https://kubernetes.io/docs/reference/access-authn-authz/rbac/#role-and-clusterrole). If you're a Cluster Admin, you're all set.
-  - Your Kubernetes version should be 1.13+. **NOTE**: For v4.2.0, while we have updated the PostgreSQL Operator for compatibility with 1.16+, we have not fully tested it.
+  - Your Kubernetes version should be 1.13+. **NOTE**: For v4.2.1, while we have updated the PostgreSQL Operator for compatibility with 1.16+, we have not fully tested it.
   - For OpenShift, the PostgreSQL Operator will work in 3.11+
 - [PersistentVolume](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)s that are available
 
@@ -46,7 +46,7 @@ You can download the playbook by cloning the [PostgreSQL Operator git repository
 ```shell
 git clone https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
-git checkout v4.2.0 # you can substitute this for the version that you want to install
+git checkout v4.2.1 # you can substitute this for the version that you want to install
 cd ansible
 ```
 
@@ -249,8 +249,8 @@ pgo version
 If successful, you should see output similar to this:
 
 ```
-pgo client version 4.2.0
-pgo-apiserver version 4.2.0
+pgo client version 4.2.1
+pgo-apiserver version 4.2.1
 ```
 
 ## Step 5: Have Some Fun - Create a PostgreSQL Cluster
@@ -390,7 +390,7 @@ The [`pgo` client](/pgo-client/) provides a helpful command-line interface to pe
 
 The `pgo` client can be downloaded from GitHub [Releases](https://github.com/crunchydata/postgres-operator/releases) (subscribers can download it from the [Crunchy Data Customer Portal](https://access.crunchydata.com)).
 
-Note that the `pgo` client's version must match the version of the PostgreSQL Operator that you have deployed. For example, if you have deployed version 4.2.0 of the PostgreSQL Operator, you must use the `pgo` for 4.2.0.
+Note that the `pgo` client's version must match the version of the PostgreSQL Operator that you have deployed. For example, if you have deployed version 4.2.1 of the PostgreSQL Operator, you must use the `pgo` for 4.2.1.
 
 Once you have download the `pgo` client, change the permissions on the file to be executable if need be as shown below:
 
@@ -417,8 +417,8 @@ pgo version
 If successful, you should see output similar to this:
 
 ```
-pgo client version 4.2.0
-pgo-apiserver version 4.2.0
+pgo client version 4.2.1
+pgo-apiserver version 4.2.1
 ```
 
 ### Step 7: Create a Namespace

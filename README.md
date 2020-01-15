@@ -91,12 +91,10 @@ The PostgreSQL Operator is developed and tested on CentOS and RHEL linux platfor
 
 The Crunchy PostgreSQL Operator is tested on the following Platforms:
 
-- Kubernetes 1.13 - 1.15 (See note about 1.16 and beyond)
+- Kubernetes 1.13+
 - OpenShift 3.11+
 - Google Kubernetes Engine (GKE), including Anthos
 - VMware Enterprise PKS 1.3+
-
-**NOTE**: At present, while the Crunchy PostgreSQL Operator has compatibility for Kubernetes 1.16 and beyond, it has not been verified for the v4.2.0 release.
 
 ### Storage
 

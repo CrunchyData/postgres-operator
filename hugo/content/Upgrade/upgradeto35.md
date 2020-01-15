@@ -1,6 +1,6 @@
 ---
 title: "Upgrade to PGO 3.5 From Previous Versions"
-Latest Release: 4.2.0 {docdate}
+Latest Release: 4.2.1 {docdate}
 draft: false
 weight: 8
 ---
