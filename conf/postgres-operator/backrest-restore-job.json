@@ -86,7 +86,9 @@
                         }
                     }]
                 }],
+                "affinity": {
         {{.NodeSelector}}
+                },
                 "restartPolicy": "Never"
             }
         }
