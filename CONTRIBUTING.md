@@ -18,7 +18,7 @@ branch as well, but all code that is committed to the `master` branch should be
 considered _stable_, even if it is part of an ongoing release cycle.
 
 All fixes for a supported release should be committed to the supported release
-branch. For example, the 4.1 release is maintained on the  `REL_4_1` branch.
+branch. For example, the 4.3 release is maintained on the  `REL_4_3` branch.
 Please see the section on _Supported Releases_ for more information.
 
 Ensure any changes are clear and well-documented. When we say "well-documented":
@@ -136,8 +136,8 @@ minor release occurs, no new features are added to the `REL_X_Y` branch.
 However, bug fixes can (and if found, should) be added to this branch.
 
 To contribute a bug fix to a supported release, please make a pull request off
-of the supported release branch. For instance, if you find a bug in the 4.1
-release, then you would make a pull request off of the `REL_4_1` branch.
+of the supported release branch. For instance, if you find a bug in the 4.3
+release, then you would make a pull request off of the `REL_4_3` branch.
 
 ## Unsupported Releases
 
@@ -156,21 +156,21 @@ candidates **should not be used in production environments**.
 
 Alpha is the early stage of a release cycle and is typically made to test the
 mechanics of an upcoming release. These should be considered relatively
-unstable. The format for an alpha release tag is `v4.2.0-alpha.1`, which in this
-case indicates it is the first alpha release for 4.2.
+unstable. The format for an alpha release tag is `v4.3.0-alpha.1`, which in this
+case indicates it is the first alpha release for 4.3.
 
 Beta occurs during the later stage of a release cycle. At this point, the
 release should be considered feature complete and the beta is used to
 distribute, test, and collect feedback on the upcoming release. The betas should
 be considered unstable, but as mentioned feature complete. The format for an
-beta release tag is `v4.2.0-beta.1`, which in this case indicates it is the
-first beta release for 4.2.
+beta release tag is `v4.3.0-beta.1`, which in this case indicates it is the
+first beta release for 4.3.
 
 Release candidates (RCs) occur just before a release. A release candidate should
 be considered stable, and is typically used for a final round of bug checking
 and testing. Multiple release candidates can occur in the event of serious bugs.
-The format for a release candidate tag is `v4.2.0-rc.1`, which in this
-case indicates it is the first release candidate for 4.2.
+The format for a release candidate tag is `v4.3.0-rc.1`, which in this
+case indicates it is the first release candidate for 4.3.
 
 **After a major or minor release, no alpha, beta, or release candidate releases
 are supported**. In fact, any newer release of an alpha, beta, or RC immediately
@@ -187,7 +187,7 @@ be sure you do the following:
 
 - If testing against a release, ensure your tests are performed against the
 latest minor version (the last number in the release denotes the minor version,
-e.g. the "3" in the 4.1.3)
+e.g. the "3" in the 4.3.3)
 - If testing against a pre-release (alpha, beta, RC), ensure your tests are
 performed against latest version
 - If testing against a development (`master`) or release (`REL_X_Y`) branch,
