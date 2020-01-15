@@ -94,6 +94,10 @@ func CreateRmdataJob(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namesp
 		return err
 	}
 
+	// set the container image to an override value, if one exists
+	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_RMDATA,
+		&newjob.Spec.Template.Spec.Containers[0])
+
 	_, err = kubeapi.CreateJob(clientset, &newjob, namespace)
 	if err != nil {
 		return err

@@ -109,6 +109,10 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 		return
 	}
 
+	// set the container image to an override value, if one exists
+	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST,
+		&newjob.Spec.Template.Spec.Containers[0])
+
 	newjob.ObjectMeta.Labels[config.LABEL_PGOUSER] = task.ObjectMeta.Labels[config.LABEL_PGOUSER]
 	newjob.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = task.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 

@@ -24,6 +24,7 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/operator"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
@@ -90,6 +91,10 @@ func Create(namespace string, clientset *kubernetes.Clientset, restclient *rest.
 		log.Errorf("error unmarshalling json into Job %s", err)
 		return
 	}
+
+	// set the container image to an override value, if one exists
+	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGBENCH,
+		&newJob.Spec.Template.Spec.Containers[0])
 
 	log.Debug("Creating benchmark job")
 	newJob.ObjectMeta.Labels[config.LABEL_PGOUSER] = task.ObjectMeta.Labels[config.LABEL_PGOUSER]

@@ -23,6 +23,8 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	log "github.com/sirupsen/logrus"
+
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -34,6 +36,11 @@ var PgoNamespace string
 var EventTCPAddress = "localhost:4150"
 
 var Pgo config.PgoConfig
+
+// ContainerImageOverrides contains a list of container images that are
+// overridden by the RELATED_IMAGE_* environmental variables that can be set by
+// people deploying the Operator
+var ContainerImageOverrides map[string]string
 
 type containerResourcesTemplateFields struct {
 	RequestsMemory, RequestsCPU string
@@ -99,10 +106,16 @@ func Initialize(clientset *kubernetes.Clientset) {
 		Pgo.Cluster.PgmonitorPassword = "password"
 	}
 
+	// In a RELATED_IMAGE_* world, this does not _need_ to be set, but our
+	// installer does set it up so we could be ok...
 	if Pgo.Pgo.PGOImageTag == "" {
 		log.Error("pgo.yaml PGOImageTag not set, required ")
 		os.Exit(2)
 	}
+
+	// initialize any container image overrides that are set by the "RELATED_*"
+	// variables
+	initializeContainerImageOverrides()
 
 	tmp = os.Getenv("EVENT_TCP_ADDRESS")
 	if tmp != "" {
@@ -157,4 +170,36 @@ func IsLocalAndS3Storage(backrestStorageType string) bool {
 		return true
 	}
 	return false
+}
+
+// SetContainerImageOverride determines if there is an override available for
+// a container image, and sets said value on the Kubernetes Container image
+// definition
+func SetContainerImageOverride(containerImageName string, container *v1.Container) {
+	// if a container image name override is available, set it!
+	overrideImageName := ContainerImageOverrides[containerImageName]
+
+	if overrideImageName != "" {
+		log.Debugf("overriding image %s with %s", containerImageName, overrideImageName)
+
+		container.Image = overrideImageName
+	}
+}
+
+// initializeContainerImageOverrides initalizes the container image overrides
+// that could be set if there are any `RELATED_IMAGE_*` environmental variables
+func initializeContainerImageOverrides() {
+	// the easiest way to handle this is to iterate over the RelatedImageMap,
+	// check if said image exist in the environmental variable, and if it does
+	// load it in as an override. Otherwise, ignore.
+	for relatedImageEnvVar, imageName := range config.RelatedImageMap {
+		// see if the envirionmental variable overrides the image name or not
+		overrideImageName := os.Getenv(relatedImageEnvVar)
+
+		// if it is overridden, set the image name the map
+		if overrideImageName != "" {
+			ContainerImageOverrides[imageName] = overrideImageName
+			log.Infof("image %s overridden by: %s", imageName, overrideImageName)
+		}
+	}
 }

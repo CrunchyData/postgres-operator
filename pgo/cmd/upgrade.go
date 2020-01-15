@@ -31,9 +31,11 @@ var upgradeCmd = &cobra.Command{
 	Long: `UPGRADE performs an upgrade on a PostgreSQL cluster. For example:
 
   pgo upgrade mycluster
-  
+
  This upgrade will update the CCPImageTag of the deployment for the primary and all replicas.
- The running containers are upgraded one at a time, sequentially, in the following order: replicas, backrest-repo, then primary.    `,
+ The running containers are upgraded one at a time, sequentially, in the following order: replicas, backrest-repo, then primary.
+
+ Note: If the PostgreSQL Operator is deployed using OLM, the value of the CCPImageTag is overriden by what is in the RELATED_IMAGE_* environmental variables, e.g. for the PostgreSQL container, it would be the value of RELATED_IMAGE_CRUNCHY_POSTGRES_HA`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Namespace == "" {
 			Namespace = PGONamespace
