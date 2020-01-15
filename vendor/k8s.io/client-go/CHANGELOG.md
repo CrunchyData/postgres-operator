@@ -180,7 +180,7 @@ Bug fixes:
 
 # v2.0.0
 
-* Included bug fixes in k8s.io/kuberentes release-1.5 branch, up to commit 
+* Included bug fixes in k8s.io/kubernetes release-1.5 branch, up to commit 
   bde8578d9675129b7a2aa08f1b825ec6cc0f3420
 
 # v2.0.0-alpha.1

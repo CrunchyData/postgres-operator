@@ -268,7 +268,7 @@ func getServices(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterService,
 }
 
 // TestCluster performs a variety of readiness checks against one or more
-// clusters within a namespace. It leverages the following two Kuberentes
+// clusters within a namespace. It leverages the following two Kubernetes
 // constructs in order to determine the availability of PostgreSQL clusters:
 //	- Pod readiness checks. The Pod readiness checks leverage "pg_isready" to
 //	determine if the PostgreSQL cluster is able to accept connecions

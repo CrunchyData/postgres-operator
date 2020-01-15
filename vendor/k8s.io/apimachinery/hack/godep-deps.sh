@@ -17,7 +17,7 @@
 
 # overall flow
 # 1. make a clean gopath
-# 2. godep restore based on k8s.io/kuberentes provided manifest
+# 2. godep restore based on k8s.io/kubernetes provided manifest
 # 3. go get anything unlisted.  This handles deps from k8s.io/*
 # 4. remove old vendoring data
 # 5. vendor packages we need
