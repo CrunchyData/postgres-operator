@@ -1,6 +1,6 @@
 ---
 title: "Upgrade"
-Latest Release: 4.2.0 {docdate}
+Latest Release: 4.2.1 {docdate}
 draft: false
 weight: 80
 ---
@@ -16,9 +16,9 @@ This section of the documentation shows specific steps required to upgrade diffe
 
 [Upgrade Postgres Operator from 3.5 to 4.1] ( {{< relref "upgrade/upgrade35to4.md" >}})
 
-[Upgrade Postgres Operator from 4.X to 4.2.0 (Bash)] ( {{< relref "upgrade/upgrade4xto42_bash.md" >}})
+[Upgrade Postgres Operator from 4.X to 4.2.1 (Bash)] ( {{< relref "upgrade/upgrade4xto42_bash.md" >}})
 
-[Upgrade Postgres Operator from 4.X to 4.2.0 (Ansible)] ( {{< relref "upgrade/upgrade4xto42_ansible.md" >}})
+[Upgrade Postgres Operator from 4.X to 4.2.1 (Ansible)] ( {{< relref "upgrade/upgrade4xto42_ansible.md" >}})
 
 [Upgrade Postgres Operator from 4.1.0 to a patch release] ( {{< relref "upgrade/upgrade41.md" >}})
 
@@ -36,8 +36,8 @@ At this time, the backrest-repo container is not upgraded during this upgrade as
 
 ## Minor Upgrade Example
 
-In this example, we are upgrading a cluster from PostgreSQL 11.5 to 11.6 using the `crunchy-postgres:centos7-11.6-4.2.0` container:
+In this example, we are upgrading a cluster from PostgreSQL 11.5 to 11.6 using the `crunchy-postgres:centos7-11.6-4.2.1` container:
 
-`pgo upgrade mycluster --ccp-image-tag=centos7-11.6-4.2.0`
+`pgo upgrade mycluster --ccp-image-tag=centos7-11.6-4.2.1`
 
 For more information, please see the `pgo upgrade` documentation [here.] ( {{< relref "pgo-client/reference/pgo_upgrade.md" >}})
