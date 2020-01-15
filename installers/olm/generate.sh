@@ -2,12 +2,12 @@
 # vim: set noexpandtab :
 set -eu
 
-render() { envsubst '$CCP_IMAGE_TAG $PGO_IMAGE_TAG $PGO_VERSION'; }
+render() { envsubst '$CCP_IMAGE_PREFIX $CCP_IMAGE_TAG $PACKAGE_NAME $PGO_IMAGE_PREFIX $PGO_IMAGE_TAG $PGO_VERSION'; }
 
 mkdir -p "./package/${PGO_VERSION}"
 
 # PackageManifest filename must end with '.package.yaml'
-render < postgresql.package.yaml > './package/postgresql.package.yaml'
+render < postgresql.package.yaml > "./package/${PACKAGE_NAME}.package.yaml"
 
 # ClusterServiceVersion filenames must end with '.clusterserviceversion.yaml'
 render < postgresoperator.csv.yaml > "./package/${PGO_VERSION}/postgresoperator.v${PGO_VERSION}.clusterserviceversion.yaml"
@@ -21,9 +21,9 @@ while IFS=$'\t' read index name; do
 done <<< "$crd_names"
 
 yq_script="$( jq <<< '{}' \
-	--argjson crds "$( yq read --tojson postgresoperator.crd.descriptions.yaml )" \
+	--argjson crds "$( yq read --tojson postgresoperator.crd.descriptions.yaml | render )" \
 	--arg examples "$( yq read --tojson postgresoperator.crd.examples.yaml --doc='*' | render | jq . )" \
-	--arg description "$(< postgresoperator.csv.description.md )" \
+	--arg description "$( render < postgresoperator.csv.description.md )" \
 	--arg icon "$( base64 --wrap=0 ../favicon.png )" \
 '{
 	"metadata.annotations.alm-examples": $examples,
@@ -44,5 +44,15 @@ yq_script="$( yq read --tojson "./package/${PGO_VERSION}/postgresoperator.v${PGO
 	.spec.install.spec.deployments[0].spec.template.spec.containers[1].env + $images)
 }' )"
 yq write --inplace --script=- <<< "$yq_script" "./package/${PGO_VERSION}/postgresoperator.v${PGO_VERSION}.clusterserviceversion.yaml"
+
+if [ "${K8S_DISTRIBUTION:-}" = 'openshift' ]; then
+	yq_script="$( jq <<< '{}' \
+		--arg description "$( render < openshift.description.md )" \
+	'{
+		"spec.description": $description,
+		"spec.displayName": "Crunchy PostgreSQL for OpenShift",
+	}' )"
+	yq write --inplace --script=- <<< "$yq_script" "./package/${PGO_VERSION}/postgresoperator.v${PGO_VERSION}.clusterserviceversion.yaml"
+fi
 
 if > /dev/null command -v tree; then tree -AC './package'; fi
