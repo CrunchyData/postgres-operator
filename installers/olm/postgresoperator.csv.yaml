@@ -16,7 +16,7 @@ metadata:
     # The following appear on the details page at OperatorHub.io:
     # https://operatorhub.io/operator/postgresql
     createdAt: 2019-12-31 19:40Z
-    containerImage: 'crunchydata/postgres-operator:${PGO_IMAGE_TAG}'
+    containerImage: '${PGO_IMAGE_PREFIX}/postgres-operator:${PGO_IMAGE_TAG}'
     repository: https://github.com/CrunchyData/postgres-operator
 
 spec:
@@ -149,7 +149,7 @@ spec:
                 serviceAccountName: postgres-operator
                 containers:
                   - name: apiserver
-                    image: 'crunchydata/pgo-apiserver:${PGO_IMAGE_TAG}'
+                    image: '${PGO_IMAGE_PREFIX}/pgo-apiserver:${PGO_IMAGE_TAG}'
                     imagePullPolicy: IfNotPresent
                     ports:
                       - containerPort: 8443
@@ -177,7 +177,7 @@ spec:
                       - { name: PORT, value: '8443' }
 
                   - name: operator
-                    image: 'crunchydata/postgres-operator:${PGO_IMAGE_TAG}'
+                    image: '${PGO_IMAGE_PREFIX}/postgres-operator:${PGO_IMAGE_TAG}'
                     imagePullPolicy: IfNotPresent
                     env:
                       - { name: NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.annotations['olm.targetNamespaces']" } } }
@@ -188,7 +188,7 @@ spec:
                       - { name: EVENT_ADDR, value: 'localhost:4150' }
 
                   - name: scheduler
-                    image: 'crunchydata/pgo-scheduler:${PGO_IMAGE_TAG}'
+                    image: '${PGO_IMAGE_PREFIX}/pgo-scheduler:${PGO_IMAGE_TAG}'
                     imagePullPolicy: IfNotPresent
                     livenessProbe:
                       exec:
@@ -209,7 +209,7 @@ spec:
                       - { name: TIMEOUT, value: '3600' }
 
                   - name: event
-                    image: 'crunchydata/pgo-event:${PGO_IMAGE_TAG}'
+                    image: '${PGO_IMAGE_PREFIX}/pgo-event:${PGO_IMAGE_TAG}'
                     imagePullPolicy: IfNotPresent
                     livenessProbe:
                       httpGet:
