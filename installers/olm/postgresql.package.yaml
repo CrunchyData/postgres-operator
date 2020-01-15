@@ -1,4 +1,4 @@
-packageName: postgresql
+packageName: '${PACKAGE_NAME}'
 defaultChannel: stable
 channels:
   - name: stable

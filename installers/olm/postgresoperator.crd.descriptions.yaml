@@ -17,9 +17,9 @@
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
     - path: ccpimagetag
-      value: "rhel7-12.1-4.3.0"
+      value: "${CCP_IMAGE_TAG}"
       displayName: PostgreSQL Image Tag
-      description: The tag of the PostgreSQL image to use. Example is "rhel7-12.1-4.3.0"
+      description: The tag of the PostgreSQL image to use. Example is "${CCP_IMAGE_TAG}"
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
     - path: clustername

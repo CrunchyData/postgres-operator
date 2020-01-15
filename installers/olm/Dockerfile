@@ -9,7 +9,7 @@ RUN curl -Lo /usr/local/bin/yq -s "https://github.com/mikefarah/yq/releases/down
  && sha256sum -c <<< "SHA256 (/usr/local/bin/yq) = 754c6e6a7ef92b00ef73b8b0bb1d76d651e04d26aa6c6625e272201afa889f8b"
 
 RUN dnf update -d1 -y \
- && dnf install -d1 -y gettext glibc-langpack-en make ncurses python3 tree \
+ && dnf install -d1 -y gettext glibc-langpack-en make ncurses python3 tree zip \
  && dnf clean all
 
 ARG OLM_VERSION
