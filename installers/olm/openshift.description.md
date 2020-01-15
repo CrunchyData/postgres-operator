@@ -1,4 +1,4 @@
-Crunchy PostgreSQL for OpenShift lets you run your own production-grade PostgreSQL-as-a-Service on Openshift!
+Crunchy PostgreSQL for OpenShift lets you run your own production-grade PostgreSQL-as-a-Service on OpenShift!
 
 Powered by the Crunchy [PostgreSQL Operator](https://github.com/CrunchyData/postgres-operator), Crunchy PostgreSQL
 for OpenShift automates and simplifies deploying and managing open source PostgreSQL clusters on OpenShift by providing the
@@ -43,7 +43,7 @@ credentials that need to be generated.
 Start by cloning the operator repository locally.
 
 ```
-git clone -b 4.2.0 https://github.com/CrunchyData/postgres-operator.git
+git clone -b v4.2.0 https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
 ```
 
@@ -63,7 +63,7 @@ CCPImageTag:  rhel7-12.1-4.2.0
 #### Storage
 
 Configure the backend storage for the Persistent Volumes used by each PostgreSQL cluster. Depending on the type of persistent
-storage you wish to make available, adjust the `StorageClass` as necessary. For example, to deploy fon AWS using `gp2`, you
+storage you wish to make available, adjust the `StorageClass` as necessary. For example, to deploy on AWS using `gp2`, you
 would set the following:
 
 ```
@@ -122,7 +122,7 @@ Create the `pgo-auth-secret` Secret that is used by the operator.
 ```
 oc create secret generic -n pgo pgo-auth-secret \
   --from-file=server.crt=$PGOROOT/conf/postgres-operator/server.crt \
-  --from-file=server.key=$PGOROOT/conf/postgres-operator/server.key \
+  --from-file=server.key=$PGOROOT/conf/postgres-operator/server.key
 ```
 
 Install the bootstrap credentials:
@@ -169,7 +169,8 @@ Once the operator is installed in the cluster, you will need to perform several 
 oc expose deployment -n pgo postgres-operator --type=LoadBalancer
 ```
 
-For the pgo client to communicate with the operator, it needs to know where to connect. Export the service url as the PGO_APISERVER_URL for the pgo client in the shell
+For the pgo client to communicate with the operator, it needs to know where to connect.
+Export the service URL as `PGO_APISERVER_URL` in the shell.
 
 ```
 export PGO_APISERVER_URL=https://<url of exposed service>:8443
