@@ -221,7 +221,7 @@ func cloneStep1(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 	// if 's3' storage was selected for the clone, ensure it is enabled in the current pg cluster.
 	// also, if 'local' was selected, or if no storage type was selected, ensure the cluster is using
 	// local storage
-	err = util.ValidateBackrestStorageTypeOnBackupRestore(cloneBackrestStorageType, 
+	err = util.ValidateBackrestStorageTypeOnBackupRestore(cloneBackrestStorageType,
 		sourceClusterBackrestStorageType, true)
 	if err != nil {
 		log.Error(err)
@@ -390,6 +390,10 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, errorMessage)
 		return
 	}
+
+	// set the container image to an override value, if one exists
+	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_RESTORE,
+		&job.Spec.Template.Spec.Containers[0])
 
 	// update the job annotations to include information about the source and
 	// target cluster
@@ -604,6 +608,10 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 			},
 		},
 	}
+
+	// set the container image to an override value, if one exists
+	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_REPO_SYNC,
+		&job.Spec.Template.Spec.Containers[0])
 
 	// Retrieve current S3 key & key secret
 	s3Creds, err := util.GetS3CredsFromBackrestRepoSecret(clientset, sourcePgcluster.Name,

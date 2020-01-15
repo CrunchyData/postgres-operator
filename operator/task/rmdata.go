@@ -119,6 +119,10 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, restclient *r
 		return
 	}
 
+	// set the container image to an override value, if one exists
+	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_RMDATA,
+		&newjob.Spec.Template.Spec.Containers[0])
+
 	var jobname string
 	jobname, err = kubeapi.CreateJob(clientset, &newjob, namespace)
 	if err != nil {

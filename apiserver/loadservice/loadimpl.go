@@ -25,6 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/operator"
 	operutil "github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
@@ -236,6 +237,10 @@ func createJob(clusterName string, template *loadJobTemplateFields, ns string) (
 		log.Error("error unmarshalling json into Job " + err.Error())
 		return "", err
 	}
+
+	// set the container image to an override value, if one exists
+	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_LOAD,
+		&newjob.Spec.Template.Spec.Containers[0])
 
 	var jobName string
 	jobName, err = kubeapi.CreateJob(apiserver.Clientset, &newjob, ns)

@@ -195,6 +195,9 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		return err
 	}
 
+	// determine if any of the container images need to be overridden
+	operator.OverrideClusterContainerImages(deployment.Spec.Template.Spec.Containers)
+
 	if deploymentExists(clientset, namespace, cl.Spec.Name) == false {
 		err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
 		if err != nil {
@@ -415,6 +418,9 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
 		return err
 	}
+
+	// determine if any of the container images need to be overridden
+	operator.OverrideClusterContainerImages(replicaDeployment.Spec.Template.Spec.Containers)
 
 	// set the replica scope to the same scope as the primary, i.e. the scope defined using label
 	// 'crunchy-pgha-scope'
