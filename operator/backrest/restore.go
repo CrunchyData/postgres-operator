@@ -190,6 +190,10 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		return
 	}
 
+	// set the container image to an override value, if one exists
+	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_RESTORE,
+		&newjob.Spec.Template.Spec.Containers[0])
+
 	var jobName string
 	jobName, err = kubeapi.CreateJob(clientset, &newjob, namespace)
 	if err != nil {
@@ -377,6 +381,10 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		log.Error("error unmarshalling primary json into Deployment " + err.Error())
 		return err
 	}
+
+	// determine if any of the container images need to be overridden
+	operator.OverrideClusterContainerImages(deployment.Spec.Template.Spec.Containers)
+
 	err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
 	if err != nil {
 		return err

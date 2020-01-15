@@ -334,6 +334,15 @@ func createImageNamePatch(cluster crv1.Pgcluster, ccpImagePrefix, ccpImageTag st
 		Name:  "database",
 		Image: ccpImagePrefix + "/" + cluster.Spec.CCPImage + ":" + ccpImageTag,
 	}
+
+	// see if the image name is overridden
+	if strings.Contains(cluster.Spec.CCPImage, "gis-ha") &&
+		operator.ContainerImageOverrides[config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_GIS_HA] != "" {
+		databaseContainer.Image = operator.ContainerImageOverrides[config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_GIS_HA]
+	} else if operator.ContainerImageOverrides[config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_HA] != "" {
+		databaseContainer.Image = operator.ContainerImageOverrides[config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_HA]
+	}
+
 	containersToPatch = append(containersToPatch, databaseContainer)
 
 	// determine if pgbadger is enabled for the cluster using label "crunchy_collect"
@@ -344,6 +353,10 @@ func createImageNamePatch(cluster crv1.Pgcluster, ccpImagePrefix, ccpImageTag st
 		collectContainer := patchDeploymentContainers{
 			Name:  "collect",
 			Image: ccpImagePrefix + "/" + collectCCPImage + ":" + ccpImageTag,
+		}
+		// see if the image name is overridden
+		if operator.ContainerImageOverrides[config.CONTAINER_IMAGE_CRUNCHY_COLLECT] != "" {
+			collectContainer.Image = operator.ContainerImageOverrides[config.CONTAINER_IMAGE_CRUNCHY_COLLECT]
 		}
 		containersToPatch = append(containersToPatch, collectContainer)
 	}
@@ -357,6 +370,10 @@ func createImageNamePatch(cluster crv1.Pgcluster, ccpImagePrefix, ccpImageTag st
 			Name:  "pgbadger",
 			Image: ccpImagePrefix + "/" + pgBadgerCCPImage + ":" + ccpImageTag,
 		}
+		// see if the image name is overridden
+		if operator.ContainerImageOverrides[config.CONTAINER_IMAGE_CRUNCHY_PGBADGER] != "" {
+			badgerContainer.Image = operator.ContainerImageOverrides[config.CONTAINER_IMAGE_CRUNCHY_PGBADGER]
+		}
 		containersToPatch = append(containersToPatch, badgerContainer)
 	}
 
@@ -365,6 +382,10 @@ func createImageNamePatch(cluster crv1.Pgcluster, ccpImagePrefix, ccpImageTag st
 		crunchyadmContainer := patchDeploymentContainers{
 			Name:  "crunchyadm",
 			Image: ccpImagePrefix + "/" + crunchyadmCCPImage + ":" + ccpImageTag,
+		}
+		// see if the image name is overridden
+		if operator.ContainerImageOverrides[config.CONTAINER_IMAGE_CRUNCHY_ADMIN] != "" {
+			crunchyadmContainer.Image = operator.ContainerImageOverrides[config.CONTAINER_IMAGE_CRUNCHY_ADMIN]
 		}
 		containersToPatch = append(containersToPatch, crunchyadmContainer)
 	}

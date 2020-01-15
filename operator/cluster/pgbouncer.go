@@ -349,6 +349,10 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 		return err
 	}
 
+	// set the container image to an override value, if one exists
+	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGBOUNCER,
+		&deployment.Spec.Template.Spec.Containers[0])
+
 	err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
 	if err != nil {
 		log.Error("error creating pgbouncer Deployment " + err.Error())

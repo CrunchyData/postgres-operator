@@ -651,3 +651,37 @@ func GetSyncReplication(specSyncReplication *bool) bool {
 	}
 	return false
 }
+
+// OverrideClusterContainerImages is a helper function that provides the
+// appropriate hooks to override any of the container images that might be
+// deployed with a PostgreSQL cluster
+func OverrideClusterContainerImages(containers []v1.Container) {
+	// set the container image to an override value, if one exists, which involves
+	// looping through the containers array
+	for _, container := range containers {
+		var containerImageName string
+		// there are a few images we need to check for:
+		// 1. "database" image, which is PostgreSQL or some flavor of it
+		// 2. "crunchyadm" image, which helps with administration
+		// 3. "collect" image, which helps with monitoring
+		// 4. "pgbadger" image, which helps with...pgbadger
+		switch container.Name {
+
+		case "collect":
+			containerImageName = config.CONTAINER_IMAGE_CRUNCHY_COLLECT
+		case "crunchyadm":
+			containerImageName = config.CONTAINER_IMAGE_CRUNCHY_ADMIN
+		case "database":
+			containerImageName = config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_HA
+			// one more step here...determine if this is GIS enabled
+			// ...yes, this is not ideal
+			if strings.Contains(container.Image, "gis-ha") {
+				containerImageName = config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_GIS_HA
+			}
+		case "pgbadger":
+			containerImageName = config.CONTAINER_IMAGE_CRUNCHY_PGBADGER
+		}
+
+		SetContainerImageOverride(containerImageName, &container)
+	}
+}

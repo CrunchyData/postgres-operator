@@ -113,6 +113,10 @@ func Restore(namespace string, clientset *kubernetes.Clientset, restclient *rest
 		return
 	}
 
+	// set the container image to an override value, if one exists
+	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGRESTORE,
+		&newjob.Spec.Template.Spec.Containers[0])
+
 	var jobName string
 	jobName, err = kubeapi.CreateJob(clientset, &newjob, namespace)
 	if err != nil {

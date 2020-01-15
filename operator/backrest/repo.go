@@ -140,6 +140,10 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 		return err
 	}
 
+	// set the container image to an override value, if one exists
+	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_REPO,
+		&deployment.Spec.Template.Spec.Containers[0])
+
 	err = kubeapi.CreateDeploymentV1(clientset, &deployment, namespace)
 
 	return err

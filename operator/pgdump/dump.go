@@ -134,6 +134,10 @@ func Dump(namespace string, clientset *kubernetes.Clientset, client *rest.RESTCl
 		return
 	}
 
+	// set the container image to an override value, if one exists
+	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGDUMP,
+		&newjob.Spec.Template.Spec.Containers[0])
+
 	_, err = kubeapi.CreateJob(clientset, &newjob, namespace)
 
 	if err != nil {
