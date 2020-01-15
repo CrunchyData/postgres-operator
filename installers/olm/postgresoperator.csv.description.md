@@ -43,7 +43,7 @@ credentials that need to be generated.
 Start by cloning the operator repository locally.
 
 ```
-git clone -b v4.2.0 https://github.com/CrunchyData/postgres-operator.git
+git clone -b v4.3.0 https://github.com/CrunchyData/postgres-operator.git
 cd postgres-operator
 ```
 
@@ -57,7 +57,7 @@ changes necessary for your environment.
 Update the `CCPImageTag` tag to configure the PostgreSQL image being used, updating for the version of PostgreSQL as needed.
 
 ```
-CCPImageTag:  centos7-12.1-4.2.0
+CCPImageTag:  centos7-12.1-4.3.0
 ```
 
 #### Storage

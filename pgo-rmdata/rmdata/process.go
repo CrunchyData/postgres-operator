@@ -740,7 +740,7 @@ func removePgBackRestRepoPVCs(request Request) {
 
 // removePgBaseBackupPVCs removes any PVCs that are associated with a
 // pg_basebackup...which this number will dwindle as pg_basebackup is removed
-// from v4.2.0
+// from v4.2
 func removePgBaseBackupPVCs(request Request) {
 	// format the name of the PVC for a pg_basebackup, which is "well"-defined
 	pvcName := fmt.Sprintf(pgBaseBackupPVC, request.ClusterName)

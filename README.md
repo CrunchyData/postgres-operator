@@ -91,12 +91,10 @@ The PostgreSQL Operator is developed and tested on CentOS and RHEL linux platfor
 
 The Crunchy PostgreSQL Operator is tested on the following Platforms:
 
-- Kubernetes 1.13 - 1.15 (See note about 1.16 and beyond)
+- Kubernetes 1.13+
 - OpenShift 3.11+
 - Google Kubernetes Engine (GKE), including Anthos
 - VMware Enterprise PKS 1.3+
-
-**NOTE**: At present, while the Crunchy PostgreSQL Operator has compatibility for Kubernetes 1.16 and beyond, it has not been verified for the v4.2.0 release.
 
 ### Storage
 
@@ -170,7 +168,7 @@ appropriate, documented your changes, etc.
 1. Open up a pull request based upon the guidelines. If you are adding a new
 feature, please open up the pull request on the `master` branch. If you have
 a bug fix for a supported version, open up a pull request against the supported
-version branch (e.g. `REL_4_1` for 4.1)
+version branch (e.g. `REL_4_2` for 4.2)
 1. Please be as descriptive in your pull request as possible. If you are
 referencing an issue, please be sure to include the issue in your pull request
 
