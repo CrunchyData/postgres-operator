@@ -1,11 +1,13 @@
 .DEFAULT_GOAL := help
 
+CCP_IMAGE_PREFIX ?= crunchydata
 CCP_IMAGE_TAG ?= $(PGO_BASEOS)-$(CCP_PG_FULLVERSION)-$(PGO_VERSION)
 CCP_PG_FULLVERSION ?= 12.1
 KUBECONFIG ?= $(HOME)/.kube/config
 OLM_TOOLS ?= registry.localhost:5000/postgres-operator-olm-tools:$(OLM_VERSION)
 OLM_VERSION ?= 0.13.0
 PGO_BASEOS ?= centos7
+PGO_IMAGE_PREFIX ?= crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
 PGO_VERSION ?= 4.2.1
 
@@ -14,10 +16,10 @@ OLM_TOOLS_BASH = docker run --net=host --rm --tty \
 		 --mount 'type=bind,source=$(CURDIR)/..,target=/mnt/installers' \
 		 '$(OLM_TOOLS)'
 
-export CCP_IMAGE_TAG
+export CCP_IMAGE_PREFIX CCP_IMAGE_TAG
 export KUBECONFIG
 export OLM_VERSION
-export PGO_IMAGE_TAG PGO_VERSION
+export PGO_IMAGE_PREFIX PGO_IMAGE_TAG PGO_VERSION
 
 .PHONY: clean
 clean:
@@ -56,14 +58,23 @@ install-olm: ## Install OLM in Kubernetes
 	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$(OLM_VERSION)/olm.yaml
 
 .PHONY: package
+package: export PACKAGE_NAME := postgresql
 package: ## Build package and version bundle
 	./generate.sh
 
 .PHONY: package-openshift
-package-openshift: PGO_BASEOS := $(subst centos,rhel,$(PGO_BASEOS))
-package-openshift:
+package-openshift: export K8S_DISTRIBUTION := openshift
+package-openshift: package
+
+.PHONY: package-redhat
+package-redhat: export K8S_DISTRIBUTION := openshift
+package-redhat: export PACKAGE_NAME := crunchy-postgres-operator
+package-redhat: CCP_IMAGE_PREFIX := registry.connect.redhat.com/crunchydata
+package-redhat: PGO_IMAGE_PREFIX := registry.connect.redhat.com/crunchydata
+package-redhat: PGO_BASEOS := $(subst centos,rhel,$(PGO_BASEOS))
+package-redhat:
 	./generate.sh
-	./openshift.sh
+	cd ./package && zip -r '$(PACKAGE_NAME)-$(PGO_VERSION).zip' *.yaml '$(PGO_VERSION)'
 
 .PHONY: verify
 verify: ## Install and test the package in a new (random) Kubernetes namespace then clean up
