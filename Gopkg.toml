@@ -11,10 +11,6 @@ name = "k8s.io/api"
 version = "kubernetes-1.9.0"
 
 [[constraint]]
-branch = "v2"
-name = "gopkg.in/robfig/cron.v2"
-
-[[constraint]]
   name = "github.com/nsqio/go-nsq"
   version = "v1.0.7"
 
@@ -26,3 +22,6 @@ name = "gopkg.in/robfig/cron.v2"
   name = "gopkg.in/yaml.v2"
   version = ">=v2.2.3" # < 2.2.3 has a DoS vuln
 
+[[constraint]]
+  name = "gopkg.in/robfig/cron.v3"
+  version = "3.0.1"
