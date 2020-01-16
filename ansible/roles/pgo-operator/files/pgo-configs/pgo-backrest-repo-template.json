@@ -19,6 +19,7 @@
                     "pg-cluster": "{{.ClusterName}}",
                     "service-name": "{{.Name}}",
                     "vendor": "crunchydata",
+                    "{{.PodAntiAffinityLabelName}}": "{{.PodAntiAffinityLabelValue}}",
                     "pgo-backrest-repo": "true"
             }
         },
@@ -29,6 +30,7 @@
                     "pg-cluster": "{{.ClusterName}}",
                     "service-name": "{{.Name}}",
                     "vendor": "crunchydata",
+                    "{{.PodAntiAffinityLabelName}}": "{{.PodAntiAffinityLabelValue}}",
                     "pgo-backrest-repo": "true"
                 }
             },
