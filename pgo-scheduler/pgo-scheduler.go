@@ -19,6 +19,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"sync"
 	"syscall"
 	"time"
 
@@ -49,6 +50,11 @@ var timeout time.Duration
 var seconds int
 var kubeClient *kubernetes.Clientset
 
+// this is used to prevent a race condition where an informer is being created
+// twice when a new scheduler-enabled ConfigMap is added.
+var informerNsMutex sync.Mutex
+var informerNamespaces map[string]struct{}
+
 func init() {
 	var err error
 	log.SetLevel(log.InfoLevel)
@@ -69,6 +75,11 @@ func init() {
 	} else {
 		log.Info("PGO_INSTALLATION_NAME set to " + installationName)
 	}
+
+	// set up the data structures for preventing double informers from being
+	// created
+	informerNsMutex = sync.Mutex{}
+	informerNamespaces = map[string]struct{}{}
 
 	pgoNamespace = os.Getenv(pgoNamespaceEnv)
 	if pgoNamespace == "" {
@@ -162,6 +173,17 @@ func newKubeClient() (*kubernetes.Clientset, error) {
 }
 
 func SetupWatch(namespace string, scheduler *scheduler.Scheduler, stop chan struct{}) {
+	// don't create informer for namespace if one has already been created
+	informerNsMutex.Lock()
+	defer informerNsMutex.Unlock()
+
+	// if the namespace is already in the informer namespaces map, then exit
+	if _, ok := informerNamespaces[namespace]; ok {
+		return
+	}
+
+	informerNamespaces[namespace] = struct{}{}
+
 	watchlist := cache.NewListWatchFromClient(kubeClient.Core().RESTClient(),
 		"configmaps", namespace, fields.Everything())
 
