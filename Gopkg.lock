@@ -497,12 +497,12 @@
   version = "v0.9.1"
 
 [[projects]]
-  branch = "v2"
-  digest = "1:92a9d3d81fc5b50d5ccf0c72b9888cd27acf277894f8aa18f4c9c41de8311555"
-  name = "gopkg.in/robfig/cron.v2"
+  digest = "1:b8a17fdcac3c9b70b7e954ff6cea876fa6c948fd0d9823488b7ce0dbf29fabcd"
+  name = "gopkg.in/robfig/cron.v3"
   packages = ["."]
   pruneopts = ""
-  revision = "be2e0b0deed5a68ffee390b4583a13aff8321535"
+  revision = "ccba498c397bb90a9c84945bbb0f7af2d72b6309"
+  version = "v3.0.1"
 
 [[projects]]
   digest = "1:ab9547706f32a7535bb4f25d6b58ad00436630593cd3e3ed4602f1613ed84783"
@@ -687,7 +687,7 @@
     "github.com/spf13/cobra/doc",
     "github.com/spf13/pflag",
     "golang.org/x/crypto/ssh",
-    "gopkg.in/robfig/cron.v2",
+    "gopkg.in/robfig/cron.v3",
     "gopkg.in/yaml.v2",
     "k8s.io/api/apps/v1",
     "k8s.io/api/batch/v1",
