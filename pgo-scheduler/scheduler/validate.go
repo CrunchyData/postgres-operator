@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	cv2 "gopkg.in/robfig/cron.v2"
+	cv3 "gopkg.in/robfig/cron.v3"
 )
 
 func validate(s ScheduleTemplate) error {
@@ -44,8 +44,12 @@ func validate(s ScheduleTemplate) error {
 	return nil
 }
 
+// ValidateSchedule validates that the cron syntax is valid
+// We use the standard format here...
 func ValidateSchedule(schedule string) error {
-	if _, err := cv2.Parse(schedule); err != nil {
+	parser := cv3.NewParser(cv3.Minute | cv3.Hour | cv3.Dom | cv3.Month | cv3.Dow)
+
+	if _, err := parser.Parse(schedule); err != nil {
 		return fmt.Errorf("%s is not a valid schedule: ", schedule)
 	}
 	return nil

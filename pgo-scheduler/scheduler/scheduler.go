@@ -25,7 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	log "github.com/sirupsen/logrus"
 
-	cv2 "gopkg.in/robfig/cron.v2"
+	cv2 "gopkg.in/robfig/cron.v3"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
