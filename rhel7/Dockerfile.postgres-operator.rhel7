@@ -1,6 +1,7 @@
-ARG PREFIX
+ARG BASEOS
 ARG BASEVER
-FROM ${PREFIX}/pgo-base:rhel7-${BASEVER}
+ARG PREFIX
+FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
 LABEL name="postgres-operator" \
 	summary="Crunchy PostgreSQL Operator" \
@@ -8,7 +9,10 @@ LABEL name="postgres-operator" \
 
 ENV PGVERSION="12"
 
-RUN yum -y install postgresql${PGVERSION} && yum -y clean all
+RUN yum -y install \
+	--setopt=skip_missing_names_on_install=False \
+	postgresql${PGVERSION} \
+	&& yum -y clean all
 
 ADD bin/postgres-operator /usr/local/bin
 ADD conf/postgres-operator /default-pgo-config

@@ -1,5 +1,6 @@
+ARG BASEOS
 ARG RELVER
-FROM registry.access.redhat.com/rhel7
+FROM registry.access.redhat.com/${BASEOS}
 
 MAINTAINER info@crunchydata.com
 
@@ -18,7 +19,8 @@ COPY redhat/atomic/help.1 /help.1
 COPY redhat/atomic/help.md /help.md
 COPY licenses /licenses
 
-RUN yum -y --enablerepo=rhel-7-server-ose-3.11-rpms update && yum -y clean all
+RUN yum -y --enablerepo=rhel-7-server-ose-3.11-rpms update && \
+	yum -y --enablerepo=rhel-7-server-ose-3.11-rpms clean all
 
 # Crunchy PostgreSQL repository
 ADD conf/RPM-GPG-KEY-crunchydata  /
