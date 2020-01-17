@@ -1,6 +1,7 @@
-ARG PREFIX
+ARG BASEOS
 ARG BASEVER
-FROM ${PREFIX}/pgo-base:rhel7-${BASEVER}
+ARG PREFIX
+FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
 LABEL name="pgo-load" \
 	summary="Crunchy PostgreSQL Operator - Load Data" \
@@ -9,6 +10,7 @@ LABEL name="pgo-load" \
 ENV PGVERSION="12"
 
 RUN yum install -y \
+ 	--setopt=skip_missing_names_on_install=False \
 	gettext \
 	hostname \
 	procps-ng \

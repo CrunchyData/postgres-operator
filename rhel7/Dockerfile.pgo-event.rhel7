@@ -1,14 +1,13 @@
-ARG PREFIX
+ARG BASEOS
 ARG BASEVER
-FROM ${PREFIX}/pgo-base:rhel7-${BASEVER}
+ARG PREFIX
+FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
 LABEL name="pgo-event" \
     summary="Crunchy PostgreSQL Operator - pgo-event" \
     description="Crunchy PostgreSQL Operator - pgo-event"
 
 ENV PGVERSION="12"
-
-RUN yum -y update && yum -y clean all
 
 ADD bin/pgo-event /usr/local/bin
 
