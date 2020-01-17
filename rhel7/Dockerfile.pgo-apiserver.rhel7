@@ -1,6 +1,7 @@
-ARG PREFIX
+ARG BASEOS
 ARG BASEVER
-FROM ${PREFIX}/pgo-base:rhel7-${BASEVER}
+ARG PREFIX
+FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
 LABEL name="pgo-apiserver" \
 	summary="Crunchy PostgreSQL Operator - Apiserver" \
@@ -8,7 +9,10 @@ LABEL name="pgo-apiserver" \
 
 ENV PGVERSION="12"
 
-RUN yum -y install postgresql${PGVERSION} hostname \
+RUN yum -y install \
+	--setopt=skip_missing_names_on_install=False \
+	postgresql${PGVERSION} \
+	hostname \
 	&& yum -y clean all
 
 ADD bin/apiserver /usr/local/bin

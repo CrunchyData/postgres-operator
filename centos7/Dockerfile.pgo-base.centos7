@@ -1,5 +1,6 @@
+ARG BASEOS
 ARG RELVER
-FROM centos:7
+FROM centos:${BASEOS}
 
 MAINTAINER info@crunchydata.com
 

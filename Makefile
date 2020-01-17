@@ -1,17 +1,31 @@
-
-# Environment definitions
-RELTMPDIR=/tmp/release.$(PGO_VERSION)
-RELFILE=/tmp/postgres-operator.$(PGO_VERSION).tar.gz
 GOPATH ?= /home/odev/go
 GOBIN ?= $(GOPATH)/bin
+
+# Default values if not already set
+PGOROOT ?= $(GOPATH)/src/github.com/crunchydata/postgres-operator
+PGO_BASEOS ?= centos7
+PGO_CMD ?= kubectl
+PGO_IMAGE_PREFIX ?= crunchydata
+PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
+PGO_OPERATOR_NAMESPACE ?= pgo
+PGO_VERSION ?= 4.3.0
+
+RELTMPDIR=/tmp/release.$(PGO_VERSION)
+RELFILE=/tmp/postgres-operator.$(PGO_VERSION).tar.gz
 
 # Valid values: buildah (default), docker
 IMGBUILDER ?= buildah
 IMGCMDSTEM=sudo --preserve-env buildah bud --layers $(SQUASH)
+DFSET=$(PGO_BASEOS)
 
 # Allows simplification of IMGBUILDER switching
 ifeq ("$(IMGBUILDER)","docker")
 	IMGCMDSTEM=docker build
+endif
+
+# Allows consolidation of ubi/rhel Dockerfile sets
+ifeq ("$(PGO_BASEOS)", "ubi7")
+	DFSET=rhel7
 endif
 
 # To build a specific image, run 'make <name>-image' (e.g. 'make pgo-apiserver-image')
@@ -106,15 +120,16 @@ winpgo:
 
 
 #======= Image builds =======
-$(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS):
+$(PGOROOT)/$(DFSET)/Dockerfile.%.$(DFSET):
 	$(error No Dockerfile found for $* naming pattern: [$@])
 
-%-img-build: pgo-base-$(IMGBUILDER) build-% $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS)
+%-img-build: pgo-base-$(IMGBUILDER) build-% $(PGOROOT)/$(DFSET)/Dockerfile.%.$(DFSET)
 	$(IMGCMDSTEM) \
-		-f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.$*.$(PGO_BASEOS) \
+		-f $(PGOROOT)/$(DFSET)/Dockerfile.$*.$(DFSET) \
 		-t $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG) \
-		--build-arg PREFIX=$(PGO_IMAGE_PREFIX) \
+		--build-arg BASEOS=$(PGO_BASEOS) \
 		--build-arg BASEVER=$(PGO_VERSION) \
+		--build-arg PREFIX=$(PGO_IMAGE_PREFIX) \
 		$(PGOROOT)
 
 %-img-buildah: %-img-build
@@ -126,10 +141,11 @@ $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.%.$(PGO_BASEOS):
 
 pgo-base: pgo-base-$(IMGBUILDER)
 
-pgo-base-build: $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-base.$(PGO_BASEOS)
+pgo-base-build: $(PGOROOT)/$(DFSET)/Dockerfile.pgo-base.$(DFSET)
 	$(IMGCMDSTEM) \
-		-f $(PGOROOT)/$(PGO_BASEOS)/Dockerfile.pgo-base.$(PGO_BASEOS) \
+		-f $(PGOROOT)/$(DFSET)/Dockerfile.pgo-base.$(DFSET) \
 		-t $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) \
+		--build-arg BASEOS=$(PGO_BASEOS) \
 		--build-arg RELVER=$(PGO_VERSION) \
 		$(PGOROOT)
 

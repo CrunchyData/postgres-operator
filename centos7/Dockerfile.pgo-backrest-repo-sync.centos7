@@ -1,6 +1,7 @@
-ARG PREFIX
+ARG BASEOS
 ARG BASEVER
-FROM ${PREFIX}/pgo-base:centos7-${BASEVER}
+ARG PREFIX
+FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
 LABEL name="pgo-backrest-repo-sync" \
 	summary="Crunchy PostgreSQL Operator - pgBackRest Repo Sync" \

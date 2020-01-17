@@ -1,6 +1,7 @@
-ARG PREFIX
+ARG BASEOS
 ARG BASEVER
-FROM ${PREFIX}/pgo-base:rhel7-${BASEVER}
+ARG PREFIX
+FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
 LABEL name="pgo-backrest-restore" \
 	summary="Crunchy PostgreSQL Operator - pgBackRest Restore" \
@@ -9,6 +10,7 @@ LABEL name="pgo-backrest-restore" \
 ENV PGVERSION="12" BACKREST_VERSION="2.20"
 
 RUN yum -y install \
+	--setopt=skip_missing_names_on_install=False \
 	crunchy-backrest-"${BACKREST_VERSION}" \
 	openssh-clients \
 	openssh-server \
