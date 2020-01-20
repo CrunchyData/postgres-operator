@@ -21,6 +21,34 @@ You can download `pgo` from the [releases page](https://github.com/crunchydata/p
 or have it installed in your preferred binary format or as a container in your
 Kubernetes cluster using the [Ansible Installer](/installation/install-with-ansible/).
 
+## General Notes on Using the `pgo` Client
+
+Many of the `pgo` client commands require you to specify a namespace via the
+`-n` or `--namespace` flag. While this is a very helpful tool when managing
+PostgreSQL deployments across many Kubernetes namespaces, this can become
+onerous for the intents of this guide.
+
+If you install the PostgreSQL Operator using the [quickstart](/quickstart/)
+guide, you will have two namespaces installed: `pgouser1` and `pgouser2`. We
+can choose to always use one of these namespaces by setting the `PGO_NAMESPACE`
+environmental variable, which is detailed in the global [`pgo` Client](/pgo-client/)
+reference,
+
+For convenience, we will use the `pgouser1` namespace in the examples below.
+For even more convenience, we recommend setting `pgouser1` to be the value of
+the `PGO_NAMESPACE` variable. In the shell that you will be executing the `pgo`
+commands in, run the following command:
+
+```shell
+export PGO_NAMESPACE=pgouser1
+```
+
+If you do not wish to set this environmental variable, or are in an environment
+where you are unable to use environmental variables, you will have to use the
+`--namespace` (or `-n`) flag for most commands, e.g.
+
+`pgo version -n pgouser1`
+
 ## Syntax
 
 The syntax for `pgo` is similar to what you would expect from using the
