@@ -184,6 +184,7 @@ export PGO_CA_CERT="${HOME?}/.pgo/pgo/client.crt"
 export PGO_CLIENT_CERT="${HOME?}/.pgo/pgo/client.crt"
 export PGO_CLIENT_KEY="${HOME?}/.pgo/pgo/client.pem"
 export PGO_APISERVER_URL='https://127.0.0.1:8443'
+export PGO_NAMESPACE=pgouser1
 ```
 
 If you wish to permanently add these variables to your environment, you can run the following:
@@ -195,6 +196,7 @@ export PGO_CA_CERT="${HOME?}/.pgo/pgo/client.crt"
 export PGO_CLIENT_CERT="${HOME?}/.pgo/pgo/client.crt"
 export PGO_CLIENT_KEY="${HOME?}/.pgo/pgo/client.pem"
 export PGO_APISERVER_URL='https://127.0.0.1:8443'
+export PGO_NAMESPACE=pgouser1
 EOF
 
 source ~/.bashrc
@@ -261,7 +263,15 @@ The quickstart installation method creates two namespaces that you can deploy yo
 pgo create cluster -n pgouser1 hippo
 ```
 
-If successful, you should see output similar to this:
+Alternatively, because we set the [`PGO_NAMESPACE`](/pgo-client/#general-notes-on-using-the-pgo-client) environmental variable in our `.bashrc` file, we could omit the `-n` flag from the [`pgo create cluster`](/pgo-client/reference/pgo_create_cluster/) command and just run this:
+
+```shell
+pgo create cluster hippo
+```
+
+Even with `PGO_NAMESPACE` set, you can always overwrite which namespace to use by setting the `-n` flag for the specific command. For explicitness, we will continue to use the `-n` flag in the remaining examples of this quickstart.
+
+If your cluster creation command executed successfully, you should see output similar to this:
 
 ```
 created Pgcluster hippo
@@ -366,6 +376,7 @@ export PGO_CA_CERT="/tmp/client.crt"
 export PGO_CLIENT_CERT="/tmp/client.crt"
 export PGO_CLIENT_KEY="/tmp/client.key"
 export PGO_APISERVER_URL='https://127.0.0.1:8443'
+export PGO_NAMESPACE=pgouser1
 ```
 
 If you wish to permanently add these variables to your environment, you can run the following command:
@@ -377,6 +388,7 @@ export PGO_CA_CERT="/tmp/client.crt"
 export PGO_CLIENT_CERT="/tmp/client.crt"
 export PGO_CLIENT_KEY="/tmp/client.key"
 export PGO_APISERVER_URL='https://127.0.0.1:8443'
+export PGO_NAMESPACE=pgouser1
 EOF
 
 source ~/.bashrc
