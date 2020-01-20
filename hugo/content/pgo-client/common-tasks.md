@@ -453,7 +453,7 @@ a [failover scenario](/architecture/high-availability/).
 To create a backup, you can run the following command:
 
 ```shell
-pgo create backup hacluster
+pgo backup hacluster
 ```
 
 which by default, will create an incremental pgBackRest backup. The reason for
@@ -471,7 +471,7 @@ optimal disaster recovery setup.
 You can create a full backup using the following command:
 
 ```shell
-pgo create backup hacluster --backup-opts="--type=full"
+pgo backup hacluster --backup-opts="--type=full"
 ```
 
 #### Creating a Differential Backup
@@ -479,7 +479,7 @@ pgo create backup hacluster --backup-opts="--type=full"
 You can create a differential backup using the following command:
 
 ```shell
-pgo create backup hacluster --backup-opts="--type=diff"
+pgo backup hacluster --backup-opts="--type=diff"
 ```
 
 #### Creating an Incremental Backup
@@ -487,7 +487,7 @@ pgo create backup hacluster --backup-opts="--type=diff"
 You can create a differential backup using the following command:
 
 ```shell
-pgo create backup hacluster --backup-opts="--type=incr"
+pgo backup hacluster --backup-opts="--type=incr"
 ```
 
 An incremental backup is created without specifying any options after a full or
@@ -526,7 +526,7 @@ For example, to create a full backup and retain the previous 7 full backups, you
 would execute the following command:
 
 ```shell
-pgo create backup hacluster --backup-opts="--type=full --repo1-retention-full=7"
+pgo backup hacluster --backup-opts="--type=full --repo1-retention-full=7"
 ```
 
 ### Scheduling Backups
