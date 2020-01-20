@@ -271,7 +271,7 @@ pgouser2                 accessible          accessible
 somethingelse            no access           no access   
 ```
 
-**NOTE**: Based on your deployment, your Kuberentes administrator may restrict
+**NOTE**: Based on your deployment, your Kubernetes administrator may restrict
 access to the multi-namespace feature of the PostgreSQL Operator. In this case,
 you do not need to worry about managing your namespaces and as such do not need
 to use this command, but we recommend setting the `PGO_NAMESPACE` variable as

@@ -105,7 +105,7 @@ default namespace the PostgreSQL Operator is deployed into (`pgo`):
 kubectl get secrets -n pgo --selector=vendor=crunchydata
 ```
 
-## Kuberentes Deployments: The Crunchy PostgreSQL Operator Deployment Model
+## Kubernetes Deployments: The Crunchy PostgreSQL Operator Deployment Model
 
 The Crunchy PostgreSQL Operator uses [Kubernetes Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
 for running PostgreSQL clusters instead of StatefulSets or other objects. This
@@ -134,7 +134,7 @@ pgo scale mixed --replica-count=1 \
   --storage-config=fast --resources-config=large
 ```
 
-Kuberentes Deployments allow us to create heterogeneous clusters with ease and
+Kubernetes Deployments allow us to create heterogeneous clusters with ease and
 let us scale them up and down as we please. Additional components in our
 PostgreSQL cluster, such as the pgBackRest repository or an optional pgBouncer,
 are deployed as Kubernetes Deployments as well.
