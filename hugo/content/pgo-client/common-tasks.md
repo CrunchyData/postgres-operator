@@ -14,11 +14,11 @@ The below guide covers many of the common operations that are required when
 managing PostgreSQL clusters. The guide is broken up by different administrative
 topics, such as provisioning, high-availability, etc.
 
-## General Notes
+## Setup Before Running the Examples
 
 Many of the `pgo` client commands require you to specify a namespace via the
 `-n` or `--namespace` flag. While this is a very helpful tool when managing
-PostgreSQL deployments across many Kubernetes namespaces, this can become
+PostgreSQL deployxments across many Kubernetes namespaces, this can become
 onerous for the intents of this guide.
 
 If you install the PostgreSQL Operator using the [quickstart](/quickstart/)
@@ -33,11 +33,11 @@ the `PGO_NAMESPACE` variable. In the shell that you will be executing the `pgo`
 commands in, run the following command:
 
 ```shell
-export PGO_NAMESPACE=shell
+export PGO_NAMESPACE=pgouser1
 ```
 
 If you do not wish to set this environmental variable, or are in an environment
-where you are unable to use envirionmental variables, you will have to use the
+where you are unable to use environmental variables, you will have to use the
 `--namespace` (or `-n`) flag for most commands, e.g.
 
 `pgo version -n pgouser1`
