@@ -98,7 +98,7 @@ The Crunchy PostgreSQL Operator is tested on the following Platforms:
 
 ### Storage
 
-The Crunchy PostgreSQL Operator is tested with a variety of different types of Kuberentes storage and Storage Classes, including:
+The Crunchy PostgreSQL Operator is tested with a variety of different types of Kubernetes storage and Storage Classes, including:
 
 - Google Compute Engine persistent volumes
 - HostPath

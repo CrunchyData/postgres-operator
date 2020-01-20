@@ -36,7 +36,7 @@ At PostgreSQL cluster creation time, you can specify a specific Storage Class
 for the pgBackRest repository. Additionally, you can also specify the type of
 pgBackRest repository that can be used, including:
 
-- `local`: Uses the storage that is provided by the Kubenetes cluster's Storage
+- `local`: Uses the storage that is provided by the Kubernetes cluster's Storage
 Class that you select
 - `s3`: Use Amazon S3 or an object storage system that uses the S3 protocol
 - `local,s3`: Use both the storage that is provided by the Kubernetes cluster's

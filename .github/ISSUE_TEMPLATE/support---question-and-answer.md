@@ -22,7 +22,7 @@ about: " Have a quick question, let us know."
 * Platform (Docker, Kubernetes, OpenShift):
 * Platform Version:
 
-If possible please run the following on the kubernetes or Openshit (oc) commands and provide the result:
+If possible please run the following on the kubernetes or OpenShift (oc) commands and provide the result:
  kubectl describe yourPodName
  kubectl describe pvc
  kubectl get nodes
