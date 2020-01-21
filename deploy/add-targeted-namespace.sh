@@ -32,16 +32,15 @@ fi
 # create the namespace if necessary
 $PGO_CMD get ns $1  > /dev/null
 if [ $? -eq 0 ]; then
-	echo "namespace" $1 "already exists"
+	echo "namespace" $1 "already exists, adding labels"
+	# set the labels so that existing namespace is owned by this installation
+	$PGO_CMD label namespace/$1 pgo-created-by=add-script
+	$PGO_CMD label namespace/$1 vendor=crunchydata
+	$PGO_CMD label namespace/$1 pgo-installation-name=$PGO_INSTALLATION_NAME
 else
 	echo "namespace" $1 "is new"
-	TARGET_NAMESPACE=$1 expenv -f $DIR/target-namespace.yaml | $PGO_CMD create -f -
+	cat $DIR/target-namespace.yaml | sed -e 's/$TARGET_NAMESPACE/'"$1"'/' -e 's/$PGO_INSTALLATION_NAME/'"$PGO_INSTALLATION_NAME"'/' | $PGO_CMD create -f -
 fi
-
-# set the labels so that this namespace is owned by this installation
-$PGO_CMD label namespace/$1 pgo-created-by=add-script
-$PGO_CMD label namespace/$1 vendor=crunchydata
-$PGO_CMD label namespace/$1 pgo-installation-name=$PGO_INSTALLATION_NAME
 
 # determine if an existing pod is using the 'pgo-pg' service account.  if so, do not delete
 # and recreate the SA or its associated role and role binding.  this is to avoid any undesired
