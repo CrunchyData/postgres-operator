@@ -55,4 +55,4 @@ if [ "${K8S_DISTRIBUTION:-}" = 'openshift' ]; then
 	yq write --inplace --script=- <<< "$yq_script" "./package/${PGO_VERSION}/postgresoperator.v${PGO_VERSION}.clusterserviceversion.yaml"
 fi
 
-if > /dev/null command -v tree; then tree -AC './package'; fi
+if > /dev/null command -v tree; then tree -C './package'; fi

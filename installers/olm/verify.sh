@@ -30,6 +30,8 @@ push_trap_exit "kubectl delete namespace '$test_namespace'"
 
 kc() { kubectl --namespace="$test_namespace" "$@"; }
 
+# Clean up anything created by the Subscription, especially CustomResourceDefinitions.
+push_trap_exit "kc delete --ignore-not-found --filename='./package/${PGO_VERSION}/'"
 
 # Install the package and inject the scorecard proxy.
 ./install.sh operator "$test_namespace" "$test_namespace"
@@ -38,39 +40,44 @@ kc() { kubectl --namespace="$test_namespace" "$@"; }
 # Restore the OLM operator that was disabled to inject the scorecard proxy.
 push_trap_exit 'kubectl --namespace olm scale --replicas=1 deploy olm-operator'
 
-# Clean up anything created by the Subscription, especially CustomResourceDefinitions.
-push_trap_exit "kc delete --ignore-not-found --filename='./package/${PGO_VERSION}/'"
 
+# Run the OLM test suite against each example stored in CSV annotations.
+examples_array="$( yq read \
+	"./package/${PGO_VERSION}/postgresoperator.v${PGO_VERSION}.clusterserviceversion.yaml" \
+	metadata.annotations.alm-examples )"
 
-# Create some configuration referenced in the examples.
-kc delete secret example-postgresuser --ignore-not-found
-kc create secret generic example-postgresuser \
-	--from-literal='username=postgres' \
-	--from-literal='password=password'
+error=0
+for index in $(seq 0 $(jq <<< "$examples_array" 'length - 1')); do
+	jq > "${TMPDIR}/resource.json" <<< "$examples_array" ".[$index]"
+	jq > "${TMPDIR}/scorecard.json" <<< '{}' \
+		--arg resource "${TMPDIR}/resource.json" \
+		--arg namespace "$test_namespace" \
+		--arg version "$PGO_VERSION" \
+	'{ scorecard: { plugins: [
+		{ basic: {
+			"cr-manifest": $resource,
+			"crds-dir": "./package/\($version)",
+			"csv-path": "./package/\($version)/postgresoperator.v\($version).clusterserviceversion.yaml",
+			"namespace": $namespace,
+			"olm-deployed": true
+		} },
+		{ olm: {
+			"cr-manifest": $resource,
+			"crds-dir": "./package/\($version)",
+			"csv-path": "./package/\($version)/postgresoperator.v\($version).clusterserviceversion.yaml",
+			"namespace": $namespace,
+			"olm-deployed": true
+		} }
+	] } }'
 
-kc delete secret example-primaryuser --ignore-not-found
-kc create secret generic example-primaryuser \
-	--from-literal='username=primaryuser' \
-	--from-literal='password=password'
+	echo "Verifying metadata.annotations.alm-examples<[$index]>:"
+	jq '{ apiVersion, kind, name: .metadata.name }' "${TMPDIR}/resource.json"
 
-kc delete secret example-backrest-repo-config --ignore-not-found
-kc create secret generic example-backrest-repo-config
+	start="$(date --utc +'%FT%TZ')"
+	if ! operator-sdk scorecard --config "${TMPDIR}/scorecard.json" --verbose; then
+		#kc logs --container='operator' --selector='name=postgres-operator' --since-time="$start"
+		error=1
+	fi
+done
 
-scorecard_config="$(mktemp).json"
-
-# Run the OLM test suite against the first example stored in CSV annotations.
-jq > "$scorecard_config" <<< '{}' \
-	--arg namespace "$test_namespace" \
-	--arg version "$PGO_VERSION" \
-'{ scorecard: { plugins: [
-	{ olm: {
-		"crds-dir": "./package/\($version)",
-		"csv-path": "./package/\($version)/postgresoperator.v\($version).clusterserviceversion.yaml",
-		"namespace": $namespace,
-		"olm-deployed": true
-	} }
-] } }'
-operator-sdk scorecard --config "$scorecard_config" --verbose
-
-# TODO repeat above with the Basic test suite after cleaning up.
-# TODO repeat above with any CR specified in `cr-manifest`.
+exit $error

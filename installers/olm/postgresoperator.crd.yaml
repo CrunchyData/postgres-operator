@@ -12,6 +12,7 @@ spec:
     singular: pgbackup
   scope: Namespaced
   version: v1
+  validation: {}
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -42,6 +43,7 @@ spec:
             PrimaryStorage: { type: object }
             port: { type: string }
             rootsecretname: { type: string }
+            status: { type: string }
             userlabels: { type: object }
             usersecretname: { type: string }
         status:
@@ -62,6 +64,7 @@ spec:
     singular: pgpolicy
   scope: Namespaced
   version: v1
+  validation: {}
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -76,6 +79,7 @@ spec:
     singular: pgreplica
   scope: Namespaced
   version: v1
+  validation: {}
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -90,3 +94,10 @@ spec:
     singular: pgtask
   scope: Namespaced
   version: v1
+  validation:
+    openAPIV3Schema:
+      properties:
+        status:
+          properties:
+            message: { type: string }
+            state: { type: string }
