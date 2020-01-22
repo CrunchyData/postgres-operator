@@ -11,9 +11,10 @@ PGO_IMAGE_PREFIX ?= crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
 PGO_VERSION ?= 4.3.0
 
-OLM_TOOLS_BASH = docker run --net=host --rm --tty \
+OLM_TOOLS_BASH = docker run --net=host --rm --tty $(DOCKER_ARGS) \
 		 --mount 'type=bind,source=$(KUBECONFIG),target=/root/.kube/config,readonly' \
 		 --mount 'type=bind,source=$(CURDIR)/..,target=/mnt/installers' \
+		 --workdir '/mnt/installers/$(basename $(notdir $(CURDIR)))' \
 		 '$(OLM_TOOLS)'
 
 export CCP_IMAGE_PREFIX CCP_IMAGE_TAG
@@ -32,11 +33,17 @@ courier-verify:
 .PHONY: docker-package
 docker-package: image-tools
 docker-package: ## Build package and version bundle from inside a container
-	$(OLM_TOOLS_BASH) make -C /mnt/installers/$(basename $(notdir $(CURDIR))) package courier-verify
+	$(OLM_TOOLS_BASH) make package courier-verify
+
+.PHONY: docker-shell
+docker-shell: image-tools
+docker-shell: DOCKER_ARGS = --interactive
+docker-shell: ## Start a shell inside a container with all the tools needed to build and test
+	$(OLM_TOOLS_BASH)
 
 .PHONY: docker-verify
 docker-verify: image-tools
-	$(OLM_TOOLS_BASH) make -C /mnt/installers/$(basename $(notdir $(CURDIR))) verify
+	$(OLM_TOOLS_BASH) make verify
 
 .PHONY: help
 help: ALIGN=14

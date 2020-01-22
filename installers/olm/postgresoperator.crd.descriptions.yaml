@@ -114,6 +114,13 @@
         - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:PrimaryStorage'
         - 'urn:alm:descriptor:com.tectonic.ui:text'
 
+    - path: status
+      value: ""
+      displayName: Deprecated
+      description: Deprecated
+      x-descriptors:
+        - 'urn:alm:descriptor:com.tectonic.ui:text'
+        - 'urn:alm:descriptor:com.tectonic.ui:advanced'
     - path: userlabels
       value: "{}"
       displayName: User defined labels
@@ -122,16 +129,6 @@
         - 'urn:alm:descriptor:com.tectonic.ui:text'
 
   statusDescriptors:
-    - path: phase
-      displayName: Status
-      description: The current status of the application.
-      x-descriptors:
-        - 'urn:alm:descriptor:io.kubernetes.phase'
-    - path: reason
-      displayName: Status Details
-      description: Explanation for the current status of the application.
-      x-descriptors:
-        - 'urn:alm:descriptor:io.kubernetes.phase:reason'
     - path: message
       displayName: Initialization Message
       description: Outputs a human readable message of the status of if the PostgreSQL cluster initialization
@@ -159,17 +156,6 @@
       description: The desired number of member Pods for the deployment.
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:podCount'
-  statusDescriptors:
-    - path: phase
-      displayName: Status
-      description: The current status of the application.
-      x-descriptors:
-        - 'urn:alm:descriptor:io.kubernetes.phase'
-    - path: reason
-      displayName: Status Details
-      description: Explanation for the current status of the application.
-      x-descriptors:
-        - 'urn:alm:descriptor:io.kubernetes.phase:reason'
 
 - name: pgpolicies.crunchydata.com
   kind: Pgpolicy
@@ -189,17 +175,6 @@
       description: The pgpolicy sql.
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
-  statusDescriptors:
-    - path: phase
-      displayName: Status
-      description: The current status of the application.
-      x-descriptors:
-        - 'urn:alm:descriptor:io.kubernetes.phase'
-    - path: reason
-      displayName: Status Details
-      description: Explanation for the current status of the application.
-      x-descriptors:
-        - 'urn:alm:descriptor:io.kubernetes.phase:reason'
 
 - name: pgtasks.crunchydata.com
   kind: Pgtask
@@ -220,16 +195,16 @@
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
   statusDescriptors:
-    - path: phase
-      displayName: Status
-      description: The current status of the application.
+    - path: message
+      displayName: Message
+      description: Message
       x-descriptors:
-        - 'urn:alm:descriptor:io.kubernetes.phase'
-    - path: reason
-      displayName: Status Details
-      description: Explanation for the current status of the application.
+        - 'urn:alm:descriptor:text'
+    - path: state
+      displayName: State
+      description: State
       x-descriptors:
-        - 'urn:alm:descriptor:io.kubernetes.phase:reason'
+        - 'urn:alm:descriptor:text'
 
 - name: pgbackups.crunchydata.com
   kind: Pgbackup
@@ -249,14 +224,3 @@
       description: The pgbackup status.
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
-  statusDescriptors:
-    - path: phase
-      displayName: Status
-      description: The current status of the application.
-      x-descriptors:
-        - 'urn:alm:descriptor:io.kubernetes.phase'
-    - path: reason
-      displayName: Status Details
-      description: Explanation for the current status of the application.
-      x-descriptors:
-        - 'urn:alm:descriptor:io.kubernetes.phase:reason'
