@@ -20,23 +20,18 @@ while IFS=$'\t' read index name; do
 	yq read --doc="$index" postgresoperator.crd.yaml > "./package/${PGO_VERSION}/${name}.crd.yaml"
 done <<< "$crd_names"
 
-yq_script="$( jq <<< '{}' \
+yq_script="$( yq read --tojson "./package/${PGO_VERSION}/postgresoperator.v${PGO_VERSION}.clusterserviceversion.yaml" | jq \
+	--argjson images "$( yq read --tojson postgresoperator.csv.images.yaml | render )" \
 	--argjson crds "$( yq read --tojson postgresoperator.crd.descriptions.yaml | render )" \
 	--arg examples "$( yq read --tojson postgresoperator.crd.examples.yaml --doc='*' | render | jq . )" \
 	--arg description "$( render < postgresoperator.csv.description.md )" \
-	--arg icon "$( base64 --wrap=0 ../favicon.png )" \
+	--arg icon "$( base64 --wrap=0 ../seal.svg )" \
 '{
 	"metadata.annotations.alm-examples": $examples,
 	"spec.customresourcedefinitions.owned": $crds,
 	"spec.description": $description,
-	"spec.icon": [{ mediatype: "image/png", base64data: $icon }]
-}' )"
-yq write --inplace --script=- <<< "$yq_script" "./package/${PGO_VERSION}/postgresoperator.v${PGO_VERSION}.clusterserviceversion.yaml"
+	"spec.icon": [{ mediatype: "image/svg+xml", base64data: $icon }],
 
-image_array="$( yq read --tojson postgresoperator.csv.images.yaml | render )"
-yq_script="$( yq read --tojson "./package/${PGO_VERSION}/postgresoperator.v${PGO_VERSION}.clusterserviceversion.yaml" |
-		jq --argjson images "$image_array" \
-'{
 	"spec.install.spec.deployments[0].spec.template.spec.containers[0].env": (
 	.spec.install.spec.deployments[0].spec.template.spec.containers[0].env + $images),
 
