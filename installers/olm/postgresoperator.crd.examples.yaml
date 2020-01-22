@@ -29,6 +29,7 @@ kind: Pgreplica
 metadata:
   name: example
 spec: {}
+status: {}
 
 ---
 apiVersion: crunchydata.com/v1
@@ -36,6 +37,7 @@ kind: Pgpolicy
 metadata:
   name: example
 spec: {}
+status: {}
 
 ---
 apiVersion: crunchydata.com/v1
@@ -50,3 +52,4 @@ kind: Pgbackup
 metadata:
   name: example
 spec: {}
+status: {}
