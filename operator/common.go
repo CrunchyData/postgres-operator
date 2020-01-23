@@ -40,7 +40,7 @@ var Pgo config.PgoConfig
 // ContainerImageOverrides contains a list of container images that are
 // overridden by the RELATED_IMAGE_* environmental variables that can be set by
 // people deploying the Operator
-var ContainerImageOverrides map[string]string
+var ContainerImageOverrides = map[string]string{}
 
 type containerResourcesTemplateFields struct {
 	RequestsMemory, RequestsCPU string
