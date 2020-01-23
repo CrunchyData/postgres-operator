@@ -33,8 +33,8 @@ ls $REPO
 
 mkdir ~/.ssh/
 cp $CONFIG/config ~/.ssh/
-cp $CONFIG/id_rsa /tmp
-chmod 400 /tmp/id_rsa ~/.ssh/config
+cp $CONFIG/id_ed25519 /tmp
+chmod 400 /tmp/id_ed25519 ~/.ssh/config
 
 # start sshd which is used by pgbackrest for remote connections
 /usr/sbin/sshd -D -f $CONFIG/sshd_config   &

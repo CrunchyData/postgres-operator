@@ -105,9 +105,9 @@ func CreateBackrestRepoSecrets(clientset *kubernetes.Clientset,
 			"aws-s3-ca.crt":           configs.Data["aws-s3-ca.crt"],
 			"aws-s3-credentials.yaml": s3KeySecretData,
 			"config":                  configs.Data["config"],
-			"id_rsa":                  keys.Private,
+			"id_ed25519":              keys.Private,
 			"sshd_config":             configs.Data["sshd_config"],
-			"ssh_host_rsa_key":        keys.Private,
+			"ssh_host_ed25519_key":    keys.Private,
 		},
 	}
 	return kubeapi.CreateSecret(clientset, &secret, backrestRepoConfig.ClusterNamespace)
