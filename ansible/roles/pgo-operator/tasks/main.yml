@@ -43,9 +43,6 @@
 - include_tasks: certs.yml
   tags: [install]
 
-- include_tasks: ssh_keys.yml
-  tags: [install]
-
 - name: Use kubectl or oc
   set_fact:
     kubectl_or_oc: "{{ openshift_oc_bin if openshift_oc_bin is defined else 'kubectl' }}"

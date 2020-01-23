@@ -58,7 +58,3 @@ expenv -f $DIR/role-bindings.yaml | $PGO_CMD -n $PGO_OPERATOR_NAMESPACE create -
 
 # create the keys used for pgo API
 source $DIR/gen-api-keys.sh
-
-# create the sshd keys for pgbackrest repo functionality
-source $DIR/gen-sshd-keys.sh
-
