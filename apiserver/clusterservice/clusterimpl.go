@@ -1341,7 +1341,13 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 	for _, cluster := range clusterList.Items {
 
 		//set autofail=true or false on each pgcluster CRD
-		cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = strconv.FormatBool(request.Autofail)
+		// Make the change based on the value of Autofail vis-a-vis UpdateClusterAutofailStatus
+		switch request.Autofail {
+		case msgs.UpdateClusterAutofailEnable:
+			cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = "true"
+		case msgs.UpdateClusterAutofailDisable:
+			cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = "false"
+		}
 
 		err = kubeapi.Updatepgcluster(apiserver.RESTClient,
 			&cluster, cluster.Spec.Name, request.Namespace)
