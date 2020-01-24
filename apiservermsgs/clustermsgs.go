@@ -182,6 +182,16 @@ type DeleteClusterResponse struct {
 	Status
 }
 
+// set the types for updating the Autofail status
+type UpdateClusterAutofailStatus int
+
+// set the different values around updating the autofail configuration
+const (
+	UpdateClusterAutofailDoNothing UpdateClusterAutofailStatus = iota
+	UpdateClusterAutofailEnable
+	UpdateClusterAutofailDisable
+)
+
 // UpdateClusterRequest ...
 // swagger:model
 type UpdateClusterRequest struct {
@@ -192,7 +202,7 @@ type UpdateClusterRequest struct {
 	ClientVersion string
 	Namespace     string
 	AllFlag       bool
-	Autofail      bool
+	Autofail      UpdateClusterAutofailStatus
 }
 
 // UpdateClusterResponse ...

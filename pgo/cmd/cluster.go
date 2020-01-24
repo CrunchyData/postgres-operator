@@ -268,8 +268,15 @@ func updateCluster(args []string, ns string) {
 	r.ClientVersion = msgs.PGO_VERSION
 	r.Namespace = ns
 	r.AllFlag = AllFlag
-	r.Autofail = !DisableAutofailFlag
 	r.Clustername = args
+
+	// check to see if EnableAutofailFlag or DisableAutofailFlag is set. If so,
+	// set a value for Autofail
+	if EnableAutofailFlag {
+		r.Autofail = msgs.UpdateClusterAutofailEnable
+	} else if DisableAutofailFlag {
+		r.Autofail = msgs.UpdateClusterAutofailDisable
+	}
 
 	response, err := api.UpdateCluster(httpclient, &r, &SessionCredentials)
 
