@@ -28,7 +28,7 @@ var AllNamespaces bool
 var ContainerResources string
 var ReplicaStorageConfig, StorageConfig string
 var CustomConfig string
-var ArchiveFlag, DisableAutofailFlag, PgbouncerFlag, MetricsFlag, BadgerFlag bool
+var ArchiveFlag, DisableAutofailFlag, EnableAutofailFlag, PgbouncerFlag, MetricsFlag, BadgerFlag bool
 var BackrestRestoreFrom string
 var PgbouncerSecret string
 var CCPImage string
