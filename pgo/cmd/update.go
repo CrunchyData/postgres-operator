@@ -17,6 +17,8 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/spf13/cobra"
 )
@@ -35,6 +37,7 @@ func init() {
 	UpdateClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdateClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
 	UpdateClusterCmd.Flags().BoolVar(&DisableAutofailFlag, "disable-autofail", false, "Disables autofail capabitilies in the cluster.")
+	UpdateClusterCmd.Flags().BoolVar(&EnableAutofailFlag, "enable-autofail", false, "Enables autofail capabitilies in the cluster.")
 	UpdateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	UpdatePgouserCmd.Flags().StringVarP(&PgouserNamespaces, "pgouser-namespaces", "", "", "The namespaces to use for updating the pgouser roles.")
 	UpdatePgouserCmd.Flags().BoolVar(&AllNamespaces, "all-namespaces", false, "all namespaces.")
@@ -66,7 +69,7 @@ var UpdateCmd = &cobra.Command{
 	pgo update pgouser someuser --pgouser-namespaces="pgouser2"
 	pgo update user mycluster --username=testuser --selector=name=mycluster --password=somepassword
 	pgo update pgorole somerole --pgorole-permission="Cat"
-	pgo update namespace mynamespace 
+	pgo update namespace mynamespace
 	pgo update cluster --selector=name=mycluster --autofail=false
 	pgo update cluster --all --autofail=true`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -104,9 +107,9 @@ var UpdateClusterCmd = &cobra.Command{
 	Long: `Update a PostgreSQL cluster. For example:
 
     pgo update cluster mycluster --autofail=false
-    pgo update cluster mycluster myothercluster --autofail=false
-    pgo update cluster --selector=name=mycluster --autofail=false
-    pgo update cluster --all --autofail=true`,
+    pgo update cluster mycluster myothercluster --disable-autofail
+    pgo update cluster --selector=name=mycluster --disable-autofail
+    pgo update cluster --all --enable-autofail`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Namespace == "" {
 			Namespace = PGONamespace
@@ -114,13 +117,21 @@ var UpdateClusterCmd = &cobra.Command{
 
 		if len(args) == 0 && Selector == "" && !AllFlag {
 			fmt.Println("Error: A cluster name(s) or selector or --all is required for this command.")
-		} else {
-			if util.AskForConfirmation(NoPrompt, "") {
-				updateCluster(args, Namespace)
-			} else {
-				fmt.Println("Aborting...")
-			}
+			os.Exit(1)
 		}
+
+		// if both --enable-autofail and --disable-autofail are true, then abort
+		if EnableAutofailFlag && DisableAutofailFlag {
+			fmt.Println("Error: Cannot set --enable-autofail and --disable-autofail simultaneously")
+			os.Exit(1)
+		}
+
+		if !util.AskForConfirmation(NoPrompt, "") {
+			fmt.Println("Aborting...")
+			return
+		}
+
+		updateCluster(args, Namespace)
 	},
 }
 
