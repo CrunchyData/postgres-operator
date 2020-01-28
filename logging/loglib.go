@@ -60,12 +60,8 @@ func CrunchyLogger(logDetails LogValues) {
 			}
 			return fmt.Sprintf("%s()", function), fmt.Sprintf("%s:%d", filename, f.Line)
 		},
-		//ForceColors: true,
 		FullTimestamp: true,
-		//DisableTruncation: true,
 	}
-
-	crunchyTextFormatter.TimestampFormat = "2006-01-02 15:04:05 -0700"
 
 	log.SetFormatter(&formatter{
 		fields: log.Fields{
