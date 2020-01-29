@@ -54,7 +54,7 @@ func init() {
 	//UpdateUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
 	UpdateUserCmd.Flags().StringVarP(&Password, "password", "", "", "Specifies the user password when updating a user password or creating a new user.")
 	UpdateUserCmd.Flags().BoolVar(&AllFlag, "all", false, "all clusters.")
-	UpdateUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 22, "If no password is supplied with the expired flag, this is the length of the auto generated password")
+	UpdateUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 0, "If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.")
 
 }
 

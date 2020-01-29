@@ -301,7 +301,7 @@ func init() {
 	createUserCmd.Flags().BoolVarP(&ManagedUser, "managed", "", false, "Creates a user with secrets that can be managed by the Operator.")
 	//	createUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
 	createUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")
-	createUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 22, "If no password is supplied, this is the length of the auto generated password")
+	createUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 0, "If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.")
 
 	// createPgbouncerCmd.Flags().StringVarP(&PgBouncerUser, "pgbouncer-user", "", "", "Username for the crunchy-pgboucer deployment, default is 'pgbouncer'.")
 	createPgbouncerCmd.Flags().StringVarP(&PgBouncerPassword, "pgbouncer-pass", "", "", "Password for the pgbouncer user of the crunchy-pgboucer deployment.")
