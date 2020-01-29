@@ -11,7 +11,7 @@ Cluster:
   User:  testuser
   Database:  userdb
   PasswordAgeDays:  60
-  PasswordLength:  8
+  PasswordLength:  24
   Strategy:  1
   Replicas:  0
   ArchiveMode:  false

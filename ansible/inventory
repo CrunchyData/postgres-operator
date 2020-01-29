@@ -154,7 +154,7 @@ service_type='ClusterIP'
 # ===================
 db_name='userdb'
 db_password_age_days=60
-db_password_length=20
+db_password_length=24
 db_port=5432
 db_replicas=0
 db_user='testuser'
