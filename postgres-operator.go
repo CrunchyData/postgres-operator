@@ -27,21 +27,15 @@ import (
 	crunchylog "github.com/crunchydata/postgres-operator/logging"
 	log "github.com/sirupsen/logrus"
 
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/workqueue"
 
 	"github.com/crunchydata/postgres-operator/controller"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/operatorupgrade"
 	"github.com/crunchydata/postgres-operator/util"
-	"k8s.io/client-go/kubernetes"
 )
-
-var Clientset *kubernetes.Clientset
-
-//var log *logrus.Entry
 
 func main() {
 	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
@@ -61,15 +55,8 @@ func main() {
 	time.Sleep(time.Duration(5) * time.Second)
 
 	// Create the client config. Use kubeconfig if given, otherwise assume in-cluster.
-	config, err := buildConfig(*kubeconfig)
+	config, Clientset, err := kubeapi.NewControllerClientConsideringFlag(*kubeconfig)
 	if err != nil {
-		log.Error(err)
-		os.Exit(2)
-	}
-
-	Clientset, err = kubernetes.NewForConfig(config)
-	if err != nil {
-		log.Info("error creating Clientset")
 		log.Error(err)
 		os.Exit(2)
 	}
@@ -194,11 +181,4 @@ func main() {
 		}
 	}
 
-}
-
-func buildConfig(kubeconfig string) (*rest.Config, error) {
-	if kubeconfig != "" {
-		return clientcmd.BuildConfigFromFlags("", kubeconfig)
-	}
-	return rest.InClusterConfig()
 }

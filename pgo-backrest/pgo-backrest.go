@@ -24,12 +24,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
-
-var Clientset *kubernetes.Clientset
 
 const backrestCommand = "pgbackrest"
 
@@ -83,17 +78,11 @@ func main() {
 	// we will discard the error and treat the value as "false" if it is not
 	// explicitly set
 	PGHA_PGBACKREST_LOCAL_S3_STORAGE, _ := strconv.ParseBool(os.Getenv("PGHA_PGBACKREST_LOCAL_S3_STORAGE"))
-	log.Debugf("setting PGHA_PGBACKREST_LOCAL_S3_STORAGE to %s", PGHA_PGBACKREST_LOCAL_S3_STORAGE)
+	log.Debugf("setting PGHA_PGBACKREST_LOCAL_S3_STORAGE to %v", PGHA_PGBACKREST_LOCAL_S3_STORAGE)
 
-	config, err := buildConfig(*kubeconfig)
+	config, clientset, err := kubeapi.NewClientConsideringFlag(*kubeconfig)
 	if err != nil {
 		panic(err)
-	}
-
-	Clientset, err = kubernetes.NewForConfig(config)
-	if err != nil {
-		log.Info("error creating Clientset")
-		panic(err.Error())
 	}
 
 	bashcmd := make([]string, 1)
@@ -136,7 +125,7 @@ func main() {
 
 	log.Infof("command is %s ", strings.Join(cmdStrs, " "))
 	reader := strings.NewReader(strings.Join(cmdStrs, " "))
-	output, stderr, err := kubeapi.ExecToPodThroughAPI(config, Clientset, bashcmd, containername, PODNAME, Namespace, reader)
+	output, stderr, err := kubeapi.ExecToPodThroughAPI(config, clientset, bashcmd, containername, PODNAME, Namespace, reader)
 	if err != nil {
 		log.Info("output=[" + output + "]")
 		log.Info("stderr=[" + stderr + "]")
@@ -148,11 +137,4 @@ func main() {
 
 	log.Info("pgo-backrest ends")
 
-}
-
-func buildConfig(kubeconfig string) (*rest.Config, error) {
-	if kubeconfig != "" {
-		return clientcmd.BuildConfigFromFlags("", kubeconfig)
-	}
-	return rest.InClusterConfig()
 }
