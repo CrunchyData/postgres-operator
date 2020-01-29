@@ -17,15 +17,14 @@ limitations under the License.
 
 import (
 	"flag"
+	"os"
+
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	crunchylog "github.com/crunchydata/postgres-operator/logging"
 	"github.com/crunchydata/postgres-operator/pgo-rmdata/rmdata"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-
-	"os"
 )
 
 var request rmdata.Request
@@ -63,13 +62,7 @@ func main() {
 	}
 
 	var err error
-	request.RESTConfig, err = buildConfig(*kubeconfig)
-
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
-
-	request.Clientset, err = kubernetes.NewForConfig(request.RESTConfig)
+	request.RESTConfig, request.Clientset, err = kubeapi.NewClientConsideringFlag(*kubeconfig)
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
@@ -84,11 +77,4 @@ func main() {
 
 	rmdata.Delete(request)
 
-}
-
-func buildConfig(kubeconfig string) (*rest.Config, error) {
-	if kubeconfig != "" {
-		return clientcmd.BuildConfigFromFlags("", kubeconfig)
-	}
-	return rest.InClusterConfig()
 }

@@ -40,7 +40,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
 
 const rsaKeySize = 2048
@@ -150,12 +149,7 @@ func ConnectToKube() {
 	flag.Parse()
 
 	var err error
-	RESTConfig, err = buildConfig(*kubeconfig)
-	if err != nil {
-		panic(err)
-	}
-
-	Clientset, err = kubernetes.NewForConfig(RESTConfig)
+	RESTConfig, Clientset, err = kubeapi.NewControllerClientConsideringFlag(*kubeconfig)
 	if err != nil {
 		panic(err)
 	}
@@ -165,14 +159,6 @@ func ConnectToKube() {
 		panic(err)
 	}
 
-}
-
-// buildConfig ...
-func buildConfig(kubeconfig string) (*rest.Config, error) {
-	if kubeconfig != "" {
-		return clientcmd.BuildConfigFromFlags("", kubeconfig)
-	}
-	return rest.InClusterConfig()
 }
 
 func initConfig() {
