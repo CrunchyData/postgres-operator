@@ -520,6 +520,9 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	resp.Results = make([]string, 0)
 	clusterName := request.Name
 
+	// set the generated password length for random password generation
+	generatedPasswordLength := util.GeneratedPasswordLength(apiserver.Pgo.Cluster.PasswordLength)
+
 	if clusterName == "all" {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "invalid cluster name 'all' is not allowed as a cluster name"
@@ -635,18 +638,18 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			// userLabelsMap[config.LABEL_PGBOUNCER] = "true"
 
 			// need to create password to be added to postgres container and pgbouncer credential...
-			if !(len(request.PgbouncerPass) > 0) {
-				userLabelsMap[config.LABEL_PGBOUNCER_PASS] = util.GeneratePassword(10)
-			} else {
+			if len(request.PgbouncerPass) > 0 {
 				userLabelsMap[config.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
+			} else {
+				userLabelsMap[config.LABEL_PGBOUNCER_PASS] = util.GeneratePassword(generatedPasswordLength)
+
 			}
 
 			// default pgbouncer user to "pgbouncer" - request should be empty until configurable user is implemented.
-			if !(len(request.PgbouncerUser) > 0) {
-				userLabelsMap[config.LABEL_PGBOUNCER_USER] = "pgbouncer"
-			} else {
-
+			if len(request.PgbouncerUser) > 0 {
 				userLabelsMap[config.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
+			} else {
+				userLabelsMap[config.LABEL_PGBOUNCER_USER] = "pgbouncer"
 			}
 
 			userLabelsMap[config.LABEL_PGBOUNCER_SECRET] = request.PgbouncerSecret
@@ -1219,6 +1222,9 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns, user str
 	var RootPassword, Password, PrimaryPassword string
 	var RootSecretName, PrimarySecretName, UserSecretName string
 
+	// set the generated password length for random password generation
+	generatedPasswordLength := util.GeneratedPasswordLength(apiserver.Pgo.Cluster.PasswordLength)
+
 	//allows user to override with their own passwords
 	if request.Password != "" {
 		log.Debug("user has set a password, will use that instead of generated ones or the secret-from settings")
@@ -1239,21 +1245,21 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns, user str
 	}
 
 	RootSecretName = clusterName + crv1.RootSecretSuffix
-	pgPassword := util.GeneratePassword(10)
+	pgPassword := util.GeneratePassword(generatedPasswordLength)
 	if RootPassword != "" {
 		log.Debugf("using user specified password for secret %s", RootSecretName)
 		pgPassword = RootPassword
 	}
 
 	PrimarySecretName = clusterName + crv1.PrimarySecretSuffix
-	primaryPassword := util.GeneratePassword(10)
+	primaryPassword := util.GeneratePassword(generatedPasswordLength)
 	if PrimaryPassword != "" {
 		log.Debugf("using user specified password for secret %s", PrimarySecretName)
 		primaryPassword = PrimaryPassword
 	}
 
 	UserSecretName = clusterName + "-" + user + crv1.UserSecretSuffix
-	testPassword := util.GeneratePassword(10)
+	testPassword := util.GeneratePassword(generatedPasswordLength)
 	if Password != "" {
 		log.Debugf("using user specified password for secret %s", UserSecretName)
 		testPassword = Password
