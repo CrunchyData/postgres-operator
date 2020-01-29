@@ -69,7 +69,11 @@ const (
 	instanceReplicationInfoTypePrimary = "Leader"
 	// pgPodNamePattern pattern is a pattern used by regexp to look up the
 	// name of the pod
-	pgPodNamePattern = "%s-[0-9a-z]{10}-[0-9a-z]{5}"
+	// The character classes are derived from the Kubernetes random generator
+	// "SafeEncodeString"
+	//
+	// https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/util/rand/rand.go#L121-L127
+	pgPodNamePattern = "%s-[bcdfghjklmnpqrstvwxz2456789]+-[0-9a-z]{5}$"
 )
 
 var (
