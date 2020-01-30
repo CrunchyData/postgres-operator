@@ -21,13 +21,10 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func loadClientConfig(kubeconfig string) (*rest.Config, error) {
+func loadClientConfig() (*rest.Config, error) {
 	// The default loading rules try to read from the files specified in the
 	// environment or from the home directory.
 	loader := clientcmd.NewDefaultClientConfigLoadingRules()
-
-	// A non-zero ExplicitPath disables the above rules. The file must exist.
-	loader.ExplicitPath = kubeconfig
 
 	// The deferred loader tries an in-cluster config if the default loading
 	// rules produce no results.
@@ -36,10 +33,9 @@ func loadClientConfig(kubeconfig string) (*rest.Config, error) {
 	).ClientConfig()
 }
 
-// NewClientConsideringFlag returns a Clientset and its underlying configuration.
-// When kubeconfig is not empty, it must be a path to an existing kubeconfig file.
-func NewClientConsideringFlag(kubeconfig string) (*rest.Config, *kubernetes.Clientset, error) {
-	config, err := loadClientConfig(kubeconfig)
+// NewClient returns a Clientset and its underlying configuration.
+func NewClient() (*rest.Config, *kubernetes.Clientset, error) {
+	config, err := loadClientConfig()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -48,11 +44,10 @@ func NewClientConsideringFlag(kubeconfig string) (*rest.Config, *kubernetes.Clie
 	return config, clientset, err
 }
 
-// NewControllerClientConsideringFlag returns a Clientset and its underlying configuration.
+// NewControllerClient returns a Clientset and its underlying configuration.
 // The Clientset is configured with a higher than normal QPS and Burst limit.
-// When kubeconfig is not empty, it must be a path to an existing kubeconfig file.
-func NewControllerClientConsideringFlag(kubeconfig string) (*rest.Config, *kubernetes.Clientset, error) {
-	config, err := loadClientConfig(kubeconfig)
+func NewControllerClient() (*rest.Config, *kubernetes.Clientset, error) {
+	config, err := loadClientConfig()
 	if err != nil {
 		return nil, nil, err
 	}

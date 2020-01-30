@@ -17,7 +17,6 @@ limitations under the License.
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -38,9 +37,6 @@ import (
 )
 
 func main() {
-	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
-	flag.Parse()
-
 	debugFlag := os.Getenv("CRUNCHY_DEBUG")
 	//add logging configuration
 	crunchylog.CrunchyLogger(crunchylog.SetParameters())
@@ -54,8 +50,7 @@ func main() {
 	//give time for pgo-event to start up
 	time.Sleep(time.Duration(5) * time.Second)
 
-	// Create the client config. Use kubeconfig if given, otherwise assume in-cluster.
-	config, Clientset, err := kubeapi.NewControllerClientConsideringFlag(*kubeconfig)
+	config, Clientset, err := kubeapi.NewControllerClient()
 	if err != nil {
 		log.Error(err)
 		os.Exit(2)

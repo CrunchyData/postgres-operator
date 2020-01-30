@@ -32,7 +32,6 @@ var request rmdata.Request
 var Clientset *kubernetes.Clientset
 
 func main() {
-	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
 	request = rmdata.Request{
 		RemoveData:       false,
 		IsReplica:        false,
@@ -62,7 +61,7 @@ func main() {
 	}
 
 	var err error
-	request.RESTConfig, request.Clientset, err = kubeapi.NewClientConsideringFlag(*kubeconfig)
+	request.RESTConfig, request.Clientset, err = kubeapi.NewClient()
 	if err != nil {
 		log.Fatalln(err.Error())
 	}

@@ -73,12 +73,6 @@ bounce:
 deployoperator:
 	cd deploy && ./deploy.sh
 
-runmain: build-postgres-operator
-	postgres-operator --kubeconfig=/etc/kubernetes/admin.conf
-
-runapiserver: build-pgo-apiserver
-	apiserver --kubeconfig=/etc/kubernetes/admin.conf
-
 
 #======= Binary builds =======
 build-pgo-apiserver:
