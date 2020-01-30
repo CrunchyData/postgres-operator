@@ -93,7 +93,7 @@ ChallengeResponseAuthentication yes
 # and ChallengeResponseAuthentication to 'no'.
 # WARNING: 'UsePAM no' is not supported in Red Hat Enterprise Linux and may cause several
 # problems.
-UsePAM no 
+UsePAM yes
 
 #AllowAgentForwarding yes
 #AllowTcpForwarding yes
