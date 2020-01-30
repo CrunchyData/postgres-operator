@@ -16,7 +16,6 @@ limitations under the License.
 */
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 
@@ -34,7 +33,6 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 
-	_ "github.com/lib/pq"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	v1 "k8s.io/api/core/v1"
@@ -466,48 +464,6 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 	}
 
 	return response
-}
-
-func query(dbUser, dbHost, dbPort, database, dbPassword string) bool {
-	var conn *sql.DB
-	var err error
-
-	connString := "sslmode=disable user=" + dbUser + " host=" + dbHost + " port=" + dbPort + " dbname=" + database + " password=" + dbPassword
-	//log.Debugf("connString=%s", connString)
-
-	conn, err = sql.Open("postgres", connString)
-	if err != nil {
-		log.Debug(err.Error())
-		return false
-	}
-
-	var ts string
-	var rows *sql.Rows
-
-	rows, err = conn.Query("select now()::text")
-	if err != nil {
-		log.Debug(err.Error())
-		return false
-	}
-
-	defer func() {
-		if conn != nil {
-			conn.Close()
-		}
-		if rows != nil {
-			rows.Close()
-		}
-	}()
-	for rows.Next() {
-		if err = rows.Scan(&ts); err != nil {
-			log.Debug(err.Error())
-			return false
-		}
-		log.Debugf("returned %s", ts)
-		return true
-	}
-	return false
-
 }
 
 // CreateCluster ...
