@@ -16,7 +16,6 @@ package main
 */
 
 import (
-	"flag"
 	"os"
 	"strconv"
 	"strings"
@@ -36,8 +35,6 @@ const repoTypeFlagS3 = "--repo-type=s3"
 
 func main() {
 	log.Info("pgo-backrest starts")
-	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
-	flag.Parse()
 
 	debugFlag := os.Getenv("CRUNCHY_DEBUG")
 	if debugFlag == "true" {
@@ -80,7 +77,7 @@ func main() {
 	PGHA_PGBACKREST_LOCAL_S3_STORAGE, _ := strconv.ParseBool(os.Getenv("PGHA_PGBACKREST_LOCAL_S3_STORAGE"))
 	log.Debugf("setting PGHA_PGBACKREST_LOCAL_S3_STORAGE to %v", PGHA_PGBACKREST_LOCAL_S3_STORAGE)
 
-	config, clientset, err := kubeapi.NewClientConsideringFlag(*kubeconfig)
+	config, clientset, err := kubeapi.NewClient()
 	if err != nil {
 		panic(err)
 	}

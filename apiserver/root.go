@@ -20,7 +20,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"errors"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -145,11 +144,8 @@ func Initialize() {
 // ConnectToKube ...
 func ConnectToKube() {
 
-	kubeconfig := flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster.")
-	flag.Parse()
-
 	var err error
-	RESTConfig, Clientset, err = kubeapi.NewControllerClientConsideringFlag(*kubeconfig)
+	RESTConfig, Clientset, err = kubeapi.NewControllerClient()
 	if err != nil {
 		panic(err)
 	}
