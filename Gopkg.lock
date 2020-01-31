@@ -390,20 +390,20 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:61a86f0be8b466d6e3fbdabb155aaa4006137cb5e3fd3b949329d103fa0ceb0f"
+  digest = "1:26df9d3abe9f6470c2706b7d2f7660fb3e9ce44e894b1db19be1f094531d6bb4"
   name = "golang.org/x/crypto"
   packages = [
+    "chacha20",
     "curve25519",
     "ed25519",
     "ed25519/internal/edwards25519",
-    "internal/chacha20",
     "internal/subtle",
     "poly1305",
     "ssh",
     "ssh/terminal",
   ]
   pruneopts = ""
-  revision = "0e37d006457bf46f9e6692014ba72ef82c33022c"
+  revision = "69ecbb4d6d5dab05e49161c6e77ea40a030884e1"
 
 [[projects]]
   branch = "master"
@@ -439,6 +439,7 @@
   digest = "1:ed900376500543ca05f2a2383e1f541b4606f19cd22f34acb81b17a0b90c7f3e"
   name = "golang.org/x/sys"
   packages = [
+    "cpu",
     "unix",
     "windows",
   ]
