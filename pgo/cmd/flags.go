@@ -40,6 +40,7 @@ var BackupOpts string
 var BackrestStorageType string
 
 var RED func(a ...interface{}) string
+var YELLOW func(a ...interface{}) string
 var GREEN func(a ...interface{}) string
 
 var Namespace string

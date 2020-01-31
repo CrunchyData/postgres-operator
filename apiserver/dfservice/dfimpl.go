@@ -16,14 +16,16 @@ limitations under the License.
 */
 
 import (
-	"database/sql"
 	"errors"
+	"fmt"
+	"regexp"
+	"strconv"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -31,205 +33,307 @@ import (
 	"strings"
 )
 
-func DfCluster(name, selector, ns string) msgs.DfResponse {
-	var err error
+// pvcContainerName contains the name of the container that the PVCs are mounted
+// to, which, curiously, is "database" for all of them
+const pvcContainerName = "database"
 
+var (
+	pvcSizePattern = regexp.MustCompile("^([0-9]+)")
+)
+
+func DfCluster(request msgs.DfRequest) msgs.DfResponse {
 	response := msgs.DfResponse{}
-	response.Results = make([]msgs.DfDetail, 0)
-	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
-
-	if selector == "" && name == "all" {
-		log.Debug("selector is empty and name is all")
-	} else {
-		if selector == "" {
-			selector = "name=" + name
-		}
+	// set the namespace
+	namespace := request.Namespace
+	// set up the selector
+	selector := ""
+	// if the selector is not set to "*", then set it to the value that is in the
+	// Selector paramater
+	if request.Selector != msgs.DfShowAllSelector {
+		selector = request.Selector
 	}
-	log.Debugf("df selector is %s", selector)
+
+	log.Debugf("df selector is [%s]", selector)
+
+	// get all of the clusters that match the selector
+	clusterList := crv1.PgclusterList{}
 
 	//get a list of matching clusters
-	clusterList := crv1.PgclusterList{}
-	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, selector, ns)
-
-	if err != nil {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = err.Error()
-		return response
+	if err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, selector, namespace); err != nil {
+		return CreateErrorResponse(err.Error())
 	}
-
-	//loop thru each cluster
 
 	log.Debugf("df clusters found len is %d", len(clusterList.Items))
 
+	// iterate through each cluster and get the information about the disk
+	// utilization. As there could be a lot of clusters doing this, we opt for
+	// concurrency, but have a way to escape if one of the clusters has an error
+	// response
+	clusterResultsChannel := make(chan msgs.DfDetail)
+	errorChannel := make(chan error)
+	clusterProgressChannel := make(chan bool)
+
 	for _, c := range clusterList.Items {
-
-		selector := config.LABEL_SERVICE_NAME + "=" + c.Spec.Name
-
-		pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
-		if err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
-		}
-		for _, p := range pods.Items {
-			if strings.Contains(p.Name, "-pgbouncer") {
-				continue
-			}
-
-			var pvcName string
-			var found bool
-			for _, v := range p.Spec.Volumes {
-				if v.Name == "pgdata" {
-					found = true
-					pvcName = v.VolumeSource.PersistentVolumeClaim.ClaimName
-
-				}
-			}
-			if !found {
-				response.Status.Code = msgs.Error
-				response.Status.Msg = "pgdata volume not found in pod "
-				return response
-			}
-			log.Debugf("pvc found to be %s", pvcName)
-
-			result := msgs.DfDetail{}
-			result.Name = p.Name
-			result.Working = true
-
-			pgSizePretty, pgSize, err := getPGSize(c.Spec.Port, p.Status.PodIP, "postgres", c.Spec.Name, ns)
-			log.Debugf("podName=%s pgSize=%d pgSize=%s cluster=%s", p.Name, pgSize, pgSizePretty, c.Spec.Name)
-			if err != nil {
-				response.Status.Code = msgs.Error
-				response.Status.Msg = err.Error()
-				return response
-			}
-			result.PGSize = pgSizePretty
-			result.ClaimSize, err = getClaimCapacity(apiserver.Clientset, pvcName, ns)
-			if err != nil {
-				response.Status.Code = msgs.Error
-				response.Status.Msg = err.Error()
-				return response
-			}
-			diskSize := resource.MustParse(result.ClaimSize)
-			diskSizeInt64, _ := diskSize.AsInt64()
-			diskSizeFloat := float64(diskSizeInt64)
-
-			result.Pct = int64((float64(pgSize) / diskSizeFloat) * 100.0)
-
-			response.Results = append(response.Results, result)
-		}
-
+		// first, to properly handle the goroutine, declare a new variable here
+		cluster := c
+		// now, go get the disk capacity information about the cluster
+		go getClusterDf(&cluster, clusterResultsChannel, clusterProgressChannel, errorChannel)
 	}
+
+	// track the progress / completion, so we know when to exit
+	processed := 0
+	totalClusters := len(clusterList.Items)
+
+loop:
+	for {
+		select {
+		// if a result comes through, append it to the list
+		case result := <-clusterResultsChannel:
+			response.Results = append(response.Results, result)
+			// if an error comes through, immeidately abort
+		case err := <-errorChannel:
+			return CreateErrorResponse(err.Error())
+			// and if we have finished, then break the loop
+		case <-clusterProgressChannel:
+			processed++
+
+			log.Debugf("df [%s] progress: [%d/%d]", selector, processed, totalClusters)
+
+			if processed == totalClusters {
+				break loop
+			}
+		}
+	}
+
+	// lastly, set the response as being OK
+	response.Status = msgs.Status{Code: msgs.Ok}
 
 	return response
 }
 
-// getPrimarySecret get only the primary postgres secret
-func getPrimarySecret(clusterName, ns string) (string, string, error) {
-
-	selector := "pg-cluster=" + clusterName
-
-	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, ns)
-	if err != nil {
-		return "", "", err
-	}
-
-	secretName := clusterName + "-postgres-secret"
-	for _, s := range secrets.Items {
-		if s.Name == secretName {
-			username := string(s.Data["username"][:])
-			password := string(s.Data["password"][:])
-			return username, password, err
-		}
-
-	}
-
-	return "", "", errors.New("secret " + secretName + " not found")
-}
-
-// getPrimaryService returns the service IP addresses
-func getServices(clusterName, ns string) (map[string]string, error) {
-
-	output := make(map[string]string, 0)
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
-
-	services, err := kubeapi.GetServices(apiserver.Clientset, selector, ns)
-	if err != nil {
-		return output, err
-	}
-
-	for _, p := range services.Items {
-		output[p.Name] = p.Spec.ClusterIP
-	}
-
-	return output, err
-}
-
-// getPGSize clusterName returns sizestring, error
-func getPGSize(port, host, databaseName, clusterName, ns string) (string, int, error) {
-	var dbsizePretty string
-	var dbsize int
-	var conn *sql.DB
-
-	username, password, err := getPrimarySecret(clusterName, ns)
-	if err != nil {
-		log.Error(err.Error())
-		return dbsizePretty, dbsize, err
-	}
-	//log.Debug("username=" + username + " password=" + password)
-
-	conn, err = sql.Open("postgres", "sslmode=disable user="+username+" host="+host+" port="+port+" dbname="+databaseName+" password="+password)
-	if err != nil {
-		log.Error(err.Error())
-		return dbsizePretty, dbsize, err
-	}
-
-	var rows *sql.Rows
-
-	rows, err = conn.Query("select pg_size_pretty(sum(pg_database_size(pg_database.datname))), sum(pg_database_size(pg_database.datname)) from pg_database")
-	if err != nil {
-		log.Error(err.Error())
-		return dbsizePretty, dbsize, err
-	}
-
-	defer func() {
-		if conn != nil {
-			conn.Close()
-		}
-		if rows != nil {
-			rows.Close()
-		}
-	}()
-	for rows.Next() {
-		if err = rows.Scan(&dbsizePretty, &dbsize); err != nil {
-			log.Error(err.Error())
-			return "", 0, err
-		}
-		log.Debugf("returned %s %d\n", dbsizePretty, dbsize)
-		return dbsizePretty, dbsize, err
-	}
-
-	return dbsizePretty, dbsize, err
-
-}
-
+// getClaimCapacity makes a call to the PVC API to get the total capacity
+// available on the PVC
 func getClaimCapacity(clientset *kubernetes.Clientset, pvcName, ns string) (string, error) {
-	var err error
-	var found bool
-	var pvc *v1.PersistentVolumeClaim
-
 	log.Debugf("in df pvc name found to be %s", pvcName)
 
-	pvc, found, err = kubeapi.GetPVC(clientset, pvcName, ns)
+	pvc, _, err := kubeapi.GetPVC(clientset, pvcName, ns)
+
 	if err != nil {
-		if !found {
-			log.Debugf("pvc %s not found", pvcName)
-		}
+		log.Error(err)
 		return "", err
 	}
+
 	qty := pvc.Status.Capacity[v1.ResourceStorage]
-	log.Debugf("storage cap string value %s\n", qty.String())
+
+	log.Debugf("storage cap string value %s", qty.String())
 
 	return qty.String(), err
+}
 
+// getClusterDf breaks out the tasks for getting all the capacity information
+// about a PostgreSQL cluster so it can be performed on each relevant instance
+// (Pod)
+//
+// we use pointers to keep the argument size down and because we are not
+// modifying any of the content
+func getClusterDf(cluster *crv1.Pgcluster, clusterResultsChannel chan msgs.DfDetail, clusterProgressChannel chan bool, errorChannel chan error) {
+	log.Debugf("pod df: %s", cluster.Spec.Name)
+
+	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, cluster.Spec.Name)
+
+	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, cluster.Spec.Namespace)
+
+	// if there is an error attempting to get the pods, just return
+	if err != nil {
+		errorChannel <- err
+		return
+	}
+
+	// set up channels for collecting the results that will be sent to the user
+	podResultsChannel := make(chan msgs.DfDetail)
+	podProgressChannel := make(chan bool)
+
+	// figure out how many pods will need to be checked, as this will be the
+	// "completed" number
+	totalPods := 0
+
+	for _, p := range pods.Items {
+		// to properly handle the goroutine that is coming up, we first declare a
+		// new variable
+		pod := p
+
+		// get the map of labels for convenience
+		podLabels := pod.ObjectMeta.GetLabels()
+
+		// if this is neither a PostgreSQL or pgBackRest pod, skip
+		// we can cheat a little bit and check that the HA label is present, or
+		// the pgBackRest repo pod label
+		if podLabels[config.LABEL_PGHA_ROLE] == "" && podLabels[config.LABEL_PGO_BACKREST_REPO] == "" {
+			continue
+		}
+
+		// at this point, we can include this pod in the total pods
+		totalPods++
+
+		// now, we can spin up goroutines to get the information and results from
+		// the rest of the pods
+		go getPodDf(cluster, &pod, podResultsChannel, podProgressChannel, errorChannel)
+	}
+
+	// track how many pods have been processed
+	processed := 0
+
+loop:
+	for {
+		select {
+		// if a result is found, immediately put onto the cluster results channel
+		case result := <-podResultsChannel:
+			log.Debug(result)
+			clusterResultsChannel <- result
+			// if a pod is fully processed, increment the processed counter and
+			// determine if we have finished and can break the loop
+		case <-podProgressChannel:
+			processed++
+			log.Debugf("df cluster [%s] pod progress: [%d/%d]", cluster.Spec.Name, processed, totalPods)
+			if processed == totalPods {
+				break loop
+			}
+		}
+	}
+
+	// if we are finished with this cluster, indicate we are done
+	clusterProgressChannel <- true
+}
+
+// getPodDf performs the heavy lifting of getting the total capacity values for
+// the PostgreSQL cluster by introspecting each Pod, which requires a few API
+// calls. This function is optimized to return concurrenetly, though has an
+// escape if an error is reached by reusing the error channel from the main Df
+// function
+//
+// we use pointers to keep the argument size down and because we are not
+// modifying any of the content
+func getPodDf(cluster *crv1.Pgcluster, pod *v1.Pod, podResultsChannel chan msgs.DfDetail, podProgressChannel chan bool, errorChannel chan error) {
+	podLabels := pod.ObjectMeta.GetLabels()
+	// at this point, we can get the instance name, which is conveniently
+	// available from the deployment label
+	//
+	/// ...this is a bit hacky to get the pgBackRest repo name, but it works
+	instanceName := podLabels[config.LABEL_DEPLOYMENT_NAME]
+
+	if instanceName == "" {
+		log.Debug(podLabels)
+		instanceName = podLabels[config.LABEL_NAME]
+	}
+
+	log.Debugf("df processing pod [%s]", instanceName)
+
+	// now, iterate through each volume, and only continue one if this is a
+	// "volume of interest"
+	for _, volume := range pod.Spec.Volumes {
+		// as a first check, ensure there is a PVC associated with this volume
+		// if not, this is a nonstarter
+		if volume.VolumeSource.PersistentVolumeClaim == nil {
+			continue
+		}
+
+		// start setting up the result...there's a chance we may not need it
+		// based on the next check, but it's more convenient
+		result := msgs.DfDetail{
+			InstanceName: instanceName, // OK to set this here, even if we continue
+			PodName:      pod.ObjectMeta.Name,
+		}
+
+		// we want three types of volumes:
+		// PostgreSQL data directories (pgdata)
+		// PostgreSQL tablespaces (tablespace-)
+		// pgBackRest repositories (backrestrepo)
+		// classify by the type of volume that we want...if we don't find any of
+		// them, continue one
+		switch {
+		case volume.Name == config.VOLUME_POSTGRESQL_DATA:
+			result.PVCType = msgs.PVCTypePostgreSQL
+		case volume.Name == config.VOLUME_PGBACKREST_REPO_NAME:
+			result.PVCType = msgs.PVCTypepgBackRest
+		case strings.HasPrefix(volume.Name, config.VOLUME_TABLESPACE_NAME_PREFIX):
+			result.PVCType = msgs.PVCTypeTablespace
+		default:
+			continue
+		}
+
+		// get the name of the PVC
+		result.PVCName = volume.VolumeSource.PersistentVolumeClaim.ClaimName
+
+		log.Debugf("pvc found [%s]", result.PVCName)
+
+		// next, get the size of the PVC. First have to get the correct PVC
+		// mount point
+		var pvcMountPoint string
+
+		switch result.PVCType {
+		case msgs.PVCTypePostgreSQL:
+			pvcMountPoint = fmt.Sprintf("%s/%s", config.VOLUME_POSTGRESQL_DATA_MOUNT_PATH, result.PVCName)
+		case msgs.PVCTypepgBackRest:
+			pvcMountPoint = fmt.Sprintf("%s/%s", config.VOLUME_PGBACKREST_REPO_MOUNT_PATH, podLabels["Name"])
+		case msgs.PVCTypeTablespace:
+			// first, extract the name of the tablespace by removing the
+			// VOLUME_TABLESPACE_NAME_PREFIX prefix from the volume name
+			tablespaceName := strings.Replace(volume.Name, config.VOLUME_TABLESPACE_NAME_PREFIX, "", 1)
+			// use that to populate the path structure for the tablespaces
+			pvcMountPoint = fmt.Sprintf("%s%s/%s", config.VOLUME_TABLESPACE_PATH_PREFIX, tablespaceName, tablespaceName)
+		}
+
+		cmd := []string{"du", "-s", "--block-size", "1", pvcMountPoint}
+
+		stdout, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig,
+			apiserver.Clientset, cmd, pvcContainerName, pod.Name, cluster.Spec.Namespace, nil)
+
+		// if the command fails, exit here
+		if err != nil {
+			err := fmt.Errorf(stderr)
+			log.Error(err)
+			errorChannel <- err
+			return
+		}
+
+		// have to parse the size out from the statement. Size is in bytes
+		pvcSizeMatches := pvcSizePattern.FindStringSubmatch(stdout)
+
+		log.Debugf("pvc size [%s]", pvcSizeMatches)
+
+		// ensure that the substring is matched
+		if len(pvcSizeMatches) < 2 {
+			msg := fmt.Sprintf("could not find the size of pvc %s", result.PVCName)
+			err := errors.New(msg)
+			log.Error(err)
+			errorChannel <- err
+			return
+		}
+
+		// get the size of the PVC...will need to be converted to an integer
+		pvcSize, err := strconv.Atoi(pvcSizeMatches[1])
+
+		if err != nil {
+			log.Error(err)
+			errorChannel <- err
+			return
+		}
+
+		result.PVCUsed = int64(pvcSize)
+
+		if claimSize, err := getClaimCapacity(apiserver.Clientset, result.PVCName, cluster.Spec.Namespace); err != nil {
+			errorChannel <- err
+			return
+		} else {
+			resourceClaimSize := resource.MustParse(claimSize)
+			result.PVCCapacity, _ = resourceClaimSize.AsInt64()
+		}
+
+		log.Debugf("pvc info [%+v]", result)
+
+		// put the result on the result channel
+		podResultsChannel <- result
+	}
+
+	podProgressChannel <- true
 }

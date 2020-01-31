@@ -15,21 +15,41 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import ()
+type DfPVCType int
 
-// DfDetail ...
-// this aggregated status comes from the pgo-status container
-// by means of a volume mounted json blob it generates
+// DfShowAllSelector is a value that is used to represent "all"
+const DfShowAllSelector = "*"
+
+// the DfPVCType selectors help to display determine what type of PVC is being
+// analyzed as part of the DF command
+const (
+	PVCTypePostgreSQL DfPVCType = iota
+	PVCTypepgBackRest
+	PVCTypeTablespace
+)
+
+// DfRequest contains the parameters that can be used to get disk utilization
+// for PostgreSQL clusters
 // swagger:model
-type DfDetail struct {
-	Name      string
-	PGSize    string
-	ClaimSize string
-	Pct       int64
-	Working   bool
+type DfRequest struct {
+	ClientVersion string
+	Namespace     string
+	Selector      string
 }
 
-// ShowClusterResponse ...
+// DfDetail returns specific information about the utilization of a PVC
+// swagger:model
+type DfDetail struct {
+	InstanceName string
+	PodName      string
+	PVCType      DfPVCType
+	PVCName      string
+	PVCUsed      int64
+	PVCCapacity  int64
+}
+
+// DfResponse returns the results of how PVCs are being utilized, or an error
+// message
 // swagger:model
 type DfResponse struct {
 	Results []DfDetail

@@ -128,7 +128,7 @@ func RegisterConfigSvcRoutes(r *mux.Router) {
 
 // RegisterDfSvcRoutes registers all routes from the Df Service
 func RegisterDfSvcRoutes(r *mux.Router) {
-	r.HandleFunc("/df/{name}", dfservice.DfHandler)
+	r.HandleFunc("/df", dfservice.DfHandler).Methods("POST")
 }
 
 // RegisterFailoverSvcRoutes registers all routes from the Failover Service

@@ -53,6 +53,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	log.Debug("init called")
 	GREEN = color.New(color.FgGreen).SprintFunc()
+	YELLOW = color.New(color.FgYellow).SprintFunc()
 	RED = color.New(color.FgRed).SprintFunc()
 
 	// Go currently guarantees an error when attempting to load OS_TRUST for

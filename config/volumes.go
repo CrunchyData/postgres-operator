@@ -15,6 +15,10 @@ package config
  limitations under the License.
 */
 
+// volume configuration settings used by the PostgreSQL data directory and mount
+const VOLUME_POSTGRESQL_DATA = "pgdata"
+const VOLUME_POSTGRESQL_DATA_MOUNT_PATH = "/pgdata"
+
 // volume configuration settings used by the pgBackRest repo mount
 const VOLUME_PGBACKREST_REPO_NAME = "backrestrepo"
 const VOLUME_PGBACKREST_REPO_MOUNT_PATH = "/backrestrepo"
