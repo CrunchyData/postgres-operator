@@ -46,7 +46,7 @@ func Clone(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredential
 	}
 	defer resp.Body.Close()
 
-	log.Debugf("%v", resp)
+	log.Debugf("%+v", resp)
 	err = StatusCheck(resp)
 	if err != nil {
 		return response, err

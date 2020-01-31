@@ -17,12 +17,23 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/gorilla/mux"
+
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
+
+// CreateErrorResponse creates an error response message
+func CreateErrorResponse(errorMessage string) msgs.DfResponse {
+	return msgs.DfResponse{
+		Status: msgs.Status{
+			Code: msgs.Error,
+			Msg:  errorMessage,
+		},
+	}
+}
 
 // StatusHandler ...
 // pgo df mycluster
@@ -36,66 +47,57 @@ func DfHandler(w http.ResponseWriter, r *http.Request) {
 	//  produces:
 	//  - application/json
 	//  parameters:
-	//  - name: "name"
-	//    description: "Cluster Name"
-	//    in: "path"
-	//    type: "string"
-	//    required: true
-	//  - name: "version"
-	//    description: "Client Version"
-	//    in: "path"
-	//    type: "string"
-	//    required: true
-	//  - name: "namespace"
-	//    description: "Namespace"
-	//    in: "path"
-	//    type: "string"
-	//    required: true
-	//  - name: "selector"
-	//    description: "Selector"
-	//    in: "path"
-	//    type: "string"
-	//    required: true
+	//  - name: "PostgreSQL Cluster Disk Utilization"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/DfRequest"
 	//  responses:
 	//    '200':
 	//      description: Output
 	//      schema:
 	//        "$ref": "#/definitions/DfResponse"
-	vars := mux.Vars(r)
-	clustername := vars["name"]
+	log.Debug("dfservice.DFHandler called")
 
-	selector := r.URL.Query().Get("selector")
-	namespace := r.URL.Query().Get("namespace")
-	clientVersion := r.URL.Query().Get("version")
-
-	log.Debugf("DfHandler parameters name [%s] namespace [%s] selector [%s] version [%s]", clustername, namespace, selector, clientVersion)
-
+	// first, check that the requesting user is authorized to make this request
 	username, err := apiserver.Authn(apiserver.DF_CLUSTER_PERM, w, r)
 	if err != nil {
 		return
 	}
 
+	// decode the request paramaeters
+	var request msgs.DfRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		response := CreateErrorResponse(err.Error())
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	log.Debugf("DfHandler parameters [%+v]", request)
+
+	// set some of the header...though we really should not be setting the HTTP
+	// Status upfront, but whatever
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	resp := msgs.DfResponse{}
-	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
-
-	if clientVersion != msgs.PGO_VERSION {
-		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-		json.NewEncoder(w).Encode(resp)
+	// check that the client versions match. If they don't, error out
+	if request.ClientVersion != msgs.PGO_VERSION {
+		response := CreateErrorResponse(apiserver.VERSION_MISMATCH_ERROR)
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
-	ns, err := apiserver.GetNamespace(apiserver.Clientset, username, namespace)
-	if err != nil {
-		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+	// ensure that the user has access to this namespace. if not, error out
+	if _, err := apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace); err != nil {
+		response := CreateErrorResponse(err.Error())
+		json.NewEncoder(w).Encode(response)
 		return
 	}
 
-	resp = DfCluster(clustername, selector, ns)
+	// process the request
+	response := DfCluster(request)
 
-	json.NewEncoder(w).Encode(resp)
+	// turn the response into JSON
+	json.NewEncoder(w).Encode(response)
 }

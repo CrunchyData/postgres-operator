@@ -16,23 +16,29 @@ package api
 */
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
-func ShowDf(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.DfResponse, error) {
-
+func ShowDf(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request msgs.DfRequest) (msgs.DfResponse, error) {
 	var response msgs.DfResponse
 
-	log.Debugf("ShowDf called %s with selector=%s", arg, selector)
+	// explicitly set the client version here
+	request.ClientVersion = msgs.PGO_VERSION
 
-	url := SessionCredentials.APIServerURL + "/df/" + arg + "?selector=" + selector + "&version=" + msgs.PGO_VERSION + "&namespace=" + ns
-	log.Debug(url)
+	log.Debugf("ShowDf called [%+v]", request)
 
-	req, err := http.NewRequest("GET", url, nil)
+	jsonValue, _ := json.Marshal(request)
+	url := SessionCredentials.APIServerURL + "/df"
+
+	action := "POST"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+
 	if err != nil {
 		return response, err
 	}
@@ -41,25 +47,24 @@ func ShowDf(httpclient *http.Client, arg, selector string, SessionCredentials *m
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
+
 	if err != nil {
 		return response, err
 	}
+
 	defer resp.Body.Close()
 
-	log.Debugf("%v", resp)
-	err = StatusCheck(resp)
-	if err != nil {
+	log.Debugf("%+v", resp)
+
+	if err := StatusCheck(resp); err != nil {
 		return response, err
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
 		fmt.Print("Error: ")
 		fmt.Println(err)
-		log.Println(err)
 		return response, err
 	}
 
-	return response, err
-
+	return response, nil
 }
