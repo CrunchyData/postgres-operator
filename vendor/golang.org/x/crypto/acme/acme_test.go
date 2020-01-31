@@ -16,6 +16,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -26,12 +27,22 @@ import (
 	"time"
 )
 
+// newTestClient creates a client with a non-nil Directory so that it skips
+// the discovery which is otherwise done on the first call of almost every
+// exported method.
+func newTestClient() *Client {
+	return &Client{
+		Key: testKeyEC,
+		dir: &Directory{}, // skip discovery
+	}
+}
+
 // Decodes a JWS-encoded request and unmarshals the decoded JSON into a provided
 // interface.
-func decodeJWSRequest(t *testing.T, v interface{}, r *http.Request) {
+func decodeJWSRequest(t *testing.T, v interface{}, r io.Reader) {
 	// Decode request
 	var req struct{ Payload string }
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(r).Decode(&req); err != nil {
 		t.Fatal(err)
 	}
 	payload, err := base64.RawURLEncoding.DecodeString(req.Payload)
@@ -47,12 +58,14 @@ func decodeJWSRequest(t *testing.T, v interface{}, r *http.Request) {
 type jwsHead struct {
 	Alg   string
 	Nonce string
+	URL   string            `json:"url"`
+	KID   string            `json:"kid"`
 	JWK   map[string]string `json:"jwk"`
 }
 
-func decodeJWSHead(r *http.Request) (*jwsHead, error) {
+func decodeJWSHead(r io.Reader) (*jwsHead, error) {
 	var req struct{ Protected string }
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.NewDecoder(r).Decode(&req); err != nil {
 		return nil, err
 	}
 	b, err := base64.RawURLEncoding.DecodeString(req.Protected)
@@ -75,6 +88,7 @@ func TestDiscover(t *testing.T) {
 	)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Replay-Nonce", "testnonce")
 		fmt.Fprintf(w, `{
 			"new-reg": %q,
 			"new-authz": %q,
@@ -100,6 +114,9 @@ func TestDiscover(t *testing.T) {
 	if dir.RevokeURL != revoke {
 		t.Errorf("dir.RevokeURL = %q; want %q", dir.RevokeURL, revoke)
 	}
+	if _, exist := c.nonces["testnonce"]; !exist {
+		t.Errorf("c.nonces = %q; want 'testnonce' in the map", c.nonces)
+	}
 }
 
 func TestRegister(t *testing.T) {
@@ -119,7 +136,7 @@ func TestRegister(t *testing.T) {
 			Contact   []string
 			Agreement string
 		}
-		decodeJWSRequest(t, &j, r)
+		decodeJWSRequest(t, &j, r.Body)
 
 		// Test request
 		if j.Resource != "new-reg" {
@@ -147,7 +164,11 @@ func TestRegister(t *testing.T) {
 		return false
 	}
 
-	c := Client{Key: testKeyEC, dir: &Directory{RegURL: ts.URL}}
+	c := Client{
+		Key:          testKeyEC,
+		DirectoryURL: ts.URL,
+		dir:          &Directory{RegURL: ts.URL},
+	}
 	a := &Account{Contact: contacts}
 	var err error
 	if a, err = c.Register(context.Background(), a, prompt); err != nil {
@@ -185,7 +206,7 @@ func TestUpdateReg(t *testing.T) {
 			Contact   []string
 			Agreement string
 		}
-		decodeJWSRequest(t, &j, r)
+		decodeJWSRequest(t, &j, r.Body)
 
 		// Test request
 		if j.Resource != "reg" {
@@ -207,7 +228,11 @@ func TestUpdateReg(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := Client{Key: testKeyEC}
+	c := Client{
+		Key:          testKeyEC,
+		DirectoryURL: ts.URL,       // don't dial outside of localhost
+		dir:          &Directory{}, // don't do discovery
+	}
 	a := &Account{URI: ts.URL, Contact: contacts, AgreedTerms: terms}
 	var err error
 	if a, err = c.UpdateReg(context.Background(), a); err != nil {
@@ -246,7 +271,7 @@ func TestGetReg(t *testing.T) {
 			Contact   []string
 			Agreement string
 		}
-		decodeJWSRequest(t, &j, r)
+		decodeJWSRequest(t, &j, r.Body)
 
 		// Test request
 		if j.Resource != "reg" {
@@ -268,7 +293,11 @@ func TestGetReg(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	c := Client{Key: testKeyEC}
+	c := Client{
+		Key:          testKeyEC,
+		DirectoryURL: ts.URL,       // don't dial outside of localhost
+		dir:          &Directory{}, // don't do discovery
+	}
 	a, err := c.GetReg(context.Background(), ts.URL)
 	if err != nil {
 		t.Fatal(err)
@@ -288,106 +317,131 @@ func TestGetReg(t *testing.T) {
 }
 
 func TestAuthorize(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "HEAD" {
-			w.Header().Set("Replay-Nonce", "test-nonce")
-			return
-		}
-		if r.Method != "POST" {
-			t.Errorf("r.Method = %q; want POST", r.Method)
-		}
-
-		var j struct {
-			Resource   string
-			Identifier struct {
-				Type  string
-				Value string
-			}
-		}
-		decodeJWSRequest(t, &j, r)
-
-		// Test request
-		if j.Resource != "new-authz" {
-			t.Errorf("j.Resource = %q; want new-authz", j.Resource)
-		}
-		if j.Identifier.Type != "dns" {
-			t.Errorf("j.Identifier.Type = %q; want dns", j.Identifier.Type)
-		}
-		if j.Identifier.Value != "example.com" {
-			t.Errorf("j.Identifier.Value = %q; want example.com", j.Identifier.Value)
-		}
-
-		w.Header().Set("Location", "https://ca.tld/acme/auth/1")
-		w.WriteHeader(http.StatusCreated)
-		fmt.Fprintf(w, `{
-			"identifier": {"type":"dns","value":"example.com"},
-			"status":"pending",
-			"challenges":[
-				{
-					"type":"http-01",
-					"status":"pending",
-					"uri":"https://ca.tld/acme/challenge/publickey/id1",
-					"token":"token1"
-				},
-				{
-					"type":"tls-sni-01",
-					"status":"pending",
-					"uri":"https://ca.tld/acme/challenge/publickey/id2",
-					"token":"token2"
+	tt := []struct{ typ, value string }{
+		{"dns", "example.com"},
+		{"ip", "1.2.3.4"},
+	}
+	for _, test := range tt {
+		t.Run(test.typ, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == "HEAD" {
+					w.Header().Set("Replay-Nonce", "test-nonce")
+					return
 				}
-			],
-			"combinations":[[0],[1]]}`)
-	}))
-	defer ts.Close()
+				if r.Method != "POST" {
+					t.Errorf("r.Method = %q; want POST", r.Method)
+				}
 
-	cl := Client{Key: testKeyEC, dir: &Directory{AuthzURL: ts.URL}}
-	auth, err := cl.Authorize(context.Background(), "example.com")
-	if err != nil {
-		t.Fatal(err)
-	}
+				var j struct {
+					Resource   string
+					Identifier struct {
+						Type  string
+						Value string
+					}
+				}
+				decodeJWSRequest(t, &j, r.Body)
 
-	if auth.URI != "https://ca.tld/acme/auth/1" {
-		t.Errorf("URI = %q; want https://ca.tld/acme/auth/1", auth.URI)
-	}
-	if auth.Status != "pending" {
-		t.Errorf("Status = %q; want pending", auth.Status)
-	}
-	if auth.Identifier.Type != "dns" {
-		t.Errorf("Identifier.Type = %q; want dns", auth.Identifier.Type)
-	}
-	if auth.Identifier.Value != "example.com" {
-		t.Errorf("Identifier.Value = %q; want example.com", auth.Identifier.Value)
-	}
+				// Test request
+				if j.Resource != "new-authz" {
+					t.Errorf("j.Resource = %q; want new-authz", j.Resource)
+				}
+				if j.Identifier.Type != test.typ {
+					t.Errorf("j.Identifier.Type = %q; want %q", j.Identifier.Type, test.typ)
+				}
+				if j.Identifier.Value != test.value {
+					t.Errorf("j.Identifier.Value = %q; want %q", j.Identifier.Value, test.value)
+				}
 
-	if n := len(auth.Challenges); n != 2 {
-		t.Fatalf("len(auth.Challenges) = %d; want 2", n)
-	}
+				w.Header().Set("Location", "https://ca.tld/acme/auth/1")
+				w.WriteHeader(http.StatusCreated)
+				fmt.Fprintf(w, `{
+					"identifier": {"type":%q,"value":%q},
+					"status":"pending",
+					"challenges":[
+						{
+							"type":"http-01",
+							"status":"pending",
+							"uri":"https://ca.tld/acme/challenge/publickey/id1",
+							"token":"token1"
+						},
+						{
+							"type":"tls-sni-01",
+							"status":"pending",
+							"uri":"https://ca.tld/acme/challenge/publickey/id2",
+							"token":"token2"
+						}
+					],
+					"combinations":[[0],[1]]
+				}`, test.typ, test.value)
+			}))
+			defer ts.Close()
 
-	c := auth.Challenges[0]
-	if c.Type != "http-01" {
-		t.Errorf("c.Type = %q; want http-01", c.Type)
-	}
-	if c.URI != "https://ca.tld/acme/challenge/publickey/id1" {
-		t.Errorf("c.URI = %q; want https://ca.tld/acme/challenge/publickey/id1", c.URI)
-	}
-	if c.Token != "token1" {
-		t.Errorf("c.Token = %q; want token1", c.Token)
-	}
+			var (
+				auth *Authorization
+				err  error
+			)
+			cl := Client{
+				Key:          testKeyEC,
+				DirectoryURL: ts.URL,
+				dir:          &Directory{AuthzURL: ts.URL},
+			}
+			switch test.typ {
+			case "dns":
+				auth, err = cl.Authorize(context.Background(), test.value)
+			case "ip":
+				auth, err = cl.AuthorizeIP(context.Background(), test.value)
+			default:
+				t.Fatalf("unknown identifier type: %q", test.typ)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	c = auth.Challenges[1]
-	if c.Type != "tls-sni-01" {
-		t.Errorf("c.Type = %q; want tls-sni-01", c.Type)
-	}
-	if c.URI != "https://ca.tld/acme/challenge/publickey/id2" {
-		t.Errorf("c.URI = %q; want https://ca.tld/acme/challenge/publickey/id2", c.URI)
-	}
-	if c.Token != "token2" {
-		t.Errorf("c.Token = %q; want token2", c.Token)
-	}
+			if auth.URI != "https://ca.tld/acme/auth/1" {
+				t.Errorf("URI = %q; want https://ca.tld/acme/auth/1", auth.URI)
+			}
+			if auth.Status != "pending" {
+				t.Errorf("Status = %q; want pending", auth.Status)
+			}
+			if auth.Identifier.Type != test.typ {
+				t.Errorf("Identifier.Type = %q; want %q", auth.Identifier.Type, test.typ)
+			}
+			if auth.Identifier.Value != test.value {
+				t.Errorf("Identifier.Value = %q; want %q", auth.Identifier.Value, test.value)
+			}
 
-	combs := [][]int{{0}, {1}}
-	if !reflect.DeepEqual(auth.Combinations, combs) {
-		t.Errorf("auth.Combinations: %+v\nwant: %+v\n", auth.Combinations, combs)
+			if n := len(auth.Challenges); n != 2 {
+				t.Fatalf("len(auth.Challenges) = %d; want 2", n)
+			}
+
+			c := auth.Challenges[0]
+			if c.Type != "http-01" {
+				t.Errorf("c.Type = %q; want http-01", c.Type)
+			}
+			if c.URI != "https://ca.tld/acme/challenge/publickey/id1" {
+				t.Errorf("c.URI = %q; want https://ca.tld/acme/challenge/publickey/id1", c.URI)
+			}
+			if c.Token != "token1" {
+				t.Errorf("c.Token = %q; want token1", c.Token)
+			}
+
+			c = auth.Challenges[1]
+			if c.Type != "tls-sni-01" {
+				t.Errorf("c.Type = %q; want tls-sni-01", c.Type)
+			}
+			if c.URI != "https://ca.tld/acme/challenge/publickey/id2" {
+				t.Errorf("c.URI = %q; want https://ca.tld/acme/challenge/publickey/id2", c.URI)
+			}
+			if c.Token != "token2" {
+				t.Errorf("c.Token = %q; want token2", c.Token)
+			}
+
+			combs := [][]int{{0}, {1}}
+			if !reflect.DeepEqual(auth.Combinations, combs) {
+				t.Errorf("auth.Combinations: %+v\nwant: %+v\n", auth.Combinations, combs)
+			}
+
+		})
 	}
 }
 
@@ -401,7 +455,11 @@ func TestAuthorizeValid(t *testing.T) {
 		w.Write([]byte(`{"status":"valid"}`))
 	}))
 	defer ts.Close()
-	client := Client{Key: testKey, dir: &Directory{AuthzURL: ts.URL}}
+	client := Client{
+		Key:          testKey,
+		DirectoryURL: ts.URL,
+		dir:          &Directory{AuthzURL: ts.URL},
+	}
 	_, err := client.Authorize(context.Background(), "example.com")
 	if err != nil {
 		t.Errorf("err = %v", err)
@@ -436,7 +494,7 @@ func TestGetAuthorization(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	cl := Client{Key: testKeyEC}
+	cl := Client{Key: testKeyEC, DirectoryURL: ts.URL}
 	auth, err := cl.GetAuthorization(context.Background(), ts.URL)
 	if err != nil {
 		t.Fatal(err)
@@ -566,7 +624,7 @@ func runWaitAuthorization(ctx context.Context, t *testing.T, h http.HandlerFunc)
 	}
 	ch := make(chan res, 1)
 	go func() {
-		var client Client
+		var client = Client{DirectoryURL: ts.URL}
 		a, err := client.WaitAuthorization(ctx, ts.URL)
 		ch <- res{a, err}
 	}()
@@ -592,7 +650,7 @@ func TestRevokeAuthorization(t *testing.T) {
 				Status   string
 				Delete   bool
 			}
-			decodeJWSRequest(t, &req, r)
+			decodeJWSRequest(t, &req, r.Body)
 			if req.Resource != "authz" {
 				t.Errorf("req.Resource = %q; want authz", req.Resource)
 			}
@@ -607,7 +665,11 @@ func TestRevokeAuthorization(t *testing.T) {
 		}
 	}))
 	defer ts.Close()
-	client := &Client{Key: testKey}
+	client := &Client{
+		Key:          testKey,
+		DirectoryURL: ts.URL,       // don't dial outside of localhost
+		dir:          &Directory{}, // don't do discovery
+	}
 	ctx := context.Background()
 	if err := client.RevokeAuthorization(ctx, ts.URL+"/1"); err != nil {
 		t.Errorf("err = %v", err)
@@ -632,7 +694,7 @@ func TestPollChallenge(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	cl := Client{Key: testKeyEC}
+	cl := Client{Key: testKeyEC, DirectoryURL: ts.URL}
 	chall, err := cl.GetChallenge(context.Background(), ts.URL)
 	if err != nil {
 		t.Fatal(err)
@@ -667,7 +729,7 @@ func TestAcceptChallenge(t *testing.T) {
 			Type     string
 			Auth     string `json:"keyAuthorization"`
 		}
-		decodeJWSRequest(t, &j, r)
+		decodeJWSRequest(t, &j, r.Body)
 
 		// Test request
 		if j.Resource != "challenge" {
@@ -693,7 +755,11 @@ func TestAcceptChallenge(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	cl := Client{Key: testKeyEC}
+	cl := Client{
+		Key:          testKeyEC,
+		DirectoryURL: ts.URL,       // don't dial outside of localhost
+		dir:          &Directory{}, // don't do discovery
+	}
 	c, err := cl.Accept(context.Background(), &Challenge{
 		URI:   ts.URL,
 		Token: "token1",
@@ -734,7 +800,7 @@ func TestNewCert(t *testing.T) {
 			NotBefore string `json:"notBefore,omitempty"`
 			NotAfter  string `json:"notAfter,omitempty"`
 		}
-		decodeJWSRequest(t, &j, r)
+		decodeJWSRequest(t, &j, r.Body)
 
 		// Test request
 		if j.Resource != "new-cert" {
@@ -809,7 +875,8 @@ func TestFetchCert(t *testing.T) {
 		w.Write([]byte{count})
 	}))
 	defer ts.Close()
-	res, err := (&Client{}).FetchCert(context.Background(), ts.URL, true)
+	cl := newTestClient()
+	res, err := cl.FetchCert(context.Background(), ts.URL, true)
 	if err != nil {
 		t.Fatalf("FetchCert: %v", err)
 	}
@@ -831,7 +898,8 @@ func TestFetchCertRetry(t *testing.T) {
 		w.Write([]byte{1})
 	}))
 	defer ts.Close()
-	res, err := (&Client{}).FetchCert(context.Background(), ts.URL, false)
+	cl := newTestClient()
+	res, err := cl.FetchCert(context.Background(), ts.URL, false)
 	if err != nil {
 		t.Fatalf("FetchCert: %v", err)
 	}
@@ -844,14 +912,15 @@ func TestFetchCertRetry(t *testing.T) {
 func TestFetchCertCancel(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Retry-After", "0")
-		w.WriteHeader(http.StatusAccepted)
+		w.WriteHeader(http.StatusBadRequest)
 	}))
 	defer ts.Close()
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 	var err error
 	go func() {
-		_, err = (&Client{}).FetchCert(ctx, ts.URL, false)
+		cl := newTestClient()
+		_, err = cl.FetchCert(ctx, ts.URL, false)
 		close(done)
 	}()
 	cancel()
@@ -874,7 +943,8 @@ func TestFetchCertDepth(t *testing.T) {
 		w.Write([]byte{count})
 	}))
 	defer ts.Close()
-	_, err := (&Client{}).FetchCert(context.Background(), ts.URL, true)
+	cl := newTestClient()
+	_, err := cl.FetchCert(context.Background(), ts.URL, true)
 	if err == nil {
 		t.Errorf("err is nil")
 	}
@@ -889,7 +959,8 @@ func TestFetchCertBreadth(t *testing.T) {
 		w.Write([]byte{1})
 	}))
 	defer ts.Close()
-	_, err := (&Client{}).FetchCert(context.Background(), ts.URL, true)
+	cl := newTestClient()
+	_, err := cl.FetchCert(context.Background(), ts.URL, true)
 	if err == nil {
 		t.Errorf("err is nil")
 	}
@@ -901,7 +972,8 @@ func TestFetchCertSize(t *testing.T) {
 		w.Write(b)
 	}))
 	defer ts.Close()
-	_, err := (&Client{}).FetchCert(context.Background(), ts.URL, false)
+	cl := newTestClient()
+	_, err := cl.FetchCert(context.Background(), ts.URL, false)
 	if err == nil {
 		t.Errorf("err is nil")
 	}
@@ -919,7 +991,7 @@ func TestRevokeCert(t *testing.T) {
 			Certificate string
 			Reason      int
 		}
-		decodeJWSRequest(t, &req, r)
+		decodeJWSRequest(t, &req, r.Body)
 		if req.Resource != "revoke-cert" {
 			t.Errorf("req.Resource = %q; want revoke-cert", req.Resource)
 		}
@@ -986,7 +1058,7 @@ func TestNonce_fetch(t *testing.T) {
 	defer ts.Close()
 	for ; i < len(tests); i++ {
 		test := tests[i]
-		c := &Client{}
+		c := newTestClient()
 		n, err := c.fetchNonce(context.Background(), ts.URL)
 		if n != test.nonce {
 			t.Errorf("%d: n=%q; want %q", i, n, test.nonce)
@@ -1005,7 +1077,7 @@ func TestNonce_fetchError(t *testing.T) {
 		w.WriteHeader(http.StatusTooManyRequests)
 	}))
 	defer ts.Close()
-	c := &Client{}
+	c := newTestClient()
 	_, err := c.fetchNonce(context.Background(), ts.URL)
 	e, ok := err.(*Error)
 	if !ok {
@@ -1013,6 +1085,53 @@ func TestNonce_fetchError(t *testing.T) {
 	}
 	if e.StatusCode != http.StatusTooManyRequests {
 		t.Errorf("e.StatusCode = %d; want %d", e.StatusCode, http.StatusTooManyRequests)
+	}
+}
+
+func TestNonce_popWhenEmpty(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "HEAD" {
+			t.Errorf("r.Method = %q; want HEAD", r.Method)
+		}
+		switch r.URL.Path {
+		case "/dir-with-nonce":
+			w.Header().Set("Replay-Nonce", "dirnonce")
+		case "/new-nonce":
+			w.Header().Set("Replay-Nonce", "newnonce")
+		case "/dir-no-nonce", "/empty":
+			// No nonce in the header.
+		default:
+			t.Errorf("Unknown URL: %s", r.URL)
+		}
+	}))
+	defer ts.Close()
+	ctx := context.Background()
+
+	tt := []struct {
+		dirURL, popURL, nonce string
+		wantOK                bool
+	}{
+		{ts.URL + "/dir-with-nonce", ts.URL + "/new-nonce", "dirnonce", true},
+		{ts.URL + "/dir-no-nonce", ts.URL + "/new-nonce", "newnonce", true},
+		{ts.URL + "/dir-no-nonce", ts.URL + "/empty", "", false},
+	}
+	for _, test := range tt {
+		t.Run(fmt.Sprintf("nonce:%s wantOK:%v", test.nonce, test.wantOK), func(t *testing.T) {
+			c := Client{DirectoryURL: test.dirURL}
+			v, err := c.popNonce(ctx, test.popURL)
+			if !test.wantOK {
+				if err == nil {
+					t.Fatalf("c.popNonce(%q) returned nil error", test.popURL)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("c.popNonce(%q): %v", test.popURL, err)
+			}
+			if v != test.nonce {
+				t.Errorf("c.popNonce(%q) = %q; want %q", test.popURL, v, test.nonce)
+			}
+		})
 	}
 }
 
@@ -1033,7 +1152,7 @@ func TestNonce_postJWS(t *testing.T) {
 			w.Write([]byte(`{"status":"valid"}`))
 		}()
 
-		head, err := decodeJWSHead(r)
+		head, err := decodeJWSHead(r.Body)
 		if err != nil {
 			t.Errorf("decodeJWSHead: %v", err)
 			return
@@ -1049,7 +1168,11 @@ func TestNonce_postJWS(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	client := Client{Key: testKey, dir: &Directory{AuthzURL: ts.URL}}
+	client := Client{
+		Key:          testKey,
+		DirectoryURL: ts.URL, // nonces are fetched from here first
+		dir:          &Directory{AuthzURL: ts.URL},
+	}
 	if _, err := client.Authorize(context.Background(), "example.com"); err != nil {
 		t.Errorf("client.Authorize 1: %v", err)
 	}
@@ -1101,8 +1224,7 @@ func TestTLSSNI01ChallengeCert(t *testing.T) {
 		san = "dbbd5eefe7b4d06eb9d1d9f5acb4c7cd.a27d320e4b30332f0b6cb441734ad7b0.acme.invalid"
 	)
 
-	client := &Client{Key: testKeyEC}
-	tlscert, name, err := client.TLSSNI01ChallengeCert(token)
+	tlscert, name, err := newTestClient().TLSSNI01ChallengeCert(token)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1134,8 +1256,7 @@ func TestTLSSNI02ChallengeCert(t *testing.T) {
 		sanB = "dbbd5eefe7b4d06eb9d1d9f5acb4c7cd.a27d320e4b30332f0b6cb441734ad7b0.ka.acme.invalid"
 	)
 
-	client := &Client{Key: testKeyEC}
-	tlscert, name, err := client.TLSSNI02ChallengeCert(token)
+	tlscert, name, err := newTestClient().TLSSNI02ChallengeCert(token)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1175,8 +1296,7 @@ func TestTLSALPN01ChallengeCert(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	client := &Client{Key: testKeyEC}
-	tlscert, err := client.TLSALPN01ChallengeCert(token, domain)
+	tlscert, err := newTestClient().TLSALPN01ChallengeCert(token, domain)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1225,7 +1345,7 @@ func TestTLSChallengeCertOpt(t *testing.T) {
 	}
 	opts := []CertOption{WithKey(key), WithTemplate(tmpl)}
 
-	client := &Client{Key: testKeyEC}
+	client := newTestClient()
 	cert1, _, err := client.TLSSNI01ChallengeCert("token", opts...)
 	if err != nil {
 		t.Fatal(err)
@@ -1283,7 +1403,7 @@ func TestHTTP01Challenge(t *testing.T) {
 		value   = token + "." + testKeyECThumbprint
 		urlpath = "/.well-known/acme-challenge/" + token
 	)
-	client := &Client{Key: testKeyEC}
+	client := newTestClient()
 	val, err := client.HTTP01ChallengeResponse(token)
 	if err != nil {
 		t.Fatal(err)
@@ -1302,8 +1422,7 @@ func TestDNS01ChallengeRecord(t *testing.T) {
 	//      base64 | tr -d '=' | tr '/+' '_-'
 	const value = "8DERMexQ5VcdJ_prpPiA0mVdp7imgbCgjsG4SqqNMIo"
 
-	client := &Client{Key: testKeyEC}
-	val, err := client.DNS01ChallengeRecord("xxx")
+	val, err := newTestClient().DNS01ChallengeRecord("xxx")
 	if err != nil {
 		t.Fatal(err)
 	}
