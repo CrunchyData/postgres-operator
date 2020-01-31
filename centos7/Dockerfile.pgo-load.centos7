@@ -7,13 +7,11 @@ LABEL name="pgo-load" \
 	summary="Crunchy PostgreSQL Operator - Load Data" \
 	description="Loads a CSV or JSON file into the database."
 
-ENV PGVERSION="12" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm"
-
-# PGDG PostgreSQL Repository
-RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
+ENV PGVERSION="12"
 
 RUN yum -y install epel-release \
     && yum install -y \
+        --setopt=skip_missing_names_on_install=False \
         gettext \
         hostname \
         nss_wrapper \
