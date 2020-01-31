@@ -13,7 +13,7 @@ RUN yum -y install \
     --setopt=skip_missing_names_on_install=False \
     openssh-clients \
     openssh-server \
-    pgbackrest-"${BACKREST_VERSION}" \
+    crunchy-backrest-"${BACKREST_VERSION}" \
     postgresql12-server \
     procps-ng \
     psmisc \

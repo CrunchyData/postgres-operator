@@ -14,7 +14,7 @@ RUN yum -y install \
     hostname \
     openssh-clients \
     openssh-server \
-    pgbackrest-"${BACKREST_VERSION}" \
+    crunchy-backrest-"${BACKREST_VERSION}" \
     procps-ng \
     psmisc \
     rsync \
