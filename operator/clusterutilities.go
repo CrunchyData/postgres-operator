@@ -17,6 +17,7 @@ package operator
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -150,12 +151,39 @@ type DeploymentTemplateFields struct {
 	ReplicaReinitOnStartFail bool
 	PodAntiAffinity          string
 	SyncReplication          bool
+	// A comma-separated list of tablespace names...this could be an array, but
+	// given how this would ultimately be interpreted in a shell script tsomewhere
+	// down the line, it's easier for the time being to do it this way. In the
+	// future, we should consider having an array
+	Tablespaces            string
+	TablespaceVolumes      string
+	TablespaceVolumeMounts string
 }
 
 type PostgresHaTemplateFields struct {
 	LogStatement            string
 	LogMinDurationStatement string
 	ArchiveTimeout          string
+}
+
+// tablespaceVolumeFields are the fields used to create the volumes in a
+// Deployment template spec or the like. These are turned into JSON.
+type tablespaceVolumeFields struct {
+	Name string                    `json:"name"`
+	PVC  tablespaceVolumePVCFields `json:"persistentVolumeClaim"`
+}
+
+// tablespaceVolumePVCFields used for specifying the PVC that should be attached
+// to the volume. These are turned into JSON
+type tablespaceVolumePVCFields struct {
+	PVCName string `json:"claimName"`
+}
+
+// tablespaceVolumeMountFields are the field used to create the volume mounts
+// in a Deployment template spec. These are turned into JSON.
+type tablespaceVolumeMountFields struct {
+	Name      string `json:"name"`
+	MountPath string `json:"mountPath"`
 }
 
 //consolidate with cluster.GetPgbackrestEnvVars
@@ -348,6 +376,110 @@ func GetCollectVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, names
 	return "\"emptyDir\": { \"secretName\": \"Memory\" }"
 }
 
+// GetTablespaceNamePVCMap returns a map of the tablespace name to the PVC name
+func GetTablespaceNamePVCMap(clusterName string, tablespaceStorageTypeMap map[string]string) map[string]string {
+	tablespacePVCMap := map[string]string{}
+
+	// iterate through all of the tablespace mounts and match the name of the
+	// tablespace to its PVC
+	for tablespaceName := range tablespaceStorageTypeMap {
+		tablespacePVCMap[tablespaceName] = GetTablespacePVCName(clusterName, tablespaceName)
+	}
+
+	return tablespacePVCMap
+}
+
+// GetTablespaceNames generates a comma-separated list of the format
+// "tablespaceName1mtablespceName2" so that the PVC containing a tablespace
+// can be properly mounted in the container, and the tablespace can be
+// referenced by the specified human readable name.  We use a comma-separated
+// list to make it "easier" to work with the shell scripts that currently setup
+// the container
+func GetTablespaceNames(tablespaceStorageTypeMap map[string]string) string {
+	tablespaces := []string{}
+
+	// iterate through the list of tablespace mounts and extract the tablespace
+	// name
+	for tablespaceName := range tablespaceStorageTypeMap {
+		tablespaces = append(tablespaces, tablespaceName)
+	}
+
+	// return the string that joins the list with the comma
+	return strings.Join(tablespaces, ",")
+}
+
+// GetTablespaceStorageTypeMap returns a map of "tablespaceName => storageType"
+func GetTablespaceStorageTypeMap(tablespaceMounts map[string]crv1.PgStorageSpec) map[string]string {
+	tablespaceStorageTypeMap := map[string]string{}
+
+	// iterate through all of the tablespaceMounts and extract the storage type
+	for tablespaceName, storageSpec := range tablespaceMounts {
+		tablespaceStorageTypeMap[tablespaceName] = storageSpec.StorageType
+	}
+
+	return tablespaceStorageTypeMap
+}
+
+// GetTablespacePVCName returns the formatted name that is used for a PVC for
+// a tablespace
+func GetTablespacePVCName(clusterName string, tablespaceName string) string {
+	return fmt.Sprintf(config.VOLUME_TABLESPACE_PVC_NAME_FORMAT, clusterName, tablespaceName)
+}
+
+// GetTablespaceVolumeMountsJSON Creates an appendable list for the volumeMounts
+// that are used to mount table spacs and returns them in a JSON-ish string
+func GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap map[string]string) string {
+	volumeMounts := bytes.Buffer{}
+
+	// iterate over each table space and generate the JSON snippet that is loaded
+	// into a Kubernetes Deployment template (or equivalent structure)
+	for tablespaceName := range tablespaceStorageTypeMap {
+		log.Debugf("generating tablespace volume mount json for %s", tablespaceName)
+
+		volumeMountFields := tablespaceVolumeMountFields{
+			Name:      getTablespaceVolumeName(tablespaceName),
+			MountPath: fmt.Sprintf("%s%s", config.VOLUME_TABLESPACE_PATH_PREFIX, tablespaceName),
+		}
+
+		// write the generated JSON into a buffer. if there is an error, log the
+		// error and continue
+		if err := writeTablespaceJSON(&volumeMounts, volumeMountFields); err != nil {
+			log.Error(err)
+			continue
+		}
+	}
+
+	return volumeMounts.String()
+}
+
+// GetTablespaceVolumes Creates an appendable list for the volumes section of a
+// Kubernetes pod
+func GetTablespaceVolumesJSON(clusterName string, tablespaceStorageTypeMap map[string]string) string {
+	volumes := bytes.Buffer{}
+
+	// iterate over each table space and generate the JSON snippet that is loaded
+	// into a Kubernetes Deployment template (or equivalent structure)
+	for tablespaceName := range tablespaceStorageTypeMap {
+		log.Debugf("generating tablespace volume json for %s", tablespaceName)
+
+		volumeFields := tablespaceVolumeFields{
+			Name: getTablespaceVolumeName(tablespaceName),
+			PVC: tablespaceVolumePVCFields{
+				PVCName: GetTablespacePVCName(clusterName, tablespaceName),
+			},
+		}
+
+		// write the generated JSON into a buffer. if there is an error, log the
+		// error and continue
+		if err := writeTablespaceJSON(&volumes, volumeFields); err != nil {
+			log.Error(err)
+			continue
+		}
+	}
+
+	return volumes.String()
+}
+
 // needs to be consolidated with cluster.GetLabelsFromMap
 // GetLabelsFromMap ...
 func GetLabelsFromMap(labels map[string]string) string {
@@ -361,31 +493,6 @@ func GetLabelsFromMap(labels map[string]string) string {
 	// removing the trailing comma from the final label
 	return strings.TrimSuffix(output, ",")
 }
-
-// GetPrimaryLabels ...
-/**
-func GetPrimaryLabels(serviceName string, ClusterName string, replicaFlag bool, userLabels map[string]string) map[string]string {
-	primaryLabels := make(map[string]string)
-
-	primaryLabels["name"] = serviceName
-	primaryLabels[config.LABEL_PG_CLUSTER] = ClusterName
-
-	for key, value := range userLabels {
-		if key == config.LABEL_PGBOUNCER {
-			//these dont apply to a primary or replica
-		} else if key == config.LABEL_AUTOFAIL || key == config.LABEL_NODE_LABEL_KEY || key == config.LABEL_NODE_LABEL_VALUE ||
-			key == config.LABEL_BACKREST_STORAGE_TYPE {
-			//dont add these since they can break label expression checks
-			//or autofail toggling
-		} else {
-			log.Debugf("JEFF label copying XXX key=%s value=%s", key, value)
-			primaryLabels[key] = value
-		}
-	}
-
-	return primaryLabels
-}
-*/
 
 // GetAffinity ...
 func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string {
@@ -684,4 +791,28 @@ func OverrideClusterContainerImages(containers []v1.Container) {
 
 		SetContainerImageOverride(containerImageName, &container)
 	}
+}
+
+// getTableSpaceVolumeName returns the name that is used to identify the volume
+// that is used to mount the tablespace
+func getTablespaceVolumeName(tablespaceName string) string {
+	return fmt.Sprintf("%s%s", config.VOLUME_TABLESPACE_NAME_PREFIX, tablespaceName)
+}
+
+// writeTablespaceJSON is a convenience function to write the tablespace JSON
+// into the current buffer
+func writeTablespaceJSON(w *bytes.Buffer, jsonFields interface{}) error {
+	json, err := json.Marshal(jsonFields)
+
+	// if there is an error, log the error and continue
+	if err != nil {
+		return err
+	}
+
+	// We are appending to the end of a list so we can always assume this comma
+	// ...at least for now
+	w.WriteString(",")
+	w.Write(json)
+
+	return nil
 }

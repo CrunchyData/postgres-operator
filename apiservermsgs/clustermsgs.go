@@ -50,6 +50,7 @@ type CreateClusterRequest struct {
 	Password            string
 	SecretFrom          string
 	UserLabels          string
+	TablespaceMounts    string
 	Policies            string
 	CCPImage            string
 	CCPImageTag         string

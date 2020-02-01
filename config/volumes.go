@@ -22,3 +22,17 @@ const VOLUME_PGBACKREST_REPO_MOUNT_PATH = "/backrestrepo"
 // volume configuration settings used by the SSHD secret
 const VOLUME_SSHD_NAME = "sshd"
 const VOLUME_SSHD_MOUNT_PATH = "/sshd"
+
+// volume configuration settings used by tablespaces
+
+// the pattern for the volume name used on a tablespace, which follows
+// "tablespace-<tablespaceName>"
+const VOLUME_TABLESPACE_NAME_PREFIX = "tablespace-"
+
+// the pattern for the path used to mount the volume of a tablespace, which
+// follows "/tablespace/<pvcName>"
+const VOLUME_TABLESPACE_PATH_PREFIX = "/tablespaces/"
+
+// the pattern for the name of a tablespace PVC, which is off the form:
+// "<clusterName>-tablespace-<tablespaceName>"
+const VOLUME_TABLESPACE_PVC_NAME_FORMAT = "%s-tablespace-%s"
