@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
@@ -38,6 +39,9 @@ const (
 	pgBaseBackupPVC      = "%s-backup"
 	pgDumpPVC            = "backup-%s-pgdump-pvc"
 	pgDataPathFormat     = "/pgdata/%s"
+	tablespacePathFormat = "/tablespaces/%s/%s"
+	// the tablespace on a replcia follows the pattern "<replicaName-tablespace-.."
+	tablespaceReplicaPVCPattern = "%s-tablespace-"
 )
 
 func Delete(request Request) {
@@ -180,7 +184,31 @@ func deletePGDATA(request Request, pod v1.Pod) error {
 		log.Infof("stopped postgresql [%s]: stdout=[%s] stderr=[%s]", clusterName, stdout, stderr)
 	}
 
-	// execute the rm command here. If it errors, return
+	// check if there are any tablespaces, and if so, remove them here
+	// we know that a mount point is a tablespace if the prefix starts with
+	// VOLUME_TABLESPACE_NAME_PREFIX
+	for _, volumeMount := range pod.Spec.Containers[0].VolumeMounts {
+		// skip if the prefix does not match VOLUME_TABLESPACE_NAME_PREFIX"
+		if !strings.HasPrefix(volumeMount.Name, config.VOLUME_TABLESPACE_NAME_PREFIX) {
+			continue
+		}
+
+		// we now need to remove the data in the tablespace directory. we can do
+		// this by using the tablespace name pattern
+		tablespaceName := strings.ReplaceAll(volumeMount.Name, config.VOLUME_TABLESPACE_NAME_PREFIX, "")
+		// with this, we can now build the directory pattern
+		tablespacePath := fmt.Sprintf(tablespacePathFormat, tablespaceName, tablespaceName)
+
+		// attempt to remote the directory, if it fails, only log the error, and
+		// continue on.
+		if stdout, stderr, err := rmDataDir(request, pod.Name, containerName, tablespacePath); err != nil {
+			log.Error(err)
+		} else {
+			log.Infof("rm pgdata/tablespace [%s - %s]: stdout=[%s] stderr=[%s]", clusterName, tablespaceName, stdout, stderr)
+		}
+	}
+
+	// execute the rm PGDATA command here. If it errors, return
 	if stdout, stderr, err := rmDataDir(request, pod.Name, containerName, pgDataPath); err != nil {
 		return err
 	} else {
@@ -465,30 +493,21 @@ func removeOnlyReplicaData(request Request) {
 	//get the replica pod only, this is the case where
 	//a user scales down a replica, in this case the DeploymentName
 	//is used to identify the correct pod
-	selector := config.LABEL_DEPLOYMENT_NAME + "=" + request.ReplicaName
+	//replicas should have a label on their pod of the
+	//form deployment-name=somedeploymentname
+	selector := fmt.Sprintf("%s=%s", config.LABEL_DEPLOYMENT_NAME, request.ReplicaName)
 
 	pods, err := kubeapi.GetPods(request.Clientset, selector, request.Namespace)
 	if err != nil {
 		log.Errorf("error selecting replica pods %s %s", selector, err.Error())
 	}
 
-	//replicas should have a label on their pod of the
-	//form deployment-name=somedeploymentname
-
-	if len(pods.Items) > 0 {
-		for _, v := range pods.Items {
-			command := make([]string, 0)
-			command = append(command, "rm")
-			command = append(command, "-rf")
-			command = append(command, "/pgdata/"+v.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME])
-			stdout, stderr, err := kubeapi.ExecToPodThroughAPI(request.RESTConfig, request.Clientset, command, v.Spec.Containers[0].Name, v.Name, request.Namespace, nil)
-			if err != nil {
-				log.Errorf("error execing into remove data pod %s command %s error %s", v.Name, command, err.Error())
-			}
-			log.Infof("stdout=[%s] stderr=[%s]", stdout, stderr)
+	// looping through this list due to the legacy code being like this...
+	for _, pod := range pods.Items {
+		if err := deletePGDATA(request, pod); err != nil {
+			log.Errorf("error execing into remove data pod %s: error %s", pod.Name, err.Error())
 		}
 	}
-
 }
 
 func removeAddons(request Request) {
@@ -626,8 +645,40 @@ func getReplicaPVC(request Request) ([]string, error) {
 	//and ClusterName is the replica deployment name
 	//when isReplica=true
 	pvcList = append(pvcList, request.ReplicaName)
-	return pvcList, nil
 
+	// see if there are any tablespaces assigned to this replica, and add them to
+	// the list
+	// ...this is a bit janky, as we have to iterate through ALL the PVCs
+	// associated with this managed cluster, and pull out anyones that have a name
+	// with the pattern "<replicaName-tablespace>"
+	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName)
+
+	// get all of the PVCs that are specific to this replica and remove them
+	pvcs, err := kubeapi.GetPVCs(request.Clientset, selector, request.Namespace)
+
+	// if there is an error, return here and log the error in the calling function
+	if err != nil {
+		return pvcList, err
+	}
+
+	// ...and where the fun begins
+	tablespaceReplicaPVCPrefix := fmt.Sprintf(tablespaceReplicaPVCPattern, request.ReplicaName)
+
+	// iterate over the PVC list and append the tablespace PVCs
+	for _, pvc := range pvcs.Items {
+		pvcName := pvc.ObjectMeta.Name
+
+		// it does not start with the tablespace replica PVC pattern, continue
+		if !strings.HasPrefix(pvcName, tablespaceReplicaPVCPrefix) {
+			continue
+		}
+
+		log.Debugf("found pvc: [%s]", pvcName)
+
+		pvcList = append(pvcList, pvcName)
+	}
+
+	return pvcList, nil
 }
 
 func removePVCs(pvcList []string, request Request) error {

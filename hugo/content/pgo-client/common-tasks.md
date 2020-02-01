@@ -304,6 +304,31 @@ can execute the following command:
 pgo create cluster hagiscluster --ccp-image=crunchy-postgres-gis-ha
 ```
 
+#### Create a PostgreSQL Cluster with a Tablespace
+
+Tablespaces are a PostgreSQL feature that allows a user to select specific
+volumes to store data to, which is helpful in [several types of scenarios](/architecture/tablespaces/).
+Often your workload does not require a tablespace, but the PostgreSQL Operator
+provides support for tablespaces throughout the lifecycle of a PostgreSQL
+cluster.
+
+To create a PostgreSQL cluster that uses the [tablespace](/architecture/tablespaces/)
+feature with NFS storage, you can execute the following command:
+
+```shell
+pgo create cluster hactsluster --tablespaces=ts1=nfsstorage
+```
+
+You can use your preferred storage engine instead of `nfsstorage`. For example,
+to create multiple tablespaces on GKE, you can execute the following command:
+
+```shell
+pgo create cluster hactsluster --tablespaces=ts1=gce,ts2=gce
+```
+
+Tablespaces are immediately available once the PostgreSQL cluster is
+provisioned. For example, to create a table using the tablespace.
+
 #### Tracking a Newly Provisioned Cluster
 
 A new PostgreSQL cluster can take a few moments to provision. You may have

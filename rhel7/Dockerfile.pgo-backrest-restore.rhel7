@@ -19,7 +19,9 @@ RUN yum -y install \
 	psmisc \
 	&& yum -y clean all
 
-RUN mkdir -p /opt/cpm/bin /pgdata && chown -R 26:26 /opt/cpm
+RUN mkdir -p /opt/cpm/bin /pgdata /tablespaces && \
+		chown -R 26:26 /opt/cpm /tablespaces
+
 ADD bin/pgo-backrest-restore/ /opt/cpm/bin
 ADD bin/uid_postgres.sh /opt/cpm/bin
 

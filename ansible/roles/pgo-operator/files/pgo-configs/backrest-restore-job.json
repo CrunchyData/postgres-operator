@@ -25,19 +25,22 @@
                 }
             },
             "spec": {
-                "volumes": [ {
+                "volumes": [
+                  {
                     "name": "pgdata",
                     "persistentVolumeClaim": {
                         "claimName": "{{.ToClusterPVCName}}"
                     }
-                }, {
+                  },
+                  {
                     "name": "sshd",
                     "secret": {
                         "secretName": "{{.ClusterName}}-backrest-repo-config",
                         "defaultMode": 511
                     }
-                } ],
-
+                  }
+                  {{.TablespaceVolumes}}
+                ],
                 {{.SecurityContext}}
                 "serviceAccountName": "pgo-backrest",
                 "containers": [{
@@ -51,9 +54,10 @@
                         "mountPath": "/sshd",
                         "name": "sshd",
                         "readOnly": true
-                    } ],
+                    }
+                    {{.TablespaceVolumeMounts}}],
                     "env": [{
-            {{.PgbackrestS3EnvVars}}
+                      {{.PgbackrestS3EnvVars}}
                         "name": "COMMAND_OPTS",
                         "value": "{{.CommandOpts}}"
                     }, {
@@ -87,7 +91,7 @@
                     }]
                 }],
                 "affinity": {
-        {{.NodeSelector}}
+                  {{.NodeSelector}}
                 },
                 "restartPolicy": "Never"
             }

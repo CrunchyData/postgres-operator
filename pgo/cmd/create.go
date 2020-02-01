@@ -39,6 +39,7 @@ var PgBouncerUser string
 var SecretFrom string
 var PoliciesFlag, PolicyFile, PolicyURL string
 var UserLabels string
+var TablespaceMounts string
 var ServiceType string
 var Schedule string
 var ScheduleOptions string
@@ -252,6 +253,7 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&PgBouncerPassword, "pgbouncer-pass", "", "", "Password for the pgbouncer user of the crunchy-pgboucer deployment.")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets.")
 	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster.")
+	createClusterCmd.Flags().StringVarP(&TablespaceMounts, "tablespaces", "", "", "A list of extra mounts to create for tablespaces. The format is a comma seperated list of <mountName>=<storageConfig>")
 	createClusterCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply when creating a cluster, comma separated.")
 	createClusterCmd.Flags().StringVarP(&CCPImage, "ccp-image", "", "", "The CCPImage name to use for cluster creation. If specified, overrides the value crunchy-postgres.")
 	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")

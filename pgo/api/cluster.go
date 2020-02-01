@@ -118,6 +118,7 @@ func CreateCluster(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 
 	var response msgs.CreateClusterResponse
 
+	log.Debugf("Using a tablespace of %s", request.TablespaceMounts)
 	jsonValue, _ := json.Marshal(request)
 	url := fmt.Sprintf(createClusterURL, SessionCredentials.APIServerURL)
 	log.Debugf("createCluster called...[%s]", url)

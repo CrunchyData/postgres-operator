@@ -73,6 +73,12 @@
                          }
                     },
                     {{ end }}
+                    {{if .Tablespaces}}
+                    {
+                        "name": "PGHA_TABLESPACES",
+                        "value": "{{ .Tablespaces }}"
+                    },
+                    {{ end }}
                     {
                         "name": "PATRONI_POSTGRESQL_DATA_DIR",
                         "value": "/pgdata/{{.Name}}"
@@ -153,6 +159,7 @@
                             "mountPath": "/crunchyadm",
                             "name": "crunchyadm"
                         }
+                        {{.TablespaceVolumeMounts}}
                     ],
 
                     "ports": [{
@@ -262,7 +269,7 @@
                             ]
                         }
                     }
-
+                    {{.TablespaceVolumes}}
                 ],
                 "affinity": {
         {{.NodeSelector}}

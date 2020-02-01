@@ -16,11 +16,11 @@ package backrest
 */
 
 import (
-	"strings"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"os"
+	"strings"
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -39,22 +39,25 @@ import (
 )
 
 type BackrestRestoreJobTemplateFields struct {
-	JobName             string
-	ClusterName         string
-	WorkflowID          string
-	ToClusterPVCName    string
-	SecurityContext     string
-	PGOImagePrefix      string
-	PGOImageTag         string
-	CommandOpts         string
-	PITRTarget          string
-	PgbackrestStanza    string
-	PgbackrestDBPath    string
-	PgbackrestRepo1Path string
-	PgbackrestRepo1Host string
-	PgbackrestRepoType  string
-	PgbackrestS3EnvVars string
-	NodeSelector        string
+	JobName                string
+	ClusterName            string
+	WorkflowID             string
+	ToClusterPVCName       string
+	SecurityContext        string
+	PGOImagePrefix         string
+	PGOImageTag            string
+	CommandOpts            string
+	PITRTarget             string
+	PgbackrestStanza       string
+	PgbackrestDBPath       string
+	PgbackrestRepo1Path    string
+	PgbackrestRepo1Host    string
+	PgbackrestRepoType     string
+	PgbackrestS3EnvVars    string
+	NodeSelector           string
+	Tablespaces            string
+	TablespaceVolumes      string
+	TablespaceVolumeMounts string
 }
 
 // Restore ...
@@ -83,10 +86,9 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	//storage := operator.Pgo.Storage[operator.Pgo.PrimaryStorage]
 	storage := cluster.Spec.PrimaryStorage
 
-	//create the "to-cluster" PVC to hold the new data
-	var pvcName string
-	pvcName, err = createPVC(storage, clusterName, restclient, namespace, clientset, task)
-	if err != nil {
+	//create the "to-cluster" PVC to hold the new dataPVC]
+	pvcName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_TO_PVC]
+	if err := createPVC(clientset, restclient, namespace, clusterName, pvcName, storage); err != nil {
 		log.Error(err)
 		return
 	}
@@ -138,43 +140,56 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		}
 	}
 
+	// set up a map of the names of the tablespaces as well as the storage classes
+	// to use for them
+	//
+	// also use it as an opportunity to create the new PVCs for each tablespace
+	// if there is an error at any step in the process, return
+	tablespaceMountsMap := map[string]string{}
+	for tablespaceName, storageSpec := range cluster.Spec.TablespaceMounts {
+		tablespaceMountsMap[tablespaceName] = storageSpec.StorageType
+
+		// get the tablespace PVC name!
+		tablespacePVCName := operator.GetTablespacePVCName(pvcName, tablespaceName)
+
+		// attempt to create the PVC
+		if err := createPVC(clientset, restclient, namespace, clusterName, tablespacePVCName, storageSpec); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
 	//sleep for a bit to give the bounce time to take effect and let
 	//the backrest repo container come back and be able to service requests
 	time.Sleep(time.Second * time.Duration(30))
-
-	//since the restore 'to' name is dynamically generated we shouldn't
-	//need to delete the previous job
-
-	//delete the job if it exists from a prior run
-	//kubeapi.DeleteJob(clientset, task.Spec.Name, namespace)
-	//add a small sleep, this is due to race condition in delete propagation
-	//time.Sleep(time.Second * 3)
 
 	//create the Job to run the backrest restore container
 
 	workflowID := task.Spec.Parameters[crv1.PgtaskWorkflowID]
 	jobFields := BackrestRestoreJobTemplateFields{
-		JobName:             "restore-" + task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-" + util.RandStringBytesRmndr(4),
-		ClusterName:         task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
-		SecurityContext:     util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
-		ToClusterPVCName:    pvcName,
-		WorkflowID:          workflowID,
-		CommandOpts:         task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_OPTS],
-		PITRTarget:          task.Spec.Parameters[config.LABEL_BACKREST_PITR_TARGET],
-		PGOImagePrefix:      operator.Pgo.Pgo.PGOImagePrefix,
-		PGOImageTag:         operator.Pgo.Pgo.PGOImageTag,
-		PgbackrestStanza:    task.Spec.Parameters[config.LABEL_PGBACKREST_STANZA],
-		PgbackrestDBPath:    task.Spec.Parameters[config.LABEL_PGBACKREST_DB_PATH],
-		PgbackrestRepo1Path: task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH],
-		PgbackrestRepo1Host: task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_HOST],
-		NodeSelector:        operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),
-		PgbackrestRepoType:  operator.GetRepoType(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
-		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(cluster, clientset, namespace),
+		JobName:                "restore-" + task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-" + util.RandStringBytesRmndr(4),
+		ClusterName:            task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
+		SecurityContext:        util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
+		ToClusterPVCName:       pvcName,
+		WorkflowID:             workflowID,
+		CommandOpts:            task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_OPTS],
+		PITRTarget:             task.Spec.Parameters[config.LABEL_BACKREST_PITR_TARGET],
+		PGOImagePrefix:         operator.Pgo.Pgo.PGOImagePrefix,
+		PGOImageTag:            operator.Pgo.Pgo.PGOImageTag,
+		PgbackrestStanza:       task.Spec.Parameters[config.LABEL_PGBACKREST_STANZA],
+		PgbackrestDBPath:       task.Spec.Parameters[config.LABEL_PGBACKREST_DB_PATH],
+		PgbackrestRepo1Path:    task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH],
+		PgbackrestRepo1Host:    task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_HOST],
+		NodeSelector:           operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),
+		PgbackrestRepoType:     operator.GetRepoType(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
+		PgbackrestS3EnvVars:    operator.GetPgbackrestS3EnvVars(cluster, clientset, namespace),
+		TablespaceVolumes:      operator.GetTablespaceVolumesJSON(pvcName, tablespaceMountsMap),
+		TablespaceVolumeMounts: operator.GetTablespaceVolumeMountsJSON(tablespaceMountsMap),
 	}
 
-	var doc2 bytes.Buffer
-	err = config.BackrestRestorejobTemplate.Execute(&doc2, jobFields)
-	if err != nil {
+	jobTemplate := bytes.Buffer{}
+
+	if err := config.BackrestRestorejobTemplate.Execute(&jobTemplate, jobFields); err != nil {
 		log.Error(err.Error())
 		log.Error("restore workflow: error executing job template")
 		return
@@ -184,25 +199,23 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		config.BackrestRestorejobTemplate.Execute(os.Stdout, jobFields)
 	}
 
-	newjob := v1batch.Job{}
-	err = json.Unmarshal(doc2.Bytes(), &newjob)
-	if err != nil {
+	job := v1batch.Job{}
+	if err := json.Unmarshal(jobTemplate.Bytes(), &job); err != nil {
 		log.Error("restore workflow: error unmarshalling json into Job " + err.Error())
 		return
 	}
 
 	// set the container image to an override value, if one exists
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_RESTORE,
-		&newjob.Spec.Template.Spec.Containers[0])
+		&job.Spec.Template.Spec.Containers[0])
 
-	var jobName string
-	jobName, err = kubeapi.CreateJob(clientset, &newjob, namespace)
-	if err != nil {
+	if jobName, err := kubeapi.CreateJob(clientset, &job, namespace); err != nil {
 		log.Error(err)
 		log.Error("restore workflow: error in creating restore job")
 		return
+	} else {
+		log.Debugf("restore workflow: restore job %s created", jobName)
 	}
-	log.Debugf("restore workflow: restore job %s created", jobName)
 
 	publishRestore(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clusterName, task.ObjectMeta.Labels[config.LABEL_PGOUSER], namespace)
 
@@ -264,31 +277,35 @@ func updateWorkflow(restclient *rest.RESTClient, workflowID, namespace, status s
 	return err
 }
 
-func createPVC(storage crv1.PgStorageSpec, clusterName string, restclient *rest.RESTClient, namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) (string, error) {
-	var err error
+// createPVC creates any persistent volume claims (PVCs) that are required to
+// restore a PostgreSQL cluster, including the PostgreSQL data volume as well
+// as tablespaces.
+// There is a bunch of legacy stuff in here, but it is refactored to handle the
+// case of creating PVCs for tablespaces
+func createPVC(clientset *kubernetes.Clientset, restclient *rest.RESTClient, namespace, clusterName, pvcName string, storage crv1.PgStorageSpec) error {
+	_, found, err := kubeapi.GetPVC(clientset, pvcName, namespace)
 
-	//create the "to-cluster" PVC to hold the new data
-	pvcName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_TO_PVC]
-	pgstoragespec := storage
-
-	var found bool
-	_, found, err = kubeapi.GetPVC(clientset, pvcName, namespace)
-	if !found {
-		log.Debugf("pvc %s not found, will create as part of restore", pvcName)
-		//create the pvc
-		err = pvc.Create(clientset, pvcName, clusterName, &pgstoragespec, namespace)
+	// if the PVC already exists, don't create and return.
+	// Likewise, if the PVC is found but there is an error, bubble the error up
+	// for logging and return
+	if found {
 		if err != nil {
-			log.Error(err.Error())
-			return "", err
+			return err
 		}
-	} else if err != nil {
-		log.Error(err.Error())
-		return "", err
-	} else {
-		log.Debugf("pvc %s found, will NOT recreate as part of restore", pvcName)
-	}
-	return pvcName, err
 
+		log.Debugf("pvc %s found, will NOT recreate as part of restore", pvcName)
+
+		return nil
+	}
+
+	log.Debugf("pvc %s not found, will create as part of restore", pvcName)
+
+	// attempt to create the PVC. If there is an error, bubble it up and return
+	if err := pvc.Create(clientset, pvcName, clusterName, &storage, namespace); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgcluster, clientset *kubernetes.Clientset,
@@ -325,6 +342,9 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	} else {
 		affinityStr = operator.GetAffinity(cluster.Spec.UserLabels["NodeLabelKey"], cluster.Spec.UserLabels["NodeLabelValue"], "In")
 	}
+
+	// set up a map of the names of the tablespaces as well as the storage classes
+	tablespaceStorageTypeMap := operator.GetTablespaceStorageTypeMap(cluster.Spec.TablespaceMounts)
 
 	log.Debugf("creating restored PG deployment with bouncer pass of [%s]", cluster.Spec.UserLabels[config.LABEL_PGBOUNCER_PASS])
 
@@ -365,6 +385,9 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		EnableCrunchyadm:         operator.Pgo.Cluster.EnableCrunchyadm,
 		ReplicaReinitOnStartFail: !operator.Pgo.Cluster.DisableReplicaStartFailReinit,
 		SyncReplication:          operator.GetSyncReplication(cluster.Spec.SyncReplication),
+		Tablespaces:              operator.GetTablespaceNames(tablespaceStorageTypeMap),
+		TablespaceVolumes:        operator.GetTablespaceVolumesJSON(restoreToName, tablespaceStorageTypeMap),
+		TablespaceVolumeMounts:   operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")

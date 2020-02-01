@@ -86,6 +86,21 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		log.Debugf("created primary pvc [%s]", pvcName)
 	}
 
+	// iterate through all of the tablespaces and attempt to create their PVCs
+	// for this cluster
+	for tablespaceName, storageSpec := range cl.Spec.TablespaceMounts {
+		// first, generate the tablespace PVC name from the cluster deployment name
+		// and the name of the tablespace
+		tablespacePVCName := operator.GetTablespacePVCName(cl.Spec.Name, tablespaceName)
+		// attempt to create the tablespace PVC. If it fails to create, log the
+		// error and publish the failure event
+		if err := CreateTablespacePVC(clientset, namespace, cl.Spec.Name, tablespacePVCName, &storageSpec); err != nil {
+			log.Error(err)
+			publishClusterCreateFailure(cl, err.Error())
+			return
+		}
+	}
+
 	//replaced with ccpimagetag instead of pg version
 
 	AddCluster(clientset, client, cl, namespace, pvcName)

@@ -32,6 +32,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
+	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/apps/v1"
@@ -70,12 +71,8 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		return err
 	}
 
-	//refactor section
-	//primaryLabels := make(map[string]string)
-	//primaryLabels := operator.GetPrimaryLabels(cl.Spec.Name, cl.Spec.ClusterName, false, cl.Spec.UserLabels)
 	cl.Spec.UserLabels["name"] = cl.Spec.Name
 	cl.Spec.UserLabels[config.LABEL_PG_CLUSTER] = cl.Spec.ClusterName
-	//end refactor section
 
 	archivePVCName := ""
 	archiveMode := "off"
@@ -88,7 +85,6 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	if cl.Labels[config.LABEL_BACKREST] == "true" {
 		//backrest requires us to turn on archive mode
 		archiveMode = "on"
-		//archivePVCName = cl.Spec.Name + "-xlog"
 		//backrest doesn't use xlog, so we make the pvc an emptydir
 		//by setting the name to empty string
 		archivePVCName = ""
@@ -108,6 +104,9 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	// Set the Patroni scope to the name of the primary deployment.  Replicas will get scope using the
 	// 'crunchy-pgha-scope' label on the pgcluster
 	cl.Spec.UserLabels[config.LABEL_PGHA_SCOPE] = cl.Spec.Name
+
+	// set up a map of the names of the tablespaces as well as the storage classes
+	tablespaceStorageTypeMap := operator.GetTablespaceStorageTypeMap(cl.Spec.TablespaceMounts)
 
 	//create the primary deployment
 	deploymentFields := operator.DeploymentTemplateFields{
@@ -147,6 +146,9 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		EnableCrunchyadm:         operator.Pgo.Cluster.EnableCrunchyadm,
 		ReplicaReinitOnStartFail: !operator.Pgo.Cluster.DisableReplicaStartFailReinit,
 		SyncReplication:          operator.GetSyncReplication(cl.Spec.SyncReplication),
+		Tablespaces:              operator.GetTablespaceNames(tablespaceStorageTypeMap),
+		TablespaceVolumes:        operator.GetTablespaceVolumesJSON(cl.Spec.Name, tablespaceStorageTypeMap),
+		TablespaceVolumeMounts:   operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
 	}
 
 	// create the default configuration file for crunchy-postgres-ha if custom config file not provided
@@ -294,6 +296,26 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 
 	cluster.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = replica.Spec.Name
 
+	// iterate through all of the tablespaces and attempt to create their PVCs
+	// for the replcia
+	for tablespaceName, storageSpec := range cluster.Spec.TablespaceMounts {
+		// attempt to create the tablespace PVC. If it fails to create, log the
+		// error and publish the failure event
+		// Note that we specify **replica.Spec.Name** in order to create distinct
+		// PVCs for this replica, but we use the **cluster.Spec.ClusterName** for the
+		// "pgcluster" Label
+		tablespacePVCName := operator.GetTablespacePVCName(replica.Spec.Name, tablespaceName)
+
+		if err := CreateTablespacePVC(clientset, namespace, cluster.Spec.ClusterName, tablespacePVCName, &storageSpec); err != nil {
+			log.Error(err)
+			publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
+			return err
+		}
+	}
+
+	// set up a map of the names of the tablespaces as well as the storage classes
+	tablespaceStorageTypeMap := operator.GetTablespaceStorageTypeMap(cluster.Spec.TablespaceMounts)
+
 	//create the replica deployment
 	replicaDeploymentFields := operator.DeploymentTemplateFields{
 		Name:               replica.Spec.Name,
@@ -331,6 +353,9 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		EnableCrunchyadm:         operator.Pgo.Cluster.EnableCrunchyadm,
 		ReplicaReinitOnStartFail: !operator.Pgo.Cluster.DisableReplicaStartFailReinit,
 		SyncReplication:          operator.GetSyncReplication(cluster.Spec.SyncReplication),
+		Tablespaces:              operator.GetTablespaceNames(tablespaceStorageTypeMap),
+		TablespaceVolumes:        operator.GetTablespaceVolumesJSON(replica.Spec.Name, tablespaceStorageTypeMap),
+		TablespaceVolumeMounts:   operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {
@@ -392,6 +417,32 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 	}
 
 	return err
+}
+
+// CreateTablespacePVC creates a PVC for a tablespace, whether its a part of a
+// cluster creation, scale, or other workflows
+func CreateTablespacePVC(clientset *kubernetes.Clientset, namespace, clusterName, tablespacePVCName string, storageSpec *crv1.PgStorageSpec) error {
+	// determine if the PVC already exists. If it exists, proceed onward. If it
+	// exists and there is an error, return
+	_, found, err := kubeapi.GetPVC(clientset, tablespacePVCName, namespace)
+
+	if found {
+		log.Debugf("tablespace pvc %s found, will NOT recreate", tablespacePVCName)
+		return nil
+	} else if found && err != nil {
+		// log the error in the calling function
+		return err
+	}
+
+	// try to create the PVC for the tablespace. if it cannot be created, return
+	// an error and allow the caller to handle it
+	if _, err = pvc.CreatePVC(clientset, storageSpec, tablespacePVCName, clusterName, namespace); err != nil {
+		return err
+	}
+
+	log.Debugf("created tablespace pvc [%s]", tablespacePVCName)
+
+	return nil
 }
 
 // DeleteReplica ...

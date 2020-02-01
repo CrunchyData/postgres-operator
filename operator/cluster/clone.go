@@ -682,10 +682,13 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 	}
 }
 
-// createPVCs is the first step in cloning a PostgreSQL cluster. It creates two
-// PVCs that are required for operating a PostgreSQL cluster:
+// createPVCs is the first step in cloning a PostgreSQL cluster. It creates
+// several PVCs that are required for operating a PostgreSQL cluster:
 // - the PVC that stores the PostgreSQL PGDATA
 // - the PVC that stores the pgBackRest repo
+//
+// Additionally, if there are any tablespaces on the original cluster, it will
+// create those too.
 func createPVCs(clientset *kubernetes.Clientset, client *rest.RESTClient, namespace string, sourcePgcluster crv1.Pgcluster, targetClusterName string) {
 	// first, create the PVC for the pgBackRest storage, as we will be needing
 	// that sooner
@@ -709,6 +712,24 @@ func createPVCs(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		RESTClient: client,
 		Storage:    sourcePgcluster.Spec.PrimaryStorage,
 	}.createPVC()
+
+	// if there are any tablespacs, create PVCs for those
+	for tablespaceName, storageSpec := range sourcePgcluster.Spec.TablespaceMounts {
+		// generate the tablespace PVC name from the name of the clone cluster and
+		// the name of this tablespace
+		tablespacePVCName := operator.GetTablespacePVCName(targetClusterName, tablespaceName)
+		// though there are some helper functions for creating a PVC, we will use
+		// the "CreatePVC" function that is here
+		CreatePVC{
+			Clientset:   clientset,
+			ClusterName: targetClusterName,
+			Namespace:   namespace,
+			// the PVCName is the same as the target cluster
+			PVCName:    tablespacePVCName,
+			RESTClient: client,
+			Storage:    storageSpec,
+		}.createPVC()
+	}
 }
 
 func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, task *crv1.Pgtask, sourcePgcluster crv1.Pgcluster, namespace string, targetClusterName string, workflowID string) error {
@@ -749,11 +770,14 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 			},
 		},
 		Spec: crv1.PgclusterSpec{
-			ArchiveStorage:  sourcePgcluster.Spec.ArchiveStorage,
-			BackrestStorage: sourcePgcluster.Spec.BackrestStorage,
-			ClusterName:     targetClusterName,
-			CCPImage:        sourcePgcluster.Spec.CCPImage,
-			CCPImageTag:     sourcePgcluster.Spec.CCPImageTag,
+			ArchiveStorage:     sourcePgcluster.Spec.ArchiveStorage,
+			BackrestStorage:    sourcePgcluster.Spec.BackrestStorage,
+			BackrestS3Bucket:   sourcePgcluster.Spec.BackrestS3Bucket,
+			BackrestS3Endpoint: sourcePgcluster.Spec.BackrestS3Endpoint,
+			BackrestS3Region:   sourcePgcluster.Spec.BackrestS3Region,
+			ClusterName:        targetClusterName,
+			CCPImage:           sourcePgcluster.Spec.CCPImage,
+			CCPImageTag:        sourcePgcluster.Spec.CCPImageTag,
 			// We're not copying over the collect container in the clone...but we will
 			// maintain the secret in case one brings up the collect container
 			CollectSecretName:  fmt.Sprintf("%s%s", targetClusterName, crv1.CollectSecretSuffix),
@@ -767,6 +791,7 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 			// NodeName is not set as in the future this will be a parameter we allow
 			// the user to pass in
 			PGBadgerPort:      sourcePgcluster.Spec.PGBadgerPort,
+			PodAntiAffinity:   sourcePgcluster.Spec.PodAntiAffinity,
 			Policies:          sourcePgcluster.Spec.Policies,
 			Port:              sourcePgcluster.Spec.Port,
 			PrimaryHost:       sourcePgcluster.Spec.PrimaryHost,
@@ -784,18 +809,17 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 			SecretFrom: sourcePgcluster.Spec.ClusterName,
 			// Strategy is set to "1" because it's already hardcoded elsewhere as this,
 			// and I don't want to touch it at this point
-			Strategy:           "1",
-			User:               sourcePgcluster.Spec.User,
-			UserSecretName:     fmt.Sprintf("%s-%s%s", targetClusterName, sourcePgcluster.Spec.User, crv1.UserSecretSuffix),
-			BackrestS3Bucket:   sourcePgcluster.Spec.BackrestS3Bucket,
-			BackrestS3Endpoint: sourcePgcluster.Spec.BackrestS3Endpoint,
-			BackrestS3Region:   sourcePgcluster.Spec.BackrestS3Region,
+			Strategy:        "1",
+			SyncReplication: sourcePgcluster.Spec.SyncReplication,
+			User:            sourcePgcluster.Spec.User,
+			UserSecretName:  fmt.Sprintf("%s-%s%s", targetClusterName, sourcePgcluster.Spec.User, crv1.UserSecretSuffix),
 			// UserLabels can be further expanded, but for now we will just track
 			// which version of pgo is creating this
 			UserLabels: map[string]string{
 				config.LABEL_PGO_VERSION:           msgs.PGO_VERSION,
 				config.LABEL_BACKREST_STORAGE_TYPE: sourcePgcluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE],
 			},
+			TablespaceMounts: sourcePgcluster.Spec.TablespaceMounts,
 		},
 		Status: crv1.PgclusterStatus{
 			State:   crv1.PgclusterStateCreated,
