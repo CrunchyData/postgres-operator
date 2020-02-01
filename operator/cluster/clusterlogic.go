@@ -198,7 +198,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	// determine if any of the container images need to be overridden
 	operator.OverrideClusterContainerImages(deployment.Spec.Template.Spec.Containers)
 
-	if deploymentExists(clientset, namespace, cl.Spec.Name) == false {
+	if _, found, _ := kubeapi.GetDeployment(clientset, cl.Spec.Name, namespace); !found {
 		err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
 		if err != nil {
 			publishClusterCreateFailure(cl, err.Error())
@@ -228,40 +228,6 @@ func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	log.Info("deleting Pgcluster object" + " in namespace " + namespace)
 	log.Info("deleting with Name=" + cl.Spec.Name + " in namespace " + namespace)
 
-	/*
-		//delete the primary and replica deployments and replica sets
-		err = shutdownCluster(clientset, restclient, cl, namespace)
-		if err != nil {
-			log.Error("error deleting primary Deployment " + err.Error())
-		}
-
-		//delete the pgbouncer service if exists
-		//	if cl.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
-		if cl.Labels[config.LABEL_PGBOUNCER] == "true" {
-			DeletePgbouncer(clientset, cl.Spec.Name, namespace)
-		}
-
-		//delete the primary service
-		kubeapi.DeleteService(clientset, cl.Spec.Name, namespace)
-
-		//delete the replica service
-		var found bool
-		_, found, err = kubeapi.GetService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
-		if found {
-			kubeapi.DeleteService(clientset, cl.Spec.Name+ReplicaSuffix, namespace)
-		}
-
-		//delete the backrest repo deployment if necessary
-		if cl.Labels[config.LABEL_BACKREST] == "true" {
-			deleteBackrestRepo(clientset, cl.Spec.Name, namespace)
-		}
-
-		//delete the pgreplicas if necessary
-		DeletePgreplicas(restclient, cl.Spec.Name, namespace)
-
-		//delete any pgtasks for this cluster
-		deletePgtasks(restclient, cl.Spec.Name, namespace)
-	*/
 	//create rmdata job
 	isReplica := false
 	isBackup := false
@@ -277,31 +243,6 @@ func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 
 	return err
 
-}
-
-// shutdownCluster ...
-func shutdownCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) error {
-	var err error
-
-	deployments, err := kubeapi.GetDeployments(clientset,
-		config.LABEL_PG_CLUSTER+"="+cl.Spec.Name, namespace)
-	if err != nil {
-		return err
-	}
-
-	for _, d := range deployments.Items {
-		err = kubeapi.DeleteDeployment(clientset, d.ObjectMeta.Name, namespace)
-	}
-
-	return err
-
-}
-
-// deploymentExists ...
-func deploymentExists(clientset *kubernetes.Clientset, namespace, clusterName string) bool {
-
-	_, found, _ := kubeapi.GetDeployment(clientset, clusterName, namespace)
-	return found
 }
 
 // Scale ...
@@ -462,43 +403,6 @@ func DeleteReplica(clientset *kubernetes.Clientset, cl *crv1.Pgreplica, namespac
 	err = kubeapi.DeleteDeployment(clientset, cl.Spec.Name, namespace)
 
 	return err
-
-}
-
-//delete the backrest repo deployment best effort
-func deleteBackrestRepo(clientset *kubernetes.Clientset, clusterName, namespace string) error {
-	var err error
-
-	depName := clusterName + "-backrest-shared-repo"
-	log.Debugf("deleting the backrest repo deployment and service %s", depName)
-
-	err = kubeapi.DeleteDeployment(clientset, depName, namespace)
-
-	//delete the service for the backrest repo
-	err = kubeapi.DeleteService(clientset, depName, namespace)
-
-	return err
-
-}
-
-// deletePgtasks
-func deletePgtasks(restclient *rest.RESTClient, clusterName, namespace string) {
-
-	taskList := crv1.PgtaskList{}
-
-	//get a list of pgtasks for this cluster
-	err := kubeapi.GetpgtasksBySelector(restclient,
-		&taskList, config.LABEL_PG_CLUSTER+"="+clusterName,
-		namespace)
-	if err != nil {
-		return
-	}
-
-	log.Debugf("pgtasks to remove is %d\n", len(taskList.Items))
-
-	for _, r := range taskList.Items {
-		err = kubeapi.Deletepgtask(restclient, r.Spec.Name, namespace)
-	}
 
 }
 
