@@ -150,10 +150,8 @@ type DeploymentTemplateFields struct {
 	PgmonitorEnvVars    string
 	ScopeLabel          string
 	//next 2 are for the replica deployment only
-	Replicas    string
-	PrimaryHost string
-	// PgBouncer deployment only
-	PgbouncerPass            string
+	Replicas                 string
+	PrimaryHost              string
 	IsInit                   bool
 	EnableCrunchyadm         bool
 	ReplicaReinitOnStartFail bool

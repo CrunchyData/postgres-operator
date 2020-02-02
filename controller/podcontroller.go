@@ -274,12 +274,17 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 						}
 					}
 
-					// if this is a pgbouncer enabled cluster, add authorizations to the database.
+					// if this is a pgbouncer enabled cluster, add a pgbouncer
 					if cluster.Labels[config.LABEL_PGBOUNCER] == "true" {
-						taskoperator.UpdatePgBouncerAuthorizations(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace,
-							newpod.Status.PodIP)
-					}
+						tmptask := crv1.Pgtask{}
+						taskName := fmt.Sprintf("%s-%s", config.LABEL_PGBOUNCER_TASK_ADD, clusterName)
 
+						// attempt to find the pgbouncer pgtask. If one does not exist
+						// create it!
+						if found, _ := kubeapi.Getpgtask(c.PodClient, &tmptask, taskName, newpod.ObjectMeta.Namespace); !found {
+							clusteroperator.CreatePgTaskforAddpgBouncer(c.PodClient, cluster, cluster.Labels[config.LABEL_PGOUSER])
+						}
+					}
 				}
 			}
 		}

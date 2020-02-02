@@ -45,14 +45,6 @@
                     }],
                     {{.ContainerResources }}
                     "env": [{
-                        "name": "PG_USERNAME",
-                        "valueFrom": {
-                            "secretKeyRef": {
-                                "name": "{{.PGBouncerSecret}}",
-                                "key": "username"
-                            }
-                        }
-                    }, {
                         "name": "PG_PASSWORD",
                         "valueFrom": {
                             "secretKeyRef": {
@@ -63,9 +55,6 @@
                     }, {
                         "name": "PG_PRIMARY_SERVICE_NAME",
                         "value": "{{.PrimaryServiceName}}"
-                    }, {
-                        "name": "PG_REPLICA_SERVICE_NAME",
-                        "value": "{{.ReplicaServiceName}}"
                     }],
                     "volumeMounts": [{
                         "name": "pgbouncer-conf",

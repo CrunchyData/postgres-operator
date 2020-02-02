@@ -84,7 +84,7 @@ func CreatePgbouncerHandler(w http.ResponseWriter, r *http.Request) {
 the documentation consistent with the API this endpoint is documented along with the
 /pgbouncer (DELETE) enpoint. This endpoint should be deprecated in future API versions.
 */
-// swagger:operation POST /pgbouncerdelete pgbouncerservice pgbouncerdelete
+// swagger:operation DELETE /pgbouncer pgbouncerservice pgbouncer-delete
 /*```
 Delete a pgbouncer from a cluster
 */

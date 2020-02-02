@@ -23,8 +23,6 @@ type CreatePgbouncerRequest struct {
 	Args          []string
 	Selector      string
 	Namespace     string
-	PgbouncerUser string
-	PgbouncerPass string
 	ClientVersion string
 }
 
@@ -42,6 +40,7 @@ type DeletePgbouncerRequest struct {
 	Selector      string
 	Namespace     string
 	ClientVersion string
+	Uninstall     bool
 }
 
 // DeletePgbouncerResponse ...

@@ -476,9 +476,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	resp.Results = make([]string, 0)
 	clusterName := request.Name
 
-	// set the generated password length for random password generation
-	generatedPasswordLength := util.GeneratedPasswordLength(apiserver.Pgo.Cluster.PasswordLength)
-
 	if clusterName == "all" {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "invalid cluster name 'all' is not allowed as a cluster name"
@@ -599,29 +596,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		if request.BackrestStorageType != "" {
 			log.Debug("using backrest storage type provided by user")
 			userLabelsMap[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
-		}
-
-		if request.PgbouncerFlag {
-			// set flag at cluster level later
-			// userLabelsMap[config.LABEL_PGBOUNCER] = "true"
-
-			// need to create password to be added to postgres container and pgbouncer credential...
-			if len(request.PgbouncerPass) > 0 {
-				userLabelsMap[config.LABEL_PGBOUNCER_PASS] = request.PgbouncerPass
-			} else {
-				userLabelsMap[config.LABEL_PGBOUNCER_PASS] = util.GeneratePassword(generatedPasswordLength)
-
-			}
-
-			// default pgbouncer user to "pgbouncer" - request should be empty until configurable user is implemented.
-			if len(request.PgbouncerUser) > 0 {
-				userLabelsMap[config.LABEL_PGBOUNCER_USER] = request.PgbouncerUser
-			} else {
-				userLabelsMap[config.LABEL_PGBOUNCER_USER] = "pgbouncer"
-			}
-
-			userLabelsMap[config.LABEL_PGBOUNCER_SECRET] = request.PgbouncerSecret
-
 		}
 
 		log.Debug("userLabelsMap")
@@ -985,7 +959,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	// pgBackRest was not the only way
 	labels[config.LABEL_BACKREST] = "true"
 
-	// pgbouncer
+	// if the pgBouncer flag is set to true, add a label to indicate that this
+	// cluster shoul dhave a pgbouncer
 	if request.PgbouncerFlag {
 		labels[config.LABEL_PGBOUNCER] = "true"
 	}
