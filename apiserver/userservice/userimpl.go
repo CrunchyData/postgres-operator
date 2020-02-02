@@ -19,7 +19,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"math/rand"
 	"regexp"
 	"strconv"
@@ -35,7 +34,6 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -177,8 +175,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 						log.Debugf("RoleName %s Role Valid Until %s", v.Rolname, v.Rolvaliduntil)
 						newPassword := GeneratePassword(request.PasswordLength)
 						newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-						pgbouncer := cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true"
-						err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, request.Namespace, pgbouncer, request.PasswordLength)
+						err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, request.Namespace, request.PasswordLength)
 						if err != nil {
 							log.Error("error in updating password")
 							resp.Status.Code = msgs.Error
@@ -195,9 +192,8 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 				log.Debug(msg)
 				resp.Results = append(resp.Results, msg)
 				newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
-				pgbouncer := cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true"
 
-				err = updatePassword(cluster.Spec.Name, info, request.Username, request.Password, newExpireDate, request.Namespace, pgbouncer, request.PasswordLength)
+				err = updatePassword(cluster.Spec.Name, info, request.Username, request.Password, newExpireDate, request.Namespace, request.PasswordLength)
 				if err != nil {
 					log.Error(err.Error())
 					resp.Status.Code = msgs.Error
@@ -300,7 +296,7 @@ func callDB(info connInfo, clusterName, maxdays string) []pswResult {
 }
 
 // updatePassword ...
-func updatePassword(clusterName string, p connInfo, username, newPassword, passwordExpireDate, namespace string, pgbouncer bool, passwordLength int) error {
+func updatePassword(clusterName string, p connInfo, username, newPassword, passwordExpireDate, namespace string, passwordLength int) error {
 	var err error
 	var conn *sql.DB
 
@@ -353,14 +349,6 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 	if err != nil {
 		log.Debug(err.Error())
 		return err
-	}
-
-	if pgbouncer {
-		err := reconfigurePgbouncer(clusterName, namespace)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
 	}
 
 	return err
@@ -719,8 +707,7 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 		}
 		newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
 
-		pgbouncer := c.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true"
-		err = updatePassword(c.Name, info, request.Username, newPassword, newExpireDate, request.Namespace, pgbouncer, request.PasswordLength)
+		err = updatePassword(c.Name, info, request.Username, newPassword, newExpireDate, request.Namespace, request.PasswordLength)
 		if err != nil {
 			log.Error(err.Error())
 			resp.Status.Code = msgs.Error
@@ -846,19 +833,6 @@ func DeleteUser(request *msgs.DeleteUserRequest, pgouser string) msgs.DeleteUser
 		msg = request.Username + " on " + clusterName + " removed managed=" + strconv.FormatBool(managed)
 		log.Debug(msg)
 		response.Results = append(response.Results, msg)
-
-		//see if any connection proxies (e.g. pgbouncer) need to be reconfigured
-		if managed {
-			if cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
-				err := reconfigurePgbouncer(clusterName, request.Namespace)
-				if err != nil {
-					log.Error(err)
-					response.Status.Code = msgs.Error
-					response.Status.Msg = err.Error()
-					return response
-				}
-			}
-		}
 
 		//publish event for delete user
 		topics := make([]string, 1)
@@ -1024,45 +998,6 @@ func deleteUserSecret(clientset *kubernetes.Clientset, clustername, username, na
 	secretName := clustername + "-" + username + "-secret"
 
 	err := kubeapi.DeleteSecret(clientset, secretName, namespace)
-	return err
-}
-
-func reconfigurePgbouncer(clusterName, ns string) error {
-	var err error
-	spec := crv1.PgtaskSpec{}
-	spec.Namespace = ns
-	spec.Name = config.LABEL_PGBOUNCER_TASK_RECONFIGURE + "-" + clusterName
-	spec.TaskType = crv1.PgtaskReconfigurePgbouncer
-	spec.StorageSpec = crv1.PgStorageSpec{}
-	spec.Parameters = make(map[string]string)
-	spec.Parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER] = clusterName
-
-	newInstance := &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name: spec.Name,
-		},
-		Spec: spec,
-	}
-
-	newInstance.ObjectMeta.Labels = make(map[string]string)
-	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
-	newInstance.ObjectMeta.Labels[config.LABEL_PGBOUNCER_TASK_RECONFIGURE] = "true"
-
-	//try deleting any previous pgtask for this cluster
-	err = kubeapi.Deletepgtask(apiserver.RESTClient, spec.Name, ns)
-	if kerrors.IsNotFound(err) {
-		log.Debugf("pgtask %s is not found prior which is ok", spec.Name)
-	} else if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	//create the pgtask
-	err = kubeapi.Createpgtask(apiserver.RESTClient, newInstance, ns)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
 	return err
 }
 

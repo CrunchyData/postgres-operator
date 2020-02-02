@@ -217,7 +217,6 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.ServiceType = ServiceType
 	r.AutofailFlag = !DisableAutofailFlag
 	r.PgbouncerFlag = PgbouncerFlag
-	r.PgbouncerPass = PgBouncerPassword
 	//r.ArchiveFlag = ArchiveFlagg
 	r.BackrestStorageType = BackrestStorageType
 	r.CustomConfig = CustomConfig
@@ -235,12 +234,6 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	// only set SyncReplication in the request if actually provided via the CLI
 	if createClusterCmd.Flag("sync-replication").Changed {
 		r.SyncReplication = &SyncReplication
-	}
-
-	if !(len(PgBouncerUser) > 0) {
-		r.PgbouncerUser = "pgbouncer"
-	} else {
-		r.PgbouncerUser = PgBouncerUser
 	}
 
 	response, err := api.CreateCluster(httpclient, &SessionCredentials, r)

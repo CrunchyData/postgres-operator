@@ -64,9 +64,6 @@ type CreateClusterRequest struct {
 	BackrestStorageType string
 	//BackrestRestoreFrom  string
 	PgbouncerFlag        bool
-	PgbouncerSecret      string
-	PgbouncerPass        string
-	PgbouncerUser        string
 	CustomConfig         string
 	StorageConfig        string
 	ReplicaStorageConfig string

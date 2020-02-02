@@ -22,6 +22,11 @@ import (
 	"os"
 )
 
+// PgBouncerUninstall is used to ensure the objects intalled in PostgreSQL on
+// behalf of pgbouncer are either not applied (in the case of a cluster create)
+// or are removed (in the case of a pgo delete pgbouncer)
+var PgBouncerUninstall bool
+
 func createPgbouncer(args []string, ns string) {
 
 	if Selector == "" && len(args) == 0 {
@@ -34,14 +39,6 @@ func createPgbouncer(args []string, ns string) {
 	r.Namespace = ns
 	r.Selector = Selector
 	r.ClientVersion = msgs.PGO_VERSION
-	r.PgbouncerUser = "pgbouncer"
-	r.PgbouncerPass = PgBouncerPassword
-
-	if !(len(PgBouncerUser) > 0) {
-		r.PgbouncerUser = "pgbouncer"
-	} else {
-		r.PgbouncerUser = PgBouncerUser
-	}
 
 	response, err := api.CreatePgbouncer(httpclient, &SessionCredentials, r)
 	if err != nil {
@@ -70,13 +67,16 @@ func deletePgbouncer(args []string, ns string) {
 		return
 	}
 
-	r := new(msgs.DeletePgbouncerRequest)
-	r.Args = args
-	r.Selector = Selector
-	r.Namespace = ns
-	r.ClientVersion = msgs.PGO_VERSION
+	// set up the API request
+	request := msgs.DeletePgbouncerRequest{
+		Args:          args,
+		ClientVersion: msgs.PGO_VERSION,
+		Selector:      Selector,
+		Namespace:     ns,
+		Uninstall:     PgBouncerUninstall,
+	}
 
-	response, err := api.DeletePgbouncer(httpclient, &SessionCredentials, r)
+	response, err := api.DeletePgbouncer(httpclient, &SessionCredentials, &request)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)

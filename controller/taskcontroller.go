@@ -131,13 +131,10 @@ func (c *PgtaskController) processNextItem() bool {
 		clusteroperator.AddUpgrade(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
 	case crv1.PgtaskDeletePgbouncer:
 		log.Debug("delete pgbouncer task added")
-		clusteroperator.DeletePgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
-	case crv1.PgtaskReconfigurePgbouncer:
-		log.Debug("Reconfiguredelete pgbouncer task added")
-		clusteroperator.ReconfigurePgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
+		clusteroperator.DeletePgbouncerFromPgTask(c.PgtaskClientset, c.PgtaskClient, c.PgtaskConfig, &tmpTask)
 	case crv1.PgtaskAddPgbouncer:
 		log.Debug("add pgbouncer task added")
-		clusteroperator.AddPgbouncerFromTask(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
+		clusteroperator.AddPgbouncerFromPgTask(c.PgtaskClientset, c.PgtaskClient, c.PgtaskConfig, &tmpTask)
 	case crv1.PgtaskFailover:
 		log.Debug("failover task added")
 		if !dupeFailover(c.PgtaskClient, &tmpTask, keyNamespace) {
@@ -182,9 +179,6 @@ func (c *PgtaskController) processNextItem() bool {
 	case crv1.PgtaskBenchmark:
 		log.Debug("benchmark task added")
 		benchmarkoperator.Create(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask)
-
-	case crv1.PgtaskUpdatePgbouncerAuths:
-		log.Debug("Pgbouncer update credential task was found...will be handled by pod controller when ready")
 
 	case crv1.PgtaskCloneStep1, crv1.PgtaskCloneStep2, crv1.PgtaskCloneStep3:
 		log.Debug("clone task added [%s]", keyResourceName)

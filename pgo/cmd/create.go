@@ -30,12 +30,9 @@ var ReplicaStorageConfig, StorageConfig string
 var CustomConfig string
 var ArchiveFlag, DisableAutofailFlag, EnableAutofailFlag, PgbouncerFlag, MetricsFlag, BadgerFlag bool
 var BackrestRestoreFrom string
-var PgbouncerSecret string
 var CCPImage string
 var CCPImageTag string
 var Password string
-var PgBouncerPassword string
-var PgBouncerUser string
 var SecretFrom string
 var PoliciesFlag, PolicyFile, PolicyURL string
 var UserLabels string
@@ -113,12 +110,6 @@ var createClusterCmd = &cobra.Command{
 			Namespace = PGONamespace
 		}
 		log.Debug("create cluster called")
-
-		// handle pgbouncer username and pass fields if --pgbouncer flag not specified.
-		if !PgbouncerFlag && ((len(PgBouncerUser) > 0) || (len(PgBouncerPassword) > 0)) {
-			fmt.Println("Error: The --pgbouncer flag is required when specifying --pgbouncer-user or --pgbouncer-pass.")
-			return
-		}
 
 		if len(args) != 1 {
 			fmt.Println(`Error: A single cluster name is required for this command.`)
@@ -249,8 +240,6 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the primary database. If not set, any node is used.")
 	createClusterCmd.Flags().StringVarP(&ServiceType, "service-type", "", "", "The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.")
 	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users.")
-	//	createClusterCmd.Flags().StringVarP(&PgBouncerUser, "pgbouncer-user", "", "", "Username for the crunchy-pgboucer deployment, default is 'pgbouncer'.")
-	createClusterCmd.Flags().StringVarP(&PgBouncerPassword, "pgbouncer-pass", "", "", "Password for the pgbouncer user of the crunchy-pgboucer deployment.")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets.")
 	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster.")
 	createClusterCmd.Flags().StringVarP(&TablespaceMounts, "tablespaces", "", "", "A list of extra mounts to create for tablespaces. The format is a comma seperated list of <mountName>=<storageConfig>")
@@ -303,8 +292,6 @@ func init() {
 	createUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")
 	createUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 0, "If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.")
 
-	// createPgbouncerCmd.Flags().StringVarP(&PgBouncerUser, "pgbouncer-user", "", "", "Username for the crunchy-pgboucer deployment, default is 'pgbouncer'.")
-	createPgbouncerCmd.Flags().StringVarP(&PgBouncerPassword, "pgbouncer-pass", "", "", "Password for the pgbouncer user of the crunchy-pgboucer deployment.")
 	createPgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 
 }

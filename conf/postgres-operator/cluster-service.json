@@ -11,13 +11,7 @@
   },
   "spec": {
     "ports": [
-      {
-        "name": "postgres",
-        "protocol": "TCP",
-        "port": {{.Port}},
-        "targetPort": {{.Port}},
-        "nodePort": 0
-      },
+      {{ if .PGBadgerPort }}
       {
         "name": "pgbadger",
         "protocol": "TCP",
@@ -25,6 +19,17 @@
         "targetPort": {{.PGBadgerPort}},
         "nodePort": 0
       },
+      {{ end }}
+      {{ if .ExporterPort }}
+      {
+        "name": "postgres-exporter",
+        "protocol": "TCP",
+        "port": {{.ExporterPort}},
+        "targetPort": {{.ExporterPort}},
+        "nodePort": 0
+      },
+      {{ end }}
+      {{ if or (eq .Name .ClusterName) (eq .Name (printf "%s%s" .ClusterName "-replica")) }}
       {
         "name": "sshd",
         "protocol": "TCP",
@@ -33,17 +38,18 @@
         "nodePort": 0
       },
       {
-        "name": "postgres-exporter",
-        "protocol": "TCP",
-        "port": {{.ExporterPort}},
-        "targetPort": {{.ExporterPort}},
-        "nodePort": 0
-      },
-      {
         "name": "patroni",
         "protocol": "TCP",
         "port": 8009,
         "targetPort": 8009,
+        "nodePort": 0
+      },
+      {{ end }}
+      {
+        "name": "postgres",
+        "protocol": "TCP",
+        "port": {{.Port}},
+        "targetPort": {{.Port}},
         "nodePort": 0
       }
     ],

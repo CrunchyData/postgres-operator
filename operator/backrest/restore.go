@@ -347,8 +347,6 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	// set up a map of the names of the tablespaces as well as the storage classes
 	tablespaceStorageTypeMap := operator.GetTablespaceStorageTypeMap(cluster.Spec.TablespaceMounts)
 
-	log.Debugf("creating restored PG deployment with bouncer pass of [%s]", cluster.Spec.UserLabels[config.LABEL_PGBOUNCER_PASS])
-
 	deploymentFields := operator.DeploymentTemplateFields{
 		Name:               restoreToName,
 		IsInit:             true,
