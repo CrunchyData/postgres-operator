@@ -24,7 +24,6 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 
-	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
