@@ -225,22 +225,27 @@ func CreateBackup(restclient *rest.RESTClient, namespace, clusterName, podName s
 func CleanBackupResources(restclient *rest.RESTClient, clientset *kubernetes.Clientset, namespace,
 	clusterName string) error {
 
-	pgtask := crv1.Pgtask{}
 	taskName := "backrest-backup-" + clusterName
-	// error if it already exists
-	found, err := kubeapi.Getpgtask(restclient, &pgtask, taskName, namespace)
-	if !found {
-		log.Debugf("backrest backup pgtask %s was not found so we will create it", taskName)
-	} else if err != nil {
+	// lookup the pgBackRest backup pgtask for the cluster to determine if it exsits
+	found, err := kubeapi.Getpgtask(restclient, &crv1.Pgtask{}, taskName, namespace)
+	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	log.Debugf("pgtask %s was found so we will recreate it", taskName)
-	//remove the existing pgtask
-	err = kubeapi.Deletepgtask(restclient, taskName, namespace)
-	if err != nil {
-		return err
+	// if the pgBackRest backup pgtask exits, then delete it so that a new pgBackRest backup
+	// pgtask can be created in order to initiate a new backup
+	if found {
+		log.Debugf("pgtask %s was found when cleaning backup resources prior to creating a new "+
+			"backrest backup pgtask and will be deleted", taskName)
+		// delete the existing pgBackRest backup pgtask
+		err = kubeapi.Deletepgtask(restclient, taskName, namespace)
+		if err != nil {
+			return err
+		}
+	} else {
+		log.Debugf("pgtask %s was not found when cleaning backup resources prior to creating a "+
+			"new backrest backup pgtask", taskName)
 	}
 
 	//remove previous backup job
