@@ -284,7 +284,7 @@ This will create a PostgreSQL cluster named `hippo`. It may take a few moments f
 pgo test -n pgouser1 hippo
 ```
 
-When everything is up and running, you should seet output similar to this:
+When everything is up and running, you should see output similar to this:
 
 ```
 cluster : hippo
