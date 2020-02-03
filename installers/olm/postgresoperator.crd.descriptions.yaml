@@ -84,7 +84,6 @@
       description: Attributes that help set the primary storage of a PostgreSQL cluster
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:PrimaryStorage'
-        - 'urn:alm:descriptor:com.tectonic.ui:label'
     - path: PrimaryStorage.name
       value: "hippo"
       displayName: PostgreSQL Primary Storage Name
