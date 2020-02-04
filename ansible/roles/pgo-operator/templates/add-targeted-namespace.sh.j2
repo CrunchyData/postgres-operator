@@ -29,15 +29,16 @@ PG_SA="pgo-pg"
 # create the namespace if necessary
 {{ kubectl_or_oc }} get ns {{ item }}  > /dev/null
 if [ $? -eq 0 ]; then
-	echo "namespace" {{ item }} "already exists, adding labels"
-	# set the labels so that existing namespace is owned by this installation
-	{{ kubectl_or_oc }} label namespace/{{ item }} pgo-created-by=add-script
-	{{ kubectl_or_oc }} label namespace/{{ item }} vendor=crunchydata
-	{{ kubectl_or_oc }} label namespace/{{ item }} pgo-installation-name={{ pgo_installation_name }}
+	echo "namespace" {{ item }} "already exists"
 else
 	echo "namespace" {{ item }} "is new"
 	{{ kubectl_or_oc }} create ns {{ item }}
 fi
+
+# set the labels so that this namespace is owned by this installation
+{{ kubectl_or_oc }} label namespace/{{ item }} pgo-created-by=add-script
+{{ kubectl_or_oc }} label namespace/{{ item }} vendor=crunchydata
+{{ kubectl_or_oc }} label namespace/{{ item }} pgo-installation-name={{ pgo_installation_name }}
 
 # determine if an existing pod is using the 'pgo-pg' service account.  if so, do not delete
 # and recreate the SA or its associated role and role binding.  this is to avoid any undesired
