@@ -61,7 +61,7 @@ const (
 func CreateBackrestRepoSecrets(clientset *kubernetes.Clientset,
 	backrestRepoConfig BackrestRepoConfig) error {
 
-	keys, err := sshutil.NewPrivatePublicKeyPair(config.DEFAULT_BACKREST_SSH_KEY_BITS)
+	keys, err := sshutil.NewPrivatePublicKeyPair()
 	if err != nil {
 		return err
 	}

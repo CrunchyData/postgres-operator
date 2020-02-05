@@ -291,7 +291,6 @@ const DEFAULT_PGBADGER_PORT = "10000"
 const DEFAULT_EXPORTER_PORT = "9187"
 const DEFAULT_POSTGRES_PORT = "5432"
 const DEFAULT_PATRONI_PORT = "8009"
-const DEFAULT_BACKREST_SSH_KEY_BITS = 2048
 
 func (c *PgoConfig) Validate() error {
 	var err error
