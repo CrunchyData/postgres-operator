@@ -1,10 +1,10 @@
 package sshutil
 
 import (
-	"math/rand"
+	"bytes"
 	"crypto/ed25519"
 	"encoding/pem"
-	"bytes"
+	"math/rand"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -16,7 +16,7 @@ type SSHKey struct {
 }
 
 // NewPrivatePublicKeyPair generates a an ed25519 ssh private and public key
-func NewPrivatePublicKeyPair(bits int) (SSHKey, error) {
+func NewPrivatePublicKeyPair() (SSHKey, error) {
 	var keys SSHKey
 
 	pub, priv, err := ed25519.GenerateKey(nil)
@@ -37,6 +37,9 @@ func NewPrivatePublicKeyPair(bits int) (SSHKey, error) {
 	return keys, nil
 }
 
+// newPublicKey generates a byte slice containing an public key that can be used
+// to ssh. This key is based off of the ed25519.PublicKey type The function is
+// only used by NewPrivatePublicKeyPair
 func newPublicKey(key ed25519.PublicKey) ([]byte, error) {
 	pubKey, err := ssh.NewPublicKey(key)
 	if err != nil {
@@ -45,8 +48,15 @@ func newPublicKey(key ed25519.PublicKey) ([]byte, error) {
 	return ssh.MarshalAuthorizedKey(pubKey), nil
 }
 
+// newPrivateKey generates a byte slice containing an OpenSSH private ssh key.
+// This key is based off of the ed25519.PrivateKey type. The function is only
+// used by NewPrivatePublicKeyPair
 func newPrivateKey(key ed25519.PrivateKey) ([]byte, error) {
+	// The following link describes the private key format for OpenSSH. It
+	// oulines the structs that are used to generate the OpenSSH private key
+	// from the ed25519 private key
 	// https://anongit.mindrot.org/openssh.git/tree/PROTOCOL.key?h=V_8_1_P1
+
 	const authMagic = "openssh-key-v1"
 	const noneCipherBlockSize = 8
 
@@ -90,6 +100,8 @@ func newPrivateKey(key ed25519.PrivateKey) ([]byte, error) {
 		Public:  private.Public,
 	}
 
+	// The overall key consists of a header, a list of public keys, and
+	// an encrypted list of matching private keys.
 	overall := struct {
 		CipherName   string
 		KDFName      string
