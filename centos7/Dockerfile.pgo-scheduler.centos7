@@ -9,6 +9,7 @@ LABEL name="pgo-scheduler" \
 
 RUN yum -y install epel-release \
 	&& yum -y install \
+                --setopt=skip_missing_names_on_install=False \
 		gettext \
 		hostname  \
 		nss_wrapper \

@@ -7,14 +7,13 @@ LABEL name="pgo-sqlrunner" \
 	summary="Crunchy PostgreSQL Operator - SQL Runner" \
 	description="Crunchy PostgreSQL Operator - SQL Runner"
 
-ENV PGVERSION="12" PGDG_REPO="pgdg-redhat-repo-latest.noarch.rpm"
+ENV PGVERSION="12"
 
 ENV PGROOT="/usr/pgsql-${PGVERSION}"
 
-RUN rpm -Uvh https://download.postgresql.org/pub/repos/yum/${PGVERSION}/redhat/rhel-7-x86_64/${PGDG_REPO}
-
 RUN yum -y install epel-release \
 	&& yum -y install \
+                --setopt=skip_missing_names_on_install=False \
 		gettext \
 		hostname  \
 		nss_wrapper \
