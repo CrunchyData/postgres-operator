@@ -23,7 +23,6 @@ Cluster:
   BackrestS3Endpoint:
   BackrestS3Region:
   DisableAutofail:  false
-  AutofailReplaceReplica:  false
   LogStatement:  none
   LogMinDurationStatement:  60000
   PodAntiAffinity: preferred
@@ -99,7 +98,6 @@ ContainerResources:
     LimitsMemory:  2Gi
     LimitsCPU:  4.0
 Pgo:
-  AutofailSleepSeconds:  9
   PreferredFailoverNode:
   Audit:  false
   PGOImagePrefix:  crunchydata

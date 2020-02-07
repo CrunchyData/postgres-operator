@@ -15,14 +15,12 @@
     - ccp_image_tag
     - pgo_image_prefix
     - pgo_image_tag
-    - auto_failover
+    - disable_auto_failover
     - backrest
     - badger
     - metrics
     - archive_mode
     - archive_timeout
-    - auto_failover_sleep_secs
-    - auto_failover_replace_replica
     - db_name
     - db_password_age_days
     - db_password_length
