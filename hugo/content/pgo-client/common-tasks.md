@@ -84,8 +84,8 @@ pgo version
 which, if working, will yield results similar to:
 
 ```
-pgo client version 4.2.1
-pgo-apiserver version 4.2.1
+pgo client version 4.2.2
+pgo-apiserver version 4.2.2
 ```
 
 ### Inspecting the PostgreSQL Operator Configuration
@@ -107,7 +107,7 @@ which yields output similar to:
 BasicAuth: ""
 Cluster:
   CCPImagePrefix: crunchydata
-  CCPImageTag: centos7-12.1-4.2.1
+  CCPImageTag: centos7-12.1-4.2.2
   PrimaryNodeLabel: ""
   ReplicaNodeLabel: ""
   Policies: ""
@@ -141,7 +141,7 @@ Pgo:
   PreferredFailoverNode: ""
   Audit: false
   PGOImagePrefix: crunchydata
-  PGOImageTag: centos7-4.2.1
+  PGOImageTag: centos7-4.2.2
 ContainerResources:
   large:
     RequestsMemory: 2Gi
@@ -202,9 +202,9 @@ Claims:                  8
 Total Volume Size:       8Gi       
 
 Database Images:
-                         4	crunchydata/crunchy-postgres-ha:centos7-12.1-4.2.1
-                         4	crunchydata/pgo-backrest-repo:centos7-4.2.1
-                         8	crunchydata/pgo-backrest:centos7-4.2.1
+                         4	crunchydata/crunchy-postgres-ha:centos7-12.1-4.2.2
+                         4	crunchydata/pgo-backrest-repo:centos7-4.2.2
+                         8	crunchydata/pgo-backrest:centos7-4.2.2
 
 Databases Not Ready:
 
@@ -234,7 +234,7 @@ Labels (count > 1): [count] [label]
 	[4]	[pgo-pg-database=true]
 	[4]	[crunchy_collect=false]
 	[4]	[pg-pod-anti-affinity=]
-	[4]	[pgo-version=4.2.1]
+	[4]	[pgo-version=4.2.2]
 	[4]	[archive-timeout=60]
 	[2]	[pg-cluster=hacluster]
 ```
@@ -351,7 +351,7 @@ pgo show cluster hacluster
 which will yield output similar to:
 
 ```
-cluster : hacluster (crunchy-postgres-ha:centos7-12.1-4.2.1)
+cluster : hacluster (crunchy-postgres-ha:centos7-12.1-4.2.2)
 	pod : hacluster-6dc6cfcfb9-f9knq (Running) on node01 (1/1) (primary)
 	pvc : hacluster
 	resources : CPU Limit= Memory Limit=, CPU Request= Memory Request=
@@ -359,7 +359,7 @@ cluster : hacluster (crunchy-postgres-ha:centos7-12.1-4.2.1)
 	deployment : hacluster
 	deployment : hacluster-backrest-shared-repo
 	service : hacluster - ClusterIP (10.102.20.42)
-	labels : pg-pod-anti-affinity= archive-timeout=60 crunchy-pgbadger=false crunchy_collect=false deployment-name=hacluster pg-cluster=hacluster crunchy-pgha-scope=hacluster autofail=true pgo-backrest=true pgo-version=4.2.1 current-primary=hacluster name=hacluster pgouser=pgoadmin workflowid=ae714d12-f5d0-4fa9-910f-21944b41dec8
+	labels : pg-pod-anti-affinity= archive-timeout=60 crunchy-pgbadger=false crunchy_collect=false deployment-name=hacluster pg-cluster=hacluster crunchy-pgha-scope=hacluster autofail=true pgo-backrest=true pgo-version=4.2.2 current-primary=hacluster name=hacluster pgouser=pgoadmin workflowid=ae714d12-f5d0-4fa9-910f-21944b41dec8
 ```
 
 ### Deleting a Cluster
@@ -875,7 +875,7 @@ into your Postgres cluster pod as follows:
 Note: backend metric storage such as Prometheus and front end
 visualization software such as Grafana are not created automatically
 by the PostgreSQL Operator.  For instructions on installing Grafana and
-Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/4.2.1/examples/metrics/metrics/).
+Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/4.2.2/examples/metrics/metrics/).
 
 ### Create a Cluster using Specific Storage
 

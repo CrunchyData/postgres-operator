@@ -4,7 +4,7 @@ Cluster:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-12.1-4.2.1
+  CCPImageTag:  centos7-12.1-4.2.2
   Port:  5432
   PGBadgerPort: 10000
   ExporterPort: 9187
@@ -101,4 +101,4 @@ Pgo:
   PreferredFailoverNode:
   Audit:  false
   PGOImagePrefix:  crunchydata
-  PGOImageTag:  centos7-4.2.1
+  PGOImageTag:  centos7-4.2.2

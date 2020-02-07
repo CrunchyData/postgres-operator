@@ -9,7 +9,7 @@ OLM_VERSION ?= 0.13.0
 PGO_BASEOS ?= centos7
 PGO_IMAGE_PREFIX ?= crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
-PGO_VERSION ?= 4.2.1
+PGO_VERSION ?= 4.2.2
 
 OLM_TOOLS_BASH = docker run --net=host --rm --tty $(DOCKER_ARGS) \
 		 --mount 'type=bind,source=$(KUBECONFIG),target=/root/.kube/config,readonly' \
