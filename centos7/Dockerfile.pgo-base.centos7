@@ -18,3 +18,8 @@ COPY redhat/licenses /licenses
 COPY licenses /licenses
 
 RUN yum -y update && yum -y clean all
+
+# Crunchy PostgreSQL repository
+ADD conf/RPM-GPG-KEY-crunchydata  /
+ADD conf/crunchypg12.repo /etc/yum.repos.d/
+RUN rpm --import RPM-GPG-KEY-crunchydata
