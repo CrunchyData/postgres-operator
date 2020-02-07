@@ -20,13 +20,13 @@ The following environment variables are expected by the steps in this guide:
 
 Variable | Example | Description
 -------- | ------- | -----------
-`GOPATH` | $HOME/odev | Golang project directory 
-`PGOROOT` | $GOPATH/src/github.com/crunchydata/postgres-operator | Operator repository location 
-`PGO_BASEOS` | centos7 | Base OS for container images 
+`GOPATH` | $HOME/odev | Golang project directory
+`PGOROOT` | $GOPATH/src/github.com/crunchydata/postgres-operator | Operator repository location
+`PGO_BASEOS` | centos7 | Base OS for container images
 `PGO_CMD` | kubectl | Cluster management tool executable
-`PGO_IMAGE_PREFIX` | crunchydata | Container image prefix 
-`PGO_OPERATOR_NAMESPACE` | pgo | Kubernetes namespace for the operator 
-`PGO_VERSION` | 4.2.1 | Operator version 
+`PGO_IMAGE_PREFIX` | crunchydata | Container image prefix
+`PGO_OPERATOR_NAMESPACE` | pgo | Kubernetes namespace for the operator
+`PGO_VERSION` | 4.2.1 | Operator version
 
 {{% notice tip %}}
 `examples/envs.sh` contains the above variable definitions as well as others used by postgres-operator tools
@@ -59,11 +59,16 @@ The setup target ensures the presence of:
 * NSQ messaging binaries
 * `docker` container tool
 * `buildah` OCI image building tool
-* `expenv` config tool 
+* `expenv` config tool
 
 By default, docker is not configured to run its daemon. Refer to the [docker post-installation instructions](https://docs.docker.com/install/linux/linux-postinstall/) to configure it to run once or at system startup. This is not done automatically.
 
 ## Compile
+
+{{% notice tip %}}
+Please be sure to have your GPG Key and `.repo` file in the `conf` directory
+before proceeding.
+{{% /notice %}}
 
 You will build all the Operator binaries and Docker images by running:
 
