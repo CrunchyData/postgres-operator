@@ -1,3 +1,4 @@
 *.repo
-CRUNCHY-GPG-KEY.public
-RPM-GPG-KEY-crunchydata
+*.public
+*.private
+RPM-GPG-KEY-*
