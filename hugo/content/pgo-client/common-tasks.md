@@ -132,7 +132,6 @@ Cluster:
   BackrestS3Endpoint: ""
   BackrestS3Region: ""
   DisableAutofail: false
-  AutofailReplaceReplica: false
   PgmonitorPassword: ""
   EnableCrunchyadm: false
   DisableReplicaStartFailReinit: false

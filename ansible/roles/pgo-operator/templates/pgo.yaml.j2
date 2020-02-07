@@ -3,8 +3,7 @@ Cluster:
   ReplicaNodeLabel:
   CCPImagePrefix:  {{ ccp_image_prefix }}
   CCPImageTag:  {{ ccp_image_tag }}
-  Autofail:  {{ auto_failover }}
-  AutofailReplaceReplica:  {{ auto_failover_replace_replica }}
+  DisableAutofail:  {{ disable_auto_failover }}
   Backrest:  {{ backrest }}
   BackrestPort:  {{ backrest_port }}
   BackrestS3Bucket: {{ backrest_aws_s3_bucket }}
@@ -71,7 +70,6 @@ ContainerResources:
 {% endif %}
 {% endfor %}
 Pgo:
-  AutofailSleepSeconds:  {{ auto_failover_sleep_secs }}
   Audit:  false
   LoadTemplate:  /pgo-config/pgo.load-template.json
   PGOImagePrefix:  {{ pgo_image_prefix }}

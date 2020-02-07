@@ -111,7 +111,6 @@ pgo_client_version='v4.2.1'
 #pgo_cluster_admin='false'
 
 # This will set default enhancements for operator deployed PostgreSQL clusters
-auto_failover='false'
 backrest='true'
 badger='false'
 metrics='false'
@@ -131,8 +130,7 @@ log_statement='none'
 log_min_duration_statement=60000
 
 # Autofail Settings
-auto_failover_replace_replica=false
-auto_failover_sleep_secs=9
+disable_auto_failover='false'
 
 # Scheduler Settings
 scheduler_timeout=3600
