@@ -224,7 +224,6 @@ type ClusterStruct struct {
 	BackrestS3Endpoint            string `yaml:"BackrestS3Endpoint"`
 	BackrestS3Region              string `yaml:"BackrestS3Region"`
 	DisableAutofail               bool   `yaml:"DisableAutofail"`
-	AutofailReplaceReplica        bool   `yaml:"AutofailReplaceReplica"`
 	PgmonitorPassword             string `yaml:"PgmonitorPassword"`
 	EnableCrunchyadm              bool   `yaml:"EnableCrunchyadm"`
 	DisableReplicaStartFailReinit bool   `yaml:"DisableReplicaStartFailReinit"`
@@ -250,12 +249,10 @@ type ContainerResourcesStruct struct {
 }
 
 type PgoStruct struct {
-	PreferredFailoverNode     string `yaml:"PreferredFailoverNode"`
-	AutofailSleepSeconds      string `yaml:"AutofailSleepSeconds"`
-	AutofailSleepSecondsValue int
-	Audit                     bool   `yaml:"Audit"`
-	PGOImagePrefix            string `yaml:"PGOImagePrefix"`
-	PGOImageTag               string `yaml:"PGOImageTag"`
+	PreferredFailoverNode string `yaml:"PreferredFailoverNode"`
+	Audit                 bool   `yaml:"Audit"`
+	PGOImagePrefix        string `yaml:"PGOImagePrefix"`
+	PGOImageTag           string `yaml:"PGOImageTag"`
 }
 
 type PgoConfig struct {
@@ -276,7 +273,6 @@ type PgoConfig struct {
 	DefaultPgbouncerResources string                              `yaml:"DefaultPgbouncerResources"`
 }
 
-const DEFAULT_AUTOFAIL_SLEEP_SECONDS = "30"
 const DEFAULT_SERVICE_TYPE = "ClusterIP"
 const LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
 const NODEPORT_SERVICE_TYPE = "NodePort"
@@ -395,14 +391,6 @@ func (c *PgoConfig) Validate() error {
 	}
 	if c.Pgo.PGOImageTag == "" {
 		return errors.New(errPrefix + "Pgo.PGOImageTag is required")
-	}
-	if c.Pgo.AutofailSleepSeconds == "" {
-		log.Warn("Pgo.AutofailSleepSeconds not set, using default ")
-		c.Pgo.AutofailSleepSeconds = DEFAULT_AUTOFAIL_SLEEP_SECONDS
-	}
-	c.Pgo.AutofailSleepSecondsValue, err = strconv.Atoi(c.Pgo.AutofailSleepSeconds)
-	if err != nil {
-		return errors.New(errPrefix + "Pgo.AutofailSleepSeconds invalid int value found")
 	}
 
 	if c.DefaultContainerResources != "" {

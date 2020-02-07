@@ -112,9 +112,6 @@ sets of variables cannot be used at the same time.
 
 * `archive_mode`
 * `archive_timeout`
-* `auto_failover`
-* `auto_failover_sleep_secs`
-* `auto_failover_replace_replica`
 * `backup_storage`
 * `backrest`
 * `backrest_storage`
@@ -128,6 +125,7 @@ sets of variables cannot be used at the same time.
 * `db_port`
 * `db_replicas`
 * `db_user`
+* `disable_auto_failover``
 * `exporterport`
 * `kubernetes_context` (Comment out if deploying to am OpenShift environment)
 * `metrics`
@@ -156,9 +154,6 @@ sets of variables cannot be used at the same time.
 |-----------------------------------|-------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `archive_mode`                    | true        | **Required** | Set to true enable archive logging on all newly created clusters.                                                                                                                |
 | `archive_timeout`                 | 60          | **Required** | Set to a value in seconds to configure the timeout threshold for archiving.                                                                                                      |
-| `auto_failover`                   | false       | **Required** | Set to true enable auto failover capabilities on all newly created cluster requests.  This can be disabled by the client.                                                        |
-| `auto_failover_replace_replica`   | false       | **Required** | Set to true to replace promoted replicas during failovers with a new replica on all newly created clusters.                                                                      |
-| `auto_failover_sleep_secs`        | 9           | **Required** | Set to a value in seconds to configure the sleep time before initiating a failover on all newly created clusters.                                                                |
 | `backrest`                        | false       | **Required** | Set to true enable pgBackRest capabilities on all newly created cluster request.  This can be disabled by the client.                                                            |
 | `backrest_aws_s3_bucket`          |             |          | Set to configure the bucket used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3.                                                                     |
 | `backrest_aws_s3_endpoint`        |             |          | Set to configure the endpoint used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3.                                                                   |
@@ -182,6 +177,7 @@ sets of variables cannot be used at the same time.
 | `db_port`                         | 5432        | **Required** | Set to configure the default port used on all newly created clusters.                                                                                                            |
 | `db_replicas`                     | 1           | **Required** | Set to configure the amount of replicas provisioned on all newly created clusters.                                                                                               |
 | `db_user`                         | testuser    | **Required** | Set to configure the username of the dedicated user account on all newly created clusters.                                                                                       |
+| `disable_failover`                | false       | **Required** | Set to true disable auto failover capabilities on all newly created cluster requests. This cannot be overriden by the client on a cluster create, but on a cluster update. Setting this is not generally recommend, as it disable high-availability capabilities.|
 | `exporterport`                    | 9187        | **Required** | Set to configure the default port used to connect to postgres exporter.  |
 | `grafana_admin_password`          |             |          | Set to configure the login password for the Grafana administrator. |
 | `grafana_admin_username`          | admin       |          | Set to configure the login username for the Grafana administrator. |
