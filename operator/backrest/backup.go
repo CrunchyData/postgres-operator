@@ -233,19 +233,16 @@ func CleanBackupResources(restclient *rest.RESTClient, clientset *kubernetes.Cli
 		return err
 	}
 
-	// if the pgBackRest backup pgtask exits, then delete it so that a new pgBackRest backup
+	log.Debugf("pgtask %s found was %t when cleaning backup resources prior to creating a "+
+		"new backrest backup pgtask for cluster %s", taskName, found, clusterName)
+	// if the pgBackRest backup pgtask was found, then delete it so that a new pgBackRest backup
 	// pgtask can be created in order to initiate a new backup
 	if found {
-		log.Debugf("pgtask %s was found when cleaning backup resources prior to creating a new "+
-			"backrest backup pgtask and will be deleted", taskName)
+		log.Debugf("deleting pgtask %s for cluster %s", taskName, clusterName)
 		// delete the existing pgBackRest backup pgtask
-		err = kubeapi.Deletepgtask(restclient, taskName, namespace)
-		if err != nil {
+		if err = kubeapi.Deletepgtask(restclient, taskName, namespace); err != nil {
 			return err
 		}
-	} else {
-		log.Debugf("pgtask %s was not found when cleaning backup resources prior to creating a "+
-			"new backrest backup pgtask", taskName)
 	}
 
 	//remove previous backup job
