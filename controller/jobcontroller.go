@@ -562,15 +562,7 @@ func handleRmdata(job *apiv1.Job, restClient *rest.RESTClient, clientset *kubern
 	labels := job.GetObjectMeta().GetLabels()
 	clusterName := labels[config.LABEL_PG_CLUSTER]
 
-	//delete any pgtask for this cluster
-	log.Debugf("deleting pgtask for rmdata job name is %s", job.ObjectMeta.Name)
-	err = kubeapi.Deletepgtasks(restClient, config.LABEL_PG_CLUSTER+"="+clusterName, namespace)
-	if err != nil {
-		return err
-	}
-
-	err = kubeapi.DeleteJob(clientset, job.Name, namespace)
-	if err != nil {
+	if err = kubeapi.DeleteJob(clientset, job.Name, namespace); err != nil {
 		log.Error(err)
 	}
 
