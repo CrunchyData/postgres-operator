@@ -17,7 +17,6 @@ package util
 
 import (
 	"fmt"
-	"strconv"
 
 	"gopkg.in/yaml.v2"
 
@@ -122,24 +121,6 @@ func IsAutofailEnabled(cluster *crv1.Pgcluster) bool {
 	log.Debugf("IsAutoFailEnabled: %s", failLabel)
 
 	return failLabel == "true"
-}
-
-// GeneratedPasswordLength returns the value for what the length of a
-// randomly generated password should be. It first determines if the user
-// provided this value via a configuration file, and if not and/or the value is
-// invalid, uses the default value
-func GeneratedPasswordLength(configuredPasswordLength string) int {
-	// set the generated password length for random password generation
-	// note that "configuredPasswordLength" may be an empty string, and as such
-	// the below line could fail. That's ok though! as we have a default set up
-	generatedPasswordLength, err := strconv.Atoi(configuredPasswordLength)
-
-	// if there is an error...set it to a default
-	if err != nil {
-		generatedPasswordLength = DefaultGeneratedPasswordLength
-	}
-
-	return generatedPasswordLength
 }
 
 // GetS3CredsFromBackrestRepoSecret retrieves the AWS S3 credentials, i.e. the key and key

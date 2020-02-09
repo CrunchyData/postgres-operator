@@ -18,6 +18,7 @@ package util
 import (
 	"fmt"
 	"math/rand"
+	"strconv"
 	"strings"
 	"time"
 
@@ -75,6 +76,24 @@ func GeneratePassword(length int) string {
 // GenerateRandString generate a rand lowercase string of a given length
 func GenerateRandString(length int) string {
 	return stringWithCharset(length, lowercharset)
+}
+
+// GeneratedPasswordLength returns the value for what the length of a
+// randomly generated password should be. It first determines if the user
+// provided this value via a configuration file, and if not and/or the value is
+// invalid, uses the default value
+func GeneratedPasswordLength(configuredPasswordLength string) int {
+	// set the generated password length for random password generation
+	// note that "configuredPasswordLength" may be an empty string, and as such
+	// the below line could fail. That's ok though! as we have a default set up
+	generatedPasswordLength, err := strconv.Atoi(configuredPasswordLength)
+
+	// if there is an error...set it to a default
+	if err != nil {
+		generatedPasswordLength = DefaultGeneratedPasswordLength
+	}
+
+	return generatedPasswordLength
 }
 
 // GetPasswordFromSecret will fetch the username, password from a user secret
