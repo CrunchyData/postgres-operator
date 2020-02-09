@@ -157,3 +157,71 @@ func DeletePgbouncerHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 
 }
+
+// ShowPgBouncerHandler is the HTTP handler to get information about a pgBouncer
+// deployment, aka `pgo show pgbouncer`
+func ShowPgBouncerHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation POST /pgbouncer/show pgbouncerservice pgbouncer-post
+	/*```
+	  Show information about a pgBouncer deployment
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Show PGBouncer Information"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/ShowPgBouncerRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/ShowPgBouncerResponse"
+	log.Debug("pgbouncerservice.ShowPgbouncerHandler called")
+
+	// first, determine if the user is authorized to access this resource
+	username, err := apiserver.Authn(apiserver.SHOW_PGBOUNCER_PERM, w, r)
+
+	if err != nil {
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	// get the information that is in the request
+	var request msgs.ShowPgBouncerRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	// ensure the versions align...
+	if request.ClientVersion != msgs.PGO_VERSION {
+		response := msgs.ShowPgBouncerResponse{
+			Status: msgs.Status{
+				Code: msgs.Error,
+				Msg:  apiserver.VERSION_MISMATCH_ERROR,
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// ensure the namespace being used exists
+	namespace, err := apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
+
+	if err != nil {
+		response := msgs.ShowPgBouncerResponse{
+			Status: msgs.Status{
+				Code: msgs.Error,
+				Msg:  err.Error(),
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// get the information about a pgbouncer deployment(s)
+	response := ShowPgBouncer(&request, namespace)
+	json.NewEncoder(w).Encode(response)
+
+}

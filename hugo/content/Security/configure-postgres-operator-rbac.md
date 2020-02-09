@@ -80,6 +80,7 @@ The following list shows the current complete list of possible pgo permissions t
 |ShowBenchmark | allow *pgo show benchmark*|
 |ShowCluster | allow *pgo show cluster*|
 |ShowConfig | allow *pgo show config*|
+|ShowPgBouncer | allow *pgo show pgbouncer*|
 |ShowPolicy | allow *pgo show policy*|
 |ShowPVC | allow *pgo show pvc*|
 |ShowSchedule | allow *pgo show schedule*|

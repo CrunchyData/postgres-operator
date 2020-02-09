@@ -17,10 +17,23 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
-	"os"
+	"github.com/crunchydata/postgres-operator/pgo/util"
 )
+
+// showPgBouncerTextPadding contains the values for what the text padding should be
+type showPgBouncerTextPadding struct {
+	ClusterName int
+	ClusterIP   int
+	ExternalIP  int
+	Password    int
+	ServiceName int
+	Username    int
+}
 
 // PgBouncerUninstall is used to ensure the objects intalled in PostgreSQL on
 // behalf of pgbouncer are either not applied (in the case of a cluster create)
@@ -91,4 +104,127 @@ func deletePgbouncer(args []string, ns string) {
 		os.Exit(2)
 	}
 
+}
+
+// makeShowPgBouncerInterface returns an interface slice of the avaialble values
+// in show pgbouncer
+func makeShowPgBouncerInterface(values []msgs.ShowPgBouncerDetail) []interface{} {
+	// iterate through the list of values to make the interface
+	showPgBouncerInterface := make([]interface{}, len(values))
+
+	for i, value := range values {
+		showPgBouncerInterface[i] = value
+	}
+
+	return showPgBouncerInterface
+}
+
+// printShowPgBouncerText prints out the information around each PostgreSQL
+// cluster's pgBouncer
+// printShowPgBouncerText renders a text response
+func printShowPgBouncerText(response msgs.ShowPgBouncerResponse) {
+	// if the request errored, return the message here and exit with an error
+	if response.Status.Code != msgs.Ok {
+		fmt.Println("Error: " + response.Status.Msg)
+		os.Exit(1)
+	}
+
+	// if no results returned, return an error
+	if len(response.Results) == 0 {
+		fmt.Println("Nothing found.")
+		return
+	}
+
+	// make the interface for the pgbouncer clusters
+	showPgBouncerInterface := makeShowPgBouncerInterface(response.Results)
+
+	// format the header
+	// start by setting up the different text paddings
+	padding := showPgBouncerTextPadding{
+		ClusterName: getMaxLength(showPgBouncerInterface, headingCluster, "ClusterName"),
+		ClusterIP:   getMaxLength(showPgBouncerInterface, headingClusterIP, "ServiceClusterIP"),
+		ExternalIP:  getMaxLength(showPgBouncerInterface, headingExternalIP, "ServiceExternalIP"),
+		ServiceName: getMaxLength(showPgBouncerInterface, headingService, "ServiceName"),
+		Password:    getMaxLength(showPgBouncerInterface, headingPassword, "Password"),
+		Username:    getMaxLength(showPgBouncerInterface, headingUsername, "Username"),
+	}
+
+	printShowPgBouncerTextHeader(padding)
+
+	// iterate through the reuslts and print them out
+	for _, result := range response.Results {
+		printShowPgBouncerTextRow(result, padding)
+	}
+}
+
+// printShowPgBouncerTextHeader prints out the header
+func printShowPgBouncerTextHeader(padding showPgBouncerTextPadding) {
+	// print the header
+	fmt.Println("")
+	fmt.Printf("%s", util.Rpad(headingCluster, " ", padding.ClusterName))
+	fmt.Printf("%s", util.Rpad(headingService, " ", padding.ServiceName))
+	fmt.Printf("%s", util.Rpad(headingUsername, " ", padding.Username))
+	fmt.Printf("%s", util.Rpad(headingPassword, " ", padding.Password))
+	fmt.Printf("%s", util.Rpad(headingClusterIP, " ", padding.ClusterIP))
+	fmt.Printf("%s", util.Rpad(headingExternalIP, " ", padding.ExternalIP))
+	fmt.Println("")
+
+	// print the layer below the header...which prints out a bunch of "-" that's
+	// 1 less than the padding value
+	fmt.Println(
+		strings.Repeat("-", padding.ClusterName-1),
+		strings.Repeat("-", padding.ServiceName-1),
+		strings.Repeat("-", padding.Username-1),
+		strings.Repeat("-", padding.Password-1),
+		strings.Repeat("-", padding.ClusterIP-1),
+		strings.Repeat("-", padding.ExternalIP-1),
+	)
+}
+
+// printShowPgBouncerTextRow prints a row of the text data
+func printShowPgBouncerTextRow(result msgs.ShowPgBouncerDetail, padding showPgBouncerTextPadding) {
+	fmt.Printf("%s", util.Rpad(result.ClusterName, " ", padding.ClusterName))
+	fmt.Printf("%s", util.Rpad(result.ServiceName, " ", padding.ServiceName))
+	fmt.Printf("%s", util.Rpad(result.Username, " ", padding.Username))
+	fmt.Printf("%s", util.Rpad(result.Password, " ", padding.Password))
+	fmt.Printf("%s", util.Rpad(result.ServiceClusterIP, " ", padding.ClusterIP))
+	fmt.Printf("%s", util.Rpad(result.ServiceExternalIP, " ", padding.ExternalIP))
+	fmt.Println("")
+}
+
+// showPgBouncer prepares to make an API requests to display information about
+// one or more pgBouncer deployments. "clusterNames" is an array of cluster
+// names to iterate over
+func showPgBouncer(namespace string, clusterNames []string) {
+	// first, determine if any arguments have been pass in
+	if len(clusterNames) == 0 && Selector == "" {
+		fmt.Println("Error: You must provide at least one cluster name, or use a selector with the `--selector` flag")
+		os.Exit(1)
+	}
+
+	// next prepare the request!
+	request := msgs.ShowPgBouncerRequest{
+		ClusterNames: clusterNames,
+		Namespace:    namespace,
+		Selector:     Selector,
+	}
+
+	// and make the API request!
+	response, err := api.ShowPgBouncer(httpclient, &SessionCredentials, request)
+
+	// if there is a bona-fide error, log and exit
+	if err != nil {
+		fmt.Println("Error:", err.Error())
+		os.Exit(1)
+	}
+
+	// great! now we can work on interpreting the results and outputting them
+	// per the user's desired output format
+	// render the next bit based on the output type
+	switch OutputFormat {
+	case "json":
+		printJSON(response)
+	default:
+		printShowPgBouncerText(response)
+	}
 }

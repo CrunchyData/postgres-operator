@@ -17,6 +17,7 @@ package util
 
 import (
 	"fmt"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 
@@ -30,6 +31,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 // BackrestRepoConfig represents the configuration required to created backrest repo secrets
@@ -53,6 +55,14 @@ const (
 	// is if it's not set in the pgo.yaml file, and to create some semblance of
 	// consistency
 	DefaultGeneratedPasswordLength = 24
+)
+
+const (
+	// sqlSetPasswordDefault is the SQL to update the password
+	// NOTE: this is safe from SQL injection as we explicitly add the inerpolated
+	// string as a MD5 hash or SCRAM verifier. And if you're not doing that,
+	// rethink your usage of this
+	sqlSetPasswordDefault = `ALTER ROLE "%s" PASSWORD '%s';`
 )
 
 // CreateBackrestRepoSecrets creates the secrets required to manage the
@@ -141,4 +151,39 @@ func GetS3CredsFromBackrestRepoSecret(clientset *kubernetes.Clientset, clusterNa
 	}
 
 	return
+}
+
+// SetPostgreSQLPassword updates the password for a PostgreSQL role in the
+// PostgreSQL cluster by executing into the primary Pod and changing it
+//
+// Note: it is recommended to pre-hash the password (e.g. md5, SCRAM) so that
+// way the plaintext password is not logged anywhere. This also avoids potential
+// SQL injections
+func SetPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod, username, password, sqlCustom string) error {
+	log.Debug("set PostgreSQL password for user [%s]", username)
+
+	// if custom SQL is not set, use the default SQL
+	sqlRaw := sqlCustom
+
+	if sqlRaw == "" {
+		sqlRaw = sqlSetPasswordDefault
+	}
+
+	// This is safe from SQL injection as we are using constants and a well defined
+	// string...well, as long as the function caller does this
+	sql := strings.NewReader(fmt.Sprintf(sqlRaw, username, password))
+	cmd := []string{"psql"}
+
+	// exec into the pod to run the query
+	_, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
+		cmd, "database", pod.Name, pod.ObjectMeta.Namespace, sql)
+
+	// if there is an error executing the command, log the error message from
+	// stderr and return the error
+	if err != nil {
+		log.Error(stderr)
+		return err
+	}
+
+	return nil
 }

@@ -92,6 +92,7 @@ func init() {
 	ShowCmd.AddCommand(ShowClusterCmd)
 	ShowCmd.AddCommand(ShowConfigCmd)
 	ShowCmd.AddCommand(ShowNamespaceCmd)
+	ShowCmd.AddCommand(ShowPgBouncerCmd)
 	ShowCmd.AddCommand(ShowPgouserCmd)
 	ShowCmd.AddCommand(ShowPgoroleCmd)
 	ShowCmd.AddCommand(ShowPolicyCmd)
@@ -108,6 +109,8 @@ func init() {
 	ShowNamespaceCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 	ShowClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 	ShowPolicyCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
+	ShowPgBouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	ShowPgBouncerCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
 	ShowPVCCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 	ShowScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	ShowScheduleCmd.Flags().StringVarP(&ScheduleName, "schedule-name", "", "", "The name of the schedule to show.")
@@ -130,6 +133,23 @@ var ShowConfigCmd = &cobra.Command{
 			Namespace = PGONamespace
 		}
 		showConfig(args, Namespace)
+	},
+}
+
+var ShowPgBouncerCmd = &cobra.Command{
+	Use:   "pgbouncer",
+	Short: "Show pgbouncer deployment information",
+	Long: `Show user, password, and service information about a pgbouncer deployment. For example:
+
+	pgo show pgbouncer hacluster
+	pgo show pgounbcer --selector=app=payment
+	`,
+
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		showPgBouncer(Namespace, args)
 	},
 }
 

@@ -73,6 +73,14 @@ func GeneratePassword(length int) string {
 	return stringWithCharset(length, charset)
 }
 
+// GeneratePostgreSQLMD5Password takes a username and a plaintext password and
+// returns the PostgreSQL formatted MD5 password, which is:
+// "md5" + md5(password+username)
+func GeneratePostgreSQLMD5Password(username, password string) string {
+	return fmt.Sprintf("md5%s",
+		GetMD5HashForAuthFile(fmt.Sprintf("%s%s", password, username)))
+}
+
 // GenerateRandString generate a rand lowercase string of a given length
 func GenerateRandString(length int) string {
 	return stringWithCharset(length, lowercharset)

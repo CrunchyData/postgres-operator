@@ -17,15 +17,19 @@ limitations under the License.
 
 import (
 	"fmt"
+	"strings"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+const pgBouncerServiceSuffix = "-pgbouncer"
 
 // CreatePgbouncer ...
 // pgo create pgbouncer mycluster
@@ -39,51 +43,13 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 
 	log.Debugf("createPgbouncer selector is [%s]", request.Selector)
 
-	if request.Selector == "" && len(request.Args) == 0 {
+	// try to get the list of clusters. if there is an error, put it into the
+	// status and return
+	clusterList, err := getClusterList(request.Namespace, request.Args, request.Selector)
+
+	if err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "either a cluster list or a selector needs to be supplied for this command"
-		return resp
-	}
-
-	clusterList := crv1.PgclusterList{}
-
-	//get a list of all clusters
-	if request.Selector != "" {
-		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector, ns)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-	}
-
-	if len(request.Args) > 0 {
-		argCluster := crv1.Pgcluster{}
-
-		for i := 0; i < len(request.Args); i++ {
-			found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
-				&argCluster, request.Args[i], ns)
-
-			if !found {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = request.Args[i] + " not found"
-				return resp
-			}
-			if !found {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = err.Error()
-				return resp
-			}
-			clusterList.Items = append(clusterList.Items, argCluster)
-
-		}
-	}
-
-	log.Debugf("createPgbouncer clusters found len is %d", len(clusterList.Items))
-	if len(clusterList.Items) == 0 {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "no clusters found that match request selector or arguments"
+		resp.Status.Msg = err.Error()
 		return resp
 	}
 
@@ -144,46 +110,13 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 
 	log.Debugf("deletePgbouncer selector is [%s]", request.Selector)
 
-	if request.Selector == "" && len(request.Args) == 0 {
+	// try to get the list of clusters. if there is an error, put it into the
+	// status and return
+	clusterList, err := getClusterList(request.Namespace, request.Args, request.Selector)
+
+	if err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "either a cluster list or a selector needs to be supplied for this command"
-		return resp
-	}
-
-	clusterList := crv1.PgclusterList{}
-
-	//get a list of all clusters
-	if request.Selector != "" {
-		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector, ns)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-	}
-
-	if len(request.Args) > 0 {
-		argCluster := crv1.Pgcluster{}
-
-		for i := 0; i < len(request.Args); i++ {
-			found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
-				&argCluster, request.Args[i], ns)
-
-			if !found || err != nil {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = err.Error()
-				return resp
-			}
-			clusterList.Items = append(clusterList.Items, argCluster)
-
-		}
-	}
-
-	log.Debugf("deletePgbouncer clusters found len is %d", len(clusterList.Items))
-	if len(clusterList.Items) == 0 {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "no clusters found that match request selector or arguments"
+		resp.Status.Msg = err.Error()
 		return resp
 	}
 
@@ -226,4 +159,174 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 
 	return resp
 
+}
+
+// ShowPgBouncer gets information about a PostgreSQL cluster's pgBouncer
+// deployment
+//
+// pgo show pgbouncer
+// pgo show pgbouncer --selector
+func ShowPgBouncer(request *msgs.ShowPgBouncerRequest, namespace string) msgs.ShowPgBouncerResponse {
+	// set up a dummy response
+	response := msgs.ShowPgBouncerResponse{
+		Results: []msgs.ShowPgBouncerDetail{},
+		Status: msgs.Status{
+			Code: msgs.Ok,
+			Msg:  "",
+		},
+	}
+
+	log.Debugf("show pgbouncer called, cluster [%v], selector [%s]", request.ClusterNames, request.Selector)
+
+	// try to get the list of clusters. if there is an error, put it into the
+	// status and return
+	clusterList, err := getClusterList(request.Namespace, request.ClusterNames, request.Selector)
+
+	if err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	// iterate through the list of clusters to get the relevant pgBouncer
+	// information about them
+	for _, cluster := range clusterList.Items {
+		result := msgs.ShowPgBouncerDetail{
+			ClusterName:  cluster.Spec.Name,
+			HasPgBouncer: true,
+		}
+		// first, check if the cluster has the pgBouncer label. If it does not, we
+		// add it to the list and keep iterating
+		clusterLabels := cluster.GetLabels()
+
+		if clusterLabels[config.LABEL_PGBOUNCER] != "true" {
+			result.HasPgBouncer = false
+			response.Results = append(response.Results, result)
+			continue
+		}
+
+		// only set the pgBouncer user if we know this is a pgBouncer enabled
+		// cluster...even though, yes, this is a constant
+		result.Username = util.PgBouncerUser
+
+		// set the pgBouncer service information on this record
+		setPgBouncerServiceDetail(cluster, &result)
+
+		// get the user information about the pgBouncer deployment
+		setPgBouncerPasswordDetail(cluster, &result)
+
+		// append the result to the list
+		response.Results = append(response.Results, result)
+	}
+
+	return response
+}
+
+// getClusterList tries to return a list of clusters based on either having an
+// argument list of cluster names, or a Kubernetes selector
+func getClusterList(namespace string, clusterNames []string, selector string) (crv1.PgclusterList, error) {
+	clusterList := crv1.PgclusterList{}
+
+	// see if there are any values in the cluster name list or in the selector
+	// if nothing exists, return an error
+	if len(clusterNames) == 0 && selector == "" {
+		err := fmt.Errorf("either a list of cluster names or a selector needs to be supplied for this comment")
+		return clusterList, err
+	}
+
+	// try to build the cluster list based on either the selector or the list
+	// of arguments...or both. First, start with the selector
+	if selector != "" {
+		err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList,
+			selector, namespace)
+
+		// if there is an error, return here with an empty cluster list
+		if err != nil {
+			return crv1.PgclusterList{}, err
+		}
+	}
+
+	// now try to get clusters based specific cluster names
+	for _, clusterName := range clusterNames {
+		cluster := crv1.Pgcluster{}
+
+		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster,
+			clusterName, namespace)
+
+		// if there is an error, capture it here and return here with an empty list
+		if !found || err != nil {
+			return crv1.PgclusterList{}, err
+		}
+
+		// if successful, append to the cluster list
+		clusterList.Items = append(clusterList.Items, cluster)
+	}
+
+	log.Debugf("clusters founds: [%d]", len(clusterList.Items))
+
+	// if after all this, there are no clusters found, return an error
+	if len(clusterList.Items) == 0 {
+		err := fmt.Errorf("no clusters found")
+		return clusterList, err
+	}
+
+	// all set! return the cluster list with error
+	return clusterList, nil
+}
+
+// setPgBouncerPasswordDetail applies the password that is used by the pgbouncer
+// service account
+func setPgBouncerPasswordDetail(cluster crv1.Pgcluster, result *msgs.ShowPgBouncerDetail) {
+	pgBouncerSecretName := util.GeneratePgBouncerSecretName(cluster.Spec.Name)
+
+	// attempt to get the secret, but only get the password
+	_, password, err := util.GetPasswordFromSecret(apiserver.Clientset,
+		cluster.Spec.Namespace, pgBouncerSecretName)
+
+	if err != nil {
+		log.Warn(err)
+	}
+
+	// and set the password. Easy!
+	result.Password = password
+}
+
+// setPgBouncerServiceDetail applies the information about the pgBouncer service
+// to the result for the pgBouncer show
+func setPgBouncerServiceDetail(cluster crv1.Pgcluster, result *msgs.ShowPgBouncerDetail) {
+	// get the service information about the pgBouncer deployment
+	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, cluster.Spec.Name)
+
+	// have to go through a bunch of services because "current design"
+	services, err := kubeapi.GetServices(apiserver.Clientset, selector, cluster.Spec.Namespace)
+
+	// if there is an error, return without making any adjustments
+	if err != nil {
+		log.Warn(err)
+		return
+	}
+
+	log.Debugf("cluster [%s] has [%d] services", cluster.Spec.Name, len(services.Items))
+
+	// adding the service information was borrowed from the ShowCluster
+	// resource
+	for _, service := range services.Items {
+		// if this service is not for pgBouncer, then skip
+		if !strings.HasSuffix(service.Name, pgBouncerServiceSuffix) {
+			continue
+		}
+
+		// this is the pgBouncer service!
+		result.ServiceClusterIP = service.Spec.ClusterIP
+		result.ServiceName = service.Name
+
+		// try to get the exterinal IP based on the formula used in show cluster
+		if len(service.Spec.ExternalIPs) > 0 {
+			result.ServiceExternalIP = service.Spec.ExternalIPs[0]
+		}
+
+		if len(service.Status.LoadBalancer.Ingress) > 0 {
+			result.ServiceExternalIP = service.Status.LoadBalancer.Ingress[0].IP
+		}
+	}
 }
