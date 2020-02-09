@@ -68,11 +68,6 @@ type PgbouncerTemplateFields struct {
 // manages pgBouncer, and follows the format "<clusterName>-pgbouncer"
 const pgBouncerDeploymentFormat = "%s-pgbouncer"
 
-// pgBouncerSecretFormat is the name of the Kubernetes Secret that pgBouncer
-// uses that stores configuration and pgbouncer user information, and follows
-// the format "<clusterName>-pgbouncer-secret"
-const pgBouncerSecretFormat = "%s-pgbouncer-secret"
-
 // ...the default PostgreSQL port
 const pgPort = "5432"
 
@@ -85,14 +80,12 @@ const (
 )
 
 const (
-	sqlpgBouncerRole = "pgbouncer"
-
 	// a string to check to see if the pgbouncer machinery is installed in the
 	// PostgreSQL cluster
 	sqlCheckPgBouncerInstall = `SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'pgbouncer' LIMIT 1);`
 
 	// disable the pgbouncer user from logging in. This is safe from SQL injection
-	// as the string that is being interpolated is the sqlpgBouncerRole constant
+	// as the string that is being interpolated is the util.PgBouncerUser constant
 	//
 	// This had the "PASSWORD NULL" feature, but this is only found in
 	// PostgreSQL 11+, and given we don't want to check for the PG version before
@@ -101,7 +94,7 @@ const (
 
 	// sqlEnableLogin is the SQL to update the password
 	// NOTE: this is safe from SQL injection as we explicitly add the inerpolated
-	// string as a MD5 hash and we are using the sqlpgBouncerRole constant
+	// string as a MD5 hash and we are using the util.PgBouncerUser constant
 	sqlEnableLogin = `ALTER ROLE "%s" PASSWORD '%s' LOGIN;`
 
 	// sqlGetDatabasesForPgBouncer gets all the databases where pgBouncer can be
@@ -282,7 +275,7 @@ func DeletePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 
 	// This is safe from SQL injection as we are using constants and a well defined
 	// string
-	sql := strings.NewReader(fmt.Sprintf(sqlDisableLogin, sqlpgBouncerRole))
+	sql := strings.NewReader(fmt.Sprintf(sqlDisableLogin, util.PgBouncerUser))
 	cmd := []string{"psql"}
 
 	// exec into the pod to run the query
@@ -312,7 +305,7 @@ func DeletePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 
 	// remove the secret. again, if this fails, just log the error and apss
 	// through
-	secretName := generatePgBouncerSecretName(clusterName)
+	secretName := util.GeneratePgBouncerSecretName(clusterName)
 
 	if err := kubeapi.DeleteSecret(clientset, secretName, namespace); err != nil {
 		log.Warn(err)
@@ -409,7 +402,7 @@ func createPgBouncerDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pg
 		CCPImagePrefix:            operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:               cluster.Spec.CCPImageTag,
 		Port:                      operator.Pgo.Cluster.Port,
-		PGBouncerSecret:           generatePgBouncerSecretName(cluster.Spec.Name),
+		PGBouncerSecret:           util.GeneratePgBouncerSecretName(cluster.Spec.Name),
 		ContainerResources:        "",
 		PodAntiAffinity:           operator.GetPodAntiAffinity(cluster.Spec.PodAntiAffinity, cluster.Spec.Name),
 		PodAntiAffinityLabelName:  config.LABEL_POD_ANTI_AFFINITY,
@@ -462,7 +455,7 @@ func createPgBouncerDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pg
 // createPgbouncerSecret create a secret used by pgbouncer. Returns the
 // plaintext password and/or an error
 func createPgbouncerSecret(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, password string) error {
-	secretName := generatePgBouncerSecretName(cluster.Spec.Name)
+	secretName := util.GeneratePgBouncerSecretName(cluster.Spec.Name)
 
 	// see if this secret already exists...if it does, then take an early exit
 	if _, _, err := util.GetPasswordFromSecret(clientset, cluster.Spec.Namespace, secretName); err == nil {
@@ -485,16 +478,8 @@ func createPgbouncerSecret(clientset *kubernetes.Clientset, cluster *crv1.Pgclus
 		return err
 	}
 
-	// next, generate the pgbouncer HBA file
+	// finally, generate the pgbouncer HBA file
 	pgbouncerHBA, err := generatePgBouncerHBA()
-
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	// finally, return the pgBouncer users file
-	pgbouncerUsersFile, err := generatePgBouncerUsersFile(password)
 
 	if err != nil {
 		log.Error(err)
@@ -515,7 +500,8 @@ func createPgbouncerSecret(clientset *kubernetes.Clientset, cluster *crv1.Pgclus
 			"password":      []byte(password),
 			"pgbouncer.ini": pgBouncerConf,
 			"pg_hba.conf":   pgbouncerHBA,
-			"users.txt":     pgbouncerUsersFile,
+			"users.txt": util.GeneratePgBouncerUsersFileBytes(
+				util.GeneratePostgreSQLMD5Password(util.PgBouncerUser, password)),
 		},
 	}
 
@@ -625,47 +611,6 @@ func generatePgBouncerHBA() ([]byte, error) {
 	log.Debug(doc.String())
 
 	return doc.Bytes(), nil
-}
-
-// generatePgBouncerUsersFile accepts a plaintext password and converts it into
-// PostgreSQL MD5 format and loads it into the accept file format for storing
-// pgBouncer users
-func generatePgBouncerUsersFile(password string) ([]byte, error) {
-	// ...prepare the template, which still borrows from the legacy setup which
-	// must have had some reasons why it was that way, but really we're just
-	// setting the credentials for a managed service user account
-	credentials := []PgbouncerPasswdFields{
-		PgbouncerPasswdFields{
-			Username: sqlpgBouncerRole,
-			Password: generatePostgreSQLMD5Password(sqlpgBouncerRole, password),
-		},
-	}
-
-	// put them into the pgbouncer users template
-	doc := bytes.Buffer{}
-
-	// the way this function is set up, even if there is an error with the
-	// template execution, we return the same stuff anyway, so we can just log
-	// if there is an error and then return
-	if err := config.PgbouncerUsersTemplate.Execute(&doc, credentials); err != nil {
-		log.Error(err)
-		return []byte{}, err
-	}
-
-	return doc.Bytes(), nil
-}
-
-// generatePgBouncerSecretName returns the name of the pgbouncer secret
-func generatePgBouncerSecretName(clusterName string) string {
-	return fmt.Sprintf(pgBouncerSecretFormat, clusterName)
-}
-
-// generatePostgreSQLMD5Password takes a username and a plaintext password and
-// returns the PostgreSQL formatted MD5 password, which is:
-// "md5" + md5(password+username)
-func generatePostgreSQLMD5Password(username, password string) string {
-	return fmt.Sprintf("md5%s",
-		util.GetMD5HashForAuthFile(fmt.Sprintf("%s%s", password, username)))
 }
 
 // getPgBouncerDatabases gets the databases in a PostgreSQL cluster that have
@@ -786,21 +731,10 @@ func setPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Con
 	// we use the PostgreSQL "md5" hashing mechanism here to pre-hash the
 	// password. This is hard coded, which will make moving up to SCRAM ever more
 	// so lovely, but at least it's better than sending it around as plaintext
-	sqlpgBouncerPassword := generatePostgreSQLMD5Password(sqlpgBouncerRole, password)
+	sqlpgBouncerPassword := util.GeneratePostgreSQLMD5Password(util.PgBouncerUser, password)
 
-	// This is safe from SQL injection as we are using constants and a well defined
-	// string
-	sql := strings.NewReader(fmt.Sprintf(sqlEnableLogin, sqlpgBouncerRole, sqlpgBouncerPassword))
-	cmd := []string{"psql"}
-
-	// exec into the pod to run the query
-	_, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
-		cmd, "database", pod.Name, pod.ObjectMeta.Namespace, sql)
-
-	// if there is an error executing the command, log the error message from
-	// stderr and return the error
-	if err != nil {
-		log.Error(stderr)
+	if err := util.SetPostgreSQLPassword(clientset, restconfig, pod, util.PgBouncerUser, sqlpgBouncerPassword, sqlEnableLogin); err != nil {
+		log.Error(err)
 		return err
 	}
 

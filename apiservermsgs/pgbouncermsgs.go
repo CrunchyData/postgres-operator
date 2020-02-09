@@ -49,3 +49,57 @@ type DeletePgbouncerResponse struct {
 	Results []string
 	Status
 }
+
+// ShowPgBouncerDetail is the specific information about a pgBouncer deployment
+// for a cluster
+//
+// swagger:model
+type ShowPgBouncerDetail struct {
+	// ClusterName is the name of the PostgreSQL cluster associated with this
+	// pgBouncer deployment
+	ClusterName string
+	// HasPgBouncer is set to true if there is a pgBouncer deployment with this
+	// cluster, otherwise its false
+	HasPgBouncer bool
+	// Password contains the password for the pgBouncer service account
+	Password string
+	// ServiceClusterIP contains the ClusterIP address of the Service
+	ServiceClusterIP string
+	// ServiceExternalIP contains the external IP address of the Service, if it
+	// is assigned
+	ServiceExternalIP string
+	// ServiceName contains the name of the Kubernetes Service
+	ServiceName string
+	// Username is the username for the pgBouncer service account
+	Username string
+}
+
+// ShowPgBouncerRequest contains the attributes for requesting information about
+// a pgBouncer deployment
+//
+// swagger:model
+type ShowPgBouncerRequest struct {
+	// ClientVersion is the required parameter that includes the version of the
+	// Operator that is requesting
+	ClientVersion string
+
+	// ClusterNames contains one or more names of cluster to be queried to show
+	// information about their pgBouncer deployment
+	ClusterNames []string
+
+	// Namespace is the namespace to perform the query in
+	Namespace string
+
+	// Selector is optional and contains a selector to gather information about
+	// a PostgreSQL cluster's pgBouncer
+	Selector string
+}
+
+// ShowPgBouncerResponse contains the attributes that are part of the response
+// from the pgBouncer request, i.e. pgBouncer information
+//
+// swagger:model
+type ShowPgBouncerResponse struct {
+	Results []ShowPgBouncerDetail
+	Status
+}

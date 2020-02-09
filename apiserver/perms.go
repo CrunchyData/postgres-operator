@@ -79,6 +79,7 @@ const SHOW_USER_PERM = "ShowUser"
 const SHOW_WORKFLOW_PERM = "ShowWorkflow"
 const SHOW_SCHEDULE_PERM = "ShowSchedule"
 const SHOW_SECRETS_PERM = "ShowSecrets"
+const SHOW_PGBOUNCER_PERM = "ShowPgBouncer"
 const SHOW_PGOUSER_PERM = "ShowPgouser"
 const SHOW_PGOROLE_PERM = "ShowPgorole"
 

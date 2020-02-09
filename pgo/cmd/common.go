@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2020 Crunchy Data Solutions, Inc.
+ Copyright 2017 - 2020 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -24,12 +24,18 @@ import (
 // values for the headings
 const (
 	headingCapacity    = "CAPACITY"
+	headingCluster     = "CLUSTER"
+	headingClusterIP   = "CLUSTER IP"
+	headingExternalIP  = "EXTERNAL IP"
 	headingInstance    = "INSTANCE"
+	headingPassword    = "PASWORD"
 	headingPercentUsed = "% USED"
 	headingPod         = "POD"
 	headingPVC         = "PVC"
+	headingService     = "SERVICE"
 	headingPVCType     = "TYPE"
 	headingUsed        = "USED"
+	headingUsername    = "USERNAME"
 )
 
 // getHeaderLength returns the length of any value in a list, so that
