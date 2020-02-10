@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2019 Crunchy Data Solutions, Inc.
+ Copyright 2017 - 2020 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -34,7 +34,7 @@ var labelCmd = &cobra.Command{
 	Long: `LABEL allows you to add or remove a label on a set of clusters. For example:
 
 	pgo label mycluster yourcluster --label=environment=prod
-	pgo label all --label=environment=prod 
+	pgo label all --label=environment=prod
 	pgo label --label=environment=prod --selector=name=mycluster
 	pgo label --label=environment=prod --selector=status=final --dry-run`,
 	Run: func(cmd *cobra.Command, args []string) {

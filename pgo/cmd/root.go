@@ -1,7 +1,7 @@
 package cmd
 
 /*
- Copyright 2019 Crunchy Data Solutions, Inc.
+ Copyright 2017 - 2020 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
@@ -56,7 +56,7 @@ func init() {
 	RED = color.New(color.FgRed).SprintFunc()
 
 	// Go currently guarantees an error when attempting to load OS_TRUST for
-	// windows-based systems (see https://golang.org/issue/16736) 
+	// windows-based systems (see https://golang.org/issue/16736)
 	defExclOSTrust := (runtime.GOOS == "windows")
 
 	RootCmd.PersistentFlags().StringVarP(&Namespace, "namespace", "n", "", "The namespace to use for pgo requests.")
