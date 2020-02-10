@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-# Copyright 2019 Crunchy Data Solutions, Inc.
+# Copyright 2019 - 2020 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,7 +20,7 @@ function trap_sigterm() {
 
 trap 'trap_sigterm' SIGINT SIGTERM
 
-# First enable sshd prior to running rsync if using pgbackrest with a repository 
+# First enable sshd prior to running rsync if using pgbackrest with a repository
 # host
 enable_sshd() {
 
@@ -54,7 +54,7 @@ rsync_repo() {
 }
 
 # Use the aws cli sync command to sync files from a source location to a target
-# location.  The this inlcudes syncing files between who s3 locations, 
+# location.  The this inlcudes syncing files between who s3 locations,
 # syncing a local directory to s3, or syncing from s3 to a local directory.
 aws_sync_repo() {
 
@@ -90,7 +90,7 @@ then
 	fi
 else
 	enable_sshd # enable sshd for rsync
-	
+
 	rsync_source="${PGBACKREST_REPO1_HOST}:${PGBACKREST_REPO1_PATH}/"
 	rsync_target="$NEW_PGBACKREST_REPO"
 	rsync_repo "${rsync_source}" "${rsync_target}"
