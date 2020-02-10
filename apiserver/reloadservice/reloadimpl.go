@@ -1,7 +1,7 @@
 package reloadservice
 
 /*
-Copyright 2019 Crunchy Data Solutions, Inc.
+Copyright 2018 - 2020 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -147,7 +147,7 @@ func reload(
 	command := make([]string, 3)
 	command[0] = "/bin/bash"
 	command[1] = "-c"
-	command[2] = fmt.Sprintf("curl -X POST --silent http://127.0.0.1:%s/reload", 
+	command[2] = fmt.Sprintf("curl -X POST --silent http://127.0.0.1:%s/reload",
 		config.DEFAULT_PATRONI_PORT)
 
 	log.Debugf("running Exec with namespace=[%s] podname=[%s] container name=[%s]", namespace, pod.Name, pod.Spec.Containers[0].Name)
