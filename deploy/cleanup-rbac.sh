@@ -1,5 +1,6 @@
-#!/bin/bash 
-# Copyright 2019 Crunchy Data Solutions, Inc.
+#!/bin/bash
+
+# Copyright 2018 - 2020 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -30,7 +31,7 @@ fi
 $PGO_CMD get clusterrole pgo-cluster-role   > /dev/null 2> /dev/null
 if [ $? -eq 0 ]
 then
-	$PGO_CMD delete clusterrole pgo-cluster-role 
+	$PGO_CMD delete clusterrole pgo-cluster-role
 fi
 
 $PGO_CMD get clusterrolebinding pgo-cluster-role   > /dev/null 2> /dev/null
@@ -42,7 +43,7 @@ fi
 $PGO_CMD -n $PGO_OPERATOR_NAMESPACE get role pgo-role   > /dev/null 2> /dev/null
 if [ $? -eq 0 ]
 then
-	$PGO_CMD -n $PGO_OPERATOR_NAMESPACE delete role pgo-role 
+	$PGO_CMD -n $PGO_OPERATOR_NAMESPACE delete role pgo-role
 fi
 
 $PGO_CMD -n $PGO_OPERATOR_NAMESPACE get rolebinding pgo-role   > /dev/null 2> /dev/null
@@ -53,4 +54,3 @@ fi
 
 
 sleep 5
-
