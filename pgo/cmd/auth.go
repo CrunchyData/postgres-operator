@@ -89,8 +89,8 @@ func parseCredentials(dat string) msgs.BasicAuthCredentials {
 		fmt.Println("unable to parse credentials in pgouser file")
 		os.Exit(2) // TODO: graceful exit
 	}
-	log.Debugf("%v", fields)
-	log.Debugf("username=[%s] password=[%s]", fields[0], fields[1])
+
+	log.Debugf("username=[%s]", fields[0])
 
 	creds := msgs.BasicAuthCredentials{
 		Username:     fields[0],

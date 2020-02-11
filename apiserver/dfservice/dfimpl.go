@@ -176,7 +176,6 @@ func getPGSize(port, host, databaseName, clusterName, ns string) (string, int, e
 		log.Error(err.Error())
 		return dbsizePretty, dbsize, err
 	}
-	//log.Debug("username=" + username + " password=" + password)
 
 	conn, err = sql.Open("postgres", "sslmode=disable user="+username+" host="+host+" port="+port+" dbname="+databaseName+" password="+password)
 	if err != nil {
