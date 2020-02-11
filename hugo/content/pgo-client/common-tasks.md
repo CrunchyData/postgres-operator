@@ -107,7 +107,7 @@ which yields output similar to:
 BasicAuth: ""
 Cluster:
   CCPImagePrefix: crunchydata
-  CCPImageTag: centos7-12.1-4.3.0
+  CCPImageTag: centos7-12.2-4.3.0
   PrimaryNodeLabel: ""
   ReplicaNodeLabel: ""
   Policies: ""
@@ -202,7 +202,7 @@ Claims:                  8
 Total Volume Size:       8Gi       
 
 Database Images:
-                         4	crunchydata/crunchy-postgres-ha:centos7-12.1-4.3.0
+                         4	crunchydata/crunchy-postgres-ha:centos7-12.2-4.3.0
                          4	crunchydata/pgo-backrest-repo:centos7-4.3.0
                          8	crunchydata/pgo-backrest:centos7-4.3.0
 
@@ -376,7 +376,7 @@ pgo show cluster hacluster
 which will yield output similar to:
 
 ```
-cluster : hacluster (crunchy-postgres-ha:centos7-12.1-4.3.0)
+cluster : hacluster (crunchy-postgres-ha:centos7-12.2-4.3.0)
 	pod : hacluster-6dc6cfcfb9-f9knq (Running) on node01 (1/1) (primary)
 	pvc : hacluster
 	resources : CPU Limit= Memory Limit=, CPU Request= Memory Request=
