@@ -2,7 +2,7 @@
 
 CCP_IMAGE_PREFIX ?= crunchydata
 CCP_IMAGE_TAG ?= $(PGO_BASEOS)-$(CCP_PG_FULLVERSION)-$(PGO_VERSION)
-CCP_PG_FULLVERSION ?= 12.1
+CCP_PG_FULLVERSION ?= 12.2
 KUBECONFIG ?= $(HOME)/.kube/config
 OLM_TOOLS ?= registry.localhost:5000/postgres-operator-olm-tools:$(OLM_VERSION)
 OLM_VERSION ?= 0.13.0
