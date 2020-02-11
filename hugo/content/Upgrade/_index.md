@@ -36,8 +36,8 @@ At this time, the backrest-repo container is not upgraded during this upgrade as
 
 ## Minor Upgrade Example
 
-In this example, we are upgrading a cluster from PostgreSQL 11.5 to 11.6 using the `crunchy-postgres:centos7-11.6-4.1.2` container:
+In this example, we are upgrading a cluster from PostgreSQL 11.6 to 11.7 using the `crunchy-postgres:centos7-11.7-4.1.2` container:
 
-`pgo upgrade mycluster --ccp-image-tag=centos7-11.6-4.1.2`
+`pgo upgrade mycluster --ccp-image-tag=centos7-11.7-4.1.2`
 
 For more information, please see the `pgo upgrade` documentation [here.] ( {{< relref "operatorcli/cli/pgo_upgrade.md" >}})

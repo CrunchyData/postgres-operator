@@ -5,7 +5,7 @@ MAINTAINER support@crunchydata.com
 LABEL name="pgo-apiserver-" \
 	vendor="crunchydata.com" \
 	PostgresVersion="12" \
-	PostgresFullVersion="12.1" \
+	PostgresFullVersion="12.2" \
 	Version="7.7" \
 	Release="4.1.2" \
 	run='docker run -d -p 8080:80 --name=web-app web-app' \
