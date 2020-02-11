@@ -68,7 +68,7 @@ storageos CLI:
 Locate the volume path/name from the above volume listing, then use
 that path in a mount command:
 
-    storageos volume mount pgouser1/pvc-3c7491f5-5b9e-11e9-a4a4-52.4.1.1262d /mnt
+    storageos volume mount pgouser1/pvc-3c7491f5-5b9e-11e9-a4a4-52.4.1.2262d /mnt
 
 The above command mounts the storageos volume into /mnt on your local
 linux host where you can now access it using normal linux commands.
@@ -80,7 +80,7 @@ which is mounted on your linux host at /mnt:
 
 Unmount the volume so that it can be mounted by the load job:
 
-    storageos volume unmount pgouser1/pvc-3c7491f5-5b9e-11e9-a4a4-52.4.1.1262d
+    storageos volume unmount pgouser1/pvc-3c7491f5-5b9e-11e9-a4a4-52.4.1.2262d
 
 At this point, you have a storageos backed PVC, csv-pvc, that has
 the sample.json file loaded into it and its ready to be used

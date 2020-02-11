@@ -1,6 +1,6 @@
 ---
 title: "Upgrade PGO 4.0.1 to 4.1.0 (Bash)"
-Latest Release: 4.1.1 {docdate}
+Latest Release: 4.1.2 {docdate}
 draft: false
 weight: 8
 ---

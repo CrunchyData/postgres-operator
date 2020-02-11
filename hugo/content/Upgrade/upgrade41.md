@@ -1,6 +1,6 @@
 ---
 title: "Upgrade PostgreSQL Operator 4.1 Minor Versions"
-Latest Release: 4.1.1 {docdate}
+Latest Release: 4.1.2 {docdate}
 draft: false
 weight: 8
 ---
@@ -51,7 +51,7 @@ source ~/.bashrc
 
 Check to make sure that the correct CO_IMAGE_TAG image tag is being used. With
 a centos7 base image and version 4.1.X of the operator your image tag will be in
-the format of `centos7-4.1.1`. Verify this by running echo `$CO_IMAGE_TAG`.
+the format of `centos7-4.1.2`. Verify this by running echo `$CO_IMAGE_TAG`.
 
 
 ##### Step 3
@@ -61,11 +61,11 @@ config that you saved in Step 1. to make sure that you have updated the settings
 to match the old config. Confirm that the yaml file includes the correct images
 for the updated version.
 
-For example, to update to versions 4.1.1:
+For example, to update to versions 4.1.2:
 
 ```yaml
-CCPImageTag: centos7-11.6-4.1.1
-COImageTag: centos7-4.1.1
+CCPImageTag: centos7-11.6-4.1.2
+COImageTag: centos7-4.1.2
 ```
 
 ##### Step 4
@@ -132,7 +132,7 @@ for container dependency information.
 You can upgrade each cluster using the following command:
 
 ```bash
-pgo upgrade -n <clusternamespace> --ccp-image-tag=centos7-11.6-4.1.1 <clustername>
+pgo upgrade -n <clusternamespace> --ccp-image-tag=centos7-11.6-4.1.2 <clustername>
 ```
 
 This process takes a few momnets to complete.
