@@ -43,7 +43,7 @@ images = pgo-apiserver \
 	postgres-operator
 
 .PHONY: all installrbac setup setupnamespaces cleannamespaces bounce \
-	deployoperator runmain runapiserver cli-docs clean deepsix push pull \
+	deployoperator runmain runapiserver cli-docs clean push pull \
 	release default
 
 
@@ -155,10 +155,6 @@ cli-docs:
 
 clean:
 	rm -rf $(GOPATH)/pkg/* $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
-
-deepsix:
-	cd $(PGOROOT)/apis/cr/v1
-	deepcopy-gen --go-header-file=$(PGOROOT)/apis/cr/v1/header.go.txt --input-dirs=.
 
 push: $(images:%=push-%) ;
 
