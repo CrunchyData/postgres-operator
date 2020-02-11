@@ -232,7 +232,7 @@ func BasicAuthCheck(username, password string) bool {
 
 	psw := string(secret.Data["password"])
 	if psw != password {
-		log.Errorf("%s  %s password does not match for user %s ", psw, password, username)
+		log.Errorf("password does not match for user [%s]", username)
 		return false
 	}
 

@@ -212,7 +212,7 @@ func GetReplicationInfo(target string) (*ReplicationInfo, error) {
 	conn, err := sql.Open("postgres", target)
 
 	if err != nil {
-		log.Errorf("Could not connect to: %s", target)
+		log.Error(err)
 		return nil, err
 	}
 
@@ -224,7 +224,7 @@ func GetReplicationInfo(target string) (*ReplicationInfo, error) {
 	rows, err := conn.Query("SELECT current_setting('server_version_num')")
 
 	if err != nil {
-		log.Errorf("Could not perform query for version: %s", target)
+		log.Error(err)
 		return nil, err
 	}
 
@@ -257,7 +257,7 @@ func GetReplicationInfo(target string) (*ReplicationInfo, error) {
 	rows, err = conn.Query(replicationInfoQuery)
 
 	if err != nil {
-		log.Errorf("Could not perform replication info query: %s", target)
+		log.Error(err)
 		return nil, err
 	}
 

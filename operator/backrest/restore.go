@@ -395,7 +395,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		affinityStr = operator.GetAffinity(cluster.Spec.UserLabels["NodeLabelKey"], cluster.Spec.UserLabels["NodeLabelValue"], "In")
 	}
 
-	log.Debugf("creating restored PG deployment with bouncer pass of [%s]", cluster.Spec.UserLabels[config.LABEL_PGBOUNCER_PASS])
+	log.Debugf("creating restored postgresql deployment for cluster [%s]", restoreToName)
 
 	deploymentFields := operator.DeploymentTemplateFields{
 		Name:                    restoreToName,
@@ -483,7 +483,7 @@ func publishRestore(id, clusterName, username, namespace string) {
 			Timestamp: time.Now(),
 			EventType: events.EventRestoreCluster,
 		},
-		Clustername:       clusterName,
+		Clustername: clusterName,
 	}
 
 	err := events.Publish(f)
