@@ -75,7 +75,7 @@ namespace='pgouser1,pgouser2'
 # CentOS7 images can be found in dockerhub: https://hub.docker.com/u/crunchydata
 # RHEL7 images are available to Crunchy customers: https://access.crunchydata.com/login/
 ccp_image_prefix='crunchydata'
-ccp_image_tag='centos7-12.1-4.2.2'
+ccp_image_tag='centos7-12.2-4.2.2'
 
 # Name of a Secret containing credentials for container image registries.
 # Provide a path to the Secret manifest to be installed in each namespace. (optional)
