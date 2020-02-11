@@ -132,7 +132,7 @@ for container dependency information.
 You can upgrade each cluster using the following command:
 
 ```bash
-pgo upgrade -n <clusternamespace> --ccp-image-tag=centos7-11.6-4.1.2 <clustername>
+pgo upgrade -n <clusternamespace> --ccp-image-tag=centos7-11.7-4.1.2 <clustername>
 ```
 
 This process takes a few momnets to complete.
