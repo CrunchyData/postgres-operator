@@ -656,9 +656,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 
 		}
 
-		log.Debug("userLabelsMap")
-		log.Debugf("%v", userLabelsMap)
-
 		if existsGlobalConfig(ns) {
 			userLabelsMap[config.LABEL_CUSTOM_CONFIG] = config.GLOBAL_CUSTOM_CONFIGMAP
 		}

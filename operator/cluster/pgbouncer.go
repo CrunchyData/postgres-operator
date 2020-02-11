@@ -278,7 +278,6 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 	err, secretUser, secretPass := createPgbouncerSecret(clientset, cl, primaryName, replicaName, primaryName, secretName, namespace)
 
 	log.Debugf("secretUser: %s", secretUser)
-	log.Debugf("secretPass: %s", secretPass)
 
 	if err != nil {
 		log.Error(err)
@@ -306,7 +305,6 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 
 	pgbouncerName := clusterName + PGBOUNCER_SUFFIX
 	log.Debugf("adding a pgbouncer %s", pgbouncerName)
-	//	log.Debugf("secretUser: %s, secretPass: %s", secretUser, secretPass)
 
 	//create the pgbouncer deployment
 	fields := PgbouncerTemplateFields{
@@ -445,7 +443,7 @@ func updatePgBouncerDBPassword(clusterName string, p connectionInfo, username, n
 	var err error
 	var conn *sql.DB
 
-	log.Debugf("Updating credentials for %s in %s with %s ", username, p.Database, newPassword)
+	log.Debugf("Updating credentials for %s in %s", username, p.Database)
 
 	conn, err = sql.Open("postgres", "sslmode=disable user="+p.Username+" host="+p.Hostip+" port="+p.Port+" dbname="+p.Database+" password="+p.Password)
 	if err != nil {

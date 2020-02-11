@@ -16,11 +16,11 @@ package backrest
 */
 
 import (
-	"strings"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"os"
+	"strings"
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -326,7 +326,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		affinityStr = operator.GetAffinity(cluster.Spec.UserLabels["NodeLabelKey"], cluster.Spec.UserLabels["NodeLabelValue"], "In")
 	}
 
-	log.Debugf("creating restored PG deployment with bouncer pass of [%s]", cluster.Spec.UserLabels[config.LABEL_PGBOUNCER_PASS])
+	log.Debugf("creating restored postgresql deployment for cluster [%s]", restoreToName)
 
 	deploymentFields := operator.DeploymentTemplateFields{
 		Name:               restoreToName,
