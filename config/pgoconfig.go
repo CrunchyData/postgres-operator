@@ -199,15 +199,12 @@ type ClusterStruct struct {
 	PrimaryNodeLabel              string `yaml:"PrimaryNodeLabel"`
 	ReplicaNodeLabel              string `yaml:"ReplicaNodeLabel"`
 	Policies                      string `yaml:"Policies"`
-	LogStatement                  string `yaml:"LogStatement"`
-	LogMinDurationStatement       string `yaml:"LogMinDurationStatement"`
 	Metrics                       bool   `yaml:"Metrics"`
 	Badger                        bool   `yaml:"Badger"`
 	Port                          string `yaml:"Port"`
 	PGBadgerPort                  string `yaml:"PGBadgerPort"`
 	ExporterPort                  string `yaml:"ExporterPort"`
 	User                          string `yaml:"User"`
-	ArchiveTimeout                string `yaml:"ArchiveTimeout"`
 	Database                      string `yaml:"Database"`
 	PasswordAgeDays               string `yaml:"PasswordAgeDays"`
 	PasswordLength                string `yaml:"PasswordLength"`
@@ -276,8 +273,6 @@ const CONFIG_PATH = "pgo.yaml"
 
 var log_statement_values = []string{"ddl", "none", "mod", "all"}
 
-const DEFAULT_LOG_STATEMENT = "none"
-const DEFAULT_LOG_MIN_DURATION_STATEMENT = "60000"
 const DEFAULT_BACKREST_PORT = 2022
 const DEFAULT_PGBADGER_PORT = "10000"
 const DEFAULT_EXPORTER_PORT = "9187"
@@ -315,31 +310,6 @@ func (c *PgoConfig) Validate() error {
 		if _, err := strconv.Atoi(c.Cluster.Port); err != nil {
 			return errors.New(errPrefix + "Invalid Port: " + err.Error())
 		}
-	}
-
-	if c.Cluster.LogStatement != "" {
-		found := false
-		for _, v := range log_statement_values {
-			if v == c.Cluster.LogStatement {
-				found = true
-			}
-		}
-		if !found {
-			return errors.New(errPrefix + "Cluster.LogStatement does not container a valid value for log_statement")
-		}
-	} else {
-		log.Info("using default log_statement value since it was not specified in pgo.yaml")
-		c.Cluster.LogStatement = DEFAULT_LOG_STATEMENT
-	}
-
-	if c.Cluster.LogMinDurationStatement != "" {
-		_, err = strconv.Atoi(c.Cluster.LogMinDurationStatement)
-		if err != nil {
-			return errors.New(errPrefix + "Cluster.LogMinDurationStatement invalid int value found")
-		}
-	} else {
-		log.Info("using default log_min_duration_statement value since it was not specified in pgo.yaml")
-		c.Cluster.LogMinDurationStatement = DEFAULT_LOG_MIN_DURATION_STATEMENT
 	}
 
 	if c.Cluster.PrimaryNodeLabel != "" {
@@ -422,15 +392,6 @@ func (c *PgoConfig) Validate() error {
 		_, ok = c.ContainerResources[c.DefaultPgbouncerResources]
 		if !ok {
 			return errors.New(errPrefix + "DefaultPgbouncerResources setting invalid")
-		}
-	}
-
-	if c.Cluster.ArchiveTimeout == "" {
-		log.Info("Pgo.Cluster.ArchiveTimeout not set, using '60'")
-	} else {
-		_, err := strconv.Atoi(c.Cluster.ArchiveTimeout)
-		if err != nil {
-			return errors.New(errPrefix + "Cluster.ArchiveTimeout invalid int value found")
 		}
 	}
 

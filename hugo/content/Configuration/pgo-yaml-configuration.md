@@ -22,8 +22,6 @@ The *pgo.yaml* file is broken into major sections as described below:
 |Port        | the PostgreSQL port to use for new containers (e.g. 5432)
 |PGBadgerPort | the port used to connect to pgbadger (e.g. 10000)
 |ExporterPort | the port used to connect to postgres exporter (e.g. 9187)
-|LogStatement        | postgresql.conf log_statement value (required field)
-|LogMinDurationStatement        | postgresql.conf log_min_duration_statement value (required field)
 |User        | the PostgreSQL normal user name
 |Database        | the PostgreSQL normal user database
 |Replicas        | the number of cluster replicas to create for newly created clusters, typically users will scale up replicas on the pgo CLI command line but this global value can be set as well

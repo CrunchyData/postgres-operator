@@ -21,10 +21,7 @@ Cluster:
   Strategy:  1
   Replicas:  {{ db_replicas }}
   ArchiveMode:  {{ archive_mode }}
-  ArchiveTimeout:  {{ archive_timeout }}
   ServiceType:  {{ service_type }}
-  LogStatement: {{ log_statement }}
-  LogMinDurationStatement:  {{ log_min_duration_statement }}
   EnableCrunchyadm:  {{ enable_crunchyadm }}
   DisableReplicaStartFailReinit:  {{ disable_replica_start_fail_reinit }}
   PodAntiAffinity:  {{ pod_anti_affinity }}
