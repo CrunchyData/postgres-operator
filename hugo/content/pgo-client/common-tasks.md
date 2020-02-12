@@ -111,15 +111,12 @@ Cluster:
   PrimaryNodeLabel: ""
   ReplicaNodeLabel: ""
   Policies: ""
-  LogStatement: none
-  LogMinDurationStatement: "60000"
   Metrics: false
   Badger: false
   Port: "5432"
   PGBadgerPort: "10000"
   ExporterPort: "9187"
   User: testuser
-  ArchiveTimeout: "60"
   Database: userdb
   PasswordAgeDays: "60"
   PasswordLength: "8"

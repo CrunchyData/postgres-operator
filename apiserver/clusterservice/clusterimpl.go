@@ -645,9 +645,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			userLabelsMap[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
 		}
 
-		//Set archive timeout value
-		userLabelsMap[config.LABEL_ARCHIVE_TIMEOUT] = apiserver.Pgo.Cluster.ArchiveTimeout
-
 		if request.PgbouncerFlag {
 			// set flag at cluster level later
 			// userLabelsMap[config.LABEL_PGBOUNCER] = "true"

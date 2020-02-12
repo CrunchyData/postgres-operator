@@ -15,7 +15,6 @@ Cluster:
   Strategy:  1
   Replicas:  0
   ArchiveMode:  false
-  ArchiveTimeout:  60
   ServiceType:  ClusterIP
   Backrest:  true
   BackrestPort:  2022
@@ -23,8 +22,6 @@ Cluster:
   BackrestS3Endpoint:
   BackrestS3Region:
   DisableAutofail:  false
-  LogStatement:  none
-  LogMinDurationStatement:  60000
   PodAntiAffinity: preferred
   SyncReplication: false
 PrimaryStorage: storageos
