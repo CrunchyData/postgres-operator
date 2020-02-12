@@ -42,7 +42,15 @@ const AffinityInOperator = "In"
 const AFFINITY_NOTINOperator = "NotIn"
 
 const DefaultArchiveTimeout = "60"
-const DefaultPgHaConfigMapSuffix = "pgha-default-config"
+
+// PGHAConfigMapSuffix defines the suffix for the name of the PGHA configMap created for each PG
+// cluster
+const PGHAConfigMapSuffix = "pgha-config"
+
+// PGHAConfigInitSetting defines the setting in the PGHA configMap that is created for each PG
+// cluster that is responsible for configuring whether or not initialization logic should be run
+// in the crunchy-postgres-ha (or GIS equivilaent) container
+const PGHAConfigInitSetting = "init"
 
 // affinityType represents the two affinity types provided by Kubernetes, specifically
 // either preferredDuringSchedulingIgnoredDuringExecution or
@@ -158,12 +166,6 @@ type DeploymentTemplateFields struct {
 	Tablespaces            string
 	TablespaceVolumes      string
 	TablespaceVolumeMounts string
-}
-
-type PostgresHaTemplateFields struct {
-	LogStatement            string
-	LogMinDurationStatement string
-	ArchiveTimeout          string
 }
 
 // tablespaceVolumeFields are the fields used to create the volumes in a
@@ -308,59 +310,35 @@ func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespac
 	return configMapStr
 }
 
-// Creates a configMap containing 'crunchy-postgres-ha' configuration settings. aA default crunchy-postgres-ha
-// configuration file is included if a default config file is not providing using a custom configMap.
-func AddDefaultPostgresHaConfigMap(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, isInit, createDefaultPghaConf bool,
+// CreatePGHAConfigMap creates a configMap that will be utilized to store configuration settings
+// for a PostgreSQL cluster.  Currently this configMap simply defines an "init" setting, which is
+// utilized by the crunchy-postgres-ha container (or GIS equivilant) to determine whether or not
+// initialization logic should be executed when the container is run.  This ensures that the
+// original primary in a PostgreSQL cluster does not attempt to run any initialization logic more
+// than once, such as following a restart of the container.  In the future this configMap can also
+// be leveraged to manage other configuration settings for the PostgreSQL cluster and its
+// associated containers.
+func CreatePGHAConfigMap(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster,
 	namespace string) error {
-
-	data := make(map[string]string)
 
 	labels := make(map[string]string)
 	labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
 	labels[config.LABEL_PG_CLUSTER] = cluster.Name
-	labels[config.LABEL_PGHA_DEFAULT_CONFIGMAP] = "true"
+	labels[config.LABEL_PGHA_CONFIGMAP] = "true"
 
-	if isInit && createDefaultPghaConf {
-		var archiveTimeout string
-
-		if _, exists := cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]; !exists {
-			archiveTimeout = cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
-		} else {
-			archiveTimeout = DefaultArchiveTimeout
-		}
-
-		postgresHaFields := PostgresHaTemplateFields{
-			LogStatement:            Pgo.Cluster.LogStatement,
-			LogMinDurationStatement: Pgo.Cluster.LogMinDurationStatement,
-			ArchiveTimeout:          archiveTimeout,
-		}
-
-		var postgresHaConfig bytes.Buffer
-
-		err := config.PostgresHaTemplate.Execute(&postgresHaConfig, postgresHaFields)
-		if err != nil {
-			log.Error(err.Error())
-			return err
-		}
-		data[config.PostgresHaTemplatePath] = postgresHaConfig.String()
-	}
-
-	if isInit {
-		data["init"] = "true"
-	} else {
-		data["init"] = "false"
-	}
+	data := make(map[string]string)
+	// set "init" to true in the postgres-ha configMap
+	data[PGHAConfigInitSetting] = "true"
 
 	configmap := &v1.ConfigMap{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:   cluster.Name + "-" + DefaultPgHaConfigMapSuffix,
+			Name:   cluster.Name + "-" + PGHAConfigMapSuffix,
 			Labels: labels,
 		},
 		Data: data,
 	}
 
-	err := kubeapi.CreateConfigMap(clientset, configmap, namespace)
-	if err != nil {
+	if err := kubeapi.CreateConfigMap(clientset, configmap, namespace); err != nil {
 		return err
 	}
 
@@ -725,25 +703,35 @@ func GetPgbackrestS3EnvVars(cluster crv1.Pgcluster, clientset *kubernetes.Client
 	return ""
 }
 
-// UpdatePghaDefaultConfigInitFlag sets the init value for the pgha config file to true or false depending on the vlaue
-// provided
-func UpdatePghaDefaultConfigInitFlag(clientset *kubernetes.Clientset, initVal bool, clusterName, namespace string) {
+// UpdatePGHAConfigInitFlag sets the value for the "init" setting in the PGHA configMap for the
+// PG cluster to the value specified via the "initVal" parameter.  For instance, following the
+// initialization of a PG cluster this function will be utilized to set the "init" value to false
+// to ensure the primary does not attempt to run initialization logic in the event that it is
+// restarted.
+func UpdatePGHAConfigInitFlag(clientset *kubernetes.Clientset, initVal bool, clusterName,
+	namespace string) error {
 
-	log.Debugf("cluster %s has been initialized, updating init value in default pgha configMap "+
-		"to prevent future bootstrap attempts", clusterName)
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGHA_DEFAULT_CONFIGMAP + "=true"
+	log.Debugf("updating init value to %t in the pgha configMap for cluster %s", initVal, clusterName)
+
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGHA_CONFIGMAP + "=true"
 	configMapList, found := kubeapi.ListConfigMap(clientset, selector, namespace)
-	if !found {
-		log.Errorf("unable to find the default pgha configMap found for cluster %s using selector %s, unable to set "+
+	switch {
+	case !found:
+		return fmt.Errorf("unable to find the default pgha configMap found for cluster %s using selector %s, unable to set "+
 			"init value to false", clusterName, selector)
-	} else if len(configMapList.Items) > 1 {
-		log.Errorf("more than one default pgha configMap found for cluster %s using selector %s, unable to set "+
+	case len(configMapList.Items) > 1:
+		return fmt.Errorf("more than one default pgha configMap found for cluster %s using selector %s, unable to set "+
 			"init value to false", clusterName, selector)
 	}
-	configMap := &configMapList.Items[0]
-	configMap.Data["init"] = strconv.FormatBool(initVal)
 
-	kubeapi.UpdateConfigMap(clientset, configMap, namespace)
+	configMap := &configMapList.Items[0]
+	configMap.Data[PGHAConfigInitSetting] = strconv.FormatBool(initVal)
+
+	if err := kubeapi.UpdateConfigMap(clientset, configMap, namespace); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // GetSyncReplication returns true if synchronous replication has been enabled using either the

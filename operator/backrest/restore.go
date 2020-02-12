@@ -240,7 +240,8 @@ func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Cl
 		return
 	}
 
-	operator.UpdatePghaDefaultConfigInitFlag(clientset, true, clusterName, namespace)
+	// set the "init" flag to true in the PGHA configMap for the PG cluster
+	operator.UpdatePGHAConfigInitFlag(clientset, true, clusterName, namespace)
 
 	//create the new primary deployment
 	CreateRestoredDeployment(restclient, &cluster, clientset, namespace, restoreToName, workflowID, affinity)

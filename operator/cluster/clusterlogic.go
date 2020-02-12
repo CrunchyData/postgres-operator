@@ -21,9 +21,7 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -151,30 +149,11 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		TablespaceVolumeMounts:   operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
 	}
 
-	// create the default configuration file for crunchy-postgres-ha if custom config file not provided
-	if deploymentFields.ConfVolume == "" {
-		log.Debugf("Custom postgres-ha configmap not found, creating configMap with default postgres-ha config file")
-		operator.AddDefaultPostgresHaConfigMap(clientset, cl, deploymentFields.IsInit, true, namespace)
-	} else {
-		confVolume := strings.Trim(deploymentFields.ConfVolume, "\"")
-		configMap, found := kubeapi.GetConfigMap(clientset, confVolume, namespace)
-		if !found {
-			err = fmt.Errorf("Unable to find custom configMap %s configured for deplyment %s when "+
-				"creating the default postgres-ha config file", deploymentFields.ConfVolume,
-				deploymentFields.Name)
-			log.Error(err.Error())
-			return err
-		}
-		if _, exists := configMap.Data[config.PostgresHaTemplatePath]; !exists {
-			log.Debugf("Custom postgres-ha config file not found in custom configMap, " +
-				"creating default configMap with default postgres-ha config file")
-			operator.AddDefaultPostgresHaConfigMap(clientset, cl, deploymentFields.IsInit, true, namespace)
-		} else {
-			log.Debugf("Custom postgres-ha config file found in custom configMap, " +
-				"creating default configMap without default postgres-ha config file")
-			operator.AddDefaultPostgresHaConfigMap(clientset, cl, deploymentFields.IsInit, false, namespace)
-		}
-	}
+	// Create a configMap for the cluster that will be utilized to configure whether or not
+	// initialization logic should be executed when the postgres-ha container is run.  This
+	// ensures that the original primary in a PG cluster does not attempt to run any initialization
+	// logic following a restart of the container.
+	operator.CreatePGHAConfigMap(clientset, cl, namespace)
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
 	err = config.DeploymentTemplate.Execute(&primaryDoc, deploymentFields)

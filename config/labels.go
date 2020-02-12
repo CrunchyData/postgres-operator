@@ -182,6 +182,6 @@ const LABEL_FAILOVER_STARTED = "failover-started"
 const GLOBAL_CUSTOM_CONFIGMAP = "pgo-custom-pg-config"
 
 const LABEL_PGHA_SCOPE = "crunchy-pgha-scope"
-const LABEL_PGHA_DEFAULT_CONFIGMAP = "pgha-default-config"
+const LABEL_PGHA_CONFIGMAP = "pgha-config"
 const LABEL_PGHA_BACKUP_TYPE = "pgha-backup-type"
 const LABEL_PGHA_ROLE = "role"
