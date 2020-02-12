@@ -193,10 +193,6 @@ var DeploymentTemplate *template.Template
 
 const deploymentTemplatePath = "cluster-deployment.json"
 
-var PostgresHaTemplate *template.Template
-
-const PostgresHaTemplatePath = "postgres-ha.yaml"
-
 type ClusterStruct struct {
 	CCPImagePrefix                string `yaml:"CCPImagePrefix"`
 	CCPImageTag                   string `yaml:"CCPImageTag"`
@@ -787,11 +783,6 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 	}
 
 	DeploymentTemplate, err = c.LoadTemplate(cMap, rootPath, deploymentTemplatePath)
-	if err != nil {
-		return err
-	}
-
-	PostgresHaTemplate, err = c.LoadTemplate(cMap, rootPath, PostgresHaTemplatePath)
 	if err != nil {
 		return err
 	}

@@ -67,7 +67,7 @@
                         "name": "PGHA_INIT",
                         "valueFrom": {
                             "configMapKeyRef": {
-                               "name": "{{.ClusterName}}-pgha-default-config",
+                               "name": "{{.ClusterName}}-pgha-config",
                                "key": "init"
                             }
                          }
@@ -262,7 +262,7 @@
                                 {{end}}
                                 {
                                     "configMap": {
-                                        "name": "{{.ClusterName}}-pgha-default-config",
+                                        "name": "{{.ClusterName}}-pgha-config",
                                         "optional": true
                                     }
                                 }

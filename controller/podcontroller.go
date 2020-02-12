@@ -221,7 +221,12 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 							cluster.ObjectMeta.Namespace)
 					}
 
-					operator.UpdatePghaDefaultConfigInitFlag(c.PodClientset, false, clusterName, newpod.ObjectMeta.Namespace)
+					err = operator.UpdatePGHAConfigInitFlag(c.PodClientset, false, clusterName,
+						newpod.ObjectMeta.Namespace)
+					if err != nil {
+						log.Error(err)
+						return
+					}
 
 					// if pod is coming ready after a restore, create the initial backup instead
 					// of the stanza

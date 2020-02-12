@@ -308,13 +308,13 @@ func removeBackupSecrets(request Request) {
 // <cluster-name>-config (stores global/cluster-wide configuration settings)
 // Additionally, the Postgres Operator also creates a configMap for each cluster
 // containing a default Patroni configuration file:
-// <cluster-name>-pgha-default-config (stores a Patroni config file in YAML format)
+// <cluster-name>-pgha-config (stores a Patroni config file in YAML format)
 func removeClusterConfigmaps(request Request) {
 	// Store the derived names of the three configmaps in an array
 	clusterConfigmaps := [3]string{
 		// first, derive the name of the PG HA default configmap, which is
-		// "`clusterName`-`LABEL_PGHA_DEFAULT_CONFIGMAP`"
-		fmt.Sprintf("%s-%s", request.ClusterName, config.LABEL_PGHA_DEFAULT_CONFIGMAP),
+		// "`clusterName`-`LABEL_PGHA_CONFIGMAP`"
+		fmt.Sprintf("%s-%s", request.ClusterName, config.LABEL_PGHA_CONFIGMAP),
 		// next, the name of the leader configmap, which is
 		// "`clusterName`-leader"
 		fmt.Sprintf("%s-%s", request.ClusterName, "leader"),
