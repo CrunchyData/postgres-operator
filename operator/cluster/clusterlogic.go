@@ -153,7 +153,11 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	// initialization logic should be executed when the postgres-ha container is run.  This
 	// ensures that the original primary in a PG cluster does not attempt to run any initialization
 	// logic following a restart of the container.
-	operator.CreatePGHAConfigMap(clientset, cl, namespace)
+	if err = operator.CreatePGHAConfigMap(clientset, cl, namespace); err != nil {
+		log.Error(err.Error())
+		publishClusterCreateFailure(cl, err.Error())
+		return err
+	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
 	err = config.DeploymentTemplate.Execute(&primaryDoc, deploymentFields)
