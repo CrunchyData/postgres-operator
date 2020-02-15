@@ -35,6 +35,22 @@ const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 const charsetNumbers = "0123456789"
 
+// PostgreSQLUserSystemAccounts accounts are a list of accounts that are used to manage
+// the PostgreSQL system and should not be directly used by Operator users
+var PostgreSQLUserSystemAccounts = []string{
+	// "ccp_monitoring" is used in the metrics collection
+	"ccp_monitoring",
+	// "crunchyadm" is an administrative user
+	"crunchyadm",
+	// "pgbouncer" is used to manage the pgBouncer deployment
+	"pgbouncer",
+	// "postgres" is the superuser
+	"postgres",
+	// "primaryuser" is a misnomer, and is actually the account used to manage
+	// replication
+	"primaryuser",
+}
+
 var seededRand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
 
@@ -66,6 +82,20 @@ func stringWithCharset(length int, charset string) string {
 		b[i] = charset[seededRand.Intn(len(charset))]
 	}
 	return string(b)
+}
+
+// CheckPostgreSQLUserSystemAccount determines whether or not this is a system
+// PostgreSQL user account, as if this returns true, one likely may not want to
+// allow a user to directly access the account
+func CheckPostgreSQLUserSystemAccount(username string) bool {
+	// go through the list of system accounts and see if the username is in it
+	for _, systemAccount := range PostgreSQLUserSystemAccounts {
+		if username == systemAccount {
+			return true
+		}
+	}
+
+	return false
 }
 
 // GeneratePassword generate a password of a given length
@@ -187,26 +217,18 @@ func (cs CloneClusterSecrets) Clone() error {
 }
 
 // CreateUserSecret will create a new secret holding a user credential
-func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string, passwordLength int) error {
-
-	var err error
-
+func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string) error {
 	secretName := clustername + "-" + username + "-secret"
-	var enPassword = GeneratePassword(passwordLength)
-	if password != "" {
-		log.Debugf("using user specified password for secret %s", secretName)
-		enPassword = password
-	}
-	err = CreateSecret(clientset, clustername, secretName, username, enPassword, namespace)
-	if err != nil {
-		log.Error("error creating secret" + err.Error())
+
+	if err := CreateSecret(clientset, clustername, secretName, username, password, namespace); err != nil {
+		log.Error(err)
 	}
 
-	return err
+	return nil
 }
 
 // UpdateUserSecret updates a user secret with a new password
-func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string, passwordLength int) error {
+func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string) error {
 
 	var err error
 
@@ -216,7 +238,7 @@ func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 	err = kubeapi.DeleteSecret(clientset, secretName, namespace)
 	if err == nil {
 		//create secret with updated password
-		err = CreateUserSecret(clientset, clustername, username, password, namespace, passwordLength)
+		err = CreateUserSecret(clientset, clustername, username, password, namespace)
 		if err != nil {
 			log.Error("UpdateUserSecret error creating secret" + err.Error())
 		} else {

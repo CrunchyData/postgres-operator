@@ -19,7 +19,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -104,7 +103,8 @@ const (
 	// sqlEnableLogin is the SQL to update the password
 	// NOTE: this is safe from SQL injection as we explicitly add the inerpolated
 	// string as a MD5 hash and we are using the util.PgBouncerUser constant
-	sqlEnableLogin = `ALTER ROLE "%s" PASSWORD '%s' LOGIN;`
+	// However, the escaping is handled in the util.SetPostgreSQLPassword function
+	sqlEnableLogin = `ALTER ROLE %s PASSWORD %s LOGIN;`
 
 	// sqlGetDatabasesForPgBouncer gets all the databases where pgBouncer can be
 	// installed or uninstalled
@@ -139,7 +139,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 
 	// get the primary pod, which is needed to update the password for the
 	// pgBouncer administrative user
-	pod, err := getPrimaryPod(clientset, cluster)
+	pod, err := util.GetPrimaryPod(clientset, cluster)
 
 	if err != nil {
 		return err
@@ -293,7 +293,7 @@ func DeletePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 	// next, disable the pgbouncer user in the PostgreSQL cluster.
 	// first, get the primary pod. If we cannot do this, let's consider it an
 	// error and abort
-	pod, err := getPrimaryPod(clientset, cluster)
+	pod, err := util.GetPrimaryPod(clientset, cluster)
 
 	if err != nil {
 		return err
@@ -756,33 +756,6 @@ func getPgBouncerDatabases(clientset *kubernetes.Clientset, restconfig *rest.Con
 	return bufio.NewScanner(strings.NewReader(stdout)), nil
 }
 
-// getPrimaryPod gets the Pod of the primary PostgreSQL instance. If somehow
-// the query gets multiple pods, then the first one in the list is returned
-func getPrimaryPod(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) (*v1.Pod, error) {
-	// set up the selector for the primary pod
-	selector := fmt.Sprintf("%s=%s,%s=master",
-		config.LABEL_PG_CLUSTER, cluster.Spec.Name, config.LABEL_PGHA_ROLE)
-	namespace := cluster.Spec.Namespace
-
-	// query the pods
-	pods, err := kubeapi.GetPods(clientset, selector, namespace)
-
-	// if there is an error, log it and abort
-	if err != nil {
-		return nil, err
-	}
-
-	// if no pods are retirn, then also raise an error
-	if len(pods.Items) == 0 {
-		err := errors.New(fmt.Sprintf("primary pod not found for selector [%s]", selector))
-		return nil, err
-	}
-
-	// Grab the first pod from the list as this is presumably the primary pod
-	pod := pods.Items[0]
-	return &pod, nil
-}
-
 // installPgBouncer installs the "pgbouncer" user and other management objects
 // into the PostgreSQL pod
 func installPgBouncer(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod) error {
@@ -846,7 +819,7 @@ func publishPgBouncerEvent(eventType string, task *crv1.Pgtask) {
 func rotatePgBouncerPassword(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
 	namspace := cluster.Spec.Namespace
 	// determine if we are able to access the primary Pod
-	primaryPod, err := getPrimaryPod(clientset, cluster)
+	primaryPod, err := util.GetPrimaryPod(clientset, cluster)
 
 	if err != nil {
 		return err

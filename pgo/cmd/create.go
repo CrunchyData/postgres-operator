@@ -202,8 +202,8 @@ var createUserCmd = &cobra.Command{
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		log.Debug("create user called ")
-		if Selector == "" && AllFlag == false && len(args) == 0 {
+		log.Debug("create user called")
+		if Selector == "" && !AllFlag && len(args) == 0 {
 			fmt.Println(`Error: a cluster name(s), --selector flag, or --all flag is required to create a user.`)
 			return
 		}
@@ -284,12 +284,13 @@ func init() {
 	createScheduleCmd.Flags().StringVarP(&ScheduleDatabase, "database", "", "", "The database to run the SQL policy against.")
 	createScheduleCmd.Flags().StringVarP(&ScheduleSecret, "secret", "", "", "The secret name for the username and password of the PostgreSQL role for SQL schedules.")
 
+	createUserCmd.Flags().BoolVar(&AllFlag, "all", false, "Create a user on every cluster.")
 	createUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	createUserCmd.Flags().StringVarP(&Password, "password", "", "", "The password to use for creating a new user which overrides a generated password.")
 	createUserCmd.Flags().StringVarP(&Username, "username", "", "", "The username to use for creating a new user")
 	createUserCmd.Flags().BoolVarP(&ManagedUser, "managed", "", false, "Creates a user with secrets that can be managed by the Operator.")
-	//	createUserCmd.Flags().StringVarP(&UserDBAccess, "db", "", "", "Grants the user access to a database.")
-	createUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 30, "Sets passwords for new users to X days.")
+	createUserCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
+	createUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 0, "Sets the number of days that a password is valid. Defaults to the server value.")
 	createUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 0, "If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.")
 
 	createPgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")

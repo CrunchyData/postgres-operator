@@ -16,7 +16,9 @@ package util
 */
 
 import (
+	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -55,6 +57,10 @@ const (
 	// is if it's not set in the pgo.yaml file, and to create some semblance of
 	// consistency
 	DefaultGeneratedPasswordLength = 24
+	// DefaultPasswordValidUntilDays is the number of days until a PostgreSQL user's
+	// password expires. If it is not set in the pgo.yaml file, we will use a
+	// default of "0" which means that a password will never expire
+	DefaultPasswordValidUntilDays = 0
 )
 
 const (
@@ -62,7 +68,10 @@ const (
 	// NOTE: this is safe from SQL injection as we explicitly add the inerpolated
 	// string as a MD5 hash or SCRAM verifier. And if you're not doing that,
 	// rethink your usage of this
-	sqlSetPasswordDefault = `ALTER ROLE "%s" PASSWORD '%s';`
+	//
+	// The escaping for SQL injections is handled in the SetPostgreSQLPassword
+	// function
+	sqlSetPasswordDefault = `ALTER ROLE %s PASSWORD %s;`
 )
 
 // CreateBackrestRepoSecrets creates the secrets required to manage the
@@ -133,6 +142,52 @@ func IsAutofailEnabled(cluster *crv1.Pgcluster) bool {
 	return failLabel == "true"
 }
 
+// GeneratedPasswordValidUntilDays returns the value for the number of days that
+// a password is valid for, which is used as part of PostgreSQL's VALID UNTIL
+// directive on a user.  It first determines if the user provided this value via
+// a configuration file, and if not and/or the value is invalid, uses the
+// default value
+func GeneratedPasswordValidUntilDays(configuredValidUntilDays string) int {
+	// set the generated password length for random password generation
+	// note that "configuredPasswordLength" may be an empty string, and as such
+	// the below line could fail. That's ok though! as we have a default set up
+	validUntilDays, err := strconv.Atoi(configuredValidUntilDays)
+
+	// if there is an error...set it to a default
+	if err != nil {
+		validUntilDays = DefaultPasswordValidUntilDays
+	}
+
+	return validUntilDays
+}
+
+// GetPrimaryPod gets the Pod of the primary PostgreSQL instance. If somehow
+// the query gets multiple pods, then the first one in the list is returned
+func GetPrimaryPod(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) (*v1.Pod, error) {
+	// set up the selector for the primary pod
+	selector := fmt.Sprintf("%s=%s,%s=master",
+		config.LABEL_PG_CLUSTER, cluster.Spec.Name, config.LABEL_PGHA_ROLE)
+	namespace := cluster.Spec.Namespace
+
+	// query the pods
+	pods, err := kubeapi.GetPods(clientset, selector, namespace)
+
+	// if there is an error, log it and abort
+	if err != nil {
+		return nil, err
+	}
+
+	// if no pods are retirn, then also raise an error
+	if len(pods.Items) == 0 {
+		err := errors.New(fmt.Sprintf("primary pod not found for selector [%s]", selector))
+		return nil, err
+	}
+
+	// Grab the first pod from the list as this is presumably the primary pod
+	pod := pods.Items[0]
+	return &pod, nil
+}
+
 // GetS3CredsFromBackrestRepoSecret retrieves the AWS S3 credentials, i.e. the key and key
 // secret, from a specific cluster's backrest repo secret
 func GetS3CredsFromBackrestRepoSecret(clientset *kubernetes.Clientset, clusterName,
@@ -171,7 +226,8 @@ func SetPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Con
 
 	// This is safe from SQL injection as we are using constants and a well defined
 	// string...well, as long as the function caller does this
-	sql := strings.NewReader(fmt.Sprintf(sqlRaw, username, password))
+	sql := strings.NewReader(fmt.Sprintf(sqlRaw,
+		SQLQuoteIdentifier(username), SQLQuoteLiteral(password)))
 	cmd := []string{"psql"}
 
 	// exec into the pod to run the query
