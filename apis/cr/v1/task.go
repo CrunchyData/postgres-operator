@@ -24,6 +24,7 @@ const PgtaskResourcePlural = "pgtasks"
 
 const PgtaskAddPgbouncer = "add-pgbouncer"
 const PgtaskDeletePgbouncer = "delete-pgbouncer"
+const PgtaskUpdatePgbouncer = "update-pgbouncer"
 const PgtaskDeleteBackups = "delete-backups"
 const PgtaskDeleteData = "delete-data"
 const PgtaskFailover = "failover"

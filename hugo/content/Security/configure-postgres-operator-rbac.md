@@ -89,6 +89,7 @@ The following list shows the current complete list of possible pgo permissions t
 |ShowWorkflow | allow *pgo show workflow*|
 |Status | allow *pgo status*|
 |TestCluster | allow *pgo test*|
+|UpdatePgBouncer | allow *pgo update pgbouncer*|
 |UpdateCluster | allow *pgo update cluster*|
 |User | allow *pgo user*|
 |Version | allow *pgo version*|

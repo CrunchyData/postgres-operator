@@ -151,3 +151,57 @@ func ShowPgBouncer(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 	// we did it! return the response
 	return response, nil
 }
+
+// UpdatePgBouncer makes an API call to the "update pgbouncer" apiserver
+// endpoint and provides the results
+func UpdatePgBouncer(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials,
+	request msgs.UpdatePgBouncerRequest) (msgs.UpdatePgBouncerResponse, error) {
+	// explicitly set the client version here
+	request.ClientVersion = msgs.PGO_VERSION
+
+	log.Debugf("UpdatePgBouncer called [%+v]", request)
+
+	// put the request into JSON format and format the URL and HTTP verb
+	jsonValue, _ := json.Marshal(request)
+	url := SessionCredentials.APIServerURL + "/pgbouncer"
+	action := "PUT"
+
+	// prepare the request!
+	httpRequest, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+
+	// if there is an error preparing the request, return here
+	if err != nil {
+		return msgs.UpdatePgBouncerResponse{}, err
+	}
+
+	// set the headers around the request, including authentication information
+	httpRequest.Header.Set("Content-Type", "application/json")
+	httpRequest.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
+
+	// make the request! if there is an error making the request, return
+
+	httpResponse, err := httpclient.Do(httpRequest)
+
+	if err != nil {
+		return msgs.UpdatePgBouncerResponse{}, err
+	}
+
+	defer httpResponse.Body.Close()
+
+	log.Debugf("%+v", httpResponse)
+
+	// check on the HTTP status. If it is not 200, return here
+	if err := StatusCheck(httpResponse); err != nil {
+		return msgs.UpdatePgBouncerResponse{}, err
+	}
+
+	// attempt to decode the response into the expected JSON format
+	response := msgs.UpdatePgBouncerResponse{}
+
+	if err := json.NewDecoder(httpResponse.Body).Decode(&response); err != nil {
+		return msgs.UpdatePgBouncerResponse{}, err
+	}
+
+	// we did it! return the response
+	return response, nil
+}

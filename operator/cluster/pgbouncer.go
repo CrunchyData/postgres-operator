@@ -80,6 +80,15 @@ const (
 )
 
 const (
+	// pgBouncerSecretPropagationPeriod is the number of seconds between each
+	// check of when the secret is propogated
+	pgBouncerSecretPropagationPeriod = 5
+	// pgBouncerSecretPropagationTimeout is the maximum amount of time in seconds
+	// to wait for the secret to propagate
+	pgBouncerSecretPropagationTimeout = 60
+)
+
+const (
 	// a string to check to see if the pgbouncer machinery is installed in the
 	// PostgreSQL cluster
 	sqlCheckPgBouncerInstall = `SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'pgbouncer' LIMIT 1);`
@@ -106,6 +115,12 @@ const (
 	sqlUninstallPgBouncer = `DROP ROLE "pgbouncer";`
 )
 
+var (
+	// this command allows one to view the users.txt file secret to determine if
+	// it has propagated
+	cmdViewPgBouncerUsersSecret = []string{"cat", "/pgconf/users.txt"}
+)
+
 // AddPgbouncer contains the various functions that are used to add a pgBouncer
 // Deployment to a PostgreSQL cluster
 //
@@ -118,7 +133,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 	// if we cannot update this we abort
 	cluster.Labels[config.LABEL_PGBOUNCER] = "true"
 
-	if err := kubeapi.Updatepgcluster(restclient, cluster, cluster.Name, cluster.Namespace); err != nil {
+	if err := kubeapi.Updatepgcluster(restclient, cluster, cluster.Spec.ClusterName, cluster.Namespace); err != nil {
 		return err
 	}
 
@@ -207,32 +222,42 @@ func AddPgbouncerFromPgTask(clientset *kubernetes.Clientset, restclient *rest.RE
 
 // CreatePgTaskforAddpgBouncer creates a pgtask to process adding a pgBouncer
 func CreatePgTaskforAddpgBouncer(restclient *rest.RESTClient, cluster *crv1.Pgcluster, pgouser string) error {
-	log.Debugf("create pgtask for adding pgbouncer to cluster [%s]", cluster.Name)
+	log.Debugf("create pgtask for adding pgbouncer to cluster [%s]", cluster.Spec.ClusterName)
 
-	// create the specfile with the required parameters for creating a pgtask
-	spec := crv1.PgtaskSpec{
-		Namespace: cluster.Namespace,
-		Name:      fmt.Sprintf("%s-%s", config.LABEL_PGBOUNCER_TASK_ADD, cluster.Name),
-		TaskType:  crv1.PgtaskAddPgbouncer,
-		Parameters: map[string]string{
-			config.LABEL_PGBOUNCER_TASK_CLUSTER: cluster.Name,
-		},
+	// generate the pgtask, first setting up the parameters it needs
+	parameters := map[string]string{
+		config.LABEL_PGBOUNCER_TASK_CLUSTER: cluster.Spec.ClusterName,
 	}
-
-	pgtask := &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
-			Name: spec.Name,
-			Labels: map[string]string{
-				config.LABEL_PG_CLUSTER:         cluster.Name,
-				config.LABEL_PGBOUNCER_TASK_ADD: "true",
-				config.LABEL_PGOUSER:            pgouser,
-			},
-		},
-		Spec: spec,
-	}
+	task := generatePgtaskForPgBouncer(cluster, pgouser,
+		crv1.PgtaskAddPgbouncer, config.LABEL_PGBOUNCER_TASK_ADD, parameters)
 
 	// try to create the pgtask!
-	if err := kubeapi.Createpgtask(restclient, pgtask, spec.Namespace); err != nil {
+	if err := kubeapi.Createpgtask(restclient, task, task.Spec.Namespace); err != nil {
+		log.Error(err)
+		return err
+	}
+
+	return nil
+}
+
+// CreatePgTaskforUpdatepgBouncer creates a pgtask to process for updating
+// pgBouncer
+//
+// The "parameters" attribute contains a list of parameters that can guide what
+// will take place during an update, e.g.
+//
+// - RotoatePassword="true" will rotate the pgBouncer PostgreSQL user password
+func CreatePgTaskforUpdatepgBouncer(restclient *rest.RESTClient, cluster *crv1.Pgcluster, pgouser string, parameters map[string]string) error {
+	log.Debugf("create pgtask for updating pgbouncer for cluster [%s]", cluster.Spec.ClusterName)
+
+	// generate the pgtask, first adding in some boilerplate parameters
+	parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER] = cluster.Spec.ClusterName
+
+	task := generatePgtaskForPgBouncer(cluster, pgouser,
+		crv1.PgtaskUpdatePgbouncer, config.LABEL_PGBOUNCER_TASK_UPDATE, parameters)
+
+	// try to create the pgtask!
+	if err := kubeapi.Createpgtask(restclient, task, task.Spec.Namespace); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -248,9 +273,10 @@ func CreatePgTaskforAddpgBouncer(restclient *rest.RESTClient, cluster *crv1.Pgcl
 // neded to be done as pgbouncer user is disabled, but if the user wishes to be
 // thorough they can do this
 //
-// Any errors that are returned should be logged in the calling function
+// Any errors that are returned should be logged in the calling function, though
+// some logging occurs in this function as well
 func DeletePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster, uninstall bool) error {
-	clusterName := cluster.Name
+	clusterName := cluster.Spec.ClusterName
 	namespace := cluster.Spec.Namespace
 
 	log.Debugf("delete pgbouncer from cluster [%s] in namespace [%s]", clusterName, namespace)
@@ -260,7 +286,7 @@ func DeletePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 	// if we cannot update this we abort
 	cluster.Labels[config.LABEL_PGBOUNCER] = "false"
 
-	if err := kubeapi.Updatepgcluster(restclient, cluster, cluster.Name, namespace); err != nil {
+	if err := kubeapi.Updatepgcluster(restclient, cluster, cluster.Spec.ClusterName, namespace); err != nil {
 		return err
 	}
 
@@ -350,6 +376,70 @@ func DeletePgbouncerFromPgTask(clientset *kubernetes.Clientset, restclient *rest
 
 	// publish an event
 	publishPgBouncerEvent(events.EventDeletePgbouncer, task)
+
+	// lastly, remove the task
+	if err := kubeapi.Deletepgtask(restclient, task.Spec.Name, namespace); err != nil {
+		log.Warn(err)
+	}
+}
+
+// UpdatePgbouncer contains the various functions that are used to perform
+// updates to the pgBouncer deployment for a cluster, such as rotating a
+// password
+//
+// Any errors that are returned should be logged in the calling function, though
+// some logging occurs in this function as well
+func UpdatePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster, parameters map[string]string) error {
+	clusterName := cluster.Spec.ClusterName
+	namespace := cluster.Spec.Namespace
+
+	log.Debugf("update pgbouncer from cluster [%s] in namespace [%s] with parameters [%+v]", clusterName, namespace)
+
+	// Alright, so we need to figure out which parameters are set, so we can take
+	// action on them
+	for param, _ := range parameters {
+		switch param {
+		// determine if we need to rotate the password. if there is an error, return
+		// early as we cannot guarantee anything else can occur
+		case config.LABEL_PGBOUNCER_ROTATE_PASSWORD:
+			if err := rotatePgBouncerPassword(clientset, restclient, restconfig, cluster); err != nil {
+				return err
+			}
+		}
+	}
+
+	// and that's it!
+	return nil
+}
+
+// UpdatePgbouncerFromPgTask is effectively a legacy method (though modernized to fit this patterh)
+// that checks basic information about the Pgtask that is being present, and delegates the actual
+// work to UpdatePgBouncer
+func UpdatePgbouncerFromPgTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, task *crv1.Pgtask) {
+	clusterName := task.Spec.Parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER]
+	namespace := task.Spec.Namespace
+	parameters := task.Spec.Parameters
+
+	log.Debugf("update pgbouncer from task called for cluster [%s] in namespace [%s] with parameters [%+v]",
+		clusterName, namespace, parameters)
+
+	// find the pgcluster that is associated with this task
+	cluster := crv1.Pgcluster{}
+
+	if found, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace); !found || err != nil {
+		// if even if it's found and there is an error, it's pretty bad so abort
+		log.Error(err)
+		return
+	}
+
+	// attempt to delete the pgbouncer!
+	if err := UpdatePgbouncer(clientset, restclient, restconfig, &cluster, parameters); err != nil {
+		log.Error(err)
+		return
+	}
+
+	// publish an event
+	publishPgBouncerEvent(events.EventUpdatePgbouncer, task)
 
 	// lastly, remove the task
 	if err := kubeapi.Deletepgtask(restclient, task.Spec.Name, namespace); err != nil {
@@ -613,6 +703,33 @@ func generatePgBouncerHBA() ([]byte, error) {
 	return doc.Bytes(), nil
 }
 
+// generatePgtaskForPgBouncer generates a pgtask specific to a pgbouncer
+// deployment
+func generatePgtaskForPgBouncer(cluster *crv1.Pgcluster, pgouser, taskType, taskLabel string, parameters map[string]string) *crv1.Pgtask {
+	// create the specfile with the required parameters for creating a pgtask
+	spec := crv1.PgtaskSpec{
+		Namespace:  cluster.Namespace,
+		Name:       fmt.Sprintf("%s-%s", taskLabel, cluster.Spec.ClusterName),
+		TaskType:   taskType,
+		Parameters: parameters,
+	}
+
+	// create the pgtask object
+	task := &crv1.Pgtask{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name: spec.Name,
+			Labels: map[string]string{
+				config.LABEL_PG_CLUSTER: cluster.Spec.ClusterName,
+				taskLabel:               "true",
+				config.LABEL_PGOUSER:    pgouser,
+			},
+		},
+		Spec: spec,
+	}
+
+	return task
+}
+
 // getPgBouncerDatabases gets the databases in a PostgreSQL cluster that have
 // the pgBouncer objects, etc.
 func getPgBouncerDatabases(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod) (*bufio.Scanner, error) {
@@ -723,6 +840,87 @@ func publishPgBouncerEvent(eventType string, task *crv1.Pgtask) {
 	}
 }
 
+// rotatePgBouncerPassword rotates the password for a pgBouncer PostgreSQL user,
+// which involves updating the password in the PostgreSQL cluster as well as
+// the users secret that is available in the pgbouncer Pod
+func rotatePgBouncerPassword(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
+	namspace := cluster.Spec.Namespace
+	// determine if we are able to access the primary Pod
+	primaryPod, err := getPrimaryPod(clientset, cluster)
+
+	if err != nil {
+		return err
+	}
+
+	// let's also go ahead and get the secret that contains the pgBouncer
+	// information. If we can't find the secret, we're basically done here
+	secretName := util.GeneratePgBouncerSecretName(cluster.Spec.Name)
+	secret, _, err := kubeapi.GetSecret(clientset, secretName, namspace)
+
+	if err != nil {
+		return err
+	}
+
+	// there are a few steps that must occur in order for the password to be
+	// successfully rotated:
+	//
+	// 1. The PostgreSQL cluster must have the pgbouncer user's password updated
+	// 2. The secret that containers the values of "users.txt" must be updated
+	// 3. The pgBouncer pods must be bounced and have the new password loaded, but
+	// 		we must first ensure the password propagates to them
+	//
+	// ...wouldn't it be nice if we could run this in a transaction? rolling back
+	// is hard :(
+
+	// first, generate a new password
+	password := generatePassword()
+
+	// next, update the PostgreSQL primary with the new password. If this fails
+	// we definitely return an error
+	if err := setPostgreSQLPassword(clientset, restconfig, primaryPod, password); err != nil {
+		return err
+	}
+
+	// next, update the users.txt and password fields of the secret. the important
+	// one to update is the users.txt, as that is used by pgbouncer to connect to
+	// PostgreSQL to perform its authentication
+	secret.Data["password"] = []byte(password)
+	secret.Data["users.txt"] = util.GeneratePgBouncerUsersFileBytes(
+		util.GeneratePostgreSQLMD5Password(util.PgBouncerUser, password))
+
+	// update the secret
+	if err := kubeapi.UpdateSecret(clientset, secret, namspace); err != nil {
+		return err
+	}
+
+	// now we wait for the password to propagate to all of the pgbouncer pods in
+	// the deployment
+	// set up the selector for the primary pod
+	selector := fmt.Sprintf("%s=true", config.LABEL_PGBOUNCER)
+
+	// query the pods
+	pods, err := kubeapi.GetPods(clientset, selector, namspace)
+
+	if err != nil {
+		return err
+	}
+
+	// iterate through each pod and see if the secret has propagated. once it
+	// returns, restart the pod (i.e. deleted it)
+	for _, pod := range pods.Items {
+		waitForSecretPropagation(clientset, restconfig, pod, string(secret.Data["users.txt"]),
+			pgBouncerSecretPropagationTimeout, pgBouncerSecretPropagationPeriod)
+
+		// after this waiting period has passed, delete Pod. If the pod fails to
+		// delete, warn but continue on
+		if err := kubeapi.DeletePod(clientset, pod.Name, pod.Namespace); err != nil {
+			log.Warn(err)
+		}
+	}
+
+	return nil
+}
+
 // setPostgreSQLPassword updates the pgBouncer password in the PostgreSQL
 // cluster by executing into the primary Pod and changing it
 func setPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod, password string) error {
@@ -738,6 +936,7 @@ func setPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Con
 		return err
 	}
 
+	// and that's all!
 	return nil
 }
 
@@ -776,4 +975,41 @@ func uninstallPgBouncer(clientset *kubernetes.Clientset, restconfig *rest.Config
 	}
 
 	return nil
+}
+
+// waitForSecretPropagation waits until the update to the pgbouncer secret has
+// propogated
+func waitForSecretPropagation(clientset *kubernetes.Clientset, restconfig *rest.Config, pod v1.Pod, expected string, timeoutSecs, periodSecs time.Duration) {
+	timeout := time.After(timeoutSecs * time.Second)
+	tick := time.Tick(periodSecs * time.Second)
+
+loop:
+	for {
+		select {
+		// in the case of hitting the timeout, warn that the timeout was hit, but
+		// continue onward
+		case <-timeout:
+			log.Warnf("timed out after [%d]s waiting for secret to propogate to pod [%s]", timeout, pod.Name)
+			return
+		case <-tick:
+			// exec into the pod to run the query
+			stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
+				cmdViewPgBouncerUsersSecret, "pgbouncer", pod.Name, pod.ObjectMeta.Namespace, nil)
+
+			// if there is an error, warn about it, but try again
+			if err != nil {
+				log.Warnf(stderr)
+				continue loop
+			}
+
+			// trim any space that may be there for an accurate read
+			secret := strings.TrimSpace(stdout)
+
+			// if we have match, break the loop
+			if secret == expected {
+				log.Debug("secret propogated to pod [%s]", pod.Name)
+				return
+			}
+		}
+	}
 }

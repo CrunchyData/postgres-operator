@@ -71,6 +71,7 @@ const (
 
 	EventCreatePgbouncer = "CreatePgbouncer"
 	EventDeletePgbouncer = "DeletePgbouncer"
+	EventUpdatePgbouncer = "UpdatePgbouncer"
 
 	EventPGOCreateUser      = "PGOCreateUser"
 	EventPGOUpdateUser      = "PGOUpdateUser"
@@ -599,6 +600,21 @@ func (p EventDeletePgbouncerFormat) GetHeader() EventHeader {
 
 func (lvl EventDeletePgbouncerFormat) String() string {
 	msg := fmt.Sprintf("Event %s (delete pgbouncer) - clustername %s", lvl.EventHeader, lvl.Clustername)
+	return msg
+}
+
+//----------------------------
+type EventUpdatePgbouncerFormat struct {
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+}
+
+func (p EventUpdatePgbouncerFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventUpdatePgbouncerFormat) String() string {
+	msg := fmt.Sprintf("Event %s (update pgbouncer) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 
