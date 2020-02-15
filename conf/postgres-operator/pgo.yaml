@@ -10,7 +10,7 @@ Cluster:
   ExporterPort: 9187
   User:  testuser
   Database:  userdb
-  PasswordAgeDays:  60
+  PasswordAgeDays:  0
   PasswordLength:  24
   Strategy:  1
   Replicas:  0
