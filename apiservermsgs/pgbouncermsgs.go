@@ -103,3 +103,54 @@ type ShowPgBouncerResponse struct {
 	Results []ShowPgBouncerDetail
 	Status
 }
+
+// UpdatePgBouncerDetail is the specific information about the pgBouncer update
+// request for each deployment
+//
+// swagger:model
+type UpdatePgBouncerDetail struct {
+	// ClusterName is the name of the PostgreSQL cluster associated with this
+	// pgBouncer deployment
+	ClusterName string
+	// Error is set to true if there is an error. HasPgbouncer == false is not
+	// an error
+	Error bool
+	// ErrorMessage contains an error message if there is an error
+	ErrorMessage string
+	// HasPgBouncer is set to true if there is a pgBouncer deployment with this
+	// cluster, otherwise its false
+	HasPgBouncer bool
+}
+
+// UpdatePgBouncerRequest contains the attributes for updating a pgBouncer
+// deployment
+//
+// swagger:model
+type UpdatePgBouncerRequest struct {
+	// ClientVersion is the required parameter that includes the version of the
+	// Operator that is requesting
+	ClientVersion string
+
+	// ClusterNames contains one or more names of pgBouncer deployments to be
+	// updated
+	ClusterNames []string
+
+	// Namespace is the namespace to perform the query in
+	Namespace string
+
+	// RotatePassword is used to rotate the password for the "pgbouncer" service
+	// account
+	RotatePassword bool
+
+	// Selector is optional and contains a selector for pgBouncer deployments that
+	// are to be updated
+	Selector string
+}
+
+// UpdatePgBouncerResponse contains the resulting output of the update request
+//
+// swagger:model
+type UpdatePgBouncerResponse struct {
+	Results []UpdatePgBouncerDetail
+	Status
+}

@@ -225,3 +225,70 @@ func ShowPgBouncerHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 
 }
+
+// UpdatePgBouncerHandler is the HTTP handler to perform update tasks on a
+// pgbouncer instance, such as rotating the password
+func UpdatePgBouncerHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation PUT /pgbouncer pgbouncerservice pgbouncer-put
+	/*```
+	  Update a pgBouncer cluster, e.g. rotate the password
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "Update PGBouncer"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/UpdatePgBouncerRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/UpdatePgBouncerResponse"
+	log.Debug("pgbouncerservice.UpdatePgbouncerHandler called")
+
+	// first, determine if the user is authorized to access this resource
+	username, err := apiserver.Authn(apiserver.UPDATE_PGBOUNCER_PERM, w, r)
+
+	if err != nil {
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	// get the information that is in the request
+	var request msgs.UpdatePgBouncerRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	// ensure the versions align...
+	if request.ClientVersion != msgs.PGO_VERSION {
+		response := msgs.UpdatePgBouncerResponse{
+			Status: msgs.Status{
+				Code: msgs.Error,
+				Msg:  apiserver.VERSION_MISMATCH_ERROR,
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// ensure the namespace being used exists
+	namespace, err := apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
+
+	if err != nil {
+		response := msgs.UpdatePgBouncerResponse{
+			Status: msgs.Status{
+				Code: msgs.Error,
+				Msg:  err.Error(),
+			},
+		}
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// get the information about a pgbouncer deployment(s)
+	response := UpdatePgBouncer(&request, namespace, username)
+	json.NewEncoder(w).Encode(response)
+}

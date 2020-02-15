@@ -23,11 +23,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var PgoroleChangePermissions bool
-var ExpireUser bool
+const pgBouncerPrompt = "This may cause an interruption in your pgBouncer service. Are you sure you wish to proceed?"
+
+var (
+	ExpireUser               bool
+	PgoroleChangePermissions bool
+	// RotatePassword is a flag that allows one to specify that a password be
+	// automatically rotated, such as a service account type password
+	RotatePassword bool
+)
 
 func init() {
 	RootCmd.AddCommand(UpdateCmd)
+	UpdateCmd.AddCommand(UpdatePgBouncerCmd)
 	UpdateCmd.AddCommand(UpdatePgouserCmd)
 	UpdateCmd.AddCommand(UpdatePgoroleCmd)
 	UpdateCmd.AddCommand(UpdateClusterCmd)
@@ -39,6 +47,10 @@ func init() {
 	UpdateClusterCmd.Flags().BoolVar(&DisableAutofailFlag, "disable-autofail", false, "Disables autofail capabitilies in the cluster.")
 	UpdateClusterCmd.Flags().BoolVar(&EnableAutofailFlag, "enable-autofail", false, "Enables autofail capabitilies in the cluster.")
 	UpdateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	UpdatePgBouncerCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	UpdatePgBouncerCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
+	UpdatePgBouncerCmd.Flags().BoolVar(&RotatePassword, "rotate-password", false, "Used to rotate the pgBouncer service account password. Can cause interruption of service.")
+	UpdatePgBouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	UpdatePgouserCmd.Flags().StringVarP(&PgouserNamespaces, "pgouser-namespaces", "", "", "The namespaces to use for updating the pgouser roles.")
 	UpdatePgouserCmd.Flags().BoolVar(&AllNamespaces, "all-namespaces", false, "all namespaces.")
 	UpdatePgouserCmd.Flags().StringVarP(&PgouserRoles, "pgouser-roles", "", "", "The roles to use for updating the pgouser roles.")
@@ -64,34 +76,38 @@ var UpdateCmd = &cobra.Command{
 	Short: "Update a pgouser, pgorole, or cluster",
 	Long: `The update command allows you to update a pgouser, pgorole, or cluster. For example:
 
+	pgo update cluster --selector=name=mycluster --autofail=false
+	pgo update cluster --all --autofail=true
+	pgo update namespace mynamespace
+	pgo update pgbouncer mycluster --rotate-password
+	pgo update pgorole somerole --pgorole-permission="Cat"
 	pgo update pgouser someuser --pgouser-password=somenewpassword
 	pgo update pgouser someuser --pgouser-roles="role1,role2"
 	pgo update pgouser someuser --pgouser-namespaces="pgouser2"
-	pgo update user mycluster --username=testuser --selector=name=mycluster --password=somepassword
 	pgo update pgorole somerole --pgorole-permission="Cat"
-	pgo update namespace mynamespace
-	pgo update cluster --selector=name=mycluster --autofail=false
-	pgo update cluster --all --autofail=true`,
+	pgo update user mycluster --username=testuser --selector=name=mycluster --password=somepassword`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the type of resource to update.  Valid resource types include:
-	* pgouser
-	* pgorole
-	* user
+	* cluster
 	* namespace
-	* cluster`)
+	* pgbouncer
+	* pgorole
+	* pgouser
+	* user`)
 		} else {
 			switch args[0] {
-			case "user", "cluster", "pgouser", "pgorole", "namespace":
+			case "user", "cluster", "pgbouncer", "pgouser", "pgorole", "namespace":
 				break
 			default:
 				fmt.Println(`Error: You must specify the type of resource to update.  Valid resource types include:
 	* cluster
-	* pgorole
-	* user
 	* namespace
-	* pgouser`)
+	* pgbouncer
+	* pgorole
+	* pgouser
+	* user`)
 			}
 		}
 
@@ -159,6 +175,29 @@ var UpdateUserCmd = &cobra.Command{
 		} else {
 			updateUser(args, Namespace, validDaysUpdate)
 		}
+	},
+}
+
+var UpdatePgBouncerCmd = &cobra.Command{
+	Use:   "pgbouncer",
+	Short: "Update a pgBouncer deployment for a PostgreSQL cluster",
+	Long: `Used to update the pgBouncer deployment for a PostgreSQL cluster, such
+	as by rotating a password. For example:
+
+	pgo update pgbouncer hacluster --rotate-password
+	`,
+
+	Run: func(cmd *cobra.Command, args []string) {
+		if !util.AskForConfirmation(NoPrompt, pgBouncerPrompt) {
+			fmt.Println("Aborting...")
+			return
+		}
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+
+		updatePgBouncer(Namespace, args)
 	},
 }
 

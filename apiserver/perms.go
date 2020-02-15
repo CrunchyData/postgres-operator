@@ -87,6 +87,7 @@ const SHOW_PGOROLE_PERM = "ShowPgorole"
 const UPDATE_CLUSTER_PERM = "UpdateCluster"
 const UPDATE_PGOUSER_PERM = "UpdatePgouser"
 const UPDATE_USER_PERM = "UpdateUser"
+const UPDATE_PGBOUNCER_PERM = "UpdatePgBouncer"
 const UPDATE_PGOROLE_PERM = "UpdatePgorole"
 const UPDATE_NAMESPACE_PERM = "UpdateNamespace"
 

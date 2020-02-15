@@ -23,19 +23,21 @@ import (
 
 // values for the headings
 const (
-	headingCapacity    = "CAPACITY"
-	headingCluster     = "CLUSTER"
-	headingClusterIP   = "CLUSTER IP"
-	headingExternalIP  = "EXTERNAL IP"
-	headingInstance    = "INSTANCE"
-	headingPassword    = "PASWORD"
-	headingPercentUsed = "% USED"
-	headingPod         = "POD"
-	headingPVC         = "PVC"
-	headingService     = "SERVICE"
-	headingPVCType     = "TYPE"
-	headingUsed        = "USED"
-	headingUsername    = "USERNAME"
+	headingCapacity     = "CAPACITY"
+	headingCluster      = "CLUSTER"
+	headingClusterIP    = "CLUSTER IP"
+	headingErrorMessage = "ERROR"
+	headingExternalIP   = "EXTERNAL IP"
+	headingInstance     = "INSTANCE"
+	headingPassword     = "PASWORD"
+	headingPercentUsed  = "% USED"
+	headingPod          = "POD"
+	headingPVC          = "PVC"
+	headingService      = "SERVICE"
+	headingStatus       = "STATUS"
+	headingPVCType      = "TYPE"
+	headingUsed         = "USED"
+	headingUsername     = "USERNAME"
 )
 
 // getHeaderLength returns the length of any value in a list, so that

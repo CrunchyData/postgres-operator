@@ -160,7 +160,7 @@ func GetS3CredsFromBackrestRepoSecret(clientset *kubernetes.Clientset, clusterNa
 // way the plaintext password is not logged anywhere. This also avoids potential
 // SQL injections
 func SetPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod, username, password, sqlCustom string) error {
-	log.Debug("set PostgreSQL password for user [%s]", username)
+	log.Debugf("set PostgreSQL password for user [%s]", username)
 
 	// if custom SQL is not set, use the default SQL
 	sqlRaw := sqlCustom

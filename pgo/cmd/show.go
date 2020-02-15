@@ -51,6 +51,7 @@ Valid resource types include:
 	* benchmark
 	* cluster
 	* config
+	* pgbouncer
 	* pgouser
 	* policy
 	* pvc
@@ -60,7 +61,7 @@ Valid resource types include:
 	`)
 		} else {
 			switch args[0] {
-			case "backup", "benchmark", "cluster", "config", "pgouser",
+			case "backup", "benchmark", "cluster", "config", "pgbouncer", "pgouser",
 				"policy", "pvc", "schedule", "namespace", "workflow",
 				"user":
 				break
@@ -71,6 +72,7 @@ Valid resource types include:
 	* benchmark
 	* cluster
 	* config
+	* pgbouncer
 	* pgouser
 	* policy
 	* pvc

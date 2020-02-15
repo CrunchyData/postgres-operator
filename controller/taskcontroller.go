@@ -135,6 +135,9 @@ func (c *PgtaskController) processNextItem() bool {
 	case crv1.PgtaskAddPgbouncer:
 		log.Debug("add pgbouncer task added")
 		clusteroperator.AddPgbouncerFromPgTask(c.PgtaskClientset, c.PgtaskClient, c.PgtaskConfig, &tmpTask)
+	case crv1.PgtaskUpdatePgbouncer:
+		log.Debug("update pgbouncer task added")
+		clusteroperator.UpdatePgbouncerFromPgTask(c.PgtaskClientset, c.PgtaskClient, c.PgtaskConfig, &tmpTask)
 	case crv1.PgtaskFailover:
 		log.Debug("failover task added")
 		if !dupeFailover(c.PgtaskClient, &tmpTask, keyNamespace) {

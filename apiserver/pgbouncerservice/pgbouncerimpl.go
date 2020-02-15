@@ -24,6 +24,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,46 +57,16 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 	for _, cluster := range clusterList.Items {
 		log.Debugf("adding pgbouncer to cluster [%s]", cluster.Name)
 
-		spec := crv1.PgtaskSpec{}
-		spec.Namespace = ns
-		spec.Name = config.LABEL_PGBOUNCER_TASK_ADD + "-" + cluster.Name
-		spec.TaskType = crv1.PgtaskAddPgbouncer
-		spec.StorageSpec = crv1.PgStorageSpec{}
-		spec.Parameters = make(map[string]string)
-		spec.Parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER] = cluster.Name
-		newInstance := &crv1.Pgtask{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name: spec.Name,
-			},
-			Spec: spec,
+		if err := clusteroperator.CreatePgTaskforAddpgBouncer(apiserver.RESTClient, &cluster, pgouser); err != nil {
+			log.Error(err)
+			resp.Results = append(resp.Results, err.Error())
+			continue
 		}
 
-		newInstance.ObjectMeta.Labels = make(map[string]string)
-		newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = cluster.Name
-		newInstance.ObjectMeta.Labels[config.LABEL_PGBOUNCER_TASK_ADD] = "true"
-		newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
-
-		//check if this cluster already has a pgbouncer
-		// if cluster.Spec.UserLabels[config.LABEL_PGBOUNCER] == "true" {
-		if cluster.Labels[config.LABEL_PGBOUNCER] == "true" {
-			resp.Results = append(resp.Results, cluster.Name+" already has pgbouncer added")
-			resp.Status.Code = msgs.Error
-		} else {
-			err := kubeapi.Createpgtask(apiserver.RESTClient,
-				newInstance, ns)
-			if err != nil {
-				log.Error(err)
-				resp.Results = append(resp.Results, err.Error())
-				return resp
-			} else {
-				resp.Results = append(resp.Results, cluster.Name+" pgbouncer added")
-			}
-		}
-
+		resp.Results = append(resp.Results, fmt.Sprintf("%s pgbouncer added", cluster.Name))
 	}
 
 	return resp
-
 }
 
 // DeletePgbouncer ...
@@ -214,6 +185,72 @@ func ShowPgBouncer(request *msgs.ShowPgBouncerRequest, namespace string) msgs.Sh
 
 		// get the user information about the pgBouncer deployment
 		setPgBouncerPasswordDetail(cluster, &result)
+
+		// append the result to the list
+		response.Results = append(response.Results, result)
+	}
+
+	return response
+}
+
+// UpdatePgBouncer updates a cluster's pgBouncer deployment based on the
+// parameters passed in. Right now, that is only rotating the service account
+// password
+//
+// pgo update pgbouncer --rotate-password
+func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser string) msgs.UpdatePgBouncerResponse {
+	// set up a dummy response
+	response := msgs.UpdatePgBouncerResponse{
+		// Results: []msgs.ShowPgBouncerDetail{},
+		Status: msgs.Status{
+			Code: msgs.Ok,
+			Msg:  "",
+		},
+	}
+
+	log.Debugf("update pgbouncer called, cluster [%v], selector [%s]", request.ClusterNames, request.Selector)
+
+	// try to get the list of clusters. if there is an error, put it into the
+	// status and return
+	clusterList, err := getClusterList(request.Namespace, request.ClusterNames, request.Selector)
+
+	if err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	// iterate through the list of clusters to get the relevant pgBouncer
+	// information about them
+	for _, cluster := range clusterList.Items {
+		result := msgs.UpdatePgBouncerDetail{
+			ClusterName:  cluster.Spec.Name,
+			HasPgBouncer: true,
+		}
+		// first, check if the cluster has the pgBouncer label. If it does not, we
+		// add it to the list and keep iterating
+		clusterLabels := cluster.GetLabels()
+
+		if clusterLabels[config.LABEL_PGBOUNCER] != "true" {
+			result.HasPgBouncer = false
+			response.Results = append(response.Results, result)
+			continue
+		}
+
+		// set up the pgtask parameters based on the request options passed in
+		parameters := map[string]string{}
+
+		if request.RotatePassword {
+			parameters[config.LABEL_PGBOUNCER_ROTATE_PASSWORD] = "true"
+		}
+
+		if err := clusteroperator.CreatePgTaskforUpdatepgBouncer(apiserver.RESTClient, &cluster, pgouser, parameters); err != nil {
+			log.Error(err)
+			result.Error = true
+			result.ErrorMessage = err.Error()
+			response.Results = append(response.Results, result)
+			continue
+		}
 
 		// append the result to the list
 		response.Results = append(response.Results, result)

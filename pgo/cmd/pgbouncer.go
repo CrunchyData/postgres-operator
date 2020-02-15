@@ -35,6 +35,13 @@ type showPgBouncerTextPadding struct {
 	Username    int
 }
 
+// updatePgBouncerTextPadding contains the values for what the text padding should be
+type updatePgBouncerTextPadding struct {
+	ClusterName  int
+	ErrorMessage int
+	Status       int
+}
+
 // PgBouncerUninstall is used to ensure the objects intalled in PostgreSQL on
 // behalf of pgbouncer are either not applied (in the case of a cluster create)
 // or are removed (in the case of a pgo delete pgbouncer)
@@ -119,6 +126,19 @@ func makeShowPgBouncerInterface(values []msgs.ShowPgBouncerDetail) []interface{}
 	return showPgBouncerInterface
 }
 
+// makeUpdatePgBouncerInterface returns an interface slice of the avaialble values
+// in show pgbouncer
+func makeUpdatePgBouncerInterface(values []msgs.UpdatePgBouncerDetail) []interface{} {
+	// iterate through the list of values to make the interface
+	updatePgBouncerInterface := make([]interface{}, len(values))
+
+	for i, value := range values {
+		updatePgBouncerInterface[i] = value
+	}
+
+	return updatePgBouncerInterface
+}
+
 // printShowPgBouncerText prints out the information around each PostgreSQL
 // cluster's pgBouncer
 // printShowPgBouncerText renders a text response
@@ -192,6 +212,73 @@ func printShowPgBouncerTextRow(result msgs.ShowPgBouncerDetail, padding showPgBo
 	fmt.Println("")
 }
 
+// printUpdatePgBouncerText prints out the information about how each pgBouncer
+// updat efared after a request
+// printShowPgBouncerText renders a text response
+func printUpdatePgBouncerText(response msgs.UpdatePgBouncerResponse) {
+	// if the request errored, return the message here and exit with an error
+	if response.Status.Code != msgs.Ok {
+		fmt.Println("Error: " + response.Status.Msg)
+		os.Exit(1)
+	}
+
+	// if no results returned, return an error
+	if len(response.Results) == 0 {
+		fmt.Println("Nothing found.")
+		return
+	}
+
+	// make the interface for the pgbouncer clusters
+	updatePgBouncerInterface := makeUpdatePgBouncerInterface(response.Results)
+
+	// format the header
+	// start by setting up the different text paddings
+	padding := updatePgBouncerTextPadding{
+		ClusterName:  getMaxLength(updatePgBouncerInterface, headingCluster, "ClusterName"),
+		ErrorMessage: getMaxLength(updatePgBouncerInterface, headingErrorMessage, "ErrorMessage"),
+		Status:       len(headingStatus) + 1,
+	}
+
+	printUpdatePgBouncerTextHeader(padding)
+
+	// iterate through the reuslts and print them out
+	for _, result := range response.Results {
+		printUpdatePgBouncerTextRow(result, padding)
+	}
+}
+
+// printUpdatePgBouncerTextHeader prints out the header
+func printUpdatePgBouncerTextHeader(padding updatePgBouncerTextPadding) {
+	// print the header
+	fmt.Println("")
+	fmt.Printf("%s", util.Rpad(headingCluster, " ", padding.ClusterName))
+	fmt.Printf("%s", util.Rpad(headingStatus, " ", padding.Status))
+	fmt.Printf("%s", util.Rpad(headingErrorMessage, " ", padding.ErrorMessage))
+	fmt.Println("")
+
+	// print the layer below the header...which prints out a bunch of "-" that's
+	// 1 less than the padding value
+	fmt.Println(
+		strings.Repeat("-", padding.ClusterName-1),
+		strings.Repeat("-", padding.Status-1),
+		strings.Repeat("-", padding.ErrorMessage-1),
+	)
+}
+
+// printUpdatePgBouncerTextRow prints a row of the text data
+func printUpdatePgBouncerTextRow(result msgs.UpdatePgBouncerDetail, padding updatePgBouncerTextPadding) {
+	// set the text-based status
+	status := "ok"
+	if result.Error {
+		status = "error"
+	}
+
+	fmt.Printf("%s", util.Rpad(result.ClusterName, " ", padding.ClusterName))
+	fmt.Printf("%s", util.Rpad(status, " ", padding.Status))
+	fmt.Printf("%s", util.Rpad(result.ErrorMessage, " ", padding.ErrorMessage))
+	fmt.Println("")
+}
+
 // showPgBouncer prepares to make an API requests to display information about
 // one or more pgBouncer deployments. "clusterNames" is an array of cluster
 // names to iterate over
@@ -226,5 +313,44 @@ func showPgBouncer(namespace string, clusterNames []string) {
 		printJSON(response)
 	default:
 		printShowPgBouncerText(response)
+	}
+}
+
+// updatePgBouncer prepares to make an API requests to update information about
+// a pgBouncer deployment in a cluster
+// one or more pgBouncer deployments. "clusterNames" is an array of cluster
+// names to iterate over
+func updatePgBouncer(namespace string, clusterNames []string) {
+	// first, determine if any arguments have been pass in
+	if len(clusterNames) == 0 && Selector == "" {
+		fmt.Println("Error: You must provide at least one cluster name, or use a selector with the `--selector` flag")
+		os.Exit(1)
+	}
+
+	// next prepare the request!
+	request := msgs.UpdatePgBouncerRequest{
+		ClusterNames:   clusterNames,
+		Namespace:      namespace,
+		RotatePassword: RotatePassword,
+		Selector:       Selector,
+	}
+
+	// and make the API request!
+	response, err := api.UpdatePgBouncer(httpclient, &SessionCredentials, request)
+
+	// if there is a bona-fide error, log and exit
+	if err != nil {
+		fmt.Println("Error:", err.Error())
+		os.Exit(1)
+	}
+
+	// great! now we can work on interpreting the results and outputting them
+	// per the user's desired output format
+	// render the next bit based on the output type
+	switch OutputFormat {
+	case "json":
+		printJSON(response)
+	default:
+		printUpdatePgBouncerText(response)
 	}
 }

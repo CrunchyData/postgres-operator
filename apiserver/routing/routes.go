@@ -164,6 +164,7 @@ func RegisterNamespaceSvcRoutes(r *mux.Router) {
 // RegisterPGBouncerSvcRoutes registers all routes from the PGBouncer Service
 func RegisterPGBouncerSvcRoutes(r *mux.Router) {
 	r.HandleFunc("/pgbouncer", pgbouncerservice.CreatePgbouncerHandler).Methods("POST")
+	r.HandleFunc("/pgbouncer", pgbouncerservice.UpdatePgBouncerHandler).Methods("PUT")
 	r.HandleFunc("/pgbouncer", pgbouncerservice.DeletePgbouncerHandler).Methods("DELETE")
 	r.HandleFunc("/pgbouncer/show", pgbouncerservice.ShowPgBouncerHandler).Methods("POST")
 	r.HandleFunc("/pgbouncerdelete", pgbouncerservice.DeletePgbouncerHandler).Methods("POST")
