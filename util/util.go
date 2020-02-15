@@ -23,7 +23,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"strconv"
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -115,32 +114,6 @@ func Patch(restclient *rest.RESTClient, path string, value string, resource stri
 
 }
 
-// DrainDeployment will drain a deployment to 0 pods
-func DrainDeployment(clientset *kubernetes.Clientset, name string, namespace string) error {
-
-	var err error
-	var patchBytes []byte
-
-	things := make([]ThingSpec, 1)
-	things[0].Op = "replace"
-	things[0].Path = "/spec/replicas"
-	things[0].Value = "0"
-
-	patchBytes, err = json.Marshal(things)
-	if err != nil {
-		log.Error("error in converting patch " + err.Error())
-	}
-	log.Debug(string(patchBytes))
-
-	_, err = clientset.AppsV1().Deployments(namespace).Patch(name, types.JSONPatchType, patchBytes, "")
-	if err != nil {
-		log.Error("error patching deployment " + err.Error())
-	}
-
-	return err
-
-}
-
 // CreatePVCSnippet generates the PVC json snippet
 func CreatePVCSnippet(storageType string, PVCName string) string {
 
@@ -177,32 +150,6 @@ func CreateBackupPVCSnippet(backupPVCName string) string {
 	sc.WriteString("}")
 
 	return sc.String()
-}
-
-// ScaleDeployment will increase the number of pods in a deployment
-func ScaleDeployment(clientset *kubernetes.Clientset, deploymentName, namespace string, replicaCount int) error {
-	var err error
-
-	things := make([]ThingSpec, 1)
-	things[0].Op = "replace"
-	things[0].Path = "/spec/replicas"
-	things[0].Value = strconv.Itoa(replicaCount)
-
-	var patchBytes []byte
-	patchBytes, err = json.Marshal(things)
-	if err != nil {
-		log.Error("error in converting patch " + err.Error())
-		return err
-	}
-	log.Debug(string(patchBytes))
-
-	_, err = clientset.AppsV1().Deployments(namespace).Patch(deploymentName, types.JSONPatchType, patchBytes)
-	if err != nil {
-		log.Error("error creating primary Deployment " + err.Error())
-		return err
-	}
-	log.Debug("replica count patch succeeded")
-	return err
 }
 
 // GetLabels ...
