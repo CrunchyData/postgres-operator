@@ -19,11 +19,25 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+	"github.com/crunchydata/postgres-operator/pgo/util"
+	utiloperator "github.com/crunchydata/postgres-operator/util"
+
 	log "github.com/sirupsen/logrus"
 )
+
+// createUserTextPadding contains the values for what the text padding should be
+type createUserTextPadding struct {
+	ClusterName  int
+	ErrorMessage int
+	Expires      int
+	Password     int
+	Username     int
+	Status       int
+}
 
 // PasswordAgeDays password age flag
 var PasswordAgeDays int
@@ -86,39 +100,49 @@ func updateUser(args []string, ns string, PasswordAgeDaysUpdate bool) {
 }
 
 func createUser(args []string, ns string) {
+	username := strings.TrimSpace(Username)
 
-	if Username == "" {
+	// ensure the username is nonempty
+	if username == "" {
 		fmt.Println("Error: --username is required")
-		return
+		os.Exit(1)
 	}
 
-	r := new(msgs.CreateUserRequest)
-	r.Clusters = args
-	r.Username = Username
-	r.Selector = Selector
-	r.Password = Password
-	r.ManagedUser = ManagedUser
-	//r.UserDBAccess = UserDBAccess
-	r.PasswordAgeDays = PasswordAgeDays
-	r.ClientVersion = msgs.PGO_VERSION
-	r.PasswordLength = PasswordLength
-	r.Namespace = ns
+	// check to see if this is a system account. if it is, do not let the request
+	// go through
+	if utiloperator.CheckPostgreSQLUserSystemAccount(username) {
+		fmt.Println("Error:", username, "is a system account and cannot be used")
+		os.Exit(1)
+	}
 
-	response, err := api.CreateUser(httpclient, &SessionCredentials, r)
+	request := msgs.CreateUserRequest{
+		AllFlag:         AllFlag,
+		Clusters:        args,
+		ManagedUser:     ManagedUser,
+		Namespace:       ns,
+		Password:        Password,
+		PasswordAgeDays: PasswordAgeDays,
+		PasswordLength:  PasswordLength,
+		Username:        username,
+		Selector:        Selector,
+	}
+
+	response, err := api.CreateUser(httpclient, &SessionCredentials, &request)
+
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
-	if response.Status.Code == msgs.Ok {
-		for _, v := range response.Results {
-			fmt.Println(v)
-		}
-	} else {
-		fmt.Println("Error: " + response.Status.Msg)
-		os.Exit(2)
+	// great! now we can work on interpreting the results and outputting them
+	// per the user's desired output format
+	// render the next bit based on the output type
+	switch OutputFormat {
+	case "json":
+		printJSON(response)
+	default:
+		printCreateUserText(response)
 	}
-
 }
 
 // deleteUser ...
@@ -154,6 +178,110 @@ func deleteUser(args []string, ns string) {
 		fmt.Println("Error: " + response.Status.Msg)
 	}
 
+}
+
+// makeCreateUserInterface returns an interface slice of the avaialble values
+// in pgo create user
+func makeCreateUserInterface(values []msgs.CreateUserResponseDetail) []interface{} {
+	// iterate through the list of values to make the interface
+	createUserInterface := make([]interface{}, len(values))
+
+	for i, value := range values {
+		createUserInterface[i] = value
+	}
+
+	return createUserInterface
+}
+
+// printCreateUserText prints out the information that is created after
+// pgo create user is called
+func printCreateUserText(response msgs.CreateUserResponse) {
+	// if the request errored, return the message here and exit with an error
+	if response.Status.Code != msgs.Ok {
+		fmt.Println("Error: " + response.Status.Msg)
+		os.Exit(1)
+	}
+
+	// if no results returned, return an error
+	if len(response.Results) == 0 {
+		fmt.Println("Nothing found.")
+		return
+	}
+
+	// make the interface for the users
+	createUserInterface := makeCreateUserInterface(response.Results)
+
+	// format the header
+	// start by setting up the different text paddings
+	padding := createUserTextPadding{
+		ClusterName:  getMaxLength(createUserInterface, headingCluster, "ClusterName"),
+		ErrorMessage: getMaxLength(createUserInterface, headingErrorMessage, "ErrorMessage"),
+		Expires:      getMaxLength(createUserInterface, headingExpires, "ValidUntil"),
+		Password:     getMaxLength(createUserInterface, headingPassword, "Password"),
+		Status:       len(headingStatus) + 1,
+		Username:     getMaxLength(createUserInterface, headingUsername, "Username"),
+	}
+
+	printCreateUserTextHeader(padding)
+
+	// iterate through the reuslts and print them out
+	for _, result := range response.Results {
+		printCreateUserTextRow(result, padding)
+	}
+}
+
+// printCreateUserTextHeader prints out the header
+func printCreateUserTextHeader(padding createUserTextPadding) {
+	// print the header
+	fmt.Println("")
+	fmt.Printf("%s", util.Rpad(headingCluster, " ", padding.ClusterName))
+	fmt.Printf("%s", util.Rpad(headingUsername, " ", padding.Username))
+	fmt.Printf("%s", util.Rpad(headingPassword, " ", padding.Password))
+	fmt.Printf("%s", util.Rpad(headingExpires, " ", padding.Expires))
+	fmt.Printf("%s", util.Rpad(headingStatus, " ", padding.Status))
+	fmt.Printf("%s", util.Rpad(headingErrorMessage, " ", padding.ErrorMessage))
+	fmt.Println("")
+
+	// print the layer below the header...which prints out a bunch of "-" that's
+	// 1 less than the padding value
+	fmt.Println(
+		strings.Repeat("-", padding.ClusterName-1),
+		strings.Repeat("-", padding.Username-1),
+		strings.Repeat("-", padding.Password-1),
+		strings.Repeat("-", padding.Expires-1),
+		strings.Repeat("-", padding.Status-1),
+		strings.Repeat("-", padding.ErrorMessage-1),
+	)
+}
+
+// printCreateUserTextRow prints a row of the text data
+func printCreateUserTextRow(result msgs.CreateUserResponseDetail, padding createUserTextPadding) {
+	expires := result.ValidUntil
+
+	// if expires is empty here, set it to never. This may be ovrriden if there is
+	// an error
+	if expires == "" {
+		expires = "never"
+	}
+
+	password := result.Password
+
+	// set the text-based status, and use it to drive some of the display
+	status := "ok"
+
+	if result.Error {
+		expires = ""
+		password = ""
+		status = "error"
+	}
+
+	fmt.Printf("%s", util.Rpad(result.ClusterName, " ", padding.ClusterName))
+	fmt.Printf("%s", util.Rpad(result.Username, " ", padding.Username))
+	fmt.Printf("%s", util.Rpad(password, " ", padding.Password))
+	fmt.Printf("%s", util.Rpad(expires, " ", padding.Expires))
+	fmt.Printf("%s", util.Rpad(status, " ", padding.Status))
+	fmt.Printf("%s", util.Rpad(result.ErrorMessage, " ", padding.ErrorMessage))
+	fmt.Println("")
 }
 
 // showUsers ...

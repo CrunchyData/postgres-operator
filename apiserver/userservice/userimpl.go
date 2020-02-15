@@ -19,10 +19,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"math/rand"
 	"regexp"
 	"strconv"
-	"strings"
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -37,10 +35,21 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const charset = "!@#~$%^&*{_+=-;}abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ123456890"
+const (
+	errSystemAccountFormat = `"%s" is a system account and cannot be used`
+)
 
-var seededRand = rand.New(
-	rand.NewSource(time.Now().UnixNano()))
+const (
+	// sqlCreateRole is SQL that allows a new PostgreSQL user to be created. To
+	// safely use this function, the role name and passsword must be escaped to
+	// avoid SQL injections, which is handled in the SetPostgreSQLPassword
+	// function
+	sqlCreateRole = `CREATE ROLE %s PASSWORD %s LOGIN`
+	// sqlValidUntilClause is a clause that allows one to pass in a valid until
+	// timestamp. The value must be escaped to avoid SQL injections, using the
+	// util.SQLQuoteLiteral function
+	sqlValidUntilClause = `VALID UNTIL %s`
+)
 
 var alterRole = "DO $_$BEGIN EXECUTE $$ALTER USER $$ || quote_ident($$%s$$) || $$ PASSWORD $$ || quote_literal($$%s$$); END$_$;"
 
@@ -62,9 +71,6 @@ type pswResult struct {
 
 // defaultPasswordAgeDays password age length
 var defaultPasswordAgeDays = 365
-
-// defaultPasswordLength password length
-var defaultPasswordLength = 32
 
 //  User ...
 // pgo user --change-password=bob --db=userdb
@@ -173,7 +179,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 					log.Debug("expired passwords...")
 					for _, v := range results {
 						log.Debugf("RoleName %s Role Valid Until %s", v.Rolname, v.Rolvaliduntil)
-						newPassword := GeneratePassword(request.PasswordLength)
+						newPassword := util.GeneratePassword(request.PasswordLength)
 						newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
 						err = updatePassword(cluster.Spec.Name, v.ConnDetails, v.Rolname, newPassword, newExpireDate, request.Namespace, request.PasswordLength)
 						if err != nil {
@@ -345,7 +351,7 @@ func updatePassword(clusterName string, p connInfo, username, newPassword, passw
 		return nil
 	}
 
-	err = util.UpdateUserSecret(apiserver.Clientset, clusterName, username, newPassword, namespace, passwordLength)
+	err = util.UpdateUserSecret(apiserver.Clientset, clusterName, username, newPassword, namespace)
 	if err != nil {
 		log.Debug(err.Error())
 		return err
@@ -412,17 +418,11 @@ func getDefaults() {
 	if str != "" {
 		defaultPasswordAgeDays, _ = strconv.Atoi(str)
 		log.Debugf("PasswordAgeDays set to %d\n", defaultPasswordAgeDays)
-
 	}
-	str = apiserver.Pgo.Cluster.PasswordLength
-	if str != "" {
-		defaultPasswordLength, _ = strconv.Atoi(str)
-		log.Debugf("PasswordLength set to %d\n", defaultPasswordLength)
-	}
-
 }
 
 // getPostgresUserInfo...
+// TODO: delete this function as it's useless
 func getPostgresUserInfo(namespace, clusterName string) (connInfo, error) {
 	var err error
 	info := connInfo{}
@@ -464,101 +464,6 @@ func getPostgresUserInfo(namespace, clusterName string) (connInfo, error) {
 	info.Port = strPort
 
 	return info, err
-}
-
-// addUser ...
-func addUser(request *msgs.CreateUserRequest, namespace, clusterName string, info connInfo) error {
-	var conn *sql.DB
-	var err error
-
-	conn, err = sql.Open("postgres", "sslmode=disable user="+info.Username+" host="+info.Hostip+" port="+info.Port+" dbname="+info.Database+" password="+info.Password)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-
-	var rows *sql.Rows
-	var querystr string
-
-	if request.Username != "" {
-		parts := strings.Split(request.Username, " ")
-		if len(parts) > 1 {
-			return errors.New("invalid user name format, can not container special characters")
-		}
-	}
-	//validate userdb if entered
-	/**
-	if request.UserDBAccess != "" {
-		parts := strings.Split(request.UserDBAccess, " ")
-		if len(parts) > 1 {
-			return errors.New("invalid db name format, can not container special characters")
-		}
-		querystr = "select count(datname) from pg_catalog.pg_database where datname = '" + request.UserDBAccess + "'"
-		log.Debug(querystr)
-		rows, err = conn.Query(querystr)
-		if err != nil {
-			log.Error(err.Error())
-			return err
-		}
-		var returnedName int
-		for rows.Next() {
-			err = rows.Scan(&returnedName)
-			if err != nil {
-				log.Error(err)
-				return err
-			}
-			log.Debugf(" returned name %d", returnedName)
-			if returnedName == 0 {
-				return errors.New("dbname is not valid database name")
-			}
-		}
-	}
-	*/
-
-	querystr = "create user \"" + request.Username + "\""
-	log.Debug(querystr)
-	rows, err = conn.Query(querystr)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-
-	/**
-	if request.UserDBAccess != "" {
-		querystr = "grant all on database " + request.UserDBAccess + " to  " + request.Username
-	} else {
-		querystr = "grant all on database userdb to  " + request.Username
-	}
-	log.Debug(querystr)
-	rows, err = conn.Query(querystr)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-	*/
-
-	defer func() {
-		if conn != nil {
-			conn.Close()
-		}
-		if rows != nil {
-			rows.Close()
-		}
-	}()
-
-	//add a secret if managed
-	if request.ManagedUser {
-		if request.Password != "" {
-			info.Password = request.Password
-		}
-		err = util.CreateUserSecret(apiserver.Clientset, clusterName, request.Username, info.Password, namespace, request.PasswordLength)
-		if err != nil {
-			log.Error(err.Error())
-			return err
-		}
-	}
-	return err
-
 }
 
 // deleteUser ...
@@ -616,134 +521,148 @@ func deleteUser(namespace, clusterName string, info connInfo, user string, manag
 // pgo create user --username=user1 --managed --all
 // pgo create user --username=user1 --managed --selector=name=mycluster
 func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUserResponse {
-	var err error
-	resp := msgs.CreateUserResponse{}
-	resp.Status.Code = msgs.Ok
-	resp.Status.Msg = ""
-	resp.Results = make([]string, 0)
-
-	getDefaults()
-
-	log.Debugf("createUser selector is ", request.Selector)
-	if request.Selector == "" && request.AllFlag == false && len(request.Clusters) == 0 {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "--selector, --all, or list of cluster names is required for this command"
-		return resp
+	response := msgs.CreateUserResponse{
+		Results: []msgs.CreateUserResponseDetail{},
+		Status: msgs.Status{
+			Code: msgs.Ok,
+			Msg:  "",
+		},
 	}
 
-	clusterList := crv1.PgclusterList{}
+	log.Debugf("create user called, cluster [%v], selector [%s], all [%t]",
+		request.Clusters, request.Selector, request.AllFlag)
 
-	//get a list of all clusters
-	if request.Selector != "" {
-		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector, request.Namespace)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-	} else if request.AllFlag {
-		err = kubeapi.Getpgclusters(apiserver.RESTClient, &clusterList, request.Namespace)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-	} else {
-		for i := 0; i < len(request.Clusters); i++ {
-			cluster := crv1.Pgcluster{}
-			found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.Clusters[i], request.Namespace)
-			if !found {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = err.Error()
-				return resp
-			}
-			clusterList.Items = append(clusterList.Items, cluster)
-		}
-
+	// if the username is one of the PostgreSQL system accounts, return here
+	if util.CheckPostgreSQLUserSystemAccount(request.Username) {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf(errSystemAccountFormat, request.Username)
+		return response
 	}
 
-	if len(clusterList.Items) == 0 {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "no clusters found"
-		return resp
+	// try to get a list of clusters. if there is an error, return
+	clusterList, err := getClusterList(request.Namespace, request.Clusters, request.Selector, request.AllFlag)
+
+	if err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
 	}
 
-	log.Debugf("createUser clusters found len is %d", len(clusterList.Items))
-
+	// NOTE: this is a legacy requirement as the uesrname is kept in the name of
+	// the secret, which requires RFC 1035 compliance. We could probably update
+	// this check as well to be more accurate, and even more the MustCompile
+	// statement to being a file-level constant, but for now this is just going
+	// to sit here and changed in a planned later commit.
 	re := regexp.MustCompile("^[a-z0-9.-]*$")
 	if !re.MatchString(request.Username) {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "user name is required to contain lowercase letters, numbers, '.' and '-' only."
-		return resp
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "user name is required to contain lowercase letters, numbers, '.' and '-' only."
+		return response
 	}
 
-	for _, c := range clusterList.Items {
-		info, err := getPostgresUserInfo(request.Namespace, c.Name)
+	// as the password age is uniform throughout the request, we can check for the
+	// user supplied value and the defaults here
+	validUntilDays := request.PasswordAgeDays
+	validUntil := ""
+	sqlValidUntil := ""
+
+	// if this is zero (or less than zero), attempt to set the value supplied by
+	// the server. If it's still zero, then the user can create a password without
+	// expiration
+	if validUntilDays <= 0 {
+		validUntilDays = util.GeneratedPasswordValidUntilDays(apiserver.Pgo.Cluster.PasswordAgeDays)
+	}
+
+	// ...and we can generate the SQL snippet here, as it won't change
+	if validUntilDays > 0 {
+		validUntil = GeneratePasswordExpireDate(validUntilDays)
+		sqlValidUntil = fmt.Sprintf(sqlValidUntilClause, util.SQLQuoteLiteral(validUntil))
+	}
+
+	// iterate through each cluster and add the new PostgreSQL role to each pod
+	for _, cluster := range clusterList.Items {
+		log.Debugf("creating user on cluster [%s]", cluster.Name)
+
+		result := msgs.CreateUserResponseDetail{
+			ClusterName: cluster.Name,
+			Username:    request.Username,
+			ValidUntil:  validUntil,
+		}
+
+		// first, find the primary Pod
+		pod, err := util.GetPrimaryPod(apiserver.Clientset, &cluster)
+
+		// if the primary Pod cannot be found, we're going to continue on for the
+		// other clusters, but provide some sort of error message in the response
 		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
+			log.Error(err)
+
+			result.Error = true
+			result.ErrorMessage = err.Error()
+
+			response.Results = append(response.Results, result)
+			continue
 		}
 
-		err = addUser(request, request.Namespace, c.Name, info)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		} else {
-			msg := "adding new user " + request.Username + " to " + c.Name
-			log.Debug(msg)
-			resp.Results = append(resp.Results, msg)
+		// build up the SQL clause that will be executed.
+		sql := sqlCreateRole
+
+		// determine if there is a password expiration set. The SQL clause
+		// is already generated and has its injectable input escaped
+		if sqlValidUntil != "" {
+			sql = fmt.Sprintf("%s %s", sql, sqlValidUntil)
 		}
 
-		if request.PasswordLength == 0 {
-			request.PasswordLength = defaultPasswordLength
-		}
-
-		newPassword := GeneratePassword(request.PasswordLength)
+		// Set the password
+		// See if the user set a password, otherwise generate a password
 		if request.Password != "" {
-			newPassword = request.Password
+			result.Password = request.Password
+		} else {
+			// Determine if the user passed in a password length, otherwise us the
+			// default
+			passwordLength := request.PasswordLength
+
+			if passwordLength == 0 {
+				passwordLength = util.GeneratedPasswordLength(apiserver.Pgo.Cluster.PasswordLength)
+			}
+
+			// generate the password
+			result.Password = util.GeneratePassword(passwordLength)
 		}
-		newExpireDate := GeneratePasswordExpireDate(request.PasswordAgeDays)
+		// create the hashed value of the password, and then set it in PostgreSQL!
+		hashedPassword := util.GeneratePostgreSQLMD5Password(request.Username, result.Password)
 
-		err = updatePassword(c.Name, info, request.Username, newPassword, newExpireDate, request.Namespace, request.PasswordLength)
-		if err != nil {
-			log.Error(err.Error())
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
+		// attempt to set the password!
+		if err := util.SetPostgreSQLPassword(apiserver.Clientset, apiserver.RESTConfig, pod, request.Username, hashedPassword, sql); err != nil {
+			log.Error(err)
 
-		//publish event for create user
-		topics := make([]string, 1)
-		topics[0] = events.EventTopicUser
+			result.Error = true
+			result.ErrorMessage = err.Error()
 
-		f := events.EventCreateUserFormat{
-			EventHeader: events.EventHeader{
-				Namespace: request.Namespace,
-				Username:  pgouser,
-				Topic:     topics,
-				Timestamp: time.Now(),
-				EventType: events.EventCreateUser,
-			},
-			Clustername:      c.Name,
-			PostgresUsername: request.Username,
-			PostgresPassword: newPassword,
-			Managed:          request.ManagedUser,
+			response.Results = append(response.Results, result)
+			continue
 		}
 
-		err = events.Publish(f)
-		if err != nil {
-			log.Error(err.Error())
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
+		// if this user is "managed" by the Operator, add a secret. If there is an
+		// error, we can fall through as the next step is appending the results
+		if request.ManagedUser {
+			if err := util.CreateUserSecret(apiserver.Clientset, cluster.Name, request.Username,
+				result.Password, cluster.Spec.Namespace); err != nil {
+				log.Error(err)
+
+				result.Error = true
+				result.ErrorMessage = err.Error()
+
+				response.Results = append(response.Results, result)
+				continue
+			}
 		}
 
+		// append to the results
+		response.Results = append(response.Results, result)
 	}
-	return resp
 
+	return response
 }
 
 // DeleteUser ...
@@ -761,41 +680,12 @@ func DeleteUser(request *msgs.DeleteUserRequest, pgouser string) msgs.DeleteUser
 		return response
 	}
 
-	clusterList := crv1.PgclusterList{}
+	// try to get a list of clusters. if there is an error, return
+	clusterList, err := getClusterList(request.Namespace, request.Clusters, request.Selector, request.AllFlag)
 
-	//get the clusters list
-	if request.Selector != "" {
-		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector, request.Namespace)
-		if err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
-		}
-	} else if request.AllFlag {
-		err = kubeapi.Getpgclusters(apiserver.RESTClient, &clusterList, request.Namespace)
-		if err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
-		}
-	} else {
-		for i := 0; i < len(request.Clusters); i++ {
-			cluster := crv1.Pgcluster{}
-			found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.Clusters[i], request.Namespace)
-			if !found {
-				response.Status.Code = msgs.Error
-				response.Status.Msg = err.Error()
-				return response
-			}
-			clusterList.Items = append(clusterList.Items, cluster)
-		}
-
-	}
-
-	if len(clusterList.Items) == 0 {
+	if err != nil {
 		response.Status.Code = msgs.Error
-		response.Status.Msg = "no clusters found"
+		response.Status.Msg = err.Error()
 		return response
 	}
 
@@ -1001,6 +891,7 @@ func deleteUserSecret(clientset *kubernetes.Clientset, clustername, username, na
 	return err
 }
 
+// TODO: delete
 func setUserValidUntil(p connInfo, username, passwordExpireDate string) error {
 	var err error
 	var conn *sql.DB
@@ -1032,16 +923,60 @@ func setUserValidUntil(p connInfo, username, passwordExpireDate string) error {
 	return nil
 }
 
-// stringWithCharset returns a generated string value
-func stringWithCharset(length int, charset string) string {
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[seededRand.Intn(len(charset))]
-	}
-	return string(b)
-}
+// getClusterList tries to return a list of clusters based on either having an
+// argument list of cluster names, a Kubernetes selector, or set to "all"
+func getClusterList(namespace string, clusterNames []string, selector string, all bool) (crv1.PgclusterList, error) {
+	clusterList := crv1.PgclusterList{}
 
-// GeneratePassword generate a password of a given length
-func GeneratePassword(length int) string {
-	return stringWithCharset(length, charset)
+	// see if there are any in one of the three parametes used to return everything
+	if len(clusterNames) == 0 && selector == "" && !all {
+		err := fmt.Errorf("either a list of cluster names, a selector, or the all flag needs to be supplied for this comment")
+		return clusterList, err
+	}
+
+	// if the all flag is set, let's return all the clusters here and return
+	if all {
+		// return the value of cluster list or that of the error here
+		err := kubeapi.Getpgclusters(apiserver.RESTClient, &clusterList, namespace)
+		return clusterList, err
+	}
+
+	// try to build the cluster list based on either the selector or the list
+	// of arguments...or both. First, start with the selector
+	if selector != "" {
+		err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList,
+			selector, namespace)
+
+		// if there is an error, return here with an empty cluster list
+		if err != nil {
+			return crv1.PgclusterList{}, err
+		}
+	}
+
+	// now try to get clusters based specific cluster names
+	for _, clusterName := range clusterNames {
+		cluster := crv1.Pgcluster{}
+
+		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster,
+			clusterName, namespace)
+
+		// if there is an error, capture it here and return here with an empty list
+		if !found || err != nil {
+			return crv1.PgclusterList{}, err
+		}
+
+		// if successful, append to the cluster list
+		clusterList.Items = append(clusterList.Items, cluster)
+	}
+
+	log.Debugf("clusters founds: [%d]", len(clusterList.Items))
+
+	// if after all this, there are no clusters found, return an error
+	if len(clusterList.Items) == 0 {
+		err := fmt.Errorf("no clusters found")
+		return clusterList, err
+	}
+
+	// all set! return the cluster list with error
+	return clusterList, nil
 }

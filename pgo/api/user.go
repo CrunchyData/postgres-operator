@@ -66,6 +66,8 @@ func CreateUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCrede
 
 	var response msgs.CreateUserResponse
 
+	request.ClientVersion = msgs.PGO_VERSION
+
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/usercreate"
 	log.Debugf("createUsers called...[%s]", url)

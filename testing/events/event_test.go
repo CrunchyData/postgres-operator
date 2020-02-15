@@ -304,30 +304,6 @@ func tryEventCreateBackupCompleted(t *testing.T) {
 	t.Log(f.String())
 }
 
-func tryEventCreateUser(t *testing.T) {
-
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicUser
-
-	f := events.EventCreateUserFormat{
-		EventHeader: events.EventHeader{
-			Namespace: Namespace,
-			Username:  TestUsername,
-			Topic:     topics,
-			EventType: events.EventCreateUser,
-		},
-		Clustername:      TestClusterName,
-		PostgresUsername: TestUsername,
-		PostgresPassword: "somepassword",
-		Managed:          true,
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	t.Log(f.String())
-}
 func tryEventDeleteUser(t *testing.T) {
 
 	topics := make([]string, 1)

@@ -19,6 +19,41 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 )
 
+// CreateUserRequest contains the parameters that are passed in when an Operator
+// user requests to create a new PostgreSQL user
+// swagger:model
+type CreateUserRequest struct {
+	AllFlag         bool
+	Clusters        []string
+	ClientVersion   string
+	ManagedUser     bool
+	Namespace       string
+	Password        string
+	PasswordAgeDays int
+	PasswordLength  int
+	Selector        string
+	Username        string
+}
+
+// CreateUserResponse is the response to a create user request
+// swagger:model
+type CreateUserResponse struct {
+	Results []CreateUserResponseDetail
+	Status
+}
+
+// CreateUserResponseDetail returns specific information about the user that
+// was created, including password, expiration time, etc.
+// swagger:model
+type CreateUserResponseDetail struct {
+	ClusterName  string
+	Error        bool
+	ErrorMessage string
+	Password     string
+	Username     string
+	ValidUntil   string
+}
+
 // UpdateUserRequest ...
 // swagger:model
 type UpdateUserRequest struct {
@@ -62,29 +97,6 @@ type DeleteUserResponse struct {
 // UpdateUserResponse ...
 // swagger:model
 type UpdateUserResponse struct {
-	Results []string
-	Status
-}
-
-// CreateUserRequest ...
-// swagger:model
-type CreateUserRequest struct {
-	Clusters    []string
-	Username    string
-	Namespace   string
-	Selector    string
-	AllFlag     bool
-	Password    string
-	ManagedUser bool
-	//UserDBAccess    string
-	PasswordAgeDays int
-	ClientVersion   string
-	PasswordLength  int
-}
-
-// CreateUserResponse ...
-// swagger:model
-type CreateUserResponse struct {
 	Results []string
 	Status
 }
