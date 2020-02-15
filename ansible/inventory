@@ -151,7 +151,9 @@ service_type='ClusterIP'
 # such as: default database name and default username
 # ===================
 db_name='userdb'
-db_password_age_days=60
+# db_password_age_days sets the length of time before a password for a
+# PostgreSQL expires. This is default to "0" which is unlimited
+db_password_age_days=0
 db_password_length=24
 db_port=5432
 db_replicas=0
