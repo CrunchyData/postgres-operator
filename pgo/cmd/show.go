@@ -119,7 +119,7 @@ func init() {
 	ShowScheduleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	ShowUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	ShowUserCmd.Flags().BoolVar(&AllFlag, "all", false, "show all clusters.")
-	ShowUserCmd.Flags().StringVarP(&Expired, "expired", "", "", "Shows passwords that will expire in X days.")
+	ShowUserCmd.Flags().IntVarP(&Expired, "expired", "", 0, "Shows passwords that will expire in X days.")
 	ShowPgouserCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 	ShowPgoroleCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 }

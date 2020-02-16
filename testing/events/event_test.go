@@ -327,29 +327,6 @@ func tryEventDeleteUser(t *testing.T) {
 	}
 	t.Log(f.String())
 }
-func tryEventChangePasswordUser(t *testing.T) {
-
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicUser
-
-	f := events.EventChangePasswordUserFormat{
-		EventHeader: events.EventHeader{
-			Namespace: Namespace,
-			Username:  TestUsername,
-			Topic:     topics,
-			EventType: events.EventChangePasswordUser,
-		},
-		Clustername:      TestClusterName,
-		PostgresUsername: TestUsername,
-		PostgresPassword: "somepassword",
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	t.Log(f.String())
-}
 func tryEventCreateLabel(t *testing.T) {
 
 	topics := make([]string, 1)

@@ -414,23 +414,6 @@ func (lvl EventDeleteUserFormat) String() string {
 }
 
 //----------------------------
-type EventChangePasswordUserFormat struct {
-	EventHeader      `json:"eventheader"`
-	Clustername      string `json:"clustername"`
-	PostgresUsername string `json:"postgresusername"`
-	PostgresPassword string `json:"postgrespassword"`
-}
-
-func (p EventChangePasswordUserFormat) GetHeader() EventHeader {
-	return p.EventHeader
-}
-
-func (lvl EventChangePasswordUserFormat) String() string {
-	msg := fmt.Sprintf("Event %s (change password user) - clustername %s - postgres user [%s]", lvl.EventHeader, lvl.Clustername, lvl.PostgresUsername)
-	return msg
-}
-
-//----------------------------
 type EventCreateLabelFormat struct {
 	EventHeader `json:"eventheader"`
 	Clustername string `json:"clustername"`
