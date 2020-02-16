@@ -29,8 +29,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// createUserTextPadding contains the values for what the text padding should be
-type createUserTextPadding struct {
+// userTextPadding contains the values for what the text padding should be
+type userTextPadding struct {
 	ClusterName  int
 	ErrorMessage int
 	Expires      int
@@ -45,59 +45,15 @@ var PasswordAgeDays int
 // Username is a postgres username
 var Username string
 
-// DeleteUser delete user flag
-var DeleteUser string
-
-// ValidDays valid days flag
-var ValidDays string
-
-// UserDBAccess user db access flag
-//var UserDBAccess string
-
 // Expired expired flag
-var Expired string
+var Expired int
 
 // PasswordLength password length flag
 var PasswordLength int
 
-// userManager ...
-func updateUser(args []string, ns string, PasswordAgeDaysUpdate bool) {
-
-	request := msgs.UpdateUserRequest{}
-	request.Namespace = ns
-	request.ExpireUser = ExpireUser
-	request.Clusters = args
-	request.AllFlag = AllFlag
-	request.Selector = Selector
-	request.Password = Password
-	request.PasswordAgeDays = PasswordAgeDays
-	request.PasswordAgeDaysUpdate = PasswordAgeDaysUpdate
-	request.Username = Username
-	request.DeleteUser = DeleteUser
-	request.ValidDays = ValidDays
-	//request.UserDBAccess = UserDBAccess
-	request.Expired = Expired
-	request.ManagedUser = ManagedUser
-	request.ClientVersion = msgs.PGO_VERSION
-	request.PasswordLength = PasswordLength
-
-	response, err := api.UpdateUser(httpclient, &SessionCredentials, &request)
-
-	if err != nil {
-		fmt.Println("Error: " + err.Error())
-		os.Exit(2)
-	}
-
-	if response.Status.Code == msgs.Ok {
-		for k := range response.Results {
-			fmt.Println(response.Results[k])
-		}
-	} else {
-		fmt.Println("Error: " + response.Status.Msg)
-		os.Exit(2)
-	}
-
-}
+// PasswordValidAlways allows a user to explicitly set that their passowrd
+// is always valid (i.e. no expiration time)
+var PasswordValidAlways bool
 
 func createUser(args []string, ns string) {
 	username := strings.TrimSpace(Username)
@@ -180,17 +136,33 @@ func deleteUser(args []string, ns string) {
 
 }
 
-// makeCreateUserInterface returns an interface slice of the avaialble values
+// generateUserPadding returns the paddings based on the values of the response
+func generateUserPadding(results []msgs.UserResponseDetail) userTextPadding {
+	// make the interface for the users
+	userInterface := makeUserInterface(results)
+
+	// set up the text padding
+	return userTextPadding{
+		ClusterName:  getMaxLength(userInterface, headingCluster, "ClusterName"),
+		ErrorMessage: getMaxLength(userInterface, headingErrorMessage, "ErrorMessage"),
+		Expires:      getMaxLength(userInterface, headingExpires, "ValidUntil"),
+		Password:     getMaxLength(userInterface, headingPassword, "Password"),
+		Status:       len(headingStatus) + 1,
+		Username:     getMaxLength(userInterface, headingUsername, "Username"),
+	}
+}
+
+// makeUserInterface returns an interface slice of the avaialble values
 // in pgo create user
-func makeCreateUserInterface(values []msgs.CreateUserResponseDetail) []interface{} {
+func makeUserInterface(values []msgs.UserResponseDetail) []interface{} {
 	// iterate through the list of values to make the interface
-	createUserInterface := make([]interface{}, len(values))
+	userInterface := make([]interface{}, len(values))
 
 	for i, value := range values {
-		createUserInterface[i] = value
+		userInterface[i] = value
 	}
 
-	return createUserInterface
+	return userInterface
 }
 
 // printCreateUserText prints out the information that is created after
@@ -204,34 +176,48 @@ func printCreateUserText(response msgs.CreateUserResponse) {
 
 	// if no results returned, return an error
 	if len(response.Results) == 0 {
-		fmt.Println("Nothing found.")
+		fmt.Println("No users created.")
 		return
 	}
 
-	// make the interface for the users
-	createUserInterface := makeCreateUserInterface(response.Results)
+	padding := generateUserPadding(response.Results)
 
-	// format the header
-	// start by setting up the different text paddings
-	padding := createUserTextPadding{
-		ClusterName:  getMaxLength(createUserInterface, headingCluster, "ClusterName"),
-		ErrorMessage: getMaxLength(createUserInterface, headingErrorMessage, "ErrorMessage"),
-		Expires:      getMaxLength(createUserInterface, headingExpires, "ValidUntil"),
-		Password:     getMaxLength(createUserInterface, headingPassword, "Password"),
-		Status:       len(headingStatus) + 1,
-		Username:     getMaxLength(createUserInterface, headingUsername, "Username"),
-	}
-
-	printCreateUserTextHeader(padding)
+	// print the header
+	printUserTextHeader(padding)
 
 	// iterate through the reuslts and print them out
 	for _, result := range response.Results {
-		printCreateUserTextRow(result, padding)
+		printUserTextRow(result, padding)
 	}
 }
 
-// printCreateUserTextHeader prints out the header
-func printCreateUserTextHeader(padding createUserTextPadding) {
+// printUpdateUserText prints out the information from calling pgo update user
+func printUpdateUserText(response msgs.UpdateUserResponse) {
+	// if the request errored, return the message here and exit with an error
+	if response.Status.Code != msgs.Ok {
+		fmt.Println("Error: " + response.Status.Msg)
+		os.Exit(1)
+	}
+
+	// if no results returned, return an error
+	if len(response.Results) == 0 {
+		fmt.Println("No users updated.")
+		return
+	}
+
+	padding := generateUserPadding(response.Results)
+
+	// print the header
+	printUserTextHeader(padding)
+
+	// iterate through the reuslts and print them out
+	for _, result := range response.Results {
+		printUserTextRow(result, padding)
+	}
+}
+
+// printUserTextHeader prints out the header
+func printUserTextHeader(padding userTextPadding) {
 	// print the header
 	fmt.Println("")
 	fmt.Printf("%s", util.Rpad(headingCluster, " ", padding.ClusterName))
@@ -254,14 +240,17 @@ func printCreateUserTextHeader(padding createUserTextPadding) {
 	)
 }
 
-// printCreateUserTextRow prints a row of the text data
-func printCreateUserTextRow(result msgs.CreateUserResponseDetail, padding createUserTextPadding) {
+// printUserTextRow prints a row of the text data
+func printUserTextRow(result msgs.UserResponseDetail, padding userTextPadding) {
 	expires := result.ValidUntil
 
-	// if expires is empty here, set it to never. This may be ovrriden if there is
-	// an error
-	if expires == "" {
+	// check for special values of expires, e.g. if the password matches special
+	// values to indicate if it has expired or not
+	switch {
+	case expires == "" || expires == utiloperator.SQLValidUntilAlways:
 		expires = "never"
+	case expires == utiloperator.SQLValidUntilNever:
+		expires = "expired"
 	}
 
 	password := result.Password
@@ -333,7 +322,60 @@ func showUser(args []string, ns string) {
 
 }
 
+// updateUser prepares the API call for updating attributes of a PostgreSQL
+// user
+func updateUser(clusterNames []string, namespace string) {
+	// set up the reuqest
+	request := msgs.UpdateUserRequest{
+		AllFlag:             AllFlag,
+		Clusters:            clusterNames,
+		Expired:             Expired,
+		ExpireUser:          ExpireUser,
+		ManagedUser:         ManagedUser,
+		Namespace:           namespace,
+		Password:            Password,
+		PasswordAgeDays:     PasswordAgeDays,
+		PasswordLength:      PasswordLength,
+		PasswordValidAlways: PasswordValidAlways,
+		RotatePassword:      RotatePassword,
+		Selector:            Selector,
+		Username:            strings.TrimSpace(Username),
+	}
+
+	// check to see if EnableLogin or DisableLogin is set. If so, set a value
+	// for the LoginState parameter
+	if EnableLogin {
+		request.LoginState = msgs.UpdateUserLoginEnable
+	} else if DisableLogin {
+		request.LoginState = msgs.UpdateUserLoginDisable
+	}
+
+	// check to see if this is a system account if a user name is passed in
+	if request.Username != "" && utiloperator.CheckPostgreSQLUserSystemAccount(request.Username) {
+		fmt.Println("Error:", request.Username, "is a system account and cannot be used")
+		os.Exit(1)
+	}
+
+	response, err := api.UpdateUser(httpclient, &SessionCredentials, &request)
+
+	if err != nil {
+		fmt.Println("Error: " + err.Error())
+		os.Exit(1)
+	}
+
+	// great! now we can work on interpreting the results and outputting them
+	// per the user's desired output format
+	// render the next bit based on the output type
+	switch OutputFormat {
+	case "json":
+		printJSON(response)
+	default:
+		printUpdateUserText(response)
+	}
+}
+
 // printUsers
+// TODO: delete
 func printUsers(detail *msgs.ShowUserDetail) {
 	fmt.Println("")
 	fmt.Println("cluster : " + detail.Cluster.Spec.Name)

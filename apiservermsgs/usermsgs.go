@@ -19,6 +19,16 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 )
 
+type UpdateClusterLoginState int
+
+// set the different values around whether or not to disable/enable a user's
+// ability to login
+const (
+	UpdateUserLoginDoNothing UpdateClusterLoginState = iota
+	UpdateUserLoginEnable
+	UpdateUserLoginDisable
+)
+
 // CreateUserRequest contains the parameters that are passed in when an Operator
 // user requests to create a new PostgreSQL user
 // swagger:model
@@ -38,42 +48,8 @@ type CreateUserRequest struct {
 // CreateUserResponse is the response to a create user request
 // swagger:model
 type CreateUserResponse struct {
-	Results []CreateUserResponseDetail
+	Results []UserResponseDetail
 	Status
-}
-
-// CreateUserResponseDetail returns specific information about the user that
-// was created, including password, expiration time, etc.
-// swagger:model
-type CreateUserResponseDetail struct {
-	ClusterName  string
-	Error        bool
-	ErrorMessage string
-	Password     string
-	Username     string
-	ValidUntil   string
-}
-
-// UpdateUserRequest ...
-// swagger:model
-type UpdateUserRequest struct {
-	Clusters              []string
-	Selector              string
-	AllFlag               bool
-	ExpireUser            bool
-	Namespace             string
-	PasswordAgeDays       int
-	PasswordAgeDaysUpdate bool
-	Username              string
-	Password              string
-	DeleteUser            string
-	ValidDays             string
-	UserDBAccess          string
-	AddUser               string
-	Expired               string
-	ManagedUser           bool
-	ClientVersion         string
-	PasswordLength        int
 }
 
 // DeleteUserRequest ...
@@ -94,13 +70,6 @@ type DeleteUserResponse struct {
 	Status
 }
 
-// UpdateUserResponse ...
-// swagger:model
-type UpdateUserResponse struct {
-	Results []string
-	Status
-}
-
 // ShowUserSecret
 // swagger:model
 type ShowUserSecret struct {
@@ -117,7 +86,7 @@ type ShowUserRequest struct {
 	ClientVersion string
 	Selector      string
 	Namespace     string
-	Expired       string
+	Expired       int
 }
 
 // ShowUsersDetail ...
@@ -135,4 +104,44 @@ type ShowUserDetail struct {
 type ShowUserResponse struct {
 	Results []ShowUserDetail
 	Status
+}
+
+// UpdateUserRequest is the API to allow an Operator user to update information
+// about a PostgreSQL user
+// swagger:model
+type UpdateUserRequest struct {
+	AllFlag             bool
+	ClientVersion       string
+	Clusters            []string
+	Expired             int
+	ExpireUser          bool
+	LoginState          UpdateClusterLoginState
+	ManagedUser         bool
+	Namespace           string
+	Password            string
+	PasswordAgeDays     int
+	PasswordLength      int
+	PasswordValidAlways bool
+	RotatePassword      bool
+	Selector            string
+	Username            string
+}
+
+// UpdateUserResponse contains the response after an update user request
+// swagger:model
+type UpdateUserResponse struct {
+	Results []UserResponseDetail
+	Status
+}
+
+// UserResponseDetail returns specific information about the user that
+// was updated, including password, expiration time, etc.
+// swagger:model
+type UserResponseDetail struct {
+	ClusterName  string
+	Error        bool
+	ErrorMessage string
+	Password     string
+	Username     string
+	ValidUntil   string
 }

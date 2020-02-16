@@ -64,6 +64,12 @@ const (
 )
 
 const (
+	// SQLValidUntilAlways uses a special PostgreSQL value to ensure a password
+	// is always valid
+	SQLValidUntilAlways = "infinity"
+	// SQLValidUntilNever uses a special PostgreSQL value to ensure a password
+	// is never valid. This is exportable and used in other places
+	SQLValidUntilNever = "-infinity"
 	// sqlSetPasswordDefault is the SQL to update the password
 	// NOTE: this is safe from SQL injection as we explicitly add the inerpolated
 	// string as a MD5 hash or SCRAM verifier. And if you're not doing that,
@@ -234,11 +240,14 @@ func SetPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Con
 	_, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
 		cmd, "database", pod.Name, pod.ObjectMeta.Namespace, sql)
 
-	// if there is an error executing the command, log the error message from
-	// stderr and return the error
+	// if there is an error executing the command, or output in stderr,
+	// log the error message and return
 	if err != nil {
-		log.Error(stderr)
+		log.Error(err)
 		return err
+	} else if stderr != "" {
+		log.Error(stderr)
+		return fmt.Errorf(stderr)
 	}
 
 	return nil

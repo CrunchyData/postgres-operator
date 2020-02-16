@@ -143,6 +143,8 @@ func UpdateUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCrede
 
 	var response msgs.UpdateUserResponse
 
+	request.ClientVersion = msgs.PGO_VERSION
+
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/userupdate"
 	log.Debugf("UpdateUser called...[%s]", url)
