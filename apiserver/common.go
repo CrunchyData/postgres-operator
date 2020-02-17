@@ -20,7 +20,6 @@ import (
 	"strconv"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
@@ -40,29 +39,6 @@ var (
 type ReplicaPodStatus struct {
 	NodeName    string
 	ReadyStatus string
-}
-
-func GetSecrets(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowUserSecret, error) {
-
-	output := make([]msgs.ShowUserSecret, 0)
-	selector := "!" + config.LABEL_PGO_BACKREST_REPO + "," + config.LABEL_PGBOUNCER + "!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
-
-	secrets, err := kubeapi.GetSecrets(Clientset, selector, ns)
-	if err != nil {
-		return output, err
-	}
-
-	log.Debugf("got %d secrets for %s", len(secrets.Items), cluster.Spec.Name)
-	for _, s := range secrets.Items {
-		d := msgs.ShowUserSecret{}
-		d.Name = s.Name
-		d.Username = string(s.Data["username"][:])
-		d.Password = string(s.Data["password"][:])
-		output = append(output, d)
-
-	}
-
-	return output, err
 }
 
 // GetReplicaPodStatus gets the status of all replica pods in the cluster. Specifically, using

@@ -29,6 +29,8 @@ func ShowUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredent
 	var response msgs.ShowUserResponse
 	response.Status.Code = msgs.Ok
 
+	request.ClientVersion = msgs.PGO_VERSION
+
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/usershow"
 	log.Debugf("ShowUser called...[%s]", url)

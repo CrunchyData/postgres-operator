@@ -15,9 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import (
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-)
+import ()
 
 type UpdateClusterLoginState int
 
@@ -52,7 +50,7 @@ type CreateUserResponse struct {
 	Status
 }
 
-// DeleteUserRequest ...
+// DeleteUserRequest
 // swagger:model
 type DeleteUserRequest struct {
 	Selector      string
@@ -70,39 +68,22 @@ type DeleteUserResponse struct {
 	Status
 }
 
-// ShowUserSecret
-// swagger:model
-type ShowUserSecret struct {
-	Name     string
-	Username string
-	Password string
-}
-
-// ShowUserRequest ...
+// ShowUserRequest finds information about users in various PostgreSQL clusters
 // swagger:model
 type ShowUserRequest struct {
-	Clusters      []string
-	AllFlag       bool
-	ClientVersion string
-	Selector      string
-	Namespace     string
-	Expired       int
-}
-
-// ShowUsersDetail ...
-// swagger:model
-type ShowUserDetail struct {
-	Cluster       crv1.Pgcluster
-	Secrets       []ShowUserSecret
-	ExpiredOutput bool
-	ExpiredDays   int
-	ExpiredMsgs   []string
+	AllFlag            bool
+	Clusters           []string
+	ClientVersion      string
+	Expired            int
+	Namespace          string
+	Selector           string
+	ShowSystemAccounts bool
 }
 
 // ShowUsersResponse ...
 // swagger:model
 type ShowUserResponse struct {
-	Results []ShowUserDetail
+	Results []UserResponseDetail
 	Status
 }
 

@@ -23,8 +23,8 @@ import (
 	"net/http"
 )
 
-// UserHandler ...
-// pgo user XXXX
+// UserHandler provides a means to update a PostgreSQL user
+// pgo update user
 func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation POST /userupdate userservice userupdate
 	/*```
@@ -191,10 +191,8 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// ShowUserHandler ...
-// pgo show user
-// parameters selector
-// returns a ShowUserResponse
+// ShowUserHandler allows one to display information about PostgreSQL uesrs that
+// are in a PostgreSQL cluster
 func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation POST /usershow userservice usershow
 	/*```
@@ -230,7 +228,6 @@ func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.ShowUserResponse{}
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-		resp.Results = make([]msgs.ShowUserDetail, 0)
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
@@ -238,7 +235,6 @@ func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		resp.Results = make([]msgs.ShowUserDetail, 0)
 		json.NewEncoder(w).Encode(resp)
 		return
 	}
