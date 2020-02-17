@@ -58,29 +58,50 @@ const (
 	sqlDisableLoginClause = `NOLOGIN`
 	// sqlEnableLoginClause allows a user to enable login to a PostgreSQL account
 	sqlEnableLoginClause = `LOGIN`
-	// sqlFindExpiredPasswords is a query that...finds expired passwords based on
-	// an interval. The interval allows us to find passwords that are expiring in
-	// the future. The value being passed into interval most definitely needs to
-	// be escape for SQL injections. This seems to be funkily formatted so it's
-	// easier to read in the SQL logs
-	sqlFindExpiredPasswords = `SELECT rolname
+	// sqlExpiredPasswordClause is the clause that is used to query a set of
+	// PostgreSQL users that have an expired passwords, regardless of if they can
+	// log in or not. Note that the value definitely needs to be escaped using
+	// SQLQuoteLiteral
+	sqlExpiredPasswordClause = `CURRENT_TIMESTAMP + %s::interval >= rolvaliduntil`
+	// sqlFindUsers returns information about PostgreSQL users that will be in
+	// a format that we need to parse
+	sqlFindUsers = `SELECT rolname, rolvaliduntil
 FROM pg_catalog.pg_authid
-WHERE rolcanlogin AND
-	CURRENT_TIMESTAMP + %s::interval >= rolvaliduntil`
+WHERE rolcanlogin`
+	// sqlOrderByUsername allows one to order a list from pg_authid by the
+	// username
+	sqlOrderByUsername = "ORDER BY rolname"
 	// sqlPasswordClause is the clause that allows on to set the password. This
 	// needs to be escaped to avoid SQL injections using the SQLQuoteLiteral
 	// function
 	sqlPasswordClause = `PASSWORD %s`
+	// sqlSetDatestyle will ensure consistent date formats as we force the
+	// datestyle to ISO...which differs from Golang's RFC3339, bu we handle this
+	// with sqlTimeFormat.
+	// This should be inserted as part of an instructions sent to PostgreSQL, and
+	// is only active for that particular query session
+	sqlSetDatestyle = `SET datestyle TO 'ISO'`
 	// sqlValidUntilClause is a clause that allows one to pass in a valid until
 	// timestamp. The value must be escaped to avoid SQL injections, using the
 	// util.SQLQuoteLiteral function
 	sqlValidUntilClause = `VALID UNTIL %s`
 )
 
+const (
+	// sqlDelimiter is just a pipe
+	sqlDelimiter = "|"
+	// sqlTimeFormat is the defauly time format that is used
+	sqlTimeFormat = "2006-01-02 15:04:05.999999999Z07"
+)
+
 var (
 	// sqlCommand is the command that needs to be executed for running SQL
 	sqlCommand = []string{"psql", "-A", "-t"}
 )
+
+// userSecretFormat follows the pattern of how the user information is stored,
+// which is "<clusteRName>-<userName>-secret"
+const userSecretFormat = "%s-%s" + crv1.UserSecretSuffix
 
 // connInfo ....
 type connInfo struct {
@@ -89,63 +110,6 @@ type connInfo struct {
 	Port     string
 	Database string
 	Password string
-}
-
-// pswResult ...
-type pswResult struct {
-	Rolname       string
-	Rolvaliduntil string
-	ConnDetails   connInfo
-}
-
-// callDB ...
-// TODO: delete this fuction as it's useless
-func callDB(info connInfo, clusterName, maxdays string) []pswResult {
-	var conn *sql.DB
-	var err error
-
-	results := []pswResult{}
-
-	conn, err = sql.Open("postgres", "sslmode=disable user="+info.Username+" host="+info.Hostip+" port="+info.Port+" dbname="+info.Database+" password="+info.Password)
-	if err != nil {
-		log.Debug(err.Error())
-		return results
-	}
-
-	var ts string
-	var rows *sql.Rows
-
-	querystr := "SELECT rolname, rolvaliduntil as expiring_soon FROM pg_authid WHERE rolvaliduntil < now() + '" + maxdays + " days'"
-	log.Debug(querystr)
-	rows, err = conn.Query(querystr)
-	if err != nil {
-		log.Debug(err.Error())
-		return results
-	}
-
-	defer func() {
-		if conn != nil {
-			conn.Close()
-		}
-		if rows != nil {
-			rows.Close()
-		}
-	}()
-	for rows.Next() {
-		p := pswResult{}
-		c := connInfo{Username: info.Username, Hostip: info.Hostip, Port: info.Port, Database: info.Database, Password: info.Password}
-		p.ConnDetails = c
-
-		if err = rows.Scan(&p.Rolname, &p.Rolvaliduntil); err != nil {
-			log.Debug(err.Error())
-			return results
-		}
-		results = append(results, p)
-		log.Debugf("returned %s", ts)
-	}
-
-	return results
-
 }
 
 // getPostgresUserInfo...
@@ -458,7 +422,149 @@ func DeleteUser(request *msgs.DeleteUserRequest, pgouser string) msgs.DeleteUser
 
 }
 
-// UpdateUser allows one to update a PostgreSQL user across PostgrESQL clusters,
+// ShowUser lets the caller view details about PostgreSQL users across the
+// PostgreSQL clusters that are queried. This includes details such as:
+//
+// - when the password expires
+// - if the user is active or not
+//
+// etc.
+func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
+	response := msgs.ShowUserResponse{
+		Results: []msgs.UserResponseDetail{},
+		Status: msgs.Status{
+			Code: msgs.Ok,
+			Msg:  "",
+		},
+	}
+
+	log.Debugf("show user called, cluster [%v], selector [%s], all [%t]",
+		request.Clusters, request.Selector, request.AllFlag)
+
+	// first try to get a list of clusters based on the various ways one can get
+	// them. If if this returns an error, exit here
+	clusterList, err := getClusterList(request.Namespace,
+		request.Clusters, request.Selector, request.AllFlag)
+
+	if err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	// to save some computing power, we can determine if the caller is looking
+	// up if passwords are expiring for users. This value is passed in days, so
+	// we can get the expiration mark that we are looking for
+	validUntil := ""
+
+	if request.Expired > 0 {
+		validUntil = generateValidUntilDateString(request.Expired)
+	}
+
+	// iterate through each cluster and look up information about each user
+	for _, cluster := range clusterList.Items {
+		// first, find the primary Pod
+		pod, err := util.GetPrimaryPod(apiserver.Clientset, &cluster)
+
+		// if the primary Pod cannot be found, we're going to continue on for the
+		// other clusters, but provide some sort of error message in the response
+		if err != nil {
+			log.Error(err)
+
+			result := msgs.UserResponseDetail{
+				Error:        true,
+				ErrorMessage: err.Error(),
+			}
+
+			response.Results = append(response.Results, result)
+			continue
+		}
+
+		// we need to build out some SQL. Start with the base
+		sql := fmt.Sprintf("%s; %s", sqlSetDatestyle, sqlFindUsers)
+
+		// determine if we only want to find the users that have expiring passwords
+		if validUntil != "" {
+			sql = fmt.Sprint("%s AND %s", sql,
+				fmt.Sprintf(sqlExpiredPasswordClause, util.SQLQuoteLiteral(validUntil)))
+		}
+
+		// being a bit cute here, but ordering by the role name
+		sql = fmt.Sprintf("%s %s", sql, sqlOrderByUsername)
+
+		// great, now we can perform the user lookup
+		output, err := executeSQL(pod, sql)
+
+		// if there is an error, record it and move on to the next cluster
+		if err != nil {
+			log.Error(err)
+
+			result := msgs.UserResponseDetail{
+				Error:        true,
+				ErrorMessage: err.Error(),
+			}
+
+			response.Results = append(response.Results, result)
+			continue
+		}
+
+		// get the rows into a buffer and start scanning
+		rows := bufio.NewScanner(strings.NewReader(output))
+
+		// the output corresponds to the following pattern:
+		// "username|validuntil" which corresponds to:
+		// string|sqlTimeFormat
+		//
+		// so we need to parse each of these...and then determine if these are
+		// managed accounts and make a call to the secret to get...the password
+		for rows.Scan() {
+			row := strings.TrimSpace(rows.Text())
+
+			// split aong the "sqlDelimiter" ("|") to get the 3 values
+			values := strings.Split(row, sqlDelimiter)
+
+			// if there are not two values, continue on, as this means this is not
+			// the row we are interested in
+			if len(values) != 2 {
+				continue
+			}
+
+			// before continuing, check to see if this is a system account.
+			// If it is, check to see that the user requested to view system accounts
+			if !request.ShowSystemAccounts && util.CheckPostgreSQLUserSystemAccount(values[0]) {
+				continue
+			}
+
+			// start building a result
+			result := msgs.UserResponseDetail{
+				ClusterName: cluster.Name,
+				Username:    values[0],
+				ValidUntil:  values[1],
+			}
+
+			// alright, attempt to get the password if it is "managed"...sigh
+			// as we are in a loop, this is costly as there are a lot of network calls
+			// so we may want to either add some concurrency or rethink how the
+			// managed passwords are stored
+			//
+			// We ignore any errors...if the password get set, we add it. If not, we
+			// don't
+			secretName := fmt.Sprintf(userSecretFormat, result.ClusterName, result.Username)
+			_, password, _ := util.GetPasswordFromSecret(apiserver.Clientset, pod.Namespace, secretName)
+
+			if password != "" {
+				result.Password = password
+			}
+
+			// add the result
+			response.Results = append(response.Results, result)
+		}
+	}
+
+	return response
+}
+
+// UpdateUser allows one to update a PostgreSQL user across PostgreSQL clusters,
 // and provides the ability to perform inline various updates, including:
 //
 // - resetting passwords
@@ -537,114 +643,6 @@ func isManaged(secretName, ns string) (bool, error) {
 	}
 
 	return true, err
-
-}
-
-// ShowUser ...
-func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
-	var err error
-
-	response := msgs.ShowUserResponse{}
-	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
-	response.Results = make([]msgs.ShowUserDetail, 0)
-
-	clusterList := crv1.PgclusterList{}
-	if request.AllFlag {
-		err = kubeapi.Getpgclusters(apiserver.RESTClient, &clusterList, request.Namespace)
-		if err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
-		}
-	} else if request.Selector != "" {
-		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector, request.Namespace)
-		if err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
-		}
-	} else {
-		for i := 0; i < len(request.Clusters); i++ {
-			cluster := crv1.Pgcluster{}
-			found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.Clusters[i], request.Namespace)
-			if !found {
-				response.Status.Code = msgs.Error
-				response.Status.Msg = err.Error()
-				return response
-			}
-			clusterList.Items = append(clusterList.Items, cluster)
-		}
-	}
-
-	if len(clusterList.Items) == 0 {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = "no clusters found"
-		return response
-	}
-
-	var expiredInt int
-	if request.Expired > 0 {
-		expiredInt = request.Expired
-
-		if expiredInt < 1 {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = "--expired is requited to be greater than 0"
-			return response
-		}
-	}
-
-	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
-
-	for _, c := range clusterList.Items {
-		detail := msgs.ShowUserDetail{}
-		detail.Cluster = c
-		detail.ExpiredDays = expiredInt
-		detail.ExpiredMsgs = make([]string, 0)
-
-		if expiredInt > 0 {
-			detail.ExpiredOutput = true
-			selector := config.LABEL_PG_CLUSTER + "=" + c.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + c.Spec.Name
-			deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, request.Namespace)
-			if err != nil {
-				response.Status.Code = msgs.Error
-				response.Status.Msg = err.Error()
-				return response
-			}
-
-			for _, d := range deployments.Items {
-				info, err := getPostgresUserInfo(request.Namespace, d.ObjectMeta.Name)
-				if err != nil {
-					response.Status.Code = msgs.Error
-					response.Status.Msg = err.Error()
-					return response
-				}
-
-				if expiredInt > 0 {
-					results := callDB(info, d.ObjectMeta.Name, string(expiredInt))
-					if len(results) > 0 {
-						log.Debug("expired passwords...")
-						for _, v := range results {
-							detail.ExpiredMsgs = append(detail.ExpiredMsgs, "RoleName "+v.Rolname+" Role Valid Until "+v.Rolvaliduntil)
-							log.Debugf("RoleName %s Role Valid Until %s", v.Rolname, v.Rolvaliduntil)
-
-						}
-					}
-				}
-
-			}
-		}
-
-		detail.Secrets, err = apiserver.GetSecrets(&c, request.Namespace)
-		if err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
-		}
-		response.Results = append(response.Results, detail)
-	}
-
-	return response
 
 }
 
@@ -835,12 +833,17 @@ func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgclu
 		return results
 	}
 
+	// start building the sql, which is the clause for finding users that can
+	// login
+	sql := sqlFindUsers
+
 	// we need to find a set of user passwords that need to be updated
 	// set the expiration interval
 	expirationInterval := fmt.Sprintf("%d days", request.Expired)
 	// and then immediately put it into SQL, with appropriate SQL injection
 	// escaping
-	sql := fmt.Sprintf(sqlFindExpiredPasswords, util.SQLQuoteLiteral(expirationInterval))
+	sql = fmt.Sprintf("%s AND %s", sql,
+		fmt.Sprintf(sqlExpiredPasswordClause, util.SQLQuoteLiteral(expirationInterval)))
 
 	// alright, time to find if there are any expired accounts. If this errors,
 	// then we will abort here

@@ -120,6 +120,8 @@ func init() {
 	ShowUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	ShowUserCmd.Flags().BoolVar(&AllFlag, "all", false, "show all clusters.")
 	ShowUserCmd.Flags().IntVarP(&Expired, "expired", "", 0, "Shows passwords that will expire in X days.")
+	ShowUserCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
+	ShowUserCmd.Flags().BoolVar(&ShowSystemAccounts, "show-system-accounts", false, "Include the system accounts in the results.")
 	ShowPgouserCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 	ShowPgoroleCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 }

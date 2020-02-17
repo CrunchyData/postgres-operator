@@ -16,7 +16,6 @@ package cmd
 */
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -54,6 +53,10 @@ var PasswordLength int
 // PasswordValidAlways allows a user to explicitly set that their passowrd
 // is always valid (i.e. no expiration time)
 var PasswordValidAlways bool
+
+// ShowSystemAccounts enables the display of the PostgreSQL user accounts that
+// perform system functions, such as the "postgres" user
+var ShowSystemAccounts bool
 
 func createUser(args []string, ns string) {
 	username := strings.TrimSpace(Username)
@@ -191,6 +194,31 @@ func printCreateUserText(response msgs.CreateUserResponse) {
 	}
 }
 
+// printShowUserText prints out the information from calling pgo show user
+func printShowUserText(response msgs.ShowUserResponse) {
+	// if the request errored, return the message here and exit with an error
+	if response.Status.Code != msgs.Ok {
+		fmt.Println("Error: " + response.Status.Msg)
+		os.Exit(1)
+	}
+
+	// if no results returned, return an error
+	if len(response.Results) == 0 {
+		fmt.Println("No users found.")
+		return
+	}
+
+	padding := generateUserPadding(response.Results)
+
+	// print the header
+	printUserTextHeader(padding)
+
+	// iterate through the reuslts and print them out
+	for _, result := range response.Results {
+		printUserTextRow(result, padding)
+	}
+}
+
 // printUpdateUserText prints out the information from calling pgo update user
 func printUpdateUserText(response msgs.UpdateUserResponse) {
 	// if the request errored, return the message here and exit with an error
@@ -273,53 +301,34 @@ func printUserTextRow(result msgs.UserResponseDetail, padding userTextPadding) {
 	fmt.Println("")
 }
 
-// showUsers ...
+// showUser prepares the API attributes for getting information about PostgreSQL
+// users in clusters
 func showUser(args []string, ns string) {
-
-	log.Debugf("showUser called %v", args)
-
-	log.Debugf("selector is %s", Selector)
-	if len(args) == 0 && Selector != "" {
-		args = make([]string, 1)
-		args[0] = "all"
+	request := msgs.ShowUserRequest{
+		AllFlag:            AllFlag,
+		Clusters:           args,
+		Expired:            Expired,
+		Namespace:          ns,
+		Selector:           Selector,
+		ShowSystemAccounts: ShowSystemAccounts,
 	}
 
-	r := msgs.ShowUserRequest{}
-	r.Clusters = args
-	r.ClientVersion = msgs.PGO_VERSION
-	r.Selector = Selector
-	r.Namespace = ns
-	r.Expired = Expired
-	r.AllFlag = AllFlag
+	response, err := api.ShowUser(httpclient, &SessionCredentials, &request)
 
-	response, err := api.ShowUser(httpclient, &SessionCredentials, &r)
 	if err != nil {
-		fmt.Println("Error: ", err.Error())
-		os.Exit(2)
+		fmt.Println("Error: " + err.Error())
+		os.Exit(1)
 	}
 
-	if response.Status.Code != msgs.Ok {
-		fmt.Println("Error: " + response.Status.Msg)
-		os.Exit(2)
+	// great! now we can work on interpreting the results and outputting them
+	// per the user's desired output format
+	// render the next bit based on the output type
+	switch OutputFormat {
+	case "json":
+		printJSON(response)
+	default:
+		printShowUserText(response)
 	}
-	if len(response.Results) == 0 {
-		fmt.Println("No clusters found.")
-		return
-	}
-
-	if OutputFormat == "json" {
-		b, err := json.MarshalIndent(response, "", "  ")
-		if err != nil {
-			fmt.Println("Error: ", err)
-		}
-		fmt.Println(string(b))
-		return
-	}
-
-	for _, clusterDetail := range response.Results {
-		printUsers(&clusterDetail)
-	}
-
 }
 
 // updateUser prepares the API call for updating attributes of a PostgreSQL
@@ -372,29 +381,4 @@ func updateUser(clusterNames []string, namespace string) {
 	default:
 		printUpdateUserText(response)
 	}
-}
-
-// printUsers
-// TODO: delete
-func printUsers(detail *msgs.ShowUserDetail) {
-	fmt.Println("")
-	fmt.Println("cluster : " + detail.Cluster.Spec.Name)
-
-	if detail.ExpiredOutput == false {
-		for _, s := range detail.Secrets {
-			fmt.Println("")
-			fmt.Println("secret : " + s.Name)
-			fmt.Println(TreeBranch + "username: " + s.Username)
-			fmt.Println(TreeTrunk + "password: " + s.Password)
-		}
-	} else {
-		fmt.Printf("\nuser passwords expiring within %d days:\n", detail.ExpiredDays)
-		fmt.Println("")
-		if len(detail.ExpiredMsgs) > 0 {
-			for _, e := range detail.ExpiredMsgs {
-				fmt.Println(e)
-			}
-		}
-	}
-
 }
