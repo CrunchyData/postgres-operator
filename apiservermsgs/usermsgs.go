@@ -50,21 +50,24 @@ type CreateUserResponse struct {
 	Status
 }
 
-// DeleteUserRequest
+// DeleteUserRequest contains the parameters that are used to delete PostgreSQL
+// users from clusters
 // swagger:model
 type DeleteUserRequest struct {
-	Selector      string
-	Clusters      []string
 	AllFlag       bool
-	Username      string
 	ClientVersion string
+	Clusters      []string
 	Namespace     string
+	Selector      string
+	Username      string
 }
 
-// DeleteUserResponse ...
+// DeleteUserResponse contains the results from trying to delete PostgreSQL
+// users from clusters. The content in this will be much sparser than the
+// others
 // swagger:model
 type DeleteUserResponse struct {
-	Results []string
+	Results []UserResponseDetail
 	Status
 }
 

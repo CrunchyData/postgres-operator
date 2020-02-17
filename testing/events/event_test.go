@@ -47,10 +47,6 @@ func TestEventCreate(t *testing.T) {
 	tryEventCreateBackup(t)
 	tryEventCreateBackupCompleted(t)
 
-	tryEventCreateUser(t)
-	tryEventDeleteUser(t)
-	tryEventChangePasswordUser(t)
-
 	tryEventCreatePolicy(t)
 	tryEventApplyPolicy(t)
 	tryEventDeletePolicy(t)
@@ -304,29 +300,6 @@ func tryEventCreateBackupCompleted(t *testing.T) {
 	t.Log(f.String())
 }
 
-func tryEventDeleteUser(t *testing.T) {
-
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicUser
-
-	f := events.EventDeleteUserFormat{
-		EventHeader: events.EventHeader{
-			Namespace: Namespace,
-			Username:  TestUsername,
-			Topic:     topics,
-			EventType: events.EventDeleteUser,
-		},
-		Clustername:      TestClusterName,
-		PostgresUsername: TestUsername,
-		Managed:          true,
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	t.Log(f.String())
-}
 func tryEventCreateLabel(t *testing.T) {
 
 	topics := make([]string, 1)

@@ -17,29 +17,24 @@ limitations under the License.
 
 import (
 	"bufio"
-	"database/sql"
-	"errors"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/config"
-	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
-	_ "github.com/lib/pq"
+
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 const (
-	errSystemAccountFormat = `"%s" is a system account and cannot be used`
+	errParsingExpiredUsernames = "Error parsing usernames for expired passwords."
+	errSystemAccountFormat     = `"%s" is a system account and cannot be modified.`
 )
 
 const (
@@ -56,6 +51,14 @@ const (
 	// sqlDisableLoginClause allows a user to disable login to a PostgreSQL
 	// account
 	sqlDisableLoginClause = `NOLOGIN`
+	// sqlDropOwnedBy drops all the objects owned by a PostgreSQL user in a
+	// specific **database**, not a cluster. As such, this needs to be executed
+	// multiple times when trying to drop a user from a PostgreSQL cluster. The
+	// value must be escaped with SQLQuoteIdentifier
+	sqlDropOwnedBy = "DROP OWNED BY %s CASCADE"
+	// sqlDropRole drops a PostgreSQL user from a PostgreSQL cluster. This must
+	// be escaped with SQLQuoteIdentifier
+	sqlDropRole = "DROP ROLE %s"
 	// sqlEnableLoginClause allows a user to enable login to a PostgreSQL account
 	sqlEnableLoginClause = `LOGIN`
 	// sqlExpiredPasswordClause is the clause that is used to query a set of
@@ -63,6 +66,10 @@ const (
 	// log in or not. Note that the value definitely needs to be escaped using
 	// SQLQuoteLiteral
 	sqlExpiredPasswordClause = `CURRENT_TIMESTAMP + %s::interval >= rolvaliduntil`
+	// sqlFindDatabases finds all the database a user can connect to. This is used
+	// to ensure we can drop all objects for a particular role. Amazingly, we do
+	// not need to do an escaping here
+	sqlFindDatabases = `SELECT datname FROM pg_catalog.pg_database WHERE datallowconn;`
 	// sqlFindUsers returns information about PostgreSQL users that will be in
 	// a format that we need to parse
 	sqlFindUsers = `SELECT rolname, rolvaliduntil
@@ -110,101 +117,6 @@ type connInfo struct {
 	Port     string
 	Database string
 	Password string
-}
-
-// getPostgresUserInfo...
-// TODO: delete this function as it's useless
-func getPostgresUserInfo(namespace, clusterName string) (connInfo, error) {
-	var err error
-	info := connInfo{}
-
-	service, found, err := kubeapi.GetService(apiserver.Clientset, clusterName, namespace)
-	if err != nil {
-		return info, err
-	}
-	if !found {
-		return info, errors.New("primary service not found for " + clusterName)
-	}
-
-	//get the secrets for this cluster
-	selector := "!" + config.LABEL_PGO_BACKREST_REPO + "," + config.LABEL_PG_CLUSTER + "=" + clusterName
-	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, namespace)
-	if err != nil {
-		return info, err
-	}
-
-	//get the postgres user secret info
-	var username, password, database, hostip string
-	for _, s := range secrets.Items {
-		username = string(s.Data[config.LABEL_USERNAME][:])
-		password = string(s.Data[config.LABEL_PASSWORD][:])
-		database = "postgres"
-		hostip = service.Spec.ClusterIP
-		if username == "postgres" {
-			log.Debug("got postgres user secrets")
-			break
-		}
-	}
-
-	//query the database for users that have expired
-	strPort := fmt.Sprint(service.Spec.Ports[0].Port)
-	info.Username = username
-	info.Password = password
-	info.Database = database
-	info.Hostip = hostip
-	info.Port = strPort
-
-	return info, err
-}
-
-// deleteUser ...
-func deleteUser(namespace, clusterName string, info connInfo, user string, managed bool) error {
-	var conn *sql.DB
-	var err error
-
-	conn, err = sql.Open("postgres", "sslmode=disable user="+info.Username+" host="+info.Hostip+" port="+info.Port+" dbname="+info.Database+" password="+info.Password)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-
-	var rows *sql.Rows
-
-	querystr := "drop owned by \"" + user + "\" cascade"
-	log.Debug(querystr)
-	rows, err = conn.Query(querystr)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-	querystr = "drop user if exists \"" + user + "\""
-	log.Debug(querystr)
-	rows, err = conn.Query(querystr)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-
-	defer func() {
-		if conn != nil {
-			conn.Close()
-		}
-		if rows != nil {
-			rows.Close()
-		}
-	}()
-
-	if managed {
-		//delete current secret
-		secretName := clusterName + "-" + user + "-secret"
-		err := kubeapi.DeleteSecret(apiserver.Clientset, secretName, namespace)
-		if err != nil {
-			log.Error(err.Error())
-			return err
-		}
-	}
-	return err
-
 }
 
 // CreatueUser allows one to create a PostgreSQL user in one of more PostgreSQL
@@ -263,12 +175,12 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 	// iterate through each cluster and add the new PostgreSQL role to each pod
 	for _, cluster := range clusterList.Items {
 		result := msgs.UserResponseDetail{
-			ClusterName: cluster.Name,
+			ClusterName: cluster.Spec.ClusterName,
 			Username:    request.Username,
 			ValidUntil:  validUntil,
 		}
 
-		log.Debugf("creating user [%s] on cluster [%s]", result.Username, cluster.Name)
+		log.Debugf("creating user [%s] on cluster [%s]", result.Username, cluster.Spec.ClusterName)
 
 		// first, find the primary Pod
 		pod, err := util.GetPrimaryPod(apiserver.Clientset, &cluster)
@@ -313,7 +225,7 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 		// if this user is "managed" by the Operator, add a secret. If there is an
 		// error, we can fall through as the next step is appending the results
 		if request.ManagedUser {
-			if err := util.CreateUserSecret(apiserver.Clientset, cluster.Name, result.Username,
+			if err := util.CreateUserSecret(apiserver.Clientset, cluster.Spec.ClusterName, result.Username,
 				result.Password, cluster.Spec.Namespace); err != nil {
 				log.Error(err)
 
@@ -332,18 +244,23 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 	return response
 }
 
-// DeleteUser ...
+// DeleteUser deletes a PostgreSQL user from clusters
 func DeleteUser(request *msgs.DeleteUserRequest, pgouser string) msgs.DeleteUserResponse {
-	var err error
+	response := msgs.DeleteUserResponse{
+		Results: []msgs.UserResponseDetail{},
+		Status: msgs.Status{
+			Code: msgs.Ok,
+			Msg:  "",
+		},
+	}
 
-	response := msgs.DeleteUserResponse{}
-	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
-	response.Results = make([]string, 0)
+	log.Debugf("delete user called, cluster [%v], selector [%s], all [%t]",
+		request.Clusters, request.Selector, request.AllFlag)
 
-	log.Debugf("DeleteUser called name=%s", request.Username)
-	if request.Username == "" {
+	// if the username is one of the PostgreSQL system accounts, return here
+	if util.CheckPostgreSQLUserSystemAccount(request.Username) {
 		response.Status.Code = msgs.Error
-		response.Status.Msg = "--username is required"
+		response.Status.Msg = fmt.Sprintf(errSystemAccountFormat, request.Username)
 		return response
 	}
 
@@ -356,70 +273,97 @@ func DeleteUser(request *msgs.DeleteUserRequest, pgouser string) msgs.DeleteUser
 		return response
 	}
 
-	var managed bool
-	var msg, clusterName string
-
+	// iterate through each cluster and try to delete the user!
+loop:
 	for _, cluster := range clusterList.Items {
-		clusterName = cluster.Spec.Name
-		info, err := getPostgresUserInfo(request.Namespace, clusterName)
-		if err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
+		result := msgs.UserResponseDetail{
+			ClusterName: cluster.Spec.ClusterName,
+			Username:    request.Username,
 		}
 
-		secretName := clusterName + "-" + request.Username + "-secret"
+		log.Debugf("dropping user [%s] from cluster [%s]", result.Username, cluster.Spec.ClusterName)
 
-		managed, err = isManaged(secretName, request.Namespace)
-		if err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
-		}
+		// first, find the primary Pod
+		pod, err := util.GetPrimaryPod(apiserver.Clientset, &cluster)
 
-		log.Debugf("DeleteUser %s managed %t", request.Username, managed)
-
-		err = deleteUser(request.Namespace, clusterName, info, request.Username, managed)
+		// if the primary Pod cannot be found, we're going to continue on for the
+		// other clusters, but provide some sort of error message in the response
 		if err != nil {
 			log.Error(err)
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
+
+			result.Error = true
+			result.ErrorMessage = err.Error()
+
+			response.Results = append(response.Results, result)
+			continue
 		}
 
-		msg = request.Username + " on " + clusterName + " removed managed=" + strconv.FormatBool(managed)
-		log.Debug(msg)
-		response.Results = append(response.Results, msg)
+		// first, get a list of all the databases in the cluster. We will need to
+		// go through each database and drop any object that the user owns
+		output, err := executeSQL(pod, sqlFindDatabases, []string{})
 
-		//publish event for delete user
-		topics := make([]string, 1)
-		topics[0] = events.EventTopicUser
-
-		f := events.EventDeleteUserFormat{
-			EventHeader: events.EventHeader{
-				Namespace: request.Namespace,
-				Username:  pgouser,
-				Topic:     topics,
-				Timestamp: time.Now(),
-				EventType: events.EventDeleteUser,
-			},
-			Clustername:      clusterName,
-			PostgresUsername: request.Username,
-			Managed:          managed,
-		}
-
-		err = events.Publish(f)
+		// if there is an error, record it and move on as we cannot actually deleted
+		// the user
 		if err != nil {
 			log.Error(err)
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
+
+			result.Error = true
+			result.ErrorMessage = err.Error()
+
+			response.Results = append(response.Results, result)
+			continue
 		}
 
+		// create the buffer of all the databases, and iterate through them so
+		// we can drop individuale objects in them
+		databases := bufio.NewScanner(strings.NewReader(output))
+
+		// so we need to parse each of these...and then determine if these are
+		// managed accounts and make a call to the secret to get...the password
+		for databases.Scan() {
+			database := strings.TrimSpace(databases.Text())
+
+			// set up the sql to drop the user object from the database
+			sql := fmt.Sprintf(sqlDropOwnedBy, util.SQLQuoteIdentifier(result.Username))
+
+			// and use the one instance where we need to pass in additional argments
+			// to the execteSQL function
+			// if there is an error, we'll make a note of it here, but we have to
+			// continue in the outer loop
+			if _, err := executeSQL(pod, sql, []string{database}); err != nil {
+				log.Error(err)
+
+				result.Error = true
+				result.ErrorMessage = err.Error()
+
+				response.Results = append(response.Results, result)
+				continue loop
+			}
+		}
+
+		// and if we survie that unscathed, we can now delete the user, which we
+		// have to escape to avoid SQL injections
+		sql := fmt.Sprintf(sqlDropRole, util.SQLQuoteIdentifier(result.Username))
+
+		// exceute the SQL. if there is an error, make note and continue
+		if _, err := executeSQL(pod, sql, []string{}); err != nil {
+			log.Error(err)
+
+			result.Error = true
+			result.ErrorMessage = err.Error()
+
+			response.Results = append(response.Results, result)
+			continue
+		}
+
+		// alright, final step: try to delete the user secret. if it does not exist,
+		// or it fails to delete, we don't care
+		deleteUserSecret(cluster, result.Username)
+
+		response.Results = append(response.Results, result)
 	}
 
 	return response
-
 }
 
 // ShowUser lets the caller view details about PostgreSQL users across the
@@ -493,7 +437,7 @@ func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
 		sql = fmt.Sprintf("%s %s", sql, sqlOrderByUsername)
 
 		// great, now we can perform the user lookup
-		output, err := executeSQL(pod, sql)
+		output, err := executeSQL(pod, sql, []string{})
 
 		// if there is an error, record it and move on to the next cluster
 		if err != nil {
@@ -537,7 +481,7 @@ func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
 
 			// start building a result
 			result := msgs.UserResponseDetail{
-				ClusterName: cluster.Name,
+				ClusterName: cluster.Spec.ClusterName,
 				Username:    values[0],
 				ValidUntil:  values[1],
 			}
@@ -630,37 +574,30 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 	return response
 }
 
-func isManaged(secretName, ns string) (bool, error) {
-	_, found, err := kubeapi.GetSecret(apiserver.Clientset, secretName, ns)
-	if !found {
-		return false, nil
-	}
-	if found {
-		return true, nil
-	}
+// deleteUserSecret deletes the user secret that stores information like the
+// user's password.
+// For the purposes of this module, we don't care if this fails. We'll log the
+// error in here, but do nothing with it
+func deleteUserSecret(cluster crv1.Pgcluster, username string) {
+	secretName := fmt.Sprintf(userSecretFormat, cluster.Spec.ClusterName, username)
+
+	err := kubeapi.DeleteSecret(apiserver.Clientset, secretName, cluster.Spec.Namespace)
+
 	if err != nil {
-		return false, err
+		log.Error(err)
 	}
-
-	return true, err
-
-}
-
-func deleteUserSecret(clientset *kubernetes.Clientset, clustername, username, namespace string) error {
-	//delete current secret
-	secretName := clustername + "-" + username + "-secret"
-
-	err := kubeapi.DeleteSecret(clientset, secretName, namespace)
-	return err
 }
 
 // executeSQL executes SQL on the primary PostgreSQL Pod. This occurs using the
 // Kubernets exec function, which allows us to perform the request over
 // a PostgreSQL connection that's authenticated with peer authentication
-func executeSQL(pod *v1.Pod, sql string) (string, error) {
+func executeSQL(pod *v1.Pod, sql string, extraCommandArgs []string) (string, error) {
+	command := sqlCommand
+	command = append(command, extraCommandArgs...)
+
 	// execute into the primary pod to run the query
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig,
-		apiserver.Clientset, sqlCommand,
+		apiserver.Clientset, command,
 		"database", pod.Name, pod.ObjectMeta.Namespace, strings.NewReader(sql))
 
 	// if there is an error executing the command, which includes the stderr,
@@ -818,14 +755,14 @@ func getClusterList(namespace string, clusterNames []string, selector string, al
 func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) []msgs.UserResponseDetail {
 	results := []msgs.UserResponseDetail{}
 
-	log.Debugf("rotate expired passwords on cluster [%s]", cluster.Name)
+	log.Debugf("rotate expired passwords on cluster [%s]", cluster.Spec.ClusterName)
 
 	// first, find the primary Pod. If we can't do that, no rense in continuing
 	pod, err := util.GetPrimaryPod(apiserver.Clientset, cluster)
 
 	if err != nil {
 		result := msgs.UserResponseDetail{
-			ClusterName:  cluster.Name,
+			ClusterName:  cluster.Spec.ClusterName,
 			Error:        true,
 			ErrorMessage: err.Error(),
 		}
@@ -847,11 +784,11 @@ func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgclu
 
 	// alright, time to find if there are any expired accounts. If this errors,
 	// then we will abort here
-	output, err := executeSQL(pod, sql)
+	output, err := executeSQL(pod, sql, []string{})
 
 	if err != nil {
 		result := msgs.UserResponseDetail{
-			ClusterName:  cluster.Name,
+			ClusterName:  cluster.Spec.ClusterName,
 			Error:        true,
 			ErrorMessage: err.Error(),
 		}
@@ -880,12 +817,30 @@ func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgclu
 
 	// iterate through each user name, which will then be used to go through and
 	// update the password for each user
+	// Note that the query has the format "username|sqlTimeFormat" so we need
+	// to parse that below
 	for usernames.Scan() {
+		// get the values out of the query
+		values := strings.Split(strings.TrimSpace(usernames.Text()), "|")
+
+		// if there is not at least one value, just abort here
+		if len(values) < 1 {
+			result := msgs.UserResponseDetail{
+				Error:        true,
+				ErrorMessage: errParsingExpiredUsernames,
+			}
+			results = append(results, result)
+			continue
+		}
+
+		// otherwise, we can safely set the username
+		username := values[0]
+
 		// start building a result. The Username call strips off the newlines and
 		// other garbage and returns the actual username
 		result := msgs.UserResponseDetail{
-			ClusterName: cluster.Name,
-			Username:    strings.TrimSpace(usernames.Text()),
+			ClusterName: cluster.Spec.ClusterName,
+			Username:    username,
 			ValidUntil:  validUntil,
 		}
 
@@ -906,11 +861,9 @@ func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgclu
 			fmt.Sprintf(sqlValidUntilClause, util.SQLQuoteLiteral(result.ValidUntil)))
 
 		// and this is enough to execute
-		_, err := executeSQL(pod, sql)
-
 		// if there is an error, record it here. The next step is to continue
 		// iterating through the loop, and we will continue to do so
-		if err != nil {
+		if _, err := executeSQL(pod, sql, []string{}); err != nil {
 			result.Error = true
 			result.ErrorMessage = err.Error()
 		}
@@ -928,11 +881,11 @@ func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgclu
 // expired passwords), which is why it's broken out into its own function
 func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.UserResponseDetail {
 	result := msgs.UserResponseDetail{
-		ClusterName: cluster.Name,
+		ClusterName: cluster.Spec.ClusterName,
 		Username:    request.Username,
 	}
 
-	log.Debugf("updating user [%s] on cluster [%s]", result.Username, cluster.Name)
+	log.Debugf("updating user [%s] on cluster [%s]", result.Username, cluster.Spec.ClusterName)
 
 	// first, find the primary Pod
 	pod, err := util.GetPrimaryPod(apiserver.Clientset, cluster)
@@ -1015,7 +968,7 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 	}
 
 	// execute the SQL! if there is an error, return the results
-	if _, err := executeSQL(pod, sql); err != nil {
+	if _, err := executeSQL(pod, sql, []string{}); err != nil {
 		log.Error(err)
 
 		result.Error = true
