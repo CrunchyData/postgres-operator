@@ -107,6 +107,8 @@ func DeleteUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCrede
 
 	var response msgs.DeleteUserResponse
 
+	request.ClientVersion = msgs.PGO_VERSION
+
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/userdelete"
 	log.Debugf("deleteUser called...[%s]", url)

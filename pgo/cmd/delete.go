@@ -271,6 +271,11 @@ func init() {
 	// the PostgreSQL user from the cluster
 	deleteUserCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false,
 		"No command line confirmation before delete.")
+	// "pgo delete user -o"
+	// selects the type of output to use, choices are "json" and any other input
+	// will render the text based one
+	deleteUserCmd.Flags().StringVarP(&OutputFormat, "output", "o", "",
+		`The output format. Supported types are: "json"`)
 	// "pgo delete schedule --selector"
 	// "pgo delete schedule -s"
 	// the selector flag that filters which PostgreSQL users should be deleted

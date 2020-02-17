@@ -114,29 +114,30 @@ func deleteUser(args []string, ns string) {
 		return
 	}
 
-	r := new(msgs.DeleteUserRequest)
-	r.Username = Username
-	r.Clusters = args
-	r.AllFlag = AllFlag
-	r.Selector = Selector
-	r.ClientVersion = msgs.PGO_VERSION
-	r.Namespace = ns
+	request := msgs.DeleteUserRequest{
+		AllFlag:   AllFlag,
+		Clusters:  args,
+		Namespace: ns,
+		Selector:  Selector,
+		Username:  Username,
+	}
 
-	response, err := api.DeleteUser(httpclient, &SessionCredentials, r)
+	response, err := api.DeleteUser(httpclient, &SessionCredentials, &request)
 
 	if err != nil {
-		fmt.Println("Error: ", err.Error())
-		return
+		fmt.Println("Error: " + err.Error())
+		os.Exit(1)
 	}
 
-	if response.Status.Code == msgs.Ok {
-		for _, result := range response.Results {
-			fmt.Println(result)
-		}
-	} else {
-		fmt.Println("Error: " + response.Status.Msg)
+	// great! now we can work on interpreting the results and outputting them
+	// per the user's desired output format
+	// render the next bit based on the output type
+	switch OutputFormat {
+	case "json":
+		printJSON(response)
+	default:
+		printDeleteUserText(response)
 	}
-
 }
 
 // generateUserPadding returns the paddings based on the values of the response
@@ -180,6 +181,32 @@ func printCreateUserText(response msgs.CreateUserResponse) {
 	// if no results returned, return an error
 	if len(response.Results) == 0 {
 		fmt.Println("No users created.")
+		return
+	}
+
+	padding := generateUserPadding(response.Results)
+
+	// print the header
+	printUserTextHeader(padding)
+
+	// iterate through the reuslts and print them out
+	for _, result := range response.Results {
+		printUserTextRow(result, padding)
+	}
+}
+
+// printDeleteUserText prints out the information that is created after
+// pgo delete user is called
+func printDeleteUserText(response msgs.DeleteUserResponse) {
+	// if the request errored, return the message here and exit with an error
+	if response.Status.Code != msgs.Ok {
+		fmt.Println("Error: " + response.Status.Msg)
+		os.Exit(1)
+	}
+
+	// if no results returned, return an error
+	if len(response.Results) == 0 {
+		fmt.Println("No users deleted.")
 		return
 	}
 

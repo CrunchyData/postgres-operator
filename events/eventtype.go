@@ -397,23 +397,6 @@ func (lvl EventCreateBackupCompletedFormat) String() string {
 }
 
 //----------------------------
-type EventDeleteUserFormat struct {
-	EventHeader      `json:"eventheader"`
-	Clustername      string `json:"clustername"`
-	PostgresUsername string `json:"postgresusername"`
-	Managed          bool   `json:"managed"`
-}
-
-func (p EventDeleteUserFormat) GetHeader() EventHeader {
-	return p.EventHeader
-}
-
-func (lvl EventDeleteUserFormat) String() string {
-	msg := fmt.Sprintf("Event %s (delete user) - clustername %s - postgres user [%s]", lvl.EventHeader, lvl.Clustername, lvl.PostgresUsername)
-	return msg
-}
-
-//----------------------------
 type EventCreateLabelFormat struct {
 	EventHeader `json:"eventheader"`
 	Clustername string `json:"clustername"`
