@@ -73,21 +73,23 @@ dependency between the two projects at a specific version level.
 
 ## Operating Systems
 
-The Operator is developed on both Centos 7 and RHEL 7 operating systems.  The
-underlying containers are designed to use either Centos 7 or Red Hat UBI 7 as 
-the base container image.
+The PostgreSQL Operator is developed on both CentOS 7 and RHEL 7 operating
+systems.  The underlying containers are designed to use either CentOS 7 or
+Red Hat UBI 7 as the base container image.
 
 Other Linux variants are possible but are not supported at this time.
 
-Also, please note that as of version 4.2.2 of the PostgreSQL Operator, Red Hat Univeral Base
-Image (UBI) 7 has replaced RHEL 7 as the base container image for the various PostgreSQL Operator
-containers.  For more information on Red Hat UBI, please see the following link:
+Also, please note that as of version 4.2.2 of the PostgreSQL Operator,
+[Red Hat Universal Base Image (UBI)](https://www.redhat.com/en/blog/introducing-red-hat-universal-base-image) 7
+has replaced RHEL 7 as the base container image for the various PostgreSQL
+Operator containers.  You can find out more information about Red Hat UBI from
+the following article:
 
 https://www.redhat.com/en/blog/introducing-red-hat-universal-base-image
 
 ## Kubernetes Distributions
 
-The Operator is designed and tested on Kubernetes and Openshift Container Platform.
+The Operator is designed and tested on Kubernetes and OpenShift Container Platform.
 
 ## Storage
 
