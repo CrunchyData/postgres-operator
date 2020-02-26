@@ -140,7 +140,7 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 		request.Clusters, request.Selector, request.AllFlag)
 
 	// if the username is one of the PostgreSQL system accounts, return here
-	if util.CheckPostgreSQLUserSystemAccount(request.Username) {
+	if util.IsPostgreSQLUserSystemAccount(request.Username) {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = fmt.Sprintf(errSystemAccountFormat, request.Username)
 		return response
@@ -258,7 +258,7 @@ func DeleteUser(request *msgs.DeleteUserRequest, pgouser string) msgs.DeleteUser
 		request.Clusters, request.Selector, request.AllFlag)
 
 	// if the username is one of the PostgreSQL system accounts, return here
-	if util.CheckPostgreSQLUserSystemAccount(request.Username) {
+	if util.IsPostgreSQLUserSystemAccount(request.Username) {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = fmt.Sprintf(errSystemAccountFormat, request.Username)
 		return response
@@ -475,7 +475,7 @@ func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
 
 			// before continuing, check to see if this is a system account.
 			// If it is, check to see that the user requested to view system accounts
-			if !request.ShowSystemAccounts && util.CheckPostgreSQLUserSystemAccount(values[0]) {
+			if !request.ShowSystemAccounts && util.IsPostgreSQLUserSystemAccount(values[0]) {
 				continue
 			}
 
@@ -538,7 +538,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 
 	// if this involes updating a specific PostgreSQL account, and it is a system
 	// account, return ere
-	if request.Username != "" && util.CheckPostgreSQLUserSystemAccount(request.Username) {
+	if request.Username != "" && util.IsPostgreSQLUserSystemAccount(request.Username) {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = fmt.Sprintf(errSystemAccountFormat, request.Username)
 		return response

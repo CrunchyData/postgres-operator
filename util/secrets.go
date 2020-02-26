@@ -16,6 +16,8 @@ package util
 */
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -35,20 +37,20 @@ const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 const charsetNumbers = "0123456789"
 
-// PostgreSQLUserSystemAccounts accounts are a list of accounts that are used to manage
+// postgreSQLUserSystemAccounts accounts are a list of accounts that are used to manage
 // the PostgreSQL system and should not be directly used by Operator users
-var PostgreSQLUserSystemAccounts = []string{
+var postgreSQLUserSystemAccounts = map[string]struct{}{
 	// "ccp_monitoring" is used in the metrics collection
-	"ccp_monitoring",
+	"ccp_monitoring": struct{}{},
 	// "crunchyadm" is an administrative user
-	"crunchyadm",
+	"crunchyadm": struct{}{},
 	// "pgbouncer" is used to manage the pgBouncer deployment
-	"pgbouncer",
+	"pgbouncer": struct{}{},
 	// "postgres" is the superuser
-	"postgres",
+	"postgres": struct{}{},
 	// "primaryuser" is a misnomer, and is actually the account used to manage
 	// replication
-	"primaryuser",
+	"primaryuser": struct{}{},
 }
 
 var seededRand = rand.New(
@@ -84,20 +86,6 @@ func stringWithCharset(length int, charset string) string {
 	return string(b)
 }
 
-// CheckPostgreSQLUserSystemAccount determines whether or not this is a system
-// PostgreSQL user account, as if this returns true, one likely may not want to
-// allow a user to directly access the account
-func CheckPostgreSQLUserSystemAccount(username string) bool {
-	// go through the list of system accounts and see if the username is in it
-	for _, systemAccount := range PostgreSQLUserSystemAccounts {
-		if username == systemAccount {
-			return true
-		}
-	}
-
-	return false
-}
-
 // GeneratePassword generate a password of a given length
 func GeneratePassword(length int) string {
 	return stringWithCharset(length, charset)
@@ -107,8 +95,15 @@ func GeneratePassword(length int) string {
 // returns the PostgreSQL formatted MD5 password, which is:
 // "md5" + md5(password+username)
 func GeneratePostgreSQLMD5Password(username, password string) string {
-	return fmt.Sprintf("md5%s",
-		GetMD5HashForAuthFile(fmt.Sprintf("%s%s", password, username)))
+	// create the plaintext password/salt that PostgreSQL expects as a byte string
+	plaintext := []byte(fmt.Sprintf("%s%s", password, username))
+	// set up the password hasher
+	hasher := md5.New()
+	// add the above plaintext to the hash
+	hasher.Write(plaintext)
+	// finish the transformation by getting the string value of the MD5 hash and
+	// encoding it in hexadecimal for PostgreSQL, appending "md5" to the front
+	return fmt.Sprintf("md5%s", hex.EncodeToString(hasher.Sum(nil)))
 }
 
 // GenerateRandString generate a rand lowercase string of a given length
@@ -150,6 +145,16 @@ func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, se
 
 	return string(secret.Data["username"][:]), string(secret.Data["password"][:]), err
 
+}
+
+// IsPostgreSQLUserSystemAccount determines whether or not this is a system
+// PostgreSQL user account, as if this returns true, one likely may not want to
+// allow a user to directly access the account
+// Normalizes the lookup by downcasing it
+func IsPostgreSQLUserSystemAccount(username string) bool {
+	// go look up and see if the username is in the map
+	_, found := postgreSQLUserSystemAccounts[strings.ToLower(username)]
+	return found
 }
 
 // CloneClusterSecrets will copy the secrets from a cluster into the secrets of
@@ -222,6 +227,7 @@ func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 
 	if err := CreateSecret(clientset, clustername, secretName, username, password, namespace); err != nil {
 		log.Error(err)
+		return err
 	}
 
 	return nil

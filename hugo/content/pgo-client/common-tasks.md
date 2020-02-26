@@ -873,13 +873,6 @@ You can also specify a pgbouncer password as follows:
 
     pgo create cluster hacluster --pgbouncer --pgbouncer-pass=somepass -n pgouser1
 
-Note, the pgbouncer configuration defaults to specifying only
-a single entry for the primary database.  If you want it to
-have an entry for the replica service, add the following
-configuration to pgbouncer.ini:
-
-    {{.PG_REPLICA_SERVICE_NAME}} = host={{.PG_REPLICA_SERVICE_NAME}} port={{.PG_PORT}} auth_user={{.PG_USERNAME}} dbname={{.PG_DATABASE}}
-
 You can remove a pgbouncer from a cluster as follows:
 
     pgo delete pgbouncer hacluster -n pgouser1

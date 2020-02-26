@@ -17,8 +17,6 @@ package util
 
 import (
 	"bytes"
-	"crypto/md5"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -261,13 +259,6 @@ func CreateBackrestPVCSnippet(backRestPVCName string) string {
 	sc.WriteString("}")
 
 	return sc.String()
-}
-
-// Generates an Md5Hash
-func GetMD5HashForAuthFile(text string) string {
-	hasher := md5.New()
-	hasher.Write([]byte(text))
-	return hex.EncodeToString(hasher.Sum(nil))
 }
 
 // NewClient gets a REST connection to Kube

@@ -201,7 +201,7 @@ func init() {
 	// "pgo delete pgbouncer --uninstall"
 	// this flag removes all of the pgbouncer machinery that is installed in the
 	// PostgreSQL cluster
-	deletePgbouncerCmd.Flags().BoolVar(&PgBouncerUninstall, "uninstall", false, `Used to rmeove any "pgbouncer" owned object and user from the PostgreSQL cluster`)
+	deletePgbouncerCmd.Flags().BoolVar(&PgBouncerUninstall, "uninstall", false, `Used to remove any "pgbouncer" owned object and user from the PostgreSQL cluster`)
 
 	// "pgo delete pgorole"
 	// delete a role that is able to issue commands interface with the
