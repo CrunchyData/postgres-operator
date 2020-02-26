@@ -26,7 +26,7 @@ client version that matches the API server version as part of the request.
 The API server is setup to work with the pgo command line interface so the
 parameters that are passed to the server can be found by looking at the related
 flags. For example, the series parameter used in the `create` example below is
-the same as the `-e, --series` flag that is described in the [pgo cli docs](https://access.crunchydata.com/documentation/postgres-operator/4.1.0/operatorcli/cli/pgo_create_cluster/).
+the same as the `-e, --series` flag that is described in the [pgo cli docs](https://access.crunchydata.com/documentation/postgres-operator/4.2.2/advanced/direct-api-calls).
 ```
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
 pgoadmin:examplepassword -H "Content-Type:application/json" --insecure -X \
@@ -55,7 +55,7 @@ created in the namespace.
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
 pgoadmin:examplepassword -H "Content-Type:application/json" --insecure -X \
 POST --data \
-    '{"ClientVersion":"4.1.0",
+    '{"ClientVersion":"4.2.2",
     "Namespace":"pgouser1",
     "Name":"mycluster",
     "Series":1}' \
@@ -75,7 +75,7 @@ show all of the clusters that are in the given namespace.
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
 pgoadmin:examplepassword -H "Content-Type:application/json" --insecure -X \
 POST --data \
-  '{"ClientVersion":"4.1.0",
+  '{"ClientVersion":"4.2.2",
   "Namespace":"pgouser1",
   "Clustername":"mycluster"}' \
 $PGO_APISERVER_URL/showclusters
@@ -85,7 +85,7 @@ $PGO_APISERVER_URL/showclusters
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
 pgoadmin:examplepassword -H "Content-Type:application/json" --insecure -X \
 POST --data \
-  '{"ClientVersion":"4.1.0",
+  '{"ClientVersion":"4.2.2",
   "Namespace":"pgouser1",
   "Clustername":"mycluster"}' \
 $PGO_APISERVER_URL/clustersdelete
@@ -93,7 +93,7 @@ $PGO_APISERVER_URL/clustersdelete
 
   Schemes: http, https
   BasePath: /
-  Version: 4.1.0
+  Version: 4.2.2
   License: Apache 2.0 http://www.apache.org/licenses/LICENSE-2.0
   Contact: Crunchy Data<info@crunchydata.com> https://www.crunchydata.com/
 
