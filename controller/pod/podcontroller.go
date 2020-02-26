@@ -267,12 +267,28 @@ func (c *Controller) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv1.P
 					publishClusterComplete(clusterName, newpod.ObjectMeta.Namespace, cluster)
 					//
 
-					if cluster.Labels[config.LABEL_BACKREST] == "true" {
-						tmptask := crv1.Pgtask{}
-						found, err := kubeapi.Getpgtask(c.PodClient, &tmptask, clusterName+"-stanza-create", newpod.ObjectMeta.Namespace)
-						if !found && err != nil {
-							backrestoperator.StanzaCreate(newpod.ObjectMeta.Namespace, clusterName, c.PodClientset, c.PodClient)
-						}
+					// Proceed with stanza-creation of this is not a standby cluster, or if its
+					// a standby cluster that does not have "s3" storage only enabled.
+					// If this is a standby cluster and the pgBackRest storage type is set
+					// to "s3" for S3 storage only, set the cluster to an initialized status.
+					if !cluster.Spec.Standby || (cluster.Spec.Standby &&
+						cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE] != "s3") {
+						backrestoperator.StanzaCreate(newpod.ObjectMeta.Namespace, clusterName,
+							c.PodClientset, c.PodClient)
+					} else {
+						controller.SetClusterInitializedStatus(c.PodClient, clusterName,
+							newpod.ObjectMeta.Namespace)
+					}
+
+					// If a standby cluster initialize the creation of any replicas.  Replicas
+					// can be initialized right away, i.e. there is no dependency on
+					// stanza-creation and/or the creation of any backups, since the replicas
+					// will be generated from the pgBackRest repository of an external PostgreSQL
+					// database (which should already exist).
+					if cluster.Spec.Standby {
+						controller.InitializeReplicaCreation(c.PodClient, clusterName,
+							newpod.ObjectMeta.Namespace)
+						return
 					}
 
 					// if this is a pgbouncer enabled cluster, add a pgbouncer

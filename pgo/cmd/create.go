@@ -61,6 +61,12 @@ var BackrestS3Region string
 var PVCSize string
 var BackrestPVCSize string
 
+// BackrestRepoPath allows the pgBackRest repo path to be defined instead of using the default
+var BackrestRepoPath string
+
+// Standby determines whether or not the cluster should be created as a standby cluster
+var Standby bool
+
 // variables used for setting up TLS-enabled PostgreSQL clusters
 var (
 	// TLSOnly indicates that only TLS connections will be accepted for a
@@ -252,6 +258,9 @@ func init() {
 	createClusterCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 0, "If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.")
 	createClusterCmd.Flags().StringVarP(&BackrestPVCSize, "pgbackrest-pvc-size", "", "",
 		`The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "local" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
+	createClusterCmd.Flags().StringVarP(&BackrestRepoPath, "pgbackrest-repo-path", "", "",
+		"The pgBackRest repository path that should be utilized instead of the default. Required "+
+			"for standby\nclusters to define the location of an existing pgBackRest repository.")
 	createClusterCmd.Flags().StringVarP(&BackrestS3Key, "pgbackrest-s3-key", "", "",
 		"The AWS S3 key that should be utilized for the cluster when the \"s3\" "+
 			"storage type is enabled for pgBackRest.")
@@ -300,6 +309,8 @@ func init() {
 		"Enables synchronous replication for the cluster.")
 	createClusterCmd.Flags().BoolVar(&TLSOnly, "tls-only", false, "If true, forces all PostgreSQL connections to be over TLS. "+
 		"Must also set \"server-tls-secret\" and \"server-ca-secret\"")
+	createClusterCmd.Flags().BoolVarP(&Standby, "standby", "", false, "Creates a standby cluster "+
+		"that replicates from a pgBackRest repository in AWS S3.")
 	createClusterCmd.Flags().StringSliceVar(&Tablespaces, "tablespace", []string{},
 		"Create a PostgreSQL tablespace on the cluster, e.g. \"name=ts1:storageconfig=nfsstorage\". The format is "+
 			"a key/value map that is delimited by \"=\" and separated by \":\". The following parameters are available:\n\n"+

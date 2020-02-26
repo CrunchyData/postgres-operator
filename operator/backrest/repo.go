@@ -107,7 +107,7 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 		BackrestRepoClaimName: repoName,
 		SshdSecretsName:       "pgo-backrest-repo-config",
 		PGbackrestDBHost:      cluster.Name,
-		PgbackrestRepoPath:    "/backrestrepo/" + serviceName,
+		PgbackrestRepoPath:    util.GetPGBackRestRepoPath(*cluster),
 		PgbackrestDBPath:      "/pgdata/" + cluster.Name,
 		PgbackrestPGPort:      cluster.Spec.Port,
 		SshdPort:              operator.Pgo.Cluster.BackrestPort,

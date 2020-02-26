@@ -103,6 +103,9 @@
                         "name": "PGHA_TLS_ONLY",
                         "value": "{{.TLSOnly}}"
                     }, {
+                        "name": "PGHA_STANDBY",
+                        "value": "{{.Standby}}"
+                    }, {
                         "name": "PATRONI_KUBERNETES_NAMESPACE",
                         "valueFrom": {
                             "fieldRef": {
@@ -302,9 +305,7 @@
                             ]
                         }
                     }
-
                     {{.TablespaceVolumes}}
-
                 ],
                 "affinity": {
         {{.NodeSelector}}

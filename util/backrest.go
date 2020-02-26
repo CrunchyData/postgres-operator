@@ -23,6 +23,11 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 )
 
+// defines the default repo1-path for pgBackRest for use when a specic path is not provided
+// in the pgcluster CR.  The '%s' format verb will be replaced with the cluster name when this
+// variable is utilized
+const defaultBackrestRepoPath = "/backrestrepo/%s-backrest-shared-repo"
+
 // ValidateBackrestStorageTypeOnBackupRestore checks to see if the pgbackrest storage type provided
 // when performing either pgbackrest backup or restore is valid.  This includes ensuring the value
 // provided is a valid storage type (e.g. "s3" and/or "local").  This also includes ensuring the
@@ -70,4 +75,15 @@ func IsValidBackrestStorageType(storageType string) bool {
 		}
 	}
 	return isValid
+}
+
+// GetPGBackRestRepoPath is responsible for determining the repo path setting (i.e. 'repo1-path'
+// flag) for use by pgBackRest.  If a specific repo path has been defined in the pgcluster CR,
+// then that path will be returned.  Otherwise a default path will be returned, which is generated
+// using the 'defaultBackrestRepoPath' constant and the cluster name.
+func GetPGBackRestRepoPath(cluster crv1.Pgcluster) string {
+	if cluster.Spec.BackrestRepoPath != "" {
+		return cluster.Spec.BackrestRepoPath
+	}
+	return fmt.Sprintf(defaultBackrestRepoPath, cluster.Name)
 }

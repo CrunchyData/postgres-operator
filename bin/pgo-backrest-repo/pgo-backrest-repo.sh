@@ -32,9 +32,9 @@ ls $CONFIG
 echo "REPO is ..."
 ls $REPO
 
-if [ ! -d $PGBACKREST_REPO_PATH ]; then
-	echo "creating " $PGBACKREST_REPO_PATH
-	mkdir -p $PGBACKREST_REPO_PATH
+if [ ! -d $PGBACKREST_REPO1_PATH ]; then
+	echo "creating " $PGBACKREST_REPO1_PATH
+	mkdir -p $PGBACKREST_REPO1_PATH
 fi
 
 # This is a workaround for changes introduced in pgBackRest v2.24.  Specifically, a pg1-path

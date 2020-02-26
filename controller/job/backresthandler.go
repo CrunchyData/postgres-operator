@@ -21,6 +21,7 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
@@ -154,49 +155,19 @@ func (c *Controller) handleBackrestBackupUpdate(job *apiv1.Job) error {
 	}
 	publishBackupComplete(labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], job.ObjectMeta.Labels[config.LABEL_PGOUSER], "pgbackrest", job.ObjectMeta.Namespace, "")
 
-	// if initial cluster backup, now annotate all existing pgreplica's to initiate replica creation
-	pgreplicaList := &crv1.PgreplicaList{}
-	selector := config.LABEL_PG_CLUSTER + "=" + labels[config.LABEL_PG_CLUSTER]
+	// If the completed backup was a cluster bootstrap backup, then mark the cluster as initialized
+	// and initiate the creation of any replicas.  Otherwise if the completed backup was taken as
+	// the result of a failover, then proceed with tremove the "primary_on_role_change" tag.
 	if labels[config.LABEL_PGHA_BACKUP_TYPE] == crv1.BackupTypeBootstrap {
 		log.Debugf("jobController onUpdate initial backup complete")
 
-		// get the pgcluster resource for the cluster the replica is a part of
-		cluster := crv1.Pgcluster{}
-		_, err = kubeapi.Getpgcluster(c.JobClient, &cluster, labels[config.LABEL_PG_CLUSTER],
+		controller.SetClusterInitializedStatus(c.JobClient, labels[config.LABEL_PG_CLUSTER],
 			job.ObjectMeta.Namespace)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-		clusterStatus := cluster.Status.State
-		message := "Cluster has been initialized"
-		err = kubeapi.PatchpgclusterStatus(c.JobClient, crv1.PgclusterStateInitialized, message,
-			&cluster, job.ObjectMeta.Namespace)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
 
-		err := kubeapi.GetpgreplicasBySelector(c.JobClient, pgreplicaList, selector, job.ObjectMeta.Namespace)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-		for _, pgreplica := range pgreplicaList.Items {
-			if pgreplica.Annotations == nil {
-				pgreplica.Annotations = make(map[string]string)
-			}
-			if clusterStatus == crv1.PgclusterStateRestore {
-				pgreplica.Spec.Status = "restore"
-			} else {
-				pgreplica.Annotations[config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA] = "true"
-			}
-			err = kubeapi.Updatepgreplica(c.JobClient, &pgreplica, pgreplica.Name, job.ObjectMeta.Namespace)
-			if err != nil {
-				log.Error(err)
-				return err
-			}
-		}
+		// now initialize the creation of any replica
+		controller.InitializeReplicaCreation(c.JobClient, labels[config.LABEL_PG_CLUSTER],
+			job.ObjectMeta.Namespace)
+
 	} else if labels[config.LABEL_PGHA_BACKUP_TYPE] == crv1.BackupTypeFailover {
 		err := clusteroperator.RemovePrimaryOnRoleChangeTag(c.JobClientset, c.JobConfig,
 			labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Namespace)
@@ -213,10 +184,15 @@ func (c *Controller) handleBackrestStanzaCreateUpdate(job *apiv1.Job) error {
 
 	labels := job.GetObjectMeta().GetLabels()
 	log.Debugf("jobController onUpdate backrest stanza-create job case")
+
+	// grab the cluster name and namespace for use in various places below
+	clusterName := labels[config.LABEL_PG_CLUSTER]
+	namespace := job.Namespace
+
 	if job.Status.Succeeded == 1 {
-		log.Debugf("backrest stanza successfully created for cluster %s", labels[config.LABEL_PG_CLUSTER])
+		log.Debugf("backrest stanza successfully created for cluster %s", clusterName)
 		log.Debugf("proceeding with the initial full backup for cluster %s as needed for replica creation",
-			labels[config.LABEL_PG_CLUSTER])
+			clusterName)
 
 		var backrestRepoPodName string
 		for _, cont := range job.Spec.Template.Spec.Containers {
@@ -224,12 +200,28 @@ func (c *Controller) handleBackrestStanzaCreateUpdate(job *apiv1.Job) error {
 				if envVar.Name == "PODNAME" {
 					backrestRepoPodName = envVar.Value
 					log.Debugf("the backrest repo pod for the initial backup of cluster %s is %s",
-						labels[config.LABEL_PG_CLUSTER], backrestRepoPodName)
+						clusterName, backrestRepoPodName)
 				}
 			}
 		}
+
+		cluster := crv1.Pgcluster{}
+		if _, err := kubeapi.Getpgcluster(c.JobClient, &cluster,
+			clusterName, namespace); err != nil {
+			return err
+		}
+		// If the cluster is a standby cluster, then no need to proceed with backup creation.
+		// Instead the cluster can be set to initialized following creation of the stanza.
+		if cluster.Spec.Standby {
+			log.Debugf("job Controller: standby cluster %s will now be set to an initialized "+
+				"status", clusterName)
+			controller.SetClusterInitializedStatus(c.JobClient, clusterName, namespace)
+			return nil
+		}
+
 		backrestoperator.CreateInitialBackup(c.JobClient, job.ObjectMeta.Namespace,
-			labels[config.LABEL_PG_CLUSTER], backrestRepoPodName)
+			clusterName, backrestRepoPodName)
+
 	}
 	return nil
 }

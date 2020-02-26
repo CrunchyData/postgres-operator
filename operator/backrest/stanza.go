@@ -16,6 +16,8 @@ package backrest
 */
 
 import (
+	"strings"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -64,8 +66,27 @@ func StanzaCreate(namespace, clusterName string, clientset *kubernetes.Clientset
 	spec.Parameters[config.LABEL_POD_NAME] = podName
 	spec.Parameters[config.LABEL_CONTAINER_NAME] = "pgo-backrest-repo"
 	spec.Parameters[config.LABEL_BACKREST_COMMAND] = crv1.PgtaskBackrestStanzaCreate
-	spec.Parameters[config.LABEL_BACKREST_OPTS] = ""
-	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]
+
+	// Handle stanza creation for a standby cluster, which requires some additonal consideration.
+	// This includes setting the pgBackRest storage type and command options as needed to support
+	// stanza creation for a standby cluster.  If not a standby cluster then simply set the
+	// storage type and options as usual.
+	if cluster.Spec.Standby {
+		// Since this is a standby cluster, if local storage is specified then ensure stanza
+		// creation is for the local repo only.  The stanza for the S3 repo will have already been
+		// created by the cluster the standby is replicating from, and therefore does not need to
+		// be attempted again.
+		if strings.Contains(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], "local") {
+			spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = "local"
+		}
+		// Since the primary will not be directly accessible to the standby cluster, create the
+		// stanza in offline mode
+		spec.Parameters[config.LABEL_BACKREST_OPTS] = "--no-online"
+	} else {
+		spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] =
+			cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]
+		spec.Parameters[config.LABEL_BACKREST_OPTS] = ""
+	}
 
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
