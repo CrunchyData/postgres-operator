@@ -42,7 +42,6 @@ import (
 )
 
 const (
-	pgBackRestRepoPath                   = "/backrestrepo/" + backrest.BackrestRepoServiceName
 	pgBackRestRepoSyncContainerImageName = "%s/pgo-backrest-repo-sync:%s"
 	pgBackRestRepoSyncJobNamePrefix      = "pgo-backrest-repo-sync-%s-%s"
 	pgBackRestStanza                     = "db" // this is hardcoded throughout...
@@ -370,7 +369,7 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		PGOImageTag:         operator.Pgo.Pgo.PGOImageTag,
 		PgbackrestStanza:    pgBackRestStanza,
 		PgbackrestDBPath:    fmt.Sprintf(targetClusterPGDATAPath, targetClusterName),
-		PgbackrestRepo1Path: fmt.Sprintf(pgBackRestRepoPath, targetClusterName),
+		PgbackrestRepo1Path: util.GetPGBackRestRepoPath(sourcePgcluster),
 		PgbackrestRepo1Host: fmt.Sprintf(backrest.BackrestRepoServiceName, targetClusterName),
 		PgbackrestRepoType:  operator.GetRepoType(task.Spec.Parameters["backrestStorageType"]),
 		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(sourcePgcluster, clientset, namespace),
@@ -557,13 +556,17 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 								},
 								v1.EnvVar{
 									Name:  "PGBACKREST_REPO1_PATH",
-									Value: fmt.Sprintf(pgBackRestRepoPath, sourcePgcluster.Spec.ClusterName),
+									Value: util.GetPGBackRestRepoPath(sourcePgcluster),
 								},
 								// NOTE: this needs to be a name like this in order to not
 								// confuse pgBackRest, which does support "REPO*" name
 								v1.EnvVar{
-									Name:  "NEW_PGBACKREST_REPO",
-									Value: fmt.Sprintf(pgBackRestRepoPath, targetClusterName),
+									Name: "NEW_PGBACKREST_REPO",
+									Value: util.GetPGBackRestRepoPath(crv1.Pgcluster{
+										ObjectMeta: meta_v1.ObjectMeta{
+											Name: targetClusterName,
+										},
+									}),
 								},
 							},
 							VolumeMounts: []v1.VolumeMount{

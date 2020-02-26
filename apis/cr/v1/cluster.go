@@ -71,9 +71,11 @@ type PgclusterSpec struct {
 	BackrestS3Bucket   string                   `json:"backrestS3Bucket"`
 	BackrestS3Region   string                   `json:"backrestS3Region"`
 	BackrestS3Endpoint string                   `json:"backrestS3Endpoint"`
+	BackrestRepoPath   string                   `json:"backrestRepoPath"`
 	TablespaceMounts   map[string]PgStorageSpec `json:"tablespaceMounts"`
 	TLS                TLSSpec                  `json:"tls"`
 	TLSOnly            bool                     `json:"tlsOnly"`
+	Standby            bool                     `json:"standby"`
 }
 
 // PgclusterList is the CRD that defines a Crunchy PG Cluster List

@@ -617,6 +617,16 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		userLabelsMap[config.LABEL_SERVICE_TYPE] = request.ServiceType
 	}
 
+	// if the request is for a standby cluster then validate it to ensure all parameters have
+	// been properly specifed as required to create a standby cluster
+	if request.Standby {
+		if err := validateStandbyCluster(request); err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
+
 	// ensure the backrest storage type specified for the cluster is valid, and that the
 	// configruation required to use that storage type (e.g. a bucket, endpoint and region
 	// when using aws s3 storage) has been provided
@@ -1119,6 +1129,11 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		labels[config.LABEL_AUTOFAIL] = "true"
 	}
 
+	// set whether or not the cluster will be a standby cluster
+	spec.Standby = request.Standby
+	// set the pgBackRest repository path
+	spec.BackrestRepoPath = request.BackrestRepoPath
+
 	//pgbadger - set with global flag first then check for a user flag
 	labels[config.LABEL_BADGER] = strconv.FormatBool(apiserver.BadgerFlag)
 	if request.BadgerFlag {
@@ -1569,4 +1584,16 @@ func isMissingS3Config(request *msgs.CreateClusterRequest) bool {
 		return true
 	}
 	return false
+}
+
+func validateStandbyCluster(request *msgs.CreateClusterRequest) error {
+	switch {
+	case !strings.Contains(request.BackrestStorageType, "s3"):
+		return errors.New("Backrest storage type 's3' must be selected in order to create a " +
+			"standby cluster")
+	case request.BackrestRepoPath == "":
+		return errors.New("A pgBackRest repository path must be specified when creating a " +
+			"standby cluster")
+	}
+	return nil
 }

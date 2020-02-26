@@ -157,6 +157,7 @@ type DeploymentTemplateFields struct {
 	ReplicaReinitOnStartFail bool
 	PodAntiAffinity          string
 	SyncReplication          bool
+	Standby                  bool
 	// A comma-separated list of tablespace names...this could be an array, but
 	// given how this would ultimately be interpreted in a shell script tsomewhere
 	// down the line, it's easier for the time being to do it this way. In the
@@ -201,12 +202,12 @@ type tablespaceVolumeMountFields struct {
 }
 
 //consolidate with cluster.GetPgbackrestEnvVars
-func GetPgbackrestEnvVars(backrestEnabled, clusterName, depName, port, storageType string) string {
+func GetPgbackrestEnvVars(cluster *crv1.Pgcluster, backrestEnabled, depName, port, storageType string) string {
 	if backrestEnabled == "true" {
 		fields := PgbackrestEnvVarsTemplateFields{
 			PgbackrestStanza:            "db",
-			PgbackrestRepo1Host:         clusterName + "-backrest-shared-repo",
-			PgbackrestRepo1Path:         "/backrestrepo/" + clusterName + "-backrest-shared-repo",
+			PgbackrestRepo1Host:         cluster.Name + "-backrest-shared-repo",
+			PgbackrestRepo1Path:         util.GetPGBackRestRepoPath(*cluster),
 			PgbackrestDBPath:            "/pgdata/" + depName,
 			PgbackrestPGPort:            port,
 			PgbackrestRepo1Type:         GetRepoType(storageType),
@@ -341,6 +342,12 @@ func CreatePGHAConfigMap(clientset *kubernetes.Clientset, cluster *crv1.Pgcluste
 	data := make(map[string]string)
 	// set "init" to true in the postgres-ha configMap
 	data[PGHAConfigInitSetting] = "true"
+
+	// if a standby cluster then we want to create replicas using the S3 pgBackRest repository
+	// (and not the local in-cluster pgBackRest repository)
+	if cluster.Spec.Standby {
+		data["replica-bootstrap-repo-type"] = "s3"
+	}
 
 	configmap := &v1.ConfigMap{
 		ObjectMeta: meta_v1.ObjectMeta{
