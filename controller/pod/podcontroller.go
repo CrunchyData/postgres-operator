@@ -1,4 +1,4 @@
-package controller
+package pod
 
 /*
 Copyright 2017 - 2020 Crunchy Data Solutions, Inc.
@@ -25,6 +25,7 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
@@ -44,8 +45,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// PodController holds the connections for the controller
-type PodController struct {
+// Controller holds the connections for the controller
+type Controller struct {
 	PodClient          *rest.RESTClient
 	PodClientset       *kubernetes.Clientset
 	PodConfig          *rest.Config
@@ -55,7 +56,7 @@ type PodController struct {
 }
 
 // Run starts an pod resource controller
-func (c *PodController) Run() error {
+func (c *Controller) Run() error {
 
 	err := c.watchPods(c.Ctx)
 	if err != nil {
@@ -68,7 +69,7 @@ func (c *PodController) Run() error {
 }
 
 // watchPods is the event loop for pod resources
-func (c *PodController) watchPods(ctx context.Context) error {
+func (c *Controller) watchPods(ctx context.Context) error {
 	nsList := ns.GetNamespaces(c.PodClientset, operator.InstallationName)
 
 	for i := 0; i < len(nsList); i++ {
@@ -80,16 +81,16 @@ func (c *PodController) watchPods(ctx context.Context) error {
 
 // onAdd is called when a pgcluster is added or
 // if a pgo-backrest-repo pod is added
-func (c *PodController) onAdd(obj interface{}) {
+func (c *Controller) onAdd(obj interface{}) {
 	newpod := obj.(*apiv1.Pod)
 
 	labels := newpod.GetObjectMeta().GetLabels()
 	if labels[config.LABEL_VENDOR] != "crunchydata" {
-		log.Debugf("PodController: onAdd skipping pod that is not crunchydata %s", newpod.ObjectMeta.SelfLink)
+		log.Debugf("Pod Controller: onAdd skipping pod that is not crunchydata %s", newpod.ObjectMeta.SelfLink)
 		return
 	}
 
-	log.Debugf("[PodController] OnAdd ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
+	log.Debugf("[Pod Controller] OnAdd ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
 
 	//handle the case when a pg database pod is added
 	if isPostgresPod(newpod) {
@@ -99,17 +100,17 @@ func (c *PodController) onAdd(obj interface{}) {
 }
 
 // onUpdate is called when a pgcluster is updated
-func (c *PodController) onUpdate(oldObj, newObj interface{}) {
+func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	oldpod := oldObj.(*apiv1.Pod)
 	newpod := newObj.(*apiv1.Pod)
 
 	labels := newpod.GetObjectMeta().GetLabels()
 	if labels[config.LABEL_VENDOR] != "crunchydata" {
-		log.Debugf("PodController: onUpdate skipping pod that is not crunchydata %s", newpod.ObjectMeta.SelfLink)
+		log.Debugf("Pod Controller: onUpdate skipping pod that is not crunchydata %s", newpod.ObjectMeta.SelfLink)
 		return
 	}
 
-	log.Debugf("[PodController] onUpdate ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
+	log.Debugf("[Pod Controller] onUpdate ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
 
 	//look up the pgcluster CRD for this pod's cluster
 	clusterName := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
@@ -117,7 +118,7 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 	found, err := kubeapi.Getpgcluster(c.PodClient, &pgcluster, clusterName, newpod.ObjectMeta.Namespace)
 	if !found || err != nil {
 		log.Error(err.Error())
-		log.Error("you should not get a not found in the onUpdate in PodController")
+		log.Error("you should not get a not found in the onUpdate in Controller")
 		return
 	}
 
@@ -175,19 +176,19 @@ func (c *PodController) onUpdate(oldObj, newObj interface{}) {
 }
 
 // onDelete is called when a pgcluster is deleted
-func (c *PodController) onDelete(obj interface{}) {
+func (c *Controller) onDelete(obj interface{}) {
 	pod := obj.(*apiv1.Pod)
 
 	labels := pod.GetObjectMeta().GetLabels()
 	if labels[config.LABEL_VENDOR] != "crunchydata" {
-		log.Debugf("PodController: onDelete skipping pod that is not crunchydata %s", pod.ObjectMeta.SelfLink)
+		log.Debugf("Pod Controller: onDelete skipping pod that is not crunchydata %s", pod.ObjectMeta.SelfLink)
 		return
 	}
 
-	//	log.Debugf("[PodController] onDelete ns=%s %s", pod.ObjectMeta.Namespace, pod.ObjectMeta.SelfLink)
+	//	log.Debugf("[Controller] onDelete ns=%s %s", pod.ObjectMeta.Namespace, pod.ObjectMeta.SelfLink)
 }
 
-func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv1.Pgcluster) {
+func (c *Controller) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv1.Pgcluster) {
 	//handle the case of a service-name re-label
 	if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] !=
 		oldpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] {
@@ -296,7 +297,7 @@ func (c *PodController) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv
 // see if this is a primary or replica being created
 // update service-name label on the pod for each case
 // to match the correct Service selector for the PG cluster
-func (c *PodController) checkPostgresPods(newpod *apiv1.Pod, ns string) {
+func (c *Controller) checkPostgresPods(newpod *apiv1.Pod, ns string) {
 
 	depName := newpod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
 
@@ -350,7 +351,7 @@ func (c *PodController) checkPostgresPods(newpod *apiv1.Pod, ns string) {
 }
 
 //check for the autofail flag on the pgcluster CRD
-func (c *PodController) checkAutofailLabel(newpod *apiv1.Pod, ns string) bool {
+func (c *Controller) checkAutofailLabel(newpod *apiv1.Pod, ns string) bool {
 	clusterName := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
 
 	pgcluster := crv1.Pgcluster{}
@@ -481,7 +482,7 @@ func publishClusterComplete(clusterName, namespace string, cluster *crv1.Pgclust
 
 }
 
-func (c *PodController) SetupWatch(ns string) {
+func (c *Controller) SetupWatch(ns string) {
 
 	// don't create informer for namespace if one has already been created
 	c.informerNsMutex.Lock()
@@ -516,7 +517,7 @@ func (c *PodController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
-	log.Debugf("PodController created informer for namespace %s", ns)
+	log.Debugf("Pod Controller created informer for namespace %s", ns)
 }
 
 func publishPrimaryNotReady(clusterName, identifier, username, namespace string) {

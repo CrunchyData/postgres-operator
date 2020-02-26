@@ -1,4 +1,4 @@
-package controller
+package pgpolicy
 
 /*
 Copyright 2017 - 2020 Crunchy Data Solutions, Inc.
@@ -35,8 +35,8 @@ import (
 	"github.com/crunchydata/postgres-operator/events"
 )
 
-// PgpolicyController holds connections for the controller
-type PgpolicyController struct {
+// Controller holds connections for the controller
+type Controller struct {
 	PgpolicyClient     *rest.RESTClient
 	PgpolicyScheme     *runtime.Scheme
 	PgpolicyClientset  *kubernetes.Clientset
@@ -46,7 +46,7 @@ type PgpolicyController struct {
 }
 
 // Run starts an pgpolicy resource controller
-func (c *PgpolicyController) Run() error {
+func (c *Controller) Run() error {
 
 	// Watch Example objects
 	err := c.watchPgpolicys(c.Ctx)
@@ -60,7 +60,7 @@ func (c *PgpolicyController) Run() error {
 }
 
 // watchPgpolicys watches the pgpolicy resource catching events
-func (c *PgpolicyController) watchPgpolicys(ctx context.Context) error {
+func (c *Controller) watchPgpolicys(ctx context.Context) error {
 	nsList := ns.GetNamespaces(c.PgpolicyClientset, operator.InstallationName)
 
 	for i := 0; i < len(nsList); i++ {
@@ -72,9 +72,9 @@ func (c *PgpolicyController) watchPgpolicys(ctx context.Context) error {
 }
 
 // onAdd is called when a pgpolicy is added
-func (c *PgpolicyController) onAdd(obj interface{}) {
+func (c *Controller) onAdd(obj interface{}) {
 	policy := obj.(*crv1.Pgpolicy)
-	log.Debugf("[PgpolicyController] onAdd ns=%s %s", policy.ObjectMeta.Namespace, policy.ObjectMeta.SelfLink)
+	log.Debugf("[pgpolicy Controller] onAdd ns=%s %s", policy.ObjectMeta.Namespace, policy.ObjectMeta.SelfLink)
 
 	//handle the case of when a pgpolicy is already processed, which
 	//is the case when the operator restarts
@@ -119,13 +119,13 @@ func (c *PgpolicyController) onAdd(obj interface{}) {
 }
 
 // onUpdate is called when a pgpolicy is updated
-func (c *PgpolicyController) onUpdate(oldObj, newObj interface{}) {
+func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 }
 
 // onDelete is called when a pgpolicy is deleted
-func (c *PgpolicyController) onDelete(obj interface{}) {
+func (c *Controller) onDelete(obj interface{}) {
 	policy := obj.(*crv1.Pgpolicy)
-	log.Debugf("[PgpolicyController] onDelete ns=%s %s", policy.ObjectMeta.Namespace, policy.ObjectMeta.SelfLink)
+	log.Debugf("[pgpolicy Controller] onDelete ns=%s %s", policy.ObjectMeta.Namespace, policy.ObjectMeta.SelfLink)
 
 	log.Debugf("DELETED pgpolicy %s", policy.ObjectMeta.Name)
 
@@ -150,7 +150,7 @@ func (c *PgpolicyController) onDelete(obj interface{}) {
 	}
 
 }
-func (c *PgpolicyController) SetupWatch(ns string) {
+func (c *Controller) SetupWatch(ns string) {
 
 	// don't create informer for namespace if one has already been created
 	c.informerNsMutex.Lock()
@@ -185,5 +185,5 @@ func (c *PgpolicyController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
-	log.Debugf("PgpolicyController: created informer for namespace %s", ns)
+	log.Debugf("pgpolicy Controller: created informer for namespace %s", ns)
 }

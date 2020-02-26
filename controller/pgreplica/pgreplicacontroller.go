@@ -1,4 +1,4 @@
-package controller
+package pgreplica
 
 /*
 Copyright 2017 - 2020 Crunchy Data Solutions, Inc.
@@ -35,8 +35,8 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-// PgreplicaController holds the connections for the controller
-type PgreplicaController struct {
+// Controller holds the connections for the controller
+type Controller struct {
 	PgreplicaClient    *rest.RESTClient
 	PgreplicaScheme    *runtime.Scheme
 	PgreplicaClientset *kubernetes.Clientset
@@ -47,7 +47,7 @@ type PgreplicaController struct {
 }
 
 // Run starts an pgreplica resource controller
-func (c *PgreplicaController) Run() error {
+func (c *Controller) Run() error {
 
 	defer c.Queue.ShutDown()
 
@@ -62,7 +62,7 @@ func (c *PgreplicaController) Run() error {
 }
 
 // watchPgreplicas is the event loop for pgreplica resources
-func (c *PgreplicaController) watchPgreplicas(ctx context.Context) error {
+func (c *Controller) watchPgreplicas(ctx context.Context) error {
 	nsList := ns.GetNamespaces(c.PgreplicaClientset, operator.InstallationName)
 
 	for i := 0; i < len(nsList); i++ {
@@ -74,14 +74,14 @@ func (c *PgreplicaController) watchPgreplicas(ctx context.Context) error {
 	return nil
 }
 
-func (c *PgreplicaController) RunWorker() {
+func (c *Controller) RunWorker() {
 
 	//process the 'add' work queue forever
 	for c.processNextItem() {
 	}
 }
 
-func (c *PgreplicaController) processNextItem() bool {
+func (c *Controller) processNextItem() bool {
 	// Wait until there is a new item in the working queue
 	key, quit := c.Queue.Get()
 	if quit {
@@ -159,9 +159,9 @@ func (c *PgreplicaController) processNextItem() bool {
 }
 
 // onAdd is called when a pgreplica is added
-func (c *PgreplicaController) onAdd(obj interface{}) {
+func (c *Controller) onAdd(obj interface{}) {
 	replica := obj.(*crv1.Pgreplica)
-	//	log.Debugf("[PgreplicaController] OnAdd ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
+	//	log.Debugf("[Controller] OnAdd ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
 
 	//handle the case of pgreplicas being processed already and
 	//when the operator restarts
@@ -179,11 +179,11 @@ func (c *PgreplicaController) onAdd(obj interface{}) {
 }
 
 // onUpdate is called when a pgreplica is updated
-func (c *PgreplicaController) onUpdate(oldObj, newObj interface{}) {
+func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 	newPgreplica := newObj.(*crv1.Pgreplica)
 
-	log.Debugf("[PgreplicaController] onUpdate ns=%s %s", newPgreplica.ObjectMeta.Namespace,
+	log.Debugf("[pgreplica Controller] onUpdate ns=%s %s", newPgreplica.ObjectMeta.Namespace,
 		newPgreplica.ObjectMeta.SelfLink)
 
 	// get the pgcluster resource for the cluster the replica is a part of
@@ -211,9 +211,9 @@ func (c *PgreplicaController) onUpdate(oldObj, newObj interface{}) {
 }
 
 // onDelete is called when a pgreplica is deleted
-func (c *PgreplicaController) onDelete(obj interface{}) {
+func (c *Controller) onDelete(obj interface{}) {
 	replica := obj.(*crv1.Pgreplica)
-	log.Debugf("[PgreplicaController] OnDelete ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
+	log.Debugf("[pgreplica Controller] OnDelete ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
 
 	//make sure we are not removing a replica deployment
 	//that is now the primary after a failover
@@ -222,7 +222,7 @@ func (c *PgreplicaController) onDelete(obj interface{}) {
 		if dep.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == dep.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] {
 			//the replica was made a primary at some point
 			//we will not scale down the deployment
-			log.Debugf("[PgreplicaController] OnDelete not scaling down the replica since it is acting as a primary")
+			log.Debugf("[pgreplica Controller] OnDelete not scaling down the replica since it is acting as a primary")
 		} else {
 			clusteroperator.ScaleDownBase(c.PgreplicaClientset, c.PgreplicaClient, replica, replica.ObjectMeta.Namespace)
 		}
@@ -230,7 +230,7 @@ func (c *PgreplicaController) onDelete(obj interface{}) {
 
 }
 
-func (c *PgreplicaController) SetupWatch(ns string) {
+func (c *Controller) SetupWatch(ns string) {
 
 	// don't create informer for namespace if one has already been created
 	c.informerNsMutex.Lock()
@@ -265,5 +265,5 @@ func (c *PgreplicaController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
-	log.Debugf("PgreplicaController: created informer for namespace %s", ns)
+	log.Debugf("pgreplica Controller: created informer for namespace %s", ns)
 }
