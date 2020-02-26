@@ -23,12 +23,19 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/crunchydata/postgres-operator/controller/namespace"
+	"github.com/crunchydata/postgres-operator/controller/pgcluster"
+	"github.com/crunchydata/postgres-operator/controller/pgpolicy"
+	"github.com/crunchydata/postgres-operator/controller/pgreplica"
+	"github.com/crunchydata/postgres-operator/controller/pgtask"
+	"github.com/crunchydata/postgres-operator/controller/pod"
+
+	"github.com/crunchydata/postgres-operator/controller/job"
 	crunchylog "github.com/crunchydata/postgres-operator/logging"
 	log "github.com/sirupsen/logrus"
 
 	"k8s.io/client-go/util/workqueue"
 
-	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
@@ -78,7 +85,7 @@ func main() {
 	// start a controller on instances of our custom resource
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
-	pgTaskcontroller := &controller.PgtaskController{
+	pgTaskcontroller := &pgtask.Controller{
 		PgtaskConfig:       config,
 		PgtaskClient:       crdClient,
 		PgtaskScheme:       crdScheme,
@@ -88,7 +95,7 @@ func main() {
 		InformerNamespaces: make(map[string]struct{}),
 	}
 
-	pgClustercontroller := &controller.PgclusterController{
+	pgClustercontroller := &pgcluster.Controller{
 		PgclusterClient:    crdClient,
 		PgclusterScheme:    crdScheme,
 		PgclusterClientset: Clientset,
@@ -96,7 +103,7 @@ func main() {
 		Ctx:                ctx,
 		InformerNamespaces: make(map[string]struct{}),
 	}
-	pgReplicacontroller := &controller.PgreplicaController{
+	pgReplicacontroller := &pgreplica.Controller{
 		PgreplicaClient:    crdClient,
 		PgreplicaScheme:    crdScheme,
 		PgreplicaClientset: Clientset,
@@ -104,28 +111,28 @@ func main() {
 		Ctx:                ctx,
 		InformerNamespaces: make(map[string]struct{}),
 	}
-	pgPolicycontroller := &controller.PgpolicyController{
+	pgPolicycontroller := &pgpolicy.Controller{
 		PgpolicyClient:     crdClient,
 		PgpolicyScheme:     crdScheme,
 		PgpolicyClientset:  Clientset,
 		Ctx:                ctx,
 		InformerNamespaces: make(map[string]struct{}),
 	}
-	podcontroller := &controller.PodController{
+	podcontroller := &pod.Controller{
 		PodClientset:       Clientset,
 		PodClient:          crdClient,
 		PodConfig:          config,
 		Ctx:                ctx,
 		InformerNamespaces: make(map[string]struct{}),
 	}
-	jobcontroller := &controller.JobController{
+	jobcontroller := &job.Controller{
 		JobConfig:          config,
 		JobClientset:       Clientset,
 		JobClient:          crdClient,
 		Ctx:                ctx,
 		InformerNamespaces: make(map[string]struct{}),
 	}
-	nscontroller := &controller.NamespaceController{
+	nscontroller := &namespace.Controller{
 		NamespaceClientset:     Clientset,
 		NamespaceClient:        crdClient,
 		Ctx:                    ctx,

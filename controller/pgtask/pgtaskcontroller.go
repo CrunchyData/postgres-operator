@@ -1,4 +1,4 @@
-package controller
+package pgtask
 
 /*
 Copyright 2017 - 2020 Crunchy Data Solutions, Inc.
@@ -38,8 +38,8 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-// PgtaskController holds connections for the controller
-type PgtaskController struct {
+// Controller holds connections for the controller
+type Controller struct {
 	PgtaskConfig       *rest.Config
 	PgtaskClient       *rest.RESTClient
 	PgtaskScheme       *runtime.Scheme
@@ -51,7 +51,7 @@ type PgtaskController struct {
 }
 
 // Run starts an pgtask resource controller
-func (c *PgtaskController) Run() error {
+func (c *Controller) Run() error {
 	log.Debug("Watch Pgtask objects")
 
 	//shut down the work queue to cause workers to end
@@ -69,7 +69,7 @@ func (c *PgtaskController) Run() error {
 }
 
 // watchPgtasks watches the pgtask resource catching events
-func (c *PgtaskController) watchPgtasks(ctx context.Context) error {
+func (c *Controller) watchPgtasks(ctx context.Context) error {
 	nsList := ns.GetNamespaces(c.PgtaskClientset, operator.InstallationName)
 
 	for i := 0; i < len(nsList); i++ {
@@ -80,14 +80,14 @@ func (c *PgtaskController) watchPgtasks(ctx context.Context) error {
 	return nil
 }
 
-func (c *PgtaskController) RunWorker() {
+func (c *Controller) RunWorker() {
 
 	//process the 'add' work queue forever
 	for c.processNextItem() {
 	}
 }
 
-func (c *PgtaskController) processNextItem() bool {
+func (c *Controller) processNextItem() bool {
 	// Wait until there is a new item in the working queue
 	key, quit := c.Queue.Get()
 	if quit {
@@ -186,9 +186,9 @@ func (c *PgtaskController) processNextItem() bool {
 }
 
 // onAdd is called when a pgtask is added
-func (c *PgtaskController) onAdd(obj interface{}) {
+func (c *Controller) onAdd(obj interface{}) {
 	task := obj.(*crv1.Pgtask)
-	//	log.Debugf("[PgtaskController] onAdd ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
+	//	log.Debugf("[Controller] onAdd ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
 
 	//handle the case of when the operator restarts, we do not want
 	//to process pgtasks already processed
@@ -206,18 +206,18 @@ func (c *PgtaskController) onAdd(obj interface{}) {
 }
 
 // onUpdate is called when a pgtask is updated
-func (c *PgtaskController) onUpdate(oldObj, newObj interface{}) {
+func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	//task := newObj.(*crv1.Pgtask)
-	//	log.Debugf("[PgtaskController] onUpdate ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
+	//	log.Debugf("[Controller] onUpdate ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
 }
 
 // onDelete is called when a pgtask is deleted
-func (c *PgtaskController) onDelete(obj interface{}) {
+func (c *Controller) onDelete(obj interface{}) {
 	//task := obj.(*crv1.Pgtask)
-	//	log.Debugf("[PgtaskController] onDelete ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
+	//	log.Debugf("[Controller] onDelete ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
 }
 
-func (c *PgtaskController) SetupWatch(ns string) {
+func (c *Controller) SetupWatch(ns string) {
 
 	// don't create informer for namespace if one has already been created
 	c.informerNsMutex.Lock()
@@ -252,7 +252,7 @@ func (c *PgtaskController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
-	log.Debugf("PgtaskController created informer for namespace %s", ns)
+	log.Debugf("pgtask Controller created informer for namespace %s", ns)
 }
 
 //de-dupe logic for a failover, if the failover started

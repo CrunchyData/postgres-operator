@@ -1,4 +1,4 @@
-package controller
+package namespace
 
 /*
 Copyright 2019 - 2020 Crunchy Data Solutions, Inc.
@@ -18,7 +18,14 @@ limitations under the License.
 import (
 	"context"
 
+	"github.com/crunchydata/postgres-operator/controller/pod"
+
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/controller/job"
+	"github.com/crunchydata/postgres-operator/controller/pgcluster"
+	"github.com/crunchydata/postgres-operator/controller/pgpolicy"
+	"github.com/crunchydata/postgres-operator/controller/pgreplica"
+	"github.com/crunchydata/postgres-operator/controller/pgtask"
 	"github.com/crunchydata/postgres-operator/operator"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -28,21 +35,21 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// NamespaceController holds the connections for the controller
-type NamespaceController struct {
+// Controller holds the connections for the controller
+type Controller struct {
 	NamespaceClient        *rest.RESTClient
 	NamespaceClientset     *kubernetes.Clientset
 	Ctx                    context.Context
-	ThePodController       *PodController
-	TheJobController       *JobController
-	ThePgpolicyController  *PgpolicyController
-	ThePgreplicaController *PgreplicaController
-	ThePgclusterController *PgclusterController
-	ThePgtaskController    *PgtaskController
+	ThePodController       *pod.Controller
+	TheJobController       *job.Controller
+	ThePgpolicyController  *pgpolicy.Controller
+	ThePgreplicaController *pgreplica.Controller
+	ThePgclusterController *pgcluster.Controller
+	ThePgtaskController    *pgtask.Controller
 }
 
 // Run starts a namespace resource controller
-func (c *NamespaceController) Run() error {
+func (c *Controller) Run() error {
 
 	err := c.watchNamespaces(c.Ctx)
 	if err != nil {
@@ -55,7 +62,7 @@ func (c *NamespaceController) Run() error {
 }
 
 // watchNamespaces is the event loop for namespace resources
-func (c *NamespaceController) watchNamespaces(ctx context.Context) error {
+func (c *Controller) watchNamespaces(ctx context.Context) error {
 	log.Info("starting namespace controller")
 
 	//watch all namespaces
@@ -90,16 +97,16 @@ func (c *NamespaceController) watchNamespaces(ctx context.Context) error {
 	return nil
 }
 
-func (c *NamespaceController) onAdd(obj interface{}) {
+func (c *Controller) onAdd(obj interface{}) {
 	newNs := obj.(*v1.Namespace)
 
-	log.Debugf("[NamespaceController] OnAdd ns=%s", newNs.ObjectMeta.SelfLink)
+	log.Debugf("[namespace Controller] OnAdd ns=%s", newNs.ObjectMeta.SelfLink)
 	labels := newNs.GetObjectMeta().GetLabels()
 	if labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY || labels[config.LABEL_PGO_INSTALLATION_NAME] != operator.InstallationName {
-		log.Debugf("NamespaceController: onAdd skipping namespace that is not crunchydata or not belonging to this Operator installation %s", newNs.ObjectMeta.SelfLink)
+		log.Debugf("namespace Controller: onAdd skipping namespace that is not crunchydata or not belonging to this Operator installation %s", newNs.ObjectMeta.SelfLink)
 		return
 	} else {
-		log.Debugf("NamespaceController: onAdd crunchy namespace %s created", newNs.ObjectMeta.SelfLink)
+		log.Debugf("namespace Controller: onAdd crunchy namespace %s created", newNs.ObjectMeta.SelfLink)
 		c.ThePodController.SetupWatch(newNs.Name)
 		c.TheJobController.SetupWatch(newNs.Name)
 		c.ThePgpolicyController.SetupWatch(newNs.Name)
@@ -111,17 +118,17 @@ func (c *NamespaceController) onAdd(obj interface{}) {
 }
 
 // onUpdate is called when a pgcluster is updated
-func (c *NamespaceController) onUpdate(oldObj, newObj interface{}) {
+func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	//oldNs := oldObj.(*v1.Namespace)
 	newNs := newObj.(*v1.Namespace)
-	log.Debugf("[NamespaceController] onUpdate ns=%s", newNs.ObjectMeta.SelfLink)
+	log.Debugf("[namespace Controller] onUpdate ns=%s", newNs.ObjectMeta.SelfLink)
 
 	labels := newNs.GetObjectMeta().GetLabels()
 	if labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY || labels[config.LABEL_PGO_INSTALLATION_NAME] != operator.InstallationName {
-		log.Debugf("NamespaceController: onUpdate skipping namespace that is not crunchydata %s", newNs.ObjectMeta.SelfLink)
+		log.Debugf("namespace Controller: onUpdate skipping namespace that is not crunchydata %s", newNs.ObjectMeta.SelfLink)
 		return
 	} else {
-		log.Debugf("NamespaceController: onUpdate crunchy namespace updated %s", newNs.ObjectMeta.SelfLink)
+		log.Debugf("namespace Controller: onUpdate crunchy namespace updated %s", newNs.ObjectMeta.SelfLink)
 		c.ThePodController.SetupWatch(newNs.Name)
 		c.TheJobController.SetupWatch(newNs.Name)
 		c.ThePgpolicyController.SetupWatch(newNs.Name)
@@ -132,16 +139,16 @@ func (c *NamespaceController) onUpdate(oldObj, newObj interface{}) {
 
 }
 
-func (c *NamespaceController) onDelete(obj interface{}) {
+func (c *Controller) onDelete(obj interface{}) {
 	ns := obj.(*v1.Namespace)
 
-	log.Debugf("[NamespaceController] onDelete ns=%s", ns.ObjectMeta.SelfLink)
+	log.Debugf("[namespace Controller] onDelete ns=%s", ns.ObjectMeta.SelfLink)
 	labels := ns.GetObjectMeta().GetLabels()
 	if labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY {
-		log.Debugf("NamespaceController: onDelete skipping namespace that is not crunchydata %s", ns.ObjectMeta.SelfLink)
+		log.Debugf("namespace Controller: onDelete skipping namespace that is not crunchydata %s", ns.ObjectMeta.SelfLink)
 		return
 	} else {
-		log.Debugf("NamespaceController: onDelete crunchy operator namespace %s is deleted", ns.ObjectMeta.SelfLink)
+		log.Debugf("namespace Controller: onDelete crunchy operator namespace %s is deleted", ns.ObjectMeta.SelfLink)
 	}
 
 }

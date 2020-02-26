@@ -1,4 +1,4 @@
-package controller
+package pgcluster
 
 /*
 Copyright 2017 - 2020 Crunchy Data Solutions, Inc.
@@ -41,8 +41,8 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-// PgclusterController holds the connections for the controller
-type PgclusterController struct {
+// Controller holds the connections for the controller
+type Controller struct {
 	PgclusterClient    *rest.RESTClient
 	PgclusterScheme    *runtime.Scheme
 	PgclusterClientset *kubernetes.Clientset
@@ -53,7 +53,7 @@ type PgclusterController struct {
 }
 
 // Run starts an pgcluster resource controller
-func (c *PgclusterController) Run() error {
+func (c *Controller) Run() error {
 	log.Debug("Watch Pgcluster objects")
 
 	//shut down the work queue to cause workers to end
@@ -71,7 +71,7 @@ func (c *PgclusterController) Run() error {
 }
 
 // watchPgclusters is the event loop for pgcluster resources
-func (c *PgclusterController) watchPgclusters(ctx context.Context) error {
+func (c *Controller) watchPgclusters(ctx context.Context) error {
 	nsList := ns.GetNamespaces(c.PgclusterClientset, operator.InstallationName)
 
 	for i := 0; i < len(nsList); i++ {
@@ -82,9 +82,9 @@ func (c *PgclusterController) watchPgclusters(ctx context.Context) error {
 }
 
 // onAdd is called when a pgcluster is added
-func (c *PgclusterController) onAdd(obj interface{}) {
+func (c *Controller) onAdd(obj interface{}) {
 	cluster := obj.(*crv1.Pgcluster)
-	log.Debugf("[PgclusterController] ns %s onAdd %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
+	log.Debugf("[pgcluster Controller] ns %s onAdd %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
 
 	//handle the case when the operator restarts and don't
 	//process already processed pgclusters
@@ -101,14 +101,14 @@ func (c *PgclusterController) onAdd(obj interface{}) {
 
 }
 
-func (c *PgclusterController) RunWorker() {
+func (c *Controller) RunWorker() {
 
 	//process the 'add' work queue forever
 	for c.processNextItem() {
 	}
 }
 
-func (c *PgclusterController) processNextItem() bool {
+func (c *Controller) processNextItem() bool {
 	// Wait until there is a new item in the working queue
 	key, quit := c.Queue.Get()
 	if quit {
@@ -163,7 +163,7 @@ func (c *PgclusterController) processNextItem() bool {
 }
 
 // onUpdate is called when a pgcluster is updated
-func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
+func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	oldcluster := oldObj.(*crv1.Pgcluster)
 	newcluster := newObj.(*crv1.Pgcluster)
 	//	log.Debugf("pgcluster ns=%s %s onUpdate", newcluster.ObjectMeta.Namespace, newcluster.ObjectMeta.Name)
@@ -193,9 +193,9 @@ func (c *PgclusterController) onUpdate(oldObj, newObj interface{}) {
 }
 
 // onDelete is called when a pgcluster is deleted
-func (c *PgclusterController) onDelete(obj interface{}) {
+func (c *Controller) onDelete(obj interface{}) {
 	//cluster := obj.(*crv1.Pgcluster)
-	//	log.Debugf("[PgclusterController] ns=%s onDelete %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
+	//	log.Debugf("[Controller] ns=%s onDelete %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
 
 	//handle pgcluster cleanup
 	//	clusteroperator.DeleteClusterBase(c.PgclusterClientset, c.PgclusterClient, cluster, cluster.ObjectMeta.Namespace)
@@ -246,7 +246,7 @@ func getReadyStatus(pod *v1.Pod) (string, bool) {
 
 }
 
-func (c *PgclusterController) SetupWatch(ns string) {
+func (c *Controller) SetupWatch(ns string) {
 
 	// don't create informer for namespace if one has already been created
 	c.informerNsMutex.Lock()
@@ -281,7 +281,7 @@ func (c *PgclusterController) SetupWatch(ns string) {
 		})
 
 	go controller.Run(c.Ctx.Done())
-	log.Debugf("PgclusterController created informer for namespace %s", ns)
+	log.Debugf("pgcluster Controller created informer for namespace %s", ns)
 }
 
 func addIdentifier(clusterCopy *crv1.Pgcluster) {
