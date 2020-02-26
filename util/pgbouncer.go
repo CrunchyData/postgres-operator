@@ -16,7 +16,6 @@ package util
 */
 
 import (
-	"bytes"
 	"fmt"
 )
 
@@ -51,6 +50,5 @@ func GeneratePgBouncerSecretName(clusterName string) string {
 // This is ultimatley moutned by the pgBouncer Pod via the secret
 func GeneratePgBouncerUsersFileBytes(hashedPassword string) []byte {
 	data := fmt.Sprintf(pgBouncerUserFileFormat, PgBouncerUser, hashedPassword)
-	userFile := bytes.NewBufferString(data)
-	return userFile.Bytes()
+	return []byte(data)
 }

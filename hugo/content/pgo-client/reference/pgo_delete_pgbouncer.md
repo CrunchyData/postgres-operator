@@ -21,7 +21,7 @@ pgo delete pgbouncer [flags]
   -h, --help              help for pgbouncer
       --no-prompt         No command line confirmation before delete.
   -s, --selector string   The selector to use for cluster filtering.
-      --uninstall         Used to rmeove any "pgbouncer" owned object and user from the PostgreSQL cluster
+      --uninstall         Used to remove any "pgbouncer" owned object and user from the PostgreSQL cluster
 ```
 
 ### Options inherited from parent commands

@@ -69,7 +69,7 @@ func createUser(args []string, ns string) {
 
 	// check to see if this is a system account. if it is, do not let the request
 	// go through
-	if utiloperator.CheckPostgreSQLUserSystemAccount(username) {
+	if utiloperator.IsPostgreSQLUserSystemAccount(username) {
 		fmt.Println("Error:", username, "is a system account and cannot be used")
 		os.Exit(1)
 	}
@@ -387,7 +387,7 @@ func updateUser(clusterNames []string, namespace string) {
 	}
 
 	// check to see if this is a system account if a user name is passed in
-	if request.Username != "" && utiloperator.CheckPostgreSQLUserSystemAccount(request.Username) {
+	if request.Username != "" && utiloperator.IsPostgreSQLUserSystemAccount(request.Username) {
 		fmt.Println("Error:", request.Username, "is a system account and cannot be used")
 		os.Exit(1)
 	}

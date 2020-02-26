@@ -61,10 +61,6 @@ const (
 	EventCreateBackup          = "CreateBackup"
 	EventCreateBackupCompleted = "CreateBackupCompleted"
 
-	EventCreateUser         = "CreateUser"
-	EventDeleteUser         = "DeleteUser"
-	EventChangePasswordUser = "ChangePasswordUser"
-
 	EventCreatePolicy = "CreatePolicy"
 	EventApplyPolicy  = "ApplyPolicy"
 	EventDeletePolicy = "DeletePolicy"
