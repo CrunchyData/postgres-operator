@@ -29,10 +29,10 @@ import (
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 )
 
@@ -263,8 +263,14 @@ func CreateBackrestPVCSnippet(backRestPVCName string) string {
 
 // NewClient gets a REST connection to Kube
 func NewClient(cfg *rest.Config) (*rest.RESTClient, *runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-	if err := crv1.AddToScheme(scheme); err != nil {
+	newScheme := runtime.NewScheme()
+
+	if err := crv1.AddToScheme(newScheme); err != nil {
+		return nil, nil, err
+	}
+
+	// need to register the objects with the global scheme as well
+	if err := crv1.AddToScheme(scheme.Scheme); err != nil {
 		return nil, nil, err
 	}
 
@@ -272,14 +278,18 @@ func NewClient(cfg *rest.Config) (*rest.RESTClient, *runtime.Scheme, error) {
 	config.GroupVersion = &crv1.SchemeGroupVersion
 	config.APIPath = "/apis"
 	config.ContentType = runtime.ContentTypeJSON
-	config.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
+	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+
+	if config.UserAgent == "" {
+		config.UserAgent = rest.DefaultKubernetesUserAgent()
+	}
 
 	client, err := rest.RESTClientFor(&config)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return client, scheme, nil
+	return client, newScheme, nil
 }
 
 // IsStringOneOf tests to see string testVal is included in the list

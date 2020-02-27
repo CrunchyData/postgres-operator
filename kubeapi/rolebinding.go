@@ -26,7 +26,7 @@ import (
 // GetRoleBinding gets a RoleBinding by name
 func GetRoleBinding(clientset *kubernetes.Clientset, name, namespace string) (*v1.RoleBinding, bool, error) {
 
-	roleBinding, err := clientset.Rbac().RoleBindings(namespace).Get(name, meta_v1.GetOptions{})
+	roleBinding, err := clientset.RbacV1().RoleBindings(namespace).Get(name, meta_v1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 		return roleBinding, false, err
 	}
@@ -42,7 +42,7 @@ func GetRoleBinding(clientset *kubernetes.Clientset, name, namespace string) (*v
 // DeleteRoleBinding
 func DeleteRoleBinding(clientset *kubernetes.Clientset, name, namespace string) error {
 
-	err := clientset.Rbac().RoleBindings(namespace).Delete(name, &meta_v1.DeleteOptions{})
+	err := clientset.RbacV1().RoleBindings(namespace).Delete(name, &meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Error(err)
 		log.Error("error deleting roleBinding " + name)
@@ -54,7 +54,7 @@ func DeleteRoleBinding(clientset *kubernetes.Clientset, name, namespace string) 
 }
 
 func UpdateRoleBinding(clientset *kubernetes.Clientset, sec *v1.RoleBinding, namespace string) error {
-	_, err := clientset.Rbac().RoleBindings(namespace).Update(sec)
+	_, err := clientset.RbacV1().RoleBindings(namespace).Update(sec)
 	if err != nil {
 		log.Error(err)
 		log.Error("error updating roleBinding %s", sec.Name)
@@ -66,7 +66,7 @@ func UpdateRoleBinding(clientset *kubernetes.Clientset, sec *v1.RoleBinding, nam
 // CreateRoleBinding
 func CreateRoleBinding(clientset *kubernetes.Clientset, roleBinding *v1.RoleBinding, namespace string) error {
 
-	_, err := clientset.Rbac().RoleBindings(namespace).Create(roleBinding)
+	_, err := clientset.RbacV1().RoleBindings(namespace).Create(roleBinding)
 	if err != nil {
 		log.Error(err)
 		log.Error("error creating rolebinding " + roleBinding.Name)

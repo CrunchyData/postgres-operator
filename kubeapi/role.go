@@ -26,7 +26,7 @@ import (
 // GetRole gets a Role by name
 func GetRole(clientset *kubernetes.Clientset, name, namespace string) (*v1.Role, bool, error) {
 
-	role, err := clientset.Rbac().Roles(namespace).Get(name, meta_v1.GetOptions{})
+	role, err := clientset.RbacV1().Roles(namespace).Get(name, meta_v1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 		return role, false, err
 	}
@@ -42,7 +42,7 @@ func GetRole(clientset *kubernetes.Clientset, name, namespace string) (*v1.Role,
 // DeleteRole
 func DeleteRole(clientset *kubernetes.Clientset, name, namespace string) error {
 
-	err := clientset.Rbac().Roles(namespace).Delete(name, &meta_v1.DeleteOptions{})
+	err := clientset.RbacV1().Roles(namespace).Delete(name, &meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Error(err)
 		log.Error("error deleting role " + name)
@@ -54,7 +54,7 @@ func DeleteRole(clientset *kubernetes.Clientset, name, namespace string) error {
 }
 
 func UpdateRole(clientset *kubernetes.Clientset, sec *v1.Role, namespace string) error {
-	_, err := clientset.Rbac().Roles(namespace).Update(sec)
+	_, err := clientset.RbacV1().Roles(namespace).Update(sec)
 	if err != nil {
 		log.Error(err)
 		log.Error("error updating role %s", sec.Name)
@@ -66,7 +66,7 @@ func UpdateRole(clientset *kubernetes.Clientset, sec *v1.Role, namespace string)
 // CreateRole
 func CreateRole(clientset *kubernetes.Clientset, role *v1.Role, namespace string) error {
 
-	_, err := clientset.Rbac().Roles(namespace).Create(role)
+	_, err := clientset.RbacV1().Roles(namespace).Create(role)
 	if err != nil {
 		log.Error(err)
 		log.Error("error creating role " + role.Name)

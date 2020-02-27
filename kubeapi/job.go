@@ -31,7 +31,7 @@ import (
 func GetJobs(clientset *kubernetes.Clientset, selector, namespace string) (*v1batch.JobList, error) {
 	lo := meta_v1.ListOptions{LabelSelector: selector}
 
-	jobs, err := clientset.Batch().Jobs(namespace).List(lo)
+	jobs, err := clientset.BatchV1().Jobs(namespace).List(lo)
 	if err != nil {
 		log.Error(err)
 		log.Error("error getting Job list selector[" + selector + "]")
@@ -42,7 +42,7 @@ func GetJobs(clientset *kubernetes.Clientset, selector, namespace string) (*v1ba
 
 // GetJob gets a Job by name
 func GetJob(clientset *kubernetes.Clientset, name, namespace string) (*v1batch.Job, bool) {
-	job, err := clientset.Batch().Jobs(namespace).Get(name, meta_v1.GetOptions{})
+	job, err := clientset.BatchV1().Jobs(namespace).Get(name, meta_v1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 		log.Debug(err)
 		return job, false
@@ -64,7 +64,7 @@ func DeleteJob(clientset *kubernetes.Clientset, jobName, namespace string) error
 	delOptions.PropagationPolicy = &delProp
 
 	//delete the job
-	err := clientset.Batch().Jobs(namespace).Delete(jobName,
+	err := clientset.BatchV1().Jobs(namespace).Delete(jobName,
 		&delOptions)
 	if err != nil {
 		log.Error("error deleting Job " + jobName + err.Error())
@@ -77,7 +77,7 @@ func DeleteJob(clientset *kubernetes.Clientset, jobName, namespace string) error
 
 // CreateJob deletes a backup job
 func CreateJob(clientset *kubernetes.Clientset, job *v1batch.Job, namespace string) (string, error) {
-	result, err := clientset.Batch().Jobs(namespace).Create(job)
+	result, err := clientset.BatchV1().Jobs(namespace).Create(job)
 	if err != nil {
 		log.Error("error creating Job " + job.Name + err.Error())
 		return job.Name, err
@@ -99,7 +99,7 @@ func DeleteJobs(clientset *kubernetes.Clientset, selector, namespace string) err
 
 	lo := meta_v1.ListOptions{LabelSelector: selector}
 
-	err := clientset.Batch().Jobs(namespace).DeleteCollection(&delOptions, lo)
+	err := clientset.BatchV1().Jobs(namespace).DeleteCollection(&delOptions, lo)
 	if err != nil {
 		log.Error("error deleting Jobs " + selector + err.Error())
 		return err

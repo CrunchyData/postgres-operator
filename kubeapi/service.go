@@ -25,7 +25,7 @@ import (
 
 // DeleteService deletes a Service
 func DeleteService(clientset *kubernetes.Clientset, name, namespace string) error {
-	err := clientset.Core().Services(namespace).Delete(name, &meta_v1.DeleteOptions{})
+	err := clientset.CoreV1().Services(namespace).Delete(name, &meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Error(err)
 		log.Error("error deleting Service " + name)
@@ -65,7 +65,7 @@ func GetService(clientset *kubernetes.Clientset, name, namespace string) (*v1.Se
 
 // CreateService creates a Service
 func CreateService(clientset *kubernetes.Clientset, svc *v1.Service, namespace string) (*v1.Service, error) {
-	result, err := clientset.Core().Services(namespace).Create(svc)
+	result, err := clientset.CoreV1().Services(namespace).Create(svc)
 	if err != nil {
 		log.Error(err)
 		log.Error("error creating service " + svc.Name)
@@ -77,7 +77,7 @@ func CreateService(clientset *kubernetes.Clientset, svc *v1.Service, namespace s
 }
 
 func UpdateService(clientset *kubernetes.Clientset, svc *v1.Service, namespace string) error {
-	_, err := clientset.Core().Services(namespace).Update(svc)
+	_, err := clientset.CoreV1().Services(namespace).Update(svc)
 	if err != nil {
 		log.Error(err)
 		log.Error("error updating service %s", svc.Name)
