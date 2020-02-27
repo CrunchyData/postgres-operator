@@ -23,5 +23,5 @@ version = "kubernetes-1.9.0"
   version = ">=v2.2.3" # < 2.2.3 has a DoS vuln
 
 [[constraint]]
-  name = "gopkg.in/robfig/cron.v3"
-  version = "3.0.1"
+  name = "github.com/robfig/cron"
+  version = "v3.0.1"
