@@ -26,7 +26,7 @@ import (
 // GetServiceAccount gets a ServiceAccount by name
 func GetServiceAccount(clientset *kubernetes.Clientset, name, namespace string) (*v1.ServiceAccount, bool, error) {
 
-	sa, err := clientset.Core().ServiceAccounts(namespace).Get(name, meta_v1.GetOptions{})
+	sa, err := clientset.CoreV1().ServiceAccounts(namespace).Get(name, meta_v1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 		return sa, false, err
 	}
@@ -42,7 +42,7 @@ func GetServiceAccount(clientset *kubernetes.Clientset, name, namespace string) 
 // DeleteServiceAccount
 func DeleteServiceAccount(clientset *kubernetes.Clientset, name, namespace string) error {
 
-	err := clientset.Core().ServiceAccounts(namespace).Delete(name, &meta_v1.DeleteOptions{})
+	err := clientset.CoreV1().ServiceAccounts(namespace).Delete(name, &meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Error(err)
 		log.Error("error deleting sa " + name)
@@ -54,7 +54,7 @@ func DeleteServiceAccount(clientset *kubernetes.Clientset, name, namespace strin
 }
 
 func UpdateServiceAccount(clientset *kubernetes.Clientset, sec *v1.ServiceAccount, namespace string) error {
-	_, err := clientset.Core().ServiceAccounts(namespace).Update(sec)
+	_, err := clientset.CoreV1().ServiceAccounts(namespace).Update(sec)
 	if err != nil {
 		log.Error(err)
 		log.Error("error updating sa %s", sec.Name)
@@ -66,7 +66,7 @@ func UpdateServiceAccount(clientset *kubernetes.Clientset, sec *v1.ServiceAccoun
 // CreateServiceAccount
 func CreateServiceAccount(clientset *kubernetes.Clientset, sa *v1.ServiceAccount, namespace string) error {
 
-	_, err := clientset.Core().ServiceAccounts(namespace).Create(sa)
+	_, err := clientset.CoreV1().ServiceAccounts(namespace).Create(sa)
 	if err != nil {
 		log.Error(err)
 		log.Error("error creating sa " + sa.Name)

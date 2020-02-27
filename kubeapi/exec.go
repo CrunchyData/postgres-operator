@@ -36,7 +36,7 @@ import (
 //          string: Errors. (STDERR)
 //           error: If any error has occurred otherwise `nil`
 func ExecToPodThroughAPI(config *rest.Config, clientset *kubernetes.Clientset, command []string, containerName, podName, namespace string, stdin io.Reader) (string, string, error) {
-	req := clientset.Core().RESTClient().Post().
+	req := clientset.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(podName).
 		Namespace(namespace).

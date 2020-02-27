@@ -30,7 +30,7 @@ import (
 
 // DeletePod deletes a Pod
 func DeletePod(clientset *kubernetes.Clientset, name, namespace string) error {
-	err := clientset.Core().Pods(namespace).Delete(name, &meta_v1.DeleteOptions{})
+	err := clientset.CoreV1().Pods(namespace).Delete(name, &meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Error(err)
 		log.Error("error deleting Pod " + name)
@@ -84,7 +84,7 @@ func GetPod(clientset *kubernetes.Clientset, name, namespace string) (*v1.Pod, b
 
 // CreatePod creates a Pod
 func CreatePod(clientset *kubernetes.Clientset, svc *v1.Pod, namespace string) (*v1.Pod, error) {
-	result, err := clientset.Core().Pods(namespace).Create(svc)
+	result, err := clientset.CoreV1().Pods(namespace).Create(svc)
 	if err != nil {
 		log.Error(err)
 		log.Error("error creating pod " + svc.Name)
@@ -96,7 +96,7 @@ func CreatePod(clientset *kubernetes.Clientset, svc *v1.Pod, namespace string) (
 }
 
 func UpdatePod(clientset *kubernetes.Clientset, pod *v1.Pod, namespace string) error {
-	_, err := clientset.Core().Pods(namespace).Update(pod)
+	_, err := clientset.CoreV1().Pods(namespace).Update(pod)
 	if err != nil {
 		log.Error(err)
 		log.Error("error updating pod %s", pod.Name)
@@ -127,7 +127,7 @@ func AddLabelToPod(clientset *kubernetes.Clientset, origPod *v1.Pod, key, value,
 		return err
 	}
 
-	_, err = clientset.Core().Pods(namespace).Patch(origPod.Name, types.MergePatchType, patchBytes)
+	_, err = clientset.CoreV1().Pods(namespace).Patch(origPod.Name, types.MergePatchType, patchBytes)
 	if err != nil {
 		log.Error(err)
 		log.Errorf("error add label to Pod  %s %s=%s", origPod.Name, key, value)

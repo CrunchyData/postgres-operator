@@ -184,7 +184,7 @@ func SetupWatch(namespace string, scheduler *scheduler.Scheduler, stop chan stru
 
 	informerNamespaces[namespace] = struct{}{}
 
-	watchlist := cache.NewListWatchFromClient(kubeClient.Core().RESTClient(),
+	watchlist := cache.NewListWatchFromClient(kubeClient.CoreV1().RESTClient(),
 		"configmaps", namespace, fields.Everything())
 
 	_, controller := cache.NewInformer(watchlist, &v1.ConfigMap{}, 0,
@@ -222,7 +222,7 @@ func SetupWatch(namespace string, scheduler *scheduler.Scheduler, stop chan stru
 }
 
 func SetupNamespaceWatch(installationName string, scheduler *scheduler.Scheduler, stop chan struct{}) {
-	watchlist := cache.NewListWatchFromClient(kubeClient.Core().RESTClient(),
+	watchlist := cache.NewListWatchFromClient(kubeClient.CoreV1().RESTClient(),
 		"namespaces", "", fields.Everything())
 
 	_, controller := cache.NewInformer(watchlist, &v1.Namespace{}, 0,

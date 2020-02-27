@@ -28,7 +28,7 @@ func GetSecrets(clientset *kubernetes.Clientset, selector, namespace string) (*v
 
 	lo := meta_v1.ListOptions{LabelSelector: selector}
 
-	secrets, err := clientset.Core().Secrets(namespace).List(lo)
+	secrets, err := clientset.CoreV1().Secrets(namespace).List(lo)
 	if err != nil {
 		log.Error(err)
 		log.Error("error getting secrets selector=[" + selector + "]")
@@ -41,7 +41,7 @@ func GetSecrets(clientset *kubernetes.Clientset, selector, namespace string) (*v
 // GetSecret gets a Secrets by name
 func GetSecret(clientset *kubernetes.Clientset, name, namespace string) (*v1.Secret, bool, error) {
 
-	secret, err := clientset.Core().Secrets(namespace).Get(name, meta_v1.GetOptions{})
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(name, meta_v1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 		log.Error("secret " + name + " not found")
 		return secret, false, err
@@ -58,7 +58,7 @@ func GetSecret(clientset *kubernetes.Clientset, name, namespace string) (*v1.Sec
 // CreateSecret
 func CreateSecret(clientset *kubernetes.Clientset, secret *v1.Secret, namespace string) error {
 
-	_, err := clientset.Core().Secrets(namespace).Create(secret)
+	_, err := clientset.CoreV1().Secrets(namespace).Create(secret)
 	if err != nil {
 		log.Error(err)
 		log.Error("error creating secret " + secret.Name)
@@ -71,7 +71,7 @@ func CreateSecret(clientset *kubernetes.Clientset, secret *v1.Secret, namespace 
 // DeleteSecret
 func DeleteSecret(clientset *kubernetes.Clientset, name, namespace string) error {
 
-	err := clientset.Core().Secrets(namespace).Delete(name, &meta_v1.DeleteOptions{})
+	err := clientset.CoreV1().Secrets(namespace).Delete(name, &meta_v1.DeleteOptions{})
 	if err != nil {
 		log.Error(err)
 		log.Error("error deleting secret " + name)
@@ -83,7 +83,7 @@ func DeleteSecret(clientset *kubernetes.Clientset, name, namespace string) error
 }
 
 func UpdateSecret(clientset *kubernetes.Clientset, sec *v1.Secret, namespace string) error {
-	_, err := clientset.Core().Secrets(namespace).Update(sec)
+	_, err := clientset.CoreV1().Secrets(namespace).Update(sec)
 	if err != nil {
 		log.Error(err)
 		log.Error("error updating secret %s", sec.Name)
