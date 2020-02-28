@@ -49,23 +49,6 @@ generated events:
 The various event types are found in the source code at
 https://github.com/CrunchyData/postgres-operator/blob/master/events/eventtype.go
 
-## Event Testing
-
-To test the event logic, you can run the test case for
-events as follows:
-
-
-    # create a connection locally to the event stream
-    kubectl port-forward postgres-operator-XXXXXX 14150:4150 -n pgo
-
-    # specify the event address
-    export EVENT_ADDR=localhost:14150
-
-    # run the test using foomatic as the name of the test cluster
-    # and pgouser1 as the name of the namespace to test against
-    cd testing/events
-    go test -run TestEventCreate -v --kubeconfig=/home/<yourhomedir>/.kube/config -clustername=foomatic -namespace=pgouser1
-
 
 ## Event Deployment
 
