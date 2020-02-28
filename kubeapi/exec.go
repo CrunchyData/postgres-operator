@@ -17,6 +17,7 @@ package kubeapi
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 
 	log "github.com/sirupsen/logrus"
@@ -73,6 +74,13 @@ func ExecToPodThroughAPI(config *rest.Config, clientset *kubernetes.Clientset, c
 		Tty:    false,
 	})
 	if err != nil {
+		log.Error(err)
+		return stdout.String(), stderr.String(), err
+	}
+
+	// Here we check if something is written to stderr. If yes, we had a problem with the provided script
+	if stderr.String() != "" {
+		err = fmt.Errorf("error in provided sql cmd: %s", stderr.String())
 		log.Error(err)
 		return stdout.String(), stderr.String(), err
 	}
