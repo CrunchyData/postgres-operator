@@ -1,3 +1,12 @@
+ignored = [
+  # The following four packages are imported by the testing directory which is
+  # a separate Go module.
+  "github.com/jackc/pgx/v4/*",
+  "github.com/stretchr/testify/*",
+  "k8s.io/apiserver/pkg/storage/names",
+  "k8s.io/client-go/tools/portforward",
+]
+
 [[constraint]]
   name = "github.com/evanphx/json-patch"
   version = "4.6.0"
