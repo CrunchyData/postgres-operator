@@ -637,6 +637,7 @@
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/remotecommand",
+    "k8s.io/client-go/transport/spdy",
     "k8s.io/client-go/util/workqueue",
   ]
   solver-name = "gps-cdcl"
