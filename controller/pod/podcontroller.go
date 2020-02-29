@@ -17,27 +17,15 @@ limitations under the License.
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"strconv"
 	"sync"
-	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
-	"github.com/crunchydata/postgres-operator/controller"
-	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
-	"github.com/crunchydata/postgres-operator/operator/backrest"
-	"github.com/crunchydata/postgres-operator/util"
 
-	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
-	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
-	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
@@ -79,104 +67,92 @@ func (c *Controller) watchPods(ctx context.Context) error {
 	return nil
 }
 
-// onAdd is called when a pgcluster is added or
-// if a pgo-backrest-repo pod is added
+// onAdd is called when a pod is added
 func (c *Controller) onAdd(obj interface{}) {
-	newpod := obj.(*apiv1.Pod)
 
-	labels := newpod.GetObjectMeta().GetLabels()
-	if labels[config.LABEL_VENDOR] != "crunchydata" {
-		log.Debugf("Pod Controller: onAdd skipping pod that is not crunchydata %s", newpod.ObjectMeta.SelfLink)
-		return
+	newPod := obj.(*apiv1.Pod)
+
+	newPodLabels := newPod.GetObjectMeta().GetLabels()
+	//only process pods with with vendor=crunchydata label
+	if newPodLabels[config.LABEL_VENDOR] == "crunchydata" {
+		log.Debugf("Pod Controller: onAdd processing the addition of pod %s in namespace %s",
+			newPod.Name, newPod.Namespace)
 	}
 
-	log.Debugf("[Pod Controller] OnAdd ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
-
 	//handle the case when a pg database pod is added
-	if isPostgresPod(newpod) {
-		c.checkPostgresPods(newpod, newpod.ObjectMeta.Namespace)
+	if isPostgresPod(newPod) {
+		c.labelPostgresPodAndDeployment(newPod)
 		return
 	}
 }
 
-// onUpdate is called when a pgcluster is updated
+// onUpdate is called when a pod is updated
 func (c *Controller) onUpdate(oldObj, newObj interface{}) {
-	oldpod := oldObj.(*apiv1.Pod)
-	newpod := newObj.(*apiv1.Pod)
 
-	labels := newpod.GetObjectMeta().GetLabels()
-	if labels[config.LABEL_VENDOR] != "crunchydata" {
-		log.Debugf("Pod Controller: onUpdate skipping pod that is not crunchydata %s", newpod.ObjectMeta.SelfLink)
+	oldPod := oldObj.(*apiv1.Pod)
+	newPod := newObj.(*apiv1.Pod)
+
+	newPodLabels := newPod.GetObjectMeta().GetLabels()
+
+	//only process pods with with vendor=crunchydata label
+	if newPodLabels[config.LABEL_VENDOR] == "crunchydata" {
+		log.Debugf("Pod Controller: onUpdate processing update for pod %s in namespace %s",
+			newPod.Name, newPod.Namespace)
+	}
+
+	// we only care about pods attached to a specific cluster, so if this one isn't (as identified
+	// by the presence of the 'pg-cluster' label) then return
+	if _, ok := newPodLabels[config.LABEL_PG_CLUSTER]; !ok {
+		log.Debugf("Pod Controller: onUpdate ignoring update for pod %s in namespace %s since it "+
+			"is not associated with a PG cluster", newPod.Name, newPod.Namespace)
 		return
 	}
 
-	log.Debugf("[Pod Controller] onUpdate ns=%s %s", newpod.ObjectMeta.Namespace, newpod.ObjectMeta.SelfLink)
-
-	//look up the pgcluster CRD for this pod's cluster
-	clusterName := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
-	pgcluster := crv1.Pgcluster{}
-	found, err := kubeapi.Getpgcluster(c.PodClient, &pgcluster, clusterName, newpod.ObjectMeta.Namespace)
-	if !found || err != nil {
+	// Lookup the pgcluster CR for PG cluster associated with this Pod.  Since a 'pg-cluster'
+	//  label was found on updated Pod, this lookup should always succeed.
+	clusterName := newPodLabels[config.LABEL_PG_CLUSTER]
+	cluster := crv1.Pgcluster{}
+	_, err := kubeapi.Getpgcluster(c.PodClient, &cluster, clusterName,
+		newPod.ObjectMeta.Namespace)
+	if err != nil {
 		log.Error(err.Error())
-		log.Error("you should not get a not found in the onUpdate in Controller")
 		return
 	}
 
-	// check here if cluster has an upgrade in progress flag set.
-	clusterInMinorUpgrade := pgcluster.Labels[config.LABEL_MINOR_UPGRADE] == config.LABEL_UPGRADE_IN_PROGRESS
-	// log.Debugf("Cluster: %s Minor Upgrade: %s ", clusterName, clusterInMinorUpgrade)
+	// Handle the "role" label change from "replica" to "master" following a failover.  This
+	// logic is only triggered when the cluster has already been initialized, which implies
+	// a failover or switchove has ocurred.
+	if cluster.Status.State == crv1.PgclusterStateInitialized &&
+		isPromotedPostgresPod(oldPod, newPod) {
 
-	// have a pod coming back up from upgrade and is ready - time to kick off the next pod.
-	if clusterInMinorUpgrade && isUpgradedPostgresPod(newpod, oldpod) {
-		upgradeTaskName := clusterName + "-" + config.LABEL_MINOR_UPGRADE
-		clusteroperator.ProcessNextUpgradeItem(c.PodClientset, c.PodClient, pgcluster, upgradeTaskName, newpod.ObjectMeta.Namespace)
+		if err := c.handlePostgresPodPromotion(newPod, cluster.Name); err != nil {
+			log.Error(err)
+			return
+		}
 	}
 
-	//handle the case when a pg database pod is updated
-	if isPostgresPod(newpod) {
-		// Handle the "role" label change from "replica" to "master" following a failover.
-		// Specifically, take a backup to ensure there is a fresh backup for the cluster
-		// post-failover.
-		if oldpod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "promoted" &&
-			labels[config.LABEL_PGHA_ROLE] == "master" &&
-			pgcluster.Status.State == crv1.PgclusterStateInitialized {
-
-			//look up the backrest-repo pod name
-			selector := fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER,
-				clusterName, config.LABEL_PGO_BACKREST_REPO)
-			pods, err := kubeapi.GetPods(c.PodClientset, selector, newpod.ObjectMeta.Namespace)
-			if len(pods.Items) != 1 {
-				log.Errorf("pods len != 1 for cluster %s", clusterName)
-				return
-			} else if err != nil {
-				log.Error(err)
-				return
-			}
-
-			err = backrest.CleanBackupResources(c.PodClient, c.PodClientset,
-				newpod.ObjectMeta.Namespace, clusterName)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-			_, err = backrest.CreatePostFailoverBackup(c.PodClient,
-				newpod.ObjectMeta.Namespace, clusterName, pods.Items[0].Name)
-			if err != nil {
-				log.Error(err)
-				return
-			}
-		}
-
-		//only check the status of primary pods
-		if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
-			c.checkReadyStatus(oldpod, newpod, &pgcluster)
-		}
+	// For the following upgrade and cluster initialization scenarios we only care about updates
+	// where the database container within the pod is becoming ready.  We can therefore return
+	// at this point if this condition is false.
+	if !isDBContainerBecomingReady(oldPod, newPod) {
 		return
+	}
+
+	// First handle pod update as needed if the update was part of an ongoing upgrade
+	if cluster.Labels[config.LABEL_MINOR_UPGRADE] == config.LABEL_UPGRADE_IN_PROGRESS {
+		c.handleUpgradePodUpdate(newPod, &cluster)
+	}
+
+	// Handle postgresql pod updates as needed for cluster initialization
+	if cluster.Status.State != crv1.PgclusterStateInitialized &&
+		isPostgresPrimaryPod(newPod) {
+		c.handleClusterInit(newPod, &cluster)
 	}
 }
 
 // onDelete is called when a pgcluster is deleted
 func (c *Controller) onDelete(obj interface{}) {
+
 	pod := obj.(*apiv1.Pod)
 
 	labels := pod.GetObjectMeta().GetLabels()
@@ -184,320 +160,12 @@ func (c *Controller) onDelete(obj interface{}) {
 		log.Debugf("Pod Controller: onDelete skipping pod that is not crunchydata %s", pod.ObjectMeta.SelfLink)
 		return
 	}
-
-	//	log.Debugf("[Controller] onDelete ns=%s %s", pod.ObjectMeta.Namespace, pod.ObjectMeta.SelfLink)
 }
 
-func (c *Controller) checkReadyStatus(oldpod, newpod *apiv1.Pod, cluster *crv1.Pgcluster) {
-	//handle the case of a service-name re-label
-	if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] !=
-		oldpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] {
-		log.Debug("the pod was updated and the service names were changed in this pod update, not going to check the ReadyStatus")
-		return
-	}
-
-	clusterName := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
-	//handle applying policies, and updating workflow after a database  pod
-	//is made Ready, in the case of backrest, create the create stanza job
-	if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
-		var oldDatabaseStatus bool
-		for _, v := range oldpod.Status.ContainerStatuses {
-			if v.Name == "database" {
-				oldDatabaseStatus = v.Ready
-			}
-		}
-		for _, v := range newpod.Status.ContainerStatuses {
-			if v.Name == "database" {
-				//see if there are pgtasks for adding a policy
-				if oldDatabaseStatus == false && v.Ready {
-
-					// Disable autofailover in the cluster that is now "Ready" if the autofail label is set
-					// to "false" on the pgcluster (i.e. label "autofail=true")
-					autofailEnabled, err := strconv.ParseBool(cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL])
-					if err != nil {
-						log.Error(err)
-						return
-					} else if !autofailEnabled {
-						util.ToggleAutoFailover(c.PodClientset, false, cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE],
-							cluster.ObjectMeta.Namespace)
-					}
-
-					err = operator.UpdatePGHAConfigInitFlag(c.PodClientset, false, clusterName,
-						newpod.ObjectMeta.Namespace)
-					if err != nil {
-						log.Error(err)
-						return
-					}
-
-					// if pod is coming ready after a restore, create the initial backup instead
-					// of the stanza
-					if cluster.Status.State == crv1.PgclusterStateRestore {
-
-						//look up the backrest-repo pod name
-						selector := fmt.Sprintf("%s=%s,pgo-backrest-repo=true",
-							config.LABEL_PG_CLUSTER, clusterName)
-						pods, err := kubeapi.GetPods(c.PodClientset, selector,
-							newpod.ObjectMeta.Namespace)
-						if len(pods.Items) != 1 {
-							log.Errorf("pods len != 1 for cluster %s", clusterName)
-							return
-						}
-						if err != nil {
-							log.Error(err)
-							return
-						}
-						err = backrest.CleanBackupResources(c.PodClient, c.PodClientset,
-							newpod.ObjectMeta.Namespace, clusterName)
-						if err != nil {
-							log.Error(err)
-							return
-						}
-
-						backrestoperator.CreateInitialBackup(c.PodClient, newpod.ObjectMeta.Namespace,
-							clusterName, pods.Items[0].Name)
-						return
-					}
-
-					log.Debugf("%s went to Ready from Not Ready, apply policies...", clusterName)
-					taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient, c.PodConfig, newpod.ObjectMeta.Namespace)
-
-					taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient, newpod.ObjectMeta.Namespace)
-
-					//publish event for cluster complete
-					publishClusterComplete(clusterName, newpod.ObjectMeta.Namespace, cluster)
-					//
-
-					// Proceed with stanza-creation of this is not a standby cluster, or if its
-					// a standby cluster that does not have "s3" storage only enabled.
-					// If this is a standby cluster and the pgBackRest storage type is set
-					// to "s3" for S3 storage only, set the cluster to an initialized status.
-					if !cluster.Spec.Standby || (cluster.Spec.Standby &&
-						cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE] != "s3") {
-						backrestoperator.StanzaCreate(newpod.ObjectMeta.Namespace, clusterName,
-							c.PodClientset, c.PodClient)
-					} else {
-						controller.SetClusterInitializedStatus(c.PodClient, clusterName,
-							newpod.ObjectMeta.Namespace)
-					}
-
-					// If a standby cluster initialize the creation of any replicas.  Replicas
-					// can be initialized right away, i.e. there is no dependency on
-					// stanza-creation and/or the creation of any backups, since the replicas
-					// will be generated from the pgBackRest repository of an external PostgreSQL
-					// database (which should already exist).
-					if cluster.Spec.Standby {
-						controller.InitializeReplicaCreation(c.PodClient, clusterName,
-							newpod.ObjectMeta.Namespace)
-						return
-					}
-
-					// if this is a pgbouncer enabled cluster, add a pgbouncer
-					if cluster.Labels[config.LABEL_PGBOUNCER] == "true" {
-						tmptask := crv1.Pgtask{}
-						taskName := fmt.Sprintf("%s-%s", config.LABEL_PGBOUNCER_TASK_ADD, clusterName)
-
-						// attempt to find the pgbouncer pgtask. If one does not exist
-						// create it!
-						if found, _ := kubeapi.Getpgtask(c.PodClient, &tmptask, taskName, newpod.ObjectMeta.Namespace); !found {
-							clusteroperator.CreatePgTaskforAddpgBouncer(c.PodClient, cluster, cluster.Labels[config.LABEL_PGOUSER])
-						}
-					}
-				}
-			}
-		}
-	}
-
-}
-
-// checkPostgresPods
-// see if this is a primary or replica being created
-// update service-name label on the pod for each case
-// to match the correct Service selector for the PG cluster
-func (c *Controller) checkPostgresPods(newpod *apiv1.Pod, ns string) {
-
-	depName := newpod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
-
-	replica := false
-	pgreplica := crv1.Pgreplica{}
-	found, err := kubeapi.Getpgreplica(c.PodClient, &pgreplica, depName, ns)
-	if found {
-		replica = true
-	}
-	log.Debugf("checkPostgresPods --- dep %s replica %t", depName, replica)
-
-	var dep *v1.Deployment
-	dep, _, err = kubeapi.GetDeployment(c.PodClientset, depName, ns)
-	if err != nil {
-		log.Errorf("could not get Deployment on pod Add %s", newpod.Name)
-		return
-	}
-
-	serviceName := ""
-
-	if dep.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] != "" {
-		log.Debug("this means the deployment was already labeled")
-		log.Debug("which means its pod was restarted for some reason")
-		log.Debug("we will use the service name on the deployment")
-		serviceName = dep.ObjectMeta.Labels[config.LABEL_SERVICE_NAME]
-	} else if replica == false {
-		log.Debugf("primary pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER])
-		//add label onto pod "service-name=clustername"
-		serviceName = newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
-	} else if replica == true {
-		log.Debugf("replica pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]+"-replica")
-		//add label onto pod "service-name=clustername-replica"
-		serviceName = newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] + "-replica"
-	}
-
-	err = kubeapi.AddLabelToPod(c.PodClientset, newpod, config.LABEL_SERVICE_NAME, serviceName, ns)
-	if err != nil {
-		log.Error(err)
-		log.Errorf(" could not add pod label for pod %s and label %s ...", newpod.Name, serviceName)
-		return
-	}
-
-	//add the service name label to the Deployment
-	err = kubeapi.AddLabelToDeployment(c.PodClientset, dep, config.LABEL_SERVICE_NAME, serviceName, ns)
-
-	if err != nil {
-		log.Error("could not add label to deployment on pod add")
-		return
-	}
-
-}
-
-//check for the autofail flag on the pgcluster CRD
-func (c *Controller) checkAutofailLabel(newpod *apiv1.Pod, ns string) bool {
-	clusterName := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
-
-	pgcluster := crv1.Pgcluster{}
-	found, err := kubeapi.Getpgcluster(c.PodClient, &pgcluster, clusterName, ns)
-	if !found {
-		return false
-	} else if err != nil {
-		log.Error(err)
-		return false
-	}
-
-	if pgcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] == "true" {
-		log.Debugf("autofail is on for this pod %s", newpod.Name)
-		return true
-	}
-	return false
-
-}
-
-func isPostgresPod(newpod *apiv1.Pod) bool {
-	if newpod.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] == "true" {
-		log.Debugf("pgo-backrest-repo found %s", newpod.Name)
-		return false
-	}
-	if newpod.ObjectMeta.Labels[config.LABEL_JOB_NAME] != "" {
-		log.Debugf("job pod found [%s]", newpod.Name)
-		return false
-	}
-	if newpod.ObjectMeta.Labels[config.LABEL_NAME] == "postgres-operator" {
-		log.Debugf("postgres-operator-pod found [%s]", newpod.Name)
-		return false
-	}
-	if newpod.ObjectMeta.Labels[config.LABEL_PGBOUNCER] == "true" {
-		log.Debugf("pgbouncer pod found [%s]", newpod.Name)
-		return false
-	}
-	return true
-}
-
-// isUpgradedPostgresPod - determines if the pod is one that could be getting a minor upgrade
-// differs from above check in that the backrest repo pod is upgradeable.
-func isUpgradedPostgresPod(newpod *apiv1.Pod, oldPod *apiv1.Pod) bool {
-
-	clusterName := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
-	replicaServiceName := clusterName + "-replica"
-
-	var podIsReady bool
-	for _, v := range newpod.Status.ContainerStatuses {
-		if v.Name == "database" {
-			podIsReady = v.Ready
-		}
-	}
-
-	var oldPodStatus bool
-	for _, v := range oldPod.Status.ContainerStatuses {
-		if v.Name == "database" {
-			oldPodStatus = v.Ready
-		}
-	}
-
-	log.Debugf("[isUpgradedPostgesPod] oldstatus: %s newstatus: %s ", oldPodStatus, podIsReady)
-
-	// only care about pods that have changed from !ready to ready
-	if podIsReady && !oldPodStatus {
-
-		// eliminate anything we don't care about - it will be most things
-		if newpod.ObjectMeta.Labels[config.LABEL_JOB_NAME] != "" {
-			log.Debugf("job pod found [%s]", newpod.Name)
-			return false
-		}
-
-		if newpod.ObjectMeta.Labels[config.LABEL_NAME] == "postgres-operator" {
-			log.Debugf("postgres-operator-pod found [%s]", newpod.Name)
-			return false
-		}
-		if newpod.ObjectMeta.Labels[config.LABEL_PGBOUNCER] == "true" {
-			log.Debugf("pgbouncer pod found [%s]", newpod.Name)
-			return false
-		}
-
-		// look for specific pods that could have just gone through upgrade
-
-		if newpod.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] == "true" {
-			log.Debugf("Minor Upgrade: upgraded pgo-backrest-repo found %s", newpod.Name)
-			return true
-		}
-
-		// primary identified by service-name being same as cluster name
-		if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
-			log.Debugf("Minor Upgrade: upgraded primary found %s", newpod.Name)
-			return true
-		}
-
-		if newpod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == replicaServiceName {
-			log.Debugf("Minor Upgrade: upgraded replica found %s", newpod.Name)
-			return true
-		}
-
-		// This indicates there is a pod we didn't account for - shouldn't be the case
-		log.Debugf(" **** Minor Upgrade: unexpected isUpgraded pod found: [%s] ****", newpod.Name)
-	}
-	return false
-}
-
-func publishClusterComplete(clusterName, namespace string, cluster *crv1.Pgcluster) error {
-	//capture the cluster creation event
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventCreateClusterCompletedFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  cluster.Spec.UserLabels[config.LABEL_PGOUSER],
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventCreateClusterCompleted,
-		},
-		Clustername: clusterName,
-		WorkflowID:  cluster.Spec.UserLabels[config.LABEL_WORKFLOW_ID],
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-	return err
-
-}
-
+// SetupWatch creates creates a new controller that provides event notifications when pods are
+// added, updated and deleted in the specific namespace specified.  This includes defining the
+// funtions that should be called when various add, update and delete events are received.  Only
+// one controller can be created per namespace to ensure duplicate events are not generated.
 func (c *Controller) SetupWatch(ns string) {
 
 	// don't create informer for namespace if one has already been created
@@ -536,87 +204,68 @@ func (c *Controller) SetupWatch(ns string) {
 	log.Debugf("Pod Controller created informer for namespace %s", ns)
 }
 
-func publishPrimaryNotReady(clusterName, identifier, username, namespace string) {
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventPrimaryNotReadyFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  username,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventPrimaryNotReady,
-		},
-		Clustername: clusterName,
+// isDBContainerBecomingReady checks to see if the Pod update shows that the Pod has
+// transitioned from an 'unready' status to a 'ready' status.
+func isDBContainerBecomingReady(oldPod, newPod *apiv1.Pod) bool {
+	var oldDatabaseStatus bool
+	// first see if the old version of the pod was not ready
+	for _, v := range oldPod.Status.ContainerStatuses {
+		if v.Name == "database" {
+			oldDatabaseStatus = v.Ready
+			break
+		}
 	}
-
-	err := events.Publish(f)
-	if err != nil {
-		log.Error(err.Error())
-	}
-}
-
-// isPrimaryOnRoleChange determines if primary role change activities are underway as the result
-// of a failover event (e.g activities such as updating the backrest repo to point to the PGDATA
-// directory for the new primary, taking a new/up-to-date backup).  This is determined by
-// detecting whether or not the 'primary_on_role_change' tag is set to 'true' in the Patroni DCS.
-// Being that Kubernetes is utilized as the Patroni DCS for the PGO, the data is specifically
-// stored in a configMap called '<patroni-scope>-config'.
-func isPrimaryOnRoleChange(clientset *kubernetes.Clientset, pgcluster crv1.Pgcluster,
-	namespace string) (primaryOnRoleChange bool) {
-
-	var err error
-
-	// return false right away if scope isn't set
-	if _, valExists := pgcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE]; !valExists {
-		return false
-	}
-
-	cmName := pgcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE] + "-config"
-	configMap, found := kubeapi.GetConfigMap(clientset, cmName, namespace)
-	if !found {
-		log.Warnf("Unable to find '%s' configMap for cluster %s (crunchy-pgha-scope=%s). "+
-			"It may not yet exist if the cluster is still being initialized.",
-			cmName, pgcluster.Name, pgcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE])
-		return false
-	}
-
-	pgHAConfigJSON := configMap.Annotations["config"]
-	var pgHAConfigMap map[string]interface{}
-	json.Unmarshal([]byte(pgHAConfigJSON), &pgHAConfigMap)
-
-	var tags map[string]interface{}
-	if pgHAConfigMap["tags"] != nil {
-		tags = pgHAConfigMap["tags"].(map[string]interface{})
-		if tags["primary_on_role_change"] != nil {
-			log.Debugf("Found 'primary_on_role_change' in DCS for cluster %s", pgcluster.Name)
-			primaryOnRoleChange, err = strconv.ParseBool(tags["primary_on_role_change"].(string))
-			if err != nil {
-				log.Error(err)
-				return
+	// if the old version of the pod was not ready, now check if the
+	// new version is ready
+	if !oldDatabaseStatus {
+		for _, v := range newPod.Status.ContainerStatuses {
+			if v.Name == "database" {
+				if v.Ready {
+					return true
+					break
+				}
 			}
 		}
 	}
-	return
+	return false
 }
 
-// isBackrestRepoReady determines if the pgBackRest dedicated repository pod has transitioned from
-// a "not ready" state to a "ready" state
-func isBackrestRepoReady(oldpod *apiv1.Pod, newpod *apiv1.Pod) (isRepoReady bool) {
-	var oldRepoStatus bool
-	for _, v := range oldpod.Status.ContainerStatuses {
-		if v.Name == "database" {
-			oldRepoStatus = v.Ready
-		}
+// isPostgresPrimaryPod determines whether or not the specific Pod provided is the primary database
+// Pod within a PG cluster.  This is done by checking to see if the "role" label for the Pod is set
+// to either "master", as set by Patroni to identify the current primary, or "promoted", as set by
+// Patroni when promoting a replica to be the new primary.
+func isPostgresPrimaryPod(newPod *apiv1.Pod) bool {
+	if newPod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "master" ||
+		newPod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "promoted" {
+		return true
 	}
-	for _, v := range newpod.Status.ContainerStatuses {
-		if v.Name == "database" {
-			if !oldRepoStatus && v.Ready {
-				isRepoReady = true
-				return
-			}
-		}
+	return false
+}
+
+// isPromotedPostgresPod determines if the Pod update is the result of the promotion of the pod
+// from a replica to the primary within a PG cluster.  This is determined by comparing the 'role'
+// label from the old Pod to the 'role' label in the New pod, specifically to determine if the
+// label has changed from "promoted" to "master" (this is the label change that will be performed
+// by Patroni when promoting a pod).
+func isPromotedPostgresPod(oldPod, newPod *apiv1.Pod) bool {
+	if oldPod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "promoted" &&
+		newPod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "master" {
+		return true
 	}
-	return
+	return false
+}
+
+// isPostgresPod determines whether or not a pod is a PostreSQL Pod, specifically either the primary
+// or a replica pod within a PG cluster.  This is determined by checking to see if the 'pg-cluster'
+// and 'role' labels are present on the pod (also, this controller will only process pod with the
+// 'vendor=crunchydata' label, so that label is assumed to be present).  Since the 'role' label is
+// utilized by Patroni for identifying a Pod as either a primary or replica, it is assumed that only
+// PostgreSQL pods will contain this label, while 'pg-cluster' is the standard label used to identify
+// various Kubernetes resources (in this case Pods) that are part of a specific PG cluster.
+func isPostgresPod(newpod *apiv1.Pod) bool {
+
+	_, pgClusterLabelExists := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
+	_, roleLabelExists := newpod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE]
+
+	return pgClusterLabelExists && roleLabelExists
 }
