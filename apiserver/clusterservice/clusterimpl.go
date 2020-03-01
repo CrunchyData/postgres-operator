@@ -495,255 +495,250 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		return resp
 	}
 
-	for i := 0; i < request.Series; i++ {
-		if request.Series > 1 {
-			clusterName = request.Name + strconv.Itoa(i)
-		}
-		log.Debugf("create cluster called for %s", clusterName)
-		result := crv1.Pgcluster{}
+	log.Debugf("create cluster called for %s", clusterName)
+	result := crv1.Pgcluster{}
 
-		// error if it already exists
-		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &result, clusterName, ns)
-		if err == nil {
-			log.Debugf("pgcluster %s was found so we will not create it", clusterName)
+	// error if it already exists
+	found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &result, clusterName, ns)
+	if err == nil {
+		log.Debugf("pgcluster %s was found so we will not create it", clusterName)
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "pgcluster " + clusterName + " was found so we will not create it"
+		return resp
+	} else if !found {
+		log.Debugf("pgcluster %s not found so we will create it", clusterName)
+	} else {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "error getting pgcluster " + clusterName + err.Error()
+		return resp
+	}
+
+	userLabelsMap := make(map[string]string)
+	if request.UserLabels != "" {
+		labels := strings.Split(request.UserLabels, ",")
+		for _, v := range labels {
+			p := strings.Split(v, "=")
+			if len(p) < 2 {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = "invalid labels format"
+				return resp
+			}
+			userLabelsMap[p[0]] = p[1]
+		}
+	}
+
+	// validate the storage type for tablespaces
+	// this is in the format "<tablespaceName1>=<storagetype1>,<tablespaceName2>,<storagetype2>,..."
+	if request.TablespaceMounts != "" {
+		tablespaces := strings.Split(request.TablespaceMounts, ",")
+
+		for _, v := range tablespaces {
+			p := strings.Split(v, "=")
+
+			if apiserver.IsValidStorageName(p[1]) == false {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = fmt.Sprintf("%s storage config for a tablespace was not found", request.StorageConfig)
+				return resp
+			}
+		}
+	}
+
+	if request.CustomConfig != "" {
+		found, err := validateCustomConfig(request.CustomConfig, ns)
+		if !found {
 			resp.Status.Code = msgs.Error
-			resp.Status.Msg = "pgcluster " + clusterName + " was found so we will not create it"
-			return resp
-		} else if !found {
-			log.Debugf("pgcluster %s not found so we will create it", clusterName)
-		} else {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = "error getting pgcluster " + clusterName + err.Error()
+			resp.Status.Msg = request.CustomConfig + " configmap was not found "
 			return resp
 		}
-
-		userLabelsMap := make(map[string]string)
-		if request.UserLabels != "" {
-			labels := strings.Split(request.UserLabels, ",")
-			for _, v := range labels {
-				p := strings.Split(v, "=")
-				if len(p) < 2 {
-					resp.Status.Code = msgs.Error
-					resp.Status.Msg = "invalid labels format"
-					return resp
-				}
-				userLabelsMap[p[0]] = p[1]
-			}
-		}
-
-		// validate the storage type for tablespaces
-		// this is in the format "<tablespaceName1>=<storagetype1>,<tablespaceName2>,<storagetype2>,..."
-		if request.TablespaceMounts != "" {
-			tablespaces := strings.Split(request.TablespaceMounts, ",")
-
-			for _, v := range tablespaces {
-				p := strings.Split(v, "=")
-
-				if apiserver.IsValidStorageName(p[1]) == false {
-					resp.Status.Code = msgs.Error
-					resp.Status.Msg = fmt.Sprintf("%s storage config for a tablespace was not found", request.StorageConfig)
-					return resp
-				}
-			}
-		}
-
-		if request.CustomConfig != "" {
-			found, err := validateCustomConfig(request.CustomConfig, ns)
-			if !found {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = request.CustomConfig + " configmap was not found "
-				return resp
-			}
-			if err != nil {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = err.Error()
-				return resp
-			}
-			//add a label for the custom config
-			userLabelsMap[config.LABEL_CUSTOM_CONFIG] = request.CustomConfig
-		}
-
-		//set the metrics flag with the global setting first
-		userLabelsMap[config.LABEL_COLLECT] = strconv.FormatBool(apiserver.MetricsFlag)
-		if err != nil {
-			log.Error(err)
-		}
-
-		//if metrics is chosen on the pgo command, stick it into the user labels
-		if request.MetricsFlag {
-			userLabelsMap[config.LABEL_COLLECT] = "true"
-		}
-		if request.ServiceType != "" {
-			if request.ServiceType != config.DEFAULT_SERVICE_TYPE && request.ServiceType != config.LOAD_BALANCER_SERVICE_TYPE && request.ServiceType != config.NODEPORT_SERVICE_TYPE {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = "error ServiceType should be either ClusterIP or LoadBalancer "
-
-				return resp
-			}
-			userLabelsMap[config.LABEL_SERVICE_TYPE] = request.ServiceType
-		}
-
-		// ensure the backrest storage type specified for the cluster is valid, and that the
-		// configruation required to use that storage type (e.g. a bucket, endpoint and region
-		// when using aws s3 storage) has been provided
-		err = validateBackrestStorageTypeOnCreate(request)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
 		}
-
-		if request.BackrestStorageType != "" {
-			log.Debug("using backrest storage type provided by user")
-			userLabelsMap[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
-		}
-
-		log.Debug("userLabelsMap")
-		log.Debugf("%v", userLabelsMap)
-
-		if existsGlobalConfig(ns) {
-			userLabelsMap[config.LABEL_CUSTOM_CONFIG] = config.GLOBAL_CUSTOM_CONFIGMAP
-		}
-
-		if request.StorageConfig != "" {
-			if apiserver.IsValidStorageName(request.StorageConfig) == false {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = request.StorageConfig + " Storage config was not found "
-				return resp
-			}
-		}
-
-		if apiserver.Pgo.Cluster.PrimaryNodeLabel != "" {
-			//already should be validate at apiserver startup
-			parts := strings.Split(apiserver.Pgo.Cluster.PrimaryNodeLabel, "=")
-			userLabelsMap[config.LABEL_NODE_LABEL_KEY] = parts[0]
-			userLabelsMap[config.LABEL_NODE_LABEL_VALUE] = parts[1]
-			log.Debug("primary node labels used from pgo.yaml")
-		}
-
-		// validate & parse nodeLabel if exists
-		if request.NodeLabel != "" {
-
-			if err = apiserver.ValidateNodeLabel(request.NodeLabel); err != nil {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = err.Error()
-				return resp
-			}
-
-			parts := strings.Split(request.NodeLabel, "=")
-			userLabelsMap[config.LABEL_NODE_LABEL_KEY] = parts[0]
-			userLabelsMap[config.LABEL_NODE_LABEL_VALUE] = parts[1]
-
-			log.Debug("primary node labels used from user entered flag")
-		}
-
-		if request.ReplicaStorageConfig != "" {
-			if apiserver.IsValidStorageName(request.ReplicaStorageConfig) == false {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = request.ReplicaStorageConfig + " Storage config was not found "
-				return resp
-			}
-		}
-
-		if request.ContainerResources != "" {
-			if apiserver.IsValidContainerResource(request.ContainerResources) == false {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = request.ContainerResources + " ContainerResource config was not found "
-				return resp
-			}
-		}
-
-		// if a value is provided in the request for PodAntiAffinity, then ensure is valid.  If
-		// it is, then set the user label for pod anti-affinity to the request value.  Otherwise,
-		// return the validation error.
-		if request.PodAntiAffinity != "" {
-			podAntiAffinityType := crv1.PodAntiAffinityType(request.PodAntiAffinity)
-			if err := podAntiAffinityType.Validate(); err != nil {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = err.Error()
-				return resp
-			}
-			userLabelsMap[config.LABEL_POD_ANTI_AFFINITY] = request.PodAntiAffinity
-		} else {
-			userLabelsMap[config.LABEL_POD_ANTI_AFFINITY] = ""
-		}
-
-		// if synchronous replication has been enabled, then add to user labels
-		if request.SyncReplication != nil {
-			userLabelsMap[config.LABEL_SYNC_REPLICATION] =
-				string(strconv.FormatBool(*request.SyncReplication))
-		}
-
-		// Create an instance of our CRD
-		newInstance := getClusterParams(request, clusterName, userLabelsMap, ns)
-		newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
-
-		if request.SecretFrom != "" {
-			err = validateSecretFrom(request.SecretFrom, newInstance.Spec.User, ns)
-			if err != nil {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = request.SecretFrom + " secret was not found "
-				return resp
-			}
-		}
-
-		validateConfigPolicies(clusterName, request.Policies, ns)
-
-		t := time.Now()
-		newInstance.Spec.PswLastUpdate = t.Format(time.RFC3339)
-
-		//create secrets
-		err, newInstance.Spec.RootSecretName, newInstance.Spec.PrimarySecretName, newInstance.Spec.UserSecretName = createSecrets(request, clusterName, ns, newInstance.Spec.User)
-		if err != nil {
-			resp.Results = append(resp.Results, err.Error())
-			return resp
-		}
-		newInstance.Spec.CollectSecretName = clusterName + crv1.CollectSecretSuffix
-
-		// Create Backrest secret for S3/SSH Keys:
-		// We make this regardless if backrest is enabled or not because
-		// the deployment template always tries to mount /sshd volume
-		secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
-		_, _, err = kubeapi.GetSecret(apiserver.Clientset, secretName, request.Namespace)
-		if kerrors.IsNotFound(err) {
-			err := util.CreateBackrestRepoSecrets(apiserver.Clientset,
-				util.BackrestRepoConfig{
-					BackrestS3Key:       request.BackrestS3Key,
-					BackrestS3KeySecret: request.BackrestS3KeySecret,
-					ClusterName:         clusterName,
-					ClusterNamespace:    request.Namespace,
-					OperatorNamespace:   apiserver.PgoNamespace,
-				})
-			if err != nil {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = fmt.Sprintf("could not create backrest repo secret: %s", err)
-				return resp
-			}
-		} else if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = fmt.Sprintf("could not query if backrest repo secret exits: %s", err)
-			return resp
-		}
-
-		//create a workflow for this new cluster
-		id, err = createWorkflowTask(clusterName, ns, pgouser)
-		if err != nil {
-			log.Error(err)
-			resp.Results = append(resp.Results, err.Error())
-			return resp
-		}
-		newInstance.Spec.UserLabels[config.LABEL_WORKFLOW_ID] = id
-
-		//create CRD for new cluster
-		err = kubeapi.Createpgcluster(apiserver.RESTClient,
-			newInstance, ns)
-		if err != nil {
-			resp.Results = append(resp.Results, err.Error())
-		} else {
-			resp.Results = append(resp.Results, "created Pgcluster "+clusterName)
-		}
-		resp.Results = append(resp.Results, "workflow id "+id)
+		//add a label for the custom config
+		userLabelsMap[config.LABEL_CUSTOM_CONFIG] = request.CustomConfig
 	}
+
+	//set the metrics flag with the global setting first
+	userLabelsMap[config.LABEL_COLLECT] = strconv.FormatBool(apiserver.MetricsFlag)
+	if err != nil {
+		log.Error(err)
+	}
+
+	//if metrics is chosen on the pgo command, stick it into the user labels
+	if request.MetricsFlag {
+		userLabelsMap[config.LABEL_COLLECT] = "true"
+	}
+	if request.ServiceType != "" {
+		if request.ServiceType != config.DEFAULT_SERVICE_TYPE && request.ServiceType != config.LOAD_BALANCER_SERVICE_TYPE && request.ServiceType != config.NODEPORT_SERVICE_TYPE {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "error ServiceType should be either ClusterIP or LoadBalancer "
+
+			return resp
+		}
+		userLabelsMap[config.LABEL_SERVICE_TYPE] = request.ServiceType
+	}
+
+	// ensure the backrest storage type specified for the cluster is valid, and that the
+	// configruation required to use that storage type (e.g. a bucket, endpoint and region
+	// when using aws s3 storage) has been provided
+	err = validateBackrestStorageTypeOnCreate(request)
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
+	if request.BackrestStorageType != "" {
+		log.Debug("using backrest storage type provided by user")
+		userLabelsMap[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
+	}
+
+	log.Debug("userLabelsMap")
+	log.Debugf("%v", userLabelsMap)
+
+	if existsGlobalConfig(ns) {
+		userLabelsMap[config.LABEL_CUSTOM_CONFIG] = config.GLOBAL_CUSTOM_CONFIGMAP
+	}
+
+	if request.StorageConfig != "" {
+		if apiserver.IsValidStorageName(request.StorageConfig) == false {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = request.StorageConfig + " Storage config was not found "
+			return resp
+		}
+	}
+
+	if apiserver.Pgo.Cluster.PrimaryNodeLabel != "" {
+		//already should be validate at apiserver startup
+		parts := strings.Split(apiserver.Pgo.Cluster.PrimaryNodeLabel, "=")
+		userLabelsMap[config.LABEL_NODE_LABEL_KEY] = parts[0]
+		userLabelsMap[config.LABEL_NODE_LABEL_VALUE] = parts[1]
+		log.Debug("primary node labels used from pgo.yaml")
+	}
+
+	// validate & parse nodeLabel if exists
+	if request.NodeLabel != "" {
+
+		if err = apiserver.ValidateNodeLabel(request.NodeLabel); err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+
+		parts := strings.Split(request.NodeLabel, "=")
+		userLabelsMap[config.LABEL_NODE_LABEL_KEY] = parts[0]
+		userLabelsMap[config.LABEL_NODE_LABEL_VALUE] = parts[1]
+
+		log.Debug("primary node labels used from user entered flag")
+	}
+
+	if request.ReplicaStorageConfig != "" {
+		if apiserver.IsValidStorageName(request.ReplicaStorageConfig) == false {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = request.ReplicaStorageConfig + " Storage config was not found "
+			return resp
+		}
+	}
+
+	if request.ContainerResources != "" {
+		if apiserver.IsValidContainerResource(request.ContainerResources) == false {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = request.ContainerResources + " ContainerResource config was not found "
+			return resp
+		}
+	}
+
+	// if a value is provided in the request for PodAntiAffinity, then ensure is valid.  If
+	// it is, then set the user label for pod anti-affinity to the request value.  Otherwise,
+	// return the validation error.
+	if request.PodAntiAffinity != "" {
+		podAntiAffinityType := crv1.PodAntiAffinityType(request.PodAntiAffinity)
+		if err := podAntiAffinityType.Validate(); err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+		userLabelsMap[config.LABEL_POD_ANTI_AFFINITY] = request.PodAntiAffinity
+	} else {
+		userLabelsMap[config.LABEL_POD_ANTI_AFFINITY] = ""
+	}
+
+	// if synchronous replication has been enabled, then add to user labels
+	if request.SyncReplication != nil {
+		userLabelsMap[config.LABEL_SYNC_REPLICATION] =
+			string(strconv.FormatBool(*request.SyncReplication))
+	}
+
+	// Create an instance of our CRD
+	newInstance := getClusterParams(request, clusterName, userLabelsMap, ns)
+	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
+
+	if request.SecretFrom != "" {
+		err = validateSecretFrom(request.SecretFrom, newInstance.Spec.User, ns)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = request.SecretFrom + " secret was not found "
+			return resp
+		}
+	}
+
+	validateConfigPolicies(clusterName, request.Policies, ns)
+
+	t := time.Now()
+	newInstance.Spec.PswLastUpdate = t.Format(time.RFC3339)
+
+	//create secrets
+	err, newInstance.Spec.RootSecretName, newInstance.Spec.PrimarySecretName, newInstance.Spec.UserSecretName = createSecrets(request, clusterName, ns, newInstance.Spec.User)
+	if err != nil {
+		resp.Results = append(resp.Results, err.Error())
+		return resp
+	}
+	newInstance.Spec.CollectSecretName = clusterName + crv1.CollectSecretSuffix
+
+	// Create Backrest secret for S3/SSH Keys:
+	// We make this regardless if backrest is enabled or not because
+	// the deployment template always tries to mount /sshd volume
+	secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
+	_, _, err = kubeapi.GetSecret(apiserver.Clientset, secretName, request.Namespace)
+	if kerrors.IsNotFound(err) {
+		err := util.CreateBackrestRepoSecrets(apiserver.Clientset,
+			util.BackrestRepoConfig{
+				BackrestS3Key:       request.BackrestS3Key,
+				BackrestS3KeySecret: request.BackrestS3KeySecret,
+				ClusterName:         clusterName,
+				ClusterNamespace:    request.Namespace,
+				OperatorNamespace:   apiserver.PgoNamespace,
+			})
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = fmt.Sprintf("could not create backrest repo secret: %s", err)
+			return resp
+		}
+	} else if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf("could not query if backrest repo secret exits: %s", err)
+		return resp
+	}
+
+	//create a workflow for this new cluster
+	id, err = createWorkflowTask(clusterName, ns, pgouser)
+	if err != nil {
+		log.Error(err)
+		resp.Results = append(resp.Results, err.Error())
+		return resp
+	}
+	newInstance.Spec.UserLabels[config.LABEL_WORKFLOW_ID] = id
+
+	//create CRD for new cluster
+	err = kubeapi.Createpgcluster(apiserver.RESTClient,
+		newInstance, ns)
+	if err != nil {
+		resp.Results = append(resp.Results, err.Error())
+	} else {
+		resp.Results = append(resp.Results, "created Pgcluster "+clusterName)
+	}
+	resp.Results = append(resp.Results, "workflow id "+id)
 
 	return resp
 

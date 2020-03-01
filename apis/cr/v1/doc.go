@@ -25,8 +25,7 @@ client version that matches the API server version as part of the request.
 
 The API server is setup to work with the pgo command line interface so the
 parameters that are passed to the server can be found by looking at the related
-flags. For example, the series parameter used in the `create` example below is
-the same as the `-e, --series` flag that is described in the [pgo cli docs](https://access.crunchydata.com/documentation/postgres-operator/4.3.0/advanced/direct-api-calls).
+flags.
 ```
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
 pgoadmin:examplepassword -H "Content-Type:application/json" --insecure -X \
@@ -47,9 +46,8 @@ pgoadmin:examplepassword -H "Content-Type:application/json" --insecure -X GET \
 You can create a cluster by sending a POST request to
 `$PGO_APISERVER_URL/clusters`. In this example `--data` is being sent to the
 API URL that includes the client version that was returned from the version
-call, the namespace where the cluster should be created, the name of the new
-cluster and the series number. Series sets the number of clusters that will be
-created in the namespace.
+call, the namespace where the cluster should be created, and the name of the new
+cluster.
 
 ```
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
@@ -58,7 +56,6 @@ POST --data \
     '{"ClientVersion":"4.3.0",
     "Namespace":"pgouser1",
     "Name":"mycluster",
-    "Series":1}' \
 $PGO_APISERVER_URL/clusters
 ```
 

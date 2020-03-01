@@ -42,7 +42,6 @@ pgo create cluster [flags]
       --replica-storage-config string     The name of a Storage config in pgo.yaml to use for the cluster replica storage.
   -r, --resources-config string           The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.
   -s, --secret-from string                The cluster name to use when restoring secrets.
-  -e, --series int                        The number of clusters to create in a series. (default 1)
       --service-type string               The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.
       --storage-config string             The name of a Storage config in pgo.yaml to use for the cluster storage.
       --sync-replication                  Enables synchronous replication for the cluster.
