@@ -50,6 +50,12 @@
   name = "k8s.io/client-go"
   version = "0.17.3"
 
+# The following override is for generating the docs using the
+# "generatedocs" program in pgo
+[[override]]
+  name = "github.com/russross/blackfriday"
+  version = "1.5.2"
+
 [prune]
   go-tests = true
   unused-packages = true
