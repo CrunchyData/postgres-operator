@@ -24,6 +24,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -138,4 +139,14 @@ func IsValidPVC(pvcName, ns string) bool {
 	}
 
 	return true
+}
+
+// ValidateQuantity runs the Kubernetes "ParseQuantity" function on a string
+// and determine whether or not it is a valid quantity object. Returns an error
+// if it is invalid, along with the error message
+//
+// See: https://github.com/kubernetes/apimachinery/blob/master/pkg/api/resource/quantity.go
+func ValidateQuantity(quantity string) error {
+	_, err := resource.ParseQuantity(quantity)
+	return err
 }
