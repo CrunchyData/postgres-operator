@@ -301,6 +301,9 @@ type ClusterTablespaceDetail struct {
 	// Name is the name of the tablespace. Becomes the name of the tablespace in
 	// PostgreSQL
 	Name string
+	// optional: allows for the specification of the size of the PVC for the
+	// tablespace, overriding the value that is in "StorageClass"
+	PVCSize string
 	// StorageConfig is the name of the storage config to use for the tablespace,
 	// e.g. "nfsstorage", that is specified in the pgo.yaml configuration
 	StorageConfig string

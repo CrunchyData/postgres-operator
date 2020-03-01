@@ -242,7 +242,15 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users.")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets.")
 	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster.")
-	createClusterCmd.Flags().StringSliceVar(&Tablespaces, "tablespace", []string{}, "A list of extra mounts to create for tablespaces. The format is a comma seperated list of <mountName>=<storageConfig>")
+	createClusterCmd.Flags().StringSliceVar(&Tablespaces, "tablespace", []string{}, `Create a PostgreSQL tablespace on the cluster, e.g. "name=ts1:storageconfig=nfsstorage". The format is a key/value map that is delimited by "=" and separated by ":". The following parameters are available:
+
+- name (required): the name of the PostgreSQL tablespace
+- storageconfig (required): the storage configuration to use, as specified in the list available in the "pgo-config" ConfigMap (aka "pgo.yaml")
+- pvcsize: the size of the PVC capacity, which overrides the value set in the specified storageconfig. Follows the Kubernetes quantity format.
+
+For example, to create a tablespace with the NFS storage configuration with a PVC of size 10Gi:
+
+--tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi`)
 	createClusterCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply when creating a cluster, comma separated.")
 	createClusterCmd.Flags().StringVarP(&CCPImage, "ccp-image", "", "", "The CCPImage name to use for cluster creation. If specified, overrides the value crunchy-postgres.")
 	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
@@ -269,9 +277,9 @@ func init() {
 		"The AWS S3 region that should be utilized for the cluster when the \"s3\" "+
 			"storage type is enabled for pgBackRest.")
 	createClusterCmd.Flags().StringVarP(&PVCSize, "pvc-size", "", "",
-		`The size of the PVC. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
+		`The size of the PVC capacity for primary and replica PostgreSQL instances. Overrides the value set in the storage class. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
 	createClusterCmd.Flags().StringVarP(&BackrestPVCSize, "pgbackrest-pvc-size", "", "",
-		`The size of the PVC used for pgBackRest. This is ignored if the storage type of "local" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
+		`The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "local" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
 
 	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy.")
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy.")

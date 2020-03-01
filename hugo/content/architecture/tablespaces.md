@@ -80,8 +80,8 @@ command. The command follows this general format:
 
 ```shell
 pgo create cluster hacluster \
-    --tablespace=tablespace1=storageconfig \
-    --tablespace=tablespace2=storageconfig
+    --tablespace=name=tablespace1:storageconfig=storageconfigname \
+    --tablespace=name=tablespace2:storageconfig=storageconfigname
 ```
 
 For example, to create tablespaces name `faststorage1` and `faststorage2` on
@@ -90,8 +90,8 @@ command:
 
 ```shell
 pgo create cluster hacluster \
-    --tablespace=faststorage1=nfsstorage \
-    --tablespace=faststorage2=nfsstorage
+    --tablespace=name=faststorage1:storageconfig=nfsstorage \
+    --tablespace=name=faststorage2:storageconfig=nfsstorage
 ```
 
 Once the cluster is initialized, you can immediately interface with the
