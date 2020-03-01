@@ -55,6 +55,7 @@ var BackrestS3KeySecret string
 var BackrestS3Bucket string
 var BackrestS3Endpoint string
 var BackrestS3Region string
+var PVCSize string
 
 var CreateCmd = &cobra.Command{
 	Use:   "create",
@@ -266,6 +267,8 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&BackrestS3Region, "pgbackrest-s3-region", "", "",
 		"The AWS S3 region that should be utilized for the cluster when the \"s3\" "+
 			"storage type is enabled for pgBackRest.")
+	createClusterCmd.Flags().StringVarP(&PVCSize, "pvc-size", "", "",
+		`The size of the PVC. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
 
 	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy.")
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy.")

@@ -77,6 +77,9 @@ type CreateClusterRequest struct {
 	BackrestS3Bucket    string
 	BackrestS3Region    string
 	BackrestS3Endpoint  string
+	// allow the user to set custom sizes for PVCs
+	// PVCSize applies to the primary/replica storage classes
+	PVCSize string
 }
 
 // CreateClusterResponse
