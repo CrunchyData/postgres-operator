@@ -230,6 +230,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.BackrestS3Region = BackrestS3Region
 	r.BackrestS3Endpoint = BackrestS3Endpoint
 	r.PVCSize = PVCSize
+	r.BackrestPVCSize = BackrestPVCSize
 
 	// only set SyncReplication in the request if actually provided via the CLI
 	if createClusterCmd.Flag("sync-replication").Changed {

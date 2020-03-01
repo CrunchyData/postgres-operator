@@ -36,7 +36,6 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
@@ -528,14 +527,24 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		}
 	}
 
-	// if the PVCSize is set to a customized value, ensure that it is parseable
-	// as a valid Quantity recognized by Kubernetes.
-	//
-	// See: https://github.com/kubernetes/apimachinery/blob/master/pkg/api/resource/quantity.go
+	// if any of the the PVCSizes are set to a customized value, ensure that they
+	// are recognizable by Kubernetes
+	// first, the primary/replica PVC size
 	if request.PVCSize != "" {
-		if _, err := resource.ParseQuantity(request.PVCSize); err != nil {
+		if err := apiserver.ValidateQuantity(request.PVCSize); err != nil {
 			resp.Status.Code = msgs.Error
-			resp.Status.Msg = fmt.Sprintf(`could not parse PVC size: %s (hint: try a value like "1Gi")`, err.Error())
+			resp.Status.Msg = fmt.Sprintf(`could not parse PVC size "%s": %s (hint: try a value like "1Gi")`,
+				request.PVCSize, err.Error())
+			return resp
+		}
+	}
+
+	// next, the pgBackRest repo PVC size
+	if request.BackrestPVCSize != "" {
+		if err := apiserver.ValidateQuantity(request.BackrestPVCSize); err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = fmt.Sprintf(`could not parse PVC size "%s": %s (hint: try a value like "1Gi")`,
+				request.BackrestPVCSize, err.Error())
 			return resp
 		}
 	}
@@ -871,6 +880,14 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	}
 
 	spec.BackrestStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.BackrestStorage)
+
+	// if the BackrestPVCSize is overwritten, update the backrest storage spec
+	// with this value
+	if request.BackrestPVCSize != "" {
+		log.Debugf("pgBackRest PVC Size is overwritten to be [%s]",
+			request.BackrestPVCSize)
+		spec.BackrestStorage.Size = request.BackrestPVCSize
+	}
 
 	spec.CCPImageTag = apiserver.Pgo.Cluster.CCPImageTag
 	if request.CCPImageTag != "" {
