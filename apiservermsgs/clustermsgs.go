@@ -50,7 +50,7 @@ type CreateClusterRequest struct {
 	Password            string
 	SecretFrom          string
 	UserLabels          string
-	TablespaceMounts    string
+	Tablespaces         []ClusterTablespaceDetail
 	Policies            string
 	CCPImage            string
 	CCPImageTag         string
@@ -288,4 +288,15 @@ type ScaleDownResponse struct {
 type ClusterScaleResponse struct {
 	Results []string
 	Status
+}
+
+// ClusterTablespaceDetail contains details required to create a tablespace
+// swagger:model
+type ClusterTablespaceDetail struct {
+	// Name is the name of the tablespace. Becomes the name of the tablespace in
+	// PostgreSQL
+	Name string
+	// StorageConfig is the name of the storage config to use for the tablespace,
+	// e.g. "nfsstorage", that is specified in the pgo.yaml configuration
+	StorageConfig string
 }

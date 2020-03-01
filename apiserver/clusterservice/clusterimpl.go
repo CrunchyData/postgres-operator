@@ -527,17 +527,13 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		}
 	}
 
-	// validate the storage type for tablespaces
-	// this is in the format "<tablespaceName1>=<storagetype1>,<tablespaceName2>,<storagetype2>,..."
-	if request.TablespaceMounts != "" {
-		tablespaces := strings.Split(request.TablespaceMounts, ",")
-
-		for _, v := range tablespaces {
-			p := strings.Split(v, "=")
-
-			if apiserver.IsValidStorageName(p[1]) == false {
+	// validate the storage type for each specified tablespace actually exists
+	if len(request.Tablespaces) > 0 {
+		for _, tablespace := range request.Tablespaces {
+			if !apiserver.IsValidStorageName(tablespace.StorageConfig) {
 				resp.Status.Code = msgs.Error
-				resp.Status.Msg = fmt.Sprintf("%s storage config for a tablespace was not found", request.StorageConfig)
+				resp.Status.Msg = fmt.Sprintf("%s storage config for tablespace %s was not found",
+					tablespace.StorageConfig, tablespace.Name)
 				return resp
 			}
 		}
@@ -831,15 +827,12 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 	// extract the parameters for th TablespacEMounts and put them in the format
 	// that is required by the pgcluster CRD
-	if request.TablespaceMounts != "" {
+	if len(request.Tablespaces) > 0 {
 		tablespaceMountsMap := map[string]crv1.PgStorageSpec{}
 
-		tablespaces := strings.Split(request.TablespaceMounts, ",")
-
-		for _, v := range tablespaces {
-			p := strings.Split(v, "=")
-			storageSpec, _ := apiserver.Pgo.GetStorageSpec(p[1])
-			tablespaceMountsMap[p[0]] = storageSpec
+		for _, tablespace := range request.Tablespaces {
+			storageSpec, _ := apiserver.Pgo.GetStorageSpec(tablespace.StorageConfig)
+			tablespaceMountsMap[tablespace.Name] = storageSpec
 		}
 
 		spec.TablespaceMounts = tablespaceMountsMap

@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -207,7 +208,6 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.Password = Password
 	r.SecretFrom = SecretFrom
 	r.UserLabels = UserLabels
-	r.TablespaceMounts = TablespaceMounts
 	r.Policies = PoliciesFlag
 	r.CCPImageTag = CCPImageTag
 	r.CCPImage = CCPImage
@@ -233,6 +233,32 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	// only set SyncReplication in the request if actually provided via the CLI
 	if createClusterCmd.Flag("sync-replication").Changed {
 		r.SyncReplication = &SyncReplication
+	}
+
+	// determine if there are any tablespaces in the Tablespaces slice. If so,
+	// add them do the TablespaceDetail struct
+	if len(Tablespaces) > 0 {
+		for _, tablespace := range Tablespaces {
+			// tablespaces are in the format "tablespaceName=storageConfig", so we need
+			// to split this out in order to put that information into the tablespace
+			// detail struct
+			tablespaceDetails := strings.Split(tablespace, "=")
+
+			// if the split is less than 2 items, then abort, as that means there is
+			// no tablespaceName nor storageClass
+			if len(tablespaceDetails) < 2 {
+				fmt.Errorf(`Error: Tablespace was not specified in proper format ("tablespaceName=storageClass"), aborting.`)
+				os.Exit(1)
+			}
+
+			// create the cluster tablespace detail and append it to the slice
+			clusterTablespaceDetail := msgs.ClusterTablespaceDetail{
+				Name:          tablespaceDetails[0],
+				StorageConfig: tablespaceDetails[1],
+			}
+
+			r.Tablespaces = append(r.Tablespaces, clusterTablespaceDetail)
+		}
 	}
 
 	response, err := api.CreateCluster(httpclient, &SessionCredentials, r)
