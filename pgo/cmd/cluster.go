@@ -29,6 +29,31 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// below are the tablespace parameters and the expected values of each
+const (
+	// tablespaceParamName represents the name of the PostgreSQL tablespace
+	tablespaceParamName = "name"
+	// tablespaceParamPVCSize represents the size of the PVC
+	tablespaceParamPVCSize = "pvcsize"
+	// tablespaceParamStorageConfig represents the storage config to use for the
+	// tablespace
+	tablespaceParamStorageConfig = "storageconfig"
+)
+
+// availableTablespaceParams is the list of acceptable parameters in the
+// --tablespace flag
+var availableTablespaceParams = map[string]struct{}{
+	tablespaceParamName:          struct{}{},
+	tablespaceParamPVCSize:       struct{}{},
+	tablespaceParamStorageConfig: struct{}{},
+}
+
+// requiredTablespaceParams are the tablespace parameters that are required
+var requiredTablespaceParams = []string{
+	tablespaceParamName,
+	tablespaceParamStorageConfig,
+}
+
 // deleteCluster will delete a PostgreSQL cluster that is managed by the
 // PostgreSQL Operator
 func deleteCluster(args []string, ns string) {
@@ -237,31 +262,9 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 		r.SyncReplication = &SyncReplication
 	}
 
-	// determine if there are any tablespaces in the Tablespaces slice. If so,
-	// add them do the TablespaceDetail struct
-	if len(Tablespaces) > 0 {
-		for _, tablespace := range Tablespaces {
-			// tablespaces are in the format "tablespaceName=storageConfig", so we need
-			// to split this out in order to put that information into the tablespace
-			// detail struct
-			tablespaceDetails := strings.Split(tablespace, "=")
-
-			// if the split is less than 2 items, then abort, as that means there is
-			// no tablespaceName nor storageClass
-			if len(tablespaceDetails) < 2 {
-				fmt.Errorf(`Error: Tablespace was not specified in proper format ("tablespaceName=storageClass"), aborting.`)
-				os.Exit(1)
-			}
-
-			// create the cluster tablespace detail and append it to the slice
-			clusterTablespaceDetail := msgs.ClusterTablespaceDetail{
-				Name:          tablespaceDetails[0],
-				StorageConfig: tablespaceDetails[1],
-			}
-
-			r.Tablespaces = append(r.Tablespaces, clusterTablespaceDetail)
-		}
-	}
+	// determine if the user wants to create tablespaces as part of this request,
+	// and if so, set the values
+	setTablespaces(r)
 
 	response, err := api.CreateCluster(httpclient, &SessionCredentials, r)
 	if err != nil {
@@ -278,6 +281,78 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 		os.Exit(2)
 	}
 
+}
+
+// isTablespaceParam returns true if the parameter in question is acceptable for
+// using with a tablespace.
+func isTablespaceParam(param string) bool {
+	_, found := availableTablespaceParams[param]
+
+	return found
+}
+
+// setTablespaces determines if there are any Tablespaces that were provided
+// via the `--tablespace` CLI flag, and if so, process their values. If
+// everything checks out, one or more tablespaces are added to the cluster
+// request
+func setTablespaces(request *msgs.CreateClusterRequest) {
+	// if there are no tablespaces set in the Tablespaces slice, abort
+	if len(Tablespaces) == 0 {
+		return
+	}
+
+	for _, tablespace := range Tablespaces {
+		tablespaceDetails := map[string]string{}
+
+		// tablespaces are in the format "name=tsname:storageconfig=nfsstorage",
+		// so we need to split this out in order to put that information into the
+		// tablespace detail struct
+		// we will do the initial split of the string, and then interate to get
+		// the key value map of the parameters, ignoring any ones that do not
+		// exist
+		for _, tablespaceParamValue := range strings.Split(tablespace, ":") {
+			tablespaceDetailParts := strings.Split(tablespaceParamValue, "=")
+
+			// if the split is not 2 items, then abort, as that means this is not
+			// a valid key/value pair
+			if len(tablespaceDetailParts) != 2 {
+				fmt.Println(`Error: Tablespace was not specified in proper format (e.g. "name=tablespacename"), aborting.`)
+				os.Exit(1)
+			}
+
+			// store the param as lower case
+			param := strings.ToLower(tablespaceDetailParts[0])
+
+			// if this is not a tablespace parameter, ignore it
+			if !isTablespaceParam(param) {
+				continue
+			}
+
+			// alright, store this param/value in the map
+			tablespaceDetails[param] = tablespaceDetailParts[1]
+		}
+
+		// determine if the required parameters are in the map. if they are not,
+		// abort
+		for _, requiredParam := range requiredTablespaceParams {
+			_, found := tablespaceDetails[requiredParam]
+
+			if !found {
+				fmt.Printf("Error: Required tablespace parameter \"%s\" is not found, aborting\n", requiredParam)
+				os.Exit(1)
+			}
+		}
+
+		// create the cluster tablespace detail and append it to the slice
+		clusterTablespaceDetail := msgs.ClusterTablespaceDetail{
+			Name:          tablespaceDetails[tablespaceParamName],
+			PVCSize:       tablespaceDetails[tablespaceParamPVCSize],
+			StorageConfig: tablespaceDetails[tablespaceParamStorageConfig],
+		}
+
+		// append to the tablespaces slice, and continue
+		request.Tablespaces = append(request.Tablespaces, clusterTablespaceDetail)
+	}
 }
 
 // updateCluster ...

@@ -40,6 +40,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
+const (
+	// errMessagePVCSize provides a standard error message when a PVCSize is not
+	// specified to the Kubernetes stnadard
+	errMessagePVCSize = `could not parse PVC size "%s": %s (hint: try a value like "1Gi")`
+)
+
 // DeleteCluster ...
 func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pgouser string) msgs.DeleteClusterResponse {
 	var err error
@@ -533,8 +539,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	if request.PVCSize != "" {
 		if err := apiserver.ValidateQuantity(request.PVCSize); err != nil {
 			resp.Status.Code = msgs.Error
-			resp.Status.Msg = fmt.Sprintf(`could not parse PVC size "%s": %s (hint: try a value like "1Gi")`,
-				request.PVCSize, err.Error())
+			resp.Status.Msg = fmt.Sprintf(errMessagePVCSize, request.PVCSize, err.Error())
 			return resp
 		}
 	}
@@ -543,13 +548,14 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	if request.BackrestPVCSize != "" {
 		if err := apiserver.ValidateQuantity(request.BackrestPVCSize); err != nil {
 			resp.Status.Code = msgs.Error
-			resp.Status.Msg = fmt.Sprintf(`could not parse PVC size "%s": %s (hint: try a value like "1Gi")`,
-				request.BackrestPVCSize, err.Error())
+			resp.Status.Msg = fmt.Sprintf(errMessagePVCSize, request.BackrestPVCSize, err.Error())
 			return resp
 		}
 	}
 
-	// validate the storage type for each specified tablespace actually exists
+	// validate the storage type for each specified tablespace actually exists.
+	// if a PVCSize is passed in, also validate that it follows the Kubernetes
+	// format
 	if len(request.Tablespaces) > 0 {
 		for _, tablespace := range request.Tablespaces {
 			if !apiserver.IsValidStorageName(tablespace.StorageConfig) {
@@ -557,6 +563,14 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 				resp.Status.Msg = fmt.Sprintf("%s storage config for tablespace %s was not found",
 					tablespace.StorageConfig, tablespace.Name)
 				return resp
+			}
+
+			if tablespace.PVCSize != "" {
+				if err := apiserver.ValidateQuantity(tablespace.PVCSize); err != nil {
+					resp.Status.Code = msgs.Error
+					resp.Status.Msg = fmt.Sprintf(errMessagePVCSize, tablespace.PVCSize, err.Error())
+					return resp
+				}
 			}
 		}
 	}
@@ -861,6 +875,13 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 		for _, tablespace := range request.Tablespaces {
 			storageSpec, _ := apiserver.Pgo.GetStorageSpec(tablespace.StorageConfig)
+
+			// if a PVCSize is specified, override the value of the Size parameter in
+			// storage spec
+			if tablespace.PVCSize != "" {
+				storageSpec.Size = tablespace.PVCSize
+			}
+
 			tablespaceMountsMap[tablespace.Name] = storageSpec
 		}
 
