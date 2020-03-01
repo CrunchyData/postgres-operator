@@ -36,6 +36,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
@@ -527,6 +528,18 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		}
 	}
 
+	// if the PVCSize is set to a customized value, ensure that it is parseable
+	// as a valid Quantity recognized by Kubernetes.
+	//
+	// See: https://github.com/kubernetes/apimachinery/blob/master/pkg/api/resource/quantity.go
+	if request.PVCSize != "" {
+		if _, err := resource.ParseQuantity(request.PVCSize); err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = fmt.Sprintf(`could not parse PVC size: %s (hint: try a value like "1Gi")`, err.Error())
+			return resp
+		}
+	}
+
 	// validate the storage type for each specified tablespace actually exists
 	if len(request.Tablespaces) > 0 {
 		for _, tablespace := range request.Tablespaces {
@@ -825,6 +838,13 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(request.StorageConfig)
 	}
 
+	// if the PVCSize is overwritten, update the primary storage spec with this
+	// value
+	if request.PVCSize != "" {
+		log.Debugf("PVC Size is overwritten to be [%s]", request.PVCSize)
+		spec.PrimaryStorage.Size = request.PVCSize
+	}
+
 	// extract the parameters for th TablespacEMounts and put them in the format
 	// that is required by the pgcluster CRD
 	if len(request.Tablespaces) > 0 {
@@ -841,6 +861,13 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.ReplicaStorage)
 	if request.ReplicaStorageConfig != "" {
 		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(request.ReplicaStorageConfig)
+	}
+
+	// if the PVCSize is overwritten, update the replica storage spec with this
+	// value
+	if request.PVCSize != "" {
+		log.Debugf("PVC Size is overwritten to be [%s]", request.PVCSize)
+		spec.ReplicaStorage.Size = request.PVCSize
 	}
 
 	spec.BackrestStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.BackrestStorage)
