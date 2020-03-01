@@ -79,7 +79,9 @@ Tablespaces can be used in a cluster with the [`pgo create cluster`](/pgo-client
 command. The command follows this general format:
 
 ```shell
-pgo create cluster hacluster --tablespaces=tablespace1=storageclass,tablespace2=storageclass
+pgo create cluster hacluster \
+    --tablespace=tablespace1=storageconfig \
+    --tablespace=tablespace2=storageconfig
 ```
 
 For example, to create tablespaces name `faststorage1` and `faststorage2` on
@@ -87,7 +89,9 @@ PVCs that use the `nfsstorage` storage type, you would execute the following
 command:
 
 ```shell
-pgo create cluster hacluster --tablespaces=faststorage1=nfsstorage,faststorage2=nfsstorage
+pgo create cluster hacluster \
+    --tablespace=faststorage1=nfsstorage \
+    --tablespace=faststorage2=nfsstorage
 ```
 
 Once the cluster is initialized, you can immediately interface with the

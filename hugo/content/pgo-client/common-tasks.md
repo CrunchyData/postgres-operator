@@ -312,14 +312,14 @@ To create a PostgreSQL cluster that uses the [tablespace](/architecture/tablespa
 feature with NFS storage, you can execute the following command:
 
 ```shell
-pgo create cluster hactsluster --tablespaces=ts1=nfsstorage
+pgo create cluster hactsluster --tablespace=ts1=nfsstorage
 ```
 
 You can use your preferred storage engine instead of `nfsstorage`. For example,
 to create multiple tablespaces on GKE, you can execute the following command:
 
 ```shell
-pgo create cluster hactsluster --tablespaces=ts1=gce,ts2=gce
+pgo create cluster hactsluster --tablespace=ts1=gce --tablespace=ts2=gce
 ```
 
 Tablespaces are immediately available once the PostgreSQL cluster is
