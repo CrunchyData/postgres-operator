@@ -291,6 +291,29 @@ created Pgcluster hacluster
 workflow id ae714d12-f5d0-4fa9-910f-21944b41dec8
 ```
 
+#### Create a PostgreSQL Cluster with Different PVC Sizes
+
+You can also create a PostgreSQL cluster with an arbitrary PVC size using the
+[`pgo create cluster`](/pgo-client/reference/pgo_create_cluster/) command. For
+example, if you want to create a PostgreSQL cluster with with a 128GB PVC, you
+can use the following command:
+
+```shell
+pgo create cluster hacluster --pvc-size=128Gi
+```
+
+The above command sets the PVC size for all PostgreSQL instances in the cluster,
+i.e. the primary and replicas.
+
+This also extends to the size of the pgBackRest repository as well, if you are
+using the local Kubernetes cluster storage for your backup repository. To
+create a PostgreSQL cluster with a pgBackRest repository that uses a 1TB PVC,
+you can use the following command:
+
+```shell
+pgo create cluster hacluster --pgbackrest-pvc-size=1Ti
+```
+
 #### Create a PostgreSQL Cluster with PostGIS
 
 To create a PostgreSQL cluster that uses the geospatial extension PostGIS, you
@@ -337,6 +360,17 @@ CREATE TABLE sensor_data (
   sensor4 numeric
 )
 TABLESPACE ts1;
+```
+
+You can also create tablespaces that have different sized PVCs from the ones
+defined in the storage specification. For instance, to create two tablespaces,
+one that uses a 10GiB PVC and one that uses a 20GiB PVC, you can execute the
+following command:
+
+```shell
+pgo create cluster hactsluster \
+    --tablespace=name=ts1:storageconfig=gce:pvcsize=10Gi \
+    --tablespace=name=ts2:storageconfig=gce:pvcsize=20Gi
 ```
 
 #### Tracking a Newly Provisioned Cluster
@@ -803,6 +837,26 @@ command:
 
 ```shell
 pgo clone hacluster newhacluster
+```
+
+### Clone a PostgreSQL Cluster to Different PVC Size
+
+You can have a cloned PostgreSQL cluster use a different PVC size, which is
+useful when moving your PostgreSQL cluster to a larger PVC. For example, to
+clone a PostgreSQL cluster to a 256GiB PVC, you can execute the following
+command:
+
+```shell
+pgo clone hacluster newhacluster --pvc-size=256Gi
+```
+
+You can also have the cloned PostgreSQL cluster use a larger pgBackRest
+backup repository by setting its PVC size. For example, to have a cloned
+PostgreSQL cluster use a 1TiB pgBackRest repository, you can execute the
+following command:
+
+```shell
+pgo clone hacluster newhacluster --pgbackrest-pvc-size=1Ti
 ```
 
 ## Monitoring

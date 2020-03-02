@@ -242,15 +242,16 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database users.")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets.")
 	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster.")
-	createClusterCmd.Flags().StringSliceVar(&Tablespaces, "tablespace", []string{}, `Create a PostgreSQL tablespace on the cluster, e.g. "name=ts1:storageconfig=nfsstorage". The format is a key/value map that is delimited by "=" and separated by ":". The following parameters are available:
-
-- name (required): the name of the PostgreSQL tablespace
-- storageconfig (required): the storage configuration to use, as specified in the list available in the "pgo-config" ConfigMap (aka "pgo.yaml")
-- pvcsize: the size of the PVC capacity, which overrides the value set in the specified storageconfig. Follows the Kubernetes quantity format.
-
-For example, to create a tablespace with the NFS storage configuration with a PVC of size 10Gi:
-
---tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi`)
+	createClusterCmd.Flags().StringSliceVar(&Tablespaces, "tablespace", []string{},
+		"Create a PostgreSQL tablespace on the cluster, e.g. \"name=ts1:storageconfig=nfsstorage\". The format is "+
+			"a key/value map that is delimited by \"=\" and separated by \":\". The following parameters are available:\n\n"+
+			"- name (required): the name of the PostgreSQL tablespace\n"+
+			"- storageconfig (required): the storage configuration to use, as specified in the list available in the "+
+			"\"pgo-config\" ConfigMap (aka \"pgo.yaml\")\n"+
+			"- pvcsize: the size of the PVC capacity, which overrides the value set in the specified storageconfig. "+
+			"Follows the Kubernetes quantity format.\n\n"+
+			"For example, to create a tablespace with the NFS storage configuration with a PVC of size 10GiB:\n\n"+
+			"--tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi")
 	createClusterCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply when creating a cluster, comma separated.")
 	createClusterCmd.Flags().StringVarP(&CCPImage, "ccp-image", "", "", "The CCPImage name to use for cluster creation. If specified, overrides the value crunchy-postgres.")
 	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")

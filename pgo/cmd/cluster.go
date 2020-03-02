@@ -307,9 +307,8 @@ func setTablespaces(request *msgs.CreateClusterRequest) {
 		// tablespaces are in the format "name=tsname:storageconfig=nfsstorage",
 		// so we need to split this out in order to put that information into the
 		// tablespace detail struct
-		// we will do the initial split of the string, and then interate to get
-		// the key value map of the parameters, ignoring any ones that do not
-		// exist
+		// we will do the initial split of the string, and then iterate to get the
+		// key value map of the parameters, ignoring any ones that do not exist
 		for _, tablespaceParamValue := range strings.Split(tablespace, ":") {
 			tablespaceDetailParts := strings.Split(tablespaceParamValue, "=")
 
