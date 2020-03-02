@@ -34,7 +34,6 @@ var ShowCmd = &cobra.Command{
 
 	pgo show backup mycluster
 	pgo show backup mycluster --backup-type=pgbackrest
-	pgo show benchmark mycluster
 	pgo show cluster mycluster
 	pgo show config
 	pgo show pgouser someuser
@@ -48,7 +47,6 @@ var ShowCmd = &cobra.Command{
 			fmt.Println(`Error: You must specify the type of resource to show.
 Valid resource types include:
 	* backup
-	* benchmark
 	* cluster
 	* config
 	* pgbouncer
@@ -61,7 +59,7 @@ Valid resource types include:
 	`)
 		} else {
 			switch args[0] {
-			case "backup", "benchmark", "cluster", "config", "pgbouncer", "pgouser",
+			case "backup", "cluster", "config", "pgbouncer", "pgouser",
 				"policy", "pvc", "schedule", "namespace", "workflow",
 				"user":
 				break
@@ -69,7 +67,6 @@ Valid resource types include:
 				fmt.Println(`Error: You must specify the type of resource to show.
 Valid resource types include:
 	* backup
-	* benchmark
 	* cluster
 	* config
 	* pgbouncer
@@ -90,7 +87,6 @@ var showBackupType string
 func init() {
 	RootCmd.AddCommand(ShowCmd)
 	ShowCmd.AddCommand(ShowBackupCmd)
-	ShowCmd.AddCommand(ShowBenchmarkCmd)
 	ShowCmd.AddCommand(ShowClusterCmd)
 	ShowCmd.AddCommand(ShowConfigCmd)
 	ShowCmd.AddCommand(ShowNamespaceCmd)
@@ -104,7 +100,6 @@ func init() {
 	ShowCmd.AddCommand(ShowUserCmd)
 
 	ShowBackupCmd.Flags().StringVarP(&showBackupType, "backup-type", "", "pgbackrest", "The backup type output to list. Valid choices are pgbackrest or pgdump.")
-	ShowBenchmarkCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	ShowClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "", "", "Filter the results based on the image tag of the cluster.")
 	ShowClusterCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, json is the only supported value.")
 	ShowClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
@@ -336,26 +331,5 @@ var ShowScheduleCmd = &cobra.Command{
 			return
 		}
 		showSchedule(args, Namespace)
-	},
-}
-
-// ShowBenchmarkCmd represents the show benchmark command
-var ShowBenchmarkCmd = &cobra.Command{
-	Use:   "benchmark",
-	Short: "Show benchmark information",
-	Long: `Show benchmark results for clusters. For example:
-
-	pgo show benchmark mycluster
-	pgo show benchmark --selector=pg-cluster=mycluster`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if Namespace == "" {
-			Namespace = PGONamespace
-		}
-
-		if len(args) == 0 && Selector == "" {
-			fmt.Println("Error: cluster name or selector are required to show benchmark results.")
-			return
-		}
-		showBenchmark(args, Namespace)
 	},
 }

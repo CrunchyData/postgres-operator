@@ -41,8 +41,6 @@ func TestEventCreate(t *testing.T) {
 	tryEventCreateLabel(t)
 	tryEventLoad(t)
 	tryEventLoadCompleted(t)
-	tryEventBenchmark(t)
-	tryEventBenchmarkCompleted(t)
 
 	tryEventCreateBackup(t)
 	tryEventCreateBackupCompleted(t)
@@ -425,49 +423,6 @@ func tryEventLoadCompleted(t *testing.T) {
 		},
 		Clustername: TestClusterName,
 		Loadconfig:  "someloadconfig",
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	t.Log(f.String())
-}
-
-func tryEventBenchmark(t *testing.T) {
-
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventBenchmarkFormat{
-		EventHeader: events.EventHeader{
-			Namespace: Namespace,
-			Username:  TestUsername,
-			Topic:     topics,
-			EventType: events.EventBenchmark,
-		},
-		Clustername: TestClusterName,
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-	t.Log(f.String())
-}
-func tryEventBenchmarkCompleted(t *testing.T) {
-
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventBenchmarkCompletedFormat{
-		EventHeader: events.EventHeader{
-			Namespace: Namespace,
-			Username:  TestUsername,
-			Topic:     topics,
-			EventType: events.EventBenchmarkCompleted,
-		},
-		Clustername: TestClusterName,
 	}
 
 	err := events.Publish(f)

@@ -29,7 +29,6 @@ import (
 	"github.com/crunchydata/postgres-operator/operator"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	backupoperator "github.com/crunchydata/postgres-operator/operator/backup"
-	benchmarkoperator "github.com/crunchydata/postgres-operator/operator/benchmark"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
@@ -370,50 +369,6 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		if err != nil {
 			log.Error("error patching pgtask '" + labels["pg-task"] + "': " + err.Error())
 		}
-	}
-
-	//handle the case of a benchmark job being upddated
-	if labels[config.LABEL_PGO_BENCHMARK] == "true" {
-		log.Debugf("jobController onUpdate benchmark job case")
-		log.Debugf("got a benchmark job status=%d", job.Status.Succeeded)
-
-		status := crv1.JobCompletedStatus + " [" + job.ObjectMeta.Name + "]"
-		if job.Status.Succeeded == 0 {
-			status = crv1.JobSubmittedStatus + " [" + job.ObjectMeta.Name + "]"
-		}
-
-		if job.Status.Failed > 0 {
-			status = crv1.JobErrorStatus + " [" + job.ObjectMeta.Name + "]"
-		}
-
-		err = util.Patch(c.JobClient, patchURL, status, patchResource, job.Name, job.ObjectMeta.Namespace)
-		if err != nil {
-			log.Error("error in patching pgtask " + labels["workflowName"] + err.Error())
-		}
-
-		benchmarkoperator.UpdateWorkflow(c.JobClient, labels["workflowName"], job.ObjectMeta.Namespace, crv1.JobCompletedStatus)
-
-		//publish event benchmark completed
-		topics := make([]string, 1)
-		topics[0] = events.EventTopicCluster
-
-		f := events.EventBenchmarkCompletedFormat{
-			EventHeader: events.EventHeader{
-				Namespace: job.ObjectMeta.Namespace,
-				Username:  job.ObjectMeta.Labels[config.LABEL_PGOUSER],
-				Topic:     topics,
-				Timestamp: time.Now(),
-				EventType: events.EventBenchmarkCompleted,
-			},
-			Clustername: labels[config.LABEL_PG_CLUSTER],
-		}
-
-		err = events.Publish(f)
-		if err != nil {
-			log.Error(err.Error())
-		}
-
-		return
 	}
 
 	// handle the case of a the clone "repo sync" step (aka "step 1")

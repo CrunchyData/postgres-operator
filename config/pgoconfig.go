@@ -77,10 +77,6 @@ var PgoPgRoleBindingTemplate *template.Template
 
 const PGOPgRoleBindingPath = "pgo-pg-role-binding.json"
 
-var BenchmarkJobTemplate *template.Template
-
-const benchmarkJobPath = "pgbench-job.json"
-
 var PolicyJobTemplate *template.Template
 
 const policyJobTemplatePath = "pgo.sqlrunner-template.json"
@@ -594,11 +590,6 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 		return err
 	}
 	PgoPgRoleBindingTemplate, err = c.LoadTemplate(cMap, rootPath, PGOPgRoleBindingPath)
-	if err != nil {
-		return err
-	}
-
-	BenchmarkJobTemplate, err = c.LoadTemplate(cMap, rootPath, benchmarkJobPath)
 	if err != nil {
 		return err
 	}

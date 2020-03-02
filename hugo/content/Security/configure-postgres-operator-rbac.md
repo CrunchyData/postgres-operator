@@ -52,7 +52,6 @@ The following list shows the current complete list of possible pgo permissions t
 |ApplyPolicy | allow *pgo apply*|
 |Cat | allow *pgo cat*|
 |CreateBackup | allow *pgo backup*|
-|CreateBenchmark | allow *pgo create benchmark*|
 |CreateCluster | allow *pgo create cluster*|
 |CreateDump | allow *pgo create pgdump*|
 |CreateFailover | allow *pgo failover*|
@@ -62,7 +61,6 @@ The following list shows the current complete list of possible pgo permissions t
 |CreateUpgrade | allow *pgo upgrade*|
 |CreateUser | allow *pgo create user*|
 |DeleteBackup | allow *pgo delete backup*|
-|DeleteBenchmark | allow *pgo delete benchmark*|
 |DeleteCluster | allow *pgo delete cluster*|
 |DeletePgbouncer | allow *pgo delete pgbouncer*|
 |DeletePolicy | allow *pgo delete policy*|
@@ -77,7 +75,6 @@ The following list shows the current complete list of possible pgo permissions t
 |Restore | allow *pgo restore*|
 |RestoreDump | allow *pgo restore* for pgdumps|
 |ShowBackup | allow *pgo show backup*|
-|ShowBenchmark | allow *pgo show benchmark*|
 |ShowCluster | allow *pgo show cluster*|
 |ShowConfig | allow *pgo show config*|
 |ShowPgBouncer | allow *pgo show pgbouncer*|

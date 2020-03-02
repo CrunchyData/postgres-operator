@@ -55,8 +55,6 @@ const (
 	EventCreateLabel              = "CreateLabel"
 	EventLoad                     = "Load"
 	EventLoadCompleted            = "LoadCompleted"
-	EventBenchmark                = "Benchmark"
-	EventBenchmarkCompleted       = "BenchmarkCompleted"
 
 	EventCreateBackup          = "CreateBackup"
 	EventCreateBackupCompleted = "CreateBackupCompleted"
@@ -484,36 +482,6 @@ func (p EventLoadCompletedFormat) GetHeader() EventHeader {
 
 func (lvl EventLoadCompletedFormat) String() string {
 	msg := fmt.Sprintf("Event %s (load completed) - clustername %s - load config [%s]", lvl.EventHeader, lvl.Clustername, lvl.Loadconfig)
-	return msg
-}
-
-//----------------------------
-type EventBenchmarkFormat struct {
-	EventHeader `json:"eventheader"`
-	Clustername string `json:"clustername"`
-}
-
-func (p EventBenchmarkFormat) GetHeader() EventHeader {
-	return p.EventHeader
-}
-
-func (lvl EventBenchmarkFormat) String() string {
-	msg := fmt.Sprintf("Event %s (benchmark) - clustername %s", lvl.EventHeader, lvl.Clustername)
-	return msg
-}
-
-//----------------------------
-type EventBenchmarkCompletedFormat struct {
-	EventHeader `json:"eventheader"`
-	Clustername string `json:"clustername"`
-}
-
-func (p EventBenchmarkCompletedFormat) GetHeader() EventHeader {
-	return p.EventHeader
-}
-
-func (lvl EventBenchmarkCompletedFormat) String() string {
-	msg := fmt.Sprintf("Event %s (benchmark completed) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 

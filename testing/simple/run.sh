@@ -17,7 +17,6 @@ echo "Test Runner...."
 
 TESTS=(
     TestBackrestBackup
-    TestBenchmark
     TestDf
     TestReload
     TestCreateLabel

@@ -144,8 +144,6 @@ const LABEL_PGBACKREST_REPO_HOST = "pgbackrest-repo-host"
 
 const LABEL_PGO_BACKREST_REPO = "pgo-backrest-repo"
 
-const LABEL_PGO_BENCHMARK = "pgo-benchmark"
-
 // a general label for grouping all the tasks...helps with cleanups
 const LABEL_PGO_CLONE = "pgo-clone"
 
