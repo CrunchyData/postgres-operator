@@ -40,12 +40,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
-const (
-	// errMessagePVCSize provides a standard error message when a PVCSize is not
-	// specified to the Kubernetes stnadard
-	errMessagePVCSize = `could not parse PVC size "%s": %s (hint: try a value like "1Gi")`
-)
-
 // DeleteCluster ...
 func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pgouser string) msgs.DeleteClusterResponse {
 	var err error
@@ -539,7 +533,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	if request.PVCSize != "" {
 		if err := apiserver.ValidateQuantity(request.PVCSize); err != nil {
 			resp.Status.Code = msgs.Error
-			resp.Status.Msg = fmt.Sprintf(errMessagePVCSize, request.PVCSize, err.Error())
+			resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessagePVCSize, request.PVCSize, err.Error())
 			return resp
 		}
 	}
@@ -548,7 +542,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	if request.BackrestPVCSize != "" {
 		if err := apiserver.ValidateQuantity(request.BackrestPVCSize); err != nil {
 			resp.Status.Code = msgs.Error
-			resp.Status.Msg = fmt.Sprintf(errMessagePVCSize, request.BackrestPVCSize, err.Error())
+			resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessagePVCSize, request.BackrestPVCSize, err.Error())
 			return resp
 		}
 	}
@@ -568,7 +562,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			if tablespace.PVCSize != "" {
 				if err := apiserver.ValidateQuantity(tablespace.PVCSize); err != nil {
 					resp.Status.Code = msgs.Error
-					resp.Status.Msg = fmt.Sprintf(errMessagePVCSize, tablespace.PVCSize, err.Error())
+					resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessagePVCSize, tablespace.PVCSize, err.Error())
 					return resp
 				}
 			}

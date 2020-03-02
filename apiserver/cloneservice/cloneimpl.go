@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"time"
@@ -43,12 +44,6 @@ func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResp
 		},
 	}
 
-	if err := request.Validate(); err != nil {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf("Invalid clone request: %s", err)
-		return response
-	}
-
 	log.Debug("Getting pgcluster")
 
 	// get the information about the current pgcluster by name, to ensure it
@@ -61,6 +56,14 @@ func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResp
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = fmt.Sprintf("Could not get cluster: %s", err)
+		return response
+	}
+
+	// validate the parameters of the request that do not require setting
+	// additional information, so we can avoid additional API lookups
+	if err := validateCloneRequest(request, sourcePgcluster); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
 		return response
 	}
 
@@ -107,25 +110,18 @@ func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResp
 		return response
 	}
 
-	// clone is a form of restore, so validate using ValidateBackrestStorageTypeOnBackupRestore
-	err = util.ValidateBackrestStorageTypeOnBackupRestore(request.BackrestStorageSource,
-		sourcePgcluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], true)
-	if err != nil {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = err.Error()
-		return response
-	}
-
 	// alright, begin the create the proper clone task!
 	cloneTask := util.CloneTask{
+		BackrestPVCSize:       request.BackrestPVCSize,
+		BackrestStorageSource: request.BackrestStorageSource,
 		PGOUser:               pgouser,
+		PVCSize:               request.PVCSize,
 		SourceClusterName:     request.SourceClusterName,
 		TargetClusterName:     request.TargetClusterName,
 		TaskStepLabel:         config.LABEL_PGO_CLONE_STEP_1,
 		TaskType:              crv1.PgtaskCloneStep1,
 		Timestamp:             time.Now(),
 		WorkflowID:            workflowID,
-		BackrestStorageSource: request.BackrestStorageSource,
 	}
 
 	task := cloneTask.Create()
@@ -188,4 +184,43 @@ func createWorkflowTask(targetClusterName, uid, namespace string) (string, error
 
 	// return succesfully after creating the task
 	return id, nil
+}
+
+// validateCloneRequest validates the input from the create clone request
+// that does not set any additional information
+func validateCloneRequest(request *msgs.CloneRequest, cluster crv1.Pgcluster) error {
+	// ensure the cluster name for the source of the clone is set
+	if request.SourceClusterName == "" {
+		return errors.New("the source cluster name must be set")
+	}
+
+	// ensure the cluster name for the target of the clone (the new cluster) is
+	// set
+	if request.TargetClusterName == "" {
+		return errors.New("the target cluster name must be set")
+	}
+
+	// if any of the the PVCSizes are set to a customized value, ensure that they
+	// are recognizable by Kubernetes
+	// first, the primary/replica PVC size
+	if request.PVCSize != "" {
+		if err := apiserver.ValidateQuantity(request.PVCSize); err != nil {
+			return fmt.Errorf(apiserver.ErrMessagePVCSize, request.PVCSize, err.Error())
+		}
+	}
+
+	// next, the pgBackRest repo PVC size
+	if request.BackrestPVCSize != "" {
+		if err := apiserver.ValidateQuantity(request.BackrestPVCSize); err != nil {
+			return fmt.Errorf(apiserver.ErrMessagePVCSize, request.BackrestPVCSize, err.Error())
+		}
+	}
+
+	// clone is a form of restore, so validate using ValidateBackrestStorageTypeOnBackupRestore
+	if err := util.ValidateBackrestStorageTypeOnBackupRestore(request.BackrestStorageSource,
+		cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], true); err != nil {
+		return err
+	}
+
+	return nil
 }

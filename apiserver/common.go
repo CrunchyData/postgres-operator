@@ -33,6 +33,9 @@ var (
 	// ErrDBContainerNotFound is an error that indicates that a "database" container
 	// could not be found in a specific pod
 	ErrDBContainerNotFound = errors.New("\"database\" container not found in pod")
+	// ErrMessagePVCSize provides a standard error message when a PVCSize is not
+	// specified to the Kubernetes stnadard
+	ErrMessagePVCSize = `could not parse PVC size "%s": %s (hint: try a value like "1Gi")`
 )
 
 // ReplicaPodStatus stores the name of the node a replica pod is assigned to, as well
