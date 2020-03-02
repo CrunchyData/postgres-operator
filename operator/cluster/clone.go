@@ -59,6 +59,7 @@ type CreatePVC struct {
 	ClusterName string
 	Namespace   string
 	PVCName     string
+	PVCSize     string
 	RESTClient  *rest.RESTClient
 	Storage     crv1.PgStorageSpec
 }
@@ -79,6 +80,11 @@ func (createPVC CreatePVC) createPVC() error {
 	if found {
 		log.Debugf("pvc %s found, will NOT recreate as part of clone", createPVC.PVCName)
 		return nil
+	}
+
+	// if the PVCSize value is nonempty, set the storage spec to that value
+	if createPVC.PVCSize != "" {
+		createPVC.Storage.Size = createPVC.PVCSize
 	}
 
 	// otherwise, attempt to create the new PVC
@@ -239,7 +245,7 @@ func cloneStep1(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 
 	// first, create the PVC for the pgBackRest storage, as we will be needing
 	// that sooner
-	createPVCs(clientset, client, namespace, sourcePgcluster, targetClusterName)
+	createPVCs(clientset, client, task, namespace, sourcePgcluster, targetClusterName)
 
 	log.Debug("clone step 1: created pvcs")
 
@@ -400,6 +406,8 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 	if job.ObjectMeta.Annotations == nil {
 		job.ObjectMeta.Annotations = map[string]string{}
 	}
+	job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_BACKREST_PVC_SIZE] = task.Spec.Parameters[util.CloneParameterBackrestPVCSize]
+	job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_PVC_SIZE] = task.Spec.Parameters[util.CloneParameterPVCSize]
 	job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_SOURCE_CLUSTER_NAME] = sourcePgcluster.Spec.ClusterName
 	job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_TARGET_CLUSTER_NAME] = targetClusterName
 	// also add the label to indicate this is also part of a clone job!
@@ -517,8 +525,10 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: jobName,
 			Annotations: map[string]string{
-				// both of these annotations are used for the subsequent steps to be
+				// these annotations are used for the subsequent steps to be
 				// able to identify how to connect these jobs
+				config.ANNOTATION_CLONE_BACKREST_PVC_SIZE:   task.Spec.Parameters[util.CloneParameterBackrestPVCSize],
+				config.ANNOTATION_CLONE_PVC_SIZE:            task.Spec.Parameters[util.CloneParameterPVCSize],
 				config.ANNOTATION_CLONE_SOURCE_CLUSTER_NAME: sourcePgcluster.Spec.ClusterName,
 				config.ANNOTATION_CLONE_TARGET_CLUSTER_NAME: targetClusterName,
 			},
@@ -689,7 +699,11 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 //
 // Additionally, if there are any tablespaces on the original cluster, it will
 // create those too.
-func createPVCs(clientset *kubernetes.Clientset, client *rest.RESTClient, namespace string, sourcePgcluster crv1.Pgcluster, targetClusterName string) {
+//
+// if the user spceified a different PVCSize than what is in the storage spec,
+// then that gets passed to the "createPVC" function
+func createPVCs(clientset *kubernetes.Clientset, client *rest.RESTClient,
+	task *crv1.Pgtask, namespace string, sourcePgcluster crv1.Pgcluster, targetClusterName string) {
 	// first, create the PVC for the pgBackRest storage, as we will be needing
 	// that sooner
 	CreatePVC{
@@ -698,6 +712,7 @@ func createPVCs(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		Namespace:   namespace,
 		// the PVCName for pgBackRest is derived from the target cluster name
 		PVCName:    fmt.Sprintf(backrest.BackrestRepoPVCName, targetClusterName),
+		PVCSize:    task.Spec.Parameters[util.CloneParameterBackrestPVCSize],
 		RESTClient: client,
 		Storage:    sourcePgcluster.Spec.BackrestStorage,
 	}.createPVC()
@@ -709,6 +724,7 @@ func createPVCs(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		Namespace:   namespace,
 		// the PVCName is the same as the target cluster
 		PVCName:    targetClusterName,
+		PVCSize:    task.Spec.Parameters[util.CloneParameterPVCSize],
 		RESTClient: client,
 		Storage:    sourcePgcluster.Spec.PrimaryStorage,
 	}.createPVC()
@@ -827,6 +843,19 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 		},
 	}
 
+	// if any of the PVC sizes are overriden, indicate this in the cluster spec
+	// here
+	// first, handle the override for the primary/replica PVC size
+	if task.Spec.Parameters[util.CloneParameterPVCSize] != "" {
+		targetPgcluster.Spec.PrimaryStorage.Size = task.Spec.Parameters[util.CloneParameterPVCSize]
+		targetPgcluster.Spec.ReplicaStorage.Size = task.Spec.Parameters[util.CloneParameterPVCSize]
+	}
+
+	// next, for the pgBackRest PVC
+	if task.Spec.Parameters[util.CloneParameterBackrestPVCSize] != "" {
+		targetPgcluster.Spec.BackrestStorage.Size = task.Spec.Parameters[util.CloneParameterBackrestPVCSize]
+	}
+
 	// update the workflow to indicate that the cluster is being created
 	if err := UpdateCloneWorkflow(client, namespace, workflowID, crv1.PgtaskWorkflowCloneClusterCreate); err != nil {
 		log.Error(err)
@@ -860,6 +889,16 @@ func getCloneTaskIdentifiers(task *crv1.Pgtask) (string, string, string) {
 	return task.Spec.Parameters["sourceClusterName"],
 		task.Spec.Parameters["targetClusterName"],
 		task.Spec.Parameters[crv1.PgtaskWorkflowID]
+}
+
+// getS3Param returns either the value provided by 'sourceClusterS3param' if not en empty string,
+// otherwise return the equivlant value from the pgo.yaml global configuration filer
+func getS3Param(sourceClusterS3param, pgoConfigParam string) string {
+	if sourceClusterS3param != "" {
+		return sourceClusterS3param
+	}
+
+	return pgoConfigParam
 }
 
 // getSourcePgcluster attempts to find the Pgcluster CRD for the source cluster
@@ -977,13 +1016,4 @@ func waitForDeploymentReady(clientset *kubernetes.Clientset, namespace, deployme
 			}
 		}
 	}
-}
-
-// getS3Param returns either the value provided by 'sourceClusterS3param' if not en empty string,
-// otherwise return the equivlant value from the pgo.yaml global configuration filer
-func getS3Param(sourceClusterS3param, pgoConfigParam string) string {
-	if sourceClusterS3param != "" {
-		return sourceClusterS3param
-	}
-	return pgoConfigParam
 }

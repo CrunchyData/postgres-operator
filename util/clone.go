@@ -25,16 +25,27 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	// CloneParameterBackrestPVCSize is the parameter name for the Backrest PVC
+	// size parameter
+	CloneParameterBackrestPVCSize = "backrestPVCSize"
+	// CloneParameterPVCSize is the parameter name for the PVC parameter for
+	// primary and replicas
+	CloneParameterPVCSize = "pvcSize"
+)
+
 // CloneTask allows you to create a Pgtask CRD with the appropriate options
 type CloneTask struct {
+	BackrestPVCSize       string
+	BackrestStorageSource string
 	PGOUser               string
+	PVCSize               string
 	SourceClusterName     string
 	TargetClusterName     string
 	TaskStepLabel         string
 	TaskType              string
 	Timestamp             time.Time
 	WorkflowID            string
-	BackrestStorageSource string
 }
 
 // newCloneTask returns a new instance of a Pgtask CRD
@@ -56,12 +67,14 @@ func (clone CloneTask) Create() *crv1.Pgtask {
 			Name:     taskName,
 			TaskType: clone.TaskType,
 			Parameters: map[string]string{
-				"sourceClusterName":   clone.SourceClusterName,
-				"targetClusterName":   clone.TargetClusterName,
-				"taskName":            taskName,
-				"timestamp":           clone.Timestamp.Format(time.RFC3339),
-				crv1.PgtaskWorkflowID: clone.WorkflowID,
-				"backrestStorageType": clone.BackrestStorageSource,
+				CloneParameterBackrestPVCSize: clone.BackrestPVCSize,
+				"backrestStorageType":         clone.BackrestStorageSource,
+				CloneParameterPVCSize:         clone.PVCSize,
+				"sourceClusterName":           clone.SourceClusterName,
+				"targetClusterName":           clone.TargetClusterName,
+				"taskName":                    taskName,
+				"timestamp":                   clone.Timestamp.Format(time.RFC3339),
+				crv1.PgtaskWorkflowID:         clone.WorkflowID,
 			},
 		},
 	}

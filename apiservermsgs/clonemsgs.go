@@ -15,18 +15,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import (
-	"errors"
-)
+import ()
 
 // CloneRequest ...
 // swagger:model
 type CloneRequest struct {
-	Namespace             string
-	SourceClusterName     string
-	TargetClusterName     string
-	ClientVersion         string
+	// BackrestPVCSize, if set, is the size of the PVC to use for the pgBackRest
+	// repository if local storage is being used
+	BackrestPVCSize string
+	// BackrestStorageSource contains the accepted values for where pgBackRest
+	// repository storage exists ("local", "s3" or both)
 	BackrestStorageSource string
+	ClientVersion         string
+	Namespace             string
+	// PVCSize, if set, is the size of the PVC to use for the primary and any
+	// replicas
+	PVCSize string
+	// SourceClusterName is the name of the source PostgreSQL cluster being used
+	// for the clone
+	SourceClusterName string
+	// TargetClusterName is the name of the target PostgreSQL cluster that the
+	// PostgreSQL cluster will be cloned to
+	TargetClusterName string
 }
 
 // CloneReseponse
@@ -35,21 +45,4 @@ type CloneResponse struct {
 	Status
 	TargetClusterName string
 	WorkflowID        string
-}
-
-// Validate validates that the parameters for the CloneRequest are valid for
-// use int he API
-func (r CloneRequest) Validate() error {
-	// ensure the cluster name for the source of the clone is set
-	if r.SourceClusterName == "" {
-		return errors.New("the source cluster name must be set")
-	}
-
-	// ensure the cluster name for the target of the clone (the new cluster) is
-	// set
-	if r.TargetClusterName == "" {
-		return errors.New("the target cluster name must be set")
-	}
-
-	return nil
 }

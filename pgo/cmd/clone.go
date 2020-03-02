@@ -69,9 +69,13 @@ var cloneCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(cloneCmd)
 
+	cloneCmd.Flags().StringVarP(&BackrestPVCSize, "pgbackrest-pvc-size", "", "",
+		`The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "local" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
 	cloneCmd.Flags().StringVarP(&BackrestStorageSource, "pgbackrest-storage-source", "", "",
 		"The data source for the clone when both \"local\" and \"s3\" are enabled in the "+
 			"source cluster. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
+	cloneCmd.Flags().StringVarP(&PVCSize, "pvc-size", "", "",
+		`The size of the PVC capacity for primary and replica PostgreSQL instances. Overrides the value set in the storage class. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
 }
 
 // clone is a helper function to help set up the clone!
@@ -80,14 +84,17 @@ func clone(namespace, sourceClusterName, targetClusterName string) {
 		namespace, sourceClusterName, targetClusterName)
 
 	// set up a request to the clone API sendpoint
-	request := new(msgs.CloneRequest)
-	request.Namespace = Namespace
-	request.SourceClusterName = sourceClusterName
-	request.TargetClusterName = targetClusterName
-	request.BackrestStorageSource = BackrestStorageSource
+	request := msgs.CloneRequest{
+		BackrestStorageSource: BackrestStorageSource,
+		BackrestPVCSize:       BackrestPVCSize,
+		Namespace:             Namespace,
+		PVCSize:               PVCSize,
+		SourceClusterName:     sourceClusterName,
+		TargetClusterName:     targetClusterName,
+	}
 
 	// make a call to the clone API
-	response, err := api.Clone(httpclient, &SessionCredentials, request)
+	response, err := api.Clone(httpclient, &SessionCredentials, &request)
 
 	// if there was an error with the API call, print that out here
 	if err != nil {
