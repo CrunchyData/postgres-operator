@@ -27,7 +27,6 @@ import (
 	"github.com/crunchydata/postgres-operator/operator"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	pgbasebackupoperator "github.com/crunchydata/postgres-operator/operator/backup"
-	benchmarkoperator "github.com/crunchydata/postgres-operator/operator/benchmark"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	pgdumpoperator "github.com/crunchydata/postgres-operator/operator/pgdump"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
@@ -178,10 +177,6 @@ func (c *PgtaskController) processNextItem() bool {
 		log.Debugf("autofailover task added %s", keyResourceName)
 	case crv1.PgtaskWorkflow:
 		log.Debugf("workflow task added [%s] ID [%s]", keyResourceName, tmpTask.Spec.Parameters[crv1.PgtaskWorkflowID])
-
-	case crv1.PgtaskBenchmark:
-		log.Debug("benchmark task added")
-		benchmarkoperator.Create(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask)
 
 	case crv1.PgtaskCloneStep1, crv1.PgtaskCloneStep2, crv1.PgtaskCloneStep3:
 		log.Debug("clone task added [%s]", keyResourceName)

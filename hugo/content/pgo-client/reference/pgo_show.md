@@ -11,7 +11,6 @@ Show allows you to show the details of a policy, backup, pvc, or cluster. For ex
 
 	pgo show backup mycluster
 	pgo show backup mycluster --backup-type=pgbackrest
-	pgo show benchmark mycluster
 	pgo show cluster mycluster
 	pgo show config
 	pgo show pgouser someuser
@@ -48,7 +47,6 @@ pgo show [flags]
 
 * [pgo](/pgo-client/reference/pgo/)	 - The pgo command line interface.
 * [pgo show backup](/pgo-client/reference/pgo_show_backup/)	 - Show backup information
-* [pgo show benchmark](/pgo-client/reference/pgo_show_benchmark/)	 - Show benchmark information
 * [pgo show cluster](/pgo-client/reference/pgo_show_cluster/)	 - Show cluster information
 * [pgo show config](/pgo-client/reference/pgo_show_config/)	 - Show configuration information
 * [pgo show namespace](/pgo-client/reference/pgo_show_namespace/)	 - Show namespace information

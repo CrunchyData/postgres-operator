@@ -35,7 +35,6 @@ const PgtaskMinorUpgrade = "minorupgradecluster"
 const PgtaskWorkflow = "workflow"
 const PgtaskWorkflowCloneType = "cloneworkflow"
 const PgtaskWorkflowCreateClusterType = "createcluster"
-const PgtaskWorkflowCreateBenchmarkType = "createbenchmark"
 const PgtaskWorkflowBackrestRestoreType = "pgbackrestrestore"
 const PgtaskWorkflowPgbasebackupRestoreType = "pgbasebackuprestore"
 const PgtaskWorkflowBackupType = "backupworkflow"
@@ -68,8 +67,6 @@ const PgtaskpgDumpInfo = "pgdumpinfo"
 const PgtaskpgRestore = "pgrestore"
 
 const PgtaskpgBasebackupRestore = "pgbasebackuprestore"
-
-const PgtaskBenchmark = "benchmark"
 
 const PgtaskCloneStep1 = "clone-step1" // performs a pgBackRest repo sync
 const PgtaskCloneStep2 = "clone-step2" // performs a pgBackRest restore

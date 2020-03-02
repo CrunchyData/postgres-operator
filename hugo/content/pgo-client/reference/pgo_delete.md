@@ -10,7 +10,6 @@ Delete an Operator resource
 The delete command allows you to delete an Operator resource. For example:
 
 	pgo delete backup mycluster
-	pgo delete benchmark mycluster
 	pgo delete cluster mycluster
 	pgo delete cluster mycluster --delete-data
 	pgo delete cluster mycluster --delete-data --delete-backups
@@ -52,7 +51,6 @@ pgo delete [flags]
 
 * [pgo](/pgo-client/reference/pgo/)	 - The pgo command line interface.
 * [pgo delete backup](/pgo-client/reference/pgo_delete_backup/)	 - Delete a backup
-* [pgo delete benchmark](/pgo-client/reference/pgo_delete_benchmark/)	 - Delete benchmarks for a cluster
 * [pgo delete cluster](/pgo-client/reference/pgo_delete_cluster/)	 - Delete a PostgreSQL cluster
 * [pgo delete label](/pgo-client/reference/pgo_delete_label/)	 - Delete a label from clusters
 * [pgo delete namespace](/pgo-client/reference/pgo_delete_namespace/)	 - Delete namespaces

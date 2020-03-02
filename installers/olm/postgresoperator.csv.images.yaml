@@ -18,7 +18,6 @@
 - { name: RELATED_IMAGE_CRUNCHY_COLLECT,          value: '${CCP_IMAGE_PREFIX}/crunchy-collect:${CCP_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_CRUNCHY_GRAFANA,          value: '${CCP_IMAGE_PREFIX}/crunchy-grafana:${CCP_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_CRUNCHY_PGBADGER,         value: '${CCP_IMAGE_PREFIX}/crunchy-pgbadger:${CCP_IMAGE_TAG}' }
-- { name: RELATED_IMAGE_CRUNCHY_PGBENCH,          value: '${CCP_IMAGE_PREFIX}/crunchy-pgbench:${CCP_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_CRUNCHY_PGBOUNCER,        value: '${CCP_IMAGE_PREFIX}/crunchy-pgbouncer:${CCP_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_CRUNCHY_PGDUMP,           value: '${CCP_IMAGE_PREFIX}/crunchy-pgdump:${CCP_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_CRUNCHY_PGRESTORE,        value: '${CCP_IMAGE_PREFIX}/crunchy-pgrestore:${CCP_IMAGE_TAG}' }

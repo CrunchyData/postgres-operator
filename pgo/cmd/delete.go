@@ -37,7 +37,6 @@ var deleteCmd = &cobra.Command{
 	Long: `The delete command allows you to delete an Operator resource. For example:
 
 	pgo delete backup mycluster
-	pgo delete benchmark mycluster
 	pgo delete cluster mycluster
 	pgo delete cluster mycluster --delete-data
 	pgo delete cluster mycluster --delete-data --delete-backups
@@ -57,7 +56,6 @@ var deleteCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the type of resource to delete.  Valid resource types include:
 	* backup
-	* benchmark
 	* cluster
 	* label
 	* pgbouncer
@@ -69,7 +67,6 @@ var deleteCmd = &cobra.Command{
 		} else {
 			switch args[0] {
 			case "backup",
-				"benchmark",
 				"cluster",
 				"label",
 				"pgbouncer",
@@ -83,7 +80,6 @@ var deleteCmd = &cobra.Command{
 			default:
 				fmt.Println(`Error: You must specify the type of resource to delete.  Valid resource types include:
 	* backup
-	* benchmark
 	* cluster
 	* label
 	* pgbouncer
@@ -118,15 +114,6 @@ func init() {
 	// "pgo delete backup"
 	// used to delete backups
 	deleteCmd.AddCommand(deleteBackupCmd)
-
-	// "pgo delete benchmark"
-	// used to delete benchmarks
-	deleteCmd.AddCommand(deleteBenchmarkCmd)
-	// "pgo delete benchmark --selector"
-	// "pgo delete benchmark -s"
-	// the selector flag that filters which benchmarks to delete for clusters
-	deleteBenchmarkCmd.Flags().StringVarP(&Selector, "selector", "s", "",
-		"The selector to use for cluster filtering.")
 
 	// "pgo delete cluster"
 	// used to delete clusters
@@ -307,28 +294,6 @@ var deleteBackupCmd = &cobra.Command{
 			} else {
 				fmt.Println("Aborting...")
 			}
-		}
-	},
-}
-
-// deleteBenchmarkCmd ...
-var deleteBenchmarkCmd = &cobra.Command{
-	Use:   "benchmark",
-	Short: "Delete benchmarks for a cluster",
-	Long: `Delete benchmarks for a cluster. For example:
-
-    pgo delete benchmark mycluster
-    pgo delete benchmark --selector=env=test`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 && Selector == "" {
-			fmt.Println("Error: cluster name or selector is required to delete a benchmark.")
-			return
-		}
-
-		if util.AskForConfirmation(NoPrompt, "") {
-			deleteBenchmark(args, Namespace)
-		} else {
-			fmt.Println("Aborting...")
 		}
 	},
 }

@@ -35,7 +35,6 @@ const VERSION_PERM = "Version"
 
 // CREATE
 const CREATE_BACKUP_PERM = "CreateBackup"
-const CREATE_BENCHMARK_PERM = "CreateBenchmark"
 const CREATE_DUMP_PERM = "CreateDump"
 const CREATE_CLUSTER_PERM = "CreateCluster"
 const CREATE_FAILOVER_PERM = "CreateFailover"
@@ -55,7 +54,6 @@ const RESTORE_PGBASEBACKUP_PERM = "RestorePgbasebackup"
 
 // DELETE
 const DELETE_BACKUP_PERM = "DeleteBackup"
-const DELETE_BENCHMARK_PERM = "DeleteBenchmark"
 const DELETE_CLUSTER_PERM = "DeleteCluster"
 const DELETE_INGEST_PERM = "DeleteIngest"
 const DELETE_PGBOUNCER_PERM = "DeletePgbouncer"
@@ -68,7 +66,6 @@ const DELETE_NAMESPACE_PERM = "DeleteNamespace"
 
 // SHOW
 const SHOW_BACKUP_PERM = "ShowBackup"
-const SHOW_BENCHMARK_PERM = "ShowBenchmark"
 const SHOW_CLUSTER_PERM = "ShowCluster"
 const SHOW_CONFIG_PERM = "ShowConfig"
 const SHOW_NAMESPACE_PERM = "ShowNamespace"
@@ -119,7 +116,6 @@ func InitializePerms() {
 
 	// Create
 	PermMap[CREATE_BACKUP_PERM] = "yes"
-	PermMap[CREATE_BENCHMARK_PERM] = "yes"
 	PermMap[CREATE_DUMP_PERM] = "yes"
 	PermMap[CREATE_CLUSTER_PERM] = "yes"
 	PermMap[CREATE_FAILOVER_PERM] = "yes"
@@ -137,7 +133,6 @@ func InitializePerms() {
 	PermMap[RESTORE_PGBASEBACKUP_PERM] = "yes"
 	// Delete
 	PermMap[DELETE_BACKUP_PERM] = "yes"
-	PermMap[DELETE_BENCHMARK_PERM] = "yes"
 	PermMap[DELETE_CLUSTER_PERM] = "yes"
 	PermMap[DELETE_INGEST_PERM] = "yes"
 	PermMap[DELETE_PGBOUNCER_PERM] = "yes"
@@ -149,7 +144,6 @@ func InitializePerms() {
 	PermMap[DELETE_NAMESPACE_PERM] = "yes"
 	// Show
 	PermMap[SHOW_BACKUP_PERM] = "yes"
-	PermMap[SHOW_BENCHMARK_PERM] = "yes"
 	PermMap[SHOW_CLUSTER_PERM] = "yes"
 	PermMap[SHOW_CONFIG_PERM] = "yes"
 	PermMap[SHOW_NAMESPACE_PERM] = "yes"

@@ -18,7 +18,6 @@ limitations under the License.
 import (
 	"github.com/crunchydata/postgres-operator/apiserver/backrestservice"
 	"github.com/crunchydata/postgres-operator/apiserver/backupservice"
-	"github.com/crunchydata/postgres-operator/apiserver/benchmarkservice"
 	"github.com/crunchydata/postgres-operator/apiserver/catservice"
 	"github.com/crunchydata/postgres-operator/apiserver/cloneservice"
 	"github.com/crunchydata/postgres-operator/apiserver/clusterservice"
@@ -51,7 +50,6 @@ import (
 func RegisterAllRoutes(r *mux.Router) {
 	RegisterBackrestSvcRoutes(r)
 	RegisterBackupSvcRoutes(r)
-	RegisterBenchmarkSvcRoutes(r)
 	RegisterCatSvcRoutes(r)
 	RegisterCloneSvcRoutes(r)
 	RegisterClusterSvcRoutes(r)
@@ -90,13 +88,6 @@ func RegisterBackupSvcRoutes(r *mux.Router) {
 	r.HandleFunc("/backupsdelete/{name}", backupservice.DeleteBackupHandler).Methods("GET")
 	r.HandleFunc("/backups", backupservice.CreateBackupHandler).Methods("POST")
 	r.HandleFunc("/pgbasebackuprestore", backupservice.RestoreHandler).Methods("POST")
-}
-
-// RegisterBenchmarkSvcRoutes registers all routes from the Benchmark Service
-func RegisterBenchmarkSvcRoutes(r *mux.Router) {
-	r.HandleFunc("/benchmark", benchmarkservice.CreateBenchmarkHandler).Methods("POST")
-	r.HandleFunc("/benchmarkdelete", benchmarkservice.DeleteBenchmarkHandler).Methods("POST")
-	r.HandleFunc("/benchmarkshow", benchmarkservice.ShowBenchmarkHandler).Methods("POST")
 }
 
 // RegisterCatSvcRoutes registers all routes from the Cat Service
