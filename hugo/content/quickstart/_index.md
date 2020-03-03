@@ -33,7 +33,7 @@ Below will guide you through the steps for installing and using the PostgreSQL O
 ### Your Environment
 
 - [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl/) or [`oc`](https://www.okd.io/download.html). Ensure you can access your Kubernetes or OpenShift cluster (this is outside the scope of this document)
-- [`ansible`](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) 2.7.0+. Learn how to [download ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
+- [`ansible`](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) 2.8.0+. Learn how to [download ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
 - `git`
 - If you are installing to Google Kubernetes Engine, you will need the [`gcloud`](https://cloud.google.com/sdk/install) utility
 
