@@ -40,9 +40,6 @@ type dfTextPadding struct {
 	Used        int
 }
 
-// unitType is used to group together the unit types
-type unitType int
-
 // the different capacity levels and when to warn. Perhaps at some point one
 // can configure this
 const (
@@ -58,40 +55,11 @@ const (
 	dfTextPaddingPercentUsed = 7
 )
 
-// unitSize recommends the unit we will use to size things
-const unitSize = 1000
-
-// the collection of unittypes, from byte to yottabyte
-const (
-	unitB unitType = iota
-	unitKB
-	unitMB
-	unitGB
-	unitTB
-	unitPB
-	unitEB
-	unitZB
-	unitYB
-)
-
 // pvcTypeToString contains the human readable strings of the PVC types
 var pvcTypeToString = map[msgs.DfPVCType]string{
 	msgs.PVCTypePostgreSQL: "data",
 	msgs.PVCTypepgBackRest: "pgbackrest",
 	msgs.PVCTypeTablespace: "tablespace",
-}
-
-//unitTypeToString converts the unit types to strings
-var unitTypeToString = map[unitType]string{
-	unitB:  "B",
-	unitKB: "KB",
-	unitMB: "MB",
-	unitGB: "GB",
-	unitTB: "TB",
-	unitPB: "PB",
-	unitEB: "EB",
-	unitZB: "ZB",
-	unitYB: "YB",
 }
 
 var dfCmd = &cobra.Command{
@@ -149,33 +117,6 @@ func init() {
 // getPVCType returns a "human readable" form of the PVC
 func getPVCType(pvcType msgs.DfPVCType) string {
 	return pvcTypeToString[pvcType]
-}
-
-// getSizeAndUnit determines the best size to return based on the best unit
-// where unit is KB, MB, GB, etc...
-func getSizeAndUnit(size int64) (float64, unitType) {
-	// set the unit
-	var unit unitType
-	// iterate through each tier, which we will initialize as "bytes"
-	normalizedSize := float64(size)
-
-	// We keep dividing by "unitSize" which is 1000. Once it is less than the unit
-	// size, that is the normalized unit we will use.
-	// The astute observer will note that "du" returns in units of 1024, but we
-	// want to attempt to keep thigns in the 3-digit area
-	//
-	// of course, eventually this will get too big...so bail after yotta bytes
-	for unit = unitB; normalizedSize > unitSize && unit < unitYB; unit++ {
-		normalizedSize /= unitSize
-	}
-
-	return normalizedSize, unit
-}
-
-// getUnitString maps the raw value of the unit to its corresponding
-// abbreviation
-func getUnitString(unit unitType) string {
-	return unitTypeToString[unit]
 }
 
 // getUtilizationColor returns the appropriate color to use on the terminal

@@ -21,6 +21,9 @@ import (
 	"reflect"
 )
 
+// unitType is used to group together the unit types
+type unitType int
+
 // values for the headings
 const (
 	headingCapacity     = "CAPACITY"
@@ -40,6 +43,35 @@ const (
 	headingUsed         = "USED"
 	headingUsername     = "USERNAME"
 )
+
+// unitSize recommends the unit we will use to size things
+const unitSize = 1024
+
+// the collection of unittypes, from byte to yottabyte
+const (
+	unitB unitType = iota
+	unitKB
+	unitMB
+	unitGB
+	unitTB
+	unitPB
+	unitEB
+	unitZB
+	unitYB
+)
+
+// unitTypeToString converts the unit types to strings
+var unitTypeToString = map[unitType]string{
+	unitB:  "B",
+	unitKB: "KiB",
+	unitMB: "MiB",
+	unitGB: "GiB",
+	unitTB: "TiB",
+	unitPB: "PiB",
+	unitEB: "EiB",
+	unitZB: "ZiB",
+	unitYB: "YiB",
+}
 
 // getHeaderLength returns the length of any value in a list, so that
 // the maximum length of the header can be determined
@@ -64,6 +96,33 @@ func getMaxLength(results []interface{}, title, fieldName string) int {
 	}
 
 	return maxLength + 1
+}
+
+// getSizeAndUnit determines the best size to return based on the best unit
+// where unit is KB, MB, GB, etc...
+func getSizeAndUnit(size int64) (float64, unitType) {
+	// set the unit
+	var unit unitType
+	// iterate through each tier, which we will initialize as "bytes"
+	normalizedSize := float64(size)
+
+	// We keep dividing by "unitSize" which is 1024. Once it is less than the unit
+	// size, that is the normalized unit we will use.
+	// The astute observer will note that "du" returns in units of 1024, but we
+	// want to attempt to keep thigns in the 3-digit area
+	//
+	// of course, eventually this will get too big...so bail after yotta bytes
+	for unit = unitB; normalizedSize > unitSize && unit < unitYB; unit++ {
+		normalizedSize /= unitSize
+	}
+
+	return normalizedSize, unit
+}
+
+// getUnitString maps the raw value of the unit to its corresponding
+// abbreviation
+func getUnitString(unit unitType) string {
+	return unitTypeToString[unit]
 }
 
 // printJSON renders a JSON response
