@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"strings"
@@ -34,9 +35,15 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const backrestCommand = "pgbackrest"
-const backrestInfoCommand = "info"
 const containername = "database"
+
+// pgBackRestInfoCommand is the baseline command used for getting the
+// pgBackRest info
+var pgBackRestInfoCommand = []string{"pgbackrest", "info", "--output", "json"}
+
+// repoTypeFlagS3 is used for getting the pgBackRest info for a repository that
+// is stored in S3
+var repoTypeFlagS3 = []string{"--repo-type", "s3"}
 
 //  CreateBackup ...
 // pgo backup mycluster
@@ -215,10 +222,6 @@ func getBackupParams(identifier, clusterName, taskName, action, podName, contain
 	return newInstance
 }
 
-func removeBackupJob(clusterName string) {
-
-}
-
 func getDeployName(cluster *crv1.Pgcluster, ns string) (string, error) {
 	var depName string
 
@@ -330,9 +333,6 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
-		detail := msgs.ShowBackrestDetail{}
-		detail.Name = c.Name
-
 		podname, err := getPrimaryPodName(&c, ns)
 
 		if err != nil {
@@ -342,60 +342,80 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 			return response
 		}
 
-		//here is where we would exec to get the backrest info
-		info, err := getInfo(c.Name, c.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], podname, ns)
-		if err != nil {
-			detail.Info = err.Error()
-		} else {
-			detail.Info = info
+		// so we potentially add two "pieces of detail" based on whether or not we
+		// have a local repository, a s3 repository, or both
+		storageTypes := c.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]
+
+		for _, storageType := range apiserver.GetBackrestStorageTypes() {
+
+			// so the way we currently store the different repos is not ideal, and
+			// this is not being fixed right now, so we'll follow this logic:
+			//
+			// 1. If storage type is "local" and the string either contains "local" or
+			// is empty, we can add the pgBackRest info
+			// 2. if the storage type is "s3" and the string contains "s3", we can
+			// add the pgBackRest info
+			// 3. Otherwise, continue
+			if (storageTypes == "" && storageType != "local") || (storageTypes != "" && !strings.Contains(storageTypes, storageType)) {
+				continue
+			}
+
+			// begin preparing the detailed response
+			detail := msgs.ShowBackrestDetail{
+				Name:        c.Name,
+				StorageType: storageType,
+			}
+
+			// get the pgBackRest info using this legacy function
+			info, err := getInfo(c.Name, storageType, podname, ns)
+
+			// see if the function returned successfully, and if so, unmarshal the JSON
+			if err != nil {
+				log.Error(err)
+				response.Status.Code = msgs.Error
+				response.Status.Msg = err.Error()
+
+				return response
+			}
+
+			if err := json.Unmarshal([]byte(info), &detail.Info); err != nil {
+				log.Error(err)
+				response.Status.Code = msgs.Error
+				response.Status.Msg = err.Error()
+
+				return response
+			}
+
+			// append the details to the list of items
+			response.Items = append(response.Items, detail)
 		}
 
-		response.Items = append(response.Items, detail)
 	}
 
 	return response
-
 }
 
 func getInfo(clusterName, storageType, podname, ns string) (string, error) {
-
-	var err error
-	const repoTypeFlagS3 = "--repo-type=s3"
-
-	cmd := make([]string, 0)
-
 	log.Debug("backrest info command requested")
-	//pgbackrest --stanza=db info
-	cmd = append(cmd, backrestCommand)
-	cmd = append(cmd, backrestInfoCommand)
 
-	log.Debugf("command is %v ", cmd)
+	cmd := pgBackRestInfoCommand
 
-	var output string
-	if storageType != "s3" {
-		outputLocal, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
-		if err != nil {
-			log.Error(err, stderr)
-			return "", err
-		}
-		output = "\nStorage Type: local\n" + outputLocal
+	if storageType == "s3" {
+		cmd = append(cmd, repoTypeFlagS3...)
 	}
 
-	if strings.Contains(storageType, "s3") {
-		cmd = append(cmd, repoTypeFlagS3)
-		outputS3, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
-		if err != nil {
-			log.Error(err, stderr)
-			return "", err
-		}
-		output = output + "\nStorage Type: s3\n" + outputS3
+	output, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
+
+	if err != nil {
+		log.Error(err, stderr)
+		return "", err
 	}
 
 	log.Debug("output=[" + output + "]")
 
 	log.Debug("backrest info ends")
-	return output, err
 
+	return output, err
 }
 
 //  Restore ...
