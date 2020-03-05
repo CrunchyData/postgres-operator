@@ -26,7 +26,6 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/failoverservice"
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
 	"github.com/crunchydata/postgres-operator/apiserver/loadservice"
-	"github.com/crunchydata/postgres-operator/apiserver/lsservice"
 	"github.com/crunchydata/postgres-operator/apiserver/namespaceservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgbouncerservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgdumpservice"
@@ -58,7 +57,6 @@ func RegisterAllRoutes(r *mux.Router) {
 	RegisterFailoverSvcRoutes(r)
 	RegisterLabelSvcRoutes(r)
 	RegisterLoadSvcRoutes(r)
-	RegisterLsSvcRoutes(r)
 	RegisterNamespaceSvcRoutes(r)
 	RegisterPGBouncerSvcRoutes(r)
 	RegisterPGDumpSvcRoutes(r)
@@ -137,11 +135,6 @@ func RegisterLabelSvcRoutes(r *mux.Router) {
 // RegisterLoadSvcRoutes registers all routes from the Load Service
 func RegisterLoadSvcRoutes(r *mux.Router) {
 	r.HandleFunc("/load", loadservice.LoadHandler).Methods("POST")
-}
-
-// RegisterLsSvcRoutes registers all routes from the Ls Service
-func RegisterLsSvcRoutes(r *mux.Router) {
-	r.HandleFunc("/ls", lsservice.LsHandler).Methods("POST")
 }
 
 // RegisterNamespaceSvcRoutes registers all routes from the Namespace Service

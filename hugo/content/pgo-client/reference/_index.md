@@ -35,7 +35,6 @@ The pgo command line interface lets you create and manage PostgreSQL clusters.
 * [pgo failover](/pgo-client/reference/pgo_failover/)	 - Performs a manual failover
 * [pgo label](/pgo-client/reference/pgo_label/)	 - Label a set of clusters
 * [pgo load](/pgo-client/reference/pgo_load/)	 - Perform a data load
-* [pgo ls](/pgo-client/reference/pgo_ls/)	 - Perform a ls command on a cluster
 * [pgo reload](/pgo-client/reference/pgo_reload/)	 - Perform a cluster reload
 * [pgo restore](/pgo-client/reference/pgo_restore/)	 - Perform a restore from previous backup
 * [pgo scale](/pgo-client/reference/pgo_scale/)	 - Scale a PostgreSQL cluster

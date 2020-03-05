@@ -110,7 +110,6 @@ provides:
 | clone      | `pgo clone oldcluster newcluster`                             | Copies the primary database of an existing cluster to a new cluster                         |
 | create      | `pgo create cluster mycluster`                               | Create an Operator resource type (e.g. cluster, policy, schedule, user, namespace, pgouser, pgorole)                         |
 | delete      | `pgo delete cluster mycluster`                               | Delete an Operator resource type (e.g. cluster, policy, user, schedule, namespace, pgouser, pgorole)                         |
-| ls          | `pgo ls mycluster filepath`                                  | Perform a Linux `ls` command on the cluster.                                                    |
 | df          | `pgo df mycluster`                                           | Display the disk status/capacity of a Postgres cluster.                                         |
 | failover    | `pgo failover mycluster`                                     | Perform a manual failover of a Postgres cluster.                                                |
 | help        | `pgo help`                                                   | Display general `pgo` help information.                                                         |

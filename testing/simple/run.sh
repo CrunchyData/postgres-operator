@@ -20,8 +20,6 @@ TESTS=(
     TestDf
     TestReload
     TestCreateLabel
-    TestLs
-    TestCat
     TestCreatePolicy
     TestShowPolicy
     TestScale
