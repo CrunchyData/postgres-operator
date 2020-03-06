@@ -93,9 +93,12 @@ func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, re
 	}
 
 	// execute the command! if it fails, return the error
-	if _, _, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
-		command, pod.Spec.Containers[0].Name, pod.Name, namespace, stdin); err != nil {
-		return err
+	if _, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
+		command, pod.Spec.Containers[0].Name, pod.Name, namespace, stdin); err != nil || stderr != "" {
+		// log the error from the pod and stderr, but return the stderr
+		log.Error(err, stderr)
+
+		return fmt.Errorf(stderr)
 	}
 
 	return nil
