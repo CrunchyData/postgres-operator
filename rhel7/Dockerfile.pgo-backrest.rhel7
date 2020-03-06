@@ -1,6 +1,7 @@
 ARG BASEOS
 ARG BASEVER
 ARG PREFIX
+ARG PGVERSION
 ARG BACKREST_VERSION
 FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
@@ -8,11 +9,9 @@ LABEL name="pgo-backrest" \
     summary="Crunchy PostgreSQL Operator - pgBackRest" \
     description="pgBackRest image that is integrated for use with Crunchy Data's PostgreSQL Operator."
 
-ENV PGVERSION="12"
-
 RUN yum -y install \
 	--setopt=skip_missing_names_on_install=False \
-	postgresql12-server \
+	postgresql${PGVERSION}-server \
 	crunchy-backrest-"${BACKREST_VERSION}" \
 	&& yum -y clean all
 

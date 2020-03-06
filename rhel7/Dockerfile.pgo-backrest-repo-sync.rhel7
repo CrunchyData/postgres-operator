@@ -1,6 +1,7 @@
 ARG BASEOS
 ARG BASEVER
 ARG PREFIX
+ARG PGVERSION
 ARG BACKREST_VERSION
 FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
@@ -16,7 +17,7 @@ RUN yum -y install \
 	crunchy-backrest-"${BACKREST_VERSION}" \
 	openssh-clients \
 	openssh-server \
-	postgresql12-server \
+	postgresql${PGVERSION}-server \
 	procps-ng \
 	psmisc \
 	rsync \

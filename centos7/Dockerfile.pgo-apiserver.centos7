@@ -1,6 +1,7 @@
 ARG BASEOS
 ARG BASEVER
 ARG PREFIX
+ARG PGVERSION
 ARG BACKREST_VERSION
 FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
@@ -8,11 +9,9 @@ LABEL name="pgo-apiserver" \
 	summary="Crunchy PostgreSQL Operator - Apiserver" \
 	description="Crunchy PostgreSQL Operator - Apiserver"
 
-ENV PGVERSION="12"
-
 # PGDG PostgreSQL Repository
 
-RUN yum -y install postgresql12 hostname && yum -y clean all
+RUN yum -y install postgresql${PGVERSION} hostname && yum -y clean all
 
 ADD bin/apiserver /usr/local/bin
 ADD conf/postgres-operator /default-pgo-config

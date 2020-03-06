@@ -9,6 +9,8 @@ PGO_IMAGE_PREFIX ?= crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
 PGO_OPERATOR_NAMESPACE ?= pgo
 PGO_VERSION ?= 4.3.0
+PGO_PG_VERSION ?= 12
+PGO_PG_FULLVERSION ?= 12.2
 PGO_BACKREST_VERSION ?= 2.24
 
 RELTMPDIR=/tmp/release.$(PGO_VERSION)
@@ -125,6 +127,7 @@ $(PGOROOT)/$(DFSET)/Dockerfile.%.$(DFSET):
 		--build-arg BASEOS=$(PGO_BASEOS) \
 		--build-arg BASEVER=$(PGO_VERSION) \
 		--build-arg PREFIX=$(PGO_IMAGE_PREFIX) \
+		--build-arg PGVERSION=$(PGO_PG_VERSION) \
 		--build-arg BACKREST_VERSION=$(PGO_BACKREST_VERSION) \
 		$(PGOROOT)
 
@@ -143,6 +146,8 @@ pgo-base-build: $(PGOROOT)/$(DFSET)/Dockerfile.pgo-base.$(DFSET)
 		-t $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) \
 		--build-arg BASEOS=$(PGO_BASEOS) \
 		--build-arg RELVER=$(PGO_VERSION) \
+		--build-arg PGVERSION=$(PGO_PG_VERSION) \
+		--build-arg PG_FULL=$(PGO_PG_FULLVERSION) \
 		$(PGOROOT)
 
 pgo-base-buildah: pgo-base-build

@@ -1,6 +1,7 @@
 ARG BASEOS
 ARG BASEVER
 ARG PREFIX
+ARG PGVERSION
 ARG BACKREST_VERSION
 FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
@@ -8,7 +9,6 @@ LABEL name="pgo-sqlrunner" \
 	summary="Crunchy PostgreSQL Operator - SQL Runner" \
 	description="Crunchy PostgreSQL Operator - SQL Runner"
 
-ENV PGVERSION="12"
 ENV PGROOT="/usr/pgsql-${PGVERSION}"
 
 RUN yum -y install \
