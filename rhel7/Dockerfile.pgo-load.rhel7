@@ -1,14 +1,13 @@
 ARG BASEOS
 ARG BASEVER
 ARG PREFIX
+ARG PGVERSION
 ARG BACKREST_VERSION
 FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
 LABEL name="pgo-load" \
 	summary="Crunchy PostgreSQL Operator - Load Data" \
 	description="Loads a CSV or JSON file into the database."
-
-ENV PGVERSION="12"
 
 RUN yum install -y \
  	--setopt=skip_missing_names_on_install=False \

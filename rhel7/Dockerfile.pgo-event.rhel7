@@ -1,14 +1,13 @@
 ARG BASEOS
 ARG BASEVER
 ARG PREFIX
+ARG PGVERSION
 ARG BACKREST_VERSION
 FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
 LABEL name="pgo-event" \
     summary="Crunchy PostgreSQL Operator - pgo-event" \
     description="Crunchy PostgreSQL Operator - pgo-event"
-
-ENV PGVERSION="12"
 
 ADD bin/pgo-event /usr/local/bin
 

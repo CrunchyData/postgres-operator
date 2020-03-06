@@ -1,6 +1,7 @@
 ARG BASEOS
 ARG BASEVER
 ARG PREFIX
+ARG PGVERSION
 ARG BACKREST_VERSION
 FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
@@ -8,9 +9,7 @@ LABEL name="postgres-operator" \
 	summary="Crunchy PostgreSQL Operator" \
 	description="Crunchy PostgreSQL Operator"
 
-ENV PGVERSION="12"
-
-RUN yum -y install hostname postgresql12  && yum -y clean all
+RUN yum -y install hostname postgresql${PGVERSION}  && yum -y clean all
 
 ADD bin/postgres-operator /usr/local/bin
 ADD conf/postgres-operator /default-pgo-config
