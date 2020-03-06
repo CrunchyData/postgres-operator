@@ -151,7 +151,7 @@ pgo-base-docker: pgo-base-build
 
 #======== Utility =======
 cli-docs:
-	cd $(PGOROOT)/hugo/content/operatorcli/cli && go run $(PGOROOT)/pgo/generatedocs.go
+	cd $(PGOROOT)/docs/content/operatorcli/cli && go run $(PGOROOT)/pgo/generatedocs.go
 
 clean:
 	rm -rf $(GOPATH)/pkg/* $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
