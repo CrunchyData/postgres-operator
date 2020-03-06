@@ -9,6 +9,7 @@ PGO_IMAGE_PREFIX ?= crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
 PGO_OPERATOR_NAMESPACE ?= pgo
 PGO_VERSION ?= 4.3.0
+PGO_BACKREST_VERSION ?= 2.24
 
 RELTMPDIR=/tmp/release.$(PGO_VERSION)
 RELFILE=/tmp/postgres-operator.$(PGO_VERSION).tar.gz
@@ -124,6 +125,7 @@ $(PGOROOT)/$(DFSET)/Dockerfile.%.$(DFSET):
 		--build-arg BASEOS=$(PGO_BASEOS) \
 		--build-arg BASEVER=$(PGO_VERSION) \
 		--build-arg PREFIX=$(PGO_IMAGE_PREFIX) \
+		--build-arg BACKREST_VERSION=$(PGO_BACKREST_VERSION) \
 		$(PGOROOT)
 
 %-img-buildah: %-img-build
