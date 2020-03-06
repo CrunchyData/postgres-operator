@@ -7,7 +7,7 @@ LABEL name="pgo-backrest-repo-sync" \
 	summary="Crunchy PostgreSQL Operator - pgBackRest Repo Sync" \
 	description="Synchronizes the contents between two pgBackRest repositories."
 
-ENV PGVERSION="12" BACKREST_VERSION="2.20"
+ENV PGVERSION="12" BACKREST_VERSION="2.24"
 
 RUN yum -y install \
 	--setopt=skip_missing_names_on_install=False \
