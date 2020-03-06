@@ -14,7 +14,7 @@ defaultContentLanguageInSubdir= false
 enableMissingTranslationPlaceholders = false
 
 [params]
-editURL = "https://github.com/CrunchyData/postgres-operator/edit/master/hugo/content/"
+editURL = "https://github.com/CrunchyData/postgres-operator/edit/master/docs/content/"
 showVisitedLinks = false # default is false
 themeStyle = "flex" # "original" or "flex" # default "flex"
 themeVariant = "" # choose theme variant "green", "gold" , "gray", "blue" (default)
