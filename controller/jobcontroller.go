@@ -338,7 +338,9 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 
 			// now, set up a new pgtask that will allow us to perform the restore
 			cloneTask := util.CloneTask{
-				BackrestPVCSize:   job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_BACKREST_PVC_SIZE],
+				BackrestPVCSize: job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_BACKREST_PVC_SIZE],
+				// sigh...convert back to a boolean
+				EnableMetrics:     job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_ENABLE_METRICS] == "true",
 				PGOUser:           job.ObjectMeta.Labels[config.LABEL_PGOUSER],
 				PVCSize:           job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_PVC_SIZE],
 				SourceClusterName: sourceClusterName,
@@ -397,7 +399,9 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			// alright, we can move on the step 3 which is the final step, where we
 			// create the cluster
 			cloneTask := util.CloneTask{
-				BackrestPVCSize:   job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_BACKREST_PVC_SIZE],
+				BackrestPVCSize: job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_BACKREST_PVC_SIZE],
+				// sigh...convert back to a boolean
+				EnableMetrics:     job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_ENABLE_METRICS] == "true", // sigh
 				PGOUser:           job.ObjectMeta.Labels[config.LABEL_PGOUSER],
 				PVCSize:           job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_PVC_SIZE],
 				SourceClusterName: sourceClusterName,

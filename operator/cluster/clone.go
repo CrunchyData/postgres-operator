@@ -406,7 +406,9 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 	if job.ObjectMeta.Annotations == nil {
 		job.ObjectMeta.Annotations = map[string]string{}
 	}
+
 	job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_BACKREST_PVC_SIZE] = task.Spec.Parameters[util.CloneParameterBackrestPVCSize]
+	job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_ENABLE_METRICS] = task.Spec.Parameters[util.CloneParameterEnableMetrics]
 	job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_PVC_SIZE] = task.Spec.Parameters[util.CloneParameterPVCSize]
 	job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_SOURCE_CLUSTER_NAME] = sourcePgcluster.Spec.ClusterName
 	job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_TARGET_CLUSTER_NAME] = targetClusterName
@@ -528,6 +530,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 				// these annotations are used for the subsequent steps to be
 				// able to identify how to connect these jobs
 				config.ANNOTATION_CLONE_BACKREST_PVC_SIZE:   task.Spec.Parameters[util.CloneParameterBackrestPVCSize],
+				config.ANNOTATION_CLONE_ENABLE_METRICS:      task.Spec.Parameters[util.CloneParameterEnableMetrics],
 				config.ANNOTATION_CLONE_PVC_SIZE:            task.Spec.Parameters[util.CloneParameterPVCSize],
 				config.ANNOTATION_CLONE_SOURCE_CLUSTER_NAME: sourcePgcluster.Spec.ClusterName,
 				config.ANNOTATION_CLONE_TARGET_CLUSTER_NAME: targetClusterName,
@@ -854,6 +857,11 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 	// next, for the pgBackRest PVC
 	if task.Spec.Parameters[util.CloneParameterBackrestPVCSize] != "" {
 		targetPgcluster.Spec.BackrestStorage.Size = task.Spec.Parameters[util.CloneParameterBackrestPVCSize]
+	}
+
+	// check to see if the metrics collection should be performed
+	if task.Spec.Parameters[util.CloneParameterEnableMetrics] == "true" {
+		targetPgcluster.Spec.UserLabels[config.LABEL_COLLECT] = "true"
 	}
 
 	// update the workflow to indicate that the cluster is being created

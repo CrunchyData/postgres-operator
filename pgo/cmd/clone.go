@@ -74,6 +74,7 @@ func init() {
 	cloneCmd.Flags().StringVarP(&BackrestStorageSource, "pgbackrest-storage-source", "", "",
 		"The data source for the clone when both \"local\" and \"s3\" are enabled in the "+
 			"source cluster. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
+	cloneCmd.Flags().BoolVar(&MetricsFlag, "enable-metrics", false, `If sets, enables metrics collection on the newly cloned cluster`)
 	cloneCmd.Flags().StringVarP(&PVCSize, "pvc-size", "", "",
 		`The size of the PVC capacity for primary and replica PostgreSQL instances. Overrides the value set in the storage class. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
 }
@@ -87,6 +88,7 @@ func clone(namespace, sourceClusterName, targetClusterName string) {
 	request := msgs.CloneRequest{
 		BackrestStorageSource: BackrestStorageSource,
 		BackrestPVCSize:       BackrestPVCSize,
+		EnableMetrics:         MetricsFlag,
 		Namespace:             Namespace,
 		PVCSize:               PVCSize,
 		SourceClusterName:     sourceClusterName,
