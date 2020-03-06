@@ -17,7 +17,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if [ -z $PGO_OPERATOR_NAMESPACE ];
 then
-	echo "error: \$PGO_OPERATOR_NAME must be set"
+	echo "error: \$PGO_OPERATOR_NAMESPACE must be set"
 	exit 1
 fi
 
