@@ -29,6 +29,9 @@ const (
 	// CloneParameterBackrestPVCSize is the parameter name for the Backrest PVC
 	// size parameter
 	CloneParameterBackrestPVCSize = "backrestPVCSize"
+	// CloneParameterEnableMetrics if set to true, enables metrics collection in
+	// a newly created cluster
+	CloneParameterEnableMetrics = "enableMetrics"
 	// CloneParameterPVCSize is the parameter name for the PVC parameter for
 	// primary and replicas
 	CloneParameterPVCSize = "pvcSize"
@@ -38,6 +41,7 @@ const (
 type CloneTask struct {
 	BackrestPVCSize       string
 	BackrestStorageSource string
+	EnableMetrics         bool
 	PGOUser               string
 	PVCSize               string
 	SourceClusterName     string
@@ -52,6 +56,12 @@ type CloneTask struct {
 func (clone CloneTask) Create() *crv1.Pgtask {
 	// get the one-time gneerated task name
 	taskName := clone.taskName()
+
+	// sigh...set a "boolean" for enabling metrics
+	enableMetrics := "false"
+	if clone.EnableMetrics {
+		enableMetrics = "true"
+	}
 
 	return &crv1.Pgtask{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -69,6 +79,7 @@ func (clone CloneTask) Create() *crv1.Pgtask {
 			Parameters: map[string]string{
 				CloneParameterBackrestPVCSize: clone.BackrestPVCSize,
 				"backrestStorageType":         clone.BackrestStorageSource,
+				CloneParameterEnableMetrics:   enableMetrics,
 				CloneParameterPVCSize:         clone.PVCSize,
 				"sourceClusterName":           clone.SourceClusterName,
 				"targetClusterName":           clone.TargetClusterName,

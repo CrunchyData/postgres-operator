@@ -19,6 +19,7 @@ package config
 const (
 	ANNOTATION_PGHA_BOOTSTRAP_REPLICA    = "pgo-pgha-bootstrap-replica"
 	ANNOTATION_CLONE_BACKREST_PVC_SIZE   = "clone-backrest-pvc-size"
+	ANNOTATION_CLONE_ENABLE_METRICS      = "clone-enable-metrics"
 	ANNOTATION_CLONE_PVC_SIZE            = "clone-pvc-size"
 	ANNOTATION_CLONE_SOURCE_CLUSTER_NAME = "clone-source-cluster-name"
 	ANNOTATION_CLONE_TARGET_CLUSTER_NAME = "clone-target-cluster-name"

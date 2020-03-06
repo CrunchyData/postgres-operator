@@ -114,6 +114,7 @@ func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResp
 	cloneTask := util.CloneTask{
 		BackrestPVCSize:       request.BackrestPVCSize,
 		BackrestStorageSource: request.BackrestStorageSource,
+		EnableMetrics:         request.EnableMetrics,
 		PGOUser:               pgouser,
 		PVCSize:               request.PVCSize,
 		SourceClusterName:     request.SourceClusterName,

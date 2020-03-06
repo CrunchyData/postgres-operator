@@ -27,7 +27,9 @@ type CloneRequest struct {
 	// repository storage exists ("local", "s3" or both)
 	BackrestStorageSource string
 	ClientVersion         string
-	Namespace             string
+	// EnableMetrics enables metrics support in the target cluster
+	EnableMetrics bool
+	Namespace     string
 	// PVCSize, if set, is the size of the PVC to use for the primary and any
 	// replicas
 	PVCSize string
