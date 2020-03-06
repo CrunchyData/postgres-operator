@@ -1,13 +1,14 @@
 ARG BASEOS
 ARG BASEVER
 ARG PREFIX
+ARG BACKREST_VERSION
 FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
 LABEL name="pgo-backrest-restore" \
 	summary="Crunchy PostgreSQL Operator - pgBackRest Restore" \
 	description="Performs a restore operation for a PostgreSQL database using pgBackRest."
 
-ENV PGVERSION="12" BACKREST_VERSION="2.24"
+ENV PGVERSION="12"
 
 RUN yum -y install \
 	--setopt=skip_missing_names_on_install=False \
