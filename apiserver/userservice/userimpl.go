@@ -399,10 +399,12 @@ func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
 	// to save some computing power, we can determine if the caller is looking
 	// up if passwords are expiring for users. This value is passed in days, so
 	// we can get the expiration mark that we are looking for
-	validUntil := ""
+	expirationInterval := ""
 
 	if request.Expired > 0 {
-		validUntil = generateValidUntilDateString(request.Expired)
+		// we need to find a set of user passwords that need to be updated
+		// set the expiration interval
+		expirationInterval = fmt.Sprintf("%d days", request.Expired)
 	}
 
 	// iterate through each cluster and look up information about each user
@@ -428,9 +430,9 @@ func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
 		sql := fmt.Sprintf("%s; %s", sqlSetDatestyle, sqlFindUsers)
 
 		// determine if we only want to find the users that have expiring passwords
-		if validUntil != "" {
-			sql = fmt.Sprint("%s AND %s", sql,
-				fmt.Sprintf(sqlExpiredPasswordClause, util.SQLQuoteLiteral(validUntil)))
+		if expirationInterval != "" {
+			sql = fmt.Sprintf("%s AND %s", sql,
+				fmt.Sprintf(sqlExpiredPasswordClause, util.SQLQuoteLiteral(expirationInterval)))
 		}
 
 		// being a bit cute here, but ordering by the role name
