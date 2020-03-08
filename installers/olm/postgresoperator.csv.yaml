@@ -95,7 +95,6 @@ spec:
                 - pgclusters
                 - pgpolicies
                 - pgtasks
-                - pgbackups
                 - pgreplicas
             - verbs:
                 - '*'

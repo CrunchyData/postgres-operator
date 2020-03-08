@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 # Copyright 2017 - 2020 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,18 +15,15 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete pgreplicas --all
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete pgbackups --all
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete pgclusters --all
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete pgpolicies --all
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete pgtasks --all
 
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete crd \
-	pgbackups.crunchydata.com \
 	pgreplicas.crunchydata.com \
 	pgclusters.crunchydata.com \
 	pgpolicies.crunchydata.com \
-	pgtasks.crunchydata.com 
+	pgtasks.crunchydata.com
 
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete jobs --selector=pgrmdata=true
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete jobs --selector=pgbackup=true
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete jobs --selector=pgo-load=true

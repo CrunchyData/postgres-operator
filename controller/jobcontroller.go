@@ -28,10 +28,8 @@ import (
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
-	backupoperator "github.com/crunchydata/postgres-operator/operator/backup"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
-	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
@@ -133,51 +131,6 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 		}
 
 		return
-	}
-
-	//handle the case of a pgbasebackup job being updated
-	if labels[config.LABEL_PGBACKUP] == "true" {
-		log.Debugf("jobController onUpdate pgbasebackup job case")
-		clusterName := job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
-		status := crv1.JobCompletedStatus
-		log.Debugf("got a pgbackup job status=%d for cluster %s", job.Status.Succeeded, clusterName)
-		if job.Status.Succeeded == 0 {
-			status = crv1.JobSubmittedStatus
-		}
-		if job.Status.Failed > 0 {
-			status = crv1.JobErrorStatus
-		}
-
-		//get the pgbackup for this job
-		backupName := clusterName
-		var found bool
-		backup := crv1.Pgbackup{}
-		found, err = kubeapi.Getpgbackup(c.JobClient, &backup, backupName, job.ObjectMeta.Namespace)
-		if !found {
-			log.Errorf("jobController onUpdate could not find pgbackup %s", backupName)
-			return
-		}
-
-		//update the backup paths if the job completed
-		if status == crv1.JobCompletedStatus {
-			path := backupoperator.UpdateBackupPaths(c.JobClientset, job.Name, job.ObjectMeta.Namespace)
-			backup.Spec.Toc[path] = path
-
-			// update pgtask for workflow
-			taskoperator.CompleteBackupWorkflow(clusterName, c.JobClientset, c.JobClient, job.ObjectMeta.Namespace)
-
-			publishBackupComplete(clusterName, job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], job.ObjectMeta.Labels[config.LABEL_PGOUSER], "pgbasebackup", job.ObjectMeta.Namespace, path)
-
-		}
-
-		err = kubeapi.Updatepgbackup(c.JobClient, &backup, backupName, job.ObjectMeta.Namespace)
-		if err != nil {
-			log.Error("error in updating pgbackup " + labels["pg-cluster"] + err.Error())
-			return
-		}
-
-		return
-
 	}
 
 	//handle the case of a backrest restore job being added
@@ -349,26 +302,6 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 				labels[config.LABEL_PG_CLUSTER], backrestRepoPodName)
 		}
 		return
-	}
-
-	if labels[config.LABEL_PGBASEBACKUP_RESTORE] == "true" {
-		log.Debugf("jobController onUpdate pgbasebackup restore job case")
-		log.Debugf("got a pgbasebackup restore job status=%d", job.Status.Succeeded)
-
-		status := crv1.JobCompletedStatus + " [" + job.ObjectMeta.Name + "]"
-		if job.Status.Succeeded == 0 {
-			status = crv1.JobSubmittedStatus + " [" + job.ObjectMeta.Name + "]"
-		}
-
-		if job.Status.Failed > 0 {
-			status = crv1.JobErrorStatus + " [" + job.ObjectMeta.Name + "]"
-		}
-
-		// patch 'pgbasebackuprestore' pgtask status with job status
-		err = util.Patch(c.JobClient, patchURL, status, patchResource, labels[config.LABEL_PGTASK], job.ObjectMeta.Namespace)
-		if err != nil {
-			log.Error("error patching pgtask '" + labels["pg-task"] + "': " + err.Error())
-		}
 	}
 
 	// handle the case of a the clone "repo sync" step (aka "step 1")

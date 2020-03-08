@@ -204,22 +204,3 @@
       description: State
       x-descriptors:
         - 'urn:alm:descriptor:text'
-
-- name: pgbackups.crunchydata.com
-  kind: Pgbackup
-  version: v1
-  displayName: Postgres backup task
-  description: Represents a Postgres backup task
-  resources:
-    - { kind: Pgbackup, version: v1 }
-  specDescriptors:
-    - path: name
-      displayName: Name
-      description: The pgbackup name.
-      x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:text'
-    - path: backupstatus
-      displayName: BackupStatus
-      description: The pgbackup status.
-      x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:text'

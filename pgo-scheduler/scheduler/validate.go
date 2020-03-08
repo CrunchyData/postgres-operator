@@ -58,7 +58,6 @@ func ValidateSchedule(schedule string) error {
 func ValidateScheduleType(schedule string) error {
 	scheduleTypes := []string{
 		"pgbackrest",
-		"pgbasebackup",
 		"policy",
 	}
 
@@ -106,15 +105,6 @@ func ValidateBackRestSchedule(scheduleType, deployment, label, backupType, stora
 
 		if !valid {
 			return fmt.Errorf("pgBackRest Backup Type invalid: %s", backupType)
-		}
-	}
-	return nil
-}
-
-func ValidateBaseBackupSchedule(scheduleType, pvcName string) error {
-	if scheduleType == "pgbasebackup" {
-		if pvcName == "" {
-			return errors.New("PVC Name required for pgBaseBackup schedules")
 		}
 	}
 	return nil

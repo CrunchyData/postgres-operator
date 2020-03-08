@@ -45,11 +45,3 @@ kind: Pgtask
 metadata:
   name: example
 spec: {}
-
----
-apiVersion: crunchydata.com/v1
-kind: Pgbackup
-metadata:
-  name: example
-spec: {}
-status: {}

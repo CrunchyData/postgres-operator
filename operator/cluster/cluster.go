@@ -207,15 +207,8 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 
 	DeleteCluster(clientset, restclient, cl, namespace)
 
-	//delete any existing pgbackups
-	pgback := crv1.Pgbackup{}
-	found, err := kubeapi.Getpgbackup(restclient, &pgback, cl.Spec.Name, namespace)
-	if found {
-		kubeapi.Deletepgbackup(restclient, cl.Spec.Name, namespace)
-	}
-
 	//delete any existing configmaps
-	if err = deleteConfigMaps(clientset, cl.Spec.Name, namespace); err != nil {
+	if err := deleteConfigMaps(clientset, cl.Spec.Name, namespace); err != nil {
 		log.Error(err)
 	}
 
@@ -236,8 +229,7 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 		Clustername: cl.Spec.Name,
 	}
 
-	err = events.Publish(f)
-	if err != nil {
+	if err := events.Publish(f); err != nil {
 		log.Error(err)
 	}
 }

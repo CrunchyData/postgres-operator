@@ -37,24 +37,15 @@ type Scheduler struct {
 }
 
 type ScheduleTemplate struct {
-	Version      string    `json:"version"`
-	Name         string    `json:"name"`
-	Created      time.Time `json:"created"`
-	Schedule     string    `json:"schedule"`
-	Namespace    string    `json:"namespace"`
-	Type         string    `json:"type"`
-	Cluster      string    `json:"cluster"`
-	PGBackRest   `json:"pgbackrest,omitempty"`
-	PGBaseBackup `json:"pgbasebackup,omitempty"`
-	Policy       `json:"policy,omitempty"`
-}
-
-type PGBaseBackup struct {
-	Port         string `json:"backupPort"`
-	Secret       string `json:"secret"`
-	BackupVolume string `json:"backupVolume"`
-	ImagePrefix  string `json:"imagePrefix"`
-	ImageTag     string `json:"imageTag"`
+	Version    string    `json:"version"`
+	Name       string    `json:"name"`
+	Created    time.Time `json:"created"`
+	Schedule   string    `json:"schedule"`
+	Namespace  string    `json:"namespace"`
+	Type       string    `json:"type"`
+	Cluster    string    `json:"cluster"`
+	PGBackRest `json:"pgbackrest,omitempty"`
+	Policy     `json:"policy,omitempty"`
 }
 
 type PGBackRest struct {

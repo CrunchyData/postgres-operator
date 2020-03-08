@@ -49,7 +49,6 @@ const CREATE_NAMESPACE_PERM = "CreateNamespace"
 
 // RESTORE
 const RESTORE_DUMP_PERM = "RestoreDump"
-const RESTORE_PGBASEBACKUP_PERM = "RestorePgbasebackup"
 
 // DELETE
 const DELETE_BACKUP_PERM = "DeleteBackup"
@@ -128,7 +127,6 @@ func InitializePerms() {
 	PermMap[CREATE_NAMESPACE_PERM] = "yes"
 	// RESTORE
 	PermMap[RESTORE_DUMP_PERM] = "yes"
-	PermMap[RESTORE_PGBASEBACKUP_PERM] = "yes"
 	// Delete
 	PermMap[DELETE_BACKUP_PERM] = "yes"
 	PermMap[DELETE_CLUSTER_PERM] = "yes"

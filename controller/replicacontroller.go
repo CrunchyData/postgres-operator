@@ -100,9 +100,6 @@ func (c *PgreplicaController) processNextItem() bool {
 	// parallel.
 	defer c.Queue.Done(key)
 	// Invoke the method containing the business logic
-	// for pgbackups, the convention is the CRD name is always
-	// the same as the pg-cluster label value
-
 	// in this case, the de-dupe logic is to test whether a replica
 	// deployment exists already , if so, then we don't create another
 	// backup job

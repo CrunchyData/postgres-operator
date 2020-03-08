@@ -36,7 +36,6 @@ type NamespaceController struct {
 	ThePodController       *PodController
 	TheJobController       *JobController
 	ThePgpolicyController  *PgpolicyController
-	ThePgbackupController  *PgbackupController
 	ThePgreplicaController *PgreplicaController
 	ThePgclusterController *PgclusterController
 	ThePgtaskController    *PgtaskController
@@ -104,7 +103,6 @@ func (c *NamespaceController) onAdd(obj interface{}) {
 		c.ThePodController.SetupWatch(newNs.Name)
 		c.TheJobController.SetupWatch(newNs.Name)
 		c.ThePgpolicyController.SetupWatch(newNs.Name)
-		c.ThePgbackupController.SetupWatch(newNs.Name)
 		c.ThePgreplicaController.SetupWatch(newNs.Name)
 		c.ThePgclusterController.SetupWatch(newNs.Name)
 		c.ThePgtaskController.SetupWatch(newNs.Name)
@@ -127,7 +125,6 @@ func (c *NamespaceController) onUpdate(oldObj, newObj interface{}) {
 		c.ThePodController.SetupWatch(newNs.Name)
 		c.TheJobController.SetupWatch(newNs.Name)
 		c.ThePgpolicyController.SetupWatch(newNs.Name)
-		c.ThePgbackupController.SetupWatch(newNs.Name)
 		c.ThePgreplicaController.SetupWatch(newNs.Name)
 		c.ThePgclusterController.SetupWatch(newNs.Name)
 		c.ThePgtaskController.SetupWatch(newNs.Name)

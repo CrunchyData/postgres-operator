@@ -23,7 +23,6 @@ const LABEL_PG_CLUSTER = "pg-cluster"
 const LABEL_PG_CLUSTER_IDENTIFIER = "pg-cluster-id"
 const LABEL_PG_DATABASE = "pgo-pg-database"
 
-const LABEL_PGBACKUP = "pgbackup"
 const LABEL_PGTASK = "pg-task"
 
 const LABEL_AUTOFAIL = "autofail"
@@ -86,7 +85,6 @@ const LABEL_BACKREST_PITR_TARGET = "backrest-pitr-target"
 const LABEL_BACKREST_STORAGE_TYPE = "backrest-storage-type"
 const LABEL_BADGER = "crunchy-pgbadger"
 const LABEL_BADGER_CCPIMAGE = "crunchy-pgbadger"
-const LABEL_BACKUP_TYPE_BASEBACKUP = "pgbasebackup"
 const LABEL_BACKUP_TYPE_BACKREST = "pgbackrest"
 const LABEL_BACKUP_TYPE_PGDUMP = "pgdump"
 
@@ -110,12 +108,6 @@ const LABEL_PGRESTORE_FROM_CLUSTER = "pgrestore-from-cluster"
 const LABEL_PGRESTORE_FROM_PVC = "pgrestore-from-pvc"
 const LABEL_PGRESTORE_OPTS = "pgrestore-opts"
 const LABEL_PGRESTORE_PITR_TARGET = "pgrestore-pitr-target"
-
-const LABEL_PGBASEBACKUP_RESTORE = "pgo-pgbasebackup-restore"
-const LABEL_PGBASEBACKUP_RESTORE_FROM_CLUSTER = "pgbasebackup-restore-from-cluster"
-const LABEL_PGBASEBACKUP_RESTORE_FROM_PVC = "pgbasebackup-restore-from-pvc"
-const LABEL_PGBASEBACKUP_RESTORE_TO_PVC = "pgbasebackup-restore-to-pvc"
-const LABEL_PGBASEBACKUP_RESTORE_BACKUP_PATH = "pgbasebackup-restore-backup-path"
 
 const LABEL_DATA_ROOT = "data-root"
 const LABEL_PVC_NAME = "pvc-name"

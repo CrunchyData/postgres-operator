@@ -76,20 +76,20 @@ func CreateRmdataJob(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namesp
 		ContainerResources: cr,
 	}
 
-	var doc2 bytes.Buffer
-	err = config.JobTemplate.Execute(&doc2, jobFields)
-	if err != nil {
+	doc := bytes.Buffer{}
+
+	if err := config.RmdatajobTemplate.Execute(&doc, jobFields); err != nil {
 		log.Error(err.Error())
 		return err
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		config.JobTemplate.Execute(os.Stdout, jobFields)
+		config.RmdatajobTemplate.Execute(os.Stdout, jobFields)
 	}
 
 	newjob := v1batch.Job{}
-	err = json.Unmarshal(doc2.Bytes(), &newjob)
-	if err != nil {
+
+	if err := json.Unmarshal(doc.Bytes(), &newjob); err != nil {
 		log.Error("error unmarshalling json into Job " + err.Error())
 		return err
 	}

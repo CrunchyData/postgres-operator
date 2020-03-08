@@ -1,5 +1,9 @@
 package apiservermsgs
 
+import (
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+)
+
 /*
 Copyright 2019 - 2020 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -56,4 +60,36 @@ type PgRestoreRequest struct {
 	RestoreOpts string
 	PITRTarget  string
 	NodeLabel   string
+}
+
+// NOTE: these are ported over from legacy functionality
+
+// ShowBackupResponse ...
+// swagger:model
+type ShowBackupResponse struct {
+	BackupList PgbackupList
+	Status
+}
+
+// PgbackupList ...
+// swagger:model
+type PgbackupList struct {
+	Items []Pgbackup `json:"items"`
+}
+
+// Pgbackup ...
+// swagger:model
+type Pgbackup struct {
+	CreationTimestamp string
+	Namespace         string             `json:"namespace"`
+	Name              string             `json:"name"`
+	StorageSpec       crv1.PgStorageSpec `json:"storagespec"`
+	CCPImageTag       string             `json:"ccpimagetag"`
+	BackupHost        string             `json:"backuphost"`
+	BackupUserSecret  string             `json:"backupusersecret"`
+	BackupPort        string             `json:"backupport"`
+	BackupStatus      string             `json:"backupstatus"`
+	BackupPVC         string             `json:"backuppvc"`
+	BackupOpts        string             `json:"backupopts"`
+	Toc               map[string]string  `json:"toc"`
 }

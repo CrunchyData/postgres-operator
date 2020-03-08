@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 # Copyright 2017 - 2020 Crunchy Data Solutions, Inc.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,9 +14,7 @@
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get pgbackups
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get pgclusters
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get pgreplicas
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get pgpolicies 
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get pgpolicies
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE get pgpolicylogs
-

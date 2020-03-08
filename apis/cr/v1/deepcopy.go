@@ -19,51 +19,6 @@ import "k8s.io/apimachinery/pkg/runtime"
 
 // DeepCopyInto copies all properties of this object into another object of the
 // same type that is provided as a pointer.
-func (in *Pgbackup) DeepCopyInto(out *Pgbackup) {
-	out.TypeMeta = in.TypeMeta
-	out.ObjectMeta = in.ObjectMeta
-	out.Spec = PgbackupSpec{
-		Namespace:        in.Spec.Namespace,
-		Name:             in.Spec.Name,
-		StorageSpec:      in.Spec.StorageSpec,
-		CCPImageTag:      in.Spec.CCPImageTag,
-		BackupHost:       in.Spec.BackupHost,
-		BackupUserSecret: in.Spec.BackupUserSecret,
-		BackupPort:       in.Spec.BackupPort,
-		BackupOpts:       in.Spec.BackupOpts,
-		BackupStatus:     in.Spec.BackupStatus,
-		BackupPVC:        in.Spec.BackupPVC,
-		Toc:              in.Spec.Toc,
-	}
-	out.Status = in.Status
-}
-
-// DeepCopyObject returns a generically typed copy of an object
-func (in *Pgbackup) DeepCopyObject() runtime.Object {
-	out := Pgbackup{}
-	in.DeepCopyInto(&out)
-
-	return &out
-}
-
-// DeepCopyObject returns a generically typed copy of an object
-func (in *PgbackupList) DeepCopyObject() runtime.Object {
-	out := PgbackupList{}
-	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
-
-	if in.Items != nil {
-		out.Items = make([]Pgbackup, len(in.Items))
-		for i := range in.Items {
-			in.Items[i].DeepCopyInto(&out.Items[i])
-		}
-	}
-
-	return &out
-}
-
-// DeepCopyInto copies all properties of this object into another object of the
-// same type that is provided as a pointer.
 func (in *Pgreplica) DeepCopyInto(out *Pgreplica) {
 	out.TypeMeta = in.TypeMeta
 	out.ObjectMeta = in.ObjectMeta

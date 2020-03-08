@@ -33,7 +33,7 @@ type backupOptions interface {
 }
 
 // ValidateBackupOpts validates the backup/restore options that can be provided to the various backup
-// and restore utilities supported by pgo (e.g. pg_basebackup, pg_dump, pg_restore, pgBackRest, etc.)
+// and restore utilities supported by pgo (e.g. pg_dump, pg_restore, pgBackRest, etc.)
 func ValidateBackupOpts(backupOpts string, request interface{}) error {
 
 	// some quick checks to make sure backup opts string is valid and should be processed and validated
@@ -141,8 +141,6 @@ func createBackupOptionsStruct(backupOpts string, request interface{}) (backupOp
 		return &pgBackRestBackupOptions{}, "pgBackRest", nil
 	case *msgs.RestoreRequest:
 		return &pgBackRestRestoreOptions{}, "pgBackRest", nil
-	case *msgs.CreateBackupRequest:
-		return &pgBaseBackupOptions{}, "pg_basebackup", nil
 	case *msgs.CreatepgDumpBackupRequest:
 		if strings.Contains(backupOpts, "--dump-all") {
 			return &pgDumpAllOptions{}, "pg_dumpall", nil
