@@ -35,7 +35,7 @@ replicas within a PostgreSQL cluster. This includes things like the number of
 replicas, what storage and resource classes to use, special affinity rules, etc.
 - `pgtasks.crunchydata.com`: A general purpose CRD that accepts a type of task
 that is needed to run against a cluster (e.g. create a cluster, take a backup,
-  perform a clone) and tracks the state of said task throw its workflow.
+  perform a clone) and tracks the state of said task through its workflow.
 - `pgpolicies.crunchydata.com`: Stores a reference to a SQL file that can be
 executed against a PostgreSQL cluster. In the past, this was used to manage RLS
 policies on PostgreSQL clusters.
@@ -148,7 +148,7 @@ our primary PostgreSQL instances.
 Using Kubernetes Deployments does create additional management complexity, but
 the good news is: the PostgreSQL Operator manages it for you! Being aware of
 this model can help you understand how the PostgreSQL Operator gives you maximum
-flexibility in for your PostgreSQL clusters while giving you the tools to
+flexibility for your PostgreSQL clusters while giving you the tools to
 troubleshoot issues in production.
 
 The last piece of this model is the use of [Kubernetes Services](https://kubernetes.io/docs/concepts/services-networking/service/)

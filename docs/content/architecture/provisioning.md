@@ -46,7 +46,7 @@ allowing them to replay old WAL logs
 "delta restore" feature
 - Serves as the basis for the cluster cloning feature
 - ...and of course, allow for one to take full, differential, and incremental
-backpus and perform full and point-in-time restores
+backups and perform full and point-in-time restores
 
 The pgBackRest repository can be configured to use storage that resides within
 the Kubernetes cluster (the `local` option), Amazon S3 or a storage system that
