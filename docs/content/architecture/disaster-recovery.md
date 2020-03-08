@@ -23,7 +23,7 @@ allowing them to replay old WAL logs
 "delta restore" feature
 - Serving as the basis for the cluster cloning feature
 - ...and of course, allowing for one to take full, differential, and incremental
-backpus and perform full and point-in-time restores
+backups and perform full and point-in-time restores
 
 ![PostgreSQL Operator pgBackRest Integration](/images/postgresql-cluster-dr-base.png)
 
