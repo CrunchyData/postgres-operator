@@ -18,7 +18,7 @@ pgo backup [flags]
 ### Options
 
 ```
-      --backup-opts string               The pgbackup options to pass into pgbackrest.
+      --backup-opts string               The options to pass into pgbackrest.
       --backup-type string               The backup type to perform. Default is pgbackrest. Valid backup types are pgbackrest and pgdump. (default "pgbackrest")
   -h, --help                             help for backup
       --pgbackrest-storage-type string   The type of storage to use when scheduling pgBackRest backups. Either "local", "s3" or both, comma separated. (default "local")

@@ -219,7 +219,7 @@
 
 - name: Delete existing Custom Objects
   shell: |
-    {{ kubectl_or_oc }} delete pgbackups,pgclusters,pgpolicies,pgreplicas,pgtasks -n {{ item }} --all
+    {{ kubectl_or_oc }} delete pgclusters,pgpolicies,pgreplicas,pgtasks -n {{ item }} --all
   with_items:
   - "{{ watched_namespaces }}"
   ignore_errors: yes
@@ -228,7 +228,7 @@
 
 - name: Delete Custom Resource Definitions
   shell: |
-    {{ kubectl_or_oc }} delete crds pgbackups.crunchydata.com pgclusters.crunchydata.com \
+    {{ kubectl_or_oc }} delete crds pgclusters.crunchydata.com \
         pgpolicies.crunchydata.com pgreplicas.crunchydata.com pgtasks.crunchydata.com
   ignore_errors: yes
   no_log: false

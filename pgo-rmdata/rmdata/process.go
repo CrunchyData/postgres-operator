@@ -36,7 +36,6 @@ const (
 	MAX_TRIES            = 16
 	pgBackRestPathFormat = "/backrestrepo/%s"
 	pgBackRestRepoPVC    = "%s-pgbr-repo"
-	pgBaseBackupPVC      = "%s-backup"
 	pgDumpPVC            = "backup-%s-pgdump-pvc"
 	pgDataPathFormat     = "/pgdata/%s"
 	tablespacePathFormat = "/tablespaces/%s/%s"
@@ -270,9 +269,6 @@ func removeBackrestRepo(request Request) {
 func removeAllBackupPVCs(request Request) {
 	// first, ensure that logical backups are removed
 	removeLogicalBackupPVCs(request)
-	// now, remove pg_basebackup PVCs. This method will be removed at some point,
-	// but we will further isolate it
-	removePgBaseBackupPVCs(request)
 	// finally, we will remove the pgBackRest repo PVC...or PVCs?
 	removePgBackRestRepoPVCs(request)
 }
@@ -597,9 +593,8 @@ func removePgtasks(request Request) {
 func getInstancePVCs(request Request) ([]string, error) {
 	pvcList := make([]string, 0)
 	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName)
-	pgDump, pgBackRest, pgBaseBackup := fmt.Sprintf(pgDumpPVC, request.ClusterName),
-		fmt.Sprintf(pgBackRestRepoPVC, request.ClusterName),
-		fmt.Sprintf(pgBaseBackupPVC, request.ClusterName)
+	pgDump, pgBackRest := fmt.Sprintf(pgDumpPVC, request.ClusterName),
+		fmt.Sprintf(pgBackRestRepoPVC, request.ClusterName)
 
 	log.Debugf("instance pvcs overall selector: [%s]", selector)
 
@@ -624,7 +619,7 @@ func getInstancePVCs(request Request) ([]string, error) {
 
 		log.Debugf("found pvc: [%s]", pvcName)
 
-		if pvcName == pgDump || pvcName == pgBackRest || pvcName == pgBaseBackup {
+		if pvcName == pgDump || pvcName == pgBackRest {
 			log.Debug("skipping...")
 			continue
 		}
@@ -699,7 +694,6 @@ func removePVCs(pvcList []string, request Request) error {
 //
 // - pgBackRest
 // - pg_dump (logical)
-// - pg_basebackup (deprecated)
 func removeBackupJobs(request Request) {
 	// Some mild cleanup for this function...going to make a list of selectors
 	// for the different kinds of backup jobs so they can be deleted, but cannot
@@ -709,8 +703,6 @@ func removeBackupJobs(request Request) {
 		fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER, request.ClusterName, config.LABEL_BACKREST_JOB),
 		// pg_dump
 		fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER, request.ClusterName, config.LABEL_BACKUP_TYPE_PGDUMP),
-		// pg_basebackup
-		fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER, request.ClusterName, config.LABEL_PGBACKUP),
 	}
 
 	// iterate through each type of selector and attempt to get all of the jobs
@@ -785,20 +777,6 @@ func removePgBackRestRepoPVCs(request Request) {
 	log.Debugf("remove backrest pvc name [%s]", pvcName)
 
 	// make a simple of the PVCs that can be removed by the removePVC command
-	pvcList := []string{pvcName}
-	removePVCs(pvcList, request)
-}
-
-// removePgBaseBackupPVCs removes any PVCs that are associated with a
-// pg_basebackup...which this number will dwindle as pg_basebackup is removed
-// from v4.2
-func removePgBaseBackupPVCs(request Request) {
-	// format the name of the PVC for a pg_basebackup, which is "well"-defined
-	pvcName := fmt.Sprintf(pgBaseBackupPVC, request.ClusterName)
-
-	log.Debugf("pgbasebackup backup pvc name: [%s]", pvcName)
-
-	// make a simple list for the PVCs, and then attempt to delete it
 	pvcList := []string{pvcName}
 	removePVCs(pvcList, request)
 }

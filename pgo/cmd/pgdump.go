@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	log "github.com/sirupsen/logrus"
@@ -98,19 +97,19 @@ func printpgDump(result *msgs.ShowpgDumpDetail) {
 }
 
 // printBackupCRD ...
-func printDumpCRD(result *crv1.Pgbackup) {
+func printDumpCRD(result *msgs.Pgbackup) {
 	fmt.Printf("%s%s\n", "", "")
-	fmt.Printf("%s%s\n", "", "pgdump : "+result.Spec.Name)
+	fmt.Printf("%s%s\n", "", "pgdump : "+result.Name)
 
-	fmt.Printf("%s%s\n", TreeBranch, "PVC Name:\t"+result.Spec.BackupPVC)
-	fmt.Printf("%s%s\n", TreeBranch, "Access Mode:\t"+result.Spec.StorageSpec.AccessMode)
-	fmt.Printf("%s%s\n", TreeBranch, "PVC Size:\t"+result.Spec.StorageSpec.Size)
-	fmt.Printf("%s%s\n", TreeBranch, "Creation:\t"+result.ObjectMeta.CreationTimestamp.String())
-	fmt.Printf("%s%s\n", TreeBranch, "CCPImageTag:\t"+result.Spec.CCPImageTag)
-	fmt.Printf("%s%s\n", TreeBranch, "Backup Status:\t"+result.Spec.BackupStatus)
-	fmt.Printf("%s%s\n", TreeBranch, "Backup Host:\t"+result.Spec.BackupHost)
-	fmt.Printf("%s%s\n", TreeBranch, "Backup User Secret:\t"+result.Spec.BackupUserSecret)
-	fmt.Printf("%s%s\n", TreeTrunk, "Backup Port:\t"+result.Spec.BackupPort)
-	fmt.Printf("%s%s\n", TreeTrunk, "Backup Opts:\t"+result.Spec.BackupOpts)
+	fmt.Printf("%s%s\n", TreeBranch, "PVC Name:\t"+result.BackupPVC)
+	fmt.Printf("%s%s\n", TreeBranch, "Access Mode:\t"+result.StorageSpec.AccessMode)
+	fmt.Printf("%s%s\n", TreeBranch, "PVC Size:\t"+result.StorageSpec.Size)
+	fmt.Printf("%s%s\n", TreeBranch, "Creation:\t"+result.CreationTimestamp)
+	fmt.Printf("%s%s\n", TreeBranch, "CCPImageTag:\t"+result.CCPImageTag)
+	fmt.Printf("%s%s\n", TreeBranch, "Backup Status:\t"+result.BackupStatus)
+	fmt.Printf("%s%s\n", TreeBranch, "Backup Host:\t"+result.BackupHost)
+	fmt.Printf("%s%s\n", TreeBranch, "Backup User Secret:\t"+result.BackupUserSecret)
+	fmt.Printf("%s%s\n", TreeTrunk, "Backup Port:\t"+result.BackupPort)
+	fmt.Printf("%s%s\n", TreeTrunk, "Backup Opts:\t"+result.BackupOpts)
 
 }

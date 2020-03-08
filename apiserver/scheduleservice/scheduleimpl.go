@@ -68,40 +68,6 @@ func (s scheduleRequest) createBackRestSchedule(cluster *crv1.Pgcluster, ns stri
 	return schedule
 }
 
-func (s scheduleRequest) createBaseBackupSchedule(cluster *crv1.Pgcluster, ns string) *PgScheduleSpec {
-	name := fmt.Sprintf("backup-%s", cluster.Name)
-
-	if s.Request.PVCName != "" {
-		_, exists, err := kubeapi.GetPVC(apiserver.Clientset, s.Request.PVCName, ns)
-		if err != nil {
-			s.Response.Status.Code = msgs.Error
-			s.Response.Status.Msg = err.Error()
-			return &PgScheduleSpec{}
-		} else if !exists {
-			s.Response.Status.Code = msgs.Error
-			s.Response.Status.Msg = fmt.Sprintf("PVC does not exist for backup: %s", s.Request.PVCName)
-			return &PgScheduleSpec{}
-		}
-	}
-
-	schedule := &PgScheduleSpec{
-		Name:      name,
-		Cluster:   cluster.Name,
-		Version:   "v1",
-		Created:   time.Now().Format(time.RFC3339),
-		Schedule:  s.Request.Schedule,
-		Type:      s.Request.ScheduleType,
-		Namespace: ns,
-		PGBaseBackup: PGBaseBackup{
-			BackupVolume: s.Request.PVCName,
-			ImagePrefix:  apiserver.Pgo.Cluster.CCPImagePrefix,
-			ImageTag:     apiserver.Pgo.Cluster.CCPImageTag,
-			Secret:       cluster.Spec.PrimarySecretName,
-		},
-	}
-	return schedule
-}
-
 func (s scheduleRequest) createPolicySchedule(cluster *crv1.Pgcluster, ns string) *PgScheduleSpec {
 	name := fmt.Sprintf("%s-%s-%s", cluster.Name, s.Request.ScheduleType, s.Request.PolicyName)
 
@@ -180,9 +146,6 @@ func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateS
 		switch sr.Request.ScheduleType {
 		case "pgbackrest":
 			schedule := sr.createBackRestSchedule(&cluster, ns)
-			schedules = append(schedules, schedule)
-		case "pgbasebackup":
-			schedule := sr.createBaseBackupSchedule(&cluster, ns)
 			schedules = append(schedules, schedule)
 		case "policy":
 			schedule := sr.createPolicySchedule(&cluster, ns)
@@ -341,8 +304,6 @@ func ShowSchedule(request *msgs.ShowScheduleRequest, ns string) msgs.ShowSchedul
 		results := fmt.Sprintf("%s:\n\tschedule: %s\n\tschedule-type: %s", blob.Name, blob.Schedule, blob.Type)
 		if blob.Type == "pgbackrest" {
 			results += fmt.Sprintf("\n\tbackup-type: %s", blob.PGBackRest.Type)
-		} else if blob.Type == "pgbasebackup" {
-			results += fmt.Sprintf("\n\tbackup-volume: %s", blob.PGBaseBackup.BackupVolume)
 		}
 		sr.Results = append(sr.Results, results)
 	}

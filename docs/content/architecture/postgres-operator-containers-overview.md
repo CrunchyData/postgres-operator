@@ -32,7 +32,7 @@ The PostgreSQL Operator orchestrates a series of PostgreSQL and PostgreSQL relat
 
 * **pg_upgrade**  (crunchy-upgrade). The crunchy-upgrade container contains 9.5, 9.6, 10, 11 and 12 PostgreSQL packages in order to perform a pg_upgrade from 9.5 to 9.6, 9.6 to 10, 10 to 11, and 11 to 12 versions.
 
-* **scheduler** (crunchy-scheduler).  The crunchy-scheduler container provides a cron like microservice for automating pgBaseBackup and pgBackRest backups within a single namespace.
+* **scheduler** (crunchy-scheduler).  The crunchy-scheduler container provides a cron like microservice for automating pgBackRest backups within a single namespace.
 
 ### Metrics and Monitoring
 

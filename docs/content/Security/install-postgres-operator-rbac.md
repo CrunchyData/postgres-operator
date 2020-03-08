@@ -7,7 +7,7 @@ weight: 7
 
 ## Installation of PostgreSQL Operator RBAC
 
-Please note, installation of the PostgreSQL Operator RBAC requires Kubernetes Cluster-Admin. 
+Please note, installation of the PostgreSQL Operator RBAC requires Kubernetes Cluster-Admin.
 
 The first step is to install the PostgreSQL Operator RBAC configuration.  This can be accomplished  by running:
 
@@ -17,8 +17,7 @@ This script will install the PostreSQL Operator Custom Resource Definitions, CRD
 
 | Setting |Definition  |
 |---|---|
-| Custom Resource Definitions (crd.yaml) | pgbackups|
-|  | pgclusters|
+| Custom Resource Definitions (crd.yaml) | pgclusters|
 |  | pgpolicies|
 |  | pgreplicas|
 |  | pgtasks|
@@ -37,5 +36,3 @@ This script will install the PostreSQL Operator Custom Resource Definitions, CRD
 Note that the cluster role bindings have a naming convention of pgopclusterbinding-$PGO_OPERATOR_NAMESPACE and pgopclusterbindingcrd-$PGO_OPERATOR_NAMESPACE.  
 
 The PGO_OPERATOR_NAMESPACE environment variable is added to make each cluster role binding name unique and to support more than a single PostgreSQL Operator being deployed on the same Kubernertes cluster.
-
-

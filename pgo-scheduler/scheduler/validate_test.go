@@ -52,13 +52,10 @@ func TestValidScheduleType(t *testing.T) {
 		valid    bool
 	}{
 		{"pgbackrest", true},
-		{"pgbasebackup", true},
 		{"policy", true},
 		{"PGBACKREST", true},
-		{"PGBASEBACKUP", true},
 		{"POLICY", true},
 		{"pgBackRest", true},
-		{"pgBaseBackup", true},
 		{"PoLiCY", true},
 		{"FOO", false},
 		{"BAR", false},
@@ -88,7 +85,6 @@ func TestValidBackRestSchedule(t *testing.T) {
 		{"pgbackrest", "", "testlabel=label", "diff", "local", true},
 		{"pgbackrest", "testdeployment", "", "full", "s3", true},
 		{"pgbackrest", "", "testlabel=label", "diff", "s3", true},
-		{"pgbasebackup", "", "", "", "local", false},
 		{"policy", "", "", "", "local", false},
 		{"pgbackrest", "", "", "", "local", false},
 		{"pgbackrest", "", "", "full", "local", false},
@@ -101,27 +97,6 @@ func TestValidBackRestSchedule(t *testing.T) {
 
 	for i, test := range tests {
 		err := ValidateBackRestSchedule(test.schedule, test.deployment, test.label, test.backupType, test.storageType)
-		if test.valid && err != nil {
-			t.Fatalf("tests[%d] - invalid schedule type. expected valid, got invalid: %s",
-				i, err)
-		} else if !test.valid && err == nil {
-			t.Fatalf("tests[%d] - valid schedule. expected invalid, got valid: %s",
-				i, err)
-		}
-	}
-}
-
-func TestValidBaseBackupSchedule(t *testing.T) {
-	tests := []struct {
-		schedule, pvcName string
-		valid             bool
-	}{
-		{"pgbasebackup", "mypvc", true},
-		{"pgbasebackup", "", false},
-	}
-
-	for i, test := range tests {
-		err := ValidateBaseBackupSchedule(test.schedule, test.pvcName)
 		if test.valid && err != nil {
 			t.Fatalf("tests[%d] - invalid schedule type. expected valid, got invalid: %s",
 				i, err)

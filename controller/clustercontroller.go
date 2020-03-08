@@ -128,9 +128,6 @@ func (c *PgclusterController) processNextItem() bool {
 	defer c.Queue.Done(key)
 
 	// Invoke the method containing the business logic
-	// for pgbackups, the convention is the CRD name is always
-	// the same as the pg-cluster label value
-
 	// in this case, the de-dupe logic is to test whether a cluster
 	// deployment exists , if so, then we don't create another
 	_, found, err := kubeapi.GetDeployment(c.PgclusterClientset, keyResourceName, keyNamespace)

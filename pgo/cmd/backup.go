@@ -18,11 +18,8 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -82,7 +79,7 @@ var backupType string
 func init() {
 	RootCmd.AddCommand(backupCmd)
 
-	backupCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The pgbackup options to pass into pgbackrest.")
+	backupCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The options to pass into pgbackrest.")
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default.")
 	backupCmd.Flags().StringVar(&backupType, "backup-type", "pgbackrest", "The backup type to perform. Default is pgbackrest. Valid backup types are pgbackrest and pgdump.")
@@ -93,28 +90,4 @@ func init() {
 // deleteBackup ....
 func deleteBackup(args []string, ns string) {
 	log.Debugf("deleteBackup called %v", args)
-
-	for _, v := range args {
-		response, err := api.DeleteBackup(httpclient, v, &SessionCredentials, ns)
-
-		if err != nil {
-			fmt.Println("Error: " + err.Error())
-			os.Exit(2)
-		}
-
-		if response.Status.Code == msgs.Ok {
-			if len(response.Results) == 0 {
-				fmt.Println("No backups found.")
-				return
-			}
-			for k := range response.Results {
-				fmt.Println("Deleted backup " + response.Results[k])
-			}
-		} else {
-			fmt.Println("Error: " + response.Status.Msg)
-			os.Exit(2)
-		}
-
-	}
-
 }

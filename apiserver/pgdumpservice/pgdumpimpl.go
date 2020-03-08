@@ -169,9 +169,15 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 func ShowpgDump(clusterName string, selector string, ns string) msgs.ShowBackupResponse {
 	var err error
 
-	response := msgs.ShowBackupResponse{}
-	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
-	response.BackupList.Items = make([]crv1.Pgbackup, 0)
+	response := msgs.ShowBackupResponse{
+		BackupList: msgs.PgbackupList{
+			Items: []msgs.Pgbackup{},
+		},
+		Status: msgs.Status{
+			Code: msgs.Ok,
+			Msg:  "",
+		},
+	}
 
 	if selector == "" && clusterName == "all" {
 		// leave selector empty, retrieves all clusters.
@@ -375,60 +381,47 @@ func parseOptionFlags(allFlags string) (bool, string) {
 }
 
 // if backup && err are nil, it simply wasn't found. Otherwise found or an error
-func getPgBackupForTask(clusterName string, taskName string, ns string) (*crv1.Pgbackup, error) {
-
-	var err error
-
+func getPgBackupForTask(clusterName string, taskName string, ns string) (*msgs.Pgbackup, error) {
 	task := crv1.Pgtask{}
-
-	var backup *crv1.Pgbackup
-
-	spec := crv1.PgtaskSpec{}
-	// spec.Name = name
-	spec.TaskType = crv1.PgtaskpgDump
 
 	found, err := kubeapi.Getpgtask(apiserver.RESTClient, &task, taskName, ns)
 
 	if found {
-		backup = buildPgBackupFrompgTask(&task)
+		return buildPgBackupFrompgTask(&task), nil
 	} else if kerrors.IsNotFound(err) {
-		err = nil // not found is not really an error.
-	} else if err == nil {
-		// It simply does not exist
-		log.Debugf("pgTask not found for requested pgdump %s", taskName)
+		// keeping in this weird old logic for the moment
+		return nil, nil
 	}
 
-	return backup, err
+	return nil, err
 }
 
 // converts pgTask to a pgBackup structure
-func buildPgBackupFrompgTask(dumpTask *crv1.Pgtask) *crv1.Pgbackup {
+func buildPgBackupFrompgTask(dumpTask *crv1.Pgtask) *msgs.Pgbackup {
 
-	backup := crv1.Pgbackup{}
-
-	backup.ObjectMeta.CreationTimestamp = dumpTask.ObjectMeta.CreationTimestamp
+	backup := msgs.Pgbackup{}
 
 	spec := dumpTask.Spec
 
-	backup.Spec.Name = spec.Name
-	backup.Spec.BackupStatus = spec.Status
-	backup.Spec.CCPImageTag = spec.Parameters[config.LABEL_CCP_IMAGE_TAG_KEY]
-	backup.Spec.BackupHost = spec.Parameters[config.LABEL_PGDUMP_HOST]
-	backup.Spec.BackupUserSecret = spec.Parameters[config.LABEL_PGDUMP_USER]
-	backup.Spec.BackupPort = spec.Parameters[config.LABEL_PGDUMP_PORT]
-	backup.Spec.BackupPVC = spec.Parameters[config.LABEL_PVC_NAME]
-	backup.Spec.StorageSpec.Size = dumpTask.Spec.StorageSpec.Size
-	backup.Spec.StorageSpec.AccessMode = dumpTask.Spec.StorageSpec.AccessMode
+	backup.Name = spec.Name
+	backup.CreationTimestamp = dumpTask.ObjectMeta.CreationTimestamp.String()
+	backup.BackupStatus = spec.Status
+	backup.CCPImageTag = spec.Parameters[config.LABEL_CCP_IMAGE_TAG_KEY]
+	backup.BackupHost = spec.Parameters[config.LABEL_PGDUMP_HOST]
+	backup.BackupUserSecret = spec.Parameters[config.LABEL_PGDUMP_USER]
+	backup.BackupPort = spec.Parameters[config.LABEL_PGDUMP_PORT]
+	backup.BackupPVC = spec.Parameters[config.LABEL_PVC_NAME]
+	backup.StorageSpec.Size = dumpTask.Spec.StorageSpec.Size
+	backup.StorageSpec.AccessMode = dumpTask.Spec.StorageSpec.AccessMode
 
 	// if dump-all flag is set, prepend it to options string since it was separated out before processing.
 	if spec.Parameters[config.LABEL_PGDUMP_ALL] == "true" {
-		backup.Spec.BackupOpts = "--dump-all " + spec.Parameters[config.LABEL_PGDUMP_OPTS]
+		backup.BackupOpts = "--dump-all " + spec.Parameters[config.LABEL_PGDUMP_OPTS]
 	} else {
-		backup.Spec.BackupOpts = spec.Parameters[config.LABEL_PGDUMP_OPTS]
+		backup.BackupOpts = spec.Parameters[config.LABEL_PGDUMP_OPTS]
 	}
 
 	return &backup
-
 }
 
 //  Restore ...

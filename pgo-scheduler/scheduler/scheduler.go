@@ -103,8 +103,6 @@ func (s *Scheduler) schedule(st ScheduleTemplate) (cv2.EntryID, error) {
 	switch st.Type {
 	case "pgbackrest":
 		job = st.NewBackRestSchedule()
-	case "pgbasebackup":
-		job = st.NewBaseBackupSchedule()
 	case "policy":
 		job = st.NewPolicySchedule()
 	default:

@@ -25,16 +25,15 @@ import (
 )
 
 type PgScheduleSpec struct {
-	Version      string `json:"version"`
-	Name         string `json:"name"`
-	Cluster      string `json:"cluster"`
-	Created      string `json:"created"`
-	Schedule     string `json:"schedule"`
-	Namespace    string `json:"namespace"`
-	Type         string `json:"type"`
-	PGBackRest   `json:"pgbackrest,omitempty"`
-	PGBaseBackup `json:"pgbasebackup,omitempty"`
-	Policy       `json:"policy,omitempty"`
+	Version    string `json:"version"`
+	Name       string `json:"name"`
+	Cluster    string `json:"cluster"`
+	Created    string `json:"created"`
+	Schedule   string `json:"schedule"`
+	Namespace  string `json:"namespace"`
+	Type       string `json:"type"`
+	PGBackRest `json:"pgbackrest,omitempty"`
+	Policy     `json:"policy,omitempty"`
 }
 
 type Policy struct {
@@ -52,18 +51,6 @@ type PGBackRest struct {
 	Type        string `json:"type,omitempty"`
 	StorageType string `json:"storageType,omitempty"`
 	Options     string `json:"options,omitempty"`
-}
-
-type PGBaseBackup struct {
-	BackupHost      string `json:"backupHost,omitempty"`
-	BackupPass      string `json:"backupPass,omitempty"`
-	BackupPort      string `json:"backupPort,omitempty"`
-	BackupUser      string `json:"backupUser,omitempty"`
-	BackupVolume    string `json:"backupVolume,omitempty"`
-	ImagePrefix     string `json:"imagePrefix,omitempty"`
-	ImageTag        string `json:"imageTag,omitempty"`
-	Secret          string `json:"secret,omitempty"`
-	SecurityContext `json:"securityContext,omitempty"`
 }
 
 type SecurityContext struct {

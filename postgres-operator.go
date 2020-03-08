@@ -104,15 +104,6 @@ func main() {
 		Ctx:                ctx,
 		InformerNamespaces: make(map[string]struct{}),
 	}
-	pgBackupcontroller := &controller.PgbackupController{
-		PgbackupClient:     crdClient,
-		PgbackupScheme:     crdScheme,
-		PgbackupClientset:  Clientset,
-		Ctx:                ctx,
-		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		UpdateQueue:        workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		InformerNamespaces: make(map[string]struct{}),
-	}
 	pgPolicycontroller := &controller.PgpolicyController{
 		PgpolicyClient:     crdClient,
 		PgpolicyScheme:     crdScheme,
@@ -141,7 +132,6 @@ func main() {
 		ThePodController:       podcontroller,
 		TheJobController:       jobcontroller,
 		ThePgpolicyController:  pgPolicycontroller,
-		ThePgbackupController:  pgBackupcontroller,
 		ThePgreplicaController: pgReplicacontroller,
 		ThePgclusterController: pgClustercontroller,
 		ThePgtaskController:    pgTaskcontroller,
@@ -154,9 +144,6 @@ func main() {
 	go pgClustercontroller.RunWorker()
 	go pgReplicacontroller.Run()
 	go pgReplicacontroller.RunWorker()
-	go pgBackupcontroller.Run()
-	go pgBackupcontroller.RunWorker()
-	go pgBackupcontroller.RunUpdateWorker()
 	go pgPolicycontroller.Run()
 	go podcontroller.Run()
 	go nscontroller.Run()

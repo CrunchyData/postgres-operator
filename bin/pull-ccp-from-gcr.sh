@@ -6,11 +6,9 @@ REGISTRY='us.gcr.io/container-suite'
 VERSION=$CCP_IMAGE_TAG
 IMAGES=(
     crunchy-postgres
-    crunchy-backup
     crunchy-collect
     crunchy-pgbadger
     crunchy-pgbouncer
-    crunchy-pgbasebackup-restore
     crunchy-pgdump
     crunchy-pgrestore
 )

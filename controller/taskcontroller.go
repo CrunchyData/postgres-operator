@@ -26,7 +26,6 @@ import (
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
-	pgbasebackupoperator "github.com/crunchydata/postgres-operator/operator/backup"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	pgdumpoperator "github.com/crunchydata/postgres-operator/operator/pgdump"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
@@ -168,10 +167,6 @@ func (c *PgtaskController) processNextItem() bool {
 	case crv1.PgtaskpgRestore:
 		log.Debug("pgDump restore task added")
 		pgdumpoperator.Restore(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask)
-
-	case crv1.PgtaskpgBasebackupRestore:
-		log.Debug("pgbasebackup restore task added")
-		pgbasebackupoperator.Restore(c.PgtaskClient, keyNamespace, c.PgtaskClientset, &tmpTask)
 
 	case crv1.PgtaskAutoFailover:
 		log.Debugf("autofailover task added %s", keyResourceName)

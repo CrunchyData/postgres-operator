@@ -121,14 +121,6 @@ var PgbackrestS3EnvVarsTemplate *template.Template
 
 const pgbackrestS3EnvVarsPath = "pgbackrest-s3-env-vars.json"
 
-var JobTemplate *template.Template
-
-const jobPath = "backup-job.json"
-
-var PgBasebackupRestoreJobTemplate *template.Template
-
-const pgBasebackupRestoreJobTemplatePath = "pgbasebackup-restore-job.json"
-
 var PgbouncerTemplate *template.Template
 
 const pgbouncerTemplatePath = "pgbouncer-template.json"
@@ -614,11 +606,6 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 		return err
 	}
 
-	JobTemplate, err = c.LoadTemplate(cMap, rootPath, jobPath)
-	if err != nil {
-		return err
-	}
-
 	PgoBackrestRepoServiceTemplate, err = c.LoadTemplate(cMap, rootPath, pgoBackrestRepoServiceTemplatePath)
 	if err != nil {
 		return err
@@ -640,16 +627,6 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 	}
 
 	PgbackrestS3EnvVarsTemplate, err = c.LoadTemplate(cMap, rootPath, pgbackrestS3EnvVarsPath)
-	if err != nil {
-		return err
-	}
-
-	JobTemplate, err = c.LoadTemplate(cMap, rootPath, jobPath)
-	if err != nil {
-		return err
-	}
-
-	PgBasebackupRestoreJobTemplate, err = c.LoadTemplate(cMap, rootPath, pgBasebackupRestoreJobTemplatePath)
 	if err != nil {
 		return err
 	}

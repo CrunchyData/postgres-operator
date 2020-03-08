@@ -17,7 +17,6 @@ limitations under the License.
 
 import (
 	"github.com/crunchydata/postgres-operator/apiserver/backrestservice"
-	"github.com/crunchydata/postgres-operator/apiserver/backupservice"
 	"github.com/crunchydata/postgres-operator/apiserver/catservice"
 	"github.com/crunchydata/postgres-operator/apiserver/cloneservice"
 	"github.com/crunchydata/postgres-operator/apiserver/clusterservice"
@@ -48,7 +47,6 @@ import (
 // provided router
 func RegisterAllRoutes(r *mux.Router) {
 	RegisterBackrestSvcRoutes(r)
-	RegisterBackupSvcRoutes(r)
 	RegisterCatSvcRoutes(r)
 	RegisterCloneSvcRoutes(r)
 	RegisterClusterSvcRoutes(r)
@@ -78,14 +76,6 @@ func RegisterBackrestSvcRoutes(r *mux.Router) {
 	r.HandleFunc("/backrestbackup", backrestservice.CreateBackupHandler).Methods("POST")
 	r.HandleFunc("/backrest/{name}", backrestservice.ShowBackrestHandler).Methods("GET")
 	r.HandleFunc("/restore", backrestservice.RestoreHandler).Methods("POST")
-}
-
-// RegisterBackupSvcRoutes registers all routes from the Backup Service
-func RegisterBackupSvcRoutes(r *mux.Router) {
-	r.HandleFunc("/backups/{name}", backupservice.ShowBackupHandler).Methods("GET")
-	r.HandleFunc("/backupsdelete/{name}", backupservice.DeleteBackupHandler).Methods("GET")
-	r.HandleFunc("/backups", backupservice.CreateBackupHandler).Methods("POST")
-	r.HandleFunc("/pgbasebackuprestore", backupservice.RestoreHandler).Methods("POST")
 }
 
 // RegisterCatSvcRoutes registers all routes from the Cat Service
