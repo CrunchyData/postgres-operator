@@ -229,8 +229,8 @@ primary. This provides a higher guarantee of data consistency and, when a
 healthy synchronous replica is present, a guarantee of the most up-to-date data
 during a failover event.
 
-This comes at a cost of performance as PostgreSQL: as PostgreSQL has to wait for
-a transaction to be committed on all synchronous replicas, a connected client
+This comes at a cost of performance: PostgreSQL has to wait for
+a transaction to be committed on all synchronous replicas, and a connected client
 will have to wait longer than if the transaction only had to be committed on the
 primary (which is how asynchronous replication works). Additionally, there is a
 potential impact to availability: if a synchronous replica crashes, any writes
