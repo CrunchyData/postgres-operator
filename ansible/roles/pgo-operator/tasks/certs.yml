@@ -3,13 +3,15 @@
   file:
     path: '{{ output_dir }}'
     state: directory
-  tags: [install]
+  tags:
+    - install
 
 - name: Generate RSA Key
   command: openssl genrsa -out "{{ output_dir }}/server.pem" 2048
   args:
     creates: "{{ output_dir }}/server.pem"
-  tags: [install]
+  tags:
+    - install
 
 - name: Generate CSR
   command: openssl req \
@@ -19,7 +21,8 @@
     -out "{{ output_dir }}/server.csr"
   args:
     creates: "{{ output_dir }}/server.csr"
-  tags: [install]
+  tags:
+    - install
 
 - name: Generate Self-signed Certificate
   command: openssl req \
@@ -30,18 +33,22 @@
     -out "{{ output_dir }}/server.crt"
   args:
     creates: "{{ output_dir }}/server.crt"
-  tags: [install]
+  tags:
+    - install
 
 - name: Ensure {{ pgo_keys_dir }} Directory Exists
   file:
     path: '{{ pgo_keys_dir }}'
     state: directory
-  tags: [install]
+  tags:
+    - install
 
 - name: Copy certificates to {{ pgo_keys_dir }}
   command: "cp {{ output_dir }}/server.crt {{ pgo_keys_dir }}/client.crt"
-  tags: [install]
+  tags:
+    - install
 
 - name: Copy keys to {{ pgo_keys_dir }}
   command: "cp {{ output_dir }}/server.pem {{ pgo_keys_dir }}/client.pem"
-  tags: [install]
+  tags:
+    - install

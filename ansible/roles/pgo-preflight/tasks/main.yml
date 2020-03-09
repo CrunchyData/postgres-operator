@@ -7,7 +7,9 @@
 - name: Check Operating System
   shell: uname
   register: uname_result
-  tags: [install, update]
+  tags:
+    - install
+    - update
 
 - assert:
     msg: Please specify either OpenShift or Kubernetes variables in inventory
