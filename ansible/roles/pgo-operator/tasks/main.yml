@@ -30,72 +30,94 @@
   tags: always
 
 - include_tasks: cleanup.yml
-  tags: [uninstall, update]
+  tags:
+    - uninstall
+    - update
 
 - include_tasks: kubernetes_cleanup.yml
   when: kubernetes_context != '' or kubernetes_in_cluster | bool
-  tags: [uninstall]
+  tags:
+    - uninstall
 
 - include_tasks: openshift_cleanup.yml
   when: openshift_host != ''
-  tags: [uninstall]
+  tags:
+    - uninstall
 
 - include_tasks: certs.yml
-  tags: [install]
+  tags:
+    - install
 
 - name: Use kubectl or oc
   set_fact:
     kubectl_or_oc: "{{ openshift_oc_bin if openshift_oc_bin is defined else 'kubectl' }}"
-  tags: always
+  tags:
+    - always
 
 - name: Deploy PostgreSQL Operator
   block:
     - include_tasks: namespace.yml
-      tags: [install, update]
+      tags:
+        - install
+        - update
     
     - include_tasks: crds.yml
-      tags: [install]
+      tags:
+        - install
 
     - name: Template PGO Admin Credentials
       template:
         src: pgouser-admin.yaml.j2
         dest: "{{ output_dir }}/pgouser-admin.yaml"
         mode: '0600'
-      tags: [install, update]
+      tags:
+        - install
+        - update
 
     - name: Create PGO Admin Credentials
       command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgouser-admin.yaml"
-      tags: [install, update]
+      tags:
+        - install
+        - update
 
     - name: Template PGO Admin Role & Permissions
       template:
         src: pgorole-pgoadmin.yaml.j2
         dest: "{{ output_dir }}/pgorole-pgoadmin.yaml"
         mode: '0600'
-      tags: [install, update]
+      tags:
+        - install
+        - update
 
     - name: Create PGO Admin Role & Permissions
       command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgorole-pgoadmin.yaml"
-      tags: [install, update]
+      tags:
+        - install
+        - update
 
     - name: Template Cluster RBAC
       template:
         src: cluster-rbac.yaml.j2
         dest: "{{ output_dir }}/cluster-rbac.yaml"
         mode: '0600'
-      tags: [install, update]
+      tags:
+        - install
+        - update
       when: create_rbac|bool
 
     - name: Create Cluster RBAC
       command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/cluster-rbac.yaml -n {{ pgo_operator_namespace }}"
-      tags: [install, update]
+      tags:
+        - install
+        - update
       when: create_rbac|bool
 
     - name: Create CCP Image Pull Secret
       shell: >
         {{ kubectl_or_oc }} -n {{ pgo_operator_namespace }} get secret/{{ ccp_image_pull_secret }} -o jsonpath='{""}' 2> /dev/null ||
         {{ kubectl_or_oc }} -n {{ pgo_operator_namespace }} create -f {{ ccp_image_pull_secret_manifest }}
-      tags: [install-metrics]
+      tags:
+        - install-metrics
       when:
         - create_rbac | bool
         - ccp_image_pull_secret_manifest != ''
@@ -104,7 +126,9 @@
       shell: >
         {{ kubectl_or_oc }} -n {{ pgo_operator_namespace }} get secret/{{ pgo_image_pull_secret }} -o jsonpath='{""}' 2> /dev/null ||
         {{ kubectl_or_oc }} -n {{ pgo_operator_namespace }} create -f {{ pgo_image_pull_secret_manifest }}
-      tags: [install, update]
+      tags:
+        - install
+        - update
       when:
         - create_rbac | bool
         - pgo_image_pull_secret_manifest != ''
@@ -115,19 +139,25 @@
           --clusterrole cluster-admin \
           --user system:serviceaccount:{{ pgo_operator_namespace }}:postgres-operator
       when: create_rbac|bool and pgo_cluster_admin|bool
-      tags: [install, update]
+      tags:
+        - install
+        - update
       
     - name: Template PGO RBAC
       template:
         src: pgo-role-rbac.yaml.j2
         dest: "{{ output_dir }}/pgo-role-rbac.yaml"
         mode: '0600'
-      tags: [install, update]
+      tags:
+        - install
+        - update
       when: create_rbac|bool
 
     - name: Create PGO RBAC
       command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgo-role-rbac.yaml  -n {{ pgo_operator_namespace }}"
-      tags: [install, update]
+      tags:
+        - install
+        - update
       when: create_rbac|bool
 
     - name: Template Local PGO User
@@ -135,28 +165,36 @@
         src: pgouser.local.j2
         dest: "{{ pgo_keys_dir }}/pgouser"
         mode: '0400'
-      tags: [install, update]
+      tags:
+        - install
+        - update
 
     - name: Template PGO Configuration
       template:
         src: pgo.yaml.j2
         dest: "{{ output_dir }}/pgo.yaml"
         mode: '0600'
-      tags: [install, update]
+      tags:
+        - install
+        - update
 
     - name: Template PGO Service Configuration
       template:
         src: service.json.j2
         dest: "{{ output_dir }}/service.json"
         mode: '0600'
-      tags: [install, update]
+      tags:
+        - install
+        - update
 
     - name: Template BackRest AWS S3 Configuration
       template:
         src: aws-s3-credentials.yaml.j2
         dest: "{{ output_dir }}/aws-s3-credentials.yaml"
         mode: '0600'
-      tags: [install,update]
+      tags:
+        - install
+        - update
 
     - name: Create PGO BackRest Repo Secret
       command: |
@@ -166,7 +204,9 @@
           --from-file=aws-s3-ca.crt='{{ role_path }}/files/pgo-backrest-repo/aws-s3-ca.crt' \
           --from-file=aws-s3-credentials.yaml='{{ output_dir }}/aws-s3-credentials.yaml' \
           -n {{ pgo_operator_namespace }}
-      tags: [install,update]
+      tags:
+        - install
+        - update
 
     - name: Create PGO API Secret
       command: |
@@ -174,7 +214,8 @@
           --cert='{{ output_dir }}/server.crt' \
           --key='{{ output_dir }}/server.pem' \
           -n {{ pgo_operator_namespace }}
-      tags: [install]
+      tags:
+        - install
 
     - name: Create PGO ConfigMap
       command: |
@@ -182,24 +223,32 @@
           --from-file=pgo.yaml='{{ output_dir }}/pgo.yaml' \
           --from-file='{{ role_path }}/files/pgo-configs' \
           -n {{ pgo_operator_namespace }}
-      tags: [install, update]
+      tags:
+        - install
+        - update
 
     - name: Create PGO Service
       command: |
         {{ kubectl_or_oc }} create --filename='{{ output_dir }}/service.json' -n {{ pgo_operator_namespace }}
-      tags: [install, update]
+      tags:
+        - install
+        - update
 
     - name: Template PGO Deployment
       template:
         src: deployment.json.j2
         dest: "{{ output_dir }}/deployment.json"
         mode: '0600'
-      tags: [install, update]
+      tags:
+        - install
+        - update
 
     - name: Deploy PGO
       command: |
         {{ kubectl_or_oc }} create --filename='{{ output_dir }}/deployment.json' -n {{ pgo_operator_namespace }}
-      tags: [install, update]
+      tags:
+        - install
+        - update
 
     - name: Download PGO Linux Client
       become: yes
@@ -210,7 +259,9 @@
         mode: 0755
         force: yes
       when: uname_result.stdout == "Linux" and pgo_client_install == "true"
-      tags: [install, update]
+      tags:
+        - install
+        - update
 
     - name: Download PGO MacOS Client
       become: yes
@@ -220,15 +271,21 @@
         dest: "/usr/local/bin/pgo"
         mode: 0755
       when: uname_result.stdout == "Darwin" and pgo_client_install == "true"
-      tags: [install, update]
+      tags:
+        - install
+        - update
 
     - name: Wait for PGO to finish deploying
       command: "{{ kubectl_or_oc }} rollout status deployment/postgres-operator -n {{ pgo_operator_namespace }}"
       async: 600
-      tags: [install, update]
+      tags:
+        - install
+        - update
 
 - name: Deploy PGO-Client Container
-  tags: [install, update]
+  tags:
+    - install
+    - update
   when: "pgo_client_container_install == 'true'"
   block:
     - name: Template PGO-Client Deployment
@@ -236,9 +293,13 @@
         src: pgo-client.json.j2
         dest: "{{ output_dir }}/pgo-client.json"
         mode: '0600'
-      tags: [install, update]
+      tags:
+        - install
+        - update
 
     - name: Create PGO-Client deployment
       command: |
         {{ kubectl_or_oc }} create --filename='{{ output_dir }}/pgo-client.json' -n {{ pgo_operator_namespace }}
-      tags: [install, update]
+      tags:
+        - install
+        - update

@@ -26,15 +26,19 @@
   tags: always
 
 - include_tasks: cleanup.yml
-  tags: [uninstall-metrics, upgrade-metrics]
+  tags:
+    - uninstall-metrics
+    - upgrade-metrics
 
 - include_tasks: kubernetes_cleanup.yml
   when: kubernetes_context != '' or kubernetes_in_cluster | bool
-  tags: [uninstall-metrics]
+  tags:
+    - uninstall-metrics
 
 - include_tasks: openshift_cleanup.yml
   when: openshift_host != ''
-  tags: [uninstall-metrics]
+  tags:
+    - uninstall-metrics
 
 - name: Use kubectl or oc
   set_fact:
