@@ -825,10 +825,7 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 			// SecretFrom needs to be set as the "sourcePgcluster.Spec.ClusterName"
 			// as this will indicate we got our secrets from the original cluster
 			// ...this does NOT copy over the secrets as I thought it would.
-			SecretFrom: sourcePgcluster.Spec.ClusterName,
-			// Strategy is set to "1" because it's already hardcoded elsewhere as this,
-			// and I don't want to touch it at this point
-			Strategy:        "1",
+			SecretFrom:      sourcePgcluster.Spec.ClusterName,
 			SyncReplication: sourcePgcluster.Spec.SyncReplication,
 			User:            sourcePgcluster.Spec.User,
 			UserSecretName:  fmt.Sprintf("%s-%s%s", targetClusterName, sourcePgcluster.Spec.User, crv1.UserSecretSuffix),

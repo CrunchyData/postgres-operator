@@ -83,7 +83,6 @@ func (in *Pgcluster) DeepCopyInto(out *Pgcluster) {
 		User:               in.Spec.User,
 		Database:           in.Spec.Database,
 		Replicas:           in.Spec.Replicas,
-		Strategy:           in.Spec.Strategy,
 		SecretFrom:         in.Spec.SecretFrom,
 		UserSecretName:     in.Spec.UserSecretName,
 		RootSecretName:     in.Spec.RootSecretName,

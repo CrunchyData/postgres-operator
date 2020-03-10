@@ -86,7 +86,6 @@
     "rootsecretname": "fromcrd-postgres-secret",
     "secretfrom": "",
     "status": "",
-    "strategy": "1",
     "syncReplication": null,
     "user": "testuser",
     "userlabels": {

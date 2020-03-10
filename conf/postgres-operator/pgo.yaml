@@ -12,7 +12,6 @@ Cluster:
   Database:  userdb
   PasswordAgeDays:  0
   PasswordLength:  24
-  Strategy:  1
   Replicas:  0
   ArchiveMode:  false
   ServiceType:  ClusterIP
