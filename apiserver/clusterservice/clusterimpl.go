@@ -1211,43 +1211,6 @@ func getReplicas(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterReplica,
 	return output, err
 }
 
-// deleteDatabaseSecrets delete secrets that match pg-cluster=somecluster
-func deleteDatabaseSecrets(db, ns string) error {
-	var err error
-	//get all that match pg-cluster=db
-	selector := config.LABEL_PG_CLUSTER + "=" + db
-	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, ns)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	for _, s := range secrets.Items {
-		err := kubeapi.DeleteSecret(apiserver.Clientset, s.ObjectMeta.Name, ns)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-	}
-	return err
-}
-
-func deleteConfigMaps(clusterName, ns string) error {
-	label := fmt.Sprintf("pg-cluster=%s", clusterName)
-	list, ok := kubeapi.ListConfigMap(apiserver.Clientset, label, ns)
-	if !ok {
-		return fmt.Errorf("No configMaps found for selector: %s", label)
-	}
-
-	for _, configmap := range list.Items {
-		err := kubeapi.DeleteConfigMap(apiserver.Clientset, configmap.Name, ns)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns, user string) (error, string, string, string) {
 
 	var err error
