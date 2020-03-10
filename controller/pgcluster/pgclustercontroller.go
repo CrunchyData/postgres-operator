@@ -190,6 +190,12 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 	}
 
+	// handle standby being enabled and disabled for the cluster
+	if oldcluster.Spec.Standby && !newcluster.Spec.Standby {
+		clusteroperator.DisableStandby(c.PgclusterClientset, *newcluster)
+	} else if !oldcluster.Spec.Standby && newcluster.Spec.Standby {
+		clusteroperator.EnableStandby(c.PgclusterClientset, *newcluster)
+	}
 }
 
 // onDelete is called when a pgcluster is deleted

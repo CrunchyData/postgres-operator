@@ -159,6 +159,9 @@ func ShowCluster(name, selector, ccpimagetag, ns string, allflag bool) msgs.Show
 			return response
 		}
 
+		// capture whether or not the cluster is currently a standby cluster
+		detail.Standby = c.Spec.Standby
+
 		if ccpimagetag == "" {
 			response.Results = append(response.Results, detail)
 		} else if ccpimagetag == c.Spec.CCPImageTag {
@@ -761,7 +764,8 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 
 	// create the user secrets
 	// first, the superuser
-	if secretName, password, err := createUserSecret(request, newInstance, crv1.RootSecretSuffix, crv1.PGUserSuperuser, ""); err != nil {
+	if secretName, password, err := createUserSecret(request, newInstance, crv1.RootSecretSuffix,
+		crv1.PGUserSuperuser, request.PasswordSuperuser); err != nil {
 		log.Error(err)
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -781,7 +785,8 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	}
 
 	// next, the replication user
-	if secretName, password, err := createUserSecret(request, newInstance, crv1.PrimarySecretSuffix, crv1.PGUserReplication, ""); err != nil {
+	if secretName, password, err := createUserSecret(request, newInstance, crv1.PrimarySecretSuffix,
+		crv1.PGUserReplication, request.PasswordReplication); err != nil {
 		log.Error(err)
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -802,7 +807,8 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 
 	// finally, the user from the request and/or default user
 	userSecretSuffix := fmt.Sprintf("-%s%s", newInstance.Spec.User, crv1.UserSecretSuffix)
-	if secretName, password, err := createUserSecret(request, newInstance, userSecretSuffix, newInstance.Spec.User, request.Password); err != nil {
+	if secretName, password, err := createUserSecret(request, newInstance, userSecretSuffix, newInstance.Spec.User,
+		request.PasswordUser); err != nil {
 		log.Error(err)
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -1450,19 +1456,42 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 			cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = "false"
 		}
 
+		// enable or disable standby mode based on UpdateClusterStandbyStatus provided in
+		// the request
+		switch request.Standby {
+		case msgs.UpdateClusterStandbyEnable:
+			if cluster.Status.State == crv1.PgclusterStateShutdown {
+				cluster.Spec.Standby = true
+			} else {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = "Cluster must be shutdown in order to enable standby mode"
+				return response
+			}
+		case msgs.UpdateClusterStandbyDisable:
+			cluster.Spec.Standby = false
+		}
+		// return an error if attempting to enable standby for a cluster that does not have the
+		// required S3 settings
+		if cluster.Spec.Standby &&
+			!strings.Contains(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], "s3") {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = "Backrest storage type 's3' must be enabled in order to enable " +
+				"standby mode"
+			return response
+		}
+
 		err = kubeapi.Updatepgcluster(apiserver.RESTClient,
 			&cluster, cluster.Spec.Name, request.Namespace)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
-		} else {
-			response.Results = append(response.Results, "updated pgcluster "+cluster.Spec.Name)
 		}
+
+		response.Results = append(response.Results, "updated pgcluster "+cluster.Spec.Name)
 	}
 
 	return response
-
 }
 
 func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterPod, error) {

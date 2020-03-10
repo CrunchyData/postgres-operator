@@ -239,3 +239,21 @@ func UpdateDeployment(clientset *kubernetes.Clientset, deployment *v1.Deployment
 	return err
 
 }
+
+// ScaleDeployment provides the ability to scale a Kubernetes deployment.  The deployment provided
+// is scaled to the number of replicas specfied via the 'replicas' parameter.
+func ScaleDeployment(clientset *kubernetes.Clientset, deployment v1.Deployment,
+	replicas int) error {
+
+	replicaCount := int32(replicas)
+	deployment.Spec.Replicas = &replicaCount
+
+	if err := UpdateDeployment(clientset, &deployment, deployment.Namespace); err != nil {
+		log.Error(err)
+		log.Errorf("unable to update replica count to %d in order to scale deployment %s",
+			deployment.Name)
+		return err
+	}
+
+	return nil
+}

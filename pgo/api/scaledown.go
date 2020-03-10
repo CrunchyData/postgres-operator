@@ -18,17 +18,20 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"strconv"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"strconv"
 )
 
-func ScaleDownCluster(httpclient *http.Client, clusterName, ScaleDownTarget string, DeleteData bool, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ScaleDownResponse, error) {
+func ScaleDownCluster(httpclient *http.Client, clusterName, ScaleDownTarget string,
+	DeleteData, Shutdown bool, SessionCredentials *msgs.BasicAuthCredentials,
+	ns string) (msgs.ScaleDownResponse, error) {
 
 	var response msgs.ScaleDownResponse
-	url := SessionCredentials.APIServerURL + "/scaledown/" + clusterName + "?version=" + msgs.PGO_VERSION + "&" + config.LABEL_REPLICA_NAME + "=" + ScaleDownTarget + "&" + config.LABEL_DELETE_DATA + "=" + strconv.FormatBool(DeleteData) + "&namespace=" + ns
+	url := fmt.Sprintf("%s/scaledown/%s", SessionCredentials.APIServerURL, clusterName)
 	log.Debug(url)
 
 	action := "GET"
@@ -36,6 +39,14 @@ func ScaleDownCluster(httpclient *http.Client, clusterName, ScaleDownTarget stri
 	if err != nil {
 		return response, err
 	}
+
+	q := req.URL.Query()
+	q.Add("version", msgs.PGO_VERSION)
+	q.Add(config.LABEL_REPLICA_NAME, ScaleDownTarget)
+	q.Add(config.LABEL_DELETE_DATA, strconv.FormatBool(DeleteData))
+	q.Add("namespace", ns)
+	q.Add(config.LABEL_SHUTDOWN, strconv.FormatBool(Shutdown))
+	req.URL.RawQuery = q.Encode()
 
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 	resp, err := httpclient.Do(req)

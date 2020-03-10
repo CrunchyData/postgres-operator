@@ -25,7 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -66,6 +66,9 @@ const (
 	// instanceReplicationInfoTypePrimary is the label used by Patroni to indicate that an instance
 	// is indeed a primary PostgreSQL instance
 	instanceReplicationInfoTypePrimary = "Leader"
+	// instanceReplicationInfoTypePrimaryStandby is the label used by Patroni to indicate that an
+	// instance is indeed a primary PostgreSQL instance, specifically within a standby cluster
+	instanceReplicationInfoTypePrimaryStandby = "Standby Leader"
 	// pgPodNamePattern pattern is a pattern used by regexp to look up the
 	// name of the pod
 	// The character classes are derived from the Kubernetes random generator
@@ -183,7 +186,8 @@ func ReplicationStatus(request ReplicationStatusRequest) (ReplicationStatusRespo
 	// response
 	for _, rawInstance := range rawInstances {
 		// if this is a primary, skip it
-		if rawInstance.Type == instanceReplicationInfoTypePrimary {
+		if rawInstance.Type == instanceReplicationInfoTypePrimary ||
+			rawInstance.Type == instanceReplicationInfoTypePrimaryStandby {
 			continue
 		}
 
@@ -259,6 +263,14 @@ func ToggleAutoFailover(clientset *kubernetes.Clientset, enable bool, pghaScope,
 		err := fmt.Errorf("Unable to find configMap %s when attempting disable autofailover", configMapName)
 		log.Error(err)
 		return err
+	}
+
+	// return ErrMissingConfigAnnotation error if configMap is missing the "config" annotation.
+	// This allows for graceful handling of scenarios where a failover toggle is attempted
+	// (e.g. during cluster removal), but this annotation has not been created yet (e.g. due to
+	// a failed cluster bootstrap)
+	if _, ok := configMap.ObjectMeta.Annotations["config"]; !ok {
+		return ErrMissingConfigAnnotation
 	}
 
 	configJSONStr := configMap.ObjectMeta.Annotations["config"]

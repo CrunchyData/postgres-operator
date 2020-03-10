@@ -16,6 +16,10 @@ limitations under the License.
 */
 
 import (
+	"fmt"
+	"strings"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
@@ -25,10 +29,9 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/apps/v1"
+	v1 "k8s.io/api/apps/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
-	"time"
 )
 
 // CreatePolicy ...
@@ -194,6 +197,16 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 		return resp
 	}
 	log.Debugf("apply policy clusters found len is %d", len(clusterList.Items))
+
+	// Return an error if any clusters identified for the policy are in standby mode.  Standby
+	// clusters are in read-only mode, and therefore cannot have policies applied to them
+	// until standby mode has been disabled.
+	if hasStandby, standbyClusters := apiserver.PGClusterListHasStandby(clusterList); hasStandby {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf("Request rejected, unable to load clusters %s: %s."+
+			strings.Join(standbyClusters, ","), apiserver.ErrStandbyNotAllowed.Error())
+		return resp
+	}
 
 	var allDeployments []v1.Deployment
 	for _, c := range clusterList.Items {

@@ -18,12 +18,13 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var failoverCmd = &cobra.Command{
@@ -101,15 +102,19 @@ func queryFailover(args []string, ns string) {
 
 	log.Debugf("queryFailover called %v", args)
 
-	// indicate which cluster this is. Put a newline before to put some
-	// separation between each line
-	fmt.Printf("\nCluster: %s\n", args[0])
-
 	// call the API
 	response, err := api.QueryFailover(httpclient, args[0], &SessionCredentials, ns)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
+	}
+
+	// indicate which cluster this is. Put a newline before to put some
+	// separation between each line
+	if !response.Standby {
+		fmt.Printf("\nCluster: %s\n", args[0])
+	} else {
+		fmt.Printf("\nCluster (standby): %s\n", args[0])
 	}
 
 	// If there is a controlled error, output the message here and continue

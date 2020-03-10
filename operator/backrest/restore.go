@@ -178,7 +178,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		PGOImageTag:            operator.Pgo.Pgo.PGOImageTag,
 		PgbackrestStanza:       task.Spec.Parameters[config.LABEL_PGBACKREST_STANZA],
 		PgbackrestDBPath:       task.Spec.Parameters[config.LABEL_PGBACKREST_DB_PATH],
-		PgbackrestRepo1Path:    task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH],
+		PgbackrestRepo1Path:    util.GetPGBackRestRepoPath(cluster),
 		PgbackrestRepo1Host:    task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_HOST],
 		NodeSelector:           operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),
 		PgbackrestRepoType:     operator.GetRepoType(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
@@ -379,6 +379,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		CollectVolume:      operator.GetCollectVolume(clientset, cluster, namespace),
 		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cluster, restoreToName),
 		ScopeLabel:         config.LABEL_PGHA_SCOPE,
+		Standby:            false, // always disabled since standby clusters cannot be restored
 		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster, cluster.Labels[config.LABEL_BACKREST], restoreToName,
 			cluster.Spec.Port, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars:      operator.GetPgbackrestS3EnvVars(*cluster, clientset, namespace),

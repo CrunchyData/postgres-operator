@@ -16,8 +16,11 @@ package kubeapi
 */
 
 import (
+	"fmt"
+	"time"
+
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -109,4 +112,24 @@ func DeletePVCs(clientset *kubernetes.Clientset, selector, namespace string) err
 
 	return err
 
+}
+
+// IsPVCDeleted checks to see if a PVC has been deleted.  It will continuously check to
+// see if the PVC has been deleted, only returning once the PVC is verified to have been
+// deleted, or the timeout specified is reached.
+func IsPVCDeleted(client *kubernetes.Clientset, timeout time.Duration, pvcName,
+	namespace string) error {
+
+	duration := time.After(timeout)
+	tick := time.Tick(500 * time.Millisecond)
+	for {
+		select {
+		case <-duration:
+			return fmt.Errorf("timed out waiting for PVC to delete: %s", pvcName)
+		case <-tick:
+			if _, found, _ := GetPVC(client, pvcName, namespace); !found {
+				return nil
+			}
+		}
+	}
 }

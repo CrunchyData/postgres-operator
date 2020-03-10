@@ -19,11 +19,13 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 
@@ -34,7 +36,8 @@ import (
 )
 
 // ScaleCluster ...
-func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel, ccpImageTag, serviceType, ns, pgouser string) msgs.ClusterScaleResponse {
+func ScaleCluster(startup bool, name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
+	ccpImageTag, serviceType, ns, pgouser string) msgs.ClusterScaleResponse {
 	var err error
 
 	response := msgs.ClusterScaleResponse{}
@@ -65,6 +68,40 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
 		return response
+	}
+	clusterName := cluster.Name
+
+	var rc int
+	rc, err = strconv.Atoi(replicaCount)
+
+	// If the cluster has been shutdown, first it needs to be started backup.  This includes
+	// starting the primary and all supporting services (e.g. pgBackRest and pgBouncer)
+	if cluster.Status.State == crv1.PgclusterStateShutdown && !startup {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "Unable to scale cluster because it is currently shutdown. " +
+			"Start up the cluster in order to scale it."
+		return response
+	} else if cluster.Status.State == crv1.PgclusterStateShutdown && startup {
+
+		log.Debugf("detected shutdown cluster when scaling up cluster %s, restarting the primary "+
+			"and all supporting services", clusterName)
+
+		clusterServices, err := scaleClusterDeployments(cluster, 1)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
+		response.Results = append(response.Results, fmt.Sprintf("Cluster %s has been restarted "+
+			"and the following services have been re-enabled: %s",
+			clusterName, strings.Join(clusterServices, ", ")))
+
+		log.Debugf("Cluster %s has been restarted by via scale, proceeding with replica creation",
+			clusterName)
+	} else if startup {
+		response.Results = append(response.Results, fmt.Sprintf("Cluster %s is already started.",
+			clusterName))
 	}
 
 	spec := crv1.PgreplicaSpec{}
@@ -138,8 +175,6 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 
 	spec.ClusterName = cluster.Spec.Name
 
-	var rc int
-	rc, err = strconv.Atoi(replicaCount)
 	if err != nil {
 		log.Error(err.Error())
 		response.Status.Code = msgs.Error
@@ -240,6 +275,11 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 		return response
 	}
 
+	// indicate in the response whether or not a standby cluster
+	if cluster.Spec.Standby {
+		response.Standby = true
+	}
+
 	// if there are no results, return the response as is
 	if len(replicationStatusResponse.Instances) == 0 {
 		return response
@@ -264,7 +304,9 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 }
 
 // ScaleDown ...
-func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleDownResponse {
+func ScaleDown(deleteData, shutdown bool, clusterName, replicaName,
+	ns string) msgs.ScaleDownResponse {
+
 	var err error
 
 	response := msgs.ScaleDownResponse{}
@@ -292,42 +334,108 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 		return response
 	}
 
-	//if this was the last replica then remove the replica service
-	var replicaList *v1.DeploymentList
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_SERVICE_NAME + "=" + clusterName + "-replica"
-	replicaList, err = kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
+	// dont proceed any further if the cluster is shutdown
+	if cluster.Status.State == crv1.PgclusterStateShutdown {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "Nothing to scale, the cluster is currently " +
+			"shutdown"
+		return response
+	}
+
+	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, clusterName,
+		config.LABEL_PGHA_ROLE, "master")
+	primaryList, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	if err != nil {
+		log.Error(err)
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	} else if len(primaryList.Items) == 0 {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "no primary found for this cluster"
+		return response
+	} else if len(primaryList.Items) > 1 {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "more than one primary found for this cluster"
+		return response
+	}
+	primaryDeploymentName := primaryList.Items[0].Labels[config.LABEL_DEPLOYMENT_NAME]
+
+	// selector in the format "pg-cluster=<cluster-name>,pg-ha-scope=<cluster-name>"
+	// which will grab the primary and any/all replicas
+	selector = fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, clusterName,
+		config.LABEL_PGHA_ROLE, "replica")
+	replicaList, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
 		return response
 	}
-	if len(replicaList.Items) == 0 {
+
+	// Return an error if trying to scale down the primary but replicas still remain in the
+	// cluster.  Otherwise if no replicas remain then proceed with scaling the primary
+	// deployment to 0 and set the cluster to a 'shutdown' status.
+	if shutdown && len(replicaList.Items) > 0 {
 		response.Status.Code = msgs.Error
-		response.Status.Msg = "no replicas found for this cluster"
+		response.Status.Msg = fmt.Sprintf("Replicas still exist for cluster %s. All replicas "+
+			"must be removed prior shutting down the database cluster.", clusterName)
+		return response
+	} else if shutdown {
+
+		log.Debugf("no replicas remain for cluster %s, scaling primary deployment %s to 0",
+			clusterName, primaryDeploymentName)
+
+		clusterServices, err := scaleClusterDeployments(cluster, 0)
+		if err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
+		// set the status of the pgcluster to 'pgcluster Shutdown' with associated message
+		message := "Cluster shutdown by scaling down the cluster"
+		if err := kubeapi.PatchpgclusterStatus(apiserver.RESTClient, crv1.PgclusterStateShutdown,
+			message, &cluster, ns); err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+
+		if err := publishClusterShutdown(&cluster); err != nil {
+			log.Error(err)
+		}
+
+		response.Results = append(response.Results, fmt.Sprintf("The primary server is shutdown "+
+			"and the database for cluster %s has been stopped.\nThe following services have also "+
+			"been disabled: %s\nScale up the cluster to restart the database and re-enable any "+
+			"supporting services.", clusterName, strings.Join(clusterServices, ", ")))
+
 		return response
 	}
 
-	//validate the replica name that was passed
-	replica := crv1.Pgreplica{}
-	found, err := kubeapi.Getpgreplica(apiserver.RESTClient, &replica, replicaName, ns)
-	if !found || err != nil {
-		log.Error(err)
-		response.Status.Code = msgs.Error
-		if !found {
-			response.Status.Msg = replicaName + " replica not found"
-		} else {
-			response.Status.Msg = err.Error()
+	// check to see if the replica name provided matches the name of the primary or any of the
+	// replicas found for the cluster
+	var replicaNameFound bool
+	for _, pod := range replicaList.Items {
+		if pod.Labels[config.LABEL_DEPLOYMENT_NAME] == replicaName {
+			replicaNameFound = true
+			break
 		}
-		return response
+	}
+	// return an error if the replica name provided does not match the primary or any replicas
+	if !replicaNameFound {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf("Unable to find replica with name %s",
+			replicaName)
 	}
 
 	//create the rmdata task which does the cleanup
 
+	clusterPGHAScope := cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE]
 	deleteBackups := false
 	isReplica := true
 	isBackup := false
 	taskName := replicaName + "-rmdata"
-	clusterPGHAScope := cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE]
 	err = apiserver.CreateRMDataTask(clusterName, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns, clusterPGHAScope)
 	if err != nil {
 		response.Status.Code = msgs.Error
@@ -335,6 +443,70 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 		return response
 	}
 
-	response.Results = append(response.Results, "deleted Pgreplica "+replicaName)
+	response.Results = append(response.Results, "deleted replica "+replicaName)
 	return response
+}
+
+// scaleClusterDeployments scales all deployments for a cluster to the number of replicas
+// specified using the 'replicas' parameter.  This is typically used to scale-up or down the
+// primary deployment and any supporting services (pgBackRest and pgBouncer) when shutting down
+// or starting up the cluster due to a scale or scale-down request.
+func scaleClusterDeployments(cluster crv1.Pgcluster, replicas int) (clusterServices []string,
+	err error) {
+
+	clusterName := cluster.Name
+	namespace := cluster.Namespace
+	// Get *all* remaining deployments for the cluster.  This includes the deployment for the
+	// primary, as well as the pgBackRest repo and any optional deployment (e.g. pgBouncer)
+	var deploymentList *v1.DeploymentList
+	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, clusterName)
+	if deploymentList, err = kubeapi.GetDeployments(apiserver.Clientset, selector,
+		namespace); err != nil {
+		return nil, err
+	}
+
+	for _, deployment := range deploymentList.Items {
+		log.Debugf("scaling deployment %s to %d for cluster %s", deployment.Name, replicas,
+			clusterName)
+		// scale the deployment
+		if err := kubeapi.ScaleDeployment(apiserver.Clientset, deployment, replicas); err != nil {
+			return nil, err
+		}
+		// determine if the deployment is a supporting service (pgBackRest, pgBouncer, etc.)
+		// and capture the name of the service for display in the response below
+		switch {
+		case deployment.Labels[config.LABEL_PGBOUNCER] == "true":
+			clusterServices = append(clusterServices, "pgBouncer")
+		case deployment.Labels[config.LABEL_PGO_BACKREST_REPO] == "true":
+			clusterServices = append(clusterServices, "pgBackRest")
+		}
+	}
+	return clusterServices, nil
+}
+
+func publishClusterShutdown(cluster *crv1.Pgcluster) error {
+
+	clusterName := cluster.Name
+
+	//capture the cluster creation event
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventShutdownClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace: cluster.Namespace,
+			Username:  cluster.Spec.UserLabels[config.LABEL_PGOUSER],
+			Topic:     topics,
+			Timestamp: time.Now(),
+			EventType: events.EventShutdownCluster,
+		},
+		Clustername: clusterName,
+	}
+
+	if err := events.Publish(f); err != nil {
+		log.Error(err.Error())
+		return err
+	}
+
+	return nil
 }

@@ -29,7 +29,7 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -171,6 +171,16 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 	// user supplied value and the defaults here
 	validUntil := generateValidUntilDateString(request.PasswordAgeDays)
 	sqlValidUntil := fmt.Sprintf(sqlValidUntilClause, util.SQLQuoteLiteral(validUntil))
+
+	// Return an error if any clusters identified for user creation are in standby mode.  Users
+	// cannot be created in standby clusters because the database is in read-only mode while the
+	// cluster replicates from a remote master.
+	if hasStandby, standbyClusters := apiserver.PGClusterListHasStandby(clusterList); hasStandby {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf("Request rejected, unable to create users for clusters "+
+			"%s: %s.", strings.Join(standbyClusters, ","), apiserver.ErrStandbyNotAllowed.Error())
+		return response
+	}
 
 	// iterate through each cluster and add the new PostgreSQL role to each pod
 	for _, cluster := range clusterList.Items {
@@ -552,6 +562,16 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
+		return response
+	}
+
+	// Return an error if any clusters identified for the user updare are in standby mode.  Users
+	// cannot be updated in standby clusters because the database is in read-only mode while the
+	// cluster replicates from a remote master
+	if hasStandby, standbyClusters := apiserver.PGClusterListHasStandby(clusterList); hasStandby {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf("Request rejected, unable to update users for clusters "+
+			"%s: %s.", strings.Join(standbyClusters, ", "), apiserver.ErrStandbyNotAllowed.Error())
 		return response
 	}
 

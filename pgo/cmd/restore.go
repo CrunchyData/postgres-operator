@@ -47,7 +47,7 @@ var restoreCmd = &cobra.Command{
 			fmt.Println(`Error: You must specify the cluster name to restore from.`)
 		} else {
 			if BackupType == "" || BackupType == config.LABEL_BACKUP_TYPE_BACKREST {
-				fmt.Println("Warning:  If currently running, the primary database in this cluster will be stopped and recreated as part of this workflow!")
+				fmt.Println("If currently running, the primary database in this cluster will be stopped and recreated as part of this workflow!")
 			}
 			if pgoutil.AskForConfirmation(NoPrompt, "") {
 				restore(args, Namespace)

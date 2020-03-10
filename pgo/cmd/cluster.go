@@ -161,6 +161,11 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 	fmt.Println("")
 	fmt.Println("cluster : " + detail.Cluster.Spec.Name + " (" + detail.Cluster.Spec.CCPImage + ":" + detail.Cluster.Spec.CCPImageTag + ")")
 
+	// indicate if a standby cluster
+	if detail.Standby {
+		fmt.Printf("%sstandby : %t\n", TreeBranch, detail.Standby)
+	}
+
 	for _, pod := range detail.Pods {
 		podType := "(" + pod.Type + ")"
 
@@ -230,8 +235,10 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.Namespace = ns
 	r.ReplicaCount = ClusterReplicaCount
 	r.NodeLabel = NodeLabel
-	r.Password = Password
 	r.PasswordLength = PasswordLength
+	r.PasswordSuperuser = PasswordSuperuser
+	r.PasswordReplication = PasswordReplication
+	r.PasswordUser = PasswordUser
 	r.SecretFrom = SecretFrom
 	r.UserLabels = UserLabels
 	r.Policies = PoliciesFlag
@@ -380,6 +387,14 @@ func updateCluster(args []string, ns string) {
 	r.Namespace = ns
 	r.AllFlag = AllFlag
 	r.Clustername = args
+
+	// check to see if EnableAutofailFlag or DisableAutofailFlag is set. If so,
+	// set a value for Autofail
+	if EnableStandby {
+		r.Standby = msgs.UpdateClusterStandbyEnable
+	} else if DisableStandby {
+		r.Standby = msgs.UpdateClusterStandbyDisable
+	}
 
 	// check to see if EnableAutofailFlag or DisableAutofailFlag is set. If so,
 	// set a value for Autofail

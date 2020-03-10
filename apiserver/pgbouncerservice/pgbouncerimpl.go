@@ -91,6 +91,20 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 		return resp
 	}
 
+	// Return an error if any clusters identified to have pgbouncer fully deleted (as specified
+	// using the uninstall parameter) have standby mode enabled and the 'uninstall' option selected.
+	// This because while in standby mode the cluster is read-only, preventing the execution of the
+	// SQL required to remove pgBouncer.
+	if hasStandby, standbyClusters := apiserver.PGClusterListHasStandby(clusterList); hasStandby &&
+		request.Uninstall {
+
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf("Request rejected, unable to delete pgbouncer using the "+
+			"'uninstall' parameter for clusters %s: %s.", strings.Join(standbyClusters, ","),
+			apiserver.ErrStandbyNotAllowed.Error())
+		return resp
+	}
+
 	for _, cluster := range clusterList.Items {
 		log.Debugf("deleting pgbouncer from cluster [%s]", cluster.Name)
 
@@ -217,6 +231,18 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
+		return response
+	}
+
+	// Return an error if any clusters selected to have pgbouncer updated have standby mode enabled.
+	// This is because while in standby mode the cluster is read-only, preventing the execution of the
+	// SQL required to update pgbouncer.
+	if hasStandby, standbyClusters := apiserver.PGClusterListHasStandby(clusterList); hasStandby {
+
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf("Request rejected, unable to update pgbouncer for "+
+			"clusters %s: %s.", strings.Join(standbyClusters, ","),
+			apiserver.ErrStandbyNotAllowed.Error())
 		return response
 	}
 

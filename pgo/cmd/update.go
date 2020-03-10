@@ -40,6 +40,10 @@ var (
 	// RotatePassword is a flag that allows one to specify that a password be
 	// automatically rotated, such as a service account type password
 	RotatePassword bool
+	// DisableStandby can be used to disable standby mode when enabled in an existing cluster
+	DisableStandby bool
+	// EnableStandby can be used to enable standby mode in an existing cluster
+	EnableStandby bool
 )
 
 func init() {
@@ -56,6 +60,10 @@ func init() {
 	UpdateClusterCmd.Flags().BoolVar(&DisableAutofailFlag, "disable-autofail", false, "Disables autofail capabitilies in the cluster.")
 	UpdateClusterCmd.Flags().BoolVar(&EnableAutofailFlag, "enable-autofail", false, "Enables autofail capabitilies in the cluster.")
 	UpdateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	UpdateClusterCmd.Flags().BoolVarP(&DisableStandby, "disable-standby", "", false,
+		"Disables standby mode if enabled in the cluster(s) specified.")
+	UpdateClusterCmd.Flags().BoolVarP(&EnableStandby, "enable-standby", "", false,
+		"Enables standby mode in the cluster(s) specified.")
 	UpdatePgBouncerCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdatePgBouncerCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
 	UpdatePgBouncerCmd.Flags().BoolVar(&RotatePassword, "rotate-password", false, "Used to rotate the pgBouncer service account password. Can cause interruption of service.")
@@ -154,6 +162,19 @@ var UpdateClusterCmd = &cobra.Command{
 		if EnableAutofailFlag && DisableAutofailFlag {
 			fmt.Println("Error: Cannot set --enable-autofail and --disable-autofail simultaneously")
 			os.Exit(1)
+		}
+
+		if EnableStandby {
+			fmt.Println("Enabling standby mode will result in the deltion of all PVCs " +
+				"for this cluster!\nData will only be retained if the proper retention policy " +
+				"is configured for any associated storage classes and/or persisent volumes.\n" +
+				"Please proceed with caution.")
+		}
+
+		if DisableStandby {
+			fmt.Println("Disabling standby mode will enable database writes for this " +
+				"cluster.\nPlease ensure the cluster this standby cluster is replicating " +
+				"from has been properly shutdown before proceeding!")
 		}
 
 		if !util.AskForConfirmation(NoPrompt, "") {

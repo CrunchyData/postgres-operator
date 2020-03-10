@@ -18,25 +18,40 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strconv"
+
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
+	log "github.com/sirupsen/logrus"
 )
 
-func ScaleCluster(httpclient *http.Client, arg string, ReplicaCount int, ContainerResources, StorageConfig, NodeLabel, CCPImageTag, ServiceType string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ClusterScaleResponse, error) {
+func ScaleCluster(httpclient *http.Client, arg string, ReplicaCount int, ContainerResources,
+	StorageConfig, NodeLabel, CCPImageTag, ServiceType string, Startup bool,
+	SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ClusterScaleResponse, error) {
 
 	var response msgs.ClusterScaleResponse
 
-	url := SessionCredentials.APIServerURL + "/clusters/scale/" + arg + "?replica-count=" + strconv.Itoa(ReplicaCount) + "&resources-config=" + ContainerResources + "&storage-config=" + StorageConfig + "&node-label=" + NodeLabel + "&version=" + msgs.PGO_VERSION + "&ccp-image-tag=" + CCPImageTag + "&service-type=" + ServiceType + "&namespace=" + ns
+	url := fmt.Sprintf("%s/clusters/scale/%s", SessionCredentials.APIServerURL, arg)
 	log.Debug(url)
 
 	action := "GET"
-
 	req, err := http.NewRequest(action, url, nil)
 	if err != nil {
 		return response, err
 	}
+
+	q := req.URL.Query()
+	q.Add("replica-count", strconv.Itoa(ReplicaCount))
+	q.Add("resources-config", ContainerResources)
+	q.Add("storage-config", StorageConfig)
+	q.Add("node-label", NodeLabel)
+	q.Add("version", msgs.PGO_VERSION)
+	q.Add("ccp-image-tag", CCPImageTag)
+	q.Add("service-type", ServiceType)
+	q.Add("namespace", ns)
+	q.Add(config.LABEL_STARTUP, strconv.FormatBool(Startup))
+	req.URL.RawQuery = q.Encode()
 
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 

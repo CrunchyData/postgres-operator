@@ -36,6 +36,9 @@ var (
 	// ErrMessagePVCSize provides a standard error message when a PVCSize is not
 	// specified to the Kubernetes stnadard
 	ErrMessagePVCSize = `could not parse PVC size "%s": %s (hint: try a value like "1Gi")`
+	// ErrStandbyNotAllowed contains the error message returned when an API call is not
+	// permitted because it involves a cluster that is in standby mode
+	ErrStandbyNotAllowed = errors.New("Action not permitted because standby mode is enabled")
 )
 
 // ReplicaPodStatus stores the name of the node a replica pod is assigned to, as well
@@ -152,4 +155,25 @@ func IsValidPVC(pvcName, ns string) bool {
 func ValidateQuantity(quantity string) error {
 	_, err := resource.ParseQuantity(quantity)
 	return err
+}
+
+// FindStandbyClusters takes a list of pgcluster structs and returns a slice containing the names
+// of those clusters that are in standby mode as indicated by whether or not the standby prameter
+// in the pgcluster spec is true.
+func FindStandbyClusters(clusterList crv1.PgclusterList) (standbyClusters []string) {
+	standbyClusters = make([]string, 0)
+	for _, cluster := range clusterList.Items {
+		if cluster.Spec.Standby {
+			standbyClusters = append(standbyClusters, cluster.Name)
+		}
+	}
+	return
+}
+
+// PGClusterListHasStandby determines if a PgclusterList has any standby clusters, specifically
+// returning "true" if one or more standby clusters exist, along with a slice of strings
+// containing the names of the clusters in standby mode
+func PGClusterListHasStandby(clusterList crv1.PgclusterList) (bool, []string) {
+	standbyClusters := FindStandbyClusters(clusterList)
+	return len(FindStandbyClusters(clusterList)) > 0, standbyClusters
 }

@@ -47,10 +47,19 @@ const DefaultArchiveTimeout = "60"
 // cluster
 const PGHAConfigMapSuffix = "pgha-config"
 
-// PGHAConfigInitSetting defines the setting in the PGHA configMap that is created for each PG
-// cluster that is responsible for configuring whether or not initialization logic should be run
-// in the crunchy-postgres-ha (or GIS equivilaent) container
-const PGHAConfigInitSetting = "init"
+// the following constants define the settings in the PGHA configMap that is created for each PG
+// cluster
+const (
+	// PGHAConfigInitSetting determines whether or not initialization logic should be run in the
+	// crunchy-postgres-ha (or GIS equivilaent) container
+	PGHAConfigInitSetting = "init"
+	// PGHAConfigReplicaBootstrapRepoTye defines an override for the type of repo (local, S3, etc.)
+	// that should be utilized when bootstrapping a replica (i.e. it override the
+	// PGBACKREST_REPO_TYPE env var in the environment).  Allows for dynamic changing of the
+	// backrest repo type without requiring container restarts (as would be required to update
+	// PGBACKREST_REPO_TYPE).
+	PGHAConfigReplicaBootstrapRepoTye = "replica-bootstrap-repo-type"
+)
 
 // affinityType represents the two affinity types provided by Kubernetes, specifically
 // either preferredDuringSchedulingIgnoredDuringExecution or
@@ -346,7 +355,7 @@ func CreatePGHAConfigMap(clientset *kubernetes.Clientset, cluster *crv1.Pgcluste
 	// if a standby cluster then we want to create replicas using the S3 pgBackRest repository
 	// (and not the local in-cluster pgBackRest repository)
 	if cluster.Spec.Standby {
-		data["replica-bootstrap-repo-type"] = "s3"
+		data[PGHAConfigReplicaBootstrapRepoTye] = "s3"
 	}
 
 	configmap := &v1.ConfigMap{

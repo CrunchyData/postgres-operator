@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
@@ -109,7 +110,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	}
 
 	// Lookup the pgcluster CR for PG cluster associated with this Pod.  Since a 'pg-cluster'
-	//  label was found on updated Pod, this lookup should always succeed.
+	// label was found on updated Pod, this lookup should always succeed.
 	clusterName := newPodLabels[config.LABEL_PG_CLUSTER]
 	cluster := crv1.Pgcluster{}
 	_, err := kubeapi.Getpgcluster(c.PodClient, &cluster, clusterName,
@@ -124,8 +125,19 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// a failover or switchove has ocurred.
 	if cluster.Status.State == crv1.PgclusterStateInitialized &&
 		isPromotedPostgresPod(oldPod, newPod) {
-
+		log.Debugf("Pod Controller: pod %s in namespace %s promoted, calling pod promotion "+
+			"handler", newPod.Name, newPod.Namespace)
 		if err := c.handlePostgresPodPromotion(newPod, cluster.Name); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
+	if cluster.Status.State == crv1.PgclusterStateInitialized &&
+		isPromotedStandby(oldPod, newPod) {
+		log.Debugf("Pod Controller: standby pod %s in namespace %s promoted, calling standby pod "+
+			"promotion handler", newPod.Name, newPod.Namespace)
+		if err := c.handleStandbyPromotion(newPod, cluster); err != nil {
 			log.Error(err)
 			return
 		}
@@ -140,13 +152,23 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 	// First handle pod update as needed if the update was part of an ongoing upgrade
 	if cluster.Labels[config.LABEL_MINOR_UPGRADE] == config.LABEL_UPGRADE_IN_PROGRESS {
-		c.handleUpgradePodUpdate(newPod, &cluster)
+		log.Debugf("Pod Controller: upgrade pod %s now ready, calling pod upgrade "+
+			"handler", newPod.Name, newPod.Namespace)
+		if err := c.handleUpgradePodUpdate(newPod, &cluster); err != nil {
+			log.Error(err)
+			return
+		}
 	}
 
 	// Handle postgresql pod updates as needed for cluster initialization
 	if cluster.Status.State != crv1.PgclusterStateInitialized &&
 		isPostgresPrimaryPod(newPod) {
-		c.handleClusterInit(newPod, &cluster)
+		log.Debugf("Pod Controller: pg pod %s now ready in an unintialized cluster, calling "+
+			"cluster init handler", newPod.Name, newPod.Namespace)
+		if err := c.handleClusterInit(newPod, &cluster); err != nil {
+			log.Error(err)
+			return
+		}
 	}
 }
 
@@ -207,6 +229,9 @@ func (c *Controller) SetupWatch(ns string) {
 // isDBContainerBecomingReady checks to see if the Pod update shows that the Pod has
 // transitioned from an 'unready' status to a 'ready' status.
 func isDBContainerBecomingReady(oldPod, newPod *apiv1.Pod) bool {
+	if !isPostgresPod(newPod) {
+		return false
+	}
 	var oldDatabaseStatus bool
 	// first see if the old version of the pod was not ready
 	for _, v := range oldPod.Status.ContainerStatuses {
@@ -222,7 +247,6 @@ func isDBContainerBecomingReady(oldPod, newPod *apiv1.Pod) bool {
 			if v.Name == "database" {
 				if v.Ready {
 					return true
-					break
 				}
 			}
 		}
@@ -235,6 +259,9 @@ func isDBContainerBecomingReady(oldPod, newPod *apiv1.Pod) bool {
 // to either "master", as set by Patroni to identify the current primary, or "promoted", as set by
 // Patroni when promoting a replica to be the new primary.
 func isPostgresPrimaryPod(newPod *apiv1.Pod) bool {
+	if !isPostgresPod(newPod) {
+		return false
+	}
 	if newPod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "master" ||
 		newPod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "promoted" {
 		return true
@@ -248,6 +275,9 @@ func isPostgresPrimaryPod(newPod *apiv1.Pod) bool {
 // label has changed from "promoted" to "master" (this is the label change that will be performed
 // by Patroni when promoting a pod).
 func isPromotedPostgresPod(oldPod, newPod *apiv1.Pod) bool {
+	if !isPostgresPod(newPod) {
+		return false
+	}
 	if oldPod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "promoted" &&
 		newPod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "master" {
 		return true
@@ -255,17 +285,34 @@ func isPromotedPostgresPod(oldPod, newPod *apiv1.Pod) bool {
 	return false
 }
 
-// isPostgresPod determines whether or not a pod is a PostreSQL Pod, specifically either the primary
-// or a replica pod within a PG cluster.  This is determined by checking to see if the 'pg-cluster'
-// and 'role' labels are present on the pod (also, this controller will only process pod with the
-// 'vendor=crunchydata' label, so that label is assumed to be present).  Since the 'role' label is
-// utilized by Patroni for identifying a Pod as either a primary or replica, it is assumed that only
-// PostgreSQL pods will contain this label, while 'pg-cluster' is the standard label used to identify
-// various Kubernetes resources (in this case Pods) that are part of a specific PG cluster.
+// isPromotedPostgresPod determines if the Pod update is the result of the promotion of the pod
+// from a replica to the primary within a PG cluster.  This is determined by comparing the 'role'
+// label from the old Pod to the 'role' label in the New pod, specifically to determine if the
+// label has changed from "promoted" to "master" (this is the label change that will be performed
+// by Patroni when promoting a pod).
+func isPromotedStandby(oldPod, newPod *apiv1.Pod) bool {
+	if !isPostgresPod(newPod) {
+		return false
+	}
+
+	oldStatus := oldPod.Annotations["status"]
+	newStatus := newPod.Annotations["status"]
+	if strings.Contains(oldStatus, "\"role\":\"standby_leader\"") &&
+		strings.Contains(newStatus, "\"role\":\"master\"") {
+		return true
+	}
+	return false
+}
+
+// isPostgresPod determines whether or not a pod is a PostreSQL Pod, specifically either the
+// primary or a replica pod within a PG cluster.  This is determined by checking to see if the
+// 'pgo-pg-database' label is present on the Pod (also, this controller will only process pod with
+// the 'vendor=crunchydata' label, so that label is assumed to be present), specifically because
+// this label will only be included on primary and replica PostgreSQL database pods (and will be
+// present as soon as the deployment and pod is created).
 func isPostgresPod(newpod *apiv1.Pod) bool {
 
-	_, pgClusterLabelExists := newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
-	_, roleLabelExists := newpod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE]
+	_, pgDatabaseLabelExists := newpod.ObjectMeta.Labels[config.LABEL_PG_DATABASE]
 
-	return pgClusterLabelExists && roleLabelExists
+	return pgDatabaseLabelExists
 }

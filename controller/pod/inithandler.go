@@ -26,6 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
+	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	"github.com/crunchydata/postgres-operator/util"
 	v1 "k8s.io/api/apps/v1"
@@ -38,9 +39,16 @@ import (
 // primary PG pod for a new or restored PG cluster reaches a ready status
 func (c *Controller) handleClusterInit(newPod *apiv1.Pod, cluster *crv1.Pgcluster) error {
 
+	clusterName := cluster.Name
+
 	// handle common tasks for initializing a cluster, whether due to bootstap or reinitialization
 	// following a restore, or if a regular or standby cluster
-	c.handleCommonInit(cluster)
+	if err := c.handleCommonInit(cluster); err != nil {
+		log.Error(err)
+		return err
+	}
+	log.Debugf("Pod Controller: completed common init for pod %s in cluster %s", newPod.Name,
+		clusterName)
 
 	// call the appropriate initialization logic depending on the current state of the PG cluster,
 	// e.g. whether or not is is initializing for the first time or reinitializing as the result of
@@ -48,14 +56,21 @@ func (c *Controller) handleClusterInit(newPod *apiv1.Pod, cluster *crv1.Pgcluste
 	// a standby clusteer
 	switch {
 	case cluster.Status.State == crv1.PgclusterStateRestore:
-		c.handleRestoreInit(cluster)
+		log.Debugf("Pod Controller: restore detected during cluster %s init, calling restore "+
+			"handler", clusterName)
+		return c.handleRestoreInit(cluster)
+	case cluster.Status.State == crv1.PgclusterStateShutdown:
+		log.Debugf("Pod Controller: shutdown state detected during cluster %s init, calling scale "+
+			"handler", clusterName)
+		return c.handleScaleInit(cluster)
 	case cluster.Spec.Standby:
-		c.handleStandbyInit(cluster)
+		log.Debugf("Pod Controller: standby cluster detected during cluster %s init, calling standby "+
+			"handler", clusterName)
+		return c.handleStandbyInit(cluster)
 	default:
-		c.handleBootstrapInit(newPod, cluster)
+		log.Debugf("Pod Controller: calling bootstrap init for cluster %s", clusterName)
+		return c.handleBootstrapInit(newPod, cluster)
 	}
-
-	return nil
 }
 
 // handleCommonInit is resposible for handling common initilization tasks for a PG cluster
@@ -74,7 +89,7 @@ func (c *Controller) handleCommonInit(cluster *crv1.Pgcluster) error {
 			cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE], cluster.Namespace)
 	}
 
-	operator.UpdatePghaDefaultConfigInitFlag(c.PodClientset, false, cluster.Name,
+	operator.UpdatePGHAConfigInitFlag(c.PodClientset, false, cluster.Name,
 		cluster.Namespace)
 
 	return nil
@@ -111,6 +126,24 @@ func (c *Controller) handleRestoreInit(cluster *crv1.Pgcluster) error {
 	return nil
 }
 
+// handleScaleInit is resposible for handling cluster initilization for a cluster that has been
+// restarted by scaling up the cluster (after it was shutdown by scaling down the cluster)
+func (c *Controller) handleScaleInit(cluster *crv1.Pgcluster) error {
+
+	// since the cluster is just being restarted, it can just be set to initialized once the
+	// primary is ready
+	if err := controller.SetClusterInitializedStatus(c.PodClient, cluster.Name,
+		cluster.Namespace); err != nil {
+		log.Error(err)
+		return err
+	}
+
+	// now initialize the creation of any replica
+	controller.InitializeReplicaCreation(c.PodClient, cluster.Name, cluster.Namespace)
+
+	return nil
+}
+
 // handleBootstrapInit is resposible for handling cluster initilization (e.g. initiating pgBackRest
 // stanza creation) when a the database container within the primary PG Pod for a new PG cluster
 // enters a ready status
@@ -128,15 +161,21 @@ func (c *Controller) handleBootstrapInit(newPod *apiv1.Pod, cluster *crv1.Pgclus
 	publishClusterComplete(clusterName, namespace, cluster)
 	//
 
-	// if this is a pgbouncer enabled cluster, add authorizations to the database.
-	if cluster.Labels[config.LABEL_PGBOUNCER] == "true" {
-		taskoperator.UpdatePgBouncerAuthorizations(clusterName, c.PodClientset, c.PodClient, namespace,
-			newPod.Status.PodIP)
-	}
-
 	// create the pgBackRest stanza
 	backrestoperator.StanzaCreate(newPod.ObjectMeta.Namespace, clusterName,
 		c.PodClientset, c.PodClient)
+
+	// if this is a pgbouncer enabled cluster, add a pgbouncer
+	if cluster.Labels[config.LABEL_PGBOUNCER] == "true" {
+		tmptask := crv1.Pgtask{}
+		taskName := fmt.Sprintf("%s-%s", config.LABEL_PGBOUNCER_TASK_ADD, clusterName)
+
+		// attempt to find the pgbouncer pgtask. If one does not exist
+		// create it!
+		if found, _ := kubeapi.Getpgtask(c.PodClient, &tmptask, taskName, newPod.ObjectMeta.Namespace); !found {
+			clusteroperator.CreatePgTaskforAddpgBouncer(c.PodClient, cluster, cluster.Labels[config.LABEL_PGOUSER])
+		}
+	}
 
 	return nil
 }
@@ -172,6 +211,19 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	// will be generated from the pgBackRest repository of an external PostgreSQL
 	// database (which should already exist).
 	controller.InitializeReplicaCreation(c.PodClient, clusterName, namespace)
+
+	// if this is a pgbouncer enabled cluster, add a pgbouncer
+	if cluster.Labels[config.LABEL_PGBOUNCER] == "true" {
+		tmptask := crv1.Pgtask{}
+		taskName := fmt.Sprintf("%s-%s", config.LABEL_PGBOUNCER_TASK_ADD, clusterName)
+
+		// attempt to find the pgbouncer pgtask. If one does not exist
+		// create it!
+		if found, _ := kubeapi.Getpgtask(c.PodClient, &tmptask, taskName, namespace); !found {
+			clusteroperator.CreatePgTaskforAddpgBouncer(c.PodClient, cluster,
+				cluster.Labels[config.LABEL_PGOUSER])
+		}
+	}
 
 	return nil
 }
