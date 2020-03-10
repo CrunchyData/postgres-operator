@@ -470,10 +470,14 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 // pgo create cluster mycluster
 func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.CreateClusterResponse {
 	var id string
-	resp := msgs.CreateClusterResponse{}
-	resp.Status.Code = msgs.Ok
-	resp.Status.Msg = ""
-	resp.Results = make([]string, 0)
+	resp := msgs.CreateClusterResponse{
+		Result: msgs.CreateClusterDetail{},
+		Status: msgs.Status{
+			Code: msgs.Ok,
+			Msg:  "",
+		},
+	}
+
 	clusterName := request.Name
 
 	if clusterName == "all" {
@@ -740,7 +744,8 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	//create secrets
 	err, newInstance.Spec.RootSecretName, newInstance.Spec.PrimarySecretName, newInstance.Spec.UserSecretName = createSecrets(request, clusterName, ns, newInstance.Spec.User)
 	if err != nil {
-		resp.Results = append(resp.Results, err.Error())
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
 		return resp
 	}
 	newInstance.Spec.CollectSecretName = clusterName + crv1.CollectSecretSuffix
@@ -774,23 +779,30 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	id, err = createWorkflowTask(clusterName, ns, pgouser)
 	if err != nil {
 		log.Error(err)
-		resp.Results = append(resp.Results, err.Error())
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
 		return resp
 	}
+
+	// assign the workflow information to rhe result, as well as the use labels
+	// for the CRD
+	resp.Result.WorkflowID = id
 	newInstance.Spec.UserLabels[config.LABEL_WORKFLOW_ID] = id
 
 	//create CRD for new cluster
 	err = kubeapi.Createpgcluster(apiserver.RESTClient,
 		newInstance, ns)
 	if err != nil {
-		resp.Results = append(resp.Results, err.Error())
-	} else {
-		resp.Results = append(resp.Results, "created Pgcluster "+clusterName)
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
 	}
-	resp.Results = append(resp.Results, "workflow id "+id)
 
+	// assign the cluster information to the result
+	resp.Result.Name = newInstance.Spec.Name
+
+	// and return!
 	return resp
-
 }
 
 func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
