@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"strings"
 	"time"
@@ -63,11 +64,10 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 		}
 	}
 
+	clusterList := crv1.PgclusterList{}
+	var err error
 	if request.Selector != "" {
 		//use the selector instead of an argument list to filter on
-
-		clusterList := crv1.PgclusterList{}
-
 		err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, request.Selector, ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
@@ -87,6 +87,26 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 			request.Args = newargs
 		}
 
+	}
+
+	// Convert the names of all pgclusters specified for the request to a pgclusterList
+	if clusterList.Items == nil {
+		clusterList, err = clusterNamesToPGClusterList(request.Args, ns)
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
+
+	// Return an error if any clusters identified for the backup are in standby mode.  Backups
+	// from standby servers are not allowed since the cluster is following a remote primary,
+	// which itself is responsible for performing any backups for the cluster as requried.
+	if hasStandby, standbyClusters := apiserver.PGClusterListHasStandby(clusterList); hasStandby {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf("Request rejected, unable to create backups for clusters "+
+			"%s: %s.", strings.Join(standbyClusters, ","), apiserver.ErrStandbyNotAllowed.Error())
+		return resp
 	}
 
 	for _, clusterName := range request.Args {
@@ -456,6 +476,16 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 		return resp
 	}
 
+	// Return an error if any clusters identified for the restore are in standby mode.  Restoring
+	// from a standby cluster is not allowed since the cluster is following a remote primary,
+	// which itself is responsible for performing any restores as requried for the cluster.
+	if cluster.Spec.Standby {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf("Request rejected, unable to restore cluster "+
+			"%s: %s.", cluster.Name, apiserver.ErrStandbyNotAllowed.Error())
+		return resp
+	}
+
 	// ensure the backrest storage type specified for the backup is valid and enabled in the
 	// cluster
 	err = util.ValidateBackrestStorageTypeOnBackupRestore(request.BackrestStorageType,
@@ -592,4 +622,19 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 		return "", err
 	}
 	return spec.Parameters[crv1.PgtaskWorkflowID], err
+}
+
+// clusterNamesToPGClusterList takes a list of cluster names as specified by a slice of
+// strings containing cluster names and then returns a PgclusterList containing Pgcluster's
+// corresponding to those names.
+func clusterNamesToPGClusterList(clusterNames []string, namespace string) (crv1.PgclusterList,
+	error) {
+	selector := fmt.Sprintf("%s in(%s)", config.LABEL_NAME, strings.Join(clusterNames, ","))
+	clusterList := crv1.PgclusterList{}
+	err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, selector,
+		namespace)
+	if err != nil {
+		return clusterList, err
+	}
+	return clusterList, nil
 }

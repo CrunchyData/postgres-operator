@@ -153,6 +153,9 @@ const (
 	PgclusterStateInitialized PgclusterState = "pgcluster Initialized"
 	// PgclusterStateRestore ...
 	PgclusterStateRestore PgclusterState = "pgcluster Restoring"
+	// PgclusterStateShutdown indicates that the cluster has been shut down (i.e. the primary)
+	// deployment has been scaled to 0
+	PgclusterStateShutdown PgclusterState = "pgcluster Shutdown"
 
 	// PodAntiAffinityRequired results in requiredDuringSchedulingIgnoredDuringExecution for any
 	// default pod anti-affinity rules applied to pg custers

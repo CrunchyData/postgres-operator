@@ -61,6 +61,8 @@ const LABEL_DELETE_DATA_STARTED = "delete-data-started"
 const LABEL_DELETE_BACKUPS = "delete-backups"
 const LABEL_IS_REPLICA = "is-replica"
 const LABEL_IS_BACKUP = "is-backup"
+const LABEL_STARTUP = "startup"
+const LABEL_SHUTDOWN = "shutdown"
 
 const LABEL_MINOR_UPGRADE = "minor-upgrade"
 const LABEL_UPGRADE_IN_PROGRESS = "upgrade-in-progress"

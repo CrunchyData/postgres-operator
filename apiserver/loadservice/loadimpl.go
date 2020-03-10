@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"strconv"
+	"fmt"
 	"strings"
 	"time"
 
@@ -164,6 +165,16 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 		policies = strings.Split(request.Policies, ",")
 	}
 	log.Debugf("policies to apply before loading are %v len=%d", request.Policies, len(policies))
+
+	// Return an error if any clusters identified for the load are in standby mode.  Standby
+	// clusters are in read-only mode as they replicate from a remote primary, and therefore
+	// cannot have data loaded into to them until standby mode has been disabled.
+	if hasStandby, standbyClusters := apiserver.PGClusterListHasStandby(clusterList); hasStandby {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf("Request rejected, unable to load clusters "+
+			"%s: %s.", strings.Join(standbyClusters, ","), apiserver.ErrStandbyNotAllowed.Error())
+		return resp
+	}
 
 	var jobName string
 	for _, c := range clusterList.Items {

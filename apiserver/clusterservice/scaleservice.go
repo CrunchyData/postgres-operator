@@ -17,13 +17,14 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"net/http"
+	"strconv"
+
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"net/http"
-	"strconv"
 )
 
 // ScaleClusterHandler ...
@@ -95,7 +96,6 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	clusterName := vars[config.LABEL_NAME]
-
 	namespace := r.URL.Query().Get(config.LABEL_NAMESPACE)
 	replicaCount := r.URL.Query().Get(config.LABEL_REPLICA_COUNT)
 	resourcesConfig := r.URL.Query().Get(config.LABEL_RESOURCES_CONFIG)
@@ -104,8 +104,12 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	serviceType := r.URL.Query().Get(config.LABEL_SERVICE_TYPE)
 	clientVersion := r.URL.Query().Get(config.LABEL_VERSION)
 	ccpImageTag := r.URL.Query().Get(config.LABEL_CCP_IMAGE_TAG_KEY)
+	startup, _ := strconv.ParseBool(r.URL.Query().Get(config.LABEL_STARTUP))
 
-	log.Debugf("ScaleClusterHandler parameters name [%s] namespace [%s] replica-count [%s] resources-config [%s] storage-config [%s] node-label [%s] service-type [%s] version [%s] ccp-image-tag [%s]", clusterName, namespace, replicaCount, resourcesConfig, storageConfig, nodeLabel, serviceType, clientVersion, ccpImageTag)
+	log.Debugf("ScaleClusterHandler parameters name [%s] namespace [%s] replica-count [%s] "+
+		"resources-config [%s] storage-config [%s] node-label [%s] service-type [%s] version [%s]"+
+		"ccp-image-tag [%s] startup [%t]", clusterName, namespace, replicaCount, resourcesConfig,
+		storageConfig, nodeLabel, serviceType, clientVersion, ccpImageTag, startup)
 
 	username, err := apiserver.Authn(apiserver.SCALE_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -131,7 +135,9 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = ScaleCluster(clusterName, replicaCount, resourcesConfig, storageConfig, nodeLabel, ccpImageTag, serviceType, ns, username)
+	// TODO too many params need to create a struct for this
+	resp = ScaleCluster(startup, clusterName, replicaCount, resourcesConfig, storageConfig,
+		nodeLabel, ccpImageTag, serviceType, ns, username)
 
 	json.NewEncoder(w).Encode(resp)
 }
@@ -257,6 +263,7 @@ func ScaleDownHandler(w http.ResponseWriter, r *http.Request) {
 	namespace := r.URL.Query().Get(config.LABEL_NAMESPACE)
 	replicaName := r.URL.Query().Get(config.LABEL_REPLICA_NAME)
 	tmp := r.URL.Query().Get(config.LABEL_DELETE_DATA)
+	shutdown, _ := strconv.ParseBool(r.URL.Query().Get(config.LABEL_SHUTDOWN))
 
 	log.Debugf("ScaleDownHandler parameters clusterName [%s] version [%s] namespace [%s] replica-name [%s] delete-data [%s]", clusterName, clientVersion, namespace, replicaName, tmp)
 
@@ -291,6 +298,6 @@ func ScaleDownHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = ScaleDown(deleteData, clusterName, replicaName, ns)
+	resp = ScaleDown(deleteData, shutdown, clusterName, replicaName, ns)
 	json.NewEncoder(w).Encode(resp)
 }

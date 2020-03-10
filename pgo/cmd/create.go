@@ -67,6 +67,15 @@ var BackrestRepoPath string
 // Standby determines whether or not the cluster should be created as a standby cluster
 var Standby bool
 
+// PasswordUser specifies the password for the standard user created during cluster creation
+var PasswordUser string
+
+// PasswordSuperuser specifies the password for the cluster superuser
+var PasswordSuperuser string
+
+// PasswordReplication specifies the password for the cluster replication user
+var PasswordReplication string
+
 // variables used for setting up TLS-enabled PostgreSQL clusters
 var (
 	// TLSOnly indicates that only TLS connections will be accepted for a
@@ -254,7 +263,9 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster.")
 	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "", false, "Adds the crunchy-collect container to the database pod.")
 	createClusterCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the primary database. If not set, any node is used.")
-	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database user.")
+	createClusterCmd.Flags().StringVarP(&PasswordUser, "user-password", "", "", "The password to use for standard user account created during cluster initialization.")
+	createClusterCmd.Flags().StringVarP(&PasswordSuperuser, "superuser-password", "", "", "The password to use for the PostgreSQL superuser.")
+	createClusterCmd.Flags().StringVarP(&PasswordReplication, "replication-password", "", "", "The password to use for the PostgreSQL replication user.")
 	createClusterCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 0, "If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.")
 	createClusterCmd.Flags().StringVarP(&BackrestPVCSize, "pgbackrest-pvc-size", "", "",
 		`The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "local" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
@@ -303,6 +314,7 @@ func init() {
 	createClusterCmd.Flags().StringVar(&TLSSecret, "server-tls-secret", "", "The name of the secret that contains "+
 		"the TLS keypair to use for enabling the PostgreSQL cluster to accept TLS connections. "+
 		"Must be used with \"server-ca-secret\"")
+	createClusterCmd.Flags().StringVarP(&ServiceType, "service-type", "", "", "The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.")
 	createClusterCmd.Flags().BoolVar(&ShowSystemAccounts, "show-system-accounts", false, "Include the system accounts in the results.")
 	createClusterCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")
 	createClusterCmd.Flags().BoolVarP(&SyncReplication, "sync-replication", "", false,

@@ -157,10 +157,13 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 	// set the password that will be used for the "pgbouncer" PostgreSQL account
 	pgBouncerPassword := generatePassword()
 
-	// attempt to update the password in PostgreSQL, as this is how pgBouncer
-	// will properly interface with PostgreSQL
-	if err := setPostgreSQLPassword(clientset, restconfig, pod, pgBouncerPassword); err != nil {
-		return err
+	// only attempt to set the password if the cluster is not in standby mode
+	if !cluster.Spec.Standby {
+		// attempt to update the password in PostgreSQL, as this is how pgBouncer
+		// will properly interface with PostgreSQL
+		if err := setPostgreSQLPassword(clientset, restconfig, pod, pgBouncerPassword); err != nil {
+			return err
+		}
 	}
 
 	// next, create the secret that pgbouncer will use to be properly configure
@@ -251,10 +254,10 @@ func CreatePgTaskforUpdatepgBouncer(restclient *rest.RESTClient, cluster *crv1.P
 
 	// generate the pgtask, first adding in some boilerplate parameters
 	parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER] = cluster.Spec.ClusterName
-
+	log.Debugf("ANDY bouncer pgouser: %+v", pgouser)
 	task := generatePgtaskForPgBouncer(cluster, pgouser,
 		crv1.PgtaskUpdatePgbouncer, config.LABEL_PGBOUNCER_TASK_UPDATE, parameters)
-
+	log.Debugf("ANDY bouncer task: %+v", task)
 	// try to create the pgtask!
 	if err := kubeapi.Createpgtask(restclient, task, task.Spec.Namespace); err != nil {
 		log.Error(err)
@@ -392,7 +395,7 @@ func UpdatePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 	clusterName := cluster.Spec.ClusterName
 	namespace := cluster.Spec.Namespace
 
-	log.Debugf("update pgbouncer from cluster [%s] in namespace [%s] with parameters [%+v]", clusterName, namespace)
+	log.Debugf("update pgbouncer from cluster [%s] in namespace [%s] with parameters [%v]", clusterName, namespace)
 
 	// Alright, so we need to figure out which parameters are set, so we can take
 	// action on them
@@ -798,6 +801,11 @@ func publishPgBouncerEvent(eventType string, task *crv1.Pgtask) {
 	switch eventType {
 	case events.EventCreatePgbouncer:
 		event = events.EventCreatePgbouncerFormat{
+			EventHeader: eventHeader,
+			Clustername: clusterName,
+		}
+	case events.EventUpdatePgbouncer:
+		event = events.EventUpdatePgbouncerFormat{
 			EventHeader: eventHeader,
 			Clustername: clusterName,
 		}

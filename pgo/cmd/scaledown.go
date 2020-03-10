@@ -17,13 +17,17 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
+
+// Shutdown is used to indicate that the cluster should be shutdown when scaling down
+var Shutdown bool
 
 var scaledownCmd = &cobra.Command{
 	Use:   "scaledown",
@@ -47,9 +51,13 @@ var scaledownCmd = &cobra.Command{
 			if Query {
 				queryCluster(args, Namespace)
 			} else {
-				if Target == "" {
-					fmt.Println(`Error: You must specify --target`)
+				if Target == "" && !Shutdown {
+					fmt.Println(`Error: --target or --shutdown must be specified`)
 					os.Exit(2)
+				}
+				if Shutdown {
+					fmt.Println("The database and all supporting services in the cluster will " +
+						"now be shut down")
 				}
 				if util.AskForConfirmation(NoPrompt, "") {
 				} else {
@@ -73,7 +81,8 @@ func init() {
 	scaledownCmd.Flags().BoolVar(&KeepData, "keep-data", false,
 		"Causes data for the scale down replica to *not* be deleted")
 	scaledownCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-
+	scaledownCmd.Flags().BoolVar(&Shutdown, "shutdown", false, "Removes all replicas and shuts "+
+		"down the database cluster.")
 }
 
 // queryCluster is a helper function that returns information about the
@@ -83,12 +92,17 @@ func queryCluster(args []string, ns string) {
 
 	// iterate through the clusters and output information about each one
 	for _, arg := range args {
-		// indicate which cluster this is. Put a newline before to put some
-		// separation between each line
-		fmt.Printf("\nCluster: %s\n", arg)
 
 		// call the API
 		response, err := api.ScaleQuery(httpclient, arg, &SessionCredentials, ns)
+
+		// indicate which cluster this is. Put a newline before to put some
+		// separation between each line
+		if !response.Standby {
+			fmt.Printf("\nCluster: %s\n", arg)
+		} else {
+			fmt.Printf("\nCluster (standby): %s\n", arg)
+		}
 
 		// If the API returns in error, just bail out here
 		if err != nil {
@@ -131,7 +145,8 @@ func scaleDownCluster(clusterName, ns string) {
 	// release
 	deleteData := !KeepData && DeleteData
 
-	response, err := api.ScaleDownCluster(httpclient, clusterName, Target, deleteData, &SessionCredentials, ns)
+	response, err := api.ScaleDownCluster(httpclient, clusterName, Target, deleteData,
+		Shutdown, &SessionCredentials, ns)
 
 	if err != nil {
 		fmt.Println("Error: ", err.Error())

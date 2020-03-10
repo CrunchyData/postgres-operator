@@ -44,6 +44,7 @@ const (
 	EventScaleCluster             = "ScaleCluster"
 	EventScaleClusterFailure      = "ScaleClusterFailure"
 	EventScaleDownCluster         = "ScaleDownCluster"
+	EventShutdownCluster          = "ShutdownCluster"
 	EventFailoverCluster          = "FailoverCluster"
 	EventFailoverClusterCompleted = "FailoverClusterCompleted"
 	EventRestoreCluster           = "RestoreCluster"
@@ -78,6 +79,9 @@ const (
 	EventPGOUpdateConfig    = "PGOUpdateConfig"
 	EventPGODeleteNamespace = "PGODeleteNamespace"
 	EventPGOCreateNamespace = "PGOCreateNamespace"
+
+	EventStandbyEnabled  = "StandbyEnabled"
+	EventStandbyDisabled = "StandbyDisabled"
 )
 
 type EventHeader struct {
@@ -588,5 +592,69 @@ func (p EventPrimaryDeletedFormat) GetHeader() EventHeader {
 
 func (lvl EventPrimaryDeletedFormat) String() string {
 	msg := fmt.Sprintf("Event %s - (primary deleted) clustername %s deployment %s", lvl.EventHeader, lvl.Clustername, lvl.Deploymentname)
+	return msg
+}
+
+//----------------------------
+type EventClusterShutdownFormat struct {
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+}
+
+func (p EventClusterShutdownFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventClusterShutdownFormat) String() string {
+	msg := fmt.Sprintf("Event %s - (cluster shutdown) clustername %s", lvl.EventHeader,
+		lvl.Clustername)
+	return msg
+}
+
+//----------------------------
+type EventStandbyEnabledFormat struct {
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+}
+
+func (p EventStandbyEnabledFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventStandbyEnabledFormat) String() string {
+	msg := fmt.Sprintf("Event %s - (standby mode enabled) clustername %s", lvl.EventHeader,
+		lvl.Clustername)
+	return msg
+}
+
+//----------------------------
+type EventStandbyDisabledFormat struct {
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+}
+
+func (p EventStandbyDisabledFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventStandbyDisabledFormat) String() string {
+	msg := fmt.Sprintf("Event %s - (standby mode disabled) clustername %s", lvl.EventHeader,
+		lvl.Clustername)
+	return msg
+}
+
+//----------------------------
+type EventShutdownClusterFormat struct {
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+}
+
+func (p EventShutdownClusterFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventShutdownClusterFormat) String() string {
+	msg := fmt.Sprintf("Event %s - (cluster shutdown) clustername %s", lvl.EventHeader,
+		lvl.Clustername)
 	return msg
 }

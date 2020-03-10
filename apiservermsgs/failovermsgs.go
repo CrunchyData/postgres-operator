@@ -15,8 +15,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import ()
-
 // FailoverTargetSpec
 // swagger:model
 type FailoverTargetSpec struct {
@@ -33,6 +31,7 @@ type FailoverTargetSpec struct {
 type QueryFailoverResponse struct {
 	Results []FailoverTargetSpec
 	Status
+	Standby bool
 }
 
 // CreateFailoverResponse ...

@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"errors"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
@@ -105,7 +106,7 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 		Status:  msgs.Status{Code: msgs.Ok, Msg: ""},
 	}
 
-	_, err = validateClusterName(name, ns)
+	cluster, err := validateClusterName(name, ns)
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -113,6 +114,11 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 	}
 
 	log.Debugf("query failover called for %s", name)
+
+	// indicate in the response whether or not a standby cluster
+	if cluster.Spec.Standby {
+		response.Standby = true
+	}
 
 	var nodes []string
 

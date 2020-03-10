@@ -44,13 +44,13 @@ type ShowClusterRequest struct {
 //
 // swagger:model
 type CreateClusterRequest struct {
-	Name      string `json:"Name"`
-	Namespace string
-	NodeLabel string
-	Password  string
-	// PasswordLength, if provided and if Password or SecretFrom is not set, sets
-	// the length of the password to be generated
+	Name                string `json:"Name"`
+	Namespace           string
+	NodeLabel           string
 	PasswordLength      int
+	PasswordSuperuser   string
+	PasswordReplication string
+	PasswordUser        string
 	SecretFrom          string
 	UserLabels          string
 	Tablespaces         []ClusterTablespaceDetail
@@ -205,6 +205,7 @@ type ShowClusterDetail struct {
 	Pods        []ShowClusterPod
 	Services    []ShowClusterService
 	Replicas    []ShowClusterReplica
+	Standby     bool
 }
 
 // ShowClusterResponse ...
@@ -248,6 +249,16 @@ const (
 	UpdateClusterAutofailDisable
 )
 
+// UpdateClusterStandbyStatus defines the types for updating the Standby status
+type UpdateClusterStandbyStatus int
+
+// set the different values around updating the standby configuration
+const (
+	UpdateClusterStandbyDoNothing UpdateClusterStandbyStatus = iota
+	UpdateClusterStandbyEnable
+	UpdateClusterStandbyDisable
+)
+
 // UpdateClusterRequest ...
 // swagger:model
 type UpdateClusterRequest struct {
@@ -259,6 +270,7 @@ type UpdateClusterRequest struct {
 	Namespace     string
 	AllFlag       bool
 	Autofail      UpdateClusterAutofailStatus
+	Standby       UpdateClusterStandbyStatus
 }
 
 // UpdateClusterResponse ...
@@ -333,6 +345,7 @@ type ScaleQueryTargetSpec struct {
 type ScaleQueryResponse struct {
 	Results []ScaleQueryTargetSpec
 	Status
+	Standby bool
 }
 
 // ScaleDownResponse
