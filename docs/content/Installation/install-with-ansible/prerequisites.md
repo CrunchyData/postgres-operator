@@ -212,9 +212,12 @@ sets of variables cannot be used at the same time.
 | `pgo_operator_namespace`          |             | **Required** | Set to configure the namespace where Operator will be deployed.                                                                                                                  |
 | `pgo_tls_ca_store`                |             |          | Set to add additional Certificate Authorities for Operator to trust (PEM-encoded file).                                                                                      |
 | `pgo_tls_no_verify`               | false       |          | Set to configure Operator to verify TLS certificates.                                                                                                                            |
-| `pgo_client_container_install` | false | | Installs the pgo-client deployment along with ansible isnstall |
+| `pgo_client_container_install` | false | | Installs the pgo-client deployment along with ansible install |
 | `pgo_apiserver_url` | `https://postgres-operator` | | Sets the `pgo_apiserver_url` in the pgo-client deployment |
 | `pgo_client_cert_secret` | `pgo.tls` | | Sets the secret that the pgo-client will use when connecting to the operator. Secret should hold the TLS certs |
+| `pod_anti_affinity`               | preferred   |           | Sets the default pod anti-affinity for the deployed PostgreSQL clusters, which is applied to the PostgreSQL instances, the pgBackRest repository, and any pgBouncer instances |
+| `pod_anti_affinity_pgbackrest`    |             |           | If set, overrides the value of `pod_anti_affinity` for just the pgBackRest repository |
+| `pod_anti_affinity_pgbouncer`     |             |           | If set, overrides the value of `pod_anti_affinity` for just the pgBouncer Pods |
 | `primary_storage`                 | storageos   | **Required** | Set to configure which storage definition to use when creating volumes used by PostgreSQL primaries on all newly created clusters.                                               |
 | `prometheus_install`              | true        |          | Set to true to install Crunchy Prometheus timeseries database.                                                                                                                   |
 | `prometheus_storage_access_mode`  |             |          | Set to the access mode used by the configured storage class for Prometheus persistent volumes.                                                                                   |

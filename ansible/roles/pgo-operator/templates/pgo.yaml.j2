@@ -25,6 +25,8 @@ Cluster:
   EnableCrunchyadm:  {{ enable_crunchyadm }}
   DisableReplicaStartFailReinit:  {{ disable_replica_start_fail_reinit }}
   PodAntiAffinity:  {{ pod_anti_affinity }}
+  PodAntiAffinityPgBackRest: {{ pod_anti_affinity_pgbackrest }}
+  PodAntiAffinityPgBouncer: {{ pod_anti_affinity_pgbouncer }}
   SyncReplication:  {{ sync_replication }}
 PrimaryStorage: {{ primary_storage }}
 BackupStorage: {{ backup_storage }}

@@ -676,8 +676,9 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	}
 
 	// if a value is provided in the request for PodAntiAffinity, then ensure is valid.  If
-	// it is, then set the user label for pod anti-affinity to the request value.  Otherwise,
-	// return the validation error.
+	// it is, then set the user label for pod anti-affinity to the request value
+	// (which in turn becomes a *Label* which is important for anti-affinity).
+	// Otherwise, return the validation error.
 	if request.PodAntiAffinity != "" {
 		podAntiAffinityType := crv1.PodAntiAffinityType(request.PodAntiAffinity)
 		if err := podAntiAffinityType.Validate(); err != nil {
@@ -688,6 +689,28 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		userLabelsMap[config.LABEL_POD_ANTI_AFFINITY] = request.PodAntiAffinity
 	} else {
 		userLabelsMap[config.LABEL_POD_ANTI_AFFINITY] = ""
+	}
+
+	// check to see if there are any pod anti-affinity overrides, specifically for
+	// pgBackRest and pgBouncer. If there are, ensure that they are valid values
+	if request.PodAntiAffinityPgBackRest != "" {
+		podAntiAffinityType := crv1.PodAntiAffinityType(request.PodAntiAffinityPgBackRest)
+
+		if err := podAntiAffinityType.Validate(); err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
+
+	if request.PodAntiAffinityPgBouncer != "" {
+		podAntiAffinityType := crv1.PodAntiAffinityType(request.PodAntiAffinityPgBouncer)
+
+		if err := podAntiAffinityType.Validate(); err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
 	}
 
 	// if synchronous replication has been enabled, then add to user labels
@@ -855,6 +878,18 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(request.StorageConfig)
 	}
 
+	// set the pd anti-affinity values
+	if podAntiAffinity, err := apiserver.Pgo.GetPodAntiAffinitySpec(
+		crv1.PodAntiAffinityType(request.PodAntiAffinity),
+		crv1.PodAntiAffinityType(request.PodAntiAffinityPgBackRest),
+		crv1.PodAntiAffinityType(request.PodAntiAffinityPgBouncer),
+	); err != nil {
+		log.Warn("Could not set pod anti-affinity rules:", err.Error())
+		spec.PodAntiAffinity = crv1.PodAntiAffinitySpec{}
+	} else {
+		spec.PodAntiAffinity = podAntiAffinity
+	}
+
 	// if the PVCSize is overwritten, update the primary storage spec with this
 	// value
 	if request.PVCSize != "" {
@@ -974,7 +1009,6 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	}
 
 	spec.CustomConfig = request.CustomConfig
-	spec.PodAntiAffinity = request.PodAntiAffinity
 	spec.SyncReplication = request.SyncReplication
 
 	// set pgBackRest S3 settings in the spec if included in the request

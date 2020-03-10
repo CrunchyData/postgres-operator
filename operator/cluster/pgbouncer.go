@@ -487,16 +487,18 @@ func createPgBouncerDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pg
 
 	// get the fields that will be substituted in the pgBouncer template
 	fields := PgbouncerTemplateFields{
-		Name:                      pgbouncerDeploymentName,
-		ClusterName:               cluster.Spec.Name,
-		CCPImagePrefix:            operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:               cluster.Spec.CCPImageTag,
-		Port:                      operator.Pgo.Cluster.Port,
-		PGBouncerSecret:           util.GeneratePgBouncerSecretName(cluster.Spec.Name),
-		ContainerResources:        "",
-		PodAntiAffinity:           operator.GetPodAntiAffinity(cluster.Spec.PodAntiAffinity, cluster.Spec.Name),
-		PodAntiAffinityLabelName:  config.LABEL_POD_ANTI_AFFINITY,
-		PodAntiAffinityLabelValue: cluster.Spec.PodAntiAffinity,
+		Name:               pgbouncerDeploymentName,
+		ClusterName:        cluster.Spec.Name,
+		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImageTag:        cluster.Spec.CCPImageTag,
+		Port:               operator.Pgo.Cluster.Port,
+		PGBouncerSecret:    util.GeneratePgBouncerSecretName(cluster.Spec.Name),
+		ContainerResources: "",
+		PodAntiAffinity: operator.GetPodAntiAffinity(cluster,
+			crv1.PodAntiAffinityDeploymentPgBouncer, cluster.Spec.PodAntiAffinity.PgBouncer),
+		PodAntiAffinityLabelName: config.LABEL_POD_ANTI_AFFINITY,
+		PodAntiAffinityLabelValue: string(operator.GetPodAntiAffinityType(cluster,
+			crv1.PodAntiAffinityDeploymentPgBouncer, cluster.Spec.PodAntiAffinity.PgBouncer)),
 	}
 
 	// Determine if a custom resource profile should be used for the pgBouncer

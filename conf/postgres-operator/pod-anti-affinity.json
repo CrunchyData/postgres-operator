@@ -1,7 +1,7 @@
                 "podAntiAffinity": {
                     "{{.AffinityType}}": [
                         {
-                            {{if eq .AffinityType "preferredDuringSchedulingIgnoredDuringExecution"}}                
+                            {{if eq .AffinityType "preferredDuringSchedulingIgnoredDuringExecution"}}
                             "weight": 1,
                             "podAffinityTerm": {
                             {{end}}
@@ -16,7 +16,15 @@
                                         },
                                         {
                                             "key": "{{.PodAntiAffinityLabelKey}}",
+                                            {{if eq .AffinityType "requiredDuringSchedulingIgnoredDuringExecution"}}
+                                            "operator": "In",
+                                            "values": [
+                                                "required",
+                                                "require"
+                                            ]
+                                            {{else}}
                                             "operator": "Exists"
+                                            {{end}}
                                         },
                                         {
                                             "key": "pg-cluster",
@@ -28,7 +36,7 @@
                                     ]
                                 },
                                 "topologyKey": "kubernetes.io/hostname"
-                            {{if eq .AffinityType "preferredDuringSchedulingIgnoredDuringExecution"}}     
+                            {{if eq .AffinityType "preferredDuringSchedulingIgnoredDuringExecution"}}
                             }
                             {{end}}
                         }

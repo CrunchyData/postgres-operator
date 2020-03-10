@@ -209,6 +209,8 @@ type ClusterStruct struct {
 	EnableCrunchyadm              bool   `yaml:"EnableCrunchyadm"`
 	DisableReplicaStartFailReinit bool   `yaml:"DisableReplicaStartFailReinit"`
 	PodAntiAffinity               string `yaml:"PodAntiAffinity"`
+	PodAntiAffinityPgBackRest     string `yaml:"PodAntiAffinityPgBackRest"`
+	PodAntiAffinityPgBouncer      string `yaml:"PodAntiAffinityPgBouncer"`
 	SyncReplication               bool   `yaml:"SyncReplication"`
 }
 
@@ -418,10 +420,20 @@ func (c *PgoConfig) Validate() error {
 		}
 	}
 
-	// if provided, ensure that the type of pod anti-affinity specified is valid
+	// if provided, ensure that the type of pod anti-affinity values are valid
 	podAntiAffinityType := crv1.PodAntiAffinityType(c.Cluster.PodAntiAffinity)
-	if err := podAntiAffinityType.Validate(); podAntiAffinityType != "" && err != nil {
+	if err := podAntiAffinityType.Validate(); err != nil {
 		return errors.New(errPrefix + "Invalid value provided for Cluster.PodAntiAffinityType")
+	}
+
+	podAntiAffinityType = crv1.PodAntiAffinityType(c.Cluster.PodAntiAffinityPgBackRest)
+	if err := podAntiAffinityType.Validate(); err != nil {
+		return errors.New(errPrefix + "Invalid value provided for Cluster.PodAntiAffinityPgBackRest")
+	}
+
+	podAntiAffinityType = crv1.PodAntiAffinityType(c.Cluster.PodAntiAffinityPgBouncer)
+	if err := podAntiAffinityType.Validate(); err != nil {
+		return errors.New(errPrefix + "Invalid value provided for Cluster.PodAntiAffinityPgBouncer")
 	}
 
 	return err
@@ -439,6 +451,73 @@ func (c *PgoConfig) GetConf() *PgoConfig {
 	}
 
 	return c
+}
+
+// GetPodAntiAffinitySpec accepts possible user-defined values for what the
+// pod anti-affinity spec should be, which include rules for:
+// - PostgreSQL instances
+// - pgBackRest
+// - pgBouncer
+func (c *PgoConfig) GetPodAntiAffinitySpec(cluster, pgBackRest, pgBouncer crv1.PodAntiAffinityType) (crv1.PodAntiAffinitySpec, error) {
+	spec := crv1.PodAntiAffinitySpec{}
+
+	// first, set the values for the PostgreSQL cluster, which is the "default"
+	// value. Otherwise, set the default to that in the configuration
+	if cluster != "" {
+		spec.Default = cluster
+	} else {
+		spec.Default = crv1.PodAntiAffinityType(c.Cluster.PodAntiAffinity)
+	}
+
+	// perform a validation check against the default type
+	if err := spec.Default.Validate(); err != nil {
+		log.Error(err)
+		return spec, err
+	}
+
+	// now that the default is set, determine if the user or the configuration
+	// overrode the settings for pgBackRest and pgBouncer. The heuristic is as
+	// such:
+	//
+	// 1. If the user provides a value, use that value
+	// 2. If there is a value provided in the configuration, use that value
+	// 3. If there is a value in the cluster default, use that value, which also
+	//    encompasses using the default value in the config at this point in the
+	//    execution.
+	//
+	// First, do pgBackRest:
+	switch {
+	case pgBackRest != "":
+		spec.PgBackRest = pgBackRest
+	case c.Cluster.PodAntiAffinityPgBackRest != "":
+		spec.PgBackRest = crv1.PodAntiAffinityType(c.Cluster.PodAntiAffinityPgBackRest)
+	case spec.Default != "":
+		spec.PgBackRest = spec.Default
+	}
+
+	// perform a validation check against the pgBackRest type
+	if err := spec.PgBackRest.Validate(); err != nil {
+		log.Error(err)
+		return spec, err
+	}
+
+	// Now, pgBouncer:
+	switch {
+	case pgBouncer != "":
+		spec.PgBouncer = pgBouncer
+	case c.Cluster.PodAntiAffinityPgBackRest != "":
+		spec.PgBouncer = crv1.PodAntiAffinityType(c.Cluster.PodAntiAffinityPgBouncer)
+	case spec.Default != "":
+		spec.PgBouncer = spec.Default
+	}
+
+	// perform a validation check against the pgBackRest type
+	if err := spec.PgBouncer.Validate(); err != nil {
+		log.Error(err)
+		return spec, err
+	}
+
+	return spec, nil
 }
 
 func (c *PgoConfig) GetStorageSpec(name string) (crv1.PgStorageSpec, error) {

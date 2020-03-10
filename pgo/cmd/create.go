@@ -49,6 +49,8 @@ var Secret string
 var PgouserPassword, PgouserRoles, PgouserNamespaces string
 var Permissions string
 var PodAntiAffinity string
+var PodAntiAffinityPgBackRest string
+var PodAntiAffinityPgBouncer string
 var SyncReplication bool
 var BackrestS3Key string
 var BackrestS3KeySecret string
@@ -260,6 +262,14 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&PodAntiAffinity, "pod-anti-affinity", "", "",
 		"Specifies the type of anti-affinity that should be utilized when applying  "+
 			"default pod anti-affinity rules to PG clusters (default \"preferred\")")
+	createClusterCmd.Flags().StringVarP(&PodAntiAffinityPgBackRest, "pod-anti-affinity-pgbackrest", "", "",
+		"Set the Pod anti-affinity rules specifically for the pgBackRest "+
+			"repository. Defaults to the default cluster pod anti-affinity (i.e. \"preferred\"), "+
+			"or the value set by --pod-anti-affinity")
+	createClusterCmd.Flags().StringVarP(&PodAntiAffinityPgBouncer, "pod-anti-affinity-pgbouncer", "", "",
+		"Set the Pod anti-affinity rules specifically for the pgBouncer "+
+			"Pods. Defaults to the default cluster pod anti-affinity (i.e. \"preferred\"), "+
+			"or the value set by --pod-anti-affinity")
 	createClusterCmd.Flags().BoolVarP(&SyncReplication, "sync-replication", "", false,
 		"Enables synchronous replication for the cluster.")
 	createClusterCmd.Flags().StringVarP(&BackrestS3Key, "pgbackrest-s3-key", "", "",

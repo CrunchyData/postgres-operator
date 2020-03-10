@@ -67,7 +67,7 @@ type PgclusterSpec struct {
 	PswLastUpdate      string                   `json:"pswlastupdate"`
 	CustomConfig       string                   `json:"customconfig"`
 	UserLabels         map[string]string        `json:"userlabels"`
-	PodAntiAffinity    string                   `json:"podPodAntiAffinity"`
+	PodAntiAffinity    PodAntiAffinitySpec      `json:"podPodAntiAffinity"`
 	SyncReplication    *bool                    `json:"syncReplication"`
 	BackrestS3Bucket   string                   `json:"backrestS3Bucket"`
 	BackrestS3Region   string                   `json:"backrestS3Region"`
@@ -96,6 +96,10 @@ type PgclusterStatus struct {
 // swagger:ignore
 type PgclusterState string
 
+// PodAntiAffinityDeployment distinguishes between the different types of
+// Deployments that can leverage PodAntiAffinity
+type PodAntiAffinityDeployment int
+
 // PodAntiAffinityType defines the different types of type of anti-affinity rules applied to pg
 // clusters when utilizing the default pod anti-affinity rules provided by the PostgreSQL Operator,
 // which are enabled for a new pg cluster by default.  Valid Values include "required" for
@@ -103,6 +107,20 @@ type PgclusterState string
 // preferredDuringSchedulingIgnoredDuringExecution anti-affinity, and "disabled" to disable the
 // default pod anti-affinity rules for the pg cluster all together.
 type PodAntiAffinityType string
+
+// PodAntiAffinitySpec provides multiple configurations for how pod
+// anti-affinity can be set.
+// - "Default" is the default rule that applies to all Pods that are a part of
+//		the PostgreSQL cluster
+// - "PgBackrest" applies just to the pgBackRest repository Pods in said
+//		Deployment
+// - "PgBouncer" applies to just pgBouncer Pods in said Deployment
+// swaggier:ignore
+type PodAntiAffinitySpec struct {
+	Default    PodAntiAffinityType `json:"default"`
+	PgBackRest PodAntiAffinityType `json:"pgBackRest"`
+	PgBouncer  PodAntiAffinityType `json:"pgBouncer"`
+}
 
 const (
 	// PgclusterStateCreated ...
@@ -126,6 +144,13 @@ const (
 	PodAntiAffinityDisabled PodAntiAffinityType = "disabled"
 )
 
+// The list of different types of PodAntiAffinityDeployments
+const (
+	PodAntiAffinityDeploymentDefault PodAntiAffinityDeployment = iota
+	PodAntiAffinityDeploymentPgBackRest
+	PodAntiAffinityDeploymentPgBouncer
+)
+
 // ValidatePodAntiAffinityType is responsible for validating whether or not the type of pod
 // anti-affinity specified is valid
 func (p PodAntiAffinityType) Validate() error {
@@ -133,7 +158,8 @@ func (p PodAntiAffinityType) Validate() error {
 	case
 		PodAntiAffinityRequired,
 		PodAntiAffinityPreffered,
-		PodAntiAffinityDisabled:
+		PodAntiAffinityDisabled,
+		"":
 		return nil
 	}
 	return fmt.Errorf("Invalid pod anti-affinity type.  Valid values are '%s', '%s' or '%s'",
