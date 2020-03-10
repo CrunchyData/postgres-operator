@@ -249,6 +249,8 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.ContainerResources = ContainerResources
 	r.ClientVersion = msgs.PGO_VERSION
 	r.PodAntiAffinity = PodAntiAffinity
+	r.PodAntiAffinityPgBackRest = PodAntiAffinityPgBackRest
+	r.PodAntiAffinityPgBouncer = PodAntiAffinityPgBouncer
 	r.BackrestS3Key = BackrestS3Key
 	r.BackrestS3KeySecret = BackrestS3KeySecret
 	r.BackrestS3Bucket = BackrestS3Bucket

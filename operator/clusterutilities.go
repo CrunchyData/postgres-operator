@@ -521,26 +521,20 @@ func GetReplicaAffinity(clusterLabels, replicaLabels map[string]string) string {
 
 // GetPodAntiAffinity returns the populated pod anti-affinity json that should be attached to
 // the various pods comprising the pg cluster
-func GetPodAntiAffinity(podAntiAffinityType string, clusterName string) string {
+func GetPodAntiAffinity(cluster *crv1.Pgcluster, deploymentType crv1.PodAntiAffinityDeployment, podAntiAffinityType crv1.PodAntiAffinityType) string {
 
-	log.Debugf("GetPodAnitAffinity with clusterName=[%s]", clusterName)
+	log.Debugf("GetPodAnitAffinity with clusterName=[%s]", cluster.Spec.Name)
 
-	// get the PodAntiAffinity type from the CR parameter (podAntiAffinityType) or from the
-	// pgo.yaml, depending on whether or not either have been set
-	var affinityTypeParam crv1.PodAntiAffinityType
-	if podAntiAffinityType != "" {
-		affinityTypeParam = crv1.PodAntiAffinityType(podAntiAffinityType)
-	} else if Pgo.Cluster.PodAntiAffinity != "" {
-		affinityTypeParam = crv1.PodAntiAffinityType(Pgo.Cluster.PodAntiAffinity)
-	}
+	// run through the checks on the pod anti-affinity type to see if it is not
+	// provided by the user, it's set by one of many defaults
+	podAntiAffinityType = GetPodAntiAffinityType(cluster, deploymentType, podAntiAffinityType)
 
-	// verify that the affinity type provided is valid (i.e. 'required' or 'preffered'), and
+	// verify that the affinity type provided is valid (i.e. 'required' or 'preferred'), and
 	// log an error and return an empty string if not
-	if err := affinityTypeParam.Validate(); affinityTypeParam != "" &&
-		err != nil {
+	if err := podAntiAffinityType.Validate(); err != nil {
 		log.Error(fmt.Sprintf("Invalid affinity type '%s' specified when attempting to set "+
 			"default pod anti-affinity for cluster %s.  Pod anti-affinity will not be applied.",
-			podAntiAffinityType, clusterName))
+			podAntiAffinityType, cluster.Spec.Name))
 		return ""
 	}
 
@@ -549,9 +543,9 @@ func GetPodAntiAffinity(podAntiAffinityType string, clusterName string) string {
 	// specified in the pgcluster CR.  Defaults to preffered if not explicitly specified
 	// in the CR or in the pgo.yaml configuration file
 	templateAffinityType := preferScheduleIgnoreExec
-	switch affinityTypeParam {
+	switch podAntiAffinityType {
 	case crv1.PodAntiAffinityDisabled: // if disabled return an empty string
-		log.Debugf("Default pod anti-affinity disabled for clusterName=[%s]", clusterName)
+		log.Debugf("Default pod anti-affinity disabled for clusterName=[%s]", cluster.Spec.Name)
 		return ""
 	case crv1.PodAntiAffinityRequired:
 		templateAffinityType = requireScheduleIgnoreExec
@@ -559,7 +553,7 @@ func GetPodAntiAffinity(podAntiAffinityType string, clusterName string) string {
 
 	podAntiAffinityTemplateFields := podAntiAffinityTemplateFields{
 		AffinityType:            templateAffinityType,
-		ClusterName:             clusterName,
+		ClusterName:             cluster.Spec.Name,
 		VendorLabelKey:          config.LABEL_VENDOR,
 		VendorLabelValue:        config.LABEL_CRUNCHY,
 		PodAntiAffinityLabelKey: config.LABEL_POD_ANTI_AFFINITY,
@@ -578,6 +572,56 @@ func GetPodAntiAffinity(podAntiAffinityType string, clusterName string) string {
 	}
 
 	return podAntiAffinityDoc.String()
+}
+
+// GetPodAntiAffinityType returns the type of pod anti-affinity to use. This is
+// based on the deployment type (cluster, pgBackRest, pgBouncer), the value
+// in the cluster spec, and the defaults available in pgo.yaml.
+//
+// In other words, the pod anti-affinity is determined by this heuristic, in
+// priority order:
+//
+// 1. If it's pgBackRest/pgBouncer the value set by the user (available in the
+//    cluster spec)
+// 2. If it's pgBackRest/pgBouncer the value set in pgo.yaml
+// 3. The value set in "Default" in the cluster spec
+// 4. The value set for PodAntiAffinity in pgo.yaml
+func GetPodAntiAffinityType(cluster *crv1.Pgcluster, deploymentType crv1.PodAntiAffinityDeployment, podAntiAffinityType crv1.PodAntiAffinityType) crv1.PodAntiAffinityType {
+	// early exit: if podAntiAffinityType is already set, return
+	if podAntiAffinityType != "" {
+		return podAntiAffinityType
+	}
+
+	// if this is a pgBouncer or pgBackRest deployment, see if there is a value
+	// set in the configuration. If there is, return that
+	switch deploymentType {
+	case crv1.PodAntiAffinityDeploymentPgBackRest:
+		if Pgo.Cluster.PodAntiAffinityPgBackRest != "" {
+			podAntiAffinityType = crv1.PodAntiAffinityType(Pgo.Cluster.PodAntiAffinityPgBackRest)
+
+			if podAntiAffinityType != "" {
+				return podAntiAffinityType
+			}
+		}
+	case crv1.PodAntiAffinityDeploymentPgBouncer:
+		if Pgo.Cluster.PodAntiAffinityPgBouncer != "" {
+			podAntiAffinityType = crv1.PodAntiAffinityType(Pgo.Cluster.PodAntiAffinityPgBouncer)
+
+			if podAntiAffinityType != "" {
+				return podAntiAffinityType
+			}
+		}
+	}
+
+	// check to see if the value for the cluster anti-affinity is set. If so, use
+	// this value
+	if cluster.Spec.PodAntiAffinity.Default != "" {
+		return cluster.Spec.PodAntiAffinity.Default
+	}
+
+	// At this point, check the value in the configuration that is used for pod
+	// anti-affinity. Ensure it is cast to be of PodAntiAffinityType
+	return crv1.PodAntiAffinityType(Pgo.Cluster.PodAntiAffinity)
 }
 
 func GetPgmonitorEnvVars(metricsEnabled string) string {

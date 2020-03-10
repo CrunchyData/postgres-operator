@@ -36,6 +36,9 @@ pgo_apiserver_url: "https://postgres-operator"
 pgo_client_cert_secret: "pgo.tls"
 pgo_image_pull_secret: ""
 pgo_image_pull_secret_manifest: ""
+pod_anti_affinity: "preferred"
+pod_anti_affinity_pgbackrest: ""
+pod_anti_affinity_pgbouncer: ""
 
 namespace: ""
 

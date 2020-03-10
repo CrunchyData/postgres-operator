@@ -114,8 +114,30 @@ pgo_client_version='v4.3.0'
 backrest='true'
 badger='false'
 metrics='false'
-pod_anti_affinity='preferred'
 sync_replication='false'
+
+# This will set the default pod anti-affinity for the deployed PostgreSQL
+# clusters. Pod Anti-Affinity is set to determine where the PostgreSQL Pods are
+# deployed relative to each other There are three levels:
+#
+# - required: Pods *must* be scheduled to different Nodes. If a Pod cannot be
+#   scheduled to a different Node from the other Pods in the anti-affinity
+#   group, then it will not be scheduled.
+# - preferred (default): Pods *should* be scheduled to different Nodes. There is
+#   a chance that two Pods in the same anti-affinity group could be scheduled to
+#   the same node
+# - disabled: Pods do not have any anti-affinity rules
+#
+# The `pod_anti_affinity` label sets the Pod anti-affinity for all of the Pods
+# that are managed by the Operator in a PostgreSQL cluster. In addition to the
+# PostgreSQL Pods, this also includes the pgBackRest repository and any
+# pgBouncer pods. By default, the pgBackRest and pgBouncer pods inherit the
+# value of `pod_anti_affinity`, but one can override the default by setting
+# the `pod_anti_affinity_pgbackrest` and `pod_anti_affinity_pgbouncer` variables
+# for pgBackRest and pgBouncer respectively
+pod_anti_affinity='preferred'
+pod_anti_affinity_pgbackrest=''
+pod_anti_affinity_pgbouncer=''
 
 # pgBadger Defaults
 pgbadgerport='10000'

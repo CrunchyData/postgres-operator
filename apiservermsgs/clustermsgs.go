@@ -69,14 +69,16 @@ type CreateClusterRequest struct {
 	ContainerResources   string
 	// Version of API client
 	// required: true
-	ClientVersion       string
-	PodAntiAffinity     string
-	SyncReplication     *bool
-	BackrestS3Key       string
-	BackrestS3KeySecret string
-	BackrestS3Bucket    string
-	BackrestS3Region    string
-	BackrestS3Endpoint  string
+	ClientVersion             string
+	PodAntiAffinity           string
+	PodAntiAffinityPgBackRest string
+	PodAntiAffinityPgBouncer  string
+	SyncReplication           *bool
+	BackrestS3Key             string
+	BackrestS3KeySecret       string
+	BackrestS3Bucket          string
+	BackrestS3Region          string
+	BackrestS3Endpoint        string
 	// allow the user to set custom sizes for PVCs
 	// PVCSize applies to the primary/replica storage specs
 	PVCSize string

@@ -23,6 +23,8 @@ Cluster:
   BackrestS3Region:
   DisableAutofail:  false
   PodAntiAffinity: preferred
+  PodAntiAffinityPgBackRest: ""
+  PodAntiAffinityPgBouncer: ""
   SyncReplication: false
 PrimaryStorage: storageos
 BackupStorage: storageos
