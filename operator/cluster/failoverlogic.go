@@ -42,7 +42,7 @@ func Failover(identifier string, clientset *kubernetes.Clientset, client *rest.R
 	var err error
 	target := task.ObjectMeta.Labels[config.LABEL_TARGET]
 
-	log.Info("strategy 1 Failover called on " + clusterName + " target is " + target)
+	log.Infof("Failover called on [%s] target [%s]", clusterName, target)
 
 	pod, err = util.GetPod(clientset, target, namespace)
 	if err != nil {

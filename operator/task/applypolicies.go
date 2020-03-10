@@ -58,7 +58,7 @@ func applyPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, r
 	labels := make(map[string]string)
 	labels[policyName] = "pgpolicy"
 
-	//look up the cluster CRD to get the strategy
+	//look up the cluster CRD
 	cl := crv1.Pgcluster{}
 	_, err = kubeapi.Getpgcluster(restclient, &cl, clusterName, ns)
 	if err != nil {

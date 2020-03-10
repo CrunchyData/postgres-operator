@@ -196,7 +196,6 @@ type ClusterStruct struct {
 	Database                      string `yaml:"Database"`
 	PasswordAgeDays               string `yaml:"PasswordAgeDays"`
 	PasswordLength                string `yaml:"PasswordLength"`
-	Strategy                      string `yaml:"Strategy"`
 	Replicas                      string `yaml:"Replicas"`
 	ServiceType                   string `yaml:"ServiceType"`
 	BackrestPort                  int    `yaml:"BackrestPort"`

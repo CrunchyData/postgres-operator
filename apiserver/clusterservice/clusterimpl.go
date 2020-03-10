@@ -978,7 +978,6 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.Replicas = strconv.Itoa(request.ReplicaCount)
 		log.Debugf("replicas is  %s", spec.Replicas)
 	}
-	spec.Strategy = "1"
 	spec.UserLabels = userLabelsMap
 	spec.UserLabels[config.LABEL_PGO_VERSION] = msgs.PGO_VERSION
 
@@ -997,11 +996,6 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	log.Debugf("Pgo.Cluster.Database is %s", apiserver.Pgo.Cluster.Database)
 	if str != "" {
 		spec.Database = str
-	}
-	str = apiserver.Pgo.Cluster.Strategy
-	log.Debugf("%s", apiserver.Pgo.Cluster.Strategy)
-	if str != "" {
-		spec.Strategy = str
 	}
 	//pass along command line flags for a restore
 	if request.SecretFrom != "" {

@@ -120,7 +120,6 @@ Cluster:
   Database: userdb
   PasswordAgeDays: "60"
   PasswordLength: "8"
-  Strategy: "1"
   Replicas: "0"
   ServiceType: ClusterIP
   BackrestPort: 2022
