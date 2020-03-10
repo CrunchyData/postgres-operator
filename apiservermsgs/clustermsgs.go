@@ -86,12 +86,23 @@ type CreateClusterRequest struct {
 	BackrestPVCSize string
 }
 
+// CreateClusterDetail provides details about the PostgreSQL cluster that is
+// created
+//
+// swagger:model
+type CreateClusterDetail struct {
+	// Name is the name of the PostgreSQL cluster
+	Name string
+	// WorkflowID matches up to the WorkflowID of the cluster
+	WorkflowID string
+}
+
 // CreateClusterResponse
 //
 // swagger:model
 type CreateClusterResponse struct {
-	Results []string `json:"results"`
-	Status  `json:"status"`
+	Result CreateClusterDetail `json:"result"`
+	Status `json:"status"`
 }
 
 // ShowClusterService

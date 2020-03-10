@@ -274,15 +274,14 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 		os.Exit(2)
 	}
 
-	if response.Status.Code == msgs.Ok {
-		for _, v := range response.Results {
-			fmt.Println(v)
-		}
-	} else {
+	if response.Status.Code == msgs.Error {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
 
+	// print out the legacy cluster information
+	fmt.Println("created cluster:", response.Result.Name)
+	fmt.Println("workflow id:", response.Result.WorkflowID)
 }
 
 // isTablespaceParam returns true if the parameter in question is acceptable for
