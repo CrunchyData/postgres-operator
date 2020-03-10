@@ -66,8 +66,8 @@ By default, docker is not configured to run its daemon. Refer to the [docker pos
 ## Compile
 
 {{% notice tip %}}
-Please be sure to have your GPG Key and `.repo` file in the `conf` directory
-before proceeding.
+Please be sure to have your GPG Key and `.repo` file in the postgres-operator `conf` directory
+before proceeding. These come from the crunchy access portal.
 {{% /notice %}}
 
 You will build all the Operator binaries and Docker images by running:
