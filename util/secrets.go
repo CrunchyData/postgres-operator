@@ -129,22 +129,15 @@ func GeneratedPasswordLength(configuredPasswordLength string) int {
 	return generatedPasswordLength
 }
 
-// GetPasswordFromSecret will fetch the username, password from a user secret
-func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace string, secretName string) (string, string, error) {
-
-	if clientset == nil {
-		log.Errorln("clientset is nil")
-	}
-	log.Infoln("namespace=" + namespace)
-	log.Infoln("secretName=" + secretName)
-
+// GetPasswordFromSecret will fetch the password from a user secret
+func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace, secretName string) (string, error) {
 	secret, found, err := kubeapi.GetSecret(clientset, secretName, namespace)
+
 	if !found || err != nil {
-		return "", "", err
+		return "", err
 	}
 
-	return string(secret.Data["username"][:]), string(secret.Data["password"][:]), err
-
+	return string(secret.Data["password"][:]), err
 }
 
 // IsPostgreSQLUserSystemAccount determines whether or not this is a system

@@ -550,7 +550,7 @@ func createPgbouncerSecret(clientset *kubernetes.Clientset, cluster *crv1.Pgclus
 	secretName := util.GeneratePgBouncerSecretName(cluster.Spec.Name)
 
 	// see if this secret already exists...if it does, then take an early exit
-	if _, _, err := util.GetPasswordFromSecret(clientset, cluster.Spec.Namespace, secretName); err == nil {
+	if _, err := util.GetPasswordFromSecret(clientset, cluster.Spec.Namespace, secretName); err == nil {
 		log.Debugf("pgbouncer secret %s already present, will reuse", secretName)
 		return nil
 	}
