@@ -225,40 +225,36 @@ func init() {
 	CreateCmd.AddCommand(createUserCmd)
 	CreateCmd.AddCommand(createNamespaceCmd)
 
-	createPgouserCmd.Flags().StringVarP(&PgouserPassword, "pgouser-password", "", "", "specify a password for a pgouser")
-	createPgouserCmd.Flags().StringVarP(&PgouserRoles, "pgouser-roles", "", "", "specify a comma separated list of Roles for a pgouser")
-	createPgouserCmd.Flags().StringVarP(&PgouserNamespaces, "pgouser-namespaces", "", "", "specify a comma separated list of Namespaces for a pgouser")
-	createPgouserCmd.Flags().BoolVarP(&AllNamespaces, "all-namespaces", "", false, "specifies this user will have access to all namespaces.")
-	createPgoroleCmd.Flags().StringVarP(&Permissions, "permissions", "", "", "specify a comma separated list of permissions for a pgorole")
+	// flags for "pgo create cluster"
+	createClusterCmd.Flags().StringVarP(&CCPImage, "ccp-image", "", "", "The CCPImage name to use for cluster creation. If specified, overrides the value crunchy-postgres.")
+	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
+	createClusterCmd.Flags().StringVarP(&CustomConfig, "custom-config", "", "", "The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.")
+	createClusterCmd.Flags().BoolVarP(&DisableAutofailFlag, "disable-autofail", "", false, "Disables autofail capabitilies in the cluster following cluster initialization.")
+	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster.")
+	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "", false, "Adds the crunchy-collect container to the database pod.")
+	createClusterCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the primary database. If not set, any node is used.")
+	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database user.")
+	createClusterCmd.Flags().StringVarP(&BackrestPVCSize, "pgbackrest-pvc-size", "", "",
+		`The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "local" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
+	createClusterCmd.Flags().StringVarP(&BackrestS3Key, "pgbackrest-s3-key", "", "",
+		"The AWS S3 key that should be utilized for the cluster when the \"s3\" "+
+			"storage type is enabled for pgBackRest.")
+	createClusterCmd.Flags().StringVarP(&BackrestS3Bucket, "pgbackrest-s3-bucket", "", "",
+		"The AWS S3 bucket that should be utilized for the cluster when the \"s3\" "+
+			"storage type is enabled for pgBackRest.")
+	createClusterCmd.Flags().StringVarP(&BackrestS3Endpoint, "pgbackrest-s3-endpoint", "", "",
+		"The AWS S3 endpoint that should be utilized for the cluster when the \"s3\" "+
+			"storage type is enabled for pgBackRest.")
+	createClusterCmd.Flags().StringVarP(&BackrestS3KeySecret, "pgbackrest-s3-key-secret", "", "",
+		"The AWS S3 key secret that should be utilized for the cluster when the \"s3\" "+
+			"storage type is enabled for pgBackRest.")
+	createClusterCmd.Flags().StringVarP(&BackrestS3Region, "pgbackrest-s3-region", "", "",
+		"The AWS S3 region that should be utilized for the cluster when the \"s3\" "+
+			"storage type is enabled for pgBackRest.")
 	createClusterCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use with pgBackRest. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgbouncerFlag, "pgbouncer", "", false, "Adds a crunchy-pgbouncer deployment to the cluster.")
-	//	createClusterCmd.Flags().BoolVarP(&ArchiveFlag, "archive", "", false, "Enables archive logging for the database cluster.")
-	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "", false, "Adds the crunchy-collect container to the database pod.")
-	createClusterCmd.Flags().BoolVarP(&DisableAutofailFlag, "disable-autofail", "", false, "Disables autofail capabitilies in the cluster following cluster initialization.")
-	createClusterCmd.Flags().StringVarP(&CustomConfig, "custom-config", "", "", "The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.")
-	createClusterCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")
 	createClusterCmd.Flags().StringVarP(&ReplicaStorageConfig, "replica-storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster replica storage.")
-	createClusterCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the primary database. If not set, any node is used.")
-	createClusterCmd.Flags().StringVarP(&ServiceType, "service-type", "", "", "The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.")
-	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database user.")
-	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets.")
-	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster.")
-	createClusterCmd.Flags().StringSliceVar(&Tablespaces, "tablespace", []string{},
-		"Create a PostgreSQL tablespace on the cluster, e.g. \"name=ts1:storageconfig=nfsstorage\". The format is "+
-			"a key/value map that is delimited by \"=\" and separated by \":\". The following parameters are available:\n\n"+
-			"- name (required): the name of the PostgreSQL tablespace\n"+
-			"- storageconfig (required): the storage configuration to use, as specified in the list available in the "+
-			"\"pgo-config\" ConfigMap (aka \"pgo.yaml\")\n"+
-			"- pvcsize: the size of the PVC capacity, which overrides the value set in the specified storageconfig. "+
-			"Follows the Kubernetes quantity format.\n\n"+
-			"For example, to create a tablespace with the NFS storage configuration with a PVC of size 10GiB:\n\n"+
-			"--tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi")
-	createClusterCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply when creating a cluster, comma separated.")
-	createClusterCmd.Flags().StringVarP(&CCPImage, "ccp-image", "", "", "The CCPImage name to use for cluster creation. If specified, overrides the value crunchy-postgres.")
-	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
-	createClusterCmd.Flags().IntVarP(&ClusterReplicaCount, "replica-count", "", 0, "The number of replicas to create as part of the cluster.")
-	createClusterCmd.Flags().StringVarP(&ContainerResources, "resources-config", "r", "", "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.")
 	createClusterCmd.Flags().StringVarP(&PodAntiAffinity, "pod-anti-affinity", "", "",
 		"Specifies the type of anti-affinity that should be utilized when applying  "+
 			"default pod anti-affinity rules to PG clusters (default \"preferred\")")
@@ -270,53 +266,62 @@ func init() {
 		"Set the Pod anti-affinity rules specifically for the pgBouncer "+
 			"Pods. Defaults to the default cluster pod anti-affinity (i.e. \"preferred\"), "+
 			"or the value set by --pod-anti-affinity")
-	createClusterCmd.Flags().BoolVarP(&SyncReplication, "sync-replication", "", false,
-		"Enables synchronous replication for the cluster.")
-	createClusterCmd.Flags().StringVarP(&BackrestS3Key, "pgbackrest-s3-key", "", "",
-		"The AWS S3 key that should be utilized for the cluster when the \"s3\" "+
-			"storage type is enabled for pgBackRest.")
-	createClusterCmd.Flags().StringVarP(&BackrestS3KeySecret, "pgbackrest-s3-key-secret", "", "",
-		"The AWS S3 key secret that should be utilized for the cluster when the \"s3\" "+
-			"storage type is enabled for pgBackRest.")
-	createClusterCmd.Flags().StringVarP(&BackrestS3Bucket, "pgbackrest-s3-bucket", "", "",
-		"The AWS S3 bucket that should be utilized for the cluster when the \"s3\" "+
-			"storage type is enabled for pgBackRest.")
-	createClusterCmd.Flags().StringVarP(&BackrestS3Endpoint, "pgbackrest-s3-endpoint", "", "",
-		"The AWS S3 endpoint that should be utilized for the cluster when the \"s3\" "+
-			"storage type is enabled for pgBackRest.")
-	createClusterCmd.Flags().StringVarP(&BackrestS3Region, "pgbackrest-s3-region", "", "",
-		"The AWS S3 region that should be utilized for the cluster when the \"s3\" "+
-			"storage type is enabled for pgBackRest.")
+	createClusterCmd.Flags().StringVarP(&PoliciesFlag, "policies", "z", "", "The policies to apply when creating a cluster, comma separated.")
 	createClusterCmd.Flags().StringVarP(&PVCSize, "pvc-size", "", "",
 		`The size of the PVC capacity for primary and replica PostgreSQL instances. Overrides the value set in the storage class. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
-	createClusterCmd.Flags().StringVarP(&BackrestPVCSize, "pgbackrest-pvc-size", "", "",
-		`The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "local" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
+	createClusterCmd.Flags().IntVarP(&ClusterReplicaCount, "replica-count", "", 0, "The number of replicas to create as part of the cluster.")
+	createClusterCmd.Flags().StringVarP(&ContainerResources, "resources-config", "r", "", "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.")
+	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets.")
+	createClusterCmd.Flags().StringVarP(&ServiceType, "service-type", "", "", "The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.")
+	createClusterCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")
+	createClusterCmd.Flags().BoolVarP(&SyncReplication, "sync-replication", "", false,
+		"Enables synchronous replication for the cluster.")
+	createClusterCmd.Flags().StringSliceVar(&Tablespaces, "tablespace", []string{},
+		"Create a PostgreSQL tablespace on the cluster, e.g. \"name=ts1:storageconfig=nfsstorage\". The format is "+
+			"a key/value map that is delimited by \"=\" and separated by \":\". The following parameters are available:\n\n"+
+			"- name (required): the name of the PostgreSQL tablespace\n"+
+			"- storageconfig (required): the storage configuration to use, as specified in the list available in the "+
+			"\"pgo-config\" ConfigMap (aka \"pgo.yaml\")\n"+
+			"- pvcsize: the size of the PVC capacity, which overrides the value set in the specified storageconfig. "+
+			"Follows the Kubernetes quantity format.\n\n"+
+			"For example, to create a tablespace with the NFS storage configuration with a PVC of size 10GiB:\n\n"+
+			"--tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi")
 
-	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy.")
+	// pgo create pgbouncer
+	createPgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+
+	// "pgo create pgouser" flags
+	createPgouserCmd.Flags().BoolVarP(&AllNamespaces, "all-namespaces", "", false, "specifies this user will have access to all namespaces.")
+	createPgoroleCmd.Flags().StringVarP(&Permissions, "permissions", "", "", "specify a comma separated list of permissions for a pgorole")
+	createPgouserCmd.Flags().StringVarP(&PgouserPassword, "pgouser-password", "", "", "specify a password for a pgouser")
+	createPgouserCmd.Flags().StringVarP(&PgouserRoles, "pgouser-roles", "", "", "specify a comma separated list of Roles for a pgouser")
+	createPgouserCmd.Flags().StringVarP(&PgouserNamespaces, "pgouser-namespaces", "", "", "specify a comma separated list of Namespaces for a pgouser")
+
+	// "pgo create policy" flags
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy.")
+	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy.")
 
-	createScheduleCmd.Flags().StringVarP(&Schedule, "schedule", "", "", "The schedule assigned to the cron task.")
-	createScheduleCmd.Flags().StringVarP(&ScheduleType, "schedule-type", "", "", "The type of schedule to be created (pgbackrest or policy).")
+	// "pgo create schedule" flags
+	createScheduleCmd.Flags().StringVarP(&ScheduleDatabase, "database", "", "", "The database to run the SQL policy against.")
 	createScheduleCmd.Flags().StringVarP(&PGBackRestType, "pgbackrest-backup-type", "", "", "The type of pgBackRest backup to schedule (full, diff or incr).")
 	createScheduleCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use when scheduling pgBackRest backups. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 	createScheduleCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
-	createScheduleCmd.Flags().StringVarP(&ScheduleOptions, "schedule-opts", "", "", "The custom options passed to the create schedule API.")
-	createScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	createScheduleCmd.Flags().StringVarP(&SchedulePolicy, "policy", "", "", "The policy to use for SQL schedules.")
-	createScheduleCmd.Flags().StringVarP(&ScheduleDatabase, "database", "", "", "The database to run the SQL policy against.")
+	createScheduleCmd.Flags().StringVarP(&Schedule, "schedule", "", "", "The schedule assigned to the cron task.")
+	createScheduleCmd.Flags().StringVarP(&ScheduleOptions, "schedule-opts", "", "", "The custom options passed to the create schedule API.")
+	createScheduleCmd.Flags().StringVarP(&ScheduleType, "schedule-type", "", "", "The type of schedule to be created (pgbackrest or policy).")
 	createScheduleCmd.Flags().StringVarP(&ScheduleSecret, "secret", "", "", "The secret name for the username and password of the PostgreSQL role for SQL schedules.")
+	createScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 
+	// "pgo create user" flags
 	createUserCmd.Flags().BoolVar(&AllFlag, "all", false, "Create a user on every cluster.")
-	createUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	createUserCmd.Flags().StringVarP(&Password, "password", "", "", "The password to use for creating a new user which overrides a generated password.")
-	createUserCmd.Flags().StringVarP(&Username, "username", "", "", "The username to use for creating a new user")
 	createUserCmd.Flags().BoolVarP(&ManagedUser, "managed", "", false, "Creates a user with secrets that can be managed by the Operator.")
 	createUserCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
-	createUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 0, "Sets the number of days that a password is valid. Defaults to the server value.")
+	createUserCmd.Flags().StringVarP(&Password, "password", "", "", "The password to use for creating a new user which overrides a generated password.")
 	createUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 0, "If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.")
-
-	createPgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-
+	createUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	createUserCmd.Flags().StringVarP(&Username, "username", "", "", "The username to use for creating a new user")
+	createUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 0, "Sets the number of days that a password is valid. Defaults to the server value.")
 }
 
 // createPgouserCmd ...
