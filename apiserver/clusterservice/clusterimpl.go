@@ -1232,14 +1232,6 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns, user str
 	// set the generated password length for random password generation
 	generatedPasswordLength := util.GeneratedPasswordLength(apiserver.Pgo.Cluster.PasswordLength)
 
-	//allows user to override with their own passwords
-	if request.Password != "" {
-		log.Debug("user has set a password, will use that instead of generated ones or the secret-from settings")
-		RootPassword = request.Password
-		Password = request.Password
-		PrimaryPassword = request.Password
-	}
-
 	if request.SecretFrom != "" {
 		log.Debugf("secret-from is specified! using %s", request.SecretFrom)
 		_, RootPassword, err = util.GetPasswordFromSecret(apiserver.Clientset, ns, request.SecretFrom+crv1.RootSecretSuffix)
@@ -1249,6 +1241,13 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns, user str
 			log.Error("error getting secrets using SecretFrom " + request.SecretFrom)
 			return err, RootSecretName, PrimarySecretName, UserSecretName
 		}
+	}
+
+	// if the user provides a password, override this instead of using the one
+	// from the "SecretFrom" parameter
+	if request.Password != "" {
+		log.Debug("using password provided in request")
+		Password = request.Password
 	}
 
 	RootSecretName = clusterName + crv1.RootSecretSuffix
@@ -1266,10 +1265,11 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns, user str
 	}
 
 	UserSecretName = clusterName + "-" + user + crv1.UserSecretSuffix
-	testPassword := util.GeneratePassword(generatedPasswordLength)
-	if Password != "" {
-		log.Debugf("using user specified password for secret %s", UserSecretName)
-		testPassword = Password
+
+	// if no password for the user has been set, generate the password for a user
+	if Password == "" {
+		log.Debugf("generating password for user and saving to secret %s", UserSecretName)
+		Password = util.GeneratePassword(generatedPasswordLength)
 	}
 
 	var found bool
@@ -1294,9 +1294,9 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns, user str
 		return err, RootSecretName, PrimarySecretName, UserSecretName
 	}
 
-	username = user
-	err = util.CreateSecret(apiserver.Clientset, clusterName, UserSecretName, username, testPassword, ns)
-	if err != nil {
+	// create the secret for the user's user...i.e. the PostgreSQL user that the
+	// user should log in as
+	if err := util.CreateSecret(apiserver.Clientset, clusterName, UserSecretName, user, Password, ns); err != nil {
 		log.Errorf("error creating secret %s %s", UserSecretName, err.Error())
 		return err, RootSecretName, PrimarySecretName, UserSecretName
 	}

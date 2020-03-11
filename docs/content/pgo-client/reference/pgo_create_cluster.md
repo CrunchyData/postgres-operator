@@ -26,7 +26,7 @@ pgo create cluster [flags]
   -l, --labels string                         The labels to apply to this cluster.
       --metrics                               Adds the crunchy-collect container to the database pod.
       --node-label string                     The node label (key=value) to use in placing the primary database. If not set, any node is used.
-  -w, --password string                       The password to use for initial database users.
+  -w, --password string                       The password to use for initial database user.
       --pgbackrest-pvc-size string            The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "local" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"
       --pgbackrest-s3-bucket string           The AWS S3 bucket that should be utilized for the cluster when the "s3" storage type is enabled for pgBackRest.
       --pgbackrest-s3-endpoint string         The AWS S3 endpoint that should be utilized for the cluster when the "s3" storage type is enabled for pgBackRest.
@@ -49,13 +49,13 @@ pgo create cluster [flags]
       --storage-config string                 The name of a Storage config in pgo.yaml to use for the cluster storage.
       --sync-replication                      Enables synchronous replication for the cluster.
       --tablespace strings                    Create a PostgreSQL tablespace on the cluster, e.g. "name=ts1:storageconfig=nfsstorage". The format is a key/value map that is delimited by "=" and separated by ":". The following parameters are available:
-                                              
+
                                               - name (required): the name of the PostgreSQL tablespace
                                               - storageconfig (required): the storage configuration to use, as specified in the list available in the "pgo-config" ConfigMap (aka "pgo.yaml")
                                               - pvcsize: the size of the PVC capacity, which overrides the value set in the specified storageconfig. Follows the Kubernetes quantity format.
-                                              
+
                                               For example, to create a tablespace with the NFS storage configuration with a PVC of size 10GiB:
-                                              
+
                                               --tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi
 ```
 
