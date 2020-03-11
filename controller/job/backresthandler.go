@@ -120,7 +120,9 @@ func (c *Controller) handleCloneBackrestRestoreUpdate(job *apiv1.Job) error {
 		// alright, we can move on the step 3 which is the final step, where we
 		// create the cluster
 		cloneTask := util.CloneTask{
+			BackrestPVCSize:   job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_BACKREST_PVC_SIZE],
 			PGOUser:           job.ObjectMeta.Labels[config.LABEL_PGOUSER],
+			PVCSize:           job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_PVC_SIZE],
 			SourceClusterName: sourceClusterName,
 			TargetClusterName: targetClusterName,
 			TaskStepLabel:     config.LABEL_PGO_CLONE_STEP_3,
