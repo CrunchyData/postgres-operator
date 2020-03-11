@@ -496,7 +496,7 @@ func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
 			// We ignore any errors...if the password get set, we add it. If not, we
 			// don't
 			secretName := fmt.Sprintf(userSecretFormat, result.ClusterName, result.Username)
-			_, password, _ := util.GetPasswordFromSecret(apiserver.Clientset, pod.Namespace, secretName)
+			password, _ := util.GetPasswordFromSecret(apiserver.Clientset, pod.Namespace, secretName)
 
 			if password != "" {
 				result.Password = password

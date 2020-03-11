@@ -1234,9 +1234,9 @@ func createSecrets(request *msgs.CreateClusterRequest, clusterName, ns, user str
 
 	if request.SecretFrom != "" {
 		log.Debugf("secret-from is specified! using %s", request.SecretFrom)
-		_, RootPassword, err = util.GetPasswordFromSecret(apiserver.Clientset, ns, request.SecretFrom+crv1.RootSecretSuffix)
-		_, Password, err = util.GetPasswordFromSecret(apiserver.Clientset, ns, request.SecretFrom+"-"+user+crv1.UserSecretSuffix)
-		_, PrimaryPassword, err = util.GetPasswordFromSecret(apiserver.Clientset, ns, request.SecretFrom+crv1.PrimarySecretSuffix)
+		RootPassword, err = util.GetPasswordFromSecret(apiserver.Clientset, ns, request.SecretFrom+crv1.RootSecretSuffix)
+		Password, err = util.GetPasswordFromSecret(apiserver.Clientset, ns, request.SecretFrom+"-"+user+crv1.UserSecretSuffix)
+		PrimaryPassword, err = util.GetPasswordFromSecret(apiserver.Clientset, ns, request.SecretFrom+crv1.PrimarySecretSuffix)
 		if err != nil {
 			log.Error("error getting secrets using SecretFrom " + request.SecretFrom)
 			return err, RootSecretName, PrimarySecretName, UserSecretName

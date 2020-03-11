@@ -317,7 +317,7 @@ func setPgBouncerPasswordDetail(cluster crv1.Pgcluster, result *msgs.ShowPgBounc
 	pgBouncerSecretName := util.GeneratePgBouncerSecretName(cluster.Spec.Name)
 
 	// attempt to get the secret, but only get the password
-	_, password, err := util.GetPasswordFromSecret(apiserver.Clientset,
+	password, err := util.GetPasswordFromSecret(apiserver.Clientset,
 		cluster.Spec.Namespace, pgBouncerSecretName)
 
 	if err != nil {
