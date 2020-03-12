@@ -21,7 +21,6 @@
     - metrics
     - archive_mode
     - archive_timeout
-    - db_name
     - db_password_length
     - create_rbac
     - db_port

@@ -94,6 +94,9 @@ type CreateClusterRequest struct {
 	// also show the results of the available system accounts (e.g. the PostgreSQL
 	// superuser)
 	ShowSystemAccounts bool
+	// Database is an optional parameter that allows the user to specify the name
+	// of the initial database that is created
+	Database string
 }
 
 // CreateClusterDetail provides details about the PostgreSQL cluster that is
@@ -101,6 +104,9 @@ type CreateClusterRequest struct {
 //
 // swagger:model
 type CreateClusterDetail struct {
+	// Database is the name of the database that is initially created for users to
+	// connect to
+	Database string
 	// Name is the name of the PostgreSQL cluster
 	Name string
 	// Users contain an array of users along with their credentials

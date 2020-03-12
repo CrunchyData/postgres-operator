@@ -32,6 +32,7 @@ var ArchiveFlag, DisableAutofailFlag, EnableAutofailFlag, PgbouncerFlag, Metrics
 var BackrestRestoreFrom string
 var CCPImage string
 var CCPImageTag string
+var Database string
 var Password string
 var SecretFrom string
 var PoliciesFlag, PolicyFile, PolicyURL string
@@ -229,6 +230,7 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&CCPImage, "ccp-image", "", "", "The CCPImage name to use for cluster creation. If specified, overrides the value crunchy-postgres.")
 	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
 	createClusterCmd.Flags().StringVarP(&CustomConfig, "custom-config", "", "", "The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.")
+	createClusterCmd.Flags().StringVarP(&Database, "database", "d", "", "If specified, sets the name of the initial database that is created for the user. Defaults to the value set in the PostgreSQL Operator configuration, or if that is not present, the name of the cluster")
 	createClusterCmd.Flags().BoolVarP(&DisableAutofailFlag, "disable-autofail", "", false, "Disables autofail capabitilies in the cluster following cluster initialization.")
 	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster.")
 	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "", false, "Adds the crunchy-collect container to the database pod.")

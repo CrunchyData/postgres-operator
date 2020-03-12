@@ -841,6 +841,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	// for the CRD
 	resp.Result.WorkflowID = id
 	newInstance.Spec.UserLabels[config.LABEL_WORKFLOW_ID] = id
+	resp.Result.Database = newInstance.Spec.Database
 
 	//create CRD for new cluster
 	err = kubeapi.Createpgcluster(apiserver.RESTClient,
@@ -1031,7 +1032,6 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.Policies = request.Policies
 	}
 
-	spec.Database = "userdb"
 	spec.Replicas = "0"
 	str := apiserver.Pgo.Cluster.Replicas
 	log.Debugf("[%s] is Pgo.Cluster.Replicas", str)
@@ -1055,7 +1055,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 	// set the user. First, attempt to default to the user that is in the pgo.yaml
 	// configuration file. If the user has entered a username in the request,
-	// then user that one
+	// then use that one
 	spec.User = apiserver.Pgo.Cluster.User
 
 	if request.Username != "" {
@@ -1064,11 +1064,21 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 	log.Debugf("username set to [%s]", spec.User)
 
-	str = apiserver.Pgo.Cluster.Database
-	log.Debugf("Pgo.Cluster.Database is %s", apiserver.Pgo.Cluster.Database)
-	if str != "" {
-		spec.Database = str
+	// set the name of the database. The hierarchy is as such:
+	// 1. Use the name that the user provides in the request
+	// 2. Use the name that is in the pgo.yaml file
+	// 3. Use the name of the cluster
+	switch {
+	case request.Database != "":
+		spec.Database = request.Database
+	case apiserver.Pgo.Cluster.Database != "":
+		spec.Database = apiserver.Pgo.Cluster.Database
+	default:
+		spec.Database = spec.Name
 	}
+
+	log.Debugf("database set to [%s]", spec.Database)
+
 	//pass along command line flags for a restore
 	if request.SecretFrom != "" {
 		spec.SecretFrom = request.SecretFrom

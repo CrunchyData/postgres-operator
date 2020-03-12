@@ -170,9 +170,11 @@ service_type='ClusterIP'
 # ===================
 # PostgreSQL Settings
 # Default parameters for objects created when the database container starts
-# such as: default database name and default username
+# such as: default database name and default username.
 # ===================
-db_name='userdb'
+# The database defaults to the name of the PostgreSQL cluster that is created
+# unless a database name is specified in "db_name"
+db_name=''
 # db_password_age_days sets the length of time before a password for a
 # PostgreSQL expires. This is default to "0" which is unlimited
 db_password_age_days=0

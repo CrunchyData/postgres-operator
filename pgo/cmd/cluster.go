@@ -261,6 +261,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.BackrestPVCSize = BackrestPVCSize
 	r.Username = Username
 	r.ShowSystemAccounts = ShowSystemAccounts
+	r.Database = Database
 
 	// only set SyncReplication in the request if actually provided via the CLI
 	if createClusterCmd.Flag("sync-replication").Changed {
@@ -285,6 +286,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	// print out the legacy cluster information
 	fmt.Println("created cluster:", response.Result.Name)
 	fmt.Println("workflow id:", response.Result.WorkflowID)
+	fmt.Println("database name:", response.Result.Database)
 	fmt.Println("users:")
 
 	for _, user := range response.Result.Users {
