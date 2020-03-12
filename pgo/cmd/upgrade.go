@@ -17,12 +17,13 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var upgradeCmd = &cobra.Command{
@@ -65,14 +66,15 @@ func createUpgrade(args []string, ns string) {
 		os.Exit(2)
 	}
 
-	request := msgs.CreateUpgradeRequest{}
-	request.Args = args
-	request.Namespace = ns
-	request.Selector = Selector
-	request.CCPImageTag = CCPImageTag
-	request.ClientVersion = msgs.PGO_VERSION
+	request := msgs.CreateUpgradeRequest{
+		Args:          args,
+		Namespace:     ns,
+		Selector:      Selector,
+		CCPImageTag:   CCPImageTag,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
-	response, err := api.CreateUpgrade(httpclient, &SessionCredentials, &request)
+	response, err := apiClient.CreateUpgrade(context.Background(), request)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"runtime"
 	"strconv"
@@ -24,6 +25,8 @@ import (
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+
+	v4http "github.com/crunchydata/postgres-operator/pgo-client/v4/http"
 )
 
 // RootCmd represents the base command when called without any subcommands
@@ -86,6 +89,11 @@ func initConfig() {
 	}
 	log.Debugf("in initConfig with url=%s", APIServerURL)
 
+	baseURL, err := url.Parse(APIServerURL)
+	if err != nil {
+		log.Fatalf("could not parse api server url: %s", err.Error())
+	}
+
 	tmp := os.Getenv("PGO_NAMESPACE")
 	if tmp != "" {
 		PGONamespace = tmp
@@ -98,6 +106,9 @@ func initConfig() {
 	// Setup the API HTTP client based on TLS enablement
 	if noTLS, _ := strconv.ParseBool(os.Getenv("DISABLE_TLS")); noTLS || PGO_DISABLE_TLS {
 		log.Debug("setting up httpclient without TLS")
+		if err != nil {
+			log.Fatal("failed to parse api server url: %s", err.Error())
+		}
 		httpclient = NewAPIClient()
 	} else {
 		log.Debug("setting up httpclient with TLS")
@@ -106,6 +117,28 @@ func initConfig() {
 		} else {
 			httpclient = hc
 		}
+	}
+
+	clientConfig := v4http.Config{
+		Address: baseURL,
+		Credentials: v4http.Credentials{
+			Username: SessionCredentials.Username,
+			Password: SessionCredentials.Password,
+		},
+	}
+
+	if noTLS, _ := strconv.ParseBool(os.Getenv("DISABLE_TLS")); !noTLS || !PGO_DISABLE_TLS {
+		transport, err := GetTLSTransport()
+		if err != nil {
+			log.Fatalf("failed to setup TLS client: %s", err.Error())
+		}
+		clientConfig.Transport = transport
+	}
+
+	apiClient, err = v4http.NewAPI(clientConfig)
+
+	if err != nil {
+		log.Fatalf("could not initialize API client: %s", err.Error())
 	}
 
 	if os.Getenv("GENERATE_BASH_COMPLETION") != "" {

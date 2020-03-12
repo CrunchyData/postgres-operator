@@ -276,6 +276,12 @@ type ScaleQueryTargetSpec struct {
 	Timeline       int    // the timeline the replica is on; timelines are adjusted after failover events
 }
 
+type ScaleQueryRequest struct {
+	Name          string
+	Namespace     string
+	ClientVersion string
+}
+
 // ScaleQueryResponse
 // swagger:model
 type ScaleQueryResponse struct {
@@ -283,11 +289,31 @@ type ScaleQueryResponse struct {
 	Status
 }
 
+type ScaleDownRequest struct {
+	Name            string
+	Namespace       string
+	ScaleDownTarget string
+	DeleteData      bool
+	ClientVersion   string
+}
+
 // ScaleDownResponse
 // swagger:model
 type ScaleDownResponse struct {
 	Results []string
 	Status
+}
+
+type ClusterScaleRequest struct {
+	Name               string
+	Namespace          string
+	ReplicaCount       int
+	ContainerResources string
+	StorageConfig      string
+	NodeLabel          string
+	CCPImageTag        string
+	ServiceType        string
+	ClientVersion      string
 }
 
 // ClusterScaleResponse ...

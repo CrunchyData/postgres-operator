@@ -21,20 +21,29 @@ limitations under the License.
 
 // CreatepgDumpBackupResponse ...
 // swagger:model
-type CreatepgDumpBackupResponse struct {
+type CreatePGDumpResponse struct {
 	Results []string
 	Status
 }
 
-// CreatepgDumpBackup ...
+// CreatePGDumpRequest ...
 // swagger:model
-type CreatepgDumpBackupRequest struct {
+type CreatePGDumpRequest struct {
 	Namespace     string
 	Args          []string
 	Selector      string
 	PVCName       string
 	StorageConfig string
 	BackupOpts    string
+}
+
+// ShowPGDumpRequest ...
+// swagger:model
+type ShowPGDumpRequest struct {
+	Arg           string
+	Selector      string
+	Namespace     string
+	ClientVersion string
 }
 
 // ShowpgDumpDetail

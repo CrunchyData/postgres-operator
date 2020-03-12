@@ -16,13 +16,14 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var scaledownCmd = &cobra.Command{
@@ -87,8 +88,14 @@ func queryCluster(args []string, ns string) {
 		// separation between each line
 		fmt.Printf("\nCluster: %s\n", arg)
 
+		r := msgs.ScaleQueryRequest{
+			Name:          arg,
+			Namespace:     ns,
+			ClientVersion: msgs.PGO_VERSION,
+		}
+
 		// call the API
-		response, err := api.ScaleQuery(httpclient, arg, &SessionCredentials, ns)
+		response, err := apiClient.ScaleQuery(context.Background(), r)
 
 		// If the API returns in error, just bail out here
 		if err != nil {
@@ -131,7 +138,14 @@ func scaleDownCluster(clusterName, ns string) {
 	// release
 	deleteData := !KeepData && DeleteData
 
-	response, err := api.ScaleDownCluster(httpclient, clusterName, Target, deleteData, &SessionCredentials, ns)
+	r := msgs.ScaleDownRequest{
+		Name:            clusterName,
+		Namespace:       ns,
+		ScaleDownTarget: Target,
+		DeleteData:      deleteData,
+	}
+
+	response, err := apiClient.ScaleDownCluster(context.Background(), r)
 
 	if err != nil {
 		fmt.Println("Error: ", err.Error())

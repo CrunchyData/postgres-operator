@@ -30,6 +30,8 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/tlsutil"
 
+	v4api "github.com/crunchydata/postgres-operator/pgo-client/v4"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -44,6 +46,8 @@ var SessionCredentials msgs.BasicAuthCredentials
 
 // Globally shared Operator API HTTP client
 var httpclient *http.Client
+
+var apiClient v4api.API
 
 // StatusCheck ...
 func StatusCheck(resp *http.Response) {

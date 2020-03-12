@@ -335,7 +335,7 @@ var createPgouserCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println(`Error: A pgouser username is required for this command.`)
 		} else {
-			createPgouser(args, Namespace)
+			createPgoUser(args, Namespace)
 		}
 	},
 }

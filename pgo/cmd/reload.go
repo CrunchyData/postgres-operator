@@ -17,13 +17,14 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 //unused but coming soon to a theatre near you
@@ -65,11 +66,13 @@ func init() {
 func reload(args []string, ns string) {
 	log.Debugf("reload called %v", args)
 
-	request := new(msgs.ReloadRequest)
-	request.Args = args
-	request.Selector = Selector
-	request.Namespace = ns
-	response, err := api.Reload(httpclient, &SessionCredentials, request)
+	request := msgs.ReloadRequest{
+		Args:      args,
+		Selector:  Selector,
+		Namespace: ns,
+	}
+
+	response, err := apiClient.Reload(context.Background(), request)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

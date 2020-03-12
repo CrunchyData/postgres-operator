@@ -16,12 +16,12 @@ package cmd
 */
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -75,15 +75,16 @@ func showTest(args []string, ns string) {
 		args[0] = "all"
 	}
 
-	r := new(msgs.ClusterTestRequest)
-	r.Selector = Selector
-	r.Namespace = ns
-	r.AllFlag = AllFlag
-	r.ClientVersion = msgs.PGO_VERSION
+	r := msgs.ClusterTestRequest{
+		Selector:      Selector,
+		Namespace:     ns,
+		AllFlag:       AllFlag,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
 	for _, arg := range args {
 		r.Clustername = arg
-		response, err := api.ShowTest(httpclient, &SessionCredentials, r)
+		response, err := apiClient.ShowTest(context.Background(), r)
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 			os.Exit(2)

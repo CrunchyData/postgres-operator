@@ -253,7 +253,7 @@ var UpdatePgouserCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println("Error: You must specify the name of a pgouser.")
 		} else {
-			updatePgouser(args, Namespace)
+			updatePgoUser(args, Namespace)
 		}
 	},
 }

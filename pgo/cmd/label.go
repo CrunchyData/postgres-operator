@@ -16,12 +16,13 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var LabelCmdLabel string
@@ -71,17 +72,18 @@ func labelClusters(clusters []string, ns string) {
 		return
 	}
 
-	r := new(msgs.LabelRequest)
-	r.Args = clusters
-	r.Namespace = ns
-	r.Selector = Selector
-	r.DryRun = DryRun
-	r.LabelCmdLabel = LabelCmdLabel
-	r.DeleteLabel = DeleteLabel
-	r.ClientVersion = msgs.PGO_VERSION
+	r := msgs.LabelRequest{
+		Args:          clusters,
+		Namespace:     ns,
+		Selector:      Selector,
+		DryRun:        DryRun,
+		LabelCmdLabel: LabelCmdLabel,
+		DeleteLabel:   DeleteLabel,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
 	log.Debugf("%s is the selector", r.Selector)
-	response, err := api.LabelClusters(httpclient, &SessionCredentials, r)
+	response, err := apiClient.LabelCluster(context.Background(), r)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -106,14 +108,15 @@ func labelClusters(clusters []string, ns string) {
 func deleteLabel(args []string, ns string) {
 	log.Debugf("deleteLabel called %v", args)
 
-	req := msgs.DeleteLabelRequest{}
-	req.Selector = Selector
-	req.Namespace = ns
-	req.Args = args
-	req.LabelCmdLabel = LabelCmdLabel
-	req.ClientVersion = msgs.PGO_VERSION
+	req := msgs.DeleteLabelRequest{
+		Selector:      Selector,
+		Namespace:     ns,
+		Args:          args,
+		LabelCmdLabel: LabelCmdLabel,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
-	response, err := api.DeleteLabel(httpclient, &SessionCredentials, &req)
+	response, err := apiClient.DeleteLabel(context.Background(), req)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)

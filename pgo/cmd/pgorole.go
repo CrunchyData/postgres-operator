@@ -16,11 +16,12 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
-	log "github.com/sirupsen/logrus"
 	"os"
+
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	log "github.com/sirupsen/logrus"
 )
 
 func updatePgorole(args []string, ns string) {
@@ -36,14 +37,15 @@ func updatePgorole(args []string, ns string) {
 		return
 	}
 
-	r := new(msgs.UpdatePgoroleRequest)
-	r.PgoroleName = args[0]
-	r.Namespace = ns
-	r.ChangePermissions = PgoroleChangePermissions
-	r.PgorolePermissions = Permissions
-	r.ClientVersion = msgs.PGO_VERSION
+	r := msgs.UpdatePgoRoleRequest{
+		PgoroleName:        args[0],
+		Namespace:          ns,
+		ChangePermissions:  PgoroleChangePermissions,
+		PgorolePermissions: Permissions,
+		ClientVersion:      msgs.PGO_VERSION,
+	}
 
-	response, err := api.UpdatePgorole(httpclient, &SessionCredentials, r)
+	response, err := apiClient.UpdatePgoRole(context.Background(), r)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -61,11 +63,12 @@ func updatePgorole(args []string, ns string) {
 
 func showPgorole(args []string, ns string) {
 
-	r := new(msgs.ShowPgoroleRequest)
-	r.PgoroleName = args
-	r.Namespace = ns
-	r.AllFlag = AllFlag
-	r.ClientVersion = msgs.PGO_VERSION
+	r := msgs.ShowPgoRoleRequest{
+		PgoroleName:   args,
+		Namespace:     ns,
+		AllFlag:       AllFlag,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
 	if len(args) == 0 && !AllFlag {
 		fmt.Println("Error: either a pgorole name or --all flag is required")
@@ -75,7 +78,7 @@ func showPgorole(args []string, ns string) {
 		args = []string{""}
 	}
 
-	response, err := api.ShowPgorole(httpclient, &SessionCredentials, r)
+	response, err := apiClient.ShowPgoRole(context.Background(), r)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -115,13 +118,14 @@ func createPgorole(args []string, ns string) {
 	}
 	var err error
 	//create the request
-	r := new(msgs.CreatePgoroleRequest)
-	r.PgoroleName = args[0]
-	r.PgorolePermissions = Permissions
-	r.Namespace = ns
-	r.ClientVersion = msgs.PGO_VERSION
+	r := msgs.CreatePgoRoleRequest{
+		PgoroleName:        args[0],
+		PgorolePermissions: Permissions,
+		Namespace:          ns,
+		ClientVersion:      msgs.PGO_VERSION,
+	}
 
-	response, err := api.CreatePgorole(httpclient, &SessionCredentials, r)
+	response, err := apiClient.CreatePgoRole(context.Background(), r)
 
 	log.Debugf("response is %v", response)
 	if err != nil {
@@ -142,11 +146,12 @@ func deletePgorole(args []string, ns string) {
 
 	log.Debugf("deletePgorole called %v", args)
 
-	r := msgs.DeletePgoroleRequest{}
-	r.PgoroleName = args
-	r.AllFlag = AllFlag
-	r.ClientVersion = msgs.PGO_VERSION
-	r.Namespace = ns
+	r := msgs.DeletePgoRoleRequest{
+		Namespace:     ns,
+		PgoroleName:   args,
+		AllFlag:       AllFlag,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
 	if AllFlag {
 		args = make([]string, 1)
@@ -155,7 +160,7 @@ func deletePgorole(args []string, ns string) {
 
 	log.Debugf("deleting pgorole %v", args)
 
-	response, err := api.DeletePgorole(httpclient, &r, &SessionCredentials)
+	response, err := apiClient.DeletePgoRole(context.Background(), r)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 	}

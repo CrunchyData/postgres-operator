@@ -17,14 +17,15 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"io/ioutil"
 	"k8s.io/apimachinery/pkg/labels"
-	"os"
 )
 
 var LoadConfig string
@@ -85,17 +86,18 @@ func createLoad(args []string, ns string) {
 		os.Exit(2)
 	}
 
-	request := msgs.LoadRequest{}
-	request.LoadConfig = string(buf)
-	request.Selector = Selector
-	request.Namespace = ns
-	request.Policies = PoliciesFlag
-	request.Args = args
-	request.ClientVersion = msgs.PGO_VERSION
+	request := msgs.LoadRequest{
+		Selector:      Selector,
+		LoadConfig:    string(buf),
+		Namespace:     ns,
+		Policies:      PoliciesFlag,
+		Args:          args,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
 	//make the request
 
-	response, err := api.CreateLoad(httpclient, &SessionCredentials, &request)
+	response, err := apiClient.Load(context.Background(), request)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

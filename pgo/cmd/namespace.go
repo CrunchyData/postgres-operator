@@ -16,13 +16,14 @@ package cmd
 */
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
-	"os"
 )
 
 func showNamespace(args []string) {
@@ -48,10 +49,11 @@ func showNamespace(args []string) {
 		}
 	}
 
-	r := msgs.ShowNamespaceRequest{}
-	r.ClientVersion = msgs.PGO_VERSION
-	r.Args = nsList
-	r.AllFlag = AllFlag
+	r := msgs.ShowNamespaceRequest{
+		ClientVersion: msgs.PGO_VERSION,
+		Args:          nsList,
+		AllFlag:       AllFlag,
+	}
 
 	if len(nsList) == 0 && AllFlag == false {
 		fmt.Println("Error: namespace args or --all is required")
@@ -60,7 +62,7 @@ func showNamespace(args []string) {
 
 	log.Debugf("showNamespace called %v", nsList)
 
-	response, err := api.ShowNamespace(httpclient, &SessionCredentials, &r)
+	response, err := apiClient.ShowNamespace(context.Background(), r)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -112,17 +114,18 @@ func showNamespace(args []string) {
 func createNamespace(args []string, ns string) {
 	log.Debugf("createNamespace called %v [%s]", args, Selector)
 
-	r := msgs.CreateNamespaceRequest{}
-	r.ClientVersion = msgs.PGO_VERSION
-	r.Namespace = ns
-	r.Args = args
+	r := msgs.CreateNamespaceRequest{
+		Args:          args,
+		Namespace:     ns,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
 	if len(args) == 0 {
 		fmt.Println("Error: namespace names are required")
 		os.Exit(2)
 	}
 
-	response, err := api.CreateNamespace(httpclient, &SessionCredentials, &r)
+	response, err := apiClient.CreateNamespace(context.Background(), r)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 	}
@@ -140,19 +143,20 @@ func createNamespace(args []string, ns string) {
 func deleteNamespace(args []string, ns string) {
 	log.Debugf("deleteNamespace called %v [%s]", args, Selector)
 
-	r := msgs.DeleteNamespaceRequest{}
-	r.Selector = Selector
-	r.AllFlag = AllFlag
-	r.ClientVersion = msgs.PGO_VERSION
-	r.Namespace = ns
-	r.Args = args
+	r := msgs.DeleteNamespaceRequest{
+		Selector:      Selector,
+		AllFlag:       AllFlag,
+		ClientVersion: msgs.PGO_VERSION,
+		Namespace:     ns,
+		Args:          args,
+	}
 
 	if Selector != "" && len(args) > 0 {
 		fmt.Println("Error: can not specify both arguments and --selector")
 		os.Exit(2)
 	}
 
-	response, err := api.DeleteNamespace(httpclient, &r, &SessionCredentials)
+	response, err := apiClient.DeleteNamespace(context.Background(), r)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 	}
@@ -174,11 +178,12 @@ func updateNamespace(args []string) {
 		return
 	}
 
-	r := new(msgs.UpdateNamespaceRequest)
-	r.Args = args
-	r.ClientVersion = msgs.PGO_VERSION
+	r := msgs.UpdateNamespaceRequest{
+		Args:          args,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
-	response, err := api.UpdateNamespace(httpclient, r, &SessionCredentials)
+	response, err := apiClient.UpdateNamespace(context.Background(), r)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

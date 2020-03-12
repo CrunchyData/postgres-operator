@@ -16,20 +16,26 @@ package cmd
 */
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
-	"os"
 )
 
 func showConfig(args []string, ns string) {
 
 	log.Debugf("showConfig called %v", args)
 
-	response, err := api.ShowConfig(httpclient, &SessionCredentials, ns)
+	request := msgs.ShowConfigRequest{
+		Namespace:     ns,
+		ClientVersion: msgs.PGO_VERSION,
+	}
+
+	response, err := apiClient.ShowConfig(context.Background(), request)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

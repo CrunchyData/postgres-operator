@@ -17,26 +17,28 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
-	log "github.com/sirupsen/logrus"
 	"os"
+
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	log "github.com/sirupsen/logrus"
 )
 
 // createpgDumpBackup
 func createpgDumpBackup(args []string, ns string) {
 	log.Debugf("createpgDumpBackup called %v %s", args, BackupOpts)
 
-	request := new(msgs.CreatepgDumpBackupRequest)
-	request.Args = args
-	request.Namespace = ns
-	request.Selector = Selector
-	request.PVCName = PVCName
-	request.StorageConfig = StorageConfig
-	request.BackupOpts = BackupOpts
+	request := msgs.CreatePGDumpRequest{
+		Args:          args,
+		Namespace:     ns,
+		Selector:      Selector,
+		PVCName:       PVCName,
+		StorageConfig: StorageConfig,
+		BackupOpts:    BackupOpts,
+	}
 
-	response, err := api.CreatepgDumpBackup(httpclient, &SessionCredentials, request)
+	response, err := apiClient.CreatePGDumpBackup(context.Background(), request)
 	if err != nil {
 		fmt.Println("Error: ", err.Error())
 		os.Exit(2)
@@ -63,7 +65,13 @@ func showpgDump(args []string, ns string) {
 	log.Debugf("showpgDump called %v", args)
 
 	for _, v := range args {
-		response, err := api.ShowpgDump(httpclient, v, Selector, &SessionCredentials, ns)
+		request := msgs.ShowPGDumpRequest{
+			Arg:           v,
+			Namespace:     ns,
+			ClientVersion: msgs.PGO_VERSION,
+		}
+
+		response, err := apiClient.ShowPGDumpBackup(context.Background(), request)
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 			os.Exit(2)

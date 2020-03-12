@@ -16,12 +16,13 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
-	"os"
 )
 
 func showWorkflow(args []string, ns string) {
@@ -38,7 +39,13 @@ func showWorkflow(args []string, ns string) {
 
 func printWorkflow(id, ns string) {
 
-	response, err := api.ShowWorkflow(httpclient, id, &SessionCredentials, ns)
+	r := msgs.ShowWorkflowRequest{
+		ID:            id,
+		Namespace:     ns,
+		ClientVersion: msgs.PGO_VERSION,
+	}
+
+	response, err := apiClient.ShowWorkflow(context.Background(), r)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

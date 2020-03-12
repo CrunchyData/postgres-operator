@@ -162,7 +162,7 @@ var ShowPgouserCmd = &cobra.Command{
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		showPgouser(args, Namespace)
+		showPgoUser(args, Namespace)
 	},
 }
 

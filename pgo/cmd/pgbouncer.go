@@ -16,12 +16,12 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 )
 
@@ -54,13 +54,14 @@ func createPgbouncer(args []string, ns string) {
 		return
 	}
 
-	r := new(msgs.CreatePgbouncerRequest)
-	r.Args = args
-	r.Namespace = ns
-	r.Selector = Selector
-	r.ClientVersion = msgs.PGO_VERSION
+	r := msgs.CreatePgbouncerRequest{
+		Args:          args,
+		Namespace:     ns,
+		Selector:      Selector,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
-	response, err := api.CreatePgbouncer(httpclient, &SessionCredentials, r)
+	response, err := apiClient.CreatePgBouncer(context.Background(), r)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -96,7 +97,7 @@ func deletePgbouncer(args []string, ns string) {
 		Uninstall:     PgBouncerUninstall,
 	}
 
-	response, err := api.DeletePgbouncer(httpclient, &SessionCredentials, &request)
+	response, err := apiClient.DeletePgBouncer(context.Background(), request)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -297,7 +298,7 @@ func showPgBouncer(namespace string, clusterNames []string) {
 	}
 
 	// and make the API request!
-	response, err := api.ShowPgBouncer(httpclient, &SessionCredentials, request)
+	response, err := apiClient.ShowPgBouncer(context.Background(), request)
 
 	// if there is a bona-fide error, log and exit
 	if err != nil {
@@ -336,7 +337,7 @@ func updatePgBouncer(namespace string, clusterNames []string) {
 	}
 
 	// and make the API request!
-	response, err := api.UpdatePgBouncer(httpclient, &SessionCredentials, request)
+	response, err := apiClient.UpdatePgBouncer(context.Background(), request)
 
 	// if there is a bona-fide error, log and exit
 	if err != nil {

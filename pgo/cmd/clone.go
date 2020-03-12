@@ -17,11 +17,11 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -94,7 +94,7 @@ func clone(namespace, sourceClusterName, targetClusterName string) {
 	}
 
 	// make a call to the clone API
-	response, err := api.Clone(httpclient, &SessionCredentials, &request)
+	response, err := apiClient.Clone(context.Background(), request)
 
 	// if there was an error with the API call, print that out here
 	if err != nil {

@@ -19,6 +19,13 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 )
 
+// ShowConfigRequest ...
+// swagger:model
+type ShowConfigRequest struct {
+	Namespace     string
+	ClientVersion string
+}
+
 // ShowConfigResponse ...
 // swagger:model
 type ShowConfigResponse struct {

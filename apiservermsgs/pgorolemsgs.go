@@ -15,49 +15,47 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import ()
-
-// ShowPgoroleRequest ...
+// ShowPgoRoleRequest ...
 // swagger:model
-type ShowPgoroleRequest struct {
+type ShowPgoRoleRequest struct {
 	Namespace     string
 	AllFlag       bool
 	ClientVersion string
 	PgoroleName   []string
 }
 
-// PgroleInfo ...
+// PgoRoleInfo ...
 // swagger:model
-type PgoroleInfo struct {
+type PgoRoleInfo struct {
 	Name        string
 	Permissions string
 }
 
-// ShowPgoroleResponse ...
+// ShowPgoRoleResponse ...
 // swagger:model
-type ShowPgoroleResponse struct {
-	RoleInfo []PgoroleInfo
+type ShowPgoRoleResponse struct {
+	RoleInfo []PgoRoleInfo
 	Status
 }
 
-// CreatePgoroleRequest ...
+// CreatePgoRoleRequest ...
 // swagger:model
-type CreatePgoroleRequest struct {
+type CreatePgoRoleRequest struct {
 	PgoroleName        string
 	PgorolePermissions string
 	Namespace          string
 	ClientVersion      string
 }
 
-// CreatePgoroleResponse ...
+// CreatePgoRoleResponse ...
 // swagger:model
-type CreatePgoroleResponse struct {
+type CreatePgoRoleResponse struct {
 	Status
 }
 
-// UpdatePgoroleRequest ...
+// UpdatePgoRoleRequest ...
 // swagger:model
-type UpdatePgoroleRequest struct {
+type UpdatePgoRoleRequest struct {
 	Name               string
 	PgorolePermissions string
 	PgoroleName        string
@@ -66,24 +64,24 @@ type UpdatePgoroleRequest struct {
 	ClientVersion      string
 }
 
-// ApplyPgoroleResponse ...
+// UpdatePgoRoleResponse ...
 // swagger:model
-type UpdatePgoroleResponse struct {
+type UpdatePgoRoleResponse struct {
 	Status
 }
 
-// DeletePgoroleRequest ...
+// DeletePgoRoleRequest ...
 // swagger:model
-type DeletePgoroleRequest struct {
+type DeletePgoRoleRequest struct {
 	PgoroleName   []string
 	Namespace     string
 	AllFlag       bool
 	ClientVersion string
 }
 
-// DeletePgoroleResponse ...
+// DeletePgoRoleResponse ...
 // swagger:model
-type DeletePgoroleResponse struct {
+type DeletePgoRoleResponse struct {
 	Results []string
 	Status
 }

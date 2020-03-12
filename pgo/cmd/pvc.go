@@ -16,40 +16,42 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
-	log "github.com/sirupsen/logrus"
 	"os"
+
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	log "github.com/sirupsen/logrus"
 )
 
 func showPVC(args []string, ns string) {
 	log.Debugf("showPVC called %v", args)
 
 	// ShowPVCRequest ...
-	r := msgs.ShowPVCRequest{}
-	r.Namespace = ns
-	r.AllFlag = AllFlag
-	r.ClientVersion = msgs.PGO_VERSION
+	r := msgs.ShowPVCRequest{
+		Namespace:     ns,
+		AllFlag:       AllFlag,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
 	if AllFlag {
 		//special case to just list all the PVCs
 		r.ClusterName = ""
-		printPVC(&r)
+		printPVC(r)
 	} else {
 		//args are a list of pvc names...for this case show details
 		for _, arg := range args {
 			r.ClusterName = arg
 			log.Debugf("show pvc called for %s", arg)
-			printPVC(&r)
+			printPVC(r)
 		}
 	}
 
 }
 
-func printPVC(r *msgs.ShowPVCRequest) {
+func printPVC(r msgs.ShowPVCRequest) {
 
-	response, err := api.ShowPVC(httpclient, r, &SessionCredentials)
+	response, err := apiClient.ShowPVC(context.Background(), r)
 
 	log.Debugf("response = %v", response)
 

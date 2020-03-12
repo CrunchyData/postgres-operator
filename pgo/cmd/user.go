@@ -16,12 +16,12 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	utiloperator "github.com/crunchydata/postgres-operator/util"
 
@@ -84,9 +84,10 @@ func createUser(args []string, ns string) {
 		PasswordLength:  PasswordLength,
 		Username:        username,
 		Selector:        Selector,
+		ClientVersion:   msgs.PGO_VERSION,
 	}
 
-	response, err := api.CreateUser(httpclient, &SessionCredentials, &request)
+	response, err := apiClient.CreateUser(context.Background(), request)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -115,14 +116,15 @@ func deleteUser(args []string, ns string) {
 	}
 
 	request := msgs.DeleteUserRequest{
-		AllFlag:   AllFlag,
-		Clusters:  args,
-		Namespace: ns,
-		Selector:  Selector,
-		Username:  Username,
+		AllFlag:       AllFlag,
+		Clusters:      args,
+		Namespace:     ns,
+		Selector:      Selector,
+		Username:      Username,
+		ClientVersion: msgs.PGO_VERSION,
 	}
 
-	response, err := api.DeleteUser(httpclient, &SessionCredentials, &request)
+	response, err := apiClient.DeleteUser(context.Background(), request)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -338,9 +340,10 @@ func showUser(args []string, ns string) {
 		Namespace:          ns,
 		Selector:           Selector,
 		ShowSystemAccounts: ShowSystemAccounts,
+		ClientVersion:      msgs.PGO_VERSION,
 	}
 
-	response, err := api.ShowUser(httpclient, &SessionCredentials, &request)
+	response, err := apiClient.ShowUser(context.Background(), request)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -376,6 +379,7 @@ func updateUser(clusterNames []string, namespace string) {
 		RotatePassword:      RotatePassword,
 		Selector:            Selector,
 		Username:            strings.TrimSpace(Username),
+		ClientVersion:       msgs.PGO_VERSION,
 	}
 
 	// check to see if EnableLogin or DisableLogin is set. If so, set a value
@@ -392,7 +396,7 @@ func updateUser(clusterNames []string, namespace string) {
 		os.Exit(1)
 	}
 
-	response, err := api.UpdateUser(httpclient, &SessionCredentials, &request)
+	response, err := apiClient.UpdateUser(context.Background(), request)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

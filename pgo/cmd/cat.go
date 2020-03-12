@@ -17,12 +17,13 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var catCmd = &cobra.Command{
@@ -53,10 +54,12 @@ func init() {
 func cat(args []string, ns string) {
 	log.Debugf("cat called %v", args)
 
-	request := new(msgs.CatRequest)
-	request.Args = args
-	request.Namespace = ns
-	response, err := api.Cat(httpclient, &SessionCredentials, request)
+	request := msgs.CatRequest{
+		Args:      args,
+		Namespace: ns,
+	}
+
+	response, err := apiClient.Cat(context.Background(), request)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

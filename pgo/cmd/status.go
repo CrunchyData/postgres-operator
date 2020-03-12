@@ -16,14 +16,15 @@ package cmd
 */
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var Summary bool
@@ -44,7 +45,12 @@ func showStatus(args []string, ns string) {
 		os.Exit(2)
 	}
 
-	response, err := api.ShowStatus(httpclient, &SessionCredentials, ns)
+	r := msgs.StatusRequest{
+		Namespace:     ns,
+		ClientVersion: msgs.PGO_VERSION,
+	}
+
+	response, err := apiClient.ShowStatus(context.Background(), r)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

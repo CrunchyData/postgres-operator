@@ -17,79 +17,79 @@ limitations under the License.
 
 import ()
 
-// ShowPgouserRequest ...
+// ShowPgoUserRequest ...
 // swagger:model
-type ShowPgouserRequest struct {
+type ShowPgoUserRequest struct {
 	Namespace     string
 	AllFlag       bool
 	ClientVersion string
-	PgouserName   []string
+	PgoUserName   []string
 }
 
-// PgouserInfo ...
+// PgoUserInfo ...
 // swagger:model
-type PgouserInfo struct {
+type PgoUserInfo struct {
 	Username  string
 	Role      []string
 	Namespace []string
 }
 
-// ShowPgouserResponse ...
+// ShowPgoUserResponse ...
 // swagger:model
-type ShowPgouserResponse struct {
-	UserInfo []PgouserInfo
+type ShowPgoUserResponse struct {
+	UserInfo []PgoUserInfo
 	Status
 }
 
-// CreatePgouserRequest ...
+// CreatePgoUserRequest ...
 // swagger:model
-type CreatePgouserRequest struct {
-	PgouserName       string
-	PgouserPassword   string
-	PgouserRoles      string
+type CreatePgoUserRequest struct {
+	PgoUserName       string
+	PgoUserPassword   string
+	PgoUserRoles      string
 	AllNamespaces     bool
-	PgouserNamespaces string
+	PgoUserNamespaces string
 	Namespace         string
 	ClientVersion     string
 }
 
-// CreatePgouserResponse ...
+// CreatePgoUserResponse ...
 // swagger:model
-type CreatePgouserResponse struct {
+type CreatePgoUserResponse struct {
 	Status
 }
 
-// UpdatePgouserRequest ...
+// UpdatePgoUserRequest ...
 // swagger:model
-type UpdatePgouserRequest struct {
+type UpdatePgoUserRequest struct {
 	Name              string
-	PgouserRoles      string
-	PgouserNamespaces string
+	PgoUserRoles      string
+	PgoUserNamespaces string
 	AllNamespaces     bool
-	PgouserPassword   string
-	PgouserName       string
+	PgoUserPassword   string
+	PgoUserName       string
 	Namespace         string
 	ClientVersion     string
 }
 
-// ApplyPgouserResponse ...
+// ApplyPgoUserResponse ...
 // swagger:model
-type UpdatePgouserResponse struct {
+type UpdatePgoUserResponse struct {
 	Status
 }
 
-// DeletePgouserRequest ...
+// DeletePgoUserRequest ...
 // swagger:model
-type DeletePgouserRequest struct {
-	PgouserName   []string
+type DeletePgoUserRequest struct {
+	PgoUserName   []string
 	Namespace     string
 	AllFlag       bool
 	ClientVersion string
 }
 
-// DeletePgouserResponse ...
+// DeletePgoUserResponse ...
 // swagger:model
-type DeletePgouserResponse struct {
+type DeletePgoUserResponse struct {
 	Results []string
 	Status
 }

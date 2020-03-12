@@ -107,6 +107,16 @@ type ShowBackrestDetail struct {
 	StorageType string
 }
 
+// ShowBackrestRequest ...
+// swagger:model
+type ShowBackrestRequest struct {
+	Name      string
+	Namespace string
+	Selector  string
+
+	ClientVersion string
+}
+
 // ShowBackrestResponse ...
 // swagger:model
 type ShowBackrestResponse struct {

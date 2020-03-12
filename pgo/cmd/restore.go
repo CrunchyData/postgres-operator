@@ -17,12 +17,12 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	pgoutil "github.com/crunchydata/postgres-operator/pgo/util"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -82,27 +82,29 @@ func restore(args []string, ns string) {
 	// use different request message, depending on type.
 	if BackupType == "pgdump" {
 
-		request := new(msgs.PgRestoreRequest)
-		request.Namespace = ns
-		request.FromCluster = args[0]
-		request.RestoreOpts = BackupOpts
-		request.PITRTarget = PITRTarget
-		request.FromPVC = BackupPVC // use PVC specified on command line for pgrestore
-		request.NodeLabel = NodeLabel
+		request := msgs.PgRestoreRequest{
+			Namespace:   ns,
+			FromCluster: args[0],
+			RestoreOpts: BackupOpts,
+			PITRTarget:  PITRTarget,
+			FromPVC:     BackupPVC, // use PVC specified on command line for pgrestore
+			NodeLabel:   NodeLabel,
+		}
 
-		response, err = api.RestoreDump(httpclient, &SessionCredentials, request)
+		response, err = apiClient.RestorePGDumpBackup(context.Background(), request)
 	} else {
 
-		request := new(msgs.RestoreRequest)
-		request.Namespace = ns
-		request.FromCluster = args[0]
-		request.ToPVC = request.FromCluster + "-" + util.RandStringBytesRmndr(4)
-		request.RestoreOpts = BackupOpts
-		request.PITRTarget = PITRTarget
-		request.NodeLabel = NodeLabel
-		request.BackrestStorageType = BackrestStorageType
+		request := msgs.RestoreRequest{
+			Namespace:           ns,
+			FromCluster:         args[0],
+			ToPVC:               args[0] + "-" + util.RandStringBytesRmndr(4),
+			RestoreOpts:         BackupOpts,
+			PITRTarget:          PITRTarget,
+			NodeLabel:           NodeLabel,
+			BackrestStorageType: BackrestStorageType,
+		}
 
-		response, err = api.Restore(httpclient, &SessionCredentials, request)
+		response, err = apiClient.RestoreBackrestBackup(context.Background(), request)
 	}
 
 	if err != nil {

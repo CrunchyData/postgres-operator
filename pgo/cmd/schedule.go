@@ -17,6 +17,7 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -24,8 +25,6 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/crunchydata/postgres-operator/pgo/api"
 )
 
 type schedule struct {
@@ -66,7 +65,7 @@ func createSchedule(args []string, ns string) {
 		return
 	}
 
-	r := &msgs.CreateScheduleRequest{
+	r := msgs.CreateScheduleRequest{
 		ClusterName:         clusterName,
 		PGBackRestType:      PGBackRestType,
 		BackrestStorageType: BackrestStorageType,
@@ -81,7 +80,7 @@ func createSchedule(args []string, ns string) {
 		Namespace:           ns,
 	}
 
-	response, err := api.CreateSchedule(httpclient, &SessionCredentials, r)
+	response, err := apiClient.CreateSchedule(context.Background(), r)
 
 	if err != nil {
 		fmt.Println("Error: " + response.Status.Msg)
@@ -117,14 +116,14 @@ func deleteSchedule(args []string, ns string) {
 		clusterName = args[0]
 	}
 
-	r := &msgs.DeleteScheduleRequest{
+	r := msgs.DeleteScheduleRequest{
 		ClusterName:  clusterName,
 		ScheduleName: ScheduleName,
 		Selector:     Selector,
 		Namespace:    ns,
 	}
 
-	response, err := api.DeleteSchedule(httpclient, &SessionCredentials, r)
+	response, err := apiClient.DeleteSchedule(context.Background(), r)
 
 	if err != nil {
 		fmt.Println("Error: " + response.Status.Msg)
@@ -162,14 +161,14 @@ func showSchedule(args []string, ns string) {
 		clusterName = args[0]
 	}
 
-	r := &msgs.ShowScheduleRequest{
+	r := msgs.ShowScheduleRequest{
 		ClusterName:  clusterName,
 		ScheduleName: ScheduleName,
 		Selector:     Selector,
 		Namespace:    ns,
 	}
 
-	response, err := api.ShowSchedule(httpclient, &SessionCredentials, r)
+	response, err := apiClient.ShowSchedule(context.Background(), r)
 
 	if err != nil {
 		fmt.Println("Error: " + response.Status.Msg)

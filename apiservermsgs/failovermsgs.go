@@ -15,8 +15,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import ()
-
 // FailoverTargetSpec
 // swagger:model
 type FailoverTargetSpec struct {
@@ -56,5 +54,6 @@ type CreateFailoverRequest struct {
 // swagger:model
 type QueryFailoverRequest struct {
 	ClusterName   string
+	Namespace     string
 	ClientVersion string
 }

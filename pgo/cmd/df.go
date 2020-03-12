@@ -16,17 +16,18 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"sort"
 	"strings"
 
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 // dfTextPadding contains the values for what the text padding should be
@@ -243,12 +244,13 @@ func printDfTextRow(result msgs.DfDetail, padding dfTextPadding) {
 // showDf is the legacy function that handles processing the "pgo df" command
 func showDf(namespace, selector string) {
 	request := msgs.DfRequest{
-		Namespace: namespace,
-		Selector:  selector,
+		Namespace:     namespace,
+		Selector:      selector,
+		ClientVersion: msgs.PGO_VERSION,
 	}
 
 	// make the request
-	response, err := api.ShowDf(httpclient, &SessionCredentials, request)
+	response, err := apiClient.Df(context.Background(), request)
 
 	// if there is an error, or the response code is not ok, print the error and
 	// exit

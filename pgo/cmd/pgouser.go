@@ -16,14 +16,15 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
-	log "github.com/sirupsen/logrus"
 	"os"
+
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	log "github.com/sirupsen/logrus"
 )
 
-func updatePgouser(args []string, ns string) {
+func updatePgoUser(args []string, ns string) {
 	var err error
 
 	if len(args) == 0 {
@@ -36,16 +37,17 @@ func updatePgouser(args []string, ns string) {
 		return
 	}
 
-	r := new(msgs.UpdatePgouserRequest)
-	r.PgouserName = args[0]
-	r.Namespace = ns
-	r.PgouserNamespaces = PgouserNamespaces
-	r.AllNamespaces = AllNamespaces
-	r.PgouserPassword = PgouserPassword
-	r.PgouserRoles = PgouserRoles
-	r.ClientVersion = msgs.PGO_VERSION
+	r := msgs.UpdatePgoUserRequest{
+		PgoUserName:       args[0],
+		Namespace:         ns,
+		PgoUserNamespaces: PgouserNamespaces,
+		AllNamespaces:     AllNamespaces,
+		PgoUserPassword:   PgouserPassword,
+		PgoUserRoles:      PgouserRoles,
+		ClientVersion:     msgs.PGO_VERSION,
+	}
 
-	response, err := api.UpdatePgouser(httpclient, &SessionCredentials, r)
+	response, err := apiClient.UpdatePgoUser(context.Background(), r)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -61,13 +63,14 @@ func updatePgouser(args []string, ns string) {
 
 }
 
-func showPgouser(args []string, ns string) {
+func showPgoUser(args []string, ns string) {
 
-	r := new(msgs.ShowPgouserRequest)
-	r.PgouserName = args
-	r.Namespace = ns
-	r.AllFlag = AllFlag
-	r.ClientVersion = msgs.PGO_VERSION
+	r := msgs.ShowPgoUserRequest{
+		PgoUserName:   args,
+		Namespace:     ns,
+		AllFlag:       AllFlag,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
 	if len(args) == 0 && !AllFlag {
 		fmt.Println("Error: either a pgouser name or --all flag is required")
@@ -77,7 +80,7 @@ func showPgouser(args []string, ns string) {
 		args = []string{""}
 	}
 
-	response, err := api.ShowPgouser(httpclient, &SessionCredentials, r)
+	response, err := apiClient.ShowPgoUser(context.Background(), r)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -105,7 +108,7 @@ func showPgouser(args []string, ns string) {
 
 }
 
-func createPgouser(args []string, ns string) {
+func createPgoUser(args []string, ns string) {
 
 	if PgouserPassword == "" {
 		fmt.Println("Error: pgouser-password flag is required.")
@@ -131,16 +134,17 @@ func createPgouser(args []string, ns string) {
 	}
 	var err error
 	//create the request
-	r := new(msgs.CreatePgouserRequest)
-	r.PgouserName = args[0]
-	r.PgouserPassword = PgouserPassword
-	r.AllNamespaces = AllNamespaces
-	r.PgouserRoles = PgouserRoles
-	r.PgouserNamespaces = PgouserNamespaces
-	r.Namespace = ns
-	r.ClientVersion = msgs.PGO_VERSION
+	r := msgs.CreatePgoUserRequest{
+		PgoUserName:       args[0],
+		PgoUserPassword:   PgouserPassword,
+		AllNamespaces:     AllNamespaces,
+		PgoUserRoles:      PgouserRoles,
+		PgoUserNamespaces: PgouserNamespaces,
+		Namespace:         ns,
+		ClientVersion:     msgs.PGO_VERSION,
+	}
 
-	response, err := api.CreatePgouser(httpclient, &SessionCredentials, r)
+	response, err := apiClient.CreatePgoUser(context.Background(), r)
 
 	log.Debugf("response is %v", response)
 	if err != nil {
@@ -157,15 +161,16 @@ func createPgouser(args []string, ns string) {
 
 }
 
-func deletePgouser(args []string, ns string) {
+func deletePgoUser(args []string, ns string) {
 
-	log.Debugf("deletePgouser called %v", args)
+	log.Debugf("deletePgoUser called %v", args)
 
-	r := msgs.DeletePgouserRequest{}
-	r.PgouserName = args
-	r.AllFlag = AllFlag
-	r.ClientVersion = msgs.PGO_VERSION
-	r.Namespace = ns
+	r := msgs.DeletePgoUserRequest{
+		Namespace:     ns,
+		PgoUserName:   args,
+		AllFlag:       AllFlag,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
 	if AllFlag {
 		args = make([]string, 1)
@@ -174,7 +179,7 @@ func deletePgouser(args []string, ns string) {
 
 	log.Debugf("deleting pgouser %v", args)
 
-	response, err := api.DeletePgouser(httpclient, &r, &SessionCredentials)
+	response, err := apiClient.DeletePgoUser(context.Background(), r)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 	}

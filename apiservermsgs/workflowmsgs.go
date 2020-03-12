@@ -15,13 +15,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import ()
-
 // ShowWorkflowDetail ...
 // swagger:model
 type ShowWorkflowDetail struct {
 	ClusterName string
 	Parameters  map[string]string
+}
+
+type ShowWorkflowRequest struct {
+	ID            string
+	Namespace     string
+	ClientVersion string
 }
 
 // ShowWorkflowResponse ...

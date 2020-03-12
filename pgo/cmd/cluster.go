@@ -16,6 +16,7 @@ package cmd
 */
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -24,7 +25,6 @@ import (
 	"github.com/spf13/cobra"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
 )
@@ -73,7 +73,7 @@ func deleteCluster(args []string, ns string) {
 
 	for _, arg := range args {
 		r.Clustername = arg
-		response, err := api.DeleteCluster(httpclient, &r, &SessionCredentials)
+		response, err := apiClient.DeleteCluster(context.Background(), r)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -114,7 +114,7 @@ func showCluster(args []string, ns string) {
 		args[0] = ""
 	}
 
-	r := new(msgs.ShowClusterRequest)
+	r := msgs.ShowClusterRequest{}
 	r.Selector = Selector
 	r.Namespace = ns
 	r.AllFlag = AllFlag
@@ -123,7 +123,7 @@ func showCluster(args []string, ns string) {
 	for _, v := range args {
 
 		r.Clustername = v
-		response, err := api.ShowCluster(httpclient, &SessionCredentials, r)
+		response, err := apiClient.ShowCluster(context.Background(), r)
 		if err != nil {
 			fmt.Println("Error: ", err.Error())
 			os.Exit(2)
@@ -225,7 +225,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 		return
 	}
 
-	r := new(msgs.CreateClusterRequest)
+	r := msgs.CreateClusterRequest{}
 	r.Name = args[0]
 	r.Namespace = ns
 	r.ReplicaCount = ClusterReplicaCount
@@ -266,9 +266,9 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 
 	// determine if the user wants to create tablespaces as part of this request,
 	// and if so, set the values
-	setTablespaces(r)
+	setTablespaces(&r)
 
-	response, err := api.CreateCluster(httpclient, &SessionCredentials, r)
+	response, err := apiClient.CreateCluster(context.Background(), r)
 	if err != nil {
 		fmt.Println("Error: ", err)
 		os.Exit(2)
@@ -375,7 +375,7 @@ func updateCluster(args []string, ns string) {
 		r.Autofail = msgs.UpdateClusterAutofailDisable
 	}
 
-	response, err := api.UpdateCluster(httpclient, &r, &SessionCredentials)
+	response, err := apiClient.UpdateCluster(context.Background(), r)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())

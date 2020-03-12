@@ -17,13 +17,14 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var failoverCmd = &cobra.Command{
@@ -69,13 +70,14 @@ func init() {
 func createFailover(args []string, ns string) {
 	log.Debugf("createFailover called %v", args)
 
-	request := new(msgs.CreateFailoverRequest)
-	request.Namespace = ns
-	request.ClusterName = args[0]
-	request.Target = Target
-	request.ClientVersion = msgs.PGO_VERSION
+	request := msgs.CreateFailoverRequest{
+		Namespace:     ns,
+		ClusterName:   args[0],
+		Target:        Target,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
-	response, err := api.CreateFailover(httpclient, &SessionCredentials, request)
+	response, err := apiClient.CreateFailover(context.Background(), request)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -105,8 +107,14 @@ func queryFailover(args []string, ns string) {
 	// separation between each line
 	fmt.Printf("\nCluster: %s\n", args[0])
 
+	request := msgs.QueryFailoverRequest{
+		Namespace:     ns,
+		ClusterName:   args[0],
+		ClientVersion: msgs.PGO_VERSION,
+	}
+
 	// call the API
-	response, err := api.QueryFailover(httpclient, args[0], &SessionCredentials, ns)
+	response, err := apiClient.QueryFailover(context.Background(), request)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)

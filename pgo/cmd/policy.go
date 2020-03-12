@@ -16,13 +16,14 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 	"io/ioutil"
 	"os"
+
+	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 var applyCmd = &cobra.Command{
@@ -73,14 +74,15 @@ func applyPolicy(args []string, ns string) {
 		return
 	}
 
-	r := new(msgs.ApplyPolicyRequest)
-	r.Name = args[0]
-	r.Selector = Selector
-	r.Namespace = ns
-	r.DryRun = DryRun
-	r.ClientVersion = msgs.PGO_VERSION
+	r := msgs.ApplyPolicyRequest{
+		Name:          args[0],
+		Selector:      Selector,
+		Namespace:     ns,
+		DryRun:        DryRun,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
-	response, err := api.ApplyPolicy(httpclient, &SessionCredentials, r)
+	response, err := apiClient.ApplyPolicy(context.Background(), r)
 
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
@@ -107,11 +109,12 @@ func applyPolicy(args []string, ns string) {
 }
 func showPolicy(args []string, ns string) {
 
-	r := new(msgs.ShowPolicyRequest)
-	r.Selector = Selector
-	r.Namespace = ns
-	r.AllFlag = AllFlag
-	r.ClientVersion = msgs.PGO_VERSION
+	r := msgs.ShowPolicyRequest{
+		Namespace:     ns,
+		Selector:      Selector,
+		AllFlag:       AllFlag,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
 	if len(args) == 0 && AllFlag {
 		args = []string{""}
@@ -120,7 +123,7 @@ func showPolicy(args []string, ns string) {
 	for _, v := range args {
 		r.Policyname = v
 
-		response, err := api.ShowPolicy(httpclient, &SessionCredentials, r)
+		response, err := apiClient.ShowPolicy(context.Background(), r)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
@@ -158,10 +161,11 @@ func createPolicy(args []string, ns string) {
 	}
 	var err error
 	//create the request
-	r := new(msgs.CreatePolicyRequest)
-	r.Name = args[0]
-	r.Namespace = ns
-	r.ClientVersion = msgs.PGO_VERSION
+	r := msgs.CreatePolicyRequest{
+		Name:          args[0],
+		Namespace:     ns,
+		ClientVersion: msgs.PGO_VERSION,
+	}
 
 	if PolicyURL != "" {
 		r.URL = PolicyURL
@@ -175,7 +179,7 @@ func createPolicy(args []string, ns string) {
 		}
 	}
 
-	response, err := api.CreatePolicy(httpclient, &SessionCredentials, r)
+	response, err := apiClient.CreatePolicy(context.Background(), r)
 
 	log.Debugf("response is %v", response)
 	if err != nil {
@@ -207,11 +211,13 @@ func deletePolicy(args []string, ns string) {
 
 	log.Debugf("deletePolicy called %v", args)
 
-	r := msgs.DeletePolicyRequest{}
-	r.Selector = Selector
-	r.AllFlag = AllFlag
-	r.ClientVersion = msgs.PGO_VERSION
-	r.Namespace = ns
+	r := msgs.DeletePolicyRequest{
+		Selector:      Selector,
+		AllFlag:       AllFlag,
+		ClientVersion: msgs.PGO_VERSION,
+		Namespace:     ns,
+	}
+
 	if AllFlag {
 		args = make([]string, 1)
 		args[0] = "all"
@@ -221,7 +227,7 @@ func deletePolicy(args []string, ns string) {
 		r.PolicyName = arg
 		log.Debugf("deleting policy %s", arg)
 
-		response, err := api.DeletePolicy(httpclient, &r, &SessionCredentials)
+		response, err := apiClient.DeletePolicy(context.Background(), r)
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 		}

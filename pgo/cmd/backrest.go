@@ -17,13 +17,13 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -31,14 +31,15 @@ import (
 func createBackrestBackup(args []string, ns string) {
 	log.Debugf("createBackrestBackup called %v %s", args, BackupOpts)
 
-	request := new(msgs.CreateBackrestBackupRequest)
-	request.Namespace = ns
-	request.Args = args
-	request.Selector = Selector
-	request.BackupOpts = BackupOpts
-	request.BackrestStorageType = BackrestStorageType
+	request := msgs.CreateBackrestBackupRequest{
+		Namespace:           ns,
+		Args:                args,
+		Selector:            Selector,
+		BackupOpts:          BackupOpts,
+		BackrestStorageType: BackrestStorageType,
+	}
 
-	response, err := api.CreateBackrestBackup(httpclient, &SessionCredentials, request)
+	response, err := apiClient.CreateBackrestBackup(context.Background(), request)
 	if err != nil {
 		fmt.Println("Error: ", err.Error())
 		os.Exit(2)
@@ -65,7 +66,14 @@ func showBackrest(args []string, ns string) {
 	log.Debugf("showBackrest called %v", args)
 
 	for _, v := range args {
-		response, err := api.ShowBackrest(httpclient, v, Selector, &SessionCredentials, ns)
+		request := msgs.ShowBackrestRequest{
+			Name:          v,
+			Namespace:     ns,
+			Selector:      Selector,
+			ClientVersion: msgs.PGO_VERSION,
+		}
+		response, err := apiClient.ShowBackrest(context.Background(), request)
+
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 			os.Exit(2)

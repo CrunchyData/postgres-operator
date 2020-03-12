@@ -15,8 +15,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import ()
-
 // NodeInfo ...
 // swagger:model
 type NodeInfo struct {
@@ -45,6 +43,11 @@ type StatusDetail struct {
 	NotReady          []string
 	Nodes             []NodeInfo
 	Labels            []KeyValue
+}
+
+type StatusRequest struct {
+	Namespace     string
+	ClientVersion string
 }
 
 // ShowClusterResponse ...

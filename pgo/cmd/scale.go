@@ -16,13 +16,14 @@ package cmd
 */
 
 import (
+	"context"
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var ReplicaCount int
@@ -73,7 +74,19 @@ func scaleCluster(args []string, ns string) {
 
 	for _, arg := range args {
 		log.Debugf(" %s ReplicaCount is %d", arg, ReplicaCount)
-		response, err := api.ScaleCluster(httpclient, arg, ReplicaCount, ContainerResources, StorageConfig, NodeLabel, CCPImageTag, ServiceType, &SessionCredentials, ns)
+
+		r := msgs.ClusterScaleRequest{
+			Name:               arg,
+			Namespace:          ns,
+			ReplicaCount:       ReplicaCount,
+			ContainerResources: ContainerResources,
+			StorageConfig:      StorageConfig,
+			NodeLabel:          NodeLabel,
+			CCPImageTag:        CCPImageTag,
+			ServiceType:        ServiceType,
+		}
+
+		response, err := apiClient.ScaleCluster(context.Background(), r)
 
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
