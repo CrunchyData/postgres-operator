@@ -16,13 +16,13 @@ The following is required prior to installing PostgreSQL Operator:
 
 ### IBM Cloud Pak Data
 
-If you are install the the PostgreSQL Operator, which comes with Crunchy
+If you install the PostgreSQL Operator, which comes with Crunchy
 PostgreSQL for Kubernetes, on IBM Cloud Pak Data, please note the following
 additional requirements:
 
 * Cloud Pak Data Version 2.5
 * Minimum Node Requirements (Cloud Paks Cluster): 3
-* Crunchy PostgreSQL for Kuberentes (Servuce):
+* Crunchy PostgreSQL for Kuberentes (Service):
   * Minimum CPU Requirements: 0.2 CPU
   * Minimum Memory Requirements: 120MB
   * Minimum Storage Requirements: 5MB
@@ -31,7 +31,7 @@ additional requirements:
 Crunchy PostgreSQL for Kubernetes are workload dependent. As such, users should
 allocate enough resources for their PostgreSQL clusters.
 
-We recommand using the [Ansible](/installation/install-with-ansible/prerequisites/)
+We recommend using the [Ansible](/installation/install-with-ansible/prerequisites/)
 installation method to install Crunchy PostgreSQL for Kubernetes in a Cloud Pak
 Data environment.   
 
