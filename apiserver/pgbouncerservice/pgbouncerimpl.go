@@ -178,7 +178,7 @@ func ShowPgBouncer(request *msgs.ShowPgBouncerRequest, namespace string) msgs.Sh
 
 		// only set the pgBouncer user if we know this is a pgBouncer enabled
 		// cluster...even though, yes, this is a constant
-		result.Username = util.PgBouncerUser
+		result.Username = crv1.PGUserPgBouncer
 
 		// set the pgBouncer service information on this record
 		setPgBouncerServiceDetail(cluster, &result)

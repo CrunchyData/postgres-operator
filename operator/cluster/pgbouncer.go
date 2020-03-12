@@ -102,23 +102,22 @@ const (
 
 	// sqlEnableLogin is the SQL to update the password
 	// NOTE: this is safe from SQL injection as we explicitly add the inerpolated
-	// string as a MD5 hash and we are using the util.PgBouncerUser constant
+	// string as a MD5 hash and we are using the crv1.PGUserPgBouncer constant
 	// However, the escaping is handled in the util.SetPostgreSQLPassword function
 	sqlEnableLogin = `ALTER ROLE %s PASSWORD %s LOGIN;`
 
 	// sqlGetDatabasesForPgBouncer gets all the databases where pgBouncer can be
 	// installed or uninstalled
 	sqlGetDatabasesForPgBouncer = `SELECT datname FROM pg_catalog.pg_database WHERE datname NOT IN ('postgres', 'template0') AND datallowconn;`
-
-	// sqlUninstallPgBouncer provides the final piece of SQL to uninstall
-	// pgbouncer, which is to remove the user
-	sqlUninstallPgBouncer = `DROP ROLE "pgbouncer";`
 )
 
 var (
 	// this command allows one to view the users.txt file secret to determine if
 	// it has propagated
 	cmdViewPgBouncerUsersSecret = []string{"cat", "/pgconf/users.txt"}
+	// sqlUninstallPgBouncer provides the final piece of SQL to uninstall
+	// pgbouncer, which is to remove the user
+	sqlUninstallPgBouncer = fmt.Sprintf(`DROP ROLE "%s";`, crv1.PGUserPgBouncer)
 )
 
 // AddPgbouncer contains the various functions that are used to add a pgBouncer
@@ -301,7 +300,7 @@ func DeletePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 
 	// This is safe from SQL injection as we are using constants and a well defined
 	// string
-	sql := strings.NewReader(fmt.Sprintf(sqlDisableLogin, util.PgBouncerUser))
+	sql := strings.NewReader(fmt.Sprintf(sqlDisableLogin, crv1.PGUserPgBouncer))
 	cmd := []string{"psql"}
 
 	// exec into the pod to run the query
@@ -593,7 +592,7 @@ func createPgbouncerSecret(clientset *kubernetes.Clientset, cluster *crv1.Pgclus
 			"pgbouncer.ini": pgBouncerConf,
 			"pg_hba.conf":   pgbouncerHBA,
 			"users.txt": util.GeneratePgBouncerUsersFileBytes(
-				util.GeneratePostgreSQLMD5Password(util.PgBouncerUser, password)),
+				util.GeneratePostgreSQLMD5Password(crv1.PGUserPgBouncer, password)),
 		},
 	}
 
@@ -861,7 +860,7 @@ func rotatePgBouncerPassword(clientset *kubernetes.Clientset, restclient *rest.R
 	// PostgreSQL to perform its authentication
 	secret.Data["password"] = []byte(password)
 	secret.Data["users.txt"] = util.GeneratePgBouncerUsersFileBytes(
-		util.GeneratePostgreSQLMD5Password(util.PgBouncerUser, password))
+		util.GeneratePostgreSQLMD5Password(crv1.PGUserPgBouncer, password))
 
 	// update the secret
 	if err := kubeapi.UpdateSecret(clientset, secret, namspace); err != nil {
@@ -904,9 +903,9 @@ func setPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Con
 	// we use the PostgreSQL "md5" hashing mechanism here to pre-hash the
 	// password. This is hard coded, which will make moving up to SCRAM ever more
 	// so lovely, but at least it's better than sending it around as plaintext
-	sqlpgBouncerPassword := util.GeneratePostgreSQLMD5Password(util.PgBouncerUser, password)
+	sqlpgBouncerPassword := util.GeneratePostgreSQLMD5Password(crv1.PGUserPgBouncer, password)
 
-	if err := util.SetPostgreSQLPassword(clientset, restconfig, pod, util.PgBouncerUser, sqlpgBouncerPassword, sqlEnableLogin); err != nil {
+	if err := util.SetPostgreSQLPassword(clientset, restconfig, pod, crv1.PGUserPgBouncer, sqlpgBouncerPassword, sqlEnableLogin); err != nil {
 		log.Error(err)
 		return err
 	}
