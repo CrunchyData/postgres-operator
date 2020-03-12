@@ -133,6 +133,8 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	}
 	for _, pgreplica := range pgreplicaList.Items {
 		pgreplica.Status.State = crv1.PgreplicaStatePendingRestore
+		pgreplica.Spec.Status = "restore"
+		delete(pgreplica.Annotations, config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA)
 		err = kubeapi.Updatepgreplica(restclient, &pgreplica, pgreplica.Name, namespace)
 		if err != nil {
 			log.Error(err)

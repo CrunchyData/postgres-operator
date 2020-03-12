@@ -52,14 +52,6 @@ func SetClusterInitializedStatus(restclient *rest.RESTClient, clusterName,
 func InitializeReplicaCreation(restclient *rest.RESTClient, clusterName,
 	namespace string) error {
 
-	cluster := crv1.Pgcluster{}
-	if _, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName,
-		namespace); err != nil {
-		log.Error(err)
-		return err
-	}
-	clusterStatus := cluster.Status.State
-
 	pgreplicaList := &crv1.PgreplicaList{}
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
 	err := kubeapi.GetpgreplicasBySelector(restclient, pgreplicaList, selector, namespace)
@@ -73,11 +65,7 @@ func InitializeReplicaCreation(restclient *rest.RESTClient, clusterName,
 			pgreplica.Annotations = make(map[string]string)
 		}
 
-		if clusterStatus == crv1.PgclusterStateRestore {
-			pgreplica.Spec.Status = "restore"
-		} else {
-			pgreplica.Annotations[config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA] = "true"
-		}
+		pgreplica.Annotations[config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA] = "true"
 
 		if err = kubeapi.Updatepgreplica(restclient, &pgreplica, pgreplica.Name,
 			namespace); err != nil {

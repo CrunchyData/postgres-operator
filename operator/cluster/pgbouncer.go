@@ -254,10 +254,8 @@ func CreatePgTaskforUpdatepgBouncer(restclient *rest.RESTClient, cluster *crv1.P
 
 	// generate the pgtask, first adding in some boilerplate parameters
 	parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER] = cluster.Spec.ClusterName
-	log.Debugf("ANDY bouncer pgouser: %+v", pgouser)
 	task := generatePgtaskForPgBouncer(cluster, pgouser,
 		crv1.PgtaskUpdatePgbouncer, config.LABEL_PGBOUNCER_TASK_UPDATE, parameters)
-	log.Debugf("ANDY bouncer task: %+v", task)
 	// try to create the pgtask!
 	if err := kubeapi.Createpgtask(restclient, task, task.Spec.Namespace); err != nil {
 		log.Error(err)
