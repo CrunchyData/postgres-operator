@@ -21,6 +21,7 @@ pgo create cluster [flags]
       --ccp-image string                      The CCPImage name to use for cluster creation. If specified, overrides the value crunchy-postgres.
   -c, --ccp-image-tag string                  The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.
       --custom-config string                  The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.
+  -d, --database string                       If specified, sets the name of the initial database that is created for the user. Defaults to the value set in the PostgreSQL Operator configuration, or if that is not present, the name of the cluster
       --disable-autofail                      Disables autofail capabitilies in the cluster following cluster initialization.
   -h, --help                                  help for cluster
   -l, --labels string                         The labels to apply to this cluster.
@@ -51,13 +52,13 @@ pgo create cluster [flags]
       --storage-config string                 The name of a Storage config in pgo.yaml to use for the cluster storage.
       --sync-replication                      Enables synchronous replication for the cluster.
       --tablespace strings                    Create a PostgreSQL tablespace on the cluster, e.g. "name=ts1:storageconfig=nfsstorage". The format is a key/value map that is delimited by "=" and separated by ":". The following parameters are available:
-                                              
+
                                               - name (required): the name of the PostgreSQL tablespace
                                               - storageconfig (required): the storage configuration to use, as specified in the list available in the "pgo-config" ConfigMap (aka "pgo.yaml")
                                               - pvcsize: the size of the PVC capacity, which overrides the value set in the specified storageconfig. Follows the Kubernetes quantity format.
-                                              
+
                                               For example, to create a tablespace with the NFS storage configuration with a PVC of size 10GiB:
-                                              
+
                                               --tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi
   -u, --username string                       The username to use for creating the PostgreSQL user with standard permissions. Defaults to the value in the PostgreSQL Operator configuration.
 ```

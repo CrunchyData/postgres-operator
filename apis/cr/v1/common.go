@@ -44,7 +44,7 @@ const StorageDynamic = "dynamic"
 // the following are standard PostgreSQL user service accounts that are created
 // as part of managed the PostgreSQL cluster environment via the Operator
 const (
-	// PGUserAdmin is a speical user that can perform administrative actions
+	// PGUserAdmin is a special user that can perform administrative actions
 	// without being a superuser itself
 	PGUserAdmin = "crunchyadm"
 	// PGUserMonitor is the monitoring user that can access metric data
@@ -52,10 +52,10 @@ const (
 	// PGUserPgBouncer is the user that's used for managing pgBouncer, which a
 	// user can use to access pgBouncer stats, etc.
 	PGUserPgBouncer = "pgbouncer"
-	// PGUserReplication is the user that's use for replication, which has
+	// PGUserReplication is the user that's used for replication, which has
 	// elevated privileges
 	PGUserReplication = "primaryuser"
-	// PGUserSuperuser is the superuser account that can do anythign
+	// PGUserSuperuser is the superuser account that can do anything
 	PGUserSuperuser = "postgres"
 )
 
