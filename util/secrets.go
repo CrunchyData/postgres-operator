@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
@@ -36,22 +37,6 @@ const lowercharset = "abcdefghijklmnopqrstuvwxyz"
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 const charsetNumbers = "0123456789"
-
-// postgreSQLUserSystemAccounts accounts are a list of accounts that are used to manage
-// the PostgreSQL system and should not be directly used by Operator users
-var postgreSQLUserSystemAccounts = map[string]struct{}{
-	// "ccp_monitoring" is used in the metrics collection
-	"ccp_monitoring": struct{}{},
-	// "crunchyadm" is an administrative user
-	"crunchyadm": struct{}{},
-	// "pgbouncer" is used to manage the pgBouncer deployment
-	"pgbouncer": struct{}{},
-	// "postgres" is the superuser
-	"postgres": struct{}{},
-	// "primaryuser" is a misnomer, and is actually the account used to manage
-	// replication
-	"primaryuser": struct{}{},
-}
 
 var seededRand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
@@ -146,7 +131,7 @@ func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace, secretNam
 // Normalizes the lookup by downcasing it
 func IsPostgreSQLUserSystemAccount(username string) bool {
 	// go look up and see if the username is in the map
-	_, found := postgreSQLUserSystemAccounts[strings.ToLower(username)]
+	_, found := crv1.PGUserSystemAccounts[strings.ToLower(username)]
 	return found
 }
 

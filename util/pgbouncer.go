@@ -17,12 +17,9 @@ package util
 
 import (
 	"fmt"
-)
 
-// PgBouncerUser is the PostgreSQL / pgBouncer user that is used to manage the
-// pgBouncer deployment, and interact with sensitive functions such as the one
-// that loads in the users that can connect to PostgreSQL via pgBouncer
-const PgBouncerUser = "pgbouncer"
+	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+)
 
 // pgBouncerSecretFormat is the name of the Kubernetes Secret that pgBouncer
 // uses that stores configuration and pgbouncer user information, and follows
@@ -49,6 +46,6 @@ func GeneratePgBouncerSecretName(clusterName string) string {
 //
 // This is ultimatley moutned by the pgBouncer Pod via the secret
 func GeneratePgBouncerUsersFileBytes(hashedPassword string) []byte {
-	data := fmt.Sprintf(pgBouncerUserFileFormat, PgBouncerUser, hashedPassword)
+	data := fmt.Sprintf(pgBouncerUserFileFormat, crv1.PGUserPgBouncer, hashedPassword)
 	return []byte(data)
 }

@@ -234,6 +234,7 @@ func init() {
 	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "", false, "Adds the crunchy-collect container to the database pod.")
 	createClusterCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the primary database. If not set, any node is used.")
 	createClusterCmd.Flags().StringVarP(&Password, "password", "w", "", "The password to use for initial database user.")
+	createClusterCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 0, "If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.")
 	createClusterCmd.Flags().StringVarP(&BackrestPVCSize, "pgbackrest-pvc-size", "", "",
 		`The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "local" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
 	createClusterCmd.Flags().StringVarP(&BackrestS3Key, "pgbackrest-s3-key", "", "",
@@ -273,6 +274,7 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&ContainerResources, "resources-config", "r", "", "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets.")
 	createClusterCmd.Flags().StringVarP(&ServiceType, "service-type", "", "", "The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.")
+	createClusterCmd.Flags().BoolVar(&ShowSystemAccounts, "show-system-accounts", false, "Include the system accounts in the results.")
 	createClusterCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")
 	createClusterCmd.Flags().BoolVarP(&SyncReplication, "sync-replication", "", false,
 		"Enables synchronous replication for the cluster.")
@@ -286,6 +288,7 @@ func init() {
 			"Follows the Kubernetes quantity format.\n\n"+
 			"For example, to create a tablespace with the NFS storage configuration with a PVC of size 10GiB:\n\n"+
 			"--tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi")
+	createClusterCmd.Flags().StringVarP(&Username, "username", "u", "", "The username to use for creating the PostgreSQL user with standard permissions. Defaults to the value in the PostgreSQL Operator configuration.")
 
 	// pgo create pgbouncer
 	createPgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")

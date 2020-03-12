@@ -44,10 +44,13 @@ type ShowClusterRequest struct {
 //
 // swagger:model
 type CreateClusterRequest struct {
-	Name                string `json:"Name"`
-	Namespace           string
-	NodeLabel           string
-	Password            string
+	Name      string `json:"Name"`
+	Namespace string
+	NodeLabel string
+	Password  string
+	// PasswordLength, if provided and if Password or SecretFrom is not set, sets
+	// the length of the password to be generated
+	PasswordLength      int
 	SecretFrom          string
 	UserLabels          string
 	Tablespaces         []ClusterTablespaceDetail
@@ -84,6 +87,13 @@ type CreateClusterRequest struct {
 	PVCSize string
 	// BackrestPVCSize applies to the pgBackRest storage spec
 	BackrestPVCSize string
+	// Username is an optional parameter that allows the user to override the
+	// default user name to use for the PostgreSQL cluster
+	Username string
+	// ShowSystemAccounts is an optional parameter than when set to true, will
+	// also show the results of the available system accounts (e.g. the PostgreSQL
+	// superuser)
+	ShowSystemAccounts bool
 }
 
 // CreateClusterDetail provides details about the PostgreSQL cluster that is
@@ -93,8 +103,22 @@ type CreateClusterRequest struct {
 type CreateClusterDetail struct {
 	// Name is the name of the PostgreSQL cluster
 	Name string
+	// Users contain an array of users along with their credentials
+	Users []CreateClusterDetailUser
 	// WorkflowID matches up to the WorkflowID of the cluster
 	WorkflowID string
+}
+
+// CreateClusterDetailUser provides information about an individual PostgreSQL
+// user, such as password
+//
+// swagger:model
+type CreateClusterDetailUser struct {
+	// Password is the password used for this username, but it may be empty based
+	// on what data is allowed to be returned by the server
+	Password string
+	// Username is the username in PostgreSQL for the user
+	Username string
 }
 
 // CreateClusterResponse

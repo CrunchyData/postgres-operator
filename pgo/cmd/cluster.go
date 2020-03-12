@@ -231,6 +231,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.ReplicaCount = ClusterReplicaCount
 	r.NodeLabel = NodeLabel
 	r.Password = Password
+	r.PasswordLength = PasswordLength
 	r.SecretFrom = SecretFrom
 	r.UserLabels = UserLabels
 	r.Policies = PoliciesFlag
@@ -258,6 +259,8 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.BackrestS3Endpoint = BackrestS3Endpoint
 	r.PVCSize = PVCSize
 	r.BackrestPVCSize = BackrestPVCSize
+	r.Username = Username
+	r.ShowSystemAccounts = ShowSystemAccounts
 
 	// only set SyncReplication in the request if actually provided via the CLI
 	if createClusterCmd.Flag("sync-replication").Changed {
@@ -282,6 +285,11 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	// print out the legacy cluster information
 	fmt.Println("created cluster:", response.Result.Name)
 	fmt.Println("workflow id:", response.Result.WorkflowID)
+	fmt.Println("users:")
+
+	for _, user := range response.Result.Users {
+		fmt.Println("\tusername:", user.Username, "password:", user.Password)
+	}
 }
 
 // isTablespaceParam returns true if the parameter in question is acceptable for
