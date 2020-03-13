@@ -29,7 +29,7 @@ type ClusterAPI interface {
 	// DeleteCluster deletes a cluster.
 	DeleteCluster(context.Context, msgs.DeleteClusterRequest) (msgs.DeleteClusterResponse, error)
 	// ShowCluster retrieves information about a cluster.
-	ShowCluster(context.Context, msgs.ShowClusterRequest) (msgs.ShowClusterResponse, error)
+	GetCluster(context.Context, msgs.GetClusterRequest) (msgs.GetClusterResponse, error)
 	// UpdateCluster updates a cluster.
 	UpdateCluster(context.Context, msgs.UpdateClusterRequest) (msgs.UpdateClusterResponse, error)
 	// Clone creates a clone of a cluster.

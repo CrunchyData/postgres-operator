@@ -19,14 +19,14 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 )
 
-// ShowClusterRequest shows cluster
+// GetClusterRequest defines the request parameters for retrieving a cluster.
 //
 // swagger:model
-type ShowClusterRequest struct {
-	// Name of the cluster to show
+type GetClusterRequest struct {
+	// Name of the cluster to get
 	// required: true
 	Clustername string `json:"clustername"`
-	// Selector of the cluster to show
+	// Selector of the cluster to get
 	Selector string `json:"selector"`
 	// Image tag of the cluster
 	Ccpimagetag string `json:"ccpimagetag"`
@@ -36,11 +36,22 @@ type ShowClusterRequest struct {
 	// Namespace to search
 	// required: true
 	Namespace string `json:"namespace"`
-	// Shows all clusters
+	// Gets all clusters
 	AllFlag bool `json:"allflag"`
 }
 
-// CreateClusterRequest
+// GetClusterResponse defines the response values for getting a cluster's
+// information.
+//
+// swagger:model
+type GetClusterResponse struct {
+	// results from show cluster
+	Results []ClusterDetail
+	// status of response
+	Status
+}
+
+// CreateClusterRequest ...
 //
 // swagger:model
 type CreateClusterRequest struct {
@@ -86,7 +97,7 @@ type CreateClusterRequest struct {
 	BackrestPVCSize string
 }
 
-// CreateClusterResponse
+// CreateClusterResponse defines the response values for creating a cluster.
 //
 // swagger:model
 type CreateClusterResponse struct {
@@ -143,26 +154,16 @@ type ShowClusterReplica struct {
 	Name string
 }
 
-// ShowClusterDetail ...
+// ClusterDetail defines cluster detail information.
 //
 // swagger:model
-type ShowClusterDetail struct {
+type ClusterDetail struct {
 	// Defines the Cluster using a Crunchy Pgcluster crd
 	Cluster     crv1.Pgcluster `json:"cluster"`
 	Deployments []ShowClusterDeployment
 	Pods        []ShowClusterPod
 	Services    []ShowClusterService
 	Replicas    []ShowClusterReplica
-}
-
-// ShowClusterResponse ...
-//
-// swagger:model
-type ShowClusterResponse struct {
-	// results from show cluster
-	Results []ShowClusterDetail
-	// status of response
-	Status
 }
 
 // DeleteClusterRequest ...

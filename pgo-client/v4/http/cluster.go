@@ -70,27 +70,27 @@ func (h *httpAPI) DeleteCluster(ctx context.Context, r msgs.DeleteClusterRequest
 	return response, json.Unmarshal(body, &response)
 }
 
-// ShowCluster retrieves information about the cluster that is described by the
+// GetCluster retrieves information about the cluster that is described by the
 // request.
-func (h *httpAPI) ShowCluster(ctx context.Context, r msgs.ShowClusterRequest) (msgs.ShowClusterResponse, error) {
+func (h *httpAPI) GetCluster(ctx context.Context, r msgs.GetClusterRequest) (msgs.GetClusterResponse, error) {
 	u := h.client.URL("showclusters", nil, nil)
 
 	req, err := h.createRequest(ctx, http.MethodPost, u.String(), r)
 
 	if err != nil {
-		return msgs.ShowClusterResponse{}, err
+		return msgs.GetClusterResponse{}, err
 	}
 
 	resp, body, err := h.client.Do(req)
 	if err != nil {
-		return msgs.ShowClusterResponse{}, err
+		return msgs.GetClusterResponse{}, err
 	}
 
 	if err := statusCheck(resp); err != nil {
-		return msgs.ShowClusterResponse{}, err
+		return msgs.GetClusterResponse{}, err
 	}
 
-	var response msgs.ShowClusterResponse
+	var response msgs.GetClusterResponse
 	return response, json.Unmarshal(body, &response)
 }
 

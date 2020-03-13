@@ -114,16 +114,16 @@ func showCluster(args []string, ns string) {
 		args[0] = ""
 	}
 
-	r := msgs.ShowClusterRequest{}
-	r.Selector = Selector
-	r.Namespace = ns
-	r.AllFlag = AllFlag
-	r.ClientVersion = msgs.PGO_VERSION
-
 	for _, v := range args {
+		r := msgs.GetClusterRequest{
+			Clustername:   v,
+			Selector:      Selector,
+			Namespace:     ns,
+			AllFlag:       AllFlag,
+			ClientVersion: msgs.PGO_VERSION,
+		}
 
-		r.Clustername = v
-		response, err := apiClient.ShowCluster(context.Background(), r)
+		response, err := apiClient.GetCluster(context.Background(), r)
 		if err != nil {
 			fmt.Println("Error: ", err.Error())
 			os.Exit(2)
@@ -151,13 +151,11 @@ func showCluster(args []string, ns string) {
 		for _, clusterDetail := range response.Results {
 			printCluster(&clusterDetail)
 		}
-
 	}
-
 }
 
 // printCluster
-func printCluster(detail *msgs.ShowClusterDetail) {
+func printCluster(detail *msgs.ClusterDetail) {
 	fmt.Println("")
 	fmt.Println("cluster : " + detail.Cluster.Spec.Name + " (" + detail.Cluster.Spec.CCPImage + ":" + detail.Cluster.Spec.CCPImageTag + ")")
 
