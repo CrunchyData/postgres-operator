@@ -18,6 +18,10 @@ limitations under the License.
 import (
 	"bytes"
 	"encoding/json"
+	"strconv"
+	"strings"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
@@ -30,8 +34,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"strings"
-	"time"
 )
 
 type loadJobTemplateFields struct {
@@ -87,6 +89,13 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 		return resp
 	}
 
+	supplementalGroups := []int64{}
+	supplementalGroup, _ := strconv.Atoi(LoadCfg.SupplementalGroup)
+
+	if supplementalGroup > 0 {
+		supplementalGroups = append(supplementalGroups, int64(supplementalGroup))
+	}
+
 	LoadConfigTemplate.PGOImagePrefix = LoadCfg.PGOImagePrefix
 	LoadConfigTemplate.PGOImageTag = LoadCfg.PGOImageTag
 	LoadConfigTemplate.DbDatabase = LoadCfg.DbDatabase
@@ -96,7 +105,7 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 	LoadConfigTemplate.FilePath = LoadCfg.FilePath
 	LoadConfigTemplate.FileType = LoadCfg.FileType
 	LoadConfigTemplate.PVCName = LoadCfg.PVCName
-	LoadConfigTemplate.SecurityContext = operutil.CreateSecContext(LoadCfg.FSGroup, LoadCfg.SupplementalGroup)
+	LoadConfigTemplate.SecurityContext = operutil.GetPodSecurityContext(supplementalGroups)
 	LoadConfigTemplate.ContainerResources = ""
 	if apiserver.Pgo.DefaultLoadResources != "" {
 		tmp, err := apiserver.Pgo.GetContainerResource(apiserver.Pgo.DefaultLoadResources)

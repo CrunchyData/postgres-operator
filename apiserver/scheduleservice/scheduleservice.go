@@ -53,11 +53,6 @@ type PGBackRest struct {
 	Options     string `json:"options,omitempty"`
 }
 
-type SecurityContext struct {
-	FSGroup            string `json:"fsgroup,omitempty"`
-	SupplementalGroups string `json:"supplementalGroups,omitempty"`
-}
-
 // CreateScheduleHandler ...
 func CreateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation POST /schedule scheduleservice schedule

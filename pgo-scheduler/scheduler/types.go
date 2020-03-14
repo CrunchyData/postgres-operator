@@ -65,11 +65,6 @@ type Policy struct {
 	Database    string `json:"database"`
 }
 
-type SecurityContext struct {
-	FSGroup            int   `json:"fsGroup,omitempty"`
-	SupplementalGroups []int `json:"supplementalGroups,omitempty"`
-}
-
 type PolicyTemplate struct {
 	JobName        string
 	ClusterName    string

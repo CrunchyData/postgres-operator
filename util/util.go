@@ -26,8 +26,10 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -43,41 +45,37 @@ func init() {
 
 }
 
-// CreateSecContext will generate the JSON security context fragment
-// for a storage type
-func CreateSecContext(fsGroup string, suppGroup string) string {
-
-	var sc bytes.Buffer
-	var fsgroup = false
-	var supp = false
-
-	if fsGroup != "" {
-		fsgroup = true
-	}
-	if suppGroup != "" {
-		supp = true
-	}
-	if fsgroup || supp {
-		sc.WriteString("\"securityContext\": {\n")
-	}
-	if fsgroup {
-		sc.WriteString("\t \"fsGroup\": " + fsGroup)
-		if fsgroup && supp {
-			sc.WriteString(",")
-		}
-		sc.WriteString("\n")
+// GetPodSecurityContext will generate the security context required for a
+// Deployment by incorporating the standard fsGroup for the user that runs the
+// container (typically the "postgres" user), and adds any supplemental groups
+// that may need to be added, e.g. for NFS storage.
+//
+// Following the legacy method, this returns a JSON string, which will be
+// modified in the future. Mainly this is transitioning from the legacy function
+// by adding the expected types
+func GetPodSecurityContext(supplementalGroups []int64) string {
+	// set up the security context struct
+	securityContext := v1.PodSecurityContext{
+		// we store the PostgreSQL FSGroup in this constant as an int64, so it's just
+		// carried over
+		FSGroup: &crv1.PGFSGroup,
+		// add any supplemental groups that the user passed in
+		SupplementalGroups: supplementalGroups,
 	}
 
-	if supp {
-		sc.WriteString("\t \"supplementalGroups\": [" + suppGroup + "]\n")
+	// ...convert to JSON. Errors are ignored
+	doc, err := json.Marshal(securityContext)
+
+	// if there happens to be an error, warn about it
+	if err != nil {
+		log.Warn(err)
 	}
 
-	//closing of securityContext
-	if fsgroup || supp {
-		sc.WriteString("},")
-	}
+	// for debug purposes, we can look at the document
+	log.Debug(doc)
 
-	return sc.String()
+	// return a string of the security context
+	return string(doc)
 }
 
 // ThingSpec is a json patch structure

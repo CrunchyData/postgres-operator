@@ -129,11 +129,10 @@ Inside `conf/postgres-operator/pgo.yaml` there are various storage configuration
         Size:  1G
         StorageType:  dynamic
         StorageClass:  standard
-        Fsgroup:  26
 
 Listed above are the *pgo.yaml* sections related to storage choices.  *PrimaryStorage* specifies the name of the storage configuration used for PostgreSQL primary database volumes to be provisioned.  In the example above, a NFS storage configuration is picked.  That same storage configuration is selected for the other volumes that the Operator will create.
 
-This sort of configuration allows for a PostgreSQL primary and replica to use different storage if you want.  Other storage settings like *AccessMode*, *Size*, *StorageType*, *StorageClass*, and *Fsgroup* further define the storage configuration.  Currently, NFS, HostPath, and Storage Classes are supported in the configuration.
+This sort of configuration allows for a PostgreSQL primary and replica to use different storage if you want.  Other storage settings like *AccessMode*, *Size*, *StorageType*, and *StorageClass* further define the storage configuration.  Currently, NFS, HostPath, and Storage Classes are supported in the configuration.
 
 As part of the Operator installation, you will need to adjust these storage settings to suit your deployment requirements.  For users wanting to try
 out the Operator on Google Kubernetes Engine you would make the

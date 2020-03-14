@@ -72,8 +72,8 @@ func Restore(namespace string, clientset *kubernetes.Clientset, restclient *rest
 		return
 	}
 
-	//use the storage config from pgo.yaml for Primary
-	storage := operator.Pgo.Storage[operator.Pgo.PrimaryStorage]
+	//use the storage config from the primary PostgreSQL cluster
+	storage := cluster.Spec.PrimaryStorage
 
 	taskName := task.Name
 
@@ -81,7 +81,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, restclient *rest
 		JobName:             "pgrestore-" + task.Spec.Parameters[config.LABEL_PGRESTORE_FROM_CLUSTER] + "-from-" + fromPvcName + "-" + util.RandStringBytesRmndr(4),
 		TaskName:            taskName,
 		ClusterName:         clusterName,
-		SecurityContext:     util.CreateSecContext(storage.Fsgroup, storage.SupplementalGroups),
+		SecurityContext:     util.GetPodSecurityContext(storage.GetSupplementalGroups()),
 		FromClusterPVCName:  fromPvcName,
 		PgRestoreHost:       task.Spec.Parameters[config.LABEL_PGRESTORE_HOST],
 		PgRestoreDB:         task.Spec.Parameters[config.LABEL_PGRESTORE_DB],
