@@ -147,6 +147,10 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		Tablespaces:              operator.GetTablespaceNames(tablespaceStorageTypeMap),
 		TablespaceVolumes:        operator.GetTablespaceVolumesJSON(cl.Spec.Name, tablespaceStorageTypeMap),
 		TablespaceVolumeMounts:   operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
+		TLSEnabled:               cl.Spec.TLS.IsTLSEnabled(),
+		TLSOnly:                  cl.Spec.TLSOnly,
+		TLSSecret:                cl.Spec.TLS.TLSSecret,
+		CASecret:                 cl.Spec.TLS.CASecret,
 	}
 
 	// Create a configMap for the cluster that will be utilized to configure whether or not
@@ -339,6 +343,10 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		Tablespaces:              operator.GetTablespaceNames(tablespaceStorageTypeMap),
 		TablespaceVolumes:        operator.GetTablespaceVolumesJSON(replica.Spec.Name, tablespaceStorageTypeMap),
 		TablespaceVolumeMounts:   operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
+		TLSEnabled:               cluster.Spec.TLS.IsTLSEnabled(),
+		TLSOnly:                  cluster.Spec.TLSOnly,
+		TLSSecret:                cluster.Spec.TLS.TLSSecret,
+		CASecret:                 cluster.Spec.TLS.CASecret,
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {

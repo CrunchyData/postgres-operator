@@ -857,6 +857,112 @@ following command:
 pgo clone hacluster newhacluster --pgbackrest-pvc-size=1Ti
 ```
 
+## Enable TLS
+
+TLS allows secure TCP connections to PostgreSQL, and the PostgreSQL Operator
+makes it easy to enable this PostgreSQL feature. The TLS support in the
+PostgreSQL Operator does not make an opinion about your PKI, but rather loads in
+your TLS key pair that you wish to use for the PostgreSQL server as well as its
+corresponding certificate authority (CA) certificate. Both of these Secrets are
+required to enable TLS support for your PostgreSQL cluster when using the
+PostgreSQL Operator, but it in turn allows seamless TLS support.
+
+### Setup
+
+There are three items that are required to enable TLS in your PostgreSQL
+clusters:
+
+- A CA certificate
+- A TLS private key
+- A TLS certificate
+
+There are a variety of methods available to generate these items: in fact,
+Kubernetes comes with its own [certificate management system](https://kubernetes.io/docs/tasks/tls/managing-tls-in-a-cluster/)!
+It is up to you to decide how you want to manage this for your cluster. The
+PostgreSQL documentation also provides an example for how to
+[generate a TLS certificate](https://www.postgresql.org/docs/current/ssl-tcp.html#SSL-CERTIFICATE-CREATION)
+as well.
+
+To set up TLS for your PostgreSQL cluster, you have to create two [Secrets](https://kubernetes.io/docs/concepts/configuration/secret/):
+one that contains the CA certificate, and the other that contains the server
+TLS key pair.
+
+First, create the Secret that contains your CA certificate. Create the Secret
+as a generic Secret, and note that the following requirements **must** be met:
+
+- The Secret must be created in the same Namespace as where you are deploying
+your PostgreSQL cluster
+- The `name` of the key that is holding the CA **must** be `ca.crt`
+
+```shell
+kubectl create secret generic postgresql-ca --from-file=ca.crt=/patho/to/ca.crt
+```
+
+Note that you can reuse this CA Secret for other PostgreSQL clusters deployed by
+the PostgreSQL Operator.
+
+Next, create the Secret that contains your TLS key pair. Create the Secret as a
+a TLS Secret, and note the following requirement must be met:
+
+- The Secret must be created in the same Namespace as where you are deploying
+your PostgreSQL cluster
+
+```shell
+kubectl create secret tls hacluster-tls-keypair --cert=/path/to/server.crt --key=/path/to/server.key
+```
+
+Now you can create a TLS-enabled PostgreSQL cluster!
+
+### Create a TLS Enabled PostgreSQL Cluster
+
+Using the above example, to create a TLS-enabled PostgreSQL cluster that can
+accept both TLS and non-TLS connections, execute the following command:
+
+```shell
+pgo create cluster hacluster-tls \
+  --server-ca-secret=hacluster-tls-keypair --server-tls-secret=postgresql-ca
+```
+
+Including the `--server-ca-secret` and `--server-tls-secret` flags automatically
+enable TLS connections in the PostgreSQL cluster that is deployed. These flags
+should reference the CA Secret and the TLS key pair Secret, respectively.
+
+If deployed successfully, when you connect to the PostgreSQL cluster, assuming
+your `PGSSLMODE` is set to `prefer` or higher, you will see something like this
+in your `psql` terminal:
+
+```
+SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, bits: 256, compression: off)
+```
+
+### Force TLS in a PostgreSQL Cluster
+
+There are many environments where you want to force all remote connections to
+occur over TLS, for example, if you deploy your PostgreSQL cluster's in a public
+cloud or on an untrusted network. The PostgreSQL Operator lets you force all
+remote connections to occur over TLS by using the `--tls-only` flag.
+
+For example, using the setup above, you can force TLS in a PostgreSQL cluster by
+executing the following command:
+
+```shell
+pgo create cluster hacluster-tls-only \
+  --tls-only \
+  --server-ca-secret=hacluster-tls-keypair --server-tls-secret=postgresql-ca
+```
+
+If deployed successfully, when you connect to the PostgreSQL cluster, assuming
+your `PGSSLMODE` is set to `prefer` or higher, you will see something like this
+in your `psql` terminal:
+
+```
+SSL connection (protocol: TLSv1.2, cipher: ECDHE-RSA-AES256-GCM-SHA384, bits: 256, compression: off)
+```
+
+If you try to connect to a PostgreSQL cluster that is deployed using the
+`--tls-only` with TLS disabled (i.e. `PGSSLMODE=disable`), you will receive an
+error that connections without TLS are unsupported.
+
 ## Monitoring
 
 ### View Disk Utilization
@@ -920,7 +1026,6 @@ You can view policies as following:
 
     pgo apply mypolicy --selector=environment=prod
     pgo apply mypolicy --selector=name=hacluster
-
 
 ## Advanced Operations
 

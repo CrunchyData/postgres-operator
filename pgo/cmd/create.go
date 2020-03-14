@@ -61,6 +61,19 @@ var BackrestS3Region string
 var PVCSize string
 var BackrestPVCSize string
 
+// variables used for setting up TLS-enabled PostgreSQL clusters
+var (
+	// TLSOnly indicates that only TLS connections will be accepted for a
+	// PostgreSQL cluster
+	TLSOnly bool
+	// TLSSecret is the name of the secret that contains the TLS information for
+	// enabling TLS in a PostgreSQL cluster
+	TLSSecret string
+	// CASecret is the name of the secret that contains the CA information for
+	// enabling TLS in a PostgreSQL cluster
+	CASecret string
+)
+
 var CreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a Postgres Operator resource",
@@ -275,11 +288,18 @@ func init() {
 	createClusterCmd.Flags().IntVarP(&ClusterReplicaCount, "replica-count", "", 0, "The number of replicas to create as part of the cluster.")
 	createClusterCmd.Flags().StringVarP(&ContainerResources, "resources-config", "r", "", "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets.")
-	createClusterCmd.Flags().StringVarP(&ServiceType, "service-type", "", "", "The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.")
+	createClusterCmd.Flags().StringVar(&CASecret, "server-ca-secret", "", "The name of the secret that contains "+
+		"the certficate authority (CA) to use for enabling the PostgreSQL cluster to accept TLS connections. "+
+		"Must be used with \"server-tls-secret\"")
+	createClusterCmd.Flags().StringVar(&TLSSecret, "server-tls-secret", "", "The name of the secret that contains "+
+		"the TLS keypair to use for enabling the PostgreSQL cluster to accept TLS connections. "+
+		"Must be used with \"server-ca-secret\"")
 	createClusterCmd.Flags().BoolVar(&ShowSystemAccounts, "show-system-accounts", false, "Include the system accounts in the results.")
 	createClusterCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")
 	createClusterCmd.Flags().BoolVarP(&SyncReplication, "sync-replication", "", false,
 		"Enables synchronous replication for the cluster.")
+	createClusterCmd.Flags().BoolVar(&TLSOnly, "tls-only", false, "If true, forces all PostgreSQL connections to be over TLS. "+
+		"Must also set \"server-tls-secret\" and \"server-ca-secret\"")
 	createClusterCmd.Flags().StringSliceVar(&Tablespaces, "tablespace", []string{},
 		"Create a PostgreSQL tablespace on the cluster, e.g. \"name=ts1:storageconfig=nfsstorage\". The format is "+
 			"a key/value map that is delimited by \"=\" and separated by \":\". The following parameters are available:\n\n"+
