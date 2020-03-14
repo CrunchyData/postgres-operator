@@ -54,31 +54,26 @@ Storage:
     Size:  300M
     StorageType:  dynamic
     StorageClass:  fast
-    Fsgroup:  26
   primarysite:
     AccessMode:  ReadWriteOnce
     Size:  4G
     StorageType:  dynamic
     StorageClass:  primarysite
-    Fsgroup:  26
   alternatesite:
     AccessMode:  ReadWriteOnce
     Size:  4G
     StorageType:  dynamic
     StorageClass:  alternatesite
-    Fsgroup:  26
   gce:
     AccessMode:  ReadWriteOnce
     Size:  300M
     StorageType:  dynamic
     StorageClass:  standard
-    Fsgroup:  26
   rook:
     AccessMode:  ReadWriteOnce
     Size:  1G
     StorageType:  dynamic
     StorageClass:  rook-ceph-block
-    Fsgroup:  26
 DefaultContainerResources:
 DefaultLoadResources:
 DefaultRmdataResources:

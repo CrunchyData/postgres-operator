@@ -27,8 +27,7 @@
                 }
             },
             "spec": {
-
-                {{.SecurityContext }}
+                "securityContext": {{.SecurityContext}},
                 "serviceAccountName": "pgo-pg",
                 "containers": [
             {

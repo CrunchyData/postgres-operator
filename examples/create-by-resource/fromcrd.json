@@ -23,7 +23,6 @@
   "spec": {
     "ArchiveStorage": {
       "accessmode": "",
-      "fsgroup": "",
       "matchLabels": "",
       "name": "",
       "size": "",
@@ -33,7 +32,6 @@
     },
     "BackrestStorage": {
       "accessmode": "ReadWriteOnce",
-      "fsgroup": "26",
       "matchLabels": "",
       "name": "",
       "size": "300M",
@@ -49,7 +47,6 @@
     },
     "PrimaryStorage": {
       "accessmode": "ReadWriteOnce",
-      "fsgroup": "26",
       "matchLabels": "",
       "name": "on2today",
       "size": "300M",
@@ -59,7 +56,6 @@
     },
     "ReplicaStorage": {
       "accessmode": "ReadWriteOnce",
-      "fsgroup": "26",
       "matchLabels": "",
       "name": "",
       "size": "300M",

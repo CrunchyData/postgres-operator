@@ -29,9 +29,7 @@
                         }
                     }
                 ],
-
-                    {{.SecurityContext}}
-
+                "securityContext": {{.SecurityContext}},
                 "serviceAccountName": "pgo-default",
                 "containers": [
                     {

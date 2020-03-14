@@ -249,7 +249,6 @@ The following `storage` variables are utilized to add or modify operator storage
 | `storage<ID>_access_mode` | Yes | Set to configure the access mode of the volumes created when using this storage definition. |
 | `storage<ID>_size` | Yes | Set to configure the size of the volumes created when using this storage definition. |
 | `storage<ID>_class` | Required when using the `dynamic` storage type | Set to configure the storage class name used when creating dynamic volumes. |
-| `storage<ID>_fs_group` | Required when using a storage class | Set to configure any filesystem groups that should be added to security contexts on newly created clusters. |
 | `storage<ID>_supplemental_groups` | Required when using NFS storage | Set to configure any supplemental groups that should be added to security contexts on newly created clusters. |
 | `storage<ID>_type` | Yes  | Set to either `create` or `dynamic` to configure the operator to create persistent volumes or have them created dynamically by a storage class. |
 
@@ -290,7 +289,6 @@ storage5_access_mode='ReadWriteOnce'
 storage5_size='300M'
 storage5_type='dynamic'
 storage5_class='fast'
-storage5_fs_group=26
 ```
 
 To assign this storage definition to all `primary` pods created by the Operator, we
@@ -307,7 +305,6 @@ storage8_access_mode='ReadWriteOnce'
 storage8_size='300M'
 storage8_type='dynamic'
 storage8_class='standard'
-storage8_fs_group=26
 ```
 
 To assign this storage definition to all `primary` pods created by the Operator, we

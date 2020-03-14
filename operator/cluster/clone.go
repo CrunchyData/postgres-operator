@@ -359,9 +359,8 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 	backrestRestoreJobFields := backrest.BackrestRestoreJobTemplateFields{
 		JobName:     fmt.Sprintf("restore-%s-%s", targetClusterName, util.RandStringBytesRmndr(4)),
 		ClusterName: targetClusterName,
-		SecurityContext: util.CreateSecContext(
-			sourcePgcluster.Spec.PrimaryStorage.Fsgroup,
-			sourcePgcluster.Spec.PrimaryStorage.SupplementalGroups),
+		SecurityContext: util.GetPodSecurityContext(
+			sourcePgcluster.Spec.PrimaryStorage.GetSupplementalGroups()),
 		ToClusterPVCName: targetClusterName, // the PVC name should match that of the target cluster
 		WorkflowID:       workflowID,
 		// use a delta restore in order to optimize how the restore occurs
@@ -492,20 +491,8 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 	jobName := fmt.Sprintf(pgBackRestRepoSyncJobNamePrefix, targetClusterName, util.RandStringBytesRmndr(4))
 	// we set the PodSecurityContext if the storageclass has additional
 	// requirements
-	podSecurityContext := v1.PodSecurityContext{}
-	// Check to see if the pgBackRest storage class has a FSGroup set
-	if sourcePgcluster.Spec.BackrestStorage.Fsgroup != "" {
-		// presently, the FSGroup is stored as a string in the storage spec CRD so
-		// we first have to convert it to an integer and therefore need to guard
-		// against bad data. That said, if there is bad data, we will ignore the
-		// error...but this is bad
-		if fsGroup, err := strconv.Atoi(sourcePgcluster.Spec.BackrestStorage.Fsgroup); err != nil {
-			log.Warnf("FSGroup for pgBackRest storage spec is not stored as a valid integer: %s",
-				sourcePgcluster.Spec.BackrestStorage.Fsgroup)
-		} else {
-			fsGroup := int64(fsGroup) // needs to be converted to int64
-			podSecurityContext.FSGroup = &fsGroup
-		}
+	podSecurityContext := v1.PodSecurityContext{
+		FSGroup: &crv1.PGFSGroup,
 	}
 	// Check to see if the pgBackRest storage class has any SupplementalGroups set
 	if sourcePgcluster.Spec.BackrestStorage.SupplementalGroups != "" {

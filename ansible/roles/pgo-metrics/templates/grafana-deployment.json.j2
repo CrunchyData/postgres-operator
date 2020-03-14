@@ -23,8 +23,6 @@
                 "securityContext": {
 {% if grafana_supplemental_groups is defined and grafana_supplemental_groups != '' %}
                     "supplementalGroups": [{{ grafana_supplemental_groups }}]
-{% elif grafana_fs_group is defined and grafana_fs_group != '' %}
-                    "fsGroup": {{ grafana_fs_group }}
 {% endif %}
                 },
                 "serviceAccountName": "grafana",

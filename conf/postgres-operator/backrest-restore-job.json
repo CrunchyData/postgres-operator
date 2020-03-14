@@ -41,7 +41,7 @@
                   }
                   {{.TablespaceVolumes}}
                 ],
-                {{.SecurityContext}}
+                "securityContext": {{.SecurityContext}},
                 "serviceAccountName": "pgo-backrest",
                 "containers": [{
                     "name": "backrest",

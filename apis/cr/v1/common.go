@@ -15,7 +15,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import ()
+import (
+	"strconv"
+	"strings"
+
+	log "github.com/sirupsen/logrus"
+)
 
 // RootSecretSuffix ...
 const RootSecretSuffix = "-postgres-secret"
@@ -59,6 +64,13 @@ const (
 	PGUserSuperuser = "postgres"
 )
 
+// PGFSGroup stores the UID of the PostgreSQL user that runs the PostgreSQL
+// process, which is 26. This also sets up for future work, as the
+// PodSecurityContext structure takes a *int64 for its FSGroup
+//
+// This has to be a "var" as Kubernetes requires for this to be a pointer
+var PGFSGroup int64 = 26
+
 // PGUserSystemAccounts maintains an easy-to-access list of what the systems
 // accounts are, which may affect how information is returned, etc.
 var PGUserSystemAccounts = map[string]struct{}{
@@ -80,6 +92,34 @@ type PgStorageSpec struct {
 	Fsgroup            string `json:"fsgroup"`
 	SupplementalGroups string `json:"supplementalgroups"`
 	MatchLabels        string `json:"matchLabels"`
+}
+
+// GetSupplementalGroups converts the comma-separated list of SupplementalGroups
+// into a slice of int64 IDs. If it errors, it returns an empty slice and logs
+// a warning
+func (s PgStorageSpec) GetSupplementalGroups() []int64 {
+	supplementalGroups := []int64{}
+
+	// split the supplemental group list
+	results := strings.Split(s.SupplementalGroups, ",")
+
+	// iterate through the results and try to append to the supplementalGroups
+	// array
+	for _, result := range results {
+		supplementalGroup, err := strconv.Atoi(result)
+
+		// if there is an error, only warn about it and continue through the loop
+		if err != nil {
+			log.Warn(err)
+			continue
+		}
+
+		// convert the int to an int64 to match the Kubernetes spec, and append to
+		// the supplementalGroups slice
+		supplementalGroups = append(supplementalGroups, int64(supplementalGroup))
+	}
+
+	return supplementalGroups
 }
 
 // PgContainerResource ...

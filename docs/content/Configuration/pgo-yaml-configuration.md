@@ -51,7 +51,6 @@ The *pgo.yaml* file is broken into major sections as described below:
 |AccessMode        |the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
 |Size        |the size to use when creating new PVCs (e.g. 100M, 1Gi)
 |Storage.storage1.StorageType        |supported values are either *dynamic*,  *create*,  if not supplied, *create* is used
-|Fsgroup        | optional, if set, will cause a *SecurityContext* and *fsGroup* attributes to be added to generated Pod and Deployment definitions
 |SupplementalGroups        | optional, if set, will cause a SecurityContext to be added to generated Pod and Deployment definitions
 |MatchLabels        | optional, if set, will cause the PVC to add a *matchlabels* selector in order to match a PV, only useful when the StorageType is *create*, when specified a label of *key=value* is added to the PVC as a match criteria
 
@@ -95,11 +94,7 @@ mode.
 
 ### Storage Class Example
 
-In the following example, the important attribute to
-set for a typical Storage Class is the  *Fsgroup* setting.
-This value is almost always set to *26* which represents
-the Postgres user ID that the Crunchy Postgres container
-runs as.  Most Storage Class providers offer *ReadWriteOnce*
+Most Storage Class providers offer *ReadWriteOnce*
 access modes, but refer to your provider documentation
 for other access modes it might support.
 
@@ -109,7 +104,6 @@ for other access modes it might support.
     Size:  1G
     StorageType:  dynamic
     StorageClass:  fast
-    Fsgroup:  26
 ```
 
 

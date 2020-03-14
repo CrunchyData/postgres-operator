@@ -218,7 +218,6 @@ type StorageStruct struct {
 	Size               string `yaml:"Size"`
 	StorageType        string `yaml:"StorageType"`
 	StorageClass       string `yaml:"StorageClass"`
-	Fsgroup            string `yaml:"Fsgroup"`
 	SupplementalGroups string `yaml:"SupplementalGroups"`
 	MatchLabels        string `yaml:"MatchLabels"`
 }
@@ -534,15 +533,8 @@ func (c *PgoConfig) GetStorageSpec(name string) (crv1.PgStorageSpec, error) {
 	storage.AccessMode = s.AccessMode
 	storage.Size = s.Size
 	storage.StorageType = s.StorageType
-	storage.Fsgroup = s.Fsgroup
 	storage.MatchLabels = s.MatchLabels
 	storage.SupplementalGroups = s.SupplementalGroups
-
-	if s.Fsgroup != "" && s.SupplementalGroups != "" {
-		err = errors.New("invalid Storage config " + name + " can not have both fsgroup and supplementalGroups specified in the same config, choose one.")
-		log.Error(err)
-		return storage, err
-	}
 
 	if storage.MatchLabels != "" {
 		test := strings.Split(storage.MatchLabels, "=")
@@ -889,7 +881,6 @@ func (c *PgoConfig) SetDefaultStorageClass(clientset *kubernetes.Clientset) erro
 		Size:               "1G",
 		StorageType:        "dynamic",
 		StorageClass:       scList.Items[0].Name,
-		Fsgroup:            "26",
 		SupplementalGroups: "",
 		MatchLabels:        "",
 	}

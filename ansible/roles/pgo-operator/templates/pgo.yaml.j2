@@ -47,9 +47,6 @@ Storage:
 {% if lookup('vars', 'storage' + i|string + '_supplemental_groups', default='') != '' %}
     SupplementalGroups: {{ lookup('vars', 'storage' + i|string + '_supplemental_groups') }}
 {% endif %}
-{% if lookup('vars', 'storage' + i|string + '_fs_group', default='') != '' %}
-    Fsgroup: {{ lookup('vars', 'storage' + i|string + '_fs_group') }}
-{% endif %}
 {% endif %}
 {% endfor %}
 DefaultContainerResources: {{ default_container_resources }}

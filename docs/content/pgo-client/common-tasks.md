@@ -159,7 +159,6 @@ Storage:
     Size: 1G
     StorageType: create
     StorageClass: ""
-    Fsgroup: ""
     SupplementalGroups: "65534"
     MatchLabels: ""
 DefaultContainerResources: ""
