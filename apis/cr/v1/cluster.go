@@ -72,6 +72,8 @@ type PgclusterSpec struct {
 	BackrestS3Region   string                   `json:"backrestS3Region"`
 	BackrestS3Endpoint string                   `json:"backrestS3Endpoint"`
 	TablespaceMounts   map[string]PgStorageSpec `json:"tablespaceMounts"`
+	TLS                TLSSpec                  `json:"tls"`
+	TLSOnly            bool                     `json:"tlsOnly"`
 }
 
 // PgclusterList is the CRD that defines a Crunchy PG Cluster List
@@ -119,6 +121,25 @@ type PodAntiAffinitySpec struct {
 	Default    PodAntiAffinityType `json:"default"`
 	PgBackRest PodAntiAffinityType `json:"pgBackRest"`
 	PgBouncer  PodAntiAffinityType `json:"pgBouncer"`
+}
+
+// TLSSpec contains the information to set up a TLS-enabled PostgreSQL cluster
+type TLSSpec struct {
+	// CASecret contains the name of the secret to use as the trusted CA for the
+	// TLSSecret
+	// This is our own format and should contain one key: "ca.crt"
+	CASecret string `json:"caSecret"`
+	// TLSSecret contains the name of the secret to use that contains the TLS
+	// keypair for the PostgreSQL server
+	// This follows the Kubernetes secret format ("kubernetes.io/tls") which has
+	// two keys: tls.crt and tls.key
+	TLSSecret string `json:"tlsSecret"`
+}
+
+// IsTLSEnabled returns true if the cluster is TLS enabled, i.e. both the TLS
+// secret name and the CA secret name are available
+func (t TLSSpec) IsTLSEnabled() bool {
+	return (t.TLSSecret != "" && t.CASecret != "")
 }
 
 const (

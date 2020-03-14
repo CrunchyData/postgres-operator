@@ -164,6 +164,20 @@ type DeploymentTemplateFields struct {
 	Tablespaces            string
 	TablespaceVolumes      string
 	TablespaceVolumeMounts string
+	// The following fields set the TLS requirements as well as provide
+	// information on how to configure TLS in a PostgreSQL cluster
+	// TLSEnabled enables TLS in a cluster if set to true. Only works in actuality
+	// if CASecret and TLSSecret are set
+	TLSEnabled bool
+	// TLSOnly is set to true if the PostgreSQL cluster should only accept TLS
+	// connections
+	TLSOnly bool
+	// TLSSecret is the name of the Secret that has the PostgreSQL server's TLS
+	// keypair
+	TLSSecret string
+	// CASecret is the name of the Secret that has the trusted CA that the
+	// PostgreSQL server is using
+	CASecret string
 }
 
 // tablespaceVolumeFields are the fields used to create the volumes in a

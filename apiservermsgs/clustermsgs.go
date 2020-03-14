@@ -97,6 +97,15 @@ type CreateClusterRequest struct {
 	// Database is an optional parameter that allows the user to specify the name
 	// of the initial database that is created
 	Database string
+	// TLSOnly indicates that a PostgreSQL cluster should be deployed with only
+	// TLS connections accepted. Requires that TLSSecret and CASecret are set
+	TLSOnly bool
+	// TLSSecret is the name of the secret that contains the keypair required to
+	// deploy a TLS-enabled PostgreSQL cluster
+	TLSSecret string
+	// CASecret is the name of the secret that contains the CA to use along with
+	// the TLS keypair for deploying a TLS-enabled PostgreSQL cluster
+	CASecret string
 }
 
 // CreateClusterDetail provides details about the PostgreSQL cluster that is

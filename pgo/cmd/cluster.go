@@ -262,6 +262,9 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.Username = Username
 	r.ShowSystemAccounts = ShowSystemAccounts
 	r.Database = Database
+	r.TLSOnly = TLSOnly
+	r.TLSSecret = TLSSecret
+	r.CASecret = CASecret
 
 	// only set SyncReplication in the request if actually provided via the CLI
 	if createClusterCmd.Flag("sync-replication").Changed {

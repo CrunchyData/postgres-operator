@@ -573,6 +573,14 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		}
 	}
 
+	// validate the TLS parameters for enabling TLS in a PostgreSQL cluster
+	if err := validateClusterTLS(request); err != nil {
+		log.Error(err)
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
 	if request.CustomConfig != "" {
 		found, err := validateCustomConfig(request.CustomConfig, ns)
 		if !found {
@@ -1079,6 +1087,11 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 	log.Debugf("database set to [%s]", spec.Database)
 
+	// set up TLS
+	spec.TLSOnly = request.TLSOnly
+	spec.TLS.CASecret = request.CASecret
+	spec.TLS.TLSSecret = request.TLSSecret
+
 	//pass along command line flags for a restore
 	if request.SecretFrom != "" {
 		spec.SecretFrom = request.SecretFrom
@@ -1508,6 +1521,38 @@ func validateBackrestStorageTypeOnCreate(request *msgs.CreateClusterRequest) err
 			"storage type with pgBackRest.")
 	}
 
+	return nil
+}
+
+// validateClusterTLS validates the parameters that allow a user to enable TLS
+// connections to a PostgreSQL cluster
+func validateClusterTLS(request *msgs.CreateClusterRequest) error {
+	// if TLSOnly is not set and  neither TLSSecret no CASecret are set, just return
+	if !request.TLSOnly && request.TLSSecret == "" && request.CASecret == "" {
+		return nil
+	}
+
+	// if TLS only is set, but there is no TLSSecret nor CASecret, return
+	if request.TLSOnly && !(request.TLSSecret != "" && request.CASecret != "") {
+		return fmt.Errorf("TLS only clusters requires both a TLS secret and CA secret")
+	}
+	// if TLSSecret or CASecret is set, but not both are set, return
+	if (request.TLSSecret != "" && request.CASecret == "") || (request.TLSSecret == "" && request.CASecret != "") {
+		fmt.Errorf("Both TLS secret and CA secret must be set in order to enable TLS for PostgreSQL")
+	}
+
+	// now check for the existence of the two secrets
+	// First the TLS secret
+	if _, _, err := kubeapi.GetSecret(apiserver.Clientset, request.TLSSecret, request.Namespace); err != nil {
+		return err
+	}
+
+	// then, the CA secret
+	if _, _, err := kubeapi.GetSecret(apiserver.Clientset, request.CASecret, request.Namespace); err != nil {
+		return err
+	}
+
+	// after this, we are validated!
 	return nil
 }
 

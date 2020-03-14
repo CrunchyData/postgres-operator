@@ -96,7 +96,13 @@
                     },  {
                         "name": "PGHA_SYNC_REPLICATION",
                         "value": "{{.SyncReplication}}"
-                    },  {
+                    }, {
+                        "name": "PGHA_TLS_ENABLED",
+                        "value": "{{.TLSEnabled}}"
+                    }, {
+                        "name": "PGHA_TLS_ONLY",
+                        "value": "{{.TLSOnly}}"
+                    }, {
                         "name": "PATRONI_KUBERNETES_NAMESPACE",
                         "valueFrom": {
                             "fieldRef": {
@@ -141,7 +147,14 @@
                         }, {
                             "mountPath": "/pgconf/pgsuper",
                             "name": "root-volume"
-                        }, {
+                        },
+                        {{if .TLSEnabled}}
+                        {
+                          "mountPath": "/pgconf/tls",
+                          "name": "tls-server"
+                        },
+                        {{ end }}
+                        {
                             "mountPath": "/pgwal",
                             "name": "pgwal-volume"
                         }, {
@@ -233,7 +246,28 @@
                         "secret": {
                             "secretName": "{{.RootSecretName}}"
                         }
-                    }, {
+                    },
+                    {{if .TLSEnabled}}
+                    {
+                      "name": "tls-server",
+                      "projected": {
+                        "defaultMode": 288,
+                        "sources": [
+                          {
+                            "secret": {
+                                "name": "{{.TLSSecret}}"
+                            }
+                          },
+                          {
+                            "secret": {
+                                "name": "{{.CASecret}}"
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {{ end }}
+                    {
                         "name": "pgwal-volume",
                         "emptyDir": { "medium": "Memory" }
                     }, {

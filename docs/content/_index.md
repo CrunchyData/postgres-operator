@@ -26,6 +26,10 @@ Safe, automated failover backed by a [distributed consensus based high-availabil
 
 Backups and restores leverage the open source [pgBackRest](https://www.pgbackrest.org) utility and [includes support for full, incremental, and differential backups as well as efficient delta restores](/architecture/disaster-recovery/). Set how long you want your backups retained for. Works great with very large databases!
 
+#### TLS
+
+Secure communication between your applications and data servers by [enabling TLS for your PostgreSQL servers](/pgo-client/common-tasks/#enable-tls), including the ability to enforce that all of your connections to use TLS.
+
 #### Monitoring
 
 Track the health of your PostgreSQL clusters using the open source [pgMonitor](https://github.com/CrunchyData/pgmonitor) library.

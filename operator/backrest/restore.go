@@ -388,6 +388,10 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		Tablespaces:              operator.GetTablespaceNames(tablespaceStorageTypeMap),
 		TablespaceVolumes:        operator.GetTablespaceVolumesJSON(restoreToName, tablespaceStorageTypeMap),
 		TablespaceVolumeMounts:   operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
+		TLSEnabled:               cluster.Spec.TLS.IsTLSEnabled(),
+		TLSOnly:                  cluster.Spec.TLSOnly,
+		TLSSecret:                cluster.Spec.TLS.TLSSecret,
+		CASecret:                 cluster.Spec.TLS.CASecret,
 	}
 
 	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
