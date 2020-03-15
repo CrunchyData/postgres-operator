@@ -55,12 +55,21 @@ func CreateClusterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var request msgs.CreateClusterRequest
+	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	// a special authz check here: if the ShowSystemAccounts flag is set, ensure
+	// the user is authorized to show system accounts
+	if request.ShowSystemAccounts &&
+		!apiserver.BasicAuthzCheck(username, apiserver.SHOW_SYSTEM_ACCOUNTS_PERM) {
+		log.Errorf("Authorization Failed %s username=[%s]", apiserver.SHOW_SYSTEM_ACCOUNTS_PERM, username)
+		http.Error(w, "Not authorized for this apiserver action", 403)
+		return
+	}
+
 	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-
-	var request msgs.CreateClusterRequest
-	_ = json.NewDecoder(r.Body).Decode(&request)
 
 	resp := msgs.CreateClusterResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
