@@ -19,75 +19,80 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// MISC
-const CAT_PERM = "Cat"
-const APPLY_POLICY_PERM = "ApplyPolicy"
-const CLONE_PERM = "Clone"
-const DF_CLUSTER_PERM = "DfCluster"
-const LABEL_PERM = "Label"
-const LOAD_PERM = "Load"
-const RELOAD_PERM = "Reload"
-const RESTORE_PERM = "Restore"
-const STATUS_PERM = "Status"
-const TEST_CLUSTER_PERM = "TestCluster"
-const VERSION_PERM = "Version"
+// The below constants contains the "apiserver RBAC permissions" -- this was
+// reorganized to make it...slightly more organized as we continue to evole
+// the system
+const (
+	// MISC
+	APPLY_POLICY_PERM = "ApplyPolicy"
+	CAT_PERM          = "Cat"
+	CLONE_PERM        = "Clone"
+	DF_CLUSTER_PERM   = "DfCluster"
+	LABEL_PERM        = "Label"
+	LOAD_PERM         = "Load"
+	RELOAD_PERM       = "Reload"
+	RESTORE_PERM      = "Restore"
+	STATUS_PERM       = "Status"
+	TEST_CLUSTER_PERM = "TestCluster"
+	VERSION_PERM      = "Version"
 
-// CREATE
-const CREATE_BACKUP_PERM = "CreateBackup"
-const CREATE_DUMP_PERM = "CreateDump"
-const CREATE_CLUSTER_PERM = "CreateCluster"
-const CREATE_FAILOVER_PERM = "CreateFailover"
-const CREATE_INGEST_PERM = "CreateIngest"
-const CREATE_PGBOUNCER_PERM = "CreatePgbouncer"
-const CREATE_POLICY_PERM = "CreatePolicy"
-const CREATE_SCHEDULE_PERM = "CreateSchedule"
-const CREATE_UPGRADE_PERM = "CreateUpgrade"
-const CREATE_USER_PERM = "CreateUser"
-const CREATE_PGOUSER_PERM = "CreatePgouser"
-const CREATE_PGOROLE_PERM = "CreatePgorole"
-const CREATE_NAMESPACE_PERM = "CreateNamespace"
+	// CREATE
+	CREATE_BACKUP_PERM    = "CreateBackup"
+	CREATE_CLUSTER_PERM   = "CreateCluster"
+	CREATE_DUMP_PERM      = "CreateDump"
+	CREATE_FAILOVER_PERM  = "CreateFailover"
+	CREATE_INGEST_PERM    = "CreateIngest"
+	CREATE_NAMESPACE_PERM = "CreateNamespace"
+	CREATE_PGBOUNCER_PERM = "CreatePgbouncer"
+	CREATE_PGOUSER_PERM   = "CreatePgouser"
+	CREATE_PGOROLE_PERM   = "CreatePgorole"
+	CREATE_POLICY_PERM    = "CreatePolicy"
+	CREATE_SCHEDULE_PERM  = "CreateSchedule"
+	CREATE_UPGRADE_PERM   = "CreateUpgrade"
+	CREATE_USER_PERM      = "CreateUser"
 
-// RESTORE
-const RESTORE_DUMP_PERM = "RestoreDump"
+	// RESTORE
+	RESTORE_DUMP_PERM = "RestoreDump"
 
-// DELETE
-const DELETE_BACKUP_PERM = "DeleteBackup"
-const DELETE_CLUSTER_PERM = "DeleteCluster"
-const DELETE_INGEST_PERM = "DeleteIngest"
-const DELETE_PGBOUNCER_PERM = "DeletePgbouncer"
-const DELETE_POLICY_PERM = "DeletePolicy"
-const DELETE_SCHEDULE_PERM = "DeleteSchedule"
-const DELETE_USER_PERM = "DeleteUser"
-const DELETE_PGOUSER_PERM = "DeletePgouser"
-const DELETE_PGOROLE_PERM = "DeletePgorole"
-const DELETE_NAMESPACE_PERM = "DeleteNamespace"
+	// DELETE
+	DELETE_BACKUP_PERM    = "DeleteBackup"
+	DELETE_CLUSTER_PERM   = "DeleteCluster"
+	DELETE_INGEST_PERM    = "DeleteIngest"
+	DELETE_NAMESPACE_PERM = "DeleteNamespace"
+	DELETE_PGBOUNCER_PERM = "DeletePgbouncer"
+	DELETE_PGOROLE_PERM   = "DeletePgorole"
+	DELETE_PGOUSER_PERM   = "DeletePgouser"
+	DELETE_POLICY_PERM    = "DeletePolicy"
+	DELETE_SCHEDULE_PERM  = "DeleteSchedule"
+	DELETE_USER_PERM      = "DeleteUser"
 
-// SHOW
-const SHOW_BACKUP_PERM = "ShowBackup"
-const SHOW_CLUSTER_PERM = "ShowCluster"
-const SHOW_CONFIG_PERM = "ShowConfig"
-const SHOW_NAMESPACE_PERM = "ShowNamespace"
-const SHOW_INGEST_PERM = "ShowIngest"
-const SHOW_POLICY_PERM = "ShowPolicy"
-const SHOW_PVC_PERM = "ShowPVC"
-const SHOW_USER_PERM = "ShowUser"
-const SHOW_WORKFLOW_PERM = "ShowWorkflow"
-const SHOW_SCHEDULE_PERM = "ShowSchedule"
-const SHOW_SECRETS_PERM = "ShowSecrets"
-const SHOW_PGBOUNCER_PERM = "ShowPgBouncer"
-const SHOW_PGOUSER_PERM = "ShowPgouser"
-const SHOW_PGOROLE_PERM = "ShowPgorole"
+	// SHOW
+	SHOW_BACKUP_PERM    = "ShowBackup"
+	SHOW_CLUSTER_PERM   = "ShowCluster"
+	SHOW_CONFIG_PERM    = "ShowConfig"
+	SHOW_INGEST_PERM    = "ShowIngest"
+	SHOW_NAMESPACE_PERM = "ShowNamespace"
+	SHOW_PGBOUNCER_PERM = "ShowPgBouncer"
+	SHOW_PGOROLE_PERM   = "ShowPgorole"
+	SHOW_PGOUSER_PERM   = "ShowPgouser"
+	SHOW_POLICY_PERM    = "ShowPolicy"
+	SHOW_PVC_PERM       = "ShowPVC"
+	SHOW_SCHEDULE_PERM  = "ShowSchedule"
+	SHOW_SECRETS_PERM   = "ShowSecrets"
+	SHOW_USER_PERM      = "ShowUser"
+	SHOW_WORKFLOW_PERM  = "ShowWorkflow"
 
-// UPDATE
-const UPDATE_CLUSTER_PERM = "UpdateCluster"
-const UPDATE_PGOUSER_PERM = "UpdatePgouser"
-const UPDATE_USER_PERM = "UpdateUser"
-const UPDATE_PGBOUNCER_PERM = "UpdatePgBouncer"
-const UPDATE_PGOROLE_PERM = "UpdatePgorole"
-const UPDATE_NAMESPACE_PERM = "UpdateNamespace"
+	// SCALE
+	SCALE_CLUSTER_PERM = "ScaleCluster"
 
-// SCALE
-const SCALE_CLUSTER_PERM = "ScaleCluster"
+	// UPDATE
+	UPDATE_CLUSTER_PERM   = "UpdateCluster"
+	UPDATE_NAMESPACE_PERM = "UpdateNamespace"
+	UPDATE_PGBOUNCER_PERM = "UpdatePgBouncer"
+	UPDATE_PGOROLE_PERM   = "UpdatePgorole"
+	UPDATE_PGOUSER_PERM   = "UpdatePgouser"
+	UPDATE_USER_PERM      = "UpdateUser"
+)
 
 var RoleMap map[string]map[string]string
 var PermMap map[string]string
@@ -96,80 +101,82 @@ const pgorolePath = "/default-pgo-config/pgorole"
 const pgoroleFile = "pgorole"
 
 func InitializePerms() {
-	PermMap = make(map[string]string)
 	RoleMap = make(map[string]map[string]string)
 
-	// MISC
-	PermMap[APPLY_POLICY_PERM] = "yes"
-	PermMap[DF_CLUSTER_PERM] = "yes"
-	PermMap[LABEL_PERM] = "yes"
-	PermMap[LOAD_PERM] = "yes"
-	PermMap[CAT_PERM] = "yes"
-	PermMap[RELOAD_PERM] = "yes"
-	PermMap[RESTORE_PERM] = "yes"
-	PermMap[STATUS_PERM] = "yes"
-	PermMap[TEST_CLUSTER_PERM] = "yes"
-	PermMap[VERSION_PERM] = "yes"
+	// ...initialize the permission map using most of the legacy method, but make
+	// it slightly more organized
+	PermMap = map[string]string{
+		// MISC
+		APPLY_POLICY_PERM: "yes",
+		CAT_PERM:          "yes",
+		CLONE_PERM:        "yes",
+		DF_CLUSTER_PERM:   "yes",
+		LABEL_PERM:        "yes",
+		LOAD_PERM:         "yes",
+		RELOAD_PERM:       "yes",
+		RESTORE_PERM:      "yes",
+		STATUS_PERM:       "yes",
+		TEST_CLUSTER_PERM: "yes",
+		VERSION_PERM:      "yes",
 
-	// Create
-	PermMap[CREATE_BACKUP_PERM] = "yes"
-	PermMap[CREATE_DUMP_PERM] = "yes"
-	PermMap[CREATE_CLUSTER_PERM] = "yes"
-	PermMap[CREATE_FAILOVER_PERM] = "yes"
-	PermMap[CREATE_INGEST_PERM] = "yes"
-	PermMap[CREATE_PGBOUNCER_PERM] = "yes"
-	PermMap[CREATE_POLICY_PERM] = "yes"
-	PermMap[CREATE_SCHEDULE_PERM] = "yes"
-	PermMap[CREATE_UPGRADE_PERM] = "yes"
-	PermMap[CREATE_USER_PERM] = "yes"
-	PermMap[CREATE_PGOUSER_PERM] = "yes"
-	PermMap[CREATE_PGOROLE_PERM] = "yes"
-	PermMap[CREATE_NAMESPACE_PERM] = "yes"
-	// RESTORE
-	PermMap[RESTORE_DUMP_PERM] = "yes"
-	// Delete
-	PermMap[DELETE_BACKUP_PERM] = "yes"
-	PermMap[DELETE_CLUSTER_PERM] = "yes"
-	PermMap[DELETE_INGEST_PERM] = "yes"
-	PermMap[DELETE_PGBOUNCER_PERM] = "yes"
-	PermMap[DELETE_POLICY_PERM] = "yes"
-	PermMap[DELETE_SCHEDULE_PERM] = "yes"
-	PermMap[DELETE_USER_PERM] = "yes"
-	PermMap[DELETE_PGOUSER_PERM] = "yes"
-	PermMap[DELETE_PGOROLE_PERM] = "yes"
-	PermMap[DELETE_NAMESPACE_PERM] = "yes"
-	// Show
-	PermMap[SHOW_BACKUP_PERM] = "yes"
-	PermMap[SHOW_CLUSTER_PERM] = "yes"
-	PermMap[SHOW_CONFIG_PERM] = "yes"
-	PermMap[SHOW_NAMESPACE_PERM] = "yes"
-	PermMap[SHOW_INGEST_PERM] = "yes"
-	PermMap[SHOW_POLICY_PERM] = "yes"
-	PermMap[SHOW_PVC_PERM] = "yes"
-	PermMap[SHOW_USER_PERM] = "yes"
-	PermMap[SHOW_WORKFLOW_PERM] = "yes"
-	PermMap[SHOW_SCHEDULE_PERM] = "yes"
-	PermMap[SHOW_SECRETS_PERM] = "yes"
-	PermMap[SHOW_PGOUSER_PERM] = "yes"
-	PermMap[SHOW_PGOROLE_PERM] = "yes"
+		// CREATE
+		CREATE_BACKUP_PERM:    "yes",
+		CREATE_DUMP_PERM:      "yes",
+		CREATE_CLUSTER_PERM:   "yes",
+		CREATE_FAILOVER_PERM:  "yes",
+		CREATE_INGEST_PERM:    "yes",
+		CREATE_NAMESPACE_PERM: "yes",
+		CREATE_PGBOUNCER_PERM: "yes",
+		CREATE_PGOROLE_PERM:   "yes",
+		CREATE_PGOUSER_PERM:   "yes",
+		CREATE_POLICY_PERM:    "yes",
+		CREATE_SCHEDULE_PERM:  "yes",
+		CREATE_UPGRADE_PERM:   "yes",
+		CREATE_USER_PERM:      "yes",
 
-	// Scale
-	PermMap[SCALE_CLUSTER_PERM] = "yes"
+		// RESTORE
+		RESTORE_DUMP_PERM: "yes",
 
-	// Update
-	PermMap[UPDATE_CLUSTER_PERM] = "yes"
-	PermMap[UPDATE_PGOUSER_PERM] = "yes"
-	PermMap[UPDATE_USER_PERM] = "yes"
-	PermMap[UPDATE_PGOROLE_PERM] = "yes"
-	PermMap[UPDATE_NAMESPACE_PERM] = "yes"
+		// DELETE
+		DELETE_BACKUP_PERM:    "yes",
+		DELETE_CLUSTER_PERM:   "yes",
+		DELETE_INGEST_PERM:    "yes",
+		DELETE_NAMESPACE_PERM: "yes",
+		DELETE_PGBOUNCER_PERM: "yes",
+		DELETE_PGOROLE_PERM:   "yes",
+		DELETE_PGOUSER_PERM:   "yes",
+		DELETE_POLICY_PERM:    "yes",
+		DELETE_SCHEDULE_PERM:  "yes",
+		DELETE_USER_PERM:      "yes",
+
+		// SHOW
+		SHOW_BACKUP_PERM:    "yes",
+		SHOW_CLUSTER_PERM:   "yes",
+		SHOW_CONFIG_PERM:    "yes",
+		SHOW_INGEST_PERM:    "yes",
+		SHOW_NAMESPACE_PERM: "yes",
+		SHOW_PGBOUNCER_PERM: "yes",
+		SHOW_PGOROLE_PERM:   "yes",
+		SHOW_PGOUSER_PERM:   "yes",
+		SHOW_POLICY_PERM:    "yes",
+		SHOW_PVC_PERM:       "yes",
+		SHOW_SCHEDULE_PERM:  "yes",
+		SHOW_SECRETS_PERM:   "yes",
+		SHOW_USER_PERM:      "yes",
+		SHOW_WORKFLOW_PERM:  "yes",
+
+		// SCALE
+		SCALE_CLUSTER_PERM: "yes",
+
+		// UPDATE
+		UPDATE_CLUSTER_PERM:   "yes",
+		UPDATE_NAMESPACE_PERM: "yes",
+		UPDATE_PGBOUNCER_PERM: "yes",
+		UPDATE_PGOROLE_PERM:   "yes",
+		UPDATE_PGOUSER_PERM:   "yes",
+		UPDATE_USER_PERM:      "yes",
+	}
 
 	log.Infof("loading PermMap with %d Permissions\n", len(PermMap))
 
-}
-
-func HasPerm(role string, perm string) bool {
-	if RoleMap[role][perm] == "yes" {
-		return true
-	}
-	return false
 }
