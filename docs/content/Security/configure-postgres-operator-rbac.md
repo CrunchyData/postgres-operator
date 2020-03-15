@@ -82,6 +82,7 @@ The following list shows the current complete list of possible pgo permissions t
 |ShowPVC | allow *pgo show pvc*|
 |ShowSchedule | allow *pgo show schedule*|
 |ShowNamespace | allow *pgo show namespace*|
+|ShowSystemAccounts | allows commands with the `--show-system-accounts` flag to return system account information (e.g. the `postgres` superuser)|
 |ShowUpgrade | allow *pgo show upgrade*|
 |ShowWorkflow | allow *pgo show workflow*|
 |Status | allow *pgo status*|

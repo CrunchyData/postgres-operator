@@ -67,20 +67,21 @@ const (
 	DELETE_USER_PERM      = "DeleteUser"
 
 	// SHOW
-	SHOW_BACKUP_PERM    = "ShowBackup"
-	SHOW_CLUSTER_PERM   = "ShowCluster"
-	SHOW_CONFIG_PERM    = "ShowConfig"
-	SHOW_INGEST_PERM    = "ShowIngest"
-	SHOW_NAMESPACE_PERM = "ShowNamespace"
-	SHOW_PGBOUNCER_PERM = "ShowPgBouncer"
-	SHOW_PGOROLE_PERM   = "ShowPgorole"
-	SHOW_PGOUSER_PERM   = "ShowPgouser"
-	SHOW_POLICY_PERM    = "ShowPolicy"
-	SHOW_PVC_PERM       = "ShowPVC"
-	SHOW_SCHEDULE_PERM  = "ShowSchedule"
-	SHOW_SECRETS_PERM   = "ShowSecrets"
-	SHOW_USER_PERM      = "ShowUser"
-	SHOW_WORKFLOW_PERM  = "ShowWorkflow"
+	SHOW_BACKUP_PERM          = "ShowBackup"
+	SHOW_CLUSTER_PERM         = "ShowCluster"
+	SHOW_CONFIG_PERM          = "ShowConfig"
+	SHOW_INGEST_PERM          = "ShowIngest"
+	SHOW_NAMESPACE_PERM       = "ShowNamespace"
+	SHOW_PGBOUNCER_PERM       = "ShowPgBouncer"
+	SHOW_PGOROLE_PERM         = "ShowPgorole"
+	SHOW_PGOUSER_PERM         = "ShowPgouser"
+	SHOW_POLICY_PERM          = "ShowPolicy"
+	SHOW_PVC_PERM             = "ShowPVC"
+	SHOW_SCHEDULE_PERM        = "ShowSchedule"
+	SHOW_SECRETS_PERM         = "ShowSecrets"
+	SHOW_SYSTEM_ACCOUNTS_PERM = "ShowSystemAccounts"
+	SHOW_USER_PERM            = "ShowUser"
+	SHOW_WORKFLOW_PERM        = "ShowWorkflow"
 
 	// SCALE
 	SCALE_CLUSTER_PERM = "ScaleCluster"
@@ -150,20 +151,21 @@ func InitializePerms() {
 		DELETE_USER_PERM:      "yes",
 
 		// SHOW
-		SHOW_BACKUP_PERM:    "yes",
-		SHOW_CLUSTER_PERM:   "yes",
-		SHOW_CONFIG_PERM:    "yes",
-		SHOW_INGEST_PERM:    "yes",
-		SHOW_NAMESPACE_PERM: "yes",
-		SHOW_PGBOUNCER_PERM: "yes",
-		SHOW_PGOROLE_PERM:   "yes",
-		SHOW_PGOUSER_PERM:   "yes",
-		SHOW_POLICY_PERM:    "yes",
-		SHOW_PVC_PERM:       "yes",
-		SHOW_SCHEDULE_PERM:  "yes",
-		SHOW_SECRETS_PERM:   "yes",
-		SHOW_USER_PERM:      "yes",
-		SHOW_WORKFLOW_PERM:  "yes",
+		SHOW_BACKUP_PERM:          "yes",
+		SHOW_CLUSTER_PERM:         "yes",
+		SHOW_CONFIG_PERM:          "yes",
+		SHOW_INGEST_PERM:          "yes",
+		SHOW_NAMESPACE_PERM:       "yes",
+		SHOW_PGBOUNCER_PERM:       "yes",
+		SHOW_PGOROLE_PERM:         "yes",
+		SHOW_PGOUSER_PERM:         "yes",
+		SHOW_POLICY_PERM:          "yes",
+		SHOW_PVC_PERM:             "yes",
+		SHOW_SCHEDULE_PERM:        "yes",
+		SHOW_SECRETS_PERM:         "yes",
+		SHOW_SYSTEM_ACCOUNTS_PERM: "yes",
+		SHOW_USER_PERM:            "yes",
+		SHOW_WORKFLOW_PERM:        "yes",
 
 		// SCALE
 		SCALE_CLUSTER_PERM: "yes",
