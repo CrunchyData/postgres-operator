@@ -23,14 +23,6 @@ trap 'trap_sigterm' SIGINT SIGTERM
 
 CONFIG=/sshd
 
-echo "PGBACKREST env vars are set to:"
-set | grep PGBACKREST
-
-echo "CONFIG is.."
-ls $CONFIG
-echo "REPO is ..."
-ls $REPO
-
 mkdir ~/.ssh/
 cp $CONFIG/config ~/.ssh/
 cp $CONFIG/id_ed25519 /tmp

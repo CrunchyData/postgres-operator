@@ -23,14 +23,7 @@ trap 'trap_sigterm' SIGINT SIGTERM
 # First enable sshd prior to running rsync if using pgbackrest with a repository
 # host
 enable_sshd() {
-
-	echo "PGBACKREST env vars are set to:"
-	set | grep PGBACKREST
-
 	SSHD_CONFIG=/sshd
-
-	echo "SSHD_CONFIG is.."
-	ls $SSHD_CONFIG
 
 	mkdir ~/.ssh/
 	cp $SSHD_CONFIG/config ~/.ssh/
@@ -57,7 +50,6 @@ rsync_repo() {
 # location.  The this inlcudes syncing files between who s3 locations,
 # syncing a local directory to s3, or syncing from s3 to a local directory.
 aws_sync_repo() {
-
 	export AWS_CA_BUNDLE="${PGBACKREST_REPO1_S3_CA_FILE}"
 	export AWS_ACCESS_KEY_ID="${PGBACKREST_REPO1_S3_KEY}"
 	export AWS_SECRET_ACCESS_KEY="${PGBACKREST_REPO1_S3_KEY_SECRET}"
