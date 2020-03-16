@@ -37,6 +37,20 @@ if [ ! -d $PGBACKREST_REPO_PATH ]; then
 	mkdir -p $PGBACKREST_REPO_PATH
 fi
 
+# This is a workaround for changes introduced in pgBackRest v2.24.  Specifically, a pg1-path
+# setting must now be visible when another container executes a pgBackRest command via SSH.
+# Since env vars, and therefore the PGBACKREST_DB_PATH setting, is not visible when another
+# container executes a command via SSH, this adds the pg1-path setting to the pgBackRest config
+# file instead, ensuring the setting is always available in the environment during SSH calls.
+# Additionally, since the value for pg1-path setting in the repository container is irrelevant 
+# (i.e. the value specified by the container running the command via SSH is used instead), it is
+# simply set to a dummy directory within the config file.
+mkdir -p /tmp/pg1path
+if ! grep -Fxq "[${PGBACKREST_STANZA}]" "/etc/pgbackrest/pgbackrest.conf" 
+then
+    printf "[%s]\npg1-path=/tmp/pg1path\n" "$PGBACKREST_STANZA" > /etc/pgbackrest/pgbackrest.conf
+fi
+
 mkdir ~/.ssh/
 cp $CONFIG/config ~/.ssh/
 #cp $CONFIG/authorized_keys ~/.ssh/
