@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-env
-
 /usr/local/bin/pgo-rmdata -pg-cluster=$PG_CLUSTER \
 	-replica-name=$REPLICA_NAME \
 	-namespace=$NAMESPACE \

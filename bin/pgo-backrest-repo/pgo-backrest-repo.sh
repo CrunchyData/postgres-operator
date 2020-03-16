@@ -24,14 +24,6 @@ trap 'trap_sigterm' SIGINT SIGTERM
 CONFIG=/sshd
 REPO=/backrestrepo
 
-echo "PGBACKREST env vars are set to:"
-set | grep PGBACKREST
-
-echo "CONFIG is.."
-ls $CONFIG
-echo "REPO is ..."
-ls $REPO
-
 if [ ! -d $PGBACKREST_REPO1_PATH ]; then
 	echo "creating " $PGBACKREST_REPO1_PATH
 	mkdir -p $PGBACKREST_REPO1_PATH
@@ -42,11 +34,11 @@ fi
 # Since env vars, and therefore the PGBACKREST_DB_PATH setting, is not visible when another
 # container executes a command via SSH, this adds the pg1-path setting to the pgBackRest config
 # file instead, ensuring the setting is always available in the environment during SSH calls.
-# Additionally, since the value for pg1-path setting in the repository container is irrelevant 
+# Additionally, since the value for pg1-path setting in the repository container is irrelevant
 # (i.e. the value specified by the container running the command via SSH is used instead), it is
 # simply set to a dummy directory within the config file.
 mkdir -p /tmp/pg1path
-if ! grep -Fxq "[${PGBACKREST_STANZA}]" "/etc/pgbackrest/pgbackrest.conf" 
+if ! grep -Fxq "[${PGBACKREST_STANZA}]" "/etc/pgbackrest/pgbackrest.conf"
 then
     printf "[%s]\npg1-path=/tmp/pg1path\n" "$PGBACKREST_STANZA" > /etc/pgbackrest/pgbackrest.conf
 fi
