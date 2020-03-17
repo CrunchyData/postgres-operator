@@ -59,8 +59,9 @@
                       }
                       {{.TablespaceVolumeMounts}}
                     ],
-                    "env": [{
+                    "env": [
                       {{.PgbackrestS3EnvVars}}
+                      {
                         "name": "COMMAND_OPTS",
                         "value": "{{.CommandOpts}}"
                     },
