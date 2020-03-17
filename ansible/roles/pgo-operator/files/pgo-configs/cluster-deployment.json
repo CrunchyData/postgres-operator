@@ -82,10 +82,10 @@
                         "name": "PATRONI_POSTGRESQL_DATA_DIR",
                         "value": "/pgdata/{{.Name}}"
                     },
+                    {{.PgbackrestEnvVars}}
                     {{.PgbackrestS3EnvVars}}
                     {{.PgmonitorEnvVars}}
                     {
-            {{.PgbackrestEnvVars}}
                         "name": "PGHA_DATABASE",
                         "value": "{{.Database}}"
                     }, {

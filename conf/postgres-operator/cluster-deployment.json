@@ -83,9 +83,9 @@
                         "value": "/pgdata/{{.Name}}"
                     },
                     {{.PgbackrestS3EnvVars}}
+                    {{.PgbackrestEnvVars}}
                     {{.PgmonitorEnvVars}}
                     {
-            {{.PgbackrestEnvVars}}
                         "name": "PGHA_DATABASE",
                         "value": "{{.Database}}"
                     }, {
