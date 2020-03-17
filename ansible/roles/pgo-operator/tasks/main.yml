@@ -5,7 +5,7 @@
   tags: always
 
 - name: Ensure output directory exists
-  file: 
+  file:
     path: "{{ output_dir }}"
     state: directory
     mode: 0700
@@ -60,7 +60,7 @@
       tags:
         - install
         - update
-    
+
     - include_tasks: crds.yml
       tags:
         - install
@@ -134,7 +134,7 @@
         - pgo_image_pull_secret_manifest != ''
 
     - name: Create cluster-admin Cluster Role Binding for PGO Service Account
-      command: | 
+      command: |
         {{ kubectl_or_oc }} create clusterrolebinding pgo-cluster-admin \
           --clusterrole cluster-admin \
           --user system:serviceaccount:{{ pgo_operator_namespace }}:postgres-operator
@@ -142,7 +142,7 @@
       tags:
         - install
         - update
-      
+
     - name: Template PGO RBAC
       template:
         src: pgo-role-rbac.yaml.j2
@@ -187,22 +187,14 @@
         - install
         - update
 
-    - name: Template BackRest AWS S3 Configuration
-      template:
-        src: aws-s3-credentials.yaml.j2
-        dest: "{{ output_dir }}/aws-s3-credentials.yaml"
-        mode: '0600'
-      tags:
-        - install
-        - update
-
     - name: Create PGO BackRest Repo Secret
       command: |
         {{ kubectl_or_oc }} create secret generic pgo-backrest-repo-config \
           --from-file=config='{{ role_path }}/files/pgo-backrest-repo/config' \
           --from-file=sshd_config='{{ role_path }}/files/pgo-backrest-repo/sshd_config' \
           --from-file=aws-s3-ca.crt='{{ role_path }}/files/pgo-backrest-repo/aws-s3-ca.crt' \
-          --from-file=aws-s3-credentials.yaml='{{ output_dir }}/aws-s3-credentials.yaml' \
+          --from-literal=aws-s3-key='{{ backrest_aws_s3_key }}' \
+          --from-literal=aws-s3-key-secret='{{ backrest_aws_s3_key_secret }}' \
           -n {{ pgo_operator_namespace }}
       tags:
         - install

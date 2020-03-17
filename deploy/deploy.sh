@@ -12,6 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# awsKeySecret is borrowed from the legacy way to pull out the AWS s3
+# credentials in an environmental variable. This is only here while we
+# transition away from whatever this was
+awsKeySecret() {
+    val=$(grep "$1" -m 1 "${PGOROOT}/conf/pgo-backrest-repo/aws-s3-credentials.yaml" | sed "s/^.*:\s*//")
+    # remove leading and trailing whitespace
+    val=$(echo -e "${val}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+    if [[ "$val" != "" ]]
+		then
+        echo "${val}"
+    fi
+}
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -20,19 +32,21 @@ $DIR/cleanup.sh
 $PGO_CMD get clusterrole pgo-cluster-role 2> /dev/null > /dev/null
 if [ $? -ne 0 ]
 then
-	echo ERROR: pgo-cluster-role was not found 
+	echo ERROR: pgo-cluster-role was not found
 	echo Verify you ran install-rbac.sh
 	exit
 fi
 
-#
-# credentials for pgbackrest sshd 
-#
+# credentials for pgbackrest sshd
+pgbackrest_aws_s3_key=$(awsKeySecret "aws-s3-key")
+pgbackrest_aws_s3_key_secret=$(awsKeySecret "aws-s3-key-secret")
+
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create secret generic pgo-backrest-repo-config \
 	--from-file=config=$PGOROOT/conf/pgo-backrest-repo/config \
 	--from-file=sshd_config=$PGOROOT/conf/pgo-backrest-repo/sshd_config \
-	--from-file=aws-s3-credentials.yaml=$PGOROOT/conf/pgo-backrest-repo/aws-s3-credentials.yaml \
-	--from-file=aws-s3-ca.crt=$PGOROOT/conf/pgo-backrest-repo/aws-s3-ca.crt
+	--from-file=aws-s3-ca.crt=$PGOROOT/conf/pgo-backrest-repo/aws-s3-ca.crt \
+	--from-literal=aws-s3-key="${pgbackrest_aws_s3_key}" \
+	--from-literal=aws-s3-key-secret="${pgbackrest_aws_s3_key_secret}"
 
 #
 # credentials for pgo-apiserver TLS REST API

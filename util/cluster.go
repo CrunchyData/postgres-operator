@@ -21,8 +21,6 @@ import (
 	"strconv"
 	"strings"
 
-	"gopkg.in/yaml.v2"
-
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -45,11 +43,11 @@ type BackrestRepoConfig struct {
 	OperatorNamespace   string
 }
 
-// AWSS3Secret is a representation of the yaml structure found in aws-s3-credentials.yaml
-// for providing an AWS S3 key and key secret
+// AWSS3Secret is a structured representation for providing  an AWS S3 key and
+// key secret
 type AWSS3Secret struct {
-	AWSS3Key       string `yaml:"aws-s3-key"`
-	AWSS3KeySecret string `yaml:"aws-s3-key-secret"`
+	AWSS3Key       string
+	AWSS3KeySecret string
 }
 
 const (
@@ -61,6 +59,21 @@ const (
 	// password expires. If it is not set in the pgo.yaml file, we will use a
 	// default of "0" which means that a password will never expire
 	DefaultPasswordValidUntilDays = 0
+)
+
+// values for the keys used to access the pgBackRest repository Secret
+const (
+	// two are these are exported, as they are used to help add the information
+	// into the templates. Say the second one 10 times fast
+	BackRestRepoSecretKeyAWSS3KeyAWSS3Key       = "aws-s3-key"
+	BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret = "aws-s3-key-secret"
+	// the rest are private
+	backRestRepoSecretKeyAuthorizedKeys      = "authorized_keys"
+	backRestRepoSecretKeyAWSS3KeyAWSS3CACert = "aws-s3-ca.crt"
+	backRestRepoSecretKeySSHConfig           = "config"
+	backRestRepoSecretKeySSHDConfig          = "sshd_config"
+	backRestRepoSecretKeySSHPrivateKey       = "id_ed25519"
+	backRestRepoSecretKeySSHHostPrivateKey   = "ssh_host_ed25519_key"
 )
 
 const (
@@ -104,23 +117,22 @@ func CreateBackrestRepoSecrets(clientset *kubernetes.Clientset,
 		return err
 	}
 
-	// if an S3 key has been provided via the request, then use key and key secret inlcuded
-	// in the request instead of the default credentials provided by 'aws-s3-credentials.yaml'.
-	// If an S3 key doesn't exist in the request, the use `aws-s3-credentials.yaml`
-	var s3KeySecretData []byte
-	if backrestRepoConfig.BackrestS3Key != "" && backrestRepoConfig.BackrestS3KeySecret != "" {
-		s3Secret := AWSS3Secret{
-			backrestRepoConfig.BackrestS3Key,
-			backrestRepoConfig.BackrestS3KeySecret,
-		}
-		s3KeySecretData, err = yaml.Marshal(s3Secret)
-		if err != nil {
-			return err
-		}
-	} else {
-		s3KeySecretData = configs.Data["aws-s3-credentials.yaml"]
+	// if an S3 key has been provided via the request, then use key and key secret
+	// inlcuded in the request instead of the default credentials that are
+	// available in the Operator pgBackRest secret
+	backrestS3Key := []byte(backrestRepoConfig.BackrestS3Key)
+
+	if backrestRepoConfig.BackrestS3Key == "" {
+		backrestS3Key = configs.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3Key]
 	}
 
+	backrestS3KeySecret := []byte(backrestRepoConfig.BackrestS3KeySecret)
+
+	if backrestRepoConfig.BackrestS3KeySecret == "" {
+		backrestS3KeySecret = configs.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret]
+	}
+
+	// set up the secret for the cluster that contains the pgBackRest information
 	secret := v1.Secret{
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: fmt.Sprintf("%s-%s", backrestRepoConfig.ClusterName,
@@ -132,15 +144,17 @@ func CreateBackrestRepoSecrets(clientset *kubernetes.Clientset,
 			},
 		},
 		Data: map[string][]byte{
-			"authorized_keys":         keys.Public,
-			"aws-s3-ca.crt":           configs.Data["aws-s3-ca.crt"],
-			"aws-s3-credentials.yaml": s3KeySecretData,
-			"config":                  configs.Data["config"],
-			"id_ed25519":              keys.Private,
-			"sshd_config":             configs.Data["sshd_config"],
-			"ssh_host_ed25519_key":    keys.Private,
+			BackRestRepoSecretKeyAWSS3KeyAWSS3Key:       backrestS3Key,
+			BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret: backrestS3KeySecret,
+			backRestRepoSecretKeyAuthorizedKeys:         keys.Public,
+			backRestRepoSecretKeyAWSS3KeyAWSS3CACert:    configs.Data[backRestRepoSecretKeyAWSS3KeyAWSS3CACert],
+			backRestRepoSecretKeySSHConfig:              configs.Data[backRestRepoSecretKeySSHConfig],
+			backRestRepoSecretKeySSHDConfig:             configs.Data[backRestRepoSecretKeySSHDConfig],
+			backRestRepoSecretKeySSHPrivateKey:          keys.Private,
+			backRestRepoSecretKeySSHHostPrivateKey:      keys.Private,
 		},
 	}
+
 	return kubeapi.CreateSecret(clientset, &secret, backrestRepoConfig.ClusterNamespace)
 }
 
@@ -203,22 +217,22 @@ func GetPrimaryPod(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) (*v
 
 // GetS3CredsFromBackrestRepoSecret retrieves the AWS S3 credentials, i.e. the key and key
 // secret, from a specific cluster's backrest repo secret
-func GetS3CredsFromBackrestRepoSecret(clientset *kubernetes.Clientset, clusterName,
-	namespace string) (s3Secret AWSS3Secret, err error) {
+func GetS3CredsFromBackrestRepoSecret(clientset *kubernetes.Clientset, namespace, clusterName string) (AWSS3Secret, error) {
+	secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
+	s3Secret := AWSS3Secret{}
 
-	currBackrestSecret, _, err := kubeapi.GetSecret(clientset,
-		clusterName+"-backrest-repo-config", namespace)
+	secret, _, err := kubeapi.GetSecret(clientset, secretName, namespace)
+
 	if err != nil {
 		log.Error(err)
-		return
-	}
-	err = yaml.Unmarshal(currBackrestSecret.Data["aws-s3-credentials.yaml"], &s3Secret)
-	if err != nil {
-		log.Error(err)
-		return
+		return s3Secret, err
 	}
 
-	return
+	// get the S3 secret credentials out of the secret, and return
+	s3Secret.AWSS3Key = string(secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3Key])
+	s3Secret.AWSS3KeySecret = string(secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret])
+
+	return s3Secret, nil
 }
 
 // SetPostgreSQLPassword updates the password for a PostgreSQL role in the

@@ -12,11 +12,21 @@
 },
 {
   "name": "PGBACKREST_REPO1_S3_KEY",
-  "value": "{{.PgbackrestS3Key}}"
+  "valueFrom": {
+    "secretKeyRef": {
+      "name": "{{.PgbackrestS3SecretName}}",
+      "key": "{{.PgbackrestS3Key}}"
+    }
+  }
 },
 {
   "name": "PGBACKREST_REPO1_S3_KEY_SECRET",
-  "value": "{{.PgbackrestS3KeySecret}}"
+  "valueFrom": {
+    "secretKeyRef": {
+      "name": "{{.PgbackrestS3SecretName}}",
+      "key": "{{.PgbackrestS3KeySecret}}"
+    }
+  }
 },
 {
   "name": "PGBACKREST_REPO1_S3_CA_FILE",
