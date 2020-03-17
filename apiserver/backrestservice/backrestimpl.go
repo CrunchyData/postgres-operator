@@ -91,7 +91,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 
 	// Convert the names of all pgclusters specified for the request to a pgclusterList
 	if clusterList.Items == nil {
-		clusterList, err = clusterNamesToPGClusterList(request.Args, ns)
+		clusterList, err = clusterNamesToPGClusterList(ns, request.Args)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -627,13 +627,12 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 // clusterNamesToPGClusterList takes a list of cluster names as specified by a slice of
 // strings containing cluster names and then returns a PgclusterList containing Pgcluster's
 // corresponding to those names.
-func clusterNamesToPGClusterList(clusterNames []string, namespace string) (crv1.PgclusterList,
+func clusterNamesToPGClusterList(namespace string, clusterNames []string) (crv1.PgclusterList,
 	error) {
 	selector := fmt.Sprintf("%s in(%s)", config.LABEL_NAME, strings.Join(clusterNames, ","))
 	clusterList := crv1.PgclusterList{}
-	err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, selector,
-		namespace)
-	if err != nil {
+	if err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, selector,
+		namespace); err != nil {
 		return clusterList, err
 	}
 	return clusterList, nil

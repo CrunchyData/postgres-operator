@@ -40,12 +40,12 @@ type Controller struct {
 	NamespaceClient        *rest.RESTClient
 	NamespaceClientset     *kubernetes.Clientset
 	Ctx                    context.Context
-	ThePodController       *pod.Controller
-	TheJobController       *job.Controller
-	ThePgpolicyController  *pgpolicy.Controller
-	ThePgreplicaController *pgreplica.Controller
-	ThePgclusterController *pgcluster.Controller
-	ThePgtaskController    *pgtask.Controller
+	PodController       *pod.Controller
+	JobController       *job.Controller
+	PgpolicyController  *pgpolicy.Controller
+	PgreplicaController *pgreplica.Controller
+	PgclusterController *pgcluster.Controller
+	PgtaskController    *pgtask.Controller
 }
 
 // Run starts a namespace resource controller
@@ -107,12 +107,12 @@ func (c *Controller) onAdd(obj interface{}) {
 		return
 	} else {
 		log.Debugf("namespace Controller: onAdd crunchy namespace %s created", newNs.ObjectMeta.SelfLink)
-		c.ThePodController.SetupWatch(newNs.Name)
-		c.TheJobController.SetupWatch(newNs.Name)
-		c.ThePgpolicyController.SetupWatch(newNs.Name)
-		c.ThePgreplicaController.SetupWatch(newNs.Name)
-		c.ThePgclusterController.SetupWatch(newNs.Name)
-		c.ThePgtaskController.SetupWatch(newNs.Name)
+		c.PodController.SetupWatch(newNs.Name)
+		c.JobController.SetupWatch(newNs.Name)
+		c.PgpolicyController.SetupWatch(newNs.Name)
+		c.PgreplicaController.SetupWatch(newNs.Name)
+		c.PgclusterController.SetupWatch(newNs.Name)
+		c.PgtaskController.SetupWatch(newNs.Name)
 	}
 
 }
@@ -129,12 +129,12 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		return
 	} else {
 		log.Debugf("namespace Controller: onUpdate crunchy namespace updated %s", newNs.ObjectMeta.SelfLink)
-		c.ThePodController.SetupWatch(newNs.Name)
-		c.TheJobController.SetupWatch(newNs.Name)
-		c.ThePgpolicyController.SetupWatch(newNs.Name)
-		c.ThePgreplicaController.SetupWatch(newNs.Name)
-		c.ThePgclusterController.SetupWatch(newNs.Name)
-		c.ThePgtaskController.SetupWatch(newNs.Name)
+		c.PodController.SetupWatch(newNs.Name)
+		c.JobController.SetupWatch(newNs.Name)
+		c.PgpolicyController.SetupWatch(newNs.Name)
+		c.PgreplicaController.SetupWatch(newNs.Name)
+		c.PgclusterController.SetupWatch(newNs.Name)
+		c.PgtaskController.SetupWatch(newNs.Name)
 	}
 
 }

@@ -26,6 +26,11 @@ import (
 	apiv1 "k8s.io/api/batch/v1"
 )
 
+const (
+	deleteRMDataJobMaxTries = 10
+	deleteRMDataJobDuration = 5
+)
+
 // handleRMDataUpdate is responsible for handling updates to rmdata jobs
 func (c *Controller) handleRMDataUpdate(job *apiv1.Job) error {
 
@@ -51,12 +56,10 @@ func (c *Controller) handleRMDataUpdate(job *apiv1.Job) error {
 		log.Error(err)
 	}
 
-	MAX_TRIES := 10
-	DURATION := 5
 	removed := false
-	for i := 0; i < MAX_TRIES; i++ {
+	for i := 0; i < deleteRMDataJobMaxTries; i++ {
 		log.Debugf("sleeping while job %s is removed cleanly", job.Name)
-		time.Sleep(time.Second * time.Duration(DURATION))
+		time.Sleep(time.Second * time.Duration(deleteRMDataJobDuration))
 		_, found := kubeapi.GetJob(c.JobClientset, job.Name, job.Namespace)
 		if !found {
 			removed = true

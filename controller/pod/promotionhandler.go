@@ -1,18 +1,18 @@
 package pod
 
 /*
-   Copyright 2017 - 2020 Crunchy Data Solutions, Inc.
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+Copyright 2020 Crunchy Data Solutions, Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-   http://www.apache.org/licenses/LICENSE-2.0
+http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 import (
@@ -30,6 +30,23 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+)
+
+var (
+	// isInRecoveryCommand is the command run to determine if postgres is in recovery
+	isInRecoveryCMD []string = []string{"psql", "-t", "-c", "'SELECT pg_is_in_recovery();'"}
+
+	// leaderStatusCMD is the command run to get the Patroni status for the primary
+	leaderStatusCMD []string = []string{"curl", fmt.Sprintf("localhost:%s/master",
+		config.DEFAULT_PATRONI_PORT)}
+
+	// isStandbyDisabledTick is the duration of the tick used when waiting for standby mode to
+	// be disabled
+	isStandbyDisabledTick time.Duration = time.Millisecond * 500
+
+	// isStandbyDisabledTimeout is the amount of time to wait before timing out when waitig for
+	// standby mode to be disabled
+	isStandbyDisabledTimeout time.Duration = time.Minute * 5
 )
 
 // handlePostgresPodPromotion is responsible for handling updates to PG pods the occur as a result
@@ -87,25 +104,12 @@ func (c *Controller) handleStandbyPromotion(newPod *apiv1.Pod, cluster crv1.Pgcl
 func waitForStandbyPromotion(restConfig *rest.Config, clientset *kubernetes.Clientset, newPod apiv1.Pod,
 	cluster crv1.Pgcluster) error {
 
-	// Checks to see if the DB is in recovery
-	isInRecoveryCMD := make([]string, 4)
-	isInRecoveryCMD[0] = "psql"
-	isInRecoveryCMD[1] = "-t"
-	isInRecoveryCMD[2] = "-c"
-	isInRecoveryCMD[3] = "select pg_is_in_recovery()"
-
-	// Pulls back details about the master
-	leaderStatusCMD := make([]string, 2)
-	leaderStatusCMD[0] = "curl"
-	leaderStatusCMD[1] = fmt.Sprintf("localhost:%s/master", config.DEFAULT_PATRONI_PORT)
-
 	var recoveryDisabled bool
 
 	// wait for the server to accept writes to ensure standby has truly been disabled before
 	// proceeding
-	duration := time.After(time.Minute * 5)
-	tick := time.Tick(500 * time.Millisecond)
-
+	duration := time.After(isStandbyDisabledTimeout)
+	tick := time.Tick(isStandbyDisabledTick)
 	for {
 		select {
 		case <-duration:

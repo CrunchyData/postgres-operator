@@ -133,15 +133,15 @@ func main() {
 		InformerNamespaces: make(map[string]struct{}),
 	}
 	nscontroller := &namespace.Controller{
-		NamespaceClientset:     Clientset,
-		NamespaceClient:        crdClient,
-		Ctx:                    ctx,
-		ThePodController:       podcontroller,
-		TheJobController:       jobcontroller,
-		ThePgpolicyController:  pgPolicycontroller,
-		ThePgreplicaController: pgReplicacontroller,
-		ThePgclusterController: pgClustercontroller,
-		ThePgtaskController:    pgTaskcontroller,
+		NamespaceClientset:  Clientset,
+		NamespaceClient:     crdClient,
+		Ctx:                 ctx,
+		PodController:       podcontroller,
+		JobController:       jobcontroller,
+		PgpolicyController:  pgPolicycontroller,
+		PgreplicaController: pgReplicacontroller,
+		PgclusterController: pgClustercontroller,
+		PgtaskController:    pgTaskcontroller,
 	}
 
 	defer cancelFunc()
