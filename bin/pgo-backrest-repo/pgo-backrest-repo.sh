@@ -41,6 +41,17 @@ mkdir -p /tmp/pg1path
 if ! grep -Fxq "[${PGBACKREST_STANZA}]" "/etc/pgbackrest/pgbackrest.conf"
 then
     printf "[%s]\npg1-path=/tmp/pg1path\n" "$PGBACKREST_STANZA" > /etc/pgbackrest/pgbackrest.conf
+
+		# Additionally, if the PGBACKREST S3 variables are set, add them here
+		if [[ "${PGBACKREST_REPO1_S3_KEY}" != "" ]]
+		then
+			printf "repo1-s3-key=%s\n" "${PGBACKREST_REPO1_S3_KEY}" >> /etc/pgbackrest/pgbackrest.conf
+		fi
+
+		if [[ "${PGBACKREST_REPO1_S3_KEY_SECRET}" != "" ]]
+		then
+			printf "repo1-s3-key-secret=%s\n" "${PGBACKREST_REPO1_S3_KEY_SECRET}" >> /etc/pgbackrest/pgbackrest.conf
+		fi
 fi
 
 mkdir ~/.ssh/

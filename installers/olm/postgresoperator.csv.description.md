@@ -107,14 +107,15 @@ Create the pgo namespace if it does not exist already. This single namespace is 
 kubectl create namespace pgo
 ```
 
-Create the `pgo-backrest-repo-config` Secret that is used by the operator.
+Create the `pgo-backrest-repo-config` Secret that is used by the PostgreSQL Operator. You can omit the AWS S3 keys if you are not planning to use S3 storage with the Operator
 
 ```
 kubectl create secret generic -n pgo pgo-backrest-repo-config \
   --from-file=config=$PGOROOT/conf/pgo-backrest-repo/config \
   --from-file=sshd_config=$PGOROOT/conf/pgo-backrest-repo/sshd_config \
-  --from-file=aws-s3-credentials.yaml=$PGOROOT/conf/pgo-backrest-repo/aws-s3-credentials.yaml \
-  --from-file=aws-s3-ca.crt=$PGOROOT/conf/pgo-backrest-repo/aws-s3-ca.crt
+  --from-file=aws-s3-ca.crt=$PGOROOT/conf/pgo-backrest-repo/aws-s3-ca.crt \
+  --from-literal=aws-s3-key="<your-aws-s3-key>" \
+  --from-literal=aws-s3-key-secret="<your-aws-s3-key-secret>"
 ```
 
 Create the `pgo-auth-secret` Secret that is used by the operator.

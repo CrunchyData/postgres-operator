@@ -288,8 +288,7 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 	}
 
 	// Retrieve current S3 key & key secret
-	s3Creds, err := util.GetS3CredsFromBackrestRepoSecret(clientset, sourcePgcluster.Name,
-		namespace)
+	s3Creds, err := util.GetS3CredsFromBackrestRepoSecret(clientset, namespace, sourcePgcluster.Name)
 	if err != nil {
 		log.Error(err)
 		errorMessage := fmt.Sprintf("Unable to get S3 key and key secret from source cluster "+
@@ -617,8 +616,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 		&job.Spec.Template.Spec.Containers[0])
 
 	// Retrieve current S3 key & key secret
-	s3Creds, err := util.GetS3CredsFromBackrestRepoSecret(clientset, sourcePgcluster.Name,
-		namespace)
+	s3Creds, err := util.GetS3CredsFromBackrestRepoSecret(clientset, namespace, sourcePgcluster.Name)
 	if err != nil {
 		log.Error(err)
 		errorMessage := fmt.Sprintf("Unable to get S3 key and key secret from source cluster "+

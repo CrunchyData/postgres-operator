@@ -23,17 +23,15 @@ import (
 	"strconv"
 	"strings"
 
-	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/validation"
-
-	"gopkg.in/yaml.v2"
-
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
+
 	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -115,11 +113,12 @@ type PgbackrestEnvVarsTemplateFields struct {
 }
 
 type PgbackrestS3EnvVarsTemplateFields struct {
-	PgbackrestS3Bucket    string
-	PgbackrestS3Endpoint  string
-	PgbackrestS3Region    string
-	PgbackrestS3Key       string
-	PgbackrestS3KeySecret string
+	PgbackrestS3Bucket     string
+	PgbackrestS3Endpoint   string
+	PgbackrestS3Region     string
+	PgbackrestS3Key        string
+	PgbackrestS3KeySecret  string
+	PgbackrestS3SecretName string
 }
 
 type PgmonitorEnvVarsTemplateFields struct {
@@ -683,96 +682,50 @@ func GetPgmonitorEnvVars(metricsEnabled string) string {
 func GetPgbackrestS3EnvVars(cluster crv1.Pgcluster, clientset *kubernetes.Clientset,
 	ns string) string {
 
-	if cluster.Labels[config.LABEL_BACKREST] == "true" &&
-		strings.Contains(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], "s3") {
-
-		// populate the S3 bucket, endpoint and region using either the values in the pgcluster
-		// spec (if present), otherwise populate using the values from the pgo.yaml config file
-		s3EnvVars := PgbackrestS3EnvVarsTemplateFields{}
-		if cluster.Spec.BackrestS3Bucket != "" {
-			s3EnvVars.PgbackrestS3Bucket = cluster.Spec.BackrestS3Bucket
-		} else {
-			s3EnvVars.PgbackrestS3Bucket = Pgo.Cluster.BackrestS3Bucket
-		}
-
-		if cluster.Spec.BackrestS3Endpoint != "" {
-			s3EnvVars.PgbackrestS3Endpoint = cluster.Spec.BackrestS3Endpoint
-		} else {
-			s3EnvVars.PgbackrestS3Endpoint = Pgo.Cluster.BackrestS3Endpoint
-		}
-
-		if cluster.Spec.BackrestS3Region != "" {
-			s3EnvVars.PgbackrestS3Region = cluster.Spec.BackrestS3Region
-		} else {
-			s3EnvVars.PgbackrestS3Region = Pgo.Cluster.BackrestS3Region
-		}
-
-		secret, secretExists, err := kubeapi.GetSecret(clientset,
-			cluster.Name+"-backrest-repo-config", ns)
-		if err != nil {
-			log.Error(err.Error())
-			return ""
-		} else if !secretExists {
-			log.Errorf("Secret '%s-backrest-repo-config' does not exist. Unable to set S3 env vars "+
-				"for pgBackRest", cluster.Name)
-			return ""
-		}
-
-		type keyData struct {
-			Key       string `yaml:"aws-s3-key"`
-			KeySecret string `yaml:"aws-s3-key-secret"`
-		}
-		clusterKeyData := keyData{}
-		pgoKeyData := keyData{}
-
-		err = yaml.Unmarshal(secret.Data["aws-s3-credentials.yaml"], &clusterKeyData)
-		if err != nil {
-			log.Error(err.Error())
-			return ""
-		}
-
-		// if key or key secret no inlcuded in cluster secret, check global secret
-		if clusterKeyData.Key == "" || clusterKeyData.KeySecret == "" {
-			secret, secretExists, err := kubeapi.GetSecret(clientset, "pgo-backrest-repo-config",
-				PgoNamespace)
-			if err != nil {
-				log.Error(err.Error())
-				return ""
-			} else if !secretExists {
-				log.Errorf("Secret 'pgo-backrest-repo-config' does not exist. Unable to set S3 env vars " +
-					"for pgBackRest")
-				return ""
-			}
-			err = yaml.Unmarshal(secret.Data["aws-s3-credentials.yaml"], &pgoKeyData)
-			if err != nil {
-				log.Error(err.Error())
-				return ""
-			}
-		}
-
-		// set the key and key secret using either the parameters from the cluster spec,
-		// or if not present, the parameters from pgo.yaml
-		if clusterKeyData.Key != "" {
-			s3EnvVars.PgbackrestS3Key = clusterKeyData.Key
-		} else if pgoKeyData.Key != "" {
-			s3EnvVars.PgbackrestS3Key = pgoKeyData.Key
-		}
-		if clusterKeyData.KeySecret != "" {
-			s3EnvVars.PgbackrestS3KeySecret = clusterKeyData.KeySecret
-		} else if pgoKeyData.Key != "" {
-			s3EnvVars.PgbackrestS3KeySecret = pgoKeyData.KeySecret
-		}
-
-		var b bytes.Buffer
-		err = config.PgbackrestS3EnvVarsTemplate.Execute(&b, s3EnvVars)
-		if err != nil {
-			log.Error(err.Error())
-			return ""
-		}
-
-		return b.String()
+	if !strings.Contains(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], "s3") {
+		return ""
 	}
-	return ""
+
+	// determine the secret for getting the credentials for using S3 as a
+	// pgBackRest repository. If we can't do that, then we can't move on
+	if _, err := util.GetS3CredsFromBackrestRepoSecret(clientset, cluster.Namespace, cluster.Name); err != nil {
+		return ""
+	}
+
+	// populate the S3 bucket, endpoint and region using either the values in the pgcluster
+	// spec (if present), otherwise populate using the values from the pgo.yaml config file
+	s3EnvVars := PgbackrestS3EnvVarsTemplateFields{
+		PgbackrestS3Key:        util.BackRestRepoSecretKeyAWSS3KeyAWSS3Key,
+		PgbackrestS3KeySecret:  util.BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret,
+		PgbackrestS3SecretName: fmt.Sprintf("%s-%s", cluster.Name, config.LABEL_BACKREST_REPO_SECRET),
+	}
+
+	if cluster.Spec.BackrestS3Bucket != "" {
+		s3EnvVars.PgbackrestS3Bucket = cluster.Spec.BackrestS3Bucket
+	} else {
+		s3EnvVars.PgbackrestS3Bucket = Pgo.Cluster.BackrestS3Bucket
+	}
+
+	if cluster.Spec.BackrestS3Endpoint != "" {
+		s3EnvVars.PgbackrestS3Endpoint = cluster.Spec.BackrestS3Endpoint
+	} else {
+		s3EnvVars.PgbackrestS3Endpoint = Pgo.Cluster.BackrestS3Endpoint
+	}
+
+	if cluster.Spec.BackrestS3Region != "" {
+		s3EnvVars.PgbackrestS3Region = cluster.Spec.BackrestS3Region
+	} else {
+		s3EnvVars.PgbackrestS3Region = Pgo.Cluster.BackrestS3Region
+	}
+
+	doc := bytes.Buffer{}
+
+	if err := config.PgbackrestS3EnvVarsTemplate.Execute(&doc, s3EnvVars); err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	return doc.String()
 }
 
 // UpdatePGHAConfigInitFlag sets the value for the "init" setting in the PGHA configMap for the
