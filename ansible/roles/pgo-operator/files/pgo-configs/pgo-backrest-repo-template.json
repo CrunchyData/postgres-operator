@@ -45,32 +45,41 @@
                         "protocol": "TCP"
                     }],
                     {{.ContainerResources }}
-                    "env": [{
-            {{.PgbackrestS3EnvVars}}
+                    "env": [
+                      {{.PgbackrestS3EnvVars}}
+                      {
                         "name": "PGBACKREST_STANZA",
                         "value": "{{.PgbackrestStanza}}"
-                    }, {
+                      },
+                      {
                         "name": "SSHD_PORT",
                         "value": "{{.SshdPort}}"
-                    }, {
+                      },
+                      {
                         "name": "PGBACKREST_DB_PATH",
                         "value": "{{.PgbackrestDBPath}}"
-                    }, {
+                      },
+                      {
                         "name": "PGBACKREST_REPO_PATH",
                         "value": "{{.PgbackrestRepoPath}}"
-                    }, {
+                      },
+                      {
                         "name": "PGBACKREST_PG1_PORT",
                         "value": "{{.PgbackrestPGPort}}"
-                    }, {
+                      },
+                      {
                         "name": "PGBACKREST_LOG_PATH",
                         "value": "/tmp"
-                    }, {
+                      },
+                      {
                         "name": "PGBACKREST_PG1_SOCKET_PATH",
                         "value": "/tmp"
-                    }, {
+                      },
+                      {
                         "name": "PGBACKREST_DB_HOST",
                         "value": "{{.PGbackrestDBHost}}"
-                    }],
+                      }
+                    ],
                     "volumeMounts": [{
                         "name": "sshd",
                         "mountPath": "/sshd",
