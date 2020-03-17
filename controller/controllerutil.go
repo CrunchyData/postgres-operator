@@ -1,7 +1,7 @@
 package controller
 
 /*
-Copyright 2017 - 2020 Crunchy Data Solutions, Inc.
+Copyright 2020 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -23,27 +23,6 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// SetClusterInitializedStatus sets the status of a pgcluster CR to indicate that it has been
-// initialized.  This is specifically done by patching the status of the pgcluster CR with the
-// proper initialization status.
-func SetClusterInitializedStatus(restclient *rest.RESTClient, clusterName,
-	namespace string) error {
-
-	cluster := crv1.Pgcluster{}
-	if _, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName,
-		namespace); err != nil {
-		log.Error(err)
-		return err
-	}
-	message := "Cluster has been initialized"
-	if err := kubeapi.PatchpgclusterStatus(restclient, crv1.PgclusterStateInitialized, message,
-		&cluster, namespace); err != nil {
-		log.Error(err)
-		return err
-	}
-
-	return nil
-}
 
 // InitializeReplicaCreation initializes the creation of replicas for a cluster.  For a regular
 // (i.e. non-standby) cluster this is called following the creation of the initial cluster backup,
@@ -74,5 +53,27 @@ func InitializeReplicaCreation(restclient *rest.RESTClient, clusterName,
 			return err
 		}
 	}
+	return nil
+}
+
+// SetClusterInitializedStatus sets the status of a pgcluster CR to indicate that it has been
+// initialized.  This is specifically done by patching the status of the pgcluster CR with the
+// proper initialization status.
+func SetClusterInitializedStatus(restclient *rest.RESTClient, clusterName,
+	namespace string) error {
+
+	cluster := crv1.Pgcluster{}
+	if _, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName,
+		namespace); err != nil {
+		log.Error(err)
+		return err
+	}
+	message := "Cluster has been initialized"
+	if err := kubeapi.PatchpgclusterStatus(restclient, crv1.PgclusterStateInitialized, message,
+		&cluster, namespace); err != nil {
+		log.Error(err)
+		return err
+	}
+
 	return nil
 }

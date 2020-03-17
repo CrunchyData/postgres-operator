@@ -100,7 +100,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns, pgouser string) msg
 // over to
 // pgo failover mycluster --query
 func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
-	var err error
+
 	response := msgs.QueryFailoverResponse{
 		Results: make([]msgs.FailoverTargetSpec, 0),
 		Status:  msgs.Status{Code: msgs.Ok, Msg: ""},
@@ -116,9 +116,7 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 	log.Debugf("query failover called for %s", name)
 
 	// indicate in the response whether or not a standby cluster
-	if cluster.Spec.Standby {
-		response.Standby = true
-	}
+	response.Standby = cluster.Spec.Standby
 
 	var nodes []string
 

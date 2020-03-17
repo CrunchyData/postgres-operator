@@ -276,9 +276,7 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 	}
 
 	// indicate in the response whether or not a standby cluster
-	if cluster.Spec.Standby {
-		response.Standby = true
-	}
+	response.Standby = cluster.Spec.Standby
 
 	// if there are no results, return the response as is
 	if len(replicationStatusResponse.Instances) == 0 {
@@ -427,6 +425,7 @@ func ScaleDown(deleteData, shutdown bool, clusterName, replicaName,
 		response.Status.Code = msgs.Error
 		response.Status.Msg = fmt.Sprintf("Unable to find replica with name %s",
 			replicaName)
+		return response
 	}
 
 	//create the rmdata task which does the cleanup

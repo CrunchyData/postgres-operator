@@ -1,7 +1,7 @@
 package job
 
 /*
-Copyright 2017 - 2020 Crunchy Data Solutions, Inc.
+Copyright 2019 - 2020 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -46,6 +46,7 @@ func publishBackupComplete(clusterName, clusterIdentifier, username, backuptype,
 	}
 
 }
+
 func publishRestoreComplete(clusterName, identifier, username, namespace string) {
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
