@@ -188,7 +188,6 @@ func (c *Controller) processNextItem() bool {
 // onAdd is called when a pgtask is added
 func (c *Controller) onAdd(obj interface{}) {
 	task := obj.(*crv1.Pgtask)
-	//	log.Debugf("[Controller] onAdd ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
 
 	//handle the case of when the operator restarts, we do not want
 	//to process pgtasks already processed
@@ -213,8 +212,6 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 // onDelete is called when a pgtask is deleted
 func (c *Controller) onDelete(obj interface{}) {
-	//task := obj.(*crv1.Pgtask)
-	//	log.Debugf("[Controller] onDelete ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
 }
 
 func (c *Controller) SetupWatch(ns string) {

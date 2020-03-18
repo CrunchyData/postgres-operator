@@ -44,6 +44,10 @@ var (
 	DisableStandby bool
 	// EnableStandby can be used to enable standby mode in an existing cluster
 	EnableStandby bool
+	// Shutdown is used to indicate that the cluster should be shutdown
+	Shutdown bool
+	// Startup is used to indicate that the cluster should be started (assuming it is shutdown)
+	Startup bool
 )
 
 func init() {
@@ -64,6 +68,10 @@ func init() {
 		"Disables standby mode if enabled in the cluster(s) specified.")
 	UpdateClusterCmd.Flags().BoolVarP(&EnableStandby, "enable-standby", "", false,
 		"Enables standby mode in the cluster(s) specified.")
+	UpdateClusterCmd.Flags().BoolVar(&Startup, "startup", false, "Restart the database cluster if it "+
+		"is currently shutdown.")
+	UpdateClusterCmd.Flags().BoolVar(&Shutdown, "shutdown", false, "Shutdown the database "+
+		"cluster if it is currently running.")
 	UpdatePgBouncerCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdatePgBouncerCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
 	UpdatePgBouncerCmd.Flags().BoolVar(&RotatePassword, "rotate-password", false, "Used to rotate the pgBouncer service account password. Can cause interruption of service.")

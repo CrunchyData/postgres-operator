@@ -23,4 +23,5 @@ const (
 	ANNOTATION_CLONE_PVC_SIZE            = "clone-pvc-size"
 	ANNOTATION_CLONE_SOURCE_CLUSTER_NAME = "clone-source-cluster-name"
 	ANNOTATION_CLONE_TARGET_CLUSTER_NAME = "clone-target-cluster-name"
+	ANNOTATION_PRIMARY_DEPLOYMENT        = "primary-deployment"
 )

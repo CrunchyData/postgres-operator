@@ -23,6 +23,7 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
@@ -52,19 +53,45 @@ var (
 // handlePostgresPodPromotion is responsible for handling updates to PG pods the occur as a result
 // of a failover.  Specifically, this handler is triggered when a replica has been promoted, and
 // it now has either the "promoted" or "master" role label.
-func (c *Controller) handlePostgresPodPromotion(newPod *apiv1.Pod, clusterName string) error {
+func (c *Controller) handlePostgresPodPromotion(newPod *apiv1.Pod, cluster crv1.Pgcluster) error {
 
-	if err := cleanAndCreatePostFailoverBackup(c.PodClient, c.PodClientset,
-		clusterName, newPod.Namespace); err != nil {
-		log.Error(err)
-		return err
+	if cluster.Status.State == crv1.PgclusterStateShutdown {
+		if err := c.handleStartupInit(cluster); err != nil {
+			return err
+		}
+	}
+
+	if cluster.Status.State == crv1.PgclusterStateInitialized {
+		if err := cleanAndCreatePostFailoverBackup(c.PodClient, c.PodClientset,
+			cluster.Name, newPod.Namespace); err != nil {
+			log.Error(err)
+			return err
+		}
 	}
 
 	return nil
 }
 
+// handleStartupInit is resposible for handling cluster initilization for a cluster that has been
+// restarted (after it was previously shutdown)
+func (c *Controller) handleStartupInit(cluster crv1.Pgcluster) error {
+
+	// since the cluster is just being restarted, it can just be set to initialized once the
+	// primary is ready
+	if err := controller.SetClusterInitializedStatus(c.PodClient, cluster.Name,
+		cluster.Namespace); err != nil {
+		log.Error(err)
+		return err
+	}
+
+	// now scale any replicas deployments to 1
+	clusteroperator.ScaleClusterDeployments(c.PodClientset, cluster, 1, false, true, false)
+
+	return nil
+}
+
 // handleStandbyPodPromotion is responsible for handling updates to PG pods the occur as a result
-// of disabling standby mode.  Specifically, this handler is triggered when a standy leader
+// of disabling standby mode.  Specifically, this handler is triggered when a standby leader
 // is turned into a regular leader.
 func (c *Controller) handleStandbyPromotion(newPod *apiv1.Pod, cluster crv1.Pgcluster) error {
 

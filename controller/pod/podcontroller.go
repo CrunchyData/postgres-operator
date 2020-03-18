@@ -96,10 +96,12 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	newPodLabels := newPod.GetObjectMeta().GetLabels()
 
 	//only process pods with with vendor=crunchydata label
-	if newPodLabels[config.LABEL_VENDOR] == "crunchydata" {
-		log.Debugf("Pod Controller: onUpdate processing update for pod %s in namespace %s",
-			newPod.Name, newPod.Namespace)
+	if newPodLabels[config.LABEL_VENDOR] != "crunchydata" {
+		return
 	}
+
+	log.Debugf("Pod Controller: onUpdate processing update for pod %s in namespace %s",
+		newPod.Name, newPod.Namespace)
 
 	// we only care about pods attached to a specific cluster, so if this one isn't (as identified
 	// by the presence of the 'pg-cluster' label) then return
@@ -123,11 +125,10 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// Handle the "role" label change from "replica" to "master" following a failover.  This
 	// logic is only triggered when the cluster has already been initialized, which implies
 	// a failover or switchove has ocurred.
-	if cluster.Status.State == crv1.PgclusterStateInitialized &&
-		isPromotedPostgresPod(oldPod, newPod) {
+	if isPromotedPostgresPod(oldPod, newPod) {
 		log.Debugf("Pod Controller: pod %s in namespace %s promoted, calling pod promotion "+
 			"handler", newPod.Name, newPod.Namespace)
-		if err := c.handlePostgresPodPromotion(newPod, cluster.Name); err != nil {
+		if err := c.handlePostgresPodPromotion(newPod, cluster); err != nil {
 			log.Error(err)
 			return
 		}
@@ -161,8 +162,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	}
 
 	// Handle postgresql pod updates as needed for cluster initialization
-	if cluster.Status.State != crv1.PgclusterStateInitialized &&
-		isPostgresPrimaryPod(newPod) {
+	if cluster.Status.State != crv1.PgclusterStateInitialized && isPostgresPrimaryPod(newPod) {
 		log.Debugf("Pod Controller: pg pod %s now ready in an unintialized cluster, calling "+
 			"cluster init handler", newPod.Name, newPod.Namespace)
 		if err := c.handleClusterInit(newPod, &cluster); err != nil {

@@ -22,12 +22,11 @@ import (
 	"strconv"
 
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/config"
 	log "github.com/sirupsen/logrus"
 )
 
 func ScaleCluster(httpclient *http.Client, arg string, ReplicaCount int, ContainerResources,
-	StorageConfig, NodeLabel, CCPImageTag, ServiceType string, Startup bool,
+	StorageConfig, NodeLabel, CCPImageTag, ServiceType string,
 	SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ClusterScaleResponse, error) {
 
 	var response msgs.ClusterScaleResponse
@@ -50,7 +49,6 @@ func ScaleCluster(httpclient *http.Client, arg string, ReplicaCount int, Contain
 	q.Add("ccp-image-tag", CCPImageTag)
 	q.Add("service-type", ServiceType)
 	q.Add("namespace", ns)
-	q.Add(config.LABEL_STARTUP, strconv.FormatBool(Startup))
 	req.URL.RawQuery = q.Encode()
 
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)

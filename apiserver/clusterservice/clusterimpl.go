@@ -808,7 +808,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	// finally, the user from the request and/or default user
 	userSecretSuffix := fmt.Sprintf("-%s%s", newInstance.Spec.User, crv1.UserSecretSuffix)
 	if secretName, password, err := createUserSecret(request, newInstance, userSecretSuffix, newInstance.Spec.User,
-		request.PasswordUser); err != nil {
+		request.Password); err != nil {
 		log.Error(err)
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -1408,6 +1408,21 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 
 	log.Debugf("autofail is [%t]\n", request.Autofail)
 
+	switch {
+	case request.Startup && request.Shutdown:
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf("A startup and a shutdown were requested. " +
+			"Please specify one or the other.")
+		return response
+	}
+
+	if request.Startup && request.Shutdown {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf("Both a startup and a shutdown was requested. " +
+			"Please specify one or the other")
+		return response
+	}
+
 	clusterList := crv1.PgclusterList{}
 
 	//get the clusters list
@@ -1478,6 +1493,13 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 			response.Status.Msg = "Backrest storage type 's3' must be enabled in order to enable " +
 				"standby mode"
 			return response
+		}
+
+		// if a startup or shutdown was requested then update the pgcluster spec accordingly
+		if request.Startup {
+			cluster.Spec.Shutdown = false
+		} else if request.Shutdown {
+			cluster.Spec.Shutdown = true
 		}
 
 		err = kubeapi.Updatepgcluster(apiserver.RESTClient,

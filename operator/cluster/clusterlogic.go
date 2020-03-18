@@ -21,6 +21,7 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"time"
 
@@ -490,4 +491,164 @@ func publishDeleteCluster(namespace, username, clusterName, identifier string) {
 	if err != nil {
 		log.Error(err.Error())
 	}
+}
+
+// ScaleClusterInfo contains information about a cluster obtained when scaling the various
+// deployments for a cluster.  This includes the name of the primary deployment, all replica
+// deployments, along with the names of the services enabled for the cluster.
+type ScaleClusterInfo struct {
+	PrimaryDeployment  string
+	ReplicaDeployments []string
+	Services           []string
+}
+
+// ShutdownCluster is responsible for shutting down a cluster that is currently running.  This
+// includes changing the replica count for all clusters to 0, and then updating the pgcluster
+// with a shutdown status.
+func ShutdownCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
+	cluster crv1.Pgcluster) error {
+
+	// first ensure the current primary deployment is properly recorded in the pg cluster.  This
+	// is needed to ensure the cluster can be
+	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, cluster.Name,
+		config.LABEL_PGHA_ROLE, "master")
+	pods, err := kubeapi.GetPods(clientset, selector, cluster.Namespace)
+	if err != nil {
+		return err
+	}
+	if len(pods.Items) > 1 {
+		return fmt.Errorf("Cluster Operator: Invalid number of primary pods (%d) found when "+
+			"shutting down cluster %s", len(pods.Items), cluster.Name)
+	}
+	primaryPod := pods.Items[0]
+	if cluster.Annotations == nil {
+		cluster.Annotations = make(map[string]string)
+	}
+	cluster.Annotations[config.ANNOTATION_PRIMARY_DEPLOYMENT] =
+		primaryPod.Labels[config.LABEL_DEPLOYMENT_NAME]
+
+	if err := kubeapi.Updatepgcluster(restclient, &cluster, cluster.Name,
+		cluster.Namespace); err != nil {
+		return fmt.Errorf("Cluster Operator: Unable to update the current primary deployment "+
+			"in the pgcluster when shutting down cluster %s", cluster.Name)
+	}
+
+	// disable autofailover to prevent failovers while shutting down deployments
+	if err := util.ToggleAutoFailover(clientset, false, cluster.Labels[config.LABEL_PGHA_SCOPE],
+		cluster.Namespace); err != nil {
+		return fmt.Errorf("Cluster Operator: Unable to toggle autofailover when shutting "+
+			"down cluster %s", cluster.Name)
+	}
+
+	clusterInfo, err := ScaleClusterDeployments(clientset, cluster, 0, true, true, true)
+	if err != nil {
+		return err
+	}
+	message := fmt.Sprintf("Database shutdown along with the following services: %s",
+		clusterInfo.Services)
+	if err := kubeapi.PatchpgclusterStatus(restclient, crv1.PgclusterStateShutdown,
+		message, &cluster, cluster.Namespace); err != nil {
+		return err
+	}
+
+	if err := kubeapi.DeleteConfigMap(clientset, fmt.Sprintf("%s-leader",
+		cluster.Labels[config.LABEL_PGHA_SCOPE]), cluster.Namespace); err != nil {
+		return err
+	}
+
+	publishClusterShutdown(cluster)
+
+	return nil
+}
+
+// StartupCluster is responsible for starting a cluster that was previsouly shutdown.  This
+// includes changing the replica count for all clusters to 1, and then updating the pgcluster
+// with a shutdown status.
+func StartupCluster(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) error {
+
+	log.Debugf("Cluster Operator: starting cluster %s", cluster.Name)
+
+	// ensure autofailover is enabled to ensure proper startup of the cluster
+	if err := util.ToggleAutoFailover(clientset, true, cluster.Labels[config.LABEL_PGHA_SCOPE],
+		cluster.Namespace); err != nil {
+		return fmt.Errorf("Cluster Operator: Unable to toggle autofailover when shutting "+
+			"down cluster %s", cluster.Name)
+	}
+
+	// Scale up the primary and supporting services, but not the replicas.  Replicas will be
+	// scaled up after the primary is ready.  This ensures the primary at the time of shutdown
+	// is the primary when the cluster comes back online.
+	clusterInfo, err := ScaleClusterDeployments(clientset, cluster, 1, true, false, true)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("Cluster Operator: primary deployment %s started for cluster %s along with "+
+		"services %v.  The following replicas will be started once the primary has initialized: "+
+		"%v", clusterInfo.PrimaryDeployment, cluster.Name, clusterInfo.Services,
+		clusterInfo.ReplicaDeployments)
+
+	return nil
+}
+
+// ScaleClusterDeployments scales all deployments for a cluster to the number of replicas
+// specified using the 'replicas' parameter.  This is typically used to scale-up or down the
+// primary deployment and any supporting services (pgBackRest and pgBouncer) when shutting down
+// or starting up the cluster due to a scale or scale-down request.
+func ScaleClusterDeployments(clientset *kubernetes.Clientset, cluster crv1.Pgcluster, replicas int,
+	scalePrimary, scaleReplicas, scaleServices bool) (clusterInfo ScaleClusterInfo, err error) {
+
+	clusterName := cluster.Name
+	namespace := cluster.Namespace
+	// Get *all* remaining deployments for the cluster.  This includes the deployment for the
+	// primary, any replicas, the pgBackRest repo and any optional services (e.g. pgBouncer)
+	var deploymentList *v1.DeploymentList
+	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, clusterName)
+	if deploymentList, err = kubeapi.GetDeployments(clientset, selector,
+		namespace); err != nil {
+		return
+	}
+
+	for _, deployment := range deploymentList.Items {
+
+		// determine if the deployment is a primary, replica, or supporting service (pgBackRest,
+		// pgBouncer, etc.)
+		switch {
+		case deployment.Name == cluster.Labels[config.LABEL_CURRENT_PRIMARY]:
+			clusterInfo.PrimaryDeployment = deployment.Name
+			// if not scaling the primary simply move on to the next deployment
+			if !scalePrimary {
+				continue
+			}
+		case deployment.Labels[config.LABEL_PGBOUNCER] == "true":
+			clusterInfo.Services = append(clusterInfo.Services, "pgBouncer")
+			// if not scaling services simply move on to the next deployment
+			if !scaleServices {
+				continue
+			}
+		case deployment.Labels[config.LABEL_PGO_BACKREST_REPO] == "true":
+			// if not scaling services simply move on to the next deployment
+			if !scaleServices {
+				continue
+			}
+			clusterInfo.Services = append(clusterInfo.Services, "pgBackRest")
+		default:
+			clusterInfo.ReplicaDeployments = append(clusterInfo.ReplicaDeployments,
+				deployment.Name)
+			// if not scaling replicas simply move on to the next deployment
+			if !scaleReplicas {
+				continue
+			}
+		}
+
+		log.Debugf("scaling deployment %s to %d for cluster %s", deployment.Name, replicas,
+			clusterName)
+
+		// Scale the deployment accoriding to the number of replicas specified.  If an error is
+		// encountered, log it and move on to scaling the next deployment.
+		if err = kubeapi.ScaleDeployment(clientset, deployment, replicas); err != nil {
+			log.Error("Error scaling deployment %s to %d: %w", deployment.Name, replicas, err)
+		}
+	}
+	return
 }

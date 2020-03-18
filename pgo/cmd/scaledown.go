@@ -26,9 +26,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Shutdown is used to indicate that the cluster should be shutdown when scaling down
-var Shutdown bool
-
 var scaledownCmd = &cobra.Command{
 	Use:   "scaledown",
 	Short: "Scale down a PostgreSQL cluster",
@@ -51,14 +48,6 @@ var scaledownCmd = &cobra.Command{
 			if Query {
 				queryCluster(args, Namespace)
 			} else {
-				if Target == "" && !Shutdown {
-					fmt.Println(`Error: --target or --shutdown must be specified`)
-					os.Exit(2)
-				}
-				if Shutdown {
-					fmt.Println("The database and all supporting services in the cluster will " +
-						"now be shut down")
-				}
 				if util.AskForConfirmation(NoPrompt, "") {
 				} else {
 					fmt.Println("Aborting...")
@@ -81,8 +70,6 @@ func init() {
 	scaledownCmd.Flags().BoolVar(&KeepData, "keep-data", false,
 		"Causes data for the scale down replica to *not* be deleted")
 	scaledownCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-	scaledownCmd.Flags().BoolVar(&Shutdown, "shutdown", false, "Removes all replicas and shuts "+
-		"down the database cluster.")
 }
 
 // queryCluster is a helper function that returns information about the
@@ -146,7 +133,7 @@ func scaleDownCluster(clusterName, ns string) {
 	deleteData := !KeepData && DeleteData
 
 	response, err := api.ScaleDownCluster(httpclient, clusterName, Target, deleteData,
-		Shutdown, &SessionCredentials, ns)
+		&SessionCredentials, ns)
 
 	if err != nil {
 		fmt.Println("Error: ", err.Error())

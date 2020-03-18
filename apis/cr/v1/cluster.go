@@ -76,6 +76,7 @@ type PgclusterSpec struct {
 	TLS                TLSSpec                  `json:"tls"`
 	TLSOnly            bool                     `json:"tlsOnly"`
 	Standby            bool                     `json:"standby"`
+	Shutdown           bool                     `json:"shutdown"`
 }
 
 // PgclusterList is the CRD that defines a Crunchy PG Cluster List
