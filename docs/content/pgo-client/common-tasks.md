@@ -894,8 +894,25 @@ as a generic Secret, and note that the following requirements **must** be met:
 your PostgreSQL cluster
 - The `name` of the key that is holding the CA **must** be `ca.crt`
 
+There are optional settings for setting up the CA secret:
+
+- You can pass in a certificate revocation list (CRL) for the CA secret by
+passing in the CRL using the `ca.crl` key name in the Secret.
+
+For example, to create a CA Secret with the trusted CA to use for the PostgreSQL
+clusters, you could execute the following command:
+
 ```shell
-kubectl create secret generic postgresql-ca --from-file=ca.crt=/patho/to/ca.crt
+kubectl create secret generic postgresql-ca --from-file=ca.crt=/path/to/ca.crt
+```
+
+To create a CA Secret that includes a CRL, you could execute the following
+command:
+
+```shell
+kubectl create secret generic postgresql-ca \
+  --from-file=ca.crt=/path/to/ca.crt \
+  --from-file=ca.crl=/path/to/ca.crl
 ```
 
 Note that you can reuse this CA Secret for other PostgreSQL clusters deployed by
@@ -908,7 +925,9 @@ a TLS Secret, and note the following requirement must be met:
 your PostgreSQL cluster
 
 ```shell
-kubectl create secret tls hacluster-tls-keypair --cert=/path/to/server.crt --key=/path/to/server.key
+kubectl create secret tls hacluster-tls-keypair \
+  --cert=/path/to/server.crt \
+  --key=/path/to/server.key
 ```
 
 Now you can create a TLS-enabled PostgreSQL cluster!
@@ -920,7 +939,8 @@ accept both TLS and non-TLS connections, execute the following command:
 
 ```shell
 pgo create cluster hacluster-tls \
-  --server-ca-secret=hacluster-tls-keypair --server-tls-secret=postgresql-ca
+  --server-ca-secret=hacluster-tls-keypair \
+  --server-tls-secret=postgresql-ca
 ```
 
 Including the `--server-ca-secret` and `--server-tls-secret` flags automatically
