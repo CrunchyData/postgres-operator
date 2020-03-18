@@ -130,7 +130,8 @@ type PodAntiAffinitySpec struct {
 type TLSSpec struct {
 	// CASecret contains the name of the secret to use as the trusted CA for the
 	// TLSSecret
-	// This is our own format and should contain one key: "ca.crt"
+	// This is our own format and should contain at least one key: "ca.crt"
+	// It can also contain a key "ca.crl" which is the certificate revocation list
 	CASecret string `json:"caSecret"`
 	// TLSSecret contains the name of the secret to use that contains the TLS
 	// keypair for the PostgreSQL server
