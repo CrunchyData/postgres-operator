@@ -862,6 +862,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 
 	// assign the cluster information to the result
 	resp.Result.Name = newInstance.Spec.Name
+	resp.Result.Namespace = newInstance.Spec.Namespace
 
 	// and return!
 	return resp

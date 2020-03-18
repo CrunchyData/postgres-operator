@@ -118,6 +118,8 @@ type CreateClusterDetail struct {
 	Database string
 	// Name is the name of the PostgreSQL cluster
 	Name string
+	// Namespace is the name of the namespace where the cluster was created.
+	Namespace string
 	// Users contain an array of users along with their credentials
 	Users []CreateClusterDetailUser
 	// WorkflowID matches up to the WorkflowID of the cluster
