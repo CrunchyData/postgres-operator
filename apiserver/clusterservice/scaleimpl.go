@@ -67,9 +67,6 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 		return response
 	}
 
-	var rc int
-	rc, err = strconv.Atoi(replicaCount)
-
 	spec := crv1.PgreplicaSpec{}
 
 	//get the resource-config
@@ -141,6 +138,8 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 
 	spec.ClusterName = cluster.Spec.Name
 
+	var rc int
+	rc, err = strconv.Atoi(replicaCount)
 	if err != nil {
 		log.Error(err.Error())
 		response.Status.Code = msgs.Error
