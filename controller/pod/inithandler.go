@@ -59,13 +59,9 @@ func (c *Controller) handleClusterInit(newPod *apiv1.Pod, cluster *crv1.Pgcluste
 		log.Debugf("Pod Controller: restore detected during cluster %s init, calling restore "+
 			"handler", clusterName)
 		return c.handleRestoreInit(cluster)
-	case cluster.Status.State == crv1.PgclusterStateShutdown:
-		log.Debugf("Pod Controller: shutdown state detected during cluster %s init, calling scale "+
-			"handler", clusterName)
-		return c.handleScaleInit(cluster)
 	case cluster.Spec.Standby:
-		log.Debugf("Pod Controller: standby cluster detected during cluster %s init, calling standby "+
-			"handler", clusterName)
+		log.Debugf("Pod Controller: standby cluster detected during cluster %s init, calling "+
+			"standby handler", clusterName)
 		return c.handleStandbyInit(cluster)
 	default:
 		log.Debugf("Pod Controller: calling bootstrap init for cluster %s", clusterName)
@@ -126,24 +122,6 @@ func (c *Controller) handleRestoreInit(cluster *crv1.Pgcluster) error {
 	return nil
 }
 
-// handleScaleInit is resposible for handling cluster initilization for a cluster that has been
-// restarted by scaling up the cluster (after it was shutdown by scaling down the cluster)
-func (c *Controller) handleScaleInit(cluster *crv1.Pgcluster) error {
-
-	// since the cluster is just being restarted, it can just be set to initialized once the
-	// primary is ready
-	if err := controller.SetClusterInitializedStatus(c.PodClient, cluster.Name,
-		cluster.Namespace); err != nil {
-		log.Error(err)
-		return err
-	}
-
-	// now initialize the creation of any replica
-	controller.InitializeReplicaCreation(c.PodClient, cluster.Name, cluster.Namespace)
-
-	return nil
-}
-
 // handleBootstrapInit is resposible for handling cluster initilization (e.g. initiating pgBackRest
 // stanza creation) when a the database container within the primary PG Pod for a new PG cluster
 // enters a ready status
@@ -192,6 +170,9 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	//publish event for cluster complete
 	publishClusterComplete(clusterName, namespace, cluster)
 	//
+
+	// now scale any replicas deployments to 1
+	clusteroperator.ScaleClusterDeployments(c.PodClientset, *cluster, 1, false, true, false)
 
 	// Proceed with stanza-creation of this is not a standby cluster, or if its
 	// a standby cluster that does not have "s3" storage only enabled.

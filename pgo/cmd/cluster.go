@@ -238,7 +238,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.PasswordLength = PasswordLength
 	r.PasswordSuperuser = PasswordSuperuser
 	r.PasswordReplication = PasswordReplication
-	r.PasswordUser = PasswordUser
+	r.Password = Password
 	r.SecretFrom = SecretFrom
 	r.UserLabels = UserLabels
 	r.Policies = PoliciesFlag
@@ -387,6 +387,8 @@ func updateCluster(args []string, ns string) {
 	r.Namespace = ns
 	r.AllFlag = AllFlag
 	r.Clustername = args
+	r.Startup = Startup
+	r.Shutdown = Shutdown
 
 	// check to see if EnableAutofailFlag or DisableAutofailFlag is set. If so,
 	// set a value for Autofail

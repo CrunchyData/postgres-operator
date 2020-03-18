@@ -168,6 +168,16 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	newcluster := newObj.(*crv1.Pgcluster)
 	//	log.Debugf("pgcluster ns=%s %s onUpdate", newcluster.ObjectMeta.Namespace, newcluster.ObjectMeta.Name)
 
+	// if the 'shutdown' parameter in the pgcluster update shows that the cluster should be either
+	// shutdown or started but its current status does not properly reflect that it is, then
+	// proceed with the logic needed to either shutdown or start the cluster
+	if newcluster.Spec.Shutdown && newcluster.Status.State != crv1.PgclusterStateShutdown {
+		clusteroperator.ShutdownCluster(c.PgclusterClientset, c.PgclusterClient, *newcluster)
+	} else if !newcluster.Spec.Shutdown &&
+		newcluster.Status.State != crv1.PgclusterStateInitialized {
+		clusteroperator.StartupCluster(c.PgclusterClientset, *newcluster)
+	}
+
 	// check to see if the "autofail" label on the pgcluster CR has been changed from either true to false, or from
 	// false to true.  If it has been changed to false, autofail will then be disabled in the pg cluster.  If has
 	// been changed to true, autofail will then be enabled in the pg cluster
@@ -192,9 +202,15 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 	// handle standby being enabled and disabled for the cluster
 	if oldcluster.Spec.Standby && !newcluster.Spec.Standby {
-		clusteroperator.DisableStandby(c.PgclusterClientset, *newcluster)
+		if err := clusteroperator.DisableStandby(c.PgclusterClientset, *newcluster); err != nil {
+			log.Error(err)
+			return
+		}
 	} else if !oldcluster.Spec.Standby && newcluster.Spec.Standby {
-		clusteroperator.EnableStandby(c.PgclusterClientset, *newcluster)
+		if err := clusteroperator.EnableStandby(c.PgclusterClientset, *newcluster); err != nil {
+			log.Error(err)
+			return
+		}
 	}
 }
 

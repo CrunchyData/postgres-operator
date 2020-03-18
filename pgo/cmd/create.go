@@ -67,9 +67,6 @@ var BackrestRepoPath string
 // Standby determines whether or not the cluster should be created as a standby cluster
 var Standby bool
 
-// PasswordUser specifies the password for the standard user created during cluster creation
-var PasswordUser string
-
 // PasswordSuperuser specifies the password for the cluster superuser
 var PasswordSuperuser string
 
@@ -263,10 +260,10 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster.")
 	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "", false, "Adds the crunchy-collect container to the database pod.")
 	createClusterCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the primary database. If not set, any node is used.")
-	createClusterCmd.Flags().StringVarP(&PasswordUser, "user-password", "", "", "The password to use for standard user account created during cluster initialization.")
-	createClusterCmd.Flags().StringVarP(&PasswordSuperuser, "superuser-password", "", "", "The password to use for the PostgreSQL superuser.")
-	createClusterCmd.Flags().StringVarP(&PasswordReplication, "replication-password", "", "", "The password to use for the PostgreSQL replication user.")
+	createClusterCmd.Flags().StringVarP(&Password, "password", "", "", "The password to use for standard user account created during cluster initialization.")
 	createClusterCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 0, "If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.")
+	createClusterCmd.Flags().StringVarP(&PasswordSuperuser, "password-superuser", "", "", "The password to use for the PostgreSQL superuser.")
+	createClusterCmd.Flags().StringVarP(&PasswordReplication, "password-replication", "", "", "The password to use for the PostgreSQL replication user.")
 	createClusterCmd.Flags().StringVarP(&BackrestPVCSize, "pgbackrest-pvc-size", "", "",
 		`The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "local" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
 	createClusterCmd.Flags().StringVarP(&BackrestRepoPath, "pgbackrest-repo-path", "", "",

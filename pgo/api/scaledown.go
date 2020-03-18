@@ -27,7 +27,7 @@ import (
 )
 
 func ScaleDownCluster(httpclient *http.Client, clusterName, ScaleDownTarget string,
-	DeleteData, Shutdown bool, SessionCredentials *msgs.BasicAuthCredentials,
+	DeleteData bool, SessionCredentials *msgs.BasicAuthCredentials,
 	ns string) (msgs.ScaleDownResponse, error) {
 
 	var response msgs.ScaleDownResponse
@@ -45,7 +45,6 @@ func ScaleDownCluster(httpclient *http.Client, clusterName, ScaleDownTarget stri
 	q.Add(config.LABEL_REPLICA_NAME, ScaleDownTarget)
 	q.Add(config.LABEL_DELETE_DATA, strconv.FormatBool(DeleteData))
 	q.Add("namespace", ns)
-	q.Add(config.LABEL_SHUTDOWN, strconv.FormatBool(Shutdown))
 	req.URL.RawQuery = q.Encode()
 
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)

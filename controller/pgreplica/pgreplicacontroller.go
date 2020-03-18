@@ -161,7 +161,6 @@ func (c *Controller) processNextItem() bool {
 // onAdd is called when a pgreplica is added
 func (c *Controller) onAdd(obj interface{}) {
 	replica := obj.(*crv1.Pgreplica)
-	//	log.Debugf("[Controller] OnAdd ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
 
 	//handle the case of pgreplicas being processed already and
 	//when the operator restarts

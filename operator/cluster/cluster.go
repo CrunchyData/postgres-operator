@@ -407,3 +407,30 @@ func publishClusterCreateFailure(cl *crv1.Pgcluster, errorMsg string) {
 		log.Error(err.Error())
 	}
 }
+
+func publishClusterShutdown(cluster crv1.Pgcluster) error {
+
+	clusterName := cluster.Name
+
+	//capture the cluster creation event
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventShutdownClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace: cluster.Namespace,
+			Username:  cluster.Spec.UserLabels[config.LABEL_PGOUSER],
+			Topic:     topics,
+			Timestamp: time.Now(),
+			EventType: events.EventShutdownCluster,
+		},
+		Clustername: clusterName,
+	}
+
+	if err := events.Publish(f); err != nil {
+		log.Error(err.Error())
+		return err
+	}
+
+	return nil
+}

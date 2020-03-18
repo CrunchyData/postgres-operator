@@ -143,66 +143,40 @@ func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) erro
 	if err != nil {
 		log.Error(err)
 		return fmt.Errorf("Unable to get remaining PVCs while enabling standby mode: %w", err)
-	} else if len(remainingPVC.Items) > 2 {
-		return fmt.Errorf("Unexpected number of PVCs (%d) found while cleaning up PVCs to enable "+
-			"standby mode for cluster %s", len(remainingPVC.Items), clusterName)
 	}
 
-	var primaryPVCName string
-	var backrestRepoPVCName string
-	for _, pvc := range remainingPVC.Items {
-		if pvc.Name == fmt.Sprintf(backrest.BackrestRepoPVCName, clusterName) {
-			backrestRepoPVCName = pvc.Name
-			continue
+	for _, currPVC := range remainingPVC.Items {
+
+		// delete the original PVC and wait for it to be removed
+		if err := kubeapi.DeletePVC(clientset, currPVC.Name, namespace); !kerrors.IsNotFound(err) &&
+			err != nil {
+			log.Error(err)
 		}
-		primaryPVCName = pvc.Name
+		if err := kubeapi.IsPVCDeleted(clientset, time.Second*60, currPVC.Name,
+			namespace); err != nil {
+			log.Error(err)
+			return err
+		}
+
+		// determine whether the PVC is a backrest repo, primary or replica, and then re-create
+		// using the proper storage spec as defined in pgo.yaml
+		storageSpec := crv1.PgStorageSpec{}
+		if currPVC.Name == cluster.Labels[config.ANNOTATION_PRIMARY_DEPLOYMENT] {
+			storageSpec = cluster.Spec.PrimaryStorage
+		} else if currPVC.Name == fmt.Sprintf(backrest.BackrestRepoPVCName, clusterName) {
+			storageSpec = cluster.Spec.BackrestStorage
+		} else {
+			storageSpec = cluster.Spec.ReplicaStorage
+		}
+		if err := pvc.Create(clientset, currPVC.Name, clusterName, &storageSpec,
+			namespace); err != nil {
+			log.Error(err)
+			return fmt.Errorf("Unable to create primary PVC while enabling standby mode: %w", err)
+		}
 	}
 
-	// try to delete both PVCs, continuing if the PVC is not found (e.g. if previously deleted)
-	if err := kubeapi.DeletePVC(clientset, primaryPVCName, namespace); !kerrors.IsNotFound(err) &&
-		err != nil {
-		log.Error(err)
-	}
-	if err := kubeapi.DeletePVC(clientset, backrestRepoPVCName, namespace); !kerrors.IsNotFound(err) &&
-		err != nil {
-		log.Error(err)
-	}
-
-	log.Debugf("Enable standby: deleted the following PVCs for cluster %s: %v", clusterName,
-		[]string{primaryPVCName, backrestRepoPVCName})
-
-	timeout := time.Second * 60
-	// Now wait for the PVCs to be deleted
-	if err := kubeapi.IsPVCDeleted(clientset, timeout, primaryPVCName, namespace); err != nil {
-		log.Error(err)
-		return err
-	}
-
-	// Now wait for the PVCs to be deleted
-	if err := kubeapi.IsPVCDeleted(clientset, timeout, backrestRepoPVCName,
-		namespace); err != nil {
-		log.Error(err)
-		return err
-	}
-
-	// Now recreate the PVCs
-	primaryStorage := cluster.Spec.PrimaryStorage
-	backrestRepostorage := cluster.Spec.BackrestStorage
-
-	if err := pvc.Create(clientset, primaryPVCName, clusterName, &primaryStorage,
-		namespace); err != nil {
-		log.Error(err)
-		return fmt.Errorf("Unable to create primary PVC while enabling standby mode: %w", err)
-	}
-
-	if err := pvc.Create(clientset, backrestRepoPVCName, clusterName, &backrestRepostorage,
-		namespace); err != nil {
-		log.Error(err)
-		return fmt.Errorf("Unable to create primary PVC while enabling standby mode: %w", err)
-	}
-
-	log.Debugf("Enable standby: re-created primary PVC %s and pgBackRest repo PVC %s for cluster "+
-		"%s", primaryPVCName, backrestRepoPVCName, clusterName)
+	log.Debugf("Enable standby: re-created PVC's %v for cluster %s", remainingPVC.Items,
+		clusterName)
 
 	// find the "config" configMap created by Patroni
 	dcsConfigMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-config"
@@ -240,7 +214,7 @@ func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) erro
 		return err
 	}
 
-	leaderConfigMapName := clusterName + "-leader"
+	leaderConfigMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-leader"
 	// Delete the "leader" configMap
 	if err = kubeapi.DeleteConfigMap(clientset, leaderConfigMapName, namespace); err != nil &&
 		!kerrors.IsNotFound(err) {

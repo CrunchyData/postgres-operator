@@ -50,7 +50,7 @@ type CreateClusterRequest struct {
 	PasswordLength      int
 	PasswordSuperuser   string
 	PasswordReplication string
-	PasswordUser        string
+	Password            string
 	SecretFrom          string
 	UserLabels          string
 	Tablespaces         []ClusterTablespaceDetail
@@ -271,6 +271,8 @@ type UpdateClusterRequest struct {
 	AllFlag       bool
 	Autofail      UpdateClusterAutofailStatus
 	Standby       UpdateClusterStandbyStatus
+	Startup       bool
+	Shutdown      bool
 }
 
 // UpdateClusterResponse ...

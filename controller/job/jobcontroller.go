@@ -76,13 +76,14 @@ func (c *Controller) watchJobs(ctx context.Context) error {
 func (c *Controller) onAdd(obj interface{}) {
 
 	job := obj.(*apiv1.Job)
+	labels := job.GetObjectMeta().GetLabels()
 
 	//only process jobs with with vendor=crunchydata label
-	labels := job.GetObjectMeta().GetLabels()
-	if labels[config.LABEL_VENDOR] == "crunchydata" {
-		log.Debugf("Job Controller: onAdd ns=%s jobName=%s", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink)
+	if labels[config.LABEL_VENDOR] != "crunchydata" {
 		return
 	}
+
+	log.Debugf("Job Controller: onAdd ns=%s jobName=%s", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink)
 }
 
 // onUpdate is called when a postgresql operator job is created and an associated update event is
@@ -94,11 +95,13 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	labels := job.GetObjectMeta().GetLabels()
 
 	//only process jobs with with vendor=crunchydata label
-	if labels[config.LABEL_VENDOR] == "crunchydata" {
-		log.Debugf("[Job Controller] onUpdate ns=%s %s active=%d succeeded=%d conditions=[%v]",
-			job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink, job.Status.Active, job.Status.Succeeded,
-			job.Status.Conditions)
+	if labels[config.LABEL_VENDOR] != "crunchydata" {
+		return
 	}
+
+	log.Debugf("[Job Controller] onUpdate ns=%s %s active=%d succeeded=%d conditions=[%v]",
+		job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink, job.Status.Active, job.Status.Succeeded,
+		job.Status.Conditions)
 
 	// determine determine which handler to route the update event to
 	switch {
@@ -127,13 +130,14 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 func (c *Controller) onDelete(obj interface{}) {
 
 	job := obj.(*apiv1.Job)
+	labels := job.GetObjectMeta().GetLabels()
 
 	//only process jobs with with vendor=crunchydata label
-	labels := job.GetObjectMeta().GetLabels()
-	if labels[config.LABEL_VENDOR] == "crunchydata" {
-		log.Debugf("[Job Controller] onDelete ns=%s %s", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink)
+	if labels[config.LABEL_VENDOR] != "crunchydata" {
 		return
 	}
+
+	log.Debugf("[Job Controller] onDelete ns=%s %s", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink)
 }
 
 // SetupWatch creates creates a new controller that provides event notifications when jobs are
