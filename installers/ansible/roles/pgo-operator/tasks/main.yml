@@ -194,7 +194,7 @@
           --from-file=sshd_config='{{ role_path }}/files/pgo-backrest-repo/sshd_config' \
           --from-file=aws-s3-ca.crt='{{ role_path }}/files/pgo-backrest-repo/aws-s3-ca.crt' \
           --from-literal=aws-s3-key='{{ backrest_aws_s3_key }}' \
-          --from-literal=aws-s3-key-secret='{{ backrest_aws_s3_key_secret }}' \
+          --from-literal=aws-s3-key-secret='{{ backrest_aws_s3_secret }}' \
           -n {{ pgo_operator_namespace }}
       tags:
         - install
