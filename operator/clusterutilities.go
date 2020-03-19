@@ -39,8 +39,6 @@ import (
 const AffinityInOperator = "In"
 const AFFINITY_NOTINOperator = "NotIn"
 
-const DefaultArchiveTimeout = "60"
-
 // PGHAConfigMapSuffix defines the suffix for the name of the PGHA configMap created for each PG
 // cluster
 const PGHAConfigMapSuffix = "pgha-config"
