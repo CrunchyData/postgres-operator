@@ -295,7 +295,7 @@ func AddDefaultPostgresHaConfigMap(clientset *kubernetes.Clientset, cluster *crv
 	if isInit && createDefaultPghaConf {
 		var archiveTimeout string
 
-		if _, exists := cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]; !exists {
+		if _, exists := cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]; exists {
 			archiveTimeout = cluster.Spec.UserLabels[config.LABEL_ARCHIVE_TIMEOUT]
 		} else {
 			archiveTimeout = DefaultArchiveTimeout
