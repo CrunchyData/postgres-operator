@@ -51,11 +51,10 @@ crunchy_debug='false'
 # needed by the pgo-install job. If you create these resources manually, these
 # options can be disabled. If these resource are not enabled here they must be
 # created manually
-
-# Defines the environment where the installer will run. Options are kubernetes
-# and openshift.
-# Default: kubernetes
-# pgo_installer_environment='kubernetes'
+# create_pgo_installer_namespace='false'
+# create_pgo_installer_service_account='false'
+# create_pgo_installer_clusterrolebinding='false'
+# create_pgo_installer_configmap='false'
 
 # Deploy into Openshift
 # ==================

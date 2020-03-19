@@ -1,0 +1,31 @@
+---
+- assert:
+    msg: Cannot Install PGO Client when Installing in Kubernetes
+    that:
+      - not (pgo_client_install | default(true) | bool)
+    quiet: yes
+  tags:
+    - install-container
+    - update-container
+
+- assert:
+    msg: kubernetes_in_cluster must be enabled to run the pgo-installer
+    that:
+      - kubernetes_in_cluster | default(false) | bool
+  tags:
+    - always
+
+- assert:
+      msg: use_cluster_admin must be enabled
+      that:
+       - use_cluster_admin | default(False) | bool
+  tags:
+    - always
+
+- assert:
+    msg: create_installer_namespace requires clusteradmin
+    that:
+      - use_cluster_admin | default(False) | bool
+  when: create_installer_namespace | default(False) | bool
+  tags:
+    - always

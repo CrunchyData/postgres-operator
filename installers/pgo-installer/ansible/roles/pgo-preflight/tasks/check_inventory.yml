@@ -1,0 +1,37 @@
+---
+- name: Check if mandatory inventory file variables are defined
+  fail:
+    msg: Please specify a value for variable {{ item }} in your inventory file
+  tags: always
+  when: "lookup('vars', item, default='') == ''"
+  with_items:
+    - pgo_operator_namespace
+    - pgo_installation_name
+    - pgo_admin_username
+    - pgo_admin_password
+    - pgo_admin_role_name
+    - pgo_admin_perms
+    - ccp_image_prefix
+    - ccp_image_tag
+    - pgo_image_prefix
+    - pgo_image_tag
+    - disable_auto_failover
+    - backrest
+    - badger
+    - metrics
+    - archive_mode
+    - archive_timeout
+    - db_password_age_days
+    - db_password_length
+    - create_rbac
+    - db_port
+    - db_replicas
+    - db_user
+    - backrest_storage
+    - backup_storage
+    - primary_storage
+    - replica_storage
+    - pgo_client_version
+    - pgbadgerport
+    - exporterport
+    - scheduler_timeout
