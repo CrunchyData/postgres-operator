@@ -1,0 +1,21 @@
+ARG BASEOS
+ARG BASEVER
+ARG PREFIX
+FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
+
+LABEL name="pgo-installer" \
+    summary="Crunchy PostgreSQL Operator - Installer" \
+    description="Crunchy PostgreSQL Operator - Installer"
+
+RUN yum install -y https://download.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
+ && yum -y install \
+    --setopt=skip_missing_names_on_install=False \
+    --enablerepo='rhel-7-server-ose-3.11-rpms' \
+    atomic-openshift-clients \
+    ansible \
+    which
+
+USER daemon
+
+COPY installers/ansible /ansible
+COPY installers/pgo-installer/bin/pgo-install.sh pgo-install.sh
