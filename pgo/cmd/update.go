@@ -66,7 +66,7 @@ func init() {
 	UpdateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	UpdateClusterCmd.Flags().BoolVarP(&DisableStandby, "disable-standby", "", false,
 		"Disables standby mode if enabled in the cluster(s) specified.")
-	UpdateClusterCmd.Flags().BoolVarP(&EnableStandby, "enable-standby", "", false,
+	UpdateClusterCmd.Flags().BoolVarP(&EnableStandby, "promote-standby", "", false,
 		"Enables standby mode in the cluster(s) specified.")
 	UpdateClusterCmd.Flags().BoolVar(&Startup, "startup", false, "Restart the database cluster if it "+
 		"is currently shutdown.")
