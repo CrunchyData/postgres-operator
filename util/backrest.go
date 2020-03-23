@@ -43,7 +43,7 @@ func ValidateBackrestStorageTypeOnBackupRestore(newBackRestStorageType,
 		strings.Contains(newBackRestStorageType, "s3") &&
 		!strings.Contains(currentBackRestStorageType, "s3") {
 		return errors.New("Storage type 's3' not allowed. S3 storage is not enabled for " +
-			"pgBackRest in thiscluster")
+			"pgBackRest in this cluster")
 	} else if (newBackRestStorageType == "" ||
 		strings.Contains(newBackRestStorageType, "local")) &&
 		(currentBackRestStorageType != "" &&
