@@ -149,7 +149,12 @@
                         }, {
                             "mountPath": "/recover",
                             "name": "recover-volume"
-                        }, {
+                        },
+                        {
+                            "mountPath": "/dev/shm",
+                            "name": "dshm"
+                        },
+                        {
                             "mountPath": "/crunchyadm",
                             "name": "crunchyadm"
                         }
@@ -242,7 +247,14 @@
                     }, {
                         "name": "crunchyadm",
                         "emptyDir": {}
-                    }, {
+                    },
+                    {
+                      "name": "dshm",
+                      "emptyDir": {
+                        "medium": "Memory"
+                      }
+                    },
+                    {
                         "name": "pgconf-volume",
                         "projected": {
                             "sources": [
