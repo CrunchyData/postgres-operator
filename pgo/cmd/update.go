@@ -72,6 +72,16 @@ func init() {
 		"is currently shutdown.")
 	UpdateClusterCmd.Flags().BoolVar(&Shutdown, "shutdown", false, "Shutdown the database "+
 		"cluster if it is currently running.")
+	UpdateClusterCmd.Flags().StringSliceVar(&Tablespaces, "tablespace", []string{},
+		"Add a PostgreSQL tablespace on the cluster, e.g. \"name=ts1:storageconfig=nfsstorage\". The format is "+
+			"a key/value map that is delimited by \"=\" and separated by \":\". The following parameters are available:\n\n"+
+			"- name (required): the name of the PostgreSQL tablespace\n"+
+			"- storageconfig (required): the storage configuration to use, as specified in the list available in the "+
+			"\"pgo-config\" ConfigMap (aka \"pgo.yaml\")\n"+
+			"- pvcsize: the size of the PVC capacity, which overrides the value set in the specified storageconfig. "+
+			"Follows the Kubernetes quantity format.\n\n"+
+			"For example, to create a tablespace with the NFS storage configuration with a PVC of size 10GiB:\n\n"+
+			"--tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi")
 	UpdatePgBouncerCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdatePgBouncerCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
 	UpdatePgBouncerCmd.Flags().BoolVar(&RotatePassword, "rotate-password", false, "Used to rotate the pgBouncer service account password. Can cause interruption of service.")
@@ -183,6 +193,10 @@ var UpdateClusterCmd = &cobra.Command{
 			fmt.Println("Disabling standby mode will enable database writes for this " +
 				"cluster.\nPlease ensure the cluster this standby cluster is replicating " +
 				"from has been properly shutdown before proceeding!")
+		}
+
+		if len(Tablespaces) > 0 {
+			fmt.Println("Adding tablespaces could cause downtime.")
 		}
 
 		if !util.AskForConfirmation(NoPrompt, "") {

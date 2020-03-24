@@ -227,17 +227,16 @@ func AddLabelToDeployment(clientset *kubernetes.Clientset, origDeployment *v1.De
 	return err
 }
 
-func UpdateDeployment(clientset *kubernetes.Clientset, deployment *v1.Deployment, namespace string) error {
-	var err error
-
-	_, err = clientset.AppsV1().Deployments(namespace).Update(deployment)
-	if err != nil {
+// UpdateDeployment enables the update of a Kubernetes deployment. This expects
+// to have the full manifest required for the udpate
+func UpdateDeployment(clientset *kubernetes.Clientset, deployment *v1.Deployment) error {
+	if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(deployment); err != nil {
 		log.Error(err)
 		log.Errorf("error updating deployment %s", deployment.Name)
 		return err
 	}
-	return err
 
+	return nil
 }
 
 // ScaleDeployment provides the ability to scale a Kubernetes deployment.  The deployment provided
@@ -248,7 +247,7 @@ func ScaleDeployment(clientset *kubernetes.Clientset, deployment v1.Deployment,
 	replicaCount := int32(replicas)
 	deployment.Spec.Replicas = &replicaCount
 
-	if err := UpdateDeployment(clientset, &deployment, deployment.Namespace); err != nil {
+	if err := UpdateDeployment(clientset, &deployment); err != nil {
 		log.Error(err)
 		log.Errorf("unable to update replica count to %d in order to scale deployment %s",
 			deployment.Name)

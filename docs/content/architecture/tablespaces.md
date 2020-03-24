@@ -73,7 +73,7 @@ a recovery
 - Deprovisioining: Tablespaces are deleted when a PostgreSQL instance or cluster
 is deleted
 
-## Creating Tablespaces
+## Adding Tablespaces to a New Cluster
 
 Tablespaces can be used in a cluster with the [`pgo create cluster`](/pgo-client/reference/pgo_create_cluster/)
 command. The command follows this general format:
@@ -106,6 +106,28 @@ CREATE TABLE sensor_data (
 )
 TABLESPACE faststorage1;
 ```
+
+## Adding Tablespaces to Existing Clusters
+
+You can also add a tablespace to an existing PostgreSQL cluster with the
+[`pgo update cluster`](/pgo-client/reference/pgo_update_cluster/) command.
+Adding a tablespace to a cluster uses a similar syntax to creating a cluster
+with tablespaces, for example:
+
+```shell
+pgo update cluster hacluster \
+    --tablespace=name=tablespace3:storageconfig=storageconfigname
+```
+
+**NOTE**: This operation can cause downtime. In order to add a tablespace to a
+PostgreSQL cluster, persistent volume claims (PVCs) need to be created and
+mounted to each PostgreSQL instance in the cluster. The act of mounting a new
+PVC to a Kubernetes Deployment causes the Pods in the deployment to restart.
+
+When the operation completes, the tablespace will be set up and accessible to
+use within the PostgreSQL cluster.
+
+## More Information
 
 For more information on how tablespaces work in PostgreSQL please refer to the
 [PostgreSQL manual](https://www.postgresql.org/docs/current/manage-ag-tablespaces.html).

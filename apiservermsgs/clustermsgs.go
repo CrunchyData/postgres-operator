@@ -273,6 +273,7 @@ type UpdateClusterRequest struct {
 	Standby       UpdateClusterStandbyStatus
 	Startup       bool
 	Shutdown      bool
+	Tablespaces   []ClusterTablespaceDetail
 }
 
 // UpdateClusterResponse ...

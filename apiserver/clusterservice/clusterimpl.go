@@ -557,23 +557,10 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	// validate the storage type for each specified tablespace actually exists.
 	// if a PVCSize is passed in, also validate that it follows the Kubernetes
 	// format
-	if len(request.Tablespaces) > 0 {
-		for _, tablespace := range request.Tablespaces {
-			if !apiserver.IsValidStorageName(tablespace.StorageConfig) {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = fmt.Sprintf("%s storage config for tablespace %s was not found",
-					tablespace.StorageConfig, tablespace.Name)
-				return resp
-			}
-
-			if tablespace.PVCSize != "" {
-				if err := apiserver.ValidateQuantity(tablespace.PVCSize); err != nil {
-					resp.Status.Code = msgs.Error
-					resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessagePVCSize, tablespace.PVCSize, err.Error())
-					return resp
-				}
-			}
-		}
+	if err := validateTablespaces(request.Tablespaces); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
 	}
 
 	// validate the TLS parameters for enabling TLS in a PostgreSQL cluster
@@ -987,24 +974,20 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.PrimaryStorage.Size = request.PVCSize
 	}
 
-	// extract the parameters for th TablespacEMounts and put them in the format
+	// extract the parameters for the TablespaceMounts and put them in the format
 	// that is required by the pgcluster CRD
-	if len(request.Tablespaces) > 0 {
-		tablespaceMountsMap := map[string]crv1.PgStorageSpec{}
+	spec.TablespaceMounts = map[string]crv1.PgStorageSpec{}
 
-		for _, tablespace := range request.Tablespaces {
-			storageSpec, _ := apiserver.Pgo.GetStorageSpec(tablespace.StorageConfig)
+	for _, tablespace := range request.Tablespaces {
+		storageSpec, _ := apiserver.Pgo.GetStorageSpec(tablespace.StorageConfig)
 
-			// if a PVCSize is specified, override the value of the Size parameter in
-			// storage spec
-			if tablespace.PVCSize != "" {
-				storageSpec.Size = tablespace.PVCSize
-			}
-
-			tablespaceMountsMap[tablespace.Name] = storageSpec
+		// if a PVCSize is specified, override the value of the Size parameter in
+		// storage spec
+		if tablespace.PVCSize != "" {
+			storageSpec.Size = tablespace.PVCSize
 		}
 
-		spec.TablespaceMounts = tablespaceMountsMap
+		spec.TablespaceMounts[tablespace.Name] = storageSpec
 	}
 
 	spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.ReplicaStorage)
@@ -1423,6 +1406,15 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		return response
 	}
 
+	// validate the storage type for each specified tablespace actually exists.
+	// if a PVCSize is passed in, also validate that it follows the Kubernetes
+	// format
+	if err := validateTablespaces(request.Tablespaces); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
 	clusterList := crv1.PgclusterList{}
 
 	//get the clusters list
@@ -1502,9 +1494,21 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 			cluster.Spec.Shutdown = true
 		}
 
-		err = kubeapi.Updatepgcluster(apiserver.RESTClient,
-			&cluster, cluster.Spec.Name, request.Namespace)
-		if err != nil {
+		// extract the parameters for the TablespaceMounts and put them in the
+		// format that is required by the pgcluster CRD
+		for _, tablespace := range request.Tablespaces {
+			storageSpec, _ := apiserver.Pgo.GetStorageSpec(tablespace.StorageConfig)
+
+			// if a PVCSize is specified, override the value of the Size parameter in
+			// storage spec
+			if tablespace.PVCSize != "" {
+				storageSpec.Size = tablespace.PVCSize
+			}
+
+			cluster.Spec.TablespaceMounts[tablespace.Name] = storageSpec
+		}
+
+		if err := kubeapi.Updatepgcluster(apiserver.RESTClient, &cluster, cluster.Spec.Name, request.Namespace); err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
@@ -1619,6 +1623,27 @@ func validateClusterTLS(request *msgs.CreateClusterRequest) error {
 	}
 
 	// after this, we are validated!
+	return nil
+}
+
+// validateTablespaces validates the tablespace parameters. if there is an error
+// it aborts and returns an error
+func validateTablespaces(tablespaces []msgs.ClusterTablespaceDetail) error {
+	// iterate through the list of tablespaces and return any erors
+	for _, tablespace := range tablespaces {
+		if !apiserver.IsValidStorageName(tablespace.StorageConfig) {
+			return fmt.Errorf("%s storage config for tablespace %s was not found",
+				tablespace.StorageConfig, tablespace.Name)
+		}
+
+		if tablespace.PVCSize != "" {
+			if err := apiserver.ValidateQuantity(tablespace.PVCSize); err != nil {
+				return fmt.Errorf(apiserver.ErrMessagePVCSize,
+					tablespace.PVCSize, err.Error())
+			}
+		}
+	}
+
 	return nil
 }
 
