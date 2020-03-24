@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -212,6 +213,15 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 			return
 		}
 	}
+
+	// if we are not in a standby state, check to see if the tablespaces have
+	// differed, and if so, add the additional volumes to the primary and replicas
+	if !reflect.DeepEqual(oldcluster.Spec.TablespaceMounts, newcluster.Spec.TablespaceMounts) {
+		if err := updateTablespaces(c, oldcluster, newcluster); err != nil {
+			log.Error(err)
+			return
+		}
+	}
 }
 
 // onDelete is called when a pgcluster is deleted
@@ -313,4 +323,132 @@ func addIdentifier(clusterCopy *crv1.Pgcluster) {
 	}
 
 	clusterCopy.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = string(u[:len(u)-1])
+}
+
+// updateTablespaces updates the PostgreSQL instance Deployments to reflect the
+// new PostgreSQL tablespaces that should be added
+func updateTablespaces(c *Controller, oldCluster *crv1.Pgcluster, newCluster *crv1.Pgcluster) error {
+	// first, get a list of all of the available deployments so we can properly
+	// mount the tablespace PVCs after we create them
+	// NOTE: this will also get the pgBackRest deployments, but we will filter
+	// these out later
+	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_VENDOR, config.LABEL_CRUNCHY,
+		config.LABEL_PG_CLUSTER, newCluster.Name)
+
+	deployments, err := kubeapi.GetDeployments(c.PgclusterClientset, selector, newCluster.Namespace)
+
+	if err != nil {
+		return err
+	}
+
+	// now get the instance names, which will make it easier to create all the
+	// PVCs
+	instanceNames := []string{}
+
+	for _, deployment := range deployments.Items {
+		labels := deployment.ObjectMeta.GetLabels()
+
+		// get the name of the PostgreSQL instance. If the "deployment-name"
+		// label is not present, then we know it's not a PostgreSQL cluster.
+		// Otherwise, the "deployment-name" label doubles as the name of the
+		// instance
+		if instanceName, ok := labels[config.LABEL_DEPLOYMENT_NAME]; ok {
+			log.Debugf("instance found [%s]", instanceName)
+
+			instanceNames = append(instanceNames, instanceName)
+		}
+	}
+
+	// iterate through the the tablespace mount map that is present in the new
+	// cluster. Any entry that is not in the old cluster, create PVCs
+	newTablespaces := map[string]crv1.PgStorageSpec{}
+
+	for tablespaceName, storageSpec := range newCluster.Spec.TablespaceMounts {
+		// if the tablespace does not exist in the old version of the cluster,
+		// then add it in!
+		if _, ok := oldCluster.Spec.TablespaceMounts[tablespaceName]; !ok {
+			log.Debugf("new tablespace found: [%s]", tablespaceName)
+
+			newTablespaces[tablespaceName] = storageSpec
+		}
+	}
+
+	// now we can start creating the new tablespaces! First, create the new
+	// PVCs. The PVCs are created for each **instance** in the cluster, as every
+	// instance needs to have a distinct PVC for each tablespace
+	for tablespaceName, storageSpec := range newTablespaces {
+		for _, instanceName := range instanceNames {
+			// get the name of the tablespace PVC for that instance
+			tablespacePVCName := operator.GetTablespacePVCName(instanceName, tablespaceName)
+
+			log.Debugf("creating tablespace PVC [%s] for [%s]", tablespacePVCName, instanceName)
+
+			// and now create it! If it errors, we just need to return, which
+			// potentially leaves things in an inconsistent state, but at this point
+			// only PVC objects have been created
+			if err := clusteroperator.CreateTablespacePVC(c.PgclusterClientset, newCluster.Namespace, newCluster.Name,
+				tablespacePVCName, &storageSpec); err != nil {
+				return err
+			}
+		}
+	}
+
+	// now the fun step: update each deployment with the new volumes
+	for _, deployment := range deployments.Items {
+		labels := deployment.ObjectMeta.GetLabels()
+
+		// same deal as before: if this is not a PostgreSQL instance, skip it
+		instanceName, ok := labels[config.LABEL_DEPLOYMENT_NAME]
+		if !ok {
+			continue
+		}
+
+		log.Debugf("attach tablespace volumes to [%s]", instanceName)
+
+		// iterate through each table space and prepare the Volume and
+		// VolumeMount clause for each instance
+		for tablespaceName, _ := range newTablespaces {
+			// this is the volume to be added for the tablespace
+			volume := v1.Volume{
+				Name: operator.GetTablespaceVolumeName(tablespaceName),
+				VolumeSource: v1.VolumeSource{
+					PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+						ClaimName: operator.GetTablespacePVCName(instanceName, tablespaceName),
+					},
+				},
+			}
+
+			// add the volume to the list of volumes
+			deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, volume)
+
+			// now add the volume mount point to that of the database container
+			volumeMount := v1.VolumeMount{
+				MountPath: fmt.Sprintf("%s%s", config.VOLUME_TABLESPACE_PATH_PREFIX, tablespaceName),
+				Name:      operator.GetTablespaceVolumeName(tablespaceName),
+			}
+
+			// we can do this as we always know that the "database" contianer is the
+			// first container in the list
+			deployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(
+				deployment.Spec.Template.Spec.Containers[0].VolumeMounts, volumeMount)
+		}
+
+		// find the "PGHA_TABLESPACES" value and update it with the new tablespace
+		// name list
+		for i, envVar := range deployment.Spec.Template.Spec.Containers[0].Env {
+			// yup, it's an old fashioned linear time lookup
+			if envVar.Name == "PGHA_TABLESPACES" {
+				deployment.Spec.Template.Spec.Containers[0].Env[i].Value = operator.GetTablespaceNames(
+					newCluster.Spec.TablespaceMounts)
+			}
+		}
+
+		// finally, update the Deployment. Potential to put things into an
+		// inconsistent state if any of these updates fail
+		if err := kubeapi.UpdateDeployment(c.PgclusterClientset, &deployment); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

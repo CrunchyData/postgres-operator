@@ -398,12 +398,12 @@ func GetTablespaceNamePVCMap(clusterName string, tablespaceStorageTypeMap map[st
 // referenced by the specified human readable name.  We use a comma-separated
 // list to make it "easier" to work with the shell scripts that currently setup
 // the container
-func GetTablespaceNames(tablespaceStorageTypeMap map[string]string) string {
+func GetTablespaceNames(tablespaceMounts map[string]crv1.PgStorageSpec) string {
 	tablespaces := []string{}
 
 	// iterate through the list of tablespace mounts and extract the tablespace
 	// name
-	for tablespaceName := range tablespaceStorageTypeMap {
+	for tablespaceName := range tablespaceMounts {
 		tablespaces = append(tablespaces, tablespaceName)
 	}
 
@@ -440,7 +440,7 @@ func GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap map[string]string) s
 		log.Debugf("generating tablespace volume mount json for %s", tablespaceName)
 
 		volumeMountFields := tablespaceVolumeMountFields{
-			Name:      getTablespaceVolumeName(tablespaceName),
+			Name:      GetTablespaceVolumeName(tablespaceName),
 			MountPath: fmt.Sprintf("%s%s", config.VOLUME_TABLESPACE_PATH_PREFIX, tablespaceName),
 		}
 
@@ -466,7 +466,7 @@ func GetTablespaceVolumesJSON(clusterName string, tablespaceStorageTypeMap map[s
 		log.Debugf("generating tablespace volume json for %s", tablespaceName)
 
 		volumeFields := tablespaceVolumeFields{
-			Name: getTablespaceVolumeName(tablespaceName),
+			Name: GetTablespaceVolumeName(tablespaceName),
 			PVC: tablespaceVolumePVCFields{
 				PVCName: GetTablespacePVCName(clusterName, tablespaceName),
 			},
@@ -481,6 +481,12 @@ func GetTablespaceVolumesJSON(clusterName string, tablespaceStorageTypeMap map[s
 	}
 
 	return volumes.String()
+}
+
+// GetTableSpaceVolumeName returns the name that is used to identify the volume
+// that is used to mount the tablespace
+func GetTablespaceVolumeName(tablespaceName string) string {
+	return fmt.Sprintf("%s%s", config.VOLUME_TABLESPACE_NAME_PREFIX, tablespaceName)
 }
 
 // needs to be consolidated with cluster.GetLabelsFromMap
@@ -802,12 +808,6 @@ func OverrideClusterContainerImages(containers []v1.Container) {
 
 		SetContainerImageOverride(containerImageName, &container)
 	}
-}
-
-// getTableSpaceVolumeName returns the name that is used to identify the volume
-// that is used to mount the tablespace
-func getTablespaceVolumeName(tablespaceName string) string {
-	return fmt.Sprintf("%s%s", config.VOLUME_TABLESPACE_NAME_PREFIX, tablespaceName)
 }
 
 // writeTablespaceJSON is a convenience function to write the tablespace JSON

@@ -388,7 +388,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		EnableCrunchyadm:         operator.Pgo.Cluster.EnableCrunchyadm,
 		ReplicaReinitOnStartFail: !operator.Pgo.Cluster.DisableReplicaStartFailReinit,
 		SyncReplication:          operator.GetSyncReplication(cluster.Spec.SyncReplication),
-		Tablespaces:              operator.GetTablespaceNames(tablespaceStorageTypeMap),
+		Tablespaces:              operator.GetTablespaceNames(cluster.Spec.TablespaceMounts),
 		TablespaceVolumes:        operator.GetTablespaceVolumesJSON(restoreToName, tablespaceStorageTypeMap),
 		TablespaceVolumeMounts:   operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
 		TLSEnabled:               cluster.Spec.TLS.IsTLSEnabled(),

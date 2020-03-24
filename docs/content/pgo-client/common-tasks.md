@@ -826,6 +826,38 @@ pgo scaledown hacluster --target=hacluster-abcd
 where `hacluster-abcd` is the name of the PostgreSQL replica that you want to
 destroy.
 
+## Cluster Maintenance & Resource Management
+
+There are several operations that you can perform to modify a PostgreSQL cluster
+over its lifetime.
+
+#### Adding a Tablespace to a Cluster
+
+Based on your workload or volume of data, you may wish to add a
+[tablespace](https://www.postgresql.org/docs/current/manage-ag-tablespaces.html) to
+your PostgreSQL cluster.
+
+You can add a tablespace to an existing PostgreSQL cluster with the
+[`pgo update cluster`](/pgo-client/reference/pgo_update_cluster/) command.
+Adding a tablespace to a cluster uses a similar syntax to
+[creating a cluster with a tablespace](#create-a-postgresql-cluster-with-a-tablespace), for example:
+
+```shell
+pgo update cluster hacluster \
+    --tablespace=name=tablespace3:storageconfig=storageconfigname
+```
+
+**NOTE**: This operation can cause downtime. In order to add a tablespace to a
+PostgreSQL cluster, persistent volume claims (PVCs) need to be created and
+mounted to each PostgreSQL instance in the cluster. The act of mounting a new
+PVC to a Kubernetes Deployment causes the Pods in the deployment to restart.
+
+When the operation completes, the tablespace will be set up and accessible to
+use within the PostgreSQL cluster.
+
+For more information on tablespaces, please visit the [tablespace](/architecture/tablespaces/)
+section of the documentation.
+
 ## Clone a PostgreSQL Cluster
 
 You can create a copy of an existing PostgreSQL cluster in a new PostgreSQL

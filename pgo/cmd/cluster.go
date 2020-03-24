@@ -274,15 +274,14 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.CASecret = CASecret
 	r.Standby = Standby
 	r.BackrestRepoPath = BackrestRepoPath
+	// determine if the user wants to create tablespaces as part of this request,
+	// and if so, set the values
+	r.Tablespaces = getTablespaces(Tablespaces)
 
 	// only set SyncReplication in the request if actually provided via the CLI
 	if createClusterCmd.Flag("sync-replication").Changed {
 		r.SyncReplication = &SyncReplication
 	}
-
-	// determine if the user wants to create tablespaces as part of this request,
-	// and if so, set the values
-	setTablespaces(r)
 
 	response, err := api.CreateCluster(httpclient, &SessionCredentials, r)
 	if err != nil {
@@ -306,25 +305,19 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	}
 }
 
-// isTablespaceParam returns true if the parameter in question is acceptable for
-// using with a tablespace.
-func isTablespaceParam(param string) bool {
-	_, found := availableTablespaceParams[param]
-
-	return found
-}
-
-// setTablespaces determines if there are any Tablespaces that were provided
+// getTablespaces determines if there are any Tablespaces that were provided
 // via the `--tablespace` CLI flag, and if so, process their values. If
 // everything checks out, one or more tablespaces are added to the cluster
 // request
-func setTablespaces(request *msgs.CreateClusterRequest) {
+func getTablespaces(tablespaceParams []string) []msgs.ClusterTablespaceDetail {
+	tablespaces := []msgs.ClusterTablespaceDetail{}
+
 	// if there are no tablespaces set in the Tablespaces slice, abort
 	if len(Tablespaces) == 0 {
-		return
+		return tablespaces
 	}
 
-	for _, tablespace := range Tablespaces {
+	for _, tablespace := range tablespaceParams {
 		tablespaceDetails := map[string]string{}
 
 		// tablespaces are in the format "name=tsname:storageconfig=nfsstorage",
@@ -373,8 +366,19 @@ func setTablespaces(request *msgs.CreateClusterRequest) {
 		}
 
 		// append to the tablespaces slice, and continue
-		request.Tablespaces = append(request.Tablespaces, clusterTablespaceDetail)
+		tablespaces = append(tablespaces, clusterTablespaceDetail)
 	}
+
+	// return the tablespace list
+	return tablespaces
+}
+
+// isTablespaceParam returns true if the parameter in question is acceptable for
+// using with a tablespace.
+func isTablespaceParam(param string) bool {
+	_, found := availableTablespaceParams[param]
+
+	return found
 }
 
 // updateCluster ...
@@ -389,6 +393,9 @@ func updateCluster(args []string, ns string) {
 	r.Clustername = args
 	r.Startup = Startup
 	r.Shutdown = Shutdown
+	// determine if the user wants to create tablespaces as part of this request,
+	// and if so, set the values
+	r.Tablespaces = getTablespaces(Tablespaces)
 
 	// check to see if EnableAutofailFlag or DisableAutofailFlag is set. If so,
 	// set a value for Autofail
