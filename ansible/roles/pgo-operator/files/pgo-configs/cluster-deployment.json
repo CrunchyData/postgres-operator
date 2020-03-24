@@ -112,6 +112,10 @@
                         }, {
                             "mountPath": "/recover",
                             "name": "recover-volume"
+                        },
+                        {
+                            "mountPath": "/dev/shm",
+                            "name": "dshm"
                         }
                     ],
 
@@ -166,8 +170,15 @@
             "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "backrestrepo",
-            "emptyDir": { "medium": "Memory" }
-                    }, {
+                        "emptyDir": { "medium": "Memory" }
+                    },
+                    {
+                      "name": "dshm",
+                      "emptyDir": {
+                        "medium": "Memory"
+                      }
+                    },
+                    {
                         "name": "pgconf-volume",
             {{.ConfVolume}}
                     }
