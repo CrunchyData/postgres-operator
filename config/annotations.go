@@ -24,4 +24,12 @@ const (
 	ANNOTATION_CLONE_SOURCE_CLUSTER_NAME = "clone-source-cluster-name"
 	ANNOTATION_CLONE_TARGET_CLUSTER_NAME = "clone-target-cluster-name"
 	ANNOTATION_PRIMARY_DEPLOYMENT        = "primary-deployment"
+	// annotation to track the cluster's current primary
+	ANNOTATION_CURRENT_PRIMARY = "current-primary"
+	// annotation to indicate whether a cluster has been upgraded
+	ANNOTATION_IS_UPGRADED = "is-upgraded"
+	// annotation to store the Operator versions upgraded from and to
+	ANNOTATION_UPGRADE_INFO = "upgrade-info"
+	// annotation to store the string boolean, used when checking upgrade status
+	ANNOTATIONS_FALSE = "false"
 )

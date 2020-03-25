@@ -33,7 +33,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	apps_v1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -71,7 +71,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	}
 
 	dataVolume, walVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
-		clientset, cl, namespace, cl.Spec.Name, cl.Spec.PrimaryStorage)
+		clientset, cl, namespace, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], cl.Spec.PrimaryStorage)
 	if err != nil {
 		log.Error(err)
 		publishClusterCreateFailure(cl, err.Error())
@@ -93,7 +93,9 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	if err != nil {
 		log.Error("error in status patch " + err.Error())
 	}
+
 	err = util.Patch(client, "/spec/PrimaryStorage/name", dataVolume.PersistentVolumeClaimName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+
 	if err != nil {
 		log.Error("error in pvcname patch " + err.Error())
 	}

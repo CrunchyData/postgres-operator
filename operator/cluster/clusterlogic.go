@@ -34,6 +34,7 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/apps/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -89,7 +90,15 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 		}
 	}
 
-	cl.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = cl.Spec.Name
+	// if the current deployment label value does not match current primary name
+	// update the label so that the new deployment will match the existing PVC
+	// as determined previously
+	// Note that the use of this value brings the initial deployment creation in line with
+	// the paradigm used during cluster restoration, as in operator/backrest/restore.go
+	if cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY] != cl.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] {
+		cl.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY]
+	}
+
 	cl.Spec.UserLabels[config.LABEL_PGOUSER] = cl.ObjectMeta.Labels[config.LABEL_PGOUSER]
 	cl.Spec.UserLabels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 
@@ -109,11 +118,11 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 
 	//create the primary deployment
 	deploymentFields := operator.DeploymentTemplateFields{
-		Name:               cl.Spec.Name,
+		Name:               cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY],
 		IsInit:             true,
 		Replicas:           "0",
 		ClusterName:        cl.Spec.Name,
-		PrimaryHost:        cl.Spec.Name,
+		PrimaryHost:        cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY],
 		Port:               cl.Spec.Port,
 		CCPImagePrefix:     util.GetValueOrDefault(cl.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
 		CCPImage:           cl.Spec.CCPImage,
@@ -121,7 +130,7 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 		PVCName:            dataVolume.InlineVolumeSource(),
 		DeploymentLabels:   operator.GetLabelsFromMap(cl.Spec.UserLabels),
 		PodLabels:          operator.GetLabelsFromMap(cl.Spec.UserLabels),
-		DataPathOverride:   cl.Spec.Name,
+		DataPathOverride:   cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY],
 		Database:           cl.Spec.Database,
 		ArchiveMode:        archiveMode,
 		SecurityContext:    util.GetPodSecurityContext(supplementalGroups),
@@ -134,17 +143,17 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 		ConfVolume:         operator.GetConfVolume(clientset, cl, namespace),
 		CollectAddon:       operator.GetCollectAddon(clientset, namespace, &cl.Spec),
 		CollectVolume:      operator.GetCollectVolume(clientset, cl, namespace),
-		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cl, cl.Spec.Name),
+		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY]),
 		PgmonitorEnvVars:   operator.GetPgmonitorEnvVars(cl.Spec.UserLabels[config.LABEL_COLLECT]),
 		ScopeLabel:         config.LABEL_PGHA_SCOPE,
-		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cl, cl.Labels[config.LABEL_BACKREST], cl.Spec.Name,
+		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cl, cl.Labels[config.LABEL_BACKREST], cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY],
 			cl.Spec.Port, cl.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars:      operator.GetPgbackrestS3EnvVars(*cl, clientset, namespace),
 		EnableCrunchyadm:         operator.Pgo.Cluster.EnableCrunchyadm,
 		ReplicaReinitOnStartFail: !operator.Pgo.Cluster.DisableReplicaStartFailReinit,
 		SyncReplication:          operator.GetSyncReplication(cl.Spec.SyncReplication),
 		Tablespaces:              operator.GetTablespaceNames(cl.Spec.TablespaceMounts),
-		TablespaceVolumes:        operator.GetTablespaceVolumesJSON(cl.Spec.Name, tablespaceStorageTypeMap),
+		TablespaceVolumes:        operator.GetTablespaceVolumesJSON(cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], tablespaceStorageTypeMap),
 		TablespaceVolumeMounts:   operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
 		TLSEnabled:               cl.Spec.TLS.IsTLSEnabled(),
 		TLSOnly:                  cl.Spec.TLSOnly,
@@ -157,7 +166,10 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 	// initialization logic should be executed when the postgres-ha container is run.  This
 	// ensures that the original primary in a PG cluster does not attempt to run any initialization
 	// logic following a restart of the container.
-	if err = operator.CreatePGHAConfigMap(clientset, cl, namespace); err != nil {
+	// If the configmap already exists, the cluster creation will continue as this is required
+	// for certain pgcluster upgrades.
+	if err = operator.CreatePGHAConfigMap(clientset, cl, namespace); err != nil &&
+		!kerrors.IsAlreadyExists(err) {
 		log.Error(err.Error())
 		return err
 	}
@@ -197,10 +209,10 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 		log.Info("primary Deployment " + cl.Spec.Name + " in namespace " + namespace + " already existed so not creating it ")
 	}
 
-	cl.Spec.UserLabels[config.LABEL_CURRENT_PRIMARY] = cl.Spec.Name
-
-	err = util.PatchClusterCRD(client, cl.Spec.UserLabels, cl, namespace)
-	if err != nil {
+	// patch in the correct current primary value to the CRD spec, as well as
+	// any updated user labels. This will handle both new and updated clusters.
+	// Note: in previous operator versions, this was stored in a user label
+	if err = util.PatchClusterCRD(client, cl.Spec.UserLabels, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], namespace); err != nil {
 		log.Error("could not patch primary crv1 with labels")
 		return err
 	}
@@ -568,7 +580,7 @@ func ScaleClusterDeployments(clientset *kubernetes.Clientset, cluster crv1.Pgclu
 		// determine if the deployment is a primary, replica, or supporting service (pgBackRest,
 		// pgBouncer, etc.)
 		switch {
-		case deployment.Name == cluster.Labels[config.LABEL_CURRENT_PRIMARY]:
+		case deployment.Name == cluster.Annotations[config.ANNOTATION_CURRENT_PRIMARY]:
 			clusterInfo.PrimaryDeployment = deployment.Name
 			// if not scaling the primary simply move on to the next deployment
 			if !scalePrimary {

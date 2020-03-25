@@ -21,6 +21,10 @@ const PGO_VERSION = "4.3.0"
 const Ok = "ok"
 const Error = "error"
 
+// UpgradeError is the error used for when a command is tried against a cluster that has not
+// been upgraded to the current Operator version
+const UpgradeError = " has not yet been upgraded. Please upgrade the cluster before running this Postgres Operator command."
+
 // Status ...
 // swagger:model Status
 type Status struct {
