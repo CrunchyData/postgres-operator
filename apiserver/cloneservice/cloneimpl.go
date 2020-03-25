@@ -32,7 +32,7 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//  Clone allows a user to clone a cluster into a new deployment
+// Clone allows a user to clone a cluster into a new deployment
 func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResponse {
 	log.Debugf("clone called with ")
 
@@ -64,6 +64,14 @@ func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResp
 	if err := validateCloneRequest(request, sourcePgcluster); err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
+		return response
+	}
+
+	// check if the current cluster is not upgraded to the deployed
+	// Operator version. If not, do not allow the command to complete
+	if sourcePgcluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = sourcePgcluster.Name + msgs.UpgradeError
 		return response
 	}
 

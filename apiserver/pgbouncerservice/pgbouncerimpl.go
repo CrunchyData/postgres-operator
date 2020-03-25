@@ -79,6 +79,15 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 	}
 
 	for _, cluster := range clusterList.Items {
+
+		// check if the current cluster is not upgraded to the deployed
+		// Operator version. If not, do not allow the command to complete
+		if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = cluster.Name + msgs.UpgradeError
+			return resp
+		}
+
 		log.Debugf("adding pgbouncer to cluster [%s]", cluster.Name)
 
 		resources := v1.ResourceList{}

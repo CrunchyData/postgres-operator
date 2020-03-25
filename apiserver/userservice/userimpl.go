@@ -25,6 +25,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 
@@ -201,6 +202,14 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 
 			response.Results = append(response.Results, result)
 			continue
+		}
+
+		// check if the current cluster is not upgraded to the deployed
+		// Operator version. If not, do not allow the command to complete
+		if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = cluster.Spec.ClusterName + msgs.UpgradeError
+			return response
 		}
 
 		// build up the SQL clause that will be executed.

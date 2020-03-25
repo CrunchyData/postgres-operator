@@ -59,6 +59,13 @@ func (c *Controller) handleConfigMapSync(key string) error {
 		return err
 	}
 
+	// if an upgrade is pending for the cluster, then don't attempt to sync and just return
+	if cluster.GetAnnotations()[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+		log.Debugf("ConfigMap Controller: syncing of configMap %s (namespace %s) disabled pending the "+
+			"upgrade of cluster %s", configMapName, namespace, clusterName)
+		return nil
+	}
+
 	// disable syncing when the cluster isn't currently initialized
 	if cluster.Status.State != crv1.PgclusterStateInitialized {
 		return nil

@@ -142,6 +142,15 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 				resp.Status.Msg = err.Error()
 				return resp
 			}
+
+			// check if the current cluster is not upgraded to the deployed
+			// Operator version. If not, do not allow the command to complete
+			if cl.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = cl.Name + msgs.UpgradeError
+				return resp
+			}
+
 			clusterList.Items = append(clusterList.Items, cl)
 		}
 	}

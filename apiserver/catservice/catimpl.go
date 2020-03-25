@@ -55,6 +55,14 @@ func Cat(request *msgs.CatRequest, ns string) msgs.CatResponse {
 		return resp
 	}
 
+	// check if the current cluster is not upgraded to the deployed
+	// Operator version. If not, do not allow the command to complete
+	if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = cluster.Name + msgs.UpgradeError
+		return resp
+	}
+
 	err = validateArgs(request.Args)
 	if err != nil {
 		resp.Status.Code = msgs.Error
