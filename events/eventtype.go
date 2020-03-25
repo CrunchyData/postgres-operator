@@ -30,32 +30,34 @@ const (
 	EventTopicPgbouncer = "pgbouncertopic"
 	EventTopicPGO       = "pgotopic"
 	EventTopicPGOUser   = "pgousertopic"
+	EventTopicUpgrade   = "upgradetopic"
 )
 const (
-	EventReloadCluster            = "ReloadCluster"
-	EventPrimaryNotReady          = "PrimaryNotReady"
-	EventPrimaryDeleted           = "PrimaryDeleted"
-	EventCloneCluster             = "CloneCluster"
-	EventCloneClusterCompleted    = "CloneClusterCompleted"
-	EventCloneClusterFailure      = "CloneClusterFailure"
-	EventCreateCluster            = "CreateCluster"
-	EventCreateClusterCompleted   = "CreateClusterCompleted"
-	EventCreateClusterFailure     = "CreateClusterFailure"
-	EventScaleCluster             = "ScaleCluster"
-	EventScaleClusterFailure      = "ScaleClusterFailure"
-	EventScaleDownCluster         = "ScaleDownCluster"
-	EventShutdownCluster          = "ShutdownCluster"
-	EventFailoverCluster          = "FailoverCluster"
-	EventFailoverClusterCompleted = "FailoverClusterCompleted"
-	EventRestoreCluster           = "RestoreCluster"
-	EventRestoreClusterCompleted  = "RestoreClusterCompleted"
-	EventUpgradeCluster           = "UpgradeCluster"
-	EventUpgradeClusterCompleted  = "UpgradeClusterCompleted"
-	EventDeleteCluster            = "DeleteCluster"
-	EventDeleteClusterCompleted   = "DeleteClusterCompleted"
-	EventCreateLabel              = "CreateLabel"
-	EventLoad                     = "Load"
-	EventLoadCompleted            = "LoadCompleted"
+	EventReloadCluster                 = "ReloadCluster"
+	EventPrimaryNotReady               = "PrimaryNotReady"
+	EventPrimaryDeleted                = "PrimaryDeleted"
+	EventCloneCluster                  = "CloneCluster"
+	EventCloneClusterCompleted         = "CloneClusterCompleted"
+	EventCloneClusterFailure           = "CloneClusterFailure"
+	EventCreateCluster                 = "CreateCluster"
+	EventCreateClusterCompleted        = "CreateClusterCompleted"
+	EventCreateClusterFailure          = "CreateClusterFailure"
+	EventScaleCluster                  = "ScaleCluster"
+	EventScaleClusterFailure           = "ScaleClusterFailure"
+	EventScaleDownCluster              = "ScaleDownCluster"
+	EventShutdownCluster               = "ShutdownCluster"
+	EventFailoverCluster               = "FailoverCluster"
+	EventFailoverClusterCompleted      = "FailoverClusterCompleted"
+	EventRestoreCluster                = "RestoreCluster"
+	EventRestoreClusterCompleted       = "RestoreClusterCompleted"
+	EventUpgradeCluster                = "UpgradeCluster"
+	EventUpgradeClusterCreateSubmitted = "UpgradeClusterCreateSubmitted"
+	EventUpgradeClusterFailure         = "UpgradeClusterFailure"
+	EventDeleteCluster                 = "DeleteCluster"
+	EventDeleteClusterCompleted        = "DeleteClusterCompleted"
+	EventCreateLabel                   = "CreateLabel"
+	EventLoad                          = "Load"
+	EventLoadCompleted                 = "LoadCompleted"
 
 	EventCreateBackup          = "CreateBackup"
 	EventCreateBackupCompleted = "CreateBackupCompleted"
@@ -305,6 +307,7 @@ func (lvl EventFailoverClusterCompletedFormat) String() string {
 type EventUpgradeClusterFormat struct {
 	EventHeader `json:"eventheader"`
 	Clustername string `json:"clustername"`
+	WorkflowID  string `json:"workflowid"`
 }
 
 func (p EventUpgradeClusterFormat) GetHeader() EventHeader {
@@ -317,18 +320,37 @@ func (lvl EventUpgradeClusterFormat) String() string {
 }
 
 //----------------------------
-type EventUpgradeClusterCompletedFormat struct {
+type EventUpgradeClusterCreateFormat struct {
 	EventHeader `json:"eventheader"`
 	Clustername string `json:"clustername"`
+	WorkflowID  string `json:"workflowid"`
 }
 
-func (p EventUpgradeClusterCompletedFormat) GetHeader() EventHeader {
+func (p EventUpgradeClusterCreateFormat) GetHeader() EventHeader {
 	return p.EventHeader
 }
 
-func (lvl EventUpgradeClusterCompletedFormat) String() string {
-	msg := fmt.Sprintf("Event %s (upgrade completed) - clustername %s", lvl.EventHeader, lvl.Clustername)
+func (lvl EventUpgradeClusterCreateFormat) String() string {
+	msg := fmt.Sprintf("Event %s (upgraded pgcluster submitted for creation) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
+}
+
+//----------------------------
+type EventUpgradeClusterFailureFormat struct {
+	EventHeader  `json:"eventheader"`
+	Clustername  string `json:"clustername"`
+	WorkflowID   string `json:"workflowid"`
+	ErrorMessage string `json:"errormessage"`
+}
+
+func (p EventUpgradeClusterFailureFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventUpgradeClusterFailureFormat) String() string {
+	return fmt.Sprintf(
+		"Event %s - (upgrade cluster failure) clustername %s workflow %s error %s",
+		lvl.EventHeader, lvl.Clustername, lvl.WorkflowID, lvl.ErrorMessage)
 }
 
 //----------------------------

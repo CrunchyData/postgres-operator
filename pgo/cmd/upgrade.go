@@ -18,43 +18,52 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
-var upgradeCmd = &cobra.Command{
+// IgnoreValidation stores the flag input value that determines whether
+// image tag version checking should be done before allowing an upgrade
+// to continue
+var IgnoreValidation bool
+
+var UpgradeCmd = &cobra.Command{
 	Use:   "upgrade",
-	Short: "Perform an upgrade",
-	Long: `UPGRADE performs an upgrade on a PostgreSQL cluster. For example:
-
-  pgo upgrade mycluster
-
- This upgrade will update the CCPImageTag of the deployment for the primary and all replicas.
- The running containers are upgraded one at a time, sequentially, in the following order: replicas, backrest-repo, then primary.
-
- Note: If the PostgreSQL Operator is deployed using OLM, the value of the CCPImageTag is overridden by what is in the RELATED_IMAGE_* environmental variables, e.g. for the PostgreSQL container, it would be the value of RELATED_IMAGE_CRUNCHY_POSTGRES_HA`,
+	Short: "Perform a cluster upgrade.",
+	Long: `UPGRADE allows you to perform a comprehensive PGCluster upgrade 
+	(for use after performing a Postgres Operator upgrade). 
+	For example:
+	
+	pgo upgrade mycluster
+	Upgrades the cluster for use with the upgraded Postgres Operator version.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		log.Debug("cluster upgrade called")
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		log.Debug("upgrade called")
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`Error: You must specify the cluster to upgrade.`)
 		} else {
-			createUpgrade(args, Namespace)
+			fmt.Println("All active replicas will be scaled down and the primary database in this cluster will be stopped and recreated as part of this workflow!")
+			if util.AskForConfirmation(NoPrompt, "") {
+				createUpgrade(args, Namespace)
+			} else {
+				fmt.Println("Aborting...")
+			}
 		}
-
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(upgradeCmd)
+	RootCmd.AddCommand(UpgradeCmd)
 
-	upgradeCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
-
+	// flags for "pgo upgrade"
+	UpgradeCmd.Flags().BoolVarP(&IgnoreValidation, "ignore-validation", "", false, "Disables version checking against the image tags when performing an cluster upgrade.")
 }
 
 func createUpgrade(args []string, ns string) {
@@ -69,8 +78,8 @@ func createUpgrade(args []string, ns string) {
 	request.Args = args
 	request.Namespace = ns
 	request.Selector = Selector
-	request.CCPImageTag = CCPImageTag
 	request.ClientVersion = msgs.PGO_VERSION
+	request.IgnoreValidation = IgnoreValidation
 
 	response, err := api.CreateUpgrade(httpclient, &SessionCredentials, &request)
 

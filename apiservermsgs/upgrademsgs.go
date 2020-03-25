@@ -18,11 +18,11 @@ limitations under the License.
 // CreateUpgradeRequest ...
 // swagger:model
 type CreateUpgradeRequest struct {
-	Args          []string
-	Selector      string
-	Namespace     string
-	CCPImageTag   string
-	ClientVersion string
+	Args             []string
+	Selector         string
+	Namespace        string
+	ClientVersion    string
+	IgnoreValidation bool
 }
 
 // CreateUpgradeResponse ...
@@ -30,4 +30,5 @@ type CreateUpgradeRequest struct {
 type CreateUpgradeResponse struct {
 	Results []string
 	Status
+	WorkflowID string
 }

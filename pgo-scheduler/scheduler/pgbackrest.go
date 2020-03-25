@@ -81,6 +81,18 @@ func (b BackRestBackupJob) Run() {
 
 	taskName := fmt.Sprintf("%s-%s-sch-backup", b.cluster, b.backupType)
 
+	//if the cluster is found, check for an annotation indicating it has not been upgraded
+	//if the annotation does not exist, then it is a new cluster and proceed as usual
+	//if the annotation is set to "true", the cluster has already been upgraded and can proceed but
+	//if the annotation is set to "false", this cluster will need to be upgraded before proceeding
+	//log the issue, then return
+	if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+		contextLogger.WithFields(log.Fields{
+			"task": taskName,
+		}).Debug("pgcluster requires an upgrade before scheduled pgbackrest task can be run")
+		return
+	}
+
 	result := crv1.Pgtask{}
 	found, err = kubeapi.Getpgtask(restClient, &result, taskName, b.namespace)
 
