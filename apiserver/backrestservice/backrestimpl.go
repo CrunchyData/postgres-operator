@@ -125,6 +125,14 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 			return resp
 		}
 
+		// check if the current cluster is not upgraded to the deployed
+		// Operator version. If not, do not allow the command to complete
+		if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = fmt.Sprintf("%s %s", cluster.Name, msgs.UpgradeError)
+			return resp
+		}
+
 		if cluster.Labels[config.LABEL_BACKREST] != "true" {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = clusterName + " does not have pgbackrest enabled"
@@ -472,7 +480,15 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 		return resp
 	}
 
-	//verify that the cluster we are restoring from has backrest enabled
+	// check if the current cluster is not upgraded to the deployed
+	// Operator version. If not, do not allow the command to complete
+	if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf("%s %s", cluster.Name, msgs.UpgradeError)
+		return resp
+	}
+
+	// verify that the cluster we are restoring from has backrest enabled
 	if cluster.Labels[config.LABEL_BACKREST] != "true" {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "can't restore, cluster restoring from does not have backrest enabled"

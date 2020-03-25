@@ -20,10 +20,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/apiserver/backupoptions"
-
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/apiserver/backupoptions"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -144,6 +143,14 @@ func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateS
 	log.Debug("Making schedules")
 	var schedules []*PgScheduleSpec
 	for _, cluster := range clusterList.Items {
+
+		// check if the current cluster is not upgraded to the deployed
+		// Operator version. If not, do not allow the command to complete
+		if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+			sr.Response.Status.Code = msgs.Error
+			sr.Response.Status.Msg = cluster.Name + msgs.UpgradeError
+			return *sr.Response
+		}
 		switch sr.Request.ScheduleType {
 		case "pgbackrest":
 			schedule := sr.createBackRestSchedule(&cluster, ns)

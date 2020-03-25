@@ -85,6 +85,14 @@ func Reload(request *msgs.ReloadRequest, ns, username string) msgs.ReloadRespons
 			return resp
 		}
 
+		// check if the current cluster is not upgraded to the deployed
+		// Operator version. If not, do not allow the command to complete
+		if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = cluster.Name + msgs.UpgradeError
+			return resp
+		}
+
 		var podList *v1.PodList
 		selector := config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 		podList, err = kubeapi.GetPods(apiserver.Clientset, selector, ns)

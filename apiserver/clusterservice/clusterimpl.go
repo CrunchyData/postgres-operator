@@ -74,6 +74,14 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pg
 
 	for _, cluster := range clusterList.Items {
 
+		// check if the current cluster is not upgraded to the deployed
+		// Operator version. If not, do not allow the command to complete
+		if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = cluster.Name + msgs.UpgradeError
+			return response
+		}
+
 		log.Debugf("deleting cluster %s", cluster.Spec.Name)
 		taskName := cluster.Spec.Name + "-rmdata"
 		log.Debugf("creating taskName %s", taskName)

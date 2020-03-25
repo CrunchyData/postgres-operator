@@ -67,6 +67,14 @@ func ScaleCluster(name, replicaCount, storageConfig, nodeLabel,
 		return response
 	}
 
+	// check if the current cluster is not upgraded to the deployed
+	// Operator version. If not, do not allow the command to complete
+	if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = cluster.Name + msgs.UpgradeError
+		return response
+	}
+
 	spec := crv1.PgreplicaSpec{}
 
 	//refer to the cluster's replica storage setting by default

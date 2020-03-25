@@ -40,10 +40,18 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns, pgouser string) msg
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	_, err = validateClusterName(request.ClusterName, ns)
+	cluster, err := validateClusterName(request.ClusterName, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
+		return resp
+	}
+
+	// check if the current cluster is not upgraded to the deployed
+	// Operator version. If not, do not allow the command to complete
+	if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = cluster.Name + msgs.UpgradeError
 		return resp
 	}
 
@@ -166,6 +174,7 @@ func validateClusterName(clusterName, ns string) (*crv1.Pgcluster, error) {
 	cluster := crv1.Pgcluster{}
 	found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
 		&cluster, clusterName, ns)
+
 	if !found {
 		return &cluster, errors.New("no cluster found named " + clusterName)
 	}
