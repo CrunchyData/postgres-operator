@@ -124,23 +124,19 @@ func Initialize(clientset *kubernetes.Clientset) {
 	log.Info("EventTCPAddress set to " + EventTCPAddress)
 }
 
-// GetContainerResources ...
+// GetContainerResources is a legacy method that  creates the JSON snippet that
+// is applied for setting the CPU and memory in a container.
 func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
-
-	//test for the case where no container resources are specified
-	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
-		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
-		return ""
+	fields := containerResourcesTemplateFields{
+		LimitsCPU:      resources.LimitsCPU,
+		LimitsMemory:   resources.LimitsMemory,
+		RequestsCPU:    resources.RequestsCPU,
+		RequestsMemory: resources.RequestsMemory,
 	}
-	fields := containerResourcesTemplateFields{}
-	fields.RequestsMemory = resources.RequestsMemory
-	fields.RequestsCPU = resources.RequestsCPU
-	fields.LimitsMemory = resources.LimitsMemory
-	fields.LimitsCPU = resources.LimitsCPU
 
 	doc := bytes.Buffer{}
-	err := config.ContainerResourcesTemplate.Execute(&doc, fields)
-	if err != nil {
+
+	if err := config.ContainerResourcesTemplate.Execute(&doc, fields); err != nil {
 		log.Error(err.Error())
 		return ""
 	}

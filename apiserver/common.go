@@ -28,14 +28,23 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	// ErrMessageCPURequest provides a standard error message when a CPURequest
+	// is not specified to the Kubernetes sstandard
+	ErrMessageCPURequest = `could not parse CPU request "%s":%s (hint: try a value like "1" or "100m")`
+	// ErrMessageMemoryRequest provides a standard error message when a MemoryRequest
+	// is not specified to the Kubernetes sstandard
+	ErrMessageMemoryRequest = `could not parse memory request "%s":%s (hint: try a value like "1Gi")`
+	// ErrMessagePVCSize provides a standard error message when a PVCSize is not
+	// specified to the Kubernetes stnadard
+	ErrMessagePVCSize = `could not parse PVC size "%s": %s (hint: try a value like "1Gi")`
+)
+
 var (
 	backrestStorageTypes = []string{"local", "s3"}
 	// ErrDBContainerNotFound is an error that indicates that a "database" container
 	// could not be found in a specific pod
 	ErrDBContainerNotFound = errors.New("\"database\" container not found in pod")
-	// ErrMessagePVCSize provides a standard error message when a PVCSize is not
-	// specified to the Kubernetes stnadard
-	ErrMessagePVCSize = `could not parse PVC size "%s": %s (hint: try a value like "1Gi")`
 	// ErrStandbyNotAllowed contains the error message returned when an API call is not
 	// permitted because it involves a cluster that is in standby mode
 	ErrStandbyNotAllowed = errors.New("Action not permitted because standby mode is enabled")
