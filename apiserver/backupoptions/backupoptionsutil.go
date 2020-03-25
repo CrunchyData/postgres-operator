@@ -29,7 +29,7 @@ import (
 
 type backupOptions interface {
 	validate([]string) error
-	getBlacklistFlags() ([]string, []string)
+	getDenyListFlags() ([]string, []string)
 }
 
 // ValidateBackupOpts validates the backup/restore options that can be provided to the various backup
@@ -98,9 +98,8 @@ func convertBackupOptsToStruct(backupOpts string, request interface{}) (backupOp
 
 	err = commandLine.Parse(parsedBackupOpts)
 	if err != nil {
-		err = handleCustomParseErrors(err, usage, optsStruct)
-		if err != nil {
-			return nil, nil, err
+		if customErr := handleCustomParseErrors(err, usage, optsStruct); customErr != nil {
+			return nil, nil, customErr
 		}
 	}
 
@@ -186,28 +185,28 @@ func isValidValue(vals []string, val string) bool {
 	return isValid
 }
 
-// this function checks unknown options from the backup-opts flag to validate that they are not blacklisted
-// if the option is in the blacklist and error is returned, otherwise the flag is unkown to the operator
+// this function checks unknown options from the backup-opts flag to validate that they are not denied
+// if the option is in the deny list and error is returned, otherwise the flag is unkown to the operator
 // and can be passed to pgBackRest for validation.
 func handleCustomParseErrors(err error, usage *bytes.Buffer, optsStruct backupOptions) error {
-	blacklistFlags, blacklistFlagsShort := optsStruct.getBlacklistFlags()
+	denyListFlags, denyListFlagsShort := optsStruct.getDenyListFlags()
 	if err.Error() == "pflag: help requested" {
 		pflag.Usage()
 		return errors.New(usage.String())
 	} else if strings.Contains(err.Error(), "unknown flag") {
-		for _, blacklistFlag := range blacklistFlags {
-			flagMatch, err := regexp.MatchString("\\B"+blacklistFlag+"$", err.Error())
+		for _, denyListFlag := range denyListFlags {
+			flagMatch, err := regexp.MatchString("\\B"+denyListFlag+"$", err.Error())
 			if err != nil {
 				return err
 			} else if flagMatch {
-				return fmt.Errorf("Flag %s is not supported for use with PGO", blacklistFlag)
+				return fmt.Errorf("Flag %s is not supported for use with PGO", denyListFlag)
 			}
 		}
 	} else if strings.Contains(err.Error(), "unknown shorthand flag") {
-		for _, blacklistFlagShort := range blacklistFlagsShort {
-			blacklistFlagQuotes := "'" + strings.TrimPrefix(blacklistFlagShort, "-") + "'"
-			if strings.Contains(err.Error(), blacklistFlagQuotes) {
-				return fmt.Errorf("Shorthand flag %s is not supported for use with PGO", blacklistFlagShort)
+		for _, denyListFlagShort := range denyListFlagsShort {
+			denyListFlagQuotes := "'" + strings.TrimPrefix(denyListFlagShort, "-") + "'"
+			if strings.Contains(err.Error(), denyListFlagQuotes) {
+				return fmt.Errorf("Shorthand flag %s is not supported for use with PGO", denyListFlagShort)
 			}
 		}
 	}

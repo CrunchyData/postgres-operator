@@ -20,14 +20,45 @@ import (
 	"strings"
 )
 
-var pgBackRestOptsBlacklist = []string{"--archive-check", "--no-archive-check", "--online", "--no-online", "--link-all",
-	"--link-map", "--tablespace-map", "--tablespace-map-all", "--cmd-ssh", "--config", "--config-include-path",
-	"--config-path", "--lock-path", "--neutral-umask", "--no-neutral-umask", "--stanza", "--log-timestamp",
-	"--repo-cipher-type", "--repo-host", "--repo-host-cmd", "--repo-host-config", "--repo-host-config-include-path",
-	"--repo-host-config-path", "--repo-host-port", "--repo-host-user", "--repo-path", "--repo-s3-bucket",
-	"--repo-s3-ca-file", "--repo-s3-ca-path", "--repo-s3-endpoint", "--repo-s3-host", "--repo-s3-region",
-	"--repo-s3-verify-ssl", "--repo-type", "--pg-host", "--pg-host-cmd", "--pg-host-config",
-	"--pg-host-config-include-path", "--pg-host-config-path", "--pg-host-port", "--pg-host-user", "--pg-path", "--pg-port"}
+var pgBackRestOptsDenyList = []string{
+	"--cmd-ssh",
+	"--config",
+	"--config-include-path",
+	"--config-path",
+	"--link-all",
+	"--link-map",
+	"--lock-path",
+	"--log-timestamp",
+	"--neutral-umask",
+	"--no-neutral-umask",
+	"--no-online",
+	"--online",
+	"--pg-host",
+	"--pg-host-cmd",
+	"--pg-host-config",
+	"--pg-host-config-include-path",
+	"--pg-host-config-path",
+	"--pg-host-port",
+	"--pg-host-user",
+	"--pg-path",
+	"--pg-port",
+	"--repo-host",
+	"--repo-host-cmd",
+	"--repo-host-config",
+	"--repo-host-config-include-path",
+	"--repo-host-config-path",
+	"--repo-host-port",
+	"--repo-host-user",
+	"--repo-path",
+	"--repo-s3-bucket",
+	"--repo-s3-endpoint",
+	"--repo-s3-host",
+	"--repo-s3-region",
+	"--repo-type",
+	"--stanza",
+	"--tablespace-map",
+	"--tablespace-map-all",
+}
 
 type pgBackRestBackupOptions struct {
 	ArchiveCopy              bool   `flag:"archive-copy"`
@@ -225,10 +256,10 @@ func isValidBackrestLogLevel(logLevel string) bool {
 	return isValidValue(logLevels, logLevel)
 }
 
-func (backRestBackupOpts pgBackRestBackupOptions) getBlacklistFlags() ([]string, []string) {
-	return pgBackRestOptsBlacklist, nil
+func (backRestBackupOpts pgBackRestBackupOptions) getDenyListFlags() ([]string, []string) {
+	return pgBackRestOptsDenyList, nil
 }
 
-func (backRestRestoreOpts pgBackRestRestoreOptions) getBlacklistFlags() ([]string, []string) {
-	return pgBackRestOptsBlacklist, nil
+func (backRestRestoreOpts pgBackRestRestoreOptions) getDenyListFlags() ([]string, []string) {
+	return pgBackRestOptsDenyList, nil
 }
