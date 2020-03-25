@@ -98,7 +98,10 @@ func convertBackupOptsToStruct(backupOpts string, request interface{}) (backupOp
 
 	err = commandLine.Parse(parsedBackupOpts)
 	if err != nil {
-		return nil, nil, handleCustomParseErrors(err, usage, optsStruct)
+		err = handleCustomParseErrors(err, usage, optsStruct)
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	setFlagFieldNames := obtainSetFlagFieldNames(commandLine, structType)
@@ -183,6 +186,9 @@ func isValidValue(vals []string, val string) bool {
 	return isValid
 }
 
+// this function checks unknown options from the backup-opts flag to validate that they are not blacklisted
+// if the option is in the blacklist and error is returned, otherwise the flag is unkown to the operator
+// and can be passed to pgBackRest for validation.
 func handleCustomParseErrors(err error, usage *bytes.Buffer, optsStruct backupOptions) error {
 	blacklistFlags, blacklistFlagsShort := optsStruct.getBlacklistFlags()
 	if err.Error() == "pflag: help requested" {
@@ -205,7 +211,7 @@ func handleCustomParseErrors(err error, usage *bytes.Buffer, optsStruct backupOp
 			}
 		}
 	}
-	return err
+	return nil
 }
 
 func obtainSetFlagFieldNames(commandLine *pflag.FlagSet, structType reflect.Type) []string {
