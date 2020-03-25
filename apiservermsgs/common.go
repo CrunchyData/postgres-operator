@@ -19,6 +19,8 @@ const PGO_VERSION = "4.3.0"
 
 // Ok status
 const Ok = "ok"
+
+// Error code string
 const Error = "error"
 
 // UpgradeError is the error used for when a command is tried against a cluster that has not

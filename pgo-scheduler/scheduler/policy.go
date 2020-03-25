@@ -94,6 +94,18 @@ func (p PolicyJob) Run() {
 
 	name := fmt.Sprintf("policy-%s-%s-schedule", p.cluster, p.policy)
 
+	// if the cluster is found, check for a annotation indicating it has not been upgraded
+	// if the annotation does not exist, then it is a new cluster and proceed as usual
+	// if the annotation is set to "true", the cluster has already been upgraded and can proceed but
+	// if the annotation is set to "false", this cluster will need to be upgraded before proceeding
+	// log the issue, then return
+	if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+		contextLogger.WithFields(log.Fields{
+			"task": name,
+		}).Debug("pgcluster requires an upgrade before scheduled policy task can run")
+		return
+	}
+
 	filename := fmt.Sprintf("%s.sql", p.policy)
 	data := make(map[string]string)
 	data[filename] = string(policy.Spec.SQL)

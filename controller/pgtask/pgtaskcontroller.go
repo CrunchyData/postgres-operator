@@ -101,8 +101,8 @@ func (c *Controller) processNextItem() bool {
 
 	//process the incoming task
 	switch tmpTask.Spec.TaskType {
-	case crv1.PgtaskMinorUpgrade:
-		log.Debug("delete minor upgrade task added")
+	case crv1.PgtaskUpgrade:
+		log.Debug("upgrade task added")
 		clusteroperator.AddUpgrade(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
 	case crv1.PgtaskFailover:
 		log.Debug("failover task added")

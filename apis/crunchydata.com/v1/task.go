@@ -27,7 +27,10 @@ const PgtaskDeleteData = "delete-data"
 const PgtaskFailover = "failover"
 const PgtaskAutoFailover = "autofailover"
 const PgtaskAddPolicies = "addpolicies"
-const PgtaskMinorUpgrade = "minorupgradecluster"
+
+const PgtaskUpgrade = "clusterupgrade"
+const PgtaskUpgradeCreated = "cluster upgrade - task created"
+const PgtaskUpgradeInProgress = "cluster upgrade - in progress"
 
 const PgtaskWorkflow = "workflow"
 const PgtaskWorkflowCloneType = "cloneworkflow"

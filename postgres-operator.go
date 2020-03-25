@@ -74,6 +74,13 @@ func main() {
 		os.Exit(2)
 	}
 
+	// check the cluster version against the operator version and label if the cluster
+	// needs to be upgraded
+	if operatorupgrade.OperatorCRPgoVersionCheck(kubeClientset, pgoRESTclient, namespaceList); err != nil {
+		log.Error(err)
+		os.Exit(2)
+	}
+
 	// set up signals so we handle the first shutdown signal gracefully
 	stopCh := signals.SetupSignalHandler()
 
@@ -101,8 +108,6 @@ func main() {
 	}
 
 	defer controllerManager.RemoveAll()
-
-	operatorupgrade.OperatorUpdateCRPgoVersion(kubeClientset, pgoRESTclient, namespaceList)
 
 	log.Info("PostgreSQL Operator initialized and running, waiting for signal to exit")
 	<-stopCh

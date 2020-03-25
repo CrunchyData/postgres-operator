@@ -17,25 +17,26 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // CreateUpgradeHandler ...
 // pgo upgrade mycluster
-// parameters --upgrade-type
-// parameters --ccp-image-tag
 func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation POST /upgrades upgradeservice upgrades
 	/*```
-	UPGRADE performs an upgrade on a PostgreSQL cluster. For example:
+	UPGRADE performs an upgrade on a PostgreSQL cluster from an earlier version
+	of the Postgres Operator to the current version.
 
+	OTHER UPGRADE DESCRIPTION:
+	This upgrade will update the scale down any existing replicas while saving the primary
+	and pgbackrest repo PVCs, then update the existing pgcluster CR and resubmit it for
+	re-creation.
 
-
-	This upgrade will update the CCPImageTag of the deployment for the following: primary, replicas, and backrest-repo.
-	The running containers are upgraded one at a time, sequentially, in the following order: replicas, backrest-repo, then primary.
 	*/
 	// ---
 	//  produces:
@@ -81,6 +82,6 @@ func CreateUpgradeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = CreateUpgrade(&request, ns)
+	resp = CreateUpgrade(&request, ns, username)
 	json.NewEncoder(w).Encode(resp)
 }
