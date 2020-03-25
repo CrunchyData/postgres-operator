@@ -20,10 +20,28 @@ import (
 	"strings"
 )
 
-var pgDumpRestoreOptsBlacklist = []string{"--binary-upgrade", "--no-reconnect", "--dbname", "--host", "--port",
-	"--username", "--no-password", "--password", "--version"}
+var pgDumpRestoreOptsDenyList = []string{
+	"--binary-upgrade",
+	"--dbname",
+	"--host",
+	"--no-password",
+	"--no-reconnect",
+	"--password",
+	"--port",
+	"--username",
+	"--version",
+}
 
-var pgDumpRestoreOptsBlacklistShort = []string{"-R", "-d", "-h", "-p", "-U", "-w", "-W", "-V"}
+var pgDumpRestoreOptsDenyListShort = []string{
+	"-R",
+	"-d",
+	"-h",
+	"-p",
+	"-U",
+	"-w",
+	"-W",
+	"-V",
+}
 
 type pgDumpOptions struct {
 	DataOnly                   bool     `flag:"data-only" flag-short:"a"`
@@ -265,14 +283,14 @@ func (restoreOpts pgRestoreOptions) validate(setFlagFieldNames []string) error {
 	return nil
 }
 
-func (dumpOpts pgDumpOptions) getBlacklistFlags() ([]string, []string) {
-	return pgDumpRestoreOptsBlacklist, pgDumpRestoreOptsBlacklistShort
+func (dumpOpts pgDumpOptions) getDenyListFlags() ([]string, []string) {
+	return pgDumpRestoreOptsDenyList, pgDumpRestoreOptsDenyListShort
 }
 
-func (dumpAllOpts pgDumpAllOptions) getBlacklistFlags() ([]string, []string) {
-	return pgDumpRestoreOptsBlacklist, pgDumpRestoreOptsBlacklistShort
+func (dumpAllOpts pgDumpAllOptions) getDenyListFlags() ([]string, []string) {
+	return pgDumpRestoreOptsDenyList, pgDumpRestoreOptsDenyListShort
 }
 
-func (restoreOpts pgRestoreOptions) getBlacklistFlags() ([]string, []string) {
-	return pgDumpRestoreOptsBlacklist, pgDumpRestoreOptsBlacklistShort
+func (restoreOpts pgRestoreOptions) getDenyListFlags() ([]string, []string) {
+	return pgDumpRestoreOptsDenyList, pgDumpRestoreOptsDenyListShort
 }
