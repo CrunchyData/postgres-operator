@@ -300,7 +300,7 @@ func createRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER] = cluster.Spec.ClusterName
 
 	// Set the Patroni scope to the name of the primary deployment.  Replicas will get scope using the
-	// 'current-primary' label on the pgcluster
+	// 'crunchy-pgha-scope' label
 	cluster.Spec.UserLabels[config.LABEL_PGHA_SCOPE] = restoreToName
 
 	archiveMode := "on"
@@ -406,12 +406,10 @@ func createRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		return err
 	}
 
-	cluster.Spec.UserLabels[config.LABEL_CURRENT_PRIMARY] = restoreToName
-
+	// store the workflowID in a user label
 	cluster.Spec.UserLabels[crv1.PgtaskWorkflowID] = workflowID
-
-	err = util.PatchClusterCRD(restclient, cluster.Spec.UserLabels, cluster, namespace)
-	if err != nil {
+	// patch the pgcluster CRD with the updated info
+	if err = util.PatchClusterCRD(restclient, cluster.Spec.UserLabels, cluster, restoreToName, namespace); err != nil {
 		log.Error("could not patch primary crv1 with labels")
 		return err
 	}

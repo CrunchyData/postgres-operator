@@ -1270,6 +1270,14 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.BackrestS3Region = request.BackrestS3Region
 	}
 
+	// create a map for the annotations
+	annotations := map[string]string{}
+	// store the default current primary value as an annotation
+	annotations[config.ANNOTATION_CURRENT_PRIMARY] = spec.Name
+	// store the inital deployment value, which will match the
+	// cluster name initially
+	annotations[config.ANNOTATION_PRIMARY_DEPLOYMENT] = spec.Name
+
 	labels := make(map[string]string)
 	labels[config.LABEL_NAME] = name
 	if !request.AutofailFlag || apiserver.Pgo.Cluster.DisableAutofail {
@@ -1283,7 +1291,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	// set the pgBackRest repository path
 	spec.BackrestRepoPath = request.BackrestRepoPath
 
-	//pgbadger - set with global flag first then check for a user flag
+	// pgbadger - set with global flag first then check for a user flag
 	labels[config.LABEL_BADGER] = strconv.FormatBool(apiserver.BadgerFlag)
 	if request.BadgerFlag {
 		labels[config.LABEL_BADGER] = "true"
@@ -1295,8 +1303,9 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 	newInstance := &crv1.Pgcluster{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name:   name,
-			Labels: labels,
+			Name:        name,
+			Labels:      labels,
+			Annotations: annotations,
 		},
 		Spec: spec,
 		Status: crv1.PgclusterStatus{

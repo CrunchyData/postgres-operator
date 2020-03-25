@@ -21,6 +21,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/util"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
@@ -117,6 +118,10 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	if isPromotedPostgresPod(oldPod, newPod) {
 		log.Debugf("Pod Controller: pod %s in namespace %s promoted, calling pod promotion "+
 			"handler", newPod.Name, newPod.Namespace)
+
+		// update the pgcluster's current primary information to match the promotion
+		setCurrentPrimary(c.PodClient, newPod, &cluster)
+
 		if err := c.handlePostgresPodPromotion(newPod, cluster); err != nil {
 			log.Error(err)
 			return
@@ -126,6 +131,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	if isPromotedStandby(oldPod, newPod) {
 		log.Debugf("Pod Controller: standby pod %s in namespace %s promoted, calling standby pod "+
 			"promotion handler", newPod.Name, newPod.Namespace)
+
 		if err := c.handleStandbyPromotion(newPod, cluster); err != nil {
 			log.Error(err)
 			return
@@ -143,6 +149,20 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	}
 
 	return
+}
+
+// setCurrentPrimary checks whether the newly promoted primary value differs from the pgcluster's
+// current primary value. If different, patch the CRD's annotation to match the new value
+func setCurrentPrimary(restclient *rest.RESTClient, newPod *apiv1.Pod, cluster *crv1.Pgcluster) {
+	// if a failover has occured and the current primary has changed, update the pgcluster CRD's annotation accordingly
+	if cluster.Annotations[config.ANNOTATION_CURRENT_PRIMARY] != newPod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME] {
+		err := util.CurrentPrimaryUpdate(restclient, cluster, newPod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME], newPod.Namespace)
+		if err != nil {
+			log.Errorf("PodController unable to patch pgcluster %s with currentprimary value %s Error: %s", cluster.Spec.ClusterName,
+				newPod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME], err)
+			return
+		}
+	}
 }
 
 // onDelete is called when a pgcluster is deleted

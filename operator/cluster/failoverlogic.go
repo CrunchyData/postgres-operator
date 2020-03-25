@@ -108,14 +108,15 @@ func Failover(identifier string, clientset *kubernetes.Clientset, client *rest.R
 		log.Errorf("could not find pgcluster %s with labels", clusterName)
 		return err
 	}
-	cluster.Spec.UserLabels[config.LABEL_CURRENT_PRIMARY] = targetDepName
-	err = util.PatchClusterCRD(client, cluster.Spec.UserLabels, &cluster, namespace)
-	if err != nil {
-		log.Errorf("failoverlogic: could not patch pgcluster %s with labels", clusterName)
+
+	// update the CRD with the new current primary. If there is an error, log it
+	// here, otherwise return
+	if err := util.CurrentPrimaryUpdate(client, &cluster, target, namespace); err != nil {
+		log.Error(err)
 		return err
 	}
 
-	return err
+	return nil
 
 }
 
