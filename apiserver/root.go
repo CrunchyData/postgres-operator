@@ -531,12 +531,6 @@ func validateWithKube() {
 
 // GetContainerResources ...
 func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
-
-	//test for the case where no container resources are specified
-	if resources.RequestsMemory == "" || resources.RequestsCPU == "" ||
-		resources.LimitsMemory == "" || resources.LimitsCPU == "" {
-		return ""
-	}
 	fields := containerResourcesTemplateFields{}
 	fields.RequestsMemory = resources.RequestsMemory
 	fields.RequestsCPU = resources.RequestsCPU

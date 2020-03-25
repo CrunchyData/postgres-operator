@@ -554,6 +554,23 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		}
 	}
 
+	// evaluate if the CPU / Memory have been set to custom values
+	if request.CPURequest != "" {
+		if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest, request.CPURequest, err.Error())
+			return resp
+		}
+	}
+
+	if request.MemoryRequest != "" {
+		if err := apiserver.ValidateQuantity(request.MemoryRequest); err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest, request.MemoryRequest, err.Error())
+			return resp
+		}
+	}
+
 	// validate the storage type for each specified tablespace actually exists.
 	// if a PVCSize is passed in, also validate that it follows the Kubernetes
 	// format
@@ -948,6 +965,19 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		if defaultContainerResource != "" {
 			spec.ContainerResources, _ = apiserver.Pgo.GetContainerResource(defaultContainerResource)
 		}
+	}
+
+	// if the request has overriding CPURequest and/or MemoryRequest parameters,
+	// these will take precedence over the values set by "ContainerResources"
+	// This will also overwrite the Limits
+	if request.CPURequest != "" {
+		spec.ContainerResources.RequestsCPU = request.CPURequest
+		spec.ContainerResources.LimitsCPU = ""
+	}
+
+	if request.MemoryRequest != "" {
+		spec.ContainerResources.RequestsMemory = request.MemoryRequest
+		spec.ContainerResources.LimitsMemory = ""
 	}
 
 	spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.PrimaryStorage)

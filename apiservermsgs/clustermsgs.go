@@ -108,6 +108,12 @@ type CreateClusterRequest struct {
 	// CASecret is the name of the secret that contains the CA to use along with
 	// the TLS keypair for deploying a TLS-enabled PostgreSQL cluster
 	CASecret string
+	// CPURequest is the value of how much CPU should be requested for deploying
+	// the PostgreSQL cluster
+	CPURequest string
+	// MemoryRequest is the value of how much RAM should be requested for
+	// deploying the PostgreSQL cluster
+	MemoryRequest string
 }
 
 // CreateClusterDetail provides details about the PostgreSQL cluster that is

@@ -27,6 +27,8 @@ import (
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 // below are the tablespace parameters and the expected values of each
@@ -281,6 +283,26 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	// only set SyncReplication in the request if actually provided via the CLI
 	if createClusterCmd.Flag("sync-replication").Changed {
 		r.SyncReplication = &SyncReplication
+	}
+
+	// if the user provided resources for CPU or Memory, validate them to ensure
+	// they are valid Kubernetes values
+	if CPURequest != "" {
+		if _, err := resource.ParseQuantity(CPURequest); err != nil {
+			fmt.Println("Error:", err.Error(), `"`+CPURequest+`"`)
+			os.Exit(1)
+		}
+
+		r.CPURequest = CPURequest
+	}
+
+	if MemoryRequest != "" {
+		if _, err := resource.ParseQuantity(MemoryRequest); err != nil {
+			fmt.Println("Error:", err.Error(), `"`+MemoryRequest+`"`)
+			os.Exit(1)
+		}
+
+		r.MemoryRequest = MemoryRequest
 	}
 
 	response, err := api.CreateCluster(httpclient, &SessionCredentials, r)
