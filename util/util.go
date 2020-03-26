@@ -24,17 +24,15 @@ import (
 	"strings"
 	"time"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 )
 
@@ -257,37 +255,6 @@ func CreateBackrestPVCSnippet(backRestPVCName string) string {
 	sc.WriteString("}")
 
 	return sc.String()
-}
-
-// NewClient gets a REST connection to Kube
-func NewClient(cfg *rest.Config) (*rest.RESTClient, *runtime.Scheme, error) {
-	newScheme := runtime.NewScheme()
-
-	if err := crv1.AddToScheme(newScheme); err != nil {
-		return nil, nil, err
-	}
-
-	// need to register the objects with the global scheme as well
-	if err := crv1.AddToScheme(scheme.Scheme); err != nil {
-		return nil, nil, err
-	}
-
-	config := *cfg
-	config.GroupVersion = &crv1.SchemeGroupVersion
-	config.APIPath = "/apis"
-	config.ContentType = runtime.ContentTypeJSON
-	config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
-
-	if config.UserAgent == "" {
-		config.UserAgent = rest.DefaultKubernetesUserAgent()
-	}
-
-	client, err := rest.RESTClientFor(&config)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return client, newScheme, nil
 }
 
 // IsStringOneOf tests to see string testVal is included in the list

@@ -28,14 +28,13 @@ import (
 	"strings"
 	"time"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/tlsutil"
-	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -145,16 +144,14 @@ func Initialize() {
 func ConnectToKube() {
 
 	var err error
-	RESTConfig, Clientset, err = kubeapi.NewControllerClient()
+	controllerClients, err := kubeapi.NewControllerClients()
 	if err != nil {
 		panic(err)
 	}
 
-	RESTClient, _, err = util.NewClient(RESTConfig)
-	if err != nil {
-		panic(err)
-	}
-
+	RESTConfig = controllerClients.Config
+	RESTClient = controllerClients.PGORestclient
+	Clientset = controllerClients.Kubeclientset
 }
 
 func initConfig() {

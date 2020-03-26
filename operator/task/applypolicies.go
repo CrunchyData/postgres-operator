@@ -17,7 +17,9 @@ package task
 
 import (
 	"encoding/json"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"strings"
+
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 	jsonpatch "github.com/evanphx/json-patch"
@@ -25,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"strings"
 )
 
 // RemoveBackups ...

@@ -21,7 +21,10 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"os"
+	"strconv"
+
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
@@ -29,8 +32,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
-	"os"
-	"strconv"
 )
 
 type RmdataJob struct {

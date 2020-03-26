@@ -16,26 +16,21 @@ limitations under the License.
 */
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"reflect"
 	"strconv"
 	"strings"
-	"sync"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/ns"
-	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
 
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
+	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -45,41 +40,9 @@ import (
 // Controller holds the connections for the controller
 type Controller struct {
 	PgclusterClient    *rest.RESTClient
-	PgclusterScheme    *runtime.Scheme
 	PgclusterClientset *kubernetes.Clientset
 	Queue              workqueue.RateLimitingInterface
-	Ctx                context.Context
-	informerNsMutex    sync.Mutex
-	InformerNamespaces map[string]struct{}
-}
-
-// Run starts an pgcluster resource controller
-func (c *Controller) Run() error {
-	log.Debug("Watch Pgcluster objects")
-
-	//shut down the work queue to cause workers to end
-	defer c.Queue.ShutDown()
-
-	err := c.watchPgclusters(c.Ctx)
-	if err != nil {
-		log.Errorf("Failed to register watch for Pgcluster resource: %v", err)
-		return err
-	}
-
-	<-c.Ctx.Done()
-
-	return c.Ctx.Err()
-}
-
-// watchPgclusters is the event loop for pgcluster resources
-func (c *Controller) watchPgclusters(ctx context.Context) error {
-	nsList := ns.GetNamespaces(c.PgclusterClientset, operator.InstallationName)
-
-	for i := 0; i < len(nsList); i++ {
-		log.Infof("starting pgcluster controller for ns [%s]", nsList[i])
-		c.SetupWatch(nsList[i])
-	}
-	return nil
+	Informer           informers.PgclusterInformer
 }
 
 // onAdd is called when a pgcluster is added
@@ -278,42 +241,16 @@ func getReadyStatus(pod *v1.Pod) (string, bool) {
 
 }
 
-func (c *Controller) SetupWatch(ns string) {
+// AddPGClusterEventHandler adds the pgcluster event handler to the pgcluster informer
+func (c *Controller) AddPGClusterEventHandler() {
 
-	// don't create informer for namespace if one has already been created
-	c.informerNsMutex.Lock()
-	defer c.informerNsMutex.Unlock()
-	if _, ok := c.InformerNamespaces[ns]; ok {
-		return
-	}
-	c.InformerNamespaces[ns] = struct{}{}
+	c.Informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    c.onAdd,
+		UpdateFunc: c.onUpdate,
+		DeleteFunc: c.onDelete,
+	})
 
-	source := cache.NewListWatchFromClient(
-		c.PgclusterClient,
-		crv1.PgclusterResourcePlural,
-		ns,
-		fields.Everything())
-
-	_, controller := cache.NewInformer(
-		source,
-
-		// The object type.
-		&crv1.Pgcluster{},
-
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
-
-		// Your custom resource event handlers.
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.onAdd,
-			UpdateFunc: c.onUpdate,
-			DeleteFunc: c.onDelete,
-		})
-
-	go controller.Run(c.Ctx.Done())
-	log.Debugf("pgcluster Controller created informer for namespace %s", ns)
+	log.Debugf("pgcluster Controller: added event handler to informer")
 }
 
 func addIdentifier(clusterCopy *crv1.Pgcluster) {

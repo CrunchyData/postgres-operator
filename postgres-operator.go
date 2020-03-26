@@ -16,34 +16,26 @@ limitations under the License.
 */
 
 import (
-	"context"
-	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/controller/namespace"
-	"github.com/crunchydata/postgres-operator/controller/pgcluster"
-	"github.com/crunchydata/postgres-operator/controller/pgpolicy"
-	"github.com/crunchydata/postgres-operator/controller/pgreplica"
-	"github.com/crunchydata/postgres-operator/controller/pgtask"
-	"github.com/crunchydata/postgres-operator/controller/pod"
+	"github.com/kubernetes/sample-controller/pkg/signals"
 
-	"github.com/crunchydata/postgres-operator/controller/job"
+	"github.com/crunchydata/postgres-operator/controller/manager"
+	"github.com/crunchydata/postgres-operator/controller/namespace"
 	crunchylog "github.com/crunchydata/postgres-operator/logging"
+	"github.com/crunchydata/postgres-operator/operator/operatorupgrade"
 	log "github.com/sirupsen/logrus"
 
-	"k8s.io/client-go/util/workqueue"
+	kubeinformers "k8s.io/client-go/informers"
 
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
-	"github.com/crunchydata/postgres-operator/operator/operatorupgrade"
-	"github.com/crunchydata/postgres-operator/util"
 )
 
 func main() {
+
 	debugFlag := os.Getenv("CRUNCHY_DEBUG")
 	//add logging configuration
 	crunchylog.CrunchyLogger(crunchylog.SetParameters())
@@ -57,117 +49,52 @@ func main() {
 	//give time for pgo-event to start up
 	time.Sleep(time.Duration(5) * time.Second)
 
-	config, Clientset, err := kubeapi.NewControllerClient()
+	clients, err := kubeapi.NewControllerClients()
 	if err != nil {
 		log.Error(err)
 		os.Exit(2)
 	}
 
-	// make a new config for our extension's API group, using the first config as a baseline
-	crdClient, crdScheme, err := util.NewClient(config)
-	if err != nil {
-		log.Error(err)
-		os.Exit(2)
-	}
+	kubeClientset := clients.Kubeclientset
+	pgoRESTclient := clients.PGORestclient
 
-	operator.Initialize(Clientset)
+	operator.Initialize(kubeClientset)
 
-	namespaceList := ns.GetNamespaces(Clientset, operator.InstallationName)
+	namespaceList := ns.GetNamespaces(kubeClientset, operator.InstallationName)
 	log.Debugf("watching the following namespaces: [%v]", namespaceList)
 
 	//validate the NAMESPACE env var
-	err = ns.ValidateNamespaces(Clientset, operator.InstallationName, operator.PgoNamespace)
+	err = ns.ValidateNamespaces(kubeClientset, operator.InstallationName, operator.PgoNamespace)
 	if err != nil {
 		log.Error(err)
 		os.Exit(2)
 	}
 
-	// start a controller on instances of our custom resource
-	ctx, cancelFunc := context.WithCancel(context.Background())
+	// set up signals so we handle the first shutdown signal gracefully
+	stopCh := signals.SetupSignalHandler()
 
-	pgTaskcontroller := &pgtask.Controller{
-		PgtaskConfig:       config,
-		PgtaskClient:       crdClient,
-		PgtaskScheme:       crdScheme,
-		PgtaskClientset:    Clientset,
-		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		Ctx:                ctx,
-		InformerNamespaces: make(map[string]struct{}),
-	}
+	// create a new controller manager with controllers for all current namespaces and then run
+	// all of those controllers
+	controllerManager, err := manager.NewControllerManager(namespaceList)
+	controllerManager.RunAll()
 
-	pgClustercontroller := &pgcluster.Controller{
-		PgclusterClient:    crdClient,
-		PgclusterScheme:    crdScheme,
-		PgclusterClientset: Clientset,
-		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		Ctx:                ctx,
-		InformerNamespaces: make(map[string]struct{}),
+	nsKubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientset, 0)
+	nsController, err := namespace.NewNamespaceController(clients, controllerManager,
+		nsKubeInformerFactory.Core().V1().Namespaces())
+	if err != nil {
+		log.Error(err)
+		os.Exit(2)
 	}
-	pgReplicacontroller := &pgreplica.Controller{
-		PgreplicaClient:    crdClient,
-		PgreplicaScheme:    crdScheme,
-		PgreplicaClientset: Clientset,
-		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		Ctx:                ctx,
-		InformerNamespaces: make(map[string]struct{}),
-	}
-	pgPolicycontroller := &pgpolicy.Controller{
-		PgpolicyClient:     crdClient,
-		PgpolicyScheme:     crdScheme,
-		PgpolicyClientset:  Clientset,
-		Ctx:                ctx,
-		InformerNamespaces: make(map[string]struct{}),
-	}
-	podcontroller := &pod.Controller{
-		PodClientset:       Clientset,
-		PodClient:          crdClient,
-		PodConfig:          config,
-		Ctx:                ctx,
-		InformerNamespaces: make(map[string]struct{}),
-	}
-	jobcontroller := &job.Controller{
-		JobConfig:          config,
-		JobClientset:       Clientset,
-		JobClient:          crdClient,
-		Ctx:                ctx,
-		InformerNamespaces: make(map[string]struct{}),
-	}
-	nscontroller := &namespace.Controller{
-		NamespaceClientset:  Clientset,
-		NamespaceClient:     crdClient,
-		Ctx:                 ctx,
-		PodController:       podcontroller,
-		JobController:       jobcontroller,
-		PgpolicyController:  pgPolicycontroller,
-		PgreplicaController: pgReplicacontroller,
-		PgclusterController: pgClustercontroller,
-		PgtaskController:    pgTaskcontroller,
-	}
+	nsController.AddNamespaceEventHandler()
 
-	defer cancelFunc()
-	go pgTaskcontroller.Run()
-	go pgTaskcontroller.RunWorker()
-	go pgClustercontroller.Run()
-	go pgClustercontroller.RunWorker()
-	go pgReplicacontroller.Run()
-	go pgReplicacontroller.RunWorker()
-	go pgPolicycontroller.Run()
-	go podcontroller.Run()
-	go nscontroller.Run()
-	go jobcontroller.Run()
+	// start the namespace controller
+	nsKubeInformerFactory.Start(stopCh)
 
-	operatorupgrade.OperatorUpdateCRPgoVersion(Clientset, crdClient, namespaceList)
+	defer controllerManager.StopAll()
 
-	fmt.Print("at end of setup, beginning wait...")
+	operatorupgrade.OperatorUpdateCRPgoVersion(kubeClientset, pgoRESTclient, namespaceList)
 
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
-	for {
-		select {
-		case s := <-signals:
-			log.Infof("received signal %#v, exiting...\n", s)
-			os.Exit(0)
-		}
-	}
-
+	log.Info("PostgreSQL Operator initialized and running, waiting for signal to exit")
+	<-stopCh
+	log.Infof("Signal received, now exiting")
 }

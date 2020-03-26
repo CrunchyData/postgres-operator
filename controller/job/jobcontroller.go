@@ -16,15 +16,10 @@ limitations under the License.
 */
 
 import (
-	"context"
-	"sync"
-
 	"github.com/crunchydata/postgres-operator/config"
-	"github.com/crunchydata/postgres-operator/ns"
-	"github.com/crunchydata/postgres-operator/operator"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
-	"k8s.io/apimachinery/pkg/fields"
+	batchinformers "k8s.io/client-go/informers/batch/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -32,44 +27,16 @@ import (
 
 // Controller holds the connections for the controller
 type Controller struct {
-	JobConfig          *rest.Config
-	JobClient          *rest.RESTClient
-	JobClientset       *kubernetes.Clientset
-	Ctx                context.Context
-	informerNsMutex    sync.Mutex
-	InformerNamespaces map[string]struct{}
+	JobConfig    *rest.Config
+	JobClient    *rest.RESTClient
+	JobClientset *kubernetes.Clientset
+	Informer     batchinformers.JobInformer
 }
 
 const (
 	patchResource = "pgtasks"
 	patchURL      = "/spec/status"
 )
-
-// Run starts an pod resource controller
-func (c *Controller) Run() error {
-
-	err := c.watchJobs(c.Ctx)
-	if err != nil {
-		log.Errorf("Failed to register watch for job resource: %v\n", err)
-		return err
-	}
-
-	<-c.Ctx.Done()
-	return c.Ctx.Err()
-}
-
-// watchJobs is the event loop for job resources
-func (c *Controller) watchJobs(ctx context.Context) error {
-	nsList := ns.GetNamespaces(c.JobClientset, operator.InstallationName)
-	log.Debugf("jobController watching %v namespaces", nsList)
-
-	for i := 0; i < len(nsList); i++ {
-		log.Infof("starting job controller for ns [%s]", nsList[i])
-		c.SetupWatch(nsList[i])
-
-	}
-	return nil
-}
 
 // onAdd is called when a postgresql operator job is created and an associated add event is
 // generated
@@ -140,44 +107,14 @@ func (c *Controller) onDelete(obj interface{}) {
 	log.Debugf("[Job Controller] onDelete ns=%s %s", job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink)
 }
 
-// SetupWatch creates creates a new controller that provides event notifications when jobs are
-// added, updated and deleted in the specific namespace specified.  This includes defining the
-// funtions that should be called when various add, update and delete events are received.  Only
-// one controller can be created per namespace to ensure duplicate events are not generated.
-func (c *Controller) SetupWatch(ns string) {
+// AddJobEventHandler adds the job event handler to the job informer
+func (c *Controller) AddJobEventHandler() {
 
-	// don't create informer for namespace if one has already been created
-	c.informerNsMutex.Lock()
-	defer c.informerNsMutex.Unlock()
-	if _, ok := c.InformerNamespaces[ns]; ok {
-		return
-	}
-	c.InformerNamespaces[ns] = struct{}{}
+	c.Informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    c.onAdd,
+		UpdateFunc: c.onUpdate,
+		DeleteFunc: c.onDelete,
+	})
 
-	source := cache.NewListWatchFromClient(
-		c.JobClientset.BatchV1().RESTClient(),
-		"jobs",
-		ns,
-		fields.Everything())
-
-	_, controller := cache.NewInformer(
-		source,
-
-		// The object type.
-		&apiv1.Job{},
-
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
-
-		// Your custom resource event handlers.
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.onAdd,
-			UpdateFunc: c.onUpdate,
-			DeleteFunc: c.onDelete,
-		})
-
-	go controller.Run(c.Ctx.Done())
-	log.Debugf("Job Controller: created informer for namespace %s", ns)
+	log.Debugf("Job Controller: added event handler to informer")
 }

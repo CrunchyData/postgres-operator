@@ -16,14 +16,15 @@ package operatorupgrade
 */
 
 import (
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"time"
+
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"time"
 )
 
 // OperatorUpdateCRPgoVersion - Update existing pgcluster custom resources to show current operator version. This is called each time the operator starts up.

@@ -16,13 +16,17 @@ limitations under the License.
 */
 
 import (
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
 )
 
+// WorkerRunner is an interface for controllers the have worker queues that need to be run
+type WorkerRunner interface {
+	RunWorker()
+}
 
 // InitializeReplicaCreation initializes the creation of replicas for a cluster.  For a regular
 // (i.e. non-standby) cluster this is called following the creation of the initial cluster backup,

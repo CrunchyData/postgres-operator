@@ -18,10 +18,11 @@ package scheduleservice
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/crunchydata/postgres-operator/apiserver/backupoptions"
 	"time"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/apiserver/backupoptions"
+
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"

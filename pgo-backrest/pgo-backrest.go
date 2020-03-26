@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"strings"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 )
@@ -77,7 +77,7 @@ func main() {
 	PGHA_PGBACKREST_LOCAL_S3_STORAGE, _ := strconv.ParseBool(os.Getenv("PGHA_PGBACKREST_LOCAL_S3_STORAGE"))
 	log.Debugf("setting PGHA_PGBACKREST_LOCAL_S3_STORAGE to %v", PGHA_PGBACKREST_LOCAL_S3_STORAGE)
 
-	config, clientset, err := kubeapi.NewClient()
+	config, clientset, err := kubeapi.NewKubeClient()
 	if err != nil {
 		panic(err)
 	}

@@ -19,16 +19,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"os"
+	"strings"
+	"time"
+
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"os"
-	"strings"
-	"time"
 )
 
 type matchLabelsTemplateFields struct {
