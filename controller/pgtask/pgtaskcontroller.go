@@ -16,22 +16,17 @@ limitations under the License.
 */
 
 import (
-	"context"
 	"strings"
-	"sync"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/ns"
-	"github.com/crunchydata/postgres-operator/operator"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	pgdumpoperator "github.com/crunchydata/postgres-operator/operator/pgdump"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
+	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -40,44 +35,11 @@ import (
 
 // Controller holds connections for the controller
 type Controller struct {
-	PgtaskConfig       *rest.Config
-	PgtaskClient       *rest.RESTClient
-	PgtaskScheme       *runtime.Scheme
-	PgtaskClientset    *kubernetes.Clientset
-	Queue              workqueue.RateLimitingInterface
-	Ctx                context.Context
-	informerNsMutex    sync.Mutex
-	InformerNamespaces map[string]struct{}
-}
-
-// Run starts an pgtask resource controller
-func (c *Controller) Run() error {
-	log.Debug("Watch Pgtask objects")
-
-	//shut down the work queue to cause workers to end
-	defer c.Queue.ShutDown()
-
-	// Watch Example objects
-	err := c.watchPgtasks(c.Ctx)
-	if err != nil {
-		log.Errorf("Failed to register watch for Pgtask resource: %v", err)
-		return err
-	}
-
-	<-c.Ctx.Done()
-	return c.Ctx.Err()
-}
-
-// watchPgtasks watches the pgtask resource catching events
-func (c *Controller) watchPgtasks(ctx context.Context) error {
-	nsList := ns.GetNamespaces(c.PgtaskClientset, operator.InstallationName)
-
-	for i := 0; i < len(nsList); i++ {
-		log.Infof("starting pgtask controller on ns [%s]", nsList[i])
-
-		c.SetupWatch(nsList[i])
-	}
-	return nil
+	PgtaskConfig    *rest.Config
+	PgtaskClient    *rest.RESTClient
+	PgtaskClientset *kubernetes.Clientset
+	Queue           workqueue.RateLimitingInterface
+	Informer        informers.PgtaskInformer
 }
 
 func (c *Controller) RunWorker() {
@@ -214,42 +176,16 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 func (c *Controller) onDelete(obj interface{}) {
 }
 
-func (c *Controller) SetupWatch(ns string) {
+// AddPGTaskEventHandler adds the pgtask event handler to the pgtask informer
+func (c *Controller) AddPGTaskEventHandler() {
 
-	// don't create informer for namespace if one has already been created
-	c.informerNsMutex.Lock()
-	defer c.informerNsMutex.Unlock()
-	if _, ok := c.InformerNamespaces[ns]; ok {
-		return
-	}
-	c.InformerNamespaces[ns] = struct{}{}
+	c.Informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    c.onAdd,
+		UpdateFunc: c.onUpdate,
+		DeleteFunc: c.onDelete,
+	})
 
-	source := cache.NewListWatchFromClient(
-		c.PgtaskClient,
-		crv1.PgtaskResourcePlural,
-		ns,
-		fields.Everything())
-
-	_, controller := cache.NewInformer(
-		source,
-
-		// The object type.
-		&crv1.Pgtask{},
-
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
-
-		// Your custom resource event handlers.
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.onAdd,
-			UpdateFunc: c.onUpdate,
-			DeleteFunc: c.onDelete,
-		})
-
-	go controller.Run(c.Ctx.Done())
-	log.Debugf("pgtask Controller created informer for namespace %s", ns)
+	log.Debugf("pgtask Controller: added event handler to informer")
 }
 
 //de-dupe logic for a failover, if the failover started

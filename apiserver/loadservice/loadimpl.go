@@ -18,12 +18,12 @@ limitations under the License.
 import (
 	"bytes"
 	"encoding/json"
-	"strconv"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"

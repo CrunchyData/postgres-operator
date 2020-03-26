@@ -17,7 +17,8 @@ package kubeapi
 
 import (
 	"encoding/json"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"

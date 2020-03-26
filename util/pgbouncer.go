@@ -18,7 +18,7 @@ package util
 import (
 	"fmt"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 )
 
 // pgBouncerSecretFormat is the name of the Kubernetes Secret that pgBouncer

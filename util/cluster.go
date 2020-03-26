@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"strings"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/sshutil"
@@ -269,6 +269,60 @@ func SetPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Con
 	} else if stderr != "" {
 		log.Error(stderr)
 		return fmt.Errorf(stderr)
+	}
+
+	return nil
+}
+
+// InitializeReplicaCreation initializes the creation of replicas for a cluster.  For a regular
+// (i.e. non-standby) cluster this is called following the creation of the initial cluster backup,
+// which is needed to bootstrap replicas.  However, for a standby cluster this is called as
+// soon as the primary PG pod reports ready and the cluster is marked as initialized.
+func InitializeReplicaCreation(restclient *rest.RESTClient, clusterName,
+	namespace string) error {
+
+	pgreplicaList := &crv1.PgreplicaList{}
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
+	err := kubeapi.GetpgreplicasBySelector(restclient, pgreplicaList, selector, namespace)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	for _, pgreplica := range pgreplicaList.Items {
+
+		if pgreplica.Annotations == nil {
+			pgreplica.Annotations = make(map[string]string)
+		}
+
+		pgreplica.Annotations[config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA] = "true"
+
+		if err = kubeapi.Updatepgreplica(restclient, &pgreplica, pgreplica.Name,
+			namespace); err != nil {
+
+			log.Error(err)
+			return err
+		}
+	}
+	return nil
+}
+
+// SetClusterInitializedStatus sets the status of a pgcluster CR to indicate that it has been
+// initialized.  This is specifically done by patching the status of the pgcluster CR with the
+// proper initialization status.
+func SetClusterInitializedStatus(restclient *rest.RESTClient, clusterName,
+	namespace string) error {
+
+	cluster := crv1.Pgcluster{}
+	if _, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName,
+		namespace); err != nil {
+		log.Error(err)
+		return err
+	}
+	message := "Cluster has been initialized"
+	if err := kubeapi.PatchpgclusterStatus(restclient, crv1.PgclusterStateInitialized, message,
+		&cluster, namespace); err != nil {
+		log.Error(err)
+		return err
 	}
 
 	return nil

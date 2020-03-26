@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 )
 
 // defines the default repo1-path for pgBackRest for use when a specic path is not provided

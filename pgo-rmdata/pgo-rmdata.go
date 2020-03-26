@@ -22,7 +22,6 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	crunchylog "github.com/crunchydata/postgres-operator/logging"
 	"github.com/crunchydata/postgres-operator/pgo-rmdata/rmdata"
-	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 )
@@ -61,12 +60,12 @@ func main() {
 	}
 
 	var err error
-	request.RESTConfig, request.Clientset, err = kubeapi.NewClient()
+	_, request.Clientset, err = kubeapi.NewKubeClient()
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
 
-	request.RESTClient, _, err = util.NewClient(request.RESTConfig)
+	_, request.RESTClient, _, err = kubeapi.NewPGOClient()
 	if err != nil {
 		log.Fatalln(err.Error())
 	}

@@ -16,10 +16,20 @@ package kubeapi
 */
 
 import (
+	clientset "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
+
+// ControllerClients stores the various clients needed by a controller
+type ControllerClients struct {
+	Config        *rest.Config
+	Kubeclientset *kubernetes.Clientset
+	PGOClientset  *clientset.Clientset
+	PGORestclient *rest.RESTClient
+}
 
 func loadClientConfig() (*rest.Config, error) {
 	// The default loading rules try to read from the files specified in the
@@ -33,23 +43,62 @@ func loadClientConfig() (*rest.Config, error) {
 	).ClientConfig()
 }
 
-// NewClient returns a Clientset and its underlying configuration.
-func NewClient() (*rest.Config, *kubernetes.Clientset, error) {
+// NewKubeClient returns a Clientset for interacting with Kubernetes resources
+func NewKubeClient() (*rest.Config, *kubernetes.Clientset, error) {
+
 	config, err := loadClientConfig()
 	if err != nil {
 		return nil, nil, err
 	}
 
-	clientset, err := kubernetes.NewForConfig(config)
+	clientset, err := createKubeClient(config)
+	if err != nil {
+		return nil, nil, err
+	}
 	return config, clientset, err
 }
 
-// NewControllerClient returns a Clientset and its underlying configuration.
-// The Clientset is configured with a higher than normal QPS and Burst limit.
-func NewControllerClient() (*rest.Config, *kubernetes.Clientset, error) {
+// NewPGOClient gets a REST connection to Kube
+func NewPGOClient() (*rest.Config, *rest.RESTClient, *clientset.Clientset, error) {
+
 	config, err := loadClientConfig()
 	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	pgoRESTClient, pgoClientset, err := createPGOClient(config)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return config, pgoRESTClient, pgoClientset, nil
+}
+
+// createPGOClient creates a PGO RESTClient and Clientset using the provided configuration
+func createKubeClient(config *rest.Config) (*kubernetes.Clientset, error) {
+	return kubernetes.NewForConfig(config)
+}
+
+// createPGOClient creates a PGO RESTClient and Clientset using the provided configuration
+func createPGOClient(config *rest.Config) (*rest.RESTClient, *clientset.Clientset, error) {
+	// create a client for pgo resources
+	pgoClientset, err := clientset.NewForConfig(config)
+	pgoRESTClient := pgoClientset.CrunchydataV1().RESTClient().(*rest.RESTClient)
+	if err != nil {
+		log.Error(err)
 		return nil, nil, err
+	}
+	return pgoRESTClient, pgoClientset, nil
+}
+
+// NewControllerClients returns a ControllerClients struct containing the various clients needed for a controller.
+// This includes a Kubernetes Clientset, along with a PGO Clientset with its associated RESTClient  and its underlying configuration.
+// The Clientset is configured with a higher than normal QPS and Burst limit.
+func NewControllerClients() (*ControllerClients, error) {
+
+	config, err := loadClientConfig()
+	if err != nil {
+		return nil, err
 	}
 
 	// Match the settings applied by sigs.k8s.io/controller-runtime@v0.4.0;
@@ -59,6 +108,20 @@ func NewControllerClient() (*rest.Config, *kubernetes.Clientset, error) {
 		config.Burst = 30.0
 	}
 
-	clientset, err := kubernetes.NewForConfig(config)
-	return config, clientset, err
+	kubeClient, err := createKubeClient(config)
+	if err != nil {
+		return nil, err
+	}
+
+	pgoRESTClient, pgoClientset, err := createPGOClient(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ControllerClients{
+		Config:        config,
+		Kubeclientset: kubeClient,
+		PGOClientset:  pgoClientset,
+		PGORestclient: pgoRESTClient,
+	}, nil
 }

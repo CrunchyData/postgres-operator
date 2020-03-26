@@ -16,7 +16,7 @@ limitations under the License.
 */
 
 import (
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 )
 
 // ShowPolicyRequest ...

@@ -19,9 +19,8 @@ import (
 	"fmt"
 	"strconv"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
-	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
@@ -182,7 +181,7 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 		backrestoperator.StanzaCreate(namespace, clusterName,
 			c.PodClientset, c.PodClient)
 	} else {
-		controller.SetClusterInitializedStatus(c.PodClient, clusterName,
+		util.SetClusterInitializedStatus(c.PodClient, clusterName,
 			namespace)
 	}
 
@@ -191,7 +190,7 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	// stanza-creation and/or the creation of any backups, since the replicas
 	// will be generated from the pgBackRest repository of an external PostgreSQL
 	// database (which should already exist).
-	controller.InitializeReplicaCreation(c.PodClient, clusterName, namespace)
+	util.InitializeReplicaCreation(c.PodClient, clusterName, namespace)
 
 	// if this is a pgbouncer enabled cluster, add a pgbouncer
 	if cluster.Labels[config.LABEL_PGBOUNCER] == "true" {

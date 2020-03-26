@@ -19,9 +19,8 @@ import (
 	"fmt"
 	"time"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
-	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
@@ -167,11 +166,11 @@ func (c *Controller) handleBackrestBackupUpdate(job *apiv1.Job) error {
 	if labels[config.LABEL_PGHA_BACKUP_TYPE] == crv1.BackupTypeBootstrap {
 		log.Debugf("jobController onUpdate initial backup complete")
 
-		controller.SetClusterInitializedStatus(c.JobClient, labels[config.LABEL_PG_CLUSTER],
+		util.SetClusterInitializedStatus(c.JobClient, labels[config.LABEL_PG_CLUSTER],
 			job.ObjectMeta.Namespace)
 
 		// now initialize the creation of any replica
-		controller.InitializeReplicaCreation(c.JobClient, labels[config.LABEL_PG_CLUSTER],
+		util.InitializeReplicaCreation(c.JobClient, labels[config.LABEL_PG_CLUSTER],
 			job.ObjectMeta.Namespace)
 
 	} else if labels[config.LABEL_PGHA_BACKUP_TYPE] == crv1.BackupTypeFailover {
@@ -221,7 +220,7 @@ func (c *Controller) handleBackrestStanzaCreateUpdate(job *apiv1.Job) error {
 		if cluster.Spec.Standby {
 			log.Debugf("job Controller: standby cluster %s will now be set to an initialized "+
 				"status", clusterName)
-			controller.SetClusterInitializedStatus(c.JobClient, clusterName, namespace)
+			util.SetClusterInitializedStatus(c.JobClient, clusterName, namespace)
 			return nil
 		}
 

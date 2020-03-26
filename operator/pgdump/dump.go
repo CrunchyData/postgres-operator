@@ -18,7 +18,9 @@ package pgdump
 import (
 	"bytes"
 	"encoding/json"
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"os"
+
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
@@ -28,7 +30,6 @@ import (
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"os"
 )
 
 type pgDumpJobTemplateFields struct {

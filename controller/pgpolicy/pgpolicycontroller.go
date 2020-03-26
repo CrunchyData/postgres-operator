@@ -16,59 +16,25 @@ limitations under the License.
 */
 
 import (
-	"context"
-	"sync"
 	"time"
 
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/ns"
-	"github.com/crunchydata/postgres-operator/operator"
+	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/events"
 )
 
 // Controller holds connections for the controller
 type Controller struct {
-	PgpolicyClient     *rest.RESTClient
-	PgpolicyScheme     *runtime.Scheme
-	PgpolicyClientset  *kubernetes.Clientset
-	Ctx                context.Context
-	informerNsMutex    sync.Mutex
-	InformerNamespaces map[string]struct{}
-}
-
-// Run starts an pgpolicy resource controller
-func (c *Controller) Run() error {
-
-	// Watch Example objects
-	err := c.watchPgpolicys(c.Ctx)
-	if err != nil {
-		log.Errorf("Failed to register watch for Pgpolicy resource: %v", err)
-		return err
-	}
-
-	<-c.Ctx.Done()
-	return c.Ctx.Err()
-}
-
-// watchPgpolicys watches the pgpolicy resource catching events
-func (c *Controller) watchPgpolicys(ctx context.Context) error {
-	nsList := ns.GetNamespaces(c.PgpolicyClientset, operator.InstallationName)
-
-	for i := 0; i < len(nsList); i++ {
-		log.Infof("starting pgpolicy controller on ns [%s]", nsList[i])
-
-		c.SetupWatch(nsList[i])
-	}
-	return nil
+	PgpolicyClient    *rest.RESTClient
+	PgpolicyClientset *kubernetes.Clientset
+	Informer          informers.PgpolicyInformer
 }
 
 // onAdd is called when a pgpolicy is added
@@ -150,40 +116,15 @@ func (c *Controller) onDelete(obj interface{}) {
 	}
 
 }
-func (c *Controller) SetupWatch(ns string) {
 
-	// don't create informer for namespace if one has already been created
-	c.informerNsMutex.Lock()
-	defer c.informerNsMutex.Unlock()
-	if _, ok := c.InformerNamespaces[ns]; ok {
-		return
-	}
-	c.InformerNamespaces[ns] = struct{}{}
+// AddPGPolicyEventHandler adds the pgpolicy event handler to the pgpolicy informer
+func (c *Controller) AddPGPolicyEventHandler() {
 
-	source := cache.NewListWatchFromClient(
-		c.PgpolicyClient,
-		crv1.PgpolicyResourcePlural,
-		ns,
-		fields.Everything())
+	c.Informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    c.onAdd,
+		UpdateFunc: c.onUpdate,
+		DeleteFunc: c.onDelete,
+	})
 
-	_, controller := cache.NewInformer(
-		source,
-
-		// The object type.
-		&crv1.Pgpolicy{},
-
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
-
-		// Your custom resource event handlers.
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.onAdd,
-			UpdateFunc: c.onUpdate,
-			DeleteFunc: c.onDelete,
-		})
-
-	go controller.Run(c.Ctx.Done())
-	log.Debugf("pgpolicy Controller: created informer for namespace %s", ns)
+	log.Debugf("pgpolicy Controller: added event handler to informer")
 }

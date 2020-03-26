@@ -22,13 +22,14 @@ import (
 	"net/http"
 	"strings"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 
+	"io/ioutil"
+
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"

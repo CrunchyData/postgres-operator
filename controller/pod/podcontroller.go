@@ -16,19 +16,15 @@ limitations under the License.
 */
 
 import (
-	"context"
 	"strings"
-	"sync"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/ns"
-	"github.com/crunchydata/postgres-operator/operator"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/fields"
+	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -36,36 +32,10 @@ import (
 
 // Controller holds the connections for the controller
 type Controller struct {
-	PodClient          *rest.RESTClient
-	PodClientset       *kubernetes.Clientset
-	PodConfig          *rest.Config
-	Ctx                context.Context
-	informerNsMutex    sync.Mutex
-	InformerNamespaces map[string]struct{}
-}
-
-// Run starts an pod resource controller
-func (c *Controller) Run() error {
-
-	err := c.watchPods(c.Ctx)
-	if err != nil {
-		log.Errorf("Failed to register watch for pod resource: %v", err)
-		return err
-	}
-
-	<-c.Ctx.Done()
-	return c.Ctx.Err()
-}
-
-// watchPods is the event loop for pod resources
-func (c *Controller) watchPods(ctx context.Context) error {
-	nsList := ns.GetNamespaces(c.PodClientset, operator.InstallationName)
-
-	for i := 0; i < len(nsList); i++ {
-		log.Infof("starting pod controller on ns [%s]", nsList[i])
-		c.SetupWatch(nsList[i])
-	}
-	return nil
+	PodClient    *rest.RESTClient
+	PodClientset *kubernetes.Clientset
+	PodConfig    *rest.Config
+	Informer     coreinformers.PodInformer
 }
 
 // onAdd is called when a pod is added
@@ -184,46 +154,16 @@ func (c *Controller) onDelete(obj interface{}) {
 	}
 }
 
-// SetupWatch creates creates a new controller that provides event notifications when pods are
-// added, updated and deleted in the specific namespace specified.  This includes defining the
-// funtions that should be called when various add, update and delete events are received.  Only
-// one controller can be created per namespace to ensure duplicate events are not generated.
-func (c *Controller) SetupWatch(ns string) {
+// AddPodEventHandler adds the pod event handler to the pod informer
+func (c *Controller) AddPodEventHandler() {
 
-	// don't create informer for namespace if one has already been created
-	c.informerNsMutex.Lock()
-	defer c.informerNsMutex.Unlock()
-	if _, ok := c.InformerNamespaces[ns]; ok {
-		return
-	}
-	c.InformerNamespaces[ns] = struct{}{}
+	c.Informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    c.onAdd,
+		UpdateFunc: c.onUpdate,
+		DeleteFunc: c.onDelete,
+	})
 
-	source := cache.NewListWatchFromClient(
-		c.PodClientset.CoreV1().RESTClient(),
-		"pods",
-		ns,
-		fields.Everything())
-
-	_, controller := cache.NewInformer(
-		source,
-
-		// The object type.
-		&apiv1.Pod{},
-
-		// resyncPeriod
-		// Every resyncPeriod, all resources in the cache will retrigger events.
-		// Set to 0 to disable the resync.
-		0,
-
-		// Your custom resource event handlers.
-		cache.ResourceEventHandlerFuncs{
-			AddFunc:    c.onAdd,
-			UpdateFunc: c.onUpdate,
-			DeleteFunc: c.onDelete,
-		})
-
-	go controller.Run(c.Ctx.Done())
-	log.Debugf("Pod Controller created informer for namespace %s", ns)
+	log.Debugf("Pod Controller: added event handler to informer")
 }
 
 // isDBContainerBecomingReady checks to see if the Pod update shows that the Pod has
