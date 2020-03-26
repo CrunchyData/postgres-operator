@@ -8,7 +8,7 @@ import (
 
 // TC42 ✓
 // TC115 ✓
-var _ = describe("Cluster Commands", func(t *testing.T) {
+func TestClusterLabel(t *testing.T) {
 	t.Parallel()
 
 	withNamespace(t, func(namespace func() string) {
@@ -45,4 +45,4 @@ var _ = describe("Cluster Commands", func(t *testing.T) {
 			})
 		})
 	})
-})
+}

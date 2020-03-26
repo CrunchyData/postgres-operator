@@ -7,7 +7,7 @@ import (
 )
 
 // TC40 ✓
-var _ = describe("Operator Commands", func(t *testing.T) {
+func TestOperatorCommands(t *testing.T) {
 	t.Parallel()
 
 	t.Run("version", func(t *testing.T) {
@@ -35,4 +35,4 @@ var _ = describe("Operator Commands", func(t *testing.T) {
 			})
 		})
 	})
-})
+}

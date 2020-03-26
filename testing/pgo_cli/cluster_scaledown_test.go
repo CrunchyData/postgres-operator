@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var _ = describe("Cluster Commands", func(t *testing.T) {
+func TestClusterScaleDown(t *testing.T) {
 	t.Parallel()
 
 	var replicaOnce sync.Once
@@ -59,4 +59,4 @@ var _ = describe("Cluster Commands", func(t *testing.T) {
 			})
 		})
 	})
-})
+}

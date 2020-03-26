@@ -224,7 +224,7 @@ func requireWaitFor(t testing.TB,
 // teardownCluster deletes a cluster. It waits sufficiently long after created
 // for the delete to go well.
 func teardownCluster(t testing.TB, namespace, cluster string, created time.Time) {
-	minimum := scale(10 * time.Second)
+	minimum := TestContext.Scale(10 * time.Second)
 
 	if elapsed := time.Since(created); elapsed < minimum {
 		time.Sleep(minimum - elapsed)
@@ -243,7 +243,7 @@ func waitFor(t testing.TB, condition func() bool, timeout, tick time.Duration) b
 	ticker := time.NewTicker(tick)
 	defer ticker.Stop()
 
-	timer := time.NewTimer(scale(timeout))
+	timer := time.NewTimer(TestContext.Scale(timeout))
 	defer timer.Stop()
 
 	for {

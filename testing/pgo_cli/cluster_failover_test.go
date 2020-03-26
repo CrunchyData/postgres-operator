@@ -15,7 +15,7 @@ import (
 // TC101 ✓
 // TC102 ✓
 // TC103 ✓
-var _ = describe("Cluster Commands", func(t *testing.T) {
+func TestClusterFailover(t *testing.T) {
 	t.Parallel()
 
 	var replicaOnce sync.Once
@@ -88,4 +88,4 @@ var _ = describe("Cluster Commands", func(t *testing.T) {
 			})
 		})
 	})
-})
+}

@@ -9,7 +9,7 @@ import (
 )
 
 // TC126 ✓
-var _ = describe("Cluster Commands", func(t *testing.T) {
+func TestClusterTest(t *testing.T) {
 	t.Parallel()
 
 	withNamespace(t, func(namespace func() string) {
@@ -38,4 +38,4 @@ var _ = describe("Cluster Commands", func(t *testing.T) {
 			})
 		})
 	})
-})
+}

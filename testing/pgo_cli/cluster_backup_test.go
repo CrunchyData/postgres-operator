@@ -12,7 +12,7 @@ import (
 // TC60 ✓
 // TC122 ✓
 // TC130 ✓
-var _ = describe("Cluster Commands", func(t *testing.T) {
+func TestClusterBackup(t *testing.T) {
 	t.Parallel()
 
 	requireStanzaExists := func(t *testing.T, namespace, cluster string, timeout time.Duration) {
@@ -248,4 +248,4 @@ var _ = describe("Cluster Commands", func(t *testing.T) {
 			})
 		})
 	})
-})
+}
