@@ -10,7 +10,7 @@ import (
 // TC115 ✓
 // TC116 ✓
 // TC119 ✓
-var _ = describe("Cluster Commands", func(t *testing.T) {
+func TestClusterDelete(t *testing.T) {
 	t.Parallel()
 
 	withNamespace(t, func(namespace func() string) {
@@ -86,4 +86,4 @@ var _ = describe("Cluster Commands", func(t *testing.T) {
 			})
 		})
 	})
-})
+}

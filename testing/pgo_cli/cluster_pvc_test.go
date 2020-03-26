@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var _ = describe("Cluster Commands", func(t *testing.T) {
+func TestClusterPVC(t *testing.T) {
 	t.Parallel()
 
 	withNamespace(t, func(namespace func() string) {
@@ -23,4 +23,4 @@ var _ = describe("Cluster Commands", func(t *testing.T) {
 			})
 		})
 	})
-})
+}

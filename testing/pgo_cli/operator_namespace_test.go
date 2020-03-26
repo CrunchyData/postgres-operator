@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var _ = describe("Operator Commands", func(t *testing.T) {
+func TestOperatorNamespace(t *testing.T) {
 	t.Parallel()
 
 	withNamespace(t, func(namespace func() string) {
@@ -18,4 +18,4 @@ var _ = describe("Operator Commands", func(t *testing.T) {
 			})
 		})
 	})
-})
+}

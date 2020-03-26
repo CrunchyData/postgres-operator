@@ -8,7 +8,7 @@ import (
 )
 
 // TC110 ✓
-var _ = describe("Operator Commands", func(t *testing.T) {
+func TestOperatorRBAC(t *testing.T) {
 	t.Parallel()
 
 	withNamespace(t, func(namespace1 func() string) {
@@ -123,4 +123,4 @@ var _ = describe("Operator Commands", func(t *testing.T) {
 			})
 		})
 	})
-})
+}
