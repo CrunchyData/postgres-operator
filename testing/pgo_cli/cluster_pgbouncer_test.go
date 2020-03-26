@@ -10,7 +10,7 @@ import (
 )
 
 // TC51 ✓
-var _ = describe("Cluster Commands", func(t *testing.T) {
+func TestClusterPgBouncer(t *testing.T) {
 	t.Parallel()
 
 	var pgbouncerOnce sync.Once
@@ -84,4 +84,4 @@ var _ = describe("Cluster Commands", func(t *testing.T) {
 			})
 		})
 	})
-})
+}

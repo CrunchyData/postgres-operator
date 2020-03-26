@@ -10,7 +10,7 @@ import (
 )
 
 // TC127 ✓
-var _ = describe("Cluster Commands", func(t *testing.T) {
+func TestClusterUser(t *testing.T) {
 	t.Parallel()
 
 	clusterDatabase := func(t *testing.T, namespace, cluster string) string {
@@ -300,4 +300,4 @@ var _ = describe("Cluster Commands", func(t *testing.T) {
 			})
 		})
 	})
-})
+}
