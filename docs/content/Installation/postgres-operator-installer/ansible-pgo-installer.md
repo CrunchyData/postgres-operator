@@ -8,7 +8,7 @@ weight: 20
 The ansible roles for the `pgo-installer` can be used to setup and run the
 install jobs with the `pgo-installer` image. Ansible will perform the steps
 oulined in the [Deploy with PostgreSQL Operator
-Installer](#/installation/postgres-operator-install).
+Installer](/installation/postgres-operator-installer).
 
 ## Prerequisites
 The following is required prior to installing Crunchy PostgreSQL Operator 
@@ -29,9 +29,9 @@ An example inventory file can be found here:
 Please reference the [Configuring the Inventory File](/installation/install-with-ansible/prerequisites#configuring-the-inventory-file)
 documentation as you update the inventory file. 
 
-#### PGO-Installer Specific Inventory Options
+#### PostgreSQL Operator Installer Specific Inventory Options
 The PostgreSQL Operator Installer has settings defined in the example inventory
-file that are not referenced in the [Configuring the Inventory File](i/installation/install-with-ansible/prerequisites#configuring-the-inventory-file)
+file that are not referenced in the [Configuring the Inventory File](/installation/install-with-ansible/prerequisites#configuring-the-inventory-file)
 section of the documentation. 
 
 | Name | Default | Required | Description |
@@ -56,7 +56,35 @@ options.
 | `create_pgo_installer_clusterrolebinding` | false | |  Enables thecreation of the `pgo_installer_crb`. This `clusterrolebinding` is only created if `use_cluster_admin` is true. |
 | `create_pgo_installer_configmap` | false | |Enables the creation of the `pgo_installer_configmap` |
 
-### Ansible Role Options
+### Setting Up Resources 
+The `pgo-installer` jobs need the resources outlined in the 
+[Deploy with PostgreSQL Operator Installer (pgo-installer)](/installation/postgres-operator-installer) 
+section of the documentation to run. These resources can be setup using the ansible roles by
+enabling their creation in the inventory file. If these options are not enabled,
+you will need to manually create the resources.
+
+### Running the Installer with Ansible
+Once the inventory file and required resources are setup, you will be able to run
+the ansible playbook to install PostgreSQL Operator with the `pgo-installer`
+image. This can be done using the `ansible-playbook` command and passing in your
+inventory file, the relevant tag from the list of options below, and the `main.yml` file.
+For example, the following command will install the operator:
+
+```
+ansible-playbook -i inventory --tags=install-container
+$PGOROOT/installers/pgo-installer/ansible/main.yml
+```
+
+You can also pass in multiple tags as you run the installer. This will allow you
+to run a job and cleanup tasks at the same time. For example, the following
+command will run the update job and cleanup tasks:
+
+```
+ansible-playbook -i inventory --tags=update-container,clean
+$PGOROOT/installers/pgo-installer/ansible/main.yml
+```
+
+#### Ansible Role Options
 | Tag Name | Description |
 |----------|--------------|
 | `install-container` | Uses the `pgo-installer` image to install the PostgreSQL Operator. |
