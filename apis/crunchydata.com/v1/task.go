@@ -94,6 +94,7 @@ type PgtaskSpec struct {
 
 // Pgtask ...
 // swagger:ignore
+// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Pgtask struct {
 	metav1.TypeMeta   `json:",inline"`

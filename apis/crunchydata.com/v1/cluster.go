@@ -27,6 +27,7 @@ const PgclusterResourcePlural = "pgclusters"
 // Pgcluster is the CRD that defines a Crunchy PG Cluster
 //
 // swagger:ignore Pgcluster
+// +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Pgcluster struct {
 	metav1.TypeMeta   `json:",inline"`
