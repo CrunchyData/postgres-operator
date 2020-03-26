@@ -1,10 +1,22 @@
-            "resources": {
-                "requests": {
-                    "memory": "{{.RequestsMemory}}",
-                    "cpu": "{{.RequestsCPU}}"
-                },
-                "limits": {
-                    "memory": "{{.LimitsMemory}}",
-                    "cpu": "{{.LimitsCPU}}"
-                }
-            },
+"resources": {
+  {{ if or .RequestsMemory .RequestsCPU }}
+  "requests": {
+    {{ if .RequestsCPU }}
+    "cpu": "{{.RequestsCPU}}"{{ if .RequestsMemory }},{{ end }}
+    {{ end }}
+    {{ if .RequestsMemory }}
+    "memory": "{{.RequestsMemory}}"
+    {{ end }}
+  }{{ if or .LimitsCPU .LimitsMemory }},{{ end }}
+  {{ end }}
+  {{ if or .LimitsCPU .LimitsMemory }}
+  "limits": {
+    {{ if .LimitsCPU }}
+    "cpu": "{{.LimitsCPU}}"{{ if .LimitsMemory }},{{ end }}
+    {{ end }}
+    {{ if .LimitsMemory }}
+    "memory": "{{.LimitsMemory}}"
+    {{ end }}
+  }
+  {{ end }}
+},
