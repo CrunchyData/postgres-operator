@@ -67,17 +67,18 @@ func NewControllerManager(namespaces []string, scheduler *Scheduler) (*Controlle
 		}
 	}
 
+	log.Debugf("Controller Manager: new controller manager created for namespaces %v",
+		namespaces)
+
 	return &controllerManager, nil
 }
 
 // AddControllerGroup adds a new controller group for the namespace specified.  Each controller
-// group is comprised of controllers for the following resources:
+// group is comprised of a controller for the following resource:
 // - configmaps
-// Two SharedInformerFactory's are utilized (one for Kube resources and one for PosgreSQL Operator
-// resources) to create and track the informers for each type of resource, while any controllers
-// utilizing worker queues are also tracked (this allows all informers and worker queues to be
-// easily started as needed). Each controller group also recieves its own clients, which can then
-// be utilized by the various controllers within that controller group.
+// One SharedInformerFactory is utilized, specifically for Kube resources, to create and track the
+// informers for this resource.  Each controller group also recieves its own clients, which can then
+// be utilized by the controller within the controller group.
 func (c *ControllerManager) AddControllerGroup(namespace string) error {
 
 	c.mgrMutex.Lock()
@@ -103,6 +104,7 @@ func (c *ControllerManager) AddControllerGroup(namespace string) error {
 	configmapController := &Controller{
 		ConfigmapClientset: kubeClientset,
 		Informer:           kubeInformerFactory.Core().V1().ConfigMaps(),
+		Scheduler:          c.Scheduler,
 	}
 
 	// add the proper event handler to the informer in each controller
@@ -115,6 +117,8 @@ func (c *ControllerManager) AddControllerGroup(namespace string) error {
 	}
 
 	c.controllers[namespace] = group
+
+	log.Debugf("Controller Manager: added controller group for namespace %s", namespace)
 
 	return nil
 }
@@ -131,6 +135,7 @@ func (c *ControllerManager) RunAll() {
 	for ns := range c.controllers {
 		c.RunGroup(ns)
 	}
+	log.Debug("Controller Manager: all contoller groups are now running")
 }
 
 // RunGroup runs the controllers within the controller group for the namespace specified.
@@ -146,16 +151,20 @@ func (c *ControllerManager) RunGroup(namespace string) {
 	}
 
 	instance.kubeInformerFactory.Start(instance.context.Done())
+
+	log.Debugf("Controller Manager: the controller group for ns %s is now running", namespace)
 }
 
 // StopAll stops all controllers across all controller groups managed by the controller manager.
 func (c *ControllerManager) StopAll() {
 	c.cancelFunc()
+	log.Debug("Controller Manager: all contoller groups are now stopped")
 }
 
 // StopGroup stops the controllers within the controller group for the namespace specified.
 func (c *ControllerManager) StopGroup(namespace string) {
 	c.controllers[namespace].cancelFunc()
+	log.Debugf("Controller Manager: the controller group for ns %s has been stopped", namespace)
 }
 
 // RemoveAll removes all controller groups managed by the controller manager, first stopping all
@@ -163,6 +172,7 @@ func (c *ControllerManager) StopGroup(namespace string) {
 func (c *ControllerManager) RemoveAll() {
 	c.StopAll()
 	c.controllers = make(map[string]*controllerGroup)
+	log.Debug("Controller Manager: all contollers groups have been removed")
 }
 
 // RemoveGroup removes the controller group for the namespace specified, first stopping all
@@ -170,4 +180,5 @@ func (c *ControllerManager) RemoveAll() {
 func (c *ControllerManager) RemoveGroup(namespace string) {
 	c.StopGroup(namespace)
 	delete(c.controllers, namespace)
+	log.Debugf("Controller Manager: the controller group for ns %s has been removed", namespace)
 }

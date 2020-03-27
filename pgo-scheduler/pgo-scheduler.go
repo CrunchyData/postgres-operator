@@ -140,12 +140,14 @@ func main() {
 	controllerManager, err := sched.NewControllerManager(namespaceList, scheduler)
 	if err != nil {
 		log.WithFields(log.Fields{}).Fatalf("Failed to create controller manager: %s", err)
+		os.Exit(2)
 	}
 	controllerManager.RunAll()
 
 	nsKubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
 	if err != nil {
 		log.WithFields(log.Fields{}).Fatalf("Failed to create namespace informer factory: %s", err)
+		os.Exit(2)
 	}
 	SetupNamespaceController(installationName, scheduler,
 		nsKubeInformerFactory.Core().V1().Namespaces(), controllerManager)

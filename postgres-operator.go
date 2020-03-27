@@ -54,6 +54,7 @@ func main() {
 		log.Error(err)
 		os.Exit(2)
 	}
+	log.Debugf("operator clients created")
 
 	kubeClientset := clients.Kubeclientset
 	pgoRESTclient := clients.PGORestclient
@@ -77,6 +78,7 @@ func main() {
 	// all of those controllers
 	controllerManager, err := manager.NewControllerManager(namespaceList)
 	controllerManager.RunAll()
+	log.Debug("controller manager created and all included controllers are now running")
 
 	nsKubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientset, 0)
 	if err != nil {
@@ -93,6 +95,7 @@ func main() {
 
 	// start the namespace controller
 	nsKubeInformerFactory.Start(stopCh)
+	log.Debug("namespace controller is now running")
 
 	defer controllerManager.StopAll()
 

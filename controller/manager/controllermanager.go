@@ -79,6 +79,9 @@ func NewControllerManager(namespaces []string) (*ControllerManager, error) {
 		}
 	}
 
+	log.Debugf("Controller Manager: new controller manager created for namespaces %v",
+		namespaces)
+
 	return &controllerManager, nil
 }
 
@@ -186,6 +189,8 @@ func (c *ControllerManager) AddControllerGroup(namespace string) error {
 
 	c.controllers[namespace] = group
 
+	log.Debugf("Controller Manager: added controller group for namespace %s", namespace)
+
 	return nil
 }
 
@@ -201,6 +206,7 @@ func (c *ControllerManager) RunAll() {
 	for ns := range c.controllers {
 		c.RunGroup(ns)
 	}
+	log.Debug("Controller Manager: all contoller groups are now running")
 }
 
 // RunGroup runs the controllers within the controller group for the namespace specified.
@@ -221,16 +227,20 @@ func (c *ControllerManager) RunGroup(namespace string) {
 	for _, worker := range c.controllers[namespace].controllersWithWorkers {
 		go wait.Until(worker.RunWorker, time.Second, instance.context.Done())
 	}
+
+	log.Debugf("Controller Manager: the controller group for ns %s is now running", namespace)
 }
 
 // StopAll stops all controllers across all controller groups managed by the controller manager.
 func (c *ControllerManager) StopAll() {
 	c.cancelFunc()
+	log.Debug("Controller Manager: all contoller groups are now stopped")
 }
 
 // StopGroup stops the controllers within the controller group for the namespace specified.
 func (c *ControllerManager) StopGroup(namespace string) {
 	c.controllers[namespace].cancelFunc()
+	log.Debugf("Controller Manager: the controller group for ns %s has been stopped", namespace)
 }
 
 // RemoveAll removes all controller groups managed by the controller manager, first stopping all
@@ -238,6 +248,7 @@ func (c *ControllerManager) StopGroup(namespace string) {
 func (c *ControllerManager) RemoveAll() {
 	c.StopAll()
 	c.controllers = make(map[string]*controllerGroup)
+	log.Debug("Controller Manager: all contollers groups have been removed")
 }
 
 // RemoveGroup removes the controller group for the namespace specified, first stopping all
@@ -245,4 +256,5 @@ func (c *ControllerManager) RemoveAll() {
 func (c *ControllerManager) RemoveGroup(namespace string) {
 	c.StopGroup(namespace)
 	delete(c.controllers, namespace)
+	log.Debugf("Controller Manager: the controller group for ns %s has been removed", namespace)
 }
