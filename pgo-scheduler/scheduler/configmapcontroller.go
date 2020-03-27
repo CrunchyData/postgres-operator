@@ -23,14 +23,15 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-// Controller holds the connections for the controller
+// Controller holds the client and informer for the controller, along with a pointer to a
+// Scheduler.
 type Controller struct {
 	ConfigmapClientset *kubernetes.Clientset
 	Informer           coreinformers.ConfigMapInformer
 	Scheduler          *Scheduler
 }
 
-// onAdd is called when a configmap is added
+// onAdd is called when a configMap is added
 func (c *Controller) onAdd(obj interface{}) {
 	cm, ok := obj.(*v1.ConfigMap)
 	if !ok {
@@ -48,7 +49,7 @@ func (c *Controller) onAdd(obj interface{}) {
 	}
 }
 
-// onDelete is called when a configmap is deleted
+// onDelete is called when a configMap is deleted
 func (c *Controller) onDelete(obj interface{}) {
 	{
 		cm, ok := obj.(*v1.ConfigMap)
@@ -71,5 +72,5 @@ func (c *Controller) AddConfigMapEventHandler() {
 		DeleteFunc: c.onDelete,
 	})
 
-	log.Debugf("pgcluster Controller: added event handler to informer")
+	log.Debugf("ConfigMap Controller: added event handler to informer")
 }
