@@ -188,3 +188,9 @@ release:  linuxpgo macpgo winpgo
 	cp $(GOBIN)/expenv.exe $(RELTMPDIR)
 	cp $(PGOROOT)/examples/pgo-bash-completion $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
+
+update-codegen:
+	$(PGOROOT)/hack/update-codegen.sh
+
+verify-codegen:
+	$(PGOROOT)/hack/verify-codegen.sh
