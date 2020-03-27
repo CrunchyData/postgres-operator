@@ -31,10 +31,9 @@ import (
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions"
 	log "github.com/sirupsen/logrus"
 
+	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/util/workqueue"
-
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // ControllerManager manages a map of controller groups, each of which is comprised of the various

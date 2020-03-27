@@ -202,7 +202,6 @@ func handleCustomParseErrors(err error, usage *bytes.Buffer, optsStruct backupOp
 				return fmt.Errorf("Flag %s is not supported for use with PGO", denyListFlag)
 			}
 		}
-		return nil
 	} else if strings.Contains(err.Error(), "unknown shorthand flag") {
 		for _, denyListFlagShort := range denyListFlagsShort {
 			denyListFlagQuotes := "'" + strings.TrimPrefix(denyListFlagShort, "-") + "'"
@@ -210,7 +209,6 @@ func handleCustomParseErrors(err error, usage *bytes.Buffer, optsStruct backupOp
 				return fmt.Errorf("Shorthand flag %s is not supported for use with PGO", denyListFlagShort)
 			}
 		}
-		return nil
 	}
 	return nil
 }

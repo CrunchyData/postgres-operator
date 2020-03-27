@@ -43,7 +43,8 @@ func loadClientConfig() (*rest.Config, error) {
 	).ClientConfig()
 }
 
-// NewKubeClient returns a Clientset for interacting with Kubernetes resources
+// NewKubeClient returns a Clientset for interacting with Kubernetes resources, along with
+// the REST config used to create the client
 func NewKubeClient() (*rest.Config, *kubernetes.Clientset, error) {
 
 	config, err := loadClientConfig()
@@ -58,7 +59,8 @@ func NewKubeClient() (*rest.Config, *kubernetes.Clientset, error) {
 	return config, clientset, err
 }
 
-// NewPGOClient gets a REST connection to Kube
+// NewPGOClient returns a Clientset and a REST client for interacting with PostgreSQL Operator
+// resources, along with the REST config used to create the clients
 func NewPGOClient() (*rest.Config, *rest.RESTClient, *clientset.Clientset, error) {
 
 	config, err := loadClientConfig()
@@ -74,7 +76,7 @@ func NewPGOClient() (*rest.Config, *rest.RESTClient, *clientset.Clientset, error
 	return config, pgoRESTClient, pgoClientset, nil
 }
 
-// createPGOClient creates a PGO RESTClient and Clientset using the provided configuration
+// createKubeClient creates a Kube Clientset using the provided configuration
 func createKubeClient(config *rest.Config) (*kubernetes.Clientset, error) {
 	return kubernetes.NewForConfig(config)
 }

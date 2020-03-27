@@ -28,7 +28,7 @@ type WorkerRunner interface {
 	RunWorker()
 }
 
-// ManagerInterface defines the interface for a ControllerManager
+// ManagerInterface defines the interface for a controller manager
 type ManagerInterface interface {
 	AddControllerGroup(namespace string) error
 	AddAndRunControllerGroup(namespace string)
