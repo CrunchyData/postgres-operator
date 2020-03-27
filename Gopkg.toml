@@ -7,6 +7,10 @@ ignored = [
   "k8s.io/client-go/tools/portforward",
 ]
 
+required = [
+  "k8s.io/code-generator",
+]
+
 [[constraint]]
   name = "github.com/evanphx/json-patch"
   version = "4.6.0"
@@ -57,6 +61,10 @@ ignored = [
 
 [[constraint]]
   name = "k8s.io/client-go"
+  version = "0.17.3"
+
+[[constraint]]
+  name = "k8s.io/code-generator"
   version = "0.17.3"
 
 # The following override is for generating the docs using the
