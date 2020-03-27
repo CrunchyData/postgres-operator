@@ -79,6 +79,10 @@ func main() {
 	controllerManager.RunAll()
 
 	nsKubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientset, 0)
+	if err != nil {
+		log.Error(err)
+		os.Exit(2)
+	}
 	nsController, err := namespace.NewNamespaceController(clients, controllerManager,
 		nsKubeInformerFactory.Core().V1().Namespaces())
 	if err != nil {

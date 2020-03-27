@@ -24,12 +24,16 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/controller"
+	"github.com/crunchydata/postgres-operator/kubeapi"
 	crunchylog "github.com/crunchydata/postgres-operator/logging"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
+	sched "github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/fields"
+	v1 "k8s.io/api/core/v1"
+	kubeinformers "k8s.io/client-go/informers"
+	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -76,11 +80,6 @@ func init() {
 		log.Info("PGO_INSTALLATION_NAME set to " + installationName)
 	}
 
-	// set up the data structures for preventing double informers from being
-	// created
-	informerNsMutex = sync.Mutex{}
-	informerNamespaces = map[string]struct{}{}
-
 	pgoNamespace = os.Getenv(pgoNamespaceEnv)
 	if pgoNamespace == "" {
 		log.WithFields(log.Fields{}).Fatalf("Failed to get PGO_OPERATOR_NAMESPACE environment: %s", pgoNamespaceEnv)
@@ -100,7 +99,7 @@ func init() {
 	log.WithFields(log.Fields{}).Infof("Setting timeout to: %d", seconds)
 	timeout = time.Second * time.Duration(seconds)
 
-	kubeClient, err = newKubeClient()
+	_, kubeClient, err = kubeapi.NewKubeClient()
 	if err != nil {
 		log.WithFields(log.Fields{}).Fatalf("Failed to connect to kubernetes: %s", err)
 	}
@@ -138,11 +137,19 @@ func main() {
 
 	log.WithFields(log.Fields{}).Infof("Watching namespaces: %s", namespaceList)
 
-	for _, namespace := range namespaceList {
-		SetupWatch(namespace, scheduler, stop)
+	controllerManager, err := sched.NewControllerManager(namespaceList, scheduler)
+	if err != nil {
+		log.WithFields(log.Fields{}).Fatalf("Failed to create controller manager: %s", err)
 	}
+	controllerManager.RunAll()
 
-	SetupNamespaceWatch(installationName, scheduler, stop)
+	nsKubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
+	if err != nil {
+		log.WithFields(log.Fields{}).Fatalf("Failed to create namespace informer factory: %s", err)
+	}
+	SetupNamespaceController(installationName, scheduler,
+		nsKubeInformerFactory.Core().V1().Namespaces(), controllerManager)
+	nsKubeInformerFactory.Start(stop)
 
 	for {
 		select {
@@ -172,86 +179,35 @@ func newKubeClient() (*kubernetes.Clientset, error) {
 	return client, nil
 }
 
-func SetupWatch(namespace string, scheduler *scheduler.Scheduler, stop chan struct{}) {
-	// don't create informer for namespace if one has already been created
-	informerNsMutex.Lock()
-	defer informerNsMutex.Unlock()
+// SetupNamespaceController sets up a namespace controller that monitors for namespace add and
+// delete events, and then either creates or removes controllers for those namespaces
+func SetupNamespaceController(installationName string, scheduler *scheduler.Scheduler,
+	informer coreinformers.NamespaceInformer, controllerManager controller.ManagerInterface) {
 
-	// if the namespace is already in the informer namespaces map, then exit
-	if _, ok := informerNamespaces[namespace]; ok {
-		return
-	}
-
-	informerNamespaces[namespace] = struct{}{}
-
-	watchlist := cache.NewListWatchFromClient(kubeClient.CoreV1().RESTClient(),
-		"configmaps", namespace, fields.Everything())
-
-	_, controller := cache.NewInformer(watchlist, &v1.ConfigMap{}, 0,
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				cm, ok := obj.(*v1.ConfigMap)
-				if !ok {
-					log.WithFields(log.Fields{}).Error("Could not convert runtime object to configmap..")
-				}
-
-				if _, ok := cm.Labels["crunchy-scheduler"]; !ok {
-					return
-				}
-
-				if err := scheduler.AddSchedule(cm); err != nil {
-					log.WithFields(log.Fields{
-						"error": err,
-					}).Error("Failed to add schedules")
-				}
-			},
-			DeleteFunc: func(obj interface{}) {
-				cm, ok := obj.(*v1.ConfigMap)
-				if !ok {
-					log.WithFields(log.Fields{}).Error("Could not convert runtime object to configmap..")
-				}
-
-				if _, ok := cm.Labels["crunchy-scheduler"]; !ok {
-					return
-				}
-				scheduler.DeleteSchedule(cm)
-			},
-		},
-	)
-	go controller.Run(stop)
-}
-
-func SetupNamespaceWatch(installationName string, scheduler *scheduler.Scheduler, stop chan struct{}) {
-	watchlist := cache.NewListWatchFromClient(kubeClient.CoreV1().RESTClient(),
-		"namespaces", "", fields.Everything())
-
-	_, controller := cache.NewInformer(watchlist, &v1.Namespace{}, 0,
-		cache.ResourceEventHandlerFuncs{
-			AddFunc: func(obj interface{}) {
-				ns, ok := obj.(*v1.Namespace)
-				if !ok {
-					log.WithFields(log.Fields{}).Error("Could not convert runtime object to Namespace..")
+	informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			ns, ok := obj.(*v1.Namespace)
+			if !ok {
+				log.WithFields(log.Fields{}).Error("Could not convert runtime object to Namespace..")
+			} else {
+				labels := ns.GetObjectMeta().GetLabels()
+				if labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY && labels[config.LABEL_PGO_INSTALLATION_NAME] == installationName {
+					log.WithFields(log.Fields{}).Infof("Added namespace: %s", ns.Name)
+					controllerManager.AddAndRunControllerGroup(ns.Name)
 				} else {
-					labels := ns.GetObjectMeta().GetLabels()
-					if labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY && labels[config.LABEL_PGO_INSTALLATION_NAME] == installationName {
-						log.WithFields(log.Fields{}).Infof("Added namespace: %s", ns.Name)
-						SetupWatch(ns.Name, scheduler, stop)
-					} else {
-						log.WithFields(log.Fields{}).Infof("Not adding namespace since it is not owned by this Operator installation: %s", ns.Name)
-					}
+					log.WithFields(log.Fields{}).Infof("Not adding namespace since it is not owned by this Operator installation: %s", ns.Name)
 				}
+			}
 
-			},
-			DeleteFunc: func(obj interface{}) {
-				ns, ok := obj.(*v1.Namespace)
-				if !ok {
-					log.WithFields(log.Fields{}).Error("Could not convert runtime object to Namespace..")
-				} else {
-					log.WithFields(log.Fields{}).Infof("Deleted namespace: %s", ns.Name)
-				}
-
-			},
 		},
-	)
-	go controller.Run(stop)
+		DeleteFunc: func(obj interface{}) {
+			ns, ok := obj.(*v1.Namespace)
+			if !ok {
+				log.WithFields(log.Fields{}).Error("Could not convert runtime object to Namespace..")
+			} else {
+				log.WithFields(log.Fields{}).Infof("Deleted namespace: %s", ns.Name)
+			}
+			controllerManager.RemoveGroup(ns.Name)
+		},
+	})
 }

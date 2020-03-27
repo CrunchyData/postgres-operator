@@ -28,6 +28,18 @@ type WorkerRunner interface {
 	RunWorker()
 }
 
+// ManagerInterface defines the interface for a ControllerManager
+type ManagerInterface interface {
+	AddControllerGroup(namespace string) error
+	AddAndRunControllerGroup(namespace string)
+	RunAll()
+	RunGroup(namespace string)
+	StopAll()
+	StopGroup(namespace string)
+	RemoveAll()
+	RemoveGroup(namespace string)
+}
+
 // InitializeReplicaCreation initializes the creation of replicas for a cluster.  For a regular
 // (i.e. non-standby) cluster this is called following the creation of the initial cluster backup,
 // which is needed to bootstrap replicas.  However, for a standby cluster this is called as

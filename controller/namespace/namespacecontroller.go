@@ -17,7 +17,7 @@ limitations under the License.
 
 import (
 	"github.com/crunchydata/postgres-operator/config"
-	"github.com/crunchydata/postgres-operator/controller/manager"
+	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 
@@ -34,7 +34,7 @@ import (
 type Controller struct {
 	NamespaceClient    *rest.RESTClient
 	NamespaceClientset *kubernetes.Clientset
-	ControllerManager  manager.ControllerManagerInterface
+	ControllerManager  controller.ManagerInterface
 	Informer           coreinformers.NamespaceInformer
 }
 
@@ -42,7 +42,7 @@ type Controller struct {
 // as responds accordingly.  This adding and removing controller groups as namespaces watched by the
 // PostgreSQL Operator are added and deleted.
 func NewNamespaceController(clients *kubeapi.ControllerClients,
-	controllerManager manager.ControllerManagerInterface,
+	controllerManager controller.ManagerInterface,
 	informer coreinformers.NamespaceInformer) (*Controller, error) {
 
 	controller := &Controller{
