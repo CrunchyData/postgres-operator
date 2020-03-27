@@ -1,4 +1,4 @@
-package manager
+package scheduler
 
 /*
 Copyright 2020 Crunchy Data Solutions, Inc.
@@ -18,23 +18,11 @@ limitations under the License.
 import (
 	"context"
 	"sync"
-	"time"
 
-	"github.com/crunchydata/postgres-operator/controller"
-	"github.com/crunchydata/postgres-operator/controller/job"
-	"github.com/crunchydata/postgres-operator/controller/pgcluster"
-	"github.com/crunchydata/postgres-operator/controller/pgpolicy"
-	"github.com/crunchydata/postgres-operator/controller/pgreplica"
-	"github.com/crunchydata/postgres-operator/controller/pgtask"
-	"github.com/crunchydata/postgres-operator/controller/pod"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions"
 	log "github.com/sirupsen/logrus"
 
 	kubeinformers "k8s.io/client-go/informers"
-	"k8s.io/client-go/util/workqueue"
-
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // ControllerManager manages a map of controller groups, each of which is comprised of the various
@@ -45,23 +33,22 @@ type ControllerManager struct {
 	cancelFunc  context.CancelFunc
 	mgrMutex    sync.Mutex
 	controllers map[string]*controllerGroup
+	Scheduler   *Scheduler
 }
 
 // controllerGroup is a struct for managing the various controllers created to handle events
 // in a specific namespace
 type controllerGroup struct {
-	context                context.Context
-	cancelFunc             context.CancelFunc
-	instanceMutex          sync.Mutex
-	started                bool
-	pgoInformerFactory     informers.SharedInformerFactory
-	kubeInformerFactory    kubeinformers.SharedInformerFactory
-	controllersWithWorkers []controller.WorkerRunner
+	context             context.Context
+	cancelFunc          context.CancelFunc
+	instanceMutex       sync.Mutex
+	started             bool
+	kubeInformerFactory kubeinformers.SharedInformerFactory
 }
 
 // NewControllerManager returns a new ControllerManager comprised of controllerGroups for each
 // namespace included in the 'namespaces' parameter.
-func NewControllerManager(namespaces []string) (*ControllerManager, error) {
+func NewControllerManager(namespaces []string, scheduler *Scheduler) (*ControllerManager, error) {
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
@@ -69,6 +56,7 @@ func NewControllerManager(namespaces []string) (*ControllerManager, error) {
 		context:     ctx,
 		cancelFunc:  cancelFunc,
 		controllers: make(map[string]*controllerGroup),
+		Scheduler:   scheduler,
 	}
 
 	// create controller groups for each namespace provided
@@ -84,11 +72,7 @@ func NewControllerManager(namespaces []string) (*ControllerManager, error) {
 
 // AddControllerGroup adds a new controller group for the namespace specified.  Each controller
 // group is comprised of controllers for the following resources:
-// - pods
-// - jobs
-// - pgclusters
-// - pgpolicys
-// - pgtasks
+// - configmaps
 // Two SharedInformerFactory's are utilized (one for Kube resources and one for PosgreSQL Operator
 // resources) to create and track the informers for each type of resource, while any controllers
 // utilizing worker queues are also tracked (this allows all informers and worker queues to be
@@ -109,80 +93,26 @@ func (c *ControllerManager) AddControllerGroup(namespace string) error {
 		return err
 	}
 
-	config := clients.Config
-	pgoClientset := clients.PGOClientset
-	pgoRESTClient := clients.PGORestclient
 	kubeClientset := clients.Kubeclientset
 
 	ctx, cancelFunc := context.WithCancel(c.context)
 
-	pgoInformerFactory := informers.NewSharedInformerFactoryWithOptions(pgoClientset, 0,
-		informers.WithNamespace(namespace))
-
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientset, 0,
 		kubeinformers.WithNamespace(namespace))
 
-	pgTaskcontroller := &pgtask.Controller{
-		PgtaskConfig:    config,
-		PgtaskClient:    pgoRESTClient,
-		PgtaskClientset: kubeClientset,
-		Queue:           workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		Informer:        pgoInformerFactory.Crunchydata().V1().Pgtasks(),
-	}
-
-	pgClustercontroller := &pgcluster.Controller{
-		PgclusterClient:    pgoRESTClient,
-		PgclusterClientset: kubeClientset,
-		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		Informer:           pgoInformerFactory.Crunchydata().V1().Pgclusters(),
-	}
-
-	pgReplicacontroller := &pgreplica.Controller{
-		PgreplicaClient:    pgoRESTClient,
-		PgreplicaClientset: kubeClientset,
-		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		Informer:           pgoInformerFactory.Crunchydata().V1().Pgreplicas(),
-	}
-
-	pgPolicycontroller := &pgpolicy.Controller{
-		PgpolicyClient:    pgoRESTClient,
-		PgpolicyClientset: kubeClientset,
-		Informer:          pgoInformerFactory.Crunchydata().V1().Pgpolicies(),
-	}
-
-	podcontroller := &pod.Controller{
-		PodConfig:    config,
-		PodClientset: kubeClientset,
-		PodClient:    pgoRESTClient,
-		Informer:     kubeInformerFactory.Core().V1().Pods(),
-	}
-
-	jobcontroller := &job.Controller{
-		JobConfig:    config,
-		JobClientset: kubeClientset,
-		JobClient:    pgoRESTClient,
-		Informer:     kubeInformerFactory.Batch().V1().Jobs(),
+	configmapController := &Controller{
+		ConfigmapClientset: kubeClientset,
+		Informer:           kubeInformerFactory.Core().V1().ConfigMaps(),
 	}
 
 	// add the proper event handler to the informer in each controller
-	pgTaskcontroller.AddPGTaskEventHandler()
-	pgClustercontroller.AddPGClusterEventHandler()
-	pgReplicacontroller.AddPGReplicaEventHandler()
-	pgPolicycontroller.AddPGPolicyEventHandler()
-	podcontroller.AddPodEventHandler()
-	jobcontroller.AddJobEventHandler()
+	configmapController.AddConfigMapEventHandler()
 
 	group := &controllerGroup{
 		context:             ctx,
 		cancelFunc:          cancelFunc,
-		pgoInformerFactory:  pgoInformerFactory,
 		kubeInformerFactory: kubeInformerFactory,
 	}
-
-	// store the controllers containing worker queues so that the queues can also be started
-	// when any informers in the controller are started
-	group.controllersWithWorkers = append(group.controllersWithWorkers,
-		pgTaskcontroller, pgClustercontroller, pgReplicacontroller)
 
 	c.controllers[namespace] = group
 
@@ -216,11 +146,6 @@ func (c *ControllerManager) RunGroup(namespace string) {
 	}
 
 	instance.kubeInformerFactory.Start(instance.context.Done())
-	instance.pgoInformerFactory.Start(instance.context.Done())
-
-	for _, worker := range c.controllers[namespace].controllersWithWorkers {
-		go wait.Until(worker.RunWorker, time.Second, instance.context.Done())
-	}
 }
 
 // StopAll stops all controllers across all controller groups managed by the controller manager.
