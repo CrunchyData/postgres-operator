@@ -63,6 +63,29 @@ The setup target ensures the presence of:
 
 By default, docker is not configured to run its daemon. Refer to the [docker post-installation instructions](https://docs.docker.com/install/linux/linux-postinstall/) to configure it to run once or at system startup. This is not done automatically.
 
+## Code Generation
+
+Code generation is leveraged to generate the clients and informers utilized to interact with the
+with the various [Custom Resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) 
+(e.g. `pgclusters`) comprising the PostgreSQL Operator declarative API.  Code generation is provided
+by the [Kubernetes code-generator project](https://github.com/kubernetes/code-generator),
+and the following two `Make` targets are included within the PostgreSQL Operator project to both
+determine if any generated code within the project requires an update, and then update that code
+as needed:
+
+```bash
+# Check to see if an update to generated code is needed:
+make check-codegen
+
+# Update any generated code:
+make update-codegen
+```
+
+Therefore, in the event that a Custom Resource defined within the PostgreSQL Operator API 
+(`$PGOROOT/apis/crunchydata.com`) is updated, the `check-codegen` target will indicate that a 
+an update is needed, and the `update-codegen` target should then be utilized to generate the
+updated code prior to compiling.
+
 ## Compile
 
 {{% notice tip %}}
