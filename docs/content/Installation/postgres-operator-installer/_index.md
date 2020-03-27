@@ -50,4 +50,39 @@ the Crunchy PostgreSQL Operator that you are installing.
 The image pull policy needs to be defined for your job.
 In most cases this should be updated to `IfNotPresent`.
 
+### Running the pgo-client
+#### pgo-client container
+The pgo-client image can be installed along side of the PostgreSQL Operator by
+enabling the `pgo_client_container_install` option in the inventory file.
+This image contains the pgo binary and is setup to have access to the
+apiserver and can be accessed by running the following:
 
+```
+kubectl exec -it -n <operator-namespace> pgo-client-<id> bash
+```
+
+Once you `exec` into the container you can run `pgo` commands without having to
+do any more setup. More information about the pgo-client container can be found
+[here]() in the docs.
+
+#### pgo binary
+The pgo binary has required resources that are needed to connect to the
+apiserver. These resources are defined under the [Install the Postgres Operator
+(pgo) Client]() section of the documentation. By following these steps you will
+be able to install the `pgo` client and setup the necessary resources. 
+
+##### Configuring Client TLS
+The `client.pem` and `client.crt` files can be found in the `pgo.tls` secret in
+the `<operator-namespace>` namespace. You can use `kubectl` to access the secret
+and store it locally as instructed in the [client install]() docs.
+
+```
+kubectl get secret -n pgo pgo.tls -o jsonpath="{.data.tls\.crt}" | base64 --decode > client.crt
+kubectl get secret -n pgo pgo.tls -o jsonpath="{.data.tls\.key}" | base64 --decode > client.pem
+```
+
+##### Configuring pgouser
+The username and password mentioned in the [client install]() docs are the
+username and password that were specified when the operator was installed. The
+variables in the inventory file are `pgo_admin_username` and
+`pgo_admin_password`.
