@@ -54,7 +54,6 @@ func main() {
 		log.Error(err)
 		os.Exit(2)
 	}
-	log.Debugf("operator clients created")
 
 	kubeClientset := clients.Kubeclientset
 	pgoRESTclient := clients.PGORestclient
@@ -77,6 +76,10 @@ func main() {
 	// create a new controller manager with controllers for all current namespaces and then run
 	// all of those controllers
 	controllerManager, err := manager.NewControllerManager(namespaceList)
+	if err != nil {
+		log.Error(err)
+		os.Exit(2)
+	}
 	controllerManager.RunAll()
 	log.Debug("controller manager created and all included controllers are now running")
 
@@ -85,7 +88,7 @@ func main() {
 		log.Error(err)
 		os.Exit(2)
 	}
-	nsController, err := namespace.NewNamespaceController(clients, controllerManager,
+	nsController, err := namespace.NewNamespaceController(controllerManager,
 		nsKubeInformerFactory.Core().V1().Namespaces())
 	if err != nil {
 		log.Error(err)

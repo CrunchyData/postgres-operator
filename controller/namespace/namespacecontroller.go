@@ -18,38 +18,30 @@ limitations under the License.
 import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/controller"
-	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreinformers "k8s.io/client-go/informers/core/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
 
 // Controller holds the connections for the controller
 type Controller struct {
-	NamespaceClient    *rest.RESTClient
-	NamespaceClientset *kubernetes.Clientset
-	ControllerManager  controller.ManagerInterface
-	Informer           coreinformers.NamespaceInformer
+	ControllerManager controller.ManagerInterface
+	Informer          coreinformers.NamespaceInformer
 }
 
 // NewNamespaceController creates a new namespace controller that will watch for namespace events
 // as responds accordingly.  This adding and removing controller groups as namespaces watched by the
 // PostgreSQL Operator are added and deleted.
-func NewNamespaceController(clients *kubeapi.ControllerClients,
-	controllerManager controller.ManagerInterface,
+func NewNamespaceController(controllerManager controller.ManagerInterface,
 	informer coreinformers.NamespaceInformer) (*Controller, error) {
 
 	controller := &Controller{
-		NamespaceClient:    clients.PGORestclient,
-		NamespaceClientset: clients.Kubeclientset,
-		ControllerManager:  controllerManager,
-		Informer:           informer,
+		ControllerManager: controllerManager,
+		Informer:          informer,
 	}
 
 	return controller, nil

@@ -60,7 +60,7 @@ func main() {
 	}
 
 	var err error
-	_, request.Clientset, err = kubeapi.NewKubeClient()
+	request.RESTConfig, request.Clientset, err = kubeapi.NewKubeClient()
 	if err != nil {
 		log.Fatalln(err.Error())
 	}

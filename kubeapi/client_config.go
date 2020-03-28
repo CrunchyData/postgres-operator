@@ -17,7 +17,6 @@ package kubeapi
 
 import (
 	clientset "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -87,7 +86,6 @@ func createPGOClient(config *rest.Config) (*rest.RESTClient, *clientset.Clientse
 	pgoClientset, err := clientset.NewForConfig(config)
 	pgoRESTClient := pgoClientset.CrunchydataV1().RESTClient().(*rest.RESTClient)
 	if err != nil {
-		log.Error(err)
 		return nil, nil, err
 	}
 	return pgoRESTClient, pgoClientset, nil
