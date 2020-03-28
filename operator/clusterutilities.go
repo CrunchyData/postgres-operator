@@ -29,6 +29,7 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 
 	log "github.com/sirupsen/logrus"
+	apps_v1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -390,6 +391,45 @@ func GetTablespaceNamePVCMap(clusterName string, tablespaceStorageTypeMap map[st
 	}
 
 	return tablespacePVCMap
+}
+
+// getInstanceDeployments finds the Deployments that represent PostgreSQL
+// instances
+func GetInstanceDeployments(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) (*apps_v1.DeploymentList, error) {
+	// first, get a list of all of the available deployments so we can properly
+	// mount the tablespace PVCs after we create them
+	// NOTE: this will also get the pgBackRest deployments, but we will filter
+	// these out later
+	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_VENDOR, config.LABEL_CRUNCHY,
+		config.LABEL_PG_CLUSTER, cluster.Name)
+
+	// get the deployments for this specific PostgreSQL luster
+	clusterDeployments, err := kubeapi.GetDeployments(clientset, selector, cluster.Namespace)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// start prepping the instance deployments
+	instanceDeployments := apps_v1.DeploymentList{}
+
+	// iterate through the list of deployments -- it matches the definition of a
+	// PostgreSQL instance deployment, then add it to the slice
+	for _, deployment := range clusterDeployments.Items {
+		labels := deployment.ObjectMeta.GetLabels()
+
+		// get the name of the PostgreSQL instance. If the "deployment-name"
+		// label is not present, then we know it's not a PostgreSQL cluster.
+		// Otherwise, the "deployment-name" label doubles as the name of the
+		// instance
+		if instanceName, ok := labels[config.LABEL_DEPLOYMENT_NAME]; ok {
+			log.Debugf("instance found [%s]", instanceName)
+
+			instanceDeployments.Items = append(instanceDeployments.Items, deployment)
+		}
+	}
+
+	return &instanceDeployments, nil
 }
 
 // GetTablespaceNames generates a comma-separated list of the format
