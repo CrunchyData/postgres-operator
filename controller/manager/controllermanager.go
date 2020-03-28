@@ -135,6 +135,7 @@ func (c *ControllerManager) AddControllerGroup(namespace string) error {
 	pgClustercontroller := &pgcluster.Controller{
 		PgclusterClient:    pgoRESTClient,
 		PgclusterClientset: kubeClientset,
+		PgclusterConfig:    config,
 		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		Informer:           pgoInformerFactory.Crunchydata().V1().Pgclusters(),
 	}

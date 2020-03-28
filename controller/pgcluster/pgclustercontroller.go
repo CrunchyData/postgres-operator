@@ -16,7 +16,6 @@ limitations under the License.
 */
 
 import (
-	"fmt"
 	"io/ioutil"
 	"reflect"
 	"strconv"
@@ -43,6 +42,7 @@ import (
 type Controller struct {
 	PgclusterClient    *rest.RESTClient
 	PgclusterClientset *kubernetes.Clientset
+	PgclusterConfig    *rest.Config
 	Queue              workqueue.RateLimitingInterface
 	Informer           informers.PgclusterInformer
 }
@@ -306,7 +306,7 @@ func updateTablespaces(c *Controller, oldCluster *crv1.Pgcluster, newCluster *cr
 
 	// alright, update the tablespace entries for this cluster!
 	// if it returns an error, pass the error back up to the caller
-	if err := clusteroperator.UpdateTablespaces(c.PgclusterClientset, newCluster, newTablespaces); err != nil {
+	if err := clusteroperator.UpdateTablespaces(c.PgclusterClientset, c.PgclusterConfig, newCluster, newTablespaces); err != nil {
 		return err
 	}
 

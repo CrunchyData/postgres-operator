@@ -357,7 +357,8 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 //
 // To do this, iterate through the the tablespace mount map that is present in
 // the new cluster.
-func UpdateTablespaces(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, newTablespaces map[string]crv1.PgStorageSpec) error {
+func UpdateTablespaces(clientset *kubernetes.Clientset, restConfig *rest.Config,
+	cluster *crv1.Pgcluster, newTablespaces map[string]crv1.PgStorageSpec) error {
 	// first, get a list of all of the instance deployments for the cluster
 	deployments, err := operator.GetInstanceDeployments(clientset, cluster)
 
@@ -446,6 +447,28 @@ func UpdateTablespaces(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster,
 				deployment.Spec.Template.Spec.Containers[0].Env[i].Value = operator.GetTablespaceNames(
 					cluster.Spec.TablespaceMounts)
 			}
+		}
+
+		// Before applying the update, we want to explicitly stop PostgreSQL on each
+		// instance. This prevents PostgreSQL from having to boot up in crash
+		// recovery mode.
+		//
+		// This also means we need to find the database pod
+		selector := fmt.Sprintf("%s=%s", config.LABEL_DEPLOYMENT_NAME, deployment.Name)
+		pods, err := kubeapi.GetPods(clientset, selector, deployment.ObjectMeta.Namespace)
+
+		if err != nil {
+			return err
+		} else if len(pods.Items) == 0 {
+			return fmt.Errorf("could not find any pods for deployment [%s]", deployment.Name)
+		}
+
+		// get the first pod off the items list
+		pod := pods.Items[0]
+
+		// now we can shut down the cluster. However, if this fails, we'll only warn
+		if err := util.StopPostgreSQLInstance(clientset, restConfig, &pod, instanceName); err != nil {
+			log.Warn(err)
 		}
 
 		// finally, update the Deployment. Potential to put things into an
