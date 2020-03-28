@@ -146,7 +146,7 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_REPO,
 		&deployment.Spec.Template.Spec.Containers[0])
 
-	err = kubeapi.CreateDeploymentV1(clientset, &deployment, namespace)
+	err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
 
 	return err
 

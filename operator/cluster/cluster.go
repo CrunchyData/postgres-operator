@@ -68,8 +68,6 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		return
 	}
 
-	//err = cleanupPreviousTasks(client, cl.Spec.Name, namespace)
-
 	var pvcName string
 
 	_, found, err := kubeapi.GetPVC(clientset, cl.Spec.Name, namespace)
@@ -363,25 +361,6 @@ func deleteConfigMaps(clientset *kubernetes.Clientset, clusterName, ns string) e
 		}
 	}
 	return nil
-}
-
-func cleanupPreviousTasks(client *rest.RESTClient, clusterName, namespace string) error {
-
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
-	taskList := crv1.PgtaskList{}
-
-	err := kubeapi.GetpgtasksBySelector(client, &taskList, selector, namespace)
-	if err != nil {
-		return err
-	}
-
-	for _, t := range taskList.Items {
-		err = kubeapi.Deletepgtask(client, t.Name, namespace)
-		if err != nil {
-			log.Error(err)
-		}
-	}
-	return err
 }
 
 func publishClusterCreateFailure(cl *crv1.Pgcluster, errorMsg string) {

@@ -197,51 +197,6 @@ func (c *Controller) onDelete(obj interface{}) {
 	//	clusteroperator.DeleteClusterBase(c.PgclusterClientset, c.PgclusterClient, cluster, cluster.ObjectMeta.Namespace)
 }
 
-func GetPrimaryPodStatus(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, ns string) (error, bool) {
-	var ready bool
-	var err error
-
-	selector := config.LABEL_SERVICE_NAME + "=" + cluster.Name
-	pods, err := kubeapi.GetPods(clientset, selector, ns)
-	if err != nil {
-		return err, ready
-	}
-	if len(pods.Items) == 0 {
-		log.Error("GetPrimaryPodStatus found no primary pod for %s using %s", cluster.Name, selector)
-		return err, ready
-	}
-	if len(pods.Items) > 1 {
-		log.Error("GetPrimaryPodStatus found more than 1 primary pod for %s using %s", cluster.Name, selector)
-		return err, ready
-	}
-
-	pod := pods.Items[0]
-	var readyStatus string
-	readyStatus, ready = getReadyStatus(&pod)
-	log.Debugf("readyStatus found to be %s", readyStatus)
-	return err, ready
-
-}
-
-//this code is taken from apiserver/cluster/clusterimpl.go, need
-//to refactor into a higher level package to share the code
-func getReadyStatus(pod *v1.Pod) (string, bool) {
-	equal := false
-	readyCount := 0
-	containerCount := 0
-	for _, stat := range pod.Status.ContainerStatuses {
-		containerCount++
-		if stat.Ready {
-			readyCount++
-		}
-	}
-	if readyCount == containerCount {
-		equal = true
-	}
-	return fmt.Sprintf("%d/%d", readyCount, containerCount), equal
-
-}
-
 // AddPGClusterEventHandler adds the pgcluster event handler to the pgcluster informer
 func (c *Controller) AddPGClusterEventHandler() {
 
