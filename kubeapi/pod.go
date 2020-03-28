@@ -17,7 +17,6 @@ package kubeapi
 
 import (
 	"encoding/json"
-	"io"
 
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
@@ -54,21 +53,6 @@ func GetPods(clientset *kubernetes.Clientset, selector, namespace string) (*v1.P
 	return pods, err
 }
 
-// GetPodsWithBothSelectors gets a list of Pods by selector and field selector
-func GetPodsWithBothSelectors(clientset *kubernetes.Clientset, selector, fieldselector, namespace string) (*v1.PodList, error) {
-
-	lo := meta_v1.ListOptions{LabelSelector: selector, FieldSelector: fieldselector}
-
-	pods, err := clientset.CoreV1().Pods(namespace).List(lo)
-	if err != nil {
-		log.Error(err)
-		log.Error("error getting pods selector=[" + selector + "]")
-		return pods, err
-	}
-
-	return pods, err
-}
-
 // GetPod gets a Pod by name
 func GetPod(clientset *kubernetes.Clientset, name, namespace string) (*v1.Pod, bool, error) {
 	svc, err := clientset.CoreV1().Pods(namespace).Get(name, meta_v1.GetOptions{})
@@ -80,29 +64,6 @@ func GetPod(clientset *kubernetes.Clientset, name, namespace string) (*v1.Pod, b
 	}
 
 	return svc, true, err
-}
-
-// CreatePod creates a Pod
-func CreatePod(clientset *kubernetes.Clientset, svc *v1.Pod, namespace string) (*v1.Pod, error) {
-	result, err := clientset.CoreV1().Pods(namespace).Create(svc)
-	if err != nil {
-		log.Error(err)
-		log.Error("error creating pod " + svc.Name)
-		return result, err
-	}
-
-	log.Info("created pod " + result.Name)
-	return result, err
-}
-
-func UpdatePod(clientset *kubernetes.Clientset, pod *v1.Pod, namespace string) error {
-	_, err := clientset.CoreV1().Pods(namespace).Update(pod)
-	if err != nil {
-		log.Error(err)
-		log.Error("error updating pod %s", pod.Name)
-	}
-	return err
-
 }
 
 func AddLabelToPod(clientset *kubernetes.Clientset, origPod *v1.Pod, key, value, namespace string) error {
@@ -135,18 +96,3 @@ func AddLabelToPod(clientset *kubernetes.Clientset, origPod *v1.Pod, key, value,
 	log.Debugf("add label to Pod %s %s=%v", origPod.Name, key, value)
 	return err
 }
-
-func GetLogs(client *kubernetes.Clientset, logOpts v1.PodLogOptions, out io.Writer, podName, ns string) error {
-	req := client.CoreV1().Pods(ns).GetLogs(podName, &logOpts)
-
-	readCloser, err := req.Stream()
-	if err != nil {
-		return err
-	}
-
-	defer readCloser.Close()
-	_, err = io.Copy(out, readCloser)
-	return err
-}
-
-//TODO include GetLogs as used in pvcimpl.go

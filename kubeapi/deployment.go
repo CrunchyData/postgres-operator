@@ -57,19 +57,6 @@ func CreateDeployment(clientset *kubernetes.Clientset, deployment *v1.Deployment
 
 }
 
-// CreateDeployment creates a deployment
-func CreateDeploymentV1(clientset *kubernetes.Clientset, deployment *v1.Deployment, namespace string) error {
-	deploymentResult, err := clientset.AppsV1().Deployments(namespace).Create(deployment)
-	if err != nil {
-		log.Error("error creating Deployment " + err.Error())
-		return err
-	}
-
-	log.Info("created deployment " + deploymentResult.Name)
-	return err
-
-}
-
 // GetDeployment gets a deployment by name
 func GetDeployment(clientset *kubernetes.Clientset, name, namespace string) (*v1.Deployment, bool, error) {
 	deploymentResult, err := clientset.AppsV1().Deployments(namespace).Get(name, meta_v1.GetOptions{})
