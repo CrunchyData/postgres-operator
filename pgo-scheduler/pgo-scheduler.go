@@ -35,7 +35,6 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -164,21 +163,6 @@ func main() {
 			time.Sleep(time.Second * 1)
 		}
 	}
-}
-
-func newKubeClient() (*kubernetes.Clientset, error) {
-	var client *kubernetes.Clientset
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		return client, err
-	}
-
-	client, err = kubernetes.NewForConfig(config)
-	if err != nil {
-		return client, err
-	}
-
-	return client, nil
 }
 
 // SetupNamespaceController sets up a namespace controller that monitors for namespace add and

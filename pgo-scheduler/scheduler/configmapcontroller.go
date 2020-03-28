@@ -51,17 +51,15 @@ func (c *Controller) onAdd(obj interface{}) {
 
 // onDelete is called when a configMap is deleted
 func (c *Controller) onDelete(obj interface{}) {
-	{
-		cm, ok := obj.(*v1.ConfigMap)
-		if !ok {
-			log.WithFields(log.Fields{}).Error("Could not convert runtime object to configmap..")
-		}
-
-		if _, ok := cm.Labels["crunchy-scheduler"]; !ok {
-			return
-		}
-		c.Scheduler.DeleteSchedule(cm)
+	cm, ok := obj.(*v1.ConfigMap)
+	if !ok {
+		log.WithFields(log.Fields{}).Error("Could not convert runtime object to configmap..")
 	}
+
+	if _, ok := cm.Labels["crunchy-scheduler"]; !ok {
+		return
+	}
+	c.Scheduler.DeleteSchedule(cm)
 }
 
 // AddConfigMapEventHandler adds the pgcluster event handler to the pgcluster informer
