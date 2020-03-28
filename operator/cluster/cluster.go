@@ -33,7 +33,9 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 
 	log "github.com/sirupsen/logrus"
+	apps_v1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -349,6 +351,79 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 
 }
 
+// UpdateResources updates the PostgreSQL instance Deployments to reflect the
+// update resources (i.e. CPU, memory)
+func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, cluster *crv1.Pgcluster) error {
+	// put the resources in their proper format for updating the cluster
+	// the "remove*" bit lets us know that we will have the request be "unbounded"
+	cpu, err := resource.ParseQuantity(cluster.Spec.ContainerResources.RequestsCPU)
+	removeCPU := err != nil
+
+	memory, err := resource.ParseQuantity(cluster.Spec.ContainerResources.RequestsMemory)
+	removeMemory := err != nil
+
+	// get a list of all of the instance deployments for the cluster
+	deployments, err := operator.GetInstanceDeployments(clientset, cluster)
+
+	if err != nil {
+		return err
+	}
+
+	// iterate through each PostgreSQL instnace deployment and update the
+	// resources values for the database container
+	//
+	// NOTE: a future version (near future) will first try to detect the primary
+	// so that all the replicas are updated first, and then the primary gets the
+	// update
+	for _, deployment := range deployments.Items {
+		requestResourceList := v1.ResourceList{}
+
+		// if there is a request resource list available already, use that one
+		// NOTE: this works as the "database" container is always first
+		if deployment.Spec.Template.Spec.Containers[0].Resources.Requests != nil {
+			requestResourceList = deployment.Spec.Template.Spec.Containers[0].Resources.Requests
+		}
+
+		if removeCPU {
+			delete(requestResourceList, v1.ResourceCPU)
+		} else {
+			requestResourceList[v1.ResourceCPU] = cpu
+		}
+
+		// handle the memory update
+		if removeMemory {
+			delete(requestResourceList, v1.ResourceMemory)
+		} else {
+			requestResourceList[v1.ResourceMemory] = memory
+		}
+
+		// update the requests resourcelist
+		deployment.Spec.Template.Spec.Containers[0].Resources.Requests = requestResourceList
+
+		// regardless, ensure the limits are gone
+		if deployment.Spec.Template.Spec.Containers[0].Resources.Limits != nil {
+			delete(deployment.Spec.Template.Spec.Containers[0].Resources.Limits, v1.ResourceCPU)
+			delete(deployment.Spec.Template.Spec.Containers[0].Resources.Limits, v1.ResourceMemory)
+		}
+
+		// Before applying the update, we want to explicitly stop PostgreSQL on each
+		// instance. This prevents PostgreSQL from having to boot up in crash
+		// recovery mode.
+		//
+		// If an error is returned, we only issue a warning
+		if err := stopPostgreSQLInstance(clientset, restConfig, deployment); err != nil {
+			log.Warn(err)
+		}
+
+		// update the deployment with the new values
+		if err := kubeapi.UpdateDeployment(clientset, &deployment); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // UpdateTablespaces updates the PostgreSQL instance Deployments to update
 // what tablespaces are mounted.
 // Though any new tablespaces are present in the CRD, to attempt to do less work
@@ -366,28 +441,15 @@ func UpdateTablespaces(clientset *kubernetes.Clientset, restConfig *rest.Config,
 		return err
 	}
 
-	// now get the instance names, which will make it easier to create all the
-	// PVCs
-	instanceNames := []string{}
-
-	for _, deployment := range deployments.Items {
-		labels := deployment.ObjectMeta.GetLabels()
-
-		// the instance name is available from the "deployment name" label
-		if instanceName, ok := labels[config.LABEL_DEPLOYMENT_NAME]; ok {
-			instanceNames = append(instanceNames, instanceName)
-		}
-	}
-
 	// now we can start creating the new tablespaces! First, create the new
 	// PVCs. The PVCs are created for each **instance** in the cluster, as every
 	// instance needs to have a distinct PVC for each tablespace
 	for tablespaceName, storageSpec := range newTablespaces {
-		for _, instanceName := range instanceNames {
+		for _, deployment := range deployments.Items {
 			// get the name of the tablespace PVC for that instance
-			tablespacePVCName := operator.GetTablespacePVCName(instanceName, tablespaceName)
+			tablespacePVCName := operator.GetTablespacePVCName(deployment.Name, tablespaceName)
 
-			log.Debugf("creating tablespace PVC [%s] for [%s]", tablespacePVCName, instanceName)
+			log.Debugf("creating tablespace PVC [%s] for [%s]", tablespacePVCName, deployment.Name)
 
 			// and now create it! If it errors, we just need to return, which
 			// potentially leaves things in an inconsistent state, but at this point
@@ -401,15 +463,7 @@ func UpdateTablespaces(clientset *kubernetes.Clientset, restConfig *rest.Config,
 
 	// now the fun step: update each deployment with the new volumes
 	for _, deployment := range deployments.Items {
-		labels := deployment.ObjectMeta.GetLabels()
-
-		// same deal as before: if this is not a PostgreSQL instance, skip it
-		instanceName, ok := labels[config.LABEL_DEPLOYMENT_NAME]
-		if !ok {
-			continue
-		}
-
-		log.Debugf("attach tablespace volumes to [%s]", instanceName)
+		log.Debugf("attach tablespace volumes to [%s]", deployment.Name)
 
 		// iterate through each table space and prepare the Volume and
 		// VolumeMount clause for each instance
@@ -419,7 +473,7 @@ func UpdateTablespaces(clientset *kubernetes.Clientset, restConfig *rest.Config,
 				Name: operator.GetTablespaceVolumeName(tablespaceName),
 				VolumeSource: v1.VolumeSource{
 					PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-						ClaimName: operator.GetTablespacePVCName(instanceName, tablespaceName),
+						ClaimName: operator.GetTablespacePVCName(deployment.Name, tablespaceName),
 					},
 				},
 			}
@@ -441,33 +495,31 @@ func UpdateTablespaces(clientset *kubernetes.Clientset, restConfig *rest.Config,
 
 		// find the "PGHA_TABLESPACES" value and update it with the new tablespace
 		// name list
+		ok := false
 		for i, envVar := range deployment.Spec.Template.Spec.Containers[0].Env {
 			// yup, it's an old fashioned linear time lookup
 			if envVar.Name == "PGHA_TABLESPACES" {
 				deployment.Spec.Template.Spec.Containers[0].Env[i].Value = operator.GetTablespaceNames(
 					cluster.Spec.TablespaceMounts)
+				ok = true
 			}
+		}
+
+		// if its not found, we need to add it to the env
+		if !ok {
+			envVar := v1.EnvVar{
+				Name:  "PGHA_TABLESPACES",
+				Value: operator.GetTablespaceNames(cluster.Spec.TablespaceMounts),
+			}
+			deployment.Spec.Template.Spec.Containers[0].Env = append(deployment.Spec.Template.Spec.Containers[0].Env, envVar)
 		}
 
 		// Before applying the update, we want to explicitly stop PostgreSQL on each
 		// instance. This prevents PostgreSQL from having to boot up in crash
 		// recovery mode.
 		//
-		// This also means we need to find the database pod
-		selector := fmt.Sprintf("%s=%s", config.LABEL_DEPLOYMENT_NAME, deployment.Name)
-		pods, err := kubeapi.GetPods(clientset, selector, deployment.ObjectMeta.Namespace)
-
-		if err != nil {
-			return err
-		} else if len(pods.Items) == 0 {
-			return fmt.Errorf("could not find any pods for deployment [%s]", deployment.Name)
-		}
-
-		// get the first pod off the items list
-		pod := pods.Items[0]
-
-		// now we can shut down the cluster. However, if this fails, we'll only warn
-		if err := util.StopPostgreSQLInstance(clientset, restConfig, &pod, instanceName); err != nil {
+		// If an error is returned, we only issue a warning
+		if err := stopPostgreSQLInstance(clientset, restConfig, deployment); err != nil {
 			log.Warn(err)
 		}
 
@@ -542,6 +594,38 @@ func publishClusterShutdown(cluster crv1.Pgcluster) error {
 
 	if err := events.Publish(f); err != nil {
 		log.Error(err.Error())
+		return err
+	}
+
+	return nil
+}
+
+// stopPostgreSQLInstance is a proxy function for the main
+// StopPostgreSQLInstance function, as it preps a Deployment to have its
+// PostgreSQL instance shut down. This helps to ensure that a PostgreSQL
+// instance will launch and not be in crash recovery mode
+func stopPostgreSQLInstance(clientset *kubernetes.Clientset, restConfig *rest.Config, deployment apps_v1.Deployment) error {
+	// First, attempt to get the PostgreSQL instance Pod attachd to this
+	// particular deployment
+	selector := fmt.Sprintf("%s=%s", config.LABEL_DEPLOYMENT_NAME, deployment.Name)
+	pods, err := kubeapi.GetPods(clientset, selector, deployment.ObjectMeta.Namespace)
+
+	// if there is a bona fide error, return.
+	// However, if no Pods are found, issue a warning, but do not return an error
+	// This likely means that PostgreSQL is already shutdown, but hey, it's the
+	// cloud
+	if err != nil {
+		return err
+	} else if len(pods.Items) == 0 {
+		log.Infof("not shutting down PostgreSQL instance [%s] as the Pod cannot be found", deployment.Name)
+		return nil
+	}
+
+	// get the first pod off the items list
+	pod := pods.Items[0]
+
+	// now we can shut down the cluster
+	if err := util.StopPostgreSQLInstance(clientset, restConfig, &pod, deployment.Name); err != nil {
 		return err
 	}
 
