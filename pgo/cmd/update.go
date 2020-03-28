@@ -61,8 +61,12 @@ func init() {
 
 	UpdateClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdateClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
+	UpdateClusterCmd.Flags().StringVar(&CPURequest, "cpu", "", "Set the number of millicores to request for the CPU, e.g. "+
+		"\"100m\" or \"0.1\". Overrides the value in \"resources-config\"")
 	UpdateClusterCmd.Flags().BoolVar(&DisableAutofailFlag, "disable-autofail", false, "Disables autofail capabitilies in the cluster.")
 	UpdateClusterCmd.Flags().BoolVar(&EnableAutofailFlag, "enable-autofail", false, "Enables autofail capabitilies in the cluster.")
+	UpdateClusterCmd.Flags().StringVar(&MemoryRequest, "memory", "", "Set the amount of RAM to request, e.g. "+
+		"1GiB. Overrides the value in \"resources-config\"")
 	UpdateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	UpdateClusterCmd.Flags().BoolVarP(&DisableStandby, "disable-standby", "", false,
 		"Disables standby mode if enabled in the cluster(s) specified.")

@@ -31,7 +31,9 @@ import (
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
+	apps_v1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -178,6 +180,15 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
+	// see if any of the resource values have changed, and if so, upate them
+	if oldcluster.Spec.ContainerResources.RequestsCPU != newcluster.Spec.ContainerResources.RequestsCPU ||
+		oldcluster.Spec.ContainerResources.RequestsMemory != newcluster.Spec.ContainerResources.RequestsMemory {
+		if err := updateResources(c, newcluster); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
 	// if we are not in a standby state, check to see if the tablespaces have
 	// differed, and if so, add the additional volumes to the primary and replicas
 	if !reflect.DeepEqual(oldcluster.Spec.TablespaceMounts, newcluster.Spec.TablespaceMounts) {
@@ -218,17 +229,105 @@ func addIdentifier(clusterCopy *crv1.Pgcluster) {
 	clusterCopy.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = string(u[:len(u)-1])
 }
 
-// updateTablespaces updates the PostgreSQL instance Deployments to reflect the
-// new PostgreSQL tablespaces that should be added
-func updateTablespaces(c *Controller, oldCluster *crv1.Pgcluster, newCluster *crv1.Pgcluster) error {
+// getInstanceDeployments finds the Deployments that represent PostgreSQL
+// instances
+func getInstanceDeployments(c *Controller, cluster *crv1.Pgcluster) (*apps_v1.DeploymentList, error) {
 	// first, get a list of all of the available deployments so we can properly
 	// mount the tablespace PVCs after we create them
 	// NOTE: this will also get the pgBackRest deployments, but we will filter
 	// these out later
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_VENDOR, config.LABEL_CRUNCHY,
-		config.LABEL_PG_CLUSTER, newCluster.Name)
+		config.LABEL_PG_CLUSTER, cluster.Name)
 
-	deployments, err := kubeapi.GetDeployments(c.PgclusterClientset, selector, newCluster.Namespace)
+	// get the deployments for this specific PostgreSQL luster
+	clusterDeployments, err := kubeapi.GetDeployments(c.PgclusterClientset, selector, cluster.Namespace)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// start prepping the instance deployments
+	instanceDeployments := apps_v1.DeploymentList{}
+
+	// iterate through the list of deployments -- it matches the definition of a
+	// PostgreSQL instance deployment, then add it to the slice
+	for _, deployment := range clusterDeployments.Items {
+		labels := deployment.ObjectMeta.GetLabels()
+
+		// get the name of the PostgreSQL instance. If the "deployment-name"
+		// label is not present, then we know it's not a PostgreSQL cluster.
+		// Otherwise, the "deployment-name" label doubles as the name of the
+		// instance
+		if instanceName, ok := labels[config.LABEL_DEPLOYMENT_NAME]; ok {
+			log.Debugf("instance found [%s]", instanceName)
+
+			instanceDeployments.Items = append(instanceDeployments.Items, deployment)
+		}
+	}
+
+	return &instanceDeployments, nil
+}
+
+// updateResources updates the PostgreSQL instance Deployments to reflect the
+// update resources (i.e. CPU, memory)
+func updateResources(c *Controller, cluster *crv1.Pgcluster) error {
+	// put the resources in their proper format for updating the cluster
+	// the "remove*" bit lets us know that we will have the request be "unbounded"
+	cpu, err := resource.ParseQuantity(cluster.Spec.ContainerResources.RequestsCPU)
+	removeCPU := err != nil
+
+	memory, err := resource.ParseQuantity(cluster.Spec.ContainerResources.RequestsMemory)
+	removeMemory := err != nil
+
+	// get a list of all of the instance deployments for the cluster
+	deployments, err := getInstanceDeployments(c, cluster)
+
+	if err != nil {
+		return err
+	}
+
+	// iterate through each PostgreSQL instnace deployment and update the
+	// resources values for the database container
+	//
+	// NOTE: a future version (near future) will first try to detect the primary
+	// so that all the replicas are updated first, and then the primary gets the
+	// update
+	for _, deployment := range deployments.Items {
+		// NOTE: this works as the "database" container is always first
+		// first handle the CPU update
+		if removeCPU {
+			delete(deployment.Spec.Template.Spec.Containers[0].Resources.Requests, v1.ResourceCPU)
+		} else {
+			deployment.Spec.Template.Spec.Containers[0].Resources.Requests[v1.ResourceCPU] = cpu
+		}
+
+		// regardless, ensure the limit is gone
+		delete(deployment.Spec.Template.Spec.Containers[0].Resources.Limits, v1.ResourceCPU)
+
+		// handle the memory update
+		if removeMemory {
+			delete(deployment.Spec.Template.Spec.Containers[0].Resources.Requests, v1.ResourceMemory)
+		} else {
+			deployment.Spec.Template.Spec.Containers[0].Resources.Requests[v1.ResourceMemory] = memory
+		}
+
+		// regardless, ensure the limit is gone
+		delete(deployment.Spec.Template.Spec.Containers[0].Resources.Limits, v1.ResourceMemory)
+
+		// update the deployment with the new values
+		if err := kubeapi.UpdateDeployment(c.PgclusterClientset, &deployment); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// updateTablespaces updates the PostgreSQL instance Deployments to reflect the
+// new PostgreSQL tablespaces that should be added
+func updateTablespaces(c *Controller, oldCluster *crv1.Pgcluster, newCluster *crv1.Pgcluster) error {
+	// first, get a list of all of the instance deployments for the cluster
+	deployments, err := getInstanceDeployments(c, newCluster)
 
 	if err != nil {
 		return err
@@ -241,13 +340,8 @@ func updateTablespaces(c *Controller, oldCluster *crv1.Pgcluster, newCluster *cr
 	for _, deployment := range deployments.Items {
 		labels := deployment.ObjectMeta.GetLabels()
 
-		// get the name of the PostgreSQL instance. If the "deployment-name"
-		// label is not present, then we know it's not a PostgreSQL cluster.
-		// Otherwise, the "deployment-name" label doubles as the name of the
-		// instance
+		// the instance name is available from the "deployment name" label
 		if instanceName, ok := labels[config.LABEL_DEPLOYMENT_NAME]; ok {
-			log.Debugf("instance found [%s]", instanceName)
-
 			instanceNames = append(instanceNames, instanceName)
 		}
 	}
