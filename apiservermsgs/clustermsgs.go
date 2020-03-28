@@ -276,6 +276,12 @@ type UpdateClusterRequest struct {
 	Namespace     string
 	AllFlag       bool
 	Autofail      UpdateClusterAutofailStatus
+	// CPURequest is the value of how much CPU should be requested for deploying
+	// the PostgreSQL cluster
+	CPURequest string
+	// MemoryRequest is the value of how much RAM should be requested for
+	// deploying the PostgreSQL cluster
+	MemoryRequest string
 	Standby       UpdateClusterStandbyStatus
 	Startup       bool
 	Shutdown      bool

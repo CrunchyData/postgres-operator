@@ -1436,6 +1436,23 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		return response
 	}
 
+	// evaluate if the CPU / Memory have been set to custom values
+	if request.CPURequest != "" {
+		if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest, request.CPURequest, err.Error())
+			return response
+		}
+	}
+
+	if request.MemoryRequest != "" {
+		if err := apiserver.ValidateQuantity(request.MemoryRequest); err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest, request.MemoryRequest, err.Error())
+			return response
+		}
+	}
+
 	// validate the storage type for each specified tablespace actually exists.
 	// if a PVCSize is passed in, also validate that it follows the Kubernetes
 	// format
@@ -1522,6 +1539,19 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 			cluster.Spec.Shutdown = false
 		} else if request.Shutdown {
 			cluster.Spec.Shutdown = true
+		}
+
+		// if the CPU or memory values have been modified, update the values in the
+		// cluster CRD
+		// This will also overwrite the limits as this is being phased out
+		if request.CPURequest != "" {
+			cluster.Spec.ContainerResources.RequestsCPU = request.CPURequest
+			cluster.Spec.ContainerResources.LimitsCPU = ""
+		}
+
+		if request.MemoryRequest != "" {
+			cluster.Spec.ContainerResources.RequestsMemory = request.MemoryRequest
+			cluster.Spec.ContainerResources.LimitsMemory = ""
 		}
 
 		// extract the parameters for the TablespaceMounts and put them in the

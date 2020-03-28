@@ -435,6 +435,26 @@ func updateCluster(args []string, ns string) {
 		r.Autofail = msgs.UpdateClusterAutofailDisable
 	}
 
+	// if the user provided resources for CPU or Memory, validate them to ensure
+	// they are valid Kubernetes values
+	if CPURequest != "" {
+		if _, err := resource.ParseQuantity(CPURequest); err != nil {
+			fmt.Println("Error:", err.Error(), `"`+CPURequest+`"`)
+			os.Exit(1)
+		}
+
+		r.CPURequest = CPURequest
+	}
+
+	if MemoryRequest != "" {
+		if _, err := resource.ParseQuantity(MemoryRequest); err != nil {
+			fmt.Println("Error:", err.Error(), `"`+MemoryRequest+`"`)
+			os.Exit(1)
+		}
+
+		r.MemoryRequest = MemoryRequest
+	}
+
 	response, err := api.UpdateCluster(httpclient, &r, &SessionCredentials)
 
 	if err != nil {
