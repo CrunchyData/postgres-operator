@@ -24,14 +24,11 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
 
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -182,7 +179,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// see if any of the resource values have changed, and if so, upate them
 	if oldcluster.Spec.ContainerResources.RequestsCPU != newcluster.Spec.ContainerResources.RequestsCPU ||
 		oldcluster.Spec.ContainerResources.RequestsMemory != newcluster.Spec.ContainerResources.RequestsMemory {
-		if err := updateResources(c, newcluster); err != nil {
+		if err := clusteroperator.UpdateResources(c.PgclusterClientset, c.PgclusterConfig, newcluster); err != nil {
 			log.Error(err)
 			return
 		}
@@ -226,61 +223,6 @@ func addIdentifier(clusterCopy *crv1.Pgcluster) {
 	}
 
 	clusterCopy.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = string(u[:len(u)-1])
-}
-
-// updateResources updates the PostgreSQL instance Deployments to reflect the
-// update resources (i.e. CPU, memory)
-func updateResources(c *Controller, cluster *crv1.Pgcluster) error {
-	// put the resources in their proper format for updating the cluster
-	// the "remove*" bit lets us know that we will have the request be "unbounded"
-	cpu, err := resource.ParseQuantity(cluster.Spec.ContainerResources.RequestsCPU)
-	removeCPU := err != nil
-
-	memory, err := resource.ParseQuantity(cluster.Spec.ContainerResources.RequestsMemory)
-	removeMemory := err != nil
-
-	// get a list of all of the instance deployments for the cluster
-	deployments, err := operator.GetInstanceDeployments(c.PgclusterClientset, cluster)
-
-	if err != nil {
-		return err
-	}
-
-	// iterate through each PostgreSQL instnace deployment and update the
-	// resources values for the database container
-	//
-	// NOTE: a future version (near future) will first try to detect the primary
-	// so that all the replicas are updated first, and then the primary gets the
-	// update
-	for _, deployment := range deployments.Items {
-		// NOTE: this works as the "database" container is always first
-		// first handle the CPU update
-		if removeCPU {
-			delete(deployment.Spec.Template.Spec.Containers[0].Resources.Requests, v1.ResourceCPU)
-		} else {
-			deployment.Spec.Template.Spec.Containers[0].Resources.Requests[v1.ResourceCPU] = cpu
-		}
-
-		// regardless, ensure the limit is gone
-		delete(deployment.Spec.Template.Spec.Containers[0].Resources.Limits, v1.ResourceCPU)
-
-		// handle the memory update
-		if removeMemory {
-			delete(deployment.Spec.Template.Spec.Containers[0].Resources.Requests, v1.ResourceMemory)
-		} else {
-			deployment.Spec.Template.Spec.Containers[0].Resources.Requests[v1.ResourceMemory] = memory
-		}
-
-		// regardless, ensure the limit is gone
-		delete(deployment.Spec.Template.Spec.Containers[0].Resources.Limits, v1.ResourceMemory)
-
-		// update the deployment with the new values
-		if err := kubeapi.UpdateDeployment(c.PgclusterClientset, &deployment); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 // updateTablespaces updates the PostgreSQL instance Deployments to reflect the

@@ -200,7 +200,15 @@ var UpdateClusterCmd = &cobra.Command{
 		}
 
 		if len(Tablespaces) > 0 {
-			fmt.Println("Adding tablespaces could cause downtime.")
+			fmt.Println("Adding tablespaces can cause downtime.")
+		}
+
+		if CPURequest != "" {
+			fmt.Println("Updating CPU resources can cause downtime.")
+		}
+
+		if MemoryRequest != "" {
+			fmt.Println("Updating memory resources can cause downtime.")
 		}
 
 		if !util.AskForConfirmation(NoPrompt, "") {
