@@ -312,6 +312,21 @@ you can use the following command:
 pgo create cluster hacluster --pgbackrest-pvc-size=1Ti
 ```
 
+#### Specify CPU / Memory for a PostgreSQL Cluster
+
+To specify the amount of CPU and memory to request for a PostgreSQL cluster, you
+can use the `--cpu` and `--memory` flags of the
+[`pgo create cluster`](/pgo-client/reference/pgo_create_cluster/) command. Both
+of these values utilize the [Kubernetes quantity format](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/)
+for specifying how to allocate resources.
+
+For example, to create a PostgreSQL cluster that requests 4 CPU cores and has 16
+gibibytes of memory, you can use the following command:
+
+```shell
+pgo create cluster hacluster --cpu=4 --memory=16Gi
+```
+
 #### Create a PostgreSQL Cluster with PostGIS
 
 To create a PostgreSQL cluster that uses the geospatial extension PostGIS, you
@@ -831,6 +846,35 @@ destroy.
 There are several operations that you can perform to modify a PostgreSQL cluster
 over its lifetime.
 
+#### Modify CPU / Memory for a PostgreSQL Cluster
+
+As database workloads change, it may be necessary to modify the CPU and memory
+allocation for your PostgreSQL cluster. The PostgreSQL Operator allows for this
+via the `--cpu` and `--memory` flags on the [`pgo update cluster`](/pgo-client/reference/pgo_update_cluster/)
+command. Similar to the create command, both flags accept values that follow the
+[Kubernetes quantity format](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/).
+
+For example, to update a PostgreSQL cluster to use 8 CPU cores and has 32
+gibibytes of memory, you can use the following command:
+
+```shell
+pgo update cluster hacluster --cpu=8 --memory=32Gi
+```
+
+The resource allocations apply to all instances in a PostgreSQL cluster: this
+means your primary and any replicas will have the same cluster resource
+allocations. Be sure to specify resource requests that your Kubernetes
+environment can support.
+
+**NOTE**: This operation can cause downtime. Modifying the resource requests
+allocated to a Deployment requires that the Pods in a Deployment must be
+restart. Each PostgreSQL instance is safely shutdown using the ["fast"](https://www.postgresql.org/docs/current/app-pg-ctl.html)
+shutdown method to help ensure it will not enter crash recovery mode when a new
+Pod is created.
+
+When the operation completes, each PostgreSQL instance will have the new
+resource allocations.
+
 #### Adding a Tablespace to a Cluster
 
 Based on your workload or volume of data, you may wish to add a
@@ -851,6 +895,10 @@ pgo update cluster hacluster \
 PostgreSQL cluster, persistent volume claims (PVCs) need to be created and
 mounted to each PostgreSQL instance in the cluster. The act of mounting a new
 PVC to a Kubernetes Deployment causes the Pods in the deployment to restart.
+
+Each PostgreSQL instance is safely shutdown using the ["fast"](https://www.postgresql.org/docs/current/app-pg-ctl.html)
+shutdown method to help ensure it will not enter crash recovery mode when a new
+Pod is created.
 
 When the operation completes, the tablespace will be set up and accessible to
 use within the PostgreSQL cluster.
