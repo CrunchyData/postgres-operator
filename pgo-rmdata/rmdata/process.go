@@ -27,7 +27,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
 	kerror "k8s.io/apimachinery/pkg/api/errors"
 
 	"time"
@@ -80,10 +79,6 @@ func Delete(request Request) {
 				"and therefore ignoring error attempting to delete nonexistent pgreplica")
 		}
 
-		if request.RemoveData {
-			removeOnlyReplicaData(request)
-		}
-
 		err = removeReplica(request)
 		if err != nil {
 			log.Error(err)
@@ -117,7 +112,6 @@ func Delete(request Request) {
 	//the user had done something like:
 	//pgo delete cluster mycluster --delete-data
 	if request.RemoveData {
-		removeData(request)
 		removeUserSecrets(request)
 	}
 
@@ -163,103 +157,12 @@ func Delete(request Request) {
 	}
 }
 
-// deleteClusterData calls a series of commands to attempt to "safely" delete
-// the PGDATA on the server
-//
-/// First, it ensures PostgreSQL has stopped, to avoid any unpredictable
-// behavior.
-//
-// Next, it calls "rm -rf" on the directory. This was implemented prior to this
-// "refactor" and may change in the future to be a bit safer in this environment
-func deletePGDATA(request Request, pod v1.Pod) error {
-	clusterName := pod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
-	containerName := pod.Spec.Containers[0].Name
-	pgDataPath := fmt.Sprintf(pgDataPathFormat, clusterName)
-
-	log.Debugf("delete pgdata: [%s]", clusterName)
-
-	// first, ensure the PostgreSQL cluster is stopped
-	stopCommand := []string{"pg_ctl", "stop", "-m", "immediate", "-D", pgDataPath}
-	// execute the command here. While not ideal, it's OK if it errors out.
-	if stdout, stderr, err := kubeapi.ExecToPodThroughAPI(
-		request.RESTConfig,
-		request.Clientset,
-		stopCommand,
-		containerName,
-		pod.Name,
-		request.Namespace, nil); err != nil {
-		log.Errorf("error execing into remove data pod %s: command %s error %s", pod.Name, stopCommand, err.Error())
-	} else {
-		log.Infof("stopped postgresql [%s]: stdout=[%s] stderr=[%s]", clusterName, stdout, stderr)
-	}
-
-	// check if there are any tablespaces, and if so, remove them here
-	// we know that a mount point is a tablespace if the prefix starts with
-	// VOLUME_TABLESPACE_NAME_PREFIX
-	for _, volumeMount := range pod.Spec.Containers[0].VolumeMounts {
-		// skip if the prefix does not match VOLUME_TABLESPACE_NAME_PREFIX"
-		if !strings.HasPrefix(volumeMount.Name, config.VOLUME_TABLESPACE_NAME_PREFIX) {
-			continue
-		}
-
-		// we now need to remove the data in the tablespace directory. we can do
-		// this by using the tablespace name pattern
-		tablespaceName := strings.ReplaceAll(volumeMount.Name, config.VOLUME_TABLESPACE_NAME_PREFIX, "")
-		// with this, we can now build the directory pattern
-		tablespacePath := fmt.Sprintf(tablespacePathFormat, tablespaceName, tablespaceName)
-
-		// attempt to remote the directory, if it fails, only log the error, and
-		// continue on.
-		if stdout, stderr, err := rmDataDir(request, pod.Name, containerName, tablespacePath); err != nil {
-			log.Error(err)
-		} else {
-			log.Infof("rm pgdata/tablespace [%s - %s]: stdout=[%s] stderr=[%s]", clusterName, tablespaceName, stdout, stderr)
-		}
-	}
-
-	// execute the rm PGDATA command here. If it errors, return
-	if stdout, stderr, err := rmDataDir(request, pod.Name, containerName, pgDataPath); err != nil {
-		return err
-	} else {
-		log.Infof("rm pgdata [%s]: stdout=[%s] stderr=[%s]", clusterName, stdout, stderr)
-	}
-
-	return nil
-}
-
 // removeBackRestRepo removes the pgBackRest repo that is associated with the
 // PostgreSQL cluster
 func removeBackrestRepo(request Request) {
 	deploymentName := fmt.Sprintf("%s-backrest-shared-repo", request.ClusterName)
-	repoPath := fmt.Sprintf(pgBackRestPathFormat, deploymentName)
 
 	log.Debugf("deleting the pgbackrest repo [%s]", deploymentName)
-
-	// first, delete the backup data directory
-	// we'll determine from the request if we ewant to remove the backup directory
-	if request.RemoveBackup {
-		// NOTE: need to use the ClusterName for the Pod selector
-		selector := fmt.Sprintf("%s=%s,%s=true",
-			config.LABEL_PG_CLUSTER, request.ClusterName, config.LABEL_PGO_BACKREST_REPO)
-		// even if we error, we can move on with deleting the deployments and servies
-		if pods, err := kubeapi.GetPods(request.Clientset, selector, request.Namespace); err != nil {
-			log.Error(err)
-		} else {
-			// iterate through any pod matching this query, and remove the data
-			// directory
-			for _, pod := range pods.Items {
-				log.Debugf("remove pgbackrest repo from pod [%s]", pod.Name)
-				// take the first available container
-				containerName := pod.Spec.Containers[0].Name
-
-				if stdout, stderr, err := rmDataDir(request, pod.Name, containerName, repoPath); err != nil {
-					log.Error(err)
-				} else {
-					log.Infof("rm pgbackrest repo [%s]: stdout=[%s] stderr=[%s]", deploymentName, stdout, stderr)
-				}
-			}
-		}
-	}
 
 	// now delete the deployment and services
 	err := kubeapi.DeleteDeployment(request.Clientset, deploymentName, request.Namespace)
@@ -338,46 +241,6 @@ func removeClusterConfigmaps(request Request) {
 			log.Error(err)
 		}
 	}
-}
-
-func removeData(request Request) {
-	//get the replicas
-	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName + "," + config.LABEL_SERVICE_NAME + "=" + request.ClusterName + "-replica"
-	log.Debugf("removeData selector %s", selector)
-	pods, err := kubeapi.GetPods(request.Clientset, selector, request.Namespace)
-	if err != nil {
-		log.Errorf("error selecting replica pods %s %s", selector, err.Error())
-	}
-
-	//replicas should have a label on their pod of the
-	//form deployment-name=somedeploymentname
-
-	log.Debugf("removeData %d replica pods", len(pods.Items))
-	if len(pods.Items) > 0 {
-		for _, pod := range pods.Items {
-			if err := deletePGDATA(request, pod); err != nil {
-				log.Errorf("error execing into remove data pod %s: %s", pod.Name, err.Error())
-			}
-		}
-	}
-
-	//get the primary
-
-	//primaries should have the label of
-	//the form deployment-name=somedeploymentname and service-name=somecluster
-	selector = config.LABEL_PG_CLUSTER + "=" + request.ClusterName + "," + config.LABEL_SERVICE_NAME + "=" + request.ClusterName
-	pods, err = kubeapi.GetPods(request.Clientset, selector, request.Namespace)
-	if err != nil {
-		log.Errorf("error selecting primary pod %s %s", selector, err.Error())
-	}
-
-	if len(pods.Items) > 0 {
-		pod := pods.Items[0]
-		if err := deletePGDATA(request, pod); err != nil {
-			log.Errorf("error execing into remove data pod %s: error %s", pod.Name, err.Error())
-		}
-	}
-
 }
 
 func removeClusterJobs(request Request) {
@@ -493,27 +356,6 @@ func removeUserSecrets(request Request) {
 		}
 	}
 
-}
-
-func removeOnlyReplicaData(request Request) {
-	//get the replica pod only, this is the case where
-	//a user scales down a replica, in this case the DeploymentName
-	//is used to identify the correct pod
-	//replicas should have a label on their pod of the
-	//form deployment-name=somedeploymentname
-	selector := fmt.Sprintf("%s=%s", config.LABEL_DEPLOYMENT_NAME, request.ReplicaName)
-
-	pods, err := kubeapi.GetPods(request.Clientset, selector, request.Namespace)
-	if err != nil {
-		log.Errorf("error selecting replica pods %s %s", selector, err.Error())
-	}
-
-	// looping through this list due to the legacy code being like this...
-	for _, pod := range pods.Items {
-		if err := deletePGDATA(request, pod); err != nil {
-			log.Errorf("error execing into remove data pod %s: error %s", pod.Name, err.Error())
-		}
-	}
 }
 
 func removeAddons(request Request) {
@@ -837,18 +679,4 @@ func removeSchedules(request Request) {
 	if err := kubeapi.DeleteConfigMaps(request.Clientset, selector, request.Namespace); err != nil {
 		log.Error(err)
 	}
-}
-
-// rmDataDir removes a data directory, such as a PGDATA directory, or a
-// pgBackRest repo
-func rmDataDir(request Request, podName, containerName, path string) (string, string, error) {
-	command := []string{"rm", "-rf", path}
-
-	return kubeapi.ExecToPodThroughAPI(
-		request.RESTConfig,
-		request.Clientset,
-		command,
-		containerName,
-		podName,
-		request.Namespace, nil)
 }
