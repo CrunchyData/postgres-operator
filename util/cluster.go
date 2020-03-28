@@ -100,6 +100,14 @@ var (
 		"configutation")
 )
 
+var (
+	// CmdStopPostgreSQL is the command used to stop a PostgreSQL instance, which
+	// uses the "fast" shutdown mode. This needs a data directory appended to it
+	cmdStopPostgreSQL = []string{"pg_ctl", "stop",
+		"-m", "fast", "-D",
+	}
+)
+
 // CreateBackrestRepoSecrets creates the secrets required to manage the
 // pgBackRest repo container
 func CreateBackrestRepoSecrets(clientset *kubernetes.Clientset,
@@ -268,6 +276,29 @@ func SetPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Con
 		return err
 	} else if stderr != "" {
 		log.Error(stderr)
+		return fmt.Errorf(stderr)
+	}
+
+	return nil
+}
+
+// StopPostgreSQLInstance issues a "fast" shutdown command to the PostgreSQL
+// instance. This will immediately terminate any connections and safely shut
+// down PostgreSQL so it does not have to start up in crash recovery mode
+func StopPostgreSQLInstance(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod, instanceName string) error {
+	log.Debugf("shutting down PostgreSQL on pod [%s]", pod.Name)
+
+	// append the data directory, which is the name of the instance
+	cmd := cmdStopPostgreSQL
+	dataDirectory := fmt.Sprintf("%s/%s", config.VOLUME_POSTGRESQL_DATA_MOUNT_PATH, instanceName)
+	cmd = append(cmd, dataDirectory)
+
+	// exec into the pod to execute the stop command
+	_, stderr, _ := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
+		cmd, "database", pod.Name, pod.ObjectMeta.Namespace, nil)
+
+	// if there is error output, assume this is an error and return
+	if stderr != "" {
 		return fmt.Errorf(stderr)
 	}
 
