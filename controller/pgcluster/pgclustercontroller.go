@@ -176,7 +176,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
-	// see if any of the resource values have changed, and if so, upate them
+	// see if any of the resource values have changed, and if so, update them
 	if oldcluster.Spec.ContainerResources.RequestsCPU != newcluster.Spec.ContainerResources.RequestsCPU ||
 		oldcluster.Spec.ContainerResources.RequestsMemory != newcluster.Spec.ContainerResources.RequestsMemory {
 		if err := clusteroperator.UpdateResources(c.PgclusterClientset, c.PgclusterConfig, newcluster); err != nil {

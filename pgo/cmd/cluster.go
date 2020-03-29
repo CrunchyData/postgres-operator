@@ -289,7 +289,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	// they are valid Kubernetes values
 	if CPURequest != "" {
 		if _, err := resource.ParseQuantity(CPURequest); err != nil {
-			fmt.Println("Error:", err.Error(), `"`+CPURequest+`"`)
+			fmt.Printf("Error: CPU: \"%s\" %s\n", CPURequest, err.Error())
 			os.Exit(1)
 		}
 
@@ -298,7 +298,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 
 	if MemoryRequest != "" {
 		if _, err := resource.ParseQuantity(MemoryRequest); err != nil {
-			fmt.Println("Error:", err.Error(), `"`+MemoryRequest+`"`)
+			fmt.Printf("Error: Memory: \"%s\" %s\n", MemoryRequest, err.Error())
 			os.Exit(1)
 		}
 

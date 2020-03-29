@@ -369,8 +369,8 @@ func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, c
 		return err
 	}
 
-	// iterate through each PostgreSQL instnace deployment and update the
-	// resources values for the database container
+	// iterate through each PostgreSQL instance deployment and update the
+	// resource values for the database container
 	//
 	// NOTE: a future version (near future) will first try to detect the primary
 	// so that all the replicas are updated first, and then the primary gets the
@@ -430,8 +430,8 @@ func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, c
 // this function takes a map of the new tablespaces that are being added, so we
 // only have to check and create the PVCs that are being mounted at this time
 //
-// To do this, iterate through the the tablespace mount map that is present in
-// the new cluster.
+// To do this, iterate through the tablespace mount map that is present in the
+// new cluster.
 func UpdateTablespaces(clientset *kubernetes.Clientset, restConfig *rest.Config,
 	cluster *crv1.Pgcluster, newTablespaces map[string]crv1.PgStorageSpec) error {
 	// first, get a list of all of the instance deployments for the cluster

@@ -413,8 +413,8 @@ func GetInstanceDeployments(clientset *kubernetes.Clientset, cluster *crv1.Pgclu
 	// start prepping the instance deployments
 	instanceDeployments := apps_v1.DeploymentList{}
 
-	// iterate through the list of deployments -- it matches the definition of a
-	// PostgreSQL instance deployment, then add it to the slice
+	// iterate through the list of deployments -- if it matches the definition of
+	// a PostgreSQL instance deployment, then add it to the slice
 	for _, deployment := range clusterDeployments.Items {
 		labels := deployment.ObjectMeta.GetLabels()
 
