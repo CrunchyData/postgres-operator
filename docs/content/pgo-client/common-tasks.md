@@ -868,7 +868,7 @@ environment can support.
 
 **NOTE**: This operation can cause downtime. Modifying the resource requests
 allocated to a Deployment requires that the Pods in a Deployment must be
-restart. Each PostgreSQL instance is safely shutdown using the ["fast"](https://www.postgresql.org/docs/current/app-pg-ctl.html)
+restarted. Each PostgreSQL instance is safely shutdown using the ["fast"](https://www.postgresql.org/docs/current/app-pg-ctl.html)
 shutdown method to help ensure it will not enter crash recovery mode when a new
 Pod is created.
 
