@@ -26,7 +26,7 @@ import (
 
 	_ "github.com/lib/pq"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -260,6 +260,14 @@ func ToggleAutoFailover(clientset *kubernetes.Clientset, enable bool, pghaScope,
 		err := fmt.Errorf("Unable to find configMap %s when attempting disable autofailover", configMapName)
 		log.Error(err)
 		return err
+	}
+
+	// return ErrMissingConfigAnnotation error if configMap is missing the "config" annotation.
+	// This allows for graceful handling of scenarios where a failover toggle is attempted
+	// (e.g. during cluster removal), but this annotation has not been created yet (e.g. due to
+	// a failed cluster bootstrap)
+	if _, ok := configMap.ObjectMeta.Annotations["config"]; !ok {
+		return ErrMissingConfigAnnotation
 	}
 
 	configJSONStr := configMap.ObjectMeta.Annotations["config"]
