@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
-	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
@@ -39,6 +38,11 @@ const (
 	pgBaseBackupPVC      = "%s-backup"
 	pgDumpPVC            = "backup-%s-pgdump-pvc"
 	pgDataPathFormat     = "/pgdata/%s"
+
+	// the following constants define the suffixes for the various configMaps created by Patroni
+	configConfigMapSuffix   = "config"
+	leaderConfigMapSuffix   = "leader"
+	failoverConfigMapSuffix = "failover"
 )
 
 func Delete(request Request) {
@@ -293,16 +297,20 @@ func removeBackupSecrets(request Request) {
 // <cluster-name>-pgha-default-config (stores a Patroni config file in YAML format)
 func removeClusterConfigmaps(request Request) {
 	// Store the derived names of the three configmaps in an array
-	clusterConfigmaps := [3]string{
+	clusterConfigmaps := [4]string{
 		// first, derive the name of the PG HA default configmap, which is
 		// "`clusterName`-`LABEL_PGHA_DEFAULT_CONFIGMAP`"
 		fmt.Sprintf("%s-%s", request.ClusterName, config.LABEL_PGHA_DEFAULT_CONFIGMAP),
 		// next, the name of the leader configmap, which is
 		// "`clusterName`-leader"
-		fmt.Sprintf("%s-%s", request.ClusterName, "leader"),
-		// finally, the name of the general configuration settings configmap, which is
+		fmt.Sprintf("%s-%s", request.ClusterName, leaderConfigMapSuffix),
+		// next, the name of the general configuration settings configmap, which is
 		// "`clusterName`-config"
-		fmt.Sprintf("%s-%s", request.ClusterName, "config")}
+		fmt.Sprintf("%s-%s", request.ClusterName, configConfigMapSuffix),
+		// finally, the name of the failover configmap, which is
+		// "`clusterName`-failover"
+		fmt.Sprintf("%s-%s", request.ClusterName, failoverConfigMapSuffix),
+	}
 
 	// As with similar resources, we can attempt to delete the configmaps directly without
 	// making any further API calls since the goal is simply to delete the configmap. Race
@@ -771,7 +779,7 @@ func removeReplicaServices(request Request) {
 	// which will grab any/all replicas
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName,
 		config.LABEL_PGHA_ROLE, "replica")
-	replicaList, err := kubeapi.GetPods(apiserver.Clientset, selector, request.Namespace)
+	replicaList, err := kubeapi.GetPods(request.Clientset, selector, request.Namespace)
 	if err != nil {
 		log.Error(err)
 		return
