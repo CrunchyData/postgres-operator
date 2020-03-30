@@ -151,6 +151,78 @@
     - debug:
         msg: Update failed
 
+- name: Client Setup
+  when: pgo_client_install | default(False) | bool
+  tags:
+    - install-container
+    - update-container
+    - setup-client
+  block:
+    - name: Check Operating System
+      shell: uname
+      register: uname_result
+      
+    - name: Download PGO Linux Client
+      become: yes
+      become_method: sudo
+      get_url:
+        url: "{{ pgo_client_url }}/pgo"
+        dest: "/usr/local/bin/pgo"
+        mode: 0755
+        force: yes
+      when: uname_result.stdout == "Linux"
+
+    - name: Download PGO MacOS Client
+      become: yes
+      become_method: sudo
+      get_url:
+        url: "{{ pgo_client_url }}/pgo-mac"
+        dest: "/usr/local/bin/pgo"
+        mode: 0755
+      when: uname_result.stdout == "Darwin"
+
+    - name: Template Local PGO User
+      template:
+        src: pgouser.local.j2
+        dest: "{{ pgo_keys_dir }}/pgouser"
+        mode: '0400'
+
+    - name: Grab tls.crt
+      command: 'kubectl get secret -n pgo pgo.tls -o jsonpath={.data.tls\\.crt}'
+      register: tls_crt
+
+    - name: Create temp file
+      copy:
+        content: "{{ tls_crt.stdout }}"
+        dest: "{{ pgo_keys_dir }}/tmp_tls_crt" 
+    
+    - name: Decode cert
+      command: "base64 --decode {{ pgo_keys_dir }}/tmp_tls_crt"
+      register: decoded_tls_crt
+
+    - name: Copy decoded cert to client.crt file
+      copy:
+        content: "{{ decoded_tls_crt.stdout }}"
+        dest: "{{ pgo_keys_dir }}/client.crt"
+
+    - name: Grab tls.key
+      command: 'kubectl get secret -n pgo pgo.tls -o jsonpath={.data.tls\\.key}'
+      register: tls_key
+
+    - name: Create temp file
+      copy:
+        content: "{{ tls_key.stdout }}"
+        dest: "{{ pgo_keys_dir }}/tmp_tls_key"
+    
+    - name: Decode key
+      command: "base64 --decode {{ pgo_keys_dir }}/tmp_tls_key"
+      register: decoded_tls_key
+
+    - name: Copy decoded cert to client.key file
+      copy:
+        content: "{{ decoded_tls_key.stdout }}"
+        dest: "{{ pgo_keys_dir }}/client.key"
+
 
 - name: Cleanup Jobs
   tags:

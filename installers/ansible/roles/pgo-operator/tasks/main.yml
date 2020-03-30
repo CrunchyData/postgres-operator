@@ -250,7 +250,9 @@
         dest: "/usr/local/bin/pgo"
         mode: 0755
         force: yes
-      when: uname_result.stdout == "Linux" and pgo_client_install == "true"
+      when: uname_result.stdout == "Linux" and
+            pgo_client_install == "true" and
+            kubernetes_in_cluster == "false"
       tags:
         - install
         - update
@@ -262,7 +264,9 @@
         url: "{{ pgo_client_url }}/pgo-mac"
         dest: "/usr/local/bin/pgo"
         mode: 0755
-      when: uname_result.stdout == "Darwin" and pgo_client_install == "true"
+      when: uname_result.stdout == "Darwin" and
+            pgo_client_install == "true" and
+            kubernetes_in_cluster == "false"
       tags:
         - install
         - update

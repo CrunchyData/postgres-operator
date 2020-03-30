@@ -63,18 +63,19 @@ kubectl exec -it -n <operator-namespace> pgo-client-<id> bash
 
 Once you `exec` into the container you can run `pgo` commands without having to
 do any more setup. More information about the pgo-client container can be found
-[here]() in the docs.
+[here]({{< relref "installation/install-pgo-client/_index.md" >}}) in the docs.
 
-#### pgo binary
+#### pgo client
 The pgo binary has required resources that are needed to connect to the
 apiserver. These resources are defined under the [Install the Postgres Operator
-(pgo) Client]() section of the documentation. By following these steps you will
-be able to install the `pgo` client and setup the necessary resources. 
+(pgo) Client]({{< relref "installation/install-pgo-client/_index.md" >}}) section of the documentation. By
+following these steps you will be able to install the `pgo` client and setup the
+necessary resources.
 
 ##### Configuring Client TLS
 The `client.pem` and `client.crt` files can be found in the `pgo.tls` secret in
 the `<operator-namespace>` namespace. You can use `kubectl` to access the secret
-and store it locally as instructed in the [client install]() docs.
+and store it locally as instructed in the [client install]({{< relref "installation/install-pgo-client/_index.md" >}}) docs.
 
 ```
 kubectl get secret -n pgo pgo.tls -o jsonpath="{.data.tls\.crt}" | base64 --decode > client.crt
@@ -82,7 +83,7 @@ kubectl get secret -n pgo pgo.tls -o jsonpath="{.data.tls\.key}" | base64 --deco
 ```
 
 ##### Configuring pgouser
-The username and password mentioned in the [client install]() docs are the
-username and password that were specified when the operator was installed. The
-variables in the inventory file are `pgo_admin_username` and
+The username and password mentioned in the [client install]({{< relref "installation/install-pgo-client/_index.md" >}})
+docs are the username and password that were specified when the operator was
+installed. The variables in the inventory file are `pgo_admin_username` and
 `pgo_admin_password`.
