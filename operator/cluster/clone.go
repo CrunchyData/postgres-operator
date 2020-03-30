@@ -368,7 +368,7 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		PGOImageTag:         operator.Pgo.Pgo.PGOImageTag,
 		PgbackrestStanza:    pgBackRestStanza,
 		PgbackrestDBPath:    fmt.Sprintf(targetClusterPGDATAPath, targetClusterName),
-		PgbackrestRepo1Path: util.GetPGBackRestRepoPath(sourcePgcluster),
+		PgbackrestRepo1Path: util.GetPGBackRestRepoPath(targetPgcluster),
 		PgbackrestRepo1Host: fmt.Sprintf(backrest.BackrestRepoServiceName, targetClusterName),
 		PgbackrestRepoType:  operator.GetRepoType(task.Spec.Parameters["backrestStorageType"]),
 		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(sourcePgcluster, clientset, namespace),
