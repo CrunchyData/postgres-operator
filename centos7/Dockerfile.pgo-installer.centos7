@@ -6,7 +6,7 @@ LABEL name="pgo-installer" \
     summary="Crunchy PostgreSQL Operator - Installer" \
     description="Crunchy PostgreSQL Operator - Installer"
 
-COPY installers/pgo-installer/config/kubernetes.repo /etc/yum.repos.d/kubernetes.repo
+COPY installers/image/conf/kubernetes.repo /etc/yum.repos.d/kubernetes.repo
 
 RUN yum -y install epel-release \
  && yum -y install \
@@ -18,4 +18,4 @@ RUN yum -y install epel-release \
 USER daemon
 
 COPY installers/ansible /ansible
-COPY installers/pgo-installer/bin/pgo-install.sh pgo-install.sh
+COPY installers/image/bin/pgo-install.sh pgo-install.sh

@@ -71,7 +71,7 @@ inventory file, the relevant tag from the list of options below, and the `main.y
 For example, the following command will install the operator:
 
 ```
-ansible-playbook -i $PGOROOT/installers/ansible/inventory --tags=install-container $PGOROOT/installers/pgo-installer/ansible/main.yml
+ansible-playbook -i $PGOROOT/installers/ansible/inventory --tags=install-container $PGOROOT/installers/method/ansible-playbook/main.yml
 ```
 
 You can also pass in multiple tags as you run the installer. This will allow you
@@ -79,7 +79,7 @@ to run a job and cleanup tasks at the same time. For example, the following
 command will run the update job and cleanup tasks:
 
 ```
-ansible-playbook -i $PGOROOT/installers/ansible/inventory --tags=update-container,clean $PGOROOT/installers/pgo-installer/ansible/main.yml
+ansible-playbook -i $PGOROOT/installers/ansible/inventory --tags=update-container,clean $PGOROOT/installers/method/ansible-playbook/main.yml
 ```
 
 #### Ansible Role Options
@@ -108,7 +108,7 @@ cat <<EOF >> ~/.bashrc
 export PGOUSER="${HOME?}/.pgo/<pgo-installer-namespace>/pgouser"
 export PGO_CA_CERT="${HOME?}/.pgo/<pgo-installer-namespace>/client.crt"
 export PGO_CLIENT_CERT="${HOME?}/.pgo/<pgo-installer-namespace>/client.crt"
-export PGO_CLIENT_KEY="${HOME?}/.pgo/<pgo-installer-namespace>/client.pem"
+export PGO_CLIENT_KEY="${HOME?}/.pgo/<pgo-installer-namespace>/client.key"
 EOF
 ```
 
