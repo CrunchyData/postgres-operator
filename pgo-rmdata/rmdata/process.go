@@ -26,7 +26,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	kerror "k8s.io/apimachinery/pkg/api/errors"
 
 	"time"
 )
@@ -61,10 +62,19 @@ func Delete(request Request) {
 			log.Error(err)
 		}
 		//delete the pgreplica CRD
-		err = kubeapi.Deletepgreplica(request.RESTClient, request.ReplicaName, request.Namespace)
-		if err != nil {
-			log.Error(err)
-			return
+		if err = kubeapi.Deletepgreplica(request.RESTClient, request.ReplicaName,
+			request.Namespace); err != nil {
+			// If the name of the replica being deleted matches the scope for the cluster, then
+			// we assume it was the original primary and the pgreplica deletion will fail with
+			// a not found error.  In this case we allow the rmdata process to continue despite
+			// the error.  This allows for the original primary to be scaled down once it is
+			// is no longer a primary, and has become a replica.
+			if !(request.ReplicaName == request.ClusterPGHAScope && kerror.IsNotFound(err)) {
+				log.Error(err)
+				return
+			}
+			log.Debug("replica name matches PGHA scope, assuming scale down of original primary " +
+				"and therefore ignoring error attempting to delete nonexistent pgreplica")
 		}
 
 		if request.RemoveData {

@@ -28,7 +28,6 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -292,42 +291,41 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 		return response
 	}
 
-	//if this was the last replica then remove the replica service
-	var replicaList *v1.DeploymentList
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_SERVICE_NAME + "=" + clusterName + "-replica"
-	replicaList, err = kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
+	// selector in the format "pg-cluster=<cluster-name>,pg-ha-scope=<cluster-name>"
+	// which will grab any/all replicas
+	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, clusterName,
+		config.LABEL_PGHA_ROLE, "replica")
+	replicaList, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
 		return response
 	}
-	if len(replicaList.Items) == 0 {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = "no replicas found for this cluster"
-		return response
-	}
 
-	//validate the replica name that was passed
-	replica := crv1.Pgreplica{}
-	found, err := kubeapi.Getpgreplica(apiserver.RESTClient, &replica, replicaName, ns)
-	if !found || err != nil {
-		log.Error(err)
-		response.Status.Code = msgs.Error
-		if !found {
-			response.Status.Msg = replicaName + " replica not found"
-		} else {
-			response.Status.Msg = err.Error()
+	// check to see if the replica name provided matches the name of any of the
+	// replicas found for the cluster
+	var replicaNameFound bool
+	for _, pod := range replicaList.Items {
+		if pod.Labels[config.LABEL_DEPLOYMENT_NAME] == replicaName {
+			replicaNameFound = true
+			break
 		}
+	}
+	// return an error if the replica name provided does not match the primary or any replicas
+	if !replicaNameFound {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf("Unable to find replica with name %s",
+			replicaName)
 		return response
 	}
 
 	//create the rmdata task which does the cleanup
 
+	clusterPGHAScope := cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE]
 	deleteBackups := false
 	isReplica := true
 	isBackup := false
 	taskName := replicaName + "-rmdata"
-	clusterPGHAScope := cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE]
 	err = apiserver.CreateRMDataTask(clusterName, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns, clusterPGHAScope)
 	if err != nil {
 		response.Status.Code = msgs.Error
