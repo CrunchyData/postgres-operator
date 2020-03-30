@@ -16,6 +16,7 @@ package util
 */
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -54,6 +55,13 @@ const (
 	// is if it's not set in the pgo.yaml file, and to create some semblance of
 	// consistency
 	DefaultGeneratedPasswordLength = 24
+)
+
+var (
+	// ErrMissingConfigAnnotation represents an error thrown when the 'config' annotation is found
+	// to be missing from the 'config' configMap created to store cluster-wide configuration
+	ErrMissingConfigAnnotation error = errors.New("'config' annotation missing from cluster " +
+		"configutation")
 )
 
 // CreateBackrestRepoSecrets creates the secrets required to manage the
