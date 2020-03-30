@@ -20,12 +20,12 @@ import (
 	"fmt"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/cr/v1"
+	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 
 	log "github.com/sirupsen/logrus"
-	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	kerror "k8s.io/apimachinery/pkg/api/errors"
 
@@ -762,33 +762,35 @@ func removePgBaseBackupPVCs(request Request) {
 	removePVCs(pvcList, request)
 }
 
+// removeReplicaServices removes the replica service if there is currently only a single replica
+// in the cluster, i.e. if the last/final replica is being being removed with the current rmdata
+// job.  If more that one replica still exists, then no action is taken.
 func removeReplicaServices(request Request) {
 
-	//remove the replica service if there is only a single replica
-	//which means we are scaling down the only replica
-
-	var err error
-	var replicaList *appsv1.DeploymentList
-	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName + "," + config.LABEL_SERVICE_NAME + "=" + request.ClusterName + "-replica"
-	replicaList, err = kubeapi.GetDeployments(request.Clientset, selector, request.Namespace)
+	// selector in the format "pg-cluster=<cluster-name>,pg-ha-scope=<cluster-name>"
+	// which will grab any/all replicas
+	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName,
+		config.LABEL_PGHA_ROLE, "replica")
+	replicaList, err := kubeapi.GetPods(apiserver.Clientset, selector, request.Namespace)
 	if err != nil {
 		log.Error(err)
 		return
 	}
-	if len(replicaList.Items) == 0 {
+
+	switch len(replicaList.Items) {
+	case 0:
 		log.Error("no replicas found for this cluster")
 		return
-	}
-
-	if len(replicaList.Items) == 1 {
+	case 1:
 		log.Debug("removing replica service when scaling down to 0 replicas")
-		err = kubeapi.DeleteService(request.Clientset, request.ClusterName+"-replica", request.Namespace)
-		if err != nil {
+		if kubeapi.DeleteService(request.Clientset, request.ClusterName+"-replica",
+			request.Namespace); err != nil {
 			log.Error(err)
 			return
 		}
 	}
 
+	log.Debug("more than one replica detected, replica service will not be deleted")
 }
 
 // removeSchedules removes any of the ConfigMap objects that were created to
