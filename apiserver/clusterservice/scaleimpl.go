@@ -291,7 +291,7 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 		return response
 	}
 
-	// selector in the format "pg-cluster=<cluster-name>,pg-ha-scope=<cluster-name>"
+	// selector in the format "pg-cluster=<cluster-name>,role=replica"
 	// which will grab any/all replicas
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, clusterName,
 		config.LABEL_PGHA_ROLE, "replica")
@@ -333,6 +333,6 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 		return response
 	}
 
-	response.Results = append(response.Results, "deleted Pgreplica "+replicaName)
+	response.Results = append(response.Results, "deleted replica "+replicaName)
 	return response
 }
