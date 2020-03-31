@@ -33,9 +33,8 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-
 	v1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
@@ -83,6 +82,14 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pg
 		isReplica := false
 		replicaName := ""
 		clusterPGHAScope := cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE]
+
+		// first delete any existing rmdata pgtask with the same name
+		if err := kubeapi.Deletepgtask(apiserver.RESTClient, taskName, ns); err != nil &&
+			!kerrors.IsNotFound(err) {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
 
 		err := apiserver.CreateRMDataTask(cluster.Spec.Name, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns, clusterPGHAScope)
 		if err != nil {
