@@ -138,16 +138,6 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
-	// First handle pod update as needed if the update was part of an ongoing upgrade
-	if cluster.Labels[config.LABEL_MINOR_UPGRADE] == config.LABEL_UPGRADE_IN_PROGRESS {
-		log.Debugf("Pod Controller: upgrade pod %s (namespace %s) now ready, calling pod upgrade "+
-			"handler", newPod.Name, namespace)
-		if err := c.handleUpgradePodUpdate(newPod, &cluster); err != nil {
-			log.Error(err)
-			return
-		}
-	}
-
 	return
 }
 

@@ -1,155 +1,98 @@
 ---
-title: "Upgrade PGO 3.5 Minor Versions"
+title: "Manual Upgrade - Operator 3.5"
 Latest Release: 4.3.0 {docdate}
 draft: false
 weight: 8
 ---
-## Upgrading Postgres Operator 3.5 Minor Versions
 
-This procedure will give instructions on how to upgrade Postgres Operator 3.5 minor releases.
+## Upgrading the Crunchy PostgreSQL Operator from Version 3.5 to 4.3.0
 
-{{% notice info %}}
+This section will outline the procedure to upgrade a given cluster created using PostgreSQL Operator 3.5.x to PostgreSQL Operator version 4.3.0. This version of the PostgreSQL Operator has several fundamental changes to the existing PGCluster structure and deployment model. Most notably, all PGClusters use the new Crunchy PostgreSQL HA container in place of the previous Crunchy PostgreSQL containers. The use of this new container is a breaking change from previous versions of the Operator.
 
-As with any upgrade, please ensure you have taken recent backups of all relevant data!
+#### Crunchy PostgreSQL High Availability Containers
 
-{{% / notice %}}
+Using the PostgreSQL Operator 4.3.0 requires replacing your `crunchy-postgres` and `crunchy-postgres-gis` containers with the `crunchy-postgres-ha` and `crunchy-postgres-gis-ha` containers respectively. The underlying PostgreSQL installations in the container remain the same but are now optimized for Kubernetes environments to provide the new high-availability functionality.
+
+A major change to this container is that the PostgreSQL process is now managed by Patroni. This allows a PostgreSQL cluster that is deployed by the PostgreSQL Operator to manage its own uptime and availability, to elect a new leader in the event of a downtime scenario, and to automatically heal after a failover event.
+
+When creating your new clusters using version 4.3.0 of the PostgreSQL Operator, the `pgo create cluster` command will automatically use the new `crunchy-postgres-ha` image if the image is unspecified. If you are creating a PostGIS enabled cluster, please be sure to use the updated image name, as with the command:
+```
+pgo create cluster mygiscluster --ccp-image=crunchy-postgres-gis-ha
+```
+##### NOTE: As with any upgrade procedure, it is strongly recommended that a full logical backup is taken before any upgrade procedure is started. Please see the [Logical Backups](/pgo-client/common-tasks#logical-backups-pg_dump--pg_dumpall) section of the Common Tasks page for more information.
 
 ##### Prerequisites.
 You will need the following items to complete the upgrade:
 
-* The latest 3.5.X code for the Postgres Operator available
-* The latest 3.5.X PGO client binary
-* Finally, these instructions assume you are executing from $COROOT in a terminal window and that you are using the same user from your previous installation. This user must also still have admin privileges in your Kubernetes or Openshift environment.
+* The code for the latest PostgreSQL Operator available
+* The latest client binary
 
 ##### Step 0
-Run `pgo show config` and save this output to compare at the end to ensure you don't miss any of your current configuration changes.
+
+Create a new Linux user with the same permissions as the existing user used to install the Crunchy PostgreSQL Operator. This is necessary to avoid any issues with environment variable differences between 3.5 and 4.3.0.
 
 ##### Step 1
-Update environment variables in the bashrc
 
-    export CO_VERSION=3.5.X
+For the cluster(s) you wish to upgrade, record the cluster details provided by
 
-If you are pulling your images from the same registry as before this should be the only update to the 3.5.X environment variables.
+        pgo show cluster <clustername>
 
-source the updated bash file:
+so that your new clusters can be recreated with the proper settings.
 
-    source ~/.bashrc
+##### Step2
 
-Check to make sure that the correct CO_IMAGE_TAG image tag is being used. With a centos7 base image and version 3.5.X of the operator your image tag will be in the format of `centos7-3.5.4`. Verify this by running echo $CO_IMAGE_TAG.
+For the cluster(s) you wish to upgrade, scale down any replicas, if necessary, then delete the cluster
 
-##### Step 2
-Update the pgo.yaml file in `$COROOT/conf/postgres-operator/pgo.yaml`. Use the config that you saved in Step 0. to make sure that you have updated the settings to match the old config. Confirm that the yaml file includes the correct images for the version that you are upgrading to:
+	pgo delete cluster <clustername>
 
-For Example:
+##### NOTE: Please record the name of each cluster, the namespace used, and be sure not to delete the associated PVCs or CRDs!
 
-```
-CCPImageTag: centos7-10.9-2.3.3
-COImageTag: centos7-3.5.4
-```
+##### Step 3
+Delete the 3.5.x version of the operator by executing:
 
-##### Step 3  
-Install the 3.5.X Operator:
+	$COROOT/deploy/cleanup.sh
+	$COROOT/deploy/remove-crd.sh
 
-    make deployoperator
+##### Step 4
 
-Verify the Operator is running:
+Log in as your new Linux user and install the 4.3.0 PostgreSQL Operator.
 
-    kubectl get pod -n <operator namespace>
+[Bash Installation]( {{< relref "installation/operator-install.md" >}}) 
+
+Be sure to add the existing namespace to the Operator's list of watched namespaces (see the [Namespace]( {{< relref "architecture/namespace.md" >}}) section of this document for more information) and make sure to avoid overwriting any existing data storage.
 
 
-##### Step 4  
-Update the PGO client binary to 3.5.X by replacing the binary file with the new one.
-Run which pgo to ensure you are replacing the current binary.
+##### Step 5
 
-##### Step 5  
-Make sure that any and all configuration changes have been updated.  
-Run:
+Once the Operator is installed and functional, create a new 4.3.0 cluster matching the cluster details recorded in Step 1. Be sure to use the same name and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs. A s
+imple example is given below, but more information on cluster creation can be found [here](/pgo-client/common-tasks#creating-a-postgresql-cluster)
 
-    pgo show config
-
-This will print out the current configuration that the operator is using.  Ensure you made any configuration changes required, you can compare this output with Step 0 to ensure no settings are missed.  If you happened to miss a setting, update the pgo.yaml file and rerun make deployoperator
-
+	pgo create cluster <clustername> -n <namespace>
 
 ##### Step 6
-The Operator is now upgraded to 3.5.X.
-Verify this by running:
 
-    pgo version
+Manually update the old leftover Secrets to use the new label as defined in 4.3.0:
 
-## Postgres Operator Container Upgrade Procedure
+	kubectl label secret/<clustername>-postgres-secret pg-cluster=<clustername> -n <namespace>
+	kubectl label secret/<clustername>-primaryuser-secret pg-cluster=<clustername> -n <namespace>
+	kubectl label secret/<clustername>-testuser-secret pg-cluster=<clustername> -n <namespace>
 
-At this point, the Operator should be running the latest minor version of 3.5, and new clusters will be built using the appropriate specifications defined in your pgo.yaml file. For the existing clusters, upgrades can be performed with the following steps.
+##### Step 7
 
-{{% notice info %}}
+To verify cluster status, run
 
-Before beginning your upgrade procedure, be sure to consult the [Compatibility Requirements Page]
-( {{< relref "configuration/compatibility.md" >}}) for container dependency information.
+	pgo test <clustername> -n <namespace>
 
-{{% / notice %}}
-
-First, update the deployment of each replica, one at a time, with the new image version:
-
+Output should be similar to:
 ```
-kubectl edit deployment.apps/yourcluster
+cluster : mycluster
+        Services
+                primary (10.106.70.238:5432): UP
+        Instances
+                primary (mycluster-7d49d98665-7zxzd): UP
 ```
-then edit the line containing the image value, which will be similar to the following
-```
-image: crunchydata/crunchy-postgres:centos7-11.3-2.4.0
-```
+##### Step 8
 
-When this new deployment is written, it will kill the pod and recreate it with the new image. Do this for each replica, waiting for the previous pod to upgrade completely before moving to next.
+Scale up to the required number of replicas, as needed.
 
-Once the replicas have been updated, update the deployment of primary by updating the `image:` line in the same fashion, waiting for it to come back up.
-
-Now, similar to the steps above, you will need to update the pgcluster `ccpimagetag:` to the new value:
-```
-kubectl edit pgcluster yourcluster
-```
-
-To check everything is now working as expected, execute
-```
-pgo test yourcluster
-```
-To validate the database connections and execute
-```
-pgo show cluster yourcluster
-```
-To check the various cluster elements are listed as expected.
-
-There is a bug in the operator where the image version for the backrest repo deployment is not updated with a pgo upgrade. As a workaround for this you need to redeploy the backrest shared repo deployment with the correct image version.
-
-First you will need to get a copy of the yaml file that defines the cluster:
-
-    kubectl get deployment <cluster-name>-backrest-shared-repo -o yaml > <cluster-name>-backrest-repo.yaml
-
-You can then edit the yaml file so that the deployment will use the correct image version:
-edit `<cluster-name>-backrest-repo.yaml`
-
-set to the image, for example:
-
-    crunchydata/pgo-backrest-repo:centos7-3.5.4
-
-Next you will need to delete the current backrest repo deployment and recreate it with the updated yaml:
-```
-kubectl delete deployment <cluster-name>-backrest-shared-repo
-kubectl create -f <cluster-name>-backrest-repo.yaml
-```
-Verify that the correct images are being used for the cluster. Run `pgo show cluster <cluster-name>` on your cluster and check the version. Describe each of the pods in your cluster and verify that the image that is being used is correct.
-```
-pgo show cluster <cluster-name>
-kubectl get pods
-kubectl describe pod <cluster-name>-<id>
-kubectl describe pod <cluster-name>-backrest-shared-repo-<id>
-```
-Finally, make sure that the correct version of pgbackrest is being used and verify backups are working. The versions of pgbackrest that are returned in the primary and backrest pods should match:
-```
-kubectl get pods
-kubectl exec -it <cluster-name>-<id> -- pgbackrest version
-kubectl exec -it <cluster-name>-backrest-shared-repo-<id> -- pgbackrest version
-pgo backup <cluster-name> --backup-type=pgbackrest
-```
-You've now completed the upgrade and are running Crunchy PostgreSQL Operator v3.5.X, you can confirm this by running pgo version from the command line and running
-
-    pgo show cluster <cluster-name>
-
-on each cluster. For this minor upgrade, most existing settings and related services (such as pgbouncer, backup schedules and existing policies) are expected to work, but should be tested for functionality and adjusted or recreated as necessary.
+Congratulations! Your cluster is upgraded and ready to use!
