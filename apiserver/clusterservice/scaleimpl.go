@@ -294,11 +294,15 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 	// selector in the format "pg-cluster=<cluster-name>,role=replica"
 	// which will grab any/all replicas
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, clusterName,
-		config.LABEL_PGHA_ROLE, "replica")
+		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_REPLICA)
 	replicaList, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
+		return response
+	} else if len(replicaList.Items) == 0 {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = "no replicas found for this cluster"
 		return response
 	}
 
@@ -333,6 +337,6 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 		return response
 	}
 
-	response.Results = append(response.Results, "deleted replica "+replicaName)
+	response.Results = append(response.Results, "deleted Pgreplica "+replicaName)
 	return response
 }
