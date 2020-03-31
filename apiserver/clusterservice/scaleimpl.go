@@ -307,7 +307,7 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 	// selector in the format "pg-cluster=<cluster-name>,pg-ha-scope=<cluster-name>"
 	// which will grab the primary and any/all replicas
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, clusterName,
-		config.LABEL_PGHA_ROLE, "replica")
+		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_REPLICA)
 	replicaList, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 	if err != nil {
 		response.Status.Code = msgs.Error

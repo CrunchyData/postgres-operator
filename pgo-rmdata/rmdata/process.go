@@ -807,7 +807,7 @@ func removeReplicaServices(request Request) {
 	// selector in the format "pg-cluster=<cluster-name>,role=replica"
 	// which will grab any/all replicas
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName,
-		config.LABEL_PGHA_ROLE, "replica")
+		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_REPLICA)
 	replicaList, err := kubeapi.GetPods(request.Clientset, selector, request.Namespace)
 	if err != nil {
 		log.Error(err)
