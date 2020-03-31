@@ -629,10 +629,10 @@ func removePgBaseBackupPVCs(request Request) {
 
 // removeReplicaServices removes the replica service if there is currently only a single replica
 // in the cluster, i.e. if the last/final replica is being being removed with the current rmdata
-// job.  If more that one replica still exists, then no action is taken.
+// job.  If more than one replica still exists, then no action is taken.
 func removeReplicaServices(request Request) {
 
-	// selector in the format "pg-cluster=<cluster-name>,pg-ha-scope=<cluster-name>"
+	// selector in the format "pg-cluster=<cluster-name>,role=replica"
 	// which will grab any/all replicas
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName,
 		config.LABEL_PGHA_ROLE, "replica")
