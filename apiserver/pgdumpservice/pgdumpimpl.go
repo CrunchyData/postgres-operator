@@ -532,8 +532,12 @@ func buildPgTaskForRestore(taskName string, action string, request *msgs.PgResto
 	spec.Parameters[config.LABEL_PGRESTORE_PORT] = apiserver.Pgo.Cluster.Port
 	spec.Parameters[config.LABEL_CCP_IMAGE_TAG_KEY] = apiserver.Pgo.Cluster.CCPImageTag
 
-	// parse nodeLabel if exists
+	// validate & parse nodeLabel if exists
 	if request.NodeLabel != "" {
+		if err := apiserver.ValidateNodeLabel(request.NodeLabel); err != nil {
+			return nil, err
+		}
+
 		parts := strings.Split(request.NodeLabel, "=")
 		spec.Parameters[config.LABEL_NODE_LABEL_KEY] = parts[0]
 		spec.Parameters[config.LABEL_NODE_LABEL_VALUE] = parts[1]

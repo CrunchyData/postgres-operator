@@ -26,13 +26,6 @@ rules:
       - serviceaccounts
       - roles
       - rolebindings
-  - verbs:
-      - 'list'
-      - 'get'
-    apiGroups:
-      - '*'
-    resources:
-      - nodes
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

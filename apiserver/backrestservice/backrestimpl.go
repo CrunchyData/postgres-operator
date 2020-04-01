@@ -547,8 +547,12 @@ func getRestoreParams(request *msgs.RestoreRequest, ns string, cluster crv1.Pgcl
 	spec.Parameters[config.LABEL_PGBACKREST_REPO_HOST] = request.FromCluster + "-backrest-shared-repo"
 	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
 
-	// parse nodeLabel if exists
+	// validate & parse nodeLabel if exists
 	if request.NodeLabel != "" {
+		if err := apiserver.ValidateNodeLabel(request.NodeLabel); err != nil {
+			return nil, err
+		}
+
 		parts := strings.Split(request.NodeLabel, "=")
 		spec.Parameters[config.LABEL_NODE_LABEL_KEY] = parts[0]
 		spec.Parameters[config.LABEL_NODE_LABEL_VALUE] = parts[1]
