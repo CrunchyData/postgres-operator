@@ -36,6 +36,9 @@ import (
 
 // BackrestRepoConfig represents the configuration required to created backrest repo secrets
 type BackrestRepoConfig struct {
+	// BackrestS3CA is the byte string value of the CA that should be used for the
+	// S3 inerfacd pgBackRest repository
+	BackrestS3CA        []byte
 	BackrestS3Key       string
 	BackrestS3KeySecret string
 	ClusterName         string
@@ -46,6 +49,7 @@ type BackrestRepoConfig struct {
 // AWSS3Secret is a structured representation for providing  an AWS S3 key and
 // key secret
 type AWSS3Secret struct {
+	AWSS3CA        []byte
 	AWSS3Key       string
 	AWSS3KeySecret string
 }
@@ -63,17 +67,17 @@ const (
 
 // values for the keys used to access the pgBackRest repository Secret
 const (
-	// two are these are exported, as they are used to help add the information
-	// into the templates. Say the second one 10 times fast
+	// three of these are exported, as they are used to help add the information
+	// into the templates. Say the last one 10 times fast
+	BackRestRepoSecretKeyAWSS3KeyAWSS3CACert    = "aws-s3-ca.crt"
 	BackRestRepoSecretKeyAWSS3KeyAWSS3Key       = "aws-s3-key"
 	BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret = "aws-s3-key-secret"
 	// the rest are private
-	backRestRepoSecretKeyAuthorizedKeys      = "authorized_keys"
-	backRestRepoSecretKeyAWSS3KeyAWSS3CACert = "aws-s3-ca.crt"
-	backRestRepoSecretKeySSHConfig           = "config"
-	backRestRepoSecretKeySSHDConfig          = "sshd_config"
-	backRestRepoSecretKeySSHPrivateKey       = "id_ed25519"
-	backRestRepoSecretKeySSHHostPrivateKey   = "ssh_host_ed25519_key"
+	backRestRepoSecretKeyAuthorizedKeys    = "authorized_keys"
+	backRestRepoSecretKeySSHConfig         = "config"
+	backRestRepoSecretKeySSHDConfig        = "sshd_config"
+	backRestRepoSecretKeySSHPrivateKey     = "id_ed25519"
+	backRestRepoSecretKeySSHHostPrivateKey = "ssh_host_ed25519_key"
 )
 
 const (
@@ -140,6 +144,13 @@ func CreateBackrestRepoSecrets(clientset *kubernetes.Clientset,
 		backrestS3KeySecret = configs.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret]
 	}
 
+	// determine if there is a CA override provided, and if not, use the default
+	// from the configuration
+	caCert := backrestRepoConfig.BackrestS3CA
+	if len(caCert) == 0 {
+		caCert = configs.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3CACert]
+	}
+
 	// set up the secret for the cluster that contains the pgBackRest information
 	secret := v1.Secret{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -152,10 +163,10 @@ func CreateBackrestRepoSecrets(clientset *kubernetes.Clientset,
 			},
 		},
 		Data: map[string][]byte{
+			BackRestRepoSecretKeyAWSS3KeyAWSS3CACert:    caCert,
 			BackRestRepoSecretKeyAWSS3KeyAWSS3Key:       backrestS3Key,
 			BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret: backrestS3KeySecret,
 			backRestRepoSecretKeyAuthorizedKeys:         keys.Public,
-			backRestRepoSecretKeyAWSS3KeyAWSS3CACert:    configs.Data[backRestRepoSecretKeyAWSS3KeyAWSS3CACert],
 			backRestRepoSecretKeySSHConfig:              configs.Data[backRestRepoSecretKeySSHConfig],
 			backRestRepoSecretKeySSHDConfig:             configs.Data[backRestRepoSecretKeySSHDConfig],
 			backRestRepoSecretKeySSHPrivateKey:          keys.Private,
@@ -237,6 +248,7 @@ func GetS3CredsFromBackrestRepoSecret(clientset *kubernetes.Clientset, namespace
 	}
 
 	// get the S3 secret credentials out of the secret, and return
+	s3Secret.AWSS3CA = secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3CACert]
 	s3Secret.AWSS3Key = string(secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3Key])
 	s3Secret.AWSS3KeySecret = string(secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret])
 

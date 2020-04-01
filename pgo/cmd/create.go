@@ -63,6 +63,10 @@ var BackrestS3Region string
 var PVCSize string
 var BackrestPVCSize string
 
+// BackrestS3CASecretName, if provided, is the name of a secret to use that
+// contains a CA certificate to use for the pgBackRest repo
+var BackrestS3CASecretName string
+
 // BackrestRepoPath allows the pgBackRest repo path to be defined instead of using the default
 var BackrestRepoPath string
 
@@ -281,6 +285,9 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&BackrestS3Bucket, "pgbackrest-s3-bucket", "", "",
 		"The AWS S3 bucket that should be utilized for the cluster when the \"s3\" "+
 			"storage type is enabled for pgBackRest.")
+	createClusterCmd.Flags().StringVar(&BackrestS3CASecretName, "pgbackrest-s3-ca-secret", "",
+		"If used, specifies a Kubernetes secret that uses a different CA certificate for "+
+			"S3 or a S3-like storage interface. Must contain a key with the value \"aws-s3-ca.crt\"")
 	createClusterCmd.Flags().StringVarP(&BackrestS3Endpoint, "pgbackrest-s3-endpoint", "", "",
 		"The AWS S3 endpoint that should be utilized for the cluster when the \"s3\" "+
 			"storage type is enabled for pgBackRest.")
