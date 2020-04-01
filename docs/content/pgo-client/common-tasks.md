@@ -134,7 +134,6 @@ Cluster:
   PodAntiAffinity: preferred
   SyncReplication: false
 Pgo:
-  PreferredFailoverNode: ""
   Audit: false
   PGOImagePrefix: crunchydata
   PGOImageTag: centos7-4.3.0

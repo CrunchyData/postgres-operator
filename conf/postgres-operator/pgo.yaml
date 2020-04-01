@@ -91,7 +91,6 @@ ContainerResources:
     LimitsMemory:  2Gi
     LimitsCPU:  4.0
 Pgo:
-  PreferredFailoverNode:
   Audit:  false
   PGOImagePrefix:  crunchydata
   PGOImageTag:  centos7-4.3.0

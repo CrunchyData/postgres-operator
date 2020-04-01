@@ -231,23 +231,6 @@ func ReplicationStatus(request ReplicationStatusRequest) (ReplicationStatusRespo
 	return response, nil
 }
 
-func GetPreferredNodes(clientset *kubernetes.Clientset, selector, namespace string) ([]string, error) {
-	nodes := make([]string, 0)
-
-	nodeList, err := kubeapi.GetNodes(clientset, selector, namespace)
-	if err != nil {
-		return nodes, err
-	}
-
-	log.Debugf("getPreferredNodes shows %d nodes", len(nodeList.Items))
-
-	for _, node := range nodeList.Items {
-		nodes = append(nodes, node.Name)
-	}
-
-	return nodes, err
-}
-
 // ToggleAutoFailover enables or disables autofailover for a cluster.  Disabling autofailover means "pausing"
 // Patroni, which will result in Patroni stepping aside from managing the cluster.  This will effectively cause
 // Patroni to stop responding to failures or other database activities, e.g. it will not attempt to start the

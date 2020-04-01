@@ -118,22 +118,6 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 	// indicate in the response whether or not a standby cluster
 	response.Standby = cluster.Spec.Standby
 
-	var nodes []string
-
-	if apiserver.Pgo.Pgo.PreferredFailoverNode != "" {
-		log.Debug("PreferredFailoverNode is set to %s", apiserver.Pgo.Pgo.PreferredFailoverNode)
-		nodes, err = util.GetPreferredNodes(apiserver.Clientset, apiserver.Pgo.Pgo.PreferredFailoverNode, ns)
-		log.Debug(nodes)
-		if err != nil {
-			log.Error("error getting preferred nodes " + err.Error())
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
-		}
-	} else {
-		log.Debug("PreferredFailoverNode is not set")
-	}
-
 	// Get information about the current status of all of the replicas. This is
 	// handled by a helper function, that will return the information in a struct
 	// with the key elements to help the user understand the current state of the
@@ -166,7 +150,6 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 		result := msgs.FailoverTargetSpec{
 			Name:           instance.Name,
 			Node:           instance.Node,
-			PreferredNode:  preferredNode(nodes, instance.Node),
 			Status:         instance.Status,
 			ReplicationLag: instance.ReplicationLag,
 			Timeline:       instance.Timeline,
@@ -224,13 +207,4 @@ func isValidFailoverTarget(deployName, clusterName, ns string) (*v1.Deployment, 
 
 	return &deployments.Items[0], nil
 
-}
-
-func preferredNode(nodes []string, targetNode string) bool {
-	for _, n := range nodes {
-		if n == targetNode {
-			return true
-		}
-	}
-	return false
 }
