@@ -414,57 +414,6 @@ func IsValidStorageName(name string) bool {
 	return ok
 }
 
-// ValidateNodeLabel
-// returns error if node label is invalid
-func ValidateNodeLabel(nodeLabel string) error {
-	parts := strings.Split(nodeLabel, "=")
-	if len(parts) != 2 {
-		return errors.New(nodeLabel + " node label does not follow key=value format")
-	}
-
-	keyValid, valueValid, err := IsValidNodeLabel(parts[0], parts[1])
-	if err != nil {
-		return err
-	}
-
-	if !keyValid {
-		return errors.New(nodeLabel + " key was not valid .. check node labels for correct values to specify")
-	}
-	if !valueValid {
-		return errors.New(nodeLabel + " node label value was not valid .. check node labels for correct values to specify")
-	}
-
-	return nil
-}
-
-// IsValidNodeLabel
-// returns bool for key validity
-// returns bool for value validity
-// returns error
-func IsValidNodeLabel(key, value string) (bool, bool, error) {
-
-	var err error
-	keyValid := false
-	valueValid := false
-
-	nodes, err := kubeapi.GetAllNodes(Clientset)
-	if err != nil {
-		return false, false, err
-	}
-
-	for _, node := range nodes.Items {
-
-		if val, exists := node.ObjectMeta.Labels[key]; exists {
-			keyValid = true
-			if val == value {
-				valueValid = true
-			}
-		}
-	}
-
-	return keyValid, valueValid, err
-}
-
 func IsValidContainerResourceValues() bool {
 
 	var err error
@@ -498,25 +447,6 @@ func IsValidContainerResourceValues() bool {
 
 func validateWithKube() {
 	log.Debug("validateWithKube called")
-
-	configNodeLabels := make([]string, 2)
-	configNodeLabels[0] = Pgo.Cluster.PrimaryNodeLabel
-	configNodeLabels[1] = Pgo.Cluster.ReplicaNodeLabel
-
-	for _, n := range configNodeLabels {
-
-		//parse & validate pgo.yaml node labels if set
-		if n != "" {
-
-			if err := ValidateNodeLabel(n); err != nil {
-				log.Error(n + " node label specified in pgo.yaml is invalid")
-				log.Error(err)
-				os.Exit(2)
-			}
-
-			log.Debugf("%s is a valid pgo.yaml node label default", n)
-		}
-	}
 
 	err := ns.ValidateNamespaces(Clientset, InstallationName, PgoNamespace)
 	if err != nil {

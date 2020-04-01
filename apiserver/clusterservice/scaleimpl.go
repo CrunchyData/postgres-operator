@@ -117,15 +117,8 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 		log.Debug("using pgo.yaml ReplicaNodeLabel for replica creation")
 	}
 
-	// validate & parse nodeLabel if exists
+	// parse nodeLabel if exists
 	if nodeLabel != "" {
-
-		if err = apiserver.ValidateNodeLabel(nodeLabel); err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = err.Error()
-			return response
-		}
-
 		parts := strings.Split(nodeLabel, "=")
 		spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = parts[0]
 		spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = parts[1]
