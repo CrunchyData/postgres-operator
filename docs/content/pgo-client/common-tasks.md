@@ -202,25 +202,6 @@ Database Images:
 
 Databases Not Ready:
 
-Nodes:
-	master                        
-		Status:Ready                         
-		Labels:
-			beta.kubernetes.io/arch=amd64
-			beta.kubernetes.io/os=linux
-			kubernetes.io/arch=amd64
-			kubernetes.io/hostname=master
-			kubernetes.io/os=linux
-			node-role.kubernetes.io/master=
-	node01                        
-		Status:Ready                         
-		Labels:
-			beta.kubernetes.io/arch=amd64
-			beta.kubernetes.io/os=linux
-			kubernetes.io/arch=amd64
-			kubernetes.io/hostname=node01
-			kubernetes.io/os=linux
-
 Labels (count > 1): [count] [label]
 	[8]	[vendor=crunchydata]
 	[4]	[pgo-backrest-repo=true]
