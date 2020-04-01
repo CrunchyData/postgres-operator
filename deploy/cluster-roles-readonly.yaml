@@ -14,4 +14,3 @@ rules:
       - serviceaccounts
       - roles
       - rolebindings
-      - nodes

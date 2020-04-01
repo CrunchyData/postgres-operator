@@ -414,6 +414,17 @@ func IsValidStorageName(name string) bool {
 	return ok
 }
 
+// ValidateNodeLabel
+// returns error if node label is invalid based on format
+func ValidateNodeLabel(nodeLabel string) error {
+	parts := strings.Split(nodeLabel, "=")
+	if len(parts) != 2 {
+		return errors.New(nodeLabel + " node label does not follow key=value format")
+	}
+
+	return nil
+}
+
 func IsValidContainerResourceValues() bool {
 
 	var err error
