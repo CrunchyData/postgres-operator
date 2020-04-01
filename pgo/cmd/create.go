@@ -26,7 +26,7 @@ var ClusterReplicaCount int
 var ManagedUser bool
 var AllNamespaces bool
 var ContainerResources string
-var ReplicaStorageConfig, StorageConfig string
+var BackrestStorageConfig, ReplicaStorageConfig, StorageConfig string
 var CustomConfig string
 var ArchiveFlag, DisableAutofailFlag, EnableAutofailFlag, PgbouncerFlag, MetricsFlag, BadgerFlag bool
 var BackrestRestoreFrom string
@@ -290,6 +290,7 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&BackrestS3Region, "pgbackrest-s3-region", "", "",
 		"The AWS S3 region that should be utilized for the cluster when the \"s3\" "+
 			"storage type is enabled for pgBackRest.")
+	createClusterCmd.Flags().StringVar(&BackrestStorageConfig, "pgbackrest-storage-config", "", "The name of the storage config in pgo.yaml to use for the pgBackRest local repository.")
 	createClusterCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use with pgBackRest. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgbouncerFlag, "pgbouncer", "", false, "Adds a crunchy-pgbouncer deployment to the cluster.")

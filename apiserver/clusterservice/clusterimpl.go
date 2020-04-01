@@ -656,6 +656,13 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		userLabelsMap[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
 	}
 
+	// if a value for BackrestStorageConfig is provided, validate it here
+	if request.BackrestStorageConfig != "" && !apiserver.IsValidStorageName(request.BackrestStorageConfig) {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf("\"%s\" storage config was not found", request.BackrestStorageConfig)
+		return resp
+	}
+
 	log.Debug("userLabelsMap")
 	log.Debugf("%v", userLabelsMap)
 
@@ -1040,6 +1047,14 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	}
 
 	spec.BackrestStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.BackrestStorage)
+
+	// if the user passed in a value to override the pgBackRest storage
+	// configuration, apply it here. Note that (and this follows the legacy code)
+	// given we've validated this storage configruation exists, this call should
+	// be ok
+	if request.BackrestStorageConfig != "" {
+		spec.BackrestStorage, _ = apiserver.Pgo.GetStorageSpec(request.BackrestStorageConfig)
+	}
 
 	// if the BackrestPVCSize is overwritten, update the backrest storage spec
 	// with this value
