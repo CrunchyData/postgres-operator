@@ -11,72 +11,61 @@
     - { kind: Service, version: v1 }
   specDescriptors:
     - path: ccpimage
-      value: "crunchy-postgres-ha"
       displayName: PostgreSQL Image
       description: The Crunchy PostgreSQL image to use. Possible values are "crunchy-postgres-ha" and "crunchy-postgres-gis-ha"
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
     - path: ccpimagetag
-      value: "${CCP_IMAGE_TAG}"
       displayName: PostgreSQL Image Tag
       description: The tag of the PostgreSQL image to use. Example is "${CCP_IMAGE_TAG}"
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
     - path: clustername
-      value: "hippo"
       displayName: PostgreSQL Cluster name
       description: The name that is assigned to this specific PostgreSQL cluster
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
     - path: database
-      value: "hippo"
       displayName: Initial PostgreSQL database name
       description: The name of the initial database to be created inside of the PostgreSQL cluster, e.g. "hippo"
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
     - path: exporterport
-      value: 9187
       displayName: PostgreSQL Monitor Port
       description: The port to use for the PostgreSQL metrics exporter used for cluster monitoring, e.g. "9187"
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:number'
     - path: name
-      value: "hippo"
       displayName: PostgreSQL CRD name
       description: The name of the CRD entry. Should match the PostgreSQL Cluster name
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
     - path: pgbadgerport
-      value: 10000
       displayName: pgBadger Port
       description: The port to use for the pgBadger PostgreSQL query analysis service, e.g. "10000"
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:number'
     - path: port
-      value: 5432
       displayName: PostgreSQL Port
       description: The port to use for the PostgreSQL cluster, e.g. "5432"
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:number'
 
     - path: rootsecretname
-      value: "hippo-postgres-secret"
       displayName: PostgreSQL superuser credentials
       description: The name of the Secret that contains the PostgreSQL superuser credentials
       x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:text'
+        - 'urn:alm:descriptor:io.kubernetes:Secret'
     - path: primarysecretname
-      value: "hippo-primaryuser-secret"
       displayName: PostgreSQL support service credentials
       description: The name of the Secret that contains the credentials used for managing cluster instance authentication, e.g. connections for replicas
       x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:text'
+        - 'urn:alm:descriptor:io.kubernetes:Secret'
     - path: usersecretname
-      value: "hippo-testuser-secret"
       displayName: PostgreSQL user credentials
       description: The name of the Secret that contains the PostgreSQL user credentials for logging into the PostgreSQL cluster
       x-descriptors:
-        - 'urn:alm:descriptor:com.tectonic.ui:text'
+        - 'urn:alm:descriptor:io.kubernetes:Secret'
 
     # `operator-sdk scorecard` expects this field to have a descriptor.
     - path: PrimaryStorage
@@ -85,7 +74,6 @@
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:PrimaryStorage'
     - path: PrimaryStorage.name
-      value: "hippo"
       displayName: PostgreSQL Primary Storage Name
       description: Contains the name of the PostgreSQL cluster to associate with this storage. Should match the Cluster name
       x-descriptors:
@@ -98,7 +86,6 @@
         - 'urn:alm:descriptor:com.tectonic.ui:fieldGroup:PrimaryStorage'
         - 'urn:alm:descriptor:io.kubernetes:StorageClass'
     - path: PrimaryStorage.accessmode
-      value: "ReadWriteOnce"
       displayName: PostgreSQL Primary StorageClass Access Mode
       description: The access mode for the storage class, e.g. "ReadWriteOnce"
       x-descriptors:
@@ -106,7 +93,6 @@
         - 'urn:alm:descriptor:com.tectonic.ui:select:ReadWriteOnce'
         - 'urn:alm:descriptor:com.tectonic.ui:select:ReadWriteMany'
     - path: PrimaryStorage.size
-      value: "1G"
       displayName: PostgreSQL Primary Data PVC Size
       description: The size of the PVC that will store the data for the primary PostgreSQL instance, e.g. "1G"
       x-descriptors:
@@ -114,14 +100,12 @@
         - 'urn:alm:descriptor:com.tectonic.ui:text'
 
     - path: status
-      value: ""
       displayName: Deprecated
       description: Deprecated
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
         - 'urn:alm:descriptor:com.tectonic.ui:advanced'
     - path: userlabels
-      value: "{}"
       displayName: User defined labels
       description: A set of labels that help the PostgreSQL Operator manage a PostgreSQL cluster
       x-descriptors:
