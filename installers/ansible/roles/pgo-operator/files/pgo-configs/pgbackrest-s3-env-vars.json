@@ -11,6 +11,7 @@
   "value": "{{.PgbackrestS3Region}}"
 },
 {
+  "name": "PGBACKREST_REPO1_S3_KEY",
   "valueFrom": {
     "secretKeyRef": {
       "name": "{{.PgbackrestS3SecretName}}",
