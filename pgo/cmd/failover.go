@@ -98,8 +98,6 @@ func createFailover(args []string, ns string) {
 // replicas that can be failed over to for this cluster. This is called when the
 // "--query" flag is specified
 func queryFailover(args []string, ns string) {
-	var hasPreferredNode bool
-
 	log.Debugf("queryFailover called %v", args)
 
 	// call the API
@@ -140,19 +138,8 @@ func queryFailover(args []string, ns string) {
 		log.Debugf("postgresql instance: %v", instance)
 
 		node := instance.Node
-		// check if this is a preferred node
-		if instance.PreferredNode {
-			hasPreferredNode = true
-			node = fmt.Sprintf("*%s", node)
-		}
 
 		fmt.Printf("%-20s\t%-10s\t%-10s\t%12d MB\n",
 			instance.Name, instance.Status, node, instance.ReplicationLag)
-	}
-
-	// if a node exists that is a preferred failover target, print an informative
-	// message
-	if hasPreferredNode {
-		fmt.Println("* next to a NODE name indicates a preferred failover target")
 	}
 }

@@ -230,10 +230,9 @@ type ContainerResourcesStruct struct {
 }
 
 type PgoStruct struct {
-	PreferredFailoverNode string `yaml:"PreferredFailoverNode"`
-	Audit                 bool   `yaml:"Audit"`
-	PGOImagePrefix        string `yaml:"PGOImagePrefix"`
-	PGOImageTag           string `yaml:"PGOImageTag"`
+	Audit          bool   `yaml:"Audit"`
+	PGOImagePrefix string `yaml:"PGOImagePrefix"`
+	PGOImageTag    string `yaml:"PGOImageTag"`
 }
 
 type PgoConfig struct {
