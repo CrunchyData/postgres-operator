@@ -114,6 +114,11 @@ type CreateClusterRequest struct {
 	// MemoryRequest is the value of how much RAM should be requested for
 	// deploying the PostgreSQL cluster
 	MemoryRequest string
+	// BackrestStorageConfig sets the storage configuration to use for the
+	// pgBackRest local repository. This overrides the value in pgo.yaml, though
+	// the value of BackrestPVCSize can override the PVC size set in this
+	// storage config
+	BackrestStorageConfig string
 }
 
 // CreateClusterDetail provides details about the PostgreSQL cluster that is
