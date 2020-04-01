@@ -850,14 +850,35 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
 	_, _, err = kubeapi.GetSecret(apiserver.Clientset, secretName, request.Namespace)
 	if kerrors.IsNotFound(err) {
+		// determine if a custom CA secret should be used
+		backrestS3CACert := []byte{}
+
+		if request.BackrestS3CASecretName != "" {
+			backrestSecret, _, err := kubeapi.GetSecret(apiserver.Clientset, request.BackrestS3CASecretName, request.Namespace)
+
+			if err != nil {
+				log.Error(err)
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = fmt.Sprintf("Error finding pgBackRest S3 CA secret \"%s\": %s",
+					request.BackrestS3CASecretName, err.Error())
+				return resp
+			}
+
+			// attempt to retrieves the custom CA, assuming it has the name
+			// "aws-s3-ca.crt"
+			backrestS3CACert = backrestSecret.Data[util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert]
+		}
+
 		err := util.CreateBackrestRepoSecrets(apiserver.Clientset,
 			util.BackrestRepoConfig{
+				BackrestS3CA:        backrestS3CACert,
 				BackrestS3Key:       request.BackrestS3Key,
 				BackrestS3KeySecret: request.BackrestS3KeySecret,
 				ClusterName:         clusterName,
 				ClusterNamespace:    request.Namespace,
 				OperatorNamespace:   apiserver.PgoNamespace,
 			})
+
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = fmt.Sprintf("could not create backrest repo secret: %s", err)

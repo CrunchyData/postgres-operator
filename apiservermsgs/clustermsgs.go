@@ -119,6 +119,9 @@ type CreateClusterRequest struct {
 	// the value of BackrestPVCSize can override the PVC size set in this
 	// storage config
 	BackrestStorageConfig string
+	// BackrestS3CASecretName specifies the name of a secret to use for the
+	// pgBackRest S3 CA instead of the default
+	BackrestS3CASecretName string
 }
 
 // CreateClusterDetail provides details about the PostgreSQL cluster that is

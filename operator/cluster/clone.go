@@ -301,6 +301,7 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 	// do it
 	if err := util.CreateBackrestRepoSecrets(clientset,
 		util.BackrestRepoConfig{
+			BackrestS3CA:        s3Creds.AWSS3CA,
 			BackrestS3Key:       s3Creds.AWSS3Key,
 			BackrestS3KeySecret: s3Creds.AWSS3KeySecret,
 			ClusterName:         targetClusterName,

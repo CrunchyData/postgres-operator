@@ -37,6 +37,7 @@ pgo create cluster [flags]
       --pgbackrest-repo-path string           The pgBackRest repository path that should be utilized instead of the default. Required for standby
                                               clusters to define the location of an existing pgBackRest repository.
       --pgbackrest-s3-bucket string           The AWS S3 bucket that should be utilized for the cluster when the "s3" storage type is enabled for pgBackRest.
+      --pgbackrest-s3-ca-secret string        If used, specifies a Kubernetes secret that uses a different CA certificate for S3 or a S3-like storage interface. Must contain a key with the value "aws-s3-ca.crt"
       --pgbackrest-s3-endpoint string         The AWS S3 endpoint that should be utilized for the cluster when the "s3" storage type is enabled for pgBackRest.
       --pgbackrest-s3-key string              The AWS S3 key that should be utilized for the cluster when the "s3" storage type is enabled for pgBackRest.
       --pgbackrest-s3-key-secret string       The AWS S3 key secret that should be utilized for the cluster when the "s3" storage type is enabled for pgBackRest.
@@ -62,13 +63,13 @@ pgo create cluster [flags]
       --storage-config string                 The name of a Storage config in pgo.yaml to use for the cluster storage.
       --sync-replication                      Enables synchronous replication for the cluster.
       --tablespace strings                    Create a PostgreSQL tablespace on the cluster, e.g. "name=ts1:storageconfig=nfsstorage". The format is a key/value map that is delimited by "=" and separated by ":". The following parameters are available:
-                                              
+
                                               - name (required): the name of the PostgreSQL tablespace
                                               - storageconfig (required): the storage configuration to use, as specified in the list available in the "pgo-config" ConfigMap (aka "pgo.yaml")
                                               - pvcsize: the size of the PVC capacity, which overrides the value set in the specified storageconfig. Follows the Kubernetes quantity format.
-                                              
+
                                               For example, to create a tablespace with the NFS storage configuration with a PVC of size 10GiB:
-                                              
+
                                               --tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi
       --tls-only                              If true, forces all PostgreSQL connections to be over TLS. Must also set "server-tls-secret" and "server-ca-secret"
   -u, --username string                       The username to use for creating the PostgreSQL user with standard permissions. Defaults to the value in the PostgreSQL Operator configuration.
