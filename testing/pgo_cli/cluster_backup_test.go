@@ -236,8 +236,9 @@ func TestClusterBackup(t *testing.T) {
 					require.Empty(t, stderr)
 
 					output, err := pgo("restore", cluster(), "-n", namespace(),
-						"--backup-opts=--type=time --target-action=promote",
-						"--pitr-target="+recoveryObjective, "--no-prompt",
+						"--backup-opts=--type=time",
+						"--pitr-target="+recoveryObjective,
+						"--no-prompt",
 					).Exec(t)
 					require.NoError(t, err)
 					require.Contains(t, output, recoveryObjective)
