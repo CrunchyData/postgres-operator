@@ -11,6 +11,7 @@ oulined in the [Deploy with PostgreSQL Operator
 Installer]({{< relref "/installation/postgres-operator-installer" >}}).
 
 ## Prerequisites
+
 The following is required prior to installing Crunchy PostgreSQL Operator 
 using Ansible:
 
@@ -18,6 +19,7 @@ using Ansible:
 * Ansible 2.8.0+
 
 ### Updating the Inventory file
+
 The PostgreSQL Operator Installer requires an inventory file to be installed.
 This inventory file must be created as a configmap that is mounted by the
 `pgo-installer` image. Once mounted, the file can be used to configure how the
@@ -30,6 +32,7 @@ Please reference the [Configuring the Inventory File]({{< relref "/installation/
 documentation as you update the inventory file. 
 
 #### PostgreSQL Operator Installer Specific Inventory Options
+
 The PostgreSQL Operator Installer has settings defined in the example inventory
 file that are not referenced in the [Configuring the Inventory File]({{< relref "/installation/install-with-ansible/prerequisites#configuring-the-inventory-file" >}})
 section of the documentation. 
@@ -57,6 +60,7 @@ options.
 | `create_pgo_installer_configmap` | false | |Enables the creation of the `pgo_installer_configmap` |
 
 ### Setting Up Resources 
+
 The `pgo-installer` jobs need the resources outlined in the 
 [Deploy with PostgreSQL Operator Installer (pgo-installer)]({{< relref "/installation/postgres-operator-installer" >}}) 
 section of the documentation to run. These resources can be setup using the ansible roles by
@@ -64,6 +68,7 @@ enabling their creation in the inventory file. If these options are not enabled,
 you will need to manually create the resources.
 
 ### Running the Installer with Ansible
+
 Once the inventory file and required resources are setup, you will be able to run
 the ansible playbook to install PostgreSQL Operator with the `pgo-installer`
 image. This can be done using the `ansible-playbook` command and passing in your
@@ -83,6 +88,7 @@ ansible-playbook -i $PGOROOT/installers/ansible/inventory --tags=update-containe
 ```
 
 #### Ansible Role Options
+
 | Tag Name | Description |
 |----------|--------------|
 | `install-container` | Uses the `pgo-installer` image to install the PostgreSQL Operator. |
@@ -92,8 +98,19 @@ ansible-playbook -i $PGOROOT/installers/ansible/inventory --tags=update-containe
 | `clean` | This option can be added to the `install-container`, `update-container`, and `uninstall-container` tags to delete the job after it completes. |
 | `clean-all` | The `namespace` and `clusterrolebinding` will be deleted if they exist. |
 
-### PGO Client
-#### Using the PGO Client Locally
+### Running the pgo Client Binary
+
+#### pgo-client Container
+
+The `pgo-client` container can be setup by enabling `pgo_client_container_install`
+in the inventory file. The client can then be used to easily access the
+PostgreSQL Operator through `pgo`. Once the install is completed you can access
+the client by using `kubectl exec` on the `pgo-client` pod. More information
+about setting this up can be found in the `Running the pgo Client Binary` section
+[here]({{< relref "/installation/postgres-operator-installer/_index.md" >}})
+
+#### pgo Client Binary
+
 Running the pgo client locally when using the pgo-installer image requires
 access to the certs stored in the `pgo.tls` Kubernetes secret. The `client.crt`
 and `client.key` need to be pulled from this secret and stored locally in a
@@ -118,6 +135,7 @@ in the [Install `pgo` client](/installation/install-pgo-client) section of the
 docs.
 
 #### Independent Setup of PGO Client
+
 The steps to setup the `pgo` client are run on each update and install of the
 operator. You also have the option of running the setup steps on an existing
 postgres-operator without having to update or reinstall. The pgo-installer
