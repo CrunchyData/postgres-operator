@@ -189,6 +189,18 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		TablespaceVolumeMounts: operator.GetTablespaceVolumeMountsJSON(tablespaceMountsMap),
 	}
 
+	// A recovery target should also have a recovery target action. The PostgreSQL
+	// and pgBackRest defaults are `pause` which requires the user to execute SQL
+	// before the cluster will accept any writes. If no action has been specified,
+	// use `promote` which accepts writes as soon as recovery succeeds.
+	//
+	// - https://www.postgresql.org/docs/current/runtime-config-wal.html#RUNTIME-CONFIG-WAL-RECOVERY-TARGET
+	// - https://pgbackrest.org/command.html#command-restore/category-command/option-target-action
+	//
+	if jobFields.PITRTarget != "" && !strings.Contains(jobFields.CommandOpts, "--target-action") {
+		jobFields.CommandOpts = strings.TrimSpace(jobFields.CommandOpts + " --target-action=promote")
+	}
+
 	jobTemplate := bytes.Buffer{}
 
 	if err := config.BackrestRestorejobTemplate.Execute(&jobTemplate, jobFields); err != nil {
