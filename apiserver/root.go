@@ -16,7 +16,6 @@ limitations under the License.
 */
 
 import (
-	"bytes"
 	"crypto/rsa"
 	"crypto/x509"
 	"errors"
@@ -28,7 +27,6 @@ import (
 	"strings"
 	"time"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
@@ -357,22 +355,7 @@ func validContainerResourcesSettings() bool {
 		return false
 	}
 
-	drs := Pgo.DefaultContainerResources
-	if drs == "" {
-		log.Info("DefaultContainerResources was not specified in pgo.yaml, so no container resources will be specified")
-		return true
-	}
-
-	//validate the DefaultContainerResource value
-	if IsValidContainerResource(drs) {
-		log.Info(drs + " is valid")
-	} else {
-		log.Error(drs + " is NOT valid")
-		return false
-	}
-
 	return true
-
 }
 
 func validStorageSettings() bool {
@@ -465,28 +448,6 @@ func validateWithKube() {
 		os.Exit(2)
 	}
 
-}
-
-// GetContainerResources ...
-func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
-	fields := containerResourcesTemplateFields{}
-	fields.RequestsMemory = resources.RequestsMemory
-	fields.RequestsCPU = resources.RequestsCPU
-	fields.LimitsMemory = resources.LimitsMemory
-	fields.LimitsCPU = resources.LimitsCPU
-
-	doc := bytes.Buffer{}
-	err := config.ContainerResourcesTemplate.Execute(&doc, fields)
-	if err != nil {
-		log.Error(err.Error())
-		return ""
-	}
-
-	if log.GetLevel() == log.DebugLevel {
-		config.ContainerResourcesTemplate.Execute(os.Stdout, fields)
-	}
-
-	return doc.String()
 }
 
 //returns installation access and user access

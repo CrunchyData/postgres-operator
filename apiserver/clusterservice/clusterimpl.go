@@ -35,6 +35,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
@@ -985,33 +986,26 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 
 func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabelsMap map[string]string, ns string) *crv1.Pgcluster {
 
-	spec := crv1.PgclusterSpec{}
+	spec := crv1.PgclusterSpec{
+		Resources: v1.ResourceList{},
+	}
 
 	if userLabelsMap[config.LABEL_CUSTOM_CONFIG] != "" {
 		spec.CustomConfig = userLabelsMap[config.LABEL_CUSTOM_CONFIG]
 	}
 
-	if request.ContainerResources != "" {
-		spec.ContainerResources, _ = apiserver.Pgo.GetContainerResource(request.ContainerResources)
-	} else {
-		log.Debugf("Pgo.DefaultContainerResources is %s", apiserver.Pgo.DefaultContainerResources)
-		defaultContainerResource := apiserver.Pgo.DefaultContainerResources
-		if defaultContainerResource != "" {
-			spec.ContainerResources, _ = apiserver.Pgo.GetContainerResource(defaultContainerResource)
-		}
-	}
-
 	// if the request has overriding CPURequest and/or MemoryRequest parameters,
-	// these will take precedence over the values set by "ContainerResources"
-	// This will also overwrite the Limits
+	// these will take precedence over the defaults
 	if request.CPURequest != "" {
-		spec.ContainerResources.RequestsCPU = request.CPURequest
-		spec.ContainerResources.LimitsCPU = ""
+		// as this was already validated, we can ignore the error
+		quantity, _ := resource.ParseQuantity(request.CPURequest)
+		spec.Resources[v1.ResourceCPU] = quantity
 	}
 
 	if request.MemoryRequest != "" {
-		spec.ContainerResources.RequestsMemory = request.MemoryRequest
-		spec.ContainerResources.LimitsMemory = ""
+		// as this was already validated, we can ignore the error
+		quantity, _ := resource.ParseQuantity(request.MemoryRequest)
+		spec.Resources[v1.ResourceMemory] = quantity
 	}
 
 	spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.PrimaryStorage)
@@ -1583,17 +1577,21 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 			cluster.Spec.Shutdown = true
 		}
 
+		// ensure there is a value for Resources
+		if cluster.Spec.Resources == nil {
+			cluster.Spec.Resources = v1.ResourceList{}
+		}
+
 		// if the CPU or memory values have been modified, update the values in the
 		// cluster CRD
-		// This will also overwrite the limits as this is being phased out
 		if request.CPURequest != "" {
-			cluster.Spec.ContainerResources.RequestsCPU = request.CPURequest
-			cluster.Spec.ContainerResources.LimitsCPU = ""
+			quantity, _ := resource.ParseQuantity(request.CPURequest)
+			cluster.Spec.Resources[v1.ResourceCPU] = quantity
 		}
 
 		if request.MemoryRequest != "" {
-			cluster.Spec.ContainerResources.RequestsMemory = request.MemoryRequest
-			cluster.Spec.ContainerResources.LimitsMemory = ""
+			quantity, _ := resource.ParseQuantity(request.MemoryRequest)
+			cluster.Spec.Resources[v1.ResourceMemory] = quantity
 		}
 
 		// extract the parameters for the TablespaceMounts and put them in the

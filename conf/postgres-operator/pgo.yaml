@@ -74,11 +74,6 @@ Storage:
     Size:  1G
     StorageType:  dynamic
     StorageClass:  rook-ceph-block
-DefaultContainerResources:
-DefaultLoadResources:
-DefaultRmdataResources:
-DefaultBackupResources:
-DefaultPgbouncerResources:
 ContainerResources:
   small:
     RequestsMemory:  512Mi

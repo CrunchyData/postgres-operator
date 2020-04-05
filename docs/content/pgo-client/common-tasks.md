@@ -160,12 +160,6 @@ Storage:
     StorageClass: ""
     SupplementalGroups: "65534"
     MatchLabels: ""
-DefaultContainerResources: ""
-DefaultLoadResources: ""
-DefaultRmdataResources: ""
-DefaultBackupResources: ""
-DefaultBadgerResources: ""
-DefaultPgbouncerResources: ""
 ```
 
 ### Viewing PostgreSQL Operator Key Metrics

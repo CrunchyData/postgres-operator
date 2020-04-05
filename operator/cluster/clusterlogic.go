@@ -132,7 +132,7 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		UserSecretName:     cl.Spec.UserSecretName,
 		NodeSelector:       operator.GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
 		PodAntiAffinity:    operator.GetPodAntiAffinity(cl, crv1.PodAntiAffinityDeploymentDefault, cl.Spec.PodAntiAffinity.Default),
-		ContainerResources: operator.GetContainerResourcesJSON(&cl.Spec.ContainerResources),
+		ContainerResources: operator.GetResourcesJSON(cl.Spec.Resources),
 		ConfVolume:         operator.GetConfVolume(clientset, cl, namespace),
 		CollectAddon:       operator.GetCollectAddon(clientset, namespace, &cl.Spec),
 		CollectVolume:      operator.GetCollectVolume(clientset, cl, namespace),
@@ -277,12 +277,6 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		imageTag = replica.Spec.UserLabels[config.LABEL_CCP_IMAGE_TAG_KEY]
 	}
 
-	//allow the user to override the replica resources
-	cs := replica.Spec.ContainerResources
-	if replica.Spec.ContainerResources.LimitsCPU == "" {
-		cs = cluster.Spec.ContainerResources
-	}
-
 	cluster.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = replica.Spec.Name
 
 	// iterate through all of the tablespaces and attempt to create their PVCs
@@ -328,7 +322,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		RootSecretName:     cluster.Spec.RootSecretName,
 		PrimarySecretName:  cluster.Spec.PrimarySecretName,
 		UserSecretName:     cluster.Spec.UserSecretName,
-		ContainerResources: operator.GetContainerResourcesJSON(&cs),
+		ContainerResources: operator.GetResourcesJSON(cluster.Spec.Resources),
 		NodeSelector:       operator.GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
 		PodAntiAffinity:    operator.GetPodAntiAffinity(cluster, crv1.PodAntiAffinityDeploymentDefault, cluster.Spec.PodAntiAffinity.Default),
 		CollectAddon:       operator.GetCollectAddon(clientset, namespace, &cluster.Spec),

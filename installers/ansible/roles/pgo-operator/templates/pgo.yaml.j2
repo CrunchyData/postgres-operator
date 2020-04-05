@@ -49,11 +49,6 @@ Storage:
 {% endif %}
 {% endif %}
 {% endfor %}
-DefaultContainerResources: {{ default_container_resources }}
-DefaultLoadResources: {{ default_load_resources }}
-DefaultRmdataResources: {{ default_rmdata_resources }}
-DefaultBackupResources: {{ default_backup_resources }}
-DefaultPgbouncerResources: {{ default_pgbouncer_resources }}
 ContainerResources:
 {% for i in range(1, max_resource_configs) %}
 {% if lookup('vars', 'resource' + i|string + '_name', default='')  != '' %}

@@ -51,9 +51,7 @@
                         "periodSeconds": 15,
                         "timeoutSeconds": 10
                     },
-
-            {{.ContainerResources }}
-
+                    {{.ContainerResources }}
                     "env": [{
                         "name": "PGHA_PG_PORT",
                         "value": "{{.Port}}"

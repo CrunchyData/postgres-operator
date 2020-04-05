@@ -501,19 +501,6 @@ func createPgBouncerDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pg
 			crv1.PodAntiAffinityDeploymentPgBouncer, cluster.Spec.PodAntiAffinity.PgBouncer)),
 	}
 
-	// Determine if a custom resource profile should be used for the pgBouncer
-	// deployment
-	if operator.Pgo.DefaultPgbouncerResources != "" {
-		pgBouncerResources, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultPgbouncerResources)
-
-		// if there is an error getting this, log it as an error, but continue on
-		if err != nil {
-			log.Warn(err)
-		}
-
-		fields.ContainerResources = operator.GetContainerResourcesJSON(&pgBouncerResources)
-	}
-
 	// For debugging purposes, put the template substitution in stdout
 	if operator.CRUNCHY_DEBUG {
 		config.PgbouncerTemplate.Execute(os.Stdout, fields)

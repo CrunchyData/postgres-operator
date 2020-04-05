@@ -166,7 +166,7 @@ type DeploymentTemplateFields struct {
 	SyncReplication          bool
 	Standby                  bool
 	// A comma-separated list of tablespace names...this could be an array, but
-	// given how this would ultimately be interpreted in a shell script tsomewhere
+	// given how this would ultimately be interpreted in a shell script somewhere
 	// down the line, it's easier for the time being to do it this way. In the
 	// future, we should consider having an array
 	Tablespaces            string
@@ -245,16 +245,6 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, cluster *
 		badgerTemplateFields.PGBadgerPort = spec.PGBadgerPort
 		badgerTemplateFields.CCPImagePrefix = Pgo.Cluster.CCPImagePrefix
 		badgerTemplateFields.ContainerResources = ""
-
-		if Pgo.DefaultBadgerResources != "" {
-			tmp, err := Pgo.GetContainerResource(Pgo.DefaultBadgerResources)
-			if err != nil {
-				log.Error(err)
-				return ""
-			}
-			badgerTemplateFields.ContainerResources = GetContainerResourcesJSON(&tmp)
-
-		}
 
 		var badgerDoc bytes.Buffer
 		err := config.BadgerTemplate.Execute(&badgerDoc, badgerTemplateFields)

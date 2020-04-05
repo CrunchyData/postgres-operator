@@ -51,17 +51,6 @@ type RmdataJob struct {
 func CreateRmdataJob(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string, removeData, removeBackup, isReplica, isBackup bool) error {
 	var err error
 
-	cr := ""
-	if operator.Pgo.DefaultBackupResources != "" {
-		tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultBackupResources)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-		cr = operator.GetContainerResourcesJSON(&tmp)
-
-	}
-
 	jobName := cl.Spec.Name + "-rmdata-" + util.RandStringBytesRmndr(4)
 
 	jobFields := RmdataJob{
@@ -73,7 +62,7 @@ func CreateRmdataJob(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namesp
 		RemoveBackup:       strconv.FormatBool(removeBackup),
 		IsBackup:           strconv.FormatBool(isReplica),
 		IsReplica:          strconv.FormatBool(isBackup),
-		ContainerResources: cr,
+		ContainerResources: "",
 	}
 
 	doc := bytes.Buffer{}

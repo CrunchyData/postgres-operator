@@ -302,12 +302,6 @@ storage9_class='rook-ceph-block'
 # Define container resource configurations that can be used to set CPU & memory requirements and limits
 # for containers created by the PGO.  Also set default resource configs for various PGO container types.
 
-#default_container_resources=''
-#default_load_resources=''
-#default_rmdata_resources=''
-#default_backup_resources=''
-#default_pgbouncer_resources=''
-
 resource1_name='small'
 resource1_requests_memory='512Mi'
 resource1_requests_cpu=0.1

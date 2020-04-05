@@ -236,21 +236,15 @@ type PgoStruct struct {
 }
 
 type PgoConfig struct {
-	BasicAuth                 string                              `yaml:"BasicAuth"`
-	Cluster                   ClusterStruct                       `yaml:"Cluster"`
-	Pgo                       PgoStruct                           `yaml:"Pgo"`
-	ContainerResources        map[string]ContainerResourcesStruct `yaml:"ContainerResources"`
-	PrimaryStorage            string                              `yaml:"PrimaryStorage"`
-	BackupStorage             string                              `yaml:"BackupStorage"`
-	ReplicaStorage            string                              `yaml:"ReplicaStorage"`
-	BackrestStorage           string                              `yaml:"BackrestStorage"`
-	Storage                   map[string]StorageStruct            `yaml:"Storage"`
-	DefaultContainerResources string                              `yaml:"DefaultContainerResources"`
-	DefaultLoadResources      string                              `yaml:"DefaultLoadResources"`
-	DefaultRmdataResources    string                              `yaml:"DefaultRmdataResources"`
-	DefaultBackupResources    string                              `yaml:"DefaultBackupResources"`
-	DefaultBadgerResources    string                              `yaml:"DefaultBadgerResources"`
-	DefaultPgbouncerResources string                              `yaml:"DefaultPgbouncerResources"`
+	BasicAuth          string                              `yaml:"BasicAuth"`
+	Cluster            ClusterStruct                       `yaml:"Cluster"`
+	Pgo                PgoStruct                           `yaml:"Pgo"`
+	ContainerResources map[string]ContainerResourcesStruct `yaml:"ContainerResources"`
+	PrimaryStorage     string                              `yaml:"PrimaryStorage"`
+	BackupStorage      string                              `yaml:"BackupStorage"`
+	ReplicaStorage     string                              `yaml:"ReplicaStorage"`
+	BackrestStorage    string                              `yaml:"BackrestStorage"`
+	Storage            map[string]StorageStruct            `yaml:"Storage"`
 }
 
 const DEFAULT_SERVICE_TYPE = "ClusterIP"
@@ -343,43 +337,6 @@ func (c *PgoConfig) Validate() error {
 	}
 	if c.Pgo.PGOImageTag == "" {
 		return errors.New(errPrefix + "Pgo.PGOImageTag is required")
-	}
-
-	if c.DefaultContainerResources != "" {
-		_, ok = c.ContainerResources[c.DefaultContainerResources]
-		if !ok {
-			return errors.New(errPrefix + "DefaultContainerResources setting invalid")
-		}
-	}
-	if c.DefaultLoadResources != "" {
-		_, ok = c.ContainerResources[c.DefaultLoadResources]
-		if !ok {
-			return errors.New(errPrefix + "DefaultLoadResources setting invalid")
-		}
-	}
-	if c.DefaultRmdataResources != "" {
-		_, ok = c.ContainerResources[c.DefaultRmdataResources]
-		if !ok {
-			return errors.New(errPrefix + "DefaultRmdataResources setting invalid")
-		}
-	}
-	if c.DefaultBackupResources != "" {
-		_, ok = c.ContainerResources[c.DefaultBackupResources]
-		if !ok {
-			return errors.New(errPrefix + "DefaultBackupResources setting invalid")
-		}
-	}
-	if c.DefaultBadgerResources != "" {
-		_, ok = c.ContainerResources[c.DefaultBadgerResources]
-		if !ok {
-			return errors.New(errPrefix + "DefaultBadgerResources setting invalid")
-		}
-	}
-	if c.DefaultPgbouncerResources != "" {
-		_, ok = c.ContainerResources[c.DefaultPgbouncerResources]
-		if !ok {
-			return errors.New(errPrefix + "DefaultPgbouncerResources setting invalid")
-		}
 	}
 
 	if c.Cluster.ServiceType == "" {

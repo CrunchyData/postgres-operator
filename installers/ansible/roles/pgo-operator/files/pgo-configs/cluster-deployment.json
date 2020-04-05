@@ -51,9 +51,7 @@
                         "periodSeconds": 15,
                         "timeoutSeconds": 10
                     },
-
-            {{.ContainerResources }}
-
+                    {{.ContainerResources }}
                     "env": [{
                         "name": "PGHA_PG_PORT",
                         "value": "{{.Port}}"
@@ -82,8 +80,8 @@
                         "name": "PATRONI_POSTGRESQL_DATA_DIR",
                         "value": "/pgdata/{{.Name}}"
                     },
-                    {{.PgbackrestEnvVars}}
                     {{.PgbackrestS3EnvVars}}
+                    {{.PgbackrestEnvVars}}
                     {{.PgmonitorEnvVars}}
                     {
                         "name": "PGHA_DATABASE",
@@ -94,7 +92,7 @@
                     }, {
                         "name": "PGHA_REPLICA_REINIT_ON_START_FAIL",
                         "value": "{{.ReplicaReinitOnStartFail}}"
-                    },  {
+                    }, {
                         "name": "PGHA_SYNC_REPLICATION",
                         "value": "{{.SyncReplication}}"
                     }, {
