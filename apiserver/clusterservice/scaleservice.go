@@ -98,7 +98,6 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	clusterName := vars[config.LABEL_NAME]
 	namespace := r.URL.Query().Get(config.LABEL_NAMESPACE)
 	replicaCount := r.URL.Query().Get(config.LABEL_REPLICA_COUNT)
-	resourcesConfig := r.URL.Query().Get(config.LABEL_RESOURCES_CONFIG)
 	storageConfig := r.URL.Query().Get(config.LABEL_STORAGE_CONFIG)
 	nodeLabel := r.URL.Query().Get(config.LABEL_NODE_LABEL)
 	serviceType := r.URL.Query().Get(config.LABEL_SERVICE_TYPE)
@@ -106,8 +105,8 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	ccpImageTag := r.URL.Query().Get(config.LABEL_CCP_IMAGE_TAG_KEY)
 
 	log.Debugf("ScaleClusterHandler parameters name [%s] namespace [%s] replica-count [%s] "+
-		"resources-config [%s] storage-config [%s] node-label [%s] service-type [%s] version [%s]"+
-		"ccp-image-tag [%s]", clusterName, namespace, replicaCount, resourcesConfig,
+		"storage-config [%s] node-label [%s] service-type [%s] version [%s]"+
+		"ccp-image-tag [%s]", clusterName, namespace, replicaCount,
 		storageConfig, nodeLabel, serviceType, clientVersion, ccpImageTag)
 
 	username, err := apiserver.Authn(apiserver.SCALE_CLUSTER_PERM, w, r)
@@ -135,7 +134,7 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO too many params need to create a struct for this
-	resp = ScaleCluster(clusterName, replicaCount, resourcesConfig, storageConfig, nodeLabel,
+	resp = ScaleCluster(clusterName, replicaCount, storageConfig, nodeLabel,
 		ccpImageTag, serviceType, ns, username)
 
 	json.NewEncoder(w).Encode(resp)

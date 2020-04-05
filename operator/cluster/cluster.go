@@ -35,7 +35,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	apps_v1 "k8s.io/api/apps/v1"
 	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -150,8 +149,6 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		//create a CRD for each replica
 		for i := 0; i < replicaCount; i++ {
 			spec := crv1.PgreplicaSpec{}
-			//get the resource config
-			spec.ContainerResources = cl.Spec.ContainerResources
 			//get the storage config
 			spec.ReplicaStorage = cl.Spec.ReplicaStorage
 
@@ -354,14 +351,6 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 // UpdateResources updates the PostgreSQL instance Deployments to reflect the
 // update resources (i.e. CPU, memory)
 func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, cluster *crv1.Pgcluster) error {
-	// put the resources in their proper format for updating the cluster
-	// the "remove*" bit lets us know that we will have the request be "unbounded"
-	cpu, err := resource.ParseQuantity(cluster.Spec.ContainerResources.RequestsCPU)
-	removeCPU := err != nil
-
-	memory, err := resource.ParseQuantity(cluster.Spec.ContainerResources.RequestsMemory)
-	removeMemory := err != nil
-
 	// get a list of all of the instance deployments for the cluster
 	deployments, err := operator.GetInstanceDeployments(clientset, cluster)
 
@@ -384,27 +373,22 @@ func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, c
 			requestResourceList = deployment.Spec.Template.Spec.Containers[0].Resources.Requests
 		}
 
-		if removeCPU {
-			delete(requestResourceList, v1.ResourceCPU)
+		// handle the CPU update
+		if request, ok := cluster.Spec.Resources[v1.ResourceCPU]; ok {
+			requestResourceList[v1.ResourceCPU] = request
 		} else {
-			requestResourceList[v1.ResourceCPU] = cpu
+			delete(requestResourceList, v1.ResourceCPU)
 		}
 
 		// handle the memory update
-		if removeMemory {
-			delete(requestResourceList, v1.ResourceMemory)
+		if request, ok := cluster.Spec.Resources[v1.ResourceMemory]; ok {
+			requestResourceList[v1.ResourceMemory] = request
 		} else {
-			requestResourceList[v1.ResourceMemory] = memory
+			delete(requestResourceList, v1.ResourceMemory)
 		}
 
 		// update the requests resourcelist
 		deployment.Spec.Template.Spec.Containers[0].Resources.Requests = requestResourceList
-
-		// regardless, ensure the limits are gone
-		if deployment.Spec.Template.Spec.Containers[0].Resources.Limits != nil {
-			delete(deployment.Spec.Template.Spec.Containers[0].Resources.Limits, v1.ResourceCPU)
-			delete(deployment.Spec.Template.Spec.Containers[0].Resources.Limits, v1.ResourceMemory)
-		}
 
 		// Before applying the update, we want to explicitly stop PostgreSQL on each
 		// instance. This prevents PostgreSQL from having to boot up in crash

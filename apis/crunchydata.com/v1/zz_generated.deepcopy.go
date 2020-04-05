@@ -20,6 +20,7 @@ limitations under the License.
 package v1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -123,7 +124,13 @@ func (in *PgclusterSpec) DeepCopyInto(out *PgclusterSpec) {
 	out.ArchiveStorage = in.ArchiveStorage
 	out.ReplicaStorage = in.ReplicaStorage
 	out.BackrestStorage = in.BackrestStorage
-	out.ContainerResources = in.ContainerResources
+	if in.Resources != nil {
+		in, out := &in.Resources, &out.Resources
+		*out = make(corev1.ResourceList, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val.DeepCopy()
+		}
+	}
 	if in.UserLabels != nil {
 		in, out := &in.UserLabels, &out.UserLabels
 		*out = make(map[string]string, len(*in))
@@ -332,7 +339,6 @@ func (in *PgreplicaList) DeepCopyObject() runtime.Object {
 func (in *PgreplicaSpec) DeepCopyInto(out *PgreplicaSpec) {
 	*out = *in
 	out.ReplicaStorage = in.ReplicaStorage
-	out.ContainerResources = in.ContainerResources
 	if in.UserLabels != nil {
 		in, out := &in.UserLabels, &out.UserLabels
 		*out = make(map[string]string, len(*in))

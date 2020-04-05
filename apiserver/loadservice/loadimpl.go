@@ -108,15 +108,6 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 	LoadConfigTemplate.PVCName = LoadCfg.PVCName
 	LoadConfigTemplate.SecurityContext = operutil.GetPodSecurityContext(supplementalGroups)
 	LoadConfigTemplate.ContainerResources = ""
-	if apiserver.Pgo.DefaultLoadResources != "" {
-		tmp, err := apiserver.Pgo.GetContainerResource(apiserver.Pgo.DefaultLoadResources)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-		LoadConfigTemplate.ContainerResources = apiserver.GetContainerResourcesJSON(&tmp)
-	}
 
 	clusterList := crv1.PgclusterList{}
 	if len(request.Args) == 0 && request.Selector == "" {

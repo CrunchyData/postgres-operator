@@ -33,7 +33,7 @@ import (
 )
 
 // ScaleCluster ...
-func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
+func ScaleCluster(name, replicaCount, storageConfig, nodeLabel,
 	ccpImageTag, serviceType, ns, pgouser string) msgs.ClusterScaleResponse {
 	var err error
 
@@ -68,16 +68,6 @@ func ScaleCluster(name, replicaCount, resourcesConfig, storageConfig, nodeLabel,
 	}
 
 	spec := crv1.PgreplicaSpec{}
-
-	//get the resource-config
-	if resourcesConfig != "" {
-		spec.ContainerResources, _ = apiserver.Pgo.GetContainerResource(resourcesConfig)
-	} else {
-		defaultContainerResource := apiserver.Pgo.DefaultContainerResources
-		if defaultContainerResource != "" {
-			spec.ContainerResources, _ = apiserver.Pgo.GetContainerResource(defaultContainerResource)
-		}
-	}
 
 	//refer to the cluster's replica storage setting by default
 	spec.ReplicaStorage = cluster.Spec.ReplicaStorage

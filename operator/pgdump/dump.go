@@ -82,17 +82,6 @@ func Dump(namespace string, clientset *kubernetes.Clientset, client *rest.RESTCl
 		}
 	}
 
-	cr := ""
-	if operator.Pgo.DefaultBackupResources != "" {
-		tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultBackupResources)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		cr = operator.GetContainerResourcesJSON(&tmp)
-
-	}
-
 	// this task name should match
 	taskName := task.Name
 	jobName := taskName + "-" + util.RandStringBytesRmndr(4)
@@ -114,7 +103,7 @@ func Dump(namespace string, clientset *kubernetes.Clientset, client *rest.RESTCl
 		PgDumpOpts:         task.Spec.Parameters[config.LABEL_PGDUMP_OPTS],
 		PgDumpAll:          task.Spec.Parameters[config.LABEL_PGDUMP_ALL],
 		PgDumpPVC:          pvcName,
-		ContainerResources: cr,
+		ContainerResources: "",
 	}
 
 	var doc2 bytes.Buffer

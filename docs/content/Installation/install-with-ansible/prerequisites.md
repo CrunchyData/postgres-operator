@@ -352,16 +352,6 @@ resource1_limits_cpu=0.1
 
 As this example resource configuration shows, integer `1` is used as the ID for each of the `resource` variables, which together form a single resource configuration called `small`.  This approach allows different resource configurations to be created by defining the proper `resource` variables with a unique ID for each required resource configuration.
 
-Additionally, once all resource configurations have been defined in the `inventory`, they can then be used to specify the default resource configurations that should be utilized for the various PG containers created by the operator.  This is done using the following variables, which are also defined in the  `inventory`:
-
-```ini
-default_container_resources='large'
-default_load_resources='small'
-default_rmdata_resources='small'
-default_backup_resources='small'
-default_pgbouncer_resources='small'
-```
-
 With the configuration shown above, the `large` resource configuration would be used by default for all database containers, while the `small` resource configuration would then be utilized by default for the various other containers created for a PG cluster.
 
 ## Understanding `pgo_operator_namespace` & `namespace`

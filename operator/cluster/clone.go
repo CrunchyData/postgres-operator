@@ -788,8 +788,7 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 			CCPImageTag:        sourcePgcluster.Spec.CCPImageTag,
 			// We're not copying over the collect container in the clone...but we will
 			// maintain the secret in case one brings up the collect container
-			CollectSecretName:  fmt.Sprintf("%s%s", targetClusterName, crv1.CollectSecretSuffix),
-			ContainerResources: sourcePgcluster.Spec.ContainerResources,
+			CollectSecretName: fmt.Sprintf("%s%s", targetClusterName, crv1.CollectSecretSuffix),
 			// CustomConfig is not set as in the future this will be a parameter we
 			// allow the user to pass in
 			Database:     sourcePgcluster.Spec.Database,
@@ -810,6 +809,7 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 			// provisioned with the clone
 			Replicas:       "0",
 			ReplicaStorage: sourcePgcluster.Spec.ReplicaStorage,
+			Resources:      sourcePgcluster.Spec.Resources,
 			RootSecretName: fmt.Sprintf("%s%s", targetClusterName, crv1.RootSecretSuffix),
 			// SecretFrom needs to be set as the "sourcePgcluster.Spec.ClusterName"
 			// as this will indicate we got our secrets from the original cluster

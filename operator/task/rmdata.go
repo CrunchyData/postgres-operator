@@ -71,17 +71,6 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, restclient *r
 	removeData := task.Spec.Parameters[config.LABEL_DELETE_DATA]
 	removeBackup := task.Spec.Parameters[config.LABEL_DELETE_BACKUPS]
 
-	cr := ""
-	if operator.Pgo.DefaultRmdataResources != "" {
-		tmp, err := operator.Pgo.GetContainerResource(operator.Pgo.DefaultRmdataResources)
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		cr = operator.GetContainerResourcesJSON(&tmp)
-
-	}
-
 	jobName := clusterName + "-rmdata-" + util.RandStringBytesRmndr(4)
 
 	jobFields := rmdatajobTemplateFields{
@@ -97,7 +86,7 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, restclient *r
 		PGOImagePrefix:     operator.Pgo.Pgo.PGOImagePrefix,
 		PGOImageTag:        operator.Pgo.Pgo.PGOImageTag,
 		SecurityContext:    util.GetPodSecurityContext(task.Spec.StorageSpec.GetSupplementalGroups()),
-		ContainerResources: cr,
+		ContainerResources: "",
 	}
 	log.Debugf("creating rmdata job %s for cluster %s ", jobName, task.Spec.Name)
 

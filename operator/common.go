@@ -20,7 +20,6 @@ import (
 	"os"
 	"strings"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	log "github.com/sirupsen/logrus"
 
@@ -124,20 +123,30 @@ func Initialize(clientset *kubernetes.Clientset) {
 	log.Info("EventTCPAddress set to " + EventTCPAddress)
 }
 
-// GetContainerResources is a legacy method that  creates the JSON snippet that
-// is applied for setting the CPU and memory in a container.
-func GetContainerResourcesJSON(resources *crv1.PgContainerResources) string {
-	fields := containerResourcesTemplateFields{
-		LimitsCPU:      resources.LimitsCPU,
-		LimitsMemory:   resources.LimitsMemory,
-		RequestsCPU:    resources.RequestsCPU,
-		RequestsMemory: resources.RequestsMemory,
+// GetResourcesJSON is a pseudo-legacy method that creates JSON that applies the
+// CPU and Memory settings. The settings are only included if:
+// a) they exist
+// b) they are nonzero
+func GetResourcesJSON(resources v1.ResourceList) string {
+	fields := containerResourcesTemplateFields{}
+
+	// first, if the contents of the resources list happen to be nil, exit out
+	if resources == nil {
+		return ""
+	}
+
+	if resources.Cpu() != nil && !resources.Cpu().IsZero() {
+		fields.RequestsCPU = resources.Cpu().String()
+	}
+
+	if resources.Memory() != nil && !resources.Memory().IsZero() {
+		fields.RequestsMemory = resources.Memory().String()
 	}
 
 	doc := bytes.Buffer{}
 
 	if err := config.ContainerResourcesTemplate.Execute(&doc, fields); err != nil {
-		log.Error(err.Error())
+		log.Error(err)
 		return ""
 	}
 

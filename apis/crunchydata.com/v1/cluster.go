@@ -18,6 +18,7 @@ package v1
 import (
 	"fmt"
 
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -39,21 +40,47 @@ type Pgcluster struct {
 // PgclusterSpec is the CRD that defines a Crunchy PG Cluster Spec
 // swagger:ignore
 type PgclusterSpec struct {
-	Namespace          string                   `json:"namespace"`
-	Name               string                   `json:"name"`
-	ClusterName        string                   `json:"clustername"`
-	Policies           string                   `json:"policies"`
-	CCPImage           string                   `json:"ccpimage"`
-	CCPImageTag        string                   `json:"ccpimagetag"`
-	Port               string                   `json:"port"`
-	PGBadgerPort       string                   `json:"pgbadgerport"`
-	ExporterPort       string                   `json:"exporterport"`
-	NodeName           string                   `json:"nodename"`
-	PrimaryStorage     PgStorageSpec            `json:primarystorage`
-	ArchiveStorage     PgStorageSpec            `json:archivestorage`
-	ReplicaStorage     PgStorageSpec            `json:replicastorage`
-	BackrestStorage    PgStorageSpec            `json:backreststorage`
-	ContainerResources PgContainerResources     `json:containerresources`
+	Namespace       string        `json:"namespace"`
+	Name            string        `json:"name"`
+	ClusterName     string        `json:"clustername"`
+	Policies        string        `json:"policies"`
+	CCPImage        string        `json:"ccpimage"`
+	CCPImageTag     string        `json:"ccpimagetag"`
+	Port            string        `json:"port"`
+	PGBadgerPort    string        `json:"pgbadgerport"`
+	ExporterPort    string        `json:"exporterport"`
+	NodeName        string        `json:"nodename"`
+	PrimaryStorage  PgStorageSpec `json:primarystorage`
+	ArchiveStorage  PgStorageSpec `json:archivestorage`
+	ReplicaStorage  PgStorageSpec `json:replicastorage`
+	BackrestStorage PgStorageSpec `json:backreststorage`
+	// Resources behaves just like the "Requests" section of a Kubernetes
+	// container defintion. You can set individual items such as "cpu" and
+	// "memory", e.g. "{ cpu: "0.5", memory: "2Gi" }"
+	//
+	// Presently we only set the "Request" portion of the Container resource
+	// definition, but if we do allow for the "Limit" portion to be set, we would
+	// keep it unified to get a "Guaranteed" QoS.
+	//
+	// We don't set the Limit you say? Yes: we want to avoid the OOM killer coming
+	// for the PostgreSQL process or any of their backends per lots of guidance
+	// from the PostgreSQL documentation. Based on Kubernetes' behavior with
+	// limits, the best thing is to not set them. However, if they ever do set,
+	// we'll ensure that we get the Guaranteed QoS to help avoid OOM risks.
+	//
+	// Guaranteed QoS prevents a backend from being first in line to be killed if
+	// the *Node* has memory pressure, but if there is, say
+	// a runaway client backend that causes the *Pod* to exceed its memory
+	// limit, a backend can still be killed by the OOM killer, which is not
+	// great.
+	//
+	// As such, given the choice, the preference is for the Pod to be evicted
+	// and have a failover event, vs. having an individual client backend killed
+	// and causing potential "bad things."
+	//
+	// https://www.postgresql.org/docs/current/kernel-resources.html#LINUX-MEMORY-OVERCOMMIT
+	// https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#how-pods-with-resource-limits-are-run
+	Resources          v1.ResourceList          `json:"resources"`
 	PrimaryHost        string                   `json:"primaryhost"`
 	User               string                   `json:"user"`
 	Database           string                   `json:"database"`

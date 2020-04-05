@@ -36,13 +36,12 @@ type Pgreplica struct {
 // PgreplicaSpec ...
 // swagger:ignore
 type PgreplicaSpec struct {
-	Namespace          string               `json:"namespace"`
-	Name               string               `json:"name"`
-	ClusterName        string               `json:"clustername"`
-	ReplicaStorage     PgStorageSpec        `json:"replicastorage"`
-	ContainerResources PgContainerResources `json:"containerresources"`
-	Status             string               `json:"status"`
-	UserLabels         map[string]string    `json:"userlabels"`
+	Namespace      string            `json:"namespace"`
+	Name           string            `json:"name"`
+	ClusterName    string            `json:"clustername"`
+	ReplicaStorage PgStorageSpec     `json:"replicastorage"`
+	Status         string            `json:"status"`
+	UserLabels     map[string]string `json:"userlabels"`
 }
 
 // PgreplicaList ...

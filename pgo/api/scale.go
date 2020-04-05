@@ -25,7 +25,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func ScaleCluster(httpclient *http.Client, arg string, ReplicaCount int, ContainerResources,
+func ScaleCluster(httpclient *http.Client, arg string, ReplicaCount int,
 	StorageConfig, NodeLabel, CCPImageTag, ServiceType string,
 	SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ClusterScaleResponse, error) {
 
@@ -42,7 +42,6 @@ func ScaleCluster(httpclient *http.Client, arg string, ReplicaCount int, Contain
 
 	q := req.URL.Query()
 	q.Add("replica-count", strconv.Itoa(ReplicaCount))
-	q.Add("resources-config", ContainerResources)
 	q.Add("storage-config", StorageConfig)
 	q.Add("node-label", NodeLabel)
 	q.Add("version", msgs.PGO_VERSION)

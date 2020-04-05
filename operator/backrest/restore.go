@@ -387,7 +387,7 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		NodeSelector:      affinityStr,
 		PodAntiAffinity: operator.GetPodAntiAffinity(cluster,
 			crv1.PodAntiAffinityDeploymentDefault, cluster.Spec.PodAntiAffinity.Default),
-		ContainerResources: operator.GetContainerResourcesJSON(&cluster.Spec.ContainerResources),
+		ContainerResources: operator.GetResourcesJSON(cluster.Spec.Resources),
 		ConfVolume:         operator.GetConfVolume(clientset, cluster, namespace),
 		CollectAddon:       operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
 		CollectVolume:      operator.GetCollectVolume(clientset, cluster, namespace),

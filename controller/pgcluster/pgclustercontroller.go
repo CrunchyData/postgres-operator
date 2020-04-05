@@ -24,11 +24,12 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/util"
-
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
+	"github.com/crunchydata/postgres-operator/util"
+
 	log "github.com/sirupsen/logrus"
+	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -177,8 +178,8 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	}
 
 	// see if any of the resource values have changed, and if so, update them
-	if oldcluster.Spec.ContainerResources.RequestsCPU != newcluster.Spec.ContainerResources.RequestsCPU ||
-		oldcluster.Spec.ContainerResources.RequestsMemory != newcluster.Spec.ContainerResources.RequestsMemory {
+	if oldcluster.Spec.Resources[v1.ResourceCPU] != newcluster.Spec.Resources[v1.ResourceCPU] ||
+		oldcluster.Spec.Resources[v1.ResourceMemory] != newcluster.Spec.Resources[v1.ResourceMemory] {
 		if err := clusteroperator.UpdateResources(c.PgclusterClientset, c.PgclusterConfig, newcluster); err != nil {
 			log.Error(err)
 			return
