@@ -91,7 +91,6 @@ type PgclusterSpec struct {
 	PrimarySecretName  string                   `json:"primarysecretname"`
 	CollectSecretName  string                   `json:"collectSecretName"`
 	Status             string                   `json:"status"`
-	PswLastUpdate      string                   `json:"pswlastupdate"`
 	CustomConfig       string                   `json:"customconfig"`
 	UserLabels         map[string]string        `json:"userlabels"`
 	PodAntiAffinity    PodAntiAffinitySpec      `json:"podPodAntiAffinity"`

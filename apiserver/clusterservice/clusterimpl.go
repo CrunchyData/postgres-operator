@@ -777,9 +777,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 
 	validateConfigPolicies(clusterName, request.Policies, ns)
 
-	t := time.Now()
-	newInstance.Spec.PswLastUpdate = t.Format(time.RFC3339)
-
 	// create the user secrets
 	// first, the superuser
 	if secretName, password, err := createUserSecret(request, newInstance, crv1.RootSecretSuffix,

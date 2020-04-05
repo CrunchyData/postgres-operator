@@ -804,7 +804,6 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 			PrimaryHost:       sourcePgcluster.Spec.PrimaryHost,
 			PrimaryStorage:    sourcePgcluster.Spec.PrimaryStorage,
 			PrimarySecretName: fmt.Sprintf("%s%s", targetClusterName, crv1.PrimarySecretSuffix),
-			PswLastUpdate:     sourcePgcluster.Spec.PswLastUpdate,
 			// Replicas is set to "0" because we want to ensure that no replicas are
 			// provisioned with the clone
 			Replicas:       "0",
