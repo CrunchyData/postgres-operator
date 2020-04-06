@@ -13,9 +13,11 @@ RUN yum -y install epel-release \
     --setopt=skip_missing_names_on_install=False \
     kubectl \
     ansible \ 
-    which
+    which \
+    gettext
 
 USER daemon
 
 COPY installers/ansible /ansible
-COPY installers/image/bin/pgo-install.sh pgo-install.sh
+COPY installers/image/bin/pgo-install.sh /pgo-install.sh
+COPY installers/image/inventory_template /inventory_template
