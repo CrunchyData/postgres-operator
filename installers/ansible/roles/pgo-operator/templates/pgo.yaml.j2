@@ -49,16 +49,6 @@ Storage:
 {% endif %}
 {% endif %}
 {% endfor %}
-ContainerResources:
-{% for i in range(1, max_resource_configs) %}
-{% if lookup('vars', 'resource' + i|string + '_name', default='')  != '' %}
-  {{ lookup('vars', 'resource' + i|string + '_name', default='') }}:
-    RequestsMemory: {{ lookup('vars', 'resource' + i|string + '_requests_memory') }}
-    RequestsCPU: {{ lookup('vars', 'resource' + i|string + '_requests_cpu') }}
-    LimitsMemory: {{ lookup('vars', 'resource' + i|string + '_limits_memory') }}
-    LimitsCPU: {{ lookup('vars', 'resource' + i|string + '_limits_cpu') }}
-{% endif %}
-{% endfor %}
 Pgo:
   Audit:  false
   LoadTemplate:  /pgo-config/pgo.load-template.json

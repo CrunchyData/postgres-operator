@@ -33,26 +33,25 @@ import (
 )
 
 type pgDumpJobTemplateFields struct {
-	JobName            string
-	TaskName           string
-	Name               string // ??
-	ClusterName        string
-	Command            string // ??
-	CommandOpts        string
-	PvcName            string
-	PodName            string // ??
-	CCPImagePrefix     string
-	CCPImageTag        string
-	SecurityContext    string
-	PgDumpHost         string
-	PgDumpUserSecret   string
-	PgDumpDB           string
-	PgDumpPort         string
-	PgDumpOpts         string
-	PgDumpFilename     string
-	PgDumpAll          string
-	PgDumpPVC          string
-	ContainerResources string
+	JobName          string
+	TaskName         string
+	Name             string // ??
+	ClusterName      string
+	Command          string // ??
+	CommandOpts      string
+	PvcName          string
+	PodName          string // ??
+	CCPImagePrefix   string
+	CCPImageTag      string
+	SecurityContext  string
+	PgDumpHost       string
+	PgDumpUserSecret string
+	PgDumpDB         string
+	PgDumpPort       string
+	PgDumpOpts       string
+	PgDumpFilename   string
+	PgDumpAll        string
+	PgDumpPVC        string
 }
 
 // Dump ...
@@ -87,23 +86,22 @@ func Dump(namespace string, clientset *kubernetes.Clientset, client *rest.RESTCl
 	jobName := taskName + "-" + util.RandStringBytesRmndr(4)
 
 	jobFields := pgDumpJobTemplateFields{
-		JobName:            jobName,
-		TaskName:           taskName,
-		ClusterName:        task.Spec.Parameters[config.LABEL_PG_CLUSTER],
-		PodName:            task.Spec.Parameters[config.LABEL_POD_NAME],
-		SecurityContext:    util.GetPodSecurityContext(task.Spec.StorageSpec.GetSupplementalGroups()),
-		Command:            cmd, //??
-		CommandOpts:        task.Spec.Parameters[config.LABEL_PGDUMP_OPTS],
-		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:        operator.Pgo.Cluster.CCPImageTag,
-		PgDumpHost:         task.Spec.Parameters[config.LABEL_PGDUMP_HOST],
-		PgDumpUserSecret:   task.Spec.Parameters[config.LABEL_PGDUMP_USER],
-		PgDumpDB:           task.Spec.Parameters[config.LABEL_PGDUMP_DB],
-		PgDumpPort:         task.Spec.Parameters[config.LABEL_PGDUMP_PORT],
-		PgDumpOpts:         task.Spec.Parameters[config.LABEL_PGDUMP_OPTS],
-		PgDumpAll:          task.Spec.Parameters[config.LABEL_PGDUMP_ALL],
-		PgDumpPVC:          pvcName,
-		ContainerResources: "",
+		JobName:          jobName,
+		TaskName:         taskName,
+		ClusterName:      task.Spec.Parameters[config.LABEL_PG_CLUSTER],
+		PodName:          task.Spec.Parameters[config.LABEL_POD_NAME],
+		SecurityContext:  util.GetPodSecurityContext(task.Spec.StorageSpec.GetSupplementalGroups()),
+		Command:          cmd, //??
+		CommandOpts:      task.Spec.Parameters[config.LABEL_PGDUMP_OPTS],
+		CCPImagePrefix:   operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImageTag:      operator.Pgo.Cluster.CCPImageTag,
+		PgDumpHost:       task.Spec.Parameters[config.LABEL_PGDUMP_HOST],
+		PgDumpUserSecret: task.Spec.Parameters[config.LABEL_PGDUMP_USER],
+		PgDumpDB:         task.Spec.Parameters[config.LABEL_PGDUMP_DB],
+		PgDumpPort:       task.Spec.Parameters[config.LABEL_PGDUMP_PORT],
+		PgDumpOpts:       task.Spec.Parameters[config.LABEL_PGDUMP_OPTS],
+		PgDumpAll:        task.Spec.Parameters[config.LABEL_PGDUMP_ALL],
+		PgDumpPVC:        pvcName,
 	}
 
 	var doc2 bytes.Buffer

@@ -20,13 +20,13 @@ pgo create cluster [flags]
 ```
       --ccp-image string                      The CCPImage name to use for cluster creation. If specified, overrides the value crunchy-postgres.
   -c, --ccp-image-tag string                  The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.
-      --cpu string                            Set the number of millicores to request for the CPU, e.g. "100m" or "0.1". Overrides the value in "resources-config"
+      --cpu string                            Set the number of millicores to request for the CPU, e.g. "100m" or "0.1".
       --custom-config string                  The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.
   -d, --database string                       If specified, sets the name of the initial database that is created for the user. Defaults to the value set in the PostgreSQL Operator configuration, or if that is not present, the name of the cluster
       --disable-autofail                      Disables autofail capabitilies in the cluster following cluster initialization.
   -h, --help                                  help for cluster
   -l, --labels string                         The labels to apply to this cluster.
-      --memory string                         Set the amount of RAM to request, e.g. 1GiB. Overrides the value in "resources-config"
+      --memory string                         Set the amount of RAM to request, e.g. 1GiB. Overrides the default server value.
       --metrics                               Adds the crunchy-collect container to the database pod.
       --node-label string                     The node label (key=value) to use in placing the primary database. If not set, any node is used.
       --password string                       The password to use for standard user account created during cluster initialization.
@@ -57,7 +57,6 @@ pgo create cluster [flags]
       --pvc-size string                       The size of the PVC capacity for primary and replica PostgreSQL instances. Overrides the value set in the storage class. Must follow the standard Kubernetes format, e.g. "10.1Gi"
       --replica-count int                     The number of replicas to create as part of the cluster.
       --replica-storage-config string         The name of a Storage config in pgo.yaml to use for the cluster replica storage.
-  -r, --resources-config string               The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits.
   -s, --secret-from string                    The cluster name to use when restoring secrets.
       --server-ca-secret string               The name of the secret that contains the certficate authority (CA) to use for enabling the PostgreSQL cluster to accept TLS connections. Must be used with "server-tls-secret"
       --server-tls-secret string              The name of the secret that contains the TLS keypair to use for enabling the PostgreSQL cluster to accept TLS connections. Must be used with "server-ca-secret"

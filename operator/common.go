@@ -43,7 +43,6 @@ var ContainerImageOverrides = map[string]string{}
 
 type containerResourcesTemplateFields struct {
 	RequestsMemory, RequestsCPU string
-	LimitsMemory, LimitsCPU     string
 }
 
 func Initialize(clientset *kubernetes.Clientset) {

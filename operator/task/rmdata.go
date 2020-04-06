@@ -36,19 +36,18 @@ import (
 )
 
 type rmdatajobTemplateFields struct {
-	JobName            string
-	Name               string
-	ClusterName        string
-	ClusterPGHAScope   string
-	ReplicaName        string
-	PGOImagePrefix     string
-	PGOImageTag        string
-	SecurityContext    string
-	ContainerResources string
-	RemoveData         string
-	RemoveBackup       string
-	IsBackup           string
-	IsReplica          string
+	JobName          string
+	Name             string
+	ClusterName      string
+	ClusterPGHAScope string
+	ReplicaName      string
+	PGOImagePrefix   string
+	PGOImageTag      string
+	SecurityContext  string
+	RemoveData       string
+	RemoveBackup     string
+	IsBackup         string
+	IsReplica        string
 }
 
 // RemoveData ...
@@ -74,19 +73,18 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, restclient *r
 	jobName := clusterName + "-rmdata-" + util.RandStringBytesRmndr(4)
 
 	jobFields := rmdatajobTemplateFields{
-		JobName:            jobName,
-		Name:               task.Spec.Name,
-		ClusterName:        clusterName,
-		ClusterPGHAScope:   clusterPGHAScope,
-		ReplicaName:        replicaName,
-		RemoveData:         removeData,
-		RemoveBackup:       removeBackup,
-		IsReplica:          isReplica,
-		IsBackup:           isBackup,
-		PGOImagePrefix:     operator.Pgo.Pgo.PGOImagePrefix,
-		PGOImageTag:        operator.Pgo.Pgo.PGOImageTag,
-		SecurityContext:    util.GetPodSecurityContext(task.Spec.StorageSpec.GetSupplementalGroups()),
-		ContainerResources: "",
+		JobName:          jobName,
+		Name:             task.Spec.Name,
+		ClusterName:      clusterName,
+		ClusterPGHAScope: clusterPGHAScope,
+		ReplicaName:      replicaName,
+		RemoveData:       removeData,
+		RemoveBackup:     removeBackup,
+		IsReplica:        isReplica,
+		IsBackup:         isBackup,
+		PGOImagePrefix:   operator.Pgo.Pgo.PGOImagePrefix,
+		PGOImageTag:      operator.Pgo.Pgo.PGOImageTag,
+		SecurityContext:  util.GetPodSecurityContext(task.Spec.StorageSpec.GetSupplementalGroups()),
 	}
 	log.Debugf("creating rmdata job %s for cluster %s ", jobName, task.Spec.Name)
 

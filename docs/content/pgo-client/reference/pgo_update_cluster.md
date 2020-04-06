@@ -22,12 +22,12 @@ pgo update cluster [flags]
 
 ```
       --all                        all resources.
-      --cpu string                 Set the number of millicores to request for the CPU, e.g. "100m" or "0.1". Overrides the value in "resources-config"
+      --cpu string                 Set the number of millicores to request for the CPU, e.g. "100m" or "0.1".
       --disable-autofail           Disables autofail capabitilies in the cluster.
       --disable-standby            Disables standby mode if enabled in the cluster(s) specified.
       --enable-autofail            Enables autofail capabitilies in the cluster.
   -h, --help                       help for cluster
-      --memory string              Set the amount of RAM to request, e.g. 1GiB. Overrides the value in "resources-config"
+      --memory string              Set the amount of RAM to request, e.g. 1GiB.
       --no-prompt                  No command line confirmation.
       --pgbackrest-cpu string      Set the number of millicores to request for CPU for the pgBackRest repository.
       --pgbackrest-memory string   Set the amount of Memory to request for the pgBackRest repository.

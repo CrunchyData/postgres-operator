@@ -69,7 +69,6 @@ type CreateClusterRequest struct {
 	CustomConfig         string
 	StorageConfig        string
 	ReplicaStorageConfig string
-	ContainerResources   string
 	// Version of API client
 	// required: true
 	ClientVersion             string

@@ -32,9 +32,6 @@
                         "name": "pgdata",
                         "readOnly": true
                     }],
-
-                    {{.ContainerResources }}
-
                     "env": [{
                         "name": "TABLE_TO_LOAD",
                         "value": "{{.TableToLoad}}"

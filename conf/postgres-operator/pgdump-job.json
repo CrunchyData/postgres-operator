@@ -42,7 +42,6 @@
                                 "readOnly": false
                             }
                         ],
-                        {{.ContainerResources}}
                         "env": [
                             {
                                 "name": "PGDUMP_HOST",

@@ -505,25 +505,6 @@ func (c *PgoConfig) GetStorageSpec(name string) (crv1.PgStorageSpec, error) {
 
 }
 
-func (c *PgoConfig) GetContainerResource(name string) (crv1.PgContainerResources, error) {
-	var err error
-	r := crv1.PgContainerResources{}
-
-	s, ok := c.ContainerResources[name]
-	if !ok {
-		err = errors.New("invalid Container Resources name " + name)
-		log.Error(err)
-		return r, err
-	}
-	r.RequestsMemory = s.RequestsMemory
-	r.RequestsCPU = s.RequestsCPU
-	r.LimitsMemory = s.LimitsMemory
-	r.LimitsCPU = s.LimitsCPU
-
-	return r, err
-
-}
-
 func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string) error {
 
 	cMap, rootPath := getRootPath(clientset, namespace)

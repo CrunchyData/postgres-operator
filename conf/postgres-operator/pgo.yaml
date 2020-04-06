@@ -74,17 +74,6 @@ Storage:
     Size:  1G
     StorageType:  dynamic
     StorageClass:  rook-ceph-block
-ContainerResources:
-  small:
-    RequestsMemory:  512Mi
-    RequestsCPU:  0.1
-    LimitsMemory:  512Mi
-    LimitsCPU:  0.1
-  large:
-    RequestsMemory:  2Gi
-    RequestsCPU:  2.0
-    LimitsMemory:  2Gi
-    LimitsCPU:  4.0
 Pgo:
   Audit:  false
   PGOImagePrefix:  crunchydata

@@ -94,11 +94,10 @@ type collectTemplateFields struct {
 
 //consolidate
 type badgerTemplateFields struct {
-	CCPImageTag        string
-	CCPImagePrefix     string
-	BadgerTarget       string
-	PGBadgerPort       string
-	ContainerResources string
+	CCPImageTag    string
+	CCPImagePrefix string
+	BadgerTarget   string
+	PGBadgerPort   string
 }
 
 type PgbackrestEnvVarsTemplateFields struct {
@@ -255,7 +254,6 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, cluster *
 		badgerTemplateFields.BadgerTarget = pgbadger_target
 		badgerTemplateFields.PGBadgerPort = spec.PGBadgerPort
 		badgerTemplateFields.CCPImagePrefix = Pgo.Cluster.CCPImagePrefix
-		badgerTemplateFields.ContainerResources = ""
 
 		var badgerDoc bytes.Buffer
 		err := config.BadgerTemplate.Execute(&badgerDoc, badgerTemplateFields)

@@ -116,13 +116,13 @@ For example, let's look at a specific PostgreSQL cluster where we want to have
 one primary instance and one replica instance. We want to ensure that our
 primary instance is using our fastest disks and has more compute resources
 available to it. We are fine with our replica having slower disks and less
-compute resources. We can create this envirionment with a command similar to
+compute resources. We can create this environment with a command similar to
 below:
 
 ```shell
 pgo create cluster mixed --replica-count=1 \
-  --storage-config=fast --resources-config=large \
-  --replica-storage-config=standard --resources-config=medium
+  --storage-config=fast --memory=32Gi --cpu=8.0 \
+  --replica-storage-config=standard
 ```
 
 Now let's say we want to have one replica available to run read-only queries
@@ -131,7 +131,7 @@ instance. We can run the following command:
 
 ```shell
 pgo scale mixed --replica-count=1 \
-  --storage-config=fast --resources-config=large
+  --storage-config=fast
 ```
 
 Kubernetes Deployments allow us to create heterogeneous clusters with ease and

@@ -268,7 +268,6 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.CustomConfig = CustomConfig
 	r.StorageConfig = StorageConfig
 	r.ReplicaStorageConfig = ReplicaStorageConfig
-	r.ContainerResources = ContainerResources
 	r.ClientVersion = msgs.PGO_VERSION
 	r.PodAntiAffinity = PodAntiAffinity
 	r.PodAntiAffinityPgBackRest = PodAntiAffinityPgBackRest
