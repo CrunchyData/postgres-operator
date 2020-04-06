@@ -292,6 +292,8 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	// set the container resource requests
 	r.CPURequest = CPURequest
 	r.MemoryRequest = MemoryRequest
+	r.BackrestCPURequest = BackrestCPURequest
+	r.BackrestMemoryRequest = BackrestMemoryRequest
 	r.PgBouncerCPURequest = PgBouncerCPURequest
 	r.PgBouncerMemoryRequest = PgBouncerMemoryRequest
 	// determine if the user wants to create tablespaces as part of this request,
@@ -311,6 +313,16 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	}
 
 	if err := util.ValidateQuantity(r.MemoryRequest, "memory"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.BackrestCPURequest, "pgbackrest-cpu"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.BackrestMemoryRequest, "pgbackrest-memory"); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -432,6 +444,8 @@ func updateCluster(args []string, ns string) {
 	r.ClientVersion = msgs.PGO_VERSION
 	r.Namespace = ns
 	r.AllFlag = AllFlag
+	r.BackrestCPURequest = BackrestCPURequest
+	r.BackrestMemoryRequest = BackrestMemoryRequest
 	r.Clustername = args
 	r.Startup = Startup
 	r.Shutdown = Shutdown
@@ -466,6 +480,16 @@ func updateCluster(args []string, ns string) {
 	}
 
 	if err := util.ValidateQuantity(r.MemoryRequest, "memory"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.BackrestCPURequest, "pgbackrest-cpu"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.BackrestMemoryRequest, "pgbackrest-memory"); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

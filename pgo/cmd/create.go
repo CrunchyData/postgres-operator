@@ -65,6 +65,8 @@ var BackrestPVCSize string
 var (
 	// the resource requests for PostgreSQL instances
 	CPURequest, MemoryRequest string
+	// the resource requests for the pgBackRest repository
+	BackrestCPURequest, BackrestMemoryRequest string
 	// the resource requests for pgBouncer instances
 	PgBouncerCPURequest, PgBouncerMemoryRequest string
 )
@@ -280,6 +282,10 @@ func init() {
 	createClusterCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 0, "If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.")
 	createClusterCmd.Flags().StringVarP(&PasswordSuperuser, "password-superuser", "", "", "The password to use for the PostgreSQL superuser.")
 	createClusterCmd.Flags().StringVarP(&PasswordReplication, "password-replication", "", "", "The password to use for the PostgreSQL replication user.")
+	createClusterCmd.Flags().StringVar(&BackrestCPURequest, "pgbackrest-cpu", "", "Set the number of millicores to request for CPU "+
+		"for the pgBackRest repository. Defaults to being unset.")
+	createClusterCmd.Flags().StringVar(&BackrestMemoryRequest, "pgbackrest-memory", "", "Set the amount of Memory to request for "+
+		"the pgBackRest repository. Defaults to server value (48Mi).")
 	createClusterCmd.Flags().StringVarP(&BackrestPVCSize, "pgbackrest-pvc-size", "", "",
 		`The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "local" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
 	createClusterCmd.Flags().StringVarP(&BackrestRepoPath, "pgbackrest-repo-path", "", "",

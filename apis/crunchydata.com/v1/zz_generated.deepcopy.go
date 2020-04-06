@@ -131,6 +131,13 @@ func (in *PgclusterSpec) DeepCopyInto(out *PgclusterSpec) {
 			(*out)[key] = val.DeepCopy()
 		}
 	}
+	if in.BackrestResources != nil {
+		in, out := &in.BackrestResources, &out.BackrestResources
+		*out = make(corev1.ResourceList, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val.DeepCopy()
+		}
+	}
 	if in.PgBouncerResources != nil {
 		in, out := &in.PgBouncerResources, &out.PgBouncerResources
 		*out = make(corev1.ResourceList, len(*in))

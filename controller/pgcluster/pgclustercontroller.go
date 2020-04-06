@@ -24,6 +24,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/util"
@@ -181,6 +182,16 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	if oldcluster.Spec.Resources[v1.ResourceCPU] != newcluster.Spec.Resources[v1.ResourceCPU] ||
 		oldcluster.Spec.Resources[v1.ResourceMemory] != newcluster.Spec.Resources[v1.ResourceMemory] {
 		if err := clusteroperator.UpdateResources(c.PgclusterClientset, c.PgclusterConfig, newcluster); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
+	// see if any of the pgBackRest repository resource values have changed, and
+	// if so, update them
+	if oldcluster.Spec.BackrestResources[v1.ResourceCPU] != newcluster.Spec.BackrestResources[v1.ResourceCPU] ||
+		oldcluster.Spec.BackrestResources[v1.ResourceMemory] != newcluster.Spec.BackrestResources[v1.ResourceMemory] {
+		if err := backrestoperator.UpdateResources(c.PgclusterClientset, c.PgclusterConfig, newcluster); err != nil {
 			log.Error(err)
 			return
 		}

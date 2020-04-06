@@ -347,7 +347,7 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 	}
 
 	// ok, let's wait for the deployment to come up...per above note.
-	backrestRepoDeploymentName := fmt.Sprintf(backrest.BackrestRepoServiceName, targetClusterName)
+	backrestRepoDeploymentName := fmt.Sprintf(util.BackrestRepoDeploymentName, targetClusterName)
 	if err := waitForDeploymentReady(clientset, namespace, backrestRepoDeploymentName, 30, 3); err != nil {
 		log.Error(err)
 		errorMessage := fmt.Sprintf("Could not start pgbackrest repo: %s", err.Error())
@@ -370,7 +370,7 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		PgbackrestStanza:    pgBackRestStanza,
 		PgbackrestDBPath:    fmt.Sprintf(targetClusterPGDATAPath, targetClusterName),
 		PgbackrestRepo1Path: util.GetPGBackRestRepoPath(targetPgcluster),
-		PgbackrestRepo1Host: fmt.Sprintf(backrest.BackrestRepoServiceName, targetClusterName),
+		PgbackrestRepo1Host: fmt.Sprintf(util.BackrestRepoServiceName, targetClusterName),
 		PgbackrestRepoType:  operator.GetRepoType(task.Spec.Parameters["backrestStorageType"]),
 		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(sourcePgcluster, clientset, namespace),
 	}
@@ -451,7 +451,7 @@ func cloneStep3(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 
 	// first, clean up any existing pgBackRest repo deployment and services, as
 	// these will be recreated
-	backrestRepoDeploymentName := fmt.Sprintf(backrest.BackrestRepoServiceName, targetClusterName)
+	backrestRepoDeploymentName := fmt.Sprintf(util.BackrestRepoDeploymentName, targetClusterName)
 	// ignore errors here...we can let the errors occur later on, e.g. if there is
 	// a failure to delete
 	_ = kubeapi.DeleteDeployment(clientset, backrestRepoDeploymentName, namespace)
@@ -552,7 +552,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 							Env: []v1.EnvVar{
 								v1.EnvVar{
 									Name:  "PGBACKREST_REPO1_HOST",
-									Value: fmt.Sprintf(backrest.BackrestRepoServiceName, sourcePgcluster.Spec.ClusterName),
+									Value: fmt.Sprintf(util.BackrestRepoServiceName, sourcePgcluster.Spec.ClusterName),
 								},
 								v1.EnvVar{
 									Name:  "PGBACKREST_REPO1_PATH",
@@ -590,7 +590,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 							Name: config.VOLUME_PGBACKREST_REPO_NAME,
 							VolumeSource: v1.VolumeSource{
 								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-									ClaimName: fmt.Sprintf(backrest.BackrestRepoPVCName, targetClusterName),
+									ClaimName: fmt.Sprintf(util.BackrestRepoPVCName, targetClusterName),
 								},
 							},
 						},
@@ -703,7 +703,7 @@ func createPVCs(clientset *kubernetes.Clientset, client *rest.RESTClient,
 		ClusterName: targetClusterName,
 		Namespace:   namespace,
 		// the PVCName for pgBackRest is derived from the target cluster name
-		PVCName:    fmt.Sprintf(backrest.BackrestRepoPVCName, targetClusterName),
+		PVCName:    fmt.Sprintf(util.BackrestRepoPVCName, targetClusterName),
 		PVCSize:    task.Spec.Parameters[util.CloneParameterBackrestPVCSize],
 		RESTClient: client,
 		Storage:    sourcePgcluster.Spec.BackrestStorage,
@@ -783,6 +783,7 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 			BackrestS3Bucket:   sourcePgcluster.Spec.BackrestS3Bucket,
 			BackrestS3Endpoint: sourcePgcluster.Spec.BackrestS3Endpoint,
 			BackrestS3Region:   sourcePgcluster.Spec.BackrestS3Region,
+			BackrestResources:  sourcePgcluster.Spec.BackrestResources,
 			ClusterName:        targetClusterName,
 			CCPImage:           sourcePgcluster.Spec.CCPImage,
 			CCPImageTag:        sourcePgcluster.Spec.CCPImageTag,

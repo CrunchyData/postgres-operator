@@ -25,7 +25,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/operator"
-	"github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
@@ -163,7 +162,7 @@ func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) erro
 		storageSpec := crv1.PgStorageSpec{}
 		if currPVC.Name == cluster.Labels[config.ANNOTATION_PRIMARY_DEPLOYMENT] {
 			storageSpec = cluster.Spec.PrimaryStorage
-		} else if currPVC.Name == fmt.Sprintf(backrest.BackrestRepoPVCName, clusterName) {
+		} else if currPVC.Name == fmt.Sprintf(util.BackrestRepoPVCName, clusterName) {
 			storageSpec = cluster.Spec.BackrestStorage
 		} else {
 			storageSpec = cluster.Spec.ReplicaStorage

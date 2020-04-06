@@ -33,6 +33,8 @@ pgo create cluster [flags]
       --password-length int                   If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.
       --password-replication string           The password to use for the PostgreSQL replication user.
       --password-superuser string             The password to use for the PostgreSQL superuser.
+      --pgbackrest-cpu string                 Set the number of millicores to request for CPU for the pgBackRest repository. Defaults to being unset.
+      --pgbackrest-memory string              Set the amount of Memory to request for the pgBackRest repository. Defaults to server value (48Mi).
       --pgbackrest-pvc-size string            The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "local" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"
       --pgbackrest-repo-path string           The pgBackRest repository path that should be utilized instead of the default. Required for standby
                                               clusters to define the location of an existing pgBackRest repository.

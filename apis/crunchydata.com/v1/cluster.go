@@ -81,6 +81,9 @@ type PgclusterSpec struct {
 	// https://www.postgresql.org/docs/current/kernel-resources.html#LINUX-MEMORY-OVERCOMMIT
 	// https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#how-pods-with-resource-limits-are-run
 	Resources v1.ResourceList `json:"resources"`
+	// BackrestResources, if specified, contains the container request resources
+	// for the pgBackRest Deployment for this PostgreSQL cluster
+	BackrestResources v1.ResourceList `json:"backrestResources"`
 	// PgBouncerResources, if specified, contains the container request resources
 	// for any pgBouncer Deployments that are part of a PostgreSQL cluster
 	PgBouncerResources v1.ResourceList          `json:"pgBouncerResources"`

@@ -70,6 +70,10 @@ func init() {
 	UpdateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	UpdateClusterCmd.Flags().BoolVarP(&DisableStandby, "disable-standby", "", false,
 		"Disables standby mode if enabled in the cluster(s) specified.")
+	UpdateClusterCmd.Flags().StringVar(&BackrestCPURequest, "pgbackrest-cpu", "", "Set the number of millicores to request for CPU "+
+		"for the pgBackRest repository.")
+	UpdateClusterCmd.Flags().StringVar(&BackrestMemoryRequest, "pgbackrest-memory", "", "Set the amount of Memory to request for "+
+		"the pgBackRest repository.")
 	UpdateClusterCmd.Flags().BoolVarP(&EnableStandby, "promote-standby", "", false,
 		"Enables standby mode in the cluster(s) specified.")
 	UpdateClusterCmd.Flags().BoolVar(&Startup, "startup", false, "Restart the database cluster if it "+
@@ -213,6 +217,10 @@ var UpdateClusterCmd = &cobra.Command{
 
 		if MemoryRequest != "" {
 			fmt.Println("Updating memory resources can cause downtime.")
+		}
+
+		if BackrestCPURequest != "" || BackrestMemoryRequest != "" {
+			fmt.Println("Updating pgBackRest resources can cause temporary unavailability of backups and WAL archives.")
 		}
 
 		if !util.AskForConfirmation(NoPrompt, "") {

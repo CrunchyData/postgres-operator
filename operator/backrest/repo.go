@@ -27,14 +27,13 @@ import (
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
-	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
-)
 
-const BackrestRepoServiceName = "%s-backrest-shared-repo"
-const BackrestRepoPVCName = "%s-pgbr-repo"
+	log "github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+)
 
 type RepoDeploymentTemplateFields struct {
 	SecurityContext           string
@@ -68,8 +67,8 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 
 	var b bytes.Buffer
 
-	repoName := fmt.Sprintf(BackrestRepoPVCName, cluster.Name)
-	serviceName := fmt.Sprintf(BackrestRepoServiceName, cluster.Name)
+	repoName := fmt.Sprintf(util.BackrestRepoPVCName, cluster.Name)
+	serviceName := fmt.Sprintf(util.BackrestRepoServiceName, cluster.Name)
 
 	//create backrest repo service
 	serviceFields := RepoServiceTemplateFields{
@@ -103,7 +102,7 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 	fields := RepoDeploymentTemplateFields{
 		PGOImagePrefix:        operator.Pgo.Pgo.PGOImagePrefix,
 		PGOImageTag:           operator.Pgo.Pgo.PGOImageTag,
-		ContainerResources:    "",
+		ContainerResources:    operator.GetResourcesJSON(cluster.Spec.BackrestResources),
 		BackrestRepoClaimName: repoName,
 		SshdSecretsName:       "pgo-backrest-repo-config",
 		PGbackrestDBHost:      cluster.Name,
@@ -135,7 +134,7 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 		config.PgoBackrestRepoTemplate.Execute(os.Stdout, fields)
 	}
 
-	deployment := v1.Deployment{}
+	deployment := appsv1.Deployment{}
 	err = json.Unmarshal(b.Bytes(), &deployment)
 	if err != nil {
 		log.Error("error unmarshalling backrest repo json into Deployment " + err.Error())
@@ -150,6 +149,52 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 
 	return err
 
+}
+
+// UpdateResources updates the pgBackRest repository Deployment to reflect any
+// resource updates
+func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, cluster *crv1.Pgcluster) error {
+	// get a list of all of the instance deployments for the cluster
+	deployment, err := operator.GetBackrestDeployment(clientset, cluster)
+
+	if err != nil {
+		return err
+	}
+
+	// iterate through each PostgreSQL instance deployment and update the
+	// resource values for the pgBackRest repository container. This is the first
+	// container
+	requestResourceList := v1.ResourceList{}
+
+	// if there is a request resource list available already, use that one
+	// NOTE: this works as the "database" container is always first
+	if deployment.Spec.Template.Spec.Containers[0].Resources.Requests != nil {
+		requestResourceList = deployment.Spec.Template.Spec.Containers[0].Resources.Requests
+	}
+
+	// handle the CPU update
+	if request, ok := cluster.Spec.BackrestResources[v1.ResourceCPU]; ok {
+		requestResourceList[v1.ResourceCPU] = request
+	} else {
+		delete(requestResourceList, v1.ResourceCPU)
+	}
+
+	// handle the memory update
+	if request, ok := cluster.Spec.BackrestResources[v1.ResourceMemory]; ok {
+		requestResourceList[v1.ResourceMemory] = request
+	} else {
+		delete(requestResourceList, v1.ResourceMemory)
+	}
+
+	// update the requests resourcelist
+	deployment.Spec.Template.Spec.Containers[0].Resources.Requests = requestResourceList
+
+	// update the deployment with the new values
+	if err := kubeapi.UpdateDeployment(clientset, deployment); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func createService(clientset *kubernetes.Clientset, fields *RepoServiceTemplateFields, namespace string) error {
@@ -170,7 +215,7 @@ func createService(clientset *kubernetes.Clientset, fields *RepoServiceTemplateF
 			config.PgoBackrestRepoServiceTemplate.Execute(os.Stdout, fields)
 		}
 
-		s := corev1.Service{}
+		s := v1.Service{}
 		err = json.Unmarshal(b.Bytes(), &s)
 		if err != nil {
 			log.Error("error unmarshalling repo service json into repo Service " + err.Error())

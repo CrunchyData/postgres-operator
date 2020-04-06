@@ -571,6 +571,20 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		return resp
 	}
 
+	// similarly, if any of the pgBackRest repo CPU / Memory values have been set,
+	// evaluate those as well
+	if err := apiserver.ValidateQuantity(request.BackrestCPURequest); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest, request.BackrestCPURequest, err.Error())
+		return resp
+	}
+
+	if err := apiserver.ValidateQuantity(request.BackrestMemoryRequest); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest, request.BackrestMemoryRequest, err.Error())
+		return resp
+	}
+
 	// similarly, if any of the pgBouncer CPU / Memory values have been set,
 	// evaluate those as well
 	if err := apiserver.ValidateQuantity(request.PgBouncerCPURequest); err != nil {
@@ -990,6 +1004,7 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabelsMap map[string]string, ns string) *crv1.Pgcluster {
 
 	spec := crv1.PgclusterSpec{
+		BackrestResources:  v1.ResourceList{},
 		PgBouncerResources: v1.ResourceList{},
 		Resources:          v1.ResourceList{},
 	}
@@ -1010,6 +1025,20 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		// as this was already validated, we can ignore the error
 		quantity, _ := resource.ParseQuantity(request.MemoryRequest)
 		spec.Resources[v1.ResourceMemory] = quantity
+	}
+
+	// similarly, if there are any overriding pgBackRest repository container
+	// resource request values, set them here
+	if request.BackrestCPURequest != "" {
+		// as this was already validated, we can ignore the error
+		quantity, _ := resource.ParseQuantity(request.BackrestCPURequest)
+		spec.BackrestResources[v1.ResourceCPU] = quantity
+	}
+
+	if request.BackrestMemoryRequest != "" {
+		// as this was already validated, we can ignore the error
+		quantity, _ := resource.ParseQuantity(request.BackrestMemoryRequest)
+		spec.BackrestResources[v1.ResourceMemory] = quantity
 	}
 
 	// similarly, if there are any overriding pgBouncer container resource request
@@ -1503,6 +1532,20 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		return response
 	}
 
+	// similarly, if any of the pgBackRest repo CPU / Memory values have been set,
+	// evaluate those as well
+	if err := apiserver.ValidateQuantity(request.BackrestCPURequest); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest, request.BackrestCPURequest, err.Error())
+		return response
+	}
+
+	if err := apiserver.ValidateQuantity(request.BackrestMemoryRequest); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest, request.BackrestMemoryRequest, err.Error())
+		return response
+	}
+
 	// validate the storage type for each specified tablespace actually exists.
 	// if a PVCSize is passed in, also validate that it follows the Kubernetes
 	// format
@@ -1606,6 +1649,23 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		if request.MemoryRequest != "" {
 			quantity, _ := resource.ParseQuantity(request.MemoryRequest)
 			cluster.Spec.Resources[v1.ResourceMemory] = quantity
+		}
+
+		// ensure there is a value for BackrestResources
+		if cluster.Spec.BackrestResources == nil {
+			cluster.Spec.BackrestResources = v1.ResourceList{}
+		}
+
+		// if the pgBackRest repository CPU or memory values have been modified,
+		// update the values in the cluster CRD
+		if request.BackrestCPURequest != "" {
+			quantity, _ := resource.ParseQuantity(request.BackrestCPURequest)
+			cluster.Spec.BackrestResources[v1.ResourceCPU] = quantity
+		}
+
+		if request.BackrestMemoryRequest != "" {
+			quantity, _ := resource.ParseQuantity(request.BackrestMemoryRequest)
+			cluster.Spec.BackrestResources[v1.ResourceMemory] = quantity
 		}
 
 		// extract the parameters for the TablespaceMounts and put them in the
