@@ -13,9 +13,11 @@ RUN yum install -y https://download.fedoraproject.org/pub/epel/epel-release-late
     --enablerepo='rhel-7-server-ose-3.11-rpms' \
     atomic-openshift-clients \
     ansible \
-    which
+    which \
+    gettext
 
 USER daemon
 
 COPY installers/ansible /ansible
-COPY installers/image/bin/pgo-install.sh pgo-install.sh
+COPY installers/image/bin/pgo-install.sh /pgo-install.sh
+COPY installers/image/inventory_template /inventory_template

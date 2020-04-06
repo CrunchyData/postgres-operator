@@ -1,0 +1,200 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+    name: pgo-install
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+    name: pgo-installer-sa
+    namespace: pgo-install
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+    name: pgo-installer-crb
+    namespace: pgo-install
+roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: cluster-admin
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: system:serviceaccount:pgo-install:pgo-installer-sa
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+    name: pgo-install
+    namespace: pgo-install
+spec:
+    backoffLimit: 0
+    template:
+        metadata:
+            name: pgo-update
+        spec:
+            serviceAccountName: pgo-installer-sa
+            restartPolicy: Never
+            containers:
+            - name: pgo-installer
+              command: ["/pgo-install.sh", "install"]
+              image: gcr.io/crunchy-dev-test/pgo-installer:centos7-4.3.jmck.7
+              imagePullPolicy: Always
+              env:
+                  - name: HOME
+                    value: "/tmp"
+                  - name: ANSIBLE_CONFIG
+                    value: "/ansible/ansible.cfg"
+                  - name: CRUNCHY_DEBUG
+                    value: "false"
+                  - name: KUBERNETES_IN_CLUSTER
+                    value: "true"
+                  - name: CREATE_RBAC
+                    value: "true"
+                  - name: PGO_INSTALLATION_NAME
+                    value: "devtest"
+                  - name: PGO_ADMIN_USERNAME
+                    value: "admin"
+                  - name: PGO_ADMIN_PASSWORD
+                    value: "password"
+                  - name: PGO_ADMIN_PERMS
+                    value: "*"
+                  - name: PGO_ADMIN_ROLE_NAME
+                    value: "pgoadmin"
+                  - name: PGO_OPERATOR_NAMESPACE
+                    value: "pgo"
+                  - name: NAMESPACE
+                    value: "pgouser1,pgouser2"
+                  - name: CCP_IMAGE_PREFIX
+                    value: "us.gcr.io/container-suite"
+                  - name: CCP_IMAGE_TAG
+                    value: "centos7-12.2-4.3.0-beta.1"
+                  - name: PGO_IMAGE_PREFIX
+                    value: "gcr.io/crunchy-dev-test"
+                  - name: PGO_IMAGE_TAG
+                    value: "centos7-4.3.jmck.7"
+                  - name: PGO_CLIENT_VERSION
+                    value: "v4.2.2"
+                  - name: BACKREST
+                    value: "true"
+                  - name: BADGER
+                    value: "false"
+                  - name: METRICS
+                    value: "false"
+                  - name: ARCHIVE_MODE
+                    value: "true"
+                  - name: ARCHIVE_TIMEOUT
+                    value: "60"
+                  - name: DISABLE_AUTO_FAILOVER
+                    value: "false"
+                  - name: DB_PASSWORD_LENGTH
+                    value: "24"
+                  - name: DB_PORT
+                    value: "5432"
+                  - name: DB_REPLICAS
+                    value: "0"
+                  - name: DB_USER
+                    value: "testuser"
+                  - name: BACKREST_STORAGE
+                    value: "gce"
+                  - name: BACKUP_STORAGE
+                    value: "gce"
+                  - name: PRIMARY_STORAGE
+                    value: "gce"
+                  - name: REPLICA_STORAGE
+                    value: "gce"
+                  - name: PGBADGERPORT
+                    value: "10000"
+                  - name: EXPORTERPORT
+                    value: "9187"
+                  - name: SCHEDULER_TIMEOUT
+                    value: "3600"
+                  - name: STORAGE1_NAME
+                    value: "hostpathstorage"
+                  - name: STORAGE_ACCESS_MODE
+                    value: "ReadWriteMany"
+                  - name: STORAGE1_SIZE
+                    value: "1G"
+                  - name: STORAGE1_TYPE
+                    value: "create"
+                  - name: STORAGE2_NAME
+                    value: "replicastorage"
+                  - name: STORAGE2_ACCESS_MODE
+                    value: "ReadWriteMany"
+                  - name: STORAGE2_SIZE
+                    value: "700M"
+                  - name: STORAGE2_TYPE
+                    value: "create"
+                  - name: STORAGE3_NAME
+                    value: "nfsstorage"
+                  - name: STORAGE3_ACCESS_MODE
+                    value: "ReadWriteMany"
+                  - name: STORAGE3_SIZE
+                    value: "1G"
+                  - name: STORAGE3_TYPE
+                    value: "create"
+                  - name: STORAGE3_SUPPLEMENTAL_GROUPS
+                    value: "65534"
+                  - name: STORAGE4_NAME
+                    value: "nfsstoragered"
+                  - name: STORAGE4_ACCESS_MODE
+                    value: "ReadWriteMany"
+                  - name: STORAGE4_MATCH_LABEL
+                    value: "crunchyzone=red"
+                  - name: STORAGE4_TYPE
+                    value: "create"
+                  - name: STORAGE4_SUPPLEMENTAL_GROUPS
+                    value: "65534"
+                  - name: STORAGE5_NAME
+                    value: "storageos"
+                  - name: STORAGE5_ACCESS_MODE
+                    value: "ReadWriteOnce"
+                  - name: STORAGE5_SIZE
+                    value: "300M"
+                  - name: STORAGE5_TYPE
+                    value: "dynamic"
+                  - name: STORAGE5_CLASS
+                    value: "fast"
+                  - name: STORAGE6_NAME
+                    value: "primarysite"
+                  - name: STORAGE6_ACCESS_MODE
+                    value: "ReadWriteOnce"
+                  - name: STORAGE6_SIZE
+                    value: "4G"
+                  - name: STORAGE6_TYPE
+                    value: "dynamic"
+                  - name: STORAGE6_CLASS
+                    value: "primarysite"
+                  - name: STORAGE7_NAME
+                    value: "alternatesite"
+                  - name: STORAGE7_ACCESS_MODE
+                    value: "ReadWriteOnce"
+                  - name: STORAGE7_SIZE
+                    value: "4G"
+                  - name: STORAGE7_TYPE
+                    value: "dynamic"
+                  - name: STORAGE7_CLASS
+                    value: "alternatesite"
+                  - name: STORAGE8_NAME
+                    value: "gce"
+                  - name: STORAGE8_ACCESS
+                    value: "ReadWriteOnce"
+                  - name: STORAGE8_SIZE
+                    value: "300M"
+                  - name: STORAGE8_TYPE
+                    value: "dynamic"
+                  - name: STORAGE8_CLASS
+                    value: "standard"
+                  - name: STORAGE9_NAME
+                    value: "rook"
+                  - name: STORAGE9_ACCESS_MODE
+                    value: "ReadWriteOnce"
+                  - name: STORAGE9_SIZE
+                    value: "1Gi"
+                  - name: STORAGE9_TYPE
+                    value: "dynamic"
+                  - name: STORAGE9_CLASS
+                    value: "rook-ceph-block"
+
