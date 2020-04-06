@@ -233,6 +233,17 @@ func GetPgbackrestEnvVars(cluster *crv1.Pgcluster, backrestEnabled, depName, por
 
 }
 
+// GetBackrestDeployment finds the pgBackRest repository Deployments for a
+// PostgreQL cluster
+func GetBackrestDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) (*apps_v1.Deployment, error) {
+	// find the pgBackRest repository Deployment, which follows a known pattern
+	deploymentName := fmt.Sprintf(util.BackrestRepoDeploymentName, cluster.Name)
+	// get the deployment, dropping the "bool" variable
+	deployment, _, err := kubeapi.GetDeployment(clientset, deploymentName, cluster.Namespace)
+
+	return deployment, err
+}
+
 func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, cluster *crv1.Pgcluster, pgbadger_target string) string {
 
 	spec := cluster.Spec
@@ -383,7 +394,7 @@ func GetTablespaceNamePVCMap(clusterName string, tablespaceStorageTypeMap map[st
 	return tablespacePVCMap
 }
 
-// getInstanceDeployments finds the Deployments that represent PostgreSQL
+// GetInstanceDeployments finds the Deployments that represent PostgreSQL
 // instances
 func GetInstanceDeployments(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) (*apps_v1.DeploymentList, error) {
 	// first, get a list of all of the available deployments so we can properly

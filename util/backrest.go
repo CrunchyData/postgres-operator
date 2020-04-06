@@ -23,6 +23,12 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 )
 
+const (
+	BackrestRepoDeploymentName = "%s-backrest-shared-repo"
+	BackrestRepoServiceName    = "%s-backrest-shared-repo"
+	BackrestRepoPVCName        = "%s-pgbr-repo"
+)
+
 // defines the default repo1-path for pgBackRest for use when a specic path is not provided
 // in the pgcluster CR.  The '%s' format verb will be replaced with the cluster name when this
 // variable is utilized
