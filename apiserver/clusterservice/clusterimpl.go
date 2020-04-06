@@ -730,14 +730,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		}
 	}
 
-	if request.ContainerResources != "" {
-		if apiserver.IsValidContainerResource(request.ContainerResources) == false {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = request.ContainerResources + " ContainerResource config was not found "
-			return resp
-		}
-	}
-
 	// if a value is provided in the request for PodAntiAffinity, then ensure is valid.  If
 	// it is, then set the user label for pod anti-affinity to the request value
 	// (which in turn becomes a *Label* which is important for anti-affinity).

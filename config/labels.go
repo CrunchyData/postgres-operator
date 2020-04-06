@@ -50,7 +50,6 @@ const LABEL_POD_ANTI_AFFINITY = "pg-pod-anti-affinity"
 const LABEL_SYNC_REPLICATION = "sync-replication"
 
 const LABEL_REPLICA_COUNT = "replica-count"
-const LABEL_RESOURCES_CONFIG = "resources-config"
 const LABEL_STORAGE_CONFIG = "storage-config"
 const LABEL_NODE_LABEL = "node-label"
 const LABEL_VERSION = "version"

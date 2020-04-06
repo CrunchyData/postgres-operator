@@ -122,15 +122,6 @@ func (s PgStorageSpec) GetSupplementalGroups() []int64 {
 	return supplementalGroups
 }
 
-// PgContainerResource ...
-// swagger:ignore
-type PgContainerResources struct {
-	RequestsMemory string `json:"requestsmemory"`
-	RequestsCPU    string `json:"requestscpu"`
-	LimitsMemory   string `json:"limitsmemory"`
-	LimitsCPU      string `json:"limitscpu"`
-}
-
 // CompletedStatus -
 const CompletedStatus = "completed"
 

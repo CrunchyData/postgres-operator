@@ -38,26 +38,20 @@ import (
 )
 
 type loadJobTemplateFields struct {
-	Name               string
-	PGOImagePrefix     string
-	PGOImageTag        string
-	DbHost             string
-	DbDatabase         string
-	DbUser             string
-	DbPass             string
-	DbPort             string
-	TableToLoad        string
-	FilePath           string
-	FileType           string
-	PVCName            string
-	SecurityContext    string
-	ContainerResources string
-	PGUserSecret       string
-}
-
-type containerResourcesTemplateFields struct {
-	RequestsMemory, RequestsCPU string
-	LimitsMemory, LimitsCPU     string
+	Name            string
+	PGOImagePrefix  string
+	PGOImageTag     string
+	DbHost          string
+	DbDatabase      string
+	DbUser          string
+	DbPass          string
+	DbPort          string
+	TableToLoad     string
+	FilePath        string
+	FileType        string
+	PVCName         string
+	SecurityContext string
+	PGUserSecret    string
 }
 
 // LoadConfig ...
@@ -107,7 +101,6 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 	LoadConfigTemplate.FileType = LoadCfg.FileType
 	LoadConfigTemplate.PVCName = LoadCfg.PVCName
 	LoadConfigTemplate.SecurityContext = operutil.GetPodSecurityContext(supplementalGroups)
-	LoadConfigTemplate.ContainerResources = ""
 
 	clusterList := crv1.PgclusterList{}
 	if len(request.Args) == 0 && request.Selector == "" {

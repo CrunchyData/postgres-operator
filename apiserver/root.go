@@ -33,7 +33,6 @@ import (
 	"github.com/crunchydata/postgres-operator/tlsutil"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -83,11 +82,6 @@ type CredentialDetail struct {
 }
 
 var Pgo config.PgoConfig
-
-type containerResourcesTemplateFields struct {
-	RequestsMemory, RequestsCPU string
-	LimitsMemory, LimitsCPU     string
-}
 
 func Initialize() {
 
@@ -185,12 +179,6 @@ func initConfig() {
 		log.Error("Storage Settings are not defined correctly, can't continue")
 		os.Exit(2)
 	}
-
-	if !validContainerResourcesSettings() {
-		log.Error("Container Resources settings are not defined correctly, can't continue")
-		os.Exit(2)
-	}
-
 }
 
 func BasicAuthCheck(username, password string) bool {
@@ -347,17 +335,6 @@ func Authn(perm string, w http.ResponseWriter, r *http.Request) (string, error) 
 
 }
 
-func validContainerResourcesSettings() bool {
-	log.Infof("ContainerResources has %d definitions", len(Pgo.ContainerResources))
-
-	//validate any Container Resources in pgo.yaml for correct formats
-	if !IsValidContainerResourceValues() {
-		return false
-	}
-
-	return true
-}
-
 func validStorageSettings() bool {
 	log.Infof("Storage has %d definitions", len(Pgo.Storage))
 
@@ -387,11 +364,6 @@ func validStorageSettings() bool {
 
 }
 
-func IsValidContainerResource(name string) bool {
-	_, ok := Pgo.ContainerResources[name]
-	return ok
-}
-
 func IsValidStorageName(name string) bool {
 	_, ok := Pgo.Storage[name]
 	return ok
@@ -406,37 +378,6 @@ func ValidateNodeLabel(nodeLabel string) error {
 	}
 
 	return nil
-}
-
-func IsValidContainerResourceValues() bool {
-
-	var err error
-
-	for k, v := range Pgo.ContainerResources {
-		log.Infof("Container Resources %s [%v]", k, v)
-		resources, _ := Pgo.GetContainerResource(k)
-		_, err = resource.ParseQuantity(resources.RequestsMemory)
-		if err != nil {
-			log.Errorf("%s.RequestsMemory value invalid format", k)
-			return false
-		}
-		_, err = resource.ParseQuantity(resources.RequestsCPU)
-		if err != nil {
-			log.Errorf("%s.RequestsCPU value invalid format", k)
-			return false
-		}
-		_, err = resource.ParseQuantity(resources.LimitsMemory)
-		if err != nil {
-			log.Errorf("%s.LimitsMemory value invalid format", k)
-			return false
-		}
-		_, err = resource.ParseQuantity(resources.LimitsCPU)
-		if err != nil {
-			log.Errorf("%s.LimitsCPU value invalid format", k)
-			return false
-		}
-	}
-	return true
 }
 
 func validateWithKube() {

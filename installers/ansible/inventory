@@ -297,24 +297,6 @@ storage9_type='dynamic'
 storage9_class='rook-ceph-block'
 
 # ==================
-# Container Resource Configurations
-# ==================
-# Define container resource configurations that can be used to set CPU & memory requirements and limits
-# for containers created by the PGO.  Also set default resource configs for various PGO container types.
-
-resource1_name='small'
-resource1_requests_memory='512Mi'
-resource1_requests_cpu=0.1
-resource1_limits_memory='512Mi'
-resource1_limits_cpu=0.1
-
-resource2_name='large'
-resource2_requests_memory='2Gi'
-resource2_requests_cpu=2.0
-resource2_limits_memory='2Gi'
-resource2_limits_cpu=4.0
-
-# ==================
 # Metrics
 # ==================
 # Optional installation of Grafana and Prometheus optimized

@@ -106,20 +106,6 @@ for other access modes it might support.
     StorageClass:  fast
 ```
 
-
-## Container Resources
-| Setting |Definition  |
-|---|---|
-|DefaultContainerResource    |optional, the value of the container resources configuration to use for all database containers, if not set, no resource limits or requests are added on the database container
-|DefaultLoadResource    |optional, the value of the container resources configuration to use for pgo-load containers, if not set, no resource limits or requests are added on the database container
-|DefaultRmdataResource    |optional, the value of the container resources configuration to use for pgo-rmdata containers, if not set, no resource limits or requests are added on the database container
-|DefaultBackupResource    |optional, the value of the container resources configuration to use for crunchy-backup containers, if not set, no resource limits or requests are added on the database container
-|DefaultPgbouncerResource    |optional, the value of the container resources configuration to use for crunchy-pgbouncer containers, if not set, no resource limits or requests are added on the database container
-|RequestsMemory        | request size of memory in bytes
-|RequestsCPU        | request size of CPU cores
-|LimitsMemory        | request size of memory in bytes
-|LimitsCPU        | request size of CPU cores
-
 ## Miscellaneous (Pgo)
 | Setting |Definition  |
 |---|---|
@@ -170,29 +156,9 @@ Example PV creation scripts are provided that add labels to a set of PVs and can
 The *pgo.yaml* includes a storage config named **nfsstoragered** that when used will demonstrate the label matching.  This feature allows you to support
 n-number of NFS storage configurations and supports spreading a PG cluster across different NFS storage configurations.
 
-## Container Resources Details
-In the *pgo.yaml* configuration file you have the option to configure a default container resources configuration that when set will add CPU and memory resource limits and requests values into each database container when the container is created.
-
-You can also override the default value using the `--resources-config` command flag when creating a new cluster:
-
-    pgo create cluster testcluster --resources-config=large -n pgouser1
-
-Note, if you try to allocate more resources than your
-host or Kubernetes cluster has available then you will see your
-pods wait in a *Pending* status. The output from a `kubectl describe pod`
-command will show output like this in this event:
-Events:
-
-      Type     Reason            Age               From               Message
-      ----     ------            ----              ----               -------
-      Warning  FailedScheduling  49s (x8 over 1m)  default-scheduler  No nodes are available that match all of the predicates: Insufficient memory (1).
-
 ## Overriding Storage Configuration Defaults
 
-
     pgo create cluster testcluster --storage-config=bigdisk -n pgouser1
-
-
 
 That example will create a cluster and specify a storage configuration of *bigdisk* to be used for the primary database storage. The replica storage will default to the value of ReplicaStorage as specified in *pgo.yaml*.
 

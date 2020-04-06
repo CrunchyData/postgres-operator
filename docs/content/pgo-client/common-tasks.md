@@ -137,17 +137,6 @@ Pgo:
   Audit: false
   PGOImagePrefix: crunchydata
   PGOImageTag: centos7-4.3.0
-ContainerResources:
-  large:
-    RequestsMemory: 2Gi
-    RequestsCPU: "2.0"
-    LimitsMemory: 2Gi
-    LimitsCPU: "4.0"
-  small:
-    RequestsMemory: 256Mi
-    RequestsCPU: "0.1"
-    LimitsMemory: 256Mi
-    LimitsCPU: "0.1"
 PrimaryStorage: nfsstorage
 BackupStorage: nfsstorage
 ReplicaStorage: nfsstorage

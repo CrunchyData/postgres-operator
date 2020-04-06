@@ -40,11 +40,10 @@ type RmdataJob struct {
 	PGOImagePrefix string
 	PGOImageTag    string
 	//		SecurityContext string
-	RemoveData         string
-	RemoveBackup       string
-	IsBackup           string
-	IsReplica          string
-	ContainerResources string
+	RemoveData   string
+	RemoveBackup string
+	IsBackup     string
+	IsReplica    string
 }
 
 // CreateService ...
@@ -54,15 +53,14 @@ func CreateRmdataJob(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namesp
 	jobName := cl.Spec.Name + "-rmdata-" + util.RandStringBytesRmndr(4)
 
 	jobFields := RmdataJob{
-		JobName:            jobName,
-		ClusterName:        cl.Spec.Name,
-		PGOImagePrefix:     operator.Pgo.Pgo.PGOImagePrefix,
-		PGOImageTag:        operator.Pgo.Pgo.PGOImageTag,
-		RemoveData:         strconv.FormatBool(removeData),
-		RemoveBackup:       strconv.FormatBool(removeBackup),
-		IsBackup:           strconv.FormatBool(isReplica),
-		IsReplica:          strconv.FormatBool(isBackup),
-		ContainerResources: "",
+		JobName:        jobName,
+		ClusterName:    cl.Spec.Name,
+		PGOImagePrefix: operator.Pgo.Pgo.PGOImagePrefix,
+		PGOImageTag:    operator.Pgo.Pgo.PGOImageTag,
+		RemoveData:     strconv.FormatBool(removeData),
+		RemoveBackup:   strconv.FormatBool(removeBackup),
+		IsBackup:       strconv.FormatBool(isReplica),
+		IsReplica:      strconv.FormatBool(isBackup),
 	}
 
 	doc := bytes.Buffer{}

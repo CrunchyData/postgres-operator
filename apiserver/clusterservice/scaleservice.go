@@ -60,11 +60,6 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	//    in: "path"
 	//    type: "int"
 	//    required: true
-	//  - name: "resources-config"
-	//    description: "The name of a container resource configuration in pgo.yaml that holds CPU and memory requests and limits."
-	//    in: "path"
-	//    type: "string"
-	//    required: false
 	//  - name: "storage-config"
 	//    description: "The service type to use in the replica Service. If not set, the default in pgo.yaml will be used."
 	//    in: "path"
