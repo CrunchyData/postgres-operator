@@ -57,6 +57,7 @@
       "storagetype": "dynamic",
       "supplementalgroups": ""
     },
+    "backrestResources": {},
     "ccpimage": "crunchy-postgres-ha",
     "ccpimagetag": "centos7-12.2-4.3.0",
     "clustername": "fromcrd",
@@ -66,8 +67,13 @@
     "name": "fromcrd",
     "namespace": "pgouser1",
     "nodename": "",
+    "pgBouncerResources": {},
     "pgbadgerport": "10000",
-    "podPodAntiAffinity": "",
+    "podPodAntiAffinity": {
+      "default": "preferred",
+      "pgBackRest": "preferred",
+      "pgBouncer": "preferred"
+    },
     "policies": "",
     "port": "5432",
     "primaryhost": "fromcrd",
@@ -75,8 +81,12 @@
     "replicas": "0",
     "rootsecretname": "fromcrd-postgres-secret",
     "secretfrom": "",
+    "shutdown": false,
+    "standby": false,
     "status": "",
     "syncReplication": null,
+    "tablespaceMounts": {},
+    "tls": {},
     "user": "testuser",
     "userlabels": {
       "crunchy_collect": "false",
