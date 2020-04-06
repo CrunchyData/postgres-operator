@@ -54,30 +54,46 @@ func createPgbouncer(args []string, ns string) {
 		return
 	}
 
-	r := new(msgs.CreatePgbouncerRequest)
-	r.Args = args
-	r.Namespace = ns
-	r.Selector = Selector
-	r.ClientVersion = msgs.PGO_VERSION
+	request := msgs.CreatePgbouncerRequest{
+		Args:          args,
+		ClientVersion: msgs.PGO_VERSION,
+		CPURequest:    PgBouncerCPURequest,
+		MemoryRequest: PgBouncerMemoryRequest,
+		Namespace:     ns,
+		Selector:      Selector,
+	}
 
-	response, err := api.CreatePgbouncer(httpclient, &SessionCredentials, r)
+	if err := util.ValidateQuantity(request.CPURequest, "cpu"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(request.MemoryRequest, "memory"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	response, err := api.CreatePgbouncer(httpclient, &SessionCredentials, &request)
+
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
-	if response.Status.Code == msgs.Ok {
-		for _, v := range response.Results {
-			fmt.Println(v)
-		}
-	} else {
+	// this is slightly rewritten from the legacy method
+	if response.Status.Code != msgs.Ok {
 		fmt.Println("Error: " + response.Status.Msg)
+
 		for _, v := range response.Results {
 			fmt.Println(v)
 		}
-		os.Exit(2)
+
+		os.Exit(1)
 	}
 
+	for _, v := range response.Results {
+		fmt.Println(v)
+	}
 }
 
 func deletePgbouncer(args []string, ns string) {
@@ -330,9 +346,21 @@ func updatePgBouncer(namespace string, clusterNames []string) {
 	// next prepare the request!
 	request := msgs.UpdatePgBouncerRequest{
 		ClusterNames:   clusterNames,
+		CPURequest:     PgBouncerCPURequest,
+		MemoryRequest:  PgBouncerMemoryRequest,
 		Namespace:      namespace,
 		RotatePassword: RotatePassword,
 		Selector:       Selector,
+	}
+
+	if err := util.ValidateQuantity(request.CPURequest, "cpu"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(request.MemoryRequest, "memory"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	// and make the API request!

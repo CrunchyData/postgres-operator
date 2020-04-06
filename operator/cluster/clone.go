@@ -797,13 +797,14 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 			Namespace:    namespace,
 			// NodeName is not set as in the future this will be a parameter we allow
 			// the user to pass in
-			PGBadgerPort:      sourcePgcluster.Spec.PGBadgerPort,
-			PodAntiAffinity:   sourcePgcluster.Spec.PodAntiAffinity,
-			Policies:          sourcePgcluster.Spec.Policies,
-			Port:              sourcePgcluster.Spec.Port,
-			PrimaryHost:       sourcePgcluster.Spec.PrimaryHost,
-			PrimaryStorage:    sourcePgcluster.Spec.PrimaryStorage,
-			PrimarySecretName: fmt.Sprintf("%s%s", targetClusterName, crv1.PrimarySecretSuffix),
+			PGBadgerPort:       sourcePgcluster.Spec.PGBadgerPort,
+			PgBouncerResources: sourcePgcluster.Spec.PgBouncerResources,
+			PodAntiAffinity:    sourcePgcluster.Spec.PodAntiAffinity,
+			Policies:           sourcePgcluster.Spec.Policies,
+			Port:               sourcePgcluster.Spec.Port,
+			PrimaryHost:        sourcePgcluster.Spec.PrimaryHost,
+			PrimaryStorage:     sourcePgcluster.Spec.PrimaryStorage,
+			PrimarySecretName:  fmt.Sprintf("%s%s", targetClusterName, crv1.PrimarySecretSuffix),
 			// Replicas is set to "0" because we want to ensure that no replicas are
 			// provisioned with the clone
 			Replicas:       "0",

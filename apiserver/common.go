@@ -158,10 +158,16 @@ func IsValidPVC(pvcName, ns string) bool {
 
 // ValidateQuantity runs the Kubernetes "ParseQuantity" function on a string
 // and determine whether or not it is a valid quantity object. Returns an error
-// if it is invalid, along with the error message
+// if it is invalid, along with the error message.
+//
+// If it is empty, it returns no error
 //
 // See: https://github.com/kubernetes/apimachinery/blob/master/pkg/api/resource/quantity.go
 func ValidateQuantity(quantity string) error {
+	if quantity == "" {
+		return nil
+	}
+
 	_, err := resource.ParseQuantity(quantity)
 	return err
 }

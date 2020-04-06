@@ -121,12 +121,15 @@ const LABEL_ROLENAME = "rolename"
 const LABEL_PASSWORD = "password"
 
 const LABEL_PGBOUNCER = "crunchy-pgbouncer"
+const LABEL_PGBOUNCER_CPU_REQUEST = "pgbouncer-cpu"
+const LABEL_PGBOUNCER_MEMORY_REQUEST = "pgbouncer-memory"
 const LABEL_PGBOUNCER_ROTATE_PASSWORD = "pgbouncer-rotate-password"
 const LABEL_PGBOUNCER_TASK_ADD = "pgbouncer-add"
 const LABEL_PGBOUNCER_TASK_DELETE = "pgbouncer-delete"
 const LABEL_PGBOUNCER_TASK_CLUSTER = "pgbouncer-cluster"
 const LABEL_PGBOUNCER_TASK_UPDATE = "pgbouncer-update"
 const LABEL_PGBOUNCER_UNINSTALL = "pgbouncer-uninstall"
+const LABEL_PGBOUNCER_UPDATE_RESOURCES = "pgbouncer-update-resources"
 
 const LABEL_PGO_LOAD = "pgo-load"
 

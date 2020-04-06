@@ -27,8 +27,6 @@ import (
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
-
-	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 // below are the tablespace parameters and the expected values of each
@@ -291,6 +289,11 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.CASecret = CASecret
 	r.Standby = Standby
 	r.BackrestRepoPath = BackrestRepoPath
+	// set the container resource requests
+	r.CPURequest = CPURequest
+	r.MemoryRequest = MemoryRequest
+	r.PgBouncerCPURequest = PgBouncerCPURequest
+	r.PgBouncerMemoryRequest = PgBouncerMemoryRequest
 	// determine if the user wants to create tablespaces as part of this request,
 	// and if so, set the values
 	r.Tablespaces = getTablespaces(Tablespaces)
@@ -302,22 +305,24 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 
 	// if the user provided resources for CPU or Memory, validate them to ensure
 	// they are valid Kubernetes values
-	if CPURequest != "" {
-		if _, err := resource.ParseQuantity(CPURequest); err != nil {
-			fmt.Printf("Error: CPU: \"%s\" %s\n", CPURequest, err.Error())
-			os.Exit(1)
-		}
-
-		r.CPURequest = CPURequest
+	if err := util.ValidateQuantity(r.CPURequest, "cpu"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
-	if MemoryRequest != "" {
-		if _, err := resource.ParseQuantity(MemoryRequest); err != nil {
-			fmt.Printf("Error: Memory: \"%s\" %s\n", MemoryRequest, err.Error())
-			os.Exit(1)
-		}
+	if err := util.ValidateQuantity(r.MemoryRequest, "memory"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
-		r.MemoryRequest = MemoryRequest
+	if err := util.ValidateQuantity(r.PgBouncerCPURequest, "pgbouncer-cpu"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.PgBouncerMemoryRequest, "pgbouncer-memory"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	response, err := api.CreateCluster(httpclient, &SessionCredentials, r)
@@ -430,6 +435,9 @@ func updateCluster(args []string, ns string) {
 	r.Clustername = args
 	r.Startup = Startup
 	r.Shutdown = Shutdown
+	// set the container resource requests
+	r.CPURequest = CPURequest
+	r.MemoryRequest = MemoryRequest
 	// determine if the user wants to create tablespaces as part of this request,
 	// and if so, set the values
 	r.Tablespaces = getTablespaces(Tablespaces)
@@ -452,22 +460,14 @@ func updateCluster(args []string, ns string) {
 
 	// if the user provided resources for CPU or Memory, validate them to ensure
 	// they are valid Kubernetes values
-	if CPURequest != "" {
-		if _, err := resource.ParseQuantity(CPURequest); err != nil {
-			fmt.Println("Error:", err.Error(), `"`+CPURequest+`"`)
-			os.Exit(1)
-		}
-
-		r.CPURequest = CPURequest
+	if err := util.ValidateQuantity(r.CPURequest, "cpu"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
-	if MemoryRequest != "" {
-		if _, err := resource.ParseQuantity(MemoryRequest); err != nil {
-			fmt.Println("Error:", err.Error(), `"`+MemoryRequest+`"`)
-			os.Exit(1)
-		}
-
-		r.MemoryRequest = MemoryRequest
+	if err := util.ValidateQuantity(r.MemoryRequest, "memory"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	response, err := api.UpdateCluster(httpclient, &r, &SessionCredentials)

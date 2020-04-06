@@ -21,9 +21,17 @@ import ()
 // swagger:model
 type CreatePgbouncerRequest struct {
 	Args          []string
-	Selector      string
-	Namespace     string
 	ClientVersion string
+	// CPURequest, if specified, is the value of how much CPU should be
+	// requested for deploying pgBouncer instances. Defaults to not being
+	// requested
+	CPURequest string
+	// MemoryRequest, if specified, is the value of how much RAM should
+	// be requested for deploying pgBouncer instances. Defaults to the server
+	// specified default
+	MemoryRequest string
+	Namespace     string
+	Selector      string
 }
 
 // CreatePgbouncerResponse ...
@@ -134,6 +142,16 @@ type UpdatePgBouncerRequest struct {
 	// ClusterNames contains one or more names of pgBouncer deployments to be
 	// updated
 	ClusterNames []string
+
+	// CPURequest, if specified, is the value of how much CPU should be
+	// requested for deploying pgBouncer instances. Defaults to not being
+	// requested
+	CPURequest string
+
+	// MemoryRequest, if specified, is the value of how much RAM should
+	// be requested for deploying pgBouncer instances. Defaults to the server
+	// specified default
+	MemoryRequest string
 
 	// Namespace is the namespace to perform the query in
 	Namespace string

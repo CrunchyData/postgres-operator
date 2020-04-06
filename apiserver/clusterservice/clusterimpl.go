@@ -545,38 +545,44 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	// if any of the the PVCSizes are set to a customized value, ensure that they
 	// are recognizable by Kubernetes
 	// first, the primary/replica PVC size
-	if request.PVCSize != "" {
-		if err := apiserver.ValidateQuantity(request.PVCSize); err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessagePVCSize, request.PVCSize, err.Error())
-			return resp
-		}
+	if err := apiserver.ValidateQuantity(request.PVCSize); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessagePVCSize, request.PVCSize, err.Error())
+		return resp
 	}
 
 	// next, the pgBackRest repo PVC size
-	if request.BackrestPVCSize != "" {
-		if err := apiserver.ValidateQuantity(request.BackrestPVCSize); err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessagePVCSize, request.BackrestPVCSize, err.Error())
-			return resp
-		}
+	if err := apiserver.ValidateQuantity(request.BackrestPVCSize); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessagePVCSize, request.BackrestPVCSize, err.Error())
+		return resp
 	}
 
 	// evaluate if the CPU / Memory have been set to custom values
-	if request.CPURequest != "" {
-		if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest, request.CPURequest, err.Error())
-			return resp
-		}
+	if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest, request.CPURequest, err.Error())
+		return resp
 	}
 
-	if request.MemoryRequest != "" {
-		if err := apiserver.ValidateQuantity(request.MemoryRequest); err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest, request.MemoryRequest, err.Error())
-			return resp
-		}
+	if err := apiserver.ValidateQuantity(request.MemoryRequest); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest, request.MemoryRequest, err.Error())
+		return resp
+	}
+
+	// similarly, if any of the pgBouncer CPU / Memory values have been set,
+	// evaluate those as well
+	if err := apiserver.ValidateQuantity(request.PgBouncerCPURequest); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest, request.PgBouncerCPURequest, err.Error())
+		return resp
+	}
+
+	if err := apiserver.ValidateQuantity(request.PgBouncerMemoryRequest); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest, request.PgBouncerMemoryRequest, err.Error())
+		return resp
 	}
 
 	// validate the storage type for each specified tablespace actually exists.
@@ -984,7 +990,8 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabelsMap map[string]string, ns string) *crv1.Pgcluster {
 
 	spec := crv1.PgclusterSpec{
-		Resources: v1.ResourceList{},
+		PgBouncerResources: v1.ResourceList{},
+		Resources:          v1.ResourceList{},
 	}
 
 	if userLabelsMap[config.LABEL_CUSTOM_CONFIG] != "" {
@@ -1003,6 +1010,20 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		// as this was already validated, we can ignore the error
 		quantity, _ := resource.ParseQuantity(request.MemoryRequest)
 		spec.Resources[v1.ResourceMemory] = quantity
+	}
+
+	// similarly, if there are any overriding pgBouncer container resource request
+	// values, set them here
+	if request.PgBouncerCPURequest != "" {
+		// as this was already validated, we can ignore the error
+		quantity, _ := resource.ParseQuantity(request.PgBouncerCPURequest)
+		spec.PgBouncerResources[v1.ResourceCPU] = quantity
+	}
+
+	if request.PgBouncerMemoryRequest != "" {
+		// as this was already validated, we can ignore the error
+		quantity, _ := resource.ParseQuantity(request.PgBouncerMemoryRequest)
+		spec.PgBouncerResources[v1.ResourceMemory] = quantity
 	}
 
 	spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.PrimaryStorage)
@@ -1470,20 +1491,16 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 	}
 
 	// evaluate if the CPU / Memory have been set to custom values
-	if request.CPURequest != "" {
-		if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest, request.CPURequest, err.Error())
-			return response
-		}
+	if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest, request.CPURequest, err.Error())
+		return response
 	}
 
-	if request.MemoryRequest != "" {
-		if err := apiserver.ValidateQuantity(request.MemoryRequest); err != nil {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest, request.MemoryRequest, err.Error())
-			return response
-		}
+	if err := apiserver.ValidateQuantity(request.MemoryRequest); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest, request.MemoryRequest, err.Error())
+		return response
 	}
 
 	// validate the storage type for each specified tablespace actually exists.
@@ -1733,11 +1750,9 @@ func validateTablespaces(tablespaces []msgs.ClusterTablespaceDetail) error {
 				tablespace.StorageConfig, tablespace.Name)
 		}
 
-		if tablespace.PVCSize != "" {
-			if err := apiserver.ValidateQuantity(tablespace.PVCSize); err != nil {
-				return fmt.Errorf(apiserver.ErrMessagePVCSize,
-					tablespace.PVCSize, err.Error())
-			}
+		if err := apiserver.ValidateQuantity(tablespace.PVCSize); err != nil {
+			return fmt.Errorf(apiserver.ErrMessagePVCSize,
+				tablespace.PVCSize, err.Error())
 		}
 	}
 
