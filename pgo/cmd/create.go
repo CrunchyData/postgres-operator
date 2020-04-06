@@ -32,9 +32,7 @@ var ArchiveFlag, DisableAutofailFlag, EnableAutofailFlag, PgbouncerFlag, Metrics
 var BackrestRestoreFrom string
 var CCPImage string
 var CCPImageTag string
-var CPURequest string
 var Database string
-var MemoryRequest string
 var Password string
 var SecretFrom string
 var PoliciesFlag, PolicyFile, PolicyURL string
@@ -62,6 +60,14 @@ var BackrestS3Endpoint string
 var BackrestS3Region string
 var PVCSize string
 var BackrestPVCSize string
+
+// group the various container resource requests together, i.e. for CPU/Memory
+var (
+	// the resource requests for PostgreSQL instances
+	CPURequest, MemoryRequest string
+	// the resource requests for pgBouncer instances
+	PgBouncerCPURequest, PgBouncerMemoryRequest string
+)
 
 // BackrestS3CASecretName, if provided, is the name of a secret to use that
 // contains a CA certificate to use for the pgBackRest repo
@@ -301,6 +307,10 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use with pgBackRest. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgbouncerFlag, "pgbouncer", "", false, "Adds a crunchy-pgbouncer deployment to the cluster.")
+	createClusterCmd.Flags().StringVar(&PgBouncerCPURequest, "pgbouncer-cpu", "", "Set the number of millicores to request for CPU "+
+		"for pgBouncer. Defaults to being unset.")
+	createClusterCmd.Flags().StringVar(&PgBouncerMemoryRequest, "pgbouncer-memory", "", "Set the amount of Memory to request for "+
+		"pgBouncer. Defaults to server value (24Mi).")
 	createClusterCmd.Flags().StringVarP(&ReplicaStorageConfig, "replica-storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster replica storage.")
 	createClusterCmd.Flags().StringVarP(&PodAntiAffinity, "pod-anti-affinity", "", "",
 		"Specifies the type of anti-affinity that should be utilized when applying  "+
@@ -347,6 +357,10 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&Username, "username", "u", "", "The username to use for creating the PostgreSQL user with standard permissions. Defaults to the value in the PostgreSQL Operator configuration.")
 
 	// pgo create pgbouncer
+	createPgbouncerCmd.Flags().StringVar(&PgBouncerCPURequest, "cpu", "", "Set the number of millicores to request for CPU "+
+		"for pgBouncer. Defaults to being unset.")
+	createPgbouncerCmd.Flags().StringVar(&PgBouncerMemoryRequest, "memory", "", "Set the amount of Memory to request for "+
+		"pgBouncer. Defaults to server value (24Mi).")
 	createPgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 
 	// "pgo create pgouser" flags

@@ -204,17 +204,13 @@ func validateCloneRequest(request *msgs.CloneRequest, cluster crv1.Pgcluster) er
 	// if any of the the PVCSizes are set to a customized value, ensure that they
 	// are recognizable by Kubernetes
 	// first, the primary/replica PVC size
-	if request.PVCSize != "" {
-		if err := apiserver.ValidateQuantity(request.PVCSize); err != nil {
-			return fmt.Errorf(apiserver.ErrMessagePVCSize, request.PVCSize, err.Error())
-		}
+	if err := apiserver.ValidateQuantity(request.PVCSize); err != nil {
+		return fmt.Errorf(apiserver.ErrMessagePVCSize, request.PVCSize, err.Error())
 	}
 
 	// next, the pgBackRest repo PVC size
-	if request.BackrestPVCSize != "" {
-		if err := apiserver.ValidateQuantity(request.BackrestPVCSize); err != nil {
-			return fmt.Errorf(apiserver.ErrMessagePVCSize, request.BackrestPVCSize, err.Error())
-		}
+	if err := apiserver.ValidateQuantity(request.BackrestPVCSize); err != nil {
+		return fmt.Errorf(apiserver.ErrMessagePVCSize, request.BackrestPVCSize, err.Error())
 	}
 
 	// clone is a form of restore, so validate using ValidateBackrestStorageTypeOnBackupRestore

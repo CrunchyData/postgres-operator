@@ -31,9 +31,11 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
+
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -49,7 +51,7 @@ type PgbouncerConfFields struct {
 	PG_PORT                 string
 }
 
-type PgbouncerTemplateFields struct {
+type pgBouncerTemplateFields struct {
 	Name                      string
 	ClusterName               string
 	PGBouncerSecret           string
@@ -128,11 +130,14 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 	log.Debugf("adding a pgbouncer")
 
 	// first, ensure that the Cluster CR is updated to know that there is now
-	// a pgBouncer associated with it
+	// a pgBouncer associated with it. This may also include other CR updates too,
+	// such as if the pgBouncer is being added via a pgtask, and as such the
+	// values for memory/CPU may be set as well.
+	//
 	// if we cannot update this we abort
 	cluster.Labels[config.LABEL_PGBOUNCER] = "true"
 
-	if err := kubeapi.Updatepgcluster(restclient, cluster, cluster.Spec.ClusterName, cluster.Namespace); err != nil {
+	if err := kubeapi.Updatepgcluster(restclient, cluster, cluster.Name, cluster.Namespace); err != nil {
 		return err
 	}
 
@@ -181,7 +186,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 		return err
 	}
 
-	log.Debugf("added pgbouncer to cluster [%s]", cluster.Spec.Name)
+	log.Debugf("added pgbouncer to cluster [%s]", cluster.Name)
 
 	return nil
 }
@@ -204,6 +209,18 @@ func AddPgbouncerFromPgTask(clientset *kubernetes.Clientset, restclient *rest.RE
 		return
 	}
 
+	// if there are values for the CPU and/or memory settings for the pgBouncer
+	// instances, apply those to the cluster
+	// if there is an error, only warn, and continue on with an empty resources
+	// list
+	if resources, err := generateContainerResources(task.Spec.Parameters[config.LABEL_PGBOUNCER_CPU_REQUEST],
+		task.Spec.Parameters[config.LABEL_PGBOUNCER_MEMORY_REQUEST]); err != nil {
+		log.Warn(err)
+		cluster.Spec.PgBouncerResources = v1.ResourceList{}
+	} else {
+		cluster.Spec.PgBouncerResources = resources
+	}
+
 	// bring up the pgbouncer deployment and all of its trappings!
 	if err := AddPgbouncer(clientset, restclient, restconfig, &cluster); err != nil {
 		log.Error(err)
@@ -215,7 +232,7 @@ func AddPgbouncerFromPgTask(clientset *kubernetes.Clientset, restclient *rest.RE
 
 	// at this point, the pgback is successful, so we can safely remove it
 	// we can fallthrough in the event of an error, because we're returning anyway
-	if err := kubeapi.Deletepgtask(restclient, task.Spec.Name, namespace); err != nil {
+	if err := kubeapi.Deletepgtask(restclient, task.Name, namespace); err != nil {
 		log.Error(err)
 	}
 
@@ -224,12 +241,26 @@ func AddPgbouncerFromPgTask(clientset *kubernetes.Clientset, restclient *rest.RE
 
 // CreatePgTaskforAddpgBouncer creates a pgtask to process adding a pgBouncer
 func CreatePgTaskforAddpgBouncer(restclient *rest.RESTClient, cluster *crv1.Pgcluster, pgouser string) error {
-	log.Debugf("create pgtask for adding pgbouncer to cluster [%s]", cluster.Spec.ClusterName)
+	log.Debugf("create pgtask for adding pgbouncer to cluster [%s]", cluster.Name)
 
 	// generate the pgtask, first setting up the parameters it needs
 	parameters := map[string]string{
-		config.LABEL_PGBOUNCER_TASK_CLUSTER: cluster.Spec.ClusterName,
+		config.LABEL_PGBOUNCER_TASK_CLUSTER: cluster.Name,
 	}
+
+	// set any pgBouncer custom CPU / Memory request resources
+	if cluster.Spec.PgBouncerResources != nil {
+		resources := cluster.Spec.PgBouncerResources
+
+		if resources.Cpu() != nil && !resources.Cpu().IsZero() {
+			parameters[config.LABEL_PGBOUNCER_CPU_REQUEST] = resources.Cpu().String()
+		}
+
+		if resources.Memory() != nil && !resources.Memory().IsZero() {
+			parameters[config.LABEL_PGBOUNCER_MEMORY_REQUEST] = resources.Memory().String()
+		}
+	}
+
 	task := generatePgtaskForPgBouncer(cluster, pgouser,
 		crv1.PgtaskAddPgbouncer, config.LABEL_PGBOUNCER_TASK_ADD, parameters)
 
@@ -250,10 +281,24 @@ func CreatePgTaskforAddpgBouncer(restclient *rest.RESTClient, cluster *crv1.Pgcl
 //
 // - RotoatePassword="true" will rotate the pgBouncer PostgreSQL user password
 func CreatePgTaskforUpdatepgBouncer(restclient *rest.RESTClient, cluster *crv1.Pgcluster, pgouser string, parameters map[string]string) error {
-	log.Debugf("create pgtask for updating pgbouncer for cluster [%s]", cluster.Spec.ClusterName)
+	log.Debugf("create pgtask for updating pgbouncer for cluster [%s]", cluster.Name)
 
 	// generate the pgtask, first adding in some boilerplate parameters
-	parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER] = cluster.Spec.ClusterName
+	parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER] = cluster.Name
+
+	// set any pgBouncer custom CPU / Memory request resources
+	if cluster.Spec.PgBouncerResources != nil {
+		resources := cluster.Spec.PgBouncerResources
+
+		if resources.Cpu() != nil && !resources.Cpu().IsZero() {
+			parameters[config.LABEL_PGBOUNCER_CPU_REQUEST] = resources.Cpu().String()
+		}
+
+		if resources.Memory() != nil && !resources.Memory().IsZero() {
+			parameters[config.LABEL_PGBOUNCER_MEMORY_REQUEST] = resources.Memory().String()
+		}
+	}
+
 	task := generatePgtaskForPgBouncer(cluster, pgouser,
 		crv1.PgtaskUpdatePgbouncer, config.LABEL_PGBOUNCER_TASK_UPDATE, parameters)
 	// try to create the pgtask!
@@ -276,8 +321,8 @@ func CreatePgTaskforUpdatepgBouncer(restclient *rest.RESTClient, cluster *crv1.P
 // Any errors that are returned should be logged in the calling function, though
 // some logging occurs in this function as well
 func DeletePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster, uninstall bool) error {
-	clusterName := cluster.Spec.ClusterName
-	namespace := cluster.Spec.Namespace
+	clusterName := cluster.Name
+	namespace := cluster.Namespace
 
 	log.Debugf("delete pgbouncer from cluster [%s] in namespace [%s]", clusterName, namespace)
 
@@ -286,7 +331,7 @@ func DeletePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 	// if we cannot update this we abort
 	cluster.Labels[config.LABEL_PGBOUNCER] = "false"
 
-	if err := kubeapi.Updatepgcluster(restclient, cluster, cluster.Spec.ClusterName, namespace); err != nil {
+	if err := kubeapi.Updatepgcluster(restclient, cluster, clusterName, namespace); err != nil {
 		return err
 	}
 
@@ -378,7 +423,7 @@ func DeletePgbouncerFromPgTask(clientset *kubernetes.Clientset, restclient *rest
 	publishPgBouncerEvent(events.EventDeletePgbouncer, task)
 
 	// lastly, remove the task
-	if err := kubeapi.Deletepgtask(restclient, task.Spec.Name, namespace); err != nil {
+	if err := kubeapi.Deletepgtask(restclient, task.Name, namespace); err != nil {
 		log.Warn(err)
 	}
 }
@@ -390,8 +435,8 @@ func DeletePgbouncerFromPgTask(clientset *kubernetes.Clientset, restclient *rest
 // Any errors that are returned should be logged in the calling function, though
 // some logging occurs in this function as well
 func UpdatePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster, parameters map[string]string) error {
-	clusterName := cluster.Spec.ClusterName
-	namespace := cluster.Spec.Namespace
+	clusterName := cluster.Name
+	namespace := cluster.Namespace
 
 	log.Debugf("update pgbouncer from cluster [%s] in namespace [%s] with parameters [%v]", clusterName, namespace)
 
@@ -403,6 +448,13 @@ func UpdatePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 		// early as we cannot guarantee anything else can occur
 		case config.LABEL_PGBOUNCER_ROTATE_PASSWORD:
 			if err := rotatePgBouncerPassword(clientset, restclient, restconfig, cluster); err != nil {
+				return err
+			}
+			// determine if we need to update the resources that are set on the
+			// pgBouncer Deployment, which in turn also need to set an update on the
+			// cluster CR
+		case config.LABEL_PGBOUNCER_UPDATE_RESOURCES:
+			if err := updatePgBouncerResources(clientset, restclient, cluster); err != nil {
 				return err
 			}
 		}
@@ -432,6 +484,20 @@ func UpdatePgbouncerFromPgTask(clientset *kubernetes.Clientset, restclient *rest
 		return
 	}
 
+	// if there are values for the CPU and/or memory settings for the pgBouncer
+	// instances, apply those to the cluster
+	// if there is an error, only warn, and continue on with an empty resources
+	// list
+	if _, ok := parameters[config.LABEL_PGBOUNCER_UPDATE_RESOURCES]; ok {
+		if resources, err := generateContainerResources(task.Spec.Parameters[config.LABEL_PGBOUNCER_CPU_REQUEST],
+			task.Spec.Parameters[config.LABEL_PGBOUNCER_MEMORY_REQUEST]); err != nil {
+			log.Warn(err)
+			cluster.Spec.PgBouncerResources = v1.ResourceList{}
+		} else {
+			cluster.Spec.PgBouncerResources = resources
+		}
+	}
+
 	// attempt to delete the pgbouncer!
 	if err := UpdatePgbouncer(clientset, restclient, restconfig, &cluster, parameters); err != nil {
 		log.Error(err)
@@ -442,7 +508,7 @@ func UpdatePgbouncerFromPgTask(clientset *kubernetes.Clientset, restclient *rest
 	publishPgBouncerEvent(events.EventUpdatePgbouncer, task)
 
 	// lastly, remove the task
-	if err := kubeapi.Deletepgtask(restclient, task.Spec.Name, namespace); err != nil {
+	if err := kubeapi.Deletepgtask(restclient, task.Name, namespace); err != nil {
 		log.Warn(err)
 	}
 }
@@ -479,21 +545,21 @@ func checkPgBouncerInstall(clientset *kubernetes.Clientset, restconfig *rest.Con
 
 // createPgBouncerDeployment creates the Kubernetes Deployment for pgBouncer
 func createPgBouncerDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) error {
-	log.Debugf("creating pgbouncer deployment: %s", cluster.Spec.Name)
+	log.Debugf("creating pgbouncer deployment: %s", cluster.Name)
 
 	// derive the name of the Deployment...which is also used as the name of the
 	// service
-	pgbouncerDeploymentName := fmt.Sprintf(pgBouncerDeploymentFormat, cluster.Spec.Name)
+	pgbouncerDeploymentName := fmt.Sprintf(pgBouncerDeploymentFormat, cluster.Name)
 
 	// get the fields that will be substituted in the pgBouncer template
-	fields := PgbouncerTemplateFields{
+	fields := pgBouncerTemplateFields{
 		Name:               pgbouncerDeploymentName,
-		ClusterName:        cluster.Spec.Name,
+		ClusterName:        cluster.Name,
 		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
 		CCPImageTag:        cluster.Spec.CCPImageTag,
 		Port:               operator.Pgo.Cluster.Port,
-		PGBouncerSecret:    util.GeneratePgBouncerSecretName(cluster.Spec.Name),
-		ContainerResources: "",
+		PGBouncerSecret:    util.GeneratePgBouncerSecretName(cluster.Name),
+		ContainerResources: operator.GetResourcesJSON(cluster.Spec.PgBouncerResources),
 		PodAntiAffinity: operator.GetPodAntiAffinity(cluster,
 			crv1.PodAntiAffinityDeploymentPgBouncer, cluster.Spec.PodAntiAffinity.PgBouncer),
 		PodAntiAffinityLabelName: config.LABEL_POD_ANTI_AFFINITY,
@@ -524,7 +590,7 @@ func createPgBouncerDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pg
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGBOUNCER,
 		&deployment.Spec.Template.Spec.Containers[0])
 
-	if err := kubeapi.CreateDeployment(clientset, &deployment, cluster.Spec.Namespace); err != nil {
+	if err := kubeapi.CreateDeployment(clientset, &deployment, cluster.Namespace); err != nil {
 		return err
 	}
 
@@ -534,10 +600,10 @@ func createPgBouncerDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pg
 // createPgbouncerSecret create a secret used by pgbouncer. Returns the
 // plaintext password and/or an error
 func createPgbouncerSecret(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, password string) error {
-	secretName := util.GeneratePgBouncerSecretName(cluster.Spec.Name)
+	secretName := util.GeneratePgBouncerSecretName(cluster.Name)
 
 	// see if this secret already exists...if it does, then take an early exit
-	if _, err := util.GetPasswordFromSecret(clientset, cluster.Spec.Namespace, secretName); err == nil {
+	if _, err := util.GetPasswordFromSecret(clientset, cluster.Namespace, secretName); err == nil {
 		log.Debugf("pgbouncer secret %s already present, will reuse", secretName)
 		return nil
 	}
@@ -570,7 +636,7 @@ func createPgbouncerSecret(clientset *kubernetes.Clientset, cluster *crv1.Pgclus
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: secretName,
 			Labels: map[string]string{
-				config.LABEL_PG_CLUSTER: cluster.Spec.Name,
+				config.LABEL_PG_CLUSTER: cluster.Name,
 				config.LABEL_PGBOUNCER:  "true",
 				config.LABEL_VENDOR:     config.LABEL_CRUNCHY,
 			},
@@ -584,7 +650,7 @@ func createPgbouncerSecret(clientset *kubernetes.Clientset, cluster *crv1.Pgclus
 		},
 	}
 
-	if err := kubeapi.CreateSecret(clientset, &secret, cluster.Spec.Namespace); err != nil {
+	if err := kubeapi.CreateSecret(clientset, &secret, cluster.Namespace); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -596,19 +662,19 @@ func createPgbouncerSecret(clientset *kubernetes.Clientset, cluster *crv1.Pgclus
 func createPgBouncerService(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) error {
 	// pgBouncerServiceName is the name of the Service of the pgBouncer, which
 	// matches that for the Deploymnt
-	pgBouncerServiceName := fmt.Sprintf(pgBouncerDeploymentFormat, cluster.Spec.Name)
+	pgBouncerServiceName := fmt.Sprintf(pgBouncerDeploymentFormat, cluster.Name)
 
 	// set up the service template fields
 	fields := ServiceTemplateFields{
 		Name:        pgBouncerServiceName,
 		ServiceName: pgBouncerServiceName,
-		ClusterName: cluster.Spec.Name,
+		ClusterName: cluster.Name,
 		// TODO: I think "port" needs to be evaluated, but I think for now using
 		// the standard PostgreSQL port works
 		Port: operator.Pgo.Cluster.Port,
 	}
 
-	if err := CreateService(clientset, &fields, cluster.Spec.Namespace); err != nil {
+	if err := CreateService(clientset, &fields, cluster.Namespace); err != nil {
 		return err
 	}
 
@@ -633,6 +699,38 @@ func execPgBouncerScript(clientset *kubernetes.Clientset, restconfig *rest.Confi
 	}
 }
 
+// generateContainerResources is a helper function to get a Kubernetes resource
+// value that is used to set the container resources on a Container. This
+// returns the standard Kubernetes ResourceList tht ais used to capture the
+// resources or an error
+func generateContainerResources(cpu, memory string) (v1.ResourceList, error) {
+	resources := v1.ResourceList{}
+
+	// if there is a value set for CPU, attempt to add it to the resource list
+	if cpu != "" {
+		quantity, err := resource.ParseQuantity(cpu)
+
+		if err != nil {
+			return resources, err
+		}
+
+		resources[v1.ResourceCPU] = quantity
+	}
+
+	// if there is a value set for Memory, attempt to add it to the resource list
+	if memory != "" {
+		quantity, err := resource.ParseQuantity(memory)
+
+		if err != nil {
+			return resources, err
+		}
+
+		resources[v1.ResourceMemory] = quantity
+	}
+
+	return resources, nil
+}
+
 // generatePassword generates a password that is used for the "pgbouncer"
 // PostgreSQL user that provides the associated pgBouncer functionality
 func generatePassword() string {
@@ -654,7 +752,7 @@ func generatePgBouncerConf(cluster *crv1.Pgcluster) ([]byte, error) {
 
 	// set up the substitution fields for the pgbouncer.ini file
 	fields := PgbouncerConfFields{
-		PG_PRIMARY_SERVICE_NAME: cluster.Spec.Name,
+		PG_PRIMARY_SERVICE_NAME: cluster.Name,
 		PG_PORT:                 port,
 	}
 
@@ -698,7 +796,7 @@ func generatePgtaskForPgBouncer(cluster *crv1.Pgcluster, pgouser, taskType, task
 	// create the specfile with the required parameters for creating a pgtask
 	spec := crv1.PgtaskSpec{
 		Namespace:  cluster.Namespace,
-		Name:       fmt.Sprintf("%s-%s", taskLabel, cluster.Spec.ClusterName),
+		Name:       fmt.Sprintf("%s-%s", taskLabel, cluster.Name),
 		TaskType:   taskType,
 		Parameters: parameters,
 	}
@@ -708,7 +806,7 @@ func generatePgtaskForPgBouncer(cluster *crv1.Pgcluster, pgouser, taskType, task
 		ObjectMeta: meta_v1.ObjectMeta{
 			Name: spec.Name,
 			Labels: map[string]string{
-				config.LABEL_PG_CLUSTER: cluster.Spec.ClusterName,
+				config.LABEL_PG_CLUSTER: cluster.Name,
 				taskLabel:               "true",
 				config.LABEL_PGOUSER:    pgouser,
 			},
@@ -743,6 +841,24 @@ func getPgBouncerDatabases(clientset *kubernetes.Clientset, restconfig *rest.Con
 
 	// return the list of databases, that will be in a multi-line string
 	return bufio.NewScanner(strings.NewReader(stdout)), nil
+}
+
+// getPgBouncerDeployment finds the pgBouncer deployment for a PostgreSQL
+// cluster
+func getPgBouncerDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) (*appsv1.Deployment, error) {
+	log.Debugf("find pgbouncer for: %s", cluster.Name)
+
+	// derive the name of the Deployment...which is also used as the name of the
+	// service
+	pgbouncerDeploymentName := fmt.Sprintf(pgBouncerDeploymentFormat, cluster.Name)
+
+	deployment, _, err := kubeapi.GetDeployment(clientset, pgbouncerDeploymentName, cluster.Namespace)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return deployment, nil
 }
 
 // installPgBouncer installs the "pgbouncer" user and other management objects
@@ -811,7 +927,7 @@ func publishPgBouncerEvent(eventType string, task *crv1.Pgtask) {
 // which involves updating the password in the PostgreSQL cluster as well as
 // the users secret that is available in the pgbouncer Pod
 func rotatePgBouncerPassword(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
-	namspace := cluster.Spec.Namespace
+	namspace := cluster.Namespace
 	// determine if we are able to access the primary Pod
 	primaryPod, err := util.GetPrimaryPod(clientset, cluster)
 
@@ -821,7 +937,7 @@ func rotatePgBouncerPassword(clientset *kubernetes.Clientset, restclient *rest.R
 
 	// let's also go ahead and get the secret that contains the pgBouncer
 	// information. If we can't find the secret, we're basically done here
-	secretName := util.GeneratePgBouncerSecretName(cluster.Spec.Name)
+	secretName := util.GeneratePgBouncerSecretName(cluster.Name)
 	secret, _, err := kubeapi.GetSecret(clientset, secretName, namspace)
 
 	if err != nil {
@@ -863,7 +979,8 @@ func rotatePgBouncerPassword(clientset *kubernetes.Clientset, restclient *rest.R
 	// now we wait for the password to propagate to all of the pgbouncer pods in
 	// the deployment
 	// set up the selector for the primary pod
-	selector := fmt.Sprintf("%s=true", config.LABEL_PGBOUNCER)
+	selector := fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER, cluster.Name,
+		config.LABEL_PGBOUNCER)
 
 	// query the pods
 	pods, err := kubeapi.GetPods(clientset, selector, namspace)
@@ -938,6 +1055,34 @@ func uninstallPgBouncer(clientset *kubernetes.Clientset, restconfig *rest.Config
 	// stderr and return the error
 	if err != nil {
 		log.Error(stderr)
+		return err
+	}
+
+	return nil
+}
+
+// updatePgBouncerResources updates the pgBouncer Deployment with the container
+// resource request values that are desired
+func updatePgBouncerResources(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cluster *crv1.Pgcluster) error {
+	// first, update the pgcluster CR with the updated values
+	if err := kubeapi.Updatepgcluster(restclient, cluster, cluster.Name, cluster.Namespace); err != nil {
+		return err
+	}
+
+	// get the pgBouncer deployment so the resources can be updated
+	deployment, err := getPgBouncerDeployment(clientset, cluster)
+
+	if err != nil {
+		return err
+	}
+
+	// the pgBouncer container is the first one, the resources can be updated
+	// from it
+	deployment.Spec.Template.Spec.Containers[0].Resources.Requests = cluster.Spec.PgBouncerResources
+
+	// and update the deployment
+	// update the deployment with the new values
+	if err := kubeapi.UpdateDeployment(clientset, deployment); err != nil {
 		return err
 	}
 

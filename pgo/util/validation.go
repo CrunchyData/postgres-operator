@@ -16,8 +16,11 @@ package util
 */
 
 import (
-	log "github.com/sirupsen/logrus"
+	"fmt"
 	"regexp"
+
+	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 var validResourceName = regexp.MustCompile(`^[a-z0-9.\-]+$`).MatchString
@@ -32,4 +35,22 @@ func IsValidForResourceName(target string) bool {
 	log.Debugf("IsValidForResourceName: %s", target)
 
 	return validResourceName(target)
+}
+
+// ValidateQuantity runs the Kubernetes "ParseQuantity" function on a string
+// and determine whether or not it is a valid quantity object. Returns an error
+// if it is invalid, along with the error message pertaining to the specific
+// flag.
+//
+// Does nothing if no value is passed in
+//
+// See: https://github.com/kubernetes/apimachinery/blob/master/pkg/api/resource/quantity.go
+func ValidateQuantity(quantity, flag string) error {
+	if quantity != "" {
+		if _, err := resource.ParseQuantity(quantity); err != nil {
+			return fmt.Errorf("Error: \"%s\" - %s", flag, err.Error())
+		}
+	}
+
+	return nil
 }

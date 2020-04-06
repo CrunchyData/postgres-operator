@@ -26,7 +26,10 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"
+
 	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -42,6 +45,21 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
+	// validate the CPU/Memory request parameters, if they are passed in
+	if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest,
+			request.CPURequest, err.Error())
+		return resp
+	}
+
+	if err := apiserver.ValidateQuantity(request.MemoryRequest); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest,
+			request.MemoryRequest, err.Error())
+		return resp
+	}
+
 	log.Debugf("createPgbouncer selector is [%s]", request.Selector)
 
 	// try to get the list of clusters. if there is an error, put it into the
@@ -56,6 +74,29 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 
 	for _, cluster := range clusterList.Items {
 		log.Debugf("adding pgbouncer to cluster [%s]", cluster.Name)
+
+		resources := v1.ResourceList{}
+
+		// if the request has overriding CPURequest and/or MemoryRequest parameters,
+		// these will take precedence over the defaults
+		if request.CPURequest != "" {
+			// as this was already validated, we can ignore the error
+			quantity, _ := resource.ParseQuantity(request.CPURequest)
+			resources[v1.ResourceCPU] = quantity
+		}
+
+		if request.MemoryRequest != "" {
+			// as this was already validated, we can ignore the error
+			quantity, _ := resource.ParseQuantity(request.MemoryRequest)
+			resources[v1.ResourceMemory] = quantity
+		}
+
+		// set this value on the cluster spec, but this is only *temporary* in this
+		// context. The values are only needed to be transferred over to the pgtask
+		// They are permanently saved later on.
+		// in the future, we would just udpate the pgcluster CR to make this
+		// occur...
+		cluster.Spec.PgBouncerResources = resources
 
 		if err := clusteroperator.CreatePgTaskforAddpgBouncer(apiserver.RESTClient, &cluster, pgouser); err != nil {
 			log.Error(err)
@@ -222,6 +263,21 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 		},
 	}
 
+	// validate the CPU/Memory request parameters, if they are passed in
+	if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest,
+			request.CPURequest, err.Error())
+		return response
+	}
+
+	if err := apiserver.ValidateQuantity(request.MemoryRequest); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest,
+			request.MemoryRequest, err.Error())
+		return response
+	}
+
 	log.Debugf("update pgbouncer called, cluster [%v], selector [%s]", request.ClusterNames, request.Selector)
 
 	// try to get the list of clusters. if there is an error, put it into the
@@ -269,6 +325,34 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 		if request.RotatePassword {
 			parameters[config.LABEL_PGBOUNCER_ROTATE_PASSWORD] = "true"
 		}
+
+		// if the request has overriding CPURequest and/or MemoryRequest parameters,
+		// add them to the cluster's pgbouncer resource list
+		resources := cluster.Spec.PgBouncerResources
+		if resources == nil {
+			resources = v1.ResourceList{}
+		}
+
+		if request.CPURequest != "" {
+			// as this was already validated, we can ignore the error
+			quantity, _ := resource.ParseQuantity(request.CPURequest)
+			resources[v1.ResourceCPU] = quantity
+			parameters[config.LABEL_PGBOUNCER_UPDATE_RESOURCES] = "true"
+		}
+
+		if request.MemoryRequest != "" {
+			// as this was already validated, we can ignore the error
+			quantity, _ := resource.ParseQuantity(request.MemoryRequest)
+			resources[v1.ResourceMemory] = quantity
+			parameters[config.LABEL_PGBOUNCER_UPDATE_RESOURCES] = "true"
+		}
+
+		// set this value on the cluster spec, but this is only *temporary* in this
+		// context. The values are only needed to be transferred over to the pgtask
+		// They are permanently saved later on.
+		// in the future, we would just udpate the pgcluster CR to make this
+		// occur...
+		cluster.Spec.PgBouncerResources = resources
 
 		if err := clusteroperator.CreatePgTaskforUpdatepgBouncer(apiserver.RESTClient, &cluster, pgouser, parameters); err != nil {
 			log.Error(err)

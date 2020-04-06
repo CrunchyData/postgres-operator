@@ -86,6 +86,10 @@ func init() {
 			"Follows the Kubernetes quantity format.\n\n"+
 			"For example, to create a tablespace with the NFS storage configuration with a PVC of size 10GiB:\n\n"+
 			"--tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi")
+	UpdatePgBouncerCmd.Flags().StringVar(&PgBouncerCPURequest, "cpu", "", "Set the number of millicores to request for CPU "+
+		"for pgBouncer.")
+	UpdatePgBouncerCmd.Flags().StringVar(&PgBouncerMemoryRequest, "memory", "", "Set the amount of Memory to request for "+
+		"pgBouncer.")
 	UpdatePgBouncerCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdatePgBouncerCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
 	UpdatePgBouncerCmd.Flags().BoolVar(&RotatePassword, "rotate-password", false, "Used to rotate the pgBouncer service account password. Can cause interruption of service.")
