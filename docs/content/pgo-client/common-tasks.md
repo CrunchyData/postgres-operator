@@ -668,6 +668,10 @@ pgo restore hacluster --pitr-target="2019-12-23 08:00:00.000000+00" \
   --backup-opts="--type=time"
 ```
 
+When the restore is complete, the cluster is immediately available for reads and
+writes. To inspect the data before allowing connections, add pgBackRest's
+`--target-action=pause` option to the `--backup-opts` parameter.
+
 The PostgreSQL Operator supports the full set of pgBackRest restore options,
 which can be passed into the `--backup-opts` parameter. For more information,
 please review the [pgBackRest restore options](https://pgbackrest.org/command.html#command-restore)
