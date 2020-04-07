@@ -7,7 +7,7 @@ weight: 30
 
 # Updating
 
-Updating the Crunchy PostgreSQL Operator is essential to the lifecycle management 
+Updating the Crunchy PostgreSQL Operator is essential to the lifecycle management
 of the service.  Using the `update` flag will:
 
 * Update and redeploy the operator deployment
@@ -19,8 +19,8 @@ of the service.  Using the `update` flag will:
 The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prerequisites/)
 we can now update the PostgreSQL Operator.
 
-The commands should be run in the directory where the Crunchy PostgreSQL Operator 
-playbooks is stored.  See the `ansible` directory in the Crunchy PostgreSQL Operator 
+The commands should be run in the directory where the Crunchy PostgreSQL Operator
+playbooks is stored.  See the `ansible` directory in the Crunchy PostgreSQL Operator
 project for the inventory file, main playbook and ansible roles.
 
 ## Updating on Linux
@@ -62,7 +62,7 @@ ansible-playbook -i /path/to/inventory --tags=update --ask-become-pass main.yml
 
 ## Verifying the Update
 
-This may take a few minutes to deploy.  To check the status of the deployment run 
+This may take a few minutes to deploy.  To check the status of the deployment run
 the following:
 
 ```bash
@@ -77,7 +77,7 @@ oc get pods -n <NAMESPACE_NAME>
 
 ## Configure Environment Variables
 
-After the Crunchy PostgreSQL Operator has successfully been updated we will need 
+After the Crunchy PostgreSQL Operator has successfully been updated we will need
 to configure local environment variables before using the `pgo` client.
 
 To configure the environment variables used by `pgo` run the following command:
@@ -104,25 +104,25 @@ source ~/.bashrc
 
 ## Verify `pgo` Connection
 
-In a separate terminal we need to setup a port forward to the Crunchy PostgreSQL 
+In a separate terminal we need to setup a port forward to the Crunchy PostgreSQL
 Operator to ensure connection can be made outside of the cluster:
 
 ```bash
 # If deployed to Kubernetes
-kubectl port-forward <OPERATOR_POD_NAME> -n <OPERATOR_NAMESPACE> 8443:8443
+kubectl port-forward -n pgo svc/postgres-operator 8443:8443
 
 # If deployed to OpenShift
-oc port-forward <OPERATOR_POD_NAME> -n <OPERATOR_NAMESPACE> 8443:8443
+oc port-forward -n pgo svc/postgres-operator 8443:8443
 ```
+In the above examples, you can substitute `pgo` for the namespace that you
+deployed the PostgreSQL Operator into.
 
-Note: If a port other than 8443 was configured, update the above command accordingly.
-
-On a separate terminal verify the `pgo` can communicate with the Crunchy PostgreSQL 
-Operator:
+On a separate terminal verify the PostgreSQL Operator client can communicate
+with the PostgreSQL Operator:
 
 ```bash
 pgo version
 ```
 
-If the above command outputs versions of both the client and API server, the Crunchy 
+If the above command outputs versions of both the client and API server, the Crunchy
 PostgreSQL Operator has been updated successfully.

@@ -27,7 +27,7 @@ event stream.  If you have the correct priviledges
 to connect to the Operator pod, you can port forward
 as follows to form a connection to the event stream:
 
-    kubectl port-forward postgres-operator-XXXXXX 14150:4150 -n pgo
+    kubectl port-forward svc/postgres-operator 14150:4150 -n pgo
 
 ## Event Topics
 

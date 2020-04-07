@@ -7,11 +7,11 @@ weight: 22
 
 # Installing
 
-PostgreSQL clusters created by the Crunchy PostgreSQL Operator can optionally be 
-configured to serve performance metrics via Prometheus Exporters.  The metric exporters 
-included in the database pod serve realtime metrics for the database container.  In 
-order to store and view this data, Grafana and Prometheus are required.  The Crunchy 
-PostgreSQL Operator does not create this infrastructure, however, they can be installed 
+PostgreSQL clusters created by the Crunchy PostgreSQL Operator can optionally be
+configured to serve performance metrics via Prometheus Exporters.  The metric exporters
+included in the database pod serve realtime metrics for the database container.  In
+order to store and view this data, Grafana and Prometheus are required.  The Crunchy
+PostgreSQL Operator does not create this infrastructure, however, they can be installed
 using the provided Ansible roles.
 
 ## Prerequisites
@@ -19,7 +19,7 @@ using the provided Ansible roles.
 The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prerequisites/)
 we can now install the PostgreSQL Operator.
 
-At a minimum, the following inventory variables should be configured to install the 
+At a minimum, the following inventory variables should be configured to install the
 metrics infrastructure:
 
 | Name                              | Default     | Description                                                                                                                                                                      |
@@ -45,7 +45,7 @@ metrics infrastructure:
 | `prometheus_storage_class_name`   |             | Set to the name of the storage class used when creating Prometheus persistent volumes.                                                                                           |
 
 {{% notice tip %}}
-Administrators can choose to install Grafana, Prometheus or both by configuring the 
+Administrators can choose to install Grafana, Prometheus or both by configuring the
 `grafana_install` and `prometheus_install` variables in the inventory files.
 {{% /notice %}}
 
@@ -60,7 +60,7 @@ For more information on storage classes see the [official Kubernetes documentati
 
 ## Installing on Linux
 
-On a Linux host with Ansible installed we can run the following command to install 
+On a Linux host with Ansible installed we can run the following command to install
 the Metrics stack:
 
 ```bash
@@ -79,7 +79,7 @@ ansible-playbook -i /path/to/inventory --tags=install-metrics --ask-become-pass 
 
 ## Installing on MacOS
 
-On a MacOS host with Ansible installed we can run the following command to install 
+On a MacOS host with Ansible installed we can run the following command to install
 the Metrics stack:
 
 ```bash
@@ -88,7 +88,7 @@ ansible-playbook -i /path/to/inventory --tags=install-metrics main.yml
 
 ## Installing on Windows
 
-On a Windows host with the Ubuntu subsystem we can run the following commands to install 
+On a Windows host with the Ubuntu subsystem we can run the following commands to install
 the Metrics stack:
 
 ```bash
@@ -97,7 +97,7 @@ ansible-playbook -i /path/to/inventory --tags=install-metrics main.yml
 
 ## Verifying the Installation
 
-This may take a few minutes to deploy.  To check the status of the deployment run 
+This may take a few minutes to deploy.  To check the status of the deployment run
 the following:
 
 ```bash
@@ -112,15 +112,15 @@ oc get pods -n <NAMESPACE_NAME>
 
 ## Verify Grafana
 
-In a separate terminal we need to setup a port forward to the Crunchy Grafana deployment 
+In a separate terminal we need to setup a port forward to the Crunchy Grafana deployment
 to ensure connection can be made outside of the cluster:
 
 ```bash
 # If deployed to Kubernetes
-kubectl port-forward <GRAFANA_POD_NAME> -n <METRICS_NAMESPACE> 3000:3000
+kubectl port-forward -n <METRICS_NAMESPACE> svc/grafana 3000:3000
 
 # If deployed to OpenShift
-oc port-forward <GRAFANA_POD_NAME> -n <METRICS_NAMESPACE> 3000:3000
+oc port-forward -n <METRICS_NAMESPACE> svc/grafana 3000:3000
 ```
 
 In a browser navigate to `http://127.0.0.1:3000` to access the Grafana dashboard.
@@ -136,21 +136,21 @@ pgo create cluster <NAME OF CLUSTER> --metrics --namespace=<NAMESPACE>
 
 ## Verify Prometheus
 
-In a separate terminal we need to setup a port forward to the Crunchy Prometheus deployment 
+In a separate terminal we need to setup a port forward to the Crunchy Prometheus deployment
 to ensure connection can be made outside of the cluster:
 
 ```bash
 # If deployed to Kubernetes
-kubectl port-forward <PROMETHEUS_POD_NAME> -n <METRICS_NAMESPACE> 9090:9090
+kubectl port-forward -n <METRICS_NAMESPACE> svc/prometheus  9090:9090
 
 # If deployed to OpenShift
-oc port-forward <PROMETHEUS_POD_NAME> -n <METRICS_NAMESPACE> 9090:9090
+oc port-forward -n <METRICS_NAMESPACE> svc/prometheus 9090:9090
 ```
 
 In a browser navigate to `http://127.0.0.1:9090` to access the Prometheus dashboard.
 
 {{% notice tip %}}
-No metrics will be scraped if no exporters are available.  To create a PostgreSQL 
+No metrics will be scraped if no exporters are available.  To create a PostgreSQL
 cluster with metric exporters run the following command:
 
 ```bash
