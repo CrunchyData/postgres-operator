@@ -105,13 +105,16 @@ Operator to ensure connection can be made outside of the cluster:
 
 ```bash
 # If deployed to Kubernetes
-kubectl port-forward <OPERATOR_POD_NAME> -n <OPERATOR_NAMESPACE> 8443:8443
+kubectl port-forward -n pgo svc/postgres-operator 8443:8443
 
 # If deployed to OpenShift
-oc port-forward <OPERATOR_POD_NAME> -n <OPERATOR_NAMESPACE> 8443:8443
+oc port-forward -n pgo svc/postgres-operator 8443:8443
 ```
 
-On a separate terminal verify the `pgo` can communicate with the Crunchy PostgreSQL
+You can subsitute `pgo` in the above examples with the namespace that you
+deployed the PostgreSQL Operator into.
+
+On a separate terminal verify the PostgreSQL client can communicate with the Crunchy PostgreSQL
 Operator:
 
 ```bash

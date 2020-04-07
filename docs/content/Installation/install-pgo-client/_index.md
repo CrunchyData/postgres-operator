@@ -33,7 +33,7 @@ The following will setup the `pgo` client to be used on a Linux or MacOS system.
 ### Installing the Client
 
 First, download the `pgo` client from the
-[GitHub official releases](https://github.com/CrunchyData/postgres-operator/releases). Crunchy Enterprise Customers can download the pgo binaries from https://access.crunchydata.com/ on the downloads page. 
+[GitHub official releases](https://github.com/CrunchyData/postgres-operator/releases). Crunchy Enterprise Customers can download the pgo binaries from https://access.crunchydata.com/ on the downloads page.
 
 Next, install `pgo` in `/usr/local/bin` by running the following:
 
@@ -115,13 +115,17 @@ ensure connection can be made outside of the cluster:
 
 ```bash
 # If deployed to Kubernetes
-kubectl port-forward <OPERATOR_POD_NAME> -n <OPERATOR_NAMESPACE> 8443:8443
+kubectl port-forward -n pgo svc/postgres-operator 8443:8443
 
 # If deployed to OpenShift
-oc port-forward <OPERATOR_POD_NAME> -n <OPERATOR_NAMESPACE> 8443:8443
+oc port-forward -n pgo svc/postgres-operator 8443:8443
 ```
 
-**Note**: the port-forward will be required for the duration of `pgo` usage.
+In the above examples, you can substitute `pgo` for the namespace that you
+deployed the PostgreSQL Operator into.
+
+**Note**: The port-forward will be required for the duration of using the
+PostgreSQL client.
 
 Next, set the following environment variable to configure the API server address:
 
@@ -141,18 +145,18 @@ source ${HOME?}/.bashrc
 
 ## PGO-Client Container
 
-The following will setup the `pgo` client image in a Kubernetes or Openshift 
+The following will setup the `pgo` client image in a Kubernetes or Openshift
 environment. The image must be installed using the Ansible installer.
 
 ### Installing the PGO-Client Container
 The pgo-client container can be installed with the Ansible installer by updating
-the `pgo_client_container_install` variable in the inventory file. Set this 
-variable to true in the inventory file and run the ansible-playbook. As part of 
+the `pgo_client_container_install` variable in the inventory file. Set this
+variable to true in the inventory file and run the ansible-playbook. As part of
 the install the `pgo.tls` and `pgouser-<username>` secrets are used to configure
-the `pgo` client. 
+the `pgo` client.
 
 ### Using the PGO-Client Deployment
-Once the container has been installed you can access it by exec'ing into the 
+Once the container has been installed you can access it by exec'ing into the
 pod. You can run single commands with the kubectl or oc command line tools
 or multiple commands by exec'ing into the pod with bash.
 
@@ -255,13 +259,17 @@ ensure connection can be made outside of the cluster:
 
 ```bash
 # If deployed to Kubernetes
-kubectl port-forward <OPERATOR_POD_NAME> -n <OPERATOR_NAMESPACE> 8443:8443
+kubectl port-forward -n pgo svc/postgres-operator 8443:8443
 
 # If deployed to OpenShift
-oc port-forward <OPERATOR_POD_NAME> -n <OPERATOR_NAMESPACE> 8443:8443
+oc port-forward -n pgo svc/postgres-operator 8443:8443
 ```
 
-**Note**: the port-forward will be required for the duration of `pgo` usage.
+In the above examples, you can substitute `pgo` for the namespace that you
+deployed the PostgreSQL Operator into.
+
+**Note**: The port-forward will be required for the duration of using the
+PostgreSQL client.
 
 Next, set the following environment variable to configure the API server address:
 
