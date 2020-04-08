@@ -327,9 +327,6 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	cluster.Spec.UserLabels[config.LABEL_PGHA_SCOPE] = restoreToName
 
 	archiveMode := "on"
-	xlogdir := "false"
-	archivePVCName := ""
-	backrestPVCName := cluster.Spec.Name + "-backrestrepo"
 
 	var affinityStr string
 	if affinity != nil {
@@ -365,9 +362,6 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		DataPathOverride:  restoreToName,
 		Database:          cluster.Spec.Database,
 		ArchiveMode:       archiveMode,
-		ArchivePVCName:    util.CreateBackupPVCSnippet(archivePVCName),
-		XLOGDir:           xlogdir,
-		BackrestPVCName:   util.CreateBackrestPVCSnippet(backrestPVCName),
 		SecurityContext:   util.GetPodSecurityContext(cluster.Spec.PrimaryStorage.GetSupplementalGroups()),
 		RootSecretName:    cluster.Spec.RootSecretName,
 		PrimarySecretName: cluster.Spec.PrimarySecretName,
