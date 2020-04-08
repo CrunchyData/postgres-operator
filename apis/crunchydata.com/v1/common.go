@@ -89,7 +89,6 @@ type PgStorageSpec struct {
 	AccessMode         string `json:"accessmode"`
 	Size               string `json:"size"`
 	StorageType        string `json:"storagetype"`
-	Fsgroup            string `json:"fsgroup"`
 	SupplementalGroups string `json:"supplementalgroups"`
 	MatchLabels        string `json:"matchLabels"`
 }
