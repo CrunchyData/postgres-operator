@@ -24,17 +24,17 @@ import (
 )
 
 type LoadConfig struct {
-	PGOImagePrefix    string `yaml:"PGOImagePrefix"`
-	PGOImageTag       string `yaml:"PGOImageTag"`
-	DbDatabase        string `yaml:"DbDatabase"`
-	DbUser            string `yaml:"DbUser"`
-	DbPort            string `yaml:"DbPort"`
-	TableToLoad       string `yaml:"TableToLoad"`
-	FilePath          string `yaml:"FilePath"`
-	FileType          string `yaml:"FileType"`
-	PVCName           string `yaml:"PVCName"`
-	FSGroup           string `yaml:"FSGroup"`
-	SupplementalGroup string `yaml:"SupplementalGroup"`
+	PGOImagePrefix    string
+	PGOImageTag       string
+	DbDatabase        string
+	DbUser            string
+	DbPort            string
+	TableToLoad       string
+	FilePath          string
+	FileType          string
+	PVCName           string
+	FSGroup           string
+	SupplementalGroup string
 }
 
 func (c *LoadConfig) validate() error {

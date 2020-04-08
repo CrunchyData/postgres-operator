@@ -89,6 +89,8 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 			// as this was already validated, we can ignore the error
 			quantity, _ := resource.ParseQuantity(request.MemoryRequest)
 			resources[v1.ResourceMemory] = quantity
+		} else {
+			resources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultPgBouncerResourceMemory
 		}
 
 		// set this value on the cluster spec, but this is only *temporary* in this

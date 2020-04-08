@@ -17,6 +17,10 @@ crunchy_debug: "false"
 enable_crunchyadm: "false"
 disable_replica_start_fail_reinit: "false"
 
+default_instance_memory: ""
+default_pgbackrest_memory: ""
+default_pgbouncer_memory: ""
+
 pgo_client_install: "true"
 pgo_client_container_install: "false"
 pgo_cluster_admin: "false"

@@ -38,6 +38,9 @@ The *pgo.yaml* file is broken into major sections as described below:
 |DisableReplicaStartFailReinit | if set to `true` will disable the detection of a "start failed" states in PG replicas, which results in the re-initialization of the replica in an attempt to bring it back online
 |PodAntiAffinity        | either `preferred`, `required` or `disabled` to either specify the type of affinity that should be utilized for the default pod anti-affinity applied to PG clusters, or to disable default pod anti-affinity all together (default `preferred`)
 |SyncReplication | boolean, if set to `true` will automatically enable synchronous replication in new PostgreSQL clusters (default `false`)
+|DefaultInstanceMemory | string, matches a Kubernetes resource value. If set, it is used as the default value of the memory request for each instance in a PostgreSQL cluster (default `512Mi`)
+|DefaultBackrestMemory | string, matches a Kubernetes resource value. If set, it is used as the default value of the memory request for the pgBackRest repository (default `48Mi`)
+|DefaultPgBouncerMemory | string, matches a Kubernetes resource value. If set, it is used as the default value of the memory request for pgBouncer instances (default `24Mi`)
 
 ## Storage
 | Setting|Definition  |
