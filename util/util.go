@@ -135,25 +135,6 @@ func CreatePVCSnippet(storageType string, PVCName string) string {
 	return sc.String()
 }
 
-// CreateBackupPVCSnippet generates the PVC definition fragment
-func CreateBackupPVCSnippet(backupPVCName string) string {
-
-	var sc bytes.Buffer
-
-	if backupPVCName != "" {
-		sc.WriteString("\"persistentVolumeClaim\": {\n")
-		sc.WriteString("\t \"claimName\": \"" + backupPVCName + "\"")
-		sc.WriteString("\n")
-	} else {
-		sc.WriteString("\"emptyDir\": {")
-		sc.WriteString("\n")
-	}
-
-	sc.WriteString("}")
-
-	return sc.String()
-}
-
 // GetLabels ...
 func GetLabels(name, clustername string, replica bool) string {
 	var output string
@@ -251,26 +232,6 @@ func RandStringBytesRmndr(n int) string {
 		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
 	}
 	return string(b)
-}
-
-// CreateBackrestPVCSnippet
-func CreateBackrestPVCSnippet(backRestPVCName string) string {
-
-	var sc bytes.Buffer
-
-	if backRestPVCName != "" {
-		sc.WriteString("\"persistentVolumeClaim\": {\n")
-		sc.WriteString("\t \"claimName\": \"" + backRestPVCName + "\"")
-		sc.WriteString("\n")
-	} else {
-		sc.WriteString("\"emptyDir\": {")
-		sc.WriteString("\"medium\": \"Memory\"")
-		sc.WriteString("\n")
-	}
-
-	sc.WriteString("}")
-
-	return sc.String()
 }
 
 // IsStringOneOf tests to see string testVal is included in the list

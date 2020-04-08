@@ -123,7 +123,6 @@ type PgmonitorEnvVarsTemplateFields struct {
 	PgmonitorPassword string
 }
 
-// needs to be consolidated with cluster.DeploymentTemplateFields
 // DeploymentTemplateFields ...
 type DeploymentTemplateFields struct {
 	Name                string
@@ -137,9 +136,6 @@ type DeploymentTemplateFields struct {
 	PodLabels           string
 	DataPathOverride    string
 	ArchiveMode         string
-	ArchivePVCName      string
-	XLOGDir             string
-	BackrestPVCName     string
 	PVCName             string
 	RootSecretName      string
 	UserSecretName      string
@@ -275,7 +271,7 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 	if spec.UserLabels[config.LABEL_COLLECT] == "true" {
 		log.Debug("crunchy_collect was found as a label on cluster create")
 
-		log.Debug("creating collect secret for cluster %s", spec.Name)
+		log.Debugf("creating collect secret for cluster %s", spec.Name)
 		err := util.CreateSecret(clientset, spec.Name, spec.CollectSecretName, config.LABEL_COLLECT_PG_USER,
 			Pgo.Cluster.PgmonitorPassword, namespace)
 
@@ -432,7 +428,7 @@ func GetInstanceDeployments(clientset *kubernetes.Clientset, cluster *crv1.Pgclu
 }
 
 // GetTablespaceNames generates a comma-separated list of the format
-// "tablespaceName1mtablespceName2" so that the PVC containing a tablespace
+// "tablespaceName1,tablespceName2" so that the PVC containing a tablespace
 // can be properly mounted in the container, and the tablespace can be
 // referenced by the specified human readable name.  We use a comma-separated
 // list to make it "easier" to work with the shell scripts that currently setup

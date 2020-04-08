@@ -73,21 +73,14 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	cl.Spec.UserLabels["name"] = cl.Spec.Name
 	cl.Spec.UserLabels[config.LABEL_PG_CLUSTER] = cl.Spec.ClusterName
 
-	archivePVCName := ""
 	archiveMode := "off"
-	xlogdir := "false"
 	if cl.Spec.UserLabels[config.LABEL_ARCHIVE] == "true" {
 		archiveMode = "on"
-		archivePVCName = cl.Spec.Name + "-xlog"
 	}
 
 	if cl.Labels[config.LABEL_BACKREST] == "true" {
 		//backrest requires us to turn on archive mode
 		archiveMode = "on"
-		//backrest doesn't use xlog, so we make the pvc an emptydir
-		//by setting the name to empty string
-		archivePVCName = ""
-		xlogdir = "false"
 		err = backrest.CreateRepoDeployment(clientset, namespace, cl, true)
 		if err != nil {
 			log.Error("could not create backrest repo deployment")
@@ -124,8 +117,6 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		DataPathOverride:   cl.Spec.Name,
 		Database:           cl.Spec.Database,
 		ArchiveMode:        archiveMode,
-		ArchivePVCName:     util.CreateBackupPVCSnippet(archivePVCName),
-		XLOGDir:            xlogdir,
 		SecurityContext:    util.GetPodSecurityContext(cl.Spec.PrimaryStorage.GetSupplementalGroups()),
 		RootSecretName:     cl.Spec.RootSecretName,
 		PrimarySecretName:  cl.Spec.PrimarySecretName,
@@ -253,20 +244,13 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 	cluster.Spec.UserLabels["name"] = serviceName
 	cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER] = replica.Spec.ClusterName
 
-	archivePVCName := ""
 	archiveMode := "off"
-	xlogdir := "false"
 	if cluster.Spec.UserLabels[config.LABEL_ARCHIVE] == "true" {
 		archiveMode = "on"
-		archivePVCName = replica.Spec.Name + "-xlog"
 	}
-
 	if cluster.Labels[config.LABEL_BACKREST] == "true" {
 		//backrest requires archive mode be set to on
 		archiveMode = "on"
-		//set to emptystring to force emptyDir to be used
-		archivePVCName = ""
-		xlogdir = "false"
 	}
 
 	image := cluster.Spec.CCPImage
@@ -312,8 +296,6 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 		Database:           cluster.Spec.Database,
 		DataPathOverride:   replica.Spec.Name,
 		ArchiveMode:        archiveMode,
-		ArchivePVCName:     util.CreateBackupPVCSnippet(archivePVCName),
-		XLOGDir:            xlogdir,
 		Replicas:           "1",
 		ConfVolume:         operator.GetConfVolume(clientset, cluster, namespace),
 		DeploymentLabels:   operator.GetLabelsFromMap(cluster.Spec.UserLabels),
