@@ -18,8 +18,9 @@ limitations under the License.
 import (
 	"bytes"
 	"errors"
+
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+	"sigs.k8s.io/yaml"
 )
 
 type LoadConfig struct {

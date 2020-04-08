@@ -26,11 +26,13 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/yaml"
 )
 
 const CustomConfigMapName = "pgo-config"
@@ -391,20 +393,6 @@ func (c *PgoConfig) Validate() error {
 	}
 
 	return err
-}
-
-func (c *PgoConfig) GetConf() *PgoConfig {
-
-	yamlFile, err := ioutil.ReadFile(CONFIG_PATH)
-	if err != nil {
-		log.Printf("yamlFile.Get err   #%v ", err)
-	}
-	err = yaml.Unmarshal(yamlFile, c)
-	if err != nil {
-		log.Fatalf("Unmarshal: %v", err)
-	}
-
-	return c
 }
 
 // GetPodAntiAffinitySpec accepts possible user-defined values for what the

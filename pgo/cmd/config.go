@@ -18,11 +18,13 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
-	"os"
+	"sigs.k8s.io/yaml"
 )
 
 func showConfig(args []string, ns string) {

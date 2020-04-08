@@ -48,10 +48,6 @@ required = [
   name = "golang.org/x/crypto"
 
 [[constraint]]
-  name = "gopkg.in/yaml.v2"
-  version = "2.2.8"
-
-[[constraint]]
   name = "k8s.io/api"
   version = "0.17.4"
 
