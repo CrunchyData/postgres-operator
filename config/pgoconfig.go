@@ -227,13 +227,6 @@ type StorageStruct struct {
 	MatchLabels        string
 }
 
-type ContainerResourcesStruct struct {
-	RequestsMemory string
-	RequestsCPU    string
-	LimitsMemory   string
-	LimitsCPU      string
-}
-
 type PgoStruct struct {
 	Audit          bool
 	PGOImagePrefix string
@@ -241,15 +234,14 @@ type PgoStruct struct {
 }
 
 type PgoConfig struct {
-	BasicAuth          string
-	Cluster            ClusterStruct
-	Pgo                PgoStruct
-	ContainerResources map[string]ContainerResourcesStruct
-	PrimaryStorage     string
-	BackupStorage      string
-	ReplicaStorage     string
-	BackrestStorage    string
-	Storage            map[string]StorageStruct
+	BasicAuth       string
+	Cluster         ClusterStruct
+	Pgo             PgoStruct
+	PrimaryStorage  string
+	BackupStorage   string
+	ReplicaStorage  string
+	BackrestStorage string
+	Storage         map[string]StorageStruct
 }
 
 const DEFAULT_SERVICE_TYPE = "ClusterIP"
