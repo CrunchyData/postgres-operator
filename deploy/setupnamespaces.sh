@@ -37,10 +37,17 @@ else
 	echo namespace $PGO_OPERATOR_NAMESPACE created
 fi
 
-IFS=', ' read -r -a array <<< "$NAMESPACE"
-
 echo ""
 echo "creating namespaces for the Operator to watch and create PG clusters into..."
+
+IFS=', ' read -r -a array <<< "$NAMESPACE"
+
+if [ ${#array[@]} -eq 0 ]
+then
+    echo "NAMESPACE is empty, updating Operator namespace ${PGO_OPERATOR_NAMESPACE}"
+    $PGOROOT/deploy/add-targeted-namespace.sh ${PGO_OPERATOR_NAMESPACE} > /dev/null
+fi
+
 for ns in "${array[@]}"
 do
 	$PGO_CMD get namespace $ns > /dev/null 2> /dev/null

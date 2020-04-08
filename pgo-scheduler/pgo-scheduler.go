@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"strconv"
@@ -25,17 +26,16 @@ import (
 
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/controller"
+	nscontroller "github.com/crunchydata/postgres-operator/controller/namespace"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	crunchylog "github.com/crunchydata/postgres-operator/logging"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
 	sched "github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
-	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 )
 
 const (
@@ -45,6 +45,7 @@ const (
 	inCluster       = true
 )
 
+var nsRefreshInterval = 10 * time.Minute
 var installationName string
 var namespace string
 var pgoNamespace string
@@ -57,6 +58,11 @@ var kubeClient *kubernetes.Clientset
 // twice when a new scheduler-enabled ConfigMap is added.
 var informerNsMutex sync.Mutex
 var informerNamespaces map[string]struct{}
+
+// NamespaceOperatingMode defines the namespace operating mode for the cluster,
+// e.g. "dynamic", "readonly" or "disabled".  See type NamespaceOperatingMode
+// for detailed explanations of each mode available.
+var namespaceOperatingMode ns.NamespaceOperatingMode
 
 func init() {
 	var err error
@@ -107,8 +113,15 @@ func init() {
 	if err := Pgo.GetConfig(kubeClient, pgoNamespace); err != nil {
 		log.WithFields(log.Fields{}).Fatalf("error in Pgo configuration: %s", err)
 	}
-	namespaceList = ns.GetNamespaces(kubeClient, installationName)
-	log.Debugf("watching the following namespaces: [%v]", namespaceList)
+
+	// Configure namespaces for the Scheduler.  This includes determining the namespace
+	// operating mode and obtaining a valid list of target namespaces for the operator install.
+	if err := setupNamespaces(kubeClient); err != nil {
+		log.Errorf("Error configuring operator namespaces: %w", err)
+		os.Exit(2)
+	}
+
+	log.Debugf("watching the following namespaces: %v", namespaceList)
 
 }
 
@@ -143,14 +156,16 @@ func main() {
 	}
 	controllerManager.RunAll()
 
-	nsKubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClient, 0)
-	if err != nil {
-		log.WithFields(log.Fields{}).Fatalf("Failed to create namespace informer factory: %s", err)
-		os.Exit(2)
+	// if the namespace operating mode is not disabled, then create and start a namespace
+	// controller
+	if namespaceOperatingMode != ns.NamespaceOperatingModeDisabled {
+		if err := createAndStartNamespaceController(kubeClient, controllerManager,
+			scheduler, stop); err != nil {
+			log.WithFields(log.Fields{}).Fatalf("Failed to create namespace informer factory: %s",
+				err)
+			os.Exit(2)
+		}
 	}
-	SetupNamespaceController(installationName, scheduler,
-		nsKubeInformerFactory.Core().V1().Namespaces(), controllerManager)
-	nsKubeInformerFactory.Start(stop)
 
 	for {
 		select {
@@ -165,35 +180,66 @@ func main() {
 	}
 }
 
-// SetupNamespaceController sets up a namespace controller that monitors for namespace add and
-// delete events, and then either creates or removes controllers for those namespaces
-func SetupNamespaceController(installationName string, scheduler *scheduler.Scheduler,
-	informer coreinformers.NamespaceInformer, controllerManager controller.ManagerInterface) {
+// setupNamespaces is responsible for the initial namespace configuration for the Operator
+// install.  This includes setting the proper namespace operating mode and returning a valid list
+// of namespaces for the current Operator install.
+func setupNamespaces(clientset *kubernetes.Clientset) error {
 
-	informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc: func(obj interface{}) {
-			ns, ok := obj.(*v1.Namespace)
-			if !ok {
-				log.WithFields(log.Fields{}).Error("Could not convert runtime object to Namespace..")
-			} else {
-				labels := ns.GetObjectMeta().GetLabels()
-				if labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY && labels[config.LABEL_PGO_INSTALLATION_NAME] == installationName {
-					log.WithFields(log.Fields{}).Infof("Added namespace: %s", ns.Name)
-					controllerManager.AddAndRunControllerGroup(ns.Name)
-				} else {
-					log.WithFields(log.Fields{}).Infof("Not adding namespace since it is not owned by this Operator installation: %s", ns.Name)
-				}
-			}
+	// First set the proper namespace operating mode for the Operator install.  The mode identified
+	// determines whether or not certain namespace capabilities are enabled.
+	if err := setNamespaceOperatingMode(clientset); err != nil {
+		log.Errorf("Error detecting namespace operating mode: %w", err)
+		return err
+	}
+	log.Debugf("Namespace operating mode is '%s'", namespaceOperatingMode)
 
-		},
-		DeleteFunc: func(obj interface{}) {
-			ns, ok := obj.(*v1.Namespace)
-			if !ok {
-				log.WithFields(log.Fields{}).Error("Could not convert runtime object to Namespace..")
-			} else {
-				log.WithFields(log.Fields{}).Infof("Deleted namespace: %s", ns.Name)
-			}
-			controllerManager.RemoveGroup(ns.Name)
-		},
-	})
+	nsList, err := ns.GetNamespaceList(clientset, namespaceOperatingMode,
+		installationName, pgoNamespace)
+	if err != nil {
+		return err
+	}
+
+	namespaceList = nsList
+
+	return nil
+}
+
+// setNamespaceOperatingMode set the namespace operating mode for the Operator by calling the
+// proper utility function to determine which mode is applicable based on the current
+// permissions assigned to the Operator Service Account.
+func setNamespaceOperatingMode(clientset *kubernetes.Clientset) error {
+	nsOpMode, err := ns.GetNamespaceOperatingMode(clientset)
+	if err != nil {
+		return err
+	}
+	namespaceOperatingMode = nsOpMode
+
+	return nil
+}
+
+// createAndStartNamespaceController creates a namespace controller and then starts it
+func createAndStartNamespaceController(kubeClientset *kubernetes.Clientset,
+	controllerManager controller.ManagerInterface, schedular *sched.Scheduler,
+	stopCh <-chan struct{}) error {
+
+	nsKubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientset,
+		nsRefreshInterval,
+		kubeinformers.WithTweakListOptions(func(options *metav1.ListOptions) {
+			options.LabelSelector = fmt.Sprintf("%s=%s,%s=%s",
+				config.LABEL_VENDOR, config.LABEL_CRUNCHY,
+				config.LABEL_PGO_INSTALLATION_NAME, installationName)
+		}))
+
+	nsController, err := nscontroller.NewNamespaceController(controllerManager,
+		nsKubeInformerFactory.Core().V1().Namespaces())
+	if err != nil {
+		return err
+	}
+	nsController.AddNamespaceEventHandler()
+
+	// start the namespace controller
+	nsKubeInformerFactory.Start(stopCh)
+	log.Debug("namespace controller is now running")
+
+	return nil
 }

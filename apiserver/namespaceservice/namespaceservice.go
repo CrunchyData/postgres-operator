@@ -17,10 +17,13 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"fmt"
+	"net/http"
+
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	"github.com/crunchydata/postgres-operator/ns"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // ShowNamespaceHandler ...
@@ -53,6 +56,14 @@ func ShowNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
 	log.Debugf("ShowNamespaceHandler called [%v]", request)
+
+	// return 405 Method Not Allowed if all namespace functionality is disabled
+	if apiserver.NamespaceOperatingMode() == ns.NamespaceOperatingModeDisabled {
+		w.Header().Set("Allow", "")
+		http.Error(w, fmt.Errorf("Unable to show namespaces: %w",
+			apiserver.ErrMethodNotAllowed).Error(), http.StatusMethodNotAllowed)
+		return
+	}
 
 	username, err := apiserver.Authn(apiserver.SHOW_NAMESPACE_PERM, w, r)
 	if err != nil {
@@ -100,6 +111,14 @@ func CreateNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 	var request msgs.CreateNamespaceRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
+	// return 405 Method Not Allowed if dynamic namespace functionality is not enabled
+	if apiserver.NamespaceOperatingMode() != ns.NamespaceOperatingModeDynamic {
+		w.Header().Set("Allow", "")
+		http.Error(w, fmt.Errorf("Unable to create namespaces: %w",
+			apiserver.ErrMethodNotAllowed).Error(), http.StatusMethodNotAllowed)
+		return
+	}
+
 	username, err := apiserver.Authn(apiserver.CREATE_NAMESPACE_PERM, w, r)
 	if err != nil {
 		return
@@ -143,6 +162,14 @@ func DeleteNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewDecoder(r.Body).Decode(&request)
 
 	log.Debugf("DeleteNamespaceHandler parameters [%v]", request)
+
+	// return 405 Method Not Allowed if dynamic namespace functionality is not enabled
+	if apiserver.NamespaceOperatingMode() != ns.NamespaceOperatingModeDynamic {
+		w.Header().Set("Allow", "")
+		http.Error(w, fmt.Errorf("Unable to delete namespaces: %w",
+			apiserver.ErrMethodNotAllowed).Error(), http.StatusMethodNotAllowed)
+		return
+	}
 
 	username, err := apiserver.Authn(apiserver.DELETE_NAMESPACE_PERM, w, r)
 	if err != nil {
@@ -193,6 +220,14 @@ func UpdateNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 
 	var request msgs.UpdateNamespaceRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
+
+	// return 405 Method Not Allowed if dynamic namespace functionality is not enabled
+	if apiserver.NamespaceOperatingMode() != ns.NamespaceOperatingModeDynamic {
+		w.Header().Set("Allow", "")
+		http.Error(w, fmt.Errorf("Unable to update namespaces: %w",
+			apiserver.ErrMethodNotAllowed).Error(), http.StatusMethodNotAllowed)
+		return
+	}
 
 	username, err := apiserver.Authn(apiserver.UPDATE_NAMESPACE_PERM, w, r)
 	if err != nil {

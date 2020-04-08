@@ -16,12 +16,19 @@ limitations under the License.
 */
 
 import (
+	"errors"
+
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/rest"
 )
+
+// ErrControllerGroupExists is the error that is thrown when a controller group for a specific
+// namespace already exists
+var ErrControllerGroupExists = errors.New("A controller group for the namespace specified already" +
+	"exists")
 
 // WorkerRunner is an interface for controllers the have worker queues that need to be run
 type WorkerRunner interface {
@@ -30,14 +37,14 @@ type WorkerRunner interface {
 
 // ManagerInterface defines the interface for a controller manager
 type ManagerInterface interface {
-	AddControllerGroup(namespace string) error
-	AddAndRunControllerGroup(namespace string)
+	AddGroup(namespace string) error
+	AddAndRunGroup(namespace string) error
+	RemoveAll()
+	RemoveGroup(namespace string)
 	RunAll()
 	RunGroup(namespace string)
 	StopAll()
 	StopGroup(namespace string)
-	RemoveAll()
-	RemoveGroup(namespace string)
 }
 
 // InitializeReplicaCreation initializes the creation of replicas for a cluster.  For a regular

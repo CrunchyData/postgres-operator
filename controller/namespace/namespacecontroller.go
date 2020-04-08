@@ -16,9 +16,7 @@ limitations under the License.
 */
 
 import (
-	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/controller"
-	"github.com/crunchydata/postgres-operator/operator"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -64,15 +62,9 @@ func (c *Controller) onAdd(obj interface{}) {
 
 	newNs := obj.(*v1.Namespace)
 
-	log.Debugf("[namespace Controller] OnAdd ns=%s", newNs.ObjectMeta.SelfLink)
-	labels := newNs.GetObjectMeta().GetLabels()
-	if labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY || labels[config.LABEL_PGO_INSTALLATION_NAME] != operator.InstallationName {
-		log.Debugf("namespace Controller: onAdd skipping namespace that is not crunchydata or not belonging to this Operator installation %s", newNs.ObjectMeta.SelfLink)
-		return
-	}
-
-	log.Debugf("namespace Controller: onAdd crunchy namespace %s created", newNs.ObjectMeta.SelfLink)
-	c.ControllerManager.AddAndRunControllerGroup(newNs.Name)
+	log.Debugf("namespace Controller: onAdd will now add a controller "+
+		"group for namespace %s", newNs.Name)
+	c.ControllerManager.AddAndRunGroup(newNs.Name)
 }
 
 // onUpdate is called when a namespace is updated
@@ -80,32 +72,21 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 	newNs := newObj.(*v1.Namespace)
 
-	log.Debugf("[namespace Controller] onUpdate ns=%s", newNs.ObjectMeta.SelfLink)
-
-	labels := newNs.GetObjectMeta().GetLabels()
-	if labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY || labels[config.LABEL_PGO_INSTALLATION_NAME] != operator.InstallationName {
-		log.Debugf("namespace Controller: onUpdate skipping namespace that is not crunchydata %s", newNs.ObjectMeta.SelfLink)
-		return
-	}
-
-	log.Debugf("namespace Controller: onUpdate crunchy namespace updated %s", newNs.ObjectMeta.SelfLink)
-	c.ControllerManager.AddAndRunControllerGroup(newNs.Name)
+	log.Debugf("namespace Controller: onUpdate will now attempt to add and run a controller "+
+		"group for namespace %s", newNs.Name)
+	// Add and run the controller group if namespace is part of the current installation.
+	// AddAndRunGroup can be called over and over again, and the controller group will only
+	// be created and/or run if not already created and/or running
+	c.ControllerManager.AddAndRunGroup(newNs.Name)
 }
 
 func (c *Controller) onDelete(obj interface{}) {
 
 	ns := obj.(*v1.Namespace)
 
-	log.Debugf("[namespace Controller] onDelete ns=%s", ns.ObjectMeta.SelfLink)
-	labels := ns.GetObjectMeta().GetLabels()
-	if labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY {
-		log.Debugf("namespace Controller: onDelete skipping namespace that is not crunchydata %s", ns.ObjectMeta.SelfLink)
-		return
-	}
-
-	log.Debugf("namespace Controller: onDelete crunchy operator namespace %s is deleted", ns.ObjectMeta.SelfLink)
+	log.Debugf("namespace Controller: onDelete will now remove the controller "+
+		"group for namespace %s if it exists", ns.Name)
 	c.ControllerManager.RemoveGroup(ns.Name)
-	log.Debugf("namespace Controller: instance removed for ns %s", ns.Name)
 }
 
 // isNamespaceInForegroundDeletion determines if a namespace is currently being deleted using

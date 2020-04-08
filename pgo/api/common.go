@@ -16,7 +16,6 @@ package api
 */
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -27,9 +26,12 @@ import (
 func StatusCheck(resp *http.Response) error {
 	log.Debugf("http status code is %d", resp.StatusCode)
 	if resp.StatusCode == 401 {
-		return errors.New(fmt.Sprintf("Authentication Failed: %d\n", resp.StatusCode))
+		return fmt.Errorf("Authentication Failed: %d\n", resp.StatusCode)
+	} else if resp.StatusCode == 405 {
+		return fmt.Errorf("Method %s for URL %s is not allowed in current the Operator "+
+			"install: %d", resp.Request.Method, resp.Request.URL.Path, resp.StatusCode)
 	} else if resp.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("Invalid Status Code: %d\n", resp.StatusCode))
+		return fmt.Errorf("Invalid Status Code: %d\n", resp.StatusCode)
 	}
 	return nil
 }

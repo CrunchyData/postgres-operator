@@ -66,6 +66,9 @@ var BasicAuth bool
 var PgoNamespace string
 var InstallationName string
 
+// namespaceList is the list of namespaces identified at install time
+var namespaceList []string
+
 var CRUNCHY_DEBUG bool
 
 // TreeTrunk is for debugging only in this context
@@ -83,6 +86,11 @@ type CredentialDetail struct {
 
 var Pgo config.PgoConfig
 
+// NamespaceOperatingMode defines the namespace operating mode for the cluster,
+// e.g. "dynamic", "readonly" or "disabled".  See type NamespaceOperatingMode
+// for detailed explanations of each mode available.
+var namespaceOperatingMode ns.NamespaceOperatingMode
+
 func Initialize() {
 
 	PgoNamespace = os.Getenv("PGO_OPERATOR_NAMESPACE")
@@ -91,9 +99,6 @@ func Initialize() {
 		os.Exit(2)
 	}
 	log.Info("Pgo Namespace is [" + PgoNamespace + "]")
-
-	//namespaceList := util.GetNamespaces()
-	//log.Debugf("watching the following namespaces: [%v]", namespaceList)
 
 	InstallationName = os.Getenv("PGO_INSTALLATION_NAME")
 	if InstallationName == "" {
@@ -127,9 +132,19 @@ func Initialize() {
 
 	initConfig()
 
-	validateWithKube()
+	if err := setNamespaceOperatingMode(); err != nil {
+		log.Error(err)
+		os.Exit(2)
+	}
 
-	//validateUserCredentials()
+	namespaceList, err = ns.GetNamespaceList(Clientset, NamespaceOperatingMode(),
+		InstallationName, PgoNamespace)
+	if err != nil {
+		log.Error(err)
+		os.Exit(2)
+	}
+
+	log.Infof("Namespace operating mode is '%s'", NamespaceOperatingMode())
 }
 
 // ConnectToKube ...
@@ -279,12 +294,7 @@ func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string)
 		return requestedNS, errors.New(errMsg)
 	}
 
-	if ns.WatchingNamespace(clientset, requestedNS, InstallationName) {
-		return requestedNS, nil
-	}
-
-	log.Debugf("GetNamespace did not find the requested namespace %s", requestedNS)
-	return requestedNS, errors.New("requested Namespace was not found to be in the list of Namespaces being watched.")
+	return requestedNS, nil
 }
 
 // Authn performs HTTP Basic Authentication against a user if "BasicAuth" is set
@@ -380,37 +390,43 @@ func ValidateNodeLabel(nodeLabel string) error {
 	return nil
 }
 
-func validateWithKube() {
-	log.Debug("validateWithKube called")
-
-	err := ns.ValidateNamespaces(Clientset, InstallationName, PgoNamespace)
-	if err != nil {
-		log.Error(err)
-		os.Exit(2)
-	}
-
-}
-
-//returns installation access and user access
-//installation access means a namespace belongs to this Operator installation
-//user access means this user has access to a namespace
+// UserIsPermittedInNamespace returns installation access and user access.
+// Installation access means a namespace belongs to this Operator installation.
+// User access means this user has access to a namespace.
 func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool) {
 
 	iAccess := false
 	uAccess := false
 
-	ns, found, err := kubeapi.GetNamespace(Clientset, requestedNS)
-	if !found {
-		log.Error(err)
-		log.Errorf("could not find namespace %s ", requestedNS)
-		return iAccess, uAccess
-	}
+	// If the namespace operating mode isn't "disabled", then query the live Kube cluster
+	// for the namespace and then check its labels to determine if its part of the
+	// current Operator install.  Otherwise verify that it was a namespace specified
+	// during installation of the Operator.
+	if namespaceOperatingMode != ns.NamespaceOperatingModeDisabled {
+		ns, found, err := kubeapi.GetNamespace(Clientset, requestedNS)
+		if !found {
+			log.Error(err)
+			log.Errorf("could not find namespace %s ", requestedNS)
+			return iAccess, uAccess
+		}
 
-	if ns.ObjectMeta.Labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY &&
+		if ns.ObjectMeta.Labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY &&
+			ns.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] == InstallationName {
+			iAccess = true
+		}
+	} else {
+		var exists bool
+		for _, namespace := range namespaceList {
+			if requestedNS == namespace {
+				exists = true
+				iAccess = true
+			}
+		}
 
-		ns.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] == InstallationName {
-		iAccess = true
-
+		if !exists {
+			log.Errorf("namespace %s is not included in this installation", requestedNS)
+			return iAccess, uAccess
+		}
 	}
 
 	//get the pgouser Secret for this username
@@ -527,4 +543,23 @@ func generateTLSCert(certPath, keyPath string) error {
 
 	return err
 
+}
+
+// setNamespaceOperatingMode set the namespace operating mode for the Operator by calling the
+// proper utility function to determine which mode is applicable based on the current
+// permissions assigned to the Operator Service Account.
+func setNamespaceOperatingMode() error {
+	nsOpMode, err := ns.GetNamespaceOperatingMode(Clientset)
+	if err != nil {
+		return err
+	}
+	namespaceOperatingMode = nsOpMode
+
+	return nil
+}
+
+// NamespaceOperatingMode returns the namespace operating mode for the current Operator
+// installation, which is stored in the "namespaceOperatingMode" variable
+func NamespaceOperatingMode() ns.NamespaceOperatingMode {
+	return namespaceOperatingMode
 }

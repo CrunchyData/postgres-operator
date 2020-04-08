@@ -16,21 +16,26 @@ limitations under the License.
 */
 
 import (
+	"fmt"
 	"os"
 	"time"
 
 	"github.com/kubernetes/sample-controller/pkg/signals"
 
+	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/controller/manager"
-	"github.com/crunchydata/postgres-operator/controller/namespace"
+	nscontroller "github.com/crunchydata/postgres-operator/controller/namespace"
 	crunchylog "github.com/crunchydata/postgres-operator/logging"
+	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator/operatorupgrade"
 	log "github.com/sirupsen/logrus"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/crunchydata/postgres-operator/kubeapi"
-	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator"
 )
 
@@ -60,13 +65,12 @@ func main() {
 
 	operator.Initialize(kubeClientset)
 
-	namespaceList := ns.GetNamespaces(kubeClientset, operator.InstallationName)
-	log.Debugf("watching the following namespaces: [%v]", namespaceList)
-
-	//validate the NAMESPACE env var
-	err = ns.ValidateNamespaces(kubeClientset, operator.InstallationName, operator.PgoNamespace)
+	// Configure namespaces for the Operator.  This includes determining the namespace
+	// operating mode, creating/updating namespaces (if permitted), and obtaining a valid
+	// list of target namespaces for the operator install
+	namespaceList, err := operator.SetupNamespaces(kubeClientset)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("Error configuring operator namespaces: %w", err)
 		os.Exit(2)
 	}
 
@@ -83,22 +87,15 @@ func main() {
 	controllerManager.RunAll()
 	log.Debug("controller manager created and all included controllers are now running")
 
-	nsKubeInformerFactory := kubeinformers.NewSharedInformerFactory(kubeClientset, 0)
-	if err != nil {
-		log.Error(err)
-		os.Exit(2)
+	// if the namespace operating mode is not 'disabled', then create and start a namespace
+	// controller
+	if operator.NamespaceOperatingMode() != ns.NamespaceOperatingModeDisabled {
+		if err := createAndStartNamespaceController(kubeClientset, controllerManager,
+			stopCh); err != nil {
+			log.Error(err)
+			os.Exit(2)
+		}
 	}
-	nsController, err := namespace.NewNamespaceController(controllerManager,
-		nsKubeInformerFactory.Core().V1().Namespaces())
-	if err != nil {
-		log.Error(err)
-		os.Exit(2)
-	}
-	nsController.AddNamespaceEventHandler()
-
-	// start the namespace controller
-	nsKubeInformerFactory.Start(stopCh)
-	log.Debug("namespace controller is now running")
 
 	defer controllerManager.StopAll()
 
@@ -107,4 +104,29 @@ func main() {
 	log.Info("PostgreSQL Operator initialized and running, waiting for signal to exit")
 	<-stopCh
 	log.Infof("Signal received, now exiting")
+}
+
+// createAndStartNamespaceController creates a namespace controller and then starts it
+func createAndStartNamespaceController(kubeClientset *kubernetes.Clientset,
+	controllerManager controller.ManagerInterface, stopCh <-chan struct{}) error {
+
+	nsKubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientset,
+		operator.NamespaceRefreshInterval,
+		kubeinformers.WithTweakListOptions(func(options *metav1.ListOptions) {
+			options.LabelSelector = fmt.Sprintf("%s=%s,%s=%s",
+				config.LABEL_VENDOR, config.LABEL_CRUNCHY,
+				config.LABEL_PGO_INSTALLATION_NAME, operator.InstallationName)
+		}))
+	nsController, err := nscontroller.NewNamespaceController(controllerManager,
+		nsKubeInformerFactory.Core().V1().Namespaces())
+	if err != nil {
+		return err
+	}
+	nsController.AddNamespaceEventHandler()
+
+	// start the namespace controller
+	nsKubeInformerFactory.Start(stopCh)
+	log.Debug("namespace controller is now running")
+
+	return nil
 }

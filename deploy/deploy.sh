@@ -29,12 +29,15 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $DIR/cleanup.sh
 
-$PGO_CMD get clusterrole pgo-cluster-role 2> /dev/null > /dev/null
-if [ $? -ne 0 ]
+if [[ "${PGO_NAMESPACE_MODE:-dynamic}" != "disabled" ]]	
 then
-	echo ERROR: pgo-cluster-role was not found
-	echo Verify you ran install-rbac.sh
-	exit
+	$PGO_CMD get clusterrole pgo-cluster-role 2> /dev/null > /dev/null
+	if [ $? -ne 0 ]
+	then
+		echo ERROR: pgo-cluster-role was not found
+		echo Verify you ran install-rbac.sh
+		exit
+	fi
 fi
 
 # credentials for pgbackrest sshd

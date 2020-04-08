@@ -169,7 +169,6 @@ const LABEL_CRUNCHY = "crunchydata"
 const LABEL_PGO_CREATED_BY = "pgo-created-by"
 const LABEL_PGO_UPDATED_BY = "pgo-updated-by"
 
-const LABEL_PGO_DEFAULT_SC = "pgo-default-sc"
 const LABEL_FAILOVER_STARTED = "failover-started"
 
 const GLOBAL_CUSTOM_CONFIGMAP = "pgo-custom-pg-config"

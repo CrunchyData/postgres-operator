@@ -52,18 +52,6 @@
         },
         {
             "apiGroups": [
-                ""
-            ],
-            "resources": [
-                "storageclasses"
-            ],
-            "verbs": [
-                "get",
-                "list"
-            ]
-        },
-        {
-            "apiGroups": [
                 "batch"
             ],
             "resources": [

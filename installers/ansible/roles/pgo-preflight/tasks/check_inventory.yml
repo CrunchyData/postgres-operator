@@ -34,3 +34,4 @@
     - pgbadgerport
     - exporterport
     - scheduler_timeout
+    - namespace_mode

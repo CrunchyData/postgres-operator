@@ -90,8 +90,8 @@ func CreateNamespace(clientset *kubernetes.Clientset, createdBy string, request 
 	//iterate thru all the args (namespace names)
 	for _, namespace := range request.Args {
 
-		err := ns.CreateNamespace(clientset, apiserver.InstallationName, apiserver.PgoNamespace, createdBy, namespace)
-		if err != nil {
+		if err := ns.CreateNamespaceAndRBAC(clientset, apiserver.InstallationName,
+			apiserver.PgoNamespace, createdBy, namespace); err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
@@ -140,8 +140,8 @@ func UpdateNamespace(clientset *kubernetes.Clientset, updatedBy string, request 
 	//iterate thru all the args (namespace names)
 	for _, namespace := range request.Args {
 
-		err := ns.UpdateNamespace(clientset, apiserver.InstallationName, apiserver.PgoNamespace, updatedBy, namespace)
-		if err != nil {
+		if err := ns.UpdateNamespaceAndRBAC(clientset, apiserver.InstallationName,
+			apiserver.PgoNamespace, updatedBy, namespace); err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp

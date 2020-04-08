@@ -19,13 +19,17 @@ import (
 	"bytes"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/ns"
 	log "github.com/sirupsen/logrus"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
+
+var NamespaceRefreshInterval = 1 * time.Minute
 
 var CRUNCHY_DEBUG bool
 var NAMESPACE string
@@ -40,6 +44,11 @@ var Pgo config.PgoConfig
 // overridden by the RELATED_IMAGE_* environmental variables that can be set by
 // people deploying the Operator
 var ContainerImageOverrides = map[string]string{}
+
+// NamespaceOperatingMode defines the namespace operating mode for the cluster,
+// e.g. "dynamic", "readonly" or "disabled".  See type NamespaceOperatingMode
+// for detailed explanations of each mode available.
+var namespaceOperatingMode ns.NamespaceOperatingMode
 
 type containerResourcesTemplateFields struct {
 	RequestsMemory, RequestsCPU string
@@ -58,9 +67,6 @@ func Initialize(clientset *kubernetes.Clientset) {
 
 	NAMESPACE = os.Getenv("NAMESPACE")
 	log.Infof("NAMESPACE %s", NAMESPACE)
-	if NAMESPACE == "" {
-		log.Error("NAMESPACE env var is set to empty string which pgo intprets as meaning you want it to watch 'all' namespaces.")
-	}
 
 	InstallationName = os.Getenv("PGO_INSTALLATION_NAME")
 	log.Infof("InstallationName %s", InstallationName)
@@ -206,4 +212,56 @@ func initializeContainerImageOverrides() {
 			log.Infof("image %s overridden by: %s", imageName, overrideImageName)
 		}
 	}
+}
+
+// SetupNamespaces is responsible for the initial namespace configuration for the Operator
+// install.  This includes setting the proper namespace operating mode, creating and/or updating
+// namespaces as needed (or as permitted by the current operator mode), and returning a valid list
+// of namespaces for the current Operator install.
+func SetupNamespaces(clientset *kubernetes.Clientset) ([]string, error) {
+
+	// First set the proper namespace operating mode for the Operator install.  The mode identified
+	// determines whether or not certain namespace capabilities are enabled.
+	if err := setNamespaceOperatingMode(clientset); err != nil {
+		log.Errorf("Error detecting namespace operating mode: %w", err)
+		return nil, err
+	}
+	log.Debugf("Namespace operating mode is '%s'", NamespaceOperatingMode())
+
+	namespaceList, err := ns.GetNamespaceList(clientset, NamespaceOperatingMode(),
+		InstallationName, PgoNamespace)
+	if err != nil {
+		return nil, err
+	}
+
+	// if in a dynmic namespace mode, then proceed with creating or updating any namespaces
+	// provided for the installation
+	if NamespaceOperatingMode() == ns.NamespaceOperatingModeDynamic {
+		if err := ns.ConfigureInstallNamespaces(clientset, InstallationName,
+			PgoNamespace, namespaceList); err != nil {
+			log.Errorf("Unable to setup namespaces: %w", err)
+			return nil, err
+		}
+	}
+
+	return namespaceList, nil
+}
+
+// setNamespaceOperatingMode set the namespace operating mode for the Operator by calling the
+// proper utility function to determine which mode is applicable based on the current
+// permissions assigned to the Operator Service Account.
+func setNamespaceOperatingMode(clientset *kubernetes.Clientset) error {
+	nsOpMode, err := ns.GetNamespaceOperatingMode(clientset)
+	if err != nil {
+		return err
+	}
+	namespaceOperatingMode = nsOpMode
+
+	return nil
+}
+
+// NamespaceOperatingMode returns the namespace operating mode for the current Operator
+// installation, which is stored in the "namespaceOperatingMode" variable
+func NamespaceOperatingMode() ns.NamespaceOperatingMode {
+	return namespaceOperatingMode
 }

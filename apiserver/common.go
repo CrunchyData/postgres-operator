@@ -48,6 +48,11 @@ var (
 	// ErrStandbyNotAllowed contains the error message returned when an API call is not
 	// permitted because it involves a cluster that is in standby mode
 	ErrStandbyNotAllowed = errors.New("Action not permitted because standby mode is enabled")
+
+	// ErrMethodNotAllowed represents the error that is thrown when a feature is disabled within the
+	// current Operator install
+	ErrMethodNotAllowed = errors.New("This method has is not allowed in the current PostgreSQL " +
+		"Operator installation")
 )
 
 // ReplicaPodStatus stores the name of the node a replica pod is assigned to, as well

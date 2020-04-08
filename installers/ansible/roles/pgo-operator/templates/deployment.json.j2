@@ -62,6 +62,10 @@
                                 "value": "{{ pgo_apiserver_port }}"
                             },
                             {
+                                "name": "NAMESPACE",
+                                "value": "{{ namespace }}"
+                            },
+                            {
                                 "name": "PGO_INSTALLATION_NAME",
                                 "value": "{{ pgo_installation_name }}"
                             },
@@ -187,6 +191,10 @@
                                         "fieldPath": "metadata.namespace"
                                     }
                                 }
+                            },
+                            {
+                                "name": "NAMESPACE",
+                                "value": "{{ namespace }}"
                             },
                             {
                                 "name": "PGO_INSTALLATION_NAME",

@@ -40,6 +40,7 @@ pod_anti_affinity_pgbackrest: ""
 pod_anti_affinity_pgbouncer: ""
 
 namespace: ""
+namespace_mode: "dynamic"
 
 delete_operator_namespace: "false"
 delete_watched_namespaces: "false"

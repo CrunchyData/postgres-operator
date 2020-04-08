@@ -22,20 +22,6 @@ If the pgo-config ConfigMap is not found by the Operator, it will use
 the configuration files that are included in the Operator container
 images.
 
-The container included set of configuration files use the most
-basic setting values and the image versions of the Operator itself
-with the latest Crunchy Container image versions.  The storage
-configurations are determined by using the default storage
-class on the system you are deploying the Operator into, the
-default storage class is one that is labeled as follows:
-
-    pgo-default-sc=true
-
-If no storage class has that label, then the first storage class
-found on the system will be used.  If no storage class is found
-on the system, the containers will not run and produce an error
-in the log.
-
 ## conf/postgres-operator/pgo.yaml
 The *pgo.yaml* file sets many different Operator configuration settings and is described in the [pgo.yaml configuration]({{< ref "pgo-yaml-configuration.md" >}}) documentation section.
 
