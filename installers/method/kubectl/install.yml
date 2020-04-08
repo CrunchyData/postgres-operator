@@ -38,9 +38,9 @@ spec:
             serviceAccountName: pgo-installer-sa
             restartPolicy: Never
             containers:
-            - name: pgo-installer
+            - name: pgo-install
               command: ["/pgo-install.sh", "install"]
-              image: gcr.io/crunchy-dev-test/pgo-installer:centos7-4.3.jmck.7
+              image: crunchydata/pgo-installer:centos7-4.3.0
               imagePullPolicy: Always
               env:
                   - name: HOME
@@ -68,15 +68,15 @@ spec:
                   - name: NAMESPACE
                     value: "pgouser1,pgouser2"
                   - name: CCP_IMAGE_PREFIX
-                    value: "us.gcr.io/container-suite"
+                    value: "crunchydata"
                   - name: CCP_IMAGE_TAG
-                    value: "centos7-12.2-4.3.0-beta.1"
+                    value: "centos7-12.2-4.3.0"
                   - name: PGO_IMAGE_PREFIX
-                    value: "gcr.io/crunchy-dev-test"
+                    value: "crunchydata"
                   - name: PGO_IMAGE_TAG
-                    value: "centos7-4.3.jmck.7"
+                    value: "centos7-4.3.0"
                   - name: PGO_CLIENT_VERSION
-                    value: "v4.2.2"
+                    value: "v4.3.0"
                   - name: BACKREST
                     value: "true"
                   - name: BADGER
