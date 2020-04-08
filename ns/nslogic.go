@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -26,7 +27,9 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+
 	log "github.com/sirupsen/logrus"
+	authorizationapi "k8s.io/api/authorization/v1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -101,21 +104,70 @@ type PgoPgRoleBinding struct {
 	TargetNamespace string
 }
 
-// CreateNamespace ...
-func CreateNamespace(clientset *kubernetes.Clientset, installationName, pgoNamespace, createdBy, newNs string) error {
+// NamespaceOperatingMode defines the different namespace operating modes for the Operator
+type NamespaceOperatingMode string
+
+const (
+	// NamespaceOperatingModeDynamic enables full dynamic namespace capabilities, in which the
+	// Operator can create, delete and update any namespaces within the Kubernetes cluster, while
+	// then also having the ability to create the roles, role bindings and service accounts within
+	// those namespaces as required for the Operator to create PG clusters.  Additionally, while in
+	// this mode the Operator can listen for namespace events (e.g. namespace additions, updates
+	// and deletions), and then create or remove controllers for various namespaces as those
+	// namespaces are added or removed from the Kubernetes cluster.
+	NamespaceOperatingModeDynamic NamespaceOperatingMode = "dynamic"
+	// NamespaceOperatingModeReadOnly allows the Operator to listen for namespace events within the
+	// Kubernetetes cluster, and then create and run and/or remove controllers as namespaces are
+	// added and deleted.  However, while in this mode the Operator is unable to create, delete or
+	// update namespaces, nor can it create the RBAC it requires in any of those namespaces to
+	// create PG clusters.  Therefore,  while in a "readonly" mode namespaces must be
+	// pre-configured with the proper RBAC, since the Operator cannot create the RBAC itself.
+	NamespaceOperatingModeReadOnly NamespaceOperatingMode = "readonly"
+	// NamespaceOperatingModeDisabled causes namespace capabilities to be disabled altogether.  In
+	// this mode the Operator will simply attempt to work with the target namespaces specified
+	// during installation.  If no target namespaces are specified, then it will be configured to
+	// work within the namespace in which the Operator is deployed.
+	NamespaceOperatingModeDisabled NamespaceOperatingMode = "disabled"
+
+	// DNS-1123 formatting and error message for validating namespace names
+	dns1123Fmt    string = "[a-z0-9]([-a-z0-9]*[a-z0-9])?"
+	dns1123ErrMsg string = "A namespace name must consist of lower case" +
+		"alphanumeric characters or '-', and must start and end with an alphanumeric character"
+)
+
+var (
+	// namespacePrivsCoreDynamic defines the privileges in the Core API group required for the
+	// Operator to run using the NamespaceOperatingModeDynamic namespace operating mode
+	namespacePrivsCoreDynamic = map[string][]string{
+		"namespaces":      []string{"get", "list", "watch", "create", "update", "delete"},
+		"serviceaccounts": []string{"get", "create", "delete"},
+	}
+	// namespacePrivsDynamic defines the privileges in the rbac.authorization.k8s.io API group
+	// required for the Operator to run using the NamespaceOperatingModeDynamic namespace
+	// operating mode
+	namespacePrivsRBACDynamic = map[string][]string{
+		"roles":        []string{"get", "create", "delete", "bind", "escalate"},
+		"rolebindings": []string{"get", "create", "delete"},
+	}
+	// namespacePrivsReadOnly defines the privileges in the Core API group required for the
+	// Operator to run using the NamespaceOperatingModeReadOnly namespace operating mode
+	namespacePrivsCoreReadOnly = map[string][]string{
+		"namespaces": []string{"get", "list", "watch"},
+	}
+
+	// ErrInvalidNamespaceName defines the error that is thrown when a namespace does not meet the
+	// requirements for naming set by Kubernetes
+	ErrInvalidNamespaceName = errors.New(validation.RegexError(dns1123ErrMsg, dns1123Fmt,
+		"my-name", "123-abc"))
+)
+
+// CreateNamespaceAndRBAC creates a new namespace that is owned by the Operator, while then
+// installing the required RBAC within that namespace as required to be utilized with the
+// current Operator install.
+func CreateNamespaceAndRBAC(clientset *kubernetes.Clientset, installationName, pgoNamespace,
+	createdBy, newNs string) error {
 
 	log.Debugf("CreateNamespace %s %s %s", pgoNamespace, createdBy, newNs)
-
-	//validate the list of args (namespaces)
-	errs := validation.IsDNS1035Label(newNs)
-	if len(errs) > 0 {
-		return errors.New("invalid namespace name format " + errs[0] + " namespace name " + newNs)
-	}
-
-	_, found, _ := kubeapi.GetNamespace(clientset, newNs)
-	if found {
-		return errors.New("namespace " + newNs + " already exists on this Kube cluster")
-	}
 
 	//define the new namespace
 	n := v1.Namespace{}
@@ -126,17 +178,15 @@ func CreateNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 
 	n.Name = newNs
 
-	err := kubeapi.CreateNamespace(clientset, &n)
-	if err != nil {
-		return errors.New("namespace create error " + newNs + err.Error())
+	if err := kubeapi.CreateNamespace(clientset, &n); err != nil {
+		return err
 	}
 
 	log.Debugf("CreateNamespace %s created by %s", newNs, createdBy)
 
 	//apply targeted rbac rules here
-	err = installTargetRBAC(clientset, pgoNamespace, newNs)
-	if err != nil {
-		return errors.New("namespace RBAC create error " + newNs + err.Error())
+	if err := installTargetRBAC(clientset, pgoNamespace, newNs); err != nil {
+		return err
 	}
 
 	//publish event
@@ -157,17 +207,8 @@ func CreateNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 	return events.Publish(f)
 }
 
-// DeleteNamespace ...
+// DeleteNamespace deletes the namespace specified.
 func DeleteNamespace(clientset *kubernetes.Clientset, installationName, pgoNamespace, deletedBy, ns string) error {
-
-	theNs, found, _ := kubeapi.GetNamespace(clientset, ns)
-	if !found {
-		return errors.New("namespace " + ns + " not found")
-	}
-
-	if theNs.ObjectMeta.Labels[config.LABEL_VENDOR] != config.LABEL_CRUNCHY || theNs.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] != installationName {
-		errors.New("namespace " + ns + " not owned by crunchy data or not part of Operator installation " + installationName)
-	}
 
 	err := kubeapi.DeleteNamespace(clientset, ns)
 	if err != nil {
@@ -423,33 +464,31 @@ func createPGOBackrestRoleBinding(clientset *kubernetes.Clientset, targetNamespa
 	return kubeapi.CreateRoleBinding(clientset, &rb, targetNamespace)
 }
 
-// UpdateNamespace ...
-func UpdateNamespace(clientset *kubernetes.Clientset, installationName, pgoNamespace, updatedBy, ns string) error {
+// UpdateNamespaceAndRBAC updates a new namespace to be owned by the Operator, while then
+// installing (or re-installing) the required RBAC within that namespace as required to be
+// utilized with the current Operator install.
+func UpdateNamespaceAndRBAC(clientset *kubernetes.Clientset, installationName, pgoNamespace,
+	updatedBy, ns string) error {
 
 	log.Debugf("UpdateNamespace %s %s %s %s", installationName, pgoNamespace, updatedBy, ns)
 
-	theNs, found, _ := kubeapi.GetNamespace(clientset, ns)
-	if !found {
-		return errors.New("namespace " + ns + " doesn't exist")
+	theNs, _, err := kubeapi.GetNamespace(clientset, ns)
+	if err != nil {
+		return err
 	}
 
-	//update the labels on the namespace  (own it)
-	if found {
-		if theNs.ObjectMeta.Labels == nil {
-			theNs.ObjectMeta.Labels = make(map[string]string)
-		}
-		theNs.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
-		theNs.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] = installationName
-		err := kubeapi.UpdateNamespace(clientset, theNs)
-		if err != nil {
-			return err
-		}
+	if theNs.ObjectMeta.Labels == nil {
+		theNs.ObjectMeta.Labels = make(map[string]string)
+	}
+	theNs.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
+	theNs.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] = installationName
+	if err := kubeapi.UpdateNamespace(clientset, theNs); err != nil {
+		return err
 	}
 
 	//apply targeted rbac rules here
-	err := installTargetRBAC(clientset, pgoNamespace, ns)
-	if err != nil {
-		return errors.New("namespace RBAC create error " + ns + err.Error())
+	if err := installTargetRBAC(clientset, pgoNamespace, ns); err != nil {
+		return err
 	}
 
 	//publish event
@@ -503,71 +542,56 @@ func createPGOBackrestServiceAccount(clientset *kubernetes.Clientset, targetName
 	return kubeapi.CreateServiceAccount(clientset, &sa, targetNamespace)
 }
 
-func ValidateNamespaces(clientset *kubernetes.Clientset, installationName, pgoNamespace string) error {
-	raw := os.Getenv("NAMESPACE")
+// ConfigureInstallNamespaces is responsible for properly configuring up any namespaces provided for
+// the installation of the Operator.  This includes creating or updating those namespaces so they can
+// be utilized by the Operator to deploy PG clusters.
+func ConfigureInstallNamespaces(clientset *kubernetes.Clientset, installationName, pgoNamespace string,
+	namespaceNames []string) error {
 
-	//the case of 'all' namespaces
-	if raw == "" {
-		return nil
-	}
+	// now loop through all namespaces and either create or update them
+	for _, namespaceName := range namespaceNames {
 
-	allFound := false
+		// First try to create the namespace. If the namespace already exists, then proceed with
+		// updating it.  Otherwise if a new namespace was successfully created, simply move on to
+		// the next namespace.
+		if err := CreateNamespaceAndRBAC(clientset, installationName, pgoNamespace,
+			"operator-bootstrap", namespaceName); err != nil && !kerrors.IsAlreadyExists(err) {
+			return err
+		} else if err == nil {
+			continue
+		}
 
-	nsList := strings.Split(raw, ",")
+		namespace, _, err := kubeapi.GetNamespace(clientset, namespaceName)
+		if err != nil {
+			return err
+		}
 
-	//check for the invalid case where a user has NAMESPACE=demo1,,demo2
-	if len(nsList) > 1 {
-		for i := 0; i < len(nsList); i++ {
-			if nsList[i] == "" {
-				allFound = true
+		// continue if already owned by this install, or if owned by another install
+		labels := namespace.ObjectMeta.Labels
+		if labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY {
+			switch {
+			case labels[config.LABEL_PGO_INSTALLATION_NAME] == installationName:
+				log.Errorf("Configure install namespaces: namespace %s already owned by this "+
+					"installation, will not update it", namespaceName)
+				continue
+			case labels[config.LABEL_PGO_INSTALLATION_NAME] != installationName:
+				log.Errorf("Configure install namespaces: namespace %s owned by another "+
+					"installation, will not update it", namespaceName)
+				continue
 			}
 		}
-	}
 
-	if allFound && len(nsList) > 1 {
-		return errors.New("'' (empty string), found within the NAMESPACE environment variable along with other namespaces, this is not an accepted format")
-	}
-
-	//check for the case of a non-existing namespace being used
-	for i := 0; i < len(nsList); i++ {
-		namespace, found, _ := kubeapi.GetNamespace(clientset, nsList[i])
-		if !found {
-			//return errors.New("NAMESPACE environment variable contains a namespace of " + nsList[i] + " but that is not found on this kube system")
-			//create the namespace here
-			err := CreateNamespace(clientset, installationName, pgoNamespace, "operator-bootstrap", nsList[i])
-			if err != nil {
-				return err
-			}
-		} else {
-			//verify the namespace doesn't belong to another
-			//installation, if not, update it to belong to this
-			//installation
-			if namespace.ObjectMeta.Labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY && namespace.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] != installationName {
-				log.Errorf("%s namespace onwed by another installation, will not convert it to this installation", namespace.Name)
-			} else if namespace.ObjectMeta.Labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY && namespace.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] == installationName {
-				log.Infof("%s namespace already part of this installation", namespace.Name)
-			} else {
-				log.Infof("%s namespace will be updated to be owned by this installation", namespace.Name)
-				if namespace.ObjectMeta.Labels == nil {
-					namespace.ObjectMeta.Labels = make(map[string]string)
-				}
-				namespace.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
-				namespace.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] = installationName
-				err := kubeapi.UpdateNamespace(clientset, namespace)
-				if err != nil {
-					return err
-				}
-				err = UpdateNamespace(clientset, installationName, pgoNamespace, "operator-bootstrap", namespace.Name)
-				if err != nil {
-					return err
-				}
-			}
-
+		// if not part of this or another install, then update the namespace to be owned by this
+		// Operator install
+		log.Infof("Configure install namespaces: namespace %s will be updated to be owned by this "+
+			"installation", namespaceName)
+		if err := UpdateNamespaceAndRBAC(clientset, installationName, pgoNamespace,
+			"operator-bootstrap", namespaceName); err != nil {
+			return err
 		}
 	}
 
 	return nil
-
 }
 
 func GetNamespaces(clientset *kubernetes.Clientset, installationName string) []string {
@@ -589,6 +613,34 @@ func GetNamespaces(clientset *kubernetes.Clientset, installationName string) []s
 
 	return ns
 
+}
+
+// getNamespacesFromEnv returns a slice containing the namespaces strored the NAMESPACE env var in
+// csv format.
+func getNamespacesFromEnv() []string {
+	namespaceEnvVar := os.Getenv("NAMESPACE")
+	if namespaceEnvVar == "" {
+		return nil
+	}
+	return strings.Split(namespaceEnvVar, ",")
+}
+
+// ValidateNamespaceNames validates one or more namespace names to ensure they are valid per Kubernetes
+// naming requirements.
+func ValidateNamespaceNames(namespace ...string) error {
+	var invalidNamespaces []string
+	for _, ns := range namespace {
+		if validation.IsDNS1123Label(ns) != nil {
+			invalidNamespaces = append(invalidNamespaces, ns)
+		}
+	}
+
+	if len(invalidNamespaces) > 0 {
+		return fmt.Errorf("The following namespaces are invalid %v. %w", invalidNamespaces,
+			ErrInvalidNamespaceName)
+	}
+
+	return nil
 }
 
 func WatchingNamespace(clientset *kubernetes.Clientset, requestedNS, installationName string) bool {
@@ -783,4 +835,117 @@ func createPGOPgRoleBinding(clientset *kubernetes.Clientset, targetNamespace str
 	}
 
 	return kubeapi.CreateRoleBinding(clientset, &rb, targetNamespace)
+}
+
+// GetNamespaceOperatingMode is responsible for returning the proper namespace operating mode for
+// the current Operator install.  This is done by submitting a SubjectAccessReview in the local
+// Kubernetes cluster to determine whether or not certain cluster-level privileges have been
+// assigned to the Operator Service Account.  Based on the privileges identified, one of the
+// a the proper NamespaceOperatingMode will be returned as applicable for those privileges
+// (please see the various NamespaceOperatingMode types for a detailed explanation of each
+// operating mode).
+func GetNamespaceOperatingMode(clientset *kubernetes.Clientset) (NamespaceOperatingMode, error) {
+
+	// fist check to see if dynamic namespace capabilites can be enable
+	isDynamicCore, err := checkClusterPrivs(clientset, namespacePrivsCoreDynamic, "")
+	if err != nil {
+		return "", err
+	}
+
+	isDynamicRBAC, err := checkClusterPrivs(clientset, namespacePrivsRBACDynamic,
+		"rbac.authorization.k8s.io")
+	if err != nil {
+		return "", err
+	}
+
+	if isDynamicCore && isDynamicRBAC {
+		return NamespaceOperatingModeDynamic, nil
+	}
+
+	// now check if read-only namespace capabilities can be enabled
+	isReadOnly, err := checkClusterPrivs(clientset, namespacePrivsCoreReadOnly, "")
+	if err != nil {
+		return "", err
+	}
+	if isReadOnly {
+		return NamespaceOperatingModeReadOnly, nil
+	}
+
+	// if not dynamic or read-only, then disable namespace capabilities
+	return NamespaceOperatingModeDisabled, nil
+}
+
+// checkClusterPrivs checks to see if the service account currently running the operator has
+// the permissions defined for various resources as specified in the provided permissions
+// map. This function assumes the resource being checked is cluster-scoped.  If the Service
+// Account has all of the permissions defined in the permissions map, then "true" is returned.
+// Otherwise, if the Service Account is missing any of the permissions specified, or if an error
+// is encountered while attempting to deterine the permissions for the service account, then
+// "false" is retured (along with the error in the event an error is encountered).
+func checkClusterPrivs(clientset *kubernetes.Clientset,
+	privs map[string][]string, apiGroup string) (bool, error) {
+
+	for resource, verbs := range privs {
+		for _, verb := range verbs {
+			resAttrs := &authorizationapi.ResourceAttributes{
+				Resource: resource,
+				Verb:     verb,
+				Group:    apiGroup,
+			}
+			sar, err := kubeapi.CreateSelfSubjectAccessReview(clientset, resAttrs)
+			if err != nil {
+				return false, err
+			}
+			if !sar.Status.Allowed {
+				return false, nil
+			}
+		}
+	}
+
+	return true, nil
+}
+
+// GetNamespaceList returns a list of namespaces for the current Operator install.  This inlcudes
+// first obtaining any namespaces from the NAMESPACE env var, and then if the namespace operating
+// mode permits, also querying the Kube cluster in order to obtain any other namespaces that are
+// part of the install, but not included in the env var.  If no namespaces are identified via
+// either of these methods, then the the PGO namespaces is returned as the default namespace.
+func GetNamespaceList(clientset *kubernetes.Clientset,
+	namespaceOperatingMode NamespaceOperatingMode,
+	installationName, pgoNamespace string) ([]string, error) {
+
+	// next grab the namespaces provided using the NAMESPACE env var
+	namespaceList := getNamespacesFromEnv()
+
+	// make sure the namespaces obtained from the NAMESPACE env var are valid
+	if err := ValidateNamespaceNames(namespaceList...); err != nil {
+		return nil, err
+	}
+
+	nsEnvMap := make(map[string]struct{})
+	for _, namespace := range namespaceList {
+		nsEnvMap[namespace] = struct{}{}
+	}
+
+	// If the Operator is in a dynamic or readOnly mode, then refresh the namespace list by
+	// querying the Kube cluster.  This allows us to account for all namespaces owned by the
+	// Operator, including those not explicitly specified during the Operator install.
+	var namespaceListCluster []string
+	if namespaceOperatingMode == NamespaceOperatingModeDynamic ||
+		namespaceOperatingMode == NamespaceOperatingModeReadOnly {
+		namespaceListCluster = GetNamespaces(clientset, installationName)
+	}
+
+	for _, namespace := range namespaceListCluster {
+		if _, ok := nsEnvMap[namespace]; !ok {
+			namespaceList = append(namespaceList, namespace)
+		}
+	}
+
+	// default to the namespace for the Operator install if the namespace list is still empty
+	if len(namespaceList) == 0 {
+		namespaceList = append(namespaceList, pgoNamespace)
+	}
+
+	return namespaceList, nil
 }

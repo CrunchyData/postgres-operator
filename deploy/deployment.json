@@ -60,6 +60,10 @@
                                 "value": "$PGO_APISERVER_PORT"
                             },
                             {
+                                "name": "NAMESPACE",
+                                "value": "$NAMESPACE"
+                            },
+                            {
                                 "name": "PGO_INSTALLATION_NAME",
                                 "value": "$PGO_INSTALLATION_NAME"
                             },
@@ -181,6 +185,10 @@
                                         "fieldPath": "metadata.namespace"
                                     }
                                 }
+                            },
+                            {
+                                "name": "NAMESPACE",
+                                "value": "$NAMESPACE"
                             },
                             {
                                 "name": "PGO_INSTALLATION_NAME",

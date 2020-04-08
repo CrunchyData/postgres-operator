@@ -95,7 +95,26 @@
         - install
         - update
 
-    - name: Template Cluster RBAC
+    - name: Template PGO Service Account
+      template:
+        src: pgo-service-account.yaml.j2
+        dest: "{{ output_dir }}/pgo-service-account.yaml"
+        mode: '0600'
+      tags:
+        - install
+        - update
+      when: 
+        - create_rbac|bool
+
+    - name: Create PGO Service Account
+      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgo-service-account.yaml"
+      tags:
+        - install
+        - update
+      when: 
+        - create_rbac|bool
+
+    - name: Template Cluster RBAC (namespace_mode 'dynamic')
       template:
         src: cluster-rbac.yaml.j2
         dest: "{{ output_dir }}/cluster-rbac.yaml"
@@ -103,14 +122,49 @@
       tags:
         - install
         - update
-      when: create_rbac|bool
+      when: 
+        - create_rbac|bool
+        - namespace_mode == "dynamic"
 
-    - name: Create Cluster RBAC
-      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/cluster-rbac.yaml -n {{ pgo_operator_namespace }}"
+    - name: Create Cluster RBAC (namespace_mode 'dynamic')
+      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/cluster-rbac.yaml"
       tags:
         - install
         - update
-      when: create_rbac|bool
+      when: 
+        - create_rbac|bool
+        - namespace_mode == "dynamic"
+
+    - name: Template Cluster RBAC (namespace_mode 'readonly')
+      template:
+        src: cluster-rbac-readonly.yaml.j2
+        dest: "{{ output_dir }}/cluster-rbac-readonly.yaml"
+        mode: '0600'
+      tags:
+        - install
+        - update
+      when: 
+        - create_rbac|bool
+        - namespace_mode == "readonly"
+
+    - name: Create Cluster RBAC (namespace_mode 'readonly')
+      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/cluster-rbac-readonly.yaml"
+      tags:
+        - install
+        - update
+      when: 
+        - create_rbac|bool
+        - namespace_mode == "readonly"
+
+    - name: Cluster Roles Disabled (namespace_mode 'disabled')
+      debug:
+        msg: "Cluster Roles will not be installed because namespace_mode is '{{ namespace_mode }}'"
+      tags:
+        - install
+        - update
+      when: 
+        - create_rbac|bool
+        - namespace_mode == "disabled"
 
     - name: Create CCP Image Pull Secret
       shell: >

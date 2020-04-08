@@ -197,7 +197,7 @@ var UpdateClusterCmd = &cobra.Command{
 		if EnableStandby {
 			fmt.Println("Enabling standby mode will result in the deltion of all PVCs " +
 				"for this cluster!\nData will only be retained if the proper retention policy " +
-				"is configured for any associated storage classes and/or persisent volumes.\n" +
+				"is configured for any associated storage classes and/or persistent volumes.\n" +
 				"Please proceed with caution.")
 		}
 

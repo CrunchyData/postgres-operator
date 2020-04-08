@@ -542,14 +542,6 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 		return err
 	}
 
-	//determine the default storage class if necessary
-	if cMap == nil {
-		err = c.SetDefaultStorageClass(clientset)
-		if err != nil {
-			return err
-		}
-	}
-
 	c.CheckEnv()
 
 	//load up all the templates
@@ -787,49 +779,6 @@ func (c *PgoConfig) DefaultTemplate(path string) (string, error) {
 	value := string(buf)
 
 	return value, nil
-}
-
-func (c *PgoConfig) SetDefaultStorageClass(clientset *kubernetes.Clientset) error {
-
-	selector := LABEL_PGO_DEFAULT_SC + "=true"
-	scList, err := kubeapi.GetStorageClasses(clientset, selector)
-	if err != nil {
-		return err
-	}
-
-	if len(scList.Items) == 0 {
-		//no pgo default sc was found, so we will use 1st sc we find
-		scList, err = kubeapi.GetAllStorageClasses(clientset)
-		if err != nil {
-			return err
-		}
-		if len(scList.Items) == 0 {
-			return errors.New("no storage classes were found on this Kube system")
-		}
-		//configure with the 1st SC on the system
-	} else {
-		//configure with the default pgo sc
-	}
-
-	log.Infof("setting pgo-default-sc to %s", scList.Items[0].Name)
-
-	//add the storage class into the config
-	c.Storage[LABEL_PGO_DEFAULT_SC] = StorageStruct{
-		AccessMode:         "ReadWriteOnce",
-		Size:               "1G",
-		StorageType:        "dynamic",
-		StorageClass:       scList.Items[0].Name,
-		SupplementalGroups: "",
-		MatchLabels:        "",
-	}
-
-	//set the default storage configs to this new one
-	c.PrimaryStorage = LABEL_PGO_DEFAULT_SC
-	c.BackupStorage = LABEL_PGO_DEFAULT_SC
-	c.ReplicaStorage = LABEL_PGO_DEFAULT_SC
-	c.BackrestStorage = LABEL_PGO_DEFAULT_SC
-
-	return nil
 }
 
 // CheckEnv is mostly used for the OLM deployment use case

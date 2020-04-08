@@ -4,12 +4,40 @@ apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: pgo-cluster-role
 rules:
-  - verbs:
-      - '*'
-    apiGroups:
-      - '*'
+  - apiGroups:
+      - ''
     resources:
       - namespaces
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+  - apiGroups:
+      - ''
+    resources:
       - serviceaccounts
+    verbs:
+    - get
+    - create
+    - delete
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
       - roles
+    verbs:
+      - get
+      - create
+      - delete
+      - bind
+      - escalate
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
       - rolebindings
+    verbs:
+      - get
+      - create
+      - delete

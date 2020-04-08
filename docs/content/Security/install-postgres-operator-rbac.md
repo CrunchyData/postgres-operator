@@ -33,6 +33,6 @@ This script will install the PostreSQL Operator Custom Resource Definitions, CRD
 |Role Bindings  (rbac.yaml) | pgo-backrest-role-binding|
 | | pgo-role-binding|
 
-Note that the cluster role bindings have a naming convention of pgopclusterbinding-$PGO_OPERATOR_NAMESPACE and pgopclusterbindingcrd-$PGO_OPERATOR_NAMESPACE.  
+Note that the cluster role bindings have a naming convention of pgopclusterbinding-$PGO_OPERATOR_NAMESPACE and pgopclusterbindingcrd-$PGO_OPERATOR_NAMESPACE.  The PGO_OPERATOR_NAMESPACE environment variable is added to make each cluster role binding name unique and to support more than a single PostgreSQL Operator being deployed on the same Kubernertes cluster.
 
-The PGO_OPERATOR_NAMESPACE environment variable is added to make each cluster role binding name unique and to support more than a single PostgreSQL Operator being deployed on the same Kubernertes cluster.
+Also, the specific Cluster Roles installed depends on the Namespace Mode enabled via the `PGO_NAMESPACE_MODE` environment variable when running `make installrbac`.  Please consult the [Namespace documentation](/architecture/namespace/) for more information regarding the Namespace Modes available, including the specific `ClusterRoles` required to enable each mode.

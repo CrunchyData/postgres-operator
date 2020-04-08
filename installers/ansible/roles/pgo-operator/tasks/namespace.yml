@@ -4,9 +4,9 @@
   vars:
     target_namespace: !unsafe "{{.TargetNamespace}}"
     operator_namespace: !unsafe "{{.OperatorNamespace}}"
+    nslist: "{{ namespace | ternary(namespace, pgo_operator_namespace) }}"
     target_ns_script: "{{ lookup('template', 'add-targeted-namespace.sh.j2') }}"
-  with_items: "{{ namespace.split(',') | map('trim') | list }}"
-  when: namespace != ''
+  with_items: "{{ nslist.split(',') | map('trim') | list }}"
   tags:
   - install
   - update

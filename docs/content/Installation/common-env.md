@@ -28,6 +28,7 @@ Variable | Ansible Inventory | Example | Description
 `PGO_IMAGE_PREFIX` | pgo_image_prefix | crunchydata | Container image prefix
 `PGO_IMAGE_TAG` | pgo_image_tag | $PGO_BASEOS-$PGO_VERSION | OS/Version tagging info for images
 `PGO_INSTALLATION_NAME` | pgo_installation_name | devtest | Unique name given to Operator installation
+`PGO_NAMESPACE_MODE` | namespace_mode | dynamic | Determines the `ClusterRoles` installed to enable Operator namespace functionality
 `PGO_OPERATOR_NAMESPACE` | pgo_operator_namespace | pgo | Kubernetes namespace for the operator
 `PGO_VERSION` |  | 4.3.0 | Operator version 
 `TLS_NO_VERIFY` | pgo_tls_no_verify | false | Disable certificate verification (e.g. strict hostname checking)

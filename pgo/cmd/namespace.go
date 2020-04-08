@@ -18,11 +18,12 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
-	"os"
 )
 
 func showNamespace(args []string) {
@@ -125,6 +126,7 @@ func createNamespace(args []string, ns string) {
 	response, err := api.CreateNamespace(httpclient, &SessionCredentials, &r)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	log.Debugf("createNamespace response %v", response)
@@ -155,6 +157,7 @@ func deleteNamespace(args []string, ns string) {
 	response, err := api.DeleteNamespace(httpclient, &r, &SessionCredentials)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
+		os.Exit(2)
 	}
 
 	if response.Status.Code == msgs.Ok {

@@ -1,30 +1,26 @@
 ---
-kind: Role
+kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: pgo-role
-  namespace: {{ pgo_operator_namespace }}
+  name: pgo-cluster-role
 rules:
   - apiGroups:
       - ''
     resources:
-      - configmaps
-      - secrets
+      - namespaces
     verbs:
       - get
       - list
-      - create
-      - update
-      - delete
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
-  name: pgo-role
+  name: pgo-cluster-role
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: pgo-role
+  kind: ClusterRole
+  name: pgo-cluster-role
 subjects:
 - apiGroup: rbac.authorization.k8s.io
   kind: User
