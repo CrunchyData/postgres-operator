@@ -184,69 +184,72 @@ var DeploymentTemplate *template.Template
 const deploymentTemplatePath = "cluster-deployment.json"
 
 type ClusterStruct struct {
-	CCPImagePrefix                string `yaml:"CCPImagePrefix"`
-	CCPImageTag                   string `yaml:"CCPImageTag"`
-	PrimaryNodeLabel              string `yaml:"PrimaryNodeLabel"`
-	ReplicaNodeLabel              string `yaml:"ReplicaNodeLabel"`
-	Policies                      string `yaml:"Policies"`
-	Metrics                       bool   `yaml:"Metrics"`
-	Badger                        bool   `yaml:"Badger"`
-	Port                          string `yaml:"Port"`
-	PGBadgerPort                  string `yaml:"PGBadgerPort"`
-	ExporterPort                  string `yaml:"ExporterPort"`
-	User                          string `yaml:"User"`
-	Database                      string `yaml:"Database"`
-	PasswordAgeDays               string `yaml:"PasswordAgeDays"`
-	PasswordLength                string `yaml:"PasswordLength"`
-	Replicas                      string `yaml:"Replicas"`
-	ServiceType                   string `yaml:"ServiceType"`
-	BackrestPort                  int    `yaml:"BackrestPort"`
-	Backrest                      bool   `yaml:"Backrest"`
-	BackrestS3Bucket              string `yaml:"BackrestS3Bucket"`
-	BackrestS3Endpoint            string `yaml:"BackrestS3Endpoint"`
-	BackrestS3Region              string `yaml:"BackrestS3Region"`
-	DisableAutofail               bool   `yaml:"DisableAutofail"`
-	PgmonitorPassword             string `yaml:"PgmonitorPassword"`
-	EnableCrunchyadm              bool   `yaml:"EnableCrunchyadm"`
-	DisableReplicaStartFailReinit bool   `yaml:"DisableReplicaStartFailReinit"`
-	PodAntiAffinity               string `yaml:"PodAntiAffinity"`
-	PodAntiAffinityPgBackRest     string `yaml:"PodAntiAffinityPgBackRest"`
-	PodAntiAffinityPgBouncer      string `yaml:"PodAntiAffinityPgBouncer"`
-	SyncReplication               bool   `yaml:"SyncReplication"`
+	CCPImagePrefix                 string
+	CCPImageTag                    string
+	PrimaryNodeLabel               string
+	ReplicaNodeLabel               string
+	Policies                       string
+	Metrics                        bool
+	Badger                         bool
+	Port                           string
+	PGBadgerPort                   string
+	ExporterPort                   string
+	User                           string
+	Database                       string
+	PasswordAgeDays                string
+	PasswordLength                 string
+	Replicas                       string
+	ServiceType                    string
+	BackrestPort                   int
+	Backrest                       bool
+	BackrestS3Bucket               string
+	BackrestS3Endpoint             string
+	BackrestS3Region               string
+	DisableAutofail                bool
+	PgmonitorPassword              string
+	EnableCrunchyadm               bool
+	DisableReplicaStartFailReinit  bool
+	PodAntiAffinity                string
+	PodAntiAffinityPgBackRest      string
+	PodAntiAffinityPgBouncer       string
+	SyncReplication                bool
+	DefaultInstanceResourceMemory  resource.Quantity `json:"DefaultInstanceMemory"`
+	DefaultBackrestResourceMemory  resource.Quantity `json:"DefaultBackrestMemory"`
+	DefaultPgBouncerResourceMemory resource.Quantity `json:"DefaultPgBouncerMemory"`
 }
 
 type StorageStruct struct {
-	AccessMode         string `yaml:"AccessMode"`
-	Size               string `yaml:"Size"`
-	StorageType        string `yaml:"StorageType"`
-	StorageClass       string `yaml:"StorageClass"`
-	SupplementalGroups string `yaml:"SupplementalGroups"`
-	MatchLabels        string `yaml:"MatchLabels"`
+	AccessMode         string
+	Size               string
+	StorageType        string
+	StorageClass       string
+	SupplementalGroups string
+	MatchLabels        string
 }
 
 type ContainerResourcesStruct struct {
-	RequestsMemory string `yaml:"RequestsMemory"`
-	RequestsCPU    string `yaml:"RequestsCPU"`
-	LimitsMemory   string `yaml:"LimitsMemory"`
-	LimitsCPU      string `yaml:"LimitsCPU"`
+	RequestsMemory string
+	RequestsCPU    string
+	LimitsMemory   string
+	LimitsCPU      string
 }
 
 type PgoStruct struct {
-	Audit          bool   `yaml:"Audit"`
-	PGOImagePrefix string `yaml:"PGOImagePrefix"`
-	PGOImageTag    string `yaml:"PGOImageTag"`
+	Audit          bool
+	PGOImagePrefix string
+	PGOImageTag    string
 }
 
 type PgoConfig struct {
-	BasicAuth          string                              `yaml:"BasicAuth"`
-	Cluster            ClusterStruct                       `yaml:"Cluster"`
-	Pgo                PgoStruct                           `yaml:"Pgo"`
-	ContainerResources map[string]ContainerResourcesStruct `yaml:"ContainerResources"`
-	PrimaryStorage     string                              `yaml:"PrimaryStorage"`
-	BackupStorage      string                              `yaml:"BackupStorage"`
-	ReplicaStorage     string                              `yaml:"ReplicaStorage"`
-	BackrestStorage    string                              `yaml:"BackrestStorage"`
-	Storage            map[string]StorageStruct            `yaml:"Storage"`
+	BasicAuth          string
+	Cluster            ClusterStruct
+	Pgo                PgoStruct
+	ContainerResources map[string]ContainerResourcesStruct
+	PrimaryStorage     string
+	BackupStorage      string
+	ReplicaStorage     string
+	BackrestStorage    string
+	Storage            map[string]StorageStruct
 }
 
 const DEFAULT_SERVICE_TYPE = "ClusterIP"
@@ -374,6 +377,25 @@ func (c *PgoConfig) Validate() error {
 			}
 			return errors.New(errPrefix + msg)
 		}
+
+		// validate any of the resources and if they are unavailable, set defaults
+		if c.Cluster.DefaultInstanceResourceMemory.IsZero() {
+			c.Cluster.DefaultInstanceResourceMemory = DefaultInstanceResourceMemory
+		}
+
+		log.Infof("deafult instance memory set to [%s]", c.Cluster.DefaultInstanceResourceMemory.String())
+
+		if c.Cluster.DefaultBackrestResourceMemory.IsZero() {
+			c.Cluster.DefaultBackrestResourceMemory = DefaultBackrestResourceMemory
+		}
+
+		log.Infof("deafult pgbackrest repository memory set to [%s]", c.Cluster.DefaultBackrestResourceMemory.String())
+
+		if c.Cluster.DefaultPgBouncerResourceMemory.IsZero() {
+			c.Cluster.DefaultPgBouncerResourceMemory = DefaultPgBouncerResourceMemory
+		}
+
+		log.Infof("deafult pgbouncer memory set to [%s]", c.Cluster.DefaultPgBouncerResourceMemory.String())
 	}
 
 	// if provided, ensure that the type of pod anti-affinity values are valid
@@ -522,9 +544,8 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 		return err
 	}
 
-	//validate the pgo.yaml config file
-	err = c.Validate()
-	if err != nil {
+	// validate the pgo.yaml config file
+	if err := c.Validate(); err != nil {
 		log.Error(err)
 		return err
 	}

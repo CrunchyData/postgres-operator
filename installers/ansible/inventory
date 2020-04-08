@@ -233,6 +233,25 @@ db_replicas=0
 db_user='testuser'
 
 # ==================
+# Default Container Resource Configurations
+# ==================
+# Define the default container resource configurations that differ from the
+# PostgreSQL Operator defaults. As a convenience, the current PostgreSQL
+# Operator defaults are listed with each variable
+#
+# "default_instance_memory" represents the memory request for a PostgreSQL
+# instance
+# default_instance_memory='512Mi'
+#
+# "default_pgbackrest_repo_memory" represents the memory request for a
+# pgBackRest repository
+# default_pgbackrest_memory='48Mi'
+#
+# "default_pgbouncer_memory" represents the memory request for a pgBouncer
+# instance
+# default_pgbouncer_memory='24Mi'
+
+# ==================
 # Storage Settings
 # ==================
 # Which storage definitions to use when creating persistent volumes

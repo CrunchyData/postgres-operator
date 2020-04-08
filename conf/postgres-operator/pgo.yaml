@@ -25,6 +25,9 @@ Cluster:
   PodAntiAffinityPgBackRest: ""
   PodAntiAffinityPgBouncer: ""
   SyncReplication: false
+  DefaultInstanceMemory:
+  DefaultBackrestMemory:
+  DefaultPgBouncerMemory:
 PrimaryStorage: storageos
 BackupStorage: storageos
 ReplicaStorage: storageos

@@ -18,7 +18,6 @@ limitations under the License.
 import (
 	"errors"
 	"fmt"
-
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -26,13 +25,12 @@ import (
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
-	log "github.com/sirupsen/logrus"
-
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 
+	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -1017,6 +1015,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		// as this was already validated, we can ignore the error
 		quantity, _ := resource.ParseQuantity(request.MemoryRequest)
 		spec.Resources[v1.ResourceMemory] = quantity
+	} else {
+		spec.Resources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultInstanceResourceMemory
 	}
 
 	// similarly, if there are any overriding pgBackRest repository container
@@ -1031,6 +1031,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		// as this was already validated, we can ignore the error
 		quantity, _ := resource.ParseQuantity(request.BackrestMemoryRequest)
 		spec.BackrestResources[v1.ResourceMemory] = quantity
+	} else {
+		spec.BackrestResources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultBackrestResourceMemory
 	}
 
 	// similarly, if there are any overriding pgBouncer container resource request
@@ -1045,6 +1047,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		// as this was already validated, we can ignore the error
 		quantity, _ := resource.ParseQuantity(request.PgBouncerMemoryRequest)
 		spec.PgBouncerResources[v1.ResourceMemory] = quantity
+	} else {
+		spec.PgBouncerResources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultPgBouncerResourceMemory
 	}
 
 	spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.PrimaryStorage)

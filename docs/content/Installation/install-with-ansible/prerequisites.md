@@ -166,6 +166,9 @@ sets of variables cannot be used at the same time.
 | `cleanup`                         | false       |          | Set to configure the playbooks to delete all objects when uninstalling the Operator.  Note: this will delete all objects related to the Operator (including clusters provisioned). |
 | `create_rbac`                     | true        | **Required** | Set to `true` if the installer should create the RBAC resources required to run the PostgreSQL Operator. |
 | `crunchy_debug`                   | false       |          | Set to configure Operator to use debugging mode.  Note: this can cause sensitive data such as passwords to appear in Operator logs.                                              |
+| `default_instance_memory`         | 512Mi       |          | The default amount of memory to request for a PostgreSQL instance                     |
+| `default_pgbackrest_memory`       | 48Mi        |          | The default amount of memory to request for a pgBackRest repository                   |
+| `default_pgbouncer_memory`        | 24Mi        |          | The default amount of memory to request for a pgBouncer instance                      |
 | `delete_metrics_namespace`        | false       |          | Set to configure whether or not the metrics namespace (defined using variable `metrics_namespace`) is deleted when uninstalling the metrics infrastructure                     |
 | `delete_operator_namespace`       | false       |          | Set to configure whether or not the PGO operator namespace (defined using variable `pgo_operator_namespace`) is deleted when uninstalling the PGO.                             |
 | `delete_watched_namespaces`       | false       |          | Set to configure whether or not the PGO watched namespaces (defined using variable `namespace`) are deleted when uninstalling the PGO.                                         |
@@ -224,6 +227,7 @@ sets of variables cannot be used at the same time.
 | `replica_storage`                 | storageos   | **Required** | Set to configure which storage definition to use when creating volumes used by PostgreSQL replicas on all newly created clusters.                                                |
 | `scheduler_timeout`               | 3600        | **Required** | Set to a value in seconds to configure the `pgo-scheduler` timeout threshold when waiting for schedules to complete.                                                             |
 | `service_type`                    | ClusterIP   |          | Set to configure the type of Kubernetes service provisioned on all newly created clusters.                                                                                       |
+| `sync_replication`                | false       |          | If set to true, defaults the PostgreSQL clusters to be deployed with synchronous replication |
 | `pgo_cluster_admin`               | false       |          | Determines whether or not the `cluster-admin` role is assigned to the PGO service account. Must be `true` to enable PGO namespace & role creation when installing in OpenShift.  |
 
 {{% notice tip %}}
