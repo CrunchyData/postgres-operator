@@ -5,7 +5,6 @@ metadata:
   labels:
     app.kubernetes.io/name: '${OPERATOR_NAME}'
 spec:
-  backoffLimit: 0
   template:
     spec:
       serviceAccountName: '${INSTALLER_SERVICE_ACCOUNT}'
