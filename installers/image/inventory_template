@@ -18,6 +18,22 @@ kubernetes_in_cluster='$KUBERNETES_IN_CLUSTER'
 # ==================
 create_rbac='$CREATE_RBAC'
 
+# Namespace Mode
+# ==================
+# Note: this setting is only applicable if 'create_rbac=true'.
+# 
+# When installing RBAC using 'create_rbac', the namespace mode determines
+# what Cluster Roles are installed.  The default mode if a value is not 
+# specified here is "dynamic", which gives the Operator the full set of 
+# Cluster Roles to create/modify/delete namespaces, and also install RBAC
+# within those namespaces in order to create PG clusters.  A value of 
+# "readonly" can also be specified, which allows the Operator to view 
+# namespaces, but not create/modify/delete them nor create  RBAC within 
+# them.  And finally "disabled" prevents the creation of any Cluster Roles,
+# and therefore disables all namespace functionality.
+# ==================
+namespace_mode='$NAMESPACE_MODE'
+
 # ===================
 # PGO Client Container Settings
 # The following settings configure the deployment of a PGO Client Container
