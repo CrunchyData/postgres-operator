@@ -43,52 +43,24 @@ spec:
               image: crunchydata/pgo-installer:centos7-4.3.0
               imagePullPolicy: Always
               env:
-                  - name: HOME
-                    value: "/tmp"
                   - name: ANSIBLE_CONFIG
                     value: "/ansible/ansible.cfg"
-                  - name: CRUNCHY_DEBUG
-                    value: "false"
-                  - name: KUBERNETES_IN_CLUSTER
-                    value: "true"
-                  - name: CREATE_RBAC
-                    value: "true"
-                  - name: NAMESPACE_MODE
-                    value: "dynamic"
-                  - name: PGO_INSTALLATION_NAME
-                    value: "devtest"
-                  - name: PGO_ADMIN_USERNAME
-                    value: "admin"
-                  - name: PGO_ADMIN_PASSWORD
-                    value: "password"
-                  - name: PGO_ADMIN_PERMS
-                    value: "*"
-                  - name: PGO_ADMIN_ROLE_NAME
-                    value: "pgoadmin"
-                  - name: PGO_OPERATOR_NAMESPACE
-                    value: "pgo"
-                  - name: NAMESPACE
-                    value: "pgouser1,pgouser2"
-                  - name: CCP_IMAGE_PREFIX
-                    value: "crunchydata"
-                  - name: CCP_IMAGE_TAG
-                    value: "centos7-12.2-4.3.0"
-                  - name: PGO_IMAGE_PREFIX
-                    value: "crunchydata"
-                  - name: PGO_IMAGE_TAG
-                    value: "centos7-4.3.0"
-                  - name: PGO_CLIENT_VERSION
-                    value: "v4.3.0"
-                  - name: BACKREST
-                    value: "true"
-                  - name: BADGER
-                    value: "false"
-                  - name: METRICS
-                    value: "false"
                   - name: ARCHIVE_MODE
                     value: "true"
                   - name: ARCHIVE_TIMEOUT
                     value: "60"
+                  - name: BACKREST
+                    value: "true"
+                  - name: BADGER
+                    value: "false"
+                  - name: CRUNCHY_DEBUG
+                    value: "false"
+                  - name: CREATE_RBAC
+                    value: "true"
+                  - name: CCP_IMAGE_PREFIX
+                    value: "crunchydata"
+                  - name: CCP_IMAGE_TAG
+                    value: "centos7-12.2-4.3.0"
                   - name: DISABLE_AUTO_FAILOVER
                     value: "false"
                   - name: DB_PASSWORD_LENGTH
@@ -99,6 +71,40 @@ spec:
                     value: "0"
                   - name: DB_USER
                     value: "testuser"
+                  - name: EXPORTERPORT
+                    value: "9187"
+                  - name: HOME
+                    value: "/tmp"
+                  - name: KUBERNETES_IN_CLUSTER
+                    value: "true"
+                  - name: METRICS
+                    value: "false"
+                  - name: NAMESPACE
+                    value: "pgouser1,pgouser2"
+                  - name: NAMESPACE_MODE
+                    value: "dynamic"
+                  - name: PGBADGERPORT
+                    value: "10000"
+                  - name: PGO_ADMIN_PASSWORD
+                    value: "password"
+                  - name: PGO_ADMIN_PERMS
+                    value: "*"
+                  - name: PGO_ADMIN_ROLE_NAME
+                    value: "pgoadmin"
+                  - name: PGO_ADMIN_USERNAME
+                    value: "admin"
+                  - name: PGO_CLIENT_VERSION
+                    value: "v4.3.0"
+                  - name: PGO_IMAGE_PREFIX
+                    value: "crunchydata"
+                  - name: PGO_IMAGE_TAG
+                    value: "centos7-4.3.0"
+                  - name: PGO_INSTALLATION_NAME
+                    value: "devtest"
+                  - name: PGO_OPERATOR_NAMESPACE
+                    value: "pgo"
+                  - name: SCHEDULER_TIMEOUT
+                    value: "3600"
                   - name: BACKREST_STORAGE
                     value: "gce"
                   - name: BACKUP_STORAGE
@@ -107,15 +113,9 @@ spec:
                     value: "gce"
                   - name: REPLICA_STORAGE
                     value: "gce"
-                  - name: PGBADGERPORT
-                    value: "10000"
-                  - name: EXPORTERPORT
-                    value: "9187"
-                  - name: SCHEDULER_TIMEOUT
-                    value: "3600"
                   - name: STORAGE1_NAME
                     value: "hostpathstorage"
-                  - name: STORAGE_ACCESS_MODE
+                  - name: STORAGE1_ACCESS_MODE
                     value: "ReadWriteMany"
                   - name: STORAGE1_SIZE
                     value: "1G"

@@ -37,6 +37,42 @@ cluster-admin role. This is required for the installer to run correctly. If you
 have a preconfigured service account with the cluster-admin role, you can remove
 this section of the yaml and update the service account name in the job spec.
 
+##### Image Pull Secrets
+
+If you are pulling the Postgres-Operator images from a private registry you will
+need to setup an `imagePullSecret` with access to the registry. The image pull
+secret will need to be added to the installer service account to have access.
+The secret will need to be created in each namespace that the Postgres-Operator
+will be using. For example, if you run the installer in one namespace, the
+operator in another, and clusters in a third namespace, the secret will need to
+exist in each.
+
+After you have configured your image pull secret in the installer namespace,
+add the name of the secret to the job yaml that you are using. You can update
+the existing section like this:
+
+```
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+    name: pgo-installer-sa
+    namespace: pgo-install
+imagePullSecrets:
+  - name: <image_pull_secret_name>
+```
+
+If the service account is configured without using the job yaml file, you
+can link the secret to the service account with the `kubectl` or `oc`
+clients.
+
+```
+# kubectl
+kubectl patch serviceaccount <installer-sa> -p '{"imagePullSecrets": [{"name": "myregistrykey"}]}' -n <install-ns>
+
+# oc
+oc secrets link <registry-secret> <installer-sa> --for=pull --namespace=<install-namespace>
+```
+
 #### Job
 
 Once the resources have been configured the job spec will be used to deploy the
