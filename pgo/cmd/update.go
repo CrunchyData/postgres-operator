@@ -68,13 +68,13 @@ func init() {
 	UpdateClusterCmd.Flags().StringVar(&MemoryRequest, "memory", "", "Set the amount of RAM to request, e.g. "+
 		"1GiB.")
 	UpdateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	UpdateClusterCmd.Flags().BoolVarP(&DisableStandby, "disable-standby", "", false,
-		"Disables standby mode if enabled in the cluster(s) specified.")
+	UpdateClusterCmd.Flags().BoolVarP(&DisableStandby, "promote-standby", "", false,
+		"Disables standby mode (if enabled) and promotes the cluster(s) specified.")
 	UpdateClusterCmd.Flags().StringVar(&BackrestCPURequest, "pgbackrest-cpu", "", "Set the number of millicores to request for CPU "+
 		"for the pgBackRest repository.")
 	UpdateClusterCmd.Flags().StringVar(&BackrestMemoryRequest, "pgbackrest-memory", "", "Set the amount of Memory to request for "+
 		"the pgBackRest repository.")
-	UpdateClusterCmd.Flags().BoolVarP(&EnableStandby, "promote-standby", "", false,
+	UpdateClusterCmd.Flags().BoolVarP(&EnableStandby, "enable-standby", "", false,
 		"Enables standby mode in the cluster(s) specified.")
 	UpdateClusterCmd.Flags().BoolVar(&Startup, "startup", false, "Restart the database cluster if it "+
 		"is currently shutdown.")
