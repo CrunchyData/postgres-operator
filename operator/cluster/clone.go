@@ -506,8 +506,6 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 			podSecurityContext.SupplementalGroups = []int64{int64(supplementalGroup)}
 		}
 	}
-	// set the backoff limit to be 0 to match our other jobs
-	backoffLimit := int32(0)
 	// set up the job template to synchronize the pgBackRest repo
 	job := batch_v1.Job{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -530,7 +528,6 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 			},
 		},
 		Spec: batch_v1.JobSpec{
-			BackoffLimit: &backoffLimit,
 			Template: v1.PodTemplateSpec{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Name: jobName,

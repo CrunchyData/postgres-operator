@@ -10,7 +10,6 @@
         }
     },
     "spec": {
-        "backoffLimit": 0,
         "template": {
             "metadata": {
                 "name": "{{.JobName}}",
