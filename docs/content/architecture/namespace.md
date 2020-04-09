@@ -107,7 +107,7 @@ enabled for the Operator installation.  Please consult the installation guides f
 installation methods available to determine the settings required to install the `ClusterRoles`
 required for each mode.
 
-### dynamic
+### `dynamic`
 
 Enables full dynamic namespace capabilities, in which the Operator can create, delete and update
 any namespaces within the Kubernetes cluster, while then also having the ability to create the 
@@ -167,7 +167,7 @@ rules:
       - delete
 ```
 
-### readonly
+### `readonly`
 
 In this mode the PostgreSQL Operator is still able to listen for  namespace events within the 
 Kubernetetes cluster, and then create and run and/or remove controllers as namespaces are added,
@@ -194,7 +194,7 @@ rules:
       - watch
 ```
 
-### disabled
+### `disabled`
 
 Disables namespace capabilities within the Operator altogether.  While in this mode the Operator
 will simply attempt to work with the target namespaces specified during installation.  If no 

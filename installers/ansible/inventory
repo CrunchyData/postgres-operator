@@ -95,7 +95,7 @@ create_rbac='true'
 # them.  And finally "disabled" prevents the creation of any Cluster Roles,
 # and therefore disables all namespace functionality.
 # ==================
-# namespace_mode='disabled'
+# namespace_mode='dynamic'
 
 # ===================
 # PGO Client Container Settings

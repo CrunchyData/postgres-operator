@@ -53,6 +53,8 @@ spec:
                     value: "true"
                   - name: CREATE_RBAC
                     value: "true"
+                  - name: NAMESPACE_MODE
+                    value: "dynamic"
                   - name: PGO_INSTALLATION_NAME
                     value: "devtest"
                   - name: PGO_ADMIN_USERNAME
