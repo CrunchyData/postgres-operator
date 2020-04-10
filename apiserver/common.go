@@ -117,15 +117,12 @@ func GetBackrestStorageTypes() []string {
 
 // IsValidPVC determines if a PVC with the name provided exits
 func IsValidPVC(pvcName, ns string) bool {
-	_, pvcFound, err := kubeapi.GetPVC(Clientset, pvcName, ns)
+	pvc, err := kubeapi.GetPVCIfExists(Clientset, pvcName, ns)
 	if err != nil {
 		log.Error(err)
 		return false
-	} else if !pvcFound {
-		return false
 	}
-
-	return true
+	return pvc != nil
 }
 
 // ValidateQuantity runs the Kubernetes "ParseQuantity" function on a string

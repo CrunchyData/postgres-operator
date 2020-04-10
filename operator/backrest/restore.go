@@ -299,29 +299,16 @@ func updateWorkflow(restclient *rest.RESTClient, workflowID, namespace, status s
 // There is a bunch of legacy stuff in here, but it is refactored to handle the
 // case of creating PVCs for tablespaces
 func createPVC(clientset *kubernetes.Clientset, restclient *rest.RESTClient, namespace, clusterName, pvcName string, storage crv1.PgStorageSpec) error {
-	_, found, err := kubeapi.GetPVC(clientset, pvcName, namespace)
-
-	// if the PVC already exists, don't create and return.
-	// Likewise, if the PVC is found but there is an error, bubble the error up
-	// for logging and return
-	if found {
-		if err != nil {
-			return err
-		}
-
-		log.Debugf("pvc %s found, will NOT recreate as part of restore", pvcName)
-
-		return nil
-	}
-
-	log.Debugf("pvc %s not found, will create as part of restore", pvcName)
-
-	// attempt to create the PVC. If there is an error, bubble it up and return
-	if err := pvc.Create(clientset, pvcName, clusterName, &storage, namespace); err != nil {
+	existing, err := kubeapi.GetPVCIfExists(clientset, pvcName, namespace)
+	if err != nil {
 		return err
 	}
-
-	return nil
+	if existing != nil {
+		log.Debugf("pvc %s found, will NOT recreate as part of restore", pvcName)
+		return nil
+	}
+	log.Debugf("pvc %s not found, will create as part of restore", pvcName)
+	return pvc.Create(clientset, pvcName, clusterName, &storage, namespace)
 }
 
 func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgcluster, clientset *kubernetes.Clientset,

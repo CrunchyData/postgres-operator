@@ -67,16 +67,12 @@ type CreatePVC struct {
 // be it for a PostgreSQL data directory or for a pgBackRest repository
 func (createPVC CreatePVC) createPVC() error {
 	// see if a PVC already exists before attempting to create
-	_, found, err := kubeapi.GetPVC(createPVC.Clientset, createPVC.PVCName, createPVC.Namespace)
-
-	// if there is an error, but the PVC was not found, return
-	if err != nil && found {
+	existing, err := kubeapi.GetPVCIfExists(createPVC.Clientset, createPVC.PVCName, createPVC.Namespace)
+	if err != nil {
 		log.Error(err.Error())
 		return err
 	}
-
-	// if the PVC is already found, return here
-	if found {
+	if existing != nil {
 		log.Debugf("pvc %s found, will NOT recreate as part of clone", createPVC.PVCName)
 		return nil
 	}

@@ -99,7 +99,7 @@ func Create(clientset *kubernetes.Clientset, name, clusterName string, storageSp
 		if storageSpec.MatchLabels != "" {
 			arr := strings.Split(storageSpec.MatchLabels, "=")
 			if len(arr) != 2 {
-				log.Error("%s MatchLabels is not formatted correctly", storageSpec.MatchLabels)
+				log.Errorf("%s MatchLabels is not formatted correctly", storageSpec.MatchLabels)
 				return errors.New("match labels is not formatted correctly")
 			}
 			pvcFields.MatchLabels = getMatchLabels(arr[0], arr[1])
@@ -135,16 +135,11 @@ func Create(clientset *kubernetes.Clientset, name, clusterName string, storageSp
 }
 
 // Delete a pvc
-func Delete(clientset *kubernetes.Clientset, name string, namespace string) error {
-	var err error
-	var found bool
-	var pvc *v1.PersistentVolumeClaim
-
-	//see if the PVC exists
-	pvc, found, err = kubeapi.GetPVC(clientset, name, namespace)
-	if err != nil || !found {
-		log.Infof("\nPVC %s\n", name+" is not found, will not attempt delete")
-		return nil
+func DeleteIfExists(clientset *kubernetes.Clientset, name string, namespace string) error {
+	pvc, err := kubeapi.GetPVCIfExists(clientset, name, namespace)
+	if pvc == nil {
+		// nothing to delete. return any other error.
+		return err
 	}
 
 	log.Debugf("PVC %s is found", pvc.Name)
@@ -152,20 +147,14 @@ func Delete(clientset *kubernetes.Clientset, name string, namespace string) erro
 	if pvc.ObjectMeta.Labels[config.LABEL_PGREMOVE] == "true" {
 		log.Debugf("delete PVC %s in namespace %s", name, namespace)
 		err = kubeapi.DeletePVC(clientset, name, namespace)
-		if err != nil {
-			return err
-		}
 	}
-
-	return nil
-
+	return err
 }
 
 // Exists test to see if pvc exists
 func Exists(clientset *kubernetes.Clientset, name string, namespace string) bool {
-	_, found, _ := kubeapi.GetPVC(clientset, name, namespace)
-
-	return found
+	pvc, _ := kubeapi.GetPVCIfExists(clientset, name, namespace)
+	return pvc == nil
 }
 
 func getMatchLabels(key, value string) string {

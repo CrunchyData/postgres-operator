@@ -21,7 +21,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -56,23 +55,21 @@ func GetPVCs(clientset *kubernetes.Clientset, selector, namespace string) (*v1.P
 }
 
 // GetPVC gets a PVC by name
-// returns pvc, found=bool, error
-func GetPVC(clientset *kubernetes.Clientset, name, namespace string) (*v1.PersistentVolumeClaim, bool, error) {
-
+func GetPVC(clientset *kubernetes.Clientset, name, namespace string) (*v1.PersistentVolumeClaim, error) {
 	options := meta_v1.GetOptions{}
-	pvc, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, options)
-	if kerrors.IsNotFound(err) {
-		log.Debugf("PVC %s is not found", name)
-		return pvc, false, err
-	}
+	return clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, options)
+}
 
+// GetPVCIfExists gets a PVC by name. If the PVC does not exist, it returns nils.
+func GetPVCIfExists(clientset *kubernetes.Clientset, name, namespace string) (*v1.PersistentVolumeClaim, error) {
+	pvc, err := GetPVC(clientset, name, namespace)
 	if err != nil {
-		log.Error("error getting pvc " + err.Error())
-		return pvc, false, err
+		pvc = nil
 	}
-
-	return pvc, true, err
-
+	if IsNotFound(err) {
+		err = nil
+	}
+	return pvc, err
 }
 
 // DeletePVC deletes a PVC by name
@@ -127,7 +124,7 @@ func IsPVCDeleted(client *kubernetes.Clientset, timeout time.Duration, pvcName,
 		case <-duration:
 			return fmt.Errorf("timed out waiting for PVC to delete: %s", pvcName)
 		case <-tick:
-			if _, found, _ := GetPVC(client, pvcName, namespace); !found {
+			if pvc, err := GetPVCIfExists(client, pvcName, namespace); err == nil && pvc == nil {
 				return nil
 			}
 		}

@@ -457,7 +457,7 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 		return resp
 	}
 
-	if _, found, err := kubeapi.GetPVC(apiserver.Clientset, request.FromPVC, ns); !found {
+	if _, err := kubeapi.GetPVC(apiserver.Clientset, request.FromPVC, ns); err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp

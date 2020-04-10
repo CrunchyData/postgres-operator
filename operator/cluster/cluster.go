@@ -73,8 +73,13 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 
 	var pvcName string
 
-	_, found, err := kubeapi.GetPVC(clientset, cl.Spec.Name, namespace)
-	if found {
+	existing, err := kubeapi.GetPVCIfExists(clientset, cl.Spec.Name, namespace)
+	if err != nil {
+		log.Error(err)
+		publishClusterCreateFailure(cl, err.Error())
+		return
+	}
+	if existing != nil {
 		log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate", cl.Spec.Name)
 		pvcName = cl.Spec.Name
 	} else {
@@ -253,8 +258,12 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	var pvcName string
 	// create the PVC if necessary.  When a replica is being created during a restore, the PVC will already exist.
 	// Otherwise a new PVC will be created.
-	_, found, err := kubeapi.GetPVC(clientset, replica.Spec.Name, namespace)
-	if found {
+	existing, err := kubeapi.GetPVCIfExists(clientset, replica.Spec.Name, namespace)
+	if err != nil {
+		log.Error(err)
+		return
+	}
+	if existing != nil {
 		log.Debugf("pvc [%s] already present for replica from previous cluster with this same name, will not recreate",
 			replica.Spec.Name)
 		pvcName = replica.Spec.Name

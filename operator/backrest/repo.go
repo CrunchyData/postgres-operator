@@ -86,8 +86,11 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 	// if createPVC is set to true, attempt to create the PVC
 	if createPVC {
 		// create backrest repo PVC with same name as repoName
-		_, found, err := kubeapi.GetPVC(clientset, repoName, namespace)
-		if found {
+		existing, err := kubeapi.GetPVCIfExists(clientset, repoName, namespace)
+		if err != nil {
+			return err
+		}
+		if existing != nil {
 			log.Debugf("pvc [%s] already present, will not recreate", repoName)
 		} else {
 			_, err = pvc.CreatePVC(clientset, &cluster.Spec.BackrestStorage, repoName, cluster.Name, namespace)

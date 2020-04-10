@@ -117,7 +117,7 @@ loop:
 func getClaimCapacity(clientset *kubernetes.Clientset, pvcName, ns string) (string, error) {
 	log.Debugf("in df pvc name found to be %s", pvcName)
 
-	pvc, _, err := kubeapi.GetPVC(clientset, pvcName, ns)
+	pvc, err := kubeapi.GetPVC(clientset, pvcName, ns)
 
 	if err != nil {
 		log.Error(err)

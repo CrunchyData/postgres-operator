@@ -409,16 +409,13 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 // CreateTablespacePVC creates a PVC for a tablespace, whether its a part of a
 // cluster creation, scale, or other workflows
 func CreateTablespacePVC(clientset *kubernetes.Clientset, namespace, clusterName, tablespacePVCName string, storageSpec *crv1.PgStorageSpec) error {
-	// determine if the PVC already exists. If it exists, proceed onward. If it
-	// exists and there is an error, return
-	_, found, err := kubeapi.GetPVC(clientset, tablespacePVCName, namespace)
-
-	if found {
+	existing, err := kubeapi.GetPVCIfExists(clientset, tablespacePVCName, namespace)
+	if err != nil {
+		return err
+	}
+	if existing != nil {
 		log.Debugf("tablespace pvc %s found, will NOT recreate", tablespacePVCName)
 		return nil
-	} else if found && err != nil {
-		// log the error in the calling function
-		return err
 	}
 
 	// try to create the PVC for the tablespace. if it cannot be created, return

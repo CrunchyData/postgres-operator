@@ -73,15 +73,10 @@ func (c *Controller) handleRMDataUpdate(job *apiv1.Job) error {
 
 	//if a user has specified --archive for a cluster then
 	// an xlog PVC will be present and can be removed
-	var found bool
 	pvcName := clusterName + "-xlog"
-	_, found, err := kubeapi.GetPVC(c.JobClientset, pvcName, job.Namespace)
-	if found {
-		log.Debugf("deleting pvc %s", pvcName)
-		if err = pvc.Delete(c.JobClientset, pvcName, job.Namespace); err != nil {
-			log.Error(err)
-			return err
-		}
+	if err := pvc.DeleteIfExists(c.JobClientset, pvcName, job.Namespace); err != nil {
+		log.Error(err)
+		return err
 	}
 
 	//delete any completed jobs for this cluster as a cleanup
