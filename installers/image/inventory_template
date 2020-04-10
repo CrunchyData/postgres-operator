@@ -216,6 +216,7 @@ backrest_storage='$BACKREST_STORAGE'
 backup_storage='$BACKUP_STORAGE'
 primary_storage='$PRIMARY_STORAGE'
 replica_storage='$REPLICA_STORAGE'
+wal_storage='$WAL_STORAGE'
 
 storage1_name='$STORAGE1_NAME'
 storage1_access_mode='$STORAGE_ACCESS_MODE'

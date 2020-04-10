@@ -18,6 +18,7 @@ package cmd
 import (
 	"fmt"
 	"math"
+	"os"
 	"sort"
 	"strings"
 
@@ -26,7 +27,6 @@ import (
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 // dfTextPadding contains the values for what the text padding should be
@@ -57,9 +57,10 @@ const (
 
 // pvcTypeToString contains the human readable strings of the PVC types
 var pvcTypeToString = map[msgs.DfPVCType]string{
-	msgs.PVCTypePostgreSQL: "data",
-	msgs.PVCTypepgBackRest: "pgbackrest",
-	msgs.PVCTypeTablespace: "tablespace",
+	msgs.PVCTypePostgreSQL:    "data",
+	msgs.PVCTypepgBackRest:    "pgbackrest",
+	msgs.PVCTypeTablespace:    "tablespace",
+	msgs.PVCTypeWriteAheadLog: "wal",
 }
 
 var dfCmd = &cobra.Command{

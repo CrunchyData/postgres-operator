@@ -83,7 +83,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 
 	//create the "to-cluster" PVC to hold the new dataPVC]
 	restoreToName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_TO_PVC]
-	dataVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
+	dataVolume, walVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
 		clientset, &cluster, namespace, restoreToName, cluster.Spec.PrimaryStorage)
 	if err != nil {
 		log.Error(err)
@@ -207,6 +207,10 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		return
 	}
 
+	if cluster.Spec.WALStorage.StorageType != "" {
+		operator.AddWALVolumeAndMountsToBackRest(&job.Spec.Template.Spec, walVolume)
+	}
+
 	// set the container image to an override value, if one exists
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_RESTORE,
 		&job.Spec.Template.Spec.Containers[0])
@@ -286,7 +290,7 @@ func createRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 
 	// interpret the storage specs again. the volumes were already created during
 	// the restore job.
-	dataVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
+	dataVolume, walVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
 		clientset, cluster, namespace, restoreToName, cluster.Spec.PrimaryStorage)
 
 	//primaryLabels := operator.GetPrimaryLabels(cluster.Spec.Name, cluster.Spec.ClusterName, false, cluster.Spec.UserLabels)
@@ -388,6 +392,10 @@ func createRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	if err != nil {
 		log.Error("error unmarshalling primary json into Deployment " + err.Error())
 		return err
+	}
+
+	if cluster.Spec.WALStorage.StorageType != "" {
+		operator.AddWALVolumeAndMountsToPostgreSQL(&deployment.Spec.Template.Spec, walVolume, restoreToName)
 	}
 
 	// determine if any of the container images need to be overridden

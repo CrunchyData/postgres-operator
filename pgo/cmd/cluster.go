@@ -301,6 +301,8 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	// determine if the user wants to create tablespaces as part of this request,
 	// and if so, set the values
 	r.Tablespaces = getTablespaces(Tablespaces)
+	r.WALStorageConfig = WALStorageConfig
+	r.WALPVCSize = WALPVCSize
 
 	// only set SyncReplication in the request if actually provided via the CLI
 	if createClusterCmd.Flag("sync-replication").Changed {

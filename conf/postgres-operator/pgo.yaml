@@ -29,6 +29,7 @@ Cluster:
   DefaultBackrestMemory:
   DefaultPgBouncerMemory:
 PrimaryStorage: storageos
+WALStorage:
 BackupStorage: storageos
 ReplicaStorage: storageos
 BackrestStorage: storageos

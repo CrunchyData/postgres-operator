@@ -233,6 +233,7 @@ backrest_storage='storageos'
 backup_storage='storageos'
 primary_storage='storageos'
 replica_storage='storageos'
+wal_storage=''
 
 storage1_name='hostpathstorage'
 storage1_access_mode='ReadWriteMany'

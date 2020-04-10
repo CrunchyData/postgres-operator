@@ -74,6 +74,7 @@ type CreateClusterRequest struct {
 	PgBouncerReplicas    int32
 	CustomConfig         string
 	StorageConfig        string
+	WALStorageConfig     string
 	ReplicaStorageConfig string
 	// Version of API client
 	// required: true
@@ -89,11 +90,15 @@ type CreateClusterRequest struct {
 	BackrestS3Endpoint        string
 	Standby                   bool
 	BackrestRepoPath          string
+
 	// allow the user to set custom sizes for PVCs
 	// PVCSize applies to the primary/replica storage specs
 	PVCSize string
 	// BackrestPVCSize applies to the pgBackRest storage spec
 	BackrestPVCSize string
+	// WALPVCSize applies to the WAL storage spec
+	WALPVCSize string
+
 	// Username is an optional parameter that allows the user to override the
 	// default user name to use for the PostgreSQL cluster
 	Username string

@@ -26,6 +26,7 @@ const (
 	PVCTypePostgreSQL DfPVCType = iota
 	PVCTypepgBackRest
 	PVCTypeTablespace
+	PVCTypeWriteAheadLog
 )
 
 // DfRequest contains the parameters that can be used to get disk utilization

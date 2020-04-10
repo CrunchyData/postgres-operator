@@ -59,7 +59,7 @@ const (
 // 4. Create a new cluster by using the old cluster as a template and providing
 // the specifications to the new cluster, with a few "opinionated" items (e.g.
 // copying over the secrets)
-func Clone(clientset *kubernetes.Clientset, client *rest.RESTClient, namespace string, task *crv1.Pgtask) {
+func Clone(clientset *kubernetes.Clientset, client *rest.RESTClient, restConfig *rest.Config, namespace string, task *crv1.Pgtask) {
 	// have a guard -- if the task is completed, don't proceed furter
 	if task.Spec.Status == crv1.CompletedStatus {
 		log.Warn(fmt.Sprintf("pgtask [%s] has already completed", task.Spec.Name))
@@ -76,7 +76,7 @@ func Clone(clientset *kubernetes.Clientset, client *rest.RESTClient, namespace s
 	// The second step is to kick off a pgBackRest restore job to the target
 	// cluster PVC
 	case crv1.PgtaskCloneStep2:
-		cloneStep2(clientset, client, namespace, task)
+		cloneStep2(clientset, client, restConfig, namespace, task)
 	// The third step is to create the new cluster!
 	case crv1.PgtaskCloneStep3:
 		cloneStep3(clientset, client, namespace, task)
@@ -196,7 +196,7 @@ func cloneStep1(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 	}
 
 	// create PVCs for pgBackRest and PostgreSQL
-	if _, _, _, err = createPVCs(clientset, client, task, namespace, sourcePgcluster, targetClusterName); err != nil {
+	if _, _, _, _, err = createPVCs(clientset, client, task, namespace, sourcePgcluster, targetClusterName); err != nil {
 		log.Error(err)
 		PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, err.Error())
 		return
@@ -215,7 +215,7 @@ func cloneStep1(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 
 	// now, synchronize the repositories
 	if jobName, err := createPgBackRestRepoSyncJob(clientset, namespace, task, sourcePgcluster); err == nil {
-		log.Debug("clone step 1: created pgbackrest repo sync job: [%s]", jobName)
+		log.Debugf("clone step 1: created pgbackrest repo sync job: [%s]", jobName)
 	}
 
 	// finally, update the pgtask to indicate that it's completed
@@ -225,7 +225,7 @@ func cloneStep1(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 // cloneStep2 creates a pgBackRest restore job for the new PostgreSQL cluster by
 // running a restore from the new target cluster pgBackRest repository to the
 // new target cluster PVC
-func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namespace string, task *crv1.Pgtask) {
+func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, restConfig *rest.Config, namespace string, task *crv1.Pgtask) {
 	sourceClusterName, targetClusterName, workflowID := getCloneTaskIdentifiers(task)
 
 	log.Debugf("clone step 2 called: namespace:[%s] sourcecluster:[%s] targetcluster:[%s] workflowid:[%s]",
@@ -245,7 +245,7 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 
 	// interpret the storage specs again. the volumes were already created during
 	// a prior step.
-	_, dataVolume, tablespaceVolumes, err := createPVCs(
+	_, dataVolume, walVolume, tablespaceVolumes, err := createPVCs(
 		clientset, client, task, namespace, sourcePgcluster, targetClusterName)
 	if err != nil {
 		log.Error(err)
@@ -355,6 +355,17 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		TablespaceVolumeMounts: operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
 	}
 
+	if sourcePgcluster.Spec.WALStorage.StorageType != "" {
+		arg, err := getLinkMap(clientset, restConfig, sourcePgcluster, targetClusterName)
+		if err != nil {
+			log.Error(err)
+			errorMessage := fmt.Sprintf("Could not determine PostgreSQL version: %s", err.Error())
+			PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, errorMessage)
+			return
+		}
+		backrestRestoreJobFields.CommandOpts += " " + arg
+	}
+
 	// substitute the variables into the BackrestRestore job template
 	var backrestRestoreJobDoc bytes.Buffer
 
@@ -373,6 +384,10 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		errorMessage := fmt.Sprintf("Could not turn pgbackrest restore template into JSON: %s", err.Error())
 		PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, errorMessage)
 		return
+	}
+
+	if sourcePgcluster.Spec.WALStorage.StorageType != "" {
+		operator.AddWALVolumeAndMountsToBackRest(&job.Spec.Template.Spec, walVolume)
 	}
 
 	// set the container image to an override value, if one exists
@@ -652,6 +667,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 // createPVCs is the first step in cloning a PostgreSQL cluster. It creates
 // several PVCs that are required for operating a PostgreSQL cluster:
 // - the PVC that stores the PostgreSQL PGDATA
+// - the PVC that stores the PostgreSQL WAL
 // - the PVC that stores the pgBackRest repo
 //
 // Additionally, if there are any tablespaces on the original cluster, it will
@@ -662,7 +678,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 func createPVCs(clientset *kubernetes.Clientset, client *rest.RESTClient,
 	task *crv1.Pgtask, namespace string, sourcePgcluster crv1.Pgcluster, targetClusterName string,
 ) (
-	backrestVolume, dataVolume operator.StorageResult,
+	backrestVolume, dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult,
 	err error,
 ) {
@@ -687,6 +703,11 @@ func createPVCs(clientset *kubernetes.Clientset, client *rest.RESTClient,
 		}
 		dataVolume, err = pvc.CreateIfNotExists(clientset,
 			storage, targetClusterName, targetClusterName, namespace)
+	}
+
+	if err == nil {
+		walVolume, err = pvc.CreateIfNotExists(clientset,
+			sourcePgcluster.Spec.WALStorage, targetClusterName+"-wal", targetClusterName, namespace)
 	}
 
 	// if there are any tablespaces, create PVCs for those
@@ -791,6 +812,7 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 				config.LABEL_BACKREST_STORAGE_TYPE: sourcePgcluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE],
 			},
 			TablespaceMounts: sourcePgcluster.Spec.TablespaceMounts,
+			WALStorage:       sourcePgcluster.Spec.WALStorage,
 		},
 		Status: crv1.PgclusterStatus{
 			State:   crv1.PgclusterStateCreated,
@@ -849,6 +871,34 @@ func getCloneTaskIdentifiers(task *crv1.Pgtask) (string, string, string) {
 	return task.Spec.Parameters["sourceClusterName"],
 		task.Spec.Parameters["targetClusterName"],
 		task.Spec.Parameters[crv1.PgtaskWorkflowID]
+}
+
+// getLinkMap returns the pgBackRest argument to support a WAL volume.
+func getLinkMap(clientset *kubernetes.Clientset, restConfig *rest.Config, cluster crv1.Pgcluster, targetClusterName string) (string, error) {
+	pods, err := kubeapi.GetPods(clientset, "pgo-pg-database=true,pg-cluster="+cluster.Name, cluster.Namespace)
+	if err != nil {
+		return "", err
+	}
+	if len(pods.Items) < 1 {
+		return "", errors.New("found no cluster pods")
+	}
+
+	// PGVERSION environment variable is available in our PostgreSQL containers.
+	// The following is the same logic we use in shell scripts there.
+	stdout, _, err := kubeapi.ExecToPodThroughAPI(restConfig, clientset,
+		[]string{"bash", "-c", `
+		if printf '10\n'${PGVERSION} | sort -VC
+		then
+			echo -n '--link-map=pg_wal='
+		else
+			echo -n '--link-map=pg_xlog='
+		fi`},
+		pods.Items[0].Spec.Containers[0].Name,
+		pods.Items[0].Name,
+		pods.Items[0].Namespace,
+		nil)
+
+	return stdout + config.PostgreSQLWALPath(targetClusterName), err
 }
 
 // getS3Param returns either the value provided by 'sourceClusterS3param' if not en empty string,

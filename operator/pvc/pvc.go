@@ -53,12 +53,17 @@ func CreateMissingPostgreSQLVolumes(clientset *kubernetes.Clientset,
 	cluster *crv1.Pgcluster, namespace string,
 	pvcNamePrefix string, dataStorageSpec crv1.PgStorageSpec,
 ) (
-	dataVolume operator.StorageResult,
+	dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult,
 	err error,
 ) {
 	dataVolume, err = CreateIfNotExists(clientset,
 		dataStorageSpec, pvcNamePrefix, cluster.Spec.Name, namespace)
+
+	if err == nil {
+		walVolume, err = CreateIfNotExists(clientset,
+			cluster.Spec.WALStorage, pvcNamePrefix+"-wal", cluster.Spec.Name, namespace)
+	}
 
 	tablespaceVolumes = make(map[string]operator.StorageResult, len(cluster.Spec.TablespaceMounts))
 	for tablespaceName, storageSpec := range cluster.Spec.TablespaceMounts {

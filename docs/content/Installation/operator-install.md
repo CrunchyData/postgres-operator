@@ -120,8 +120,7 @@ Here are some common examples of configuration changes most installers would mak
 Inside `conf/postgres-operator/pgo.yaml` there are various storage configurations defined.  
 
     PrimaryStorage: gce
-    XlogStorage: gce
-    ArchiveStorage: gce
+    WALStorage: gce
     BackupStorage: gce
     ReplicaStorage: gce
       gce:

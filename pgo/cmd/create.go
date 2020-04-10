@@ -62,6 +62,8 @@ var BackrestS3Endpoint string
 var BackrestS3Region string
 var PVCSize string
 var BackrestPVCSize string
+var WALStorageConfig string
+var WALPVCSize string
 
 // group the various container resource requests together, i.e. for CPU/Memory
 var (
@@ -377,6 +379,11 @@ func init() {
 			"For example, to create a tablespace with the NFS storage configuration with a PVC of size 10GiB:\n\n"+
 			"--tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi")
 	createClusterCmd.Flags().StringVarP(&Username, "username", "u", "", "The username to use for creating the PostgreSQL user with standard permissions. Defaults to the value in the PostgreSQL Operator configuration.")
+
+	createClusterCmd.Flags().StringVar(&WALStorageConfig, "wal-storage-config", "",
+		`The name of a storage configuration in pgo.yaml to use for PostgreSQL's write-ahead log (WAL).`)
+	createClusterCmd.Flags().StringVar(&WALPVCSize, "wal-storage-size", "",
+		`The size of the capacity for WAL storage, which overrides any value in the storage configuration. Follows the Kubernetes quantity format.`)
 
 	// pgo create pgbouncer
 	createPgbouncerCmd.Flags().StringVar(&PgBouncerCPURequest, "cpu", "", "Set the number of millicores to request for CPU "+

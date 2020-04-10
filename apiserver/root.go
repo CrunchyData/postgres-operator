@@ -189,11 +189,6 @@ func initConfig() {
 		}
 	}
 	log.Infof("BasicAuth is %v", BasicAuth)
-
-	if !validStorageSettings() {
-		log.Error("Storage Settings are not defined correctly, can't continue")
-		os.Exit(2)
-	}
 }
 
 func BasicAuthCheck(username, password string) bool {
@@ -339,35 +334,6 @@ func Authn(perm string, w http.ResponseWriter, r *http.Request) (string, error) 
 
 	log.Debug("Authentication Success")
 	return username, err
-
-}
-
-func validStorageSettings() bool {
-	log.Infof("Storage has %d definitions", len(Pgo.Storage))
-
-	ps := Pgo.PrimaryStorage
-	if IsValidStorageName(ps) {
-		log.Info(ps + " is valid")
-	} else {
-		log.Error(ps + " is NOT valid")
-		return false
-	}
-	rs := Pgo.ReplicaStorage
-	if IsValidStorageName(rs) {
-		log.Info(rs + " is valid")
-	} else {
-		log.Error(rs + " is NOT valid")
-		return false
-	}
-	bs := Pgo.BackupStorage
-	if IsValidStorageName(bs) {
-		log.Info(bs + " is valid")
-	} else {
-		log.Error(bs + " is NOT valid")
-		return false
-	}
-
-	return true
 
 }
 

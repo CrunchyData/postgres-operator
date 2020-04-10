@@ -15,9 +15,25 @@ package config
  limitations under the License.
 */
 
+import (
+	"fmt"
+
+	core_v1 "k8s.io/api/core/v1"
+)
+
 // volume configuration settings used by the PostgreSQL data directory and mount
 const VOLUME_POSTGRESQL_DATA = "pgdata"
 const VOLUME_POSTGRESQL_DATA_MOUNT_PATH = "/pgdata"
+
+// PostgreSQLWALVolumeMount returns the VolumeMount for the PostgreSQL WAL directory.
+func PostgreSQLWALVolumeMount() core_v1.VolumeMount {
+	return core_v1.VolumeMount{Name: "pgwal", MountPath: "/pgwal"}
+}
+
+// PostgreSQLWALPath returns the absolute path to a mounted WAL directory.
+func PostgreSQLWALPath(cluster string) string {
+	return fmt.Sprintf("%s/%s-wal", PostgreSQLWALVolumeMount().MountPath, cluster)
+}
 
 // volume configuration settings used by the pgBackRest repo mount
 const VOLUME_PGBACKREST_REPO_NAME = "backrestrepo"

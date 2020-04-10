@@ -16,11 +16,7 @@ limitations under the License.
 */
 
 import (
-	"errors"
 	"fmt"
-	"regexp"
-	"strconv"
-
 	"strings"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
@@ -37,10 +33,6 @@ import (
 // pvcContainerName contains the name of the container that the PVCs are mounted
 // to, which, curiously, is "database" for all of them
 const pvcContainerName = "database"
-
-var (
-	pvcSizePattern = regexp.MustCompile("^([0-9]+)")
-)
 
 func DfCluster(request msgs.DfRequest) msgs.DfResponse {
 	response := msgs.DfResponse{}
@@ -208,7 +200,7 @@ loop:
 
 // getPodDf performs the heavy lifting of getting the total capacity values for
 // the PostgreSQL cluster by introspecting each Pod, which requires a few API
-// calls. This function is optimized to return concurrenetly, though has an
+// calls. This function is optimized to return concurrently, though has an
 // escape if an error is reached by reusing the error channel from the main Df
 // function
 //
@@ -258,6 +250,8 @@ func getPodDf(cluster *crv1.Pgcluster, pod *v1.Pod, podResultsChannel chan msgs.
 			result.PVCType = msgs.PVCTypepgBackRest
 		case strings.HasPrefix(volume.Name, config.VOLUME_TABLESPACE_NAME_PREFIX):
 			result.PVCType = msgs.PVCTypeTablespace
+		case volume.Name == config.PostgreSQLWALVolumeMount().Name:
+			result.PVCType = msgs.PVCTypeWriteAheadLog
 		default:
 			continue
 		}
@@ -282,6 +276,8 @@ func getPodDf(cluster *crv1.Pgcluster, pod *v1.Pod, podResultsChannel chan msgs.
 			tablespaceName := strings.Replace(volume.Name, config.VOLUME_TABLESPACE_NAME_PREFIX, "", 1)
 			// use that to populate the path structure for the tablespaces
 			pvcMountPoint = fmt.Sprintf("%s%s/%s", config.VOLUME_TABLESPACE_PATH_PREFIX, tablespaceName, tablespaceName)
+		case msgs.PVCTypeWriteAheadLog:
+			pvcMountPoint = config.PostgreSQLWALPath(instanceName)
 		}
 
 		cmd := []string{"du", "-s", "--block-size", "1", pvcMountPoint}
@@ -298,29 +294,12 @@ func getPodDf(cluster *crv1.Pgcluster, pod *v1.Pod, podResultsChannel chan msgs.
 		}
 
 		// have to parse the size out from the statement. Size is in bytes
-		pvcSizeMatches := pvcSizePattern.FindStringSubmatch(stdout)
-
-		log.Debugf("pvc size [%s]", pvcSizeMatches)
-
-		// ensure that the substring is matched
-		if len(pvcSizeMatches) < 2 {
-			msg := fmt.Sprintf("could not find the size of pvc %s", result.PVCName)
-			err := errors.New(msg)
+		if _, err = fmt.Sscan(stdout, &result.PVCUsed); err != nil {
+			err := fmt.Errorf("could not find the size of pvc %s: %v", result.PVCName, err)
 			log.Error(err)
 			errorChannel <- err
 			return
 		}
-
-		// get the size of the PVC...will need to be converted to an integer
-		pvcSize, err := strconv.Atoi(pvcSizeMatches[1])
-
-		if err != nil {
-			log.Error(err)
-			errorChannel <- err
-			return
-		}
-
-		result.PVCUsed = int64(pvcSize)
 
 		if claimSize, err := getClaimCapacity(apiserver.Clientset, result.PVCName, cluster.Spec.Namespace); err != nil {
 			errorChannel <- err
