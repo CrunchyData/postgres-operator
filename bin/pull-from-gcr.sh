@@ -29,6 +29,7 @@ IMAGES=(
     pgo-backrest
     pgo-load
     pgo-client
+    pgo-installer
 )
 
 function echo_green() {

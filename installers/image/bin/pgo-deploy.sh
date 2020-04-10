@@ -19,5 +19,7 @@ export PGO_DISABLE_TLS=${PGO_DISABLE_TLS:-false}
 export PGO_TLS_NO_VERIFY=${PGO_TLS_NO_VERIFY:-false}
 export SERVICE_TYPE=${SERVICE_TYPE:-ClusterIP}
 
+export DEPLOY_ACTION=${DEPLOY_ACTION:-install}
+
 cat /inventory_template | envsubst > /tmp/inventory
-/usr/bin/env ansible-playbook -i /tmp/inventory --tags=$1 /ansible/main.yml
+/usr/bin/env ansible-playbook -i /tmp/inventory --tags=$DEPLOY_ACTION /ansible/main.yml

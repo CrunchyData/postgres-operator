@@ -19,5 +19,5 @@ RUN yum install -y https://download.fedoraproject.org/pub/epel/epel-release-late
 USER daemon
 
 COPY installers/ansible /ansible
-COPY installers/image/bin/pgo-install.sh /pgo-install.sh
+COPY installers/image/bin/pgo-deploy.sh /pgo-deploy.sh
 COPY installers/image/inventory_template /inventory_template
