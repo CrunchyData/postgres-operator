@@ -17,6 +17,7 @@ RUN yum -y install \
 	openssh-server \
 	procps-ng \
 	psmisc \
+	rsync \
 	&& yum -y clean all
 
 RUN groupadd pgbackrest -g 2000 && useradd pgbackrest -u 2000 -g 2000
