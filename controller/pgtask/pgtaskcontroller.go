@@ -143,7 +143,7 @@ func (c *Controller) processNextItem() bool {
 
 	case crv1.PgtaskCloneStep1, crv1.PgtaskCloneStep2, crv1.PgtaskCloneStep3:
 		log.Debug("clone task added [%s]", keyResourceName)
-		clusteroperator.Clone(c.PgtaskClientset, c.PgtaskClient, keyNamespace, &tmpTask)
+		clusteroperator.Clone(c.PgtaskClientset, c.PgtaskClient, c.PgtaskConfig, keyNamespace, &tmpTask)
 
 	default:
 		log.Debugf("unknown task type on pgtask added [%s]", tmpTask.Spec.TaskType)

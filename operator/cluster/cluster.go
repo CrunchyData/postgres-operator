@@ -71,7 +71,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		return
 	}
 
-	dataVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
+	dataVolume, walVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
 		clientset, cl, namespace, cl.Spec.Name, cl.Spec.PrimaryStorage)
 	if err != nil {
 		log.Error(err)
@@ -85,7 +85,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		return
 	}
 
-	if err = addClusterCreateDeployments(clientset, client, cl, namespace, dataVolume, tablespaceVolumes); err != nil {
+	if err = addClusterCreateDeployments(clientset, client, cl, namespace, dataVolume, walVolume, tablespaceVolumes); err != nil {
 		publishClusterCreateFailure(cl, err.Error())
 		return
 	}
@@ -234,7 +234,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		return
 	}
 
-	dataVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
+	dataVolume, walVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
 		clientset, &cluster, namespace, replica.Spec.Name, replica.Spec.ReplicaStorage)
 	if err != nil {
 		log.Error(err)
@@ -256,7 +256,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	}
 
 	//instantiate the replica
-	if err = scaleReplicaCreateDeployment(clientset, client, replica, &cluster, namespace, dataVolume, tablespaceVolumes); err != nil {
+	if err = scaleReplicaCreateDeployment(clientset, client, replica, &cluster, namespace, dataVolume, walVolume, tablespaceVolumes); err != nil {
 		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], &cluster)
 		return
 	}

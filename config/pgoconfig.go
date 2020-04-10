@@ -245,6 +245,7 @@ type PgoConfig struct {
 	Cluster         ClusterStruct
 	Pgo             PgoStruct
 	PrimaryStorage  string
+	WALStorage      string
 	BackupStorage   string
 	ReplicaStorage  string
 	BackrestStorage string
@@ -312,30 +313,35 @@ func (c *PgoConfig) Validate() error {
 	}
 
 	log.Infof("pgo.yaml Cluster.Backrest is %v", c.Cluster.Backrest)
-	_, ok := c.Storage[c.PrimaryStorage]
-	if !ok {
-		return errors.New(errPrefix + "PrimaryStorage setting required")
-	}
-	_, ok = c.Storage[c.BackupStorage]
-	if !ok {
-		return errors.New(errPrefix + "BackupStorage setting required")
-	}
-	_, ok = c.Storage[c.BackrestStorage]
-	if !ok {
-		log.Warning("BackrestStorage setting not set, will use PrimaryStorage setting")
-		c.Storage[c.BackrestStorage] = c.Storage[c.PrimaryStorage]
-	}
 
-	_, ok = c.Storage[c.ReplicaStorage]
-	if !ok {
-		return errors.New(errPrefix + "ReplicaStorage setting required")
-	}
-	for k := range c.Storage {
-		_, err = c.GetStorageSpec(k)
-		if err != nil {
-			return err
+	{
+		storageNotDefined := func(setting, value string) error {
+			return fmt.Errorf("%s%s setting is invalid: %q is not defined", errPrefix, setting, value)
+		}
+		if _, ok := c.Storage[c.PrimaryStorage]; !ok {
+			return storageNotDefined("PrimaryStorage", c.PrimaryStorage)
+		}
+		if _, ok := c.Storage[c.BackrestStorage]; !ok {
+			log.Warning("BackrestStorage setting not set, will use PrimaryStorage setting")
+			c.Storage[c.BackrestStorage] = c.Storage[c.PrimaryStorage]
+		}
+		if _, ok := c.Storage[c.BackupStorage]; !ok {
+			return storageNotDefined("BackupStorage", c.BackupStorage)
+		}
+		if _, ok := c.Storage[c.ReplicaStorage]; !ok {
+			return storageNotDefined("ReplicaStorage", c.ReplicaStorage)
+		}
+		if _, ok := c.Storage[c.WALStorage]; c.WALStorage != "" && !ok {
+			return storageNotDefined("WALStorage", c.WALStorage)
+		}
+		for k := range c.Storage {
+			_, err = c.GetStorageSpec(k)
+			if err != nil {
+				return err
+			}
 		}
 	}
+
 	if c.Pgo.PGOImagePrefix == "" {
 		return errors.New(errPrefix + "Pgo.PGOImagePrefix is required")
 	}

@@ -45,25 +45,30 @@
                 "containers": [{
                     "name": "backrest",
                     "image": "{{.PGOImagePrefix}}/pgo-backrest-restore:{{.PGOImageTag}}",
-                    "volumeMounts": [ {
+                    "volumeMounts": [
+                      {
                         "mountPath": "/pgdata",
                         "name": "pgdata",
                         "readOnly": false
-                    }, {
+                      },
+                      {
                         "mountPath": "/sshd",
                         "name": "sshd",
                         "readOnly": true
-                    }
-                    {{.TablespaceVolumeMounts}}],
+                      }
+                      {{.TablespaceVolumeMounts}}
+                    ],
                     "env": [
                       {{.PgbackrestS3EnvVars}}
                       {
                         "name": "COMMAND_OPTS",
                         "value": "{{.CommandOpts}}"
-                    }, {
+                    },
+                    {
                         "name": "PITR_TARGET",
                         "value": "{{.PITRTarget}}"
-                    }, {
+                    },
+                    {
                         "name": "PGBACKREST_STANZA",
                         "value": "{{.PgbackrestStanza}}"
                     }, {

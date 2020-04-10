@@ -556,6 +556,12 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		return resp
 	}
 
+	if err := apiserver.ValidateQuantity(request.WALPVCSize); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessagePVCSize, request.WALPVCSize, err.Error())
+		return resp
+	}
+
 	// evaluate if the CPU / Memory have been set to custom values
 	if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
 		resp.Status.Code = msgs.Error
@@ -678,7 +684,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	// if a value for BackrestStorageConfig is provided, validate it here
 	if request.BackrestStorageConfig != "" && !apiserver.IsValidStorageName(request.BackrestStorageConfig) {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf("\"%s\" storage config was not found", request.BackrestStorageConfig)
+		resp.Status.Msg = fmt.Sprintf("%q storage config was not found", request.BackrestStorageConfig)
 		return resp
 	}
 
@@ -689,12 +695,22 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		userLabelsMap[config.LABEL_CUSTOM_CONFIG] = config.GLOBAL_CUSTOM_CONFIGMAP
 	}
 
-	if request.StorageConfig != "" {
-		if apiserver.IsValidStorageName(request.StorageConfig) == false {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = request.StorageConfig + " Storage config was not found "
-			return resp
-		}
+	if request.StorageConfig != "" && !apiserver.IsValidStorageName(request.StorageConfig) {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf("%q storage config was not found", request.StorageConfig)
+		return resp
+	}
+
+	if request.WALStorageConfig != "" && !apiserver.IsValidStorageName(request.WALStorageConfig) {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf("%q storage config was not found", request.WALStorageConfig)
+		return resp
+	}
+
+	if request.WALPVCSize != "" && request.WALStorageConfig == "" && apiserver.Pgo.WALStorage == "" {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = "WAL size requires WAL storage"
+		return resp
 	}
 
 	if apiserver.Pgo.Cluster.PrimaryNodeLabel != "" {
@@ -1095,6 +1111,18 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	if request.PVCSize != "" {
 		log.Debugf("PVC Size is overwritten to be [%s]", request.PVCSize)
 		spec.PrimaryStorage.Size = request.PVCSize
+	}
+
+	// extract parameters for optional WAL storage. server configuration and
+	// request parameters are all optional.
+	if apiserver.Pgo.WALStorage != "" {
+		spec.WALStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.WALStorage)
+	}
+	if request.WALStorageConfig != "" {
+		spec.WALStorage, _ = apiserver.Pgo.GetStorageSpec(request.WALStorageConfig)
+	}
+	if request.WALPVCSize != "" {
+		spec.WALStorage.Size = request.WALPVCSize
 	}
 
 	// extract the parameters for the TablespaceMounts and put them in the format

@@ -63,7 +63,7 @@ func addClusterCreateMissingService(clientset *kubernetes.Clientset, cl *crv1.Pg
 // addClusterCreateDeployments creates deployments for pgBackRest and PostgreSQL.
 func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.RESTClient,
 	cl *crv1.Pgcluster, namespace string,
-	dataVolume operator.StorageResult,
+	dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult,
 ) error {
 	var primaryDoc bytes.Buffer
@@ -181,6 +181,10 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 		return err
 	}
 
+	if cl.Spec.WALStorage.StorageType != "" {
+		operator.AddWALVolumeAndMountsToPostgreSQL(&deployment.Spec.Template.Spec, walVolume, cl.Spec.Name)
+	}
+
 	// determine if any of the container images need to be overridden
 	operator.OverrideClusterContainerImages(deployment.Spec.Template.Spec.Containers)
 
@@ -255,7 +259,7 @@ func scaleReplicaCreateMissingService(clientset *kubernetes.Clientset, replica *
 // scaleReplicaCreateDeployment creates a deployment for the cluster replica.
 func scaleReplicaCreateDeployment(clientset *kubernetes.Clientset, client *rest.RESTClient,
 	replica *crv1.Pgreplica, cluster *crv1.Pgcluster, namespace string,
-	dataVolume operator.StorageResult,
+	dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult,
 ) error {
 	var err error
@@ -367,6 +371,10 @@ func scaleReplicaCreateDeployment(clientset *kubernetes.Clientset, client *rest.
 	if err != nil {
 		log.Error("error unmarshalling replica json into Deployment " + err.Error())
 		return err
+	}
+
+	if cluster.Spec.WALStorage.StorageType != "" {
+		operator.AddWALVolumeAndMountsToPostgreSQL(&replicaDeployment.Spec.Template.Spec, walVolume, replica.Spec.Name)
 	}
 
 	// determine if any of the container images need to be overridden
@@ -589,7 +597,7 @@ func ScaleClusterDeployments(clientset *kubernetes.Clientset, cluster crv1.Pgclu
 		// Scale the deployment accoriding to the number of replicas specified.  If an error is
 		// encountered, log it and move on to scaling the next deployment.
 		if err = kubeapi.ScaleDeployment(clientset, deployment, replicas); err != nil {
-			log.Error("Error scaling deployment %s to %d: %w", deployment.Name, replicas, err)
+			log.Errorf("Error scaling deployment %s to %d: %w", deployment.Name, replicas, err)
 		}
 	}
 	return

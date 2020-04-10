@@ -52,6 +52,7 @@ type PgclusterSpec struct {
 	PGBadgerPort    string        `json:"pgbadgerport"`
 	ExporterPort    string        `json:"exporterport"`
 	PrimaryStorage  PgStorageSpec `json:primarystorage`
+	WALStorage      PgStorageSpec `json:walstorage`
 	ArchiveStorage  PgStorageSpec `json:archivestorage`
 	ReplicaStorage  PgStorageSpec `json:replicastorage`
 	BackrestStorage PgStorageSpec `json:backreststorage`

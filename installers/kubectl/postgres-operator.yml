@@ -113,6 +113,8 @@ spec:
                     value: "hostpathstorage"
                   - name: REPLICA_STORAGE
                     value: "hostpathstorage"
+                  - name: WAL_STORAGE
+                    value: ""
                   - name: STORAGE1_NAME
                     value: "hostpathstorage"
                   - name: STORAGE1_ACCESS_MODE
