@@ -21,7 +21,6 @@ import (
 	"errors"
 	"os"
 	"strings"
-	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
@@ -123,15 +122,7 @@ func Create(clientset *kubernetes.Clientset, name, clusterName string, storageSp
 		return err
 	}
 
-	err = kubeapi.CreatePVC(clientset, &newpvc, namespace)
-	if err != nil {
-		return err
-	}
-
-	//TODO replace sleep with proper wait
-	time.Sleep(3000 * time.Millisecond)
-	return nil
-
+	return kubeapi.CreatePVC(clientset, &newpvc, namespace)
 }
 
 // Delete a pvc
