@@ -106,6 +106,12 @@ func (s PgStorageSpec) GetSupplementalGroups() []int64 {
 	// iterate through the results and try to append to the supplementalGroups
 	// array
 	for _, result := range results {
+		// if the result is the empty string (likely because there are no
+		// supplemental groups), continue on
+		if result == "" {
+			continue
+		}
+
 		supplementalGroup, err := strconv.Atoi(result)
 
 		// if there is an error, only warn about it and continue through the loop
