@@ -225,24 +225,30 @@ func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 	return nil
 }
 
-// UpdateUserSecret updates a user secret with a new password
+// UpdateUserSecret updates a user secret with a new password. It follows the
+// following method:
+//
+// 1. If the Secret exists, it updates the value of the Secret
+// 2. If the Secret does not exist, it creates the secret
 func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string) error {
-
-	var err error
-
 	secretName := fmt.Sprintf(UserSecretFormat, clustername, username)
 
-	//delete current secret
-	err = kubeapi.DeleteSecret(clientset, secretName, namespace)
-	if err == nil {
-		//create secret with updated password
-		err = CreateUserSecret(clientset, clustername, username, password, namespace)
-		if err != nil {
-			log.Error("UpdateUserSecret error creating secret" + err.Error())
-		} else {
-			log.Debugf("created secret %s", secretName)
+	// see if the secret already exists
+	secret, err := kubeapi.GetSecret(clientset, secretName, namespace)
+
+	// if this returns an error and it's not the "not found" error, return
+	// However, if it is the "not found" error, treat this as creating the user
+	// secret
+	if err != nil {
+		if !kubeapi.IsNotFound(err) {
+			return err
 		}
+
+		return CreateUserSecret(clientset, clustername, username, password, namespace)
 	}
 
-	return err
+	// update the value of "password"
+	secret.Data["password"] = []byte(password)
+
+	return kubeapi.UpdateSecret(clientset, secret, secret.Namespace)
 }
