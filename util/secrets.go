@@ -17,12 +17,12 @@ package util
 
 import (
 	"crypto/md5"
+	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"strconv"
 	"strings"
-	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
@@ -32,14 +32,22 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const lowercharset = "abcdefghijklmnopqrstuvwxyz"
+// The following constants are used as a part of password generation. For more
+// information on these selections, please consulting the ASCII man page
+// (`man ascii`)
+const (
+	// passwordCharLower is the lowest ASCII character to use for generating a
+	// password, which is 33
+	passwordCharLower = 33
+	// passwordCharUpper is the highest ASCII character to use for generating a
+	// password, which is 126
+	passwordCharUpper = 126
+)
 
-const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-const charsetNumbers = "0123456789"
-
-var seededRand = rand.New(
-	rand.NewSource(time.Now().UnixNano()))
+// passwordCharSelector is a "big int" that we need to select the random ASCII
+// character for the password. Since the random integer generator looks for
+// values from [0,X), we need to force this to be [33,126]
+var passwordCharSelector = big.NewInt(passwordCharUpper - passwordCharLower)
 
 // CreateSecret create the secret, user, and primary secrets
 func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, password, namespace string) error {
@@ -62,18 +70,25 @@ func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, pas
 
 }
 
-// stringWithCharset returns a generated string value
-func stringWithCharset(length int, charset string) string {
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = charset[seededRand.Intn(len(charset))]
-	}
-	return string(b)
-}
+// GeneratePassword generates a password of a given length out of the acceptable
+// ASCII characters suitable for a password
+func GeneratePassword(length int) (string, error) {
+	// for "length" times, we are going to get a random ASCII character, and
+	// append it to the  "password" string
+	password := ""
 
-// GeneratePassword generate a password of a given length
-func GeneratePassword(length int) string {
-	return stringWithCharset(length, charset)
+	for i := 0; i < length; i++ {
+		char, err := rand.Int(rand.Reader, passwordCharSelector)
+
+		// if there is an error generating the random integer, return
+		if err != nil {
+			return "", err
+		}
+
+		password += string(passwordCharLower + char.Int64())
+	}
+
+	return password, nil
 }
 
 // GeneratePostgreSQLMD5Password takes a username and a plaintext password and
@@ -89,11 +104,6 @@ func GeneratePostgreSQLMD5Password(username, password string) string {
 	// finish the transformation by getting the string value of the MD5 hash and
 	// encoding it in hexadecimal for PostgreSQL, appending "md5" to the front
 	return fmt.Sprintf("md5%s", hex.EncodeToString(hasher.Sum(nil)))
-}
-
-// GenerateRandString generate a rand lowercase string of a given length
-func GenerateRandString(length int) string {
-	return stringWithCharset(length, lowercharset)
 }
 
 // GeneratedPasswordLength returns the value for what the length of a

@@ -1477,7 +1477,14 @@ func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluste
 			passwordLength = util.GeneratedPasswordLength(apiserver.Pgo.Cluster.PasswordLength)
 		}
 
-		password = util.GeneratePassword(passwordLength)
+		generatedPassword, err := util.GeneratePassword(passwordLength)
+
+		// if the password fails to generate, return the error
+		if err != nil {
+			return "", "", err
+		}
+
+		password = generatedPassword
 	}
 
 	// great, now we can create the secret! if we can't, return an error

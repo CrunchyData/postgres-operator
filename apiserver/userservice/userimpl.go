@@ -218,7 +218,19 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 
 		// Set the password. We want a password to be generated if the user did not
 		// set a password
-		_, password, hashedPassword := generatePassword(result.Username, request.Password, true, request.PasswordLength)
+		_, password, hashedPassword, err := generatePassword(result.Username, request.Password, true, request.PasswordLength)
+
+		// on the off-chance there is an error, record it and continue
+		if err != nil {
+			log.Error(err)
+
+			result.Error = true
+			result.ErrorMessage = err.Error()
+
+			response.Results = append(response.Results, result)
+			continue
+		}
+
 		result.Password = password
 
 		// attempt to set the password!
@@ -549,7 +561,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 	}
 
 	// if this involes updating a specific PostgreSQL account, and it is a system
-	// account, return ere
+	// account, return here
 	if request.Username != "" && util.IsPostgreSQLUserSystemAccount(request.Username) {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = fmt.Sprintf(errSystemAccountFormat, request.Username)
@@ -651,10 +663,10 @@ func executeSQL(pod *v1.Pod, sql string, extraCommandArgs []string) (string, err
 //
 // In the future, this can be mdofifed to also support a password hashing type
 // e.g. SCRAM :)
-func generatePassword(username, password string, generatePassword bool, generatedPasswordLength int) (bool, string, string) {
+func generatePassword(username, password string, generatePassword bool, generatedPasswordLength int) (bool, string, string, error) {
 	// first, an early exit: nothing is updated
 	if password == "" && !generatePassword {
-		return false, "", ""
+		return false, "", "", nil
 	}
 
 	// give precedence to the user customized password
@@ -668,14 +680,21 @@ func generatePassword(username, password string, generatePassword bool, generate
 		}
 
 		// generate the password
-		password = util.GeneratePassword(passwordLength)
+		generatedPassword, err := util.GeneratePassword(passwordLength)
+
+		// if there is an error, return
+		if err != nil {
+			return false, "", "", err
+		}
+
+		password = generatedPassword
 	}
 
 	// finally, hash the password
 	hashedPassword := util.GeneratePostgreSQLMD5Password(username, password)
 
 	// return!
-	return true, password, hashedPassword
+	return true, password, hashedPassword, nil
 }
 
 // generateValidUntilDateString returns a RFC3339 string that is computed by
@@ -872,7 +891,19 @@ func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgclu
 		// generate a new password. Check to see if the user passed in a particular
 		// length of the password, or passed in a password to rotate (though that
 		// is not advised...). This forced the password to change
-		_, password, hashedPassword := generatePassword(result.Username, request.Password, true, request.PasswordLength)
+		_, password, hashedPassword, err := generatePassword(result.Username, request.Password, true, request.PasswordLength)
+
+		// on the off-chance there's an error in generating the password, record it
+		// and continue
+		if err != nil {
+			log.Error(err)
+
+			result.Error = true
+			result.ErrorMessage = err.Error()
+
+			results = append(results, result)
+			continue
+		}
 
 		result.Password = password
 		sql = fmt.Sprintf("%s %s", sql,
@@ -939,8 +970,19 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 	// Speaking of passwords...let's first determine if the user updated their
 	// password. See generatePassword for how precedence is given for password
 	// updates
-	isChanged, password, hashedPassword := generatePassword(result.Username,
+	isChanged, password, hashedPassword, err := generatePassword(result.Username,
 		request.Password, request.RotatePassword, request.PasswordLength)
+
+	// in the off-chance there is an error generating the password, record it
+	// and return
+	if err != nil {
+		log.Error(err)
+
+		result.Error = true
+		result.ErrorMessage = err.Error()
+
+		return result
+	}
 
 	if isChanged {
 		result.Password = password

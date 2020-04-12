@@ -160,7 +160,11 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 	}
 
 	// set the password that will be used for the "pgbouncer" PostgreSQL account
-	pgBouncerPassword := generatePassword()
+	pgBouncerPassword, err := generatePassword()
+
+	if err != nil {
+		return err
+	}
 
 	// only attempt to set the password if the cluster is not in standby mode
 	if !cluster.Spec.Standby {
@@ -733,7 +737,7 @@ func generateContainerResources(cpu, memory string) (v1.ResourceList, error) {
 
 // generatePassword generates a password that is used for the "pgbouncer"
 // PostgreSQL user that provides the associated pgBouncer functionality
-func generatePassword() string {
+func generatePassword() (string, error) {
 	// first, get the length of what the password should be
 	generatedPasswordLength := util.GeneratedPasswordLength(operator.Pgo.Cluster.PasswordLength)
 	// from there, the password can be generated!
@@ -956,7 +960,11 @@ func rotatePgBouncerPassword(clientset *kubernetes.Clientset, restclient *rest.R
 	// is hard :(
 
 	// first, generate a new password
-	password := generatePassword()
+	password, err := generatePassword()
+
+	if err != nil {
+		return err
+	}
 
 	// next, update the PostgreSQL primary with the new password. If this fails
 	// we definitely return an error
