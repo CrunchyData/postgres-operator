@@ -32,9 +32,11 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	operutil "github.com/crunchydata/postgres-operator/util"
+
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/util/rand"
 )
 
 type loadJobTemplateFields struct {
@@ -221,8 +223,9 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 func createJob(clusterName string, template *loadJobTemplateFields, ns string) (string, error) {
 	var err error
 
-	randStr := operutil.GenerateRandString(3)
-	template.Name = "pgo-load-" + clusterName + "-" + randStr
+	// generate the name for the load job. Substituted out the legacy entropy
+	// method to use the one that Kubernetes provides
+	template.Name = "pgo-load-" + clusterName + "-" + rand.String(3)
 	template.DbHost = clusterName
 	template.PGUserSecret = clusterName + crv1.RootSecretSuffix
 
