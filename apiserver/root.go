@@ -204,27 +204,23 @@ func BasicAuthCheck(username, password string) bool {
 
 	//see if there is a pgouser Secret for this username
 	secretName := "pgouser-" + username
-	secret, found, _ := kubeapi.GetSecret(Clientset, secretName, PgoNamespace)
-	if !found {
-		log.Errorf("%s username Secret is not found", username)
+	secret, err := kubeapi.GetSecret(Clientset, secretName, PgoNamespace)
+
+	if err != nil {
+		log.Errorf("could not get pgouser secret %s: %s", username, err.Error())
 		return false
 	}
 
-	psw := string(secret.Data["password"])
-	if psw != password {
-		log.Errorf("%s  %s password does not match for user %s ", psw, password, username)
-		return false
-	}
-
-	return true
+	return password == string(secret.Data["password"])
 }
 
 func BasicAuthzCheck(username, perm string) bool {
 
 	secretName := "pgouser-" + username
-	secret, found, _ := kubeapi.GetSecret(Clientset, secretName, PgoNamespace)
-	if !found {
-		log.Errorf("%s username Secret is not found", username)
+	secret, err := kubeapi.GetSecret(Clientset, secretName, PgoNamespace)
+
+	if err != nil {
+		log.Errorf("could not get pgouser secret %s: %s", username, err.Error())
 		return false
 	}
 
@@ -241,9 +237,10 @@ func BasicAuthzCheck(username, perm string) bool {
 
 		//get the pgorole
 		roleSecretName := "pgorole-" + r
-		rolesecret, found, _ := kubeapi.GetSecret(Clientset, roleSecretName, PgoNamespace)
-		if !found {
-			log.Errorf("%s pgorole Secret is not found for user %s", r, username)
+		rolesecret, err := kubeapi.GetSecret(Clientset, roleSecretName, PgoNamespace)
+
+		if err != nil {
+			log.Errorf("could not get pgorole secret %s: %s", r, err.Error())
 			return false
 		}
 
@@ -431,11 +428,11 @@ func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool) {
 
 	//get the pgouser Secret for this username
 	userSecretName := "pgouser-" + username
-	userSecret, found, err := kubeapi.GetSecret(Clientset, userSecretName, PgoNamespace)
-	if !found {
+	userSecret, err := kubeapi.GetSecret(Clientset, userSecretName, PgoNamespace)
+
+	if err != nil {
 		uAccess = false
-		log.Error(err)
-		log.Errorf("could not find pgouser Secret for username %s", username)
+		log.Errorf("could not get pgouser secret %s: %s", username, err.Error())
 		return iAccess, uAccess
 	}
 
@@ -459,37 +456,39 @@ func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool) {
 	return iAccess, uAccess
 }
 
-// WriteTLSCert writes the server certificate and key to files from the
-// PGOSecretName secret or generates a new key (writing to both the secret
-// and the expected files
+// WriteTLSCert is a legacy method that writes the server certificate and key to
+// files from the PGOSecretName secret or generates a new key (writing to both
+// the secret and the expected files
 func WriteTLSCert(certPath, keyPath string) error {
+	pgoSecret, err := kubeapi.GetSecret(Clientset, PGOSecretName, PgoNamespace)
 
-	var pgoSecret *v1.Secret
-	var found bool
-	var err error
-
-	pgoSecret, found, err = kubeapi.GetSecret(Clientset, PGOSecretName, PgoNamespace)
-	if found {
-		log.Infof("%s Secret found in namespace %s", PGOSecretName, PgoNamespace)
-		log.Infof("cert key data len is %d", len(pgoSecret.Data[v1.TLSCertKey]))
-		if err := ioutil.WriteFile(certPath, pgoSecret.Data[v1.TLSCertKey], 0644); err != nil {
-			return err
-		}
-		log.Infof("private key data len is %d", len(pgoSecret.Data[v1.TLSPrivateKeyKey]))
-		if err := ioutil.WriteFile(keyPath, pgoSecret.Data[v1.TLSPrivateKeyKey], 0644); err != nil {
-			return err
-		}
-	} else {
+	// if the TLS certificate secret is not found, attempt to generate one
+	if err != nil {
 		log.Infof("%s Secret NOT found in namespace %s", PGOSecretName, PgoNamespace)
-		err = generateTLSCert(certPath, keyPath)
-		if err != nil {
+
+		if err := generateTLSCert(certPath, keyPath); err != nil {
 			log.Error("error generating pgo.tls Secret")
 			return err
 		}
+
+		return nil
+	}
+
+	// otherwise, write the TLS sertificate to the certificate and key path
+	log.Infof("%s Secret found in namespace %s", PGOSecretName, PgoNamespace)
+	log.Infof("cert key data len is %d", len(pgoSecret.Data[v1.TLSCertKey]))
+
+	if err := ioutil.WriteFile(certPath, pgoSecret.Data[v1.TLSCertKey], 0644); err != nil {
+		return err
+	}
+
+	log.Infof("private key data len is %d", len(pgoSecret.Data[v1.TLSPrivateKeyKey]))
+
+	if err := ioutil.WriteFile(keyPath, pgoSecret.Data[v1.TLSPrivateKeyKey], 0644); err != nil {
+		return err
 	}
 
 	return nil
-
 }
 
 // generateTLSCert generates a self signed cert and stores it in both

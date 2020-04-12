@@ -28,7 +28,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -123,9 +122,10 @@ func CreateBackrestRepoSecrets(clientset *kubernetes.Clientset,
 	}
 
 	// Retrieve the S3/SSHD configuration files from secret
-	configs, _, err := kubeapi.GetSecret(clientset, "pgo-backrest-repo-config",
+	configs, err := kubeapi.GetSecret(clientset, "pgo-backrest-repo-config",
 		backrestRepoConfig.OperatorNamespace)
-	if kerrors.IsNotFound(err) || err != nil {
+
+	if err != nil {
 		return err
 	}
 
@@ -240,7 +240,7 @@ func GetS3CredsFromBackrestRepoSecret(clientset *kubernetes.Clientset, namespace
 	secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
 	s3Secret := AWSS3Secret{}
 
-	secret, _, err := kubeapi.GetSecret(clientset, secretName, namespace)
+	secret, err := kubeapi.GetSecret(clientset, secretName, namespace)
 
 	if err != nil {
 		log.Error(err)

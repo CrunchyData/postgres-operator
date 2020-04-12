@@ -856,13 +856,13 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	// We make this regardless if backrest is enabled or not because
 	// the deployment template always tries to mount /sshd volume
 	secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
-	_, _, err = kubeapi.GetSecret(apiserver.Clientset, secretName, request.Namespace)
-	if kerrors.IsNotFound(err) {
+
+	if _, err := kubeapi.GetSecret(apiserver.Clientset, secretName, request.Namespace); kubeapi.IsNotFound(err) {
 		// determine if a custom CA secret should be used
 		backrestS3CACert := []byte{}
 
 		if request.BackrestS3CASecretName != "" {
-			backrestSecret, _, err := kubeapi.GetSecret(apiserver.Clientset, request.BackrestS3CASecretName, request.Namespace)
+			backrestSecret, err := kubeapi.GetSecret(apiserver.Clientset, request.BackrestS3CASecretName, request.Namespace)
 
 			if err != nil {
 				log.Error(err)
@@ -1441,7 +1441,7 @@ func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluste
 
 	// if the secret already exists, we can perform an early exit
 	// if there is an error, we'll ignore it
-	if secret, found, _ := kubeapi.GetSecret(apiserver.Clientset, secretName, cluster.Spec.Namespace); found {
+	if secret, err := kubeapi.GetSecret(apiserver.Clientset, secretName, cluster.Spec.Namespace); err == nil {
 		log.Infof("secret exists: [%s] - skipping", secretName)
 
 		return secretName, string(secret.Data["password"][:]), nil
@@ -1790,12 +1790,12 @@ func validateClusterTLS(request *msgs.CreateClusterRequest) error {
 
 	// now check for the existence of the two secrets
 	// First the TLS secret
-	if _, _, err := kubeapi.GetSecret(apiserver.Clientset, request.TLSSecret, request.Namespace); err != nil {
+	if _, err := kubeapi.GetSecret(apiserver.Clientset, request.TLSSecret, request.Namespace); err != nil {
 		return err
 	}
 
 	// then, the CA secret
-	if _, _, err := kubeapi.GetSecret(apiserver.Clientset, request.CASecret, request.Namespace); err != nil {
+	if _, err := kubeapi.GetSecret(apiserver.Clientset, request.CASecret, request.Namespace); err != nil {
 		return err
 	}
 

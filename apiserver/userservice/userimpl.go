@@ -106,10 +106,6 @@ var (
 	sqlCommand = []string{"psql", "-A", "-t"}
 )
 
-// userSecretFormat follows the pattern of how the user information is stored,
-// which is "<clusteRName>-<userName>-secret"
-const userSecretFormat = "%s-%s" + crv1.UserSecretSuffix
-
 // connInfo ....
 type connInfo struct {
 	Username string
@@ -517,7 +513,7 @@ func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
 			//
 			// We ignore any errors...if the password get set, we add it. If not, we
 			// don't
-			secretName := fmt.Sprintf(userSecretFormat, result.ClusterName, result.Username)
+			secretName := fmt.Sprintf(util.UserSecretFormat, result.ClusterName, result.Username)
 			password, _ := util.GetPasswordFromSecret(apiserver.Clientset, pod.Namespace, secretName)
 
 			if password != "" {
@@ -613,7 +609,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 // For the purposes of this module, we don't care if this fails. We'll log the
 // error in here, but do nothing with it
 func deleteUserSecret(cluster crv1.Pgcluster, username string) {
-	secretName := fmt.Sprintf(userSecretFormat, cluster.Spec.ClusterName, username)
+	secretName := fmt.Sprintf(util.UserSecretFormat, cluster.Spec.ClusterName, username)
 
 	err := kubeapi.DeleteSecret(apiserver.Clientset, secretName, cluster.Spec.Namespace)
 

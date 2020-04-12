@@ -236,7 +236,8 @@ func DeleteNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 }
 
 func copySecret(clientset *kubernetes.Clientset, secretName, operatorNamespace, targetNamespace string) error {
-	secret, _, err := kubeapi.GetSecret(clientset, secretName, operatorNamespace)
+	secret, err := kubeapi.GetSecret(clientset, secretName, operatorNamespace)
+
 	if err == nil {
 		secret.ObjectMeta = metav1.ObjectMeta{
 			Annotations: secret.ObjectMeta.Annotations,
@@ -247,9 +248,11 @@ func copySecret(clientset *kubernetes.Clientset, secretName, operatorNamespace, 
 			err = kubeapi.UpdateSecret(clientset, secret, targetNamespace)
 		}
 	}
-	if !kerrors.IsNotFound(err) {
+
+	if !kubeapi.IsNotFound(err) {
 		return err
 	}
+
 	return nil
 }
 

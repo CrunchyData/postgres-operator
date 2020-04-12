@@ -103,8 +103,9 @@ func ShowPgorole(clientset *kubernetes.Clientset, request *msgs.ShowPgoroleReque
 		for _, v := range request.PgoroleName {
 			info := msgs.PgoroleInfo{}
 			secretName := "pgorole-" + v
-			s, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
-			if !found || err != nil {
+			s, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
+
+			if err != nil {
 				info.Name = v + " was not found"
 				info.Permissions = ""
 			} else {
@@ -129,46 +130,30 @@ func DeletePgorole(clientset *kubernetes.Clientset, deletedBy string, request *m
 	for _, v := range request.PgoroleName {
 		secretName := "pgorole-" + v
 		log.Debugf("DeletePgorole %s deleted by %s", secretName, deletedBy)
-		_, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
-		if !found {
+
+		// try to see if a secret exists for this pgorole. If it does not, continue
+		// on
+		if _, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace); err != nil {
 			resp.Results = append(resp.Results, secretName+" not found")
-		} else {
-			err = kubeapi.DeleteSecret(clientset, secretName, apiserver.PgoNamespace)
-			if err != nil {
-				resp.Results = append(resp.Results, "error deleting secret "+secretName)
-			} else {
-				resp.Results = append(resp.Results, "deleted role "+v)
-				//publish event
-				topics := make([]string, 1)
-				topics[0] = events.EventTopicPGOUser
+			continue
+		}
 
-				f := events.EventPGODeleteRoleFormat{
-					EventHeader: events.EventHeader{
-						Namespace: apiserver.PgoNamespace,
-						Username:  deletedBy,
-						Topic:     topics,
-						Timestamp: time.Now(),
-						EventType: events.EventPGODeleteRole,
-					},
-					DeletedRolename: v,
-				}
+		// attempt to delete the pgorole secret. if it cannot be deleted, move on
+		if err := kubeapi.DeleteSecret(clientset, secretName, apiserver.PgoNamespace); err != nil {
+			resp.Results = append(resp.Results, "error deleting secret "+secretName)
+			continue
+		}
 
-				err = events.Publish(f)
-				if err != nil {
-					resp.Status.Code = msgs.Error
-					resp.Status.Msg = err.Error()
-					return resp
-				}
+		// this was successful
+		resp.Results = append(resp.Results, "deleted role "+v)
 
-				//delete this role from all pgousers
-				err = deleteRoleFromUsers(clientset, v)
-				if err != nil {
-					resp.Status.Code = msgs.Error
-					resp.Status.Msg = err.Error()
-					return resp
-				}
-			}
-
+		// ensure the pgorole is deleted from teh various users that may have this
+		// role. Though it may be odd to return at this point, this is part of the
+		// legacy of this function and is kept in for those purposes
+		if err := deleteRoleFromUsers(clientset, v); err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
 		}
 	}
 
@@ -191,8 +176,8 @@ func UpdatePgorole(clientset *kubernetes.Clientset, updatedBy string, request *m
 
 	secretName := "pgorole-" + request.PgoroleName
 
-	secret, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
-	if !found {
+	secret, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
+	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
@@ -241,9 +226,9 @@ func createSecret(clientset *kubernetes.Clientset, createdBy, pgorolename, permi
 
 	secretName := "pgorole-" + pgorolename
 
-	_, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
-	if found {
-		return err
+	// if this secret is found (i.e. no errors returned) return here
+	if _, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace); err == nil {
+		return nil
 	}
 
 	secret := v1.Secret{}
@@ -257,10 +242,7 @@ func createSecret(clientset *kubernetes.Clientset, createdBy, pgorolename, permi
 	secret.Data["rolename"] = []byte(enRolename)
 	secret.Data["permissions"] = []byte(permissions)
 
-	err = kubeapi.CreateSecret(clientset, &secret, apiserver.PgoNamespace)
-
-	return err
-
+	return kubeapi.CreateSecret(clientset, &secret, apiserver.PgoNamespace)
 }
 
 func validPermissions(perms string) error {
