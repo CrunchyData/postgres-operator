@@ -129,8 +129,9 @@ func ShowPgouser(clientset *kubernetes.Clientset, request *msgs.ShowPgouserReque
 			info.Role = make([]string, 0)
 			info.Namespace = make([]string, 0)
 
-			s, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
-			if !found || err != nil {
+			s, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
+
+			if err != nil {
 				info.Username = v + " was not found"
 			} else {
 				info.Username = v
@@ -155,8 +156,8 @@ func DeletePgouser(clientset *kubernetes.Clientset, deletedBy string, request *m
 	for _, v := range request.PgouserName {
 		secretName := "pgouser-" + v
 		log.Debugf("DeletePgouser %s deleted by %s", secretName, deletedBy)
-		_, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
-		if !found {
+
+		if _, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace); err != nil {
 			resp.Results = append(resp.Results, secretName+" not found")
 		} else {
 			err = kubeapi.DeleteSecret(clientset, secretName, apiserver.PgoNamespace)
@@ -204,8 +205,8 @@ func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *m
 
 	secretName := "pgouser-" + request.PgouserName
 
-	secret, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
-	if !found {
+	secret, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
+	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
@@ -276,9 +277,9 @@ func createSecret(clientset *kubernetes.Clientset, createdBy string, request *ms
 
 	secretName := "pgouser-" + request.PgouserName
 
-	_, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
-	if found {
-		return err
+	// if this secret is found (no errors returned), returned here
+	if _, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace); err == nil {
+		return nil
 	}
 
 	secret := v1.Secret{}
@@ -294,10 +295,7 @@ func createSecret(clientset *kubernetes.Clientset, createdBy string, request *ms
 	secret.Data[MAP_KEY_NAMESPACES] = []byte(request.PgouserNamespaces)
 	secret.Data[MAP_KEY_PASSWORD] = []byte(request.PgouserPassword)
 
-	err = kubeapi.CreateSecret(clientset, &secret, apiserver.PgoNamespace)
-
-	return err
-
+	return kubeapi.CreateSecret(clientset, &secret, apiserver.PgoNamespace)
 }
 
 func validRoles(clientset *kubernetes.Clientset, roles string) error {
@@ -306,8 +304,8 @@ func validRoles(clientset *kubernetes.Clientset, roles string) error {
 	for _, v := range fields {
 		r := strings.TrimSpace(v)
 		secretName := "pgorole-" + r
-		_, found, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace)
-		if !found || err != nil {
+
+		if _, err := kubeapi.GetSecret(clientset, secretName, apiserver.PgoNamespace); err != nil {
 			return errors.New(v + " pgorole was not found")
 		}
 

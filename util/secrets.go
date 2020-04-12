@@ -32,6 +32,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// UserSecretFormat follows the pattern of how the user information is stored,
+// which is "<clusteRName>-<userName>-secret"
+const UserSecretFormat = "%s-%s" + crv1.UserSecretSuffix
+
 // The following constants are used as a part of password generation. For more
 // information on these selections, please consulting the ASCII man page
 // (`man ascii`)
@@ -126,13 +130,13 @@ func GeneratedPasswordLength(configuredPasswordLength string) int {
 
 // GetPasswordFromSecret will fetch the password from a user secret
 func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace, secretName string) (string, error) {
-	secret, found, err := kubeapi.GetSecret(clientset, secretName, namespace)
+	secret, err := kubeapi.GetSecret(clientset, secretName, namespace)
 
-	if !found || err != nil {
+	if err != nil {
 		return "", err
 	}
 
-	return string(secret.Data["password"][:]), err
+	return string(secret.Data["password"][:]), nil
 }
 
 // IsPostgreSQLUserSystemAccount determines whether or not this is a system
@@ -211,7 +215,7 @@ func (cs CloneClusterSecrets) Clone() error {
 
 // CreateUserSecret will create a new secret holding a user credential
 func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string) error {
-	secretName := clustername + "-" + username + "-secret"
+	secretName := fmt.Sprintf(UserSecretFormat, clustername, username)
 
 	if err := CreateSecret(clientset, clustername, secretName, username, password, namespace); err != nil {
 		log.Error(err)
@@ -226,7 +230,7 @@ func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 
 	var err error
 
-	secretName := clustername + "-" + username + "-secret"
+	secretName := fmt.Sprintf(UserSecretFormat, clustername, username)
 
 	//delete current secret
 	err = kubeapi.DeleteSecret(clientset, secretName, namespace)

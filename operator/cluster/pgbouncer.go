@@ -942,7 +942,7 @@ func rotatePgBouncerPassword(clientset *kubernetes.Clientset, restclient *rest.R
 	// let's also go ahead and get the secret that contains the pgBouncer
 	// information. If we can't find the secret, we're basically done here
 	secretName := util.GeneratePgBouncerSecretName(cluster.Name)
-	secret, _, err := kubeapi.GetSecret(clientset, secretName, namspace)
+	secret, err := kubeapi.GetSecret(clientset, secretName, namspace)
 
 	if err != nil {
 		return err

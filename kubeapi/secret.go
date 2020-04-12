@@ -18,7 +18,6 @@ package kubeapi
 import (
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -39,20 +38,15 @@ func GetSecrets(clientset *kubernetes.Clientset, selector, namespace string) (*v
 }
 
 // GetSecret gets a Secrets by name
-func GetSecret(clientset *kubernetes.Clientset, name, namespace string) (*v1.Secret, bool, error) {
-
+func GetSecret(clientset *kubernetes.Clientset, name, namespace string) (*v1.Secret, error) {
 	secret, err := clientset.CoreV1().Secrets(namespace).Get(name, meta_v1.GetOptions{})
-	if kerrors.IsNotFound(err) {
-		log.Error("secret " + name + " not found")
-		return secret, false, err
-	}
 
 	if err != nil {
 		log.Error(err)
-		return secret, false, err
+		return nil, err
 	}
 
-	return secret, true, err
+	return secret, nil
 }
 
 // CreateSecret
