@@ -1039,5 +1039,21 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 		return result
 	}
 
+	// If the password did change, it is not updated in the database. If the user
+	// has a "managed" account (i.e. there is a secret for this user account"),
+	// we can now updated the value of that password in the secret
+	if isChanged {
+		secretName := fmt.Sprintf(util.UserSecretFormat, cluster.Spec.ClusterName, result.Username)
+
+		// only call update user secret if the secret exists
+		if _, err := kubeapi.GetSecret(apiserver.Clientset, secretName, cluster.Namespace); err == nil {
+			// if we cannot update the user secret, only warn that we cannot do so
+			if err := util.UpdateUserSecret(apiserver.Clientset, cluster.Spec.ClusterName,
+				result.Username, result.Password, cluster.Namespace); err != nil {
+				log.Warn(err)
+			}
+		}
+	}
+
 	return result
 }
