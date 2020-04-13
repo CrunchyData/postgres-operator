@@ -34,7 +34,7 @@ spec:
             containers:
             - name: pgo-deploy
               command: ["/pgo-deploy.sh"]
-              image:crunchydata/pgo-installer:centos7-4.3.0
+              image: crunchydata/pgo-installer:centos7-4.3.0
               imagePullPolicy: IfNotPresent
               env:
                   - name: ANSIBLE_CONFIG

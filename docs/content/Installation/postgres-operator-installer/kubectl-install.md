@@ -104,3 +104,29 @@ client.
 ```
 kubectl delete -f deploy.yml
 ```
+
+#### pgo Client Binary
+
+Running the pgo client locally when using the pgo-installer image requires
+access to the certs stored in the `pgo.tls` Kubernetes secret. The `client.crt`
+and `client.key` need to be pulled from this secret and stored locally in a
+location that is accessable to the `pgo` client. You will also need to setup a
+`pgouser` file that contains the admin username and password that was set in your
+inventory file. This username and password will be pulled from the
+`pgouser-admin` secret. The the `client-setup.sh` script will setup these
+resources in the `~/.pgo/$PGO_OPERATOR_NAMESPACE` directory. Please set the
+following environment variables after the pgo-installer job has completed:
+
+```
+cat <<EOF >> ~/.bashrc
+export PGOUSER="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/pgouser"
+export PGO_CA_CERT="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.crt"
+export PGO_CLIENT_CERT="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.crt"
+export PGO_CLIENT_KEY="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.key"
+EOF
+```
+
+This will allow the the `pgo` client to have access to your postgres-operator
+instance. Full install instructions for installing the pgo client can be found
+in the [Install `pgo` client]({{< relref "/installation/install-pgo-client" >}})
+section of the docs.
