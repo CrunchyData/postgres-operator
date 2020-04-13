@@ -32,7 +32,7 @@ var ErrControllerGroupExists = errors.New("A controller group for the namespace 
 
 // WorkerRunner is an interface for controllers the have worker queues that need to be run
 type WorkerRunner interface {
-	RunWorker()
+	RunWorker(stopCh <-chan struct{}, doneCh chan<- struct{})
 }
 
 // ManagerInterface defines the interface for a controller manager
@@ -43,8 +43,6 @@ type ManagerInterface interface {
 	RemoveGroup(namespace string)
 	RunAll()
 	RunGroup(namespace string)
-	StopAll()
-	StopGroup(namespace string)
 }
 
 // InitializeReplicaCreation initializes the creation of replicas for a cluster.  For a regular
