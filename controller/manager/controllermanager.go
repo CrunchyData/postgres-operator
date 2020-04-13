@@ -16,12 +16,11 @@ limitations under the License.
 */
 
 import (
-	"context"
 	"errors"
 	"sync"
-	"time"
 
 	"github.com/crunchydata/postgres-operator/controller"
+	"github.com/crunchydata/postgres-operator/controller/configmap"
 	"github.com/crunchydata/postgres-operator/controller/job"
 	"github.com/crunchydata/postgres-operator/controller/pgcluster"
 	"github.com/crunchydata/postgres-operator/controller/pgpolicy"
@@ -32,7 +31,6 @@ import (
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions"
 	log "github.com/sirupsen/logrus"
 
-	"k8s.io/apimachinery/pkg/util/wait"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/util/workqueue"
 )
@@ -41,8 +39,6 @@ import (
 // controllers needed to handle events within a specific namespace.  Only one controllerGroup is
 // allowed per namespace.
 type ControllerManager struct {
-	context     context.Context
-	cancelFunc  context.CancelFunc
 	mgrMutex    sync.Mutex
 	controllers map[string]*controllerGroup
 }
@@ -50,8 +46,8 @@ type ControllerManager struct {
 // controllerGroup is a struct for managing the various controllers created to handle events
 // in a specific namespace
 type controllerGroup struct {
-	context                context.Context
-	cancelFunc             context.CancelFunc
+	stopCh                 chan struct{}
+	doneCh                 chan struct{}
 	started                bool
 	pgoInformerFactory     informers.SharedInformerFactory
 	kubeInformerFactory    kubeinformers.SharedInformerFactory
@@ -62,11 +58,7 @@ type controllerGroup struct {
 // namespace included in the 'namespaces' parameter.
 func NewControllerManager(namespaces []string) (*ControllerManager, error) {
 
-	ctx, cancelFunc := context.WithCancel(context.Background())
-
 	controllerManager := ControllerManager{
-		context:     ctx,
-		cancelFunc:  cancelFunc,
 		controllers: make(map[string]*controllerGroup),
 	}
 
@@ -135,7 +127,10 @@ func (c *ControllerManager) RemoveAll() {
 	c.mgrMutex.Lock()
 	defer c.mgrMutex.Unlock()
 
-	c.controllers = make(map[string]*controllerGroup)
+	for ns := range c.controllers {
+		c.removeControllerGroup(ns)
+	}
+
 	log.Debug("Controller Manager: all contollers groups have been removed")
 }
 
@@ -146,13 +141,7 @@ func (c *ControllerManager) RemoveGroup(namespace string) {
 	c.mgrMutex.Lock()
 	defer c.mgrMutex.Unlock()
 
-	if _, ok := c.controllers[namespace]; !ok {
-		log.Debugf("Controller Manager: no controller group to remove for ns %s ", namespace)
-		return
-	}
-
-	delete(c.controllers, namespace)
-	log.Debugf("Controller Manager: the controller group for ns %s has been removed", namespace)
+	c.removeControllerGroup(namespace)
 }
 
 // RunAll runs all controllers across all controller groups managed by the controller manager.
@@ -185,35 +174,6 @@ func (c *ControllerManager) RunGroup(namespace string) {
 	log.Debugf("Controller Manager: the controller group for ns %s is now running", namespace)
 }
 
-// StopAll stops all controllers across all controller groups managed by the controller manager.
-func (c *ControllerManager) StopAll() {
-
-	c.mgrMutex.Lock()
-	defer c.mgrMutex.Unlock()
-
-	c.cancelFunc()
-	log.Debug("Controller Manager: all contoller groups are now stopped")
-}
-
-// StopGroup stops the controllers within the controller group for the namespace specified.
-func (c *ControllerManager) StopGroup(namespace string) {
-
-	c.mgrMutex.Lock()
-	defer c.mgrMutex.Unlock()
-
-	if _, ok := c.controllers[namespace]; !ok {
-		log.Debugf("Controller Manager: unable to stop controller group for namespace %s because "+
-			"a controller group for this namespace does not exist", namespace)
-		return
-	}
-
-	controllerGroup := c.controllers[namespace]
-	controllerGroup.cancelFunc()
-	controllerGroup.started = false
-
-	log.Debugf("Controller Manager: the controller group for ns %s has been stopped", namespace)
-}
-
 // addControllerGroup adds a new controller group for the namespace specified
 func (c *ControllerManager) addControllerGroup(namespace string) error {
 
@@ -233,8 +193,6 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 	pgoClientset := clients.PGOClientset
 	pgoRESTClient := clients.PGORestclient
 	kubeClientset := clients.Kubeclientset
-
-	ctx, cancelFunc := context.WithCancel(c.context)
 
 	pgoInformerFactory := informers.NewSharedInformerFactoryWithOptions(pgoClientset, 0,
 		informers.WithNamespace(namespace))
@@ -285,6 +243,13 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 		Informer:     kubeInformerFactory.Batch().V1().Jobs(),
 	}
 
+	configMapController, err := configmap.NewConfigMapController(config, pgoRESTClient,
+		kubeClientset, kubeInformerFactory.Core().V1().ConfigMaps())
+	if err != nil {
+		log.Errorf("Unable to create ConfigMap controller: %w", err)
+		return err
+	}
+
 	// add the proper event handler to the informer in each controller
 	pgTaskcontroller.AddPGTaskEventHandler()
 	pgClustercontroller.AddPGClusterEventHandler()
@@ -294,8 +259,8 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 	jobcontroller.AddJobEventHandler()
 
 	group := &controllerGroup{
-		context:             ctx,
-		cancelFunc:          cancelFunc,
+		stopCh:              make(chan struct{}),
+		doneCh:              make(chan struct{}),
 		pgoInformerFactory:  pgoInformerFactory,
 		kubeInformerFactory: kubeInformerFactory,
 	}
@@ -303,7 +268,7 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 	// store the controllers containing worker queues so that the queues can also be started
 	// when any informers in the controller are started
 	group.controllersWithWorkers = append(group.controllersWithWorkers,
-		pgTaskcontroller, pgClustercontroller, pgReplicacontroller)
+		pgTaskcontroller, pgClustercontroller, pgReplicacontroller, configMapController)
 
 	c.controllers[namespace] = group
 
@@ -324,14 +289,59 @@ func (c *ControllerManager) runControllerGroup(namespace string) {
 		return
 	}
 
-	controllerGroup.kubeInformerFactory.Start(controllerGroup.context.Done())
-	controllerGroup.pgoInformerFactory.Start(controllerGroup.context.Done())
+	controllerGroup.kubeInformerFactory.Start(controllerGroup.stopCh)
+	controllerGroup.pgoInformerFactory.Start(controllerGroup.stopCh)
 
 	for _, worker := range c.controllers[namespace].controllersWithWorkers {
-		go wait.Until(worker.RunWorker, time.Second, controllerGroup.context.Done())
+		go worker.RunWorker(controllerGroup.stopCh, controllerGroup.doneCh)
 	}
 
 	controllerGroup.started = true
 
 	log.Debugf("Controller Manager: controller group for namespace %s is now running", namespace)
+}
+
+// removeControllerGroup removes the controller group for the namespace specified.  Any worker
+// queues associated with the controllers inside of the controller group are first shutdown
+// prior to removing the controller group.
+func (c *ControllerManager) removeControllerGroup(namespace string) {
+
+	if _, ok := c.controllers[namespace]; !ok {
+		log.Debugf("Controller Manager: no controller group to remove for ns %s ", namespace)
+		return
+	}
+
+	c.stopControllerGroup(namespace)
+	delete(c.controllers, namespace)
+
+	log.Debugf("Controller Manager: the controller group for ns %s has been removed", namespace)
+}
+
+// stopControllerGroup stops the controller group associated with the namespace specified.  This is
+// done by calling the ShutdownWorker function associated with the controller.  If the controller
+// does not have a ShutdownWorker function then no action is taken.
+func (c *ControllerManager) stopControllerGroup(namespace string) {
+
+	if _, ok := c.controllers[namespace]; !ok {
+		log.Debugf("Controller Manager: unable to stop controller group for namespace %s because "+
+			"a controller group for this namespace does not exist", namespace)
+		return
+	}
+
+	controllerGroup := c.controllers[namespace]
+
+	// close the stop channel to stop all informers and instruct the workers queues to shutdown
+	close(controllerGroup.stopCh)
+
+	// wait for all worker queues to shutdown
+	log.Debugf("Waiting for %d workers in the controller group for namespace %s to shutdown",
+		len(controllerGroup.controllersWithWorkers), namespace)
+	for i := 0; i < len(controllerGroup.controllersWithWorkers); i++ {
+		<-controllerGroup.doneCh
+	}
+	close(controllerGroup.doneCh)
+
+	controllerGroup.started = false
+
+	log.Debugf("Controller Manager: the controller group for ns %s has been stopped", namespace)
 }

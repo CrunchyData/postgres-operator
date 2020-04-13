@@ -97,7 +97,7 @@ func main() {
 		}
 	}
 
-	defer controllerManager.StopAll()
+	defer controllerManager.RemoveAll()
 
 	operatorupgrade.OperatorUpdateCRPgoVersion(kubeClientset, pgoRESTclient, namespaceList)
 

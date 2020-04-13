@@ -38,11 +38,25 @@ type Controller struct {
 	Informer           informers.PgreplicaInformer
 }
 
-func (c *Controller) RunWorker() {
+// RunWorker is a long-running function that will continually call the
+// processNextWorkItem function in order to read and process a message on the
+// workqueue.
+func (c *Controller) RunWorker(stopCh <-chan struct{}, doneCh chan<- struct{}) {
 
-	//process the 'add' work queue forever
+	go c.waitForShutdown(stopCh)
+
 	for c.processNextItem() {
 	}
+
+	log.Debug("pgreplica Contoller: worker queue has been shutdown, writing to the done channel")
+	doneCh <- struct{}{}
+}
+
+// waitForShutdown waits for a message on the stop channel and then shuts down the work queue
+func (c *Controller) waitForShutdown(stopCh <-chan struct{}) {
+	<-stopCh
+	c.Queue.ShutDown()
+	log.Debug("pgreplica Contoller: recieved stop signal, worker queue told to shutdown")
 }
 
 func (c *Controller) processNextItem() bool {
