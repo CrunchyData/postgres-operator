@@ -95,17 +95,7 @@ variable in the `deploy.yml` file. This variable can be set to `install`,
 `update`, and `uninstall`. Each time a job is run you will need to cleanup the
 job using the command below.
 
-### Cleanup
-
-The job resources can be cleaned up by running a delete on the `deploy.yml`
-file. The resources can also be delete manually through the kubectl
-client.
-
-```
-kubectl delete -f deploy.yml
-```
-
-#### pgo Client Binary
+### pgo Client Binary
 
 Running the pgo client locally when using the pgo-installer image requires
 access to the certs stored in the `pgo.tls` Kubernetes secret. The `client.crt`
@@ -130,3 +120,13 @@ This will allow the the `pgo` client to have access to your postgres-operator
 instance. Full install instructions for installing the pgo client can be found
 in the [Install `pgo` client]({{< relref "/installation/install-pgo-client" >}})
 section of the docs.
+
+### Cleanup
+
+The job resources can be cleaned up by running a delete on the `deploy.yml`
+file. The resources can also be delete manually through the kubectl
+client.
+
+```
+kubectl delete -f deploy.yml
+```
