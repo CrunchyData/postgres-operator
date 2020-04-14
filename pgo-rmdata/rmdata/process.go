@@ -423,7 +423,9 @@ func removePgreplicas(request Request) {
 	log.Debugf("pgreplicas found len is %d\n", len(replicaList.Items))
 
 	for _, r := range replicaList.Items {
-		err = kubeapi.Deletepgreplica(request.RESTClient, r.Spec.Name, request.Namespace)
+		if err := kubeapi.Deletepgreplica(request.RESTClient, r.Spec.Name, request.Namespace); err != nil {
+			log.Warn(err)
+		}
 	}
 
 }
@@ -443,7 +445,9 @@ func removePgtasks(request Request) {
 	log.Debugf("pgtasks to remove is %d\n", len(taskList.Items))
 
 	for _, r := range taskList.Items {
-		err = kubeapi.Deletepgtask(request.RESTClient, r.Spec.Name, request.Namespace)
+		if err := kubeapi.Deletepgtask(request.RESTClient, r.Spec.Name, request.Namespace); err != nil {
+			log.Warn(err)
+		}
 	}
 
 }

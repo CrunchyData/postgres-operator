@@ -263,8 +263,9 @@ func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Cl
 	log.Debugf("restore workflow phase  2: created restored primary was %s now %s", cluster.Spec.Name, restoreToName)
 
 	//update workflow
-	err = updateWorkflow(restclient, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestorePrimaryCreatedStatus)
-
+	if err := updateWorkflow(restclient, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestorePrimaryCreatedStatus); err != nil {
+		log.Warn(err)
+	}
 }
 
 func updateWorkflow(restclient *rest.RESTClient, workflowID, namespace, status string) error {

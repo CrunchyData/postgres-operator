@@ -71,9 +71,6 @@ func showPgorole(args []string, ns string) {
 		fmt.Println("Error: either a pgorole name or --all flag is required")
 		os.Exit(2)
 	}
-	if len(args) == 0 && AllFlag {
-		args = []string{""}
-	}
 
 	response, err := api.ShowPgorole(httpclient, &SessionCredentials, r)
 

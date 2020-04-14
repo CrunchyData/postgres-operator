@@ -19,7 +19,6 @@ package cluster
 */
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -31,7 +30,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -54,7 +52,9 @@ func Failover(identifier string, clientset *kubernetes.Clientset, client *rest.R
 	updateFailoverStatus(client, task, namespace, clusterName, "deleted primary deployment "+clusterName)
 
 	//trigger the failover to the selected replica
-	err = promote(pod, clientset, client, namespace, restconfig)
+	if err := promote(pod, clientset, client, namespace, restconfig); err != nil {
+		log.Warn(err)
+	}
 
 	publishPromoteEvent(identifier, namespace, task.ObjectMeta.Labels[config.LABEL_PGOUSER], clusterName, target)
 
@@ -142,39 +142,6 @@ func updateFailoverStatus(client *rest.RESTClient, task *crv1.Pgtask, namespace,
 
 }
 
-func deletePrimary(clientset *kubernetes.Clientset, namespace, clusterName, pgouser string) error {
-
-	//the primary will be the one with a pod that has a label
-	//that looks like service-name=clustername and is not a backrest job
-	selector := config.LABEL_SERVICE_NAME + "=" + clusterName + "," + config.LABEL_BACKREST_RESTORE + "!=true," + config.LABEL_BACKREST_JOB + "!=true"
-
-	// wait for single primary pod to exist.
-	pods, success := waitForSinglePrimary(clientset, selector, namespace)
-
-	if !success {
-		log.Errorf("Received false while waiting for single primary, count: ", len(pods.Items))
-		return errors.New("Couldn't isolate single primary pod")
-	}
-
-	//update the label to 'fenced' on the pod to fence off traffic from
-	//any client or replica using the primary, this effectively
-	//stops traffic from the Primary service to the primary pod
-	//we are about to delete
-	pod := pods.Items[0]
-
-	deploymentToDelete := pod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
-
-	publishPrimaryDeleted(pod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clusterName, deploymentToDelete, pgouser, namespace)
-
-	//delete the deployment with pg-cluster=clusterName,primary=true
-	log.Debugf("deleting deployment %s", deploymentToDelete)
-	err := kubeapi.DeleteDeployment(clientset, deploymentToDelete, namespace)
-
-	err = waitForDelete(deploymentToDelete, pod.Name, clientset, namespace)
-
-	return err
-}
-
 func promote(
 	pod *v1.Pod,
 	clientset *kubernetes.Clientset,
@@ -198,60 +165,6 @@ func promote(
 	return err
 }
 
-func waitForDelete(deploymentToDelete, podName string, clientset *kubernetes.Clientset, namespace string) error {
-	var tries = 10
-
-	for i := 0; i < tries; i++ {
-		pod, _, err := kubeapi.GetPod(clientset, podName, namespace)
-		if kerrors.IsNotFound(err) {
-			log.Debugf("%s deployment %s pod not found so its safe to proceed on failover", deploymentToDelete, podName)
-			return nil
-		} else if err != nil {
-			log.Error(err)
-			log.Error("error getting pod when evaluating old primary in failover %s %s", deploymentToDelete, podName)
-			return err
-		}
-		log.Debugf("waiting for %s to delete", pod.Name)
-		time.Sleep(time.Second * time.Duration(9))
-	}
-
-	return errors.New(fmt.Sprintf("timeout waiting for %s %s to delete", deploymentToDelete, podName))
-
-}
-
-// waitForSinglePrimary - during failover, there can exist the possibility that while one pod is in the process of
-// terminating, the Deployment will be spinning up another pod - both will appear to be a primary even though the
-// terminating pod will not be accessible via the service. This method gets the primary and if both exists, it waits to
-// give the terminating pod a chance to complete. If a single primary is never isolated, it returns false with the count
-// of primaries found when it gave up. The number of tries and duration can be increased if needed - max wait time is
-// tries * duration.
-func waitForSinglePrimary(clientset *kubernetes.Clientset, selector, namespace string) (*v1.PodList, bool) {
-
-	var tries = 5
-	var duration = 2 // seconds
-	var pods *v1.PodList
-
-	for i := 0; i < tries; i++ {
-
-		pods, _ = kubeapi.GetPods(clientset, selector, namespace)
-
-		if len(pods.Items) > 1 {
-			log.Errorf("more than 1 primary pod found when looking for primary %s", selector)
-			log.Debug("Waiting in case a pod is terminating...")
-			// return errors.New("more than 1 primary pod found in delete primary logic")
-			time.Sleep(time.Second * time.Duration(duration))
-		} else if len(pods.Items) == 0 {
-			log.Errorf("No pods found for primary deployment")
-			return pods, false
-		} else {
-			log.Debug("Found single pod for primary deployment")
-			return pods, true
-		}
-	}
-
-	return pods, false
-}
-
 func publishPromoteEvent(identifier, namespace, username, clusterName, target string) {
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
@@ -273,27 +186,6 @@ func publishPromoteEvent(identifier, namespace, username, clusterName, target st
 		log.Error(err.Error())
 	}
 
-}
-func publishPrimaryDeleted(identifier, clusterName, deploymentToDelete, username, namespace string) {
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventPrimaryDeletedFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  username,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventPrimaryDeleted,
-		},
-		Clustername:    clusterName,
-		Deploymentname: deploymentToDelete,
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		log.Error(err.Error())
-	}
 }
 
 // RemovePrimaryOnRoleChangeTag sets the 'primary_on_role_change' tag to null in the
