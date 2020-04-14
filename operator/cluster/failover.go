@@ -42,7 +42,7 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	//in the case, the clustername is passed as a key in the
 	//parameters map
 	var clusterName string
-	for k, _ := range task.Spec.Parameters {
+	for k := range task.Spec.Parameters {
 		clusterName = k
 	}
 

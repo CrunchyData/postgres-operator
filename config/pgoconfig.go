@@ -323,7 +323,7 @@ func (c *PgoConfig) Validate() error {
 	if !ok {
 		return errors.New(errPrefix + "ReplicaStorage setting required")
 	}
-	for k, _ := range c.Storage {
+	for k := range c.Storage {
 		_, err = c.GetStorageSpec(k)
 		if err != nil {
 			return err

@@ -43,9 +43,9 @@ const (
 // availableTablespaceParams is the list of acceptable parameters in the
 // --tablespace flag
 var availableTablespaceParams = map[string]struct{}{
-	tablespaceParamName:          struct{}{},
-	tablespaceParamPVCSize:       struct{}{},
-	tablespaceParamStorageConfig: struct{}{},
+	tablespaceParamName:          {},
+	tablespaceParamPVCSize:       {},
+	tablespaceParamStorageConfig: {},
 }
 
 // requiredTablespaceParams are the tablespace parameters that are required

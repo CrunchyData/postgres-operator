@@ -15,8 +15,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import ()
-
 const PGO_VERSION = "4.3.0"
 
 // Ok status

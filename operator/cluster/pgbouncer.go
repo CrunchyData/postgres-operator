@@ -446,7 +446,7 @@ func UpdatePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 
 	// Alright, so we need to figure out which parameters are set, so we can take
 	// action on them
-	for param, _ := range parameters {
+	for param := range parameters {
 		switch param {
 		// determine if we need to rotate the password. if there is an error, return
 		// early as we cannot guarantee anything else can occur
