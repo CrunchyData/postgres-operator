@@ -139,20 +139,20 @@ var (
 	// namespacePrivsCoreDynamic defines the privileges in the Core API group required for the
 	// Operator to run using the NamespaceOperatingModeDynamic namespace operating mode
 	namespacePrivsCoreDynamic = map[string][]string{
-		"namespaces":      []string{"get", "list", "watch", "create", "update", "delete"},
-		"serviceaccounts": []string{"get", "create", "delete"},
+		"namespaces":      {"get", "list", "watch", "create", "update", "delete"},
+		"serviceaccounts": {"get", "create", "delete"},
 	}
 	// namespacePrivsDynamic defines the privileges in the rbac.authorization.k8s.io API group
 	// required for the Operator to run using the NamespaceOperatingModeDynamic namespace
 	// operating mode
 	namespacePrivsRBACDynamic = map[string][]string{
-		"roles":        []string{"get", "create", "delete", "bind", "escalate"},
-		"rolebindings": []string{"get", "create", "delete"},
+		"roles":        {"get", "create", "delete", "bind", "escalate"},
+		"rolebindings": {"get", "create", "delete"},
 	}
 	// namespacePrivsReadOnly defines the privileges in the Core API group required for the
 	// Operator to run using the NamespaceOperatingModeReadOnly namespace operating mode
 	namespacePrivsCoreReadOnly = map[string][]string{
-		"namespaces": []string{"get", "list", "watch"},
+		"namespaces": {"get", "list", "watch"},
 	}
 
 	// ErrInvalidNamespaceName defines the error that is thrown when a namespace does not meet the

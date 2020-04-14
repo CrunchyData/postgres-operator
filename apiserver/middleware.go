@@ -33,8 +33,8 @@ type certEnforcer struct {
 func NewCertEnforcer(reqRoutes []string) (*certEnforcer, error) {
 	allowed := map[string]struct{}{
 		// List of allowed routes is part of the published documentation
-		"/health":  struct{}{},
-		"/healthz": struct{}{},
+		"/health":  {},
+		"/healthz": {},
 	}
 
 	ce := &certEnforcer{

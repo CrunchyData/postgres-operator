@@ -460,7 +460,7 @@ func deleteTheLabel(deployment *v1.Deployment, clusterName string, labelsMap map
 		objLabels = make(map[string]string)
 	}
 
-	for k, _ := range labelsMap {
+	for k := range labelsMap {
 		delete(objLabels, k)
 	}
 	log.Debugf("revised labels after delete are %v", objLabels)

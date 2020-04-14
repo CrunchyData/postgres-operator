@@ -542,22 +542,22 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 				// Spec for the pod that will run the pgo-backrest-repo-sync job
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{
-						v1.Container{
+						{
 							Name: "rsync",
 							Image: fmt.Sprintf(pgBackRestRepoSyncContainerImageName,
 								operator.Pgo.Pgo.PGOImagePrefix, operator.Pgo.Pgo.PGOImageTag),
 							Env: []v1.EnvVar{
-								v1.EnvVar{
+								{
 									Name:  "PGBACKREST_REPO1_HOST",
 									Value: fmt.Sprintf(util.BackrestRepoServiceName, sourcePgcluster.Spec.ClusterName),
 								},
-								v1.EnvVar{
+								{
 									Name:  "PGBACKREST_REPO1_PATH",
 									Value: util.GetPGBackRestRepoPath(sourcePgcluster),
 								},
 								// NOTE: this needs to be a name like this in order to not
 								// confuse pgBackRest, which does support "REPO*" name
-								v1.EnvVar{
+								{
 									Name: "NEW_PGBACKREST_REPO",
 									Value: util.GetPGBackRestRepoPath(crv1.Pgcluster{
 										ObjectMeta: meta_v1.ObjectMeta{
@@ -567,11 +567,11 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 								},
 							},
 							VolumeMounts: []v1.VolumeMount{
-								v1.VolumeMount{
+								{
 									MountPath: config.VOLUME_PGBACKREST_REPO_MOUNT_PATH,
 									Name:      config.VOLUME_PGBACKREST_REPO_NAME,
 								},
-								v1.VolumeMount{
+								{
 									MountPath: config.VOLUME_SSHD_MOUNT_PATH,
 									Name:      config.VOLUME_SSHD_NAME,
 									ReadOnly:  true,
@@ -583,7 +583,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 					SecurityContext:    &podSecurityContext,
 					ServiceAccountName: config.LABEL_BACKREST,
 					Volumes: []v1.Volume{
-						v1.Volume{
+						{
 							Name: config.VOLUME_PGBACKREST_REPO_NAME,
 							VolumeSource: v1.VolumeSource{
 								PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
@@ -592,7 +592,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 							},
 						},
 						// the SSHD volume that contains the SSHD secrets
-						v1.Volume{
+						{
 							Name: config.VOLUME_SSHD_NAME,
 							VolumeSource: v1.VolumeSource{
 								Secret: &v1.SecretVolumeSource{
@@ -627,34 +627,34 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 		"s3") {
 		syncEnv := job.Spec.Template.Spec.Containers[0].Env
 		syncEnv = append(syncEnv, []v1.EnvVar{
-			v1.EnvVar{
+			{
 				Name:  "BACKREST_STORAGE_SOURCE",
 				Value: task.Spec.Parameters["backrestStorageType"],
 			},
-			v1.EnvVar{
+			{
 				Name: "PGBACKREST_REPO1_S3_BUCKET",
 				Value: getS3Param(sourcePgcluster.Spec.BackrestS3Bucket,
 					operator.Pgo.Cluster.BackrestS3Bucket),
 			},
-			v1.EnvVar{
+			{
 				Name: "PGBACKREST_REPO1_S3_ENDPOINT",
 				Value: getS3Param(sourcePgcluster.Spec.BackrestS3Endpoint,
 					operator.Pgo.Cluster.BackrestS3Endpoint),
 			},
-			v1.EnvVar{
+			{
 				Name: "PGBACKREST_REPO1_S3_REGION",
 				Value: getS3Param(sourcePgcluster.Spec.BackrestS3Region,
 					operator.Pgo.Cluster.BackrestS3Region),
 			},
-			v1.EnvVar{
+			{
 				Name:  "PGBACKREST_REPO1_S3_KEY",
 				Value: s3Creds.AWSS3Key,
 			},
-			v1.EnvVar{
+			{
 				Name:  "PGBACKREST_REPO1_S3_KEY_SECRET",
 				Value: s3Creds.AWSS3KeySecret,
 			},
-			v1.EnvVar{
+			{
 				Name:  "PGBACKREST_REPO1_S3_CA_FILE",
 				Value: "/sshd/aws-s3-ca.crt",
 			},
@@ -662,7 +662,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 		if operator.IsLocalAndS3Storage(
 			sourcePgcluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]) {
 			syncEnv = append(syncEnv, []v1.EnvVar{
-				v1.EnvVar{
+				{
 					Name:  "PGHA_PGBACKREST_LOCAL_S3_STORAGE",
 					Value: "true",
 				},

@@ -74,11 +74,11 @@ var PGFSGroup int64 = 26
 // PGUserSystemAccounts maintains an easy-to-access list of what the systems
 // accounts are, which may affect how information is returned, etc.
 var PGUserSystemAccounts = map[string]struct{}{
-	PGUserAdmin:       struct{}{},
-	PGUserMonitor:     struct{}{},
-	PGUserPgBouncer:   struct{}{},
-	PGUserReplication: struct{}{},
-	PGUserSuperuser:   struct{}{},
+	PGUserAdmin:       {},
+	PGUserMonitor:     {},
+	PGUserPgBouncer:   {},
+	PGUserReplication: {},
+	PGUserSuperuser:   {},
 }
 
 // PgStorageSpec ...

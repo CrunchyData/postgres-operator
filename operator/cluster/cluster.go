@@ -451,7 +451,7 @@ func UpdateTablespaces(clientset *kubernetes.Clientset, restConfig *rest.Config,
 
 		// iterate through each table space and prepare the Volume and
 		// VolumeMount clause for each instance
-		for tablespaceName, _ := range newTablespaces {
+		for tablespaceName := range newTablespaces {
 			// this is the volume to be added for the tablespace
 			volume := v1.Volume{
 				Name: operator.GetTablespaceVolumeName(tablespaceName),
