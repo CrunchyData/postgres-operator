@@ -70,6 +70,19 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, restclient *r
 	removeData := task.Spec.Parameters[config.LABEL_DELETE_DATA]
 	removeBackup := task.Spec.Parameters[config.LABEL_DELETE_BACKUPS]
 
+	// make sure the provided clustername is not empty
+	if clusterName == "" {
+		log.Error("unable to create pgdump job, clustername is empty.")
+		return
+	}
+
+	// if the clustername is not empty, get the pgcluster
+	cluster := crv1.Pgcluster{}
+	if _, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace); err != nil {
+		log.Error(err)
+		return
+	}
+
 	jobName := clusterName + "-rmdata-" + util.RandStringBytesRmndr(4)
 
 	jobFields := rmdatajobTemplateFields{
@@ -82,7 +95,7 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, restclient *r
 		RemoveBackup:     removeBackup,
 		IsReplica:        isReplica,
 		IsBackup:         isBackup,
-		PGOImagePrefix:   operator.Pgo.Pgo.PGOImagePrefix,
+		PGOImagePrefix:   util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, operator.Pgo.Pgo.PGOImagePrefix),
 		PGOImageTag:      operator.Pgo.Pgo.PGOImageTag,
 		SecurityContext:  util.GetPodSecurityContext(task.Spec.StorageSpec.GetSupplementalGroups()),
 	}

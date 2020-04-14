@@ -253,7 +253,7 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, cluster *
 		badgerTemplateFields.CCPImageTag = spec.CCPImageTag
 		badgerTemplateFields.BadgerTarget = pgbadger_target
 		badgerTemplateFields.PGBadgerPort = spec.PGBadgerPort
-		badgerTemplateFields.CCPImagePrefix = Pgo.Cluster.CCPImagePrefix
+		badgerTemplateFields.CCPImagePrefix = util.GetValueOrDefault(spec.CCPImagePrefix, Pgo.Cluster.CCPImagePrefix)
 
 		var badgerDoc bytes.Buffer
 		err := config.BadgerTemplate.Execute(&badgerDoc, badgerTemplateFields)
@@ -284,7 +284,7 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 		collectTemplateFields.JobName = spec.Name
 		collectTemplateFields.CCPImageTag = spec.CCPImageTag
 		collectTemplateFields.ExporterPort = spec.ExporterPort
-		collectTemplateFields.CCPImagePrefix = Pgo.Cluster.CCPImagePrefix
+		collectTemplateFields.CCPImagePrefix = util.GetValueOrDefault(spec.CCPImagePrefix, Pgo.Cluster.CCPImagePrefix)
 		collectTemplateFields.PgPort = spec.Port
 
 		var collectDoc bytes.Buffer

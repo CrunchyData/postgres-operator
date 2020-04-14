@@ -26,6 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -133,7 +134,7 @@ func (p PolicyJob) Run() {
 	policyJob := PolicyTemplate{
 		JobName:        name,
 		ClusterName:    p.cluster,
-		PGOImagePrefix: p.ccpImagePrefix,
+		PGOImagePrefix: util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, p.ccpImagePrefix),
 		PGOImageTag:    p.ccpImageTag,
 		PGHost:         p.cluster,
 		PGPort:         cluster.Spec.Port,

@@ -331,6 +331,8 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		Spec: crv1.PgclusterSpec{
 			Port:           sourcePgcluster.Spec.Port,
 			PrimaryStorage: sourcePgcluster.Spec.PrimaryStorage,
+			CCPImagePrefix: sourcePgcluster.Spec.CCPImagePrefix,
+			PGOImagePrefix: sourcePgcluster.Spec.PGOImagePrefix,
 			UserLabels: map[string]string{
 				config.LABEL_BACKREST_STORAGE_TYPE: sourcePgcluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE],
 			},
@@ -365,7 +367,7 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		// use a delta restore in order to optimize how the restore occurs
 		CommandOpts: "--delta",
 		// PITRTarget is not supported in the first iteration of clone
-		PGOImagePrefix:      operator.Pgo.Pgo.PGOImagePrefix,
+		PGOImagePrefix:      util.GetValueOrDefault(sourcePgcluster.Spec.PGOImagePrefix, operator.Pgo.Pgo.PGOImagePrefix),
 		PGOImageTag:         operator.Pgo.Pgo.PGOImageTag,
 		PgbackrestStanza:    pgBackRestStanza,
 		PgbackrestDBPath:    fmt.Sprintf(targetClusterPGDATAPath, targetClusterName),
@@ -545,7 +547,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 						{
 							Name: "rsync",
 							Image: fmt.Sprintf(pgBackRestRepoSyncContainerImageName,
-								operator.Pgo.Pgo.PGOImagePrefix, operator.Pgo.Pgo.PGOImageTag),
+								util.GetValueOrDefault(sourcePgcluster.Spec.PGOImagePrefix, operator.Pgo.Pgo.PGOImagePrefix), operator.Pgo.Pgo.PGOImageTag),
 							Env: []v1.EnvVar{
 								{
 									Name:  "PGBACKREST_REPO1_HOST",
@@ -783,6 +785,7 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 			BackrestResources:  sourcePgcluster.Spec.BackrestResources,
 			ClusterName:        targetClusterName,
 			CCPImage:           sourcePgcluster.Spec.CCPImage,
+			CCPImagePrefix:     sourcePgcluster.Spec.CCPImagePrefix,
 			CCPImageTag:        sourcePgcluster.Spec.CCPImageTag,
 			// We're not copying over the collect container in the clone...but we will
 			// maintain the secret in case one brings up the collect container
@@ -797,6 +800,7 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 			// the user to pass in
 			PGBadgerPort:       sourcePgcluster.Spec.PGBadgerPort,
 			PgBouncerResources: sourcePgcluster.Spec.PgBouncerResources,
+			PGOImagePrefix:     sourcePgcluster.Spec.PGOImagePrefix,
 			PodAntiAffinity:    sourcePgcluster.Spec.PodAntiAffinity,
 			Policies:           sourcePgcluster.Spec.Policies,
 			Port:               sourcePgcluster.Spec.Port,
