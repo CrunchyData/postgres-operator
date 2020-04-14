@@ -40,7 +40,7 @@ func ApplyPolicies(clusterName string, Clientset *kubernetes.Clientset, RESTClie
 	found, err := kubeapi.Getpgtask(RESTClient, &task, taskName, ns)
 	if found && err == nil {
 		//apply those policies
-		for k, _ := range task.Spec.Parameters {
+		for k := range task.Spec.Parameters {
 			log.Debugf("applying policy %s to %s", k, clusterName)
 			applyPolicy(Clientset, RESTClient, RESTConfig, k, clusterName, ns)
 		}
