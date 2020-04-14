@@ -48,7 +48,8 @@ For the cluster(s) you wish to upgrade, scale down any replicas, if necessary (s
 
 {{% notice warning %}}
 
-Please note the name of each cluster, the namespace used, and be sure not to delete the associated PVCs or CRDs!
+Please note the name of each cluster, the namespace used, and be sure not to delete the associated PVCs or CRDs! <br/>
+Also note the name of the primary PVC, if it does not exactly match the cluster name, a restore operation will be required (step 12).
 
 {{% /notice %}}
 
@@ -187,6 +188,16 @@ cluster : mycluster
                 primary (mycluster-7d49d98665-7zxzd): UP
 ```
 ##### Step 12
+If in step 0, the primary PVC name did not exactly match the cluster name, you will need to perform a cluster restore operation.<br/>
+This extra step is needed, for instance, in case a failover occurred for the cluster. In such a case, the new primary has a pvc name not matching exactly the cluster name (it has an added suffix).
+ 
+If you are in this situation and check the dBs within your postgreSQL cluster, you will notice that it just contains the initial dBs.
+
+To run the restore operation
+
+        pgo restore <clustername> -n <namespace>
+        
+##### Step 13
 Scale up to the required number of replicas, as needed.
 
 It is also recommended to take full backups of each pgcluster once the upgrade is completed due to version differences between the old and new clusters.
