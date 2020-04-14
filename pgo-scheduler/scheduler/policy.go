@@ -133,7 +133,7 @@ func (p PolicyJob) Run() {
 	policyJob := PolicyTemplate{
 		JobName:        name,
 		ClusterName:    p.cluster,
-		PGOImagePrefix: p.ccpImagePrefix,
+		PGOImagePrefix: getCCPImagePrefix(cluster, p.ccpImagePrefix),
 		PGOImageTag:    p.ccpImageTag,
 		PGHost:         p.cluster,
 		PGPort:         cluster.Spec.Port,
@@ -190,4 +190,13 @@ func (p PolicyJob) Run() {
 		}).Error("Failed creating policy job")
 		return
 	}
+}
+
+// getCCPImagePrefix checks whether the CCPImagePrefix value is set in the pgcluster CRD.
+// If so, this value is returned to be used, otherwise the value from the job is used.
+func getCCPImagePrefix(cluster crv1.Pgcluster, jobPrefix string) string {
+	if cluster.Spec.CCPImagePrefix != "" {
+		return cluster.Spec.CCPImagePrefix
+	}
+	return jobPrefix
 }

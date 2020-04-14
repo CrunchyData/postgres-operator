@@ -559,7 +559,7 @@ func createPgBouncerDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pg
 	fields := pgBouncerTemplateFields{
 		Name:               pgbouncerDeploymentName,
 		ClusterName:        cluster.Name,
-		CCPImagePrefix:     operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImagePrefix:     operator.GetImagePrefix(cluster.Spec.CCPImagePrefix),
 		CCPImageTag:        cluster.Spec.CCPImageTag,
 		Port:               operator.Pgo.Cluster.Port,
 		PGBouncerSecret:    util.GeneratePgBouncerSecretName(cluster.Name),

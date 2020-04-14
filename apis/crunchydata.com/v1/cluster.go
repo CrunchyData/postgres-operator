@@ -18,7 +18,7 @@ package v1
 import (
 	"fmt"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -46,6 +46,7 @@ type PgclusterSpec struct {
 	Policies        string        `json:"policies"`
 	CCPImage        string        `json:"ccpimage"`
 	CCPImageTag     string        `json:"ccpimagetag"`
+	CCPImagePrefix  string        `json:"ccpimageprefix"`
 	Port            string        `json:"port"`
 	PGBadgerPort    string        `json:"pgbadgerport"`
 	ExporterPort    string        `json:"exporterport"`

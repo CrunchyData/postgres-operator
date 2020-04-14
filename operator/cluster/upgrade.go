@@ -164,7 +164,7 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 
 		log.Debug("About to patch replica: ", replicaTargetName)
 
-		imageNamePatch, err := createImageNamePatch(cluster, operator.Pgo.Cluster.CCPImagePrefix,
+		imageNamePatch, err := createImageNamePatch(cluster, operator.GetImagePrefix(cluster.Spec.CCPImagePrefix),
 			upgradeTask.Spec.Parameters["CCPImageTag"])
 		if err != nil {
 			log.Errorf("error creating container image name patch during minor upgrade of cluster %s",
@@ -195,7 +195,7 @@ func ProcessNextUpgradeItem(clientset *kubernetes.Clientset, restclient *rest.RE
 		log.Debug("Minor Upgrade: primary")
 		log.Debug("About to patch primary: ", primaryTargetName)
 
-		imageNamePatch, err := createImageNamePatch(cluster, operator.Pgo.Cluster.CCPImagePrefix,
+		imageNamePatch, err := createImageNamePatch(cluster, operator.GetImagePrefix(cluster.Spec.CCPImagePrefix),
 			upgradeTask.Spec.Parameters["CCPImageTag"])
 		if err != nil {
 			log.Errorf("error creating container image name patch during minor upgrade of cluster %s",
@@ -257,7 +257,7 @@ func UpgradeWithAutofailDisabled(clientset *kubernetes.Clientset, restclient *re
 	primaryTargetName := upgradeTask.Spec.Parameters[config.LABEL_UPGRADE_PRIMARY]
 
 	// upgrade everything at once and then mark as complete
-	imageNamePatch, err := createImageNamePatch(cluster, operator.Pgo.Cluster.CCPImagePrefix,
+	imageNamePatch, err := createImageNamePatch(cluster, operator.GetImagePrefix(cluster.Spec.CCPImagePrefix),
 		upgradeTask.Spec.Parameters["CCPImageTag"])
 	if err != nil {
 		log.Errorf("error creating container image name patch during minor upgrade of cluster %s",

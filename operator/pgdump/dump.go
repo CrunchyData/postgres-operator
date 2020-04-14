@@ -81,6 +81,20 @@ func Dump(namespace string, clientset *kubernetes.Clientset, client *rest.RESTCl
 		}
 	}
 
+	// make sure the provided clustername is not empty
+	clusterName := task.Spec.Parameters[config.LABEL_PG_CLUSTER]
+	if clusterName == "" {
+		log.Error(err)
+		return
+	}
+
+	// get the pgcluster CRD for cases where a CCPImagePrefix is specified
+	cluster := crv1.Pgcluster{}
+	if _, err := kubeapi.Getpgcluster(client, &cluster, clusterName, namespace); err != nil {
+		log.Error(err)
+		return
+	}
+
 	// this task name should match
 	taskName := task.Name
 	jobName := taskName + "-" + util.RandStringBytesRmndr(4)
@@ -93,7 +107,7 @@ func Dump(namespace string, clientset *kubernetes.Clientset, client *rest.RESTCl
 		SecurityContext:  util.GetPodSecurityContext(task.Spec.StorageSpec.GetSupplementalGroups()),
 		Command:          cmd, //??
 		CommandOpts:      task.Spec.Parameters[config.LABEL_PGDUMP_OPTS],
-		CCPImagePrefix:   operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImagePrefix:   operator.GetImagePrefix(cluster.Spec.CCPImagePrefix),
 		CCPImageTag:      operator.Pgo.Cluster.CCPImageTag,
 		PgDumpHost:       task.Spec.Parameters[config.LABEL_PGDUMP_HOST],
 		PgDumpUserSecret: task.Spec.Parameters[config.LABEL_PGDUMP_USER],

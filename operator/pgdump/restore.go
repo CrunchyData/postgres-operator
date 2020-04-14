@@ -89,7 +89,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, restclient *rest
 		PgPrimaryPort:       operator.Pgo.Cluster.Port,
 		PGRestoreOpts:       task.Spec.Parameters[config.LABEL_PGRESTORE_OPTS],
 		PITRTarget:          task.Spec.Parameters[config.LABEL_PGRESTORE_PITR_TARGET],
-		CCPImagePrefix:      operator.Pgo.Cluster.CCPImagePrefix,
+		CCPImagePrefix:      operator.GetImagePrefix(cluster.Spec.CCPImagePrefix),
 		CCPImageTag:         operator.Pgo.Cluster.CCPImageTag,
 		NodeSelector:        operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),
 	}
