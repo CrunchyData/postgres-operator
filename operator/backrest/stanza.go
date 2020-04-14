@@ -21,6 +21,8 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -65,6 +67,9 @@ func StanzaCreate(namespace, clusterName string, clientset *kubernetes.Clientset
 	spec.Parameters[config.LABEL_PG_CLUSTER] = clusterName
 	spec.Parameters[config.LABEL_POD_NAME] = podName
 	spec.Parameters[config.LABEL_CONTAINER_NAME] = "pgo-backrest-repo"
+	// pass along the appropriate image prefix for the backup task
+	// this will be used by the associated backrest job
+	spec.Parameters[config.LABEL_IMAGE_PREFIX] = util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, operator.Pgo.Pgo.PGOImagePrefix)
 	spec.Parameters[config.LABEL_BACKREST_COMMAND] = crv1.PgtaskBackrestStanzaCreate
 
 	// Handle stanza creation for a standby cluster, which requires some additional consideration.

@@ -29,6 +29,7 @@ import (
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -74,7 +75,7 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 		Command:                       cmd,
 		CommandOpts:                   task.Spec.Parameters[config.LABEL_BACKREST_OPTS],
 		PITRTarget:                    "",
-		PGOImagePrefix:                operator.Pgo.Pgo.PGOImagePrefix,
+		PGOImagePrefix:                task.Spec.Parameters[config.LABEL_IMAGE_PREFIX],
 		PGOImageTag:                   operator.Pgo.Pgo.PGOImageTag,
 		PgbackrestStanza:              task.Spec.Parameters[config.LABEL_PGBACKREST_STANZA],
 		PgbackrestDBPath:              task.Spec.Parameters[config.LABEL_PGBACKREST_DB_PATH],
@@ -191,6 +192,9 @@ func CreateBackup(restclient *rest.RESTClient, namespace, clusterName, podName s
 	spec.Parameters[config.LABEL_PG_CLUSTER] = cluster.Name
 	spec.Parameters[config.LABEL_POD_NAME] = podName
 	spec.Parameters[config.LABEL_CONTAINER_NAME] = "database"
+	// pass along the appropriate image prefix for the backup task
+	// this will be used by the associated backrest job
+	spec.Parameters[config.LABEL_IMAGE_PREFIX] = util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, operator.Pgo.Pgo.PGOImagePrefix)
 	spec.Parameters[config.LABEL_BACKREST_COMMAND] = crv1.PgtaskBackrestBackup
 	spec.Parameters[config.LABEL_BACKREST_OPTS] = backupOpts
 	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]

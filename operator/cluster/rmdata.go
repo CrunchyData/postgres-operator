@@ -55,7 +55,7 @@ func CreateRmdataJob(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namesp
 	jobFields := RmdataJob{
 		JobName:        jobName,
 		ClusterName:    cl.Spec.Name,
-		PGOImagePrefix: operator.Pgo.Pgo.PGOImagePrefix,
+		PGOImagePrefix: util.GetValueOrDefault(cl.Spec.PGOImagePrefix, operator.Pgo.Pgo.PGOImagePrefix),
 		PGOImageTag:    operator.Pgo.Pgo.PGOImageTag,
 		RemoveData:     strconv.FormatBool(removeData),
 		RemoveBackup:   strconv.FormatBool(removeBackup),

@@ -100,7 +100,7 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 
 	//create backrest repo deployment
 	fields := RepoDeploymentTemplateFields{
-		PGOImagePrefix:        operator.Pgo.Pgo.PGOImagePrefix,
+		PGOImagePrefix:        util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, operator.Pgo.Pgo.PGOImagePrefix),
 		PGOImageTag:           operator.Pgo.Pgo.PGOImageTag,
 		ContainerResources:    operator.GetResourcesJSON(cluster.Spec.BackrestResources),
 		BackrestRepoClaimName: repoName,

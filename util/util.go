@@ -202,6 +202,15 @@ func PatchClusterCRD(restclient *rest.RESTClient, labelMap map[string]string, ol
 
 }
 
+// GetValueOrDefault checks whether the first value given is set. If it is,
+// that value is returned. If not, the second, default value is returned instead
+func GetValueOrDefault(value, defaultValue string) string {
+	if value != "" {
+		return value
+	}
+	return defaultValue
+}
+
 // GetSecretPassword ...
 func GetSecretPassword(clientset *kubernetes.Clientset, db, suffix, Namespace string) (string, error) {
 
