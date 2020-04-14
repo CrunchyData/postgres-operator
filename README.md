@@ -3,6 +3,7 @@
   <img width="150" src="./crunchy_logo.png?raw=true"/>
 </p>
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/CrunchyData/postgres-operator)](https://goreportcard.com/report/github.com/CrunchyData/postgres-operator)
 
 # Run your own production-grade PostgreSQL-as-a-Service on Kubernetes!
 
