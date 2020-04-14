@@ -29,7 +29,6 @@ import (
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	"github.com/crunchydata/postgres-operator/util"
-	v1 "k8s.io/api/apps/v1"
 	apiv1 "k8s.io/api/core/v1"
 
 	log "github.com/sirupsen/logrus"
@@ -218,16 +217,11 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 	depName := newpod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
 	ns := newpod.Namespace
 
-	replica := false
 	pgreplica := crv1.Pgreplica{}
-	found, err := kubeapi.Getpgreplica(c.PodClient, &pgreplica, depName, ns)
-	if found {
-		replica = true
-	}
+	replica, _ := kubeapi.Getpgreplica(c.PodClient, &pgreplica, depName, ns)
 	log.Debugf("checkPostgresPods --- dep %s replica %t", depName, replica)
 
-	var dep *v1.Deployment
-	dep, _, err = kubeapi.GetDeployment(c.PodClientset, depName, ns)
+	dep, _, err := kubeapi.GetDeployment(c.PodClientset, depName, ns)
 	if err != nil {
 		log.Errorf("could not get Deployment on pod Add %s", newpod.Name)
 		return

@@ -73,9 +73,6 @@ func showPgouser(args []string, ns string) {
 		fmt.Println("Error: either a pgouser name or --all flag is required")
 		os.Exit(2)
 	}
-	if len(args) == 0 && AllFlag {
-		args = []string{""}
-	}
 
 	response, err := api.ShowPgouser(httpclient, &SessionCredentials, r)
 

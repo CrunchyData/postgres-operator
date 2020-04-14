@@ -200,7 +200,7 @@ func isValidFailoverTarget(deployName, clusterName, ns string) (*v1.Deployment, 
 	// pg-cluster=clusterName,deployment-name=deployName,role=master
 	selector = config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_DEPLOYMENT_NAME + "=" + deployName +
 		"," + config.LABEL_PGHA_ROLE + "=master"
-	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	pods, _ := kubeapi.GetPods(apiserver.Clientset, selector, ns)
 	if len(pods.Items) > 0 {
 		return nil, errors.New("The primary database cannot be selected as a failover target")
 	}

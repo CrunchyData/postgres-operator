@@ -578,12 +578,12 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
 
 	//delete any existing pgtask with the same name
-	found, err := kubeapi.Getpgtask(apiserver.RESTClient,
+	found, _ := kubeapi.Getpgtask(apiserver.RESTClient,
 		&existingTask, taskName, ns)
 	if found {
 		log.Debugf("deleting prior pgtask %s", taskName)
-		err = kubeapi.Deletepgtask(apiserver.RESTClient, taskName, ns)
-		if err != nil {
+
+		if err := kubeapi.Deletepgtask(apiserver.RESTClient, taskName, ns); err != nil {
 			return "", err
 		}
 	}
