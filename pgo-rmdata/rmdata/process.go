@@ -149,7 +149,7 @@ func Delete(request Request) {
 	// backup jobs, as those take up space
 	removeBackupJobs(request)
 	// Now, even though it appears we are removing the pgBackRest repo here, we
-	// are **not** removing the phyiscal data unless request.RemoveBackup is true.
+	// are **not** removing the physical data unless request.RemoveBackup is true.
 	// In that case, only the deployment/services for the pgBackRest repo are
 	// removed
 	removeBackrestRepo(request)

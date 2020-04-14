@@ -203,7 +203,7 @@ func SetSessionUserCredentials() {
 func GetTLSTransport() (*http.Transport, error) {
 	log.Debug("GetTLSTransport called")
 
-	// By default, load the OS CA cert truststore unless explictly disabled
+	// By default, load the OS CA cert truststore unless explicitly disabled
 	// Reasonable default given the client controls to whom it is connecting
 	var caCertPool *x509.CertPool
 	if noTrust, _ := strconv.ParseBool(os.Getenv("EXCLUDE_OS_TRUST")); noTrust || EXCLUDE_OS_TRUST {

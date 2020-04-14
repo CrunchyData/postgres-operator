@@ -186,7 +186,7 @@ func isValidValue(vals []string, val string) bool {
 }
 
 // this function checks unknown options from the backup-opts flag to validate that they are not denied
-// if the option is in the deny list and error is returned, otherwise the flag is unkown to the operator
+// if the option is in the deny list and error is returned, otherwise the flag is unknown to the operator
 // and can be passed to pgBackRest for validation.
 func handleCustomParseErrors(err error, usage *bytes.Buffer, optsStruct backupOptions) error {
 	denyListFlags, denyListFlagsShort := optsStruct.getDenyListFlags()

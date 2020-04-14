@@ -94,7 +94,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 	// Handle the "role" label change from "replica" to "master" following a failover.  This
 	// logic is only triggered when the cluster has already been initialized, which implies
-	// a failover or switchove has ocurred.
+	// a failover or switchover has occurred.
 	if isPromotedPostgresPod(oldPod, newPod) {
 		log.Debugf("Pod Controller: pod %s in namespace %s promoted, calling pod promotion "+
 			"handler", newPod.Name, newPod.Namespace)

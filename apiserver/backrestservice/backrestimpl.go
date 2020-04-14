@@ -101,7 +101,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 
 	// Return an error if any clusters identified for the backup are in standby mode.  Backups
 	// from standby servers are not allowed since the cluster is following a remote primary,
-	// which itself is responsible for performing any backups for the cluster as requried.
+	// which itself is responsible for performing any backups for the cluster as required.
 	if hasStandby, standbyClusters := apiserver.PGClusterListHasStandby(clusterList); hasStandby {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = fmt.Sprintf("Request rejected, unable to create backups for clusters "+
@@ -478,7 +478,7 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 
 	// Return an error if any clusters identified for the restore are in standby mode.  Restoring
 	// from a standby cluster is not allowed since the cluster is following a remote primary,
-	// which itself is responsible for performing any restores as requried for the cluster.
+	// which itself is responsible for performing any restores as required for the cluster.
 	if cluster.Spec.Standby {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = fmt.Sprintf("Request rejected, unable to restore cluster "+

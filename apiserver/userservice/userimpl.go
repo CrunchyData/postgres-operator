@@ -999,7 +999,7 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 	// for last
 	switch {
 	case request.ExpireUser:
-		// append the VALID UNTIL special clause here for explictly disallowing
+		// append the VALID UNTIL special clause here for explicitly disallowing
 		// the user of a password
 		result.ValidUntil = util.SQLValidUntilNever
 	case request.PasswordValidAlways:

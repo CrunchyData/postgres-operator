@@ -94,7 +94,7 @@ func NewControllerManager(namespaces []string) (*ControllerManager, error) {
 // Two SharedInformerFactory's are utilized (one for Kube resources and one for PosgreSQL Operator
 // resources) to create and track the informers for each type of resource, while any controllers
 // utilizing worker queues are also tracked (this allows all informers and worker queues to be
-// easily started as needed). Each controller group also recieves its own clients, which can then
+// easily started as needed). Each controller group also receives its own clients, which can then
 // be utilized by the various controllers within that controller group.
 func (c *ControllerManager) AddGroup(namespace string) error {
 

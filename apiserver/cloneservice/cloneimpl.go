@@ -183,7 +183,7 @@ func createWorkflowTask(targetClusterName, uid, namespace string) (string, error
 		return "", err
 	}
 
-	// return succesfully after creating the task
+	// return successfully after creating the task
 	return id, nil
 }
 

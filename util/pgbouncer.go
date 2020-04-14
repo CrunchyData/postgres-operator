@@ -44,7 +44,7 @@ func GeneratePgBouncerSecretName(clusterName string) string {
 //
 // where "hashed-password" is a MD5 or SCRAM hashed password
 //
-// This is ultimatley moutned by the pgBouncer Pod via the secret
+// This is ultimately moutned by the pgBouncer Pod via the secret
 func GeneratePgBouncerUsersFileBytes(hashedPassword string) []byte {
 	data := fmt.Sprintf(pgBouncerUserFileFormat, crv1.PGUserPgBouncer, hashedPassword)
 	return []byte(data)

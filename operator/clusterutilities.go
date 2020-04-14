@@ -331,7 +331,7 @@ func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespac
 
 // CreatePGHAConfigMap creates a configMap that will be utilized to store configuration settings
 // for a PostgreSQL cluster.  Currently this configMap simply defines an "init" setting, which is
-// utilized by the crunchy-postgres-ha container (or GIS equivilant) to determine whether or not
+// utilized by the crunchy-postgres-ha container (or GIS equivalent) to determine whether or not
 // initialization logic should be executed when the container is run.  This ensures that the
 // original primary in a PostgreSQL cluster does not attempt to run any initialization logic more
 // than once, such as following a restart of the container.  In the future this configMap can also
@@ -715,7 +715,7 @@ func GetPgmonitorEnvVars(metricsEnabled string) string {
 }
 
 // GetPgbackrestS3EnvVars retrieves the values for the various configuration settings require to
-// configure pgBackRest for AWS S3, inlcuding a bucket, endpoint, region, key and key secret.
+// configure pgBackRest for AWS S3, including a bucket, endpoint, region, key and key secret.
 // The bucket, endpoint & region are obtained from the associated parameters in the pgcluster
 // CR, while the key and key secret are obtained from the backrest repository secret.  Once these
 // values have been obtained, they are used to populate a template containing the various

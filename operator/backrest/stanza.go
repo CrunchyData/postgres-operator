@@ -67,7 +67,7 @@ func StanzaCreate(namespace, clusterName string, clientset *kubernetes.Clientset
 	spec.Parameters[config.LABEL_CONTAINER_NAME] = "pgo-backrest-repo"
 	spec.Parameters[config.LABEL_BACKREST_COMMAND] = crv1.PgtaskBackrestStanzaCreate
 
-	// Handle stanza creation for a standby cluster, which requires some additonal consideration.
+	// Handle stanza creation for a standby cluster, which requires some additional consideration.
 	// This includes setting the pgBackRest storage type and command options as needed to support
 	// stanza creation for a standby cluster.  If not a standby cluster then simply set the
 	// storage type and options as usual.
