@@ -1109,7 +1109,7 @@ loop:
 		// in the case of hitting the timeout, warn that the timeout was hit, but
 		// continue onward
 		case <-timeout:
-			log.Warnf("timed out after [%d]s waiting for secret to propogate to pod [%s]", timeout, pod.Name)
+			log.Warnf("timed out after [%d]s waiting for secret to propagate to pod [%s]", timeout, pod.Name)
 			return
 		case <-tick:
 			// exec into the pod to run the query

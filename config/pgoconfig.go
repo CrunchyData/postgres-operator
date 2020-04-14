@@ -375,19 +375,19 @@ func (c *PgoConfig) Validate() error {
 			c.Cluster.DefaultInstanceResourceMemory = DefaultInstanceResourceMemory
 		}
 
-		log.Infof("deafult instance memory set to [%s]", c.Cluster.DefaultInstanceResourceMemory.String())
+		log.Infof("default instance memory set to [%s]", c.Cluster.DefaultInstanceResourceMemory.String())
 
 		if c.Cluster.DefaultBackrestResourceMemory.IsZero() {
 			c.Cluster.DefaultBackrestResourceMemory = DefaultBackrestResourceMemory
 		}
 
-		log.Infof("deafult pgbackrest repository memory set to [%s]", c.Cluster.DefaultBackrestResourceMemory.String())
+		log.Infof("default pgbackrest repository memory set to [%s]", c.Cluster.DefaultBackrestResourceMemory.String())
 
 		if c.Cluster.DefaultPgBouncerResourceMemory.IsZero() {
 			c.Cluster.DefaultPgBouncerResourceMemory = DefaultPgBouncerResourceMemory
 		}
 
-		log.Infof("deafult pgbouncer memory set to [%s]", c.Cluster.DefaultPgBouncerResourceMemory.String())
+		log.Infof("default pgbouncer memory set to [%s]", c.Cluster.DefaultPgBouncerResourceMemory.String())
 	}
 
 	// if provided, ensure that the type of pod anti-affinity values are valid

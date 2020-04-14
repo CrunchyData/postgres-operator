@@ -78,7 +78,7 @@ func NewControllerManager(namespaces []string, scheduler *Scheduler) (*Controlle
 // group is comprised of a controller for the following resource:
 // - configmaps
 // One SharedInformerFactory is utilized, specifically for Kube resources, to create and track the
-// informers for this resource.  Each controller group also recieves its own clients, which can then
+// informers for this resource.  Each controller group also receives its own clients, which can then
 // be utilized by the controller within the controller group.
 func (c *ControllerManager) AddGroup(namespace string) error {
 

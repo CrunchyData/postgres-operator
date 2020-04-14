@@ -156,7 +156,7 @@ func generateUserPadding(results []msgs.UserResponseDetail) userTextPadding {
 	}
 }
 
-// makeUserInterface returns an interface slice of the avaialble values
+// makeUserInterface returns an interface slice of the available values
 // in pgo create user
 func makeUserInterface(values []msgs.UserResponseDetail) []interface{} {
 	// iterate through the list of values to make the interface

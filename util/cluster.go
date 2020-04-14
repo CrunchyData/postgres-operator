@@ -130,7 +130,7 @@ func CreateBackrestRepoSecrets(clientset *kubernetes.Clientset,
 	}
 
 	// if an S3 key has been provided via the request, then use key and key secret
-	// inlcuded in the request instead of the default credentials that are
+	// included in the request instead of the default credentials that are
 	// available in the Operator pgBackRest secret
 	backrestS3Key := []byte(backrestRepoConfig.BackrestS3Key)
 

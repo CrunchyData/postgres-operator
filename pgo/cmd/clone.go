@@ -52,12 +52,12 @@ var cloneCmd = &cobra.Command{
 		log.Debug("clone called")
 		// ensure all the required arguments are available
 		if len(args) < 1 {
-			fmt.Println("Error: You must specifiy a cluster to clone from and a name for a new cluster")
+			fmt.Println("Error: You must specify a cluster to clone from and a name for a new cluster")
 			os.Exit(1)
 		}
 
 		if len(args) < 2 {
-			fmt.Println("Error: You must specifiy the name of the new cluster")
+			fmt.Println("Error: You must specify the name of the new cluster")
 			os.Exit(1)
 		}
 
@@ -104,7 +104,7 @@ func clone(namespace, sourceClusterName, targetClusterName string) {
 		os.Exit(1)
 	}
 
-	// if the response was unsuccesful due to user error, print out the error
+	// if the response was unsuccessful due to user error, print out the error
 	// message here
 	if response.Status.Code != msgs.Ok {
 		fmt.Println("Error: " + response.Status.Msg)

@@ -63,7 +63,7 @@ type CreatePVC struct {
 	Storage     crv1.PgStorageSpec
 }
 
-// createPVC attemps to create a new PVC where the cloned data will be copied to
+// createPVC attempts to create a new PVC where the cloned data will be copied to
 // be it for a PostgreSQL data directory or for a pgBackRest repository
 func (createPVC CreatePVC) createPVC() error {
 	// see if a PVC already exists before attempting to create
@@ -189,7 +189,7 @@ func UpdateCloneWorkflow(client *rest.RESTClient, namespace, workflowID, status 
 
 // cloneStep1 covers the creation of the PVCs for the new PostgreSQL cluster,
 // as well as sets up and executes a job to copy (via rsync) the PgBackRest
-// repostiory from the source cluster to the destination cluster
+// repository from the source cluster to the destination cluster
 func cloneStep1(clientset *kubernetes.Clientset, client *rest.RESTClient, namespace string, task *crv1.Pgtask) {
 	sourceClusterName, targetClusterName, workflowID := getCloneTaskIdentifiers(task)
 
@@ -738,7 +738,7 @@ func createPVCs(clientset *kubernetes.Clientset, client *rest.RESTClient,
 }
 
 func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, task *crv1.Pgtask, sourcePgcluster crv1.Pgcluster, namespace string, targetClusterName string, workflowID string) error {
-	// first, handle copying over the cluster secrets so they are availble when
+	// first, handle copying over the cluster secrets so they are available when
 	// the cluster is created
 	cloneClusterSecrets := util.CloneClusterSecrets{
 		// ensure the pgBackRest secret is not copied over, as we will need to
@@ -830,7 +830,7 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 		},
 	}
 
-	// if any of the PVC sizes are overriden, indicate this in the cluster spec
+	// if any of the PVC sizes are overridden, indicate this in the cluster spec
 	// here
 	// first, handle the override for the primary/replica PVC size
 	if task.Spec.Parameters[util.CloneParameterPVCSize] != "" {

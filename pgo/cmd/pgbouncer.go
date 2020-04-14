@@ -129,7 +129,7 @@ func deletePgbouncer(args []string, ns string) {
 
 }
 
-// makeShowPgBouncerInterface returns an interface slice of the avaialble values
+// makeShowPgBouncerInterface returns an interface slice of the available values
 // in show pgbouncer
 func makeShowPgBouncerInterface(values []msgs.ShowPgBouncerDetail) []interface{} {
 	// iterate through the list of values to make the interface
@@ -142,7 +142,7 @@ func makeShowPgBouncerInterface(values []msgs.ShowPgBouncerDetail) []interface{}
 	return showPgBouncerInterface
 }
 
-// makeUpdatePgBouncerInterface returns an interface slice of the avaialble values
+// makeUpdatePgBouncerInterface returns an interface slice of the available values
 // in show pgbouncer
 func makeUpdatePgBouncerInterface(values []msgs.UpdatePgBouncerDetail) []interface{} {
 	// iterate through the list of values to make the interface

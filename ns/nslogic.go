@@ -849,7 +849,7 @@ func createPGOPgRoleBinding(clientset *kubernetes.Clientset, targetNamespace str
 // operating mode).
 func GetNamespaceOperatingMode(clientset *kubernetes.Clientset) (NamespaceOperatingMode, error) {
 
-	// fist check to see if dynamic namespace capabilites can be enable
+	// first check to see if dynamic namespace capabilities can be enabled
 	isDynamicCore, err := checkClusterPrivs(clientset, namespacePrivsCoreDynamic, "")
 	if err != nil {
 		return "", err
@@ -908,7 +908,7 @@ func checkClusterPrivs(clientset *kubernetes.Clientset,
 	return true, nil
 }
 
-// GetNamespaceList returns a list of namespaces for the current Operator install.  This inlcudes
+// GetNamespaceList returns a list of namespaces for the current Operator install.  This includes
 // first obtaining any namespaces from the NAMESPACE env var, and then if the namespace operating
 // mode permits, also querying the Kube cluster in order to obtain any other namespaces that are
 // part of the install, but not included in the env var.  If no namespaces are identified via

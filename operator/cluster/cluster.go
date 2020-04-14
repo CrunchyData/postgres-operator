@@ -471,7 +471,7 @@ func UpdateTablespaces(clientset *kubernetes.Clientset, restConfig *rest.Config,
 				Name:      operator.GetTablespaceVolumeName(tablespaceName),
 			}
 
-			// we can do this as we always know that the "database" contianer is the
+			// we can do this as we always know that the "database" container is the
 			// first container in the list
 			deployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(
 				deployment.Spec.Template.Spec.Containers[0].VolumeMounts, volumeMount)

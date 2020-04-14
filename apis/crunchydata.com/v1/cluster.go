@@ -55,7 +55,7 @@ type PgclusterSpec struct {
 	ReplicaStorage  PgStorageSpec `json:replicastorage`
 	BackrestStorage PgStorageSpec `json:backreststorage`
 	// Resources behaves just like the "Requests" section of a Kubernetes
-	// container defintion. You can set individual items such as "cpu" and
+	// container definition. You can set individual items such as "cpu" and
 	// "memory", e.g. "{ cpu: "0.5", memory: "2Gi" }"
 	//
 	// Presently we only set the "Request" portion of the Container resource

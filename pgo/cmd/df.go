@@ -133,7 +133,7 @@ func getUtilizationColor(utilization float64) func(...interface{}) string {
 	}
 }
 
-// makeDfInterface returns an interface slice of the avaialble values in the df
+// makeDfInterface returns an interface slice of the available values in the df
 func makeDfInterface(values []msgs.DfDetail) []interface{} {
 	// iterate through the list of values to make the interface
 	dfInterface := make([]interface{}, len(values))

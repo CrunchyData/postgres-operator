@@ -147,7 +147,7 @@ func DeletePgorole(clientset *kubernetes.Clientset, deletedBy string, request *m
 		// this was successful
 		resp.Results = append(resp.Results, "deleted role "+v)
 
-		// ensure the pgorole is deleted from teh various users that may have this
+		// ensure the pgorole is deleted from the various users that may have this
 		// role. Though it may be odd to return at this point, this is part of the
 		// legacy of this function and is kept in for those purposes
 		if err := deleteRoleFromUsers(clientset, v); err != nil {

@@ -651,7 +651,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	}
 
 	// if the request is for a standby cluster then validate it to ensure all parameters have
-	// been properly specifed as required to create a standby cluster
+	// been properly specified as required to create a standby cluster
 	if request.Standby {
 		if err := validateStandbyCluster(request); err != nil {
 			resp.Status.Code = msgs.Error
@@ -661,7 +661,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	}
 
 	// ensure the backrest storage type specified for the cluster is valid, and that the
-	// configruation required to use that storage type (e.g. a bucket, endpoint and region
+	// configuration required to use that storage type (e.g. a bucket, endpoint and region
 	// when using aws s3 storage) has been provided
 	err = validateBackrestStorageTypeOnCreate(request)
 	if err != nil {
@@ -1107,7 +1107,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 	// if the user passed in a value to override the pgBackRest storage
 	// configuration, apply it here. Note that (and this follows the legacy code)
-	// given we've validated this storage configruation exists, this call should
+	// given we've validated this storage configuration exists, this call should
 	// be ok
 	if request.BackrestStorageConfig != "" {
 		spec.BackrestStorage, _ = apiserver.Pgo.GetStorageSpec(request.BackrestStorageConfig)

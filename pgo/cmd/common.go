@@ -109,7 +109,7 @@ func getSizeAndUnit(size int64) (float64, unitType) {
 	// We keep dividing by "unitSize" which is 1024. Once it is less than the unit
 	// size, that is the normalized unit we will use.
 	// The astute observer will note that "du" returns in units of 1024, but we
-	// want to attempt to keep thigns in the 3-digit area
+	// want to attempt to keep things in the 3-digit area
 	//
 	// of course, eventually this will get too big...so bail after yotta bytes
 	for unit = unitB; normalizedSize > unitSize && unit < unitYB; unit++ {

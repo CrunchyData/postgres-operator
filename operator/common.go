@@ -196,7 +196,7 @@ func SetContainerImageOverride(containerImageName string, container *v1.Containe
 	}
 }
 
-// initializeContainerImageOverrides initalizes the container image overrides
+// initializeContainerImageOverrides initializes the container image overrides
 // that could be set if there are any `RELATED_IMAGE_*` environmental variables
 func initializeContainerImageOverrides() {
 	// the easiest way to handle this is to iterate over the RelatedImageMap,
