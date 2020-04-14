@@ -1133,6 +1133,16 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	} else {
 		spec.CCPImage = "crunchy-postgres-ha"
 	}
+
+	// update the CRD spec to use the custom CCPImagePrefix, if given
+	// otherwise, set the value from the global configuration
+	if request.CCPImagePrefix != "" {
+		spec.CCPImagePrefix = request.CCPImagePrefix
+		log.Debugf("user is overriding CCPImagePrefix from command line %s", request.CCPImagePrefix)
+	} else {
+		spec.CCPImagePrefix = apiserver.Pgo.Cluster.CCPImagePrefix
+	}
+
 	spec.Namespace = ns
 	spec.Name = name
 	spec.ClusterName = name
