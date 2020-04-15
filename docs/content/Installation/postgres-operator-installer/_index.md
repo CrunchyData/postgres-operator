@@ -1,112 +1,133 @@
 ---
-title: "Deploy with PostgreSQL Operator Installer (pgo-deployer)"
+title: Deploy the PostgreSQL Operator with `kubectl`"
 date:
 draft: false
-weight: 100
+weight: 20
 ---
 
-## Install the Postgres Operator with Installer Image
+The `pgo-deployer` image can be deployed using the `kubectl` or `oc` clients.
+The resources needed to run the installer are described in the
+[pgo-deployer]({{< relref "/installation/postgres-operator-installer/_index.md" >}})
+section of the documentation.
 
-The following job can be run to `install`, `update`, and `uninstall` the Crunchy
-PostgreSQL Operator in your Kubernetes or OpenShift cluster using the
-pgo-deployer image. Examples of these job can be found in
-`$PGOROOT/installers/method/ansible-playbook/roles/pgo-deployer/templates`. The
-job templates will need to updated with the following variables to run correctly.
+### Resources
 
-### Installer Namespace
+The `pgo-deployer` requires a serviceaccount and clusterrolebinding to run the
+job. Both of these resources are defined `postgres-operator.yml` file and will
+be created with the install job. These resources can be updated based on your
+specific needs but we provide sane defaults so that you can easily deploy.
 
-The job template allows you to specify the namespace in
-which to run the install job. This does not specify which namespace the
-postgres-operator will be installed but they can both be in the same namespace.
-The namespace should be defined in place of the `{{ pgo_installer_namespace }}`
-variable.
+The installer will run in the `pgo` namespace by default but this can be
+updated in the `postgres-operator.yml` file. Please ensure that the namespace
+exists before the job is run.
 
-### Cluster Resources
+#### ServiceAccount and ClusterRoleBinding
 
-#### Service Account
+The installer image needs a service account that can access the Kubernetes
+cluster where the PostgreSQL Operator will be installed. The job yaml defines a
+service account and clusterrolebinding that gives the service account the
+cluster-admin role. This is required for the installer to run correctly. If you
+have a preconfigured service account with the correct permissions, you can
+remove this section of the yaml and update the service account name in the job
+spec.
 
-The postgres-operator-installer
-requires a service account with cluster-admin privileges. You can create a
-service account manually and assign it to the job by updating the `{{
-pgo_installer_sa }}` variable.
+##### Image Pull Secrets
 
-#### Config Map
+If you are pulling the PostgreSQL Operator images from a private registry you
+will need to setup an
+[imagePullSecret](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/)
+with access to the registry. The image pull secret will need to be added to the
+installer service account to have access. The secret will need to be created in
+each namespace that the PostgreSQL Operator will be using.
 
-The ansible installer used by the `pgo-installer` image requires
-an inventory file to be created as a configmap in your environment. This
-configmap will be used to install the  PostgreSQL Operator and should meet all
-of the requirements outlined in the ansible install instructions.
-
-### Job Varibles
-
-#### Command
-
-The command defined in the installer job uses
-the `pgo-install.sh` script to pass in the ansible tag to be run. The command
-can use any of the tags supported by the ansible installer.
-
-#### Image Prefix and Tag
-
-The install job uses the `pgo-installer` image that is
-built using each version of the ansible installer. You will need to update the
-`{{ pgo_image_prefix }}` and `{{ pgo_image_tag }}` for the version of the
-installer that you are using. The `pgo-installer` tag must match the version of
-the Crunchy PostgreSQL Operator that you are installing.
-
-#### Image Pull Policy
-
-The image pull policy needs to be defined for your job.
-In most cases this should be updated to `IfNotPresent`.
-
-### Running the pgo Client Binary
-
-The `pgo-client` allows you to work with the PostgreSQL Operator using the
-convenient command-line utility, similar to how you would use `kubectl`. You can
-use the `pgo-client` from a container image, or install it to your local
-environment. as a binary. The following steps will show you how to set up and
-use both methods.
-
-#### pgo-client container
-
-The pgo-client image can be installed along side of the PostgreSQL Operator by
-enabling the `pgo_client_container_install` option in the inventory file.
-This image contains the pgo binary and is setup to have access to the
-apiserver and can be accessed by running the following:
+After you have configured your image pull secret in the installer namespace,
+add the name of the secret to the job yaml that you are using. You can update
+the existing section like this:
 
 ```
-kubectl exec -it -n <operator-namespace> pgo-client-<id> bash
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+    name: pgo-deployer-sa
+    namespace: pgo
+imagePullSecrets:
+  - name: <image_pull_secret_name>
 ```
 
-Once you `exec` into the container you can run `pgo` commands without having to
-do any more setup. More information about the pgo-client container can be found
-[here]({{< relref "installation/install-pgo-client/_index.md" >}}) in the docs.
-
-#### pgo Client Binary
-
-The pgo binary has required resources that are needed to connect to the
-apiserver. These resources are defined under the [Install the Postgres Operator
-(pgo) Client]({{< relref "installation/install-pgo-client/_index.md" >}}) section of the documentation. By
-following these steps you will be able to install the `pgo` client and setup the
-necessary resources.
-
-##### Configuring Client TLS
-
-The `client.pem` and `client.crt` files can be found in the `pgo.tls` secret in
-the `<operator-namespace>` namespace. You can use `kubectl` to access the secret
-and store it locally as instructed in the [client install]({{< relref "installation/install-pgo-client/_index.md" >}}) docs.
+If the service account is configured without using the job yaml file, you
+can link the secret to an existing service account with the `kubectl` or `oc`
+clients.
 
 ```
-kubectl get secret -n pgo pgo.tls -o jsonpath="{.data.tls\.crt}" | base64 --decode > client.crt
-kubectl get secret -n pgo pgo.tls -o jsonpath="{.data.tls\.key}" | base64 --decode > client.pem
+# kubectl
+kubectl patch serviceaccount <deployer-sa> -p '{"imagePullSecrets": [{"name": "myregistrykey"}]}' -n <install-namespace>
+
+# oc
+oc secrets link <registry-secret> <deployer-sa> --for=pull --namespace=<install-namespace>
 ```
 
-##### Configuring pgouser
+#### Job
 
-The pgouser file contains the username and password used for authentication with
-the Crunchy PostgreSQL Operator. You will need to create this file with the
-correct username and password in order for the `pgo` binary to access the
-PostgreSQL Operator. More information about this file can be found in the
-[Install pgo Client]({{< relref "installation/install-pgo-client/_index.md" >}})
-documentation. The username and password are specified in the inventory file
-when the operator is installed. The variables in the inventory file are
-`pgo_admin_username` and `pgo_admin_password`.
+Once the resources have been configured the job spec will be used to deploy the
+PostgreSQL Operator in your Kubernetes environment. The job spec includes sane
+defaults that can be used to deploy a specific version of the PostgreSQL Operator
+based on the version of the `pgo-deployer` image that is used. Each version will
+install the corresponding version of the PostgreSQL Operator.
+
+##### Deployment Options
+
+The installer image uses environment variables to specify deployment options for
+the PostgreSQL Operator. The environment variables that you can define are the
+same as the options in the inventory file for the ansible installer. These
+options can be found in the
+[Configuring the Inventory File]({{< relref "/installation/install-with-ansible/prerequisites.md" >}})
+section of the docs. The environment variables will be the same as the inventory
+options but in all capital letters. A full list of available environment
+variables can be found in the `$PGOROOT/installers/method/kubectl/full_options`
+file. The deployment options that are included in the default job spec are
+required.
+
+### Deploying
+
+The deploy job can be used to perform different deployment actions for the
+PostgreSQL Operator. If you run the job it will install the operator but you can
+change the deployment action by updating the `DEPLOY_ACTION` environment
+variable in the `postgres-operator.yml` file. This variable can be set to
+`install`, `update`, and `uninstall`. Each time a job is run you will need to
+cleanup the job using the command from the **Cleanup** section.
+
+### pgo Client Binary
+
+Running the pgo client locally when using the `pgo-deployer` image requires
+access to the certs stored in the `pgo.tls` Kubernetes secret. The `client.crt`
+and `client.key` need to be pulled from this secret and stored locally in a
+location that is accessable to the `pgo` client. You will also need to setup a
+`pgouser` file that contains the admin username and password that was set in your
+inventory file. This username and password will be pulled from the
+`pgouser-admin` secret. The the `client-setup.sh` script will setup these
+resources in the `~/.pgo/$PGO_OPERATOR_NAMESPACE` directory. Please set the
+following environment variables after the `pgo-deployer` job has completed:
+
+```
+cat <<EOF >> ~/.bashrc
+export PGOUSER="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/pgouser"
+export PGO_CA_CERT="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.crt"
+export PGO_CLIENT_CERT="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.crt"
+export PGO_CLIENT_KEY="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.key"
+EOF
+```
+
+This will allow the the `pgo` client to have access to your postgres-operator
+instance. Full install instructions for installing the pgo client can be found
+in the [Install `pgo` client]({{< relref "/installation/install-pgo-client" >}})
+section of the docs.
+
+### Cleanup
+
+The job resources can be cleaned up by running a delete on the `postgres-operator.yml`
+file. The resources can also be delete manually through the kubectl
+client.
+
+```
+kubectl delete -f postgres-operator.yml
+```

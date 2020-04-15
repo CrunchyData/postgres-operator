@@ -6,55 +6,9 @@ crunchy_debug='false'
 
 # ==================
 # Installation Methods
-# One of the three following blocks must be updated:
-# - Deploy with PostgreSQL Operator Installer (pgo-installer)
+# One of the following blocks must be updated:
 # - Deploy into Kubernetes
 # - Deploy into Openshift
-
-# Deploy with PostgreSQL Operator Installer (pgo-installer)
-# ==================
-# Note: Enable kubernetes_in_cluster if you are using the pgo_deployer image
-# to install the operator
-# ==================
-#kubernetes_in_cluster='false'
-
-# use_cluster_admin enables the installer to create resources with cluster-admin
-# permissions
-# Note: Cluster-admin is required
-# use_cluster_admin='true'
-
-# Defines the environment where the installer will run. Options are kubernetes
-# and openshift.
-# Default: kubernetes
-# pgo_installer_environment='kubernetes'
-
-# These options name the resources that are created when the pgo-installer
-# ansible roles are run. If you create the resources manually, provide your
-# resources names here.
-
-# Defines the namespace in which the install job will run.
-# pgo_installer_namespace='pgo-install'
-
-# Defines the name of the service account used by the pgo-installer.
-# Note: This service account is only created if use_cluster_admin is true
-# pgo_installer_sa='pgo-installer-sa'
-
-# Defines the name of the clusterrolebinding used by the pgo-installer
-# Note: This clusterrolebinding is only created if use_cluster_admin is true
-# pgo_installer_crb='pgo-installer-crb'
-
-# Defines the name of the configmap that stores the inventory file for the
-# PostgreSQL Operator install.
-# pgo_installer_configmap='pgo-installer-inventory'
-
-# If the following options are enabled the installer will create the resources
-# needed by the pgo-install job. If you create these resources manually, these
-# options can be disabled. If these resource are not enabled here they must be
-# created manually
-# create_pgo_installer_namespace='false'
-# create_pgo_installer_service_account='false'
-# create_pgo_installer_clusterrolebinding='false'
-# create_pgo_installer_configmap='false'
 
 # Deploy into Openshift
 # ==================
