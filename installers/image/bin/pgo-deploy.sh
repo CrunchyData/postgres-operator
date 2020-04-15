@@ -34,6 +34,7 @@ export SERVICE_TYPE=${SERVICE_TYPE:-ClusterIP}
 # Metrics Defaults
 export METRICS_NAMESPACE=${METRICS_NAMESPACE:-pgo}
 
+export KUBERNETES_IN_CLUSTER=${KUBERNETES_IN_CLUSTER:-true}
 export DEPLOY_ACTION=${DEPLOY_ACTION:-install}
 
 cat /inventory_template | envsubst > /tmp/inventory

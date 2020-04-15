@@ -69,8 +69,6 @@ spec:
                     value: "9187"
                   - name: HOME
                     value: "/tmp"
-                  - name: KUBERNETES_IN_CLUSTER
-                    value: "true"
                   - name: METRICS
                     value: "false"
                   - name: NAMESPACE

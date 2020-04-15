@@ -1,9 +1,0 @@
----
-pgo_installer_namespace: "pgo-install"
-pgo_installer_sa: "pgo-installer-sa"
-pgo_installer_crb: "pgo-installer-crb"
-pgo_installer_role: "cluster-admin"
-pgo_installer_environment: "kubernetes"
-pgo_installer_configmap: "pgo-installer-inventory"
-job_wait_timeout: 300s
-installer_img_pull_policy: "IfNotPresent"
