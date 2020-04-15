@@ -28,7 +28,7 @@ pgo-rmdata
 pgo-backrest
 pgo-load
 pgo-client
-pgo-installer
+pgo-deployer
 )
 
 for image in "${IMAGES[@]}"

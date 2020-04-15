@@ -1,18 +1,18 @@
-ARG BASEOS
-ARG BASEVER
 ARG PREFIX
-FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
+ARG BASEVER
+FROM ${PREFIX}/pgo-base:centos7-${BASEVER}
 
-LABEL name="pgo-installer" \
+LABEL name="pgo-deployer" \
     summary="Crunchy PostgreSQL Operator - Installer" \
     description="Crunchy PostgreSQL Operator - Installer"
 
-RUN yum install -y https://download.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
+COPY installers/image/conf/kubernetes.repo /etc/yum.repos.d/kubernetes.repo
+
+RUN yum -y install epel-release \
  && yum -y install \
     --setopt=skip_missing_names_on_install=False \
-    --enablerepo='rhel-7-server-ose-3.11-rpms' \
-    atomic-openshift-clients \
-    ansible \
+    kubectl \
+    ansible \ 
     which \
     gettext
 

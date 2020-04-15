@@ -1,5 +1,5 @@
 ---
-title: "Deploy with PostgreSQL Operator Installer (pgo-installer)"
+title: "Deploy with PostgreSQL Operator Installer (pgo-deployer)"
 date:
 draft: false
 weight: 100
@@ -7,10 +7,10 @@ weight: 100
 
 ## Install the Postgres Operator with Installer Image
 
-The following jobs can be run to install, update, and uninstall the Crunchy
+The following job can be run to `install`, `update`, and `uninstall` the Crunchy
 PostgreSQL Operator in your Kubernetes or OpenShift cluster using the
-pgo-installer image. Examples of these job can be found in
-`$PGOROOT/installers/method/ansible-playbook/roles/pgo-installer/templates`. The
+pgo-deployer image. Examples of these job can be found in
+`$PGOROOT/installers/method/ansible-playbook/roles/pgo-deployer/templates`. The
 job templates will need to updated with the following variables to run correctly.
 
 ### Installer Namespace

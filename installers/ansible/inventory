@@ -13,7 +13,7 @@ crunchy_debug='false'
 
 # Deploy with PostgreSQL Operator Installer (pgo-installer)
 # ==================
-# Note: Enable kubernetes_in_cluster if you are using the pgo-installer image
+# Note: Enable kubernetes_in_cluster if you are using the pgo_deployer image
 # to install the operator
 # ==================
 #kubernetes_in_cluster='false'

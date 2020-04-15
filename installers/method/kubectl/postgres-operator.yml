@@ -1,13 +1,13 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-    name: pgo-installer-sa
+    name: pgo-deployer-sa
     namespace: pgo
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-    name: pgo-installer-crb
+    name: pgo-deployer-crb
     namespace: pgo
 roleRef:
     apiGroup: rbac.authorization.k8s.io
@@ -16,7 +16,7 @@ roleRef:
 subjects:
 - apiGroup: rbac.authorization.k8s.io
   kind: User
-  name: system:serviceaccount:pgo:pgo-installer-sa
+  name: system:serviceaccount:pgo:pgo-deployer-sa
 ---
 apiVersion: batch/v1
 kind: Job
@@ -29,12 +29,12 @@ spec:
         metadata:
             name: pgo-deploy
         spec:
-            serviceAccountName: pgo-installer-sa
+            serviceAccountName: pgo-deployer-sa
             restartPolicy: Never
             containers:
             - name: pgo-deploy
               command: ["/pgo-deploy.sh"]
-              image: crunchydata/pgo-installer:centos7-4.3.0
+              image: crunchydata/pgo-deployer:centos7-4.3.0
               imagePullPolicy: IfNotPresent
               env:
                   - name: ANSIBLE_CONFIG

@@ -4,9 +4,9 @@ localhost ansible_connection=local ansible_python_interpreter="/usr/bin/env pyth
 
 crunchy_debug='$CRUNCHY_DEBUG'
 
-# Deploy with PostgreSQL Operator Installer (pgo-installer)
+# Deploy with PostgreSQL Operator Installer (pgo-deployer)
 # ==================
-# Note: Enable kubernetes_in_cluster if you are using the pgo-installer image
+# Note: Enable kubernetes_in_cluster if you are using the pgo-deployer image
 # to install the Operator
 # ==================
 kubernetes_in_cluster='$KUBERNETES_IN_CLUSTER'
