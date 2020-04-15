@@ -43,7 +43,7 @@ images = pgo-apiserver \
 	pgo-scheduler \
 	pgo-sqlrunner \
 	pgo-client \
-	pgo-installer \
+	pgo-deployer \
 	postgres-operator
 
 .PHONY: all installrbac setup setupnamespaces cleannamespaces bounce \

@@ -5,14 +5,14 @@ draft: false
 weight: 20
 ---
 
-The `pgo-installer` image can be deployed using the `kubectl` or `oc` clients.
+The `pgo-deployer` image can be deployed using the `kubectl` or `oc` clients.
 The resources needed to run the installer are described in the
-[pgo-installer]({{< relref "/installation/postgres-operator-installer/_index.md" >}})
+[pgo-deployer]({{< relref "/installation/postgres-operator-installer/_index.md" >}})
 section of the documentation.
 
 ### Resources
 
-The `pgo-installer` requires a serviceaccount and clusterrolebinding to run the
+The `pgo-deployer` requires a serviceaccount and clusterrolebinding to run the
 job. Both of these resources are defined `deploy.yml` file and will be created
 with the install job. These resources can be updated based on your specific
 needs but we provide sane defaults so that you can easily deploy.
@@ -47,7 +47,7 @@ the existing section like this:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-    name: pgo-installer-sa
+    name: pgo-deployer-sa
     namespace: pgo
 imagePullSecrets:
   - name: <image_pull_secret_name>
@@ -70,7 +70,7 @@ oc secrets link <registry-secret> <installer-sa> --for=pull --namespace=<install
 Once the resources have been configured the job spec will be used to deploy the
 PostgreSQL Operator in your Kubernetes environment. The job spec includes sane
 defaults that can be used to deploy a specific version of the PostgreSQL Operator
-based on the version of the pgo-installer image that is used. Each version will
+based on the version of the `pgo-deployer` image that is used. Each version will
 install the corresponding version of the PostgreSQL Operator.
 
 ##### Deployment Options
@@ -97,7 +97,7 @@ job is run you will need to cleanup the job using the command below.
 
 ### pgo Client Binary
 
-Running the pgo client locally when using the pgo-installer image requires
+Running the pgo client locally when using the `pgo-deployer` image requires
 access to the certs stored in the `pgo.tls` Kubernetes secret. The `client.crt`
 and `client.key` need to be pulled from this secret and stored locally in a
 location that is accessable to the `pgo` client. You will also need to setup a
@@ -105,7 +105,7 @@ location that is accessable to the `pgo` client. You will also need to setup a
 inventory file. This username and password will be pulled from the
 `pgouser-admin` secret. The the `client-setup.sh` script will setup these
 resources in the `~/.pgo/$PGO_OPERATOR_NAMESPACE` directory. Please set the
-following environment variables after the pgo-installer job has completed:
+following environment variables after the `pgo-deployer` job has completed:
 
 ```
 cat <<EOF >> ~/.bashrc
