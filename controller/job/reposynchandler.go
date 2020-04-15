@@ -69,6 +69,7 @@ func (c *Controller) handleRepoSyncUpdate(job *apiv1.Job) error {
 	// now, set up a new pgtask that will allow us to perform the restore
 	cloneTask := util.CloneTask{
 		BackrestPVCSize:   job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_BACKREST_PVC_SIZE],
+		EnableMetrics:     job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_ENABLE_METRICS] == "true",
 		PGOUser:           job.ObjectMeta.Labels[config.LABEL_PGOUSER],
 		PVCSize:           job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_PVC_SIZE],
 		SourceClusterName: sourceClusterName,
