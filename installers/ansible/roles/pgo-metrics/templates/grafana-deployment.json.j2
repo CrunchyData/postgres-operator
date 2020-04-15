@@ -22,8 +22,9 @@
             "spec": {
                 "securityContext": {
 {% if grafana_supplemental_groups is defined and grafana_supplemental_groups != '' %}
-                    "supplementalGroups": [{{ grafana_supplemental_groups }}]
+                    "supplementalGroups": [{{ grafana_supplemental_groups }}],
 {% endif %}
+                    "fsGroup": 26
                 },
                 "serviceAccountName": "grafana",
                 "containers": [

@@ -92,8 +92,8 @@ The deploy job can be used to perform different deployment actions for the
 PostgreSQL Operator. If you run the job it will install the operator but you can
 change the deployment action by updating the `DEPLOY_ACTION` environment
 variable in the `deploy.yml` file. This variable can be set to `install`,
-`update`, and `uninstall`. Each time a job is run you will need to cleanup the
-job using the command below.
+`update`, `uninstall`, `install-metrics`, and `uninstall-metrics`. Each time a
+job is run you will need to cleanup the job using the command below.
 
 ### pgo Client Binary
 

@@ -22,8 +22,9 @@
             "spec": {
                 "securityContext": {
 {% if prometheus_supplemental_groups is defined and prometheus_supplemental_groups != '' %}
-                    "supplementalGroups": [{{ prometheus_supplemental_groups }}]
+                    "supplementalGroups": [{{ prometheus_supplemental_groups }}],
 {% endif %}
+                    "fsGroup": 26
                 },
                 "serviceAccountName": "prometheus-sa",
                 "containers": [
