@@ -17,5 +17,8 @@ package kubeapi
 
 import "k8s.io/apimachinery/pkg/api/errors"
 
+// IsAlreadyExists returns true if the err indicates that a resource already exists.
+func IsAlreadyExists(err error) bool { return errors.IsAlreadyExists(err) }
+
 // IsNotFound returns true if err indicates that a resource was not found.
 func IsNotFound(err error) bool { return errors.IsNotFound(err) }

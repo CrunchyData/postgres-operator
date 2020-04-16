@@ -31,7 +31,6 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/backrest"
-	"github.com/crunchydata/postgres-operator/operator/pvc"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/apps/v1"
@@ -64,7 +63,8 @@ func addClusterCreateMissingService(clientset *kubernetes.Clientset, cl *crv1.Pg
 // addClusterCreateDeployments creates deployments for pgBackRest and PostgreSQL.
 func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.RESTClient,
 	cl *crv1.Pgcluster, namespace string,
-	primaryPVCName string,
+	dataVolume operator.StorageResult,
+	tablespaceVolumes map[string]operator.StorageResult,
 ) error {
 	var primaryDoc bytes.Buffer
 	var err error
@@ -100,6 +100,13 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 	// set up a map of the names of the tablespaces as well as the storage classes
 	tablespaceStorageTypeMap := operator.GetTablespaceStorageTypeMap(cl.Spec.TablespaceMounts)
 
+	// combine supplemental groups from all volumes
+	var supplementalGroups []int64
+	supplementalGroups = append(supplementalGroups, dataVolume.SupplementalGroups...)
+	for _, v := range tablespaceVolumes {
+		supplementalGroups = append(supplementalGroups, v.SupplementalGroups...)
+	}
+
 	//create the primary deployment
 	deploymentFields := operator.DeploymentTemplateFields{
 		Name:               cl.Spec.Name,
@@ -111,13 +118,13 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 		CCPImagePrefix:     util.GetValueOrDefault(cl.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
 		CCPImage:           cl.Spec.CCPImage,
 		CCPImageTag:        cl.Spec.CCPImageTag,
-		PVCName:            util.CreatePVCSnippet(cl.Spec.PrimaryStorage.StorageType, primaryPVCName),
+		PVCName:            dataVolume.InlineVolumeSource(),
 		DeploymentLabels:   operator.GetLabelsFromMap(cl.Spec.UserLabels),
 		PodLabels:          operator.GetLabelsFromMap(cl.Spec.UserLabels),
 		DataPathOverride:   cl.Spec.Name,
 		Database:           cl.Spec.Database,
 		ArchiveMode:        archiveMode,
-		SecurityContext:    util.GetPodSecurityContext(cl.Spec.PrimaryStorage.GetSupplementalGroups()),
+		SecurityContext:    util.GetPodSecurityContext(supplementalGroups),
 		RootSecretName:     cl.Spec.RootSecretName,
 		PrimarySecretName:  cl.Spec.PrimarySecretName,
 		UserSecretName:     cl.Spec.UserSecretName,
@@ -248,7 +255,8 @@ func scaleReplicaCreateMissingService(clientset *kubernetes.Clientset, replica *
 // scaleReplicaCreateDeployment creates a deployment for the cluster replica.
 func scaleReplicaCreateDeployment(clientset *kubernetes.Clientset, client *rest.RESTClient,
 	replica *crv1.Pgreplica, cluster *crv1.Pgcluster, namespace string,
-	pvcName string,
+	dataVolume operator.StorageResult,
+	tablespaceVolumes map[string]operator.StorageResult,
 ) error {
 	var err error
 	log.Debugf("Scale called for %s in %s", replica.Name, namespace)
@@ -282,24 +290,15 @@ func scaleReplicaCreateDeployment(clientset *kubernetes.Clientset, client *rest.
 
 	cluster.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = replica.Spec.Name
 
-	// iterate through all of the tablespaces and attempt to create their PVCs
-	// for the replcia
-	for tablespaceName, storageSpec := range cluster.Spec.TablespaceMounts {
-		// attempt to create the tablespace PVC. If it fails to create, log the
-		// error and publish the failure event
-		// Note that we specify **replica.Spec.Name** in order to create distinct
-		// PVCs for this replica, but we use the **cluster.Spec.ClusterName** for the
-		// "pgcluster" Label
-		tablespacePVCName := operator.GetTablespacePVCName(replica.Spec.Name, tablespaceName)
-
-		if err := CreateTablespacePVC(clientset, namespace, cluster.Spec.ClusterName, tablespacePVCName, &storageSpec); err != nil {
-			log.Error(err)
-			return err
-		}
-	}
-
 	// set up a map of the names of the tablespaces as well as the storage classes
 	tablespaceStorageTypeMap := operator.GetTablespaceStorageTypeMap(cluster.Spec.TablespaceMounts)
+
+	// combine supplemental groups from all volumes
+	var supplementalGroups []int64
+	supplementalGroups = append(supplementalGroups, dataVolume.SupplementalGroups...)
+	for _, v := range tablespaceVolumes {
+		supplementalGroups = append(supplementalGroups, v.SupplementalGroups...)
+	}
 
 	//create the replica deployment
 	replicaDeploymentFields := operator.DeploymentTemplateFields{
@@ -309,7 +308,7 @@ func scaleReplicaCreateDeployment(clientset *kubernetes.Clientset, client *rest.
 		CCPImagePrefix:     util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
 		CCPImageTag:        imageTag,
 		CCPImage:           image,
-		PVCName:            util.CreatePVCSnippet(cluster.Spec.ReplicaStorage.StorageType, pvcName),
+		PVCName:            dataVolume.InlineVolumeSource(),
 		PrimaryHost:        cluster.Spec.PrimaryHost,
 		Database:           cluster.Spec.Database,
 		DataPathOverride:   replica.Spec.Name,
@@ -318,7 +317,7 @@ func scaleReplicaCreateDeployment(clientset *kubernetes.Clientset, client *rest.
 		ConfVolume:         operator.GetConfVolume(clientset, cluster, namespace),
 		DeploymentLabels:   operator.GetLabelsFromMap(cluster.Spec.UserLabels),
 		PodLabels:          operator.GetLabelsFromMap(cluster.Spec.UserLabels),
-		SecurityContext:    util.GetPodSecurityContext(replica.Spec.ReplicaStorage.GetSupplementalGroups()),
+		SecurityContext:    util.GetPodSecurityContext(supplementalGroups),
 		RootSecretName:     cluster.Spec.RootSecretName,
 		PrimarySecretName:  cluster.Spec.PrimarySecretName,
 		UserSecretName:     cluster.Spec.UserSecretName,
@@ -379,29 +378,6 @@ func scaleReplicaCreateDeployment(clientset *kubernetes.Clientset, client *rest.
 	replicaDeployment.Spec.Template.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_PGHA_SCOPE]
 
 	return kubeapi.CreateDeployment(clientset, &replicaDeployment, namespace)
-}
-
-// CreateTablespacePVC creates a PVC for a tablespace, whether its a part of a
-// cluster creation, scale, or other workflows
-func CreateTablespacePVC(clientset *kubernetes.Clientset, namespace, clusterName, tablespacePVCName string, storageSpec *crv1.PgStorageSpec) error {
-	existing, err := kubeapi.GetPVCIfExists(clientset, tablespacePVCName, namespace)
-	if err != nil {
-		return err
-	}
-	if existing != nil {
-		log.Debugf("tablespace pvc %s found, will NOT recreate", tablespacePVCName)
-		return nil
-	}
-
-	// try to create the PVC for the tablespace. if it cannot be created, return
-	// an error and allow the caller to handle it
-	if _, err = pvc.CreatePVC(clientset, storageSpec, tablespacePVCName, clusterName, namespace); err != nil {
-		return err
-	}
-
-	log.Debugf("created tablespace pvc [%s]", tablespacePVCName)
-
-	return nil
 }
 
 // DeleteReplica ...

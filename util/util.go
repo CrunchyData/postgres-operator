@@ -16,7 +16,6 @@ package util
 */
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -114,25 +113,6 @@ func Patch(restclient *rest.RESTClient, path string, value string, resource stri
 
 	return err6
 
-}
-
-// CreatePVCSnippet generates the PVC json snippet
-func CreatePVCSnippet(storageType string, PVCName string) string {
-
-	var sc bytes.Buffer
-
-	if storageType != "emptydir" {
-		sc.WriteString("\"persistentVolumeClaim\": {\n")
-		sc.WriteString("\t \"claimName\": \"" + PVCName + "\"")
-		sc.WriteString("\n")
-	} else {
-		sc.WriteString("\"emptyDir\": {")
-		sc.WriteString("\n")
-	}
-
-	sc.WriteString("}")
-
-	return sc.String()
 }
 
 // GetLabels ...

@@ -71,40 +71,12 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		return
 	}
 
-	var pvcName string
-
-	existing, err := kubeapi.GetPVCIfExists(clientset, cl.Spec.Name, namespace)
+	dataVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
+		clientset, cl, namespace, cl.Spec.Name, cl.Spec.PrimaryStorage)
 	if err != nil {
 		log.Error(err)
 		publishClusterCreateFailure(cl, err.Error())
 		return
-	}
-	if existing != nil {
-		log.Debugf("pvc [%s] already present from previous cluster with this same name, will not recreate", cl.Spec.Name)
-		pvcName = cl.Spec.Name
-	} else {
-		pvcName, err = pvc.CreatePVC(clientset, &cl.Spec.PrimaryStorage, cl.Spec.Name, cl.Spec.Name, namespace)
-		if err != nil {
-			log.Error(err)
-			publishClusterCreateFailure(cl, err.Error())
-			return
-		}
-		log.Debugf("created primary pvc [%s]", pvcName)
-	}
-
-	// iterate through all of the tablespaces and attempt to create their PVCs
-	// for this cluster
-	for tablespaceName, storageSpec := range cl.Spec.TablespaceMounts {
-		// first, generate the tablespace PVC name from the cluster deployment name
-		// and the name of the tablespace
-		tablespacePVCName := operator.GetTablespacePVCName(cl.Spec.Name, tablespaceName)
-		// attempt to create the tablespace PVC. If it fails to create, log the
-		// error and publish the failure event
-		if err := CreateTablespacePVC(clientset, namespace, cl.Spec.Name, tablespacePVCName, &storageSpec); err != nil {
-			log.Error(err)
-			publishClusterCreateFailure(cl, err.Error())
-			return
-		}
 	}
 
 	if err = addClusterCreateMissingService(clientset, cl, namespace); err != nil {
@@ -113,7 +85,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		return
 	}
 
-	if err = addClusterCreateDeployments(clientset, client, cl, namespace, pvcName); err != nil {
+	if err = addClusterCreateDeployments(clientset, client, cl, namespace, dataVolume, tablespaceVolumes); err != nil {
 		publishClusterCreateFailure(cl, err.Error())
 		return
 	}
@@ -122,7 +94,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 	if err != nil {
 		log.Error("error in status patch " + err.Error())
 	}
-	err = util.Patch(client, "/spec/PrimaryStorage/name", pvcName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
+	err = util.Patch(client, "/spec/PrimaryStorage/name", dataVolume.PersistentVolumeClaimName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error in pvcname patch " + err.Error())
 	}
@@ -262,31 +234,16 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		return
 	}
 
-	var pvcName string
-	// create the PVC if necessary.  When a replica is being created during a restore, the PVC will already exist.
-	// Otherwise a new PVC will be created.
-	existing, err := kubeapi.GetPVCIfExists(clientset, replica.Spec.Name, namespace)
+	dataVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
+		clientset, &cluster, namespace, replica.Spec.Name, replica.Spec.ReplicaStorage)
 	if err != nil {
 		log.Error(err)
 		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], &cluster)
 		return
 	}
-	if existing != nil {
-		log.Debugf("pvc [%s] already present for replica from previous cluster with this same name, will not recreate",
-			replica.Spec.Name)
-		pvcName = replica.Spec.Name
-	} else {
-		pvcName, err = pvc.CreatePVC(clientset, &replica.Spec.ReplicaStorage, replica.Spec.Name, cluster.Spec.Name, namespace)
-		if err != nil {
-			log.Error(err)
-			publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], &cluster)
-			return
-		}
-		log.Debugf("created replica pvc [%s]", pvcName)
-	}
 
 	//update the replica CRD pvcname
-	err = util.Patch(client, "/spec/replicastorage/name", pvcName, crv1.PgreplicaResourcePlural, replica.Spec.Name, namespace)
+	err = util.Patch(client, "/spec/replicastorage/name", dataVolume.PersistentVolumeClaimName, crv1.PgreplicaResourcePlural, replica.Spec.Name, namespace)
 	if err != nil {
 		log.Error("error in pvcname patch " + err.Error())
 	}
@@ -299,7 +256,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	}
 
 	//instantiate the replica
-	if err = scaleReplicaCreateDeployment(clientset, client, replica, &cluster, namespace, pvcName); err != nil {
+	if err = scaleReplicaCreateDeployment(clientset, client, replica, &cluster, namespace, dataVolume, tablespaceVolumes); err != nil {
 		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], &cluster)
 		return
 	}
@@ -454,11 +411,15 @@ func UpdateTablespaces(clientset *kubernetes.Clientset, restConfig *rest.Config,
 		return err
 	}
 
+	tablespaceVolumes := make([]map[string]operator.StorageResult, len(deployments.Items))
+
 	// now we can start creating the new tablespaces! First, create the new
 	// PVCs. The PVCs are created for each **instance** in the cluster, as every
 	// instance needs to have a distinct PVC for each tablespace
-	for tablespaceName, storageSpec := range newTablespaces {
-		for _, deployment := range deployments.Items {
+	for i, deployment := range deployments.Items {
+		tablespaceVolumes[i] = make(map[string]operator.StorageResult)
+
+		for tablespaceName, storageSpec := range newTablespaces {
 			// get the name of the tablespace PVC for that instance
 			tablespacePVCName := operator.GetTablespacePVCName(deployment.Name, tablespaceName)
 
@@ -467,15 +428,16 @@ func UpdateTablespaces(clientset *kubernetes.Clientset, restConfig *rest.Config,
 			// and now create it! If it errors, we just need to return, which
 			// potentially leaves things in an inconsistent state, but at this point
 			// only PVC objects have been created
-			if err := CreateTablespacePVC(clientset, cluster.Namespace, cluster.Name,
-				tablespacePVCName, &storageSpec); err != nil {
+			tablespaceVolumes[i][tablespaceName], err = pvc.CreateIfNotExists(clientset,
+				storageSpec, tablespacePVCName, cluster.Name, cluster.Namespace)
+			if err != nil {
 				return err
 			}
 		}
 	}
 
 	// now the fun step: update each deployment with the new volumes
-	for _, deployment := range deployments.Items {
+	for i, deployment := range deployments.Items {
 		log.Debugf("attach tablespace volumes to [%s]", deployment.Name)
 
 		// iterate through each table space and prepare the Volume and
@@ -483,12 +445,8 @@ func UpdateTablespaces(clientset *kubernetes.Clientset, restConfig *rest.Config,
 		for tablespaceName := range newTablespaces {
 			// this is the volume to be added for the tablespace
 			volume := v1.Volume{
-				Name: operator.GetTablespaceVolumeName(tablespaceName),
-				VolumeSource: v1.VolumeSource{
-					PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-						ClaimName: operator.GetTablespacePVCName(deployment.Name, tablespaceName),
-					},
-				},
+				Name:         operator.GetTablespaceVolumeName(tablespaceName),
+				VolumeSource: tablespaceVolumes[i][tablespaceName].VolumeSource(),
 			}
 
 			// add the volume to the list of volumes
@@ -504,6 +462,12 @@ func UpdateTablespaces(clientset *kubernetes.Clientset, restConfig *rest.Config,
 			// first container in the list
 			deployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(
 				deployment.Spec.Template.Spec.Containers[0].VolumeMounts, volumeMount)
+
+			// add any supplemental groups specified in storage configuration.
+			// SecurityContext is always initialized because we use fsGroup.
+			deployment.Spec.Template.Spec.SecurityContext.SupplementalGroups = append(
+				deployment.Spec.Template.Spec.SecurityContext.SupplementalGroups,
+				tablespaceVolumes[i][tablespaceName].SupplementalGroups...)
 		}
 
 		// find the "PGHA_TABLESPACES" value and update it with the new tablespace
