@@ -39,14 +39,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// AddCluster ...
-func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string, primaryPVCName string) error {
-	var primaryDoc bytes.Buffer
-	var err error
-
-	log.Info("creating Pgcluster object  in namespace " + namespace)
-	log.Info("created with Name=" + cl.Spec.Name + " in namespace " + namespace)
-
+// addClusterCreateMissingService creates a service for the cluster primary if
+// it does not yet exist.
+func addClusterCreateMissingService(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string) error {
 	st := operator.Pgo.Cluster.ServiceType
 	if cl.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
 		st = cl.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
@@ -63,12 +58,19 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 		ServiceType:  st,
 	}
 
-	err = CreateService(clientset, &serviceFields, namespace)
-	if err != nil {
-		log.Error("error in creating primary service " + err.Error())
-		publishClusterCreateFailure(cl, err.Error())
-		return err
-	}
+	return CreateService(clientset, &serviceFields, namespace)
+}
+
+// addClusterCreateDeployments creates deployments for pgBackRest and PostgreSQL.
+func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.RESTClient,
+	cl *crv1.Pgcluster, namespace string,
+	primaryPVCName string,
+) error {
+	var primaryDoc bytes.Buffer
+	var err error
+
+	log.Info("creating Pgcluster object  in namespace " + namespace)
+	log.Info("created with Name=" + cl.Spec.Name + " in namespace " + namespace)
 
 	cl.Spec.UserLabels["name"] = cl.Spec.Name
 	cl.Spec.UserLabels[config.LABEL_PG_CLUSTER] = cl.Spec.ClusterName
@@ -77,14 +79,12 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	if cl.Spec.UserLabels[config.LABEL_ARCHIVE] == "true" {
 		archiveMode = "on"
 	}
-
 	if cl.Labels[config.LABEL_BACKREST] == "true" {
 		//backrest requires us to turn on archive mode
 		archiveMode = "on"
 		err = backrest.CreateRepoDeployment(clientset, namespace, cl, true)
 		if err != nil {
 			log.Error("could not create backrest repo deployment")
-			publishClusterCreateFailure(cl, err.Error())
 			return err
 		}
 	}
@@ -152,7 +152,6 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	// logic following a restart of the container.
 	if err = operator.CreatePGHAConfigMap(clientset, cl, namespace); err != nil {
 		log.Error(err.Error())
-		publishClusterCreateFailure(cl, err.Error())
 		return err
 	}
 
@@ -160,7 +159,6 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	err = config.DeploymentTemplate.Execute(&primaryDoc, deploymentFields)
 	if err != nil {
 		log.Error(err.Error())
-		publishClusterCreateFailure(cl, err.Error())
 		return err
 	}
 
@@ -173,7 +171,6 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
 	if err != nil {
 		log.Error("error unmarshalling primary json into Deployment " + err.Error())
-		publishClusterCreateFailure(cl, err.Error())
 		return err
 	}
 
@@ -183,7 +180,6 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	if _, found, _ := kubeapi.GetDeployment(clientset, cl.Spec.Name, namespace); !found {
 		err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
 		if err != nil {
-			publishClusterCreateFailure(cl, err.Error())
 			return err
 		}
 	} else {
@@ -195,12 +191,10 @@ func AddCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *cr
 	err = util.PatchClusterCRD(client, cl.Spec.UserLabels, cl, namespace)
 	if err != nil {
 		log.Error("could not patch primary crv1 with labels")
-		publishClusterCreateFailure(cl, err.Error())
 		return err
 	}
 
 	return err
-
 }
 
 // DeleteCluster ...
@@ -227,12 +221,37 @@ func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 
 }
 
-// Scale ...
-func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *crv1.Pgreplica, namespace, pvcName string, cluster *crv1.Pgcluster) error {
+// scaleReplicaCreateMissingService creates a service for cluster replicas if
+// it does not yet exist.
+func scaleReplicaCreateMissingService(clientset *kubernetes.Clientset, replica *crv1.Pgreplica, cluster *crv1.Pgcluster, namespace string) error {
+	st := operator.Pgo.Cluster.ServiceType
+	if replica.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
+		st = replica.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
+	} else if cluster.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
+		st = cluster.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
+	}
+
+	serviceName := fmt.Sprintf("%s-replica", replica.Spec.ClusterName)
+	serviceFields := ServiceTemplateFields{
+		Name:         serviceName,
+		ServiceName:  serviceName,
+		ClusterName:  replica.Spec.ClusterName,
+		Port:         cluster.Spec.Port,
+		PGBadgerPort: cluster.Spec.PGBadgerPort,
+		ExporterPort: cluster.Spec.ExporterPort,
+		ServiceType:  st,
+	}
+
+	return CreateService(clientset, &serviceFields, namespace)
+}
+
+// scaleReplicaCreateDeployment creates a deployment for the cluster replica.
+func scaleReplicaCreateDeployment(clientset *kubernetes.Clientset, client *rest.RESTClient,
+	replica *crv1.Pgreplica, cluster *crv1.Pgcluster, namespace string,
+	pvcName string,
+) error {
 	var err error
-	log.Debug("Scale called for " + replica.Name)
-	log.Debug("Scale called pvcName " + pvcName)
-	log.Debug("Scale called namespace " + namespace)
+	log.Debugf("Scale called for %s in %s", replica.Name, namespace)
 
 	var replicaDoc bytes.Buffer
 
@@ -275,7 +294,6 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 
 		if err := CreateTablespacePVC(clientset, namespace, cluster.Spec.ClusterName, tablespacePVCName, &storageSpec); err != nil {
 			log.Error(err)
-			publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
 			return err
 		}
 	}
@@ -338,7 +356,6 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 
 	if err != nil {
 		log.Error(err.Error())
-		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
 		return err
 	}
 
@@ -350,7 +367,6 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
 	if err != nil {
 		log.Error("error unmarshalling replica json into Deployment " + err.Error())
-		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
 		return err
 	}
 
@@ -362,30 +378,7 @@ func Scale(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *cr
 	replicaDeployment.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_PGHA_SCOPE]
 	replicaDeployment.Spec.Template.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_PGHA_SCOPE]
 
-	err = kubeapi.CreateDeployment(clientset, &replicaDeployment, namespace)
-
-	//publish event for replica creation
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventScaleClusterFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  replica.ObjectMeta.Labels[config.LABEL_PGOUSER],
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventScaleCluster,
-		},
-		Clustername: cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
-		Replicaname: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
-	}
-
-	err = events.Publish(f)
-	if err != nil {
-		log.Error(err.Error())
-	}
-
-	return err
+	return kubeapi.CreateDeployment(clientset, &replicaDeployment, namespace)
 }
 
 // CreateTablespacePVC creates a PVC for a tablespace, whether its a part of a

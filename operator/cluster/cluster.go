@@ -107,9 +107,16 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 		}
 	}
 
-	//replaced with ccpimagetag instead of pg version
+	if err = addClusterCreateMissingService(clientset, cl, namespace); err != nil {
+		log.Error("error in creating primary service " + err.Error())
+		publishClusterCreateFailure(cl, err.Error())
+		return
+	}
 
-	AddCluster(clientset, client, cl, namespace, pvcName)
+	if err = addClusterCreateDeployments(clientset, client, cl, namespace, pvcName); err != nil {
+		publishClusterCreateFailure(cl, err.Error())
+		return
+	}
 
 	err = util.Patch(client, "/spec/status", crv1.CompletedStatus, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
@@ -261,6 +268,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	existing, err := kubeapi.GetPVCIfExists(clientset, replica.Spec.Name, namespace)
 	if err != nil {
 		log.Error(err)
+		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], &cluster)
 		return
 	}
 	if existing != nil {
@@ -271,6 +279,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		pvcName, err = pvc.CreatePVC(clientset, &replica.Spec.ReplicaStorage, replica.Spec.Name, cluster.Spec.Name, namespace)
 		if err != nil {
 			log.Error(err)
+			publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], &cluster)
 			return
 		}
 		log.Debugf("created replica pvc [%s]", pvcName)
@@ -283,34 +292,17 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 	}
 
 	//create the replica service if it doesnt exist
-
-	st := operator.Pgo.Cluster.ServiceType
-
-	if replica.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
-		st = replica.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
-	} else if cluster.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
-		st = cluster.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
-	}
-
-	serviceName := replica.Spec.ClusterName + "-replica"
-	serviceFields := ServiceTemplateFields{
-		Name:         serviceName,
-		ServiceName:  serviceName,
-		ClusterName:  replica.Spec.ClusterName,
-		Port:         cluster.Spec.Port,
-		PGBadgerPort: cluster.Spec.PGBadgerPort,
-		ExporterPort: cluster.Spec.ExporterPort,
-		ServiceType:  st,
-	}
-
-	err = CreateService(clientset, &serviceFields, namespace)
-	if err != nil {
+	if err = scaleReplicaCreateMissingService(clientset, replica, &cluster, namespace); err != nil {
 		log.Error(err)
+		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], &cluster)
 		return
 	}
 
 	//instantiate the replica
-	Scale(clientset, client, replica, namespace, pvcName, &cluster)
+	if err = scaleReplicaCreateDeployment(clientset, client, replica, &cluster, namespace, pvcName); err != nil {
+		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], &cluster)
+		return
+	}
 
 	//update the replica CRD status
 	err = util.Patch(client, "/spec/status", crv1.CompletedStatus, crv1.PgreplicaResourcePlural, replica.Spec.Name, namespace)
@@ -318,6 +310,25 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 		log.Error("error in status patch " + err.Error())
 	}
 
+	//publish event for replica creation
+	topics := make([]string, 1)
+	topics[0] = events.EventTopicCluster
+
+	f := events.EventScaleClusterFormat{
+		EventHeader: events.EventHeader{
+			Namespace: namespace,
+			Username:  replica.ObjectMeta.Labels[config.LABEL_PGOUSER],
+			Topic:     topics,
+			Timestamp: time.Now(),
+			EventType: events.EventScaleCluster,
+		},
+		Clustername: cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
+		Replicaname: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
+	}
+
+	if err = events.Publish(f); err != nil {
+		log.Error(err.Error())
+	}
 }
 
 // ScaleDownBase ...
