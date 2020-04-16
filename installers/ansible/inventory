@@ -338,7 +338,7 @@ storage9_class='rook-ceph-block'
 # to work with the Crunchy PostgreSQL Operator
 
 # Note: Ansible will create namespaces that don't exist
-metrics_namespace='metrics'
+metrics_namespace='pgo'
 exporterport='9187'
 
 grafana_install='false'

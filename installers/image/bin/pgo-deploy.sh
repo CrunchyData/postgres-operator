@@ -31,6 +31,9 @@ export PGO_DISABLE_TLS=${PGO_DISABLE_TLS:-false}
 export PGO_TLS_NO_VERIFY=${PGO_TLS_NO_VERIFY:-false}
 export SERVICE_TYPE=${SERVICE_TYPE:-ClusterIP}
 
+# Metrics Defaults
+export METRICS_NAMESPACE=${METRICS_NAMESPACE:-pgo}
+
 export DEPLOY_ACTION=${DEPLOY_ACTION:-install}
 
 cat /inventory_template | envsubst > /tmp/inventory
