@@ -81,19 +81,16 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		return
 	}
 
-	//use the storage config from pgo.yaml for Primary
-	//use the storage config from the pgcluster for the restored pvc
-	//storage := operator.Pgo.Storage[operator.Pgo.PrimaryStorage]
-	storage := cluster.Spec.PrimaryStorage
-
 	//create the "to-cluster" PVC to hold the new dataPVC]
-	pvcName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_TO_PVC]
-	if err := createPVC(clientset, restclient, namespace, clusterName, pvcName, storage); err != nil {
+	restoreToName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_TO_PVC]
+	dataVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
+		clientset, &cluster, namespace, restoreToName, cluster.Spec.PrimaryStorage)
+	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	log.Debugf("restore workflow: created pvc %s for cluster %s", pvcName, clusterName)
+	log.Debugf("restore workflow: created pvc %s for cluster %s", restoreToName, clusterName)
 	//delete current primary and all replica deployments
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PG_DATABASE + "=true"
 	var depList *appsv1.DeploymentList
@@ -143,22 +140,13 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	}
 
 	// set up a map of the names of the tablespaces as well as the storage classes
-	// to use for them
-	//
-	// also use it as an opportunity to create the new PVCs for each tablespace
-	// if there is an error at any step in the process, return
-	tablespaceMountsMap := map[string]string{}
-	for tablespaceName, storageSpec := range cluster.Spec.TablespaceMounts {
-		tablespaceMountsMap[tablespaceName] = storageSpec.StorageType
+	tablespaceStorageTypeMap := operator.GetTablespaceStorageTypeMap(cluster.Spec.TablespaceMounts)
 
-		// get the tablespace PVC name!
-		tablespacePVCName := operator.GetTablespacePVCName(pvcName, tablespaceName)
-
-		// attempt to create the PVC
-		if err := createPVC(clientset, restclient, namespace, clusterName, tablespacePVCName, storageSpec); err != nil {
-			log.Error(err)
-			return
-		}
+	// combine supplemental groups from all volumes
+	var supplementalGroups []int64
+	supplementalGroups = append(supplementalGroups, dataVolume.SupplementalGroups...)
+	for _, v := range tablespaceVolumes {
+		supplementalGroups = append(supplementalGroups, v.SupplementalGroups...)
 	}
 
 	//sleep for a bit to give the bounce time to take effect and let
@@ -171,8 +159,8 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	jobFields := BackrestRestoreJobTemplateFields{
 		JobName:                "restore-" + task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-" + util.RandStringBytesRmndr(4),
 		ClusterName:            task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
-		SecurityContext:        util.GetPodSecurityContext(storage.GetSupplementalGroups()),
-		ToClusterPVCName:       pvcName,
+		SecurityContext:        util.GetPodSecurityContext(supplementalGroups),
+		ToClusterPVCName:       restoreToName,
 		WorkflowID:             workflowID,
 		CommandOpts:            task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_OPTS],
 		PITRTarget:             task.Spec.Parameters[config.LABEL_BACKREST_PITR_TARGET],
@@ -185,8 +173,8 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		NodeSelector:           operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),
 		PgbackrestRepoType:     operator.GetRepoType(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars:    operator.GetPgbackrestS3EnvVars(cluster, clientset, namespace),
-		TablespaceVolumes:      operator.GetTablespaceVolumesJSON(pvcName, tablespaceMountsMap),
-		TablespaceVolumeMounts: operator.GetTablespaceVolumeMountsJSON(tablespaceMountsMap),
+		TablespaceVolumes:      operator.GetTablespaceVolumesJSON(restoreToName, tablespaceStorageTypeMap),
+		TablespaceVolumeMounts: operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
 	}
 
 	// A recovery target should also have a recovery target action. The PostgreSQL
@@ -258,7 +246,7 @@ func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Cl
 	operator.UpdatePGHAConfigInitFlag(clientset, true, clusterName, namespace)
 
 	//create the new primary deployment
-	CreateRestoredDeployment(restclient, &cluster, clientset, namespace, restoreToName, workflowID, affinity)
+	createRestoredDeployment(restclient, &cluster, clientset, namespace, restoreToName, workflowID, affinity)
 
 	log.Debugf("restore workflow phase  2: created restored primary was %s now %s", cluster.Spec.Name, restoreToName)
 
@@ -293,28 +281,13 @@ func updateWorkflow(restclient *rest.RESTClient, workflowID, namespace, status s
 	return err
 }
 
-// createPVC creates any persistent volume claims (PVCs) that are required to
-// restore a PostgreSQL cluster, including the PostgreSQL data volume as well
-// as tablespaces.
-// There is a bunch of legacy stuff in here, but it is refactored to handle the
-// case of creating PVCs for tablespaces
-func createPVC(clientset *kubernetes.Clientset, restclient *rest.RESTClient, namespace, clusterName, pvcName string, storage crv1.PgStorageSpec) error {
-	existing, err := kubeapi.GetPVCIfExists(clientset, pvcName, namespace)
-	if err != nil {
-		return err
-	}
-	if existing != nil {
-		log.Debugf("pvc %s found, will NOT recreate as part of restore", pvcName)
-		return nil
-	}
-	log.Debugf("pvc %s not found, will create as part of restore", pvcName)
-	return pvc.Create(clientset, pvcName, clusterName, &storage, namespace)
-}
-
-func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgcluster, clientset *kubernetes.Clientset,
+func createRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgcluster, clientset *kubernetes.Clientset,
 	namespace, restoreToName, workflowID string, affinity *v1.Affinity) error {
 
-	var err error
+	// interpret the storage specs again. the volumes were already created during
+	// the restore job.
+	dataVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
+		clientset, cluster, namespace, restoreToName, cluster.Spec.PrimaryStorage)
 
 	//primaryLabels := operator.GetPrimaryLabels(cluster.Spec.Name, cluster.Spec.ClusterName, false, cluster.Spec.UserLabels)
 
@@ -346,6 +319,13 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	// set up a map of the names of the tablespaces as well as the storage classes
 	tablespaceStorageTypeMap := operator.GetTablespaceStorageTypeMap(cluster.Spec.TablespaceMounts)
 
+	// combine supplemental groups from all volumes
+	var supplementalGroups []int64
+	supplementalGroups = append(supplementalGroups, dataVolume.SupplementalGroups...)
+	for _, v := range tablespaceVolumes {
+		supplementalGroups = append(supplementalGroups, v.SupplementalGroups...)
+	}
+
 	deploymentFields := operator.DeploymentTemplateFields{
 		Name:              restoreToName,
 		IsInit:            true,
@@ -356,13 +336,13 @@ func CreateRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		CCPImagePrefix:    util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
 		CCPImage:          cluster.Spec.CCPImage,
 		CCPImageTag:       cluster.Spec.CCPImageTag,
-		PVCName:           util.CreatePVCSnippet(cluster.Spec.PrimaryStorage.StorageType, restoreToName),
+		PVCName:           dataVolume.InlineVolumeSource(),
 		DeploymentLabels:  operator.GetLabelsFromMap(cluster.Spec.UserLabels),
 		PodLabels:         operator.GetLabelsFromMap(cluster.Spec.UserLabels),
 		DataPathOverride:  restoreToName,
 		Database:          cluster.Spec.Database,
 		ArchiveMode:       archiveMode,
-		SecurityContext:   util.GetPodSecurityContext(cluster.Spec.PrimaryStorage.GetSupplementalGroups()),
+		SecurityContext:   util.GetPodSecurityContext(supplementalGroups),
 		RootSecretName:    cluster.Spec.RootSecretName,
 		PrimarySecretName: cluster.Spec.PrimarySecretName,
 		UserSecretName:    cluster.Spec.UserSecretName,

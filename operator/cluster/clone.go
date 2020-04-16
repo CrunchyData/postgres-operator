@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -49,48 +48,6 @@ const (
 	patchURL                             = "/spec/status"
 	targetClusterPGDATAPath              = "/pgdata/%s"
 )
-
-// arguments required to create a new PVC
-type CreatePVC struct {
-	Clientset *kubernetes.Clientset
-	// ClusterName is the name of the PostgreSQL cluster to associate with the
-	// PVC. Set ClusterName to PVCName if this is being restored to a differnet PVC
-	ClusterName string
-	Namespace   string
-	PVCName     string
-	PVCSize     string
-	RESTClient  *rest.RESTClient
-	Storage     crv1.PgStorageSpec
-}
-
-// createPVC attempts to create a new PVC where the cloned data will be copied to
-// be it for a PostgreSQL data directory or for a pgBackRest repository
-func (createPVC CreatePVC) createPVC() error {
-	// see if a PVC already exists before attempting to create
-	existing, err := kubeapi.GetPVCIfExists(createPVC.Clientset, createPVC.PVCName, createPVC.Namespace)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-	if existing != nil {
-		log.Debugf("pvc %s found, will NOT recreate as part of clone", createPVC.PVCName)
-		return nil
-	}
-
-	// if the PVCSize value is nonempty, set the storage spec to that value
-	if createPVC.PVCSize != "" {
-		createPVC.Storage.Size = createPVC.PVCSize
-	}
-
-	// otherwise, attempt to create the new PVC
-	log.Debugf("pvc %s not found, will create as part of clone", createPVC.PVCName)
-	if err := pvc.Create(createPVC.Clientset, createPVC.PVCName, createPVC.ClusterName, &createPVC.Storage, createPVC.Namespace); err != nil {
-		log.Error(err.Error())
-		return err
-	}
-
-	return nil
-}
 
 // Clone allows for one to clone the data from an existing cluster to a new
 // cluster in the Operator. It works by doing the following:
@@ -239,7 +196,11 @@ func cloneStep1(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 	}
 
 	// create PVCs for pgBackRest and PostgreSQL
-	createPVCs(clientset, client, task, namespace, sourcePgcluster, targetClusterName)
+	if _, _, _, err = createPVCs(clientset, client, task, namespace, sourcePgcluster, targetClusterName); err != nil {
+		log.Error(err)
+		PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, err.Error())
+		return
+	}
 
 	log.Debug("clone step 1: created pvcs")
 
@@ -279,6 +240,16 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		log.Error(err)
 		errorMessage := fmt.Sprintf("Could not find source cluster: %s", err.Error())
 		PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, errorMessage)
+		return
+	}
+
+	// interpret the storage specs again. the volumes were already created during
+	// a prior step.
+	_, dataVolume, tablespaceVolumes, err := createPVCs(
+		clientset, client, task, namespace, sourcePgcluster, targetClusterName)
+	if err != nil {
+		log.Error(err)
+		PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, err.Error())
 		return
 	}
 
@@ -355,11 +326,17 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 	// set up a map of the names of the tablespaces as well as the storage classes
 	tablespaceStorageTypeMap := operator.GetTablespaceStorageTypeMap(sourcePgcluster.Spec.TablespaceMounts)
 
+	// combine supplemental groups from all volumes
+	var supplementalGroups []int64
+	supplementalGroups = append(supplementalGroups, dataVolume.SupplementalGroups...)
+	for _, v := range tablespaceVolumes {
+		supplementalGroups = append(supplementalGroups, v.SupplementalGroups...)
+	}
+
 	backrestRestoreJobFields := backrest.BackrestRestoreJobTemplateFields{
-		JobName:     fmt.Sprintf("restore-%s-%s", targetClusterName, util.RandStringBytesRmndr(4)),
-		ClusterName: targetClusterName,
-		SecurityContext: util.GetPodSecurityContext(
-			sourcePgcluster.Spec.PrimaryStorage.GetSupplementalGroups()),
+		JobName:          fmt.Sprintf("restore-%s-%s", targetClusterName, util.RandStringBytesRmndr(4)),
+		ClusterName:      targetClusterName,
+		SecurityContext:  util.GetPodSecurityContext(supplementalGroups),
 		ToClusterPVCName: targetClusterName, // the PVC name should match that of the target cluster
 		WorkflowID:       workflowID,
 		// use a delta restore in order to optimize how the restore occurs
@@ -491,24 +468,12 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 	workflowID := task.Spec.Parameters[crv1.PgtaskWorkflowID]
 	// set the name of the job, with the "entropy" that we add
 	jobName := fmt.Sprintf(pgBackRestRepoSyncJobNamePrefix, targetClusterName, util.RandStringBytesRmndr(4))
-	// we set the PodSecurityContext if the storageclass has additional
-	// requirements
+
 	podSecurityContext := v1.PodSecurityContext{
-		FSGroup: &crv1.PGFSGroup,
+		FSGroup:            &crv1.PGFSGroup,
+		SupplementalGroups: sourcePgcluster.Spec.BackrestStorage.GetSupplementalGroups(),
 	}
-	// Check to see if the pgBackRest storage class has any SupplementalGroups set
-	if sourcePgcluster.Spec.BackrestStorage.SupplementalGroups != "" {
-		// presently there is only a single supplemental group stored in the CRD,
-		// and as a string. That said, we need to guard against bad data here. If
-		// the data is bad, we will ignore the error and just not set the
-		// supplemental group, but this is pretty bad
-		if supplementalGroup, err := strconv.Atoi(sourcePgcluster.Spec.BackrestStorage.SupplementalGroups); err != nil {
-			log.Warnf("SupplementalGroup for pgBackRest storage spec is not stored as a valid integer: %s",
-				sourcePgcluster.Spec.BackrestStorage.SupplementalGroups)
-		} else {
-			podSecurityContext.SupplementalGroups = []int64{int64(supplementalGroup)}
-		}
-	}
+
 	// set up the job template to synchronize the pgBackRest repo
 	job := batch_v1.Job{
 		ObjectMeta: meta_v1.ObjectMeta{
@@ -693,51 +658,50 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 // create those too.
 //
 // if the user spceified a different PVCSize than what is in the storage spec,
-// then that gets passed to the "createPVC" function
+// then that gets used
 func createPVCs(clientset *kubernetes.Clientset, client *rest.RESTClient,
-	task *crv1.Pgtask, namespace string, sourcePgcluster crv1.Pgcluster, targetClusterName string) {
+	task *crv1.Pgtask, namespace string, sourcePgcluster crv1.Pgcluster, targetClusterName string,
+) (
+	backrestVolume, dataVolume operator.StorageResult,
+	tablespaceVolumes map[string]operator.StorageResult,
+	err error,
+) {
 	// first, create the PVC for the pgBackRest storage, as we will be needing
 	// that sooner
-	CreatePVC{
-		Clientset:   clientset,
-		ClusterName: targetClusterName,
-		Namespace:   namespace,
+	{
+		storage := sourcePgcluster.Spec.BackrestStorage
+		if size := task.Spec.Parameters[util.CloneParameterBackrestPVCSize]; size != "" {
+			storage.Size = size
+		}
 		// the PVCName for pgBackRest is derived from the target cluster name
-		PVCName:    fmt.Sprintf(util.BackrestRepoPVCName, targetClusterName),
-		PVCSize:    task.Spec.Parameters[util.CloneParameterBackrestPVCSize],
-		RESTClient: client,
-		Storage:    sourcePgcluster.Spec.BackrestStorage,
-	}.createPVC()
+		backrestPVCName := fmt.Sprintf(util.BackrestRepoPVCName, targetClusterName)
+		backrestVolume, err = pvc.CreateIfNotExists(clientset,
+			storage, backrestPVCName, targetClusterName, namespace)
+	}
 
 	// now create the PVC for the target cluster
-	CreatePVC{
-		Clientset:   clientset,
-		ClusterName: targetClusterName,
-		Namespace:   namespace,
-		// the PVCName is the same as the target cluster
-		PVCName:    targetClusterName,
-		PVCSize:    task.Spec.Parameters[util.CloneParameterPVCSize],
-		RESTClient: client,
-		Storage:    sourcePgcluster.Spec.PrimaryStorage,
-	}.createPVC()
-
-	// if there are any tablespacs, create PVCs for those
-	for tablespaceName, storageSpec := range sourcePgcluster.Spec.TablespaceMounts {
-		// generate the tablespace PVC name from the name of the clone cluster and
-		// the name of this tablespace
-		tablespacePVCName := operator.GetTablespacePVCName(targetClusterName, tablespaceName)
-		// though there are some helper functions for creating a PVC, we will use
-		// the "CreatePVC" function that is here
-		CreatePVC{
-			Clientset:   clientset,
-			ClusterName: targetClusterName,
-			Namespace:   namespace,
-			// the PVCName is the same as the target cluster
-			PVCName:    tablespacePVCName,
-			RESTClient: client,
-			Storage:    storageSpec,
-		}.createPVC()
+	if err == nil {
+		storage := sourcePgcluster.Spec.PrimaryStorage
+		if size := task.Spec.Parameters[util.CloneParameterPVCSize]; size != "" {
+			storage.Size = size
+		}
+		dataVolume, err = pvc.CreateIfNotExists(clientset,
+			storage, targetClusterName, targetClusterName, namespace)
 	}
+
+	// if there are any tablespaces, create PVCs for those
+	tablespaceVolumes = make(map[string]operator.StorageResult, len(sourcePgcluster.Spec.TablespaceMounts))
+	for tablespaceName, storageSpec := range sourcePgcluster.Spec.TablespaceMounts {
+		if err == nil {
+			// generate the tablespace PVC name from the name of the clone cluster and
+			// the name of this tablespace
+			tablespacePVCName := operator.GetTablespacePVCName(targetClusterName, tablespaceName)
+			tablespaceVolumes[tablespaceName], err = pvc.CreateIfNotExists(clientset,
+				storageSpec, tablespacePVCName, targetClusterName, namespace)
+		}
+	}
+
+	return
 }
 
 func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, task *crv1.Pgtask, sourcePgcluster crv1.Pgcluster, namespace string, targetClusterName string, workflowID string) error {

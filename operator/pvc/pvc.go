@@ -46,6 +46,58 @@ type TemplateFields struct {
 	MatchLabels  string
 }
 
+// CreateMissingPostgreSQLVolumes converts the storage specifications of cluster
+// related to PostgreSQL into StorageResults. When a specification calls for a
+// PVC to be created, the PVC is created unless it already exists.
+func CreateMissingPostgreSQLVolumes(clientset *kubernetes.Clientset,
+	cluster *crv1.Pgcluster, namespace string,
+	pvcNamePrefix string, dataStorageSpec crv1.PgStorageSpec,
+) (
+	dataVolume operator.StorageResult,
+	tablespaceVolumes map[string]operator.StorageResult,
+	err error,
+) {
+	dataVolume, err = CreateIfNotExists(clientset,
+		dataStorageSpec, pvcNamePrefix, cluster.Spec.Name, namespace)
+
+	tablespaceVolumes = make(map[string]operator.StorageResult, len(cluster.Spec.TablespaceMounts))
+	for tablespaceName, storageSpec := range cluster.Spec.TablespaceMounts {
+		if err == nil {
+			tablespacePVCName := operator.GetTablespacePVCName(pvcNamePrefix, tablespaceName)
+			tablespaceVolumes[tablespaceName], err = CreateIfNotExists(clientset,
+				storageSpec, tablespacePVCName, cluster.Spec.Name, namespace)
+		}
+	}
+
+	return
+}
+
+// CreateIfNotExists converts a storage specification into a StorageResult. If
+// spec calls for a PVC to be created and pvcName does not exist, it will be created.
+func CreateIfNotExists(clientset *kubernetes.Clientset, spec crv1.PgStorageSpec, pvcName, clusterName, namespace string) (operator.StorageResult, error) {
+	result := operator.StorageResult{
+		SupplementalGroups: spec.GetSupplementalGroups(),
+	}
+
+	switch spec.StorageType {
+	case "", "emptydir":
+		// no-op
+
+	case "existing":
+		result.PersistentVolumeClaimName = spec.Name
+
+	case "create", "dynamic":
+		result.PersistentVolumeClaimName = pvcName
+		err := Create(clientset, pvcName, clusterName, &spec, namespace)
+		if err != nil && !kubeapi.IsAlreadyExists(err) {
+			log.Errorf("error in pvc create: %v", err)
+			return result, err
+		}
+	}
+
+	return result, nil
+}
+
 // CreatePVC create a pvc
 func CreatePVC(clientset *kubernetes.Clientset, storageSpec *crv1.PgStorageSpec, pvcName, clusterName, namespace string) (string, error) {
 	var err error
@@ -122,7 +174,8 @@ func Create(clientset *kubernetes.Clientset, name, clusterName string, storageSp
 		return err
 	}
 
-	return kubeapi.CreatePVC(clientset, &newpvc, namespace)
+	_, err = clientset.CoreV1().PersistentVolumeClaims(namespace).Create(&newpvc)
+	return err
 }
 
 // Delete a pvc
