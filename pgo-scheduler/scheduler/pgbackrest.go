@@ -79,7 +79,7 @@ func (b BackRestBackupJob) Run() {
 		return
 	}
 
-	taskName := fmt.Sprintf("%s-backrest-%s-backup-schedule", b.cluster, b.backupType)
+	taskName := fmt.Sprintf("%s-%s-sch-backup", b.cluster, b.backupType)
 
 	result := crv1.Pgtask{}
 	found, err = kubeapi.Getpgtask(restClient, &result, taskName, b.namespace)
