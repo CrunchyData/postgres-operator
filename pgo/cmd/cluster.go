@@ -257,6 +257,8 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.Policies = PoliciesFlag
 	r.CCPImageTag = CCPImageTag
 	r.CCPImage = CCPImage
+	r.CCPImagePrefix = CCPImagePrefix
+	r.PGOImagePrefix = PGOImagePrefix
 	r.MetricsFlag = MetricsFlag
 	r.BadgerFlag = BadgerFlag
 	r.ServiceType = ServiceType

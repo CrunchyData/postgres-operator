@@ -57,6 +57,8 @@ type CreateClusterRequest struct {
 	Policies            string
 	CCPImage            string
 	CCPImageTag         string
+	CCPImagePrefix      string
+	PGOImagePrefix      string
 	ReplicaCount        int
 	ServiceType         string
 	MetricsFlag         bool
