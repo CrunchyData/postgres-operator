@@ -238,8 +238,7 @@ func cloneStep1(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		return
 	}
 
-	// first, create the PVC for the pgBackRest storage, as we will be needing
-	// that sooner
+	// create PVCs for pgBackRest and PostgreSQL
 	createPVCs(clientset, client, task, namespace, sourcePgcluster, targetClusterName)
 
 	log.Debug("clone step 1: created pvcs")
@@ -353,6 +352,9 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		return
 	}
 
+	// set up a map of the names of the tablespaces as well as the storage classes
+	tablespaceStorageTypeMap := operator.GetTablespaceStorageTypeMap(sourcePgcluster.Spec.TablespaceMounts)
+
 	backrestRestoreJobFields := backrest.BackrestRestoreJobTemplateFields{
 		JobName:     fmt.Sprintf("restore-%s-%s", targetClusterName, util.RandStringBytesRmndr(4)),
 		ClusterName: targetClusterName,
@@ -371,6 +373,9 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 		PgbackrestRepo1Host: fmt.Sprintf(util.BackrestRepoServiceName, targetClusterName),
 		PgbackrestRepoType:  operator.GetRepoType(task.Spec.Parameters["backrestStorageType"]),
 		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(sourcePgcluster, clientset, namespace),
+
+		TablespaceVolumes:      operator.GetTablespaceVolumesJSON(targetClusterName, tablespaceStorageTypeMap),
+		TablespaceVolumeMounts: operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
 	}
 
 	// substitute the variables into the BackrestRestore job template
