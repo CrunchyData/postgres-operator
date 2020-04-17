@@ -98,7 +98,7 @@ cleanup the job using the command from the **Cleanup** section.
 
 ### pgo Client Binary
 
-Running the pgo client locally when using the `pgo-deployer` image requires
+Running the `pgo` client locally when using the `pgo-deployer` image requires
 access to the certs stored in the `pgo.tls` Kubernetes secret. The `client.crt`
 and `client.key` need to be pulled from this secret and stored locally in a
 location that is accessable to the `pgo` client. You will also need to setup a
@@ -107,6 +107,12 @@ inventory file. This username and password will be pulled from the
 `pgouser-admin` secret. The the `client-setup.sh` script will setup these
 resources in the `~/.pgo/$PGO_OPERATOR_NAMESPACE` directory. Please set the
 following environment variables after the `pgo-deployer` job has completed:
+
+
+{{% notice tip %}}
+Running this script will cause existing `pgouser`, `client.crt`, and `client.key`
+files to be overwritten.
+{{% /notice %}}
 
 ```
 cat <<EOF >> ~/.bashrc

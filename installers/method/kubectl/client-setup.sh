@@ -38,13 +38,11 @@ OUTPUT_DIR=$HOME/.pgo/$PGO_OPERATOR_NAMESPACE
 mkdir -p $OUTPUT_DIR
 
 # Use the pgouser-admin secret to generate pgouser file
-kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgouser-admin -o 'jsonpath={.data.username}' | base64 --decode >> $OUTPUT_DIR/pgouser
-printf ":" >> $OUTPUT_DIR/pgouser
-kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgouser-admin -o 'jsonpath={.data.password}' | base64 --decode >> $OUTPUT_DIR/pgouser
+kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgouser-admin -o 'go-template={{.data.username | base64decode }}:{{.data.password | base64decode}}' > $OUTPUT_DIR/pgouser
 
 # Use the pgo.tls secret to generate the client cert files
-kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgo.tls -o 'jsonpath={.data.tls\.crt}' | base64 --decode >> $OUTPUT_DIR/client.crt
-kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgo.tls -o 'jsonpath={.data.tls\.key}' | base64 --decode >> $OUTPUT_DIR/client.key
+kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgo.tls -o 'go-template={{ index .data "tls.crt" | base64decode }}' > $OUTPUT_DIR/client.crt
+kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgo.tls -o 'go-template={{ index .data "tls.key" | base64decode }}' > $OUTPUT_DIR/client.key
 
 
 echo "pgo client files have been generated, please add the following to your bashrc"
