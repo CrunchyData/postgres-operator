@@ -33,7 +33,7 @@ func TestClusterTest(t *testing.T) {
 				t.Run("shows something immediately", func(t *testing.T) {
 					output, err := pgo("test", cluster(), "-n", namespace()).Exec(t)
 					require.NoError(t, err)
-					require.Contains(t, output, "DOWN")
+					require.Contains(t, output, cluster())
 				})
 
 				t.Run("detects the cluster eventually", func(t *testing.T) {

@@ -35,8 +35,7 @@ func TestClusterBackup(t *testing.T) {
 
 		ready := func() bool {
 			output, err := pgo("show", "backup", cluster, "-n", namespace).Exec(t)
-			require.NoError(t, err)
-			return strings.Contains(output, "status: ok")
+			return err == nil && strings.Contains(output, "status: ok")
 		}
 
 		if !ready() {
@@ -50,6 +49,9 @@ func TestClusterBackup(t *testing.T) {
 			t.Run("show backup", func(t *testing.T) {
 				t.Run("shows something", func(t *testing.T) {
 					requireClusterReady(t, namespace(), cluster(), time.Minute)
+
+					// BUG(cbandy): cannot check too soon.
+					waitFor(t, func() bool { return false }, 5*time.Second, time.Second)
 
 					output, err := pgo("show", "backup", cluster(), "-n", namespace()).Exec(t)
 					require.NoError(t, err)

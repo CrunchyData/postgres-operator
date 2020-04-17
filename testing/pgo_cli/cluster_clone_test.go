@@ -64,7 +64,7 @@ func TestClusterClone(t *testing.T) {
 					defer teardownCluster(t, namespace(), "rex", time.Now())
 					requireClusterReady(t, namespace(), "rex", 4*time.Minute)
 
-					stdout, stderr := clusterPSQL(t, namespace(), cluster(), `TABLE original`)
+					stdout, stderr := clusterPSQL(t, namespace(), "rex", `TABLE original`)
 					require.Empty(t, stderr)
 					require.Contains(t, stdout, "(2 rows)",
 						"expected original data to be present in the clone")

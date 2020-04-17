@@ -132,7 +132,7 @@ func TestClusterUser(t *testing.T) {
 					require.NoError(t, err)
 					require.NotEmpty(t, output)
 
-					_, err := pgo("show", "user", cluster(), "-n", namespace()).Exec(t)
+					_, err = pgo("show", "user", cluster(), "-n", namespace()).Exec(t)
 					require.NoError(t, err)
 					require.Empty(t, showPassword(t, namespace(), cluster(), "arwen"))
 
@@ -254,7 +254,7 @@ func TestClusterUser(t *testing.T) {
 					require.NoError(t, err)
 					require.NotEmpty(t, output)
 
-					_, err := pgo("show", "user", cluster(), "-n", namespace()).Exec(t)
+					_, err = pgo("show", "user", cluster(), "-n", namespace()).Exec(t)
 					require.NoError(t, err)
 					require.Empty(t, showPassword(t, namespace(), cluster(), "ged"),
 						"expected pgo to forget about this user")
@@ -302,7 +302,7 @@ func TestClusterUser(t *testing.T) {
 					require.NoError(t, err)
 					require.NotEmpty(t, output)
 
-					_, err := pgo("show", "user", cluster(), "-n", namespace()).Exec(t)
+					_, err = pgo("show", "user", cluster(), "-n", namespace()).Exec(t)
 					require.NoError(t, err)
 					require.Empty(t, showPassword(t, namespace(), cluster(), "vetch"),
 						"expected pgo to forget about this user")
