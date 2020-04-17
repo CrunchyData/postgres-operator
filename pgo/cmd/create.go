@@ -31,6 +31,8 @@ var ArchiveFlag, DisableAutofailFlag, EnableAutofailFlag, PgbouncerFlag, Metrics
 var BackrestRestoreFrom string
 var CCPImage string
 var CCPImageTag string
+var CCPImagePrefix string
+var PGOImagePrefix string
 var Database string
 var Password string
 var SecretFrom string
@@ -267,6 +269,8 @@ func init() {
 	// flags for "pgo create cluster"
 	createClusterCmd.Flags().StringVarP(&CCPImage, "ccp-image", "", "", "The CCPImage name to use for cluster creation. If specified, overrides the value crunchy-postgres.")
 	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
+	createClusterCmd.Flags().StringVarP(&CCPImagePrefix, "ccp-image-prefix", "", "", "The CCPImagePrefix to use for cluster creation. If specified, overrides the global configuration.")
+	createClusterCmd.Flags().StringVarP(&PGOImagePrefix, "pgo-image-prefix", "", "", "The PGOImagePrefix to use for cluster creation. If specified, overrides the global configuration.")
 	createClusterCmd.Flags().StringVar(&CPURequest, "cpu", "", "Set the number of millicores to request for the CPU, e.g. "+
 		"\"100m\" or \"0.1\".")
 	createClusterCmd.Flags().StringVarP(&CustomConfig, "custom-config", "", "", "The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.")
