@@ -1,5 +1,9 @@
 {{ if or .RequestsMemory .RequestsCPU }}
 "resources": {
+  {{ if .RequestsCPU }}
+  "limits": {
+    "cpu": "{{.RequestsCPU}}"
+  },
   "requests": {
     {{ if .RequestsCPU }}
     "cpu": "{{.RequestsCPU}}"{{ if .RequestsMemory }},{{ end }}

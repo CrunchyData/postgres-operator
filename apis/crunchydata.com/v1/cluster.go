@@ -58,9 +58,9 @@ type PgclusterSpec struct {
 	// container definition. You can set individual items such as "cpu" and
 	// "memory", e.g. "{ cpu: "0.5", memory: "2Gi" }"
 	//
-	// Presently we only set the "Request" portion of the Container resource
-	// definition, but if we do allow for the "Limit" portion to be set, we would
-	// keep it unified to get a "Guaranteed" QoS.
+	// For memory requests, we only set the "Request" portion of the Container
+	// resource definition, but if we do allow for the "Limit" portion to be set,
+	// we would keep it unified to get a "Guaranteed" QoS.
 	//
 	// We don't set the Limit you say? Yes: we want to avoid the OOM killer coming
 	// for the PostgreSQL process or any of their backends per lots of guidance
@@ -78,8 +78,13 @@ type PgclusterSpec struct {
 	// and have a failover event, vs. having an individual client backend killed
 	// and causing potential "bad things."
 	//
+	// For more info on PostgreSQL and Kubernetes memory management, see:
+	//
 	// https://www.postgresql.org/docs/current/kernel-resources.html#LINUX-MEMORY-OVERCOMMIT
 	// https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#how-pods-with-resource-limits-are-run
+	//
+	// Now, for CPU, we set both the Request and the Limit, based on how
+	// Kubernetes interacts with these parameters
 	Resources v1.ResourceList `json:"resources"`
 	// BackrestResources, if specified, contains the container request resources
 	// for the pgBackRest Deployment for this PostgreSQL cluster
