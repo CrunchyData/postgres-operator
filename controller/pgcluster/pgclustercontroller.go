@@ -197,6 +197,15 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
+	// see if any of the pgBouncer values have changed, and if so, update the
+	// pgBouncer deployment
+	if !reflect.DeepEqual(oldcluster.Spec.PgBouncer, newcluster.Spec.PgBouncer) {
+		if err := updatePgBouncer(c, oldcluster, newcluster); err != nil {
+			log.Error(err)
+			return
+		}
+	}
+
 	// if we are not in a standby state, check to see if the tablespaces have
 	// differed, and if so, add the additional volumes to the primary and replicas
 	if !reflect.DeepEqual(oldcluster.Spec.TablespaceMounts, newcluster.Spec.TablespaceMounts) {
@@ -235,6 +244,40 @@ func addIdentifier(clusterCopy *crv1.Pgcluster) {
 	}
 
 	clusterCopy.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = string(u[:len(u)-1])
+}
+
+// updatePgBouncer updates the pgBouncer Deployment to reflect any changes that
+// may be made, which include:
+// - enabling a pgBouncer Deployment :)
+// - disabling a pgBouncer Deployment :(
+// - any changes to the resizing, etc.
+func updatePgBouncer(c *Controller, oldCluster *crv1.Pgcluster, newCluster *crv1.Pgcluster) error {
+	log.Debugf("update pgbouncer for cluster %s", newCluster.Name)
+
+	// first, handle the easy ones, i.e. determine if we are enabling or disabling
+	// if this is what we're doing...this is all we are doing for this one
+	if oldCluster.Spec.PgBouncer.Enabled != newCluster.Spec.PgBouncer.Enabled {
+		log.Debugf("pgbouncer enabled: %t", newCluster.Spec.PgBouncer.Enabled)
+
+		if newCluster.Spec.PgBouncer.Enabled {
+			return clusteroperator.AddPgbouncer(c.PgclusterClientset, c.PgclusterClient, c.PgclusterConfig, newCluster)
+		}
+
+		// if we're not enabling it, we're disabling it
+		// TODO: handle uninstall?
+		return clusteroperator.DeletePgbouncer(c.PgclusterClientset, c.PgclusterClient, c.PgclusterConfig, newCluster)
+	}
+
+	// otherwise, for now, this is a resources update. As we're blending things in
+	// from a legacy system, this means we have to apply a special "parameter" to
+	// indicate that we are updating the resources
+	parameters := map[string]string{
+		config.LABEL_PGBOUNCER_UPDATE_RESOURCES: "true",
+	}
+
+	log.Debugf("update pgbouncer resources: %+v", newCluster.Spec.PgBouncer.Resources)
+
+	return clusteroperator.UpdatePgbouncer(c.PgclusterClientset, c.PgclusterClient, c.PgclusterConfig, newCluster, parameters)
 }
 
 // updateTablespaces updates the PostgreSQL instance Deployments to reflect the

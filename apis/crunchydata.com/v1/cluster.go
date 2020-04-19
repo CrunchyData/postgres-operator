@@ -90,10 +90,9 @@ type PgclusterSpec struct {
 	// BackrestResources, if specified, contains the container request resources
 	// for the pgBackRest Deployment for this PostgreSQL cluster
 	BackrestResources v1.ResourceList `json:"backrestResources"`
-	// PgBouncerResources, if specified, contains the container request resources
-	// for any pgBouncer Deployments that are part of a PostgreSQL cluster
-	PgBouncerResources v1.ResourceList `json:"pgBouncerResources"`
-	// PgBouncerReplcias
+	// PgBouncer contains all of the settings to properly maintain a pgBouncer
+	// implementation
+	PgBouncer          PgBouncerSpec            `json:"pgBouncer"`
 	PrimaryHost        string                   `json:"primaryhost"`
 	User               string                   `json:"user"`
 	Database           string                   `json:"database"`
@@ -164,6 +163,20 @@ type PodAntiAffinitySpec struct {
 	Default    PodAntiAffinityType `json:"default"`
 	PgBackRest PodAntiAffinityType `json:"pgBackRest"`
 	PgBouncer  PodAntiAffinityType `json:"pgBouncer"`
+}
+
+// PgBouncerSpec is a struct that is used within the Cluster specification that
+// provides the attributes for managing a PgBouncer implementation, including:
+// - is it enabled?
+// - what resources it should consume
+// - TODO: how many replicas it has?
+type PgBouncerSpec struct {
+	// Enabled is true if a pgBouncer Deployment should be deployed with the
+	// PostgreSQL cluster
+	Enabled bool `json:"enabled"`
+	// Resources, if specified, contains the container request resources
+	// for any pgBouncer Deployments that are part of a PostgreSQL cluster
+	Resources v1.ResourceList `json:"resources"`
 }
 
 // TLSSpec contains the information to set up a TLS-enabled PostgreSQL cluster

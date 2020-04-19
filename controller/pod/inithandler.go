@@ -143,14 +143,11 @@ func (c *Controller) handleBootstrapInit(newPod *apiv1.Pod, cluster *crv1.Pgclus
 		c.PodClientset, c.PodClient)
 
 	// if this is a pgbouncer enabled cluster, add a pgbouncer
-	if cluster.Labels[config.LABEL_PGBOUNCER] == "true" {
-		tmptask := crv1.Pgtask{}
-		taskName := fmt.Sprintf("%s-%s", config.LABEL_PGBOUNCER_TASK_ADD, clusterName)
-
-		// attempt to find the pgbouncer pgtask. If one does not exist
-		// create it!
-		if found, _ := kubeapi.Getpgtask(c.PodClient, &tmptask, taskName, newPod.ObjectMeta.Namespace); !found {
-			clusteroperator.CreatePgTaskforAddpgBouncer(c.PodClient, cluster, cluster.Labels[config.LABEL_PGOUSER])
+	// Note: we only warn if we cannot create the pgBouncer, so eecution can
+	// continue
+	if cluster.Spec.PgBouncer.Enabled {
+		if err := clusteroperator.AddPgbouncer(c.PodClientset, c.PodClient, c.PodConfig, cluster); err != nil {
+			log.Warn(err)
 		}
 	}
 
@@ -193,15 +190,11 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	controller.InitializeReplicaCreation(c.PodClient, clusterName, namespace)
 
 	// if this is a pgbouncer enabled cluster, add a pgbouncer
-	if cluster.Labels[config.LABEL_PGBOUNCER] == "true" {
-		tmptask := crv1.Pgtask{}
-		taskName := fmt.Sprintf("%s-%s", config.LABEL_PGBOUNCER_TASK_ADD, clusterName)
-
-		// attempt to find the pgbouncer pgtask. If one does not exist
-		// create it!
-		if found, _ := kubeapi.Getpgtask(c.PodClient, &tmptask, taskName, namespace); !found {
-			clusteroperator.CreatePgTaskforAddpgBouncer(c.PodClient, cluster,
-				cluster.Labels[config.LABEL_PGOUSER])
+	// Note: we only warn if we cannot create the pgBouncer, so eecution can
+	// continue
+	if cluster.Spec.PgBouncer.Enabled {
+		if err := clusteroperator.AddPgbouncer(c.PodClientset, c.PodClient, c.PodConfig, cluster); err != nil {
+			log.Warn(err)
 		}
 	}
 

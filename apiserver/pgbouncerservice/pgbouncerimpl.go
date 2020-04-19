@@ -30,7 +30,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const pgBouncerServiceSuffix = "-pgbouncer"
@@ -93,14 +92,13 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 			resources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultPgBouncerResourceMemory
 		}
 
-		// set this value on the cluster spec, but this is only *temporary* in this
-		// context. The values are only needed to be transferred over to the pgtask
-		// They are permanently saved later on.
-		// in the future, we would just udpate the pgcluster CR to make this
-		// occur...
-		cluster.Spec.PgBouncerResources = resources
+		// Initialize the values on the cluster spec. We are going to "enable" the
+		// pgBouncer Deployment, and apply any resources to it
+		cluster.Spec.PgBouncer.Enabled = true
+		cluster.Spec.PgBouncer.Resources = resources
 
-		if err := clusteroperator.CreatePgTaskforAddpgBouncer(apiserver.RESTClient, &cluster, pgouser); err != nil {
+		// update the cluster CRD with these udpates. If there is an error
+		if err := kubeapi.Updatepgcluster(apiserver.RESTClient, &cluster, cluster.Name, request.Namespace); err != nil {
 			log.Error(err)
 			resp.Results = append(resp.Results, err.Error())
 			continue
@@ -151,38 +149,20 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 	for _, cluster := range clusterList.Items {
 		log.Debugf("deleting pgbouncer from cluster [%s]", cluster.Name)
 
-		spec := crv1.PgtaskSpec{}
-		spec.Namespace = ns
-		spec.Name = config.LABEL_PGBOUNCER_TASK_DELETE + "-" + cluster.Name
-		spec.TaskType = crv1.PgtaskDeletePgbouncer
-		spec.StorageSpec = crv1.PgStorageSpec{}
-		spec.Parameters = map[string]string{
-			config.LABEL_PGBOUNCER_TASK_CLUSTER: cluster.Name,
-			config.LABEL_PGBOUNCER_UNINSTALL:    fmt.Sprintf("%t", request.Uninstall),
-		}
+		// Disable the pgBouncer Deploymnet
+		cluster.Spec.PgBouncer.Enabled = false
 
-		newInstance := &crv1.Pgtask{
-			ObjectMeta: meta_v1.ObjectMeta{
-				Name: spec.Name,
-			},
-			Spec: spec,
-		}
-
-		newInstance.ObjectMeta.Labels = make(map[string]string)
-		newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = cluster.Name
-		newInstance.ObjectMeta.Labels[config.LABEL_PGBOUNCER_TASK_DELETE] = "true"
-
-		err := kubeapi.Createpgtask(apiserver.RESTClient,
-			newInstance, ns)
-		if err != nil {
+		// update the cluster CRD with these udpates. If there is an error
+		if err := kubeapi.Updatepgcluster(apiserver.RESTClient, &cluster, cluster.Name, request.Namespace); err != nil {
 			log.Error(err)
 			resp.Status.Code = msgs.Error
 			resp.Results = append(resp.Results, err.Error())
 			return resp
-		} else {
-			resp.Results = append(resp.Results, cluster.Name+" pgbouncer deleted")
 		}
 
+		// follow the legacy format for returning this information
+		result := fmt.Sprintf("%s pgbouncer deleted", cluster.Name)
+		resp.Results = append(resp.Results, result)
 	}
 
 	return resp
@@ -223,11 +203,8 @@ func ShowPgBouncer(request *msgs.ShowPgBouncerRequest, namespace string) msgs.Sh
 			ClusterName:  cluster.Spec.Name,
 			HasPgBouncer: true,
 		}
-		// first, check if the cluster has the pgBouncer label. If it does not, we
-		// add it to the list and keep iterating
-		clusterLabels := cluster.GetLabels()
-
-		if clusterLabels[config.LABEL_PGBOUNCER] != "true" {
+		// first, check if the cluster has pgBouncer enabled
+		if !cluster.Spec.PgBouncer.Enabled {
 			result.HasPgBouncer = false
 			response.Results = append(response.Results, result)
 			continue
@@ -311,11 +288,9 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 			ClusterName:  cluster.Spec.Name,
 			HasPgBouncer: true,
 		}
-		// first, check if the cluster has the pgBouncer label. If it does not, we
-		// add it to the list and keep iterating
-		clusterLabels := cluster.GetLabels()
 
-		if clusterLabels[config.LABEL_PGBOUNCER] != "true" {
+		// first, check if the cluster has pgBouncer enabled
+		if !cluster.Spec.PgBouncer.Enabled {
 			result.HasPgBouncer = false
 			response.Results = append(response.Results, result)
 			continue
@@ -330,7 +305,7 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 
 		// if the request has overriding CPURequest and/or MemoryRequest parameters,
 		// add them to the cluster's pgbouncer resource list
-		resources := cluster.Spec.PgBouncerResources
+		resources := cluster.Spec.PgBouncer.Resources
 		if resources == nil {
 			resources = v1.ResourceList{}
 		}
@@ -354,7 +329,7 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 		// They are permanently saved later on.
 		// in the future, we would just udpate the pgcluster CR to make this
 		// occur...
-		cluster.Spec.PgBouncerResources = resources
+		cluster.Spec.PgBouncer.Resources = resources
 
 		if err := clusteroperator.CreatePgTaskforUpdatepgBouncer(apiserver.RESTClient, &cluster, pgouser, parameters); err != nil {
 			log.Error(err)

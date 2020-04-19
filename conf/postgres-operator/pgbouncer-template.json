@@ -70,7 +70,7 @@
                     }
                 }],
                 "affinity": {
-        {{.PodAntiAffinity}}
+                  {{.PodAntiAffinity}}
                 },
                 "restartPolicy": "Always",
                 "dnsPolicy": "ClusterFirst"

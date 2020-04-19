@@ -994,9 +994,14 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabelsMap map[string]string, ns string) *crv1.Pgcluster {
 
 	spec := crv1.PgclusterSpec{
-		BackrestResources:  v1.ResourceList{},
-		PgBouncerResources: v1.ResourceList{},
-		Resources:          v1.ResourceList{},
+		BackrestResources: v1.ResourceList{},
+		PgBouncer: crv1.PgBouncerSpec{
+			// if the pgBouncer flag is set to true, indicate that the pgBouncer
+			// deployment should be made available in this cluster
+			Enabled:   request.PgbouncerFlag,
+			Resources: v1.ResourceList{},
+		},
+		Resources: v1.ResourceList{},
 	}
 
 	if userLabelsMap[config.LABEL_CUSTOM_CONFIG] != "" {
@@ -1040,15 +1045,15 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	if request.PgBouncerCPURequest != "" {
 		// as this was already validated, we can ignore the error
 		quantity, _ := resource.ParseQuantity(request.PgBouncerCPURequest)
-		spec.PgBouncerResources[v1.ResourceCPU] = quantity
+		spec.PgBouncer.Resources[v1.ResourceCPU] = quantity
 	}
 
 	if request.PgBouncerMemoryRequest != "" {
 		// as this was already validated, we can ignore the error
 		quantity, _ := resource.ParseQuantity(request.PgBouncerMemoryRequest)
-		spec.PgBouncerResources[v1.ResourceMemory] = quantity
+		spec.PgBouncer.Resources[v1.ResourceMemory] = quantity
 	} else {
-		spec.PgBouncerResources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultPgBouncerResourceMemory
+		spec.PgBouncer.Resources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultPgBouncerResourceMemory
 	}
 
 	spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.PrimaryStorage)
@@ -1250,12 +1255,6 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	// pgBackRest is always set to true. This is here due to a time where
 	// pgBackRest was not the only way
 	labels[config.LABEL_BACKREST] = "true"
-
-	// if the pgBouncer flag is set to true, add a label to indicate that this
-	// cluster shoul dhave a pgbouncer
-	if request.PgbouncerFlag {
-		labels[config.LABEL_PGBOUNCER] = "true"
-	}
 
 	newInstance := &crv1.Pgcluster{
 		ObjectMeta: meta_v1.ObjectMeta{

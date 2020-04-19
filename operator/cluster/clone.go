@@ -792,19 +792,20 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 			CollectSecretName: fmt.Sprintf("%s%s", targetClusterName, crv1.CollectSecretSuffix),
 			// CustomConfig is not set as in the future this will be a parameter we
 			// allow the user to pass in
-			Database:           sourcePgcluster.Spec.Database,
-			ExporterPort:       sourcePgcluster.Spec.ExporterPort,
-			Name:               targetClusterName,
-			Namespace:          namespace,
-			PGBadgerPort:       sourcePgcluster.Spec.PGBadgerPort,
-			PgBouncerResources: sourcePgcluster.Spec.PgBouncerResources,
-			PGOImagePrefix:     sourcePgcluster.Spec.PGOImagePrefix,
-			PodAntiAffinity:    sourcePgcluster.Spec.PodAntiAffinity,
-			Policies:           sourcePgcluster.Spec.Policies,
-			Port:               sourcePgcluster.Spec.Port,
-			PrimaryHost:        sourcePgcluster.Spec.PrimaryHost,
-			PrimaryStorage:     sourcePgcluster.Spec.PrimaryStorage,
-			PrimarySecretName:  fmt.Sprintf("%s%s", targetClusterName, crv1.PrimarySecretSuffix),
+			Database:       sourcePgcluster.Spec.Database,
+			ExporterPort:   sourcePgcluster.Spec.ExporterPort,
+			Name:           targetClusterName,
+			Namespace:      namespace,
+			PGBadgerPort:   sourcePgcluster.Spec.PGBadgerPort,
+			PGOImagePrefix: sourcePgcluster.Spec.PGOImagePrefix,
+			// PgBouncer will be disabled to start
+			PgBouncer:         crv1.PgBouncerSpec{},
+			PodAntiAffinity:   sourcePgcluster.Spec.PodAntiAffinity,
+			Policies:          sourcePgcluster.Spec.Policies,
+			Port:              sourcePgcluster.Spec.Port,
+			PrimaryHost:       sourcePgcluster.Spec.PrimaryHost,
+			PrimaryStorage:    sourcePgcluster.Spec.PrimaryStorage,
+			PrimarySecretName: fmt.Sprintf("%s%s", targetClusterName, crv1.PrimarySecretSuffix),
 			// Replicas is set to "0" because we want to ensure that no replicas are
 			// provisioned with the clone
 			Replicas:       "0",
