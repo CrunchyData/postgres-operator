@@ -103,7 +103,7 @@ func (c *Controller) handleStandbyPromotion(newPod *apiv1.Pod, cluster crv1.Pgcl
 	}
 
 	// rotate the pgBouncer passwords if pgbouncer is enabled within the cluster
-	if cluster.Labels[config.LABEL_PGBOUNCER] == "true" {
+	if cluster.Spec.PgBouncer.Enabled {
 		parameters := map[string]string{
 			config.LABEL_PGBOUNCER_ROTATE_PASSWORD: "true",
 			config.LABEL_PGBOUNCER_TASK_CLUSTER:    cluster.Name,
