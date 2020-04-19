@@ -36,12 +36,15 @@ import (
 )
 
 var (
-	// ErrClusterNotShutdown defines the error that is thrown when an action cannot
-	// proceed because the cluster is not in standby mode
-	ErrClusterNotShutdown = errors.New("Cluster not in shutdown status")
+	// ErrStandbyNotAllowed contains the error message returned when an API call is not
+	// permitted because it involves a cluster that is in standby mode
+	ErrStandbyNotAllowed = errors.New("Action not permitted because standby mode is enabled")
 	// ErrStandbyNotEnabled defines the error that is thrown when
 	// standby mode is not enabled but a standby action was attempted
 	ErrStandbyNotEnabled = errors.New("Standby mode not enabled")
+	// ErrClusterNotShutdown defines the error that is thrown when an action cannot
+	// proceed because the cluster is not in standby mode
+	ErrClusterNotShutdown = errors.New("Cluster not in shutdown status")
 )
 
 const (

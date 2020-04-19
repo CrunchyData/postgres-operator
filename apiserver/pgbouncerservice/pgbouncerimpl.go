@@ -149,6 +149,17 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 	for _, cluster := range clusterList.Items {
 		log.Debugf("deleting pgbouncer from cluster [%s]", cluster.Name)
 
+		// check to see if the uninstall flag was set. If it was, apply the update
+		// inline
+		if request.Uninstall {
+			if err := clusteroperator.UninstallPgBouncer(apiserver.Clientset, apiserver.RESTConfig, &cluster); err != nil {
+				log.Error(err)
+				resp.Status.Code = msgs.Error
+				resp.Results = append(resp.Results, err.Error())
+				return resp
+			}
+		}
+
 		// Disable the pgBouncer Deploymnet
 		cluster.Spec.PgBouncer.Enabled = false
 
