@@ -142,6 +142,11 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 	if installed, err := checkPgBouncerInstall(clientset, restconfig, pod); err != nil {
 		return err
 	} else if !installed {
+		// this can't be installed if this is a standby, so abort if that's the case
+		if cluster.Spec.Standby {
+			return ErrStandbyNotAllowed
+		}
+
 		if err := installPgBouncer(clientset, restconfig, pod); err != nil {
 			return err
 		}
@@ -288,6 +293,56 @@ func DeletePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 
 	// publish an event
 	publishPgBouncerEvent(events.EventDeletePgbouncer, cluster)
+
+	return nil
+}
+
+// UninstallPgBouncer uninstalls the "pgbouncer" user and other management
+// objects from the PostgreSQL cluster
+func UninstallPgBouncer(clientset *kubernetes.Clientset, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
+	// if this is a standby cluster, exit and return an error
+	if cluster.Spec.Standby {
+		return ErrStandbyNotAllowed
+	}
+
+	// determine if we are able to access the primary Pod. If not, then the
+	// journey ends right here
+	pod, err := util.GetPrimaryPod(clientset, cluster)
+
+	if err != nil {
+		return err
+	}
+
+	// get the list of databases that we need to scan through
+	databases, err := getPgBouncerDatabases(clientset, restconfig, pod)
+
+	if err != nil {
+		return err
+	}
+
+	// iterate through the list of databases that are returned, and execute the
+	// uninstallation script
+	for databases.Scan() {
+		databaseName := strings.TrimSpace(databases.Text())
+		execPgBouncerScript(clientset, restconfig, pod, databaseName, pgBouncerUninstallScript)
+	}
+
+	// lastly, delete the "pgbouncer" role from the PostgreSQL database
+	// This is safe from SQL injection as we are using constants and a well defined
+	// string
+	sql := strings.NewReader(sqlUninstallPgBouncer)
+	cmd := []string{"psql"}
+
+	// exec into the pod to run the query
+	_, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
+		cmd, "database", pod.Name, pod.ObjectMeta.Namespace, sql)
+
+	// if there is an error executing the command, log the error message from
+	// stderr and return the error
+	if err != nil {
+		log.Error(stderr)
+		return err
+	}
 
 	return nil
 }
@@ -888,43 +943,6 @@ func setPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Con
 	}
 
 	// and that's all!
-	return nil
-}
-
-// uninstallPgBouncer uninstalls the "pgbouncer" user and other management
-// objects from the PostgreSQL pod
-func uninstallPgBouncer(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod) error {
-	// get the list of databases that we need to scan through
-	databases, err := getPgBouncerDatabases(clientset, restconfig, pod)
-
-	if err != nil {
-		return err
-	}
-
-	// iterate through the list of databases that are returned, and execute the
-	// uninstallation script
-	for databases.Scan() {
-		databaseName := strings.TrimSpace(databases.Text())
-		execPgBouncerScript(clientset, restconfig, pod, databaseName, pgBouncerUninstallScript)
-	}
-
-	// lastly, delete the "pgbouncer" role from the PostgreSQL database
-	// This is safe from SQL injection as we are using constants and a well defined
-	// string
-	sql := strings.NewReader(sqlUninstallPgBouncer)
-	cmd := []string{"psql"}
-
-	// exec into the pod to run the query
-	_, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
-		cmd, "database", pod.Name, pod.ObjectMeta.Namespace, sql)
-
-	// if there is an error executing the command, log the error message from
-	// stderr and return the error
-	if err != nil {
-		log.Error(stderr)
-		return err
-	}
-
 	return nil
 }
 
