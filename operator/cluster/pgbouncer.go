@@ -1087,6 +1087,9 @@ func updatePgBouncerResources(clientset *kubernetes.Clientset, restclient *rest.
 	// the pgBouncer container is the first one, the resources can be updated
 	// from it
 	deployment.Spec.Template.Spec.Containers[0].Resources.Requests = cluster.Spec.PgBouncerResources
+	deployment.Spec.Template.Spec.Containers[0].Resources.Limits = cluster.Spec.PgBouncerResources
+	// delete the memory limit
+	delete(deployment.Spec.Template.Spec.Containers[0].Resources.Limits, v1.ResourceMemory)
 
 	// and update the deployment
 	// update the deployment with the new values

@@ -366,29 +366,38 @@ func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, c
 	// update
 	for _, deployment := range deployments.Items {
 		requestResourceList := v1.ResourceList{}
+		limitResourceList := v1.ResourceList{}
 
-		// if there is a request resource list available already, use that one
+		// if there is a request / limit resource list available already, use that
+		// one
 		// NOTE: this works as the "database" container is always first
 		if deployment.Spec.Template.Spec.Containers[0].Resources.Requests != nil {
 			requestResourceList = deployment.Spec.Template.Spec.Containers[0].Resources.Requests
 		}
+		if deployment.Spec.Template.Spec.Containers[0].Resources.Limits != nil {
+			limitResourceList = deployment.Spec.Template.Spec.Containers[0].Resources.Limits
+		}
 
-		// handle the CPU update
-		if request, ok := cluster.Spec.Resources[v1.ResourceCPU]; ok {
-			requestResourceList[v1.ResourceCPU] = request
+		// handle the CPU update. For the CPU updates, we set both set/unset the
+		// request and the limit
+		if resource, ok := cluster.Spec.Resources[v1.ResourceCPU]; ok {
+			requestResourceList[v1.ResourceCPU] = resource
+			limitResourceList[v1.ResourceCPU] = resource
 		} else {
 			delete(requestResourceList, v1.ResourceCPU)
+			delete(limitResourceList, v1.ResourceCPU)
 		}
 
 		// handle the memory update
-		if request, ok := cluster.Spec.Resources[v1.ResourceMemory]; ok {
-			requestResourceList[v1.ResourceMemory] = request
+		if resource, ok := cluster.Spec.Resources[v1.ResourceMemory]; ok {
+			requestResourceList[v1.ResourceMemory] = resource
 		} else {
 			delete(requestResourceList, v1.ResourceMemory)
 		}
 
 		// update the requests resourcelist
 		deployment.Spec.Template.Spec.Containers[0].Resources.Requests = requestResourceList
+		deployment.Spec.Template.Spec.Containers[0].Resources.Limits = limitResourceList
 
 		// Before applying the update, we want to explicitly stop PostgreSQL on each
 		// instance. This prevents PostgreSQL from having to boot up in crash
