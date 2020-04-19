@@ -66,7 +66,6 @@
     "exporterport": "9187",
     "name": "fromcrd",
     "namespace": "pgouser1",
-    "nodename": "",
     "pgBouncerResources": {},
     "pgbadgerport": "10000",
     "podPodAntiAffinity": {
