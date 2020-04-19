@@ -51,7 +51,6 @@ type PgclusterSpec struct {
 	Port            string        `json:"port"`
 	PGBadgerPort    string        `json:"pgbadgerport"`
 	ExporterPort    string        `json:"exporterport"`
-	NodeName        string        `json:"nodename"`
 	PrimaryStorage  PgStorageSpec `json:primarystorage`
 	ArchiveStorage  PgStorageSpec `json:archivestorage`
 	ReplicaStorage  PgStorageSpec `json:replicastorage`
@@ -93,7 +92,8 @@ type PgclusterSpec struct {
 	BackrestResources v1.ResourceList `json:"backrestResources"`
 	// PgBouncerResources, if specified, contains the container request resources
 	// for any pgBouncer Deployments that are part of a PostgreSQL cluster
-	PgBouncerResources v1.ResourceList          `json:"pgBouncerResources"`
+	PgBouncerResources v1.ResourceList `json:"pgBouncerResources"`
+	// PgBouncerReplcias
 	PrimaryHost        string                   `json:"primaryhost"`
 	User               string                   `json:"user"`
 	Database           string                   `json:"database"`

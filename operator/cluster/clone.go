@@ -792,12 +792,10 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 			CollectSecretName: fmt.Sprintf("%s%s", targetClusterName, crv1.CollectSecretSuffix),
 			// CustomConfig is not set as in the future this will be a parameter we
 			// allow the user to pass in
-			Database:     sourcePgcluster.Spec.Database,
-			ExporterPort: sourcePgcluster.Spec.ExporterPort,
-			Name:         targetClusterName,
-			Namespace:    namespace,
-			// NodeName is not set as in the future this will be a parameter we allow
-			// the user to pass in
+			Database:           sourcePgcluster.Spec.Database,
+			ExporterPort:       sourcePgcluster.Spec.ExporterPort,
+			Name:               targetClusterName,
+			Namespace:          namespace,
 			PGBadgerPort:       sourcePgcluster.Spec.PGBadgerPort,
 			PgBouncerResources: sourcePgcluster.Spec.PgBouncerResources,
 			PGOImagePrefix:     sourcePgcluster.Spec.PGOImagePrefix,

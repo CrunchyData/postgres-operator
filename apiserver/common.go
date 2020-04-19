@@ -55,42 +55,6 @@ var (
 		"Operator installation")
 )
 
-// ReplicaPodStatus stores the name of the node a replica pod is assigned to, as well
-// as whether or not the pod is considered "Ready" in the Kubernetes cluster
-type ReplicaPodStatus struct {
-	NodeName    string
-	ReadyStatus string
-}
-
-// GetReplicaPodStatus gets the status of all replica pods in the cluster. Specifically, using
-// the provided cluster name and namespace, it looks up all replica pod in the cluster, and then
-// provides a status for each pod ("Ready" or "Not Ready")
-func GetReplicaPodStatus(clusterName, ns string) (*ReplicaPodStatus, error) {
-
-	//get pods with pg-cluster=<cluster-name>,role=replica
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGHA_ROLE + "=replica"
-	pods, err := kubeapi.GetPods(Clientset, selector, ns)
-	if err != nil {
-		return nil, err
-	}
-
-	p := pods.Items[0]
-	for _, c := range p.Status.ContainerStatuses {
-		if c.Name == "database" {
-			var readyStatus string
-			if c.Ready {
-				readyStatus = "Ready"
-			} else {
-				readyStatus = "Not Ready"
-			}
-			return &ReplicaPodStatus{NodeName: p.Spec.NodeName, ReadyStatus: readyStatus}, nil
-		}
-	}
-
-	log.Error(ErrDBContainerNotFound)
-	return nil, ErrDBContainerNotFound
-}
-
 func GetPVCName(pod *v1.Pod) map[string]string {
 	pvcList := make(map[string]string)
 
