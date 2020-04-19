@@ -244,28 +244,12 @@ func DeletePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 
 	log.Debugf("delete pgbouncer from cluster [%s] in namespace [%s]", clusterName, namespace)
 
-	// next, disable the pgbouncer user in the PostgreSQL cluster.
-	// first, get the primary pod. If we cannot do this, let's consider it an
-	// error and abort
-	pod, err := util.GetPrimaryPod(clientset, cluster)
-
-	if err != nil {
-		return err
-	}
-
-	// This is safe from SQL injection as we are using constants and a well defined
-	// string
-	sql := strings.NewReader(fmt.Sprintf(sqlDisableLogin, crv1.PGUserPgBouncer))
-	cmd := []string{"psql"}
-
-	// exec into the pod to run the query
-	_, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
-		cmd, "database", pod.Name, pod.ObjectMeta.Namespace, sql)
-
-	// if there is an error, log the error from the stderr and return the error
-	if err != nil {
-		log.Error(stderr)
-		return err
+	// if this is a standby cluster, we cannot execute any of the SQL on the
+	// PostgreSQL server, but we can still remove the Deployment and Service.
+	if !cluster.Spec.Standby {
+		if err := disablePgBouncer(clientset, restconfig, cluster); err != nil {
+			return err
+		}
 	}
 
 	// next, delete the various Kubernetes objects associated with the pgbouncer
@@ -594,6 +578,38 @@ func createPgBouncerService(clientset *kubernetes.Clientset, cluster *crv1.Pgclu
 	}
 
 	if err := CreateService(clientset, &fields, cluster.Namespace); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// disablePgBouncer executes codes on the primary PostgreSQL pod in order to
+// disable the "pgbouncer" role from being able to log in. It keeps the
+// artificats that were created during normal pgBouncer operation
+func disablePgBouncer(clientset *kubernetes.Clientset, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
+	log.Debugf("disable pgbouncer user on cluster [%s]", cluster.Name)
+	// disable the pgbouncer user in the PostgreSQL cluster.
+	// first, get the primary pod. If we cannot do this, let's consider it an
+	// error and abort
+	pod, err := util.GetPrimaryPod(clientset, cluster)
+
+	if err != nil {
+		return err
+	}
+
+	// This is safe from SQL injection as we are using constants and a well defined
+	// string
+	sql := strings.NewReader(fmt.Sprintf(sqlDisableLogin, crv1.PGUserPgBouncer))
+	cmd := []string{"psql"}
+
+	// exec into the pod to run the query
+	_, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
+		cmd, "database", pod.Name, pod.ObjectMeta.Namespace, sql)
+
+	// if there is an error, log the error from the stderr and return the error
+	if err != nil {
+		log.Error(stderr)
 		return err
 	}
 
