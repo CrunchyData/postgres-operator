@@ -5,7 +5,7 @@ set -e -u
 REGISTRY='us.gcr.io/container-suite'
 VERSION=$CCP_IMAGE_TAG
 IMAGES=(
-    crunchy-postgres
+    crunchy-postgres-ha
     crunchy-collect
     crunchy-pgbadger
     crunchy-pgbouncer
