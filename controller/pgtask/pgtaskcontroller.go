@@ -89,9 +89,6 @@ func (c *Controller) processNextItem() bool {
 	case crv1.PgtaskMinorUpgrade:
 		log.Debug("delete minor upgrade task added")
 		clusteroperator.AddUpgrade(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
-	case crv1.PgtaskUpdatePgbouncer:
-		log.Debug("update pgbouncer task added")
-		clusteroperator.UpdatePgbouncerFromPgTask(c.PgtaskClientset, c.PgtaskClient, c.PgtaskConfig, &tmpTask)
 	case crv1.PgtaskFailover:
 		log.Debug("failover task added")
 		if !dupeFailover(c.PgtaskClient, &tmpTask, keyNamespace) {

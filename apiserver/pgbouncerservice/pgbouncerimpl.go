@@ -307,9 +307,6 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 			continue
 		}
 
-		// set up the pgtask parameters based on the request options passed in
-		parameters := map[string]string{}
-
 		// if we are rotating the password, perform the request inline
 		if request.RotatePassword {
 			if err := clusteroperator.RotatePgBouncerPassword(apiserver.Clientset, apiserver.RESTClient, apiserver.RESTConfig, &cluster); err != nil {
@@ -322,38 +319,39 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 
 		// if the request has overriding CPURequest and/or MemoryRequest parameters,
 		// add them to the cluster's pgbouncer resource list
-		resources := cluster.Spec.PgBouncer.Resources
-		if resources == nil {
-			resources = v1.ResourceList{}
-		}
+		resources := v1.ResourceList{}
 
 		if request.CPURequest != "" {
 			// as this was already validated, we can ignore the error
 			quantity, _ := resource.ParseQuantity(request.CPURequest)
 			resources[v1.ResourceCPU] = quantity
-			parameters[config.LABEL_PGBOUNCER_UPDATE_RESOURCES] = "true"
 		}
 
 		if request.MemoryRequest != "" {
 			// as this was already validated, we can ignore the error
 			quantity, _ := resource.ParseQuantity(request.MemoryRequest)
 			resources[v1.ResourceMemory] = quantity
-			parameters[config.LABEL_PGBOUNCER_UPDATE_RESOURCES] = "true"
 		}
 
-		// set this value on the cluster spec, but this is only *temporary* in this
-		// context. The values are only needed to be transferred over to the pgtask
-		// They are permanently saved later on.
-		// in the future, we would just udpate the pgcluster CR to make this
-		// occur...
-		cluster.Spec.PgBouncer.Resources = resources
+		// only issue an update to the pgcluster CR if any of the resources have
+		// been updated
+		if len(resources) > 0 {
+			if cluster.Spec.PgBouncer.Resources == nil {
+				cluster.Spec.PgBouncer.Resources = resources
+			} else {
+				for resource, quantity := range resources {
+					cluster.Spec.PgBouncer.Resources[resource] = quantity
+				}
+			}
 
-		if err := clusteroperator.CreatePgTaskforUpdatepgBouncer(apiserver.RESTClient, &cluster, pgouser, parameters); err != nil {
-			log.Error(err)
-			result.Error = true
-			result.ErrorMessage = err.Error()
-			response.Results = append(response.Results, result)
-			continue
+			if err := kubeapi.Updatepgcluster(apiserver.RESTClient, &cluster, cluster.Name, cluster.Namespace); err != nil {
+				log.Error(err)
+				result.Error = true
+				result.ErrorMessage = err.Error()
+				response.Results = append(response.Results, result)
+				continue
+
+			}
 		}
 
 		// append the result to the list

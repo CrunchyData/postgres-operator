@@ -268,16 +268,10 @@ func updatePgBouncer(c *Controller, oldCluster *crv1.Pgcluster, newCluster *crv1
 		return clusteroperator.DeletePgbouncer(c.PgclusterClientset, c.PgclusterClient, c.PgclusterConfig, newCluster)
 	}
 
-	// otherwise, for now, this is a resources update. As we're blending things in
-	// from a legacy system, this means we have to apply a special "parameter" to
-	// indicate that we are updating the resources
-	parameters := map[string]string{
-		config.LABEL_PGBOUNCER_UPDATE_RESOURCES: "true",
-	}
-
+	// otherwise, for now, this is a resources update.
 	log.Debugf("update pgbouncer resources: %+v", newCluster.Spec.PgBouncer.Resources)
 
-	return clusteroperator.UpdatePgbouncer(c.PgclusterClientset, c.PgclusterClient, c.PgclusterConfig, newCluster, parameters)
+	return clusteroperator.UpdatePgbouncer(c.PgclusterClientset, c.PgclusterClient, newCluster)
 }
 
 // updateTablespaces updates the PostgreSQL instance Deployments to reflect the

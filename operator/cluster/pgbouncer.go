@@ -191,43 +191,6 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 	return nil
 }
 
-// CreatePgTaskforUpdatepgBouncer creates a pgtask to process for updating
-// pgBouncer
-//
-// The "parameters" attribute contains a list of parameters that can guide what
-// will take place during an update, e.g.
-//
-// - RotoatePassword="true" will rotate the pgBouncer PostgreSQL user password
-func CreatePgTaskforUpdatepgBouncer(restclient *rest.RESTClient, cluster *crv1.Pgcluster, pgouser string, parameters map[string]string) error {
-	log.Debugf("create pgtask for updating pgbouncer for cluster [%s]", cluster.Name)
-
-	// generate the pgtask, first adding in some boilerplate parameters
-	parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER] = cluster.Name
-
-	// set any pgBouncer custom CPU / Memory request resources
-	if cluster.Spec.PgBouncer.Resources != nil {
-		resources := cluster.Spec.PgBouncer.Resources
-
-		if resources.Cpu() != nil && !resources.Cpu().IsZero() {
-			parameters[config.LABEL_PGBOUNCER_CPU_REQUEST] = resources.Cpu().String()
-		}
-
-		if resources.Memory() != nil && !resources.Memory().IsZero() {
-			parameters[config.LABEL_PGBOUNCER_MEMORY_REQUEST] = resources.Memory().String()
-		}
-	}
-
-	task := generatePgtaskForPgBouncer(cluster, pgouser,
-		crv1.PgtaskUpdatePgbouncer, config.LABEL_PGBOUNCER_TASK_UPDATE, parameters)
-	// try to create the pgtask!
-	if err := kubeapi.Createpgtask(restclient, task, task.Spec.Namespace); err != nil {
-		log.Error(err)
-		return err
-	}
-
-	return nil
-}
-
 // DeletePgbouncer contains the various functions that are used to delete a
 // pgBouncer Deployment for a PostgreSQL cluster
 //
@@ -420,24 +383,16 @@ func UninstallPgBouncer(clientset *kubernetes.Clientset, restconfig *rest.Config
 //
 // Any errors that are returned should be logged in the calling function, though
 // some logging occurs in this function as well
-func UpdatePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster, parameters map[string]string) error {
+func UpdatePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cluster *crv1.Pgcluster) error {
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
 
-	log.Debugf("update pgbouncer from cluster [%s] in namespace [%s] with parameters [%+v]", clusterName, namespace, parameters)
+	log.Debugf("update pgbouncer from cluster [%s] in namespace [%s]", clusterName, namespace)
 
-	// Alright, so we need to figure out which parameters are set, so we can take
-	// action on them
-	for param := range parameters {
-		switch param {
-		// determine if we need to update the resources that are set on the
-		// pgBouncer Deployment, which in turn also need to set an update on the
-		// cluster CR
-		case config.LABEL_PGBOUNCER_UPDATE_RESOURCES:
-			if err := updatePgBouncerResources(clientset, restclient, cluster); err != nil {
-				return err
-			}
-		}
+	// currently, there is only one action, which is to update the pgBouncer
+	// resources
+	if err := updatePgBouncerResources(clientset, restclient, cluster); err != nil {
+		return err
 	}
 
 	// publish an event
@@ -445,52 +400,6 @@ func UpdatePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 
 	// and that's it!
 	return nil
-}
-
-// UpdatePgbouncerFromPgTask is effectively a legacy method (though modernized to fit this patterh)
-// that checks basic information about the Pgtask that is being present, and delegates the actual
-// work to UpdatePgBouncer
-func UpdatePgbouncerFromPgTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, task *crv1.Pgtask) {
-	clusterName := task.Spec.Parameters[config.LABEL_PGBOUNCER_TASK_CLUSTER]
-	namespace := task.Spec.Namespace
-	parameters := task.Spec.Parameters
-
-	log.Debugf("update pgbouncer from task called for cluster [%s] in namespace [%s] with parameters [%+v]",
-		clusterName, namespace, parameters)
-
-	// find the pgcluster that is associated with this task
-	cluster := crv1.Pgcluster{}
-
-	if found, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace); !found || err != nil {
-		// if even if it's found and there is an error, it's pretty bad so abort
-		log.Error(err)
-		return
-	}
-
-	// if there are values for the CPU and/or memory settings for the pgBouncer
-	// instances, apply those to the cluster
-	// if there is an error, only warn, and continue on with an empty resources
-	// list
-	if _, ok := parameters[config.LABEL_PGBOUNCER_UPDATE_RESOURCES]; ok {
-		if resources, err := generateContainerResources(task.Spec.Parameters[config.LABEL_PGBOUNCER_CPU_REQUEST],
-			task.Spec.Parameters[config.LABEL_PGBOUNCER_MEMORY_REQUEST]); err != nil {
-			log.Warn(err)
-			cluster.Spec.PgBouncer.Resources = v1.ResourceList{}
-		} else {
-			cluster.Spec.PgBouncer.Resources = resources
-		}
-	}
-
-	// attempt to update the pgbouncer!
-	if err := UpdatePgbouncer(clientset, restclient, restconfig, &cluster, parameters); err != nil {
-		log.Error(err)
-		return
-	}
-
-	// lastly, remove the task
-	if err := kubeapi.Deletepgtask(restclient, task.Name, namespace); err != nil {
-		log.Warn(err)
-	}
 }
 
 // checkPgBouncerInstall checks to see if pgBouncer is installed in the
@@ -956,11 +865,6 @@ func setPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Con
 // updatePgBouncerResources updates the pgBouncer Deployment with the container
 // resource request values that are desired
 func updatePgBouncerResources(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cluster *crv1.Pgcluster) error {
-	// first, update the pgcluster CR with the updated values
-	if err := kubeapi.Updatepgcluster(restclient, cluster, cluster.Name, cluster.Namespace); err != nil {
-		return err
-	}
-
 	// get the pgBouncer deployment so the resources can be updated
 	deployment, err := getPgBouncerDeployment(clientset, cluster)
 
@@ -970,8 +874,8 @@ func updatePgBouncerResources(clientset *kubernetes.Clientset, restclient *rest.
 
 	// the pgBouncer container is the first one, the resources can be updated
 	// from it
-	deployment.Spec.Template.Spec.Containers[0].Resources.Requests = cluster.Spec.PgBouncer.Resources
-	deployment.Spec.Template.Spec.Containers[0].Resources.Limits = cluster.Spec.PgBouncer.Resources
+	deployment.Spec.Template.Spec.Containers[0].Resources.Requests = cluster.Spec.PgBouncer.Resources.DeepCopy()
+	deployment.Spec.Template.Spec.Containers[0].Resources.Limits = cluster.Spec.PgBouncer.Resources.DeepCopy()
 	// delete the memory limit
 	delete(deployment.Spec.Template.Spec.Containers[0].Resources.Limits, v1.ResourceMemory)
 
