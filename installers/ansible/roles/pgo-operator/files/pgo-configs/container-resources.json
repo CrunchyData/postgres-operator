@@ -4,6 +4,7 @@
   "limits": {
     "cpu": "{{.RequestsCPU}}"
   },
+  {{ end }}
   "requests": {
     {{ if .RequestsCPU }}
     "cpu": "{{.RequestsCPU}}"{{ if .RequestsMemory }},{{ end }}
