@@ -239,10 +239,10 @@ func ShowPgBouncer(request *msgs.ShowPgBouncerRequest, namespace string) msgs.Sh
 }
 
 // UpdatePgBouncer updates a cluster's pgBouncer deployment based on the
-// parameters passed in. Right now, that is only rotating the service account
-// password
+// parameters passed in. This includes:
 //
-// pgo update pgbouncer --rotate-password
+// - password rotation
+// - updating CPU/memory resources
 func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser string) msgs.UpdatePgBouncerResponse {
 	// set up a dummy response
 	response := msgs.UpdatePgBouncerResponse{
@@ -310,8 +310,14 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 		// set up the pgtask parameters based on the request options passed in
 		parameters := map[string]string{}
 
+		// if we are rotating the password, perform the request inline
 		if request.RotatePassword {
-			parameters[config.LABEL_PGBOUNCER_ROTATE_PASSWORD] = "true"
+			if err := clusteroperator.RotatePgBouncerPassword(apiserver.Clientset, apiserver.RESTClient, apiserver.RESTConfig, &cluster); err != nil {
+				log.Error(err)
+				result.Error = true
+				result.ErrorMessage = err.Error()
+				response.Results = append(response.Results, result)
+			}
 		}
 
 		// if the request has overriding CPURequest and/or MemoryRequest parameters,

@@ -281,6 +281,89 @@ func DeletePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 	return nil
 }
 
+// RotatePgBouncerPassword rotates the password for a pgBouncer PostgreSQL user,
+// which involves updating the password in the PostgreSQL cluster as well as
+// the users secret that is available in the pgbouncer Pod
+func RotatePgBouncerPassword(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
+	namspace := cluster.Namespace
+	// determine if we are able to access the primary Pod
+	primaryPod, err := util.GetPrimaryPod(clientset, cluster)
+
+	if err != nil {
+		return err
+	}
+
+	// let's also go ahead and get the secret that contains the pgBouncer
+	// information. If we can't find the secret, we're basically done here
+	secretName := util.GeneratePgBouncerSecretName(cluster.Name)
+	secret, err := kubeapi.GetSecret(clientset, secretName, namspace)
+
+	if err != nil {
+		return err
+	}
+
+	// there are a few steps that must occur in order for the password to be
+	// successfully rotated:
+	//
+	// 1. The PostgreSQL cluster must have the pgbouncer user's password updated
+	// 2. The secret that containers the values of "users.txt" must be updated
+	// 3. The pgBouncer pods must be bounced and have the new password loaded, but
+	// 		we must first ensure the password propagates to them
+	//
+	// ...wouldn't it be nice if we could run this in a transaction? rolling back
+	// is hard :(
+
+	// first, generate a new password
+	password, err := generatePassword()
+
+	if err != nil {
+		return err
+	}
+
+	// next, update the PostgreSQL primary with the new password. If this fails
+	// we definitely return an error
+	if err := setPostgreSQLPassword(clientset, restconfig, primaryPod, password); err != nil {
+		return err
+	}
+
+	// next, update the users.txt and password fields of the secret. the important
+	// one to update is the users.txt, as that is used by pgbouncer to connect to
+	// PostgreSQL to perform its authentication
+	secret.Data["password"] = []byte(password)
+	secret.Data["users.txt"] = util.GeneratePgBouncerUsersFileBytes(
+		util.GeneratePostgreSQLMD5Password(crv1.PGUserPgBouncer, password))
+
+	// update the secret
+	if err := kubeapi.UpdateSecret(clientset, secret, namspace); err != nil {
+		return err
+	}
+
+	// now we wait for the password to propagate to all of the pgbouncer pods in
+	// the deployment
+	// set up the selector for the primary pod
+	selector := fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER, cluster.Name,
+		config.LABEL_PGBOUNCER)
+
+	// query the pods
+	pods, err := kubeapi.GetPods(clientset, selector, namspace)
+
+	if err != nil {
+		return err
+	}
+
+	// iterate through each pod and restart it, which will force an update of the
+	// secret
+	for _, pod := range pods.Items {
+		// after this waiting period has passed, delete Pod. If the pod fails to
+		// delete, warn but continue on
+		if err := kubeapi.DeletePod(clientset, pod.Name, pod.Namespace); err != nil {
+			log.Warn(err)
+		}
+	}
+
+	return nil
+}
+
 // UninstallPgBouncer uninstalls the "pgbouncer" user and other management
 // objects from the PostgreSQL cluster
 func UninstallPgBouncer(clientset *kubernetes.Clientset, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
@@ -347,15 +430,9 @@ func UpdatePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 	// action on them
 	for param := range parameters {
 		switch param {
-		// determine if we need to rotate the password. if there is an error, return
-		// early as we cannot guarantee anything else can occur
-		case config.LABEL_PGBOUNCER_ROTATE_PASSWORD:
-			if err := rotatePgBouncerPassword(clientset, restclient, restconfig, cluster); err != nil {
-				return err
-			}
-			// determine if we need to update the resources that are set on the
-			// pgBouncer Deployment, which in turn also need to set an update on the
-			// cluster CR
+		// determine if we need to update the resources that are set on the
+		// pgBouncer Deployment, which in turn also need to set an update on the
+		// cluster CR
 		case config.LABEL_PGBOUNCER_UPDATE_RESOURCES:
 			if err := updatePgBouncerResources(clientset, restclient, cluster); err != nil {
 				return err
@@ -857,92 +934,6 @@ func publishPgBouncerEvent(eventType string, cluster *crv1.Pgcluster) {
 	}
 }
 
-// rotatePgBouncerPassword rotates the password for a pgBouncer PostgreSQL user,
-// which involves updating the password in the PostgreSQL cluster as well as
-// the users secret that is available in the pgbouncer Pod
-func rotatePgBouncerPassword(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
-	namspace := cluster.Namespace
-	// determine if we are able to access the primary Pod
-	primaryPod, err := util.GetPrimaryPod(clientset, cluster)
-
-	if err != nil {
-		return err
-	}
-
-	// let's also go ahead and get the secret that contains the pgBouncer
-	// information. If we can't find the secret, we're basically done here
-	secretName := util.GeneratePgBouncerSecretName(cluster.Name)
-	secret, err := kubeapi.GetSecret(clientset, secretName, namspace)
-
-	if err != nil {
-		return err
-	}
-
-	// there are a few steps that must occur in order for the password to be
-	// successfully rotated:
-	//
-	// 1. The PostgreSQL cluster must have the pgbouncer user's password updated
-	// 2. The secret that containers the values of "users.txt" must be updated
-	// 3. The pgBouncer pods must be bounced and have the new password loaded, but
-	// 		we must first ensure the password propagates to them
-	//
-	// ...wouldn't it be nice if we could run this in a transaction? rolling back
-	// is hard :(
-
-	// first, generate a new password
-	password, err := generatePassword()
-
-	if err != nil {
-		return err
-	}
-
-	// next, update the PostgreSQL primary with the new password. If this fails
-	// we definitely return an error
-	if err := setPostgreSQLPassword(clientset, restconfig, primaryPod, password); err != nil {
-		return err
-	}
-
-	// next, update the users.txt and password fields of the secret. the important
-	// one to update is the users.txt, as that is used by pgbouncer to connect to
-	// PostgreSQL to perform its authentication
-	secret.Data["password"] = []byte(password)
-	secret.Data["users.txt"] = util.GeneratePgBouncerUsersFileBytes(
-		util.GeneratePostgreSQLMD5Password(crv1.PGUserPgBouncer, password))
-
-	// update the secret
-	if err := kubeapi.UpdateSecret(clientset, secret, namspace); err != nil {
-		return err
-	}
-
-	// now we wait for the password to propagate to all of the pgbouncer pods in
-	// the deployment
-	// set up the selector for the primary pod
-	selector := fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER, cluster.Name,
-		config.LABEL_PGBOUNCER)
-
-	// query the pods
-	pods, err := kubeapi.GetPods(clientset, selector, namspace)
-
-	if err != nil {
-		return err
-	}
-
-	// iterate through each pod and see if the secret has propagated. once it
-	// returns, restart the pod (i.e. deleted it)
-	for _, pod := range pods.Items {
-		waitForSecretPropagation(clientset, restconfig, pod, string(secret.Data["users.txt"]),
-			pgBouncerSecretPropagationTimeout, pgBouncerSecretPropagationPeriod)
-
-		// after this waiting period has passed, delete Pod. If the pod fails to
-		// delete, warn but continue on
-		if err := kubeapi.DeletePod(clientset, pod.Name, pod.Namespace); err != nil {
-			log.Warn(err)
-		}
-	}
-
-	return nil
-}
-
 // setPostgreSQLPassword updates the pgBouncer password in the PostgreSQL
 // cluster by executing into the primary Pod and changing it
 func setPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod, password string) error {
@@ -991,41 +982,4 @@ func updatePgBouncerResources(clientset *kubernetes.Clientset, restclient *rest.
 	}
 
 	return nil
-}
-
-// waitForSecretPropagation waits until the update to the pgbouncer secret has
-// propogated
-func waitForSecretPropagation(clientset *kubernetes.Clientset, restconfig *rest.Config, pod v1.Pod, expected string, timeoutSecs, periodSecs time.Duration) {
-	timeout := time.After(timeoutSecs * time.Second)
-	tick := time.Tick(periodSecs * time.Second)
-
-loop:
-	for {
-		select {
-		// in the case of hitting the timeout, warn that the timeout was hit, but
-		// continue onward
-		case <-timeout:
-			log.Warnf("timed out after [%d]s waiting for secret to propagate to pod [%s]", timeout, pod.Name)
-			return
-		case <-tick:
-			// exec into the pod to run the query
-			stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
-				cmdViewPgBouncerUsersSecret, "pgbouncer", pod.Name, pod.ObjectMeta.Namespace, nil)
-
-			// if there is an error, warn about it, but try again
-			if err != nil {
-				log.Warnf(stderr)
-				continue loop
-			}
-
-			// trim any space that may be there for an accurate read
-			secret := strings.TrimSpace(stdout)
-
-			// if we have match, break the loop
-			if secret == expected {
-				log.Debug("secret propogated to pod [%s]", pod.Name)
-				return
-			}
-		}
-	}
 }
