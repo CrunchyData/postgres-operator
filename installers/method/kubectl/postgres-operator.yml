@@ -98,13 +98,13 @@ spec:
                   - name: SCHEDULER_TIMEOUT
                     value: "3600"
                   - name: BACKREST_STORAGE
-                    value: "gce"
+                    value: "storageos"
                   - name: BACKUP_STORAGE
-                    value: "gce"
+                    value: "storageos"
                   - name: PRIMARY_STORAGE
-                    value: "gce"
+                    value: "storageos"
                   - name: REPLICA_STORAGE
-                    value: "gce"
+                    value: "storageos"
                   - name: STORAGE1_NAME
                     value: "hostpathstorage"
                   - name: STORAGE1_ACCESS_MODE
