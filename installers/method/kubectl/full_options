@@ -197,7 +197,7 @@ value: "storageos"
 - name: STORAGE5_ACCESS_MODE
 value: "ReadWriteOnce"
 - name: STORAGE5_SIZE
-value: "300M"
+value: "5Gi"
 - name: STORAGE5_TYPE
 value: "dynamic"
 - name: STORAGE5_CLASS

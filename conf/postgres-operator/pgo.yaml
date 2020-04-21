@@ -54,7 +54,7 @@ Storage:
     SupplementalGroups:  65534
   storageos:
     AccessMode:  ReadWriteOnce
-    Size:  300M
+    Size:  5Gi
     StorageType:  dynamic
     StorageClass:  fast
   primarysite:

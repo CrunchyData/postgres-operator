@@ -291,7 +291,7 @@ The following example defines a storageTo setup storage1 to use the storage clas
 ```ini
 storage5_name='storageos'
 storage5_access_mode='ReadWriteOnce'
-storage5_size='300M'
+storage5_size='5Gi'
 storage5_type='dynamic'
 storage5_class='fast'
 ```
