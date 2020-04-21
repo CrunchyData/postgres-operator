@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -156,9 +157,15 @@ var createClusterCmd = &cobra.Command{
 
 		if len(args) != 1 {
 			fmt.Println(`Error: A single cluster name is required for this command.`)
-		} else {
-			createCluster(args, Namespace, cmd)
+			os.Exit(1)
 		}
+
+		if PgbouncerFlag && PgBouncerReplicas < 0 {
+			fmt.Println("Error: You must specify one or more replicas for pgBouncer.")
+			os.Exit(1)
+		}
+
+		createCluster(args, Namespace, cmd)
 	},
 }
 
@@ -203,9 +210,15 @@ var createPgbouncerCmd = &cobra.Command{
 
 		if len(args) == 0 && Selector == "" {
 			fmt.Println(`Error: A cluster name or selector is required for this command.`)
-		} else {
-			createPgbouncer(args, Namespace)
+			os.Exit(1)
 		}
+
+		if PgBouncerReplicas < 0 {
+			fmt.Println("Error: You must specify one or more replicas.")
+			os.Exit(1)
+		}
+
+		createPgbouncer(args, Namespace)
 	},
 }
 
@@ -320,6 +333,7 @@ func init() {
 		"for pgBouncer. Defaults to being unset.")
 	createClusterCmd.Flags().StringVar(&PgBouncerMemoryRequest, "pgbouncer-memory", "", "Set the amount of Memory to request for "+
 		"pgBouncer. Defaults to server value (24Mi).")
+	createClusterCmd.Flags().Int32Var(&PgBouncerReplicas, "pgbouncer-replicas", 0, "Set the total number of pgBouncer instances to deploy. If not set, defaults to 1.")
 	createClusterCmd.Flags().StringVarP(&ReplicaStorageConfig, "replica-storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster replica storage.")
 	createClusterCmd.Flags().StringVarP(&PodAntiAffinity, "pod-anti-affinity", "", "",
 		"Specifies the type of anti-affinity that should be utilized when applying  "+
@@ -369,6 +383,7 @@ func init() {
 		"for pgBouncer. Defaults to being unset.")
 	createPgbouncerCmd.Flags().StringVar(&PgBouncerMemoryRequest, "memory", "", "Set the amount of Memory to request for "+
 		"pgBouncer. Defaults to server value (24Mi).")
+	createPgbouncerCmd.Flags().Int32Var(&PgBouncerReplicas, "replicas", 0, "Set the total number of pgBouncer instances to deploy. If not set, defaults to 1.")
 	createPgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 
 	// "pgo create pgouser" flags

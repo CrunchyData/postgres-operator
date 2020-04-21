@@ -145,7 +145,7 @@ func (c *Controller) handleBootstrapInit(newPod *apiv1.Pod, cluster *crv1.Pgclus
 	// if this is a pgbouncer enabled cluster, add a pgbouncer
 	// Note: we only warn if we cannot create the pgBouncer, so eecution can
 	// continue
-	if cluster.Spec.PgBouncer.Enabled {
+	if cluster.Spec.PgBouncer.Enabled() {
 		if err := clusteroperator.AddPgbouncer(c.PodClientset, c.PodClient, c.PodConfig, cluster); err != nil {
 			log.Warn(err)
 		}
@@ -192,7 +192,7 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	// if this is a pgbouncer enabled cluster, add a pgbouncer
 	// Note: we only warn if we cannot create the pgBouncer, so eecution can
 	// continue
-	if cluster.Spec.PgBouncer.Enabled {
+	if cluster.Spec.PgBouncer.Enabled() {
 		if err := clusteroperator.AddPgbouncer(c.PodClientset, c.PodClient, c.PodConfig, cluster); err != nil {
 			log.Warn(err)
 		}

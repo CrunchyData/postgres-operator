@@ -38,6 +38,9 @@ const (
 	// ErrMessagePVCSize provides a standard error message when a PVCSize is not
 	// specified to the Kubernetes stnadard
 	ErrMessagePVCSize = `could not parse PVC size "%s": %s (hint: try a value like "1Gi")`
+	// ErrMessageReplicas provides a standard error message when the count of
+	// replicas is incorrect
+	ErrMessageReplicas = `must have at least %d replica(s)`
 )
 
 var (

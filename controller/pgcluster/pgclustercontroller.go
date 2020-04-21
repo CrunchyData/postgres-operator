@@ -255,23 +255,20 @@ func updatePgBouncer(c *Controller, oldCluster *crv1.Pgcluster, newCluster *crv1
 	log.Debugf("update pgbouncer for cluster %s", newCluster.Name)
 
 	// first, handle the easy ones, i.e. determine if we are enabling or disabling
-	// if this is what we're doing...this is all we are doing for this one
-	if oldCluster.Spec.PgBouncer.Enabled != newCluster.Spec.PgBouncer.Enabled {
-		log.Debugf("pgbouncer enabled: %t", newCluster.Spec.PgBouncer.Enabled)
+	if oldCluster.Spec.PgBouncer.Enabled() != newCluster.Spec.PgBouncer.Enabled() {
+		log.Debugf("pgbouncer enabled: %t", newCluster.Spec.PgBouncer.Enabled())
 
-		if newCluster.Spec.PgBouncer.Enabled {
+		// if this is being enabled, it's a simple step where we can return here
+		if newCluster.Spec.PgBouncer.Enabled() {
 			return clusteroperator.AddPgbouncer(c.PgclusterClientset, c.PgclusterClient, c.PgclusterConfig, newCluster)
 		}
 
-		// if we're not enabling it, we're disabling it
-		// TODO: handle uninstall?
+		// if we're not enabled, we're disabled
 		return clusteroperator.DeletePgbouncer(c.PgclusterClientset, c.PgclusterClient, c.PgclusterConfig, newCluster)
 	}
 
-	// otherwise, for now, this is a resources update.
-	log.Debugf("update pgbouncer resources: %+v", newCluster.Spec.PgBouncer.Resources)
-
-	return clusteroperator.UpdatePgbouncer(c.PgclusterClientset, c.PgclusterClient, newCluster)
+	// otherwise, this is an update
+	return clusteroperator.UpdatePgbouncer(c.PgclusterClientset, c.PgclusterClient, oldCluster, newCluster)
 }
 
 // updateTablespaces updates the PostgreSQL instance Deployments to reflect the

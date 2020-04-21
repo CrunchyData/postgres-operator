@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -63,6 +64,7 @@ type pgBouncerTemplateFields struct {
 	PodAntiAffinity           string
 	PodAntiAffinityLabelName  string
 	PodAntiAffinityLabelValue string
+	Replicas                  int32 `json:",string"`
 }
 
 // pgBouncerDeploymentFormat is the name of the Kubernetes Deployment that
@@ -383,20 +385,35 @@ func UninstallPgBouncer(clientset *kubernetes.Clientset, restconfig *rest.Config
 //
 // Any errors that are returned should be logged in the calling function, though
 // some logging occurs in this function as well
-func UpdatePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cluster *crv1.Pgcluster) error {
-	clusterName := cluster.Name
-	namespace := cluster.Namespace
+func UpdatePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, oldCluster, newCluster *crv1.Pgcluster) error {
+	clusterName := newCluster.Name
+	namespace := newCluster.Namespace
 
 	log.Debugf("update pgbouncer from cluster [%s] in namespace [%s]", clusterName, namespace)
 
-	// currently, there is only one action, which is to update the pgBouncer
-	// resources
-	if err := updatePgBouncerResources(clientset, restclient, cluster); err != nil {
-		return err
+	// we need to detect what has changed. presently, two "groups" of things could
+	// have changed
+	// 1. The # of replicas to maintain
+	// 2. The pgBouncer container resources
+	//
+	// As #2 is a bit more destructive, we'll do that last
+
+	// check if the replicas differ
+	if oldCluster.Spec.PgBouncer.Replicas != newCluster.Spec.PgBouncer.Replicas {
+		if err := updatePgBouncerReplicas(clientset, restclient, newCluster); err != nil {
+			return err
+		}
+	}
+
+	// check if the resources differ
+	if !reflect.DeepEqual(oldCluster.Spec.PgBouncer.Resources, newCluster.Spec.PgBouncer.Resources) {
+		if err := updatePgBouncerResources(clientset, restclient, newCluster); err != nil {
+			return err
+		}
 	}
 
 	// publish an event
-	publishPgBouncerEvent(events.EventUpdatePgbouncer, cluster)
+	publishPgBouncerEvent(events.EventUpdatePgbouncer, newCluster)
 
 	// and that's it!
 	return nil
@@ -454,6 +471,7 @@ func createPgBouncerDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pg
 		PodAntiAffinityLabelName: config.LABEL_POD_ANTI_AFFINITY,
 		PodAntiAffinityLabelValue: string(operator.GetPodAntiAffinityType(cluster,
 			crv1.PodAntiAffinityDeploymentPgBouncer, cluster.Spec.PodAntiAffinity.PgBouncer)),
+		Replicas: cluster.Spec.PgBouncer.Replicas,
 	}
 
 	// For debugging purposes, put the template substitution in stdout
@@ -862,9 +880,37 @@ func setPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Con
 	return nil
 }
 
+// updatePgBouncerReplicas updates the pgBouncer Deployment with the number
+// of replicas (Pods) that it should run. Presently, this is fairly naive, but
+// as pgBouncer is "semi-stateful" we may want to improve upon this in the
+// future
+func updatePgBouncerReplicas(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cluster *crv1.Pgcluster) error {
+	log.Debugf("scale pgbouncer replicas to [%d]", cluster.Spec.PgBouncer.Replicas)
+
+	// get the pgBouncer deployment so the resources can be updated
+	deployment, err := getPgBouncerDeployment(clientset, cluster)
+
+	if err != nil {
+		return err
+	}
+
+	// update the number of replicas
+	deployment.Spec.Replicas = &cluster.Spec.PgBouncer.Replicas
+
+	// and update the deployment
+	// update the deployment with the new values
+	if err := kubeapi.UpdateDeployment(clientset, deployment); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // updatePgBouncerResources updates the pgBouncer Deployment with the container
 // resource request values that are desired
 func updatePgBouncerResources(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cluster *crv1.Pgcluster) error {
+	log.Debugf("update pgbouncer resources to [%+v]", cluster.Spec.PgBouncer.Resources)
+
 	// get the pgBouncer deployment so the resources can be updated
 	deployment, err := getPgBouncerDeployment(clientset, cluster)
 
