@@ -297,6 +297,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.BackrestMemoryRequest = BackrestMemoryRequest
 	r.PgBouncerCPURequest = PgBouncerCPURequest
 	r.PgBouncerMemoryRequest = PgBouncerMemoryRequest
+	r.PgBouncerReplicas = PgBouncerReplicas
 	// determine if the user wants to create tablespaces as part of this request,
 	// and if so, set the values
 	r.Tablespaces = getTablespaces(Tablespaces)

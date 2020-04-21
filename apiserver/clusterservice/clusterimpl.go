@@ -728,6 +728,14 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		}
 	}
 
+	// if the pgBouncer flag is set, validate that replicas is set to a
+	// nonnegative value
+	if request.PgbouncerFlag && request.PgBouncerReplicas < 0 {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageReplicas+" for pgBouncer", 1)
+		return resp
+	}
+
 	// if a value is provided in the request for PodAntiAffinity, then ensure is valid.  If
 	// it is, then set the user label for pod anti-affinity to the request value
 	// (which in turn becomes a *Label* which is important for anti-affinity).
@@ -996,9 +1004,6 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec := crv1.PgclusterSpec{
 		BackrestResources: v1.ResourceList{},
 		PgBouncer: crv1.PgBouncerSpec{
-			// if the pgBouncer flag is set to true, indicate that the pgBouncer
-			// deployment should be made available in this cluster
-			Enabled:   request.PgbouncerFlag,
 			Resources: v1.ResourceList{},
 		},
 		Resources: v1.ResourceList{},
@@ -1038,6 +1043,18 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.BackrestResources[v1.ResourceMemory] = quantity
 	} else {
 		spec.BackrestResources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultBackrestResourceMemory
+	}
+
+	// if the pgBouncer flag is set to true, indicate that the pgBouncer
+	// deployment should be made available in this cluster
+	if request.PgbouncerFlag {
+		spec.PgBouncer.Replicas = config.DefaultPgBouncerReplicas
+
+		// if the user requests a custom amount of pgBouncer replicas, pass them in
+		// here
+		if request.PgBouncerReplicas > 0 {
+			spec.PgBouncer.Replicas = request.PgBouncerReplicas
+		}
 	}
 
 	// similarly, if there are any overriding pgBouncer container resource request

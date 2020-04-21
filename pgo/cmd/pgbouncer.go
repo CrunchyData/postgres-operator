@@ -42,6 +42,10 @@ type updatePgBouncerTextPadding struct {
 	Status       int
 }
 
+// PgBouncerReplicas is the total number of replica pods to deploy with a
+// pgBouncer Deployment
+var PgBouncerReplicas int32
+
 // PgBouncerUninstall is used to ensure the objects intalled in PostgreSQL on
 // behalf of pgbouncer are either not applied (in the case of a cluster create)
 // or are removed (in the case of a pgo delete pgbouncer)
@@ -60,6 +64,7 @@ func createPgbouncer(args []string, ns string) {
 		CPURequest:    PgBouncerCPURequest,
 		MemoryRequest: PgBouncerMemoryRequest,
 		Namespace:     ns,
+		Replicas:      PgBouncerReplicas,
 		Selector:      Selector,
 	}
 
@@ -349,6 +354,7 @@ func updatePgBouncer(namespace string, clusterNames []string) {
 		CPURequest:     PgBouncerCPURequest,
 		MemoryRequest:  PgBouncerMemoryRequest,
 		Namespace:      namespace,
+		Replicas:       PgBouncerReplicas,
 		RotatePassword: RotatePassword,
 		Selector:       Selector,
 	}

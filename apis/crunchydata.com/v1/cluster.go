@@ -169,14 +169,24 @@ type PodAntiAffinitySpec struct {
 // provides the attributes for managing a PgBouncer implementation, including:
 // - is it enabled?
 // - what resources it should consume
-// - TODO: how many replicas it has?
+// - the total number of replicas
 type PgBouncerSpec struct {
-	// Enabled is true if a pgBouncer Deployment should be deployed with the
-	// PostgreSQL cluster
-	Enabled bool `json:"enabled"`
+	// Replicas represents the total number of Pods to deploy with pgBouncer,
+	// which effectively enables/disables the pgBouncer.
+	//
+	// if it is set to 0 or less, it is disabled.
+	//
+	// if it is set to 1 or more, it is enabled
+	Replicas int32 `json:"replicas"`
 	// Resources, if specified, contains the container request resources
 	// for any pgBouncer Deployments that are part of a PostgreSQL cluster
 	Resources v1.ResourceList `json:"resources"`
+}
+
+// Enabled returns true if the pgBouncer is enabled for the cluster, i.e. there
+// is at least one replica set
+func (s *PgBouncerSpec) Enabled() bool {
+	return s.Replicas > 0
 }
 
 // TLSSpec contains the information to set up a TLS-enabled PostgreSQL cluster

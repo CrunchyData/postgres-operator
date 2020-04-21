@@ -19,6 +19,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+// DefaultPgBouncerReplicas is the total number of Pods to place in a pgBouncer
+// Deployment
+const DefaultPgBouncerReplicas = 1
+
 // Default resource values for deploying a PostgreSQL cluster. These values are
 // utilized if the user has not provided these values either through
 // configuration or from one-off API/CLI calls.

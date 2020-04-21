@@ -96,6 +96,7 @@ func init() {
 		"pgBouncer.")
 	UpdatePgBouncerCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdatePgBouncerCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
+	UpdatePgBouncerCmd.Flags().Int32Var(&PgBouncerReplicas, "replicas", 0, "Set the total number of pgBouncer instances to deploy. If not set, defaults to 1.")
 	UpdatePgBouncerCmd.Flags().BoolVar(&RotatePassword, "rotate-password", false, "Used to rotate the pgBouncer service account password. Can cause interruption of service.")
 	UpdatePgBouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	UpdatePgouserCmd.Flags().StringVarP(&PgouserNamespaces, "pgouser-namespaces", "", "", "The namespaces to use for updating the pgouser roles.")
@@ -298,6 +299,11 @@ var UpdatePgBouncerCmd = &cobra.Command{
 
 		if Namespace == "" {
 			Namespace = PGONamespace
+		}
+
+		if PgBouncerReplicas < 0 {
+			fmt.Println("Error: You must specify one or more replicas.")
+			os.Exit(1)
 		}
 
 		updatePgBouncer(Namespace, args)

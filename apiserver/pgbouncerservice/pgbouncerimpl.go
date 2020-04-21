@@ -59,6 +59,13 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 		return resp
 	}
 
+	// validate the number of replicas being requested
+	if request.Replicas < 0 {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageReplicas, 1)
+		return resp
+	}
+
 	log.Debugf("createPgbouncer selector is [%s]", request.Selector)
 
 	// try to get the list of clusters. if there is an error, put it into the
@@ -76,6 +83,15 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 
 		resources := v1.ResourceList{}
 
+		// Set the value that enables the pgBouncer, which is the replicas
+		// Set the default value, and if there is a custom number of replicas
+		// provided, set it to that
+		cluster.Spec.PgBouncer.Replicas = config.DefaultPgBouncerReplicas
+
+		if request.Replicas > 0 {
+			cluster.Spec.PgBouncer.Replicas = request.Replicas
+		}
+
 		// if the request has overriding CPURequest and/or MemoryRequest parameters,
 		// these will take precedence over the defaults
 		if request.CPURequest != "" {
@@ -92,9 +108,6 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 			resources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultPgBouncerResourceMemory
 		}
 
-		// Initialize the values on the cluster spec. We are going to "enable" the
-		// pgBouncer Deployment, and apply any resources to it
-		cluster.Spec.PgBouncer.Enabled = true
 		cluster.Spec.PgBouncer.Resources = resources
 
 		// update the cluster CRD with these udpates. If there is an error
@@ -160,8 +173,8 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 			}
 		}
 
-		// Disable the pgBouncer Deploymnet
-		cluster.Spec.PgBouncer.Enabled = false
+		// Disable the pgBouncer Deploymnet, whcih means setting Replicas to 0
+		cluster.Spec.PgBouncer.Replicas = 0
 
 		// update the cluster CRD with these udpates. If there is an error
 		if err := kubeapi.Updatepgcluster(apiserver.RESTClient, &cluster, cluster.Name, request.Namespace); err != nil {
@@ -215,7 +228,7 @@ func ShowPgBouncer(request *msgs.ShowPgBouncerRequest, namespace string) msgs.Sh
 			HasPgBouncer: true,
 		}
 		// first, check if the cluster has pgBouncer enabled
-		if !cluster.Spec.PgBouncer.Enabled {
+		if !cluster.Spec.PgBouncer.Enabled() {
 			result.HasPgBouncer = false
 			response.Results = append(response.Results, result)
 			continue
@@ -268,6 +281,13 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 		return response
 	}
 
+	// validate the number of replicas being requested
+	if request.Replicas < 0 {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageReplicas, 1)
+		return response
+	}
+
 	log.Debugf("update pgbouncer called, cluster [%v], selector [%s]", request.ClusterNames, request.Selector)
 
 	// try to get the list of clusters. if there is an error, put it into the
@@ -301,7 +321,7 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 		}
 
 		// first, check if the cluster has pgBouncer enabled
-		if !cluster.Spec.PgBouncer.Enabled {
+		if !cluster.Spec.PgBouncer.Enabled() {
 			result.HasPgBouncer = false
 			response.Results = append(response.Results, result)
 			continue
@@ -333,8 +353,7 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 			resources[v1.ResourceMemory] = quantity
 		}
 
-		// only issue an update to the pgcluster CR if any of the resources have
-		// been updated
+		// update the resources, if there are any changes
 		if len(resources) > 0 {
 			if cluster.Spec.PgBouncer.Resources == nil {
 				cluster.Spec.PgBouncer.Resources = resources
@@ -343,15 +362,20 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 					cluster.Spec.PgBouncer.Resources[resource] = quantity
 				}
 			}
+		}
 
-			if err := kubeapi.Updatepgcluster(apiserver.RESTClient, &cluster, cluster.Name, cluster.Namespace); err != nil {
-				log.Error(err)
-				result.Error = true
-				result.ErrorMessage = err.Error()
-				response.Results = append(response.Results, result)
-				continue
+		// apply the replica count number if there is a change, i.e. replicas is not
+		// 0
+		if request.Replicas > 0 {
+			cluster.Spec.PgBouncer.Replicas = request.Replicas
+		}
 
-			}
+		if err := kubeapi.Updatepgcluster(apiserver.RESTClient, &cluster, cluster.Name, cluster.Namespace); err != nil {
+			log.Error(err)
+			result.Error = true
+			result.ErrorMessage = err.Error()
+			response.Results = append(response.Results, result)
+			continue
 		}
 
 		// append the result to the list

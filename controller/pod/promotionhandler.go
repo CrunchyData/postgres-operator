@@ -103,7 +103,7 @@ func (c *Controller) handleStandbyPromotion(newPod *apiv1.Pod, cluster crv1.Pgcl
 	}
 
 	// rotate the pgBouncer passwords if pgbouncer is enabled within the cluster
-	if cluster.Spec.PgBouncer.Enabled {
+	if cluster.Spec.PgBouncer.Enabled() {
 		if err := clusteroperator.RotatePgBouncerPassword(c.PodClientset, c.PodClient, c.PodConfig, &cluster); err != nil {
 			log.Error(err)
 			return err

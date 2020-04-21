@@ -67,7 +67,7 @@
     "name": "fromcrd",
     "namespace": "pgouser1",
     "pgBouncer": {
-      "enabled": false,
+      "replicas": 0,
       "resources": {}
     },
     "pgbadgerport": "10000",

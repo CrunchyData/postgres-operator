@@ -29,7 +29,11 @@ type CreatePgbouncerRequest struct {
 	// specified default
 	MemoryRequest string
 	Namespace     string
-	Selector      string
+	// Replicas represents the total number of pgBouncer pods to deploy with a
+	// PostgreSQL cluster. Must be at least 1. If 0 is passed in, it will
+	// automatically be set to 1
+	Replicas int32
+	Selector string
 }
 
 // CreatePgbouncerResponse ...
@@ -153,6 +157,10 @@ type UpdatePgBouncerRequest struct {
 
 	// Namespace is the namespace to perform the query in
 	Namespace string
+
+	// Replicas represents the total number of pgBouncer pods to deploy with a
+	// PostgreSQL cluster. Must be at least 1. If 0 is passed in, it is ignored
+	Replicas int32
 
 	// RotatePassword is used to rotate the password for the "pgbouncer" service
 	// account
