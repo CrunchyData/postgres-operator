@@ -257,7 +257,7 @@ storage4_supplemental_groups=65534
 
 storage5_name='storageos'
 storage5_access_mode='ReadWriteOnce'
-storage5_size='300M'
+storage5_size='5Gi'
 storage5_type='dynamic'
 storage5_class='fast'
 
