@@ -261,7 +261,7 @@ func GetS3CredsFromBackrestRepoSecret(clientset *kubernetes.Clientset, namespace
 // Note: it is recommended to pre-hash the password (e.g. md5, SCRAM) so that
 // way the plaintext password is not logged anywhere. This also avoids potential
 // SQL injections
-func SetPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod, username, password, sqlCustom string) error {
+func SetPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod, port, username, password, sqlCustom string) error {
 	log.Debugf("set PostgreSQL password for user [%s]", username)
 
 	// if custom SQL is not set, use the default SQL
@@ -275,7 +275,7 @@ func SetPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Con
 	// string...well, as long as the function caller does this
 	sql := strings.NewReader(fmt.Sprintf(sqlRaw,
 		SQLQuoteIdentifier(username), SQLQuoteLiteral(password)))
-	cmd := []string{"psql"}
+	cmd := []string{"psql", "-p", port}
 
 	// exec into the pod to run the query
 	_, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,

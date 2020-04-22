@@ -50,8 +50,14 @@ func ApplyPolicies(clusterName string, Clientset *kubernetes.Clientset, RESTClie
 }
 
 func applyPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, policyName, clusterName, ns string) {
-	err := util.ExecPolicy(clientset, restclient, restconfig, ns, policyName, clusterName)
-	if err != nil {
+	cl := crv1.Pgcluster{}
+
+	if _, err := kubeapi.Getpgcluster(restclient, &cl, clusterName, ns); err != nil {
+		log.Error(err)
+		return
+	}
+
+	if err := util.ExecPolicy(clientset, restclient, restconfig, ns, policyName, clusterName, cl.Spec.Port); err != nil {
 		log.Error(err)
 		return
 	}
@@ -59,23 +65,12 @@ func applyPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, r
 	labels := make(map[string]string)
 	labels[policyName] = "pgpolicy"
 
-	//look up the cluster CRD
-	cl := crv1.Pgcluster{}
-	_, err = kubeapi.Getpgcluster(restclient, &cl, clusterName, ns)
-	if err != nil {
-		log.Error(err)
-		return
-
-	}
-
-	err = util.UpdatePolicyLabels(clientset, clusterName, ns, labels)
-	if err != nil {
+	if err := util.UpdatePolicyLabels(clientset, clusterName, ns, labels); err != nil {
 		log.Error(err)
 	}
 
 	//update the pgcluster crd labels with the new policy
-	err = PatchPgcluster(restclient, policyName+"=pgpolicy", cl, ns)
-	if err != nil {
+	if err := PatchPgcluster(restclient, policyName+"=pgpolicy", cl, ns); err != nil {
 		log.Error(err)
 	}
 

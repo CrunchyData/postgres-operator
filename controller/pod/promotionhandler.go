@@ -35,7 +35,7 @@ import (
 
 var (
 	// isInRecoveryCommand is the command run to determine if postgres is in recovery
-	isInRecoveryCMD []string = []string{"psql", "-t", "-c", "'SELECT pg_is_in_recovery();'"}
+	isInRecoveryCMD []string = []string{"psql", "-t", "-c", "'SELECT pg_is_in_recovery();'", "-p"}
 
 	// leaderStatusCMD is the command run to get the Patroni status for the primary
 	leaderStatusCMD []string = []string{"curl", fmt.Sprintf("localhost:%s/master",
@@ -139,6 +139,9 @@ func waitForStandbyPromotion(restConfig *rest.Config, clientset *kubernetes.Clie
 				"standby mode", cluster.Name)
 		case <-tick:
 			if !recoveryDisabled {
+				cmd := isInRecoveryCMD
+				cmd = append(cmd, cluster.Spec.Port)
+
 				isInRecoveryStr, _, _ := kubeapi.ExecToPodThroughAPI(restConfig, clientset,
 					isInRecoveryCMD, newPod.Spec.Containers[0].Name, newPod.Name,
 					newPod.Namespace, nil)

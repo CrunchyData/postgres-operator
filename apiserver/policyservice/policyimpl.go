@@ -244,22 +244,22 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 
 		log.Debugf("apply policy %s on deployment %s based on selector %s", request.Name, d.ObjectMeta.Name, selector)
 
-		if err := util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, apiserver.RESTConfig,
-			ns, request.Name, d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME]); err != nil {
-			log.Error(err)
+		// ...to make this work, this needs to be here.
+		cl := crv1.Pgcluster{}
+
+		if _, err = kubeapi.Getpgcluster(apiserver.RESTClient, &cl,
+			d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME], ns); err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
 		}
 
-		cl := crv1.Pgcluster{}
-		_, err = kubeapi.Getpgcluster(apiserver.RESTClient,
-			&cl, d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME], ns)
-		if err != nil {
+		if err := util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, apiserver.RESTConfig,
+			ns, request.Name, d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME], cl.Spec.Port); err != nil {
+			log.Error(err)
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
-
 		}
 
 		err = util.UpdatePolicyLabels(apiserver.Clientset, d.ObjectMeta.Name, ns, labels)

@@ -41,7 +41,7 @@ import (
 const primaryClusterLabel = "master"
 
 // ExecPolicy execute a sql policy against a cluster
-func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, namespace string, policyName string, serviceName string) error {
+func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, namespace, policyName, serviceName, port string) error {
 	//fetch the policy sql
 	sql, err := GetPolicySQL(restclient, namespace, policyName)
 
@@ -87,6 +87,8 @@ func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, re
 	// this gets us closer to what we want to do
 	command := []string{
 		"psql",
+		"-p",
+		port,
 		"postgres",
 		"postgres",
 		"-f",
