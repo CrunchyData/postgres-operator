@@ -113,8 +113,11 @@ for other access modes it might support.
 | Setting |Definition  |
 |---|---|
 |COImagePrefix        | image tag prefix to use for the Operator containers
-|COImageTag        | image tag to use for the Operator containers
-|Audit        | boolean, if set to true will cause each apiserver call to be logged with an *audit* marking
+|COImageTag           |image tag to use for the Operator containers
+|Audit                |boolean, if set to true will cause each apiserver call to be logged with an *audit* marking
+|NamespaceRefreshInterval        | The refresh interval for the namespace controller (defaults to 60 seconds)
+|ControllerGroupRefreshInterval  | The refresh interval for any per-namespace controller with a refresh interval (defaults to 60 seconds)
+
 
 ## Storage Configuration Details
 
