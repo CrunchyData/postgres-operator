@@ -230,7 +230,8 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 		result.Password = password
 
 		// attempt to set the password!
-		if err := util.SetPostgreSQLPassword(apiserver.Clientset, apiserver.RESTConfig, pod, result.Username, hashedPassword, sql); err != nil {
+		if err := util.SetPostgreSQLPassword(apiserver.Clientset, apiserver.RESTConfig, pod,
+			cluster.Spec.Port, result.Username, hashedPassword, sql); err != nil {
 			log.Error(err)
 
 			result.Error = true
@@ -318,7 +319,7 @@ loop:
 
 		// first, get a list of all the databases in the cluster. We will need to
 		// go through each database and drop any object that the user owns
-		output, err := executeSQL(pod, sqlFindDatabases, []string{})
+		output, err := executeSQL(pod, cluster.Spec.Port, sqlFindDatabases, []string{})
 
 		// if there is an error, record it and move on as we cannot actually deleted
 		// the user
@@ -348,7 +349,7 @@ loop:
 			// to the execteSQL function
 			// if there is an error, we'll make a note of it here, but we have to
 			// continue in the outer loop
-			if _, err := executeSQL(pod, sql, []string{database}); err != nil {
+			if _, err := executeSQL(pod, cluster.Spec.Port, sql, []string{database}); err != nil {
 				log.Error(err)
 
 				result.Error = true
@@ -364,7 +365,7 @@ loop:
 		sql := fmt.Sprintf(sqlDropRole, util.SQLQuoteIdentifier(result.Username))
 
 		// exceute the SQL. if there is an error, make note and continue
-		if _, err := executeSQL(pod, sql, []string{}); err != nil {
+		if _, err := executeSQL(pod, cluster.Spec.Port, sql, []string{}); err != nil {
 			log.Error(err)
 
 			result.Error = true
@@ -457,7 +458,7 @@ func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
 		sql = fmt.Sprintf("%s %s", sql, sqlOrderByUsername)
 
 		// great, now we can perform the user lookup
-		output, err := executeSQL(pod, sql, []string{})
+		output, err := executeSQL(pod, cluster.Spec.Port, sql, []string{})
 
 		// if there is an error, record it and move on to the next cluster
 		if err != nil {
@@ -621,8 +622,13 @@ func deleteUserSecret(cluster crv1.Pgcluster, username string) {
 // executeSQL executes SQL on the primary PostgreSQL Pod. This occurs using the
 // Kubernets exec function, which allows us to perform the request over
 // a PostgreSQL connection that's authenticated with peer authentication
-func executeSQL(pod *v1.Pod, sql string, extraCommandArgs []string) (string, error) {
+func executeSQL(pod *v1.Pod, port, sql string, extraCommandArgs []string) (string, error) {
 	command := sqlCommand
+
+	// add the port
+	command = append(command, "-p", port)
+
+	// add any extra arguments
 	command = append(command, extraCommandArgs...)
 
 	// execute into the primary pod to run the query
@@ -821,7 +827,7 @@ func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgclu
 
 	// alright, time to find if there are any expired accounts. If this errors,
 	// then we will abort here
-	output, err := executeSQL(pod, sql, []string{})
+	output, err := executeSQL(pod, cluster.Spec.Port, sql, []string{})
 
 	if err != nil {
 		result := msgs.UserResponseDetail{
@@ -912,7 +918,7 @@ func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgclu
 		// and this is enough to execute
 		// if there is an error, record it here. The next step is to continue
 		// iterating through the loop, and we will continue to do so
-		if _, err := executeSQL(pod, sql, []string{}); err != nil {
+		if _, err := executeSQL(pod, cluster.Spec.Port, sql, []string{}); err != nil {
 			result.Error = true
 			result.ErrorMessage = err.Error()
 		}
@@ -1028,7 +1034,7 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 	}
 
 	// execute the SQL! if there is an error, return the results
-	if _, err := executeSQL(pod, sql, []string{}); err != nil {
+	if _, err := executeSQL(pod, cluster.Spec.Port, sql, []string{}); err != nil {
 		log.Error(err)
 
 		result.Error = true

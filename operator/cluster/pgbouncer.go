@@ -141,7 +141,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 
 	// check to see if pgBoncer is "installed" in the PostgreSQL cluster. This
 	// means checking to see if there is a pgbouncer user, effetively
-	if installed, err := checkPgBouncerInstall(clientset, restconfig, pod); err != nil {
+	if installed, err := checkPgBouncerInstall(clientset, restconfig, pod, cluster.Spec.Port); err != nil {
 		return err
 	} else if !installed {
 		// this can't be installed if this is a standby, so abort if that's the case
@@ -149,7 +149,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 			return ErrStandbyNotAllowed
 		}
 
-		if err := installPgBouncer(clientset, restconfig, pod); err != nil {
+		if err := installPgBouncer(clientset, restconfig, pod, cluster.Spec.Port); err != nil {
 			return err
 		}
 	}
@@ -165,7 +165,7 @@ func AddPgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClient, 
 	if !cluster.Spec.Standby {
 		// attempt to update the password in PostgreSQL, as this is how pgBouncer
 		// will properly interface with PostgreSQL
-		if err := setPostgreSQLPassword(clientset, restconfig, pod, pgBouncerPassword); err != nil {
+		if err := setPostgreSQLPassword(clientset, restconfig, pod, cluster.Spec.Port, pgBouncerPassword); err != nil {
 			return err
 		}
 	}
@@ -287,7 +287,7 @@ func RotatePgBouncerPassword(clientset *kubernetes.Clientset, restclient *rest.R
 
 	// next, update the PostgreSQL primary with the new password. If this fails
 	// we definitely return an error
-	if err := setPostgreSQLPassword(clientset, restconfig, primaryPod, password); err != nil {
+	if err := setPostgreSQLPassword(clientset, restconfig, primaryPod, cluster.Spec.Port, password); err != nil {
 		return err
 	}
 
@@ -346,7 +346,7 @@ func UninstallPgBouncer(clientset *kubernetes.Clientset, restconfig *rest.Config
 	}
 
 	// get the list of databases that we need to scan through
-	databases, err := getPgBouncerDatabases(clientset, restconfig, pod)
+	databases, err := getPgBouncerDatabases(clientset, restconfig, pod, cluster.Spec.Port)
 
 	if err != nil {
 		return err
@@ -356,14 +356,14 @@ func UninstallPgBouncer(clientset *kubernetes.Clientset, restconfig *rest.Config
 	// uninstallation script
 	for databases.Scan() {
 		databaseName := strings.TrimSpace(databases.Text())
-		execPgBouncerScript(clientset, restconfig, pod, databaseName, pgBouncerUninstallScript)
+		execPgBouncerScript(clientset, restconfig, pod, cluster.Spec.Port, databaseName, pgBouncerUninstallScript)
 	}
 
 	// lastly, delete the "pgbouncer" role from the PostgreSQL database
 	// This is safe from SQL injection as we are using constants and a well defined
 	// string
 	sql := strings.NewReader(sqlUninstallPgBouncer)
-	cmd := []string{"psql"}
+	cmd := []string{"psql", "-p", cluster.Spec.Port}
 
 	// exec into the pod to run the query
 	_, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
@@ -422,12 +422,12 @@ func UpdatePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 // checkPgBouncerInstall checks to see if pgBouncer is installed in the
 // PostgreSQL custer, which involves check to see if the pgBouncer role is
 // present in the PostgreSQL cluster
-func checkPgBouncerInstall(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod) (bool, error) {
+func checkPgBouncerInstall(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod, port string) (bool, error) {
 	// set up the SQL
 	sql := strings.NewReader(sqlCheckPgBouncerInstall)
 
 	// have the command return an unaligned string of just the "t" or "f"
-	cmd := []string{"psql", "-A", "-t"}
+	cmd := []string{"psql", "-A", "-t", "-p", port}
 
 	// exec into the pod to run the query
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
@@ -622,8 +622,8 @@ func disablePgBouncer(clientset *kubernetes.Clientset, restconfig *rest.Config, 
 
 // execPgBouncerScript runs a script pertaining to the management of pgBouncer
 // on the PostgreSQL pod
-func execPgBouncerScript(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod, databaseName, script string) {
-	cmd := []string{"psql", databaseName, "-f", script}
+func execPgBouncerScript(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod, port, databaseName, script string) {
+	cmd := []string{"psql", "-p", port, databaseName, "-f", script}
 
 	// exec into the pod to run the query
 	_, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
@@ -758,14 +758,14 @@ func generatePgtaskForPgBouncer(cluster *crv1.Pgcluster, pgouser, taskType, task
 
 // getPgBouncerDatabases gets the databases in a PostgreSQL cluster that have
 // the pgBouncer objects, etc.
-func getPgBouncerDatabases(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod) (*bufio.Scanner, error) {
+func getPgBouncerDatabases(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod, port string) (*bufio.Scanner, error) {
 	// so the way this works is that there needs to be a special SQL installation
 	// script that is executed on every database EXCEPT for postgres and template0
 	// but is executed on template1
 	sql := strings.NewReader(sqlGetDatabasesForPgBouncer)
 
 	// have the command return an unaligned string of just the "t" or "f"
-	cmd := []string{"psql", "-A", "-t"}
+	cmd := []string{"psql", "-A", "-t", "-p", port}
 
 	// exec into the pod to run the query
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
@@ -802,9 +802,9 @@ func getPgBouncerDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pgclu
 
 // installPgBouncer installs the "pgbouncer" user and other management objects
 // into the PostgreSQL pod
-func installPgBouncer(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod) error {
+func installPgBouncer(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod, port string) error {
 	// get the list of databases that we need to scan through
-	databases, err := getPgBouncerDatabases(clientset, restconfig, pod)
+	databases, err := getPgBouncerDatabases(clientset, restconfig, pod, port)
 
 	if err != nil {
 		return err
@@ -815,7 +815,7 @@ func installPgBouncer(clientset *kubernetes.Clientset, restconfig *rest.Config, 
 	for databases.Scan() {
 		databaseName := strings.TrimSpace(databases.Text())
 
-		execPgBouncerScript(clientset, restconfig, pod, databaseName, pgBouncerInstallScript)
+		execPgBouncerScript(clientset, restconfig, pod, port, databaseName, pgBouncerInstallScript)
 	}
 
 	return nil
@@ -863,7 +863,7 @@ func publishPgBouncerEvent(eventType string, cluster *crv1.Pgcluster) {
 
 // setPostgreSQLPassword updates the pgBouncer password in the PostgreSQL
 // cluster by executing into the primary Pod and changing it
-func setPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod, password string) error {
+func setPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod, port, password string) error {
 	log.Debug("set pgbouncer password in PostgreSQL")
 
 	// we use the PostgreSQL "md5" hashing mechanism here to pre-hash the
@@ -871,7 +871,8 @@ func setPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Con
 	// so lovely, but at least it's better than sending it around as plaintext
 	sqlpgBouncerPassword := util.GeneratePostgreSQLMD5Password(crv1.PGUserPgBouncer, password)
 
-	if err := util.SetPostgreSQLPassword(clientset, restconfig, pod, crv1.PGUserPgBouncer, sqlpgBouncerPassword, sqlEnableLogin); err != nil {
+	if err := util.SetPostgreSQLPassword(clientset, restconfig, pod,
+		port, crv1.PGUserPgBouncer, sqlpgBouncerPassword, sqlEnableLogin); err != nil {
 		log.Error(err)
 		return err
 	}
