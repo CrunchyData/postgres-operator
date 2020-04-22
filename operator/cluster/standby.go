@@ -22,6 +22,7 @@ import (
 	"time"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/operator"
@@ -32,6 +33,8 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	cfg "github.com/crunchydata/postgres-operator/operator/config"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -58,59 +61,43 @@ const (
 )
 
 // DisableStandby disables standby mode for the cluster
-func DisableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) error {
+func DisableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error {
 
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
 
 	log.Debugf("Disable standby: disabling standby for cluster %s", clusterName)
 
-	// find the "config" configMap created by Patroni
-	configMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-config"
-	configMap, found := kubeapi.GetConfigMap(clientset, configMapName, namespace)
-	if !found {
-		return fmt.Errorf("Unable to find configMap %s when attempting to enable standby",
-			configMapName)
-	}
-
-	// return ErrMissingConfigAnnotation error if configMap is missing the "config" annotation
-	if _, ok := configMap.ObjectMeta.Annotations["config"]; !ok {
-		return util.ErrMissingConfigAnnotation
-	}
-
-	// grab the json stored in the config annotation
-	configJSONStr := configMap.ObjectMeta.Annotations["config"]
-	var configJSON map[string]interface{}
-	json.Unmarshal([]byte(configJSONStr), &configJSON)
-
-	// retrun an error if standby_cluster isnt found (meaning it isn't currently enabled)
-	if _, ok := configJSON["standby_cluster"]; !ok {
-		return fmt.Errorf("Unable to disable standby mode for cluster %s: %w", clusterName,
-			ErrStandbyNotEnabled)
-	}
-
-	// now delete the standby cluster configuration and update the 'config' annotation
-	delete(configJSON, "standby_cluster")
-	configJSONFinalStr, err := json.Marshal(configJSON)
+	configMapName := fmt.Sprintf("%s-pgha-config", cluster.Labels[config.LABEL_PGHA_SCOPE])
+	configMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(configMapName,
+		metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	configMap.ObjectMeta.Annotations["config"] = string(configJSONFinalStr)
-	err = kubeapi.UpdateConfigMap(clientset, configMap, namespace)
+	dcs := cfg.NewDCS(configMap, clientset)
+	dcsConfig, _, err := dcs.GetDCSConfig()
 	if err != nil {
+		return err
+	}
+	dcsConfig.StandbyCluster = nil
+	if err := dcs.Update(dcsConfig); err != nil {
 		return err
 	}
 
 	// ensure any repo override is removed
-	pghaConfigMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-pgha-config"
-	pghaConfigMap, found := kubeapi.GetConfigMap(clientset, pghaConfigMapName, namespace)
-	if !found {
-		return fmt.Errorf("Unable to find configMap %s when attempting to enable standby",
-			pghaConfigMapName)
-	}
-	delete(pghaConfigMap.Data, operator.PGHAConfigReplicaBootstrapRepoTye)
+	pghaConfigMapName := fmt.Sprintf("%s-pgha-config", cluster.Labels[config.LABEL_PGHA_SCOPE])
+	jsonOp := []util.JSONPatchOperation{{
+		Op:   "remove",
+		Path: fmt.Sprintf("/data/%s", operator.PGHAConfigReplicaBootstrapRepoType),
+	}}
 
-	if err := kubeapi.UpdateConfigMap(clientset, pghaConfigMap, namespace); err != nil {
+	jsonOpBytes, err := json.Marshal(jsonOp)
+	if err != nil {
+		return err
+	}
+
+	if _, err := clientset.CoreV1().ConfigMaps(namespace).Patch(pghaConfigMapName,
+		types.JSONPatchType, jsonOpBytes); err != nil {
 		return err
 	}
 
@@ -232,7 +219,10 @@ func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) erro
 		return fmt.Errorf("Unable to find configMap %s when attempting to enable standby",
 			pghaConfigMapName)
 	}
-	pghaConfigMap.Data[operator.PGHAConfigReplicaBootstrapRepoTye] = "s3"
+	pghaConfigMap.Data[operator.PGHAConfigReplicaBootstrapRepoType] = "s3"
+
+	// delete the DCS config so that it will refresh with the included standby settings
+	delete(pghaConfigMap.Data, fmt.Sprintf(cfg.PGHADCSConfigName, clusterName))
 
 	if err := kubeapi.UpdateConfigMap(clientset, pghaConfigMap, namespace); err != nil {
 		return err

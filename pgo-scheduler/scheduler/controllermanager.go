@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/crunchydata/postgres-operator/controller"
@@ -24,6 +25,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	kubeinformers "k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 )
 
 // ControllerManager manages a map of controller groups, each of which is comprised of the various
@@ -42,6 +44,7 @@ type controllerGroup struct {
 	doneCh              chan struct{}
 	started             bool
 	kubeInformerFactory kubeinformers.SharedInformerFactory
+	informerSyncedFuncs []cache.InformerSynced
 }
 
 // NewControllerManager returns a new ControllerManager comprised of controllerGroups for each
@@ -100,7 +103,9 @@ func (c *ControllerManager) AddAndRunGroup(namespace string) error {
 		return err
 	}
 
-	c.runControllerGroup(namespace)
+	if err := c.runControllerGroup(namespace); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -130,20 +135,24 @@ func (c *ControllerManager) RemoveGroup(namespace string) {
 }
 
 // RunAll runs all controllers across all controller groups managed by the controller manager.
-func (c *ControllerManager) RunAll() {
+func (c *ControllerManager) RunAll() error {
 
 	c.mgrMutex.Lock()
 	defer c.mgrMutex.Unlock()
 
 	for ns := range c.controllers {
-		c.runControllerGroup(ns)
+		if err := c.runControllerGroup(ns); err != nil {
+			return err
+		}
 	}
 
 	log.Debug("Controller Manager: all contoller groups are now running")
+
+	return nil
 }
 
 // RunGroup runs the controllers within the controller group for the namespace specified.
-func (c *ControllerManager) RunGroup(namespace string) {
+func (c *ControllerManager) RunGroup(namespace string) error {
 
 	c.mgrMutex.Lock()
 	defer c.mgrMutex.Unlock()
@@ -151,12 +160,16 @@ func (c *ControllerManager) RunGroup(namespace string) {
 	if _, ok := c.controllers[namespace]; !ok {
 		log.Debugf("Controller Manager: unable to run controller group for namespace %s because "+
 			"a controller group for this namespace does not exist", namespace)
-		return
+		return nil
 	}
 
-	c.runControllerGroup(namespace)
+	if err := c.runControllerGroup(namespace); err != nil {
+		return err
+	}
 
 	log.Debugf("Controller Manager: the controller group for ns %s is now running", namespace)
+
+	return nil
 }
 
 // addControllerGroup adds a new controller group for the namespace specified
@@ -191,6 +204,9 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 	group := &controllerGroup{
 		stopCh:              make(chan struct{}),
 		kubeInformerFactory: kubeInformerFactory,
+		informerSyncedFuncs: []cache.InformerSynced{
+			kubeInformerFactory.Core().V1().ConfigMaps().Informer().HasSynced,
+		},
 	}
 
 	c.controllers[namespace] = group
@@ -202,19 +218,28 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 
 // runControllerGroup is responsible running the controllers for the controller group corresponding
 // to the namespace provided
-func (c *ControllerManager) runControllerGroup(namespace string) {
+func (c *ControllerManager) runControllerGroup(namespace string) error {
 
 	controllerGroup := c.controllers[namespace]
 
 	if c.controllers[namespace].started {
 		log.Debugf("Controller Manager: controller group for namespace %s is already running",
 			namespace)
-		return
+		return nil
 	}
 
 	controllerGroup.kubeInformerFactory.Start(controllerGroup.stopCh)
 
+	if ok := cache.WaitForNamedCacheSync(namespace, controllerGroup.stopCh,
+		controllerGroup.informerSyncedFuncs...); !ok {
+		return fmt.Errorf("Controller Manager: failed to wait for caches to sync")
+	}
+
 	controllerGroup.started = true
+
+	log.Debugf("Controller Manager: controller group for namespace %s is now running", namespace)
+
+	return nil
 }
 
 // removeControllerGroup removes the controller group for the namespace specified.  Any worker

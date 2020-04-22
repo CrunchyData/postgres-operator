@@ -84,7 +84,10 @@ func main() {
 		log.Error(err)
 		os.Exit(2)
 	}
-	controllerManager.RunAll()
+	if err := controllerManager.RunAll(); err != nil {
+		log.Error(err)
+		os.Exit(2)
+	}
 	log.Debug("controller manager created and all included controllers are now running")
 
 	// if the namespace operating mode is not 'disabled', then create and start a namespace
@@ -108,10 +111,10 @@ func main() {
 
 // createAndStartNamespaceController creates a namespace controller and then starts it
 func createAndStartNamespaceController(kubeClientset *kubernetes.Clientset,
-	controllerManager controller.ManagerInterface, stopCh <-chan struct{}) error {
+	controllerManager controller.Manager, stopCh <-chan struct{}) error {
 
 	nsKubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientset,
-		operator.NamespaceRefreshInterval,
+		time.Duration(*operator.Pgo.Pgo.NamespaceRefreshInterval)*time.Second,
 		kubeinformers.WithTweakListOptions(func(options *metav1.ListOptions) {
 			options.LabelSelector = fmt.Sprintf("%s=%s,%s=%s",
 				config.LABEL_VENDOR, config.LABEL_CRUNCHY,

@@ -30,6 +30,7 @@ import (
 	taskoperator "github.com/crunchydata/postgres-operator/operator/task"
 	"github.com/crunchydata/postgres-operator/util"
 	apiv1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -175,6 +176,15 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	// If this is a standby cluster and the pgBackRest storage type is set
 	// to "s3" for S3 storage only, set the cluster to an initialized status.
 	if cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE] != "s3" {
+		// first try to delete any existing stanza create task and/or job
+		if err := kubeapi.Deletepgtask(c.PodClient, fmt.Sprintf("%s-%s", clusterName,
+			crv1.PgtaskBackrestStanzaCreate), namespace); err != nil && !kerrors.IsNotFound(err) {
+			return err
+		}
+		if err := kubeapi.DeleteJob(c.PodClientset, fmt.Sprintf("%s-%s", clusterName,
+			crv1.PgtaskBackrestStanzaCreate), namespace); err != nil && !kerrors.IsNotFound(err) {
+			return err
+		}
 		backrestoperator.StanzaCreate(namespace, clusterName,
 			c.PodClientset, c.PodClient)
 	} else {

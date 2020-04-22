@@ -37,6 +37,8 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
+const workerCount = 1
+
 // Controller holds the connections for the controller
 type Controller struct {
 	PgclusterClient    *rest.RESTClient
@@ -313,4 +315,9 @@ func updateTablespaces(c *Controller, oldCluster *crv1.Pgcluster, newCluster *cr
 	}
 
 	return nil
+}
+
+// WorkerCount returns the worker count for the controller
+func (c *Controller) WorkerCount() int {
+	return workerCount
 }

@@ -113,37 +113,6 @@ func patchDeployment(clientset *kubernetes.Clientset, deploymentName, namespace,
 	return nil
 }
 
-type IntThingSpec struct {
-	Op    string `json:"op"`
-	Path  string `json:"path"`
-	Value int    `json:"value"`
-}
-
-// PatchDeployment patches a deployment
-func PatchReplicas(clientset *kubernetes.Clientset, name, namespace, jsonpath string, patchvalue int) error {
-	var patchBytes []byte
-	var err error
-
-	things := make([]IntThingSpec, 1)
-	things[0].Op = "replace"
-	things[0].Path = jsonpath
-	things[0].Value = patchvalue
-
-	patchBytes, err = json.Marshal(things)
-	if err != nil {
-		log.Error("error in converting patch " + err.Error())
-		return err
-	}
-
-	_, err = clientset.AppsV1().Deployments(namespace).Patch(name, types.JSONPatchType, patchBytes)
-	if err != nil {
-		log.Error(err)
-		log.Error("error patching Deployment " + name)
-	}
-	log.Info("patch deployment " + name)
-	return err
-}
-
 // MergePatchDeployment patches a deployment for failover only at this point
 func MergePatchDeployment(clientset *kubernetes.Clientset, origDeployment *v1.Deployment, newname, namespace string) error {
 	var newData, patchBytes []byte

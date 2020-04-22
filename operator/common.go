@@ -19,7 +19,6 @@ import (
 	"bytes"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/ns"
@@ -28,8 +27,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
-
-var NamespaceRefreshInterval = 1 * time.Minute
 
 var CRUNCHY_DEBUG bool
 var NAMESPACE string
@@ -126,6 +123,28 @@ func Initialize(clientset *kubernetes.Clientset) {
 		EventTCPAddress = tmp
 	}
 	log.Info("EventTCPAddress set to " + EventTCPAddress)
+
+	// set the namespace controller refresh interval if not provided in the pgo.yaml
+	if Pgo.Pgo.NamespaceRefreshInterval == nil {
+		log.Debugf("NamespaceRefreshInterval not set, defaulting to %d seconds",
+			config.NamespaceRefreshInterval)
+		defaultVal := int(config.NamespaceRefreshInterval)
+		Pgo.Pgo.NamespaceRefreshInterval = &defaultVal
+	} else {
+		log.Debugf("NamespaceRefreshInterval is set, using %d seconds",
+			*Pgo.Pgo.NamespaceRefreshInterval)
+	}
+
+	// set the default controller group refresh interval if not provided in the pgo.yaml
+	if Pgo.Pgo.ControllerGroupRefreshInterval == nil {
+		log.Debugf("ControllerGroupRefreshInterval not set, defaulting to %d seconds",
+			config.ControllerGroupRefreshInterval)
+		defaultVal := int(config.ControllerGroupRefreshInterval)
+		Pgo.Pgo.ControllerGroupRefreshInterval = &defaultVal
+	} else {
+		log.Debugf("ControllerGroupRefreshInterval is set, using %d seconds",
+			*Pgo.Pgo.ControllerGroupRefreshInterval)
+	}
 }
 
 // GetResourcesJSON is a pseudo-legacy method that creates JSON that applies the

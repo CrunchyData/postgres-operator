@@ -38,6 +38,13 @@ import (
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyz"
 
+// JSONPatchOperation represents the structure for a JSON patch operation
+type JSONPatchOperation struct {
+	Op    string      `json:"op"`
+	Path  string      `json:"path"`
+	Value interface{} `json:"value"`
+}
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 
