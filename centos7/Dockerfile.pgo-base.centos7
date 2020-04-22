@@ -22,6 +22,6 @@ COPY licenses /licenses
 RUN yum -y update && yum -y clean all
 
 # Crunchy PostgreSQL repository
-ADD conf/RPM-GPG-KEY-crunchydata  /
+ADD conf/RPM-GPG-KEY-crunchydata*  /
 ADD conf/crunchypg${PGVERSION}.repo /etc/yum.repos.d/
-RUN rpm --import RPM-GPG-KEY-crunchydata
+RUN rpm --import RPM-GPG-KEY-crunchydata*
