@@ -27,14 +27,14 @@ import (
 
 // Controller holds the connections for the controller
 type Controller struct {
-	ControllerManager controller.ManagerInterface
+	ControllerManager controller.Manager
 	Informer          coreinformers.NamespaceInformer
 }
 
 // NewNamespaceController creates a new namespace controller that will watch for namespace events
 // as responds accordingly.  This adding and removing controller groups as namespaces watched by the
 // PostgreSQL Operator are added and deleted.
-func NewNamespaceController(controllerManager controller.ManagerInterface,
+func NewNamespaceController(controllerManager controller.Manager,
 	informer coreinformers.NamespaceInformer) (*Controller, error) {
 
 	controller := &Controller{
@@ -64,7 +64,9 @@ func (c *Controller) onAdd(obj interface{}) {
 
 	log.Debugf("namespace Controller: onAdd will now add a controller "+
 		"group for namespace %s", newNs.Name)
-	c.ControllerManager.AddAndRunGroup(newNs.Name)
+	if err := c.ControllerManager.AddAndRunGroup(newNs.Name); err != nil {
+		log.Error(err)
+	}
 }
 
 // onUpdate is called when a namespace is updated
@@ -77,7 +79,9 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// Add and run the controller group if namespace is part of the current installation.
 	// AddAndRunGroup can be called over and over again, and the controller group will only
 	// be created and/or run if not already created and/or running
-	c.ControllerManager.AddAndRunGroup(newNs.Name)
+	if err := c.ControllerManager.AddAndRunGroup(newNs.Name); err != nil {
+		log.Error(err)
+	}
 }
 
 func (c *Controller) onDelete(obj interface{}) {

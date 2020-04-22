@@ -17,7 +17,11 @@ limitations under the License.
 
 import (
 	"errors"
+	"fmt"
 	"sync"
+	"time"
+
+	"github.com/crunchydata/postgres-operator/operator"
 
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/controller/configmap"
@@ -32,6 +36,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	kubeinformers "k8s.io/client-go/informers"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )
 
@@ -46,12 +51,14 @@ type ControllerManager struct {
 // controllerGroup is a struct for managing the various controllers created to handle events
 // in a specific namespace
 type controllerGroup struct {
-	stopCh                 chan struct{}
-	doneCh                 chan struct{}
-	started                bool
-	pgoInformerFactory     informers.SharedInformerFactory
-	kubeInformerFactory    kubeinformers.SharedInformerFactory
-	controllersWithWorkers []controller.WorkerRunner
+	stopCh                         chan struct{}
+	doneCh                         chan struct{}
+	started                        bool
+	pgoInformerFactory             informers.SharedInformerFactory
+	kubeInformerFactory            kubeinformers.SharedInformerFactory
+	kubeInformerFactoryWithRefresh kubeinformers.SharedInformerFactory
+	controllersWithWorkers         []controller.WorkerRunner
+	informerSyncedFuncs            []cache.InformerSynced
 }
 
 // NewControllerManager returns a new ControllerManager comprised of controllerGroups for each
@@ -115,7 +122,9 @@ func (c *ControllerManager) AddAndRunGroup(namespace string) error {
 		return err
 	}
 
-	c.runControllerGroup(namespace)
+	if err := c.runControllerGroup(namespace); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -145,20 +154,24 @@ func (c *ControllerManager) RemoveGroup(namespace string) {
 }
 
 // RunAll runs all controllers across all controller groups managed by the controller manager.
-func (c *ControllerManager) RunAll() {
+func (c *ControllerManager) RunAll() error {
 
 	c.mgrMutex.Lock()
 	defer c.mgrMutex.Unlock()
 
 	for ns := range c.controllers {
-		c.runControllerGroup(ns)
+		if err := c.runControllerGroup(ns); err != nil {
+			return err
+		}
 	}
 
 	log.Debug("Controller Manager: all contoller groups are now running")
+
+	return nil
 }
 
 // RunGroup runs the controllers within the controller group for the namespace specified.
-func (c *ControllerManager) RunGroup(namespace string) {
+func (c *ControllerManager) RunGroup(namespace string) error {
 
 	c.mgrMutex.Lock()
 	defer c.mgrMutex.Unlock()
@@ -166,12 +179,16 @@ func (c *ControllerManager) RunGroup(namespace string) {
 	if _, ok := c.controllers[namespace]; !ok {
 		log.Debugf("Controller Manager: unable to run controller group for namespace %s because "+
 			"a controller group for this namespace does not exist", namespace)
-		return
+		return nil
 	}
 
-	c.runControllerGroup(namespace)
+	if err := c.runControllerGroup(namespace); err != nil {
+		return err
+	}
 
 	log.Debugf("Controller Manager: the controller group for ns %s is now running", namespace)
+
+	return nil
 }
 
 // addControllerGroup adds a new controller group for the namespace specified
@@ -198,6 +215,10 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 		informers.WithNamespace(namespace))
 
 	kubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientset, 0,
+		kubeinformers.WithNamespace(namespace))
+
+	kubeInformerFactoryWithRefresh := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientset,
+		time.Duration(*operator.Pgo.Pgo.ControllerGroupRefreshInterval)*time.Second,
 		kubeinformers.WithNamespace(namespace))
 
 	pgTaskcontroller := &pgtask.Controller{
@@ -244,7 +265,8 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 	}
 
 	configMapController, err := configmap.NewConfigMapController(config, pgoRESTClient,
-		kubeClientset, kubeInformerFactory.Core().V1().ConfigMaps())
+		kubeClientset, kubeInformerFactoryWithRefresh.Core().V1().ConfigMaps(),
+		pgoInformerFactory.Crunchydata().V1().Pgclusters())
 	if err != nil {
 		log.Errorf("Unable to create ConfigMap controller: %w", err)
 		return err
@@ -259,10 +281,20 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 	jobcontroller.AddJobEventHandler()
 
 	group := &controllerGroup{
-		stopCh:              make(chan struct{}),
-		doneCh:              make(chan struct{}),
-		pgoInformerFactory:  pgoInformerFactory,
-		kubeInformerFactory: kubeInformerFactory,
+		stopCh:                         make(chan struct{}),
+		doneCh:                         make(chan struct{}),
+		pgoInformerFactory:             pgoInformerFactory,
+		kubeInformerFactory:            kubeInformerFactory,
+		kubeInformerFactoryWithRefresh: kubeInformerFactoryWithRefresh,
+		informerSyncedFuncs: []cache.InformerSynced{
+			pgoInformerFactory.Crunchydata().V1().Pgtasks().Informer().HasSynced,
+			pgoInformerFactory.Crunchydata().V1().Pgclusters().Informer().HasSynced,
+			pgoInformerFactory.Crunchydata().V1().Pgreplicas().Informer().HasSynced,
+			pgoInformerFactory.Crunchydata().V1().Pgpolicies().Informer().HasSynced,
+			kubeInformerFactory.Core().V1().Pods().Informer().HasSynced,
+			kubeInformerFactory.Batch().V1().Jobs().Informer().HasSynced,
+			kubeInformerFactoryWithRefresh.Core().V1().ConfigMaps().Informer().HasSynced,
+		},
 	}
 
 	// store the controllers containing worker queues so that the queues can also be started
@@ -279,26 +311,36 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 
 // runControllerGroup is responsible running the controllers for the controller group corresponding
 // to the namespace provided
-func (c *ControllerManager) runControllerGroup(namespace string) {
+func (c *ControllerManager) runControllerGroup(namespace string) error {
 
 	controllerGroup := c.controllers[namespace]
 
 	if c.controllers[namespace].started {
 		log.Debugf("Controller Manager: controller group for namespace %s is already running",
 			namespace)
-		return
+		return nil
 	}
 
 	controllerGroup.kubeInformerFactory.Start(controllerGroup.stopCh)
 	controllerGroup.pgoInformerFactory.Start(controllerGroup.stopCh)
+	controllerGroup.kubeInformerFactoryWithRefresh.Start(controllerGroup.stopCh)
+
+	if ok := cache.WaitForNamedCacheSync(namespace, controllerGroup.stopCh,
+		controllerGroup.informerSyncedFuncs...); !ok {
+		return fmt.Errorf("Controller Manager: failed to wait for caches to sync")
+	}
 
 	for _, worker := range c.controllers[namespace].controllersWithWorkers {
-		go worker.RunWorker(controllerGroup.stopCh, controllerGroup.doneCh)
+		for i := 0; i < worker.WorkerCount(); i++ {
+			go worker.RunWorker(controllerGroup.stopCh, controllerGroup.doneCh)
+		}
 	}
 
 	controllerGroup.started = true
 
 	log.Debugf("Controller Manager: controller group for namespace %s is now running", namespace)
+
+	return nil
 }
 
 // removeControllerGroup removes the controller group for the namespace specified.  Any worker
@@ -336,7 +378,13 @@ func (c *ControllerManager) stopControllerGroup(namespace string) {
 	// wait for all worker queues to shutdown
 	log.Debugf("Waiting for %d workers in the controller group for namespace %s to shutdown",
 		len(controllerGroup.controllersWithWorkers), namespace)
-	for i := 0; i < len(controllerGroup.controllersWithWorkers); i++ {
+	var numWorkers int
+	for _, worker := range controllerGroup.controllersWithWorkers {
+		for i := 0; i < worker.WorkerCount(); i++ {
+			numWorkers++
+		}
+	}
+	for i := 0; i < numWorkers; i++ {
 		<-controllerGroup.doneCh
 	}
 	close(controllerGroup.doneCh)

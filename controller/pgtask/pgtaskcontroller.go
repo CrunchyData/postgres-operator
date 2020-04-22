@@ -33,6 +33,8 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
+const workerCount = 1
+
 // Controller holds connections for the controller
 type Controller struct {
 	PgtaskConfig    *rest.Config
@@ -229,4 +231,9 @@ func dupeDeleteData(restClient *rest.RESTClient, task *crv1.Pgtask, ns string) b
 	}
 
 	return true
+}
+
+// WorkerCount returns the worker count for the controller
+func (c *Controller) WorkerCount() int {
+	return workerCount
 }

@@ -219,7 +219,7 @@ func setNamespaceOperatingMode(clientset *kubernetes.Clientset) error {
 
 // createAndStartNamespaceController creates a namespace controller and then starts it
 func createAndStartNamespaceController(kubeClientset *kubernetes.Clientset,
-	controllerManager controller.ManagerInterface, schedular *sched.Scheduler,
+	controllerManager controller.Manager, schedular *sched.Scheduler,
 	stopCh <-chan struct{}) error {
 
 	nsKubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientset,

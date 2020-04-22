@@ -20,7 +20,7 @@ import (
 	"io"
 
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -35,7 +35,7 @@ import (
 // :return: string: Output of the command. (STDOUT)
 //          string: Errors. (STDERR)
 //           error: If any error has occurred otherwise `nil`
-func ExecToPodThroughAPI(config *rest.Config, clientset *kubernetes.Clientset, command []string, containerName, podName, namespace string, stdin io.Reader) (string, string, error) {
+func ExecToPodThroughAPI(config *rest.Config, clientset kubernetes.Interface, command []string, containerName, podName, namespace string, stdin io.Reader) (string, string, error) {
 	req := clientset.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(podName).
