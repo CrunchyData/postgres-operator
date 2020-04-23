@@ -1,4 +1,4 @@
-GOPATH ?= /home/odev/go
+GOPATH ?= $(HOME)/odev/go
 GOBIN ?= $(GOPATH)/bin
 
 # Default values if not already set
