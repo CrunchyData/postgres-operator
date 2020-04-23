@@ -38,14 +38,14 @@ create_rbac='true'
 # Namespace Mode
 # ==================
 # Note: this setting is only applicable if 'create_rbac=true'.
-# 
+#
 # When installing RBAC using 'create_rbac', the namespace mode determines
-# what Cluster Roles are installed.  The default mode if a value is not 
-# specified here is "dynamic", which gives the Operator the full set of 
+# what Cluster Roles are installed.  The default mode if a value is not
+# specified here is "dynamic", which gives the Operator the full set of
 # Cluster Roles to create/modify/delete namespaces, and also install RBAC
-# within those namespaces in order to create PG clusters.  A value of 
-# "readonly" can also be specified, which allows the Operator to view 
-# namespaces, but not create/modify/delete them nor create  RBAC within 
+# within those namespaces in order to create PG clusters.  A value of
+# "readonly" can also be specified, which allows the Operator to view
+# namespaces, but not create/modify/delete them nor create  RBAC within
 # them.  And finally "disabled" prevents the creation of any Cluster Roles,
 # and therefore disables all namespace functionality.
 # ==================
@@ -210,9 +210,11 @@ db_user='testuser'
 # Operator defaults are listed with each variable
 #
 # "default_instance_memory" represents the memory request for a PostgreSQL
-# instance
-# default_instance_memory='512Mi'
-#
+# instance. For production instances, this should be at least 512Mi, but we
+# model a number that is OK for just basic deployment testing. However, you
+# really should make this value bigger
+default_instance_memory='128Mi'
+
 # "default_pgbackrest_repo_memory" represents the memory request for a
 # pgBackRest repository
 # default_pgbackrest_memory='48Mi'

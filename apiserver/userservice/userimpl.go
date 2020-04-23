@@ -620,7 +620,7 @@ func deleteUserSecret(cluster crv1.Pgcluster, username string) {
 }
 
 // executeSQL executes SQL on the primary PostgreSQL Pod. This occurs using the
-// Kubernets exec function, which allows us to perform the request over
+// Kubernetes exec function, which allows us to perform the request over
 // a PostgreSQL connection that's authenticated with peer authentication
 func executeSQL(pod *v1.Pod, port, sql string, extraCommandArgs []string) (string, error) {
 	command := sqlCommand
