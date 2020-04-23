@@ -39,14 +39,6 @@ const CustomConfigMapName = "pgo-config"
 const DefaultConfigsPath = "/default-pgo-config/"
 const CustomConfigsPath = "/pgo-config/"
 
-// ControllerGroupRefreshInterval is the default informer refresh interval in seconds
-// for the controllers created by the Controller Manager that require a refresh interval
-const ControllerGroupRefreshInterval = 60
-
-// NamespaceRefreshInterval is the default informer refresh interval in seconds
-// for the namespace controller
-const NamespaceRefreshInterval = 60
-
 var PgoDefaultServiceAccountTemplate *template.Template
 
 const PGODefaultServiceAccountPath = "pgo-default-sa.json"
@@ -235,12 +227,17 @@ type StorageStruct struct {
 	MatchLabels        string
 }
 
+// PgoStruct defines various configuration settings for the PostgreSQL Operator
 type PgoStruct struct {
 	Audit                          bool
-	PGOImagePrefix                 string
-	PGOImageTag                    string
+	ConfigMapWorkerCount           *int
 	ControllerGroupRefreshInterval *int
 	NamespaceRefreshInterval       *int
+	PGClusterWorkerCount           *int
+	PGOImagePrefix                 string
+	PGOImageTag                    string
+	PGReplicaWorkerCount           *int
+	PGTaskWorkerCount              *int
 }
 
 type PgoConfig struct {

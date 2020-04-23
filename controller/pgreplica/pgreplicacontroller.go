@@ -30,14 +30,13 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-const workerCount = 1
-
 // Controller holds the connections for the controller
 type Controller struct {
-	PgreplicaClient    *rest.RESTClient
-	PgreplicaClientset *kubernetes.Clientset
-	Queue              workqueue.RateLimitingInterface
-	Informer           informers.PgreplicaInformer
+	PgreplicaClient      *rest.RESTClient
+	PgreplicaClientset   *kubernetes.Clientset
+	Queue                workqueue.RateLimitingInterface
+	Informer             informers.PgreplicaInformer
+	PgreplicaWorkerCount int
 }
 
 // RunWorker is a long-running function that will continually call the
@@ -224,5 +223,5 @@ func (c *Controller) AddPGReplicaEventHandler() {
 
 // WorkerCount returns the worker count for the controller
 func (c *Controller) WorkerCount() int {
-	return workerCount
+	return c.PgreplicaWorkerCount
 }

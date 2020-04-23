@@ -79,7 +79,7 @@ func main() {
 
 	// create a new controller manager with controllers for all current namespaces and then run
 	// all of those controllers
-	controllerManager, err := manager.NewControllerManager(namespaceList)
+	controllerManager, err := manager.NewControllerManager(namespaceList, operator.Pgo)
 	if err != nil {
 		log.Error(err)
 		os.Exit(2)

@@ -112,12 +112,15 @@ for other access modes it might support.
 ## Miscellaneous (Pgo)
 | Setting |Definition  |
 |---|---|
-|COImagePrefix        | image tag prefix to use for the Operator containers
-|COImageTag           |image tag to use for the Operator containers
-|Audit                |boolean, if set to true will cause each apiserver call to be logged with an *audit* marking
-|NamespaceRefreshInterval        | The refresh interval for the namespace controller (defaults to 60 seconds)
+|Audit                 |boolean, if set to true will cause each apiserver call to be logged with an *audit* marking
+|ConfigMapWorkerCount  | The number of workers created for the worker queue within the ConfigMap controller (defaults to 2)
 |ControllerGroupRefreshInterval  | The refresh interval for any per-namespace controller with a refresh interval (defaults to 60 seconds)
-
+|NamespaceRefreshInterval        | The refresh interval for the namespace controller (defaults to 60 seconds)
+|PgclusterWorkerCount  | The number of workers created for the worker queue within the PGCluster controller (defaults to 1)
+|PGOImagePrefix        | image tag prefix to use for the Operator containers
+|PGOImageTag           |image tag to use for the Operator containers
+|PGReplicaWorkerCount  | The number of workers created for the worker queue within the PGReplica controller (defaults to 1)
+|PGTaskWorkerCount  | The number of workers created for the worker queue within the PGTask controller (defaults to 1)
 
 ## Storage Configuration Details
 

@@ -1,17 +1,5 @@
 package config
 
-import (
-	"encoding/json"
-	"errors"
-	"fmt"
-
-	"github.com/crunchydata/postgres-operator/util"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
-
-	"k8s.io/apimachinery/pkg/types"
-)
-
 /*
  Copyright 2020 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,6 +14,18 @@ import (
  See the License for the specific language governing permissions and
  limitations under the License.
 */
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+
+	"github.com/crunchydata/postgres-operator/util"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
+
+	"k8s.io/apimachinery/pkg/types"
+)
 
 const (
 	// pghaConfigMapName represents the name of the PGHA configMap created for each cluster, which

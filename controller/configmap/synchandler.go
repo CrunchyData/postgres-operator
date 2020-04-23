@@ -46,10 +46,16 @@ func (c *Controller) handleConfigMapSync(key string) error {
 	clusterName := configMap.GetObjectMeta().GetLabels()[config.LABEL_PG_CLUSTER]
 
 	cluster, err := c.pgclusterLister.Pgclusters(namespace).Get(clusterName)
-	if err != nil && kerrors.IsNotFound(err) {
-		log.Debugf("ConfigMap Controller: cannot find pgcluster for configMap %s (namespace %s),"+
-			"ignoring", configMapName, namespace)
-	} else if err != nil {
+	if err != nil {
+		// If the pgcluster is not found, then simply log an error and return.  This should not
+		// typically happen, but in the event of an orphaned configMap with no pgcluster we do
+		// not want to keep re-queueing the same item.  If any other error is encountered then
+		// return that error.
+		if kerrors.IsNotFound(err) {
+			log.Errorf("ConfigMap Controller: cannot find pgcluster for configMap %s (namespace %s),"+
+				"ignoring", configMapName, namespace)
+			return nil
+		}
 		return err
 	}
 

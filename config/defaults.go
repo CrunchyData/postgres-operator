@@ -40,3 +40,31 @@ var (
 	// for memory of a pgBouncer instance
 	DefaultPgBouncerResourceMemory = resource.MustParse("24Mi")
 )
+
+// The following constants define the default refresh intervals for any informers created
+// by that require a refresh interval
+const (
+	// ControllerGroupRefreshInterval is the default informer refresh interval in seconds
+	// for the controllers created by the Controller Manager that require a refresh interval
+	DefaultControllerGroupRefreshInterval = 60
+	// NamespaceRefreshInterval is the default informer refresh interval in seconds
+	// for the Operator's namespace controller
+	DefaultNamespaceRefreshInterval = 60
+)
+
+// The following constants define the default number of workers created for the worker queues
+// created within the various controller created by the Operator
+const (
+	// DefaultConfigMapWorkerCount defines the default number or workers for the worker queue
+	// in the ConfigMap controller
+	DefaultConfigMapWorkerCount = 2
+	// DefaultPGClusterWorkerCount defines the default number or workers for the worker queue
+	// in the PGCluster controller
+	DefaultPGClusterWorkerCount = 1
+	// DefaultPGReplicaWorkerCount defines the default number or workers for the worker queue
+	// in the PGReplica controller
+	DefaultPGReplicaWorkerCount = 1
+	// DefaultPGTaskWorkerCount defines the default number or workers for the worker queue
+	// in the PGTask controller
+	DefaultPGTaskWorkerCount = 1
+)
