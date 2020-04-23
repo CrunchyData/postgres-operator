@@ -75,7 +75,7 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 		Command:                       cmd,
 		CommandOpts:                   task.Spec.Parameters[config.LABEL_BACKREST_OPTS],
 		PITRTarget:                    "",
-		PGOImagePrefix:                task.Spec.Parameters[config.LABEL_IMAGE_PREFIX],
+		PGOImagePrefix:                util.GetValueOrDefault(task.Spec.Parameters[config.LABEL_IMAGE_PREFIX], operator.Pgo.Pgo.PGOImagePrefix),
 		PGOImageTag:                   operator.Pgo.Pgo.PGOImageTag,
 		PgbackrestStanza:              task.Spec.Parameters[config.LABEL_PGBACKREST_STANZA],
 		PgbackrestDBPath:              task.Spec.Parameters[config.LABEL_PGBACKREST_DB_PATH],

@@ -31,6 +31,7 @@ type pgBackRestTask struct {
 	backupOptions string
 	stanza        string
 	storageType   string
+	imagePrefix   string
 }
 
 func (p pgBackRestTask) NewBackRestTask() *crv1.Pgtask {
@@ -49,6 +50,7 @@ func (p pgBackRestTask) NewBackRestTask() *crv1.Pgtask {
 				config.LABEL_BACKREST_COMMAND:      crv1.PgtaskBackrestBackup,
 				config.LABEL_BACKREST_OPTS:         fmt.Sprintf("--stanza=%s %s", p.stanza, p.backupOptions),
 				config.LABEL_BACKREST_STORAGE_TYPE: p.storageType,
+				config.LABEL_IMAGE_PREFIX:          p.imagePrefix,
 			},
 		},
 	}

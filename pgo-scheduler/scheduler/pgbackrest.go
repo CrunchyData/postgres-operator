@@ -151,6 +151,7 @@ func (b BackRestBackupJob) Run() {
 		backupOptions: fmt.Sprintf("--type=%s %s", b.backupType, b.options),
 		stanza:        b.stanza,
 		storageType:   b.storageType,
+		imagePrefix:   cluster.Spec.PGOImagePrefix,
 	}
 
 	err = kubeapi.Createpgtask(restClient, backrest.NewBackRestTask(), b.namespace)
