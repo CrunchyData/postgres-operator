@@ -27,14 +27,12 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 
 	log "github.com/sirupsen/logrus"
-
-	"sigs.k8s.io/yaml"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/yaml"
 )
 
 var (
@@ -306,8 +304,7 @@ func (l *LocalDB) clean() error {
 
 // getLocalConfigFromCluster obtains the local configuration for a specific database server in the
 // cluster.  It also returns the Pod that is currently running that specific server.
-func (l *LocalDB) getLocalConfigFromCluster(configName string) (*LocalDBConfig,
-	*corev1.Pod, error) {
+func (l *LocalDB) getLocalConfigFromCluster(configName string) (*LocalDBConfig, error) {
 
 	clusterName := l.configMap.GetObjectMeta().GetLabels()[config.LABEL_PG_CLUSTER]
 	namespace := l.configMap.GetObjectMeta().GetNamespace()
@@ -319,7 +316,7 @@ func (l *LocalDB) getLocalConfigFromCluster(configName string) (*LocalDBConfig,
 		LabelSelector: selector,
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	dbPod := &dbPodList.Items[0]
 
@@ -327,17 +324,17 @@ func (l *LocalDB) getLocalConfigFromCluster(configName string) (*LocalDBConfig,
 		dbPod.Spec.Containers[0].Name, dbPod.GetName(), namespace, nil)
 	if err != nil {
 		log.Errorf(stderr)
-		return nil, nil, err
+		return nil, err
 	}
 
 	// we unmarshall to ensure the configMap only contains the settings that we want to expose
 	// to the end-user
 	localDBConfig := &LocalDBConfig{}
 	if err := yaml.Unmarshal([]byte(stdout), localDBConfig); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return localDBConfig, dbPod, nil
+	return localDBConfig, nil
 }
 
 // getLocalConfig returns the current local configuration included in the ClusterConfig's
@@ -377,7 +374,7 @@ func (l *LocalDB) refresh(configName string) error {
 	log.Debugf("Cluster Config: refreshing local config %s in cluster %s "+
 		"(namespace %s)", configName, clusterName, namespace)
 
-	localConfig, _, err := l.getLocalConfigFromCluster(configName)
+	localConfig, err := l.getLocalConfigFromCluster(configName)
 	if err != nil {
 		return err
 	}

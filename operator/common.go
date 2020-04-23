@@ -124,27 +124,9 @@ func Initialize(clientset *kubernetes.Clientset) {
 	}
 	log.Info("EventTCPAddress set to " + EventTCPAddress)
 
-	// set the namespace controller refresh interval if not provided in the pgo.yaml
-	if Pgo.Pgo.NamespaceRefreshInterval == nil {
-		log.Debugf("NamespaceRefreshInterval not set, defaulting to %d seconds",
-			config.NamespaceRefreshInterval)
-		defaultVal := int(config.NamespaceRefreshInterval)
-		Pgo.Pgo.NamespaceRefreshInterval = &defaultVal
-	} else {
-		log.Debugf("NamespaceRefreshInterval is set, using %d seconds",
-			*Pgo.Pgo.NamespaceRefreshInterval)
-	}
-
-	// set the default controller group refresh interval if not provided in the pgo.yaml
-	if Pgo.Pgo.ControllerGroupRefreshInterval == nil {
-		log.Debugf("ControllerGroupRefreshInterval not set, defaulting to %d seconds",
-			config.ControllerGroupRefreshInterval)
-		defaultVal := int(config.ControllerGroupRefreshInterval)
-		Pgo.Pgo.ControllerGroupRefreshInterval = &defaultVal
-	} else {
-		log.Debugf("ControllerGroupRefreshInterval is set, using %d seconds",
-			*Pgo.Pgo.ControllerGroupRefreshInterval)
-	}
+	// set controller refresh intervals and worker counts
+	initializeControllerRefreshIntervals()
+	initializeControllerWorkerCounts()
 }
 
 // GetResourcesJSON is a pseudo-legacy method that creates JSON that applies the
@@ -230,6 +212,81 @@ func initializeContainerImageOverrides() {
 			ContainerImageOverrides[imageName] = overrideImageName
 			log.Infof("image %s overridden by: %s", imageName, overrideImageName)
 		}
+	}
+}
+
+// initControllerRefreshIntervals initializes the refresh intervals for any informers
+// created by the Operator requiring a refresh interval.  This inlcudes first attempting
+// to utilize the refresh interval(s) defined in the pgo.yaml config file, and if not
+// present then falling back to a default value.
+func initializeControllerRefreshIntervals() {
+	// set the namespace controller refresh interval if not provided in the pgo.yaml
+	if Pgo.Pgo.NamespaceRefreshInterval == nil {
+		log.Debugf("NamespaceRefreshInterval not set, defaulting to %d seconds",
+			config.DefaultNamespaceRefreshInterval)
+		defaultVal := int(config.DefaultNamespaceRefreshInterval)
+		Pgo.Pgo.NamespaceRefreshInterval = &defaultVal
+	} else {
+		log.Debugf("NamespaceRefreshInterval is set, using %d seconds",
+			*Pgo.Pgo.NamespaceRefreshInterval)
+	}
+
+	// set the default controller group refresh interval if not provided in the pgo.yaml
+	if Pgo.Pgo.ControllerGroupRefreshInterval == nil {
+		log.Debugf("ControllerGroupRefreshInterval not set, defaulting to %d seconds",
+			config.DefaultControllerGroupRefreshInterval)
+		defaultVal := int(config.DefaultControllerGroupRefreshInterval)
+		Pgo.Pgo.ControllerGroupRefreshInterval = &defaultVal
+	} else {
+		log.Debugf("ControllerGroupRefreshInterval is set, using %d seconds",
+			*Pgo.Pgo.ControllerGroupRefreshInterval)
+	}
+}
+
+// initControllerWorkerCounts sets the number of workers that will be created for any worker
+// queues created within the various controllers created by the Operator.  This inlcudes first
+// attempting to utilize the worker counts defined in the pgo.yaml config file, and if not
+// present then falling back to a default value.
+func initializeControllerWorkerCounts() {
+
+	if Pgo.Pgo.ConfigMapWorkerCount == nil {
+		log.Debugf("ConfigMapWorkerCount not set, defaulting to %d worker(s)",
+			config.DefaultConfigMapWorkerCount)
+		defaultVal := int(config.DefaultConfigMapWorkerCount)
+		Pgo.Pgo.ConfigMapWorkerCount = &defaultVal
+	} else {
+		log.Debugf("ConfigMapWorkerCount is set, using %d worker(s)",
+			*Pgo.Pgo.ConfigMapWorkerCount)
+	}
+
+	if Pgo.Pgo.PGClusterWorkerCount == nil {
+		log.Debugf("PGClusterWorkerCount not set, defaulting to %d worker(s)",
+			config.DefaultPGClusterWorkerCount)
+		defaultVal := int(config.DefaultPGClusterWorkerCount)
+		Pgo.Pgo.PGClusterWorkerCount = &defaultVal
+	} else {
+		log.Debugf("PGClusterWorkerCount is set, using %d worker(s)",
+			*Pgo.Pgo.PGClusterWorkerCount)
+	}
+
+	if Pgo.Pgo.PGReplicaWorkerCount == nil {
+		log.Debugf("PGReplicaWorkerCount not set, defaulting to %d worker(s)",
+			config.DefaultPGReplicaWorkerCount)
+		defaultVal := int(config.DefaultPGReplicaWorkerCount)
+		Pgo.Pgo.PGReplicaWorkerCount = &defaultVal
+	} else {
+		log.Debugf("PGReplicaWorkerCount is set, using %d worker(s)",
+			*Pgo.Pgo.PGReplicaWorkerCount)
+	}
+
+	if Pgo.Pgo.PGTaskWorkerCount == nil {
+		log.Debugf("PGTaskWorkerCount not set, defaulting to %d worker(s)",
+			config.DefaultPGTaskWorkerCount)
+		defaultVal := int(config.DefaultPGTaskWorkerCount)
+		Pgo.Pgo.PGTaskWorkerCount = &defaultVal
+	} else {
+		log.Debugf("PGTaskWorkerCount is set, using %d worker(s)",
+			*Pgo.Pgo.PGTaskWorkerCount)
 	}
 }
 

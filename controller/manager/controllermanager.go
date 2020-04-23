@@ -21,8 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/operator"
-
+	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/controller/configmap"
 	"github.com/crunchydata/postgres-operator/controller/job"
@@ -46,6 +45,7 @@ import (
 type ControllerManager struct {
 	mgrMutex    sync.Mutex
 	controllers map[string]*controllerGroup
+	pgoConfig   config.PgoConfig
 }
 
 // controllerGroup is a struct for managing the various controllers created to handle events
@@ -63,10 +63,12 @@ type controllerGroup struct {
 
 // NewControllerManager returns a new ControllerManager comprised of controllerGroups for each
 // namespace included in the 'namespaces' parameter.
-func NewControllerManager(namespaces []string) (*ControllerManager, error) {
+func NewControllerManager(namespaces []string,
+	pgoConfig config.PgoConfig) (*ControllerManager, error) {
 
 	controllerManager := ControllerManager{
 		controllers: make(map[string]*controllerGroup),
+		pgoConfig:   pgoConfig,
 	}
 
 	// create controller groups for each namespace provided
@@ -218,30 +220,33 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 		kubeinformers.WithNamespace(namespace))
 
 	kubeInformerFactoryWithRefresh := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientset,
-		time.Duration(*operator.Pgo.Pgo.ControllerGroupRefreshInterval)*time.Second,
+		time.Duration(*c.pgoConfig.Pgo.ControllerGroupRefreshInterval)*time.Second,
 		kubeinformers.WithNamespace(namespace))
 
 	pgTaskcontroller := &pgtask.Controller{
-		PgtaskConfig:    config,
-		PgtaskClient:    pgoRESTClient,
-		PgtaskClientset: kubeClientset,
-		Queue:           workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		Informer:        pgoInformerFactory.Crunchydata().V1().Pgtasks(),
+		PgtaskConfig:      config,
+		PgtaskClient:      pgoRESTClient,
+		PgtaskClientset:   kubeClientset,
+		Queue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		Informer:          pgoInformerFactory.Crunchydata().V1().Pgtasks(),
+		PgtaskWorkerCount: *c.pgoConfig.Pgo.PGTaskWorkerCount,
 	}
 
 	pgClustercontroller := &pgcluster.Controller{
-		PgclusterClient:    pgoRESTClient,
-		PgclusterClientset: kubeClientset,
-		PgclusterConfig:    config,
-		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		Informer:           pgoInformerFactory.Crunchydata().V1().Pgclusters(),
+		PgclusterClient:      pgoRESTClient,
+		PgclusterClientset:   kubeClientset,
+		PgclusterConfig:      config,
+		Queue:                workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		Informer:             pgoInformerFactory.Crunchydata().V1().Pgclusters(),
+		PgclusterWorkerCount: *c.pgoConfig.Pgo.PGClusterWorkerCount,
 	}
 
 	pgReplicacontroller := &pgreplica.Controller{
-		PgreplicaClient:    pgoRESTClient,
-		PgreplicaClientset: kubeClientset,
-		Queue:              workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
-		Informer:           pgoInformerFactory.Crunchydata().V1().Pgreplicas(),
+		PgreplicaClient:      pgoRESTClient,
+		PgreplicaClientset:   kubeClientset,
+		Queue:                workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
+		Informer:             pgoInformerFactory.Crunchydata().V1().Pgreplicas(),
+		PgreplicaWorkerCount: *c.pgoConfig.Pgo.PGReplicaWorkerCount,
 	}
 
 	pgPolicycontroller := &pgpolicy.Controller{
@@ -266,7 +271,8 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 
 	configMapController, err := configmap.NewConfigMapController(config, pgoRESTClient,
 		kubeClientset, kubeInformerFactoryWithRefresh.Core().V1().ConfigMaps(),
-		pgoInformerFactory.Crunchydata().V1().Pgclusters())
+		pgoInformerFactory.Crunchydata().V1().Pgclusters(),
+		*c.pgoConfig.Pgo.ConfigMapWorkerCount)
 	if err != nil {
 		log.Errorf("Unable to create ConfigMap controller: %w", err)
 		return err

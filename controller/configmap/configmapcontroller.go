@@ -32,8 +32,6 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-const workerCount = 2
-
 // Controller holds connections and other resources for the ConfigMap controller
 type Controller struct {
 	cmRESTConfig    *rest.Config
@@ -48,12 +46,12 @@ type Controller struct {
 }
 
 // NewConfigMapController is responsible for creating a new ConfigMap controller
-func NewConfigMapController(config *rest.Config, restClient *rest.RESTClient,
+func NewConfigMapController(restConfig *rest.Config, restClient *rest.RESTClient,
 	clientset *kubernetes.Clientset, coreInformer coreinformers.ConfigMapInformer,
-	pgoInformer pgoinformers.PgclusterInformer) (*Controller, error) {
+	pgoInformer pgoinformers.PgclusterInformer, workerCount int) (*Controller, error) {
 
 	controller := &Controller{
-		cmRESTConfig:    config,
+		cmRESTConfig:    restConfig,
 		cmRESTClient:    restClient,
 		kubeclientset:   clientset,
 		cmLister:        coreInformer.Lister(),
@@ -62,6 +60,7 @@ func NewConfigMapController(config *rest.Config, restClient *rest.RESTClient,
 		pgclusterSynced: pgoInformer.Informer().HasSynced,
 		workqueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(),
 			"ConfigMaps"),
+		workerCount: workerCount,
 	}
 
 	coreInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -167,5 +166,5 @@ func (c *Controller) processNextWorkItem() bool {
 
 // WorkerCount returns the worker count for the controller
 func (c *Controller) WorkerCount() int {
-	return workerCount
+	return c.workerCount
 }

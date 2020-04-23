@@ -33,15 +33,14 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-const workerCount = 1
-
 // Controller holds connections for the controller
 type Controller struct {
-	PgtaskConfig    *rest.Config
-	PgtaskClient    *rest.RESTClient
-	PgtaskClientset *kubernetes.Clientset
-	Queue           workqueue.RateLimitingInterface
-	Informer        informers.PgtaskInformer
+	PgtaskConfig      *rest.Config
+	PgtaskClient      *rest.RESTClient
+	PgtaskClientset   *kubernetes.Clientset
+	Queue             workqueue.RateLimitingInterface
+	Informer          informers.PgtaskInformer
+	PgtaskWorkerCount int
 }
 
 // RunWorker is a long-running function that will continually call the
@@ -235,5 +234,5 @@ func dupeDeleteData(restClient *rest.RESTClient, task *crv1.Pgtask, ns string) b
 
 // WorkerCount returns the worker count for the controller
 func (c *Controller) WorkerCount() int {
-	return workerCount
+	return c.PgtaskWorkerCount
 }

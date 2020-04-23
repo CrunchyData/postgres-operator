@@ -37,15 +37,14 @@ import (
 	"k8s.io/client-go/util/workqueue"
 )
 
-const workerCount = 1
-
 // Controller holds the connections for the controller
 type Controller struct {
-	PgclusterClient    *rest.RESTClient
-	PgclusterClientset *kubernetes.Clientset
-	PgclusterConfig    *rest.Config
-	Queue              workqueue.RateLimitingInterface
-	Informer           informers.PgclusterInformer
+	PgclusterClient      *rest.RESTClient
+	PgclusterClientset   *kubernetes.Clientset
+	PgclusterConfig      *rest.Config
+	Queue                workqueue.RateLimitingInterface
+	Informer             informers.PgclusterInformer
+	PgclusterWorkerCount int
 }
 
 // onAdd is called when a pgcluster is added
@@ -319,5 +318,5 @@ func updateTablespaces(c *Controller, oldCluster *crv1.Pgcluster, newCluster *cr
 
 // WorkerCount returns the worker count for the controller
 func (c *Controller) WorkerCount() int {
-	return workerCount
+	return c.PgclusterWorkerCount
 }
