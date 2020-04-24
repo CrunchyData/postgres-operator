@@ -30,8 +30,8 @@ const DefaultPgBouncerReplicas = 1
 // These values were determined by either program defaults (e.g. the PostgreSQL
 // one) and/or loose to vigorous experimentation and profiling
 var (
-	// DefaultBackrestRepoResourceMemory is the default value of the resource request
-	// for memory for a pgBackRest repository
+	// DefaultBackrestRepoResourceMemory is the default value of the resource
+	// request for memory for a pgBackRest repository
 	DefaultBackrestResourceMemory = resource.MustParse("48Mi")
 	// DefaultInstanceResourceMemory is the default value of the resource request
 	// for memory for a PostgreSQL instance in a cluster

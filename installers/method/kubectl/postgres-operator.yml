@@ -55,8 +55,6 @@ spec:
                     value: "crunchydata"
                   - name: CCP_IMAGE_TAG
                     value: "centos7-12.2-4.3.0"
-                  - name: DISABLE_AUTO_FAILOVER
-                    value: "false"
                   - name: DB_PASSWORD_LENGTH
                     value: "24"
                   - name: DB_PORT
@@ -65,6 +63,14 @@ spec:
                     value: "0"
                   - name: DB_USER
                     value: "testuser"
+                  - name: DEFAULT_INSTANCE_MEMORY
+                    value: "128Mi"
+                  - name: DEFAULT_PGBACKREST_MEMORY
+                    value: ""
+                  - name: DEFAULT_PGBOUNCER_MEMORY
+                    value: ""
+                  - name: DISABLE_AUTO_FAILOVER
+                    value: "false"
                   - name: EXPORTERPORT
                     value: "9187"
                   - name: HOME
