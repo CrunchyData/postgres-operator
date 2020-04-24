@@ -69,6 +69,8 @@ spec:
                     value: ""
                   - name: DEFAULT_PGBOUNCER_MEMORY
                     value: ""
+                  - name: DEPLOY_ACTION
+                    value: "install"
                   - name: DISABLE_AUTO_FAILOVER
                     value: "false"
                   - name: EXPORTERPORT
