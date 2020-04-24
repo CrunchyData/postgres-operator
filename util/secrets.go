@@ -41,8 +41,8 @@ const UserSecretFormat = "%s-%s" + crv1.UserSecretSuffix
 // (`man ascii`)
 const (
 	// passwordCharLower is the lowest ASCII character to use for generating a
-	// password, which is 33
-	passwordCharLower = 33
+	// password, which is 40
+	passwordCharLower = 40
 	// passwordCharUpper is the highest ASCII character to use for generating a
 	// password, which is 126
 	passwordCharUpper = 126
@@ -50,7 +50,7 @@ const (
 
 // passwordCharSelector is a "big int" that we need to select the random ASCII
 // character for the password. Since the random integer generator looks for
-// values from [0,X), we need to force this to be [33,126]
+// values from [0,X), we need to force this to be [40,126]
 var passwordCharSelector = big.NewInt(passwordCharUpper - passwordCharLower)
 
 // CreateSecret create the secret, user, and primary secrets
