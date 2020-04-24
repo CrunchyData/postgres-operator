@@ -83,7 +83,7 @@ options can be found in the
 [Configuring the Inventory File]({{< relref "/installation/install-with-ansible/prerequisites.md" >}})
 section of the docs. The environment variables will be the same as the inventory
 options but in all capital letters. A full list of available environment
-variables can be found in the `$PGOROOT/installers/method/kubectl/full_options`
+variables can be found in the `$PGOROOT/installers/kubectl/full_options`
 file. The deployment options that are included in the default job spec are
 required.
 
