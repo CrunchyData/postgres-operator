@@ -15,8 +15,6 @@ The *pgo.yaml* file is broken into major sections as described below:
 | Setting |Definition  |
 |---|---|
 |BasicAuth        | If set to `"true"` will enable Basic Authentication. If set to `"false"`, will allow a valid Operator user to successfully authenticate regardless of the value of the password provided for Basic Authentication. Defaults to `"true".`
-|PrimaryNodeLabel        |newly created primary deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
-|ReplicaNodeLabel        |newly created replica deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
 |CCPImagePrefix        |newly created containers will be based on this image prefix (e.g. crunchydata), update this if you require a custom image prefix
 |CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-12.2-4.3.0), unless you override it using the --ccp-image-tag command line flag
 |Port        | the PostgreSQL port to use for new containers (e.g. 5432)

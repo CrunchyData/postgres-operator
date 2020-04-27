@@ -108,8 +108,6 @@ BasicAuth: ""
 Cluster:
   CCPImagePrefix: crunchydata
   CCPImageTag: centos7-12.2-4.3.0
-  PrimaryNodeLabel: ""
-  ReplicaNodeLabel: ""
   Policies: ""
   Metrics: false
   Badger: false

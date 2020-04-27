@@ -1,6 +1,4 @@
 Cluster:
-  PrimaryNodeLabel:
-  ReplicaNodeLabel:
   CCPImagePrefix:  crunchydata
   Metrics:  false
   Badger:  false

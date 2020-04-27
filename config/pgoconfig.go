@@ -186,8 +186,6 @@ const deploymentTemplatePath = "cluster-deployment.json"
 type ClusterStruct struct {
 	CCPImagePrefix                 string
 	CCPImageTag                    string
-	PrimaryNodeLabel               string
-	ReplicaNodeLabel               string
 	Policies                       string
 	Metrics                        bool
 	Badger                         bool
@@ -295,20 +293,6 @@ func (c *PgoConfig) Validate() error {
 	} else {
 		if _, err := strconv.Atoi(c.Cluster.Port); err != nil {
 			return errors.New(errPrefix + "Invalid Port: " + err.Error())
-		}
-	}
-
-	if c.Cluster.PrimaryNodeLabel != "" {
-		parts := strings.Split(c.Cluster.PrimaryNodeLabel, "=")
-		if len(parts) != 2 {
-			return errors.New(errPrefix + "Cluster.PrimaryNodeLabel does not follow key=value format")
-		}
-	}
-
-	if c.Cluster.ReplicaNodeLabel != "" {
-		parts := strings.Split(c.Cluster.ReplicaNodeLabel, "=")
-		if len(parts) != 2 {
-			return errors.New(errPrefix + "Cluster.ReplicaNodeLabel does not follow key=value format")
 		}
 	}
 

@@ -21,7 +21,6 @@ package cluster
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
@@ -141,14 +140,6 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			//the replica should not use the same node labels as the primary
 			spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = ""
 			spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = ""
-
-			//check for replica node label in pgo.yaml
-			if operator.Pgo.Cluster.ReplicaNodeLabel != "" {
-				parts := strings.Split(operator.Pgo.Cluster.ReplicaNodeLabel, "=")
-				spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = parts[0]
-				spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = parts[1]
-				log.Debug("using pgo.yaml ReplicaNodeLabel for replica creation")
-			}
 
 			labels := make(map[string]string)
 			labels[config.LABEL_PG_CLUSTER] = cl.Spec.Name

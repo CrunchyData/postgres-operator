@@ -713,14 +713,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		return resp
 	}
 
-	if apiserver.Pgo.Cluster.PrimaryNodeLabel != "" {
-		//already should be validate at apiserver startup
-		parts := strings.Split(apiserver.Pgo.Cluster.PrimaryNodeLabel, "=")
-		userLabelsMap[config.LABEL_NODE_LABEL_KEY] = parts[0]
-		userLabelsMap[config.LABEL_NODE_LABEL_VALUE] = parts[1]
-		log.Debug("primary node labels used from pgo.yaml")
-	}
-
 	// validate & parse nodeLabel if exists
 	if request.NodeLabel != "" {
 		if err = apiserver.ValidateNodeLabel(request.NodeLabel); err != nil {
