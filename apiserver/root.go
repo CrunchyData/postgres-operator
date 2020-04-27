@@ -137,7 +137,7 @@ func Initialize() {
 		os.Exit(2)
 	}
 
-	namespaceList, err = ns.GetNamespaceList(Clientset, NamespaceOperatingMode(),
+	namespaceList, err = ns.GetInitialNamespaceList(Clientset, NamespaceOperatingMode(),
 		InstallationName, PgoNamespace)
 	if err != nil {
 		log.Error(err)
@@ -276,13 +276,17 @@ func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string)
 		return requestedNS, errors.New("empty namespace is not valid from pgo clients")
 	}
 
-	iAccess, uAccess := UserIsPermittedInNamespace(username, requestedNS)
-	if uAccess == false {
-		errMsg := fmt.Sprintf("user [%s] is not allowed access to namespace [%s]", username, requestedNS)
-		return requestedNS, errors.New(errMsg)
+	iAccess, uAccess, err := UserIsPermittedInNamespace(username, requestedNS)
+	if err != nil {
+		return requestedNS, fmt.Errorf("Error when determining whether user [%s] is allowed access to "+
+			"namespace [%s]: %w", username, requestedNS, err)
 	}
 	if iAccess == false {
 		errMsg := fmt.Sprintf("namespace [%s] is not part of the Operator installation", requestedNS)
+		return requestedNS, errors.New(errMsg)
+	}
+	if uAccess == false {
+		errMsg := fmt.Sprintf("user [%s] is not allowed access to namespace [%s]", username, requestedNS)
 		return requestedNS, errors.New(errMsg)
 	}
 
@@ -356,70 +360,37 @@ func ValidateNodeLabel(nodeLabel string) error {
 // UserIsPermittedInNamespace returns installation access and user access.
 // Installation access means a namespace belongs to this Operator installation.
 // User access means this user has access to a namespace.
-func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool) {
+func UserIsPermittedInNamespace(username, requestedNS string) (iAccess, uAccess bool, err error) {
 
-	iAccess := false
-	uAccess := false
-
-	// If the namespace operating mode isn't "disabled", then query the live Kube cluster
-	// for the namespace and then check its labels to determine if its part of the
-	// current Operator install.  Otherwise verify that it was a namespace specified
-	// during installation of the Operator.
-	if namespaceOperatingMode != ns.NamespaceOperatingModeDisabled {
-		ns, found, err := kubeapi.GetNamespace(Clientset, requestedNS)
-		if !found {
-			log.Error(err)
-			log.Errorf("could not find namespace %s ", requestedNS)
-			return iAccess, uAccess
-		}
-
-		if ns.ObjectMeta.Labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY &&
-			ns.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] == InstallationName {
-			iAccess = true
-		}
-	} else {
-		var exists bool
-		for _, namespace := range namespaceList {
-			if requestedNS == namespace {
-				exists = true
-				iAccess = true
-			}
-		}
-
-		if !exists {
-			log.Errorf("namespace %s is not included in this installation", requestedNS)
-			return iAccess, uAccess
-		}
+	if err = ns.ValidateNamespacesWatched(Clientset, NamespaceOperatingMode(), InstallationName,
+		requestedNS); err != nil && !errors.Is(err, ns.ErrNamespaceNotWatched) {
+		return
 	}
 
 	//get the pgouser Secret for this username
 	userSecretName := "pgouser-" + username
 	userSecret, err := kubeapi.GetSecret(Clientset, userSecretName, PgoNamespace)
-
 	if err != nil {
-		uAccess = false
 		log.Errorf("could not get pgouser secret %s: %s", username, err.Error())
-		return iAccess, uAccess
+		return
 	}
 
+	// handle the case of a user in pgouser with "" (all) namespaces, otherwise check the
+	// namespaces config in the user secret
 	nsstring := string(userSecret.Data["namespaces"])
-	nsList := strings.Split(nsstring, ",")
-	for _, v := range nsList {
-		ns := strings.TrimSpace(v)
-		if ns == requestedNS {
-			uAccess = true
-			return iAccess, uAccess
+	if nsstring == "" {
+		uAccess = true
+	} else {
+		nsList := strings.Split(nsstring, ",")
+		for _, v := range nsList {
+			ns := strings.TrimSpace(v)
+			if ns == requestedNS {
+				uAccess = true
+			}
 		}
 	}
 
-	//handle the case of a user in pgouser with "" (all) namespaces
-	if nsstring == "" {
-		uAccess = true
-		return iAccess, uAccess
-	}
-
-	uAccess = false
-	return iAccess, uAccess
+	return
 }
 
 // WriteTLSCert is a legacy method that writes the server certificate and key to

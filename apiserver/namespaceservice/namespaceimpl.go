@@ -16,6 +16,8 @@ limitations under the License.
 */
 
 import (
+	"fmt"
+
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -66,7 +68,13 @@ func ShowNamespace(clientset *kubernetes.Clientset, username string, request *ms
 	}
 
 	for i := 0; i < len(nsList); i++ {
-		iaccess, uaccess := apiserver.UserIsPermittedInNamespace(username, nsList[i])
+		iaccess, uaccess, err := apiserver.UserIsPermittedInNamespace(username, nsList[i])
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = fmt.Sprintf("Error when determining whether user [%s] is allowed "+
+				"access to namespace [%s]: %w", username, nsList[i], err)
+			return resp
+		}
 		r := msgs.NamespaceResult{
 			Namespace:          nsList[i],
 			InstallationAccess: iaccess,

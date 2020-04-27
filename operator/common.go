@@ -304,7 +304,7 @@ func SetupNamespaces(clientset *kubernetes.Clientset) ([]string, error) {
 	}
 	log.Debugf("Namespace operating mode is '%s'", NamespaceOperatingMode())
 
-	namespaceList, err := ns.GetNamespaceList(clientset, NamespaceOperatingMode(),
+	namespaceList, err := ns.GetInitialNamespaceList(clientset, NamespaceOperatingMode(),
 		InstallationName, PgoNamespace)
 	if err != nil {
 		return nil, err
