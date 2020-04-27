@@ -106,13 +106,13 @@ spec:
                   - name: SCHEDULER_TIMEOUT
                     value: "3600"
                   - name: BACKREST_STORAGE
-                    value: "storageos"
+                    value: "hostpathstorage"
                   - name: BACKUP_STORAGE
-                    value: "storageos"
+                    value: "hostpathstorage"
                   - name: PRIMARY_STORAGE
-                    value: "storageos"
+                    value: "hostpathstorage"
                   - name: REPLICA_STORAGE
-                    value: "storageos"
+                    value: "hostpathstorage"
                   - name: STORAGE1_NAME
                     value: "hostpathstorage"
                   - name: STORAGE1_ACCESS_MODE
