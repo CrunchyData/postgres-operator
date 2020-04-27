@@ -55,6 +55,7 @@ type RepoDeploymentTemplateFields struct {
 	PodAntiAffinity           string
 	PodAntiAffinityLabelName  string
 	PodAntiAffinityLabelValue string
+	Replicas                  int
 }
 
 type RepoServiceTemplateFields struct {
@@ -63,7 +64,8 @@ type RepoServiceTemplateFields struct {
 	Port        string
 }
 
-func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, cluster *crv1.Pgcluster, createPVC bool) error {
+func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, cluster *crv1.Pgcluster, createPVC bool,
+	replicas int) error {
 
 	var b bytes.Buffer
 
@@ -119,6 +121,7 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 		Name:                  serviceName,
 		ClusterName:           cluster.Name,
 		SecurityContext:       util.GetPodSecurityContext(cluster.Spec.BackrestStorage.GetSupplementalGroups()),
+		Replicas:              replicas,
 		PodAntiAffinity: operator.GetPodAntiAffinity(cluster,
 			crv1.PodAntiAffinityDeploymentPgBackRest, cluster.Spec.PodAntiAffinity.PgBackRest),
 		PodAntiAffinityLabelName: config.LABEL_POD_ANTI_AFFINITY,

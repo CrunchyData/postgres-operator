@@ -137,7 +137,24 @@ func (c *Controller) processNextItem() bool {
 
 	log.Debugf("pgcluster added: %s", cluster.ObjectMeta.Name)
 
+	// AddClusterBase creates all deployments for the cluster (in addition to various other supporting
+	// resources such as services, configMaps, secrets, etc.), but leaves them scaled to 0.  This
+	// ensures all deployments exist as needed to properly orchestrate initialization of the
+	// cluster, e.g. we need to ensure the primary DB deployment resource has been created before
+	// bringing the repo deployment online, since that in turn will bring the primary DB online.
 	clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, &cluster, cluster.ObjectMeta.Namespace)
+
+	// Now scale the repo deployment only to ensure it is initialized prior to the primary DB.
+	// Once the repo is ready, the primary datbase deployment will then also be scaled to 1.
+	clusterInfo, err := clusteroperator.ScaleClusterDeployments(c.PgclusterClientset,
+		cluster, 1, false, false, true, false)
+	if err != nil {
+		log.Error(err)
+		c.Queue.AddRateLimited(key)
+	}
+
+	log.Debugf("Scaled pgBackRest repo deployment %s to 1 to proceed with initializing "+
+		"cluster %s", clusterInfo.PrimaryDeployment, cluster.Name)
 
 	return true
 }

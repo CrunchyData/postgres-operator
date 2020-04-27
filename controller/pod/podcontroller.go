@@ -84,11 +84,30 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// Lookup the pgcluster CR for PG cluster associated with this Pod.  Since a 'pg-cluster'
 	// label was found on updated Pod, this lookup should always succeed.
 	clusterName := newPodLabels[config.LABEL_PG_CLUSTER]
+	namespace := newPod.ObjectMeta.Namespace
 	cluster := crv1.Pgcluster{}
-	_, err := kubeapi.Getpgcluster(c.PodClient, &cluster, clusterName,
-		newPod.ObjectMeta.Namespace)
+	_, err := kubeapi.Getpgcluster(c.PodClient, &cluster, clusterName, namespace)
 	if err != nil {
 		log.Error(err.Error())
+		return
+	}
+
+	// For the following upgrade and cluster initialization scenarios we only care about updates
+	// where the database container within the pod is becoming ready.  We can therefore return
+	// at this point if this condition is false.
+	if cluster.Status.State != crv1.PgclusterStateInitialized &&
+		(isDBContainerBecomingReady(oldPod, newPod) ||
+			isBackRestRepoBecomingReady(oldPod, newPod)) {
+		if err := c.handleClusterInit(newPod, &cluster); err != nil {
+			log.Error(err)
+			return
+		}
+		return
+	}
+
+	// the handlers called below are only applicable to PG pods when the cluster is
+	// in an initialized status
+	if cluster.Status.State != crv1.PgclusterStateInitialized || !isPostgresPod(newPod) {
 		return
 	}
 
@@ -104,8 +123,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
-	if cluster.Status.State == crv1.PgclusterStateInitialized &&
-		isPromotedStandby(oldPod, newPod) {
+	if isPromotedStandby(oldPod, newPod) {
 		log.Debugf("Pod Controller: standby pod %s in namespace %s promoted, calling standby pod "+
 			"promotion handler", newPod.Name, newPod.Namespace)
 		if err := c.handleStandbyPromotion(newPod, cluster); err != nil {
@@ -114,32 +132,17 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
-	// For the following upgrade and cluster initialization scenarios we only care about updates
-	// where the database container within the pod is becoming ready.  We can therefore return
-	// at this point if this condition is false.
-	if !isDBContainerBecomingReady(oldPod, newPod) {
-		return
-	}
-
 	// First handle pod update as needed if the update was part of an ongoing upgrade
 	if cluster.Labels[config.LABEL_MINOR_UPGRADE] == config.LABEL_UPGRADE_IN_PROGRESS {
-		log.Debugf("Pod Controller: upgrade pod %s now ready, calling pod upgrade "+
-			"handler", newPod.Name, newPod.Namespace)
+		log.Debugf("Pod Controller: upgrade pod %s (namespace %s) now ready, calling pod upgrade "+
+			"handler", newPod.Name, namespace)
 		if err := c.handleUpgradePodUpdate(newPod, &cluster); err != nil {
 			log.Error(err)
 			return
 		}
 	}
 
-	// Handle postgresql pod updates as needed for cluster initialization
-	if cluster.Status.State != crv1.PgclusterStateInitialized && isPostgresPrimaryPod(newPod) {
-		log.Debugf("Pod Controller: pg pod %s now ready in an unintialized cluster, calling "+
-			"cluster init handler", newPod.Name, newPod.Namespace)
-		if err := c.handleClusterInit(newPod, &cluster); err != nil {
-			log.Error(err)
-			return
-		}
-	}
+	return
 }
 
 // onDelete is called when a pgcluster is deleted
@@ -166,25 +169,43 @@ func (c *Controller) AddPodEventHandler() {
 	log.Debugf("Pod Controller: added event handler to informer")
 }
 
-// isDBContainerBecomingReady checks to see if the Pod update shows that the Pod has
-// transitioned from an 'unready' status to a 'ready' status.
-func isDBContainerBecomingReady(oldPod, newPod *apiv1.Pod) bool {
-	if !isPostgresPod(newPod) {
+// isBackRestRepoBecomingReady checks to see if the Pod update shows that the BackRest
+// repo Pod has transitioned from an 'unready' status to a 'ready' status.
+func isBackRestRepoBecomingReady(oldPod, newPod *apiv1.Pod) bool {
+	if !isBackRestRepoPod(newPod) {
 		return false
 	}
-	var oldDatabaseStatus bool
-	// first see if the old version of the pod was not ready
+	return isContainerBecomingReady("database", oldPod, newPod)
+}
+
+// isBackRestRepoPod determines whether or not a pod is a pgBackRest repository Pod.  This is
+// determined by checking to see if the 'pgo-backrest-repo' label is present on the Pod (also,
+// this controller will only process pod with the 'vendor=crunchydata' label, so that label is
+// assumed to be present), specifically because this label will only be included on pgBackRest
+// repository Pods.
+func isBackRestRepoPod(newpod *apiv1.Pod) bool {
+
+	_, backrestRepoLabelExists := newpod.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO]
+
+	return backrestRepoLabelExists
+}
+
+// isContainerBecomingReady determines whether or not that container specified is moving
+// from an unready status to a ready status.
+func isContainerBecomingReady(containerName string, oldPod, newPod *apiv1.Pod) bool {
+	var oldContainerStatus bool
+	// first see if the old version of the container was not ready
 	for _, v := range oldPod.Status.ContainerStatuses {
-		if v.Name == "database" {
-			oldDatabaseStatus = v.Ready
+		if v.Name == containerName {
+			oldContainerStatus = v.Ready
 			break
 		}
 	}
-	// if the old version of the pod was not ready, now check if the
+	// if the old version of the container was not ready, now check if the
 	// new version is ready
-	if !oldDatabaseStatus {
+	if !oldContainerStatus {
 		for _, v := range newPod.Status.ContainerStatuses {
-			if v.Name == "database" {
+			if v.Name == containerName {
 				if v.Ready {
 					return true
 				}
@@ -194,19 +215,26 @@ func isDBContainerBecomingReady(oldPod, newPod *apiv1.Pod) bool {
 	return false
 }
 
-// isPostgresPrimaryPod determines whether or not the specific Pod provided is the primary database
-// Pod within a PG cluster.  This is done by checking to see if the "role" label for the Pod is set
-// to either "master", as set by Patroni to identify the current primary, or "promoted", as set by
-// Patroni when promoting a replica to be the new primary.
-func isPostgresPrimaryPod(newPod *apiv1.Pod) bool {
+// isDBContainerBecomingReady checks to see if the Pod update shows that the Pod has
+// transitioned from an 'unready' status to a 'ready' status.
+func isDBContainerBecomingReady(oldPod, newPod *apiv1.Pod) bool {
 	if !isPostgresPod(newPod) {
 		return false
 	}
-	if newPod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "master" ||
-		newPod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "promoted" {
-		return true
-	}
-	return false
+	return isContainerBecomingReady("database", oldPod, newPod)
+}
+
+// isPostgresPod determines whether or not a pod is a PostreSQL Pod, specifically either the
+// primary or a replica pod within a PG cluster.  This is determined by checking to see if the
+// 'pgo-pg-database' label is present on the Pod (also, this controller will only process pod with
+// the 'vendor=crunchydata' label, so that label is assumed to be present), specifically because
+// this label will only be included on primary and replica PostgreSQL database pods (and will be
+// present as soon as the deployment and pod is created).
+func isPostgresPod(newpod *apiv1.Pod) bool {
+
+	_, pgDatabaseLabelExists := newpod.ObjectMeta.Labels[config.LABEL_PG_DATABASE]
+
+	return pgDatabaseLabelExists
 }
 
 // isPromotedPostgresPod determines if the Pod update is the result of the promotion of the pod
@@ -225,11 +253,11 @@ func isPromotedPostgresPod(oldPod, newPod *apiv1.Pod) bool {
 	return false
 }
 
-// isPromotedPostgresPod determines if the Pod update is the result of the promotion of the pod
+// isPromotedStandby determines if the Pod update is the result of the promotion of the standby pod
 // from a replica to the primary within a PG cluster.  This is determined by comparing the 'role'
 // label from the old Pod to the 'role' label in the New pod, specifically to determine if the
-// label has changed from "promoted" to "master" (this is the label change that will be performed
-// by Patroni when promoting a pod).
+// label has changed from "standby_leader" to "master" (this is the label change that will be
+// performed by Patroni when promoting a pod).
 func isPromotedStandby(oldPod, newPod *apiv1.Pod) bool {
 	if !isPostgresPod(newPod) {
 		return false
@@ -242,17 +270,4 @@ func isPromotedStandby(oldPod, newPod *apiv1.Pod) bool {
 		return true
 	}
 	return false
-}
-
-// isPostgresPod determines whether or not a pod is a PostreSQL Pod, specifically either the
-// primary or a replica pod within a PG cluster.  This is determined by checking to see if the
-// 'pgo-pg-database' label is present on the Pod (also, this controller will only process pod with
-// the 'vendor=crunchydata' label, so that label is assumed to be present), specifically because
-// this label will only be included on primary and replica PostgreSQL database pods (and will be
-// present as soon as the deployment and pod is created).
-func isPostgresPod(newpod *apiv1.Pod) bool {
-
-	_, pgDatabaseLabelExists := newpod.ObjectMeta.Labels[config.LABEL_PG_DATABASE]
-
-	return pgDatabaseLabelExists
 }

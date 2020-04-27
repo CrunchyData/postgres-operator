@@ -12,7 +12,7 @@
         }
     },
     "spec": {
-        "replicas": 1,
+        "replicas": {{.Replicas}},
         "selector": {
             "matchLabels": {
                     "name": "{{.Name}}",

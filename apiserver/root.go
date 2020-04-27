@@ -366,6 +366,7 @@ func UserIsPermittedInNamespace(username, requestedNS string) (iAccess, uAccess 
 		requestedNS); err != nil && !errors.Is(err, ns.ErrNamespaceNotWatched) {
 		return
 	}
+	iAccess = true
 
 	//get the pgouser Secret for this username
 	userSecretName := "pgouser-" + username
