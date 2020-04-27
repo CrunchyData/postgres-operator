@@ -1028,6 +1028,101 @@ If you try to connect to a PostgreSQL cluster that is deployed using the
 `--tls-only` with TLS disabled (i.e. `PGSSLMODE=disable`), you will receive an
 error that connections without TLS are unsupported.
 
+## Standby Clusters: Multi-Cluster Kubernetes Deployments
+
+A [standby PostgreSQL cluster]({{< relref "/architecture/high-availability/multi-cluster-kubernetes.md" >}})
+can be used to create an advanced high-availability set with a PostgreSQL
+cluster running in a different Kubernetes cluster, or used for other operations
+such as migrating from one PostgreSQL cluster to another. Note: this is not
+[high availability]({{< relref "/architecture/high-availability/_index.md" >}})
+per se: a high-availability PostgreSQL cluster will automatically fail over upon
+a downtime event, whereas a standby PostgreSQL cluster must be explicitly
+promoted.
+
+With that said, you can run multiple PostgreSQL Operators in different
+Kubernetes clusters, and the below functionality will work!
+
+Below are some commands for setting up and using standby PostgreSQL clusters.
+For more details on how standby clusters work, please review the section on
+[Kubernetes Multi-Cluster Deployments]({{< relref "/architecture/high-availability/multi-cluster-kubernetes.md" >}}).
+
+### Creating a Standby Cluster
+
+Before creating a standby cluster, you will need to ensure that your primary
+cluster is created properly. Standby clusters require the use of S3 or
+equivalent S3-compatible storage system that is accessible to both the primary
+and standby clusters. For example, to create a primary cluster to these
+specifications:
+
+```shell
+pgo create cluster hippo --pgbouncer --replica-count=2 \
+  --pgbackrest-storage-type=local,s3 \
+  --pgbackrest-s3-key=<redacted> \
+  --pgbackrest-s3-key-secret=<redacted> \
+  --pgbackrest-s3-bucket=watering-hole \
+  --pgbackrest-s3-endpoint=s3.amazonaws.com \
+  --pgbackrest-s3-region=us-east-1 \
+  --password-superuser=supersecrethippo \
+  --password-replication=somewhatsecrethippo \
+  --password=opensourcehippo
+  ```
+
+Before setting up the standby PostgreSQL cluster, you will need to wait a few
+moments for the primary PostgreSQL cluster to be ready. Once your primary
+PostgreSQL cluster is available, you can create a standby cluster by using the
+following command:
+
+```shell
+pgo create cluster hippo-standby --standby --replica-count=2 \
+  --pgbackrest-storage-type=s3 \
+  --pgbackrest-s3-key=<redacted> \
+  --pgbackrest-s3-key-secret=<redacted> \
+  --pgbackrest-s3-bucket=watering-hole \
+  --pgbackrest-s3-endpoint=s3.amazonaws.com \
+  --pgbackrest-s3-region=us-east-1 \
+  --pgbackrest-repo-path=/backrestrepo/hippo-backrest-shared-repo \
+  --password-superuser=supersecrethippo \
+  --password-replication=somewhatsecrethippo \
+  --password=opensourcehippo
+```
+
+The standby cluster will take a few moments to bootstrap, but it is now set up!
+
+### Promoting a Standby Cluster
+
+Before promoting a standby cluster, it is first necessary to shut down the
+primary cluster, otherwise you can run into a potential "[split-brain](https://en.wikipedia.org/wiki/Split-brain_(computing))"
+scenario (if your primary Kubernetes cluster is down, it may not be possible to
+do this).
+
+To shutdown, run the following command:
+
+```
+pgo update cluster hippo --shutdown
+```
+
+Once it is shut down, you can promote the standby cluster:
+
+```
+pgo update cluster hippo-standby --promote-standby
+```
+
+The standby is now an active PostgreSQL cluster and can start to accept writes.
+
+To convert the previous active cluster into a standby cluster, you can run the
+following command:
+
+```
+pgo update cluster hippo --enable-standby
+```
+
+This will take a few moments to make this PostgreSQL cluster into a standby
+cluster. When it is ready, you can start it up with the following command:
+
+```
+pgo update cluster hippo --startup
+```
+
 ## Monitoring
 
 ### View Disk Utilization
@@ -1038,6 +1133,21 @@ volume claim size by entering the following:
 ```shell
 pgo df hacluster -n pgouser1
 ```
+
+### PostgreSQL Metrics via pgMonitor
+
+You can view metrics about your PostgreSQL cluster using the pgMonitor stack by
+deploying the "crunchy-collect" sidecar with the PostgreSQL cluster:
+
+```
+pgo create cluster hacluster --metrics
+```
+
+Note: To store and visualize the metrics, you must deploy Prometheus and Grafana
+with yoru PostgreSQL cluster. For instructions on installing Grafana and
+Prometheus in your environment, please review the
+[installation instructions]({{< relref "/installation/other/ansible/installing-metrics.md" >}})
+for the metrics stack.
 
 ## Labels
 
@@ -1113,20 +1223,12 @@ You can remove a pgbouncer from a cluster as follows:
 
     pgo delete pgbouncer hacluster -n pgouser1
 
+### Query Analysis via pgBadger
+
 You can create a pgbadger sidecar container in your Postgres cluster
 pod as follows:
 
     pgo create cluster hacluster --pgbadger -n pgouser1
-
-Likewise, you can add the Crunchy Collect Metrics sidecar container
-into your Postgres cluster pod as follows:
-
-    pgo create cluster hacluster --metrics -n pgouser1
-
-Note: backend metric storage such as Prometheus and front end
-visualization software such as Grafana are not created automatically
-by the PostgreSQL Operator.  For instructions on installing Grafana and
-Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/4.3.0/examples/metrics/metrics/).
 
 ### Create a Cluster using Specific Storage
 
