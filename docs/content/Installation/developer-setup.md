@@ -39,8 +39,15 @@ Variable | Example | Description
 * `GOPATH` points to a directory containing `src`,`pkg`, and `bin` directories.
 * The development host has `$GOPATH/bin` added to its `PATH` environment variable. Development tools will be installed to this path. Defining a `GOBIN` environment variable other than `$GOPATH/bin` may yield unexpected results.
 * The development host has `git` installed and has cloned the postgres-operator repository to `$GOPATH/src/github.com/crunchydata/postgres-operator`. Makefile targets below are run from the repository directory.
-* Deploying the Operator will require deployment access to a Kubernetes cluster. Clusters built on OpenShift Container Platform (OCP) or built using `kubeadm` are the validation targets for Pull Requests and thus recommended for devleopment. Instructions for setting up these clusters are outside the scope of this guide.
+* Deploying the Operator will require deployment access to a Kubernetes or OpenShift cluster
+* Once you have cloned the git repository, you will need to download the CentOS 7 repository files and GPG keys and place them in the `$PGOROOT/conf` directory. You can do so with the following code:
 
+```shell
+cd $PGOROOT
+curl https://api.developers.crunchydata.com/downloads/repo/rpm-centos/postgresql12/crunchypg12.repo > conf/crunchypg12.repo
+curl https://api.developers.crunchydata.com/downloads/repo/rpm-centos/postgresql11/crunchypg11.repo > conf/crunchypg11.repo
+curl https://api.developers.crunchydata.com/downloads/gpg/RPM-GPG-KEY-crunchydata-dev > conf/RPM-GPG-KEY-crunchydata-dev
+```
 
 # Building
 
@@ -66,7 +73,7 @@ By default, docker is not configured to run its daemon. Refer to the [docker pos
 ## Code Generation
 
 Code generation is leveraged to generate the clients and informers utilized to interact with the
-with the various [Custom Resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) 
+various [Custom Resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
 (e.g. `pgclusters`) comprising the PostgreSQL Operator declarative API.  Code generation is provided
 by the [Kubernetes code-generator project](https://github.com/kubernetes/code-generator),
 and the following two `Make` targets are included within the PostgreSQL Operator project to both
@@ -75,14 +82,14 @@ as needed:
 
 ```bash
 # Check to see if an update to generated code is needed:
-make check-codegen
+make verify-codegen
 
 # Update any generated code:
 make update-codegen
 ```
 
-Therefore, in the event that a Custom Resource defined within the PostgreSQL Operator API 
-(`$PGOROOT/apis/crunchydata.com`) is updated, the `check-codegen` target will indicate that a 
+Therefore, in the event that a Custom Resource defined within the PostgreSQL Operator API
+(`$PGOROOT/apis/crunchydata.com`) is updated, the `verify-codegen` target will indicate that
 an update is needed, and the `update-codegen` target should then be utilized to generate the
 updated code prior to compiling.
 
@@ -106,24 +113,35 @@ The project uses the golang dep package manager to vendor all the golang source 
 
 After a full compile, you will have a `pgo` binary in `$HOME/odev/bin` and the Operator images in your local Docker registry.
 
-## Release
-You can perform a release build by running:
-
-    make release
-
-This will compile the Mac and Windows versions of `pgo`.
-
-
 # Deployment
 
-Now that you have built the Operator images, you can push them to your Kubernetes cluster if that cluster is remote to your development host.
+Now that you have built the PostgreSQL Operator images, you can now deploy them
+to your Kubernetes cluster. To deploy the image and associated Kubernetes
+manifests, you can execute the following command:
 
-You would then run:
+```shell
+make deployoperator
+```
 
-    make deployoperator
+If your Kubernetes cluster is not local to your development host, you will need
+to specify a config file that will connect you to your Kubernetes cluster. See
+the [Kubernetes documentation](https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/)
+for details.
 
-To deploy the Operator on your Kubernetes cluster.  If your Kubernetes cluster is not local to your development host, you will need to specify a config file that will connect you to your Kubernetes cluster. See the Kubernetes documentation for details.
+# Testing
 
+Once the PostgreSQL Operator is deployed, you can run the end-to-end regression
+test suite interface with the PostgreSQL client. You need to ensure
+that the `pgo` client executable is in your `$PATH`. The test suite can be run
+using the following commands:
+
+```shell
+cd $PGOROOT/testing/pgo_cli
+GO111MODULE=on go test -count=1 -parallel=2 -timeout=30m -v .
+```
+
+For more information, please follow the [testing README](https://github.com/CrunchyData/postgres-operator/blob/master/testing/pgo_cli/README.md)
+in the source repository.
 
 # Troubleshooting
 
