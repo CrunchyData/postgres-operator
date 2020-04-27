@@ -677,11 +677,13 @@ func ValidateNamespacesWatched(clientset *kubernetes.Clientset,
 }
 
 // getNamespacesFromEnv returns a slice containing the namespaces strored the NAMESPACE env var in
-// csv format.
+// csv format.  If NAMESPACE is empty, then the Operator namespace as specified in env var
+// PGO_OPERATOR_NAMESPACE is returned.
 func getNamespacesFromEnv() []string {
 	namespaceEnvVar := os.Getenv("NAMESPACE")
 	if namespaceEnvVar == "" {
-		return nil
+		defaultNs := os.Getenv("PGO_OPERATOR_NAMESPACE")
+		return []string{defaultNs}
 	}
 	return strings.Split(namespaceEnvVar, ",")
 }
@@ -980,11 +982,6 @@ func GetInitialNamespaceList(clientset *kubernetes.Clientset,
 		if _, ok := nsEnvMap[namespace]; !ok {
 			namespaceList = append(namespaceList, namespace)
 		}
-	}
-
-	// default to the namespace for the Operator install if the namespace list is still empty
-	if len(namespaceList) == 0 {
-		namespaceList = append(namespaceList, pgoNamespace)
 	}
 
 	return namespaceList, nil
