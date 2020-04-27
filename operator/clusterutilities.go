@@ -565,28 +565,6 @@ func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string
 	return affinityDoc.String()
 }
 
-// GetReplicaAffinity ...
-// use NotIn as an operator when a node-label is not specified on the
-// replica, use the node labels from the primary in this case
-// use In as an operator when a node-label is specified on the replica
-// use the node labels from the replica in this case
-func GetReplicaAffinity(clusterLabels, replicaLabels map[string]string) string {
-	var operator, key, value string
-	log.Debug("GetReplicaAffinity ")
-	if replicaLabels[config.LABEL_NODE_LABEL_KEY] != "" {
-		//use the replica labels
-		operator = "In"
-		key = replicaLabels[config.LABEL_NODE_LABEL_KEY]
-		value = replicaLabels[config.LABEL_NODE_LABEL_VALUE]
-	} else {
-		//use the cluster labels
-		operator = "NotIn"
-		key = clusterLabels[config.LABEL_NODE_LABEL_KEY]
-		value = clusterLabels[config.LABEL_NODE_LABEL_VALUE]
-	}
-	return GetAffinity(key, value, operator)
-}
-
 // GetPodAntiAffinity returns the populated pod anti-affinity json that should be attached to
 // the various pods comprising the pg cluster
 func GetPodAntiAffinity(cluster *crv1.Pgcluster, deploymentType crv1.PodAntiAffinityDeployment, podAntiAffinityType crv1.PodAntiAffinityType) string {

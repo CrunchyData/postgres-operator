@@ -326,7 +326,7 @@ func scaleReplicaCreateDeployment(clientset *kubernetes.Clientset, client *rest.
 		PrimarySecretName:  cluster.Spec.PrimarySecretName,
 		UserSecretName:     cluster.Spec.UserSecretName,
 		ContainerResources: operator.GetResourcesJSON(cluster.Spec.Resources),
-		NodeSelector:       operator.GetReplicaAffinity(cluster.Spec.UserLabels, replica.Spec.UserLabels),
+		NodeSelector:       operator.GetAffinity(replica.Spec.UserLabels["NodeLabelKey"], replica.Spec.UserLabels["NodeLabelValue"], "In"),
 		PodAntiAffinity:    operator.GetPodAntiAffinity(cluster, crv1.PodAntiAffinityDeploymentDefault, cluster.Spec.PodAntiAffinity.Default),
 		CollectAddon:       operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
 		CollectVolume:      operator.GetCollectVolume(clientset, cluster, namespace),
