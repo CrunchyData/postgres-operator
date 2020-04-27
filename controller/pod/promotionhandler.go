@@ -85,7 +85,7 @@ func (c *Controller) handleStartupInit(cluster crv1.Pgcluster) error {
 	}
 
 	// now scale any replicas deployments to 1
-	clusteroperator.ScaleClusterDeployments(c.PodClientset, cluster, 1, false, true, false)
+	clusteroperator.ScaleClusterDeployments(c.PodClientset, cluster, 1, false, true, false, false)
 
 	return nil
 }

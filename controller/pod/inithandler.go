@@ -39,7 +39,18 @@ import (
 // primary PG pod for a new or restored PG cluster reaches a ready status
 func (c *Controller) handleClusterInit(newPod *apiv1.Pod, cluster *crv1.Pgcluster) error {
 
-	clusterName := cluster.Name
+	clusterName := cluster.GetName()
+
+	// first check to see if the update is a repo pod.  If so, then call repo init handler and
+	// return since the other handlers are only applicable to PG pods
+	if isBackRestRepoPod(newPod) {
+		log.Debugf("Pod Controller: calling pgBackRest repo init for cluster %s", clusterName)
+		if err := c.handleBackRestRepoInit(cluster); err != nil {
+			log.Error(err)
+			return err
+		}
+		return nil
+	}
 
 	// handle common tasks for initializing a cluster, whether due to bootstap or reinitialization
 	// following a restore, or if a regular or standby cluster
@@ -67,6 +78,23 @@ func (c *Controller) handleClusterInit(newPod *apiv1.Pod, cluster *crv1.Pgcluste
 		log.Debugf("Pod Controller: calling bootstrap init for cluster %s", clusterName)
 		return c.handleBootstrapInit(newPod, cluster)
 	}
+}
+
+// handleBackRestRepoInit handles cluster initialization tasks that must be executed once
+// as a result of an update to a cluster's pgBackRest repostiroy pod
+func (c *Controller) handleBackRestRepoInit(cluster *crv1.Pgcluster) error {
+
+	clusterInfo, err := clusteroperator.ScaleClusterDeployments(c.PodClientset, *cluster, 1,
+		true, false, false, false)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	log.Debugf("Pod Controller: scaled primary deployment %s to 1 to proceed with initializing "+
+		"cluster %s", clusterInfo.PrimaryDeployment, cluster.Name)
+
+	return nil
 }
 
 // handleCommonInit is resposible for handling common initilization tasks for a PG cluster
@@ -169,7 +197,7 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	//
 
 	// now scale any replicas deployments to 1
-	clusteroperator.ScaleClusterDeployments(c.PodClientset, *cluster, 1, false, true, false)
+	clusteroperator.ScaleClusterDeployments(c.PodClientset, *cluster, 1, false, true, false, false)
 
 	// Proceed with stanza-creation of this is not a standby cluster, or if its
 	// a standby cluster that does not have "s3" storage only enabled.

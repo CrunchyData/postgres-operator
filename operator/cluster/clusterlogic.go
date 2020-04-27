@@ -82,8 +82,8 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 	if cl.Labels[config.LABEL_BACKREST] == "true" {
 		//backrest requires us to turn on archive mode
 		archiveMode = "on"
-		err = backrest.CreateRepoDeployment(clientset, namespace, cl, true)
-		if err != nil {
+		if err := backrest.CreateRepoDeployment(clientset, namespace, cl, true,
+			0); err != nil {
 			log.Error("could not create backrest repo deployment")
 			return err
 		}
@@ -111,7 +111,7 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 	deploymentFields := operator.DeploymentTemplateFields{
 		Name:               cl.Spec.Name,
 		IsInit:             true,
-		Replicas:           "1",
+		Replicas:           "0",
 		ClusterName:        cl.Spec.Name,
 		PrimaryHost:        cl.Spec.Name,
 		Port:               cl.Spec.Port,
@@ -447,9 +447,10 @@ func publishDeleteCluster(namespace, username, clusterName, identifier string) {
 // deployments for a cluster.  This includes the name of the primary deployment, all replica
 // deployments, along with the names of the services enabled for the cluster.
 type ScaleClusterInfo struct {
-	PrimaryDeployment  string
-	ReplicaDeployments []string
-	Services           []string
+	PrimaryDeployment        string
+	ReplicaDeployments       []string
+	PGBackRestRepoDeployment string
+	PGBouncerDeployment      string
 }
 
 // ShutdownCluster is responsible for shutting down a cluster that is currently running.  This
@@ -490,12 +491,13 @@ func ShutdownCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 			"down cluster %s", cluster.Name)
 	}
 
-	clusterInfo, err := ScaleClusterDeployments(clientset, cluster, 0, true, true, true)
+	clusterInfo, err := ScaleClusterDeployments(clientset, cluster, 0, true, true, true, true)
 	if err != nil {
 		return err
 	}
-	message := fmt.Sprintf("Database shutdown along with the following services: %s",
-		clusterInfo.Services)
+	message := fmt.Sprintf("Database shutdown along with the following services: %v",
+		append(make([]string, 0), clusterInfo.PGBackRestRepoDeployment,
+			clusterInfo.PGBouncerDeployment))
 	if err := kubeapi.PatchpgclusterStatus(restclient, crv1.PgclusterStateShutdown,
 		message, &cluster, cluster.Namespace); err != nil {
 		return err
@@ -528,14 +530,15 @@ func StartupCluster(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) err
 	// Scale up the primary and supporting services, but not the replicas.  Replicas will be
 	// scaled up after the primary is ready.  This ensures the primary at the time of shutdown
 	// is the primary when the cluster comes back online.
-	clusterInfo, err := ScaleClusterDeployments(clientset, cluster, 1, true, false, true)
+	clusterInfo, err := ScaleClusterDeployments(clientset, cluster, 1, true, false, true, true)
 	if err != nil {
 		return err
 	}
 
 	log.Debugf("Cluster Operator: primary deployment %s started for cluster %s along with "+
 		"services %v.  The following replicas will be started once the primary has initialized: "+
-		"%v", clusterInfo.PrimaryDeployment, cluster.Name, clusterInfo.Services,
+		"%v", clusterInfo.PrimaryDeployment, cluster.Name, append(make([]string, 0),
+		clusterInfo.PGBackRestRepoDeployment, clusterInfo.PGBouncerDeployment),
 		clusterInfo.ReplicaDeployments)
 
 	return nil
@@ -546,7 +549,8 @@ func StartupCluster(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) err
 // primary deployment and any supporting services (pgBackRest and pgBouncer) when shutting down
 // or starting up the cluster due to a scale or scale-down request.
 func ScaleClusterDeployments(clientset *kubernetes.Clientset, cluster crv1.Pgcluster, replicas int,
-	scalePrimary, scaleReplicas, scaleServices bool) (clusterInfo ScaleClusterInfo, err error) {
+	scalePrimary, scaleReplicas, scaleBackRestRepo,
+	scalePGBouncer bool) (clusterInfo ScaleClusterInfo, err error) {
 
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
@@ -571,17 +575,17 @@ func ScaleClusterDeployments(clientset *kubernetes.Clientset, cluster crv1.Pgclu
 				continue
 			}
 		case deployment.Labels[config.LABEL_PGBOUNCER] == "true":
-			clusterInfo.Services = append(clusterInfo.Services, "pgBouncer")
+			clusterInfo.PGBouncerDeployment = deployment.Name
 			// if not scaling services simply move on to the next deployment
-			if !scaleServices {
+			if !scalePGBouncer {
 				continue
 			}
 		case deployment.Labels[config.LABEL_PGO_BACKREST_REPO] == "true":
+			clusterInfo.PGBackRestRepoDeployment = deployment.Name
 			// if not scaling services simply move on to the next deployment
-			if !scaleServices {
+			if !scaleBackRestRepo {
 				continue
 			}
-			clusterInfo.Services = append(clusterInfo.Services, "pgBackRest")
 		default:
 			clusterInfo.ReplicaDeployments = append(clusterInfo.ReplicaDeployments,
 				deployment.Name)
