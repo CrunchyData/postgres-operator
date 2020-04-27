@@ -119,7 +119,7 @@ You will need to edit the `$PGOROOT/deploy/install-bootstrap-creds.sh` file to c
 export PGOADMIN_USERNAME=pgoadmin
 export PGOADMIN_PASSWORD=examplepassword
 ```
-You will need to update the `$HOME/.pgouser`file to match the values you set in order to use the Operator. Additional accounts can be created later following the steps described in the 'Operator Security' section of the main [Bash Installation Guide] ( {{< relref "installation/operator-install.md" >}}). Once these accounts are created, you can change this file to login in via the PGO CLI as that user.
+You will need to update the `$HOME/.pgouser`file to match the values you set in order to use the Operator. Additional accounts can be created later following the steps described in the 'Operator Security' section of the main [Bash Installation Guide] ( {{< relref "installation/other/bash.md" >}}). Once these accounts are created, you can change this file to login in via the PGO CLI as that user.
 
 ##### Step 6
 

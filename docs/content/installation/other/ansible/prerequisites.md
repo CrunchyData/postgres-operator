@@ -32,10 +32,6 @@ are required:
 * [Windows Subsystem for Linux (WSL)](https://docs.microsoft.com/en-us/windows/wsl/install-win10)
 * [Ubuntu for Windows](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6)
 
-## Environment
-
-Ensure the appropriate [environment variables]({{< relref "common-env.md" >}}) are set.
-
 ## Permissions
 
 The installation of the Crunchy PostgreSQL Operator requires elevated privileges.  

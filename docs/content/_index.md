@@ -12,7 +12,7 @@ draft: false
 
 Latest Release: 4.3.0
 
-The Crunchy PostgreSQL Operator automates and simplifies deploying and managing open source PostgreSQL clusters on Kubernetes and other Kubernetes-enabled Platforms by providing the essential features you need to keep your PostgreSQL clusters up and running, including:
+The [Crunchy PostgreSQL Operator](https://www.crunchydata.com/developers/download-postgres/containers/postgres-operator) automates and simplifies deploying and managing open source PostgreSQL clusters on Kubernetes and other Kubernetes-enabled Platforms by providing the essential features you need to keep your PostgreSQL clusters up and running, including:
 
 #### PostgreSQL Cluster Provisioning
 
@@ -96,23 +96,21 @@ The Crunchy PostgreSQL Operator extends Kubernetes to provide a higher-level abs
 
 The Crunchy PostgreSQL Operator is tested on the following Platforms:
 
-- Kubernetes 1.13 - 1.15 (See note about 1.16 and beyond)
+- Kubernetes 1.13+
 - OpenShift 3.11+
 - Google Kubernetes Engine (GKE), including Anthos
 - VMware Enterprise PKS 1.3+
-
-**NOTE**: At present, while the Crunchy PostgreSQL Operator has compatibility for Kubernetes 1.16 and beyond, it has not been verified for the v4.3.0 release.
 
 ## Storage
 
 The Crunchy PostgreSQL Operator is tested with a variety of different types of Kubernetes storage and Storage Classes, including:
 
-- Google Compute Engine persistent volumes
-- HostPath
-- NFS
 - Rook
 - StorageOS
+- Google Compute Engine persistent volumes
+- NFS
+- HostPath
 
-and more.
+and more. We have had reports of people using the PostgreSQL Operator with other [Storage Classes](https://kubernetes.io/docs/concepts/storage/storage-classes/) as well.
 
-We know there are a variety of different types of [Storage Classes](https://kubernetes.io/docs/concepts/storage/storage-classes/) available for Kubernetes and we do our best to test each one, but due to the breadth of this area we are unable to verify PostgreSQL Operator functionality in each one. With that said, the PostgreSQL Operator is designed to be storage class agnostic and has been demonstrated to work with additional Storage Classes.
+We know there are a variety of different types of [Storage Classes](https://kubernetes.io/docs/concepts/storage/storage-classes/) available for Kubernetes and we do our best to test each one, but due to the breadth of this area we are unable to verify PostgreSQL Operator functionality in each one. With that said, the PostgreSQL Operator is designed to be storage class agnostic and has been demonstrated to work with additional Storage Classes. Storage is a rapidly evolving field in Kubernetes and we will continue to adapt the PostgreSQL Operator to modern Kubernetes storage standards.

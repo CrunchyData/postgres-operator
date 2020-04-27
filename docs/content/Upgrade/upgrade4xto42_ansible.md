@@ -51,12 +51,12 @@ Save a copy of your current inventory file with a new name (such as `inventory.b
 
 
 ##### Step 2
-Update the new inventory file with the appropriate values for your new Operator installation, as described in the [Ansible Install Prerequisites] ( {{< relref "installation/install-with-ansible/prerequisites.md" >}}) and the [Compatibility Requirements Guide] ( {{< relref "configuration/compatibility.md" >}}).
+Update the new inventory file with the appropriate values for your new Operator installation, as described in the [Ansible Install Prerequisites] ( {{< relref "installation/other/ansible/prerequisites.md" >}}) and the [Compatibility Requirements Guide] ( {{< relref "configuration/compatibility.md" >}}).
 
 
 ##### Step 3
 
-Now you can upgrade your Operator installation and configure your connection settings as described in the [Ansible Update Page] ( {{< relref "installation/install-with-ansible/updating-operator.md" >}}).
+Now you can upgrade your Operator installation and configure your connection settings as described in the [Ansible Update Page] ( {{< relref "installation/other/ansible/updating-operator.md" >}}).
 
 
 ##### Step 4
@@ -87,6 +87,6 @@ cluster : mycluster
                 primary (mycluster-7d49d98665-7zxzd): UP
 ```
 ##### Step 7
-Scale up to the required number of replicas, as needed. 
+Scale up to the required number of replicas, as needed.
 
 It is also recommended to take full backups of each pgcluster once the upgrade is completed due to version differences between the old and new clusters.

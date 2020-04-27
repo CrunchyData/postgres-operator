@@ -54,7 +54,7 @@ Delete the 3.5.x version of the operator by executing:
 ##### Step 3
 Log in as your new Linux user and install the 4.3.0 Postgres Operator.
 
-[Bash Installation] ( {{< relref "installation/operator-install.md" >}}) 
+[Bash Installation] ( {{< relref "installation/other/bash.md" >}}) 
 
 Be sure to add the existing namespace to the Operator's list of watched namespaces (see the [Namespace] ( {{< relref "architecture/namespace.md" >}}) section of this document for more information) and make sure to avoid overwriting any existing data storage.
 
