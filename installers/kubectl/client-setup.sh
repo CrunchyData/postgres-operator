@@ -12,21 +12,22 @@
 #  limitations under the License.
 
 # This script should be run after the operator has been deployed
-export PGO_OPERATOR_NAMESPACE=${PGO_OPERATOR_NAMESPACE:-pgo}
+export PGO_OPERATOR_NAMESPACE="${PGO_OPERATOR_NAMESPACE:-pgo}"
+PGO_USER_ADMIN="${PGO_USER_ADMIN:-pgouser-admin}"
 
 # Check that the pgouser-admin secret exists
-if [ -z "$(kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgouser-admin)" ]
+if [ -z "$(kubectl get secret -n ${PGO_OPERATOR_NAMESPACE} ${PGO_USER_ADMIN})" ]
 then
-    echo "pgouser-admin Secret not found in namespace: $PGO_OPERATOR_NAMESPACE"
+    echo "${PGO_USER_ADMIN} Secret not found in namespace: ${PGO_OPERATOR_NAMESPACE}"
     echo "Please ensure that the PostgreSQL Operator has been installed."
     echo "Exiting..."
     exit 1
 fi
 
 # Check that the pgo.tls secret exists
-if [ -z "$(kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgo.tls)" ]
+if [ -z "$(kubectl get secret -n ${PGO_OPERATOR_NAMESPACE} pgo.tls)" ]
 then
-    echo "pgo.tls Secret not found in namespace: $PGO_OPERATOR_NAMESPACE"
+    echo "pgo.tls Secret not found in namespace: ${PGO_OPERATOR_NAMESPACE}"
     echo "Please ensure that the PostgreSQL Operator has been installed."
     echo "Exiting..."
     exit 1
@@ -34,19 +35,26 @@ fi
 
 
 # Creates the output directory for files
-OUTPUT_DIR=$HOME/.pgo/$PGO_OPERATOR_NAMESPACE
-mkdir -p $OUTPUT_DIR
+OUTPUT_DIR="${HOME}/.pgo/${PGO_OPERATOR_NAMESPACE}"
+mkdir -p "${OUTPUT_DIR}"
+# lock down the directory to just this user
+chmod a-rwx,u+rwx "${OUTPUT_DIR}"
 
 # Use the pgouser-admin secret to generate pgouser file
-kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgouser-admin -o 'go-template={{.data.username | base64decode }}:{{.data.password | base64decode}}' > $OUTPUT_DIR/pgouser
+kubectl get secret -n "${PGO_OPERATOR_NAMESPACE}" "${PGO_USER_ADMIN}" -o 'go-template={{.data.username | base64decode }}:{{.data.password | base64decode}}' > $OUTPUT_DIR/pgouser
+# ensure this file is locked down to the specific user running this
+chmod a-rwx,u+rw "${OUTPUT_DIR}/pgouser"
+
 
 # Use the pgo.tls secret to generate the client cert files
-kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgo.tls -o 'go-template={{ index .data "tls.crt" | base64decode }}' > $OUTPUT_DIR/client.crt
-kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgo.tls -o 'go-template={{ index .data "tls.key" | base64decode }}' > $OUTPUT_DIR/client.key
+kubectl get secret -n "${PGO_OPERATOR_NAMESPACE}" pgo.tls -o 'go-template={{ index .data "tls.crt" | base64decode }}' > $OUTPUT_DIR/client.crt
+kubectl get secret -n "${PGO_OPERATOR_NAMESPACE}" pgo.tls -o 'go-template={{ index .data "tls.key" | base64decode }}' > $OUTPUT_DIR/client.key
+# ensure the files are locked down to the specific user running this
+chmod a-rwx,u+rw "${OUTPUT_DIR}/client.crt" "${OUTPUT_DIR}/client.key"
 
 
 echo "pgo client files have been generated, please add the following to your bashrc"
-echo "export PGOUSER=$OUTPUT_DIR/pgouser"
-echo "export PGO_CA_CERT=$OUTPUT_DIR/client.crt"
-echo "export PGO_CLIENT_CERT=$OUTPUT_DIR/client.crt"
-echo "export PGO_CLIENT_KEY=$OUTPUT_DIR/client.key"
+echo "export PGOUSER=${OUTPUT_DIR}/pgouser"
+echo "export PGO_CA_CERT=${OUTPUT_DIR}/client.crt"
+echo "export PGO_CLIENT_CERT=${OUTPUT_DIR}/client.crt"
+echo "export PGO_CLIENT_KEY=${OUTPUT_DIR}/client.key"
