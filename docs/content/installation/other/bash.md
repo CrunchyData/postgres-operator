@@ -1,5 +1,5 @@
 ---
-title: "Install Operator Using Bash"
+title: "Bash Scripts"
 date:
 draft: false
 weight: 200
@@ -42,9 +42,6 @@ Environment variables control aspects of the Operator installation.  You can cop
 
     cat $HOME/odev/src/github.com/crunchydata/postgres-operator/examples/envs.sh >> $HOME/.bashrc
     source $HOME/.bashrc
-
-To manually configure the environment variables, refer to the [environment documentation]({{< relref "common-env.md" >}}).
-
 
 For various scripts used by the Operator, the *expenv* utility is required, download this utility from the Github Releases page, and place it into your PATH (e.g. $HOME/odev/bin).
 {{% notice tip %}}There is also a Makefile target that includes is *expenv* and several other dependencies that are only needed if you plan on building from source:

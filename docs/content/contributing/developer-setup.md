@@ -1,16 +1,17 @@
 ---
-title: "Developer Setup"
+title: "Development Environment"
 date:
 draft: false
 weight: 305
 ---
 
-The [Postgres-Operator](https://github.com/crunchydata/postgres-operator) is an open source project hosted on GitHub.
+The [PostgreSQL Operator](https://github.com/crunchydata/postgres-operator) is an open source project hosted on GitHub.
 
 This guide is intended for those wanting to build the Operator from source or contribute via pull requests.
 
 
 # Prerequisites
+
 The target development host for these instructions is a CentOS 7 or RHEL 7 host. Others operating systems
 are possible, however we do not support building or running the Operator on others at this time.
 
@@ -66,7 +67,6 @@ The setup target ensures the presence of:
 * NSQ messaging binaries
 * `docker` container tool
 * `buildah` OCI image building tool
-* `expenv` config tool
 
 By default, docker is not configured to run its daemon. Refer to the [docker post-installation instructions](https://docs.docker.com/install/linux/linux-postinstall/) to configure it to run once or at system startup. This is not done automatically.
 

@@ -2,10 +2,10 @@
 title: "Install `pgo` Client"
 date:
 draft: false
-weight: 400
+weight: 30
 ---
 
-# Install the Postgres Operator (`pgo`) Client
+# Install the PostgreSQL Operator (`pgo`) Client
 
 The following will install and configure the `pgo` client on all systems.  For the
 purpose of these instructions it's assumed that the Crunchy PostgreSQL Operator

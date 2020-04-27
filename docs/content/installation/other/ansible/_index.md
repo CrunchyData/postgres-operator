@@ -1,5 +1,5 @@
 ---
-title: "Install Operator Using Ansible"
+title: "Ansible"
 date:
 draft: false
 weight: 100
