@@ -17,7 +17,9 @@ limitations under the License.
 
 import (
 	"errors"
-	"fmt"
+	"strings"
+	"time"
+
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
@@ -25,10 +27,8 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
-	"strings"
-	"time"
 )
 
 const MAP_KEY_USERNAME = "username"
@@ -316,29 +316,20 @@ func validRoles(clientset *kubernetes.Clientset, roles string) error {
 
 func validNamespaces(namespaces string, allnamespaces bool) error {
 
-	var err error
-
 	if allnamespaces {
+		return nil
+	}
+
+	nsSlice := strings.Split(namespaces, ",")
+	for i := range nsSlice {
+		nsSlice[i] = strings.TrimSpace(nsSlice[i])
+	}
+
+	err := ns.ValidateNamespacesWatched(apiserver.Clientset, apiserver.NamespaceOperatingMode(),
+		apiserver.InstallationName, nsSlice...)
+	if err != nil {
 		return err
 	}
 
-	watchedNamespaces := ns.GetNamespaces(apiserver.Clientset, apiserver.InstallationName)
-
-	fields := strings.Split(namespaces, ",")
-	for _, v := range fields {
-		ns := strings.TrimSpace(v)
-
-		found := false
-		for i := 0; i < len(watchedNamespaces); i++ {
-			if watchedNamespaces[i] == ns {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return errors.New(fmt.Sprintf("%s was not found in the watched namespaces %v", ns, watchedNamespaces))
-		}
-
-	}
-	return err
+	return nil
 }

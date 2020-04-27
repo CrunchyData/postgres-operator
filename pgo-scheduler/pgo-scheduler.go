@@ -49,7 +49,6 @@ var nsRefreshInterval = 10 * time.Minute
 var installationName string
 var namespace string
 var pgoNamespace string
-var namespaceList []string
 var timeout time.Duration
 var seconds int
 var kubeClient *kubernetes.Clientset
@@ -116,13 +115,10 @@ func init() {
 
 	// Configure namespaces for the Scheduler.  This includes determining the namespace
 	// operating mode and obtaining a valid list of target namespaces for the operator install.
-	if err := setupNamespaces(kubeClient); err != nil {
+	if err := setNamespaceOperatingMode(kubeClient); err != nil {
 		log.Errorf("Error configuring operator namespaces: %w", err)
 		os.Exit(2)
 	}
-
-	log.Debugf("watching the following namespaces: %v", namespaceList)
-
 }
 
 func main() {
@@ -130,7 +126,7 @@ func main() {
 	//give time for pgo-event to start up
 	time.Sleep(time.Duration(5) * time.Second)
 
-	scheduler := scheduler.New(schedulerLabel, pgoNamespace, namespaceList, kubeClient)
+	scheduler := scheduler.New(schedulerLabel, pgoNamespace, kubeClient)
 	scheduler.CronClient.Start()
 
 	sigs := make(chan os.Signal, 1)
@@ -147,9 +143,16 @@ func main() {
 
 	stop := make(chan struct{})
 
-	log.WithFields(log.Fields{}).Infof("Watching namespaces: %s", namespaceList)
+	nsList, err := ns.GetInitialNamespaceList(kubeClient, namespaceOperatingMode,
+		installationName, pgoNamespace)
+	if err != nil {
+		log.WithFields(log.Fields{}).Fatalf("Failed to obtain initial namespace list: %s", err)
+		os.Exit(2)
+	}
 
-	controllerManager, err := sched.NewControllerManager(namespaceList, scheduler)
+	log.WithFields(log.Fields{}).Infof("Watching namespaces: %s", nsList)
+
+	controllerManager, err := sched.NewControllerManager(nsList, scheduler)
 	if err != nil {
 		log.WithFields(log.Fields{}).Fatalf("Failed to create controller manager: %s", err)
 		os.Exit(2)
@@ -178,30 +181,6 @@ func main() {
 			time.Sleep(time.Second * 1)
 		}
 	}
-}
-
-// setupNamespaces is responsible for the initial namespace configuration for the Operator
-// install.  This includes setting the proper namespace operating mode and returning a valid list
-// of namespaces for the current Operator install.
-func setupNamespaces(clientset *kubernetes.Clientset) error {
-
-	// First set the proper namespace operating mode for the Operator install.  The mode identified
-	// determines whether or not certain namespace capabilities are enabled.
-	if err := setNamespaceOperatingMode(clientset); err != nil {
-		log.Errorf("Error detecting namespace operating mode: %w", err)
-		return err
-	}
-	log.Debugf("Namespace operating mode is '%s'", namespaceOperatingMode)
-
-	nsList, err := ns.GetNamespaceList(clientset, namespaceOperatingMode,
-		installationName, pgoNamespace)
-	if err != nil {
-		return err
-	}
-
-	namespaceList = nsList
-
-	return nil
 }
 
 // setNamespaceOperatingMode set the namespace operating mode for the Operator by calling the

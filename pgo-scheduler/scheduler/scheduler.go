@@ -26,11 +26,11 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	cv2 "github.com/robfig/cron"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-func New(label, namespace string, nsList []string, client *kubernetes.Clientset) *Scheduler {
+func New(label, namespace string, client *kubernetes.Clientset) *Scheduler {
 	apiserver.ConnectToKube()
 	restClient = apiserver.RESTClient
 	kubeClient = client
@@ -39,11 +39,10 @@ func New(label, namespace string, nsList []string, client *kubernetes.Clientset)
 	cronClient.AddFunc("* * * * *", heartbeat)
 
 	return &Scheduler{
-		namespace:     namespace,
-		label:         label,
-		CronClient:    cronClient,
-		entries:       make(map[string]cv2.EntryID),
-		namespaceList: nsList,
+		namespace:  namespace,
+		label:      label,
+		CronClient: cronClient,
+		entries:    make(map[string]cv2.EntryID),
 	}
 }
 

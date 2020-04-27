@@ -159,6 +159,10 @@ var (
 	// requirements for naming set by Kubernetes
 	ErrInvalidNamespaceName = errors.New(validation.RegexError(dns1123ErrMsg, dns1123Fmt,
 		"my-name", "123-abc"))
+	// ErrNamespaceNotWatched defines the error that is thrown when a namespace does not meet the
+	// requirements for naming set by Kubernetes
+	ErrNamespaceNotWatched = errors.New("The namespaces are not watched by the " +
+		"current PostgreSQL Operator installation")
 )
 
 // CreateNamespaceAndRBAC creates a new namespace that is owned by the Operator, while then
@@ -597,13 +601,22 @@ func ConfigureInstallNamespaces(clientset *kubernetes.Clientset, installationNam
 	return nil
 }
 
-func GetNamespaces(clientset *kubernetes.Clientset, installationName string) []string {
+// GetCurrentNamespaceList returns the current list namespaces being managed by the current
+// Operateor installation.  When the current namespace mode is "dynamic" or "readOnly", this
+// involves querying the Kube cluster for an namespaces with the "vendor" and
+// "pgo-installation-name" labels corresponding to the current Operator install.  When the
+// namespace mode is "disabled", a list of namespaces specified using the NAMESPACE env var during
+// installation is returned (with the list defaulting to the Operator's own namespace in the event
+// that NAMESPACE is empty).
+func GetCurrentNamespaceList(clientset *kubernetes.Clientset,
+	installationName string) ([]string, error) {
+
 	ns := make([]string, 0)
 
 	nsList, err := kubeapi.GetNamespaces(clientset)
 	if err != nil {
 		log.Error(err.Error())
-		return ns
+		return nil, err
 	}
 
 	for _, v := range nsList.Items {
@@ -614,8 +627,53 @@ func GetNamespaces(clientset *kubernetes.Clientset, installationName string) []s
 		}
 	}
 
-	return ns
+	return ns, nil
+}
 
+// ValidateNamespacesWatched validates whether or not the namespaces provided are being watched by
+// the current Operator installation.  When the current namespace mode is "dynamic" or "readOnly",
+// this involves ensuring the namespace specified has the proper "vendor" and
+// "pgo-installation-name" labels corresponding to the current Operator install.  When the
+// namespace mode is "disabled", this means ensuring the namespace is in the list of those
+// specifiedusing the NAMESPACE env var during installation (with the list defaulting to the
+// Operator's own namespace in the event that NAMESPACE is empty).  If any namespaces are found to
+// be invalid, an ErrNamespaceNotWatched error is returned containing an error message listing
+// the invalid namespaces.
+func ValidateNamespacesWatched(clientset *kubernetes.Clientset,
+	namespaceOperatingMode NamespaceOperatingMode,
+	installationName string, namespaces ...string) error {
+
+	var err error
+	var currNSList []string
+	if namespaceOperatingMode != NamespaceOperatingModeDisabled {
+		currNSList, err = GetCurrentNamespaceList(clientset, installationName)
+		if err != nil {
+			return err
+		}
+	} else {
+		currNSList = getNamespacesFromEnv()
+	}
+
+	var invalidNamespaces []string
+	for _, ns := range namespaces {
+		var validNS bool
+		for _, currNS := range currNSList {
+			if ns == currNS {
+				validNS = true
+				break
+			}
+		}
+		if !validNS {
+			invalidNamespaces = append(invalidNamespaces, ns)
+		}
+	}
+
+	if len(invalidNamespaces) > 0 {
+		return fmt.Errorf("The following namespaces are invalid: %v. %w", invalidNamespaces,
+			ErrNamespaceNotWatched)
+	}
+
+	return nil
 }
 
 // getNamespacesFromEnv returns a slice containing the namespaces strored the NAMESPACE env var in
@@ -644,32 +702,6 @@ func ValidateNamespaceNames(namespace ...string) error {
 	}
 
 	return nil
-}
-
-func WatchingNamespace(clientset *kubernetes.Clientset, requestedNS, installationName string) bool {
-
-	log.Debugf("WatchingNamespace [%s]", requestedNS)
-
-	nsList := GetNamespaces(clientset, installationName)
-
-	//handle the case where we are watching all namespaces but
-	//the user might enter an invalid namespace not on the kube
-	if nsList[0] == "" {
-		_, found, _ := kubeapi.GetNamespace(clientset, requestedNS)
-		if !found {
-			return false
-		} else {
-			return true
-		}
-	}
-
-	for i := 0; i < len(nsList); i++ {
-		if nsList[i] == requestedNS {
-			return true
-		}
-	}
-
-	return false
 }
 
 // createPGODefaultServiceAccount creates the default SA.
@@ -908,12 +940,13 @@ func checkClusterPrivs(clientset *kubernetes.Clientset,
 	return true, nil
 }
 
-// GetNamespaceList returns a list of namespaces for the current Operator install.  This includes
-// first obtaining any namespaces from the NAMESPACE env var, and then if the namespace operating
-// mode permits, also querying the Kube cluster in order to obtain any other namespaces that are
-// part of the install, but not included in the env var.  If no namespaces are identified via
-// either of these methods, then the the PGO namespaces is returned as the default namespace.
-func GetNamespaceList(clientset *kubernetes.Clientset,
+// GetInitialNamespaceList returns an initial list of namespaces for the current Operator install.
+// This includes first obtaining any namespaces from the NAMESPACE env var, and then if the
+// namespace operating mode permits, also querying the Kube cluster in order to obtain any other
+// namespaces that are part of the install, but not included in the env var.  If no namespaces are
+// identified via either of these methods, then the the PGO namespaces is returned as the default
+// namespace.
+func GetInitialNamespaceList(clientset *kubernetes.Clientset,
 	namespaceOperatingMode NamespaceOperatingMode,
 	installationName, pgoNamespace string) ([]string, error) {
 
@@ -934,9 +967,13 @@ func GetNamespaceList(clientset *kubernetes.Clientset,
 	// querying the Kube cluster.  This allows us to account for all namespaces owned by the
 	// Operator, including those not explicitly specified during the Operator install.
 	var namespaceListCluster []string
+	var err error
 	if namespaceOperatingMode == NamespaceOperatingModeDynamic ||
 		namespaceOperatingMode == NamespaceOperatingModeReadOnly {
-		namespaceListCluster = GetNamespaces(clientset, installationName)
+		namespaceListCluster, err = GetCurrentNamespaceList(clientset, installationName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	for _, namespace := range namespaceListCluster {
