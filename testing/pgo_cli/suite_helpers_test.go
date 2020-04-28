@@ -235,6 +235,25 @@ func requireReplicasReady(t testing.TB, namespace, cluster string, timeout time.
 	}
 }
 
+// requireStanzaExists waits until pgBackRest reports the stanza is ok. If
+// timeout elapses, t will FailNow.
+func requireStanzaExists(t testing.TB, namespace, cluster string, timeout time.Duration) {
+	t.Helper()
+
+	var err error
+	var output string
+
+	ready := func() bool {
+		output, err = pgo("show", "backup", cluster, "-n", namespace).Exec(t)
+		return err == nil && strings.Contains(output, "status: ok")
+	}
+
+	if !ready() {
+		requireWaitFor(t, ready, timeout, time.Second,
+			"timeout waiting for stanza of %q in %q:\n%s", cluster, namespace, output)
+	}
+}
+
 // requireWaitFor calls condition every tick until it returns true. If timeout
 // elapses, t will Logf message and args then FailNow. Condition runs in the
 // current goroutine so that it may also call t.FailNow.

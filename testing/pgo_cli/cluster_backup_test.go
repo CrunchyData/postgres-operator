@@ -30,20 +30,6 @@ import (
 func TestClusterBackup(t *testing.T) {
 	t.Parallel()
 
-	requireStanzaExists := func(t *testing.T, namespace, cluster string, timeout time.Duration) {
-		t.Helper()
-
-		ready := func() bool {
-			output, err := pgo("show", "backup", cluster, "-n", namespace).Exec(t)
-			return err == nil && strings.Contains(output, "status: ok")
-		}
-
-		if !ready() {
-			requireWaitFor(t, ready, timeout, time.Second,
-				"timeout waiting for stanza of %q in %q", cluster, namespace)
-		}
-	}
-
 	withNamespace(t, func(namespace func() string) {
 		withCluster(t, namespace, func(cluster func() string) {
 			t.Run("show backup", func(t *testing.T) {
