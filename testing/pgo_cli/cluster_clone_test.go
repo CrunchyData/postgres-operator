@@ -16,7 +16,6 @@ package pgo_cli_test
 */
 
 import (
-	"strings"
 	"testing"
 	"time"
 
@@ -25,21 +24,6 @@ import (
 
 func TestClusterClone(t *testing.T) {
 	t.Parallel()
-
-	requireStanzaExists := func(t *testing.T, namespace, cluster string, timeout time.Duration) {
-		t.Helper()
-
-		ready := func() bool {
-			output, err := pgo("show", "backup", cluster, "-n", namespace).Exec(t)
-			require.NoError(t, err)
-			return strings.Contains(output, "status: ok")
-		}
-
-		if !ready() {
-			requireWaitFor(t, ready, timeout, time.Second,
-				"timeout waiting for stanza of %q in %q", cluster, namespace)
-		}
-	}
 
 	withNamespace(t, func(namespace func() string) {
 		withCluster(t, namespace, func(cluster func() string) {
