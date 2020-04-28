@@ -28,6 +28,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+const (
+	// defaultRegistry is the default registry to pull the container images from
+	defaultRegistry = "registry.developers.crunchydata.com/crunchydata"
+)
+
 var CRUNCHY_DEBUG bool
 var NAMESPACE string
 
@@ -90,14 +95,14 @@ func Initialize(clientset *kubernetes.Clientset) {
 	log.Printf("PrimaryStorage=%v\n", Pgo.Storage["storage1"])
 
 	if Pgo.Cluster.CCPImagePrefix == "" {
-		log.Debug("pgo.yaml CCPImagePrefix not set, using default")
-		Pgo.Cluster.CCPImagePrefix = "crunchydata"
+		log.Debugf("pgo.yaml CCPImagePrefix not set, using default %q", defaultRegistry)
+		Pgo.Cluster.CCPImagePrefix = defaultRegistry
 	} else {
 		log.Debugf("pgo.yaml CCPImagePrefix set, using %s", Pgo.Cluster.CCPImagePrefix)
 	}
 	if Pgo.Pgo.PGOImagePrefix == "" {
-		log.Debug("pgo.yaml PGOImagePrefix not set, using default")
-		Pgo.Pgo.PGOImagePrefix = "crunchydata"
+		log.Debugf("pgo.yaml PGOImagePrefix not set, using default %q", defaultRegistry)
+		Pgo.Pgo.PGOImagePrefix = defaultRegistry
 	} else {
 		log.Debugf("PGOImagePrefix set, using %s", Pgo.Pgo.PGOImagePrefix)
 	}

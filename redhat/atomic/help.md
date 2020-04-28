@@ -37,7 +37,7 @@ That atomic command runs the Docker command set in this label:
 
 `Name=`
 
-The registry location and name of the image. For example, Name="crunchydata/postgres-operator".
+The registry location and name of the image. For example, Name="registry.developers.crunchydata.com/crunchydata/postgres-operator".
 
 `Version=`
 

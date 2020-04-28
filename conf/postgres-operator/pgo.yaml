@@ -1,5 +1,5 @@
 Cluster:
-  CCPImagePrefix:  crunchydata
+  CCPImagePrefix:  registry.developers.crunchydata.com/crunchydata
   Metrics:  false
   Badger:  false
   CCPImageTag:  centos7-12.2-4.3.0
@@ -78,5 +78,5 @@ Storage:
     StorageClass:  rook-ceph-block
 Pgo:
   Audit:  false
-  PGOImagePrefix:  crunchydata
+  PGOImagePrefix:  registry.developers.crunchydata.com/crunchydata
   PGOImageTag:  centos7-4.3.0
