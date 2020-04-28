@@ -34,7 +34,7 @@ spec:
             containers:
             - name: pgo-deploy
               command: ["/pgo-deploy.sh"]
-              image: crunchydata/pgo-deployer:centos7-4.3.0
+              image: registry.developers.crunchydata.com/crunchydata/pgo-deployer:centos7-4.3.0
               imagePullPolicy: IfNotPresent
               env:
                   - name: ANSIBLE_CONFIG
@@ -52,7 +52,7 @@ spec:
                   - name: CREATE_RBAC
                     value: "true"
                   - name: CCP_IMAGE_PREFIX
-                    value: "crunchydata"
+                    value: "registry.developers.crunchydata.com/crunchydata"
                   - name: CCP_IMAGE_TAG
                     value: "centos7-12.2-4.3.0"
                   - name: DB_PASSWORD_LENGTH
@@ -96,7 +96,7 @@ spec:
                   - name: PGO_CLIENT_VERSION
                     value: "v4.3.0"
                   - name: PGO_IMAGE_PREFIX
-                    value: "crunchydata"
+                    value: "registry.developers.crunchydata.com/crunchydata"
                   - name: PGO_IMAGE_TAG
                     value: "centos7-4.3.0"
                   - name: PGO_INSTALLATION_NAME
