@@ -182,15 +182,19 @@ chmod +x client-setup.sh
 ```
 
 {{% notice tip %}}
-Running this script can cause existing `pgouser`, `client.crt`, and `client.key`
-files to be overwritten.
+Running this script can cause existing `pgo` client binary, `pgouser`,
+`client.crt`, and `client.key` files to be overwritten.
 {{% /notice %}}
 
 The `client-setup.sh` script performs the following tasks:
 
 - Sets `$PGO_OPERATOR_NAMESPACE` to `pgo` if it is unset. This is the default
-namespace that the PostgreSQL Operator is deployed to
+namespace that the PostgreSQßL Operator is deployed to
+- Checks for valid Operating Systems and determines which `pgo` binary to
+download
 - Creates a directory in `$HOME/.pgo/$PGO_OPERATOR_NAMESPACE` (e.g. `/home/hippo/.pgo/pgo`)
+- Downloads the `pgo` binary, saves it to in `$HOME/.pgo/$PGO_OPERATOR_NAMESPACE`,
+and sets it to be executable
 - Pulls the TLS keypair from the PostgreSQL Operator `pgo.tls` Secret so that
 the `pgo` client can communicate with the PostgreSQL Operator. These are saved
 as `client.crt` and `client.key` in the `$HOME/.pgo/$PGO_OPERATOR_NAMESPACE`
@@ -214,12 +218,19 @@ environmental variables to your environment:
 
 ```shell
 cat <<EOF >> ~/.bashrc
+export PATH="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/pgo:$PATH"
 export PGOUSER="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/pgouser"
 export PGO_CA_CERT="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.crt"
 export PGO_CLIENT_CERT="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.crt"
 export PGO_CLIENT_KEY="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.key"
 EOF
 ```
+
+{{% notice tip %}}
+If you are using MacOS the `pgo-mac` binary will need to be renamed to `pgo`.
+Alternatively, you can update your path to include `pgo-mac`.
+`export PATH="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/pgo-mac:$PATH"`
+{{% /notice %}}
 
 By default, the `client-setup.sh` script targets the user that is stored in the
 `pgouser-admin` secret in the `pgo` (`$PGO_OPERATOR_NAMESPACE`) Namespace. If
