@@ -47,3 +47,14 @@ type BasicAuthCredentials struct {
 func (b BasicAuthCredentials) HasUsernameAndPassword() bool {
 	return len(b.Username) > 0 && len(b.Password) > 0
 }
+
+// set the types for updating the memory limit
+type MemoryLimitStatus int
+
+// set the different values around updating the "memory limit" parameter for
+// setting whether or not the memory limit for a Pod should be set
+const (
+	MemoryLimitDoNothing MemoryLimitStatus = iota
+	MemoryLimitEnable
+	MemoryLimitDisable
+)

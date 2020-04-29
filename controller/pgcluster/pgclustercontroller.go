@@ -212,7 +212,8 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 	// see if any of the resource values have changed, and if so, update them
 	if oldcluster.Spec.Resources[v1.ResourceCPU] != newcluster.Spec.Resources[v1.ResourceCPU] ||
-		oldcluster.Spec.Resources[v1.ResourceMemory] != newcluster.Spec.Resources[v1.ResourceMemory] {
+		oldcluster.Spec.Resources[v1.ResourceMemory] != newcluster.Spec.Resources[v1.ResourceMemory] ||
+		oldcluster.Spec.EnableMemoryLimit != newcluster.Spec.EnableMemoryLimit {
 		if err := clusteroperator.UpdateResources(c.PgclusterClientset, c.PgclusterConfig, newcluster); err != nil {
 			log.Error(err)
 			return
@@ -222,7 +223,8 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// see if any of the pgBackRest repository resource values have changed, and
 	// if so, update them
 	if oldcluster.Spec.BackrestResources[v1.ResourceCPU] != newcluster.Spec.BackrestResources[v1.ResourceCPU] ||
-		oldcluster.Spec.BackrestResources[v1.ResourceMemory] != newcluster.Spec.BackrestResources[v1.ResourceMemory] {
+		oldcluster.Spec.BackrestResources[v1.ResourceMemory] != newcluster.Spec.BackrestResources[v1.ResourceMemory] ||
+		oldcluster.Spec.EnableBackrestMemoryLimit != newcluster.Spec.EnableBackrestMemoryLimit {
 		if err := backrestoperator.UpdateResources(c.PgclusterClientset, c.PgclusterConfig, newcluster); err != nil {
 			log.Error(err)
 			return

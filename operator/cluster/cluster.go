@@ -361,8 +361,17 @@ func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, c
 		// handle the memory update
 		if resource, ok := cluster.Spec.Resources[v1.ResourceMemory]; ok {
 			requestResourceList[v1.ResourceMemory] = resource
+			limitResourceList[v1.ResourceMemory] = resource
 		} else {
 			delete(requestResourceList, v1.ResourceMemory)
+			delete(limitResourceList, v1.ResourceMemory)
+		}
+
+		// we do need to separately determine whether or not to include the memory
+		// limit based on the user's preference we make this check regardless if the
+		// limit was cleared
+		if !cluster.Spec.EnableMemoryLimit {
+			delete(limitResourceList, v1.ResourceMemory)
 		}
 
 		// update the requests resourcelist

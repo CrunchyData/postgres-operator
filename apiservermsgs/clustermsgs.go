@@ -121,6 +121,11 @@ type CreateClusterRequest struct {
 	// CPURequest is the value of how much CPU should be requested for deploying
 	// the PostgreSQL cluster
 	CPURequest string
+	// MemoryLimitStatus determines whether or not the Kubernetes Resource Limit
+	// for memory should be set on the request. Defaults to "do nothing", which
+	// effectively disable setting the memory limit, which is currently the
+	// preferred behavior
+	MemoryLimitStatus MemoryLimitStatus
 	// MemoryRequest is the value of how much RAM should be requested for
 	// deploying the PostgreSQL cluster
 	MemoryRequest string
@@ -128,6 +133,11 @@ type CreateClusterRequest struct {
 	// requested for deploying pgBouncer instances. Defaults to not being
 	// requested
 	PgBouncerCPURequest string
+	// PgBouncerMemoryLimitStatus determines whether or not the Kubernetes
+	// Resource Limit for memory should be set on the request. Defaults to
+	// "do nothing", which effectively disable setting the memory limit, which is
+	// currently the preferred behavior
+	PgBouncerMemoryLimitStatus MemoryLimitStatus
 	// PgBouncerMemoryRequest, if specified, is the value of how much RAM should
 	// be requested for deploying pgBouncer instances. Defaults to the server
 	// specified default
@@ -135,6 +145,11 @@ type CreateClusterRequest struct {
 	// BackrestCPURequest, if specified, is the value of how much CPU should be
 	// requested the pgBackRest repository. Defaults to not being requested
 	BackrestCPURequest string
+	// BackrestMemoryLimitStatus determines whether or not the Kubernetes
+	// Resource Limit for memory should be set on the request. Defaults to
+	// "do nothing", which effectively disable setting the memory limit, which is
+	// currently the preferred behavior
+	BackrestMemoryLimitStatus MemoryLimitStatus
 	// BackrestMemoryRequest, if specified, is the value of how much RAM should
 	// be requested for the pgBackRest repository. Defaults to the server
 	// specified default
@@ -312,12 +327,20 @@ type UpdateClusterRequest struct {
 	// BackrestCPURequest, if specified, is the value of how much CPU should be
 	// requested the pgBackRest repository.
 	BackrestCPURequest string
+	// BackrestMemoryLimitStatus determines whether or not the Kubernetes
+	// Resource Limit for memory should be set on the request. Defaults to
+	// "do nothing", which does nothing
+	BackrestMemoryLimitStatus MemoryLimitStatus
 	// BackrestMemoryRequest, if specified, is the value of how much RAM should
 	// be requested for the pgBackRest repository.
 	BackrestMemoryRequest string
 	// CPURequest is the value of how much CPU should be requested for deploying
 	// the PostgreSQL cluster
 	CPURequest string
+	// MemoryLimitStatus determines whether or not the Kubernetes Resource Limit
+	// for memory should be set on the request. Defaults to "do nothing", which
+	// does nothing
+	MemoryLimitStatus MemoryLimitStatus
 	// MemoryRequest is the value of how much RAM should be requested for
 	// deploying the PostgreSQL cluster
 	MemoryRequest string

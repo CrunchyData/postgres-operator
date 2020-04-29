@@ -36,7 +36,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -406,7 +405,8 @@ func UpdatePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 	}
 
 	// check if the resources differ
-	if !reflect.DeepEqual(oldCluster.Spec.PgBouncer.Resources, newCluster.Spec.PgBouncer.Resources) {
+	if !reflect.DeepEqual(oldCluster.Spec.PgBouncer.Resources, newCluster.Spec.PgBouncer.Resources) ||
+		oldCluster.Spec.PgBouncer.EnableMemoryLimit != newCluster.Spec.PgBouncer.EnableMemoryLimit {
 		if err := updatePgBouncerResources(clientset, restclient, newCluster); err != nil {
 			return err
 		}
@@ -459,13 +459,14 @@ func createPgBouncerDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pg
 
 	// get the fields that will be substituted in the pgBouncer template
 	fields := pgBouncerTemplateFields{
-		Name:               pgbouncerDeploymentName,
-		ClusterName:        cluster.Name,
-		CCPImagePrefix:     util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
-		CCPImageTag:        cluster.Spec.CCPImageTag,
-		Port:               operator.Pgo.Cluster.Port,
-		PGBouncerSecret:    util.GeneratePgBouncerSecretName(cluster.Name),
-		ContainerResources: operator.GetResourcesJSON(cluster.Spec.PgBouncer.Resources),
+		Name:            pgbouncerDeploymentName,
+		ClusterName:     cluster.Name,
+		CCPImagePrefix:  util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
+		CCPImageTag:     cluster.Spec.CCPImageTag,
+		Port:            operator.Pgo.Cluster.Port,
+		PGBouncerSecret: util.GeneratePgBouncerSecretName(cluster.Name),
+		ContainerResources: operator.GetResourcesJSON(cluster.Spec.PgBouncer.Resources,
+			cluster.Spec.PgBouncer.EnableMemoryLimit),
 		PodAntiAffinity: operator.GetPodAntiAffinity(cluster,
 			crv1.PodAntiAffinityDeploymentPgBouncer, cluster.Spec.PodAntiAffinity.PgBouncer),
 		PodAntiAffinityLabelName: config.LABEL_POD_ANTI_AFFINITY,
@@ -636,38 +637,6 @@ func execPgBouncerScript(clientset *kubernetes.Clientset, restconfig *rest.Confi
 		log.Warnf("You can attempt to rerun the script [%s] on [%s]",
 			script, databaseName)
 	}
-}
-
-// generateContainerResources is a helper function to get a Kubernetes resource
-// value that is used to set the container resources on a Container. This
-// returns the standard Kubernetes ResourceList tht ais used to capture the
-// resources or an error
-func generateContainerResources(cpu, memory string) (v1.ResourceList, error) {
-	resources := v1.ResourceList{}
-
-	// if there is a value set for CPU, attempt to add it to the resource list
-	if cpu != "" {
-		quantity, err := resource.ParseQuantity(cpu)
-
-		if err != nil {
-			return resources, err
-		}
-
-		resources[v1.ResourceCPU] = quantity
-	}
-
-	// if there is a value set for Memory, attempt to add it to the resource list
-	if memory != "" {
-		quantity, err := resource.ParseQuantity(memory)
-
-		if err != nil {
-			return resources, err
-		}
-
-		resources[v1.ResourceMemory] = quantity
-	}
-
-	return resources, nil
 }
 
 // generatePassword generates a password that is used for the "pgbouncer"
@@ -923,8 +892,11 @@ func updatePgBouncerResources(clientset *kubernetes.Clientset, restclient *rest.
 	// from it
 	deployment.Spec.Template.Spec.Containers[0].Resources.Requests = cluster.Spec.PgBouncer.Resources.DeepCopy()
 	deployment.Spec.Template.Spec.Containers[0].Resources.Limits = cluster.Spec.PgBouncer.Resources.DeepCopy()
-	// delete the memory limit
-	delete(deployment.Spec.Template.Spec.Containers[0].Resources.Limits, v1.ResourceMemory)
+
+	// delete the memory limit unless the user has enabled it
+	if !cluster.Spec.PgBouncer.EnableMemoryLimit {
+		delete(deployment.Spec.Template.Spec.Containers[0].Resources.Limits, v1.ResourceMemory)
+	}
 
 	// and update the deployment
 	// update the deployment with the new values
