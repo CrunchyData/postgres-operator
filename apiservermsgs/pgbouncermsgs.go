@@ -24,6 +24,11 @@ type CreatePgbouncerRequest struct {
 	// requested for deploying pgBouncer instances. Defaults to not being
 	// requested
 	CPURequest string
+	// MemoryLimitStatus determines whether or not the Kubernetes Resource Limit
+	// for memory should be set on the request. Defaults to "do nothing", which
+	// effectively disable setting the memory limit, which is currently the
+	// preferred behavior
+	MemoryLimitStatus MemoryLimitStatus
 	// MemoryRequest, if specified, is the value of how much RAM should
 	// be requested for deploying pgBouncer instances. Defaults to the server
 	// specified default
@@ -149,6 +154,12 @@ type UpdatePgBouncerRequest struct {
 	// requested for deploying pgBouncer instances. Defaults to not being
 	// requested
 	CPURequest string
+
+	// MemoryLimitStatus determines whether or not the Kubernetes Resource Limit
+	// for memory should be set on the request. Defaults to "do nothing", which
+	// effectively disable setting the memory limit, which is currently the
+	// preferred behavior
+	MemoryLimitStatus MemoryLimitStatus
 
 	// MemoryRequest, if specified, is the value of how much RAM should
 	// be requested for deploying pgBouncer instances. Defaults to the server

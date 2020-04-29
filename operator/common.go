@@ -53,6 +53,11 @@ var ContainerImageOverrides = map[string]string{}
 var namespaceOperatingMode ns.NamespaceOperatingMode
 
 type containerResourcesTemplateFields struct {
+	// EnableMemoryLimit allows a user to determine if they want to apply a limit
+	// to the memory request
+	EnableMemoryLimit bool
+	// RequestsMemory and RequestsCPU determine how much memory/CPU resources to
+	// request
 	RequestsMemory, RequestsCPU string
 }
 
@@ -138,8 +143,10 @@ func Initialize(clientset *kubernetes.Clientset) {
 // CPU and Memory settings. The settings are only included if:
 // a) they exist
 // b) they are nonzero
-func GetResourcesJSON(resources v1.ResourceList) string {
-	fields := containerResourcesTemplateFields{}
+func GetResourcesJSON(resources v1.ResourceList, enableMemoryLimit bool) string {
+	fields := containerResourcesTemplateFields{
+		EnableMemoryLimit: enableMemoryLimit,
+	}
 
 	// first, if the contents of the resources list happen to be nil, exit out
 	if resources == nil {

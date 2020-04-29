@@ -117,6 +117,11 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 			resources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultPgBouncerResourceMemory
 		}
 
+		// determine if we should apply a memory limit for the pgBouncer instances
+		if request.MemoryLimitStatus == msgs.MemoryLimitEnable {
+			cluster.Spec.PgBouncer.EnableMemoryLimit = true
+		}
+
 		cluster.Spec.PgBouncer.Resources = resources
 
 		// update the cluster CRD with these udpates. If there is an error
@@ -184,6 +189,9 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 
 		// Disable the pgBouncer Deploymnet, whcih means setting Replicas to 0
 		cluster.Spec.PgBouncer.Replicas = 0
+		// Set the MemoryLimit of pgBouncer to false as well, as this is the default
+		// setting
+		cluster.Spec.PgBouncer.EnableMemoryLimit = false
 
 		// update the cluster CRD with these udpates. If there is an error
 		if err := kubeapi.Updatepgcluster(apiserver.RESTClient, &cluster, cluster.Name, request.Namespace); err != nil {
@@ -371,6 +379,14 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 					cluster.Spec.PgBouncer.Resources[resource] = quantity
 				}
 			}
+		}
+
+		// determine if we should apply a memory limit for the pgBouncer instances
+		switch request.MemoryLimitStatus {
+		case msgs.MemoryLimitEnable:
+			cluster.Spec.PgBouncer.EnableMemoryLimit = true
+		case msgs.MemoryLimitDisable:
+			cluster.Spec.PgBouncer.EnableMemoryLimit = false
 		}
 
 		// apply the replica count number if there is a change, i.e. replicas is not

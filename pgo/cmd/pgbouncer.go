@@ -78,6 +78,13 @@ func createPgbouncer(args []string, ns string) {
 		os.Exit(1)
 	}
 
+	// check to see if EnableMemoryLimit is set. If so, set a value for
+	// MemoryLimitStatus. Do not need to worry about disabled as it's disabled by
+	// default
+	if EnablePgBouncerMemoryLimit {
+		request.MemoryLimitStatus = msgs.MemoryLimitEnable
+	}
+
 	response, err := api.CreatePgbouncer(httpclient, &SessionCredentials, &request)
 
 	if err != nil {
@@ -367,6 +374,14 @@ func updatePgBouncer(namespace string, clusterNames []string) {
 	if err := util.ValidateQuantity(request.MemoryRequest, "memory"); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
+	}
+
+	// check to see if DisableMemoryLimit/EnableMemoryLimit is set. If so, set a
+	// value for MemoryLimitStatus.
+	if EnablePgBouncerMemoryLimit {
+		request.MemoryLimitStatus = msgs.MemoryLimitEnable
+	} else if DisablePgBouncerMemoryLimit {
+		request.MemoryLimitStatus = msgs.MemoryLimitDisable
 	}
 
 	// and make the API request!

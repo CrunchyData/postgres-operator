@@ -88,9 +88,15 @@ type PgclusterSpec struct {
 	// Now, for CPU, we set both the Request and the Limit, based on how
 	// Kubernetes interacts with these parameters
 	Resources v1.ResourceList `json:"resources"`
+	// EnableMemoryLimit specifies whether or not the "Limit" for memory
+	// should be set on the Pod. Defaults to false
+	EnableMemoryLimit bool `json:"enableMemoryLimit"`
 	// BackrestResources, if specified, contains the container request resources
 	// for the pgBackRest Deployment for this PostgreSQL cluster
 	BackrestResources v1.ResourceList `json:"backrestResources"`
+	// EnableBackrestMemoryLimit specifies whether or not the "Limit" for memory
+	// should be set on the Pod. Defaults to false
+	EnableBackrestMemoryLimit bool `json:"enableBackrestMemoryLimit"`
 	// PgBouncer contains all of the settings to properly maintain a pgBouncer
 	// implementation
 	PgBouncer          PgBouncerSpec            `json:"pgBouncer"`
@@ -172,6 +178,9 @@ type PodAntiAffinitySpec struct {
 // - what resources it should consume
 // - the total number of replicas
 type PgBouncerSpec struct {
+	// EnableMemoryLimit specifies whether or not the "Limit" for memory
+	// should be set on the Pod. Defaults to false
+	EnableMemoryLimit bool `json:"enableMemoryLimit"`
 	// Replicas represents the total number of Pods to deploy with pgBouncer,
 	// which effectively enables/disables the pgBouncer.
 	//

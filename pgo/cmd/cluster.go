@@ -341,6 +341,27 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 		os.Exit(1)
 	}
 
+	// check to see if EnableMemoryLimit is set. If so, set a value for
+	// MemoryLimitStatus. We do not need to worry about disable here as it is
+	// disabled by default
+	if EnableMemoryLimit {
+		r.MemoryLimitStatus = msgs.MemoryLimitEnable
+	}
+
+	// check to see if EnableBackrestMemoryLimit is set. If so, set a value for
+	// BackrestMemoryLimitStatus. We do not need to worry about disable here as
+	// it is disabled by default
+	if EnableBackrestMemoryLimit {
+		r.BackrestMemoryLimitStatus = msgs.MemoryLimitEnable
+	}
+
+	// check to see if EnablePgBouncerMemoryLimit is set. If so, set a value for
+	// PgBouncerMemoryLimitStatus. We do not need to worry about disable here as
+	// it is disabled by default
+	if EnablePgBouncerMemoryLimit {
+		r.PgBouncerMemoryLimitStatus = msgs.MemoryLimitEnable
+	}
+
 	response, err := api.CreateCluster(httpclient, &SessionCredentials, r)
 	if err != nil {
 		fmt.Println("Error: ", err)
@@ -460,8 +481,8 @@ func updateCluster(args []string, ns string) {
 	// and if so, set the values
 	r.Tablespaces = getTablespaces(Tablespaces)
 
-	// check to see if EnableAutofailFlag or DisableAutofailFlag is set. If so,
-	// set a value for Autofail
+	// check to see if EnableStandby or DisableStandby is set. If so,
+	// set a value for Standby
 	if EnableStandby {
 		r.Standby = msgs.UpdateClusterStandbyEnable
 	} else if DisableStandby {
@@ -474,6 +495,22 @@ func updateCluster(args []string, ns string) {
 		r.Autofail = msgs.UpdateClusterAutofailEnable
 	} else if DisableAutofailFlag {
 		r.Autofail = msgs.UpdateClusterAutofailDisable
+	}
+
+	// check to see if Disable/EnableMemoryLimit is set. If so, set a
+	// value for MemoryLimitStatus.
+	if EnableMemoryLimit {
+		r.MemoryLimitStatus = msgs.MemoryLimitEnable
+	} else if DisableMemoryLimit {
+		r.MemoryLimitStatus = msgs.MemoryLimitDisable
+	}
+
+	// check to see if DisableBackrestMemoryLimit/EnableBackrestMemoryLimit is
+	// set. If so, set a value for BackrestMemoryLimitStatus.
+	if EnableBackrestMemoryLimit {
+		r.BackrestMemoryLimitStatus = msgs.MemoryLimitEnable
+	} else if DisableBackrestMemoryLimit {
+		r.BackrestMemoryLimitStatus = msgs.MemoryLimitDisable
 	}
 
 	// if the user provided resources for CPU or Memory, validate them to ensure

@@ -1045,6 +1045,11 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.Resources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultInstanceResourceMemory
 	}
 
+	// determine if we should apply a memory limit for the PostgreSQL clusters
+	if request.MemoryLimitStatus == msgs.MemoryLimitEnable {
+		spec.EnableMemoryLimit = true
+	}
+
 	// similarly, if there are any overriding pgBackRest repository container
 	// resource request values, set them here
 	if request.BackrestCPURequest != "" {
@@ -1061,6 +1066,11 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.BackrestResources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultBackrestResourceMemory
 	}
 
+	// determine if we should apply a memory limit for the pgBackRest repository
+	if request.BackrestMemoryLimitStatus == msgs.MemoryLimitEnable {
+		spec.EnableBackrestMemoryLimit = true
+	}
+
 	// if the pgBouncer flag is set to true, indicate that the pgBouncer
 	// deployment should be made available in this cluster
 	if request.PgbouncerFlag {
@@ -1070,6 +1080,11 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		// here
 		if request.PgBouncerReplicas > 0 {
 			spec.PgBouncer.Replicas = request.PgBouncerReplicas
+		}
+
+		// determine if we should apply a memory limit for the pgBouncer instances
+		if request.PgBouncerMemoryLimitStatus == msgs.MemoryLimitEnable {
+			spec.PgBouncer.EnableMemoryLimit = true
 		}
 	}
 
@@ -1716,6 +1731,14 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 			cluster.Spec.Resources[v1.ResourceMemory] = quantity
 		}
 
+		// determine if the memory limit should be applied to PostgreSQL instances
+		switch request.MemoryLimitStatus {
+		case msgs.MemoryLimitEnable:
+			cluster.Spec.EnableMemoryLimit = true
+		case msgs.MemoryLimitDisable:
+			cluster.Spec.EnableMemoryLimit = false
+		}
+
 		// ensure there is a value for BackrestResources
 		if cluster.Spec.BackrestResources == nil {
 			cluster.Spec.BackrestResources = v1.ResourceList{}
@@ -1731,6 +1754,14 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		if request.BackrestMemoryRequest != "" {
 			quantity, _ := resource.ParseQuantity(request.BackrestMemoryRequest)
 			cluster.Spec.BackrestResources[v1.ResourceMemory] = quantity
+		}
+
+		// determine if the memory limit should be applied to pgBackRest
+		switch request.BackrestMemoryLimitStatus {
+		case msgs.MemoryLimitEnable:
+			cluster.Spec.EnableBackrestMemoryLimit = true
+		case msgs.MemoryLimitDisable:
+			cluster.Spec.EnableBackrestMemoryLimit = false
 		}
 
 		// extract the parameters for the TablespaceMounts and put them in the

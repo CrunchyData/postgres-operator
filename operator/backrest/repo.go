@@ -107,7 +107,7 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 	fields := RepoDeploymentTemplateFields{
 		PGOImagePrefix:        util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, operator.Pgo.Pgo.PGOImagePrefix),
 		PGOImageTag:           operator.Pgo.Pgo.PGOImageTag,
-		ContainerResources:    operator.GetResourcesJSON(cluster.Spec.BackrestResources),
+		ContainerResources:    operator.GetResourcesJSON(cluster.Spec.BackrestResources, cluster.Spec.EnableBackrestMemoryLimit),
 		BackrestRepoClaimName: repoName,
 		SshdSecretsName:       "pgo-backrest-repo-config",
 		PGbackrestDBHost:      cluster.Name,
@@ -198,8 +198,17 @@ func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, c
 	// we only set the **request*
 	if resource, ok := cluster.Spec.BackrestResources[v1.ResourceMemory]; ok {
 		requestResourceList[v1.ResourceMemory] = resource
+		limitResourceList[v1.ResourceMemory] = resource
 	} else {
 		delete(requestResourceList, v1.ResourceMemory)
+		delete(limitResourceList, v1.ResourceMemory)
+	}
+
+	// we do need to separately determine whether or not to include the memory
+	// limit based on the user's preference we make this check regardless if the
+	// limit was cleared
+	if !cluster.Spec.EnableBackrestMemoryLimit {
+		delete(limitResourceList, v1.ResourceMemory)
 	}
 
 	// update the requests / limits resourcelist

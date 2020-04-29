@@ -69,10 +69,16 @@ var WALPVCSize string
 var (
 	// the resource requests for PostgreSQL instances
 	CPURequest, MemoryRequest string
+	// whether or not to set the memory limit for PostgreSQL instances
+	DisableMemoryLimit, EnableMemoryLimit bool
 	// the resource requests for the pgBackRest repository
 	BackrestCPURequest, BackrestMemoryRequest string
+	// whether or not to set the memory limit for the pgBackRest instance
+	DisableBackrestMemoryLimit, EnableBackrestMemoryLimit bool
 	// the resource requests for pgBouncer instances
 	PgBouncerCPURequest, PgBouncerMemoryRequest string
+	// whether or not to set the memory limit for pgBouncer instances
+	DisablePgBouncerMemoryLimit, EnablePgBouncerMemoryLimit bool
 )
 
 // BackrestS3CASecretName, if provided, is the name of a secret to use that
@@ -291,6 +297,12 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&CustomConfig, "custom-config", "", "", "The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.")
 	createClusterCmd.Flags().StringVarP(&Database, "database", "d", "", "If specified, sets the name of the initial database that is created for the user. Defaults to the value set in the PostgreSQL Operator configuration, or if that is not present, the name of the cluster")
 	createClusterCmd.Flags().BoolVarP(&DisableAutofailFlag, "disable-autofail", "", false, "Disables autofail capabitilies in the cluster following cluster initialization.")
+	createClusterCmd.Flags().BoolVar(&EnableMemoryLimit, "enable-memory-limit", false, "Enables PostgreSQL instances to be set with a "+
+		"memory limit on top of the memory request.")
+	createClusterCmd.Flags().BoolVar(&EnableBackrestMemoryLimit, "enable-pgbackrest-memory-limit", false, "Enables the pgBackRest "+
+		"repository to be set with a memory limit on top of the memory request.")
+	createClusterCmd.Flags().BoolVar(&EnablePgBouncerMemoryLimit, "enable-pgbouncer-memory-limit", false, "Enables pgBouncer instances "+
+		"to be set with a memory limit on top of the memory request. This has no effect if there is no pgBouncer deployment.")
 	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster.")
 	createClusterCmd.Flags().StringVar(&MemoryRequest, "memory", "", "Set the amount of RAM to request, e.g. "+
 		"1GiB. Overrides the default server value.")
@@ -388,6 +400,8 @@ func init() {
 	// pgo create pgbouncer
 	createPgbouncerCmd.Flags().StringVar(&PgBouncerCPURequest, "cpu", "", "Set the number of millicores to request for CPU "+
 		"for pgBouncer. Defaults to being unset.")
+	createPgbouncerCmd.Flags().BoolVar(&EnablePgBouncerMemoryLimit, "enable-memory-limit", false, "Enables pgBouncer instances "+
+		"to be set with a memory limit on top of the memory request.")
 	createPgbouncerCmd.Flags().StringVar(&PgBouncerMemoryRequest, "memory", "", "Set the amount of Memory to request for "+
 		"pgBouncer. Defaults to server value (24Mi).")
 	createPgbouncerCmd.Flags().Int32Var(&PgBouncerReplicas, "replicas", 0, "Set the total number of pgBouncer instances to deploy. If not set, defaults to 1.")

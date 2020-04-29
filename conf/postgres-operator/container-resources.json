@@ -1,10 +1,13 @@
 {{ if or .RequestsMemory .RequestsCPU }}
 "resources": {
-  {{ if .RequestsCPU }}
   "limits": {
-    "cpu": "{{.RequestsCPU}}"
+    {{ if .RequestsCPU }}
+    "cpu": "{{.RequestsCPU}}"{{ if and .EnableMemoryLimit .RequestsMemory }},{{ end }}
+    {{ end }}
+    {{ if and .EnableMemoryLimit .RequestsMemory }}
+    "memory": "{{.RequestsMemory}}"
+    {{ end }}
   },
-  {{ end }}
   "requests": {
     {{ if .RequestsCPU }}
     "cpu": "{{.RequestsCPU}}"{{ if .RequestsMemory }},{{ end }}
