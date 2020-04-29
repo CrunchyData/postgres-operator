@@ -82,6 +82,7 @@ The Crunchy PostgreSQL Operator makes it easy to get your own PostgreSQL-as-a-Se
 - Selecting different storage classes for your primary, replica, and backup storage
 - Select your own container resources class for each PostgreSQL cluster deployment; differentiate between resources applied for primary and replica clusters!
 - Use your own container image repository, including support `imagePullSecrets` and private repositories
+- [Customize your PostgreSQL configuration]({{< relref "/advanced/custom-configuration.md" >}})
 - Bring your own trusted certificate authority (CA) for use with the Operator API server
 - Override your PostgreSQL configuration for each cluster
 
