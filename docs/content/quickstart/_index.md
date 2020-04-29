@@ -171,7 +171,7 @@ replica_storage='gce'
 Ensure you are still in the `ansible` directory and run the following command to install the PostgreSQL Operator:
 
 ```shell
-ansible-playbook -i inventory --tags=install main.yml
+ansible-playbook -i inventory --tags=install --ask-become-pass main.yml
 ```
 
 This can take a few minutes to complete depending on your Kubernetes cluster.
