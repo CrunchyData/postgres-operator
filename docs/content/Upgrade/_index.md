@@ -48,7 +48,7 @@ For existing PostgreSQL Operator deployments that were installed using Ansible, 
 
 First, you will copy your existing inventory file as a backup for your existing settings. You will reference these settings, but you will need to use the updated version of the inventory file for the current version of PostgreSQL Operator.
 
-Once you've checked out the appropriate release tag, please follow the [Update Instructions]({{< relref "installation/install-with-ansible/updating-operator.md" >}}), being sure to update the new inventory file with your required settings. Please keep the above [Considerations](/upgrade#considerations) in mind, particularly with regard to the version and storage requirements listed.
+Once you've checked out the appropriate release tag, please follow the [Update Instructions]({{< relref "installation/other/ansible/updating-operator.md" >}}), being sure to update the new inventory file with your required settings. Please keep the above [Considerations](/upgrade#considerations) in mind, particularly with regard to the version and storage requirements listed.
 
 Once the update is complete, you should now see the PostgreSQL Operator pods are up and ready. It is strongly recommended that you create a test cluster to validate proper functionality before moving on to the [Automated Cluster Upgrade](/upgrade#postgres-operator-automated-cluster-upgrade) section below.
 

@@ -37,7 +37,22 @@ For the cluster(s) you wish to upgrade, record the cluster details provided by
 
         pgo show cluster <clustername>
 
-so that your new clusters can be recreated with the proper settings.
+so that your new clusters can be recreated with the proper settings. 
+
+Also, you will need to note the name of the primary PVC. If it does not exactly match the cluster name, you will need to recreate your cluster using the primary PVC name as the new cluster name.
+
+For example, given the following output:
+
+	$ pgo show cluster mycluster
+
+	cluster : mycluster (crunchy-postgres:centos7-11.5-2.4.2)
+		pod : mycluster-7bbf54d785-pk5dq (Running) on kubernetes1 (1/1) (replica)
+		pvc : mycluster
+		pod : mycluster-ypvq-5b9b8d645-nvlb6 (Running) on kubernetes1 (1/1) (primary)
+		pvc : mycluster-ypvq
+	...
+
+the new cluster's name will need to be "mycluster-ypvq"
 
 ##### Step2
 
@@ -57,14 +72,14 @@ Delete the 3.5.x version of the operator by executing:
 
 Log in as your new Linux user and install the 4.3.0 PostgreSQL Operator.
 
-[Bash Installation]( {{< relref "installation/operator-install.md" >}}) 
+[Bash Installation]( {{< relref "installation/other/bash.md" >}}) 
 
 Be sure to add the existing namespace to the Operator's list of watched namespaces (see the [Namespace]( {{< relref "architecture/namespace.md" >}}) section of this document for more information) and make sure to avoid overwriting any existing data storage.
 
 
 ##### Step 5
 
-Once the Operator is installed and functional, create a new 4.3.0 cluster matching the cluster details recorded in Step 1. Be sure to use the same name and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs. A s
+Once the Operator is installed and functional, create a new 4.3.0 cluster matching the cluster details recorded in Step 1. Be sure to use the primary PVC name (also noted in Step 1) and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs. A s
 imple example is given below, but more information on cluster creation can be found [here](/pgo-client/common-tasks#creating-a-postgresql-cluster)
 
 	pgo create cluster <clustername> -n <namespace>

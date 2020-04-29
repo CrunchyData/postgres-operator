@@ -44,6 +44,22 @@ For the cluster(s) you wish to upgrade, record the cluster details provided by
 
 so that your new clusters can be recreated with the proper settings.
 
+Also, you will need to note the name of the primary PVC. If it does not exactly match the cluster name, you will need to recreate your cluster using the primary PVC name as the new cluster name.
+
+For example, given the following output:
+
+        $ pgo show cluster mycluster
+
+        cluster : mycluster (crunchy-postgres:centos7-11.5-2.4.2)
+                pod : mycluster-7bbf54d785-pk5dq (Running) on kubernetes1 (1/1) (replica)
+                pvc : mycluster
+                pod : mycluster-ypvq-5b9b8d645-nvlb6 (Running) on kubernetes1 (1/1) (primary)
+                pvc : mycluster-ypvq
+        ...
+
+the new cluster's name will need to be "mycluster-ypvq"
+
+
 ##### Step 1
 
 For the cluster(s) you wish to upgrade, scale down any replicas, if necessary (see `pgo scaledown --help` for more information on command usage) page for more information), then delete the cluster
@@ -60,12 +76,12 @@ Save a copy of your current inventory file with a new name (such as `inventory.b
 
 ##### Step 3
 
-Update the new inventory file with the appropriate values for your new Operator installation, as described in the [Ansible Install Prerequisites]( {{< relref "installation/install-with-ansible/prerequisites.md" >}}) and the [Compatibility Requirements Guide]( {{< relref "configuration/compatibility.md" >}}).
+Update the new inventory file with the appropriate values for your new Operator installation, as described in the [Ansible Install Prerequisites]( {{< relref "installation/other/ansible/prerequisites.md" >}}) and the [Compatibility Requirements Guide]( {{< relref "configuration/compatibility.md" >}}).
 
 
 ##### Step 4
 
-Now you can upgrade your Operator installation and configure your connection settings as described in the [Ansible Update Page]( {{< relref "installation/install-with-ansible/updating-operator.md" >}}).
+Now you can upgrade your Operator installation and configure your connection settings as described in the [Ansible Update Page]( {{< relref "installation/other/ansible/updating-operator.md" >}}).
 
 
 ##### Step 5
@@ -80,7 +96,7 @@ And that it is upgraded to the appropriate version
 
 ##### Step 6
 
-Once the Operator is installed and functional, create a new 4.3.0 cluster matching the cluster details recorded in Step 0. Be sure to use the same name and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs. A simple example is given below, but more information on cluster creation can be found [here](/pgo-client/common-tasks#creating-a-postgresql-cluster)
+Once the Operator is installed and functional, create a new 4.3.0 cluster matching the cluster details recorded in Step 0. Be sure to use the primary PVC name (also noted in Step 0) and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs. A simple example is given below, but more information on cluster creation can be found [here](/pgo-client/common-tasks#creating-a-postgresql-cluster)
 
         pgo create cluster <clustername> -n <namespace>
 
@@ -217,7 +233,7 @@ You will need to edit the `$PGOROOT/deploy/install-bootstrap-creds.sh` file to c
 export PGOADMIN_USERNAME=pgoadmin
 export PGOADMIN_PASSWORD=examplepassword
 ```
-You will need to update the `$HOME/.pgouser`file to match the values you set in order to use the Operator. Additional accounts can be created later following the steps described in the 'Operator Security' section of the main [Bash Installation Guide] ( {{< relref "installation/operator-install.md" >}}). Once these accounts are created, you can change this file to login in via the PGO CLI as that user.
+You will need to update the `$HOME/.pgouser`file to match the values you set in order to use the Operator. Additional accounts can be created later following the steps described in the 'Operator Security' section of the main [Bash Installation Guide] ( {{< relref "installation/other/bash.md" >}}). Once these accounts are created, you can change this file to login in via the PGO CLI as that user.
 
 ##### Step 8
 
