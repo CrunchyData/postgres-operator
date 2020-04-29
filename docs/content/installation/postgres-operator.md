@@ -108,8 +108,8 @@ for deploying the PostgreSQL Operator. The [example file](https://github.com/Cru
 contains defaults that should work in most Kubernetes environments, but it may
 require some customization.
 
-For the [full reference](<{{< relref "/installation/configuration.md">}}>) for how these configuration parameters work,
-please read the [PostgreSQL Operator Installer Configuration Reference](<{{< relref "/installation/configuration.md">}}>)
+For a detailed description of each configuration parameter, please read the
+[PostgreSQL Operator Installer Configuration Reference](<{{< relref "/installation/configuration.md">}}>)
 
 #### Configuring to Update and Uninstall
 
