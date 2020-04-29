@@ -112,6 +112,22 @@ deleted
 - The Kubernetes Deployment associated with the replica is removed, as well as
 any other Kubernetes objects that are specifically associated with this replcia
 
+## [Custom Configuration]({{< relref "/advanced/custom-configuration.md" >}})
+
+PostgreSQL workloads often need tuning and additional configuration in production
+environments, and the PostgreSQL Operator allows for this via its ability to
+manage [custom PostgreSQL configuration]({{< relref "/advanced/custom-configuration.md" >}}).
+
+The custom configuration can be edit from a [ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/)
+that follows the pattern of `<clusterName>-pgha-config`, where `<clusterName>`
+would be `hippo` in `pgo create cluster hippo`. When the ConfigMap is edited,
+the changes are automatically pushed out to all of the PostgreSQL instances
+within a cluster.
+
+For more information on how this works and what configuration settings are
+editable, please visit the "[Custom PostgreSQL configuration]({{< relref "/advanced/custom-configuration.md" >}})"
+section of the documentation.
+
 ## Deprovisioning
 
 There may become a point where you need to completely deprovision, or delete, a

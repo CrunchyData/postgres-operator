@@ -1028,6 +1028,15 @@ If you try to connect to a PostgreSQL cluster that is deployed using the
 `--tls-only` with TLS disabled (i.e. `PGSSLMODE=disable`), you will receive an
 error that connections without TLS are unsupported.
 
+## [Custom PostgreSQL Configuration]({{< relref "/advanced/custom-configuration.md" >}})
+
+Customizing PostgreSQL configuration is currently not subject to the `pgo`
+client, but given it is a common question, we thought it may be helpful to link
+to how to do it from here. To find out more about how to
+[customize your PostgreSQL configuration]({{< relref "/advanced/custom-configuration.md" >}}),
+please refer to the [Custom PostgreSQL Configuration]({{< relref "/advanced/custom-configuration.md" >}})
+section of the documentation.
+
 ## Standby Clusters: Multi-Cluster Kubernetes Deployments
 
 A [standby PostgreSQL cluster]({{< relref "/architecture/high-availability/multi-cluster-kubernetes.md" >}})
