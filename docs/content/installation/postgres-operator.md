@@ -108,8 +108,17 @@ for deploying the PostgreSQL Operator. The [example file](https://github.com/Cru
 contains defaults that should work in most Kubernetes environments, but it may
 require some customization.
 
-For the [full reference]("#") for how these configuration parameters work,
-please read the [PostgreSQL Operator Installer Configuration Reference]("#")
+For a detailed description of each configuration parameter, please read the
+[PostgreSQL Operator Installer Configuration Reference](<{{< relref "/installation/configuration.md">}}>)
+
+#### Configuring to Update and Uninstall
+
+The deploy job can be used to perform different deployment actions for the
+PostgreSQL Operator. When you run the job it will install the operator by
+default but you can change the deployment action to uninstall or update. The
+`DEPLOY_ACTION` environment variable in the `postgres-operator.yml` file can be
+set to `install`, `update`, and `uninstall`. 
+
 
 ### Image Pull Secrets
 
@@ -156,16 +165,6 @@ command:
 ```shell
 kubectl apply -f /path/to/postgres-operator.yml
 ```
-
-<!--
-### Deploying
-
-The deploy job can be used to perform different deployment actions for the
-PostgreSQL Operator. If you run the job it will install the operator but you can
-change the deployment action by updating the `DEPLOY_ACTION` environment
-variable in the `postgres-operator.yml` file. This variable can be set to
-`install`, `update`, and `uninstall`. Each time a job is run you will need to
-cleanup the job using the command from the **Cleanup** section. -->
 
 ### Install the [`pgo` Client]({{< relref "/installation/pgo-client" >}})
 
