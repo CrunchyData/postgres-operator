@@ -24,7 +24,7 @@ import (
 // N.B. Changing this name will cause a new group to be created and redirect
 // connection updates to that new group without any cleanup of the old
 // group name
-const sgLabel = "Crunchy On-Demand"
+const sgLabel = "Crunchy PostgreSQL Operator"
 
 // DeleteUser deletes the specified user, their servergroups, and servers
 func DeleteUser(qr *queryRunner, username string) error {
@@ -101,12 +101,12 @@ func SetClusterConnection(qr *queryRunner, username string, dbInfo ServerEntry) 
 	}
 
 	// Insert entries into servergroups and servers for the dbInfo provided
-	addSG := fmt.Sprintf(`INSERT OR IGNORE INTO servergroup(user_id,name) 
+	addSG := fmt.Sprintf(`INSERT OR IGNORE INTO servergroup(user_id,name)
 		VALUES(%d,'%s');`, uid, sgLabel)
 	hasSvc := fmt.Sprintf(`SELECT name FROM server WHERE user_id = %d;`, uid)
-	addSvc := fmt.Sprintf(`INSERT INTO server(user_id, servergroup_id, 
+	addSvc := fmt.Sprintf(`INSERT INTO server(user_id, servergroup_id,
 		name, host, port, maintenance_db, username, password, ssl_mode,
-		comment) VALUES (%d, 
+		comment) VALUES (%d,
 			(SELECT id FROM servergroup WHERE user_id=%d AND name='%s'),
 			'%s', '%s', %d, '%s', '%s', '%s', '%s', '%s');`,
 		uid,     // user_id
