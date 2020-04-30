@@ -120,39 +120,39 @@ We know there are a variety of different types of [Storage Classes](https://kube
 
 ### PostgreSQL Operator Installation
 
-The PostgreSQL Operator provides a few different methods for installation.  
+The PostgreSQL Operator provides a few different methods for installation based on your use case.
 
-For an automated deployment using Ansible playbooks, please start here:
+Based on your storage settings in your Kubernetes environment, you may be able to start as quickly as:
 
- - [Installation via Ansible](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/install-with-ansible/)
+```shell
+kubectl create namespace pgo
+kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator/master/installers/kubectl/postgres-operator.yml
+```
 
- For a step by step customer installation using Bash, please start here:
+Otherwise, we highly recommend following the instructions from our [Quickstart](https://access.crunchydata.com/documentation/postgres-operator/latest/quickstart/).
 
- - [Installation via Bash](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/operator-install/)
+Installations methods include:
 
-For a quick start deployment using OperatorHub.io, please see instructions here:
-
--  [OperatorHub.io Guidance](https://operatorhub.io/operator/postgresql)
-
-For a quick start deployment to Google Kubernetes Engine (GKE), please see instructions here:
-
--  [GKE Quickstart Guidance](https://info.crunchydata.com/blog/install-postgres-operator-kubernetes-on-gke-ansible)
-
+- [Quickstart](https://access.crunchydata.com/documentation/postgres-operator/latest/quickstart/)
+- [PostgreSQL Operator Installer](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/postgres-operator/)
+- [Ansible](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/other/ansible/)
+- [OperatorHub](https://operatorhub.io/operator/postgresql)
+- [Developer Setup](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/other/bash/)
 
 ### `pgo` Client Installation
 
 If you have the PostgreSQL Operator installed in your environment, and are interested in installation of the client interface, please start here:
 
-- [pgo Client Install](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/install-pgo-client/)
+- [pgo Client Install](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/pgo-client/)
 
 There is also a `pgo-client` container if you wish to deploy the client directly to your Kubernetes environment.
 
-### Using the PostgreSQL Operator
+## Using the PostgreSQL Operator
 
 If you have the PostgreSQL and Client Interface installed in your environment and are interested in guidance on the use of the Crunchy PostgreSQL Operator, please start here:
 
 - [PostgreSQL Operator Documentation](https://access.crunchydata.com/documentation/postgres-operator/)
-- [pgo Client User Guide](https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/)
+- [`pgo` Client User Guide](https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/)
 
 ## Contributing to the Project
 
