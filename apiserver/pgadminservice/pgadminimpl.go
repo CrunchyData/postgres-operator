@@ -57,7 +57,7 @@ func CreatePgAdmin(request *msgs.CreatePgAdminRequest, ns, pgouser string) msgs.
 		if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = cluster.Name + msgs.UpgradeError
-			return response
+			return resp
 		}
 
 		log.Debugf("adding pgAdmin to cluster [%s]", cluster.Name)
@@ -124,7 +124,7 @@ func DeletePgAdmin(request *msgs.DeletePgAdminRequest, ns string) msgs.DeletePgA
 		if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = cluster.Name + msgs.UpgradeError
-			return response
+			return resp
 		}
 
 		log.Debugf("deleting pgAdmin from cluster [%s]", cluster.Name)
