@@ -747,6 +747,9 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 	// set up the target cluster
 	targetPgcluster := &crv1.Pgcluster{
 		ObjectMeta: meta_v1.ObjectMeta{
+			Annotations: map[string]string{
+				config.ANNOTATION_CURRENT_PRIMARY: targetClusterName,
+			},
 			Name: targetClusterName,
 			Labels: map[string]string{
 				config.LABEL_NAME: targetClusterName,
