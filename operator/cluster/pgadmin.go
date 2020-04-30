@@ -344,7 +344,9 @@ func createPgAdminDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pgcl
 
 	// Password provided to initialize pgadmin setup (admin) - credentials
 	// not given to users (account gets disabled)
-	throwawayPass := util.GeneratePassword(initPassLen)
+	//
+	// Ignoring error, this password is throwaway so low entropy is ok
+	throwawayPass, _ := util.GeneratePassword(initPassLen)
 
 	// get the fields that will be substituted in the pgAdmin template
 	fields := pgAdminTemplateFields{
