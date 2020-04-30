@@ -76,7 +76,7 @@ chmod a-rwx,u+rw "${OUTPUT_DIR}/client.crt" "${OUTPUT_DIR}/client.key"
 
 
 echo "pgo client files have been generated, please add the following to your bashrc"
-echo "export PATH=${OUTPUT_DIR}/${BIN_NAME}:\$PATH"
+echo "export PATH=${OUTPUT_DIR}:\$PATH"
 echo "export PGOUSER=${OUTPUT_DIR}/pgouser"
 echo "export PGO_CA_CERT=${OUTPUT_DIR}/client.crt"
 echo "export PGO_CLIENT_CERT=${OUTPUT_DIR}/client.crt"

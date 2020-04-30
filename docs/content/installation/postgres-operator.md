@@ -224,7 +224,7 @@ environmental variables to your environment:
 
 ```shell
 cat <<EOF >> ~/.bashrc
-export PATH="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/pgo:$PATH"
+export PATH="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE:$PATH"
 export PGOUSER="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/pgouser"
 export PGO_CA_CERT="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.crt"
 export PGO_CLIENT_CERT="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.crt"
