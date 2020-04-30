@@ -266,6 +266,16 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 			}
 		}
 
+		// if a pgAdmin deployment exists, attempt to add the user to it
+		if err := updatePgAdmin(&cluster, result.Username, result.Password); err != nil {
+			log.Error(err)
+			result.Error = true
+			result.ErrorMessage = err.Error()
+
+			response.Results = append(response.Results, result)
+			continue
+		}
+
 		// append to the results
 		response.Results = append(response.Results, result)
 	}
@@ -388,6 +398,29 @@ loop:
 		// alright, final step: try to delete the user secret. if it does not exist,
 		// or it fails to delete, we don't care
 		deleteUserSecret(cluster, result.Username)
+
+		// remove user from pgAdmin, if enabled
+		qr, err := pgadmin.GetPgAdminQueryRunner(apiserver.Clientset, apiserver.RESTConfig, &cluster)
+		if err != nil {
+			log.Error(err)
+
+			result.Error = true
+			result.ErrorMessage = err.Error()
+
+			response.Results = append(response.Results, result)
+			continue
+		} else if qr != nil {
+			err = pgadmin.DeleteUser(qr, result.Username)
+			if err != nil {
+				log.Error(err)
+
+				result.Error = true
+				result.ErrorMessage = err.Error()
+
+				response.Results = append(response.Results, result)
+				continue
+			}
+		}
 
 		response.Results = append(response.Results, result)
 	}
@@ -939,6 +972,57 @@ func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgclu
 	return results
 }
 
+// updatePgAdmin will attempt to synchronize information in a pgAdmin
+// deployment, should one exist. Basically, it adds or updates the credentials
+// of a user should there be a pgadmin deploymen associated with this PostgreSQL
+// cluster. Returns an error if anything goes wrong
+func updatePgAdmin(cluster *crv1.Pgcluster, username, password string) error {
+	// Sync user to pgAdmin, if enabled
+	qr, err := pgadmin.GetPgAdminQueryRunner(apiserver.Clientset, apiserver.RESTConfig, cluster)
+
+	// if there is an error, return as such
+	if err != nil {
+		return err
+	}
+
+	// likewise, if there is no pgAdmin associated this cluster, return no error
+	if qr == nil {
+		return nil
+	}
+
+	// proceed onward
+	// Get service details and prep connection metadata
+	service, svcFound, err := kubeapi.GetService(apiserver.Clientset, cluster.Name, cluster.Namespace)
+	if err != nil {
+		return err
+	}
+
+	// set up the server entry data
+	dbService := pgadmin.ServerEntry{}
+	if svcFound {
+		dbService = pgadmin.ServerEntryFromPgService(service, cluster.Name)
+	}
+	dbService.Password = password
+
+	// attempt to set the username/password for this user in the pgadmin
+	// deployment
+	if err := pgadmin.SetLoginPassword(qr, username, password); err != nil {
+		return err
+	}
+
+	// if the service name for the database is present, also set the cluster
+	// if it's not set, early exit
+	if dbService.Name == "" {
+		return nil
+	}
+
+	if err := pgadmin.SetClusterConnection(qr, username, dbService); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // updateUser, though perhaps poorly named in context, performs the standard
 // "ALTER ROLE" type functionality on a user, which is just updating a single
 // user account on a single PostgreSQL cluster. This is in contrast with some
@@ -1002,53 +1086,13 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 			fmt.Sprintf(sqlPasswordClause, util.SQLQuoteLiteral(hashedPassword)))
 
 		// Sync user to pgAdmin, if enabled
-		qr, err := pgadmin.GetPgAdminQueryRunner(apiserver.Clientset, apiserver.RESTConfig, cluster)
-		if err != nil {
+		if err := updatePgAdmin(cluster, result.Username, result.Password); err != nil {
 			log.Error(err)
 
 			result.Error = true
 			result.ErrorMessage = err.Error()
 
 			return result
-		} else if qr != nil {
-			// Get service details and prep connection metadata
-			service, svcFound, err := kubeapi.GetService(apiserver.Clientset, cluster.Name, cluster.Namespace)
-			if err != nil {
-				log.Error(err)
-
-				result.Error = true
-				result.ErrorMessage = err.Error()
-
-				return result
-			}
-
-			dbService := pgadmin.ServerEntry{}
-			if svcFound {
-				dbService = pgadmin.ServerEntryFromPgService(service, cluster.Name)
-			}
-			dbService.Password = password
-
-			err = pgadmin.SetLoginPassword(qr, result.Username, dbService.Password)
-			if err != nil {
-				log.Error(err)
-
-				result.Error = true
-				result.ErrorMessage = err.Error()
-
-				return result
-			}
-
-			if dbService.Name != "" {
-				err = pgadmin.SetClusterConnection(qr, result.Username, dbService)
-				if err != nil {
-					log.Error(err)
-
-					result.Error = true
-					result.ErrorMessage = err.Error()
-
-					return result
-				}
-			}
 		}
 	}
 

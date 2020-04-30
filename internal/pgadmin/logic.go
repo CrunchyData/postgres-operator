@@ -109,6 +109,7 @@ func SetClusterConnection(qr *queryRunner, username string, dbInfo ServerEntry) 
 		return fmt.Errorf("Failed to convert user id [%s] to int: %v", idStr, err)
 	}
 
+	encPassword := encrypt(dbInfo.Password, encKey)
 	// Insert entries into servergroups and servers for the dbInfo provided
 	addSG := fmt.Sprintf(`INSERT OR IGNORE INTO servergroup(user_id,name)
 		VALUES(%d,'%s');`, uid, sgLabel)
@@ -126,12 +127,11 @@ func SetClusterConnection(qr *queryRunner, username string, dbInfo ServerEntry) 
 		dbInfo.Port,
 		dbInfo.MaintenanceDB,
 		username,
-		encrypt(dbInfo.Password, encKey),
+		encPassword,
 		dbInfo.SSLMode,
 		dbInfo.Comment,
 	)
-	updSvcPass := fmt.Sprintf("UPDATE server SET password='%s';", encrypt(dbInfo.Password, encKey))
-
+	updSvcPass := fmt.Sprintf("UPDATE server SET password='%s' WHERE user_id = %d;", encPassword, uid)
 	if err := qr.Exec(addSG); err != nil {
 		return err
 	}
