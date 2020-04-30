@@ -34,7 +34,7 @@ specify all of the configuration files. It is entirely up to your use case
 to determine which to use.
 
 An example set of configuration files and a script to create the
-global configMap is found at 
+global configMap is found at
 ```
 $PGOROOT/examples/custom-config
 ```
@@ -79,7 +79,7 @@ and avoid defining a global configMap.
 ## Modifying PostgreSQL Cluster Configuration
 
 Once a PostgreSQL cluster has been initialized, its configuration settings
-can be updated and modified as needed.  This done by modifying the 
+can be updated and modified as needed.  This done by modifying the
 `<clusterName>-pgha-config` ConfigMap that is created for each individual
 PostgreSQL cluster.
 
@@ -94,7 +94,7 @@ and cluster's configuration can be
 [found here](https://access.crunchydata.com/documentation/patroni/latest/settings/index.html#settings).
 Please proceed with caution when modiying configuration, especially those settings
 applied by default by Operator.  Certain settings are required for normal operation
-of the Operator and the PostgreSQL clusters it creates, and altering these 
+of the Operator and the PostgreSQL clusters it creates, and altering these
 settings could result in expected behavior.
 
 ### Types of Configuration
@@ -104,15 +104,15 @@ Within the `<clusterName>-pgha-config` ConfigMap are two forms of configuration:
 - **Distributed Configuration Store (DCS):** Cluster-wide
 configuration settings that are applied to all database servers in the PostgreSQL
 cluster
-- **Local Database:** Configuration settings that are applied 
-individually to each database server (i.e. the primary and each replica) within 
+- **Local Database:** Configuration settings that are applied
+individually to each database server (i.e. the primary and each replica) within
 the cluster.
 
 The DCS configuration settings are stored within the `<clusterName>-pgha-config`
-ConfigMap in a configuration named `<clusterName>-dcs-config`, while the local 
+ConfigMap in a configuration named `<clusterName>-dcs-config`, while the local
 database configurations are stored in one or more configurations named
-`<severName>-dcs-config` (with one local configuration for the primary and each
-replica within the cluster).  Please note that 
+`<serverName>-local-config` (with one local configuration for the primary and each
+replica within the cluster).  Please note that
 [as described here](https://access.crunchydata.com/documentation/patroni/latest/dynamic_configuration/),
 certain settings can only be applied via the DCS to ensure they are uniform among
 the primary and all replicas within the cluster.
@@ -121,7 +121,7 @@ The following is an example of the both the DCS and primary configuration settin
 as stored in the `<clusterName>-pgha-config` ConfigMap for a cluster named `mycluster`.
 Please note the `mycluster-dcs-config` configuration defining the DCS configuration
 for `mycluster`, along with the `mycluster-local-config` configuration defining the
-local configuration for the database server named `mycluster`, which is the current 
+local configuration for the database server named `mycluster`, which is the current
 primary within the PostgreSQL cluster.
 
 ```bash
@@ -190,11 +190,11 @@ postgresql:
 
 In order to update a cluster's configuration settings and then apply
 those settings (e.g. to the DCS and/or any individual database servers), the
-DCS and local configuration settings within the `<clusterName>-pgha-config` 
-ConfigMap can be modified.  This can be done using the various commands 
+DCS and local configuration settings within the `<clusterName>-pgha-config`
+ConfigMap can be modified.  This can be done using the various commands
 available using the `kubectl` client (or the `oc` client if using OpenShift)
 for modifying Kubernetes resources. For instance, the following command can be
-utilized to open the ConfigMap in a local text editor, and then update the 
+utilized to open the ConfigMap in a local text editor, and then update the
 various cluster configurations as needed:
 
 ```bash
@@ -219,7 +219,7 @@ postgresql:
 ```
 
 The various key/value pairs provided within the `paramters` section result in the
-configuration of the same settings within the `postgresql.conf` file.  Please note that 
+configuration of the same settings within the `postgresql.conf` file.  Please note that
 settings applied locally to a database server take precendence over those set via the DCS (with the
 exception being those that must be set via the DCS, as
 [described here](https://access.crunchydata.com/documentation/patroni/latest/dynamic_configuration/)).
@@ -247,7 +247,7 @@ $ kubectl exec -it mycluster-6f89d8bb85-pnlwz -- patronictl list
 +-----------------------------+-----------+--------+---------+----+-----------+-----------------+
 ```
 
-Here we can see that the ` mycluster-6f89d8bb85-pnlwz` server is pending a restart, 
+Here we can see that the ` mycluster-6f89d8bb85-pnlwz` server is pending a restart,
 which can then be accomplished as follows:
 
 ```bash
@@ -259,7 +259,7 @@ $ kubectl exec -it mycluster-6f89d8bb85-pnlwz -- patronictl restart mycluster my
 +-----------------------------+-----------+--------+---------+----+-----------+
 When should the restart take place (e.g. 2020-04-29T17:23)  [now]: now
 Are you sure you want to restart members mycluster-6f89d8bb85-pnlwz? [y/N]: y
-Restart if the PostgreSQL version is less than provided (e.g. 9.5.2)  []: 
+Restart if the PostgreSQL version is less than provided (e.g. 9.5.2)  []:
 Success: restart on member mycluster-6f89d8bb85-pnlwz
 ```
 
@@ -268,15 +268,15 @@ database container within the PostgreSQL cluster being updated.
 
 ### Refreshing Configuration Settings
 
-If necessary, it is possible to refresh the configuration stored within the 
+If necessary, it is possible to refresh the configuration stored within the
 `<clusterName>-pgha-config` ConfigMap with a fresh copy of either the DCS
 configuration and/or the configuration for one or more local database servers.
-This is specifically done by fully deleting a configuration from the 
+This is specifically done by fully deleting a configuration from the
 `<clusterName>-pgha-config` ConfigMap.  Once a configuration has been deleted,
-the Operator will detect this and refresh the ConfigMap with a fresh copy of 
+the Operator will detect this and refresh the ConfigMap with a fresh copy of
 that specific configuration.
 
-For instance, the following `kubectl patch` command can be utilized to 
+For instance, the following `kubectl patch` command can be utilized to
 remove the `mycluster-dcs-config` configuration from the example above,
 causing that specific configuration to be refreshed with a fresh copy of
 the DCS configuration settings for `mycluster`:
