@@ -17,6 +17,8 @@ The [Crunchy PostgreSQL Operator](https://access.crunchydata.com/documentation/p
 
 Safe, automated failover backed by a [distributed consensus based high-availability solution](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/). Uses [Pod Anti-Affinity](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity) to help resiliency; you can configure how aggressive this can be! Failed primaries automatically heal, allowing for faster recovery time.
 
+Support for [standby PostgreSQL clusters](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/multi-cluster-kubernetes/) that work both within an across [multiple Kubernetes clusters](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/multi-cluster-kubernetes/).
+
 #### Disaster Recovery
 
 Backups and restores leverage the open source [pgBackRest](https://www.pgbackrest.org) utility and [includes support for full, incremental, and differential backups as well as efficient delta restores](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/). Set how long you want your backups retained for. Works great with very large databases!
@@ -137,7 +139,7 @@ Installations methods include:
 - [PostgreSQL Operator Installer](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/postgres-operator/)
 - [Ansible](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/other/ansible/)
 - [OperatorHub](https://operatorhub.io/operator/postgresql)
-- [Developer Setup](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/other/bash/)
+- [Developer Installation](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/other/bash/)
 
 ### `pgo` Client Installation
 
@@ -164,7 +166,7 @@ as set of contributing guidelines that you can review here:
 If you want to learn how to get up your development environment, please read our
 documentation here:
 
- - [Developer Setup](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/developer-setup/)
+ - [Developer Setup](https://access.crunchydata.com/documentation/postgres-operator/latest/contributing/developer-setup/)
 
 Once you are ready to submit a Pull Request, please ensure you do the following:
 
@@ -193,9 +195,9 @@ For additional information regarding design, configuration and operation of the
 PostgreSQL Operator, pleases see the
 [Official Project Documentation](https://access.crunchydata.com/documentation/postgres-operator/)
 
-If you are looking for the [nightly builds of the documentation](https://crunchydata.github.io/postgres-operator/latest), you can view it at:
+If you are looking for the [nightly builds of the documentation](https://crunchydata.github.io/postgres-operator/latest/), you can view them at:
 
-https://crunchydata.github.io/postgres-operator/latest
+https://crunchydata.github.io/postgres-operator/latest/
 
 ## Past Versions
 
