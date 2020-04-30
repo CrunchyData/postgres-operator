@@ -30,6 +30,10 @@ import (
 func TestClusterBackup(t *testing.T) {
 	t.Parallel()
 
+	teardownSchedule := func(t *testing.T, namespace, schedule string) {
+		pgo("delete", "schedule", "-n", namespace, "--no-prompt", "--schedule-name="+schedule).Exec(t)
+	}
+
 	withNamespace(t, func(namespace func() string) {
 		withCluster(t, namespace, func(cluster func() string) {
 			t.Run("show backup", func(t *testing.T) {
@@ -91,11 +95,10 @@ func TestClusterBackup(t *testing.T) {
 
 			t.Run("create schedule", func(t *testing.T) {
 				t.Run("creates a backup", func(t *testing.T) {
-					t.Skip("BUG: scheduler does not handle namespaces updated after creation")
-
 					output, err := pgo("create", "schedule", "--selector=name="+cluster(), "-n", namespace(),
 						"--schedule-type=pgbackrest", "--schedule=* * * * *", "--pgbackrest-backup-type=full",
 					).Exec(t)
+					defer teardownSchedule(t, namespace(), cluster()+"-pgbackrest-full")
 					require.NoError(t, err)
 					require.Contains(t, output, "created")
 
