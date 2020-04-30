@@ -205,13 +205,6 @@ func BootstrapPgAdminUsers(
 	// have kubernetes-stored passwords, using the connection info above
 	//
 
-	// set of system accounts to exclude from autobinding
-	systemAccts := map[string]struct{}{
-		"crunchyadm":  struct{}{},
-		"postgres":    struct{}{},
-		"primaryuser": struct{}{},
-	}
-
 	// Get the secrets managed by Kubernetes - any users existing only in
 	// Postgres don't have their passwords available
 	sel := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, cluster.Name)
@@ -231,7 +224,7 @@ func BootstrapPgAdminUsers(
 			// Doesn't look like the secrets we seek
 			continue
 		}
-		if _, ok := systemAccts[user]; ok {
+		if util.IsPostgreSQLUserSystemAccount(user) {
 			continue
 		}
 		rawpass, ok := secret.Data["password"]
