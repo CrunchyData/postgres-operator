@@ -43,7 +43,7 @@ type updatePgAdminTextPadding struct {
 func createPgAdmin(args []string, ns string) {
 	if Selector == "" && len(args) == 0 {
 		fmt.Println("Error: The --selector flag is required when cluster is unspecified.")
-		return
+		os.Exit(1)
 	}
 
 	request := msgs.CreatePgAdminRequest{
@@ -77,7 +77,7 @@ func createPgAdmin(args []string, ns string) {
 func deletePgAdmin(args []string, ns string) {
 	if Selector == "" && len(args) == 0 {
 		fmt.Println("Error: The --selector flag or a cluster name is required.")
-		return
+		os.Exit(1)
 	}
 
 	// set up the API request
@@ -91,7 +91,7 @@ func deletePgAdmin(args []string, ns string) {
 	response, err := api.DeletePgAdmin(httpclient, &SessionCredentials, &request)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	if response.Status.Code == msgs.Ok {
@@ -100,7 +100,7 @@ func deletePgAdmin(args []string, ns string) {
 		}
 	} else {
 		fmt.Println("Error: " + response.Status.Msg)
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 }
