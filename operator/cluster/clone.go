@@ -990,13 +990,14 @@ func publishCloneClusterFailureEvent(eventHeader events.EventHeader, sourceClust
 // are deleted
 func waitForDeploymentDelete(clientset *kubernetes.Clientset, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) error {
 	timeout := time.After(timeoutSecs * time.Second)
-	tick := time.Tick(periodSecs * time.Second)
+	tick := time.NewTicker(periodSecs * time.Second)
+	defer tick.Stop()
 
 	for {
 		select {
 		case <-timeout:
 			return errors.New(fmt.Sprintf("Timed out waiting for deployment to be deleted: [%s]", deploymentName))
-		case <-tick:
+		case <-tick.C:
 			_, deploymentFound, _ := kubeapi.GetDeployment(clientset, deploymentName, namespace)
 			_, serviceFound, _ := kubeapi.GetService(clientset, deploymentName, namespace)
 			if !(deploymentFound || serviceFound) {
@@ -1010,14 +1011,15 @@ func waitForDeploymentDelete(clientset *kubernetes.Clientset, namespace, deploym
 // waitFotDeploymentReady waits for a deployment to be ready, or times out
 func waitForDeploymentReady(clientset *kubernetes.Clientset, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) error {
 	timeout := time.After(timeoutSecs * time.Second)
-	tick := time.Tick(periodSecs * time.Second)
+	tick := time.NewTicker(periodSecs * time.Second)
+	defer tick.Stop()
 
 	// loop until the timeout is met, or that all the replicas are ready
 	for {
 		select {
 		case <-timeout:
 			return errors.New(fmt.Sprintf("Timed out waiting for deployment to become ready: [%s]", deploymentName))
-		case <-tick:
+		case <-tick.C:
 			if deployment, found, err := kubeapi.GetDeployment(clientset, deploymentName, namespace); err != nil {
 				// if there is an error, log it but continue through the loop
 				log.Error(err)

@@ -110,12 +110,13 @@ func DeleteJobs(clientset *kubernetes.Clientset, selector, namespace string) err
 
 func IsJobComplete(client *kubernetes.Clientset, namespace string, job *v1batch.Job, timeout time.Duration) error {
 	duration := time.After(timeout)
-	tick := time.Tick(500 * time.Millisecond)
+	tick := time.NewTicker(500 * time.Millisecond)
+	defer tick.Stop()
 	for {
 		select {
 		case <-duration:
 			return fmt.Errorf("timed out waiting for job to complete: %s", job.Name)
-		case <-tick:
+		case <-tick.C:
 			j, found := GetJob(client, job.Name, namespace)
 			if !found {
 				return errors.New("Job not found")
@@ -132,12 +133,13 @@ func IsJobComplete(client *kubernetes.Clientset, namespace string, job *v1batch.
 
 func IsJobDeleted(client *kubernetes.Clientset, namespace string, job *v1batch.Job, timeout time.Duration) error {
 	duration := time.After(timeout)
-	tick := time.Tick(500 * time.Millisecond)
+	tick := time.NewTicker(500 * time.Millisecond)
+	defer tick.Stop()
 	for {
 		select {
 		case <-duration:
 			return fmt.Errorf("timed out waiting for job to delete: %s", job.Name)
-		case <-tick:
+		case <-tick.C:
 			_, found := GetJob(client, job.Name, namespace)
 			if !found {
 				return nil

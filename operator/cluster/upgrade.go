@@ -352,13 +352,14 @@ func deleteBeforeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTC
 // deletion to complete before proceeding with the rest of the pgcluster upgrade.
 func deploymentWait(clientset *kubernetes.Clientset, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) string {
 	timeout := time.After(timeoutSecs * time.Second)
-	tick := time.Tick(periodSecs * time.Second)
+	tick := time.NewTicker(periodSecs * time.Second)
+	defer tick.Stop()
 
 	for {
 		select {
 		case <-timeout:
 			return fmt.Sprintf("Timed out waiting for deployment to be deleted: [%s]", deploymentName)
-		case <-tick:
+		case <-tick.C:
 			_, deploymentFound, _ := kubeapi.GetDeployment(clientset, deploymentName, namespace)
 			if !(deploymentFound) {
 				return fmt.Sprintf("Deploment %s has been deleted.", deploymentName)

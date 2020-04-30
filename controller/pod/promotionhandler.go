@@ -131,13 +131,14 @@ func waitForStandbyPromotion(restConfig *rest.Config, clientset *kubernetes.Clie
 	// wait for the server to accept writes to ensure standby has truly been disabled before
 	// proceeding
 	duration := time.After(isStandbyDisabledTimeout)
-	tick := time.Tick(isStandbyDisabledTick)
+	tick := time.NewTicker(isStandbyDisabledTick)
+	defer tick.Stop()
 	for {
 		select {
 		case <-duration:
 			return fmt.Errorf("timed out waiting for cluster %s to accept writes after disabling "+
 				"standby mode", cluster.Name)
-		case <-tick:
+		case <-tick.C:
 			if !recoveryDisabled {
 				cmd := isInRecoveryCMD
 				cmd = append(cmd, cluster.Spec.Port)

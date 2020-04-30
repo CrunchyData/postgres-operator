@@ -258,13 +258,14 @@ func CleanBackupResources(restclient *rest.RESTClient, clientset *kubernetes.Cli
 	}
 
 	timeout := time.After(30 * time.Second)
-	tick := time.Tick(1 * time.Second)
+	tick := time.NewTicker(1 * time.Second)
+	defer tick.Stop()
 	for {
 		select {
 		case <-timeout:
 			return fmt.Errorf("Timed out waiting for deletion of pgBackRest backup job for "+
 				"cluster %s", clusterName)
-		case <-tick:
+		case <-tick.C:
 			jobList, err := kubeapi.GetJobs(clientset, selector, namespace)
 			if err != nil {
 				log.Error(err)
