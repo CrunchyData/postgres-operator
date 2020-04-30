@@ -47,7 +47,7 @@ rsync_repo() {
 }
 
 # Use the aws cli sync command to sync files from a source location to a target
-# location.  The this inlcudes syncing files between who s3 locations,
+# location.  The this includes syncing files between who s3 locations,
 # syncing a local directory to s3, or syncing from s3 to a local directory.
 aws_sync_repo() {
 	export AWS_CA_BUNDLE="${PGBACKREST_REPO1_S3_CA_FILE}"

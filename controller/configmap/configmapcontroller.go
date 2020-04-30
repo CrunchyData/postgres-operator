@@ -94,7 +94,7 @@ func (c *Controller) RunWorker(stopCh <-chan struct{}, doneCh chan<- struct{}) {
 func (c *Controller) waitForShutdown(stopCh <-chan struct{}) {
 	<-stopCh
 	c.workqueue.ShutDown()
-	log.Debug("ConfigMap Contoller: recieved stop signal, worker queue told to shutdown")
+	log.Debug("ConfigMap Contoller: received stop signal, worker queue told to shutdown")
 }
 
 // ShutdownWorker shuts down the work queue
@@ -158,7 +158,7 @@ func (c *Controller) processNextWorkItem() bool {
 			key, err)
 	}
 
-	// Finally if no error has occured forget this item
+	// Finally if no error has occurred forget this item
 	c.workqueue.Forget(obj)
 
 	return true

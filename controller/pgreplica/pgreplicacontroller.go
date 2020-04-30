@@ -57,7 +57,7 @@ func (c *Controller) RunWorker(stopCh <-chan struct{}, doneCh chan<- struct{}) {
 func (c *Controller) waitForShutdown(stopCh <-chan struct{}) {
 	<-stopCh
 	c.Queue.ShutDown()
-	log.Debug("pgreplica Contoller: recieved stop signal, worker queue told to shutdown")
+	log.Debug("pgreplica Contoller: received stop signal, worker queue told to shutdown")
 }
 
 func (c *Controller) processNextItem() bool {

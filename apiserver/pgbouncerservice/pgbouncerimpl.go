@@ -187,7 +187,7 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 			}
 		}
 
-		// Disable the pgBouncer Deploymnet, whcih means setting Replicas to 0
+		// Disable the pgBouncer Deploymnet, which means setting Replicas to 0
 		cluster.Spec.PgBouncer.Replicas = 0
 		// Set the MemoryLimit of pgBouncer to false as well, as this is the default
 		// setting

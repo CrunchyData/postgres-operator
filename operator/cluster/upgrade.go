@@ -250,7 +250,7 @@ func getCurrentPrimary(clusterName, podPrimary, crPrimary, labelPrimary string) 
 	return clusterName
 }
 
-// handleReplicas deletes all pgreplicas related to the pgcluster to be ugpraded, then returns the number
+// handleReplicas deletes all pgreplicas related to the pgcluster to be upgraded, then returns the number
 // of pgreplicas that were found. This will delete any PVCs that match the existing pgreplica CRs, but
 // will leave any other PVCs, whether they are from the current primary, previous primaries that are now
 // unassociated because of a failover or the backrest-shared-repo PVC. The total number of current replicas
@@ -349,7 +349,7 @@ func deleteBeforeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTC
 }
 
 // deploymentWait is modified from cluster.waitForDeploymentDelete. It simply waits for the current primary deployment
-// deletion to complete before proceding with the rest of the pgcluster upgrade.
+// deletion to complete before proceeding with the rest of the pgcluster upgrade.
 func deploymentWait(clientset *kubernetes.Clientset, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) string {
 	timeout := time.After(timeoutSecs * time.Second)
 	tick := time.Tick(periodSecs * time.Second)

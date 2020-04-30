@@ -228,7 +228,7 @@ func initializeContainerImageOverrides() {
 }
 
 // initControllerRefreshIntervals initializes the refresh intervals for any informers
-// created by the Operator requiring a refresh interval.  This inlcudes first attempting
+// created by the Operator requiring a refresh interval.  This includes first attempting
 // to utilize the refresh interval(s) defined in the pgo.yaml config file, and if not
 // present then falling back to a default value.
 func initializeControllerRefreshIntervals() {
@@ -256,7 +256,7 @@ func initializeControllerRefreshIntervals() {
 }
 
 // initControllerWorkerCounts sets the number of workers that will be created for any worker
-// queues created within the various controllers created by the Operator.  This inlcudes first
+// queues created within the various controllers created by the Operator.  This includes first
 // attempting to utilize the worker counts defined in the pgo.yaml config file, and if not
 // present then falling back to a default value.
 func initializeControllerWorkerCounts() {

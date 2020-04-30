@@ -85,7 +85,7 @@ func (c *Controller) RunWorker(stopCh <-chan struct{}, doneCh chan<- struct{}) {
 func (c *Controller) waitForShutdown(stopCh <-chan struct{}) {
 	<-stopCh
 	c.Queue.ShutDown()
-	log.Debug("pgcluster Contoller: recieved stop signal, worker queue told to shutdown")
+	log.Debug("pgcluster Contoller: received stop signal, worker queue told to shutdown")
 }
 
 func (c *Controller) processNextItem() bool {
@@ -145,7 +145,7 @@ func (c *Controller) processNextItem() bool {
 	clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, &cluster, cluster.ObjectMeta.Namespace)
 
 	// Now scale the repo deployment only to ensure it is initialized prior to the primary DB.
-	// Once the repo is ready, the primary datbase deployment will then also be scaled to 1.
+	// Once the repo is ready, the primary database deployment will then also be scaled to 1.
 	clusterInfo, err := clusteroperator.ScaleClusterDeployments(c.PgclusterClientset,
 		cluster, 1, false, false, true, false)
 	if err != nil {

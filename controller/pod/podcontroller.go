@@ -144,7 +144,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 // setCurrentPrimary checks whether the newly promoted primary value differs from the pgcluster's
 // current primary value. If different, patch the CRD's annotation to match the new value
 func setCurrentPrimary(restclient *rest.RESTClient, newPod *apiv1.Pod, cluster *crv1.Pgcluster) {
-	// if a failover has occured and the current primary has changed, update the pgcluster CRD's annotation accordingly
+	// if a failover has occurred and the current primary has changed, update the pgcluster CRD's annotation accordingly
 	if cluster.Annotations[config.ANNOTATION_CURRENT_PRIMARY] != newPod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME] {
 		err := util.CurrentPrimaryUpdate(restclient, cluster, newPod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME], newPod.Namespace)
 		if err != nil {
