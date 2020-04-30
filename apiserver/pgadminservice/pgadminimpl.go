@@ -17,7 +17,6 @@ limitations under the License.
 
 import (
 	"fmt"
-	// "strings"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
@@ -27,8 +26,6 @@ import (
 	"github.com/crunchydata/postgres-operator/kubeapi"
 
 	log "github.com/sirupsen/logrus"
-	// v1 "k8s.io/api/core/v1"
-	// "k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
