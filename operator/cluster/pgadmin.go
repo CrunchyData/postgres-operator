@@ -17,8 +17,10 @@ package cluster
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	weakrand "math/rand"
 	"os"
 	"time"
 
@@ -338,8 +340,11 @@ func createPgAdminDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pgcl
 	// Password provided to initialize pgadmin setup (admin) - credentials
 	// not given to users (account gets disabled)
 	//
-	// Ignoring error, this password is throwaway so low entropy is ok
-	throwawayPass, _ := util.GeneratePassword(initPassLen)
+	// This password is throwaway so low entropy genreation method is fine
+	randBytes := make([]byte, initPassLen)
+	// weakrand Read is always nil error
+	weakrand.Read(randBytes)
+	throwawayPass := base64.RawStdEncoding.EncodeToString(randBytes)
 
 	// get the fields that will be substituted in the pgAdmin template
 	fields := pgAdminTemplateFields{
