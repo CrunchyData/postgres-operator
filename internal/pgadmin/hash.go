@@ -67,16 +67,9 @@ func HashPassword(qr *queryRunner, pass string) (string, error) {
 
 	hashed := pbkdf2.Key([]byte(macBase64), hashSalt, iterations, hashLenBytes, sha512.New)
 
-	saltEncoded := base64Trim(base64.StdEncoding.EncodeToString(hashSalt))
-	keyEncoded := base64Trim(base64.StdEncoding.EncodeToString(hashed))
+	// Base64 encode and convert to storage format expected by Flask-Security
+	saltEncoded := strings.ReplaceAll(base64.RawStdEncoding.EncodeToString(hashSalt), "+", ".")
+	keyEncoded := strings.ReplaceAll(base64.RawStdEncoding.EncodeToString(hashed), "+", ".")
 
 	return fmt.Sprintf("$pbkdf2-sha512$%d$%s$%s", iterations, saltEncoded, keyEncoded), nil
-}
-
-// base64Trim removes rightmost padding characters and translates + to . for storage
-func base64Trim(a string) string {
-	a = strings.TrimRight(a, "=") // Would this be eliminated with RawStdEncoder?
-	a = strings.ReplaceAll(a, "+", ".")
-
-	return a
 }

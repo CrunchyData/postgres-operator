@@ -29,8 +29,8 @@ import (
 )
 
 const (
-	defaultWaitTime = 60
-	defaultPoll     = 3
+	defaultWaitTime = 60 * time.Second
+	defaultPoll     = 3 * time.Second
 	defaultPath     = "/var/lib/pgadmin/pgadmin4.db"
 )
 
@@ -40,8 +40,8 @@ type queryRunner struct {
 	Namespace    string
 	Path         string
 	Pod          v1.Pod
-	PollInterval int
-	WaitTimeout  int
+	PollInterval time.Duration
+	WaitTimeout  time.Duration
 
 	clientset *kubernetes.Clientset
 	apicfg    *rest.Config
@@ -80,8 +80,9 @@ func (qr *queryRunner) EnsureReady() error {
 		qr.Path,
 		"SELECT email FROM user WHERE id=1",
 	}
-	timeout := time.After(time.Duration(qr.WaitTimeout) * time.Second)
-	tick := time.Tick(time.Duration(qr.PollInterval) * time.Second)
+	timeout := time.After(qr.WaitTimeout)
+	ticker := time.NewTicker(qr.PollInterval)
+	defer ticker.Stop()
 
 	// short-fuse test, otherwise minimum wait is tick time
 	stdout, _, err := kubeapi.ExecToPodThroughAPI(qr.apicfg, qr.clientset,
@@ -95,7 +96,7 @@ func (qr *queryRunner) EnsureReady() error {
 		select {
 		case <-timeout:
 			return fmt.Errorf("Timed out waiting for pgadmin db to become ready")
-		case <-tick:
+		case <-ticker.C:
 			// exec into the pod to run the query
 			stdout, stderr, err := kubeapi.ExecToPodThroughAPI(qr.apicfg, qr.clientset,
 				cmd, qr.Pod.Spec.Containers[0].Name, qr.Pod.Name, qr.Namespace, nil)
@@ -107,7 +108,7 @@ func (qr *queryRunner) EnsureReady() error {
 				// trim any space that may be there for an accurate read
 				output := strings.TrimSpace(stdout)
 				if output == "" || len(strings.TrimSpace(stderr)) > 0 {
-					<-time.After(time.Duration(qr.PollInterval) * time.Second)
+					continue
 				} else {
 					qr.ready = true
 					return nil

@@ -190,7 +190,7 @@ func ShowPgAdmin(request *msgs.ShowPgAdminRequest, namespace string) msgs.ShowPg
 
 		// This takes advantage of pgadmin deployment and pgadmin service
 		// sharing a name that is clustername + pgAdminServiceSuffix
-		service, svcFound, err := kubeapi.GetService(
+		service, _, err := kubeapi.GetService(
 			apiserver.Clientset,
 			cluster.Name+pgAdminServiceSuffix,
 			cluster.Namespace)
@@ -199,15 +199,13 @@ func ShowPgAdmin(request *msgs.ShowPgAdminRequest, namespace string) msgs.ShowPg
 			return response
 		}
 
-		if svcFound {
-			result.ServiceClusterIP = service.Spec.ClusterIP
-			result.ServiceName = service.Name
-			if len(service.Spec.ExternalIPs) > 0 {
-				result.ServiceExternalIP = service.Spec.ExternalIPs[0]
-			}
-			if len(service.Status.LoadBalancer.Ingress) > 0 {
-				result.ServiceExternalIP = service.Status.LoadBalancer.Ingress[0].IP
-			}
+		result.ServiceClusterIP = service.Spec.ClusterIP
+		result.ServiceName = service.Name
+		if len(service.Spec.ExternalIPs) > 0 {
+			result.ServiceExternalIP = service.Spec.ExternalIPs[0]
+		}
+		if len(service.Status.LoadBalancer.Ingress) > 0 {
+			result.ServiceExternalIP = service.Status.LoadBalancer.Ingress[0].IP
 		}
 
 		// In the future, construct results to contain individual error stati
@@ -260,11 +258,11 @@ func getClusterList(namespace string, clusterNames []string, selector string) (c
 	for _, clusterName := range clusterNames {
 		cluster := crv1.Pgcluster{}
 
-		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster,
+		_, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster,
 			clusterName, namespace)
 
 		// if there is an error, capture it here and return here with an empty list
-		if !found || err != nil {
+		if err != nil {
 			return crv1.PgclusterList{}, err
 		}
 

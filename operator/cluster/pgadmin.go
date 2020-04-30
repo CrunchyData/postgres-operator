@@ -99,13 +99,11 @@ func AddPgAdmin(
 	pvcName := fmt.Sprintf(pgAdminDeploymentFormat, cluster.Name)
 
 	// create the pgAdmin storage volume
-	if !pvc.Exists(clientset, pvcName, ns) {
-		if _, err := pvc.CreatePVC(clientset, storageClass, pvcName, cluster.Name, ns); err != nil {
-			log.Errorf("Error creating PVC: %s", err.Error())
-			return err
-		} else {
-			log.Info("created pgadmin PVC =" + pvcName + " in namespace " + ns)
-		}
+	if _, err := pvc.CreateIfNotExists(clientset, *storageClass, pvcName, cluster.Name, ns); err != nil {
+		log.Errorf("Error creating PVC: %s", err.Error())
+		return err
+	} else {
+		log.Info("created pgadmin PVC =" + pvcName + " in namespace " + ns)
 	}
 
 	// create the pgAdmin deployment

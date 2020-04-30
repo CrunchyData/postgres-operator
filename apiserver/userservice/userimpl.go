@@ -992,16 +992,13 @@ func updatePgAdmin(cluster *crv1.Pgcluster, username, password string) error {
 
 	// proceed onward
 	// Get service details and prep connection metadata
-	service, svcFound, err := kubeapi.GetService(apiserver.Clientset, cluster.Name, cluster.Namespace)
+	service, _, err := kubeapi.GetService(apiserver.Clientset, cluster.Name, cluster.Namespace)
 	if err != nil {
 		return err
 	}
 
 	// set up the server entry data
-	dbService := pgadmin.ServerEntry{}
-	if svcFound {
-		dbService = pgadmin.ServerEntryFromPgService(service, cluster.Name)
-	}
+	dbService := pgadmin.ServerEntryFromPgService(service, cluster.Name)
 	dbService.Password = password
 
 	// attempt to set the username/password for this user in the pgadmin

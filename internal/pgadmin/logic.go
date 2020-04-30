@@ -17,7 +17,6 @@ package pgadmin
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
@@ -37,21 +36,16 @@ const sgLabel = "Crunchy PostgreSQL Operator"
 
 // DeleteUser deletes the specified user, their servergroups, and servers
 func DeleteUser(qr *queryRunner, username string) error {
-	idStr, err := qr.Query(fmt.Sprintf("SELECT id FROM user WHERE email='%s'", username))
+	uid, err := qr.Query(fmt.Sprintf("SELECT id FROM user WHERE email='%s'", sqlLiteral(username)))
 	if err != nil {
 		return err
 	}
 
-	if idStr != "" {
-		uid, err := strconv.Atoi(idStr)
-		if err != nil {
-			return fmt.Errorf("Failed to convert user id [%s] to int: %v", idStr, err)
-		}
-
+	if uid != "" {
 		rm := fmt.Sprintf(
-			`DELETE FROM server WHERE user_id=%d;
-			DELETE FROM servergroup WHERE user_id=%d;
-			DELETE FROM user where id=%d;`, uid, uid, uid)
+			`DELETE FROM server WHERE user_id='%[1]s';
+			DELETE FROM servergroup WHERE user_id='%[1]s';
+			DELETE FROM user where id='%[1]s';`, uid)
 		err = qr.Exec(rm)
 		if err != nil {
 			return err
@@ -62,9 +56,6 @@ func DeleteUser(qr *queryRunner, username string) error {
 
 // Sets the login password for the given username in the pgadmin database
 // Adds the user to the pgadmin database if it does not exist
-//
-// N.B. No particular sanitization is done on the username for preventing
-// shenanigans, it is the caller's responsibility as it knows the origin
 func SetLoginPassword(qr *queryRunner, username, pass string) error {
 	hp, err := HashPassword(qr, pass)
 	if err != nil {
@@ -73,8 +64,8 @@ func SetLoginPassword(qr *queryRunner, username, pass string) error {
 
 	// Idempotent user insertion and update, this implies that setting a
 	// password (e.g. update) will establish a user entry
-	insQ := fmt.Sprintf("INSERT OR IGNORE INTO user(email,password,active) VALUES ('%s','%s',1);", username, hp)
-	updQ := fmt.Sprintf("UPDATE user SET password='%s' WHERE email='%s';", hp, username)
+	insQ := fmt.Sprintf("INSERT OR IGNORE INTO user(email,password,active) VALUES ('%s','%s',1);", sqlLiteral(username), hp)
+	updQ := fmt.Sprintf("UPDATE user SET password='%s' WHERE email='%s';", hp, sqlLiteral(username))
 
 	if err := qr.Exec(insQ); err != nil {
 		return err
@@ -87,13 +78,10 @@ func SetLoginPassword(qr *queryRunner, username, pass string) error {
 }
 
 // Configures a PG connection for the given username in the pgadmin database
-//
-// N.B. No particular sanitization is done on the username for preventing
-// shenanigans, it is the caller's responsibility as it knows the origin
 func SetClusterConnection(qr *queryRunner, username string, dbInfo ServerEntry) error {
 	// Encryption key for db connections is the user's login password hash
 	//
-	result, err := qr.Query(fmt.Sprintf("SELECT id, password FROM user WHERE email='%s';", username))
+	result, err := qr.Query(fmt.Sprintf("SELECT id, password FROM user WHERE email='%s';", sqlLiteral(username)))
 	if err != nil {
 		return err
 	}
@@ -102,36 +90,30 @@ func SetClusterConnection(qr *queryRunner, username string, dbInfo ServerEntry) 
 	}
 
 	fields := strings.SplitN(result, qr.Separator(), 2)
-	idStr, encKey := fields[0], fields[1]
-
-	uid, err := strconv.Atoi(idStr)
-	if err != nil {
-		return fmt.Errorf("Failed to convert user id [%s] to int: %v", idStr, err)
-	}
+	uid, encKey := fields[0], fields[1]
 
 	encPassword := encrypt(dbInfo.Password, encKey)
 	// Insert entries into servergroups and servers for the dbInfo provided
 	addSG := fmt.Sprintf(`INSERT OR IGNORE INTO servergroup(user_id,name)
-		VALUES(%d,'%s');`, uid, sgLabel)
-	hasSvc := fmt.Sprintf(`SELECT name FROM server WHERE user_id = %d;`, uid)
+		VALUES('%s','%s');`, uid, sgLabel)
+	hasSvc := fmt.Sprintf(`SELECT name FROM server WHERE user_id = '%s';`, uid)
 	addSvc := fmt.Sprintf(`INSERT INTO server(user_id, servergroup_id,
 		name, host, port, maintenance_db, username, password, ssl_mode,
-		comment) VALUES (%d,
-			(SELECT id FROM servergroup WHERE user_id=%d AND name='%s'),
+		comment) VALUES ('%[1]s',
+			(SELECT id FROM servergroup WHERE user_id='%[1]s' AND name='%s'),
 			'%s', '%s', %d, '%s', '%s', '%s', '%s', '%s');`,
-		uid,     // user_id
-		uid,     // servergroup_id %d (user_id)
+		uid,     // user_id && servergroup_id %s (user_id)
 		sgLabel, // servergroup_id %s (name)
 		dbInfo.Name,
 		dbInfo.Host,
 		dbInfo.Port,
 		dbInfo.MaintenanceDB,
-		username,
+		sqlLiteral(username),
 		encPassword,
 		dbInfo.SSLMode,
 		dbInfo.Comment,
 	)
-	updSvcPass := fmt.Sprintf("UPDATE server SET password='%s' WHERE user_id = %d;", encPassword, uid)
+	updSvcPass := fmt.Sprintf("UPDATE server SET password='%s' WHERE user_id = '%s';", encPassword, uid)
 	if err := qr.Exec(addSG); err != nil {
 		return err
 	}
@@ -158,11 +140,8 @@ func SetClusterConnection(qr *queryRunner, username string, dbInfo ServerEntry) 
 func GetUsernames(qr *queryRunner) ([]string, error) {
 	q := "SELECT email FROM user WHERE active=1 AND id>1"
 	results, err := qr.Query(q)
-	if err != nil {
-		return []string{}, err
-	}
 
-	return strings.Split(results, "\n"), nil
+	return strings.Split(results, "\n"), err
 }
 
 // GetPgAdminQueryRunner takes cluster information, identifies whether
@@ -213,4 +192,9 @@ func ServerEntryFromPgService(service *v1.Service, clustername string) ServerEnt
 		}
 	}
 	return dbService
+}
+
+// sqlLiteral escapes single quotes in strings
+func sqlLiteral(s string) string {
+	return strings.ReplaceAll(s, `'`, `''`)
 }
