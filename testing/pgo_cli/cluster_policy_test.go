@@ -92,7 +92,7 @@ func TestClusterPolicy(t *testing.T) {
 
 			t.Run("create schedule", func(t *testing.T) {
 				t.Run("executes a policy", func(t *testing.T) {
-					t.Skip("BUG: scheduler does not handle namespaces updated after creation")
+					t.Skip("BUG: how to choose a database")
 					const policyPath = "../testdata/policy2-setup.sql"
 					const insertPath = "../testdata/policy2-insert.sql"
 
