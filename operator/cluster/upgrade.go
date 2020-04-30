@@ -459,7 +459,7 @@ func recreateBackrestRepoSecret(clientset *kubernetes.Clientset, clustername, na
 			ClusterNamespace:    namespace,
 			OperatorNamespace:   operatorNamespace,
 		}); err != nil {
-		log.Errorf("error generating new backrest repo secrets during pgcluster ugprade: %v", err)
+		log.Errorf("error generating new backrest repo secrets during pgcluster upgrade: %v", err)
 	}
 }
 

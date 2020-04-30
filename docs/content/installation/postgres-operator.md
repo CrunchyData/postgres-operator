@@ -13,7 +13,8 @@ If you believe that all the default settings in the installation manifest work
 for you, you can take a chance by running the manifest directly from the
 repository:
 
-```shell
+```
+kubectl create namespace pgo
 kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator/master/installers/kubectl/postgres-operator.yml
 ```
 
@@ -66,6 +67,12 @@ By default, the installer will run in the `pgo` Namespace. This can be
 updated in the `postgres-operator.yml` file. **Please ensure that this namespace
 exists before the job is run**.
 
+For example, to create the `pgo` namespace:
+
+```
+kubectl create namespace pgo
+```
+
 The PostgreSQL Operator has the ability to manage PostgreSQL clusters across
 multiple Kubernetes [Namespaces](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/),
 including the ability to add and remove Namespaces that it watches. Doing so
@@ -117,7 +124,7 @@ The deploy job can be used to perform different deployment actions for the
 PostgreSQL Operator. When you run the job it will install the operator by
 default but you can change the deployment action to uninstall or update. The
 `DEPLOY_ACTION` environment variable in the `postgres-operator.yml` file can be
-set to `install`, `update`, and `uninstall`. 
+set to `install`, `update`, and `uninstall`.
 
 
 ### Image Pull Secrets
