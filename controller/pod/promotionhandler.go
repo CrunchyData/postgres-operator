@@ -143,7 +143,7 @@ func waitForStandbyPromotion(restConfig *rest.Config, clientset *kubernetes.Clie
 				cmd = append(cmd, cluster.Spec.Port)
 
 				isInRecoveryStr, _, _ := kubeapi.ExecToPodThroughAPI(restConfig, clientset,
-					isInRecoveryCMD, newPod.Spec.Containers[0].Name, newPod.Name,
+					cmd, newPod.Spec.Containers[0].Name, newPod.Name,
 					newPod.Namespace, nil)
 				if strings.Contains(isInRecoveryStr, "f") {
 					recoveryDisabled = true
