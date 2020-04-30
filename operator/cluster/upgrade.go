@@ -362,7 +362,7 @@ func deploymentWait(clientset *kubernetes.Clientset, namespace, deploymentName s
 		case <-tick.C:
 			_, deploymentFound, _ := kubeapi.GetDeployment(clientset, deploymentName, namespace)
 			if !(deploymentFound) {
-				return fmt.Sprintf("Deploment %s has been deleted.", deploymentName)
+				return fmt.Sprintf("Deployment %s has been deleted.", deploymentName)
 			}
 			log.Debugf("deployment deleted: %t", !deploymentFound)
 		}

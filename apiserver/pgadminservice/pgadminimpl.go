@@ -52,6 +52,14 @@ func CreatePgAdmin(request *msgs.CreatePgAdminRequest, ns, pgouser string) msgs.
 	}
 
 	for _, cluster := range clusterList.Items {
+		// check if the current cluster is not upgraded to the deployed
+		// Operator version. If not, do not allow the command to complete
+		if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = cluster.Name + msgs.UpgradeError
+			return response
+		}
+
 		log.Debugf("adding pgAdmin to cluster [%s]", cluster.Name)
 
 		// generate the pgtask, starting with spec
@@ -111,6 +119,14 @@ func DeletePgAdmin(request *msgs.DeletePgAdminRequest, ns string) msgs.DeletePgA
 	}
 
 	for _, cluster := range clusterList.Items {
+		// check if the current cluster is not upgraded to the deployed
+		// Operator version. If not, do not allow the command to complete
+		if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = cluster.Name + msgs.UpgradeError
+			return response
+		}
+
 		log.Debugf("deleting pgAdmin from cluster [%s]", cluster.Name)
 
 		// generate the pgtask, starting with spec
