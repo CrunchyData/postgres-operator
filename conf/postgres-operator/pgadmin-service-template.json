@@ -13,7 +13,7 @@
         "spec": {
             "ports": [{
                 "protocol": "TCP",
-                "port": {{.ServicePort}},
+                "port": {{.Port}},
                 "targetPort": {{.Port}},
                 "nodePort": 0
             }],

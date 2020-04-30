@@ -41,9 +41,8 @@ import (
 )
 
 const (
-	defPgAdminPort    = config.DEFAULT_PGADMIN_PORT
-	defPgAdminSvcPort = "8080" // Switch to 8443 when HTTPS enabled
-	defSetupUsername  = "pgadminsetup"
+	defPgAdminPort   = config.DEFAULT_PGADMIN_PORT
+	defSetupUsername = "pgadminsetup"
 )
 
 type pgAdminTemplateFields struct {
@@ -399,7 +398,6 @@ func createPgAdminService(clientset *kubernetes.Clientset, cluster *crv1.Pgclust
 		Name:        pgAdminSvcName,
 		ClusterName: cluster.Name,
 		Port:        defPgAdminPort,
-		ServicePort: defPgAdminSvcPort,
 	}
 
 	// For debugging purposes, put the template substitution in stdout
