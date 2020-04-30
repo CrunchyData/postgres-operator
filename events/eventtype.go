@@ -27,6 +27,7 @@ const (
 	EventTopicLoad      = "loadtopic"
 	EventTopicUser      = "postgresusertopic"
 	EventTopicPolicy    = "policytopic"
+	EventTopicPgAdmin   = "pgadmintopic"
 	EventTopicPgbouncer = "pgbouncertopic"
 	EventTopicPGO       = "pgotopic"
 	EventTopicPGOUser   = "pgousertopic"
@@ -66,6 +67,9 @@ const (
 	EventApplyPolicy  = "ApplyPolicy"
 	EventDeletePolicy = "DeletePolicy"
 
+	EventCreatePgAdmin = "CreatePgAdmin"
+	EventDeletePgAdmin = "DeletePgAdmin"
+
 	EventCreatePgbouncer = "CreatePgbouncer"
 	EventDeletePgbouncer = "DeletePgbouncer"
 	EventUpdatePgbouncer = "UpdatePgbouncer"
@@ -95,7 +99,7 @@ type EventHeader struct {
 }
 
 func (lvl EventHeader) String() string {
-	msg := fmt.Sprintf("Event %s - ns [%s] - user [%s] topics [%v] timestampe [%s]", lvl.EventType, lvl.Namespace, lvl.Username, lvl.Topic, lvl.Timestamp)
+	msg := fmt.Sprintf("Event %s - ns [%s] - user [%s] topics [%v] timestamp [%s]", lvl.EventType, lvl.Namespace, lvl.Username, lvl.Topic, lvl.Timestamp)
 	return msg
 }
 
@@ -508,6 +512,36 @@ func (p EventLoadCompletedFormat) GetHeader() EventHeader {
 
 func (lvl EventLoadCompletedFormat) String() string {
 	msg := fmt.Sprintf("Event %s (load completed) - clustername %s - load config [%s]", lvl.EventHeader, lvl.Clustername, lvl.Loadconfig)
+	return msg
+}
+
+//----------------------------
+type EventCreatePgAdminFormat struct {
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+}
+
+func (p EventCreatePgAdminFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventCreatePgAdminFormat) String() string {
+	msg := fmt.Sprintf("Event %s (create pgbouncer) - clustername %s", lvl.EventHeader, lvl.Clustername)
+	return msg
+}
+
+//----------------------------
+type EventDeletePgAdminFormat struct {
+	EventHeader `json:"eventheader"`
+	Clustername string `json:"clustername"`
+}
+
+func (p EventDeletePgAdminFormat) GetHeader() EventHeader {
+	return p.EventHeader
+}
+
+func (lvl EventDeletePgAdminFormat) String() string {
+	msg := fmt.Sprintf("Event %s (delete pgbouncer) - clustername %s", lvl.EventHeader, lvl.Clustername)
 	return msg
 }
 

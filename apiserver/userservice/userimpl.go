@@ -999,6 +999,56 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 		result.Password = password
 		sql = fmt.Sprintf("%s %s", sql,
 			fmt.Sprintf(sqlPasswordClause, util.SQLQuoteLiteral(hashedPassword)))
+
+		// Sync user to pgAdmin, if enabled
+		qr, err := autobind.GetPgAdminQueryRunner(apiserver.Clientset, apiserver.RESTConfig, cluster)
+		if err != nil {
+			log.Error(err)
+
+			result.Error = true
+			result.ErrorMessage = err.Error()
+
+			return result
+		} else if qr != nil {
+			// Get service details and prep connection metadata
+			service, svcFound, err := kubeapi.GetService(apiserver.Clientset, cluster.Name, cluster.Namespace)
+			if err != nil {
+				log.Error(err)
+
+				result.Error = true
+				result.ErrorMessage = err.Error()
+
+				return result
+			}
+
+			dbService := autobind.ServerEntry{}
+			if svcFound {
+				dbService = autobind.ServerEntryFromPgService(service, cluster.Name)
+			}
+			dbService.Password = password
+
+			err = autobind.SetLoginPassword(qr, result.Username, dbService.Password)
+			if err != nil {
+				log.Error(err)
+
+				result.Error = true
+				result.ErrorMessage = err.Error()
+
+				return result
+			}
+
+			if dbService.Name != "" {
+				err = autobind.SetClusterConnection(qr, result.Username, dbService)
+				if err != nil {
+					log.Error(err)
+
+					result.Error = true
+					result.ErrorMessage = err.Error()
+
+					return result
+				}
+			}
+		}
 	}
 
 	// now, check to see if the request wants to expire the user's password

@@ -115,6 +115,11 @@ const LABEL_USERNAME = "username"
 const LABEL_ROLENAME = "rolename"
 const LABEL_PASSWORD = "password"
 
+const LABEL_PGADMIN = "crunchy-pgadmin"
+const LABEL_PGADMIN_TASK_ADD = "pgadmin-add"
+const LABEL_PGADMIN_TASK_CLUSTER = "pgadmin-cluster"
+const LABEL_PGADMIN_TASK_DELETE = "pgadmin-delete"
+
 const LABEL_PGBOUNCER = "crunchy-pgbouncer"
 
 const LABEL_PGO_LOAD = "pgo-load"

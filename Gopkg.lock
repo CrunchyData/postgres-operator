@@ -342,7 +342,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:cdf8191bd19d4a19b6c1427f80243d8b304a20d07a141dab1d2cb421e16265ce"
+  digest = "1:17da86687c09ab43a342bf91c2b2e5feba1dda6b7cce9626d64201fbf0113264"
   name = "golang.org/x/crypto"
   packages = [
     "blowfish",
@@ -351,6 +351,7 @@
     "ed25519",
     "ed25519/internal/edwards25519",
     "internal/subtle",
+    "pbkdf2",
     "poly1305",
     "ssh",
     "ssh/internal/bcrypt_pbkdf",
@@ -939,6 +940,7 @@
     "github.com/spf13/cobra",
     "github.com/spf13/cobra/doc",
     "github.com/spf13/pflag",
+    "golang.org/x/crypto/pbkdf2",
     "golang.org/x/crypto/ssh",
     "k8s.io/api/apps/v1",
     "k8s.io/api/authorization/v1",

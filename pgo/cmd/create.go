@@ -115,6 +115,7 @@ var CreateCmd = &cobra.Command{
 	Short: "Create a Postgres Operator resource",
 	Long: `CREATE allows you to create a new Operator resource. For example:
     pgo create cluster
+    pgo create pgadmin
     pgo create pgbouncer
     pgo create pgouser
     pgo create pgorole
@@ -126,6 +127,7 @@ var CreateCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the type of resource to create.  Valid resource types include:
     * cluster
+    * pgadmin
     * pgbouncer
     * pgouser
     * pgorole
@@ -139,6 +141,7 @@ var CreateCmd = &cobra.Command{
 			default:
 				fmt.Println(`Error: You must specify the type of resource to create.  Valid resource types include:
     * cluster
+    * pgadmin
     * pgbouncer
     * pgouser
     * pgorole
@@ -198,6 +201,28 @@ var createPolicyCmd = &cobra.Command{
 			fmt.Println(`Error: A policy name is required for this command.`)
 		} else {
 			createPolicy(args, Namespace)
+		}
+	},
+}
+
+// createPgAdminCmd ...
+var createPgAdminCmd = &cobra.Command{
+	Use:   "pgadmin",
+	Short: "Create a pgAdmin instance ",
+	Long: `Create a pgAdmin instance for mycluster. For example:
+
+	pgo create pgadmin mycluster`,
+	Run: func(cmd *cobra.Command, args []string) {
+
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		log.Debug("create pgadmin called ")
+
+		if len(args) == 0 && Selector == "" {
+			fmt.Println(`Error: A cluster name or selector is required for this command.`)
+		} else {
+			createPgAdmin(args, Namespace)
 		}
 	},
 }
@@ -280,6 +305,7 @@ func init() {
 	RootCmd.AddCommand(CreateCmd)
 	CreateCmd.AddCommand(createClusterCmd)
 	CreateCmd.AddCommand(createPolicyCmd)
+	CreateCmd.AddCommand(createPgAdminCmd)
 	CreateCmd.AddCommand(createPgbouncerCmd)
 	CreateCmd.AddCommand(createPgouserCmd)
 	CreateCmd.AddCommand(createPgoroleCmd)
@@ -391,11 +417,13 @@ func init() {
 			"For example, to create a tablespace with the NFS storage configuration with a PVC of size 10GiB:\n\n"+
 			"--tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi")
 	createClusterCmd.Flags().StringVarP(&Username, "username", "u", "", "The username to use for creating the PostgreSQL user with standard permissions. Defaults to the value in the PostgreSQL Operator configuration.")
-
 	createClusterCmd.Flags().StringVar(&WALStorageConfig, "wal-storage-config", "",
 		`The name of a storage configuration in pgo.yaml to use for PostgreSQL's write-ahead log (WAL).`)
 	createClusterCmd.Flags().StringVar(&WALPVCSize, "wal-storage-size", "",
 		`The size of the capacity for WAL storage, which overrides any value in the storage configuration. Follows the Kubernetes quantity format.`)
+
+	// pgo create pgadmin
+	createPgAdminCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 
 	// pgo create pgbouncer
 	createPgbouncerCmd.Flags().StringVar(&PgBouncerCPURequest, "cpu", "", "Set the number of millicores to request for CPU "+
