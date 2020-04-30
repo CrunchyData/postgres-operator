@@ -215,8 +215,6 @@ func showPgAdmin(namespace string, clusterNames []string) {
 		printJSON(response)
 	default:
 		fmt.Println("outputting text")
-		fmt.Printf("%+v\n", response)
-		// FIX
 		printShowPgAdminText(response)
 	}
 }
