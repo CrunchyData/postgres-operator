@@ -177,6 +177,7 @@ func ShowPgAdmin(request *msgs.ShowPgAdminRequest, namespace string) msgs.ShowPg
 			ClusterName: cluster.Spec.Name,
 			HasPgAdmin:  true,
 		}
+
 		// first, check if the cluster has the pgAdmin label. If it does not, we
 		// add it to the list and keep iterating
 		clusterLabels := cluster.GetLabels()
@@ -187,7 +188,12 @@ func ShowPgAdmin(request *msgs.ShowPgAdminRequest, namespace string) msgs.ShowPg
 			continue
 		}
 
-		service, svcFound, err := kubeapi.GetService(apiserver.Clientset, cluster.Name, cluster.Namespace)
+		// This takes advantage of pgadmin deployment and pgadmin service
+		// sharing a name that is clustername + pgAdminServiceSuffix
+		service, svcFound, err := kubeapi.GetService(
+			apiserver.Clientset,
+			cluster.Name+pgAdminServiceSuffix,
+			cluster.Namespace)
 		if err != nil {
 			response.SetError(err.Error())
 			return response
