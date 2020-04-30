@@ -203,7 +203,7 @@ func DeleteIfExists(clientset *kubernetes.Clientset, name string, namespace stri
 // Exists test to see if pvc exists
 func Exists(clientset *kubernetes.Clientset, name string, namespace string) bool {
 	pvc, _ := kubeapi.GetPVCIfExists(clientset, name, namespace)
-	return pvc == nil
+	return pvc != nil
 }
 
 func getMatchLabels(key, value string) string {
