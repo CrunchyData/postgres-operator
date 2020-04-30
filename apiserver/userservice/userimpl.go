@@ -26,7 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
-	"github.com/crunchydata/postgres-operator/internal/autobind"
+	"github.com/crunchydata/postgres-operator/internal/pgadmin"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 
@@ -1002,7 +1002,7 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 			fmt.Sprintf(sqlPasswordClause, util.SQLQuoteLiteral(hashedPassword)))
 
 		// Sync user to pgAdmin, if enabled
-		qr, err := autobind.GetPgAdminQueryRunner(apiserver.Clientset, apiserver.RESTConfig, cluster)
+		qr, err := pgadmin.GetPgAdminQueryRunner(apiserver.Clientset, apiserver.RESTConfig, cluster)
 		if err != nil {
 			log.Error(err)
 
@@ -1022,13 +1022,13 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 				return result
 			}
 
-			dbService := autobind.ServerEntry{}
+			dbService := pgadmin.ServerEntry{}
 			if svcFound {
-				dbService = autobind.ServerEntryFromPgService(service, cluster.Name)
+				dbService = pgadmin.ServerEntryFromPgService(service, cluster.Name)
 			}
 			dbService.Password = password
 
-			err = autobind.SetLoginPassword(qr, result.Username, dbService.Password)
+			err = pgadmin.SetLoginPassword(qr, result.Username, dbService.Password)
 			if err != nil {
 				log.Error(err)
 
@@ -1039,7 +1039,7 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 			}
 
 			if dbService.Name != "" {
-				err = autobind.SetClusterConnection(qr, result.Username, dbService)
+				err = pgadmin.SetClusterConnection(qr, result.Username, dbService)
 				if err != nil {
 					log.Error(err)
 

@@ -22,7 +22,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
-	"github.com/crunchydata/postgres-operator/internal/autobind"
+	"github.com/crunchydata/postgres-operator/internal/pgadmin"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 
 	log "github.com/sirupsen/logrus"
@@ -212,12 +212,12 @@ func ShowPgAdmin(request *msgs.ShowPgAdminRequest, namespace string) msgs.ShowPg
 
 		// In the future, construct results to contain individual error stati
 		// for now log and return empty content if encountered
-		qr, err := autobind.GetPgAdminQueryRunner(apiserver.Clientset, apiserver.RESTConfig, &cluster)
+		qr, err := pgadmin.GetPgAdminQueryRunner(apiserver.Clientset, apiserver.RESTConfig, &cluster)
 		if err != nil {
 			log.Error(err)
 			continue
 		} else if qr != nil {
-			names, err := autobind.GetUsernames(qr)
+			names, err := pgadmin.GetUsernames(qr)
 			if err != nil {
 				log.Error(err)
 				continue

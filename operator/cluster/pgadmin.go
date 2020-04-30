@@ -27,7 +27,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
-	"github.com/crunchydata/postgres-operator/internal/autobind"
+	"github.com/crunchydata/postgres-operator/internal/pgadmin"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
@@ -177,7 +177,7 @@ func BootstrapPgAdminUsers(
 	restconfig *rest.Config,
 	cluster *crv1.Pgcluster) error {
 
-	qr, err := autobind.GetPgAdminQueryRunner(clientset, restconfig, cluster)
+	qr, err := pgadmin.GetPgAdminQueryRunner(clientset, restconfig, cluster)
 	if err != nil {
 		return err
 	} else if qr == nil {
@@ -198,9 +198,9 @@ func BootstrapPgAdminUsers(
 		return err
 	}
 
-	dbService := autobind.ServerEntry{}
+	dbService := pgadmin.ServerEntry{}
 	if svcFound {
-		dbService = autobind.ServerEntryFromPgService(service, cluster.Name)
+		dbService = pgadmin.ServerEntryFromPgService(service, cluster.Name)
 	}
 
 	// Get current users of cluster and add them to pgadmin's db if they
@@ -236,13 +236,13 @@ func BootstrapPgAdminUsers(
 		}
 
 		dbService.Password = string(rawpass[:])
-		err = autobind.SetLoginPassword(qr, user, dbService.Password)
+		err = pgadmin.SetLoginPassword(qr, user, dbService.Password)
 		if err != nil {
 			return err
 		}
 
 		if dbService.Name != "" {
-			err = autobind.SetClusterConnection(qr, user, dbService)
+			err = pgadmin.SetClusterConnection(qr, user, dbService)
 			if err != nil {
 				return err
 			}

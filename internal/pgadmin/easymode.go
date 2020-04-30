@@ -1,4 +1,4 @@
-package autobind
+package pgadmin
 
 /*
  Copyright 2017 - 2020 Crunchy Data Solutions, Inc.

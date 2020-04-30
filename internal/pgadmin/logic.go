@@ -1,7 +1,4 @@
-/* package autobind provides a set of tools for interacting with the sqlite
-database which powers pgadmin */
-
-package autobind
+package pgadmin
 
 /*
  Copyright 2017 - 2020 Crunchy Data Solutions, Inc.
