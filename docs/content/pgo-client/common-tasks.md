@@ -874,9 +874,11 @@ section of the documentation.
 ## Clone a PostgreSQL Cluster
 
 You can create a copy of an existing PostgreSQL cluster in a new PostgreSQL
-cluster by using the [`pgo clone`](/pgo-client/reference/pgo_clone/) command. To
-create a new copy of a PostgreSQL cluster, you can execute the following
-command:
+cluster by using the [`pgo clone`](/pgo-client/reference/pgo_clone/) command.
+The command copies the pgBackRest repository from the existing cluster and
+creates a new, single instance primary as its own cluster. To
+create the new, single instance, copy of a PostgreSQL cluster, you can execute
+the following command:
 
 ```shell
 pgo clone hacluster newhacluster
