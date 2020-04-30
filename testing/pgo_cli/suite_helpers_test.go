@@ -165,7 +165,9 @@ func requireClusterReady(t testing.TB, namespace, cluster string, timeout time.D
 
 		var database bool
 		for _, deployment := range deployments {
-			if deployment.Status.Replicas != deployment.Status.ReadyReplicas {
+			if *deployment.Spec.Replicas < 1 ||
+				deployment.Status.ReadyReplicas != *deployment.Spec.Replicas ||
+				deployment.Status.UpdatedReplicas != *deployment.Spec.Replicas {
 				return false
 			}
 			if deployment.Labels["pgo-pg-database"] == "true" {
@@ -197,7 +199,9 @@ func requirePgBouncerReady(t testing.TB, namespace, cluster string, timeout time
 			return false
 		}
 		for _, deployment := range deployments {
-			if deployment.Status.Replicas != deployment.Status.ReadyReplicas {
+			if *deployment.Spec.Replicas < 1 ||
+				deployment.Status.ReadyReplicas != *deployment.Spec.Replicas ||
+				deployment.Status.UpdatedReplicas != *deployment.Spec.Replicas {
 				return false
 			}
 		}
