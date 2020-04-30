@@ -43,6 +43,7 @@ const (
 	CREATE_FAILOVER_PERM  = "CreateFailover"
 	CREATE_INGEST_PERM    = "CreateIngest"
 	CREATE_NAMESPACE_PERM = "CreateNamespace"
+	CREATE_PGADMIN_PERM   = "CreatePgAdmin"
 	CREATE_PGBOUNCER_PERM = "CreatePgbouncer"
 	CREATE_PGOUSER_PERM   = "CreatePgouser"
 	CREATE_PGOROLE_PERM   = "CreatePgorole"
@@ -59,6 +60,7 @@ const (
 	DELETE_CLUSTER_PERM   = "DeleteCluster"
 	DELETE_INGEST_PERM    = "DeleteIngest"
 	DELETE_NAMESPACE_PERM = "DeleteNamespace"
+	DELETE_PGADMIN_PERM   = "DeletePgAdmin"
 	DELETE_PGBOUNCER_PERM = "DeletePgbouncer"
 	DELETE_PGOROLE_PERM   = "DeletePgorole"
 	DELETE_PGOUSER_PERM   = "DeletePgouser"
@@ -72,6 +74,7 @@ const (
 	SHOW_CONFIG_PERM          = "ShowConfig"
 	SHOW_INGEST_PERM          = "ShowIngest"
 	SHOW_NAMESPACE_PERM       = "ShowNamespace"
+	SHOW_PGADMIN_PERM         = "ShowPgAdmin"
 	SHOW_PGBOUNCER_PERM       = "ShowPgBouncer"
 	SHOW_PGOROLE_PERM         = "ShowPgorole"
 	SHOW_PGOUSER_PERM         = "ShowPgouser"
@@ -127,6 +130,7 @@ func InitializePerms() {
 		CREATE_FAILOVER_PERM:  "yes",
 		CREATE_INGEST_PERM:    "yes",
 		CREATE_NAMESPACE_PERM: "yes",
+		CREATE_PGADMIN_PERM:   "yes",
 		CREATE_PGBOUNCER_PERM: "yes",
 		CREATE_PGOROLE_PERM:   "yes",
 		CREATE_PGOUSER_PERM:   "yes",
@@ -143,6 +147,7 @@ func InitializePerms() {
 		DELETE_CLUSTER_PERM:   "yes",
 		DELETE_INGEST_PERM:    "yes",
 		DELETE_NAMESPACE_PERM: "yes",
+		DELETE_PGADMIN_PERM:   "yes",
 		DELETE_PGBOUNCER_PERM: "yes",
 		DELETE_PGOROLE_PERM:   "yes",
 		DELETE_PGOUSER_PERM:   "yes",
@@ -156,6 +161,7 @@ func InitializePerms() {
 		SHOW_CONFIG_PERM:          "yes",
 		SHOW_INGEST_PERM:          "yes",
 		SHOW_NAMESPACE_PERM:       "yes",
+		SHOW_PGADMIN_PERM:         "yes",
 		SHOW_PGBOUNCER_PERM:       "yes",
 		SHOW_PGOROLE_PERM:         "yes",
 		SHOW_PGOUSER_PERM:         "yes",

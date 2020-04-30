@@ -47,7 +47,7 @@ func CreatePgAdminHandler(w http.ResponseWriter, r *http.Request) {
 	//        "$ref": "#/definitions/CreatePgAdminResponse"
 	var ns string
 	log.Debug("pgadminservice.CreatePgAdminHandler called")
-	username, err := apiserver.Authn(apiserver.CREATE_PGBOUNCER_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.CREATE_PGADMIN_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -101,7 +101,7 @@ func DeletePgAdminHandler(w http.ResponseWriter, r *http.Request) {
 	//        "$ref": "#/definitions/DeletePgAdminResponse"
 	var ns string
 	log.Debug("pgadminservice.DeletePgAdminHandler called")
-	username, err := apiserver.Authn(apiserver.DELETE_PGBOUNCER_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.DELETE_PGADMIN_PERM, w, r)
 	if err != nil {
 		return
 	}
@@ -156,7 +156,7 @@ func ShowPgAdminHandler(w http.ResponseWriter, r *http.Request) {
 	log.Debug("pgadminservice.ShowPgAdminHandler called")
 
 	// first, determine if the user is authorized to access this resource
-	username, err := apiserver.Authn(apiserver.SHOW_PGBOUNCER_PERM, w, r)
+	username, err := apiserver.Authn(apiserver.SHOW_PGADMIN_PERM, w, r)
 	if err != nil {
 		return
 	}

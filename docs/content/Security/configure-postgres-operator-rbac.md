@@ -56,6 +56,7 @@ The following list shows the current complete list of possible pgo permissions t
 |CreateCluster | allow *pgo create cluster*|
 |CreateDump | allow *pgo create pgdump*|
 |CreateFailover | allow *pgo failover*|
+|CreatePgAdmin | allow *pgo create pgadmin*|
 |CreatePgbouncer | allow *pgo create pgbouncer*|
 |CreatePolicy | allow *pgo create policy*|
 |CreateSchedule | allow *pgo create schedule*|
@@ -63,6 +64,7 @@ The following list shows the current complete list of possible pgo permissions t
 |CreateUser | allow *pgo create user*|
 |DeleteBackup | allow *pgo delete backup*|
 |DeleteCluster | allow *pgo delete cluster*|
+|DeletePgAdmin | allow *pgo delete pgadmin*|
 |DeletePgbouncer | allow *pgo delete pgbouncer*|
 |DeletePolicy | allow *pgo delete policy*|
 |DeleteSchedule | allow *pgo delete schedule*|
@@ -77,6 +79,7 @@ The following list shows the current complete list of possible pgo permissions t
 |ShowBackup | allow *pgo show backup*|
 |ShowCluster | allow *pgo show cluster*|
 |ShowConfig | allow *pgo show config*|
+|ShowPgAdmin | allow *pgo show pgadmin*|
 |ShowPgBouncer | allow *pgo show pgbouncer*|
 |ShowPolicy | allow *pgo show policy*|
 |ShowPVC | allow *pgo show pvc*|
