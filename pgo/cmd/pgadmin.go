@@ -31,7 +31,6 @@ type showPgAdminTextPadding struct {
 	ClusterIP   int
 	ExternalIP  int
 	ServiceName int
-	// Username    int
 }
 
 // updatePgAdminTextPadding contains the values for what the text padding should be
