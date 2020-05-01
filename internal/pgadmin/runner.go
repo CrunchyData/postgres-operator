@@ -40,8 +40,6 @@ type queryRunner struct {
 	Namespace     string
 	Path          string
 	Pod           v1.Pod
-	PollInterval  time.Duration
-	WaitTimeout   time.Duration
 
 	clientset *kubernetes.Clientset
 	apicfg    *rest.Config
