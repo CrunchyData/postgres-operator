@@ -93,25 +93,17 @@ func (qr *queryRunner) EnsureReady() error {
 		return nil
 	}
 
-	// Use policy that is roughly 90s total timeout
-	backoff := ExponentialBackoffPolicy{
-		Base:       1200 * time.Millisecond,
-		Ratio:      1.25,
-		JitterMode: JitterFull,
-		Maximum:    90,
-	}
-
 	var output string
 	var lastError error
 	// Extended retries compared to "normal" queries
-	for i := 0; i < 2*maxRetries; i++ {
+	for i := 0; i < maxRetries; i++ {
 		// exec into the pod to run the query
 		stdout, stderr, err := kubeapi.ExecToPodThroughAPI(qr.apicfg, qr.clientset,
 			cmd, qr.Pod.Spec.Containers[0].Name, qr.Pod.Name, qr.Namespace, nil)
 
 		if err != nil && !strings.Contains(stderr, "no such table") {
 			lastError = fmt.Errorf("%v - %v", err, stderr)
-			nextRoundIn := backoff.Duration(i)
+			nextRoundIn := qr.BackoffPolicy.Duration(i)
 			log.Debugf("[InitWait attempt %02d]: %v - retry in %v", i, err, nextRoundIn)
 			time.Sleep(nextRoundIn)
 		} else {
@@ -119,7 +111,7 @@ func (qr *queryRunner) EnsureReady() error {
 			output = strings.TrimSpace(stdout)
 			if output == "" || len(strings.TrimSpace(stderr)) > 0 {
 				log.Debugf("InitWait stderr: %s", stderr)
-				nextRoundIn := backoff.Duration(i)
+				nextRoundIn := qr.BackoffPolicy.Duration(i)
 				time.Sleep(nextRoundIn)
 			} else {
 				qr.ready = true
