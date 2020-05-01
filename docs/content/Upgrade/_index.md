@@ -40,6 +40,8 @@ The automated upgrade procedure is designed to facilate the quickest and most ef
 
 7. As opposed to the manual upgrade procedures, the automated upgrade is designed to leave existing resources (such as CRDs, config maps, secrets, etc) in place whenever possible to minimize the need for resource re-creation.
 
+8. Metrics - While the PostgreSQL Operator upgrade process will not delete an existing Metrics Stack, it does not currently support the upgrade of existing metrics infrastructure.
+
 ##### NOTE: As with any upgrade procedure, it is strongly recommended that a full logical backup is taken before any upgrade procedure is started. Please see the [Logical Backups](/pgo-client/common-tasks#logical-backups-pg_dump--pg_dumpall) section of the Common Tasks page for more information.
  
 ### Automated Upgrade when using an Ansible installation of the PostgreSQL Operator
@@ -118,8 +120,7 @@ pgo upgrade mycluster
 This will follow a similar process to the documented manual process, where the pods, deployments, replicasets, pgtasks and jobs are deleted, the cluster's replicas are scaled down and replica PVCs deleted, but the primary PVC and backrest-repo PVC are left in place. Existing services for the primary, replica and backrest-shared-repo are also kept and will be updated to the requirements of the current version. Configmaps and secrets are kept except where deletion is required. For a cluster 'mycluster', the following configmaps will be deleted (if they exist) and recreated:
 ```    
 mycluster-leader
-mycluster-config
-mycluster-pgha-config
+mycluster-pgha-default-config
 ```
 along with the following secret:
 ```    
@@ -128,10 +129,10 @@ mycluster-backrest-repo-config
 
 The pgcluster CRD will be read, updated automatically and replaced, at which point the normal cluster creation process will take over. The end result of the upgrade should be an identical numer of pods, deployments, replicas, etc with a new pgbackrest backup taken, but existing backups left in place.
 
-Finally, to disable PostgreSQL version checking during the upgrade, such as for when container images are re-tagged and no longer follow the standard version tagging format, use the "disable-version-check" flag:
+Finally, to disable PostgreSQL version checking during the upgrade, such as for when container images are re-tagged and no longer follow the standard version tagging format, use the "ignore-validation" flag:
 
 ```
-pgo upgrade mycluster --disable-version-check
+pgo upgrade mycluster --ignore-validation
 ```
 
 That will allow the upgrade to proceed, regardless of the tag values. Please note, the underlying image must still be chosen in accordance with the [considerations](/upgrade#considerations) listed above.
@@ -139,7 +140,7 @@ That will allow the upgrade to proceed, regardless of the tag values. Please not
 
 ## Manually Upgrading the Operator and PostgreSQL Clusters
 
-In the event that the automated upgrade cannot be used, below are manual upgrade procedures for both PostgreSQL Operator 3.5 and 4 releases. These procedures will require action by the Operator administrator of your organization in order to upgrade to the current release of the Operator. Some upgrade steps are still automated within the Operator, but not all are possible with this upgrade method. As such, the pages below show the specific steps required to upgrade different versions of the PostgreSQL Operator depending on your current environment.
+In the event that the automated upgrade cannot be used, below are manual upgrade procedures for both PostgreSQL Operator 3.5 and 4.0 releases. These procedures will require action by the Operator administrator of your organization in order to upgrade to the current release of the Operator. Some upgrade steps are still automated within the Operator, but not all are possible with this upgrade method. As such, the pages below show the specific steps required to upgrade different versions of the PostgreSQL Operator depending on your current environment.
 
 In the event that you are performing a manual upgrade, it is recommended to upgrade to the latest PostgreSQL Operator available.
 
