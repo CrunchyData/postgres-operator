@@ -83,7 +83,6 @@ func (sbp SpecificBackoffPolicy) Duration(n int) time.Duration {
 // 10ms, 20ms, 40ms, 80ms, 160ms, 320ms, 640ms, 1.28s, 2.56s...
 //
 type CalculatedBackoffPolicy struct {
-	// Ratio is the growth rate, will default to 2 if <= 1.0
 	Ratio      float64
 	Base       time.Duration
 	Maximum    time.Duration
