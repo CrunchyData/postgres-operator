@@ -123,6 +123,7 @@ func (qr *queryRunner) EnsureReady() error {
 				time.Sleep(nextRoundIn)
 			} else {
 				qr.ready = true
+				lastError = nil
 				break
 			}
 		}
@@ -153,6 +154,7 @@ func (qr *queryRunner) Exec(query string) error {
 			log.Debugf("[Exec attempt %2d]: %v - retry in %v", i, err, nextRoundIn)
 			time.Sleep(nextRoundIn)
 		} else {
+			lastError = nil
 			break
 		}
 	}
@@ -190,6 +192,7 @@ func (qr *queryRunner) Query(query string) (string, error) {
 			time.Sleep(nextRoundIn)
 		} else {
 			output = strings.TrimSpace(stdout)
+			lastError = nil
 			break
 		}
 	}
