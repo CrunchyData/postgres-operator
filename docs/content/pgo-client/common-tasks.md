@@ -1039,6 +1039,58 @@ to how to do it from here. To find out more about how to
 please refer to the [Custom PostgreSQL Configuration]({{< relref "/advanced/custom-configuration.md" >}})
 section of the documentation.
 
+## pgAdmin 4: PostgreSQL Administration
+
+[pgAdmin 4](https://www.pgadmin.org/) is a popular graphical user interface that
+lets you work with PostgreSQL databases from both a desktop or web-based client.
+In the case of the PostgreSQL Operator, the pgAdmin 4 web client can be deployed
+and synchronized with PostgreSQL clusters so that users can administrate their
+databases with their PostgreSQL username and password.
+
+For example, let's work with a PostgreSQL cluster called `hippo` that has a user named `hippo` with password `datalake`, e.g.:
+
+```
+pgo create cluster hippo --username=hippo --password=datalake
+```
+
+Once the `hippo` PostgreSQL cluster is ready, create the pgAdmin 4 deployment
+with the [`pgo create pgadmin`]({{< relref "/pgo-client/reference/pgo_create_pgadmin.md" >}})
+command:
+
+```
+pgo create pgadmin hippo
+```
+
+This creates a pgAdmin 4 deployment unique to this PostgreSQL cluster and
+synchronizes the PostgreSQL user information into it. To access pgAdmin 4, you
+can set up a port-forward to the Service, which follows the
+pattern `<clusterName>-pgadmin`, to port `5050`:
+
+```
+kubectl port-forward svc/hippo-pgadmin 5050:5050
+```
+
+Point your browser at `http://localhost:5050` and use your database username
+(e.g. `hippo`) and password (e.g. `datalake`) to log in.
+
+![pgAdmin 4 Login Page](/images/pgadmin4-login.png)
+
+(Note: if your password does not appear to work, you can retry setting up the
+user with the [`pgo update user`]({{< relref "/pgo-client/reference/pgo_update_user.md" >}})
+command: `pgo update user hippo --password=datalake`)
+
+The `pgo create user`, `pgo update user`, and `pgo delete user` commands are
+synchronized with the pgAdmin 4 deployment. Any user with credentials to this
+PostgreSQL cluster will be able to log in and use pgAdmin 4:
+
+![pgAdmin 4 Query](/images/pgadmin4-query.png)
+
+You can remove the pgAdmin 4 deployment with the [`pgo delete pgadmin`]({{< relref "/pgo-client/reference/pgo_delete_pgadmin.md" >}})
+command.
+
+For more information, please read the [pgAdmin 4 Architecture]({{< relref "/architecture/pgadmin4.md" >}})
+section of the documentation.
+
 ## Standby Clusters: Multi-Cluster Kubernetes Deployments
 
 A [standby PostgreSQL cluster]({{< relref "/architecture/high-availability/multi-cluster-kubernetes.md" >}})
