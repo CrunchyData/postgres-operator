@@ -29,19 +29,19 @@ import (
 )
 
 const (
-	defaultWaitTime = 60 * time.Second
-	defaultPoll     = 3 * time.Second
-	defaultPath     = "/var/lib/pgadmin/pgadmin4.db"
+	defaultPath = "/var/lib/pgadmin/pgadmin4.db"
+	maxRetries  = 10
 )
 
 // queryRunner provides a helper for performing queries against the pgadmin
 // sqlite database via Kubernetes Exec functionality
 type queryRunner struct {
-	Namespace    string
-	Path         string
-	Pod          v1.Pod
-	PollInterval time.Duration
-	WaitTimeout  time.Duration
+	BackoffPolicy Backoff
+	Namespace     string
+	Path          string
+	Pod           v1.Pod
+	PollInterval  time.Duration
+	WaitTimeout   time.Duration
 
 	clientset *kubernetes.Clientset
 	apicfg    *rest.Config
@@ -54,14 +54,21 @@ type queryRunner struct {
 // necessary to exec into the named pod in the provided namespace
 func NewQueryRunner(clientset *kubernetes.Clientset, apic *rest.Config, pod v1.Pod) *queryRunner {
 	qr := &queryRunner{
-		Namespace:    pod.ObjectMeta.Namespace,
-		Path:         defaultPath,
-		Pod:          pod,
-		PollInterval: defaultPoll,
-		WaitTimeout:  defaultWaitTime,
-		apicfg:       apic,
-		clientset:    clientset,
-		separator:    ",",
+		Namespace: pod.ObjectMeta.Namespace,
+		Path:      defaultPath,
+		Pod:       pod,
+		apicfg:    apic,
+		clientset: clientset,
+		separator: ",",
+	}
+
+	// Set up a default policy as an 'intelligent default', creators can
+	// override, naturally - default will hit max at n == 10
+	qr.BackoffPolicy = CalculatedBackoffPolicy{
+		Base:       35 * time.Millisecond,
+		JitterMode: JitterSmall,
+		Maximum:    2 * time.Second,
+		Ratio:      1.5,
 	}
 
 	return qr
@@ -80,9 +87,6 @@ func (qr *queryRunner) EnsureReady() error {
 		qr.Path,
 		"SELECT email FROM user WHERE id=1",
 	}
-	timeout := time.After(qr.WaitTimeout)
-	ticker := time.NewTicker(qr.PollInterval)
-	defer ticker.Stop()
 
 	// short-fuse test, otherwise minimum wait is tick time
 	stdout, _, err := kubeapi.ExecToPodThroughAPI(qr.apicfg, qr.clientset,
@@ -91,31 +95,45 @@ func (qr *queryRunner) EnsureReady() error {
 		return nil
 	}
 
-	// loop until the timeout is met, or expected state found
-	for {
-		select {
-		case <-timeout:
-			return fmt.Errorf("Timed out waiting for pgadmin db to become ready")
-		case <-ticker.C:
-			// exec into the pod to run the query
-			stdout, stderr, err := kubeapi.ExecToPodThroughAPI(qr.apicfg, qr.clientset,
-				cmd, qr.Pod.Spec.Containers[0].Name, qr.Pod.Name, qr.Namespace, nil)
+	// Use policy that is roughly 90s total timeout
+	backoff := CalculatedBackoffPolicy{
+		Base:       1200 * time.Millisecond,
+		Ratio:      1.25,
+		JitterMode: JitterFull,
+		Maximum:    90,
+	}
 
-			// if there is an error, warn about it, but try again
-			if err != nil && !strings.Contains(stderr, "no such table") {
-				log.Warnf(stderr)
+	var output string
+	var lastError error
+	// Extended retries compared to "normal" queries
+	for i := 0; i < 2*maxRetries; i++ {
+		// exec into the pod to run the query
+		stdout, stderr, err := kubeapi.ExecToPodThroughAPI(qr.apicfg, qr.clientset,
+			cmd, qr.Pod.Spec.Containers[0].Name, qr.Pod.Name, qr.Namespace, nil)
+
+		if err != nil && !strings.Contains(stderr, "no such table") {
+			lastError = fmt.Errorf("%v - %v", err, stderr)
+			nextRoundIn := backoff.Duration(i)
+			log.Debugf("[InitWait attempt %2d]: %v - retry in %v", i, err, nextRoundIn)
+			time.Sleep(nextRoundIn)
+		} else {
+			// trim any space that may be there for an accurate read
+			output = strings.TrimSpace(stdout)
+			if output == "" || len(strings.TrimSpace(stderr)) > 0 {
+				log.Debugf("InitWait stderr: %s", stderr)
+				nextRoundIn := backoff.Duration(i)
+				time.Sleep(nextRoundIn)
 			} else {
-				// trim any space that may be there for an accurate read
-				output := strings.TrimSpace(stdout)
-				if output == "" || len(strings.TrimSpace(stderr)) > 0 {
-					continue
-				} else {
-					qr.ready = true
-					return nil
-				}
+				qr.ready = true
+				break
 			}
 		}
 	}
+	if lastError != nil && output == "" {
+		return fmt.Errorf("error executing query: %v", lastError)
+	}
+
+	return nil
 }
 
 // Exec performs a query on the database but expects no results
@@ -125,11 +143,23 @@ func (qr *queryRunner) Exec(query string) error {
 	}
 
 	cmd := []string{"sqlite3", qr.Path, query}
-	// exec into the pod to run the query
-	_, stderr, err := kubeapi.ExecToPodThroughAPI(qr.apicfg, qr.clientset,
-		cmd, qr.Pod.Spec.Containers[0].Name, qr.Pod.Name, qr.Namespace, nil)
-	if err != nil {
-		return fmt.Errorf("error executing query [%s]: %s %s", query, err, stderr)
+
+	var lastError error
+	for i := 0; i < maxRetries; i++ {
+		// exec into the pod to run the query
+		_, stderr, err := kubeapi.ExecToPodThroughAPI(qr.apicfg, qr.clientset,
+			cmd, qr.Pod.Spec.Containers[0].Name, qr.Pod.Name, qr.Namespace, nil)
+		if err != nil {
+			lastError = fmt.Errorf("%v - %v", err, stderr)
+			nextRoundIn := qr.BackoffPolicy.Duration(i)
+			log.Debugf("[Exec attempt %2d]: %v - retry in %v", i, err, nextRoundIn)
+			time.Sleep(nextRoundIn)
+		} else {
+			break
+		}
+	}
+	if lastError != nil {
+		return fmt.Errorf("error executing query: %vv", lastError)
 	}
 
 	return nil
@@ -148,15 +178,28 @@ func (qr *queryRunner) Query(query string) (string, error) {
 		qr.Path,
 		query,
 	}
-	// exec into the pod to run the query
-	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(qr.apicfg, qr.clientset,
-		cmd, qr.Pod.Spec.Containers[0].Name, qr.Pod.Name, qr.Namespace, nil)
-	if err != nil {
-		log.Warnf(stderr)
-		return "", fmt.Errorf("error executing query [%s]: %s", query, stderr)
+
+	var output string
+	var lastError error
+	for i := 0; i < maxRetries; i++ {
+		// exec into the pod to run the query
+		stdout, stderr, err := kubeapi.ExecToPodThroughAPI(qr.apicfg, qr.clientset,
+			cmd, qr.Pod.Spec.Containers[0].Name, qr.Pod.Name, qr.Namespace, nil)
+		if err != nil {
+			lastError = fmt.Errorf("%v - %v", err, stderr)
+			nextRoundIn := qr.BackoffPolicy.Duration(i)
+			log.Debugf("[Query attempt %2d]: %v - retry in %v", i, err, nextRoundIn)
+			time.Sleep(nextRoundIn)
+		} else {
+			output = strings.TrimSpace(stdout)
+			break
+		}
+	}
+	if lastError != nil && output == "" {
+		return "", fmt.Errorf("error executing query: %v", lastError)
 	}
 
-	return strings.TrimSpace(stdout), nil
+	return output, nil
 }
 
 // Separator gets the configured field separator

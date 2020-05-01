@@ -64,16 +64,20 @@ func SetLoginPassword(qr *queryRunner, username, pass string) error {
 
 	// Idempotent user insertion and update, this implies that setting a
 	// password (e.g. update) will establish a user entry
-	insQ := fmt.Sprintf("INSERT OR IGNORE INTO user(email,password,active) VALUES ('%s','%s',1);", sqlLiteral(username), hp)
-	updQ := fmt.Sprintf("UPDATE user SET password='%s' WHERE email='%s';", hp, sqlLiteral(username))
+	//
+	// role_id(2) == User role (vs 1:Administrator)
+	//
+	// Bulk query to reduce loss potential from exec errors
+	query := fmt.Sprintf(
+		`INSERT OR IGNORE INTO user(email,password,active) VALUES ('%[1]s','%[2]s',1);
+		INSERT OR IGNORE INTO roles_users(user_id, role_id) VALUES 
+		    ((SELECT id FROM user WHERE email='%[1]s'), 2);
+		UPDATE user SET password='%[2]s' WHERE email='%[1]s';`, sqlLiteral(username), hp,
+	)
 
-	if err := qr.Exec(insQ); err != nil {
+	if err := qr.Exec(query); err != nil {
 		return err
 	}
-	if err := qr.Exec(updQ); err != nil {
-		return err
-	}
-
 	return nil
 }
 
