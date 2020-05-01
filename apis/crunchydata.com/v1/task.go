@@ -32,6 +32,9 @@ const PgtaskUpgrade = "clusterupgrade"
 const PgtaskUpgradeCreated = "cluster upgrade - task created"
 const PgtaskUpgradeInProgress = "cluster upgrade - in progress"
 
+const PgtaskPgAdminAdd = "add-pgadmin"
+const PgtaskPgAdminDelete = "delete-pgadmin"
+
 const PgtaskWorkflow = "workflow"
 const PgtaskWorkflowCloneType = "cloneworkflow"
 const PgtaskWorkflowCreateClusterType = "createcluster"

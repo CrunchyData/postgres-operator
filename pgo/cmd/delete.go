@@ -41,6 +41,7 @@ var deleteCmd = &cobra.Command{
 	pgo delete cluster mycluster --delete-data
 	pgo delete cluster mycluster --delete-data --delete-backups
 	pgo delete label mycluster --label=env=research
+	pgo delete pgadmin mycluster
 	pgo delete pgbouncer mycluster
 	pgo delete pgbouncer mycluster --uninstall
 	pgo delete pgouser someuser
@@ -58,6 +59,7 @@ var deleteCmd = &cobra.Command{
 	* backup
 	* cluster
 	* label
+	* pgadmin
 	* pgbouncer
 	* pgouser
 	* pgorole
@@ -69,6 +71,7 @@ var deleteCmd = &cobra.Command{
 			case "backup",
 				"cluster",
 				"label",
+				"pgadmin",
 				"pgbouncer",
 				"pgouser",
 				"pgorole",
@@ -82,6 +85,7 @@ var deleteCmd = &cobra.Command{
 	* backup
 	* cluster
 	* label
+	* pgadmin
 	* pgbouncer
 	* pgouser
 	* pgorole
@@ -172,6 +176,17 @@ func init() {
 	// "pgo delete namespace"
 	// deletes a namespace and all of the objects within it (clusters, etc.)
 	deleteCmd.AddCommand(deleteNamespaceCmd)
+
+	// "pgo delete pgadmin"
+	// delete a pgAdmin instance associated with a PostgreSQL cluster
+	deleteCmd.AddCommand(deletePgAdminCmd)
+	// "pgo delete pgadmin --no-prompt"
+	// does not display the warning prompt to confirming pgAdmin deletion
+	deletePgAdminCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation before delete.")
+	// "pgo delete pgadmin --selector"
+	// "pgo delete pgadmin -s"
+	// the selector flag filtering clusters from which to delete the pgAdmin instances
+	deletePgAdminCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 
 	// "pgo delete pgbouncer"
 	// delete a pgBouncer instance that is associated with a PostgreSQL cluster
@@ -415,6 +430,30 @@ var deletePgouserCmd = &cobra.Command{
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deletePgouser(args, Namespace)
+			} else {
+				fmt.Println("Aborting...")
+			}
+		}
+	},
+}
+
+// deletePgAdminCmd ...
+var deletePgAdminCmd = &cobra.Command{
+	Use:   "pgadmin",
+	Short: "Delete a pgAdmin instance from a cluster",
+	Long: `Delete a pgAdmin instance from a cluster. For example:
+
+	pgo delete pgadmin mycluster`,
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		if len(args) == 0 && Selector == "" {
+			fmt.Println("Error: A cluster name or selector is required for this command.")
+		} else {
+			if util.AskForConfirmation(NoPrompt, "") {
+				deletePgAdmin(args, Namespace)
+
 			} else {
 				fmt.Println("Aborting...")
 			}

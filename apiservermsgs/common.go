@@ -36,6 +36,12 @@ type Status struct {
 	Msg string
 }
 
+// Syntactic sugar for consistency and readibility
+func (s *Status) SetError(msg string) {
+	s.Code = Error
+	s.Msg = msg
+}
+
 // BasicAuthCredentials ...
 // swagger:model BasicAuthCredentials
 type BasicAuthCredentials struct {

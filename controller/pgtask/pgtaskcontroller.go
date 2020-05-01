@@ -101,6 +101,12 @@ func (c *Controller) processNextItem() bool {
 
 	//process the incoming task
 	switch tmpTask.Spec.TaskType {
+	case crv1.PgtaskPgAdminAdd:
+		log.Debug("add pgadmin task added")
+		clusteroperator.AddPgAdminFromPgTask(c.PgtaskClientset, c.PgtaskClient, c.PgtaskConfig, &tmpTask)
+	case crv1.PgtaskPgAdminDelete:
+		log.Debug("delete pgadmin task added")
+		clusteroperator.DeletePgAdminFromPgTask(c.PgtaskClientset, c.PgtaskClient, c.PgtaskConfig, &tmpTask)
 	case crv1.PgtaskUpgrade:
 		log.Debug("upgrade task added")
 		clusteroperator.AddUpgrade(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)

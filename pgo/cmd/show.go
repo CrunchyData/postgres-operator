@@ -49,6 +49,7 @@ Valid resource types include:
 	* backup
 	* cluster
 	* config
+	* pgadmin
 	* pgbouncer
 	* pgouser
 	* policy
@@ -59,9 +60,9 @@ Valid resource types include:
 	`)
 		} else {
 			switch args[0] {
-			case "backup", "cluster", "config", "pgbouncer", "pgouser",
-				"policy", "pvc", "schedule", "namespace", "workflow",
-				"user":
+			case "backup", "cluster", "config", "pgadmin", "pgbouncer",
+				"pgouser", "policy", "pvc", "schedule", "namespace",
+				"workflow", "user":
 				break
 			default:
 				fmt.Println(`Error: You must specify the type of resource to show.
@@ -69,6 +70,7 @@ Valid resource types include:
 	* backup
 	* cluster
 	* config
+	* pgadmin
 	* pgbouncer
 	* pgouser
 	* policy
@@ -90,6 +92,7 @@ func init() {
 	ShowCmd.AddCommand(ShowClusterCmd)
 	ShowCmd.AddCommand(ShowConfigCmd)
 	ShowCmd.AddCommand(ShowNamespaceCmd)
+	ShowCmd.AddCommand(ShowPgAdminCmd)
 	ShowCmd.AddCommand(ShowPgBouncerCmd)
 	ShowCmd.AddCommand(ShowPgouserCmd)
 	ShowCmd.AddCommand(ShowPgoroleCmd)
@@ -106,6 +109,8 @@ func init() {
 	ShowNamespaceCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 	ShowClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
 	ShowPolicyCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
+	ShowPgAdminCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	ShowPgAdminCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
 	ShowPgBouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	ShowPgBouncerCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
 	ShowPVCCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
@@ -135,13 +140,30 @@ var ShowConfigCmd = &cobra.Command{
 	},
 }
 
+var ShowPgAdminCmd = &cobra.Command{
+	Use:   "pgadmin",
+	Short: "Show pgadmin deployment information",
+	Long: `Show service information about a pgadmin deployment. For example:
+
+	pgo show pgadmin thecluster
+	pgo show pgadmin --selector=app=theapp
+	`,
+
+	Run: func(cmd *cobra.Command, args []string) {
+		if Namespace == "" {
+			Namespace = PGONamespace
+		}
+		showPgAdmin(Namespace, args)
+	},
+}
+
 var ShowPgBouncerCmd = &cobra.Command{
 	Use:   "pgbouncer",
 	Short: "Show pgbouncer deployment information",
 	Long: `Show user, password, and service information about a pgbouncer deployment. For example:
 
 	pgo show pgbouncer hacluster
-	pgo show pgounbcer --selector=app=payment
+	pgo show pgbouncer --selector=app=payment
 	`,
 
 	Run: func(cmd *cobra.Command, args []string) {

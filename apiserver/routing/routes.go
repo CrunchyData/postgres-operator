@@ -26,6 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/labelservice"
 	"github.com/crunchydata/postgres-operator/apiserver/loadservice"
 	"github.com/crunchydata/postgres-operator/apiserver/namespaceservice"
+	"github.com/crunchydata/postgres-operator/apiserver/pgadminservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgbouncerservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgdumpservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pgoroleservice"
@@ -56,6 +57,7 @@ func RegisterAllRoutes(r *mux.Router) {
 	RegisterLabelSvcRoutes(r)
 	RegisterLoadSvcRoutes(r)
 	RegisterNamespaceSvcRoutes(r)
+	RegisterPGAdminSvcRoutes(r)
 	RegisterPGBouncerSvcRoutes(r)
 	RegisterPGDumpSvcRoutes(r)
 	RegisterPGORoleSvcRoutes(r)
@@ -133,6 +135,13 @@ func RegisterNamespaceSvcRoutes(r *mux.Router) {
 	r.HandleFunc("/namespacedelete", namespaceservice.DeleteNamespaceHandler).Methods("POST")
 	r.HandleFunc("/namespacecreate", namespaceservice.CreateNamespaceHandler).Methods("POST")
 	r.HandleFunc("/namespaceupdate", namespaceservice.UpdateNamespaceHandler).Methods("POST")
+}
+
+// RegisterPGAdminSvcRoutes registers all routes from the PGAdmin Service
+func RegisterPGAdminSvcRoutes(r *mux.Router) {
+	r.HandleFunc("/pgadmin", pgadminservice.CreatePgAdminHandler).Methods("POST")
+	r.HandleFunc("/pgadmin", pgadminservice.DeletePgAdminHandler).Methods("DELETE")
+	r.HandleFunc("/pgadmin/show", pgadminservice.ShowPgAdminHandler).Methods("POST")
 }
 
 // RegisterPGBouncerSvcRoutes registers all routes from the PGBouncer Service

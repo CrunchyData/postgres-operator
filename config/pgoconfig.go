@@ -123,6 +123,14 @@ var PgbackrestS3EnvVarsTemplate *template.Template
 
 const pgbackrestS3EnvVarsPath = "pgbackrest-s3-env-vars.json"
 
+var PgAdminTemplate *template.Template
+
+const pgAdminTemplatePath = "pgadmin-template.json"
+
+var PgAdminServiceTemplate *template.Template
+
+const pgAdminServiceTemplatePath = "pgadmin-service-template.json"
+
 var PgbouncerTemplate *template.Template
 
 const pgbouncerTemplatePath = "pgbouncer-template.json"
@@ -258,6 +266,7 @@ const CONFIG_PATH = "pgo.yaml"
 var log_statement_values = []string{"ddl", "none", "mod", "all"}
 
 const DEFAULT_BACKREST_PORT = 2022
+const DEFAULT_PGADMIN_PORT = "5050"
 const DEFAULT_PGBADGER_PORT = "10000"
 const DEFAULT_EXPORTER_PORT = "9187"
 const DEFAULT_POSTGRES_PORT = "5432"
@@ -624,6 +633,16 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 	}
 
 	PgbackrestS3EnvVarsTemplate, err = c.LoadTemplate(cMap, rootPath, pgbackrestS3EnvVarsPath)
+	if err != nil {
+		return err
+	}
+
+	PgAdminTemplate, err = c.LoadTemplate(cMap, rootPath, pgAdminTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	PgAdminServiceTemplate, err = c.LoadTemplate(cMap, rootPath, pgAdminServiceTemplatePath)
 	if err != nil {
 		return err
 	}

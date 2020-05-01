@@ -10,9 +10,11 @@ apiVersion: security.openshift.io/v1
 defaultAddCapabilities: null
 fsGroup:
   type: MustRunAs
-  ranges: 
+  ranges:
   - max: 26
     min: 26
+  - max: 2
+    min: 2    
 groups:
 - system:authenticated
 kind: SecurityContextConstraints

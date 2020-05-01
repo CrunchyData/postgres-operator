@@ -84,12 +84,13 @@ func IsPVCDeleted(client *kubernetes.Clientset, timeout time.Duration, pvcName,
 	namespace string) error {
 
 	duration := time.After(timeout)
-	tick := time.Tick(500 * time.Millisecond)
+	tick := time.NewTicker(500 * time.Millisecond)
+	defer tick.Stop()
 	for {
 		select {
 		case <-duration:
 			return fmt.Errorf("timed out waiting for PVC to delete: %s", pvcName)
-		case <-tick:
+		case <-tick.C:
 			if pvc, err := GetPVCIfExists(client, pvcName, namespace); err == nil && pvc == nil {
 				return nil
 			}
