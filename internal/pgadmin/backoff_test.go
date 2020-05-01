@@ -74,6 +74,40 @@ func TestCalcMax(t *testing.T) {
 }
 
 func TestSubscripts(t *testing.T) {
+	cases := []struct {
+		label string
+		iter  int
+		pol   SpecificBackoffPolicy
+	}{
+		{
+			label: "nil",
+			iter:  0,
+			pol:   SpecificBackoffPolicy{},
+		},
+		{
+			label: "zerolen",
+			iter:  0,
+			pol: SpecificBackoffPolicy{
+				Times: []time.Duration{},
+			},
+		},
+		{
+			label: "negative",
+			iter:  -42,
+			pol: SpecificBackoffPolicy{
+				Times: []time.Duration{
+					9 * time.Second,
+				},
+			},
+		},
+	}
+
+	for _, tCase := range cases {
+		if d := tCase.pol.Duration(tCase.iter); d != 0 {
+			t.Logf("Expected 0 from case, got %v", d)
+			t.Fail()
+		}
+	}
 
 }
 
