@@ -62,7 +62,7 @@ func NewQueryRunner(clientset *kubernetes.Clientset, apic *rest.Config, pod v1.P
 
 	// Set up a default policy as an 'intelligent default', creators can
 	// override, naturally - default will hit max at n == 10
-	qr.BackoffPolicy = CalculatedBackoffPolicy{
+	qr.BackoffPolicy = ExponentialBackoffPolicy{
 		Base:       35 * time.Millisecond,
 		JitterMode: JitterSmall,
 		Maximum:    2 * time.Second,
@@ -94,7 +94,7 @@ func (qr *queryRunner) EnsureReady() error {
 	}
 
 	// Use policy that is roughly 90s total timeout
-	backoff := CalculatedBackoffPolicy{
+	backoff := ExponentialBackoffPolicy{
 		Base:       1200 * time.Millisecond,
 		Ratio:      1.25,
 		JitterMode: JitterFull,

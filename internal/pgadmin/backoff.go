@@ -76,20 +76,20 @@ func (sbp SpecificBackoffPolicy) Duration(n int) time.Duration {
 	return sbp.JitterMode.Apply(sbp.Times[n])
 }
 
-// CalculatedBackoffPolicy provides an exponential backoff based on:
+// ExponentialBackoffPolicy provides an exponential backoff based on:
 // Base * (Ratio ^ Iteration)
 //
 // For example a base of 10ms, ratio of 2, and no jitter would produce:
 // 10ms, 20ms, 40ms, 80ms, 160ms, 320ms, 640ms, 1.28s, 2.56s...
 //
-type CalculatedBackoffPolicy struct {
+type ExponentialBackoffPolicy struct {
 	Ratio      float64
 	Base       time.Duration
 	Maximum    time.Duration
 	JitterMode Jitter
 }
 
-func (cbp CalculatedBackoffPolicy) Duration(n int) time.Duration {
+func (cbp ExponentialBackoffPolicy) Duration(n int) time.Duration {
 	d := time.Duration(math.Pow(cbp.Ratio, float64(n)) * float64(cbp.Base))
 
 	if j := cbp.JitterMode.Apply(d); cbp.Maximum > 0 && j > cbp.Maximum {

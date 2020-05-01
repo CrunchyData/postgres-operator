@@ -26,7 +26,7 @@ type testPair struct {
 }
 
 func TestDoubleExp(t *testing.T) {
-	bp := CalculatedBackoffPolicy{
+	bp := ExponentialBackoffPolicy{
 		Base:  10 * time.Millisecond,
 		Ratio: 2,
 	}
@@ -53,7 +53,7 @@ func TestDoubleExp(t *testing.T) {
 
 func TestCalcMax(t *testing.T) {
 	const limit = 1279 * time.Millisecond
-	bp := CalculatedBackoffPolicy{
+	bp := ExponentialBackoffPolicy{
 		Base:    10 * time.Millisecond,
 		Ratio:   2,
 		Maximum: limit,
