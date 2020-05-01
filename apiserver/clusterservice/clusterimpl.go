@@ -1764,6 +1764,12 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 			cluster.Spec.EnableBackrestMemoryLimit = false
 		}
 
+		// if TablespaceMounts happens to be nil (e.g. an upgraded cluster), and
+		// the tablespaces are being updated, set it here
+		if len(request.Tablespaces) > 0 && cluster.Spec.TablespaceMounts == nil {
+			cluster.Spec.TablespaceMounts = map[string]crv1.PgStorageSpec{}
+		}
+
 		// extract the parameters for the TablespaceMounts and put them in the
 		// format that is required by the pgcluster CRD
 		for _, tablespace := range request.Tablespaces {
