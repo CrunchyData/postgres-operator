@@ -112,7 +112,7 @@ func (qr *queryRunner) EnsureReady() error {
 		if err != nil && !strings.Contains(stderr, "no such table") {
 			lastError = fmt.Errorf("%v - %v", err, stderr)
 			nextRoundIn := backoff.Duration(i)
-			log.Debugf("[InitWait attempt %2d]: %v - retry in %v", i, err, nextRoundIn)
+			log.Debugf("[InitWait attempt %02d]: %v - retry in %v", i, err, nextRoundIn)
 			time.Sleep(nextRoundIn)
 		} else {
 			// trim any space that may be there for an accurate read
@@ -151,7 +151,7 @@ func (qr *queryRunner) Exec(query string) error {
 		if err != nil {
 			lastError = fmt.Errorf("%v - %v", err, stderr)
 			nextRoundIn := qr.BackoffPolicy.Duration(i)
-			log.Debugf("[Exec attempt %2d]: %v - retry in %v", i, err, nextRoundIn)
+			log.Debugf("[Exec attempt %02d]: %v - retry in %v", i, err, nextRoundIn)
 			time.Sleep(nextRoundIn)
 		} else {
 			lastError = nil
@@ -188,7 +188,7 @@ func (qr *queryRunner) Query(query string) (string, error) {
 		if err != nil {
 			lastError = fmt.Errorf("%v - %v", err, stderr)
 			nextRoundIn := qr.BackoffPolicy.Duration(i)
-			log.Debugf("[Query attempt %2d]: %v - retry in %v", i, err, nextRoundIn)
+			log.Debugf("[Query attempt %02d]: %v - retry in %v", i, err, nextRoundIn)
 			time.Sleep(nextRoundIn)
 		} else {
 			output = strings.TrimSpace(stdout)
