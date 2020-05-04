@@ -20,7 +20,7 @@ import (
 	"os"
 
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	crunchylog "github.com/crunchydata/postgres-operator/logging"
+	crunchylog "github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/pgo-rmdata/rmdata"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"

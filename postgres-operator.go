@@ -26,7 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller"
 	"github.com/crunchydata/postgres-operator/internal/controller/manager"
 	nscontroller "github.com/crunchydata/postgres-operator/internal/controller/namespace"
-	crunchylog "github.com/crunchydata/postgres-operator/logging"
+	crunchylog "github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/operator/operatorupgrade"
 	log "github.com/sirupsen/logrus"
