@@ -21,7 +21,7 @@ import (
 	"net/http"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
-	msgs "github.com/crunchydata/postgres-operator/internal/apiservermsgs"
+	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/internal/ns"
 	log "github.com/sirupsen/logrus"
 )

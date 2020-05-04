@@ -17,7 +17,7 @@ package cmd
 
 import (
 	"fmt"
-	msgs "github.com/crunchydata/postgres-operator/internal/apiservermsgs"
+	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

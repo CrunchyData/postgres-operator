@@ -22,7 +22,7 @@ import (
 	"regexp"
 	"runtime"
 
-	msgs "github.com/crunchydata/postgres-operator/internal/apiservermsgs"
+	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 )
 

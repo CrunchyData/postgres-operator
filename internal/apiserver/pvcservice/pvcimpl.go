@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
-	msgs "github.com/crunchydata/postgres-operator/internal/apiservermsgs"
+	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	log "github.com/sirupsen/logrus"
