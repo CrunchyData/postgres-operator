@@ -22,7 +22,7 @@ import (
 
 	"github.com/kubernetes/sample-controller/pkg/signals"
 
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/controller/manager"
 	nscontroller "github.com/crunchydata/postgres-operator/controller/namespace"

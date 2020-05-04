@@ -22,7 +22,7 @@ import (
 	"strconv"
 
 	msgs "github.com/crunchydata/postgres-operator/internal/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	log "github.com/sirupsen/logrus"
 )
 

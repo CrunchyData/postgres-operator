@@ -24,7 +24,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	cfg "github.com/crunchydata/postgres-operator/operator/config"
 )
 

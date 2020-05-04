@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 

@@ -22,7 +22,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/internal/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )

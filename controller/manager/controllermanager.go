@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/controller/configmap"
 	"github.com/crunchydata/postgres-operator/controller/job"

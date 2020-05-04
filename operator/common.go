@@ -20,7 +20,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/ns"
 	log "github.com/sirupsen/logrus"
 
