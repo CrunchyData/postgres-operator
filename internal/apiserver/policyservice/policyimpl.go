@@ -25,7 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/apiserver/labelservice"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/events"
+	"github.com/crunchydata/postgres-operator/pkg/events"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	log "github.com/sirupsen/logrus"

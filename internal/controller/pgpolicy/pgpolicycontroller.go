@@ -27,7 +27,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/internal/events"
+	"github.com/crunchydata/postgres-operator/pkg/events"
 )
 
 // Controller holds connections for the controller

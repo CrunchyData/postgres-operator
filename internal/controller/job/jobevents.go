@@ -18,7 +18,7 @@ limitations under the License.
 import (
 	"time"
 
-	"github.com/crunchydata/postgres-operator/internal/events"
+	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"
 )
 

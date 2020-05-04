@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/events"
+	"github.com/crunchydata/postgres-operator/pkg/events"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 
 	log "github.com/sirupsen/logrus"
