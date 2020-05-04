@@ -47,7 +47,7 @@ generated events:
 ## Event Types
 
 The various event types are found in the source code at
-https://github.com/CrunchyData/postgres-operator/blob/master/events/eventtype.go
+https://github.com/CrunchyData/postgres-operator/blob/master/internal/events/eventtype.go
 
 
 ## Event Deployment
