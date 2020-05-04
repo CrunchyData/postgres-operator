@@ -9,6 +9,8 @@ weight: 8
 
 Below are the procedures for upgrading to version 4.3.0 of the Crunchy PostgreSQL Operator using the Bash or Ansible installation methods. This version of the PostgreSQL Operator has several fundamental changes to the existing PGCluster structure and deployment model. Most notably for those upgrading from 4.1 and below, all PGClusters use the new Crunchy PostgreSQL HA container in place of the previous Crunchy PostgreSQL containers. The use of this new container is a breaking change from previous versions of the Operator did not use the HA containers.
 
+##### NOTE: If you are upgrading from Crunchy PostgreSQL Operator version 4.1.0 or later, the [Automated Upgrade Procedure](/upgrade#automated-upgrade-procedure) is recommended.
+
 #### Crunchy PostgreSQL High Availability Containers
 
 Using the PostgreSQL Operator 4.3.0 requires replacing your `crunchy-postgres` and `crunchy-postgres-gis` containers with the `crunchy-postgres-ha` and `crunchy-postgres-gis-ha` containers respectively. The underlying PostgreSQL installations in the container remain the same but are now optimized for Kubernetes environments to provide the new high-availability functionality.
@@ -64,7 +66,17 @@ the new cluster's name will need to be "mycluster-ypvq"
 
 For the cluster(s) you wish to upgrade, scale down any replicas, if necessary (see `pgo scaledown --help` for more information on command usage) page for more information), then delete the cluster
 
+For 4.2:
+
+        pgo delete cluster <clustername> --keep-backups --keep-data
+
+For 4.0 and 4.1:
+
         pgo delete cluster <clustername>
+
+and then, for all versions, delete the "backrest-repo-config" secret, if it exists:
+
+        kubectl delete secret <clustername>-backrest-repo-config
 
 ##### Please note the name of each cluster, the namespace used, and be sure not to delete the associated PVCs or CRDs!
 
@@ -153,7 +165,17 @@ so that your new clusters can be recreated with the proper settings.
 
 For the cluster(s) you wish to upgrade, scale down any replicas, if necessary (see `pgo scaledown --help` for more information on command usage) page for more information), then delete the cluster
 
-	pgo delete cluster <clustername>
+For 4.2:
+
+        pgo delete cluster <clustername> --keep-backups --keep-data
+
+For 4.0 and 4.1:
+
+        pgo delete cluster <clustername>
+
+and then, for all versions, delete the "backrest-repo-config" secret, if it exists:
+
+        kubectl delete secret <clustername>-backrest-repo-config
 
 ##### NOTE: Please record the name of each cluster, the namespace used, and be sure not to delete the associated PVCs or CRDs!
 
