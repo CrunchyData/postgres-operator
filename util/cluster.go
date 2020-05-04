@@ -24,7 +24,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	"github.com/crunchydata/postgres-operator/sshutil"
+	"github.com/crunchydata/postgres-operator/internal/sshutil"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
