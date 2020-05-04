@@ -20,7 +20,7 @@ import (
 	"os"
 	"strings"
 
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	msgs "github.com/crunchydata/postgres-operator/internal/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	utiloperator "github.com/crunchydata/postgres-operator/util"

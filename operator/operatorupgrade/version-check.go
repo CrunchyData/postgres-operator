@@ -17,7 +17,7 @@ package operatorupgrade
 
 import (
 	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	msgs "github.com/crunchydata/postgres-operator/internal/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	log "github.com/sirupsen/logrus"

@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"net/http"
 
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	msgs "github.com/crunchydata/postgres-operator/internal/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 )
 

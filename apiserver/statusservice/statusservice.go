@@ -18,7 +18,7 @@ limitations under the License.
 import (
 	"encoding/json"
 	"github.com/crunchydata/postgres-operator/apiserver"
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	msgs "github.com/crunchydata/postgres-operator/internal/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 	//"github.com/gorilla/mux"
 	"net/http"
