@@ -24,8 +24,8 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
-	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
+	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
+	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/util"
 

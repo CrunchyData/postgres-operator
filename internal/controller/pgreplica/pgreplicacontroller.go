@@ -21,7 +21,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
+	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
