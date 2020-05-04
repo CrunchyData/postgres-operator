@@ -24,7 +24,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	pgoutil "github.com/crunchydata/postgres-operator/pgo/util"
-	"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )

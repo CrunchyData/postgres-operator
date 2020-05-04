@@ -31,7 +31,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/events"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
-	operutil "github.com/crunchydata/postgres-operator/util"
+	operutil "github.com/crunchydata/postgres-operator/internal/util"
 
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"

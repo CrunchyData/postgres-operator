@@ -23,7 +23,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/internal/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
-	utiloperator "github.com/crunchydata/postgres-operator/util"
+	utiloperator "github.com/crunchydata/postgres-operator/internal/util"
 
 	log "github.com/sirupsen/logrus"
 )

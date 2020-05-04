@@ -24,7 +24,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/events"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
-	"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
 )

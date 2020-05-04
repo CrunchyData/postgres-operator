@@ -27,7 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/events"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
-	"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	log "github.com/sirupsen/logrus"
 
 	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"

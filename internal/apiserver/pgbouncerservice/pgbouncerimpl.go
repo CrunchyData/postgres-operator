@@ -25,7 +25,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
-	"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/internal/util"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"

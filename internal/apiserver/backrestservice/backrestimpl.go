@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver/backupoptions"
-	"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/internal/util"
 
 	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/internal/apiserver"

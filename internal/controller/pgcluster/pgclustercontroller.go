@@ -27,7 +27,7 @@ import (
 	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	informers "github.com/crunchydata/postgres-operator/internal/pkg/generated/informers/externalversions/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/util"
+	"github.com/crunchydata/postgres-operator/internal/util"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
