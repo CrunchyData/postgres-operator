@@ -30,7 +30,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/ns"
-	"github.com/crunchydata/postgres-operator/tlsutil"
+	"github.com/crunchydata/postgres-operator/internal/tlsutil"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"

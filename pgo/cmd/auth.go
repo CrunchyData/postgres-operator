@@ -28,7 +28,7 @@ import (
 	"time"
 
 	msgs "github.com/crunchydata/postgres-operator/internal/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/tlsutil"
+	"github.com/crunchydata/postgres-operator/internal/tlsutil"
 
 	log "github.com/sirupsen/logrus"
 )
