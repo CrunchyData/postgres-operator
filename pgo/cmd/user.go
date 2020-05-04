@@ -21,9 +21,9 @@ import (
 	"strings"
 
 	msgs "github.com/crunchydata/postgres-operator/internal/apiservermsgs"
+	utiloperator "github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
-	utiloperator "github.com/crunchydata/postgres-operator/internal/util"
 
 	log "github.com/sirupsen/logrus"
 )

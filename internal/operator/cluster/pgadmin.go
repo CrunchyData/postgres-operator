@@ -27,10 +27,10 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/events"
-	"github.com/crunchydata/postgres-operator/internal/pgadmin"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
+	"github.com/crunchydata/postgres-operator/internal/pgadmin"
 	"github.com/crunchydata/postgres-operator/internal/util"
 
 	log "github.com/sirupsen/logrus"
