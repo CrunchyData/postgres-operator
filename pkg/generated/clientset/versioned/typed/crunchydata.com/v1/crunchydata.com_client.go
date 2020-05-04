@@ -19,7 +19,7 @@ package v1
 
 import (
 	v1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/internal/pkg/generated/clientset/versioned/scheme"
+	"github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 

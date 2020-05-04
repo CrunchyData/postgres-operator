@@ -21,7 +21,7 @@ import (
 	"time"
 
 	v1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
-	scheme "github.com/crunchydata/postgres-operator/internal/pkg/generated/clientset/versioned/scheme"
+	scheme "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
