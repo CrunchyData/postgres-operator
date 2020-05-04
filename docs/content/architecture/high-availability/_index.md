@@ -154,7 +154,7 @@ to any Kubernetes jobs created by the PostgreSQL Operator). This includes:
 
 - The primary PG deployment
 - The deployments for each PG replica
-- The `pgBackrest` dedicated repostiory deployment
+- The `pgBackrest` dedicated repository deployment
 - The `pgBouncer` deployment (if enabled for the cluster)
 
 There are three types of Pod Anti-Affinity rules that the Crunchy PostgreSQL
