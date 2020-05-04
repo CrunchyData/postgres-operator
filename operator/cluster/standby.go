@@ -30,7 +30,7 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
+	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	cfg "github.com/crunchydata/postgres-operator/operator/config"

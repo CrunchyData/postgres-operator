@@ -89,7 +89,7 @@ make update-codegen
 ```
 
 Therefore, in the event that a Custom Resource defined within the PostgreSQL Operator API
-(`$PGOROOT/apis/crunchydata.com`) is updated, the `verify-codegen` target will indicate that
+(`$PGOROOT/internal/apis/crunchydata.com`) is updated, the `verify-codegen` target will indicate that
 an update is needed, and the `update-codegen` target should then be utilized to generate the
 updated code prior to compiling.
 

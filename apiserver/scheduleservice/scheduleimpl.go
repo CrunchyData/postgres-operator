@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"time"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
+	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/apiserver"
 	"github.com/crunchydata/postgres-operator/apiserver/backupoptions"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"

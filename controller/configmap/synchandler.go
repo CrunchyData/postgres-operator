@@ -23,7 +23,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
+	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	cfg "github.com/crunchydata/postgres-operator/operator/config"
 )
