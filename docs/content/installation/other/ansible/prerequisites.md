@@ -65,7 +65,7 @@ directory in the  [postgres-operator project](https://github.com/CrunchyData/pos
 
 Available to Crunchy customers is an RPM containing all the necessary Ansible roles
 and files required for installation using Ansible.  The RPM can be found in Crunchy's
-yum repository.  For information on setting up `yum` to use the Crunchy repoistory,
+yum repository.  For information on setting up `yum` to use the Crunchy repository,
 see the [Crunchy Access Portal](https://access.crunchydata.com/).
 
 To install the Crunchy PostgreSQL Operator Ansible roles using `yum`, run the following
@@ -174,7 +174,7 @@ sets of variables cannot be used at the same time.
 | `db_port`                         | 5432        | **Required** | Set to configure the default port used on all newly created clusters.                                                                                                            |
 | `db_replicas`                     | 1           | **Required** | Set to configure the amount of replicas provisioned on all newly created clusters.                                                                                               |
 | `db_user`                         | testuser    | **Required** | Set to configure the username of the dedicated user account on all newly created clusters.                                                                                       |
-| `disable_failover`                | false       | **Required** | Set to true disable auto failover capabilities on all newly created cluster requests. This cannot be overriden by the client on a cluster create, but on a cluster update. Setting this is not generally recommend, as it disable high-availability capabilities.|
+| `disable_failover`                | false       | **Required** | Set to true disable auto failover capabilities on all newly created cluster requests. This cannot be overridden by the client on a cluster create, but on a cluster update. Setting this is not generally recommend, as it disable high-availability capabilities.|
 | `exporterport`                    | 9187        | **Required** | Set to configure the default port used to connect to postgres exporter.  |
 | `grafana_admin_password`          |             |          | Set to configure the login password for the Grafana administrator. |
 | `grafana_admin_username`          | admin       |          | Set to configure the login username for the Grafana administrator. |

@@ -18,7 +18,7 @@ be provisioned in a topology-aware manner according to the specific scheduling r
 This means that when a new PostgreSQL cluster is created, it is necessary to ensure that the volume containing the database
 files for the primary PostgreSQL database within the PostgreSQL clluster is provisioned in the same zone as the node containing the PostgreSQL primary pod that will be accesing the applicable volume.
 
-#### Dynamic Provisioning of Volumes: Default Behavoir
+#### Dynamic Provisioning of Volumes: Default Behavior
 
 By default, the Kubernetes scheduler will ensure any pods created that claim a specific volume via a PVC are scheduled on a 
 node in the same zone as that volume.  This is part of the default Kubernetes [multi-zone support](https://kubernetes.io/docs/setup/multiple-zones/). 
@@ -34,7 +34,7 @@ soon as they are requested, which means volumes are provisioned without knowledg
 This behavior defined using the `volumeBindingMode` configuration applicable to the Storage Class being utilized to
 dynamically provision the volume.  By default,`volumeBindingMode` is set to `Immediate`.  
 
-This default behavoir for dynamic provisioning can be seen in the Storage Class definition for a Google Cloud Engine Persistent Disk (GCE PD):
+This default behavior for dynamic provisioning can be seen in the Storage Class definition for a Google Cloud Engine Persistent Disk (GCE PD):
 
 ```bash
 kind: StorageClass
@@ -50,7 +50,7 @@ As indicated, `volumeBindingMode` indicates the default value of `Immediate`.
 
 #### Issues with Dynamic Provisioning of Volumes in PostgreSQL Operator
 
-Unfortunately, the default setting for dynamic provisinoing of volumes in mulit-zone Kubernetes cluster environments results in undesired behavoir when using the PostgreSQL Operator.  
+Unfortunately, the default setting for dynamic provisinoing of volumes in mulit-zone Kubernetes cluster environments results in undesired behavior when using the PostgreSQL Operator.  
 
 Within the PostgreSQL Operator, a **node label** is implemented as a `preferredDuringSchedulingIgnoredDuringExecution` node
 affinity rule, which is an affinity rule that Kubernetes will attempt to adhere to when scheduling any pods for the cluster,

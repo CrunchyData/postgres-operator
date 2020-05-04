@@ -265,7 +265,7 @@ Prior to using *pgo*, users testing the Operator on a single host can specify th
     pgo version
 ```
 
-That URL address needs to be reachable from your local *pgo* client host.  Your Kubernetes administrator will likely need to create a network route, ingress, or LoadBalancer service to expose the Operator REST API to applications outside of the Kubernetes cluster.  Your Kubernetes administrator might also allow you to run the Kubernetes port-forward command, contact your adminstrator for details.
+That URL address needs to be reachable from your local *pgo* client host.  Your Kubernetes administrator will likely need to create a network route, ingress, or LoadBalancer service to expose the Operator REST API to applications outside of the Kubernetes cluster.  Your Kubernetes administrator might also allow you to run the Kubernetes port-forward command, contact your administrator for details.
 
 Next, the *pgo* client needs to reference the keys used to secure the Operator REST API:
 

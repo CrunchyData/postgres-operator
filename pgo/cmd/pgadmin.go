@@ -105,7 +105,7 @@ func deletePgAdmin(args []string, ns string) {
 
 }
 
-// makeShowPgAdminInterface returns an interface slice of the avaialble values
+// makeShowPgAdminInterface returns an interface slice of the available values
 // in show pgadmin
 func makeShowPgAdminInterface(values []msgs.ShowPgAdminDetail) []interface{} {
 	// iterate through the list of values to make the interface
