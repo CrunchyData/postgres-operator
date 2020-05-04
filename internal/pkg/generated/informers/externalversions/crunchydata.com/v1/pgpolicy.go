@@ -21,68 +21,68 @@ import (
 	time "time"
 
 	crunchydatacomv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
-	versioned "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
-	internalinterfaces "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/internalinterfaces"
-	v1 "github.com/crunchydata/postgres-operator/pkg/generated/listers/crunchydata.com/v1"
+	versioned "github.com/crunchydata/postgres-operator/internal/pkg/generated/clientset/versioned"
+	internalinterfaces "github.com/crunchydata/postgres-operator/internal/pkg/generated/informers/externalversions/internalinterfaces"
+	v1 "github.com/crunchydata/postgres-operator/internal/pkg/generated/listers/crunchydata.com/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// PgclusterInformer provides access to a shared informer and lister for
-// Pgclusters.
-type PgclusterInformer interface {
+// PgpolicyInformer provides access to a shared informer and lister for
+// Pgpolicies.
+type PgpolicyInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.PgclusterLister
+	Lister() v1.PgpolicyLister
 }
 
-type pgclusterInformer struct {
+type pgpolicyInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewPgclusterInformer constructs a new informer for Pgcluster type.
+// NewPgpolicyInformer constructs a new informer for Pgpolicy type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewPgclusterInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredPgclusterInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewPgpolicyInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredPgpolicyInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredPgclusterInformer constructs a new informer for Pgcluster type.
+// NewFilteredPgpolicyInformer constructs a new informer for Pgpolicy type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredPgclusterInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredPgpolicyInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CrunchydataV1().Pgclusters(namespace).List(options)
+				return client.CrunchydataV1().Pgpolicies(namespace).List(options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CrunchydataV1().Pgclusters(namespace).Watch(options)
+				return client.CrunchydataV1().Pgpolicies(namespace).Watch(options)
 			},
 		},
-		&crunchydatacomv1.Pgcluster{},
+		&crunchydatacomv1.Pgpolicy{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *pgclusterInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredPgclusterInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *pgpolicyInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredPgpolicyInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *pgclusterInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&crunchydatacomv1.Pgcluster{}, f.defaultInformer)
+func (f *pgpolicyInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&crunchydatacomv1.Pgpolicy{}, f.defaultInformer)
 }
 
-func (f *pgclusterInformer) Lister() v1.PgclusterLister {
-	return v1.NewPgclusterLister(f.Informer().GetIndexer())
+func (f *pgpolicyInformer) Lister() v1.PgpolicyLister {
+	return v1.NewPgpolicyLister(f.Informer().GetIndexer())
 }

@@ -21,9 +21,9 @@ import (
 	time "time"
 
 	crunchydatacomv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
-	versioned "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
-	internalinterfaces "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/internalinterfaces"
-	v1 "github.com/crunchydata/postgres-operator/pkg/generated/listers/crunchydata.com/v1"
+	versioned "github.com/crunchydata/postgres-operator/internal/pkg/generated/clientset/versioned"
+	internalinterfaces "github.com/crunchydata/postgres-operator/internal/pkg/generated/informers/externalversions/internalinterfaces"
+	v1 "github.com/crunchydata/postgres-operator/internal/pkg/generated/listers/crunchydata.com/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"

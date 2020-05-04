@@ -18,9 +18,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
-	crunchydatav1 "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned/typed/crunchydata.com/v1"
-	fakecrunchydatav1 "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned/typed/crunchydata.com/v1/fake"
+	clientset "github.com/crunchydata/postgres-operator/internal/pkg/generated/clientset/versioned"
+	crunchydatav1 "github.com/crunchydata/postgres-operator/internal/pkg/generated/clientset/versioned/typed/crunchydata.com/v1"
+	fakecrunchydatav1 "github.com/crunchydata/postgres-operator/internal/pkg/generated/clientset/versioned/typed/crunchydata.com/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

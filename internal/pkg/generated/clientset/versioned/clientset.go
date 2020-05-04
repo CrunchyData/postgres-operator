@@ -20,7 +20,7 @@ package versioned
 import (
 	"fmt"
 
-	crunchydatav1 "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned/typed/crunchydata.com/v1"
+	crunchydatav1 "github.com/crunchydata/postgres-operator/internal/pkg/generated/clientset/versioned/typed/crunchydata.com/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"

@@ -18,7 +18,7 @@ limitations under the License.
 package fake
 
 import (
-	v1 "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned/typed/crunchydata.com/v1"
+	v1 "github.com/crunchydata/postgres-operator/internal/pkg/generated/clientset/versioned/typed/crunchydata.com/v1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )

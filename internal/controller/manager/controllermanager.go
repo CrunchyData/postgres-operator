@@ -31,7 +31,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/pgtask"
 	"github.com/crunchydata/postgres-operator/internal/controller/pod"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions"
+	informers "github.com/crunchydata/postgres-operator/internal/pkg/generated/informers/externalversions"
 	log "github.com/sirupsen/logrus"
 
 	kubeinformers "k8s.io/client-go/informers"

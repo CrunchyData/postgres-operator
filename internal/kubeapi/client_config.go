@@ -16,7 +16,7 @@ package kubeapi
 */
 
 import (
-	clientset "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
+	clientset "github.com/crunchydata/postgres-operator/internal/pkg/generated/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"

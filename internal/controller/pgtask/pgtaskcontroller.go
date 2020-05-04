@@ -25,7 +25,7 @@ import (
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	pgdumpoperator "github.com/crunchydata/postgres-operator/internal/operator/pgdump"
 	taskoperator "github.com/crunchydata/postgres-operator/internal/operator/task"
-	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
+	informers "github.com/crunchydata/postgres-operator/internal/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
