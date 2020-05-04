@@ -26,7 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/apiserver/backupoptions"
 	"github.com/crunchydata/postgres-operator/internal/util"
 
-	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
+	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/internal/config"

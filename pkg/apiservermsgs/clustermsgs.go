@@ -16,7 +16,7 @@ limitations under the License.
 */
 
 import (
-	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
+	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 )
 
 // ShowClusterRequest shows cluster

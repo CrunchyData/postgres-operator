@@ -1,7 +1,7 @@
 package apiservermsgs
 
 import (
-	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
+	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 )
 
 /*

@@ -20,7 +20,7 @@ package v1
 import (
 	"time"
 
-	v1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
+	v1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	scheme "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
