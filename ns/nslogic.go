@@ -26,7 +26,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/events"
-	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 
 	log "github.com/sirupsen/logrus"
 	authorizationapi "k8s.io/api/authorization/v1"

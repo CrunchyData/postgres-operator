@@ -24,7 +24,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/internal/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/events"
-	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"

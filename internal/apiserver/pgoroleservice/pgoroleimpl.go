@@ -22,7 +22,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/internal/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/events"
-	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"

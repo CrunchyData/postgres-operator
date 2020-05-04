@@ -21,7 +21,7 @@ import (
 	"sync"
 
 	"github.com/crunchydata/postgres-operator/internal/controller"
-	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	log "github.com/sirupsen/logrus"
 
 	kubeinformers "k8s.io/client-go/informers"

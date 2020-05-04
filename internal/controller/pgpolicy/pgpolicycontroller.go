@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"

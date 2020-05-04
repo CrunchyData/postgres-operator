@@ -23,7 +23,7 @@ import (
 	"sync"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
 
 	log "github.com/sirupsen/logrus"

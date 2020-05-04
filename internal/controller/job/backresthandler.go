@@ -23,7 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller"
 	"github.com/crunchydata/postgres-operator/internal/events"
-	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
 	"github.com/crunchydata/postgres-operator/util"

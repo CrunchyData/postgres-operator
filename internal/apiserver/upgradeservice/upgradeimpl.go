@@ -26,7 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/internal/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 
 	log "github.com/sirupsen/logrus"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

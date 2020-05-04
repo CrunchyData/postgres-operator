@@ -27,7 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller"
 	nscontroller "github.com/crunchydata/postgres-operator/internal/controller/namespace"
-	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crunchylog "github.com/crunchydata/postgres-operator/logging"
 	"github.com/crunchydata/postgres-operator/ns"
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"

@@ -25,7 +25,7 @@ import (
 	"text/template"
 
 	crv1 "github.com/crunchydata/postgres-operator/internal/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
