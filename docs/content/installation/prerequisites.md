@@ -57,7 +57,7 @@ stream to connect to `nsqd` and `nsqdadmin`:
 | nsqadmin | 4151 |
 | nsqd | 4150 |
 
-If you are using these services, ensure your cluster adminsitrator has given you
+If you are using these services, ensure your cluster administrator has given you
 access to these ports.
 
 ### Application Ports

@@ -48,7 +48,7 @@ The *postgres-ha.yaml* file is the main configuration file that allows for the
 configuration of a wide variety of tuning parameters for you PostgreSQL cluster.
 This includes various PostgreSQL settings, e.g. those that should be applied to
 files such as `postgresql.conf`, `pg_hba.conf` and `pg_ident.conf`, as well as
-tuning paramters for the High Availability features inlcuded in each cluster.
+tuning parameters for the High Availability features included in each cluster.
 The various configuration settings available can be
 [found here](https://access.crunchydata.com/documentation/patroni/latest/settings/index.html#settings)
 
@@ -218,9 +218,9 @@ postgresql:
     max_wal_senders: 10
 ```
 
-The various key/value pairs provided within the `paramters` section result in the
+The various key/value pairs provided within the `parameters` section result in the
 configuration of the same settings within the `postgresql.conf` file.  Please note that
-settings applied locally to a database server take precendence over those set via the DCS (with the
+settings applied locally to a database server take precedence over those set via the DCS (with the
 exception being those that must be set via the DCS, as
 [described here](https://access.crunchydata.com/documentation/patroni/latest/dynamic_configuration/)).
 

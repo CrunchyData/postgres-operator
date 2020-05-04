@@ -43,7 +43,7 @@ If the user tries to access a namespace that they are not configured for within 
     Error: user [pgouser1] is not allowed access to namespace [pgouser2]
 
 
-If you wish to add all avaiable permissions to a *pgorole*, you can specify it by using a single `*` in your configuration. Note that if you are editing your YAML file directly, you will need to ensure to write it as `"*"` to ensure it is recognized as a string.
+If you wish to add all available permissions to a *pgorole*, you can specify it by using a single `*` in your configuration. Note that if you are editing your YAML file directly, you will need to ensure to write it as `"*"` to ensure it is recognized as a string.
 
 The following list shows the current complete list of possible pgo permissions that you can specify within the *pgorole* file when creating roles:
 

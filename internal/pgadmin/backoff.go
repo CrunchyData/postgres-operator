@@ -39,7 +39,7 @@ const (
 	JitterSmall
 )
 
-// Apply provides a new tiem with respect to t based on the jitter mode
+// Apply provides a new time with respect to t based on the jitter mode
 func (jm Jitter) Apply(t time.Duration) time.Duration {
 	switch jm {
 	case JitterNone: // being explicit in case default case changes
