@@ -29,7 +29,7 @@ import (
 	nscontroller "github.com/crunchydata/postgres-operator/internal/controller/namespace"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crunchylog "github.com/crunchydata/postgres-operator/internal/logging"
-	"github.com/crunchydata/postgres-operator/ns"
+	"github.com/crunchydata/postgres-operator/internal/ns"
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
 	sched "github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
 	log "github.com/sirupsen/logrus"
