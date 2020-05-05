@@ -20,7 +20,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends ansible=2.8.* openssh-client \
  && rm -rf /var/lib/apt/lists/*
 
-COPY ansible/* \
+COPY installers/ansible/* \
      /opt/postgres-operator/ansible/
 COPY installers/favicon.png \
      installers/gcp-marketplace/install-job.yaml \
