@@ -35,7 +35,7 @@ Operator.
 | `BADGER` | false | **Required** | Set to true enable pgBadger capabilities on all newly created clusters. This can be disabled by the client. |
 | `CCP_IMAGE_PREFIX` | crunchydata | **Required** | Configures the image prefix used when creating containers from Crunchy Container Suite. |
 | `CCP_IMAGE_PULL_SECRET` |  |  | Name of a Secret containing credentials for container image registries. |
-| `CCP_IMAGE_PULL_MANIFEST` |  |  | Provide a path to the Secret manifest to be installed in each namespace. (optional) |
+| `CCP_IMAGE_PULL_SECRET_MANIFEST` |  |  | Provide a path to the Secret manifest to be installed in each namespace. (optional) |
 | `CCP_IMAGE_TAG` |  | **Required** | Configures the image tag (version) used when creating containers from Crunchy Container Suite. |
 | `CREATE_RBAC` | true | **Required** | Set to true if the installer should create the RBAC resources required to run the PostgreSQL Operator. |
 | `CRUNCHY_DEBUG` | false |  | Set to configure Operator to use debugging mode. Note: this can cause sensitive data such as passwords to appear in Operator logs. |
@@ -61,6 +61,7 @@ Operator.
 | `GRAFANA_SUPPLEMENTAL_GROUPS` | 65534 |  | Set to configure any supplemental groups that should be added to security contexts for Grafana. |
 | `GRAFANA_VOLUME_SIZE` | 1G |  | Set to the size of persistent volume to create for Grafana. |
 | `METRICS` | false | **Required** | Set to true enable performance metrics on all newly created clusters. This can be disabled by the client. |
+| `METRICS_NAMESPACE` | `pgo` |  | Namespace in which the `metrics` deployments with be run. |
 | `NAMESPACE` |  |  | Set to a comma delimited string of all the namespaces Operator will manage. |
 | `NAMESPACE_MODE` | dynamic |  | When installing RBAC using 'create_rbac', the namespace mode determines what Cluster Roles are installed. Options: `dynamic`, `readonly`, and `disabled` |
 | `PGBADGERPORT` | 10000 | **Required** | Set to configure the default port used to connect to pgbadger. |
@@ -78,7 +79,7 @@ Operator.
 | `PGO_DISABLE_TLS` | false |  | Set to configure whether or not TLS should be enabled for the Crunchy PostgreSQL Operator apiserver. |
 | `PGO_IMAGE_PREFIX` | crunchydata | **Required** | Configures the image prefix used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc). |
 | `PGO_IMAGE_PULL_SECRET` |  |  | Name of a Secret containing credentials for container image registries. |
-| `PGO_IMAGE_PULL_MANIFEST` |  |  | Provide a path to the Secret manifest to be installed in each namespace. (optional) |
+| `PGO_IMAGE_PULL_SECRET_MANIFEST` |  |  | Provide a path to the Secret manifest to be installed in each namespace. (optional) |
 | `PGO_IMAGE_TAG` |  | **Required** | Configures the image tag used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc) |
 | `PGO_INSTALLATION_NAME` | devtest | **Required** | The name of the PGO installation. |
 | `PGO_NOAUTH_ROUTES` |  |  | Configures URL routes with mTLS and HTTP BasicAuth disabled. |
@@ -221,10 +222,10 @@ other storage classes in production deployments.
 | Name | Value |
 |------|-------|
 | STORAGE7_NAME | alternatesite |
-| STORAGE6_ACCESS_MODE | ReadWriteOnce |
+| STORAGE7_ACCESS_MODE | ReadWriteOnce |
 | STORAGE7_SIZE | 4G |
 | STORAGE7_TYPE | dynamic |
-| STORAGE6_CLASS | alternatesite |
+| STORAGE7_CLASS | alternatesite |
 
 #### GCE
 

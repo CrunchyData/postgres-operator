@@ -37,8 +37,6 @@ spec:
               image: registry.developers.crunchydata.com/crunchydata/pgo-deployer:centos7-4.3.0
               imagePullPolicy: IfNotPresent
               env:
-                  - name: ANSIBLE_CONFIG
-                    value: "/ansible/ansible.cfg"
                   - name: ARCHIVE_MODE
                     value: "true"
                   - name: ARCHIVE_TIMEOUT
@@ -75,8 +73,6 @@ spec:
                     value: "false"
                   - name: EXPORTERPORT
                     value: "9187"
-                  - name: HOME
-                    value: "/tmp"
                   - name: METRICS
                     value: "false"
                   - name: NAMESPACE
@@ -145,6 +141,8 @@ spec:
                     value: "nfsstoragered"
                   - name: STORAGE4_ACCESS_MODE
                     value: "ReadWriteMany"
+                  - name: STORAGE4_SIZE
+                    value: "1G"
                   - name: STORAGE4_MATCH_LABEL
                     value: "crunchyzone=red"
                   - name: STORAGE4_TYPE

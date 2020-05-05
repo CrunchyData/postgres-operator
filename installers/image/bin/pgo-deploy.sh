@@ -34,8 +34,11 @@ export SERVICE_TYPE=${SERVICE_TYPE:-ClusterIP}
 # Metrics Defaults
 export METRICS_NAMESPACE=${METRICS_NAMESPACE:-pgo}
 
-export KUBERNETES_IN_CLUSTER=${KUBERNETES_IN_CLUSTER:-true}
+# Installer Settings
+export ANSIBLE_CONFIG="/ansible/ansible.cfg"
 export DEPLOY_ACTION=${DEPLOY_ACTION:-install}
+export HOME="/tmp"
+export KUBERNETES_IN_CLUSTER=${KUBERNETES_IN_CLUSTER:-true}
 
 cat /inventory_template | envsubst > /tmp/inventory
 /usr/bin/env ansible-playbook -i /tmp/inventory --tags=$DEPLOY_ACTION /ansible/main.yml
