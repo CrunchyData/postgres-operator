@@ -80,7 +80,7 @@ spec:
                   - name: METRICS
                     value: "false"
                   - name: NAMESPACE
-                    value: "pgouser1,pgouser2"
+                    value: "pgo"
                   - name: NAMESPACE_MODE
                     value: "dynamic"
                   - name: PGBADGERPORT
