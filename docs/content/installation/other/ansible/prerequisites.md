@@ -58,8 +58,9 @@ There are two ways to obtain the Crunchy PostgreSQL Operator Roles:
 
 ### GitHub Installation
 
-All necessary files (inventory, main playbook and roles) can be found in the `ansible`
-directory in the  [postgres-operator project](https://github.com/CrunchyData/postgres-operator).
+All necessary files (inventory, main playbook and roles) can be found in the
+[`installers/ansible`](https://github.com/CrunchyData/postgres-operator/tree/master/installers/ansible) directory
+in the [source code](https://github.com/CrunchyData/postgres-operator).
 
 ### RPM Installation using Yum
 
