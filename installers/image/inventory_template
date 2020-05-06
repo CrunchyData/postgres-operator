@@ -92,10 +92,6 @@ pgo_image_tag='$PGO_IMAGE_TAG'
 pgo_image_pull_secret='$PGO_IMAGE_PULL_SECRET'
 pgo_image_pull_secret_manifest='$PGO_IMAGE_PULL_SECRET_MANIFEST'
 
-# PGO Client Install
-pgo_client_install='$PGO_CLIENT_INSTALL'
-pgo_client_version='$PGO_CLIENT_VERSION'
-
 # PGO Apiserver TLS Settings
 pgo_tls_no_verify='$PGO_TLS_NO_VERIFY'
 pgo_disable_tls='$PGO_DISABLE_TLS'
@@ -148,10 +144,6 @@ pgbadgerport='$PGBADGERPORT'
 archive_mode='$ARCHIVE_MODE'
 archive_timeout=$ARCHIVE_TIMEOUT
 backrest_port='$BACKREST_PORT'
-
-# Log Defaults
-log_statement='$LOG_STATEMENT'
-log_min_duration_statement=$LOG_MIN_DURATION_STATEMENT
 
 # Autofail Settings
 disable_auto_failover='$DISABLE_AUTO_FAILOVER'
@@ -219,7 +211,7 @@ replica_storage='$REPLICA_STORAGE'
 wal_storage='$WAL_STORAGE'
 
 storage1_name='$STORAGE1_NAME'
-storage1_access_mode='$STORAGE_ACCESS_MODE'
+storage1_access_mode='$STORAGE1_ACCESS_MODE'
 storage1_size='$STORAGE1_SIZE'
 storage1_type='$STORAGE1_TYPE'
 
@@ -237,7 +229,7 @@ storage3_supplemental_groups=$STORAGE3_SUPPLEMENTAL_GROUPS
 storage4_name='$STORAGE4_NAME'
 storage4_access_mode='$STORAGE4_ACCESS_MODE'
 storage4_size='$STORAGE4_SIZE'
-storage4_match_labels='$STORAGE4_MATCH_LABEL'
+storage4_match_labels='$STORAGE4_MATCH_LABELS'
 storage4_type='$STORAGE4_TYPE'
 storage4_supplemental_groups=$STORAGE4_SUPPLEMENTAL_GROUPS
 
@@ -260,7 +252,7 @@ storage7_type='$STORAGE7_TYPE'
 storage7_class='$STORAGE7_CLASS'
 
 storage8_name='$STORAGE8_NAME'
-storage8_access_mode='$STORAGE8_ACCESS'
+storage8_access_mode='$STORAGE8_ACCESS_MODE'
 storage8_size='$STORAGE8_SIZE'
 storage8_type='$STORAGE8_TYPE'
 storage8_class='$STORAGE8_CLASS'
