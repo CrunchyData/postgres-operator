@@ -129,7 +129,7 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 	if err != nil {
 		log.Errorf("error submitting upgraded pgcluster CRD for cluster recreation of cluster %s, Error: %v", pgcluster.Name, err)
 	} else {
-		log.Debugf("upgraded cluster %s submitted for recreation, workflowid: %s", pgcluster.Name)
+		log.Debugf("upgraded cluster %s submitted for recreation", pgcluster.Name)
 	}
 
 	// submit an event now that the new pgcluster has been submitted to the cluster creation process
@@ -201,7 +201,7 @@ func getMasterPodDeploymentName(clientset *kubernetes.Clientset, cluster *crv1.P
 		config.LABEL_PGHA_ROLE, "master")
 	pods, err := kubeapi.GetPods(clientset, selector, cluster.Namespace)
 	if err != nil {
-		log.Errorf("no pod with the master role label was found for cluster %s. Error: ", cluster.Name, err)
+		log.Errorf("no pod with the master role label was found for cluster %s. Error: %s", cluster.Name, err.Error())
 		return ""
 	}
 
@@ -711,7 +711,7 @@ func publishUpgradeClusterEvent(eventHeader events.EventHeader, clustername, wor
 	}
 	// attempt to publish the event; if it fails, log the error, but keep moving on
 	if err := events.Publish(event); err != nil {
-		log.Errorf("error publishing event. Error: ", err)
+		log.Errorf("error publishing event. Error: %s", err.Error())
 	}
 }
 
@@ -726,7 +726,7 @@ func publishUpgradeClusterCreateEvent(eventHeader events.EventHeader, clusternam
 	}
 	// attempt to publish the event; if it fails, log the error, but keep moving on
 	if err := events.Publish(event); err != nil {
-		log.Errorf("error publishing event. Error: ", err)
+		log.Errorf("error publishing event. Error: %s", err.Error())
 	}
 }
 
@@ -742,6 +742,6 @@ func publishUpgradeClusterFailureEvent(eventHeader events.EventHeader, clusterna
 	}
 	// attempt to publish the event; if it fails, log the error, but keep moving on
 	if err := events.Publish(event); err != nil {
-		log.Errorf("error publishing event. Error: ", err)
+		log.Errorf("error publishing event. Error: %s", err.Error())
 	}
 }
