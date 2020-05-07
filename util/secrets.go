@@ -16,9 +16,7 @@ package util
 */
 
 import (
-	"crypto/md5"
 	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -93,21 +91,6 @@ func GeneratePassword(length int) (string, error) {
 	}
 
 	return password, nil
-}
-
-// GeneratePostgreSQLMD5Password takes a username and a plaintext password and
-// returns the PostgreSQL formatted MD5 password, which is:
-// "md5" + md5(password+username)
-func GeneratePostgreSQLMD5Password(username, password string) string {
-	// create the plaintext password/salt that PostgreSQL expects as a byte string
-	plaintext := []byte(fmt.Sprintf("%s%s", password, username))
-	// set up the password hasher
-	hasher := md5.New()
-	// add the above plaintext to the hash
-	hasher.Write(plaintext)
-	// finish the transformation by getting the string value of the MD5 hash and
-	// encoding it in hexadecimal for PostgreSQL, appending "md5" to the front
-	return fmt.Sprintf("md5%s", hex.EncodeToString(hasher.Sum(nil)))
 }
 
 // GeneratedPasswordLength returns the value for what the length of a

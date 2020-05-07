@@ -29,6 +29,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
+	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
 	"github.com/crunchydata/postgres-operator/util"
@@ -295,7 +296,7 @@ func RotatePgBouncerPassword(clientset *kubernetes.Clientset, restclient *rest.R
 	// PostgreSQL to perform its authentication
 	secret.Data["password"] = []byte(password)
 	secret.Data["users.txt"] = util.GeneratePgBouncerUsersFileBytes(
-		util.GeneratePostgreSQLMD5Password(crv1.PGUserPgBouncer, password))
+		makePostgresPassword(pgpassword.MD5, password))
 
 	// update the secret
 	if err := kubeapi.UpdateSecret(clientset, secret, namspace); err != nil {
@@ -554,7 +555,7 @@ func createPgbouncerSecret(clientset *kubernetes.Clientset, cluster *crv1.Pgclus
 			"pgbouncer.ini": pgBouncerConf,
 			"pg_hba.conf":   pgbouncerHBA,
 			"users.txt": util.GeneratePgBouncerUsersFileBytes(
-				util.GeneratePostgreSQLMD5Password(crv1.PGUserPgBouncer, password)),
+				makePostgresPassword(pgpassword.MD5, password)),
 		},
 	}
 
@@ -790,6 +791,19 @@ func installPgBouncer(clientset *kubernetes.Clientset, restconfig *rest.Config, 
 	return nil
 }
 
+// makePostgresPassword creates the expected hash for a password type for a
+// PostgreSQL password
+func makePostgresPassword(passwordType pgpassword.PasswordType, password string) string {
+	// get the PostgreSQL password generate based on the password type
+	// as all of these values are valid, this not not error
+	postgresPassword, _ := pgpassword.NewPostgresPassword(passwordType, crv1.PGUserPgBouncer, password)
+
+	// create the PostgreSQL style hashed password and return
+	hashedPassword, _ := postgresPassword.Build()
+
+	return hashedPassword
+}
+
 // publishPgBouncerEvent publishes one of the events on the event stream
 func publishPgBouncerEvent(eventType string, cluster *crv1.Pgcluster) {
 	var event events.EventInterface
@@ -836,9 +850,9 @@ func setPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Con
 	log.Debug("set pgbouncer password in PostgreSQL")
 
 	// we use the PostgreSQL "md5" hashing mechanism here to pre-hash the
-	// password. This is hard coded, which will make moving up to SCRAM ever more
-	// so lovely, but at least it's better than sending it around as plaintext
-	sqlpgBouncerPassword := util.GeneratePostgreSQLMD5Password(crv1.PGUserPgBouncer, password)
+	// password. This is semi-hard coded but is now prepped for SCRAM as a
+	// password type can be passed in. Almost to SCRAM!
+	sqlpgBouncerPassword := makePostgresPassword(pgpassword.MD5, password)
 
 	if err := util.SetPostgreSQLPassword(clientset, restconfig, pod,
 		port, crv1.PGUserPgBouncer, sqlpgBouncerPassword, sqlEnableLogin); err != nil {
