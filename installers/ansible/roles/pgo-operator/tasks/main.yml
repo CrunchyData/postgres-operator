@@ -208,7 +208,7 @@
       when: create_rbac|bool
 
     - name: Create PGO RBAC
-      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgo-role-rbac.yaml  -n {{ pgo_operator_namespace }}"
+      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgo-role-rbac.yaml"
       tags:
         - install
         - update
