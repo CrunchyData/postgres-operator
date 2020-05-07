@@ -56,7 +56,7 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 	//create marker (clustername, namespace)
 	err = PatchpgtaskFailoverStatus(client, task, namespace)
 	if err != nil {
-		log.Error("could not set failover started marker for task %s cluster %s", task.Spec.Name, clusterName)
+		log.Errorf("could not set failover started marker for task %s cluster %s", task.Spec.Name, clusterName)
 		return
 	}
 
@@ -68,7 +68,7 @@ func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *res
 		log.Error(err)
 		return
 	}
-	log.Debug("replica count before failover is %d", len(replicaList.Items))
+	log.Debugf("replica count before failover is %d", len(replicaList.Items))
 
 	//publish event for failover
 	topics := make([]string, 1)

@@ -82,7 +82,7 @@ func Failover(identifier string, clientset *kubernetes.Clientset, client *rest.R
 	}
 
 	targetDepName := upod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
-	log.Debug("targetDepName %s", targetDepName)
+	log.Debugf("targetDepName %s", targetDepName)
 	var targetDep *appsv1.Deployment
 	targetDep, _, err = kubeapi.GetDeployment(clientset, targetDepName, namespace)
 	if err != nil {
