@@ -29,7 +29,8 @@ var (
 	ErrMD5PasswordInvalid = errors.New(`invalid password attributes. must provide "username" and "password"`)
 )
 
-// MD5Password is something
+// MD5Password implements the PostgresPassword interface for hashing passwords
+// using the PostgreSQL MD5 method
 type MD5Password struct {
 	// password is the plaintext password
 	password string
@@ -45,4 +46,12 @@ func (m *MD5Password) Build() (string, error) {
 	// finish the transformation by getting the string value of the MD5 hash and
 	// encoding it in hexadecimal for PostgreSQL, appending "md5" to the front
 	return fmt.Sprintf("md5%x", md5.Sum(plaintext)), nil
+}
+
+// NewMD5Password constructs a new MD5Password struct
+func NewMD5Password(username, password string) *MD5Password {
+	return &MD5Password{
+		password: password,
+		username: username,
+	}
 }

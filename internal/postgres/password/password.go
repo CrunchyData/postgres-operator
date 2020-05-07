@@ -28,6 +28,7 @@ type PasswordType int
 const (
 	// MD5 refers to the MD5Password method
 	MD5 PasswordType = iota
+	SCRAM
 )
 
 var (
@@ -52,17 +53,13 @@ type PostgresPassword interface {
 //
 // An error is returned if the proper password generator cannot be found
 func NewPostgresPassword(passwordType PasswordType, username, password string) (PostgresPassword, error) {
-	var postgresPassword PostgresPassword
-
 	switch passwordType {
-	case MD5:
-		postgresPassword = &MD5Password{username: username, password: password}
-	}
-
-	// if no password type is selected, return an error
-	if postgresPassword == nil {
+	default:
+		// if no password type is selected, return an error
 		return nil, ErrPasswordType
+	case MD5:
+		return NewMD5Password(username, password), nil
+	case SCRAM:
+		return NewSCRAMPassword(password), nil
 	}
-
-	return postgresPassword, nil
 }
