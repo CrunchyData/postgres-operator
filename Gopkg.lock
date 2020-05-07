@@ -341,6 +341,14 @@
   version = "v1.0.5"
 
 [[projects]]
+  digest = "1:577b99fc55ee19cbf1ffd072808c91ced78cd732bd9d0517bec9b90e532069cb"
+  name = "github.com/xdg/stringprep"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "bd625b8dc1e3b0f57412280ccbcc317f0c69d8db"
+  version = "v1.0.0"
+
+[[projects]]
   branch = "master"
   digest = "1:17da86687c09ab43a342bf91c2b2e5feba1dda6b7cce9626d64201fbf0113264"
   name = "golang.org/x/crypto"
@@ -940,6 +948,7 @@
     "github.com/spf13/cobra",
     "github.com/spf13/cobra/doc",
     "github.com/spf13/pflag",
+    "github.com/xdg/stringprep",
     "golang.org/x/crypto/pbkdf2",
     "golang.org/x/crypto/ssh",
     "k8s.io/api/apps/v1",

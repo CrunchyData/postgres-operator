@@ -49,3 +49,20 @@ func TestMD5Build(t *testing.T) {
 		})
 	}
 }
+
+func TestNewMD5Password(t *testing.T) {
+	username := "hippo"
+	password := "datalake"
+
+	md5 := NewMD5Password(username, password)
+
+	if md5.username != username {
+		t.Errorf("username not set properly. expected %q actual %q", username, md5.username)
+		return
+	}
+
+	if md5.password != password {
+		t.Errorf("plaintext password not set properly. expected %q actual %q", password, md5.password)
+		return
+	}
+}
