@@ -20,39 +20,54 @@ import (
 )
 
 func TestNewPostgresPassword(t *testing.T) {
+	username := "hippo"
+	password := "datalake"
 
 	t.Run("md5", func(t *testing.T) {
-		username := "hippo"
-		password := "datalake"
+		passwordType := MD5
 
-		t.Run("valid", func(t *testing.T) {
-			passwordType := MD5
+		postgresPassword, err := NewPostgresPassword(passwordType, username, password)
 
-			postgresPassword, err := NewPostgresPassword(passwordType, username, password)
+		if err != nil {
+			t.Error(err)
+		}
 
-			if err != nil {
-				t.Error(err)
-			}
+		if _, ok := postgresPassword.(*MD5Password); !ok {
+			t.Errorf("postgres password is not md5")
+		}
 
-			if _, ok := postgresPassword.(*MD5Password); !ok {
-				t.Errorf("postgres password is not md5")
-			}
+		if postgresPassword.(*MD5Password).username != username {
+			t.Errorf("username expected %q actual %q", username, postgresPassword.(*MD5Password).username)
+		}
 
-			if postgresPassword.(*MD5Password).username != username {
-				t.Errorf("username expected %q actual %q", username, postgresPassword.(*MD5Password).username)
-			}
+		if postgresPassword.(*MD5Password).password != password {
+			t.Errorf("username expected %q actual %q", password, postgresPassword.(*MD5Password).password)
+		}
+	})
 
-			if postgresPassword.(*MD5Password).password != password {
-				t.Errorf("username expected %q actual %q", password, postgresPassword.(*MD5Password).password)
-			}
-		})
+	t.Run("scram", func(t *testing.T) {
+		passwordType := SCRAM
 
-		t.Run("invalid", func(t *testing.T) {
-			passwordType := PasswordType(-1)
+		postgresPassword, err := NewPostgresPassword(passwordType, username, password)
 
-			if _, err := NewPostgresPassword(passwordType, username, password); err != ErrPasswordType {
-				t.Errorf("expected error: %q", err.Error())
-			}
-		})
+		if err != nil {
+			t.Error(err)
+		}
+
+		if _, ok := postgresPassword.(*SCRAMPassword); !ok {
+			t.Errorf("postgres password is not scram")
+		}
+
+		if postgresPassword.(*SCRAMPassword).password != password {
+			t.Errorf("username expected %q actual %q", password, postgresPassword.(*SCRAMPassword).password)
+		}
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		passwordType := PasswordType(-1)
+
+		if _, err := NewPostgresPassword(passwordType, username, password); err != ErrPasswordType {
+			t.Errorf("expected error: %q", err.Error())
+		}
 	})
 }
