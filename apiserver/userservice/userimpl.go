@@ -26,6 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
+	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
 	"github.com/crunchydata/postgres-operator/internal/pgadmin"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/util"
@@ -736,7 +737,17 @@ func generatePassword(username, password string, generatePassword bool, generate
 	}
 
 	// finally, hash the password
-	hashedPassword := util.GeneratePostgreSQLMD5Password(username, password)
+	postgresPassword, err := pgpassword.NewPostgresPassword(pgpassword.MD5, username, password)
+
+	if err != nil {
+		return false, "", "", err
+	}
+
+	hashedPassword, err := postgresPassword.Build()
+
+	if err != nil {
+		return false, "", "", err
+	}
 
 	// return!
 	return true, password, hashedPassword, nil
