@@ -292,38 +292,30 @@
     - name: Deploy PGO
       command: |
         {{ kubectl_or_oc }} create --filename='{{ output_dir }}/deployment.json' -n {{ pgo_operator_namespace }}
+    - name: PGO Client
       tags:
         - install
         - update
+      when: pgo_client_install == "true" and kubernetes_in_cluster == "false"
+      block:
+        - name: Download PGO Linux Client
+          become: yes
+          become_method: sudo
+          get_url:
+            url: "{{ pgo_client_url }}/pgo"
+            dest: "/usr/local/bin/pgo"
+            mode: 0755
+            force: yes
+          when: uname_result.stdout == "Linux"
 
-    - name: Download PGO Linux Client
-      become: yes
-      become_method: sudo
-      get_url:
-        url: "{{ pgo_client_url }}/pgo"
-        dest: "/usr/local/bin/pgo"
-        mode: 0755
-        force: yes
-      when: uname_result.stdout == "Linux" and
-            pgo_client_install == "true" and
-            kubernetes_in_cluster == "false"
-      tags:
-        - install
-        - update
-
-    - name: Download PGO MacOS Client
-      become: yes
-      become_method: sudo
-      get_url:
-        url: "{{ pgo_client_url }}/pgo-mac"
-        dest: "/usr/local/bin/pgo"
-        mode: 0755
-      when: uname_result.stdout == "Darwin" and
-            pgo_client_install == "true" and
-            kubernetes_in_cluster == "false"
-      tags:
-        - install
-        - update
+        - name: Download PGO MacOS Client
+          become: yes
+          become_method: sudo
+          get_url:
+            url: "{{ pgo_client_url }}/pgo-mac"
+            dest: "/usr/local/bin/pgo"
+            mode: 0755
+          when: uname_result.stdout == "Darwin"
 
     - name: Wait for PGO to finish deploying
       command: "{{ kubectl_or_oc }} rollout status deployment/postgres-operator -n {{ pgo_operator_namespace }}"
