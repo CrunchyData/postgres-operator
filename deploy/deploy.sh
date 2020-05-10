@@ -29,7 +29,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $DIR/cleanup.sh
 
-if [[ "${PGO_NAMESPACE_MODE:-dynamic}" != "disabled" ]]	
+if [[ "${PGO_NAMESPACE_MODE:-dynamic}" != "disabled" ]]
 then
 	$PGO_CMD get clusterrole pgo-cluster-role 2> /dev/null > /dev/null
 	if [ $? -ne 0 ]
@@ -74,6 +74,14 @@ if [[ -z ${PGO_APISERVER_PORT} ]]
 then
         echo "PGO_APISERVER_PORT is not set. Setting to default port value of 8443."
 		export PGO_APISERVER_PORT=8443
+fi
+
+# check if TLS is disabled. If it is, both ensure that the probes occur over
+# HTTP, and then also set TLS_NO_VERIFY to true as well, given TLS is disabled
+if [[ "${DISABLE_TLS}" == "true" ]]
+then
+  export PGO_APISERVER_SCHEME="HTTP"
+  export TLS_NO_VERIFY="true"
 fi
 
 #
