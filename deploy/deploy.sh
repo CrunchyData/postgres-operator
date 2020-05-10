@@ -76,6 +76,8 @@ then
 		export PGO_APISERVER_PORT=8443
 fi
 
+export PGO_APISERVER_SCHEME="HTTPS"
+
 # check if TLS is disabled. If it is, both ensure that the probes occur over
 # HTTP, and then also set TLS_NO_VERIFY to true as well, given TLS is disabled
 if [[ "${DISABLE_TLS}" == "true" ]]
@@ -87,5 +89,5 @@ fi
 #
 # create the postgres-operator Deployment and Service
 #
-expenv -f $DIR/deployment.json | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
-expenv -f $DIR/service.json | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
+envsubst < $DIR/deployment.json | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
+envsubst < $DIR/service.json | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
