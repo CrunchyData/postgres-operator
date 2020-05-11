@@ -91,6 +91,10 @@ var BackrestRepoPath string
 // Standby determines whether or not the cluster should be created as a standby cluster
 var Standby bool
 
+// PasswordType allows one to specify if the password should be MD5 or SCRAM
+// we presently ensure it defaults to MD5
+var PasswordType string
+
 // PasswordSuperuser specifies the password for the cluster superuser
 var PasswordSuperuser string
 
@@ -464,6 +468,8 @@ func init() {
 	createUserCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
 	createUserCmd.Flags().StringVarP(&Password, "password", "", "", "The password to use for creating a new user which overrides a generated password.")
 	createUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 0, "If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.")
+	createUserCmd.Flags().StringVar(&PasswordType, "password-type", "md5", "The type of password hashing to use."+
+		"Choices are: (md5, scram-sha-256).")
 	createUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	createUserCmd.Flags().StringVarP(&Username, "username", "", "", "The username to use for creating a new user")
 	createUserCmd.Flags().IntVarP(&PasswordAgeDays, "valid-days", "", 0, "Sets the number of days that a password is valid. Defaults to the server value.")
