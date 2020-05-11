@@ -15,6 +15,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import (
+	"errors"
+
+	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
+)
+
 type UpdateClusterLoginState int
 
 // set the different values around whether or not to disable/enable a user's
@@ -24,6 +30,21 @@ const (
 	UpdateUserLoginEnable
 	UpdateUserLoginDisable
 )
+
+var (
+	// ErrPasswordTypeInvalid is used when a string that's not included in
+	// PasswordTypeStrings is used
+	ErrPasswordTypeInvalid = errors.New("invalid password type. choices are (md5, scram-sha-256)")
+)
+
+// passwordTypeStrings is a mapping of strings of password types to their
+// corresponding value of the structured password type
+var passwordTypeStrings = map[string]pgpassword.PasswordType{
+	"":              pgpassword.MD5,
+	"md5":           pgpassword.MD5,
+	"scram":         pgpassword.SCRAM,
+	"scram-sha-256": pgpassword.SCRAM,
+}
 
 // CreateUserRequest contains the parameters that are passed in when an Operator
 // user requests to create a new PostgreSQL user
@@ -37,8 +58,10 @@ type CreateUserRequest struct {
 	Password        string
 	PasswordAgeDays int
 	PasswordLength  int
-	Selector        string
-	Username        string
+	// PasswordType is one of "md5" or "scram-sha-256", defaults to "md5"
+	PasswordType string
+	Selector     string
+	Username     string
 }
 
 // CreateUserResponse is the response to a create user request
@@ -92,17 +115,19 @@ type ShowUserResponse struct {
 // about a PostgreSQL user
 // swagger:model
 type UpdateUserRequest struct {
-	AllFlag             bool
-	ClientVersion       string
-	Clusters            []string
-	Expired             int
-	ExpireUser          bool
-	LoginState          UpdateClusterLoginState
-	ManagedUser         bool
-	Namespace           string
-	Password            string
-	PasswordAgeDays     int
-	PasswordLength      int
+	AllFlag         bool
+	ClientVersion   string
+	Clusters        []string
+	Expired         int
+	ExpireUser      bool
+	LoginState      UpdateClusterLoginState
+	ManagedUser     bool
+	Namespace       string
+	Password        string
+	PasswordAgeDays int
+	PasswordLength  int
+	// PasswordType is one of "md5" or "scram-sha-256", defaults to "md5"
+	PasswordType        string
 	PasswordValidAlways bool
 	RotatePassword      bool
 	Selector            string
@@ -126,4 +151,16 @@ type UserResponseDetail struct {
 	Password     string
 	Username     string
 	ValidUntil   string
+}
+
+// GetPasswordType returns the enumerated password type based on the string, and
+// an error if it cannot match one
+func GetPasswordType(passwordTypeStr string) (pgpassword.PasswordType, error) {
+	passwordType, ok := passwordTypeStrings[passwordTypeStr]
+
+	if !ok {
+		return passwordType, ErrPasswordTypeInvalid
+	}
+
+	return passwordType, nil
 }
