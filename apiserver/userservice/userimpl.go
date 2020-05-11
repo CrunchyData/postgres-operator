@@ -166,6 +166,15 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 		return response
 	}
 
+	// determine if the user passed in a valid password type
+	passwordType, err := msgs.GetPasswordType(request.PasswordType)
+
+	if err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
 	// as the password age is uniform throughout the request, we can check for the
 	// user supplied value and the defaults here
 	validUntil := generateValidUntilDateString(request.PasswordAgeDays)
@@ -225,7 +234,7 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 
 		// Set the password. We want a password to be generated if the user did not
 		// set a password
-		_, password, hashedPassword, err := generatePassword(result.Username, request.Password, true, request.PasswordLength)
+		_, password, hashedPassword, err := generatePassword(result.Username, request.Password, passwordType, true, request.PasswordLength)
 
 		// on the off-chance there is an error, record it and continue
 		if err != nil {
@@ -609,6 +618,13 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 		return response
 	}
 
+	// determine if the user passed in a valid password type
+	if _, err := msgs.GetPasswordType(request.PasswordType); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
 	// try to get a list of clusters. if there is an error, return
 	clusterList, err := getClusterList(request.Namespace, request.Clusters, request.Selector, request.AllFlag)
 
@@ -707,9 +723,11 @@ func executeSQL(pod *v1.Pod, port, sql string, extraCommandArgs []string) (strin
 // "password" is empty, then a password will be generated. If both are set,
 // then "password" is used.
 //
-// In the future, this can be mdofifed to also support a password hashing type
-// e.g. SCRAM :)
-func generatePassword(username, password string, generatePassword bool, generatedPasswordLength int) (bool, string, string, error) {
+// Finally, one can specify the "password type" to be generated, which right now
+// is either one of MD5 of SCRAM, the two PostgreSQL password authentication
+// methods. This will return a hash / verifier that is stored in PostgreSQL
+func generatePassword(username, password string, passwordType pgpassword.PasswordType,
+	generatePassword bool, generatedPasswordLength int) (bool, string, string, error) {
 	// first, an early exit: nothing is updated
 	if password == "" && !generatePassword {
 		return false, "", "", nil
@@ -737,7 +755,7 @@ func generatePassword(username, password string, generatePassword bool, generate
 	}
 
 	// finally, hash the password
-	postgresPassword, err := pgpassword.NewPostgresPassword(pgpassword.MD5, username, password)
+	postgresPassword, err := pgpassword.NewPostgresPassword(passwordType, username, password)
 
 	if err != nil {
 		return false, "", "", err
@@ -944,10 +962,14 @@ func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgclu
 		// start building the SQL
 		sql := fmt.Sprintf(sqlAlterRole, util.SQLQuoteIdentifier(result.Username))
 
+		// get the password type. the error is already evaluated in a called
+		// function
+		passwordType, _ := msgs.GetPasswordType(request.PasswordType)
+
 		// generate a new password. Check to see if the user passed in a particular
 		// length of the password, or passed in a password to rotate (though that
 		// is not advised...). This forced the password to change
-		_, password, hashedPassword, err := generatePassword(result.Username, request.Password, true, request.PasswordLength)
+		_, password, hashedPassword, err := generatePassword(result.Username, request.Password, passwordType, true, request.PasswordLength)
 
 		// on the off-chance there's an error in generating the password, record it
 		// and continue
@@ -1074,8 +1096,9 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 	// Speaking of passwords...let's first determine if the user updated their
 	// password. See generatePassword for how precedence is given for password
 	// updates
+	passwordType, _ := msgs.GetPasswordType(request.PasswordType)
 	isChanged, password, hashedPassword, err := generatePassword(result.Username,
-		request.Password, request.RotatePassword, request.PasswordLength)
+		request.Password, passwordType, request.RotatePassword, request.PasswordLength)
 
 	// in the off-chance there is an error generating the password, record it
 	// and return

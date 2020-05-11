@@ -82,8 +82,15 @@ func createUser(args []string, ns string) {
 		Password:        Password,
 		PasswordAgeDays: PasswordAgeDays,
 		PasswordLength:  PasswordLength,
+		PasswordType:    PasswordType,
 		Username:        username,
 		Selector:        Selector,
+	}
+
+	// determine if the user provies a valid password type
+	if _, err := msgs.GetPasswordType(PasswordType); err != nil {
+		fmt.Println("Error:", err.Error())
+		os.Exit(1)
 	}
 
 	response, err := api.CreateUser(httpclient, &SessionCredentials, &request)
@@ -373,6 +380,7 @@ func updateUser(clusterNames []string, namespace string) {
 		PasswordAgeDays:     PasswordAgeDays,
 		PasswordLength:      PasswordLength,
 		PasswordValidAlways: PasswordValidAlways,
+		PasswordType:        PasswordType,
 		RotatePassword:      RotatePassword,
 		Selector:            Selector,
 		Username:            strings.TrimSpace(Username),
@@ -389,6 +397,12 @@ func updateUser(clusterNames []string, namespace string) {
 	// check to see if this is a system account if a user name is passed in
 	if request.Username != "" && utiloperator.IsPostgreSQLUserSystemAccount(request.Username) {
 		fmt.Println("Error:", request.Username, "is a system account and cannot be used")
+		os.Exit(1)
+	}
+
+	// determine if the user provies a valid password type
+	if _, err := msgs.GetPasswordType(PasswordType); err != nil {
+		fmt.Println("Error:", err.Error())
 		os.Exit(1)
 	}
 
