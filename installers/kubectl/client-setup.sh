@@ -62,11 +62,16 @@ then
     exit 1
 fi
 
+# there is an "issue" from an older installer where some of the files in the
+# directory are set to "read-only" for the files. This makes it a bit
+# challenging to update. So we need to give these files write permissions
+# if the files don't exist, we can ignore
+chmod u+rw "${OUTPUT_DIR}/pgouser" "${OUTPUT_DIR}/client.crt" "${OUTPUT_DIR}/client.key" 2> /dev/null
+
 # Use the pgouser-admin secret to generate pgouser file
 kubectl get secret -n "${PGO_OPERATOR_NAMESPACE}" "${PGO_USER_ADMIN}" -o 'go-template={{.data.username | base64decode }}:{{.data.password | base64decode}}' > $OUTPUT_DIR/pgouser
 # ensure this file is locked down to the specific user running this
 chmod a-rwx,u+rw "${OUTPUT_DIR}/pgouser"
-
 
 # Use the pgo.tls secret to generate the client cert files
 kubectl get secret -n "${PGO_OPERATOR_NAMESPACE}" pgo.tls -o 'go-template={{ index .data "tls.crt" | base64decode }}' > $OUTPUT_DIR/client.crt
