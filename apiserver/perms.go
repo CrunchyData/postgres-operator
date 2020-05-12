@@ -31,6 +31,7 @@ const (
 	LABEL_PERM        = "Label"
 	LOAD_PERM         = "Load"
 	RELOAD_PERM       = "Reload"
+	RESTART_PERM      = "Restart"
 	RESTORE_PERM      = "Restore"
 	STATUS_PERM       = "Status"
 	TEST_CLUSTER_PERM = "TestCluster"

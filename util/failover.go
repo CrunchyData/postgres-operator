@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"regexp"
 
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
@@ -38,6 +37,8 @@ type InstanceReplicationInfo struct {
 	ReplicationLag int
 	Status         string
 	Timeline       int
+	PendingRestart bool
+	Role           string
 }
 
 type ReplicationStatusRequest struct {
@@ -59,7 +60,15 @@ type instanceReplicationInfoJSON struct {
 	Type           string `json:"Role"`
 	ReplicationLag int    `json:"Lag in MB"`
 	State          string
-	Timeline       int `json:"TL"`
+	Timeline       int    `json:"TL"`
+	PendingRestart string `json:"Pending restart"`
+}
+
+// instanceInfo stores the name and node of a specific instance (primary or replica) within a
+// PG cluster
+type instanceInfo struct {
+	name string
+	node string
 }
 
 const (
@@ -69,13 +78,6 @@ const (
 	// instanceReplicationInfoTypePrimaryStandby is the label used by Patroni to indicate that an
 	// instance is indeed a primary PostgreSQL instance, specifically within a standby cluster
 	instanceReplicationInfoTypePrimaryStandby = "Standby Leader"
-	// pgPodNamePattern pattern is a pattern used by regexp to look up the
-	// name of the pod
-	// The character classes are derived from the Kubernetes random generator
-	// "SafeEncodeString"
-	//
-	// https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/apimachinery/pkg/util/rand/rand.go#L121-L127
-	pgPodNamePattern = "%s-[bcdfghjklmnpqrstvwxz2456789]+-[0-9a-z]{5}$"
 )
 
 var (
@@ -130,14 +132,24 @@ func GetPod(clientset *kubernetes.Clientset, deploymentName, namespace string) (
 //
 // Statistics include: the current node the replica is on, if it is up, the
 // replication lag, etc.
-func ReplicationStatus(request ReplicationStatusRequest) (ReplicationStatusResponse, error) {
+//
+// By default information is only returned for replicas within the cluster.  However,
+// if primary information is also needed, the inlcudePrimary flag can set set to true
+// and primary information will will also be included in the ReplicationStatusResponse.
+func ReplicationStatus(request ReplicationStatusRequest, includePrimary bool) (ReplicationStatusResponse, error) {
 	response := ReplicationStatusResponse{
 		Instances: make([]InstanceReplicationInfo, 0),
 	}
 
-	// First, get replica pods using selector pg-cluster=clusterName-replica,role=replica
-	selector := fmt.Sprintf("%s=%s,%s=replica",
-		config.LABEL_PG_CLUSTER, request.ClusterName, config.LABEL_PGHA_ROLE)
+	// First, get replica pods using selector pg-cluster=clusterName,role=replica if not including the primary,
+	// or pg-cluster=clusterName,pg-database if including the primary
+	var roleSelector string
+	if !includePrimary {
+		roleSelector = fmt.Sprintf("%s=%s", config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_REPLICA)
+	} else {
+		roleSelector = config.LABEL_PG_DATABASE
+	}
+	selector := fmt.Sprintf("%s=%s,%s", config.LABEL_PG_CLUSTER, request.ClusterName, roleSelector)
 
 	log.Debugf(`searching for pods with "%s"`, selector)
 	pods, err := kubeapi.GetPods(request.Clientset, selector, request.Namespace)
@@ -155,10 +167,10 @@ func ReplicationStatus(request ReplicationStatusRequest) (ReplicationStatusRespo
 		return response, err
 	}
 
-	// We need to create a quick map of "instance name" => node name
+	// We need to create a quick map of "pod name" => node name / instance name
 	// We will iterate through the pod list once to extract the name we refer to
 	// the specific instance as, as well as which node it is deployed on
-	instanceNodeMap := createInstanceNodeMap(pods)
+	instanceInfoMap := createInstanceInfoMap(pods)
 
 	// Now get the statistics about the current state of the replicas, which we
 	// can delegate to Patroni vis-a-vis the information that it collects
@@ -185,10 +197,17 @@ func ReplicationStatus(request ReplicationStatusRequest) (ReplicationStatusRespo
 	// We need to iterate through this list to format the information for the
 	// response
 	for _, rawInstance := range rawInstances {
-		// if this is a primary, skip it
+
+		var role string
+		// skip the primary unless explicitly enabled
 		if rawInstance.Type == instanceReplicationInfoTypePrimary ||
 			rawInstance.Type == instanceReplicationInfoTypePrimaryStandby {
-			continue
+			if !includePrimary {
+				continue
+			}
+			role = "primary"
+		} else {
+			role = "replica"
 		}
 
 		// set up the instance that will be returned
@@ -196,31 +215,14 @@ func ReplicationStatus(request ReplicationStatusRequest) (ReplicationStatusRespo
 			ReplicationLag: rawInstance.ReplicationLag,
 			Status:         rawInstance.State,
 			Timeline:       rawInstance.Timeline,
+			Role:           role,
+			Name:           instanceInfoMap[rawInstance.PodName].name,
+			Node:           instanceInfoMap[rawInstance.PodName].node,
 		}
 
-		// get the instance name that is recognized by the Operator, which is the
-		// first part of the name and is kept on a deployment label. We have these
-		// available in our instanceNodeMap, and because we skip over the primary,
-		// this will not lead to false positive
-		//
-		// This is not the cleanest way of doing it, but it works
-		for name, node := range instanceNodeMap {
-			r, err := regexp.Compile(fmt.Sprintf(pgPodNamePattern, name))
-
-			// if there is an error compiling the regular expression, add an error to
-			// log log and keep iterating
-			if err != nil {
-				log.Error(err)
-				continue
-			}
-
-			// see if there is a match in the names. If it , add the name and node for
-			// this particular instance
-			if r.Match([]byte(rawInstance.PodName)) {
-				instance.Name = name
-				instance.Node = node
-				break
-			}
+		// indicate whether or not the instance has a pending restart
+		if rawInstance.PendingRestart == "*" {
+			instance.PendingRestart = true
 		}
 
 		// append this newly created instance to the list that will be returned
@@ -272,27 +274,25 @@ func ToggleAutoFailover(clientset *kubernetes.Clientset, enable bool, pghaScope,
 	return nil
 }
 
-// createInstanceNodeMap creates a mapping between the names of the PostgreSQL
-// instances to the Nodes that they run on, based upon the output from a
-// Kubernetes API query
-func createInstanceNodeMap(pods *v1.PodList) map[string]string {
-	instanceNodeMap := map[string]string{}
+// createInstanceInfoMap creates a mapping between the pod names for the PostgreSQL
+// pods in a cluster to the a struct containing the associated instance name and the
+// Nodes that it runs on, all based upon the output from a Kubernetes API query
+func createInstanceInfoMap(pods *v1.PodList) map[string]instanceInfo {
+
+	instanceInfoMap := make(map[string]instanceInfo)
 
 	// Iterate through each pod that is returned and get the mapping between the
-	// PostgreSQL instance name and the node it is scheduled on
+	// pod and the PostgreSQL instance name with node it is scheduled on
 	for _, pod := range pods.Items {
-		// get the replica name from the metadata on the pod
-		// for legacy purposes, we are using the "deployment name" label
-		replicaName := pod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
-		// get the node name from the spec on the pod
-		nodeName := pod.Spec.NodeName
-		// add them to the map
-		instanceNodeMap[replicaName] = nodeName
+		instanceInfoMap[pod.GetName()] = instanceInfo{
+			name: pod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME],
+			node: pod.Spec.NodeName,
+		}
 	}
 
-	log.Debugf("instance/node map: %v", instanceNodeMap)
+	log.Debugf("instanceInfoMap: %v", instanceInfoMap)
 
-	return instanceNodeMap
+	return instanceInfoMap
 }
 
 // If "pause" is present in the config and set to "true", then it needs to be removed to enable

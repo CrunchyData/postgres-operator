@@ -18,12 +18,13 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 //unused but coming soon to a theatre near you
@@ -81,7 +82,12 @@ func reload(args []string, ns string) {
 			fmt.Println(response.Results[k])
 		}
 	} else {
-		fmt.Println("Error: " + response.Status.Msg)
+		// print the error message as well as the results, since the reload might have succeeded
+		// for certain clusters specified, but not for others
+		fmt.Println(response.Status.Msg)
+		for k := range response.Results {
+			fmt.Println(response.Results[k])
+		}
 		os.Exit(2)
 	}
 

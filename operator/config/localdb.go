@@ -197,7 +197,7 @@ func (l *LocalDB) Update(configName string, localDBConfig LocalDBConfig) error {
 	log.Debugf("Cluster Config: updating local config %s in cluster %s "+
 		"(namespace %s)", configName, clusterName, namespace)
 
-	content, err := json.Marshal(localDBConfig)
+	content, err := yaml.Marshal(localDBConfig)
 	if err != nil {
 		return err
 	}

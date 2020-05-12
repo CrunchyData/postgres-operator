@@ -142,7 +142,7 @@ func (d *DCS) Update(dcsConfig *DCSConfig) error {
 	log.Debugf("Cluster Config: updating DCS config for cluster %s (namespace %s)", clusterName,
 		namespace)
 
-	content, err := json.Marshal(dcsConfig)
+	content, err := yaml.Marshal(dcsConfig)
 	if err != nil {
 		return err
 	}
