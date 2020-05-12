@@ -23,6 +23,7 @@ type FailoverTargetSpec struct {
 	ReplicationLag int    // how far behind the instance is behind the primary, in MB
 	Status         string // the current status of the instance
 	Timeline       int    // the timeline the replica is on; timelines are adjusted after failover events
+	PendingRestart bool   // whether or not a restart is pending for the target
 }
 
 // QueryFailoverResponse ...

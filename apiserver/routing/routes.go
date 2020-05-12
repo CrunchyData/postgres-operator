@@ -34,6 +34,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver/policyservice"
 	"github.com/crunchydata/postgres-operator/apiserver/pvcservice"
 	"github.com/crunchydata/postgres-operator/apiserver/reloadservice"
+	"github.com/crunchydata/postgres-operator/apiserver/restartservice"
 	"github.com/crunchydata/postgres-operator/apiserver/scheduleservice"
 	"github.com/crunchydata/postgres-operator/apiserver/statusservice"
 	"github.com/crunchydata/postgres-operator/apiserver/upgradeservice"
@@ -65,6 +66,7 @@ func RegisterAllRoutes(r *mux.Router) {
 	RegisterPolicySvcRoutes(r)
 	RegisterPVCSvcRoutes(r)
 	RegisterReloadSvcRoutes(r)
+	RegisterRestartSvcRoutes(r)
 	RegisterScheduleSvcRoutes(r)
 	RegisterStatusSvcRoutes(r)
 	RegisterUpgradeSvcRoutes(r)
@@ -192,6 +194,12 @@ func RegisterPVCSvcRoutes(r *mux.Router) {
 // RegisterReloadSvcRoutes registers all routes from the Reload Service
 func RegisterReloadSvcRoutes(r *mux.Router) {
 	r.HandleFunc("/reload", reloadservice.ReloadHandler).Methods("POST")
+}
+
+// RegisterRestartSvcRoutes registers all routes from the Restart Service
+func RegisterRestartSvcRoutes(r *mux.Router) {
+	r.HandleFunc("/restart", restartservice.RestartHandler).Methods("POST")
+	r.HandleFunc("/restart/{name}", restartservice.QueryRestartHandler).Methods("GET")
 }
 
 // RegisterScheduleSvcRoutes registers all routes from the Schedule Service

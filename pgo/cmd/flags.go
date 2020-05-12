@@ -25,6 +25,7 @@ var KeepData bool
 var Query bool
 
 var Target string
+var Targets []string
 
 var OutputFormat string
 var Labelselector string

@@ -28,5 +28,4 @@ type ReloadRequest struct {
 	Namespace string
 	Args      []string
 	Selector  string
-	//ConfigMapName       string
 }

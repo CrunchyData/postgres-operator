@@ -17,6 +17,8 @@ package pgo_cli_test
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net"
 	"os"
 	"strings"
@@ -29,7 +31,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	core_v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apiserver/pkg/storage/names"
+	"sigs.k8s.io/yaml"
 )
 
 type Pool struct {
@@ -380,4 +385,77 @@ func withNamespace(t testing.TB, during func(func() string)) {
 
 		return namespace.Name
 	})
+}
+
+// updatePGConfigDCS updates PG configuration for cluster via its Distributed Configuration Store
+// (DCS) according to the key/value pairs defined in the pgConfig map, specifically by updating
+// the <clusterName>-pgha-config ConfigMap.  Specifically, the configuration settings specified are
+// applied to the entire cluster via the DCS configuration included within this the
+// <clusterName>-pgha-config ConfigMap.
+func updatePGConfigDCS(t testing.TB, clusterName, namespace string, pgConfig map[string]string) {
+	t.Helper()
+
+	dcsConfigName := fmt.Sprintf("%s-dcs-config", clusterName)
+
+	type postgresDCS struct {
+		Parameters map[string]interface{} `json:"parameters,omitempty"`
+	}
+
+	type dcsConfig struct {
+		PostgreSQL            *postgresDCS `json:"postgresql,omitempty"`
+		LoopWait              interface{}  `json:"loop_wait,omitempty"`
+		TTL                   interface{}  `json:"ttl,omitempty"`
+		RetryTimeout          interface{}  `json:"retry_timeout,omitempty"`
+		MaximumLagOnFailover  interface{}  `json:"maximum_lag_on_failover,omitempty"`
+		MasterStartTimeout    interface{}  `json:"master_start_timeout,omitempty"`
+		SynchronousMode       interface{}  `json:"synchronous_mode,omitempty"`
+		SynchronousModeStrict interface{}  `json:"synchronous_mode_strict,omitempty"`
+		StandbyCluster        interface{}  `json:"standby_cluster,omitempty"`
+		Slots                 interface{}  `json:"slots,omitempty"`
+	}
+
+	clusterConfig, err := TestContext.Kubernetes.Client.CoreV1().ConfigMaps(namespace).
+		Get(fmt.Sprintf("%s-pgha-config", clusterName), metav1.GetOptions{})
+	require.NoError(t, err)
+
+	dcsConf := &dcsConfig{}
+	if err := yaml.Unmarshal([]byte(clusterConfig.Data[dcsConfigName]),
+		dcsConf); err != nil {
+	}
+	require.NoError(t, err)
+
+newConf:
+	for newParamKey, newParamVal := range pgConfig {
+		for currParamKey, _ := range dcsConf.PostgreSQL.Parameters {
+			// update setting if it already exists
+			if newParamKey == currParamKey {
+				dcsConf.PostgreSQL.Parameters[currParamKey] = newParamVal
+				// move to the next new setting provided
+				continue newConf
+			}
+		}
+		// add new setting if doesn't already exist
+		dcsConf.PostgreSQL.Parameters[newParamKey] = newParamVal
+	}
+
+	content, err := yaml.Marshal(dcsConf)
+	require.NoError(t, err)
+
+	jsonOpBytes, err := json.Marshal([]struct {
+		Op    string `json:"op"`
+		Path  string `json:"path"`
+		Value string `json:"value"`
+	}{{
+		"replace",
+		fmt.Sprintf("/data/%s", dcsConfigName),
+		string(content),
+	}})
+	require.NoError(t, err)
+
+	if _, err := TestContext.Kubernetes.Client.CoreV1().ConfigMaps(namespace).
+		Patch(clusterConfig.GetName(),
+			types.JSONPatchType, jsonOpBytes); err != nil {
+		require.NoError(t, err)
+	}
+
 }

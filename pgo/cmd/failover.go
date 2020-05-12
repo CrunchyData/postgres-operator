@@ -130,16 +130,16 @@ func queryFailover(args []string, ns string) {
 	}
 
 	// output the information about each instance
-	fmt.Printf("%-20s\t%-10s\t%-10s\t%s\n", "REPLICA", "STATUS", "NODE", "REPLICATION LAG")
+	fmt.Printf("%-20s\t%-10s\t%-10s\t%-20s\t%s\n", "REPLICA", "STATUS", "NODE", "REPLICATION LAG",
+		"PENDING RESTART")
 
 	for i := 0; i < len(response.Results); i++ {
 		instance := response.Results[i]
 
 		log.Debugf("postgresql instance: %v", instance)
 
-		node := instance.Node
-
-		fmt.Printf("%-20s\t%-10s\t%-10s\t%12d MB\n",
-			instance.Name, instance.Status, node, instance.ReplicationLag)
+		fmt.Printf("%-20s\t%-10s\t%-10s\t%12d %-7s\t%15t\n",
+			instance.Name, instance.Status, instance.Node, instance.ReplicationLag, "MB",
+			instance.PendingRestart)
 	}
 }

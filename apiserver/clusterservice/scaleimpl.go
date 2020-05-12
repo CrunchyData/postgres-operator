@@ -217,7 +217,7 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 		ClusterName: name,
 	}
 
-	replicationStatusResponse, err := util.ReplicationStatus(replicationStatusRequest)
+	replicationStatusResponse, err := util.ReplicationStatus(replicationStatusRequest, false)
 
 	// if an error is return, log the message, and return the response
 	if err != nil {
@@ -244,6 +244,7 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 			Status:         instance.Status,
 			ReplicationLag: instance.ReplicationLag,
 			Timeline:       instance.Timeline,
+			PendingRestart: instance.PendingRestart,
 		}
 
 		// append the result to the response list
