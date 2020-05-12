@@ -30,8 +30,10 @@ import (
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
+	pgov1 "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	"github.com/crunchydata/postgres-operator/tlsutil"
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -43,12 +45,16 @@ const PGOSecretName = "pgo.tls"
 
 const VERSION_MISMATCH_ERROR = "pgo client and server version mismatch"
 
-// RESTClient ...
-var RESTClient *rest.RESTClient
-
-// Clientset ...
-var Clientset *kubernetes.Clientset
-var RESTConfig *rest.Config
+var (
+	// PGOClientset is a client for PostgreSQL Operator resources
+	PGOClientset pgov1.Interface
+	// Clientset is a client for native Kubernetes resources
+	Clientset *kubernetes.Clientset
+	// RESTConfig holds the REST configuration for a Kube client
+	RESTConfig *rest.Config
+	// RESTClient is a REST client for the Kubernetes API
+	RESTClient *rest.RESTClient
+)
 
 // MetricsFlag if set to true will cause crunchy-collect to be added into new clusters
 var MetricsFlag, BadgerFlag bool
@@ -159,6 +165,7 @@ func ConnectToKube() {
 	RESTConfig = controllerClients.Config
 	RESTClient = controllerClients.PGORestclient
 	Clientset = controllerClients.Kubeclientset
+	PGOClientset = controllerClients.PGOClientset
 }
 
 func initConfig() {
@@ -414,13 +421,13 @@ func WriteTLSCert(certPath, keyPath string) error {
 
 	// otherwise, write the TLS sertificate to the certificate and key path
 	log.Infof("%s Secret found in namespace %s", PGOSecretName, PgoNamespace)
-	log.Infof("cert key data len is %d", len(pgoSecret.Data[v1.TLSCertKey]))
+	log.Infof("cert key data len is %d", len(pgoSecret.Data[corev1.TLSCertKey]))
 
-	if err := ioutil.WriteFile(certPath, pgoSecret.Data[v1.TLSCertKey], 0644); err != nil {
+	if err := ioutil.WriteFile(certPath, pgoSecret.Data[corev1.TLSCertKey], 0644); err != nil {
 		return err
 	}
 
-	log.Infof("private key data len is %d", len(pgoSecret.Data[v1.TLSPrivateKeyKey]))
+	log.Infof("private key data len is %d", len(pgoSecret.Data[corev1.TLSPrivateKeyKey]))
 
 	if err := ioutil.WriteFile(keyPath, pgoSecret.Data[v1.TLSPrivateKeyKey], 0644); err != nil {
 		return err
@@ -456,14 +463,14 @@ func generateTLSCert(certPath, keyPath string) error {
 	log.Debugf("generated caCertBytes len %d", len(caCertBytes))
 
 	// CreateSecret
-	newSecret := v1.Secret{}
+	newSecret := corev1.Secret{}
 	newSecret.Name = PGOSecretName
 	newSecret.ObjectMeta.Labels = make(map[string]string)
 	newSecret.ObjectMeta.Labels[config.LABEL_VENDOR] = "crunchydata"
 	newSecret.Data = make(map[string][]byte)
-	newSecret.Data[v1.TLSCertKey] = caCertBytes
-	newSecret.Data[v1.TLSPrivateKeyKey] = privateKeyBytes
-	newSecret.Type = v1.SecretTypeTLS
+	newSecret.Data[corev1.TLSCertKey] = caCertBytes
+	newSecret.Data[corev1.TLSPrivateKeyKey] = privateKeyBytes
+	newSecret.Type = corev1.SecretTypeTLS
 
 	err = kubeapi.CreateSecret(Clientset, &newSecret, PgoNamespace)
 	if err != nil {
@@ -471,10 +478,10 @@ func generateTLSCert(certPath, keyPath string) error {
 		os.Exit(2)
 	}
 
-	if err := ioutil.WriteFile(certPath, newSecret.Data[v1.TLSCertKey], 0644); err != nil {
+	if err := ioutil.WriteFile(certPath, newSecret.Data[corev1.TLSCertKey], 0644); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(keyPath, newSecret.Data[v1.TLSPrivateKeyKey], 0644); err != nil {
+	if err := ioutil.WriteFile(keyPath, newSecret.Data[corev1.TLSPrivateKeyKey], 0644); err != nil {
 		return err
 	}
 
