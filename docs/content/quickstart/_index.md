@@ -27,7 +27,7 @@ If your environment is set up to use hostpath storage (found in things like [min
 
 ```
 kubectl create namespace pgo
-kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator/master/installers/kubectl/postgres-operator.yml
+kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.0/installers/kubectl/postgres-operator.yml
 ```
 
 If not, please read onward: you can still get up and running fairly quickly with just a little bit of configuration.
@@ -39,7 +39,7 @@ If not, please read onward: you can still get up and running fairly quickly with
 You will need to download the PostgreSQL Operator Installer manifest to your environment, which you can do with the following command:
 
 ```
-curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/master/installers/kubectl/postgres-operator.yml > postgres-operator.yml
+curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.0/installers/kubectl/postgres-operator.yml > postgres-operator.yml
 ```
 
 If you wish to download a specific version of the installer, you can substitute `master` with the version of the tag, i.e.
