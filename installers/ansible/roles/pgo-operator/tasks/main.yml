@@ -171,9 +171,6 @@
 
       - name: Create Cluster RBAC (namespace_mode 'readonly')
         command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/cluster-rbac-readonly.yaml"
-        tags:
-          - install
-          - update
         when: cluster_rbac_readonly_result.rc == 1
 
     - name: Cluster Roles Disabled (namespace_mode 'disabled')
@@ -211,7 +208,6 @@
       tags:
         - install
         - update
-        - test
       when: create_rbac|bool and pgo_cluster_admin|bool
       block:
         - name: Check cluster-admin Cluster Role Binding for PGO Service Account
@@ -223,7 +219,7 @@
           command: |
             {{ kubectl_or_oc }} create clusterrolebinding pgo-cluster-admin \
               --clusterrole cluster-admin \
-              --user system:serviceaccount:{{ pgo_operator_namespace }}:postgres-operator
+              --serviceaccount "{{ pgo_operator_namespace }}:postgres-operator"
           when: pgo_cluster_admin_result.rc == 1
 
 
