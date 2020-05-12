@@ -229,42 +229,47 @@ Also, please note that `pg_hba` and `pg_ident` sections exist to update both the
 
 #### Restarting Database Servers
 
-Changes to certain settings may require a restart of a PostgreSQL database.
-This can be accomplished using the `patronictl` utility included wihtin
-each PostgreSQL database container in the cluster, specifically
-using the `patronictl restart` command.  For example, to detect if a
-restart is needed for a server in a cluster called `mycluster`, the
-`kubectl exec` command can be utilized to access the database container for
-the primary PostgreSQL database server, and run the `patronictl list`
-command:
+Changes to certain settings may require one or more PostgreSQL databases within the cluster to be
+restarted.  This can be accomplished using the `pgo restart` command included with the `pgo` client.
+To detect if a restart is needed for a instance within a cluster called `mycluster` after making a 
+configuration change, the `query` flag can be utilized with the `pgo restart` command as follows:
 
 ```bash
-$ kubectl exec -it mycluster-6f89d8bb85-pnlwz -- patronictl list
-+ Cluster: mycluster (6821144425371877525) -------+---------+----+-----------+-----------------+
-|            Member           |    Host   |  Role  |  State  | TL | Lag in MB | Pending restart |
-+-----------------------------+-----------+--------+---------+----+-----------+-----------------+
-| mycluster-6f89d8bb85-pnlwz | 10.44.0.6 | Leader | running |  1 |           |        *        |
-+-----------------------------+-----------+--------+---------+----+-----------+-----------------+
+$ pgo restart mycluster2 --query
+
+Cluster: mycluster2
+INSTANCE                ROLE            STATUS          NODE            REPLICATION LAG         PENDING RESTART
+mycluster               primary         running         node01                     0 MB                   false
+mycluster-ambq          replica         running         node01                     0 MB                    true
 ```
 
-Here we can see that the ` mycluster-6f89d8bb85-pnlwz` server is pending a restart,
-which can then be accomplished as follows:
+Here we can see that the `mycluster-ambq` instance (i.e. the sole replica in cluster `mycluster`)
+is pending a restart, as shown by the `PENDING RESTART` column.  A restart can then be requested
+as follows:
 
 ```bash
-$ kubectl exec -it mycluster-6f89d8bb85-pnlwz -- patronictl restart mycluster mycluster-6f89d8bb85-pnlwz
-+ Cluster: mycluster (6821144425371877525) -------+---------+----+-----------+
-|            Member           |    Host   |  Role  |  State  | TL | Lag in MB |
-+-----------------------------+-----------+--------+---------+----+-----------+
-| mycluster-6f89d8bb85-pnlwz | 10.44.0.6 | Leader | running |  1 |           |
-+-----------------------------+-----------+--------+---------+----+-----------+
-When should the restart take place (e.g. 2020-04-29T17:23)  [now]: now
-Are you sure you want to restart members mycluster-6f89d8bb85-pnlwz? [y/N]: y
-Restart if the PostgreSQL version is less than provided (e.g. 9.5.2)  []:
-Success: restart on member mycluster-6f89d8bb85-pnlwz
+$ pgo restart mycluster --target mycluster-ambq
+WARNING: Are you sure? (yes/no): yes
+Successfully restarted instance mycluster
 ```
 
-Please note that these commands can be run from the primary or any replica
-database container within the PostgreSQL cluster being updated.
+It is also possible to target multiple instances at the same time:
+
+```bash
+$ pgo restart mycluster --target mycluster --target mycluster-ambq
+WARNING: Are you sure? (yes/no): yes
+Successfully restarted instance mycluster
+Successfully restarted instance mycluster-ambq
+```
+
+Or if no target is specified, the all instances within the cluster will be restarted:
+
+```bash
+$ pgo restart mycluster
+WARNING: Are you sure? (yes/no): yes
+Successfully restarted instance mycluster
+Successfully restarted instance mycluster-ambq
+```
 
 ### Refreshing Configuration Settings
 
