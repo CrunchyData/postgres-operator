@@ -12,10 +12,12 @@
 #  limitations under the License.
 
 # This script should be run after the operator has been deployed
-export PGO_OPERATOR_NAMESPACE="${PGO_OPERATOR_NAMESPACE:-pgo}"
+PGO_OPERATOR_NAMESPACE="${PGO_OPERATOR_NAMESPACE:-pgo}"
 PGO_USER_ADMIN="${PGO_USER_ADMIN:-pgouser-admin}"
 PGO_CLIENT_VERSION="${PGO_CLIENT_VERSION:-v4.3.0}"
 PGO_CLIENT_URL="https://github.com/CrunchyData/postgres-operator/releases/download/${PGO_CLIENT_VERSION}"
+
+PGO_CMD="${PGO_CMD-kubectl}"
 
 # Checks operating system and determines which binary to download
 UNAME_RESULT=$(uname)
@@ -33,19 +35,16 @@ fi
 
 # Creates the output directory for files
 OUTPUT_DIR="${HOME}/.pgo/${PGO_OPERATOR_NAMESPACE}"
-mkdir -p "${OUTPUT_DIR}"
-# lock down the directory to just this user
-chmod a-rwx,u+rwx "${OUTPUT_DIR}"
+install -d -m a-rwx,u+rwx "${OUTPUT_DIR}"
 
 echo "Operating System found is ${UNAME_RESULT}. Downloading ${BIN_NAME} client binary..."
 
-FULL_PATH="${PGO_CLIENT_URL}/${BIN_NAME}"
-curl -L "${FULL_PATH}" -o "${OUTPUT_DIR}/${BIN_NAME}"
-chmod +x "${OUTPUT_DIR}/${BIN_NAME}"
+curl -Lo "${OUTPUT_DIR}/pgo" "${PGO_CLIENT_URL}/${BIN_NAME}"
+chmod +x "${OUTPUT_DIR}/pgo"
 
 
 # Check that the pgouser-admin secret exists
-if [ -z "$(kubectl get secret -n ${PGO_OPERATOR_NAMESPACE} ${PGO_USER_ADMIN})" ]
+if [ -z "$($PGO_CMD get secret -n ${PGO_OPERATOR_NAMESPACE} ${PGO_USER_ADMIN})" ]
 then
     echo "${PGO_USER_ADMIN} Secret not found in namespace: ${PGO_OPERATOR_NAMESPACE}"
     echo "Please ensure that the PostgreSQL Operator has been installed."
@@ -54,7 +53,7 @@ then
 fi
 
 # Check that the pgo.tls secret exists
-if [ -z "$(kubectl get secret -n ${PGO_OPERATOR_NAMESPACE} pgo.tls)" ]
+if [ -z "$($PGO_CMD get secret -n ${PGO_OPERATOR_NAMESPACE} pgo.tls)" ]
 then
     echo "pgo.tls Secret not found in namespace: ${PGO_OPERATOR_NAMESPACE}"
     echo "Please ensure that the PostgreSQL Operator has been installed."
@@ -62,23 +61,16 @@ then
     exit 1
 fi
 
-# there is an "issue" from an older installer where some of the files in the
-# directory are set to "read-only" for the files. This makes it a bit
-# challenging to update. So we need to give these files write permissions
-# if the files don't exist, we can ignore
-chmod u+rw "${OUTPUT_DIR}/pgouser" "${OUTPUT_DIR}/client.crt" "${OUTPUT_DIR}/client.key" 2> /dev/null
+# Restrict access to the target file before writing
+kubectl_get_private() { touch "$1" && chmod a-rwx,u+rw "$1" && $PGO_CMD get > "$1" "${@:2}"; }
 
 # Use the pgouser-admin secret to generate pgouser file
-kubectl get secret -n "${PGO_OPERATOR_NAMESPACE}" "${PGO_USER_ADMIN}" -o 'go-template={{.data.username | base64decode }}:{{.data.password | base64decode}}' > $OUTPUT_DIR/pgouser
-# ensure this file is locked down to the specific user running this
-chmod a-rwx,u+rw "${OUTPUT_DIR}/pgouser"
+kubectl_get_private "${OUTPUT_DIR}/pgouser" secret -n "${PGO_OPERATOR_NAMESPACE}" "${PGO_USER_ADMIN}" \
+	-o 'go-template={{ .data.username | base64decode }}:{{ .data.password | base64decode }}'
 
 # Use the pgo.tls secret to generate the client cert files
-kubectl get secret -n "${PGO_OPERATOR_NAMESPACE}" pgo.tls -o 'go-template={{ index .data "tls.crt" | base64decode }}' > $OUTPUT_DIR/client.crt
-kubectl get secret -n "${PGO_OPERATOR_NAMESPACE}" pgo.tls -o 'go-template={{ index .data "tls.key" | base64decode }}' > $OUTPUT_DIR/client.key
-# ensure the files are locked down to the specific user running this
-chmod a-rwx,u+rw "${OUTPUT_DIR}/client.crt" "${OUTPUT_DIR}/client.key"
-
+kubectl_get_private "${OUTPUT_DIR}/client.crt" secret -n "${PGO_OPERATOR_NAMESPACE}" pgo.tls -o 'go-template={{ index .data "tls.crt" | base64decode }}'
+kubectl_get_private "${OUTPUT_DIR}/client.key" secret -n "${PGO_OPERATOR_NAMESPACE}" pgo.tls -o 'go-template={{ index .data "tls.key" | base64decode }}'
 
 echo "pgo client files have been generated, please add the following to your bashrc"
 echo "export PATH=${OUTPUT_DIR}:\$PATH"
