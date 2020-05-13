@@ -34,13 +34,21 @@ and much more!
 [pgBackRest]: https://www.pgbackrest.org
 [pgMonitor]: https://github.com/CrunchyData/pgmonitor
 
+
 ## Before You Begin
 
-There are several manual steps that the cluster administrator must perform prior to installing the operator. The
-operator must be provided with an initial configuration to run in the cluster, as well as certificates and
-credentials that need to be generated.
+There are a few manual steps that the cluster administrator must perform prior to installing the PostgreSQL Operator.
+At the very least, it must be provided with an initial configuration.
 
-Start by cloning the operator repository locally.
+First, select a namespace in which to install the PostgreSQL Operator. PostgreSQL clusters will also be deployed here.
+If it does not exist, create it now.
+
+```
+export PGO_OPERATOR_NAMESPACE=pgo
+kubectl create namespace "$PGO_OPERATOR_NAMESPACE"
+```
+
+Next, clone the PostgreSQL Operator repository locally.
 
 ```
 git clone -b v${PGO_VERSION} https://github.com/CrunchyData/postgres-operator.git
@@ -49,145 +57,83 @@ cd postgres-operator
 
 ### PostgreSQL Operator Configuration
 
-Edit `conf/postgres-operator/pgo.yaml` to configure the operator deployment. Look over all of the options and make any
-changes necessary for your environment.
+Edit `conf/postgres-operator/pgo.yaml` to configure the deployment. Look over all of the options and make any
+changes necessary for your environment. A [full description of each option][pgo-yaml-reference] is available in the documentation.
 
-#### Image
+[pgo-yaml-reference]: https://access.crunchydata.com/documentation/postgres-operator/${PGO_VERSION}/configuration/pgo-yaml-configuration/
 
-Update the `CCPImageTag` tag to configure the PostgreSQL image being used, updating for the version of PostgreSQL as needed.
-
-```
-CCPImageTag:  ${CCP_IMAGE_TAG}
-```
-
-#### Storage
-
-Configure the backend storage for the Persistent Volumes used by each PostgreSQL cluster. Depending on the type of persistent
-storage you wish to make available, adjust the `StorageClass` as necessary. For example, to deploy on AWS using `gp2`, you
-would set the following:
+When the file is ready, upload the entire directory to the `pgo-config` ConfigMap.
 
 ```
-storageos:
-  AccessMode:  ReadWriteOnce
-  Size:  1G
-  StorageType:  dynamic
-  StorageClass:  gp2
-  Fsgroup:  26
+kubectl -n "$PGO_OPERATOR_NAMESPACE" create configmap pgo-config \
+  --from-file=./conf/postgres-operator
 ```
 
-Once the storage backend is defined, enable the new storage option as needed.
+### Secrets
+
+Configure pgBackRest for your environment. If you do not plan to use AWS S3 to store backups, you can omit
+the `aws-s3` keys below.
 
 ```
-PrimaryStorage: storageos
-ReplicaStorage: storageos
-BackrestStorage: storageos
-```
-
-### Certificates
-
-You will need to either generate new TLS certificates or use existing certificates for the operator API.
-
-You can generate new self-signed certificates using scripts in the operator repository.
-
-```
-export PGOROOT=$(pwd)
-cd $PGOROOT/deploy
-$PGOROOT/deploy/gen-api-keys.sh
-$PGOROOT/deploy/gen-sshd-keys.sh
-cd $PGOROOT
-```
-
-### Configuration and Secrets
-
-Once the configuration changes have been updated and certificates are in place, we can save the information to the cluster.
-
-Create the pgo namespace if it does not exist already. This single namespace is where the operator should be deployed to. PostgreSQL clusters will also be deployed here.
-
-```
-kubectl create namespace pgo
-```
-
-Create the `pgo-backrest-repo-config` Secret that is used by the PostgreSQL Operator. You can omit the AWS S3 keys if you are not planning to use S3 storage with the Operator
-
-```
-kubectl create secret generic -n pgo pgo-backrest-repo-config \
-  --from-file=config=$PGOROOT/conf/pgo-backrest-repo/config \
-  --from-file=sshd_config=$PGOROOT/conf/pgo-backrest-repo/sshd_config \
-  --from-file=aws-s3-ca.crt=$PGOROOT/conf/pgo-backrest-repo/aws-s3-ca.crt \
+kubectl -n "$PGO_OPERATOR_NAMESPACE" create secret generic pgo-backrest-repo-config \
+  --from-file=config=./conf/pgo-backrest-repo/config \
+  --from-file=sshd_config=./conf/pgo-backrest-repo/sshd_config \
+  --from-file=aws-s3-ca.crt=./conf/pgo-backrest-repo/aws-s3-ca.crt \
   --from-literal=aws-s3-key="<your-aws-s3-key>" \
   --from-literal=aws-s3-key-secret="<your-aws-s3-key-secret>"
 ```
 
-Create the `pgo-auth-secret` Secret that is used by the operator.
+### Certificates (optional)
+
+The PostgreSQL Operator has an API that uses TLS to communicate securely with clients. If you have
+a certificate bundle validated by your organization, you can install it now.  If not, the API will
+automatically generate and use a self-signed certificate.
 
 ```
-kubectl create secret generic -n pgo pgo-auth-secret \
-  --from-file=server.crt=$PGOROOT/conf/postgres-operator/server.crt \
-  --from-file=server.key=$PGOROOT/conf/postgres-operator/server.key
+kubectl -n "$PGO_OPERATOR_NAMESPACE" create secret tls pgo.tls \
+  --cert=/path/to/server.crt \
+  --key=/path/to/server.key
 ```
 
-Install the bootstrap credentials:
+Once these resources are in place, the PostgreSQL Operator can be installed into the cluster.
 
-```
-$PGOROOT/deploy/install-bootstrap-creds.sh
-```
-
-Remove existing credentials for pgo-apiserver TLS REST API, if they exist.
-
-```
-kubectl delete secret -n pgo tls pgo.tls
-```
-
-Create credentials for pgo-apiserver TLS REST API
-```
-kubectl create secret -n pgo tls pgo.tls \
-  --key=$PGOROOT/conf/postgres-operator/server.key \
-  --cert=$PGOROOT/conf/postgres-operator/server.crt
-```
-
-Create the `pgo-config` ConfigMap that is used by the operator.
-
-```
-kubectl create configmap -n pgo pgo-config \
-  --from-file=$PGOROOT/conf/postgres-operator
-```
-
-Once these resources are in place, the operator can be installed into the cluster.
 
 ## After You Install
 
-Once the operator is installed in the cluster, you will need to perform several steps to enable usage.
+Once the PostgreSQL Operator is installed in your Kubernetes cluster, you will need to do a few things
+to use the [PostgreSQL Operator Client][pgo-client].
 
-### Service
+[pgo-client]: https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/
 
-```
-kubectl expose deployment -n pgo postgres-operator --type=LoadBalancer
-```
-
-For the pgo client to communicate with the operator, it needs to know where to connect.
-Export the service URL as `PGO_APISERVER_URL` in the shell.
+Install the first set of client credentials and download the `pgo` binary and client certificates.
 
 ```
-export PGO_APISERVER_URL=https://<url of exposed service>:8443
+PGO_CMD=kubectl ./deploy/install-bootstrap-creds.sh
+PGO_CMD=kubectl ./installers/kubectl/client-setup.sh
 ```
 
-### Security
-
-When postgres operator deploys, it creates a set of certificates the pgo client will need to communicate.
-
-### Client Certificates
-
-Copy the client certificates from the apiserver to the local environment - we use /tmp for this example.
+The client needs to be able to reach the PostgreSQL Operator API from outside the Kubernetes cluster.
+Create an external service or forward a port locally.
 
 ```
-kubectl cp <pgo-namespace>/<postgres-operator-pod>:/tmp/server.key /tmp/server.key -c apiserver
-kubectl cp <pgo-namespace>/<postgres-operator-pod>:/tmp/server.crt /tmp/server.crt -c apiserver
+kubectl -n "$PGO_OPERATOR_NAMESPACE" expose deployment postgres-operator --type=LoadBalancer
+
+export PGO_APISERVER_URL="https://$(
+  kubectl -n "$PGO_OPERATOR_NAMESPACE" get service postgres-operator \
+    -o jsonpath="{.status.loadBalancer.ingress[*]['ip','hostname']}"
+):8443"
+```
+_or_
+```
+kubectl -n "$PGO_OPERATOR_NAMESPACE" port-forward deployment/postgres-operator 8443
+
+export PGO_APISERVER_URL="https://127.0.0.1:8443"
 ```
 
-Configure the shell for the pgo command line to use the certificates
+Verify connectivity using the `pgo` command.
 
 ```
-export PGO_CA_CERT=/tmp/server.crt
-export PGO_CLIENT_CERT=/tmp/server.crt
-export PGO_CLIENT_KEY=/tmp/server.key
+pgo version
+# pgo client version ${PGO_VERSION}
+# pgo-apiserver version ${PGO_VERSION}
 ```
