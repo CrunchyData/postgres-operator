@@ -17,9 +17,11 @@ package operator
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"strings"
 
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/ns"
 	log "github.com/sirupsen/logrus"
@@ -137,6 +139,43 @@ func Initialize(clientset *kubernetes.Clientset) {
 	// set controller refresh intervals and worker counts
 	initializeControllerRefreshIntervals()
 	initializeControllerWorkerCounts()
+}
+
+// GetPodSecurityContext will generate the security context required for a
+// Deployment by incorporating the standard fsGroup for the user that runs the
+// container (typically the "postgres" user), and adds any supplemental groups
+// that may need to be added, e.g. for NFS storage.
+//
+// Following the legacy method, this returns a JSON string, which will be
+// modified in the future. Mainly this is transitioning from the legacy function
+// by adding the expected types
+func GetPodSecurityContext(supplementalGroups []int64) string {
+	// set up the security context struct
+	securityContext := v1.PodSecurityContext{
+		// add any supplemental groups that the user passed in
+		SupplementalGroups: supplementalGroups,
+	}
+
+	// determine if we should use the PostgreSQL FSGroup.
+	if !Pgo.Cluster.DisableFSGroup {
+		// we store the PostgreSQL FSGroup in this constant as an int64, so it's
+		// just carried over
+		securityContext.FSGroup = &crv1.PGFSGroup
+	}
+
+	// ...convert to JSON. Errors are ignored
+	doc, err := json.Marshal(securityContext)
+
+	// if there happens to be an error, warn about it
+	if err != nil {
+		log.Warn(err)
+	}
+
+	// for debug purposes, we can look at the document
+	log.Debug(doc)
+
+	// return a string of the security context
+	return string(doc)
 }
 
 // GetResourcesJSON is a pseudo-legacy method that creates JSON that applies the

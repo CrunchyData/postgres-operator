@@ -341,7 +341,7 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, restCo
 	backrestRestoreJobFields := backrest.BackrestRestoreJobTemplateFields{
 		JobName:          fmt.Sprintf("restore-%s-%s", targetClusterName, util.RandStringBytesRmndr(4)),
 		ClusterName:      targetClusterName,
-		SecurityContext:  util.GetPodSecurityContext(supplementalGroups),
+		SecurityContext:  operator.GetPodSecurityContext(supplementalGroups),
 		ToClusterPVCName: targetClusterName, // the PVC name should match that of the target cluster
 		WorkflowID:       workflowID,
 		// use a delta restore in order to optimize how the restore occurs
@@ -490,8 +490,11 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 	jobName := fmt.Sprintf(pgBackRestRepoSyncJobNamePrefix, targetClusterName, util.RandStringBytesRmndr(4))
 
 	podSecurityContext := v1.PodSecurityContext{
-		FSGroup:            &crv1.PGFSGroup,
 		SupplementalGroups: sourcePgcluster.Spec.BackrestStorage.GetSupplementalGroups(),
+	}
+
+	if !operator.Pgo.Cluster.DisableFSGroup {
+		podSecurityContext.FSGroup = &crv1.PGFSGroup
 	}
 
 	// set up the job template to synchronize the pgBackRest repo

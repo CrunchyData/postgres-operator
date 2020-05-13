@@ -71,6 +71,8 @@ spec:
                     value: "install"
                   - name: DISABLE_AUTO_FAILOVER
                     value: "false"
+                  - name: DISABLE_FSGROUP
+                    value: "false"
                   - name: EXPORTERPORT
                     value: "9187"
                   - name: METRICS

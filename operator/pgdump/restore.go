@@ -81,7 +81,7 @@ func Restore(namespace string, clientset *kubernetes.Clientset, restclient *rest
 		JobName:             "pgrestore-" + task.Spec.Parameters[config.LABEL_PGRESTORE_FROM_CLUSTER] + "-from-" + fromPvcName + "-" + util.RandStringBytesRmndr(4),
 		TaskName:            taskName,
 		ClusterName:         clusterName,
-		SecurityContext:     util.GetPodSecurityContext(storage.GetSupplementalGroups()),
+		SecurityContext:     operator.GetPodSecurityContext(storage.GetSupplementalGroups()),
 		FromClusterPVCName:  fromPvcName,
 		PgRestoreHost:       task.Spec.Parameters[config.LABEL_PGRESTORE_HOST],
 		PgRestoreDB:         task.Spec.Parameters[config.LABEL_PGRESTORE_DB],

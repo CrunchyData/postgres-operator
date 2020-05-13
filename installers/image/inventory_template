@@ -114,6 +114,10 @@ badger='$BADGER'
 metrics='$METRICS'
 sync_replication='$SYNC_REPLICATION'
 
+# This is used if one wants to disable the setting of the fsGroup for PostgreSQL
+# which can occur in the default "restricted" deployment of OpenShift
+disable_fsgroup='$DISABLE_FSGROUP'
+
 # This will set the default pod anti-affinity for the deployed PostgreSQL
 # clusters. Pod Anti-Affinity is set to determine where the PostgreSQL Pods are
 # deployed relative to each other There are three levels:
