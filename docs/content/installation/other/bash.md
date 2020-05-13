@@ -162,7 +162,7 @@ The Operator implements its own RBAC (Role Based Access Controls) for authentica
 A default admin user is created when the operator is deployed. Create a .pgouser in your home directory and insert the text from below:
 
 ```
-pgoadmin:examplepassword
+admin:examplepassword
 ```
 
 The format of the .pgouser client file is:
