@@ -28,7 +28,7 @@ parameters that are passed to the server can be found by looking at the related
 flags.
 ```
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
-pgoadmin:examplepassword -H "Content-Type:application/json" --insecure -X \
+admin:examplepassword -H "Content-Type:application/json" --insecure -X \
 GET $PGO_APISERVER_URL/version
 ```
 
@@ -38,7 +38,7 @@ structure. These json structures are defined in the following documentation.
 
 ```
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
-pgoadmin:examplepassword -H "Content-Type:application/json" --insecure -X GET \
+admin:examplepassword -H "Content-Type:application/json" --insecure -X GET \
 "$PGO_APISERVER_URL/workflow/<id>?version=<client-version>&namespace=<namespace>"
 ```
 
@@ -51,7 +51,7 @@ cluster.
 
 ```
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
-pgoadmin:examplepassword -H "Content-Type:application/json" --insecure -X \
+admin:examplepassword -H "Content-Type:application/json" --insecure -X \
 POST --data \
     '{"ClientVersion":"4.3.0",
     "Namespace":"pgouser1",
@@ -70,7 +70,7 @@ show all of the clusters that are in the given namespace.
 
 ```
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
-pgoadmin:examplepassword -H "Content-Type:application/json" --insecure -X \
+admin:examplepassword -H "Content-Type:application/json" --insecure -X \
 POST --data \
   '{"ClientVersion":"4.3.0",
   "Namespace":"pgouser1",
@@ -80,7 +80,7 @@ $PGO_APISERVER_URL/showclusters
 
 ```
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT -u \
-pgoadmin:examplepassword -H "Content-Type:application/json" --insecure -X \
+admin:examplepassword -H "Content-Type:application/json" --insecure -X \
 POST --data \
   '{"ClientVersion":"4.3.0",
   "Namespace":"pgouser1",

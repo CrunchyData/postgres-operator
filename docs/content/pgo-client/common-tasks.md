@@ -186,7 +186,7 @@ Databases Not Ready:
 Labels (count > 1): [count] [label]
 	[8]	[vendor=crunchydata]
 	[4]	[pgo-backrest-repo=true]
-	[4]	[pgouser=pgoadmin]
+	[4]	[pgouser=admin]
 	[4]	[pgo-pg-database=true]
 	[4]	[crunchy_collect=false]
 	[4]	[pg-pod-anti-affinity=]
@@ -214,7 +214,7 @@ pgo show namespace --all
 which yields output similar to:
 
 ```
-pgo username: pgoadmin
+pgo username: admin
 namespace                useraccess          installaccess       
 default                  accessible          no access           
 kube-node-lease          accessible          no access           
@@ -403,7 +403,7 @@ cluster : hacluster (crunchy-postgres-ha:centos7-12.2-4.3.0)
 	deployment : hacluster
 	deployment : hacluster-backrest-shared-repo
 	service : hacluster - ClusterIP (10.102.20.42)
-	labels : pg-pod-anti-affinity= archive-timeout=60 crunchy-pgbadger=false crunchy_collect=false deployment-name=hacluster pg-cluster=hacluster crunchy-pgha-scope=hacluster autofail=true pgo-backrest=true pgo-version=4.3.0 current-primary=hacluster name=hacluster pgouser=pgoadmin workflowid=ae714d12-f5d0-4fa9-910f-21944b41dec8
+	labels : pg-pod-anti-affinity= archive-timeout=60 crunchy-pgbadger=false crunchy_collect=false deployment-name=hacluster pg-cluster=hacluster crunchy-pgha-scope=hacluster autofail=true pgo-backrest=true pgo-version=4.3.0 current-primary=hacluster name=hacluster pgouser=admin workflowid=ae714d12-f5d0-4fa9-910f-21944b41dec8
 ```
 
 ### Deleting a Cluster
