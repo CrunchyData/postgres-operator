@@ -25,7 +25,7 @@ yq_script="$( yq read --tojson "./package/${PGO_VERSION}/postgresoperator.v${PGO
 	--argjson crds "$( yq read --tojson postgresoperator.crd.descriptions.yaml | render )" \
 	--arg examples "$( yq read --tojson postgresoperator.crd.examples.yaml --doc='*' | render | jq . )" \
 	--arg description "$( render < postgresoperator.csv.description.md )" \
-	--arg icon "$( base64 --wrap=0 ../seal.svg )" \
+	--arg icon "$( base64 ../seal.svg | tr -d '\n' )" \
 '{
 	"metadata.annotations.alm-examples": $examples,
 	"spec.customresourcedefinitions.owned": $crds,
