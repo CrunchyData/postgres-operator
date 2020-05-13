@@ -104,7 +104,7 @@ func Dump(namespace string, clientset *kubernetes.Clientset, client *rest.RESTCl
 		TaskName:         taskName,
 		ClusterName:      task.Spec.Parameters[config.LABEL_PG_CLUSTER],
 		PodName:          task.Spec.Parameters[config.LABEL_POD_NAME],
-		SecurityContext:  util.GetPodSecurityContext(task.Spec.StorageSpec.GetSupplementalGroups()),
+		SecurityContext:  operator.GetPodSecurityContext(task.Spec.StorageSpec.GetSupplementalGroups()),
 		Command:          cmd, //??
 		CommandOpts:      task.Spec.Parameters[config.LABEL_PGDUMP_OPTS],
 		CCPImagePrefix:   util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),

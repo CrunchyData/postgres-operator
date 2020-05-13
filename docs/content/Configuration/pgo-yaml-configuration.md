@@ -39,6 +39,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 |DefaultInstanceMemory | string, matches a Kubernetes resource value. If set, it is used as the default value of the memory request for each instance in a PostgreSQL cluster. The example configuration uses `128Mi` which is very low for a PostgreSQL cluster, as the default amount of shared memory PostgreSQL requests is `128Mi`. However, for test clusters, this value is acceptable as the shared memory buffers won't be stressed, but you should absolutely consider raising this in production. If the value is unset, it defaults to `512Mi`, which is a much more appropriate minimum.
 |DefaultBackrestMemory | string, matches a Kubernetes resource value. If set, it is used as the default value of the memory request for the pgBackRest repository (default `48Mi`)
 |DefaultPgBouncerMemory | string, matches a Kubernetes resource value. If set, it is used as the default value of the memory request for pgBouncer instances (default `24Mi`)
+|DisableFSGroup | If set to `true`, this will disable the use of the fsGroup for the containers related to PostgreSQL, which is normally set to 26. This is geared towards deployments that use Security Context Constraints in the mode of restricted (default `false`) |
 
 ## Storage
 | Setting|Definition  |

@@ -97,7 +97,7 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, restclient *r
 		IsBackup:         isBackup,
 		PGOImagePrefix:   util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, operator.Pgo.Pgo.PGOImagePrefix),
 		PGOImageTag:      operator.Pgo.Pgo.PGOImageTag,
-		SecurityContext:  util.GetPodSecurityContext(task.Spec.StorageSpec.GetSupplementalGroups()),
+		SecurityContext:  operator.GetPodSecurityContext(task.Spec.StorageSpec.GetSupplementalGroups()),
 	}
 	log.Debugf("creating rmdata job %s for cluster %s ", jobName, task.Spec.Name)
 

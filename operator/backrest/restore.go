@@ -159,7 +159,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	jobFields := BackrestRestoreJobTemplateFields{
 		JobName:                "restore-" + task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-" + util.RandStringBytesRmndr(4),
 		ClusterName:            task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
-		SecurityContext:        util.GetPodSecurityContext(supplementalGroups),
+		SecurityContext:        operator.GetPodSecurityContext(supplementalGroups),
 		ToClusterPVCName:       restoreToName,
 		WorkflowID:             workflowID,
 		CommandOpts:            task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_OPTS],
@@ -346,7 +346,7 @@ func createRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		DataPathOverride:  restoreToName,
 		Database:          cluster.Spec.Database,
 		ArchiveMode:       archiveMode,
-		SecurityContext:   util.GetPodSecurityContext(supplementalGroups),
+		SecurityContext:   operator.GetPodSecurityContext(supplementalGroups),
 		RootSecretName:    cluster.Spec.RootSecretName,
 		PrimarySecretName: cluster.Spec.PrimarySecretName,
 		UserSecretName:    cluster.Spec.UserSecretName,

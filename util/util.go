@@ -29,7 +29,6 @@ import (
 
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
@@ -48,39 +47,6 @@ type JSONPatchOperation struct {
 func init() {
 	rand.Seed(time.Now().UnixNano())
 
-}
-
-// GetPodSecurityContext will generate the security context required for a
-// Deployment by incorporating the standard fsGroup for the user that runs the
-// container (typically the "postgres" user), and adds any supplemental groups
-// that may need to be added, e.g. for NFS storage.
-//
-// Following the legacy method, this returns a JSON string, which will be
-// modified in the future. Mainly this is transitioning from the legacy function
-// by adding the expected types
-func GetPodSecurityContext(supplementalGroups []int64) string {
-	// set up the security context struct
-	securityContext := v1.PodSecurityContext{
-		// we store the PostgreSQL FSGroup in this constant as an int64, so it's just
-		// carried over
-		FSGroup: &crv1.PGFSGroup,
-		// add any supplemental groups that the user passed in
-		SupplementalGroups: supplementalGroups,
-	}
-
-	// ...convert to JSON. Errors are ignored
-	doc, err := json.Marshal(securityContext)
-
-	// if there happens to be an error, warn about it
-	if err != nil {
-		log.Warn(err)
-	}
-
-	// for debug purposes, we can look at the document
-	log.Debug(doc)
-
-	// return a string of the security context
-	return string(doc)
 }
 
 // ThingSpec is a json patch structure
