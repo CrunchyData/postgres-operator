@@ -2,10 +2,15 @@
 # vim: set noexpandtab :
 set -eu
 
-# Use a version of `kubectl` that matches the Kubernetes server.
-command -v kubectl >/dev/null || eval "kubectl() { kubectl-$( kubectl-1.16 version --output=json |
-	jq --raw-output '.serverVersion | .major + "." + .minor')"' "$@"; }'
-kubectl version --short
+if command -v oc >/dev/null; then
+	kubectl() { oc "$@"; }
+	kubectl version
+elif ! command -v kubectl >/dev/null; then
+	# Use a version of `kubectl` that matches the Kubernetes server.
+	eval "kubectl() { kubectl-$( kubectl-1.16 version --output=json |
+		jq --raw-output '.serverVersion | .major + "." + .minor')"' "$@"; }'
+	kubectl version --short
+fi
 
 catalog_source() (
 	source_namespace="$1"
@@ -303,15 +308,6 @@ scorecard() (
 	}' )"
 	kc delete secret scorecard-kubeconfig --ignore-not-found
 	kc create secret generic scorecard-kubeconfig --from-literal="kubeconfig=$scorecard_kubeconfig"
-
-	# Turn off OLM while we manipulate the operator deployment.
-	>&2 echo $(tput bold)Turning off the OLM operator!$(tput sgr0)
-	kubectl --namespace olm scale --replicas=0 deploy olm-operator
-	kubectl --namespace olm rollout status deploy olm-operator --timeout=1m
-
-	# OLM crashes when a running Deployment doesn't match the CSV.
-	# TODO move manipulation of the Deployment into the package registry.
-	#trap 'kubectl --namespace olm scale --replicas=1 deploy olm-operator' EXIT
 
 	# Inject a `scorecard-proxy` Container into the main Deployment and configure other containers
 	# to make Kubernetes API calls through it.
