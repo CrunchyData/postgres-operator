@@ -296,7 +296,7 @@ export PGO_CA_CERT="/tmp/client.crt"
 export PGO_CLIENT_CERT="/tmp/client.crt"
 export PGO_CLIENT_KEY="/tmp/client.key"
 export PGO_APISERVER_URL='https://127.0.0.1:8443'
-export PGO_NAMESPACE=pgouser1
+export PGO_NAMESPACE=pgo
 ```
 
 If you wish to permanently add these variables to your environment, you can run the following command:
@@ -308,7 +308,7 @@ export PGO_CA_CERT="/tmp/client.crt"
 export PGO_CLIENT_CERT="/tmp/client.crt"
 export PGO_CLIENT_KEY="/tmp/client.key"
 export PGO_APISERVER_URL='https://127.0.0.1:8443'
-export PGO_NAMESPACE=pgouser1
+export PGO_NAMESPACE=pgo
 EOF
 
 source ~/.bashrc
