@@ -22,25 +22,25 @@ PostgreSQL deployxments across many Kubernetes namespaces, this can become
 onerous for the intents of this guide.
 
 If you install the PostgreSQL Operator using the [quickstart](/quickstart/)
-guide, you will have two namespaces installed: `pgouser1` and `pgouser2`. We
+guide, you will install the PostgreSQL Operator to a namespace called `pgo`. We
 can choose to always use one of these namespaces by setting the `PGO_NAMESPACE`
 environmental variable, which is detailed in the global [`pgo` Client](/pgo-client/)
 reference,
 
-For convenience, we will use the `pgouser1` namespace in the examples below.
-For even more convenience, we recommend setting `pgouser1` to be the value of
+For convenience, we will use the `pgo` namespace in the examples below.
+For even more convenience, we recommend setting `pgo` to be the value of
 the `PGO_NAMESPACE` variable. In the shell that you will be executing the `pgo`
 commands in, run the following command:
 
 ```shell
-export PGO_NAMESPACE=pgouser1
+export PGO_NAMESPACE=pgo
 ```
 
 If you do not wish to set this environmental variable, or are in an environment
 where you are unable to use environmental variables, you will have to use the
 `--namespace` (or `-n`) flag for most commands, e.g.
 
-`pgo version -n pgouser1`
+`pgo version -n pgo`
 
 ### JSON Output
 
