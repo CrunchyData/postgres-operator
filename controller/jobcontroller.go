@@ -448,15 +448,25 @@ func (c *JobController) onUpdate(oldObj, newObj interface{}) {
 			// next, update the workflow to indicate that step 1 is complete
 			clusteroperator.UpdateCloneWorkflow(c.JobClient, namespace, workflowID, crv1.PgtaskWorkflowCloneRestoreBackup)
 
+			// determine the storage source (e.g. local or s3) to use for the restore based on the storage
+			// source utilized for the backrest repo sync job
+			var storageSource string
+			for _, envVar := range job.Spec.Template.Spec.Containers[0].Env {
+				if envVar.Name == "BACKREST_STORAGE_SOURCE" {
+					storageSource = envVar.Value
+				}
+			}
+
 			// now, set up a new pgtask that will allow us to perform the restore
 			cloneTask := util.CloneTask{
-				PGOUser:           job.ObjectMeta.Labels[config.LABEL_PGOUSER],
-				SourceClusterName: sourceClusterName,
-				TargetClusterName: targetClusterName,
-				TaskStepLabel:     config.LABEL_PGO_CLONE_STEP_2,
-				TaskType:          crv1.PgtaskCloneStep2,
-				Timestamp:         time.Now(),
-				WorkflowID:        workflowID,
+				BackrestStorageSource: storageSource,
+				PGOUser:               job.ObjectMeta.Labels[config.LABEL_PGOUSER],
+				SourceClusterName:     sourceClusterName,
+				TargetClusterName:     targetClusterName,
+				TaskStepLabel:         config.LABEL_PGO_CLONE_STEP_2,
+				TaskType:              crv1.PgtaskCloneStep2,
+				Timestamp:             time.Now(),
+				WorkflowID:            workflowID,
 			}
 
 			task := cloneTask.Create()

@@ -324,8 +324,11 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 			},
 		},
 		Spec: crv1.PgclusterSpec{
-			Port:           sourcePgcluster.Spec.Port,
-			PrimaryStorage: sourcePgcluster.Spec.PrimaryStorage,
+			BackrestS3Bucket:   sourcePgcluster.Spec.BackrestS3Bucket,
+			BackrestS3Endpoint: sourcePgcluster.Spec.BackrestS3Endpoint,
+			BackrestS3Region:   sourcePgcluster.Spec.BackrestS3Region,
+			Port:               sourcePgcluster.Spec.Port,
+			PrimaryStorage:     sourcePgcluster.Spec.PrimaryStorage,
 			UserLabels: map[string]string{
 				config.LABEL_BACKREST_STORAGE_TYPE: sourcePgcluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE],
 			},
