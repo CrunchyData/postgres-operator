@@ -289,16 +289,20 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, restCo
 	// attributes we need to make this successful
 	targetPgcluster := crv1.Pgcluster{
 		ObjectMeta: meta_v1.ObjectMeta{
-			Name: targetClusterName,
+			Name:      targetClusterName,
+			Namespace: namespace,
 			Labels: map[string]string{
 				config.LABEL_BACKREST: "true",
 			},
 		},
 		Spec: crv1.PgclusterSpec{
-			Port:           sourcePgcluster.Spec.Port,
-			PrimaryStorage: sourcePgcluster.Spec.PrimaryStorage,
-			CCPImagePrefix: sourcePgcluster.Spec.CCPImagePrefix,
-			PGOImagePrefix: sourcePgcluster.Spec.PGOImagePrefix,
+			BackrestS3Bucket:   sourcePgcluster.Spec.BackrestS3Bucket,
+			BackrestS3Endpoint: sourcePgcluster.Spec.BackrestS3Endpoint,
+			BackrestS3Region:   sourcePgcluster.Spec.BackrestS3Region,
+			Port:               sourcePgcluster.Spec.Port,
+			PrimaryStorage:     sourcePgcluster.Spec.PrimaryStorage,
+			CCPImagePrefix:     sourcePgcluster.Spec.CCPImagePrefix,
+			PGOImagePrefix:     sourcePgcluster.Spec.PGOImagePrefix,
 			UserLabels: map[string]string{
 				config.LABEL_BACKREST_STORAGE_TYPE: sourcePgcluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE],
 			},
