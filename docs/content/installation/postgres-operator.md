@@ -195,7 +195,7 @@ Running this script can cause existing `pgo` client binary, `pgouser`,
 The `client-setup.sh` script performs the following tasks:
 
 - Sets `$PGO_OPERATOR_NAMESPACE` to `pgo` if it is unset. This is the default
-namespace that the PostgreSQßL Operator is deployed to
+namespace that the PostgreSQL Operator is deployed to
 - Checks for valid Operating Systems and determines which `pgo` binary to
 download
 - Creates a directory in `$HOME/.pgo/$PGO_OPERATOR_NAMESPACE` (e.g. `/home/hippo/.pgo/pgo`)
