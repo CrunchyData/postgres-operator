@@ -120,7 +120,7 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 		PgbackrestS3EnvVars:   operator.GetPgbackrestS3EnvVars(*cluster, clientset, namespace),
 		Name:                  serviceName,
 		ClusterName:           cluster.Name,
-		SecurityContext:       util.GetPodSecurityContext(cluster.Spec.BackrestStorage.GetSupplementalGroups()),
+		SecurityContext:       operator.GetPodSecurityContext(cluster.Spec.BackrestStorage.GetSupplementalGroups()),
 		Replicas:              replicas,
 		PodAntiAffinity: operator.GetPodAntiAffinity(cluster,
 			crv1.PodAntiAffinityDeploymentPgBackRest, cluster.Spec.PodAntiAffinity.PgBackRest),

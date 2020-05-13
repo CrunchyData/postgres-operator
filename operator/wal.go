@@ -24,7 +24,10 @@ import (
 func addWALVolumeAndMounts(podSpec *core_v1.PodSpec, walVolume StorageResult, containerNames ...string) {
 	walVolumeMount := config.PostgreSQLWALVolumeMount()
 
-	// SecurityContext is always initialized because we use fsGroup.
+	if podSpec.SecurityContext == nil {
+		podSpec.SecurityContext = &core_v1.PodSecurityContext{}
+	}
+
 	podSpec.SecurityContext.SupplementalGroups = append(
 		podSpec.SecurityContext.SupplementalGroups, walVolume.SupplementalGroups...)
 

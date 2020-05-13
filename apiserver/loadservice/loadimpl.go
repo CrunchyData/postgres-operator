@@ -31,7 +31,6 @@ import (
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
-	operutil "github.com/crunchydata/postgres-operator/util"
 
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
@@ -102,7 +101,7 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 	LoadConfigTemplate.FilePath = LoadCfg.FilePath
 	LoadConfigTemplate.FileType = LoadCfg.FileType
 	LoadConfigTemplate.PVCName = LoadCfg.PVCName
-	LoadConfigTemplate.SecurityContext = operutil.GetPodSecurityContext(supplementalGroups)
+	LoadConfigTemplate.SecurityContext = operator.GetPodSecurityContext(supplementalGroups)
 
 	clusterList := crv1.PgclusterList{}
 	if len(request.Args) == 0 && request.Selector == "" {

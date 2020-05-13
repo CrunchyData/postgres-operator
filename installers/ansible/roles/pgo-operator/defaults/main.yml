@@ -16,6 +16,7 @@ common_name: "crunchydata"
 crunchy_debug: "false"
 enable_crunchyadm: "false"
 disable_replica_start_fail_reinit: "false"
+disable_fsgroup: "false"
 
 default_instance_memory: ""
 default_pgbackrest_memory: ""
