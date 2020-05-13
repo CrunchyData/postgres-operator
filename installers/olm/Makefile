@@ -13,7 +13,7 @@ PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
 PGO_VERSION ?= 4.3.0
 
 OLM_TOOLS_BASH = docker run --net=host --rm --tty $(DOCKER_ARGS) \
-		 --mount 'type=bind,source=$(KUBECONFIG),target=/root/.kube/config,readonly' \
+		 --mount 'type=bind,source=$(KUBECONFIG),target=/root/.kube/config,ro' \
 		 --mount 'type=bind,source=$(CURDIR)/..,target=/mnt/installers' \
 		 --workdir '/mnt/installers/$(basename $(notdir $(CURDIR)))' \
 		 '$(OLM_TOOLS)'
@@ -26,6 +26,12 @@ export PGO_IMAGE_PREFIX PGO_IMAGE_TAG PGO_VERSION
 .PHONY: clean
 clean:
 	rm -rf ./package
+
+.PHONY: catalog-source
+catalog-source: ## Upload package and version bundle to a Kubernetes namespace
+	@test -n '$(NAMESPACE)' || { >&2 echo Must choose a NAMESPACE; exit 1; }
+	./install.sh registry '$(NAMESPACE)' olm-registry
+	./install.sh catalog_source '$(NAMESPACE)' olm-catalog-source '$(NAMESPACE)' olm-registry
 
 .PHONY: courier-verify
 courier-verify:
