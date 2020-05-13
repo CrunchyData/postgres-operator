@@ -57,13 +57,14 @@ var restartCmd = &cobra.Command{
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the cluster to restart.`)
 		} else {
-			if Query {
+			switch {
+			case Query:
 				queryRestart(args, Namespace)
-			} else if len(args) > 1 {
+			case len(args) > 1:
 				fmt.Println("Error: a single cluster must be specified when performing a restart")
-			} else if util.AskForConfirmation(NoPrompt, "") {
+			case util.AskForConfirmation(NoPrompt, ""):
 				restart(args[0], Namespace)
-			} else {
+			default:
 				fmt.Println("Aborting...")
 			}
 		}
