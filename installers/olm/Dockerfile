@@ -12,9 +12,9 @@ RUN dnf update -d1 -y \
  && dnf install -d1 -y gettext glibc-langpack-en make ncurses python3 tree zip \
  && dnf clean all
 
-ARG OLM_VERSION
+ARG OLM_SDK_VERSION
 RUN python3 -m pip install operator-courier \
- && curl -Lo /usr/local/bin/operator-sdk -s "https://github.com/operator-framework/operator-sdk/releases/download/v${OLM_VERSION}/operator-sdk-v${OLM_VERSION}-x86_64-linux-gnu" \
+ && curl -Lo /usr/local/bin/operator-sdk -s "https://github.com/operator-framework/operator-sdk/releases/download/v${OLM_SDK_VERSION}/operator-sdk-v${OLM_SDK_VERSION}-x86_64-linux-gnu" \
  && chmod +x /usr/local/bin/operator-sdk \
  && sha256sum -c <<< "SHA256 (/usr/local/bin/operator-sdk) = 18446d7f31ffcf059be22f767d66a7df585e81b596a3f3e91e3a8eba571eb927"
 
