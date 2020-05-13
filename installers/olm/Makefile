@@ -4,8 +4,9 @@ CCP_IMAGE_PREFIX ?= registry.developers.crunchydata.com/crunchydata
 CCP_IMAGE_TAG ?= $(PGO_BASEOS)-$(CCP_PG_FULLVERSION)-$(PGO_VERSION)
 CCP_PG_FULLVERSION ?= 12.2
 KUBECONFIG ?= $(HOME)/.kube/config
-OLM_TOOLS ?= registry.localhost:5000/postgres-operator-olm-tools:$(OLM_VERSION)
-OLM_VERSION ?= 0.13.0
+OLM_SDK_VERSION ?= 0.13.0
+OLM_TOOLS ?= registry.localhost:5000/postgres-operator-olm-tools:$(OLM_SDK_VERSION)
+OLM_VERSION ?= 0.14.2
 PGO_BASEOS ?= centos7
 PGO_IMAGE_PREFIX ?= registry.developers.crunchydata.com/crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
@@ -19,7 +20,7 @@ OLM_TOOLS_BASH = docker run --net=host --rm --tty $(DOCKER_ARGS) \
 
 export CCP_IMAGE_PREFIX CCP_IMAGE_TAG
 export KUBECONFIG
-export OLM_VERSION
+export OLM_SDK_VERSION
 export PGO_IMAGE_PREFIX PGO_IMAGE_TAG PGO_VERSION
 
 .PHONY: clean
@@ -52,7 +53,7 @@ help: ## Print this message
 
 .PHONY: image-tools
 image-tools:
-	docker build --file Dockerfile --tag '$(OLM_TOOLS)' --build-arg OLM_VERSION='$(OLM_VERSION)' .
+	docker build --file Dockerfile --tag '$(OLM_TOOLS)' --build-arg OLM_SDK_VERSION='$(OLM_SDK_VERSION)' .
 
 .PHONY: install
 install: ## Install the package in a Kubernetes namespace
@@ -61,8 +62,13 @@ install: ## Install the package in a Kubernetes namespace
 
 .PHONY: install-olm
 install-olm: ## Install OLM in Kubernetes
-	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$(OLM_VERSION)/crds.yaml
-	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$(OLM_VERSION)/olm.yaml
+	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/raw/$(OLM_VERSION)/deploy/upstream/quickstart/crds.yaml
+	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/raw/$(OLM_VERSION)/deploy/upstream/quickstart/olm.yaml
+	@#
+	@# Release downloads are preferred, but 0.14.2 wasn't exactly a release:
+	@# https://github.com/operator-framework/operator-lifecycle-manager/blob/0.14.2/deploy/upstream/quickstart/install.sh
+	@#kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$(OLM_VERSION)/crds.yaml
+	@#kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$(OLM_VERSION)/olm.yaml
 
 .PHONY: package
 package: export PACKAGE_NAME := postgresql

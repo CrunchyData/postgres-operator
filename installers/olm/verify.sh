@@ -31,11 +31,12 @@ push_trap_exit "kubectl delete namespace '$test_namespace'"
 kc() { kubectl --namespace="$test_namespace" "$@"; }
 
 # Clean up anything created by the Subscription, especially CustomResourceDefinitions.
-push_trap_exit "kc delete --ignore-not-found --filename='./package/${PGO_VERSION}/'"
+push_trap_exit "kubectl delete clusterrole,clusterrolebinding --selector='olm.owner.namespace=$test_namespace'"
+push_trap_exit "kubectl delete --ignore-not-found --filename='./package/${PGO_VERSION}/'"
 
 # Install the package and inject the scorecard proxy.
 ./install.sh operator "$test_namespace" "$test_namespace"
-./install.sh scorecard "$test_namespace" "$OLM_VERSION"
+./install.sh scorecard "$test_namespace" "$OLM_SDK_VERSION"
 
 # Restore the OLM operator that was disabled to inject the scorecard proxy.
 push_trap_exit 'kubectl --namespace olm scale --replicas=1 deploy olm-operator'
@@ -74,7 +75,10 @@ for index in $(seq 0 $(jq <<< "$examples_array" 'length - 1')); do
 	jq '{ apiVersion, kind, name: .metadata.name }' "${TMPDIR}/resource.json"
 
 	start="$(date --utc +'%FT%TZ')"
-	if ! operator-sdk scorecard --config "${TMPDIR}/scorecard.json" --verbose; then
+	if operator-sdk scorecard --config "${TMPDIR}/scorecard.json" --verbose; then
+		: # no-op to preserve the exit code above
+	else
+		echo "Error: $?"
 		#kc logs --container='operator' --selector='name=postgres-operator' --since-time="$start"
 		error=1
 	fi

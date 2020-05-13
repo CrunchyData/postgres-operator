@@ -17,7 +17,7 @@ catalog_source() (
 	kc get namespace "$source_namespace" --output=jsonpath='{""}' 2>/dev/null ||
 		kc create namespace "$source_namespace"
 
-	# See https://godoc.org/github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1#CatalogSource
+	# See https://godoc.org/github.com/operator-framework/api/pkg/operators/v1alpha1#CatalogSource
 	source_json="$( jq <<< '{}' \
 		--arg name "$source_name" \
 		--arg registry "${registry_name}.${registry_namespace}" \
@@ -137,7 +137,7 @@ operator() (
 	operator_group "$operator_namespace" olm-operator-group "${target_namespaces[@]}"
 
 	# Create a Subscription to install the operator.
-	# See https://godoc.org/github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1#Subscription
+	# See https://godoc.org/github.com/operator-framework/api/pkg/operators/v1alpha1#Subscription
 	subscription_json="$( jq <<< '{}' \
 		--arg channel "$package_channel_name" \
 		--arg namespace "$operator_namespace" \
@@ -263,7 +263,7 @@ operator() (
 
 scorecard() (
 	operator_namespace="$1"
-	olm_version="$2"
+	sdk_version="$2"
 
 	kc() { kubectl --namespace="$operator_namespace" "$@"; }
 
@@ -317,7 +317,7 @@ scorecard() (
 	# to make Kubernetes API calls through it.
 	yq_script="$(mktemp)"
 	jq > "$yq_script" <<< '{}' \
-		--arg image "quay.io/operator-framework/scorecard-proxy:v$olm_version" \
+		--arg image "quay.io/operator-framework/scorecard-proxy:v$sdk_version" \
 	'{
 		"spec.template.spec.volumes[+]": {
 			name: "scorecard-kubeconfig",
