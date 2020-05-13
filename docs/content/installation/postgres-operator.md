@@ -232,12 +232,6 @@ export PGO_CLIENT_KEY="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.key"
 EOF
 ```
 
-{{% notice tip %}}
-If you are using MacOS the `pgo-mac` binary will need to be renamed to `pgo`.
-Alternatively, you can update your path to include `pgo-mac`.
-`export PATH="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/pgo-mac:$PATH"`
-{{% /notice %}}
-
 By default, the `client-setup.sh` script targets the user that is stored in the
 `pgouser-admin` secret in the `pgo` (`$PGO_OPERATOR_NAMESPACE`) Namespace. If
 you wish to use a different Secret, you can set the `PGO_USER_ADMIN`
