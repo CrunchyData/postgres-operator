@@ -21,7 +21,7 @@ import (
 	"github.com/crunchydata/postgres-operator/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
-	"github.com/crunchydata/postgres-operator/operator/patroni"
+	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 
@@ -67,18 +67,13 @@ func Restart(request *msgs.RestartRequest, pgouser string) msgs.RestartResponse 
 		cluster.GetName(), namespace)
 	if len(request.Targets) > 0 {
 		restartResults, err = patroniClient.RestartInstances(request.Targets...)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
 	} else {
 		restartResults, err = patroniClient.RestartCluster()
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
+	}
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
 	}
 
 	restartDetails := msgs.RestartDetail{ClusterName: clusterName}
