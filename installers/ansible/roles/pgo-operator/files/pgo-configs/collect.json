@@ -31,6 +31,12 @@
             "value": "{{.ExporterPort}}"
         }
     ],
+    "resources": {
+      "limits": {
+        "cpu": "100m",
+        "memory": "24Mi"
+      }
+    },
     "volumeMounts": [
         {
             "mountPath": "/collect-pguser",
