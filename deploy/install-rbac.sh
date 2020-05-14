@@ -33,7 +33,7 @@ fi
 $DIR/install-bootstrap-creds.sh
 
 # create the Operator service accounts
-expenv -f $DIR/service-accounts.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
+envsubst < $DIR/service-accounts.yaml | $PGO_CMD create -f -
 
 if [ -r "$PGO_IMAGE_PULL_SECRET_MANIFEST" ]; then
 	$PGO_CMD -n $PGO_OPERATOR_NAMESPACE create -f "$PGO_IMAGE_PULL_SECRET_MANIFEST"
@@ -71,23 +71,23 @@ fi
 # namespace in which it is deployed.
 if [[ "${PGO_NAMESPACE_MODE:-dynamic}" == "dynamic" ]]; then
 	# create the full cluster roles for the Operator
-	expenv -f $DIR/cluster-roles.yaml | $PGO_CMD create -f -
+	envsubst < $DIR/cluster-roles.yaml | $PGO_CMD create -f -
 	# create the cluster role binding for the Operator Service Account
-	expenv -f $DIR/cluster-role-bindings.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
+	envsubst < $DIR/cluster-role-bindings.yaml | $PGO_CMD create -f -
 	echo "Cluster roles installed to enable dynamic namespace capabilities"
 elif [[ "${PGO_NAMESPACE_MODE}" == "readonly" ]]; then
 	# create the read-only cluster roles for the Operator
-	expenv -f $DIR/cluster-roles-readonly.yaml | $PGO_CMD create -f -
+	envsubst < $DIR/cluster-roles-readonly.yaml | $PGO_CMD create -f -
 	# create the cluster role binding for the Operator Service Account
-	expenv -f $DIR/cluster-role-bindings.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
+	envsubst < $DIR/cluster-role-bindings.yaml | $PGO_CMD create -f -
 	echo "Cluster roles installed to enable read-only namespace capabilities"
 elif [[ "${PGO_NAMESPACE_MODE}" == "disabled" ]]; then
 	echo "Cluster roles not installed, namespace capabilites will be disabled"
 fi
 
 # Create the roles the Operator requires within it's own namespace
-expenv -f $DIR/roles.yaml | $PGO_CMD -n $PGO_OPERATOR_NAMESPACE create -f -
-expenv -f $DIR/role-bindings.yaml | $PGO_CMD -n $PGO_OPERATOR_NAMESPACE create -f -
+envsubst < $DIR/roles.yaml | $PGO_CMD create -f -
+envsubst < $DIR/role-bindings.yaml | $PGO_CMD create -f -
 
 # create the keys used for pgo API
 source $DIR/gen-api-keys.sh
