@@ -311,7 +311,7 @@
         - install
         - update
 
-    - name: Download PGO MacOS Client
+    - name: Download PGO macOS Client
       become: yes
       become_method: sudo
       get_url:

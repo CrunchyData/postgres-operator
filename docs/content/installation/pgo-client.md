@@ -16,7 +16,7 @@ is already deployed.
 * For Kubernetes deployments: [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) configured to communicate with Kubernetes
 * For OpenShift deployments: [oc](https://docs.openshift.com/container-platform/3.11/cli_reference/get_started_cli.html) configured to communicate with OpenShift
 
-The Crunchy Postgres Operator als requires the following in order to authenticate with the apiserver:
+To authenticate with the Crunchy PostgreSQL Operator API:
 
 * Client CA Certificate
 * Client TLS Certificate
@@ -26,9 +26,9 @@ The Crunchy Postgres Operator als requires the following in order to authenticat
 All of the requirements above should be obtained from an administrator who installed the Crunchy
 PostgreSQL Operator.
 
-## Linux and MacOS
+## Linux and macOS
 
-The following will setup the `pgo` client to be used on a Linux or MacOS system.
+The following will setup the `pgo` client to be used on a Linux or macOS system.
 
 ### Installing the Client
 
