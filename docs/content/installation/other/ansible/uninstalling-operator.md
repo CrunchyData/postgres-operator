@@ -7,7 +7,7 @@ weight: 40
 
 # Uninstalling PostgreSQL Operator
 
-The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prerequisites/)
+The following assumes the proper [prerequisites are satisfied][ansible-prerequisites]
 we can now uninstall the PostgreSQL Operator.
 
 First, it is recommended to use the playbooks tagged with the same version
@@ -39,3 +39,5 @@ Otherwise, the `pgo` client can be manually uninstalled by running the following
 ```
 rm /usr/local/bin/pgo
 ```
+
+[ansible-prerequisites]: {{< relref "/installation/other/ansible/prerequisites.md" >}}

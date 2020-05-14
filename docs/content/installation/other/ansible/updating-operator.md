@@ -16,7 +16,7 @@ of the service.  Using the `update` flag will:
 * Allow administrators to change settings configured in the `inventory`
 * Reinstall the `pgo` client if a new version is specified
 
-The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prerequisites/)
+The following assumes the proper [prerequisites are satisfied][ansible-prerequisites]
 we can now update the PostgreSQL Operator.
 
 The commands should be run in the directory where the Crunchy PostgreSQL Operator
@@ -42,9 +42,9 @@ ansible-playbook -i /path/to/inventory --tags=update --ask-become-pass \
     /usr/share/ansible/postgres-operator/playbooks/main.yml
 ```
 
-## Updating on MacOS
+## Updating on macOS
 
-On a MacOS host with Ansible installed we can run the following command to update  
+On a macOS host with Ansible installed we can run the following command to update  
 the PostgreSQL Operator.
 
 ```bash
@@ -126,3 +126,5 @@ pgo version
 
 If the above command outputs versions of both the client and API server, the Crunchy
 PostgreSQL Operator has been updated successfully.
+
+[ansible-prerequisites]: {{< relref "/installation/other/ansible/prerequisites.md" >}}

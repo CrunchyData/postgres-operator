@@ -16,7 +16,7 @@ using the provided Ansible roles.
 
 ## Prerequisites
 
-The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prerequisites/)
+The following assumes the proper [prerequisites are satisfied][ansible-prerequisites]
 we can now install the PostgreSQL Operator.
 
 At a minimum, the following inventory variables should be configured to install the
@@ -77,9 +77,9 @@ ansible-playbook -i /path/to/inventory --tags=install-metrics --ask-become-pass 
     /usr/share/ansible/postgres-operator/playbooks/main.yml
 ```
 
-## Installing on MacOS
+## Installing on macOS
 
-On a MacOS host with Ansible installed we can run the following command to install
+On a macOS host with Ansible installed we can run the following command to install
 the Metrics stack:
 
 ```bash
@@ -157,3 +157,5 @@ cluster with metric exporters run the following command:
 pgo create cluster <NAME OF CLUSTER> --metrics --namespace=<NAMESPACE>
 ```
 {{% /notice %}}
+
+[ansible-prerequisites]: {{< relref "/installation/other/ansible/prerequisites.md" >}}

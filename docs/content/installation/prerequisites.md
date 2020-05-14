@@ -38,7 +38,7 @@ allocate enough resources for their PostgreSQL clusters.
 
 ## Client Interfaces
 
-The PostgreSQL Operator installer will install the [`pgo` client](({{< relref "/pgo-client/_index.md" >}})) interface
+The PostgreSQL Operator installer will install the [`pgo` client]({{< relref "/pgo-client/_index.md" >}}) interface
 to help with using the PostgreSQL Operator. However, it is also recommend that
 you have access to [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 or [`oc`](https://www.okd.io/download.html) and are able to communicate with the
