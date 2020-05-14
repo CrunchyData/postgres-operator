@@ -8,7 +8,7 @@ weight: 40
 There are several different ways to install and deploy the [PostgreSQL Operator](https://www.crunchydata.com/developers/download-postgres/containers/postgres-operator)
 based upon your use case.
 
-For the vast majority of use cases, we recommend using the [PostgreSQL Operator Installer]({{< relref "/installation/postgres-operator/_index.md" >}}),
+For the vast majority of use cases, we recommend using the [PostgreSQL Operator Installer]({{< relref "/installation/postgres-operator.md" >}}),
 which uses the `pgo-deployer` container to set up all of the objects required to
 run the PostgreSQL Operator.
 
