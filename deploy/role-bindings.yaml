@@ -9,7 +9,6 @@ roleRef:
   kind: Role
   name: pgo-role
 subjects:
-- apiGroup: rbac.authorization.k8s.io
-  kind: ServiceAccount
+- kind: ServiceAccount
   name: postgres-operator
   namespace: "$PGO_OPERATOR_NAMESPACE"

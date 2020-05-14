@@ -304,3 +304,8 @@ prometheus_supplemental_groups=$PROMETHEUS_SUPPLEMENTAL_GROUPS
 delete_operator_namespace='$DELETE_OPERATOR_NAMESPACE'
 delete_watched_namespaces='$DELETE_WATCHED_NAMESPACES'
 delete_metrics_namespace='$DELETE_METRICS_NAMESPACE'
+
+# This is a dummy value for 'pgo_client_version' to prevent the pre-flight check for this variable
+# from failing.  This is harmless since the client will never be installed via the deployer
+# container, so this value will never actually be utilized during the installation.
+pgo_client_version=' '
