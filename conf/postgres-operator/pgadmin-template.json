@@ -34,9 +34,11 @@
       },
       "spec": {
         "serviceAccountName": "pgo-default",
+        {{ if not .DisableFSGroup }}
         "securityContext": {
           "fsGroup": 2
         },
+        {{ end }}
         "containers": [{
           "name": "pgadminweb",
           "image": "{{.CCPImagePrefix}}/crunchy-pgadmin4:{{.CCPImageTag}}",
