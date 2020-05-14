@@ -13,18 +13,3 @@
   tags:
   - install
   - update
-
-- name: Get PGO SCC Status
-  shell: "{{ openshift_oc_bin}} get scc pgo"
-  register: scc_status
-  ignore_errors: yes
-  tags: 
-  - install
-  - update
-
-- name: Create PGO SCC
-  shell: "{{ openshift_oc_bin}} create -f {{ role_path }}/files/pgo-configs/pgo-scc.yaml"
-  when: scc_status.rc != 0
-  tags:
-  - install
-  - update
