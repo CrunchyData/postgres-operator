@@ -17,7 +17,14 @@ rules:
       - get
       - list
       - create
+      - patch
       - delete
+  - apiGroups:
+      - ''
+    resources:
+      - pods
+    verbs:
+      - list
   - apiGroups:
       - ''
     resources:
@@ -36,6 +43,14 @@ rules:
     verbs:
       - create
       - delete
+  - apiGroups:
+      - ''
+    resources:
+      - serviceaccounts
+    verbs:
+      - create
+      - delete
+      - patch
   - apiGroups:
       - apps
     resources:
