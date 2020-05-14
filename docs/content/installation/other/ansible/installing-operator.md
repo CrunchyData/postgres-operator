@@ -7,11 +7,11 @@ weight: 21
 
 # Installing
 
-The following assumes the proper [prerequisites are satisfied](/installation/install-with-ansible/prerequisites/)
+The following assumes the proper [prerequisites are satisfied][ansible-prerequisites]
 we can now install the PostgreSQL Operator.
 
 The commands should be run in the directory where the Crunchy PostgreSQL Operator
-playbooks is stored.  See the `ansible` directory in the Crunchy PostgreSQL Operator
+playbooks are stored.  See the `installers/ansible` directory in the Crunchy PostgreSQL Operator
 project for the inventory file, main playbook and ansible roles.
 
 ## Installing on Linux
@@ -33,9 +33,9 @@ ansible-playbook -i /path/to/inventory --tags=install --ask-become-pass \
     /usr/share/ansible/postgres-operator/playbooks/main.yml
 ```
 
-## Installing on MacOS
+## Installing on macOS
 
-On a MacOS host with Ansible installed we can run the following command to install
+On a macOS host with Ansible installed we can run the following command to install
 the PostgreSQL Operator.
 
 ```bash
@@ -123,3 +123,5 @@ pgo version
 
 If the above command outputs versions of both the client and API server, the Crunchy
 PostgreSQL Operator has been installed successfully.
+
+[ansible-prerequisites]: {{< relref "/installation/other/ansible/prerequisites.md" >}}
