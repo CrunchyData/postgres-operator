@@ -22,6 +22,6 @@ roleRef:
   kind: ClusterRole
   name: pgo-cluster-role
 subjects:
-- apiGroup: rbac.authorization.k8s.io
-  kind: User
-  name: system:serviceaccount:{{ pgo_operator_namespace }}:postgres-operator
+- kind: ServiceAccount
+  name: postgres-operator
+  namespace: {{ pgo_operator_namespace }}

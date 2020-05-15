@@ -24,6 +24,11 @@
                 }
             },
             "spec": {
+                {% if pgo_image_pull_secret %}
+                "imagePullSecrets": [
+                    { "name": "{{ pgo_image_pull_secret }}" }
+                ],
+                {% endif %}
                 "containers": [
                     {
                         "name": "pgo",
