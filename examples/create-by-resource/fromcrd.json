@@ -2,6 +2,9 @@
   "apiVersion": "crunchydata.com/v1",
   "kind": "Pgcluster",
   "metadata": {
+    "annotations": {
+      "current-primary": "fromcrd"
+    },
     "labels": {
       "autofail": "true",
       "crunchy-pgbadger": "false",
