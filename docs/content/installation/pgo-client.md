@@ -161,11 +161,11 @@ pod. You can run single commands with the kubectl or oc command line tools
 or multiple commands by exec'ing into the pod with bash.
 
 ```
-kubectl exec -it -n pgo <pgo-client-deployment-name> -c "pgo version"
+kubectl exec -it -n pgo pgo-client-<pod-id> -- pgo version
 
 # or
 
-kubectl exec -it -n pgo <pgo-client-deployment-name> bash
+kubectl exec -it -n pgo pgo-client-<pod-id> bash
 ```
 
 The deployment does not require any configuration to connect to the operator.
