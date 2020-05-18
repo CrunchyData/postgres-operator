@@ -34,6 +34,22 @@ create_rbac='$CREATE_RBAC'
 # ==================
 namespace_mode='$NAMESPACE_MODE'
 
+# Dynamic RBAC
+# ==================
+# Note: this setting is only applicable if 'namespace_mode' is set to
+# 'readonly' or 'disabled'.
+#
+# When creating target namespaces during installation, this setting
+# determines what RBAC is created within the target namespace.  If set to
+# 'true', the RBAC created in those namespaces will allow the PostgreSQL
+# Operator itself to create the ServiceAccounts, Roles and RoleBindings
+# it requires to create PG clusters.  If set to 'false' (the default), 
+# the installer will instead create the ServiceAccounts, Roles and
+# RoleBindings), and the PostgreSQL Operator will not be granted the
+# ability to create the RBAC it requires within those namespaces.
+# ==================
+dynamic_rbac='$DYNAMIC_RBAC'
+
 # ===================
 # PGO Client Container Settings
 # The following settings configure the deployment of a PGO Client Container
