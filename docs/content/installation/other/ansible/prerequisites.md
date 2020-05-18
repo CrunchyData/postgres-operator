@@ -176,6 +176,7 @@ sets of variables cannot be used at the same time.
 | `db_replicas`                     | 1           | **Required** | Set to configure the amount of replicas provisioned on all newly created clusters.                                                                                               |
 | `db_user`                         | testuser    | **Required** | Set to configure the username of the dedicated user account on all newly created clusters.                                                                                       |
 | `disable_failover`                | false       | **Required** | Set to true disable auto failover capabilities on all newly created cluster requests. This cannot be overridden by the client on a cluster create, but on a cluster update. Setting this is not generally recommend, as it disable high-availability capabilities.|
+| `dynamic_rbac`                    | false       |          | When using a `readonly` or `disabled` `namespace_mode`, determines whether or not the PostgreSQL Operator itself will granted the permissions needed to create required RBAC within a target namespace. |
 | `exporterport`                    | 9187        | **Required** | Set to configure the default port used to connect to postgres exporter.  |
 | `grafana_admin_password`          |             |          | Set to configure the login password for the Grafana administrator. |
 | `grafana_admin_username`          | admin       |          | Set to configure the login username for the Grafana administrator. |

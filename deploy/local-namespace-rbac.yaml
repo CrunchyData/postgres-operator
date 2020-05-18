@@ -1,17 +1,16 @@
 ---
-kind: ClusterRole
+kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: pgo-cluster-role
+  name: pgo-local-ns
+  namespace: $TARGET_NAMESPACE
 rules:
   - apiGroups:
       - ''
     resources:
-      - namespaces
+      - secrets
     verbs:
       - get
-      - list
-      - watch
       - create
       - update
       - delete
@@ -20,10 +19,10 @@ rules:
     resources:
       - serviceaccounts
     verbs:
-    - get
-    - create
-    - update
-    - delete
+      - get
+      - create
+      - update
+      - delete
   - apiGroups:
       - rbac.authorization.k8s.io
     resources:
@@ -44,3 +43,18 @@ rules:
       - create
       - update
       - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pgo-local-ns
+  namespace: $TARGET_NAMESPACE
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pgo-local-ns
+subjects:
+- kind: ServiceAccount
+  name: postgres-operator
+  namespace: $PGO_OPERATOR_NAMESPACE
+

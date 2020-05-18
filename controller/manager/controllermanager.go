@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/controller/configmap"
@@ -31,21 +32,35 @@ import (
 	"github.com/crunchydata/postgres-operator/controller/pgtask"
 	"github.com/crunchydata/postgres-operator/controller/pod"
 	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/ns"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sync/semaphore"
 
 	kubeinformers "k8s.io/client-go/informers"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
+)
+
+// the following variables represent the resources the operator must has "list" access to in order
+// to start an informer
+var (
+	listerResourcesCrunchy = []string{"pgtasks", "pgclusters", "pgreplicas", "pgpolicies"}
+	listerResourcesCore    = []string{"pods", "configmaps"}
 )
 
 // ControllerManager manages a map of controller groups, each of which is comprised of the various
 // controllers needed to handle events within a specific namespace.  Only one controllerGroup is
 // allowed per namespace.
 type ControllerManager struct {
-	mgrMutex    sync.Mutex
-	controllers map[string]*controllerGroup
-	pgoConfig   config.PgoConfig
+	mgrMutex               sync.Mutex
+	controllers            map[string]*controllerGroup
+	installationName       string
+	namespaceOperatingMode ns.NamespaceOperatingMode
+	pgoConfig              config.PgoConfig
+	pgoNamespace           string
+	sem                    *semaphore.Weighted
 }
 
 // controllerGroup is a struct for managing the various controllers created to handle events
@@ -59,16 +74,22 @@ type controllerGroup struct {
 	kubeInformerFactoryWithRefresh kubeinformers.SharedInformerFactory
 	controllersWithWorkers         []controller.WorkerRunner
 	informerSyncedFuncs            []cache.InformerSynced
+	kubeClientset                  *kubernetes.Clientset
 }
 
 // NewControllerManager returns a new ControllerManager comprised of controllerGroups for each
 // namespace included in the 'namespaces' parameter.
 func NewControllerManager(namespaces []string,
-	pgoConfig config.PgoConfig) (*ControllerManager, error) {
+	pgoConfig config.PgoConfig, pgoNamespace, installationName string,
+	namespaceOperatingMode ns.NamespaceOperatingMode) (*ControllerManager, error) {
 
 	controllerManager := ControllerManager{
-		controllers: make(map[string]*controllerGroup),
-		pgoConfig:   pgoConfig,
+		controllers:            make(map[string]*controllerGroup),
+		installationName:       installationName,
+		namespaceOperatingMode: namespaceOperatingMode,
+		pgoConfig:              pgoConfig,
+		pgoNamespace:           pgoNamespace,
+		sem:                    semaphore.NewWeighted(1),
 	}
 
 	// create controller groups for each namespace provided
@@ -115,6 +136,41 @@ func (c *ControllerManager) AddGroup(namespace string) error {
 // namespace specified, and then immediately runs the controllers in that group.
 func (c *ControllerManager) AddAndRunGroup(namespace string) error {
 
+	if c.controllers[namespace] != nil {
+		// first try to clean if one is not already in progress
+		if err := c.clean(namespace); err != nil {
+			log.Infof("Controller Manager: %s", err.Error())
+		}
+
+		// if we just cleaned the current namespace's controller, then return
+		if _, ok := c.controllers[namespace]; !ok {
+			log.Infof("Controller Manager: controller group for namespace %s has already "+
+				"been cleaned", namespace)
+			return nil
+		}
+
+		// check if we can create RBAC in the namespace in order to the reconcile RBAC
+		// as needed to ensure proper operator functionality
+		canCreateRBACInNamespace, err := ns.CanCreateRBACInNamespace(
+			c.controllers[namespace].kubeClientset,
+			namespace, c.namespaceOperatingMode)
+		if err != nil {
+			return err
+		}
+
+		log.Debugf("Controller Manager: canCreateRBACInNamespace is '%t' for namespace %s",
+			canCreateRBACInNamespace, namespace)
+
+		// now reconcile RBAC in the namespace if allowed
+		if canCreateRBACInNamespace {
+			if err := ns.ReconcileTargetRBAC(c.controllers[namespace].kubeClientset, c.pgoNamespace,
+				namespace); err != nil {
+				return err
+			}
+		}
+	}
+
+	// now finally add and run the controller group
 	c.mgrMutex.Lock()
 	defer c.mgrMutex.Unlock()
 
@@ -287,6 +343,7 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 	jobcontroller.AddJobEventHandler()
 
 	group := &controllerGroup{
+		kubeClientset:                  kubeClientset,
 		stopCh:                         make(chan struct{}),
 		doneCh:                         make(chan struct{}),
 		pgoInformerFactory:             pgoInformerFactory,
@@ -315,16 +372,133 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 	return nil
 }
 
+// clean removes and controller groups that no longer correspond to a valid namespace within
+// the Kubernetes cluster, e.g. in the event that a namespace has been deleted.
+func (c *ControllerManager) clean(namespace string) error {
+
+	if !c.sem.TryAcquire(1) {
+		return fmt.Errorf("controller group clean already in progress, namespace %s will not "+
+			"clean", namespace)
+	}
+	defer c.sem.Release(1)
+
+	log.Debugf("Controller Manager: namespace %s acquired clean lock and will clean the "+
+		"controller groups", namespace)
+
+	nsList, err := ns.GetCurrentNamespaceList(c.controllers[namespace].kubeClientset,
+		c.installationName, c.namespaceOperatingMode)
+	if err != nil {
+		log.Errorf(err.Error())
+	}
+
+	for controlledNamespace := range c.controllers {
+		cleanNamespace := true
+		for _, currNamespace := range nsList {
+			if controlledNamespace == currNamespace {
+				cleanNamespace = false
+				break
+			}
+		}
+		if cleanNamespace {
+			log.Debugf("Controller Manager: removing controller group for namespace %s",
+				controlledNamespace)
+			c.removeControllerGroup(controlledNamespace)
+		}
+	}
+
+	return nil
+}
+
+// hasListerPrivs verifies the Operator has the privileges required to start the controllers
+// for the namespace specified.
+func (c *ControllerManager) hasListerPrivs(namespace string) bool {
+
+	controllerGroup := c.controllers[namespace]
+
+	var err error
+	var hasCrunchyPrivs, hasCorePrivs, hasBatchPrivs bool
+
+	for _, listerResource := range listerResourcesCrunchy {
+		hasCrunchyPrivs, err = ns.CheckAccessPrivs(controllerGroup.kubeClientset,
+			map[string][]string{listerResource: []string{"list"}},
+			crv1.GroupName, namespace)
+		if err != nil {
+			log.Errorf(err.Error())
+		} else if !hasCrunchyPrivs {
+			log.Errorf("Controller Manager: Controller Group for namespace %s does not have the "+
+				"required list privileges for resource %s in the %s API",
+				namespace, listerResource, crv1.GroupName)
+		}
+	}
+
+	for _, listerResource := range listerResourcesCore {
+		hasCorePrivs, err = ns.CheckAccessPrivs(controllerGroup.kubeClientset,
+			map[string][]string{listerResource: []string{"list"}},
+			"", namespace)
+		if err != nil {
+			log.Errorf(err.Error())
+		} else if !hasCorePrivs {
+			log.Errorf("Controller Manager: Controller Group for namespace %s does not have the "+
+				"required list privileges for resource %s in the Core API",
+				namespace, listerResource)
+		}
+	}
+
+	hasBatchPrivs, err = ns.CheckAccessPrivs(controllerGroup.kubeClientset,
+		map[string][]string{"jobs": []string{"list"}},
+		"batch", namespace)
+	if err != nil {
+		log.Errorf(err.Error())
+	} else if !hasBatchPrivs {
+		log.Errorf("Controller Manager: Controller Group for namespace %s does not have the "+
+			"required list privileges for resource %s in the Batch API",
+			namespace, "jobs")
+	}
+
+	return (hasCrunchyPrivs && hasCorePrivs && hasBatchPrivs)
+}
+
 // runControllerGroup is responsible running the controllers for the controller group corresponding
 // to the namespace provided
 func (c *ControllerManager) runControllerGroup(namespace string) error {
 
 	controllerGroup := c.controllers[namespace]
 
-	if c.controllers[namespace].started {
+	hasListerPrivs := c.hasListerPrivs(namespace)
+	switch {
+	case c.controllers[namespace].started && hasListerPrivs:
 		log.Debugf("Controller Manager: controller group for namespace %s is already running",
 			namespace)
 		return nil
+	case c.controllers[namespace].started && !hasListerPrivs:
+		c.removeControllerGroup(namespace)
+		return fmt.Errorf("Controller Manager: removing the running controller group for "+
+			"namespace %s because it no longer has the required privs, will attempt to "+
+			"restart on the next ns refresh interval", namespace)
+	case !hasListerPrivs:
+		return fmt.Errorf("Controller Manager: cannot start controller group for namespace %s "+
+			"because it does not have the required privs, will attempt to start on the next ns "+
+			"refresh interval", namespace)
+	}
+
+	// check if we can create RBAC in the namespace in order to the reconcile RBAC
+	// as needed to ensure proper operator functionality
+	canCreateRBACInNamespace, err := ns.CanCreateRBACInNamespace(
+		c.controllers[namespace].kubeClientset,
+		namespace, c.namespaceOperatingMode)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("Controller Manager: canCreateRBACInNamespace is '%t' for namespace %s",
+		canCreateRBACInNamespace, namespace)
+
+	// now reconcile RBAC in the namespace if allowed
+	if canCreateRBACInNamespace {
+		if err := ns.ReconcileTargetRBAC(c.controllers[namespace].kubeClientset, c.pgoNamespace,
+			namespace); err != nil {
+			return err
+		}
 	}
 
 	controllerGroup.kubeInformerFactory.Start(controllerGroup.stopCh)
@@ -333,7 +507,7 @@ func (c *ControllerManager) runControllerGroup(namespace string) error {
 
 	if ok := cache.WaitForNamedCacheSync(namespace, controllerGroup.stopCh,
 		controllerGroup.informerSyncedFuncs...); !ok {
-		return fmt.Errorf("Controller Manager: failed to wait for caches to sync")
+		return fmt.Errorf("Controller Manager: failed waiting for caches to sync")
 	}
 
 	for _, worker := range c.controllers[namespace].controllersWithWorkers {

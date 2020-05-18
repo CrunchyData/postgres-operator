@@ -84,6 +84,7 @@ spec:
               verbs:
                 - get
                 - create
+                - update
                 - delete
             - apiGroups:
                 - rbac.authorization.k8s.io
@@ -93,6 +94,7 @@ spec:
                 - '*' # BUG(cbandy): spec.install.spec.clusterPermissions.rules.verbs in body should be one of [* assign get list watch create update patch put post delete deletecollection initialize use]
                 #- get
                 #- create
+                #- update
                 #- delete
                 #- bind
                 #- escalate
@@ -103,6 +105,7 @@ spec:
               verbs:
                 - get
                 - create
+                - update
                 - delete
 
       permissions:
@@ -119,6 +122,12 @@ spec:
                 - create
                 - update
                 - delete
+            - apiGroups:
+                - ''
+              resources:
+                - serviceaccounts
+              verbs:
+                - get
 
       deployments:
         - name: postgres-operator
