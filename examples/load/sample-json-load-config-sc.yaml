@@ -1,4 +1,4 @@
-PGOImagePrefix:  crunchydata
+PGOImagePrefix:  registry.developers.crunchydata.com/crunchydata
 PGOImageTag:  centos7-4.2.3
 DbDatabase:  userdb
 DbUser:  postgres
