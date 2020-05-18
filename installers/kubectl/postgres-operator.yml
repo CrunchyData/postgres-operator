@@ -172,6 +172,8 @@ spec:
                     value: "false"
                   - name: DISABLE_FSGROUP
                     value: "false"
+                  - name: DYNAMIC_RBAC
+                    value: "false"
                   - name: EXPORTERPORT
                     value: "9187"
                   - name: METRICS
