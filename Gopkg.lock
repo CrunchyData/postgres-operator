@@ -410,6 +410,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:4692f916cb72b2c295f04841036d85a3f13e96d1cc9e8e4c2c30edebac518053"
+  name = "golang.org/x/sync"
+  packages = ["semaphore"]
+  pruneopts = "UT"
+  revision = "43a5402ce75a95522677f77c619865d66b8c57ab"
+
+[[projects]]
+  branch = "master"
   digest = "1:3dcef1d66750aa78c2c57361b88e715b70a2486ab2a9f6c70a7cfb5e0712e9c3"
   name = "golang.org/x/sys"
   packages = [
@@ -992,6 +1000,7 @@
     "github.com/xdg/stringprep",
     "golang.org/x/crypto/pbkdf2",
     "golang.org/x/crypto/ssh",
+    "golang.org/x/sync/semaphore",
     "k8s.io/api/apps/v1",
     "k8s.io/api/authorization/v1",
     "k8s.io/api/batch/v1",
