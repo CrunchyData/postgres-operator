@@ -34,6 +34,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"
@@ -86,7 +87,8 @@ func main() {
 
 	// create a new controller manager with controllers for all current namespaces and then run
 	// all of those controllers
-	controllerManager, err := manager.NewControllerManager(namespaceList, operator.Pgo)
+	controllerManager, err := manager.NewControllerManager(namespaceList, operator.Pgo,
+		operator.PgoNamespace, operator.InstallationName, operator.NamespaceOperatingMode())
 	if err != nil {
 		log.Error(err)
 		os.Exit(2)
@@ -97,13 +99,25 @@ func main() {
 	}
 	log.Debug("controller manager created and all included controllers are now running")
 
-	// if the namespace operating mode is not 'disabled', then create and start a namespace
-	// controller
+	// If not using the "disabled" namespace operating mode, start a real namespace controller
+	// that is able to resond to namespace events in the Kube cluster.  If using the "disabled"
+	// operating mode, then create a fake client containing all namespaces defined for the install
+	// (i.e. via the NAMESPACE environment variable) and use that to create the namespace
+	// controller.  This allows for namespace and RBAC reconciliation logic to be run in a
+	// consistent manner regardless of the namespace operating mode being utilized.
 	if operator.NamespaceOperatingMode() != ns.NamespaceOperatingModeDisabled {
 		if err := createAndStartNamespaceController(kubeClientset, controllerManager,
 			stopCh); err != nil {
-			log.Error(err)
-			os.Exit(2)
+			log.Fatal(err)
+		}
+	} else {
+		fakeClient, err := ns.CreateFakeNamespaceClient(operator.InstallationName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := createAndStartNamespaceController(fakeClient, controllerManager,
+			stopCh); err != nil {
+			log.Fatal(err)
 		}
 	}
 
@@ -115,7 +129,7 @@ func main() {
 }
 
 // createAndStartNamespaceController creates a namespace controller and then starts it
-func createAndStartNamespaceController(kubeClientset *kubernetes.Clientset,
+func createAndStartNamespaceController(kubeClientset kubernetes.Interface,
 	controllerManager controller.Manager, stopCh <-chan struct{}) error {
 
 	nsKubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientset,
@@ -126,14 +140,24 @@ func createAndStartNamespaceController(kubeClientset *kubernetes.Clientset,
 				config.LABEL_PGO_INSTALLATION_NAME, operator.InstallationName)
 		}))
 	nsController, err := nscontroller.NewNamespaceController(controllerManager,
-		nsKubeInformerFactory.Core().V1().Namespaces())
+		nsKubeInformerFactory.Core().V1().Namespaces(),
+		*operator.Pgo.Pgo.NamespaceWorkerCount)
 	if err != nil {
 		return err
 	}
-	nsController.AddNamespaceEventHandler()
 
 	// start the namespace controller
 	nsKubeInformerFactory.Start(stopCh)
+
+	if ok := cache.WaitForNamedCacheSync("namespace", stopCh,
+		nsKubeInformerFactory.Core().V1().Namespaces().Informer().HasSynced); !ok {
+		return fmt.Errorf("failed waiting for namespace cache to sync")
+	}
+
+	for i := 0; i < nsController.WorkerCount(); i++ {
+		go nsController.RunWorker(stopCh)
+	}
+
 	log.Debug("namespace controller is now running")
 
 	return nil

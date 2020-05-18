@@ -36,7 +36,8 @@ func (c *Controller) handleConfigMapSync(key string) error {
 
 	namespace, configMapName, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
-		return err
+		log.Error(err)
+		return nil
 	}
 
 	configMap, err := c.cmLister.ConfigMaps(namespace).Get(configMapName)

@@ -132,6 +132,75 @@ and/or removed).
 
 Mode `disabled` is enabled when no `ClusterRoles` have been installed.
 
+## Dynamic RBAC Creation for `readonly` and `disabled` Namespace Operating Modes
+
+_Please note that this section is only applicable when using the `readonly` or `disabled` namespace
+operating modes._
+
+As described in the Namespace Operating Mode section above, when using either the `readonly` or 
+`disabled` operating modes, all target name namespaces must be pre-configured with the proper RBAC
+(ServiceAccounts, Roles and RoleBindings) as required for the PostgreSQL Operator to create PostgreSQL
+clusters within those namespaces.  However,  this can done in one of the following two ways:
+
+1. Assign the `postgres-operator` ServiceAccount the permissions required to create the RBAC it requires
+within the namespace to create PostgreSQL clusters.  This is specifically be done by creating the following
+Role and RoleBinding within the target namespace:
+
+    ```yaml
+    ---
+    kind: Role
+    apiVersion: rbac.authorization.k8s.io/v1
+    metadata:
+      name: pgo-local-ns
+      namespace: <target-namespace>
+    rules:
+      - apiGroups:
+          - ''
+        resources:
+          - serviceaccounts
+        verbs:
+          - get
+          - create
+          - delete
+      - apiGroups:
+          - rbac.authorization.k8s.io
+        resources:
+          - roles
+          - rolebindings
+        verbs:
+          - get
+          - create
+          - delete
+          - bind
+          - escalate
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: pgo-local-ns
+      namespace: $TARGET_NAMESPACE
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: Role
+      name: pgo-local-ns
+    subjects:
+    - kind: ServiceAccount
+      name: postgres-operator
+      namespace: <postgresql-operator-namespace>
+    ```
+
+    When the PostgreSQL Operator detects that it has the permissions defined in the `pgo-local-ns`
+    during initialization, it will create any RBAC it requires within that namespace  (recreating 
+    it if it already exists).  And if using the `readonly` namespace operating mode, the operator
+    will also create/recreate the RBAC for a namespace when it detects that a new target namespace
+    has been created.
+
+2. Manually create the ServiceAccounts, Roles and RoleBindings required for the Operator to create PostgreSQL clusters in a target namespace.
+
+All installation methods provided for installing the PostgreSQL Operator include configuration settings for determining whether or not
+the PostgreSQL Operator is assigned the permissions needed to dynamically create RBAC within a target namespace.  Therefore, when using the
+`readonly` and `disabled` namespace operating modes, please consult the proper installation guide for guidance on the proper configuration
+settings.
 
 ## Namespace Deployment Patterns
 

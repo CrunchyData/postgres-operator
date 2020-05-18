@@ -19,88 +19,133 @@ import (
 	"github.com/crunchydata/postgres-operator/controller"
 
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
 )
 
 // Controller holds the connections for the controller
 type Controller struct {
 	ControllerManager controller.Manager
 	Informer          coreinformers.NamespaceInformer
+	workqueue         workqueue.RateLimitingInterface
+	workerCount       int
 }
 
 // NewNamespaceController creates a new namespace controller that will watch for namespace events
 // as responds accordingly.  This adding and removing controller groups as namespaces watched by the
 // PostgreSQL Operator are added and deleted.
 func NewNamespaceController(controllerManager controller.Manager,
-	informer coreinformers.NamespaceInformer) (*Controller, error) {
+	informer coreinformers.NamespaceInformer, workerCount int) (*Controller, error) {
 
 	controller := &Controller{
 		ControllerManager: controllerManager,
 		Informer:          informer,
+		workqueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(),
+			"Namespaces"),
+		workerCount: workerCount,
 	}
+
+	informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			controller.enqueueNamespace(obj)
+		},
+		UpdateFunc: func(old, new interface{}) {
+			newNs := new.(*corev1.Namespace)
+			// if terminating, ignore updates and wait for the delete event
+			if newNs.Status.Phase != corev1.NamespaceTerminating {
+				controller.enqueueNamespace(new)
+			}
+		},
+		DeleteFunc: func(obj interface{}) {
+			controller.enqueueNamespace(obj)
+		},
+	})
 
 	return controller, nil
 }
 
-// AddNamespaceEventHandler adds the pod event handler to the namespace informer
-func (c *Controller) AddNamespaceEventHandler() {
+// RunWorker is a long-running function that will continually call the processNextWorkItem
+// function in order to read and process a message on the worker queue.  Once the worker queue
+// is instructed to shutdown, a message is written to the done channel.
+func (c *Controller) RunWorker(stopCh <-chan struct{}) {
 
-	c.Informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    c.onAdd,
-		UpdateFunc: c.onUpdate,
-		DeleteFunc: c.onDelete,
-	})
+	go c.waitForShutdown(stopCh)
 
-	log.Debugf("Namespace Controller: added event handler to informer")
+	for c.processNextWorkItem() {
+	}
 }
 
-// onUpdate is called when a namespace is added
-func (c *Controller) onAdd(obj interface{}) {
+// waitForShutdown waits for a message on the stop channel and then shuts down the work queue
+func (c *Controller) waitForShutdown(stopCh <-chan struct{}) {
+	<-stopCh
+	c.workqueue.ShutDown()
+	log.Debug("Namespace Contoller: received stop signal, worker queue told to shutdown")
+}
 
-	newNs := obj.(*v1.Namespace)
+// ShutdownWorker shuts down the work queue
+func (c *Controller) ShutdownWorker() {
+	c.workqueue.ShutDown()
+	log.Debug("Namespace Contoller: worker queue told to shutdown")
+}
 
-	log.Debugf("namespace Controller: onAdd will now add a controller "+
-		"group for namespace %s", newNs.Name)
-	if err := c.ControllerManager.AddAndRunGroup(newNs.Name); err != nil {
+// enqueueNamespace inspects a namespace to determine if it should be added to the work queue.  If
+// so, the namespace resource is converted into a namespace/name string and is then added to the
+// work queue
+func (c *Controller) enqueueNamespace(obj interface{}) {
+
+	var key string
+	var err error
+	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
+		utilruntime.HandleError(err)
+		return
+	}
+	c.workqueue.Add(key)
+}
+
+// processNextWorkItem will read a single work item off the work queue and processes it via
+// the Namespace sync handler
+func (c *Controller) processNextWorkItem() bool {
+
+	obj, shutdown := c.workqueue.Get()
+
+	if shutdown {
+		return false
+	}
+
+	// We call Done here so the workqueue knows we have finished processing this item
+	defer c.workqueue.Done(obj)
+
+	var key string
+	var ok bool
+	// We expect strings to come off the workqueue in the form namespace/name
+	if key, ok = obj.(string); !ok {
+		c.workqueue.Forget(obj)
+		log.Errorf("Namespace Controller: expected string in workqueue but got %#v", obj)
+		return true
+	}
+
+	_, namespace, err := cache.SplitMetaNamespaceKey(key)
+	if err != nil {
 		log.Error(err)
+		return true
 	}
+
+	// Run AddAndRunGroup, passing it the namespace that needs to be synced
+	if err := c.ControllerManager.AddAndRunGroup(namespace); err != nil {
+		log.Errorf("Namespace Controller: error syncing Namespace '%s': %s",
+			key, err.Error())
+	}
+
+	// Finally if no error has occurred forget this item
+	c.workqueue.Forget(obj)
+
+	return true
 }
 
-// onUpdate is called when a namespace is updated
-func (c *Controller) onUpdate(oldObj, newObj interface{}) {
-
-	newNs := newObj.(*v1.Namespace)
-
-	log.Debugf("namespace Controller: onUpdate will now attempt to add and run a controller "+
-		"group for namespace %s", newNs.Name)
-	// Add and run the controller group if namespace is part of the current installation.
-	// AddAndRunGroup can be called over and over again, and the controller group will only
-	// be created and/or run if not already created and/or running
-	if err := c.ControllerManager.AddAndRunGroup(newNs.Name); err != nil {
-		log.Error(err)
-	}
-}
-
-func (c *Controller) onDelete(obj interface{}) {
-
-	ns := obj.(*v1.Namespace)
-
-	log.Debugf("namespace Controller: onDelete will now remove the controller "+
-		"group for namespace %s if it exists", ns.Name)
-	c.ControllerManager.RemoveGroup(ns.Name)
-}
-
-// isNamespaceInForegroundDeletion determines if a namespace is currently being deleted using
-// foreground cascading deletion, as indicated by the presence of value “foregroundDeletion” in
-// the namespace's metadata.finalizers.
-func isNamespaceInForegroundDeletion(namespace *v1.Namespace) bool {
-	for _, finalizer := range namespace.Finalizers {
-		if finalizer == meta_v1.FinalizerDeleteDependents {
-			return true
-		}
-	}
-	return false
+// WorkerCount returns the worker count for the controller
+func (c *Controller) WorkerCount() int {
+	return c.workerCount
 }

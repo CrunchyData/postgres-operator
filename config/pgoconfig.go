@@ -240,6 +240,7 @@ type PgoStruct struct {
 	ConfigMapWorkerCount           *int
 	ControllerGroupRefreshInterval *int
 	NamespaceRefreshInterval       *int
+	NamespaceWorkerCount           *int
 	PGClusterWorkerCount           *int
 	PGOImagePrefix                 string
 	PGOImageTag                    string

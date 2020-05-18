@@ -48,16 +48,27 @@ then
     $PGOROOT/deploy/add-targeted-namespace.sh ${PGO_OPERATOR_NAMESPACE} > /dev/null
 fi
 
-for ns in "${array[@]}"
-do
-	$PGO_CMD get namespace $ns > /dev/null 2> /dev/null
+if [[ "${PGO_NAMESPACE_MODE:-dynamic}" != "dynamic" ]]
+then
 
-	if [ $? -eq 0 ]
+	if [[ "${PGO_DYNAMIC_RBAC}" == "true" ]]
 	then
-		echo namespace $ns already exists, updating...
-		$PGOROOT/deploy/add-targeted-namespace.sh $ns > /dev/null
-	else
-		echo namespace $ns creating...
-		$PGOROOT/deploy/add-targeted-namespace.sh $ns > /dev/null
+		add_ns_script=add-targeted-namespace-dynamic-rbac.sh
+	else	
+		add_ns_script=add-targeted-namespace.sh
 	fi
-done
+
+	for ns in "${array[@]}"
+	do
+		$PGO_CMD get namespace $ns > /dev/null 2> /dev/null
+
+		if [ $? -eq 0 ]
+		then
+			echo namespace $ns already exists, updating...
+			$PGOROOT/deploy/$add_ns_script $ns > /dev/null
+		else
+			echo namespace $ns creating...
+			$PGOROOT/deploy/$add_ns_script $ns > /dev/null
+		fi
+	done
+fi
