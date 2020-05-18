@@ -52,22 +52,9 @@ For various scripts used by the Operator, the *expenv* utility is required, down
 
 ## Default Installation - Namespace Creation
 
-The default installation will create 3 namespaces to use
-for deploying the Operator into and for holding Postgres clusters
-created by the Operator.
-
 Creating Kubernetes namespaces is typically something that only a
 privileged Kubernetes user can perform so log into your Kubernetes cluster as a user
 that has the necessary privileges.
-
-On Openshift if you do not want to install the Operator as the system
-administrator, you can grant cluster-admin privileges to a user
-as follows:
-
-    oc adm policy add-cluster-role-to-user cluster-admin pgoinstaller
-
-In the above command, you are granting cluster-admin privileges
-to a user named pgoinstaller.  
 
 The *NAMESPACE* environment variable is a comma separated list
 of namespaces that specify where the Operator will be provisioing

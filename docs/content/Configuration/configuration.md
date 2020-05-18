@@ -12,7 +12,7 @@ The operator is template-driven; this makes it simple to configure both the clie
 
 The Operator is configured with a collection of files found in the *conf* directory.  These configuration files are deployed to your Kubernetes cluster when the Operator is deployed.  Changes made to any of these configuration files currently require a redeployment of the Operator on the Kubernetes cluster.
 
-The server components of the Operator include Role Based Access Control resources which need to be created a single time by a Kubernetes cluster-admin user.  See the Installation section for details on installing a Postgres Operator server.
+The server components of the Operator include Role Based Access Control resources which need to be created a single time by a privileged Kubernetes user.  See the Installation section for details on installing a Postgres Operator server.
 
 The configuration files used by the Operator are found in 2 places:
  * the pgo-config ConfigMap in the namespace the Operator is running in

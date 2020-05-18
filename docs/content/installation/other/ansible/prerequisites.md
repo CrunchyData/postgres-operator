@@ -34,12 +34,11 @@ are required:
 
 ## Permissions
 
-The installation of the Crunchy PostgreSQL Operator requires elevated privileges.  
-It is required that the playbooks are run as a `cluster-admin` to ensure the playbooks
-can install:
+The installation of the Crunchy PostgreSQL Operator requires elevated
+privileges, as the following objects need to be created:
 
 * Custom Resource Definitions
-* Cluster RBAC
+* Cluster RBAC for using one of the multi-namespace modes
 * Create required namespaces
 
 {{% notice warning %}}In Kubernetes versions prior to 1.12 (including Openshift up through 3.11), there is a limitation that requires an extra step during installation for the operator to function properly with watched namespaces. This limitation does not exist when using Kubernetes 1.12+. When a list of namespaces are provided through the NAMESPACE environment variable, the setupnamespaces.sh script handles the limitation properly in both the bash and ansible installation.
