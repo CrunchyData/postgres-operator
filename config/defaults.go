@@ -58,6 +58,9 @@ const (
 	// DefaultConfigMapWorkerCount defines the default number or workers for the worker queue
 	// in the ConfigMap controller
 	DefaultConfigMapWorkerCount = 2
+	// DefaultNamespaceWorkerCount defines the default number or workers for the worker queue
+	// in the Namespace controller
+	DefaultNamespaceWorkerCount = 3
 	// DefaultPGClusterWorkerCount defines the default number or workers for the worker queue
 	// in the PGCluster controller
 	DefaultPGClusterWorkerCount = 1

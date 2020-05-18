@@ -310,6 +310,16 @@ func initializeControllerWorkerCounts() {
 			*Pgo.Pgo.ConfigMapWorkerCount)
 	}
 
+	if Pgo.Pgo.NamespaceWorkerCount == nil {
+		log.Debugf("NamespaceWorkerCount not set, defaulting to %d worker(s)",
+			config.DefaultNamespaceWorkerCount)
+		defaultVal := int(config.DefaultNamespaceWorkerCount)
+		Pgo.Pgo.NamespaceWorkerCount = &defaultVal
+	} else {
+		log.Debugf("NamespaceWorkerCount is set, using %d worker(s)",
+			*Pgo.Pgo.NamespaceWorkerCount)
+	}
+
 	if Pgo.Pgo.PGClusterWorkerCount == nil {
 		log.Debugf("PGClusterWorkerCount not set, defaulting to %d worker(s)",
 			config.DefaultPGClusterWorkerCount)
@@ -361,14 +371,11 @@ func SetupNamespaces(clientset *kubernetes.Clientset) ([]string, error) {
 		return nil, err
 	}
 
-	// if in a dynmic namespace mode, then proceed with creating or updating any namespaces
-	// provided for the installation
-	if NamespaceOperatingMode() == ns.NamespaceOperatingModeDynamic {
-		if err := ns.ConfigureInstallNamespaces(clientset, InstallationName,
-			PgoNamespace, namespaceList); err != nil {
-			log.Errorf("Unable to setup namespaces: %w", err)
-			return nil, err
-		}
+	// proceed with creating and/or updating any namespaces provided for the installation
+	if err := ns.ConfigureInstallNamespaces(clientset, InstallationName,
+		PgoNamespace, namespaceList, NamespaceOperatingMode()); err != nil {
+		log.Errorf("Unable to setup namespaces: %w", err)
+		return nil, err
 	}
 
 	return namespaceList, nil

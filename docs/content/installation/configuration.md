@@ -53,6 +53,7 @@ Operator.
 | `DELETE_WATCHED_NAMESPACES` | false |  | 	Set to configure whether or not the PGO watched namespaces (defined using variable `namespace`) are deleted when uninstalling the PGO. |
 | `DISABLE_AUTO_FAILOVER` | false |  | If set, will disable autofail capabilities by default in any newly created cluster |
 | `DISABLE_FSGROUP` | false |  | Set to `true` for deployments where you do not want to have the default PostgreSQL fsGroup (26) set. The typical usage is in OpenShift environments that have a `restricted` Security Context Constraints. |
+| `DYNAMIC_RBAC` | false | | When using a `readonly` or `disabled` `NAMESPACE_MODE`, determines whether or not the PostgreSQL Operator itself will granted the permissions needed to create required RBAC within a target namespace. |
 | `EXPORTERPORT` | 9187 | **Required** | Set to configure the default port used to connect to postgres exporter. |
 | `GRAFANA_ADMIN_PASSWORD` |  |  | Set to configure the login password for the Grafana administrator. |
 | `GRAFANA_ADMIN_USERNAME` | admin |  | Set to configure the login username for the Grafana administrator. |
