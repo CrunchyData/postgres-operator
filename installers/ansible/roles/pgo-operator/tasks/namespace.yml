@@ -1,12 +1,81 @@
 ---
+- name: Namespace List
+  set_fact:
+    nslist: "{{ namespace | ternary(namespace, pgo_operator_namespace) }}"
+  tags:
+    - install
+    - update
+
 - name: Create Watched Namespaces
   shell: "{{ target_ns_script }}"
   vars:
     target_namespace: !unsafe "{{.TargetNamespace}}"
     operator_namespace: !unsafe "{{.OperatorNamespace}}"
-    nslist: "{{ namespace | ternary(namespace, pgo_operator_namespace) }}"
     target_ns_script: "{{ lookup('template', 'add-targeted-namespace.sh.j2') }}"
   with_items: "{{ nslist.split(',') | map('trim') | list }}"
+  when:
+    - namespace_mode != 'dynamic'
+    - dynamic_rbac == 'false'
   tags:
-  - install
-  - update
+    - install
+    - update
+
+- name: Create Watched Namespaces (Dynamic RBAC)
+  shell: "{{ kubectl_or_oc }} create namespace {{ item }}"
+  register: result
+  failed_when: 
+    - result.rc != 0
+    - "'AlreadyExists' not in result.stderr"
+  with_items: "{{ nslist.split(',') | map('trim') | list }}"
+  when:
+    - namespace_mode != 'dynamic'
+    - dynamic_rbac == 'true'
+  tags:
+    - install
+    - update
+
+- name: Label Watched Namespaces (Dynamic RBAC)
+  shell: |
+    {{ kubectl_or_oc }} label namespace {{ item }} --overwrite \
+      vendor=crunchydata pgo-installation-name={{ pgo_installation_name }} pgo-created-by=add-script
+  with_items: "{{ nslist.split(',') | map('trim') | list }}"
+  when:
+    - namespace_mode != 'dynamic'
+    - dynamic_rbac == 'true'
+  tags:
+    - install
+    - update
+
+- name: Template Local Namespace RBAC (Dynamic RBAC)
+  template:
+    src: local-namespace-rbac.yaml.j2
+    dest: "{{ output_dir }}/local-namespace-rbac.yaml"
+    mode: '0600'
+  when:
+    - namespace_mode != 'dynamic'
+    - dynamic_rbac == 'true'
+  tags:
+    - install
+    - update
+
+- name: Cleanup Local Namespace RBAC (Dynamic RBAC)
+  command: "{{ kubectl_or_oc }} delete -f {{ output_dir }}/local-namespace-rbac.yaml -n {{ item }}"
+  with_items: "{{ nslist.split(',') | map('trim') | list }}"
+  when:
+    - namespace_mode != 'dynamic'
+    - dynamic_rbac == 'true'
+  ignore_errors: yes
+  tags:
+    - install
+    - update
+
+- name: Create Local Namespace RBAC (Dynamic RBAC)
+  command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/local-namespace-rbac.yaml -n {{ item }}"
+  with_items: "{{ nslist.split(',') | map('trim') | list }}"
+  when:
+    - namespace_mode != 'dynamic'
+    - dynamic_rbac == 'true'
+  tags:
+    - install
+    - update
+  

@@ -115,6 +115,7 @@ for other access modes it might support.
 |ConfigMapWorkerCount  | The number of workers created for the worker queue within the ConfigMap controller (defaults to 2)
 |ControllerGroupRefreshInterval  | The refresh interval for any per-namespace controller with a refresh interval (defaults to 60 seconds)
 |NamespaceRefreshInterval        | The refresh interval for the namespace controller (defaults to 60 seconds)
+|NamespaceWorkerCount  | The number of workers created for the worker queue within the Namespace controller (defaults to 2)
 |PgclusterWorkerCount  | The number of workers created for the worker queue within the PGCluster controller (defaults to 1)
 |PGOImagePrefix        | image tag prefix to use for the Operator containers
 |PGOImageTag           |image tag to use for the Operator containers

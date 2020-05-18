@@ -21,7 +21,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/crunchydata/postgres-operator/config"
@@ -30,12 +32,15 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	authorizationapi "k8s.io/api/authorization/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 const OPERATOR_SERVICE_ACCOUNT = "postgres-operator"
@@ -53,55 +58,30 @@ const PGO_PG_ROLE = "pgo-pg-role"
 const PGO_PG_ROLE_BINDING = "pgo-pg-role-binding"
 const PGO_PG_SERVICE_ACCOUNT = "pgo-pg"
 
-//pgo-default-sa.json
-type PgoDefaultServiceAccount struct {
+// PgoServiceAccount is used to populate the following ServiceAccount templates:
+// pgo-default-sa.json
+// pgo-target-sa.json
+// pgo-backrest-sa.json
+// pgo-pg-sa.json
+type PgoServiceAccount struct {
 	TargetNamespace string
 }
 
-//pgo-backrest-sa.json
-type PgoBackrestServiceAccount struct {
+// PgoRole is used to populate the following Role templates:
+// pgo-target-role.json
+// pgo-backrest-role.json
+// pgo-pg-role.json
+type PgoRole struct {
 	TargetNamespace string
 }
 
-//pgo-target-sa.json
-type PgoTargetServiceAccount struct {
-	TargetNamespace string
-}
-
-//pgo-target-role-binding.json
-type PgoTargetRoleBinding struct {
+// PgoRoleBinding is used to populate the following RoleBinding templates:
+// pgo-target-role-binding.json
+// pgo-backrest-role-binding.json
+// pgo-pg-role-binding.json
+type PgoRoleBinding struct {
 	TargetNamespace   string
 	OperatorNamespace string
-}
-
-//pgo-backrest-role.json
-type PgoBackrestRole struct {
-	TargetNamespace string
-}
-
-//pgo-backrest-role-binding.json
-type PgoBackrestRoleBinding struct {
-	TargetNamespace string
-}
-
-//pgo-target-role.json
-type PgoTargetRole struct {
-	TargetNamespace string
-}
-
-//pgo-pg-sa.json
-type PgoPgServiceAccount struct {
-	TargetNamespace string
-}
-
-//pgo-pg-role.json
-type PgoPgRole struct {
-	TargetNamespace string
-}
-
-//pgo-pg-role-binding.json
-type PgoPgRoleBinding struct {
-	TargetNamespace string
 }
 
 // NamespaceOperatingMode defines the different namespace operating modes for the Operator
@@ -139,20 +119,24 @@ var (
 	// namespacePrivsCoreDynamic defines the privileges in the Core API group required for the
 	// Operator to run using the NamespaceOperatingModeDynamic namespace operating mode
 	namespacePrivsCoreDynamic = map[string][]string{
-		"namespaces":      {"get", "list", "watch", "create", "update", "delete"},
-		"serviceaccounts": {"get", "create", "delete"},
-	}
-	// namespacePrivsDynamic defines the privileges in the rbac.authorization.k8s.io API group
-	// required for the Operator to run using the NamespaceOperatingModeDynamic namespace
-	// operating mode
-	namespacePrivsRBACDynamic = map[string][]string{
-		"roles":        {"get", "create", "delete", "bind", "escalate"},
-		"rolebindings": {"get", "create", "delete"},
+		"namespaces": {"get", "list", "watch", "create", "update", "delete"},
 	}
 	// namespacePrivsReadOnly defines the privileges in the Core API group required for the
 	// Operator to run using the NamespaceOperatingModeReadOnly namespace operating mode
 	namespacePrivsCoreReadOnly = map[string][]string{
 		"namespaces": {"get", "list", "watch"},
+	}
+
+	// rbacPrivsCore defines the privileges in the Core API group required for the Operator to
+	// create RBAC in a namespace
+	rbacPrivsCore = map[string][]string{
+		"serviceaccounts": {"get", "create", "delete"},
+	}
+	// rbacPrivsRBAC definess the privileges in the rbac.authorization.k8s.io API group
+	// required for the Operator to create RBAC in a namespace
+	rbacPrivsRBAC = map[string][]string{
+		"roles":        {"get", "create", "delete", "bind", "escalate"},
+		"rolebindings": {"get", "create", "delete"},
 	}
 
 	// ErrInvalidNamespaceName defines the error that is thrown when a namespace does not meet the
@@ -165,10 +149,30 @@ var (
 		"current PostgreSQL Operator installation")
 )
 
-// CreateNamespaceAndRBAC creates a new namespace that is owned by the Operator, while then
-// installing the required RBAC within that namespace as required to be utilized with the
-// current Operator install.
-func CreateNamespaceAndRBAC(clientset *kubernetes.Clientset, installationName, pgoNamespace,
+// CreateFakeNamespaceClient creates a fake namespace client for use with the "disabled" namespace
+// operating mode
+func CreateFakeNamespaceClient(installationName string) (kubernetes.Interface, error) {
+
+	var namespaces []runtime.Object
+	for _, namespace := range getNamespacesFromEnv() {
+		namespaces = append(namespaces, &v1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespace,
+				Labels: map[string]string{
+					config.LABEL_VENDOR:                config.LABEL_CRUNCHY,
+					config.LABEL_PGO_INSTALLATION_NAME: installationName,
+				},
+			},
+		})
+	}
+
+	fakeClient := fake.NewSimpleClientset(namespaces...)
+
+	return fakeClient, nil
+}
+
+// CreateNamespace creates a new namespace that is owned by the Operator.
+func CreateNamespace(clientset *kubernetes.Clientset, installationName, pgoNamespace,
 	createdBy, newNs string) error {
 
 	log.Debugf("CreateNamespace %s %s %s", pgoNamespace, createdBy, newNs)
@@ -187,11 +191,6 @@ func CreateNamespaceAndRBAC(clientset *kubernetes.Clientset, installationName, p
 	}
 
 	log.Debugf("CreateNamespace %s created by %s", newNs, createdBy)
-
-	//apply targeted rbac rules here
-	if err := installTargetRBAC(clientset, pgoNamespace, newNs); err != nil {
-		return err
-	}
 
 	//publish event
 	topics := make([]string, 1)
@@ -260,221 +259,291 @@ func copySecret(clientset *kubernetes.Clientset, secretName, operatorNamespace, 
 	return nil
 }
 
-func installTargetRBAC(clientset *kubernetes.Clientset, operatorNamespace, targetNamespace string) error {
+// ReconcileTargetRBAC ensures the RBAC resources in a target namespace are valid, reconciling
+// (i.e. updating or recreating) them if not.
+func ReconcileTargetRBAC(clientset *kubernetes.Clientset, pgoNamespace,
+	targetNamespace string) error {
+
+	var errs []string
 
 	// Use the image pull secrets of the operator service account in the new namespace.
-	operator, exists, err := kubeapi.GetServiceAccount(clientset, OPERATOR_SERVICE_ACCOUNT, operatorNamespace)
-	if !exists {
+	operator, err := clientset.CoreV1().ServiceAccounts(pgoNamespace).Get(
+		OPERATOR_SERVICE_ACCOUNT, metav1.GetOptions{})
+	if err != nil {
 		log.Errorf("expected the operator account to exist: %v", err)
-		return err
+		errs = append(errs, err.Error())
 	}
 
-	err = createPGODefaultServiceAccount(clientset, targetNamespace, operator.ImagePullSecrets)
+	saCreatedOrUpdated, err := reconcileServiceAccounts(clientset, targetNamespace,
+		operator.ImagePullSecrets)
 	if err != nil {
-		log.Error(err)
-		return err
+		errs = append(errs, err.Error())
 	}
 
-	err = createPGOTargetServiceAccount(clientset, targetNamespace, operator.ImagePullSecrets)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	err = createPGOBackrestServiceAccount(clientset, targetNamespace, operator.ImagePullSecrets)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	err = createPGOTargetRole(clientset, targetNamespace)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	err = createPGOTargetRoleBinding(clientset, targetNamespace, operatorNamespace)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	err = createPGOBackrestRole(clientset, targetNamespace)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	err = createPGOBackrestRoleBinding(clientset, targetNamespace)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	err = createPGOPgServiceAccount(clientset, targetNamespace, operator.ImagePullSecrets)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	err = createPGOPgRole(clientset, targetNamespace)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	err = createPGOPgRoleBinding(clientset, targetNamespace)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	// Now that the operator has permission in the new namespace, copy any existing
-	// image pull secrets to the new namespace.
+	// If a SA was created or updated, or if it doesnt exist, ensure the image pull secrets
+	// are up to date
 	for _, reference := range operator.ImagePullSecrets {
-		if err = copySecret(clientset, reference.Name, operatorNamespace, targetNamespace); err != nil {
-			log.Error(err)
-			return err
+
+		var doesNotExist bool
+
+		if _, err := clientset.CoreV1().Secrets(targetNamespace).Get(
+			reference.Name, metav1.GetOptions{}); err != nil {
+			if kerrors.IsNotFound(err) {
+				doesNotExist = true
+			} else {
+				errs = append(errs, err.Error())
+				continue
+			}
+		}
+
+		if doesNotExist || saCreatedOrUpdated {
+			if err = copySecret(clientset, reference.Name, pgoNamespace,
+				targetNamespace); err != nil {
+				errs = append(errs, err.Error())
+			}
 		}
 	}
 
+	if err := reconcileRoles(clientset, targetNamespace); err != nil {
+		errs = append(errs, err.Error())
+	}
+	if err := reconcileRoleBindings(clientset, pgoNamespace, targetNamespace); err != nil {
+		errs = append(errs, err.Error())
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf(strings.Join(errs, "/n"))
+	}
 	return nil
-
 }
 
-func createPGOTargetRoleBinding(clientset *kubernetes.Clientset, targetNamespace, operatorNamespace string) error {
-	//check for rolebinding existing
-	_, found, _ := kubeapi.GetRoleBinding(clientset, PGO_TARGET_ROLE_BINDING, targetNamespace)
-	if found {
-		log.Infof("rolebinding %s already exists, will delete and re-create", PGO_TARGET_ROLE_BINDING)
-		err := kubeapi.DeleteRoleBinding(clientset, PGO_TARGET_ROLE_BINDING, targetNamespace)
+// reconcileRoles reconciles the Rroles required by the operator in a target namespace
+func reconcileRoles(clientset *kubernetes.Clientset, targetNamespace string) error {
+
+	var errs []string
+
+	reconcileRoles := map[string]*template.Template{
+		PGO_TARGET_ROLE:   config.PgoTargetRoleTemplate,
+		PGO_BACKREST_ROLE: config.PgoBackrestRoleTemplate,
+		PGO_PG_ROLE:       config.PgoPgRoleTemplate,
+	}
+
+	for role, template := range reconcileRoles {
+
+		var createRole bool
+
+		currRole, err := clientset.RbacV1().Roles(targetNamespace).Get(
+			role, metav1.GetOptions{})
 		if err != nil {
-			log.Errorf("error deleting rolebinding %s %s", PGO_TARGET_ROLE_BINDING, err.Error())
-			return err
+			if kerrors.IsNotFound(err) {
+				log.Debugf("Role %s in namespace %s does not exist and will be created",
+					currRole.Name, targetNamespace)
+				createRole = true
+			} else {
+				errs = append(errs, err.Error())
+				continue
+			}
+		}
+
+		var buffer bytes.Buffer
+		if err := template.Execute(&buffer,
+			PgoRole{TargetNamespace: targetNamespace}); err != nil {
+			errs = append(errs, err.Error())
+			continue
+		}
+		templatedRole := rbacv1.Role{}
+		if err := json.Unmarshal(buffer.Bytes(), &templatedRole); err != nil {
+			errs = append(errs, err.Error())
+			continue
+		}
+
+		if createRole {
+			if _, err := clientset.RbacV1().Roles(targetNamespace).Create(
+				&templatedRole); err != nil {
+				errs = append(errs, err.Error())
+				continue
+			}
+			continue
+		}
+
+		if !reflect.DeepEqual(currRole.Rules, templatedRole.Rules) {
+
+			log.Debugf("Role %s in namespace %s is invalid and will now be reconciled",
+				currRole.Name, targetNamespace)
+
+			currRole.Rules = templatedRole.Rules
+
+			if _, err := clientset.RbacV1().Roles(targetNamespace).Update(
+				currRole); err != nil {
+				errs = append(errs, err.Error())
+				continue
+			}
 		}
 	}
 
-	var buffer bytes.Buffer
-	err := config.PgoTargetRoleBindingTemplate.Execute(&buffer,
-		PgoTargetRoleBinding{
-			TargetNamespace:   targetNamespace,
-			OperatorNamespace: operatorNamespace,
-		})
-	if err != nil {
-		log.Error(err.Error())
-		return err
+	if len(errs) > 0 {
+		return fmt.Errorf(strings.Join(errs, "/n"))
 	}
-	log.Info(buffer.String())
-
-	rb := rbacv1.RoleBinding{}
-	err = json.Unmarshal(buffer.Bytes(), &rb)
-	if err != nil {
-		log.Error("error unmarshalling " + config.PGOTargetRoleBindingPath + " json RoleBinding " + err.Error())
-		return err
-	}
-
-	return kubeapi.CreateRoleBinding(clientset, &rb, targetNamespace)
+	return nil
 }
 
-func createPGOBackrestRole(clientset *kubernetes.Clientset, targetNamespace string) error {
-	//check for role existing
-	_, found, _ := kubeapi.GetRole(clientset, PGO_BACKREST_ROLE, targetNamespace)
-	if found {
-		log.Infof("role %s already exists, will delete and re-create", PGO_BACKREST_ROLE)
-		err := kubeapi.DeleteRole(clientset, PGO_BACKREST_ROLE, targetNamespace)
+// reconcileRoleBindings reconciles the RoleBindings required by the operator in a target namespace
+func reconcileRoleBindings(clientset *kubernetes.Clientset, pgoNamespace,
+	targetNamespace string) error {
+
+	var errs []string
+
+	reconcileRoleBindings := map[string]*template.Template{
+		PGO_TARGET_ROLE_BINDING:   config.PgoTargetRoleBindingTemplate,
+		PGO_BACKREST_ROLE_BINDING: config.PgoBackrestRoleBindingTemplate,
+		PGO_PG_ROLE_BINDING:       config.PgoPgRoleBindingTemplate,
+	}
+
+	for roleBinding, template := range reconcileRoleBindings {
+
+		var createRoleBinding bool
+
+		currRoleBinding, err := clientset.RbacV1().RoleBindings(targetNamespace).Get(
+			roleBinding, metav1.GetOptions{})
 		if err != nil {
-			log.Errorf("error deleting role %s %s", PGO_BACKREST_ROLE, err.Error())
-			return err
+			if kerrors.IsNotFound(err) {
+				log.Debugf("RoleBinding %s in namespace %s does not exist and will be created",
+					currRoleBinding.Name, targetNamespace)
+				createRoleBinding = true
+			} else {
+				errs = append(errs, err.Error())
+				continue
+			}
+		}
+
+		var buffer bytes.Buffer
+		if err := template.Execute(&buffer,
+			PgoRoleBinding{
+				TargetNamespace:   targetNamespace,
+				OperatorNamespace: pgoNamespace,
+			}); err != nil {
+			errs = append(errs, err.Error())
+			continue
+		}
+
+		templatedRoleBinding := rbacv1.RoleBinding{}
+		if err := json.Unmarshal(buffer.Bytes(), &templatedRoleBinding); err != nil {
+			errs = append(errs, err.Error())
+			continue
+		}
+
+		if createRoleBinding {
+			if _, err := clientset.RbacV1().RoleBindings(targetNamespace).Create(
+				&templatedRoleBinding); err != nil {
+				errs = append(errs, err.Error())
+				continue
+			}
+			continue
+		}
+
+		if !reflect.DeepEqual(currRoleBinding.Subjects,
+			templatedRoleBinding.Subjects) ||
+			!reflect.DeepEqual(currRoleBinding.RoleRef,
+				templatedRoleBinding.RoleRef) {
+
+			log.Debugf("RoleBinding %s in namespace %s is invalid and will now be reconciled",
+				currRoleBinding.Name, targetNamespace)
+
+			currRoleBinding.Subjects = templatedRoleBinding.Subjects
+			currRoleBinding.RoleRef = templatedRoleBinding.RoleRef
+
+			if _, err := clientset.RbacV1().RoleBindings(targetNamespace).Update(
+				currRoleBinding); err != nil {
+				errs = append(errs, err.Error())
+				continue
+			}
 		}
 	}
 
-	var buffer bytes.Buffer
-	err := config.PgoBackrestRoleTemplate.Execute(&buffer,
-		PgoBackrestRole{
-			TargetNamespace: targetNamespace,
-		})
-	if err != nil {
-		log.Error(err.Error())
-		return err
+	if len(errs) > 0 {
+		return fmt.Errorf(strings.Join(errs, "/n"))
 	}
-	log.Info(buffer.String())
-	r := rbacv1.Role{}
-	err = json.Unmarshal(buffer.Bytes(), &r)
-	if err != nil {
-		log.Error("error unmarshalling " + config.PGOBackrestRolePath + " json Role " + err.Error())
-		return err
-	}
-
-	return kubeapi.CreateRole(clientset, &r, targetNamespace)
+	return nil
 }
 
-func createPGOTargetRole(clientset *kubernetes.Clientset, targetNamespace string) error {
-	//check for role existing
-	_, found, _ := kubeapi.GetRole(clientset, PGO_TARGET_ROLE, targetNamespace)
-	if found {
-		log.Infof("role %s already exists, will delete and re-create", PGO_TARGET_ROLE)
-		err := kubeapi.DeleteRole(clientset, PGO_TARGET_ROLE, targetNamespace)
+// reconcileServiceAccounts reconciles the ServiceAccounts required by the operator in a target
+// namespace
+func reconcileServiceAccounts(clientset *kubernetes.Clientset, targetNamespace string,
+	imagePullSecrets []v1.LocalObjectReference) (createdOrUpdated bool, err error) {
+
+	var errs []string
+
+	reconcileServiceAccounts := map[string]*template.Template{
+		PGO_DEFAULT_SERVICE_ACCOUNT:  config.PgoDefaultServiceAccountTemplate,
+		PGO_TARGET_SERVICE_ACCOUNT:   config.PgoTargetServiceAccountTemplate,
+		PGO_BACKREST_SERVICE_ACCOUNT: config.PgoBackrestServiceAccountTemplate,
+		PGO_PG_SERVICE_ACCOUNT:       config.PgoPgServiceAccountTemplate,
+	}
+
+	for serviceAccount, template := range reconcileServiceAccounts {
+
+		var createServiceAccount bool
+
+		currServiceAccount, err := clientset.CoreV1().ServiceAccounts(
+			targetNamespace).Get(serviceAccount, metav1.GetOptions{})
 		if err != nil {
-			log.Errorf("error deleting role %s %s", PGO_TARGET_ROLE, err.Error())
-			return err
+			if kerrors.IsNotFound(err) {
+				log.Debugf("ServiceAccount %s in namespace %s does not exist and will be created",
+					currServiceAccount.Name, targetNamespace)
+				createServiceAccount = true
+			} else {
+				errs = append(errs, err.Error())
+				continue
+			}
+		}
+
+		var buffer bytes.Buffer
+		if err := template.Execute(&buffer,
+			PgoServiceAccount{TargetNamespace: targetNamespace}); err != nil {
+			errs = append(errs, err.Error())
+			continue
+		}
+		templatedServiceAccount := corev1.ServiceAccount{}
+		if err := json.Unmarshal(buffer.Bytes(), &templatedServiceAccount); err != nil {
+			errs = append(errs, err.Error())
+			continue
+		}
+
+		if createServiceAccount {
+			templatedServiceAccount.ImagePullSecrets = imagePullSecrets
+			if _, err := clientset.CoreV1().ServiceAccounts(targetNamespace).Create(
+				&templatedServiceAccount); err != nil {
+				errs = append(errs, err.Error())
+				continue
+			}
+			createdOrUpdated = true
+			continue
+		}
+
+		if !reflect.DeepEqual(currServiceAccount.ImagePullSecrets, imagePullSecrets) {
+
+			log.Debugf("ServiceAccout %s in namespace %s is invalid and will now be reconciled",
+				currServiceAccount.Name, targetNamespace)
+
+			currServiceAccount.ImagePullSecrets = imagePullSecrets
+
+			if _, err := clientset.CoreV1().ServiceAccounts(targetNamespace).Update(
+				currServiceAccount); err != nil {
+				errs = append(errs, err.Error())
+				continue
+			}
+			createdOrUpdated = true
 		}
 	}
 
-	var buffer bytes.Buffer
-	err := config.PgoTargetRoleTemplate.Execute(&buffer,
-		PgoTargetRole{
-			TargetNamespace: targetNamespace,
-		})
-
-	if err != nil {
-		log.Error(err.Error())
-		return err
+	if len(errs) > 0 {
+		err = fmt.Errorf(strings.Join(errs, "/n"))
 	}
-	log.Info(buffer.String())
-	r := rbacv1.Role{}
-	err = json.Unmarshal(buffer.Bytes(), &r)
-	if err != nil {
-		log.Error("error unmarshalling " + config.PGOTargetRolePath + " json Role " + err.Error())
-		return err
-	}
-
-	return kubeapi.CreateRole(clientset, &r, targetNamespace)
+	return
 }
 
-func createPGOBackrestRoleBinding(clientset *kubernetes.Clientset, targetNamespace string) error {
-
-	//check for rolebinding existing
-	_, found, _ := kubeapi.GetRoleBinding(clientset, PGO_BACKREST_ROLE_BINDING, targetNamespace)
-	if found {
-		log.Infof("rolebinding %s already exists, will delete and re-create", PGO_BACKREST_ROLE_BINDING)
-		err := kubeapi.DeleteRoleBinding(clientset, PGO_BACKREST_ROLE_BINDING, targetNamespace)
-		if err != nil {
-			log.Errorf("error deleting rolebinding %s %s", PGO_BACKREST_ROLE_BINDING, err.Error())
-			return err
-		}
-	}
-	var buffer bytes.Buffer
-	err := config.PgoBackrestRoleBindingTemplate.Execute(&buffer,
-		PgoBackrestRoleBinding{
-			TargetNamespace: targetNamespace,
-		})
-	if err != nil {
-		log.Error(err.Error() + " on " + config.PGOBackrestRoleBindingPath)
-		return err
-	}
-	log.Info(buffer.String())
-
-	rb := rbacv1.RoleBinding{}
-	err = json.Unmarshal(buffer.Bytes(), &rb)
-	if err != nil {
-		log.Error("error unmarshalling " + config.PGOBackrestRoleBindingPath + " json RoleBinding " + err.Error())
-		return err
-	}
-
-	return kubeapi.CreateRoleBinding(clientset, &rb, targetNamespace)
-}
-
-// UpdateNamespaceAndRBAC updates a new namespace to be owned by the Operator, while then
-// installing (or re-installing) the required RBAC within that namespace as required to be
-// utilized with the current Operator install.
-func UpdateNamespaceAndRBAC(clientset *kubernetes.Clientset, installationName, pgoNamespace,
+// UpdateNamespace updates a new namespace to be owned by the Operator.
+func UpdateNamespace(clientset *kubernetes.Clientset, installationName, pgoNamespace,
 	updatedBy, ns string) error {
 
 	log.Debugf("UpdateNamespace %s %s %s %s", installationName, pgoNamespace, updatedBy, ns)
@@ -490,11 +559,6 @@ func UpdateNamespaceAndRBAC(clientset *kubernetes.Clientset, installationName, p
 	theNs.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
 	theNs.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] = installationName
 	if err := kubeapi.UpdateNamespace(clientset, theNs); err != nil {
-		return err
-	}
-
-	//apply targeted rbac rules here
-	if err := installTargetRBAC(clientset, pgoNamespace, ns); err != nil {
 		return err
 	}
 
@@ -516,85 +580,72 @@ func UpdateNamespaceAndRBAC(clientset *kubernetes.Clientset, installationName, p
 	return events.Publish(f)
 }
 
-func createPGOBackrestServiceAccount(clientset *kubernetes.Clientset, targetNamespace string, imagePullSecrets []v1.LocalObjectReference) error {
-
-	//check for serviceaccount existing
-	_, found, _ := kubeapi.GetServiceAccount(clientset, PGO_BACKREST_SERVICE_ACCOUNT, targetNamespace)
-	if found {
-		log.Infof("serviceaccount %s already exists, will delete and re-create", PGO_BACKREST_SERVICE_ACCOUNT)
-		err := kubeapi.DeleteServiceAccount(clientset, PGO_BACKREST_SERVICE_ACCOUNT, targetNamespace)
-		if err != nil {
-			log.Errorf("error deleting serviceaccount %s %s", PGO_BACKREST_SERVICE_ACCOUNT, err.Error())
-			return err
-		}
-	}
-	var buffer bytes.Buffer
-	err := config.PgoBackrestServiceAccountTemplate.Execute(&buffer,
-		PgoBackrestServiceAccount{
-			TargetNamespace: targetNamespace,
-		})
-	if err != nil {
-		log.Error(err.Error() + " on " + config.PGOBackrestServiceAccountPath)
-		return err
-	}
-	log.Info(buffer.String())
-
-	var sa v1.ServiceAccount
-	if err = json.Unmarshal(buffer.Bytes(), &sa); err != nil {
-		log.Error("error unmarshalling " + config.PGOBackrestServiceAccountPath + " json ServiceAccount " + err.Error())
-		return err
-	}
-	sa.ImagePullSecrets = imagePullSecrets
-
-	return kubeapi.CreateServiceAccount(clientset, &sa, targetNamespace)
-}
-
 // ConfigureInstallNamespaces is responsible for properly configuring up any namespaces provided for
 // the installation of the Operator.  This includes creating or updating those namespaces so they can
 // be utilized by the Operator to deploy PG clusters.
 func ConfigureInstallNamespaces(clientset *kubernetes.Clientset, installationName, pgoNamespace string,
-	namespaceNames []string) error {
+	namespaceNames []string, namespaceOperatingMode NamespaceOperatingMode) error {
 
 	// now loop through all namespaces and either create or update them
 	for _, namespaceName := range namespaceNames {
 
-		// First try to create the namespace. If the namespace already exists, then proceed with
-		// updating it.  Otherwise if a new namespace was successfully created, simply move on to
-		// the next namespace.
-		if err := CreateNamespaceAndRBAC(clientset, installationName, pgoNamespace,
-			"operator-bootstrap", namespaceName); err != nil && !kerrors.IsAlreadyExists(err) {
-			return err
-		} else if err == nil {
-			continue
+		nameSpaceExists := true
+		// if we can get namespaces, make sure this one isn't part of another install
+		if namespaceOperatingMode != NamespaceOperatingModeDisabled {
+
+			namespace, err := clientset.CoreV1().Namespaces().Get(namespaceName,
+				metav1.GetOptions{})
+			if err != nil {
+				if kerrors.IsNotFound(err) {
+					nameSpaceExists = false
+				} else {
+					return err
+				}
+			}
+
+			if nameSpaceExists {
+				// continue if already owned by this install, or if owned by another install
+				labels := namespace.ObjectMeta.Labels
+				if labels != nil && labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY &&
+					labels[config.LABEL_PGO_INSTALLATION_NAME] != installationName {
+					log.Errorf("Configure install namespaces: namespace %s owned by another "+
+						"installation, will not update it", namespaceName)
+					continue
+				}
+			}
 		}
 
-		namespace, _, err := kubeapi.GetNamespace(clientset, namespaceName)
+		// if using the "dynamic" namespace mode we can now update the namespace to ensure it is
+		// properly owned by this install
+		if namespaceOperatingMode == NamespaceOperatingModeDynamic {
+			if nameSpaceExists {
+				// if not part of this or another install, then update the namespace to be owned by this
+				// Operator install
+				log.Infof("Configure install namespaces: namespace %s will be updated to be owned by this "+
+					"installation", namespaceName)
+				if err := UpdateNamespace(clientset, installationName, pgoNamespace,
+					"operator-bootstrap", namespaceName); err != nil {
+					return err
+				}
+			} else {
+				log.Infof("Configure install namespaces: namespace %s will be created for this "+
+					"installation", namespaceName)
+				if err := CreateNamespace(clientset, installationName, pgoNamespace,
+					"operator-bootstrap", namespaceName); err != nil {
+					return err
+				}
+			}
+		}
+
+		// now finally create any RBAC if we have permissions in the namespace to do so
+		canCreateRBACInNamespace, err := CanCreateRBACInNamespace(clientset, namespaceName,
+			namespaceOperatingMode)
 		if err != nil {
 			return err
 		}
 
-		// continue if already owned by this install, or if owned by another install
-		labels := namespace.ObjectMeta.Labels
-		if labels[config.LABEL_VENDOR] == config.LABEL_CRUNCHY {
-			switch {
-			case labels[config.LABEL_PGO_INSTALLATION_NAME] == installationName:
-				log.Errorf("Configure install namespaces: namespace %s already owned by this "+
-					"installation, will not update it", namespaceName)
-				continue
-			case labels[config.LABEL_PGO_INSTALLATION_NAME] != installationName:
-				log.Errorf("Configure install namespaces: namespace %s owned by another "+
-					"installation, will not update it", namespaceName)
-				continue
-			}
-		}
-
-		// if not part of this or another install, then update the namespace to be owned by this
-		// Operator install
-		log.Infof("Configure install namespaces: namespace %s will be updated to be owned by this "+
-			"installation", namespaceName)
-		if err := UpdateNamespaceAndRBAC(clientset, installationName, pgoNamespace,
-			"operator-bootstrap", namespaceName); err != nil {
-			return err
+		if canCreateRBACInNamespace {
+			ReconcileTargetRBAC(clientset, pgoNamespace, namespaceName)
 		}
 	}
 
@@ -609,7 +660,11 @@ func ConfigureInstallNamespaces(clientset *kubernetes.Clientset, installationNam
 // installation is returned (with the list defaulting to the Operator's own namespace in the event
 // that NAMESPACE is empty).
 func GetCurrentNamespaceList(clientset *kubernetes.Clientset,
-	installationName string) ([]string, error) {
+	installationName string, namespaceOperatingMode NamespaceOperatingMode) ([]string, error) {
+
+	if namespaceOperatingMode == NamespaceOperatingModeDisabled {
+		return getNamespacesFromEnv(), nil
+	}
 
 	ns := make([]string, 0)
 
@@ -630,6 +685,33 @@ func GetCurrentNamespaceList(clientset *kubernetes.Clientset,
 	return ns, nil
 }
 
+// CanCreateRBACInNamespace returns true or false to indicate whether or not the Operator
+// ServiceAccount has privileges to create RBAC (ServiceAccounts, Roles and RoleBindings)
+// within the namespace specified.
+func CanCreateRBACInNamespace(clientset *kubernetes.Clientset, namespace string,
+	namespaceOperatingMode NamespaceOperatingMode) (bool, error) {
+
+	// if using the "dynamic" namespace operating mode the we know we can create RBAC
+	// (specifically since a check to ensure we have the required RBAC happended during
+	// operator initialization)
+	if namespaceOperatingMode == NamespaceOperatingModeDynamic {
+		return true, nil
+	}
+
+	hasRBACPrivsCore, err := CheckAccessPrivs(clientset, rbacPrivsCore, "", namespace)
+	if err != nil {
+		return false, err
+	}
+
+	hasRBACPrivsRBAC, err := CheckAccessPrivs(clientset, rbacPrivsRBAC,
+		"rbac.authorization.k8s.io", namespace)
+	if err != nil {
+		return false, err
+	}
+
+	return (hasRBACPrivsCore && hasRBACPrivsRBAC), nil
+}
+
 // ValidateNamespacesWatched validates whether or not the namespaces provided are being watched by
 // the current Operator installation.  When the current namespace mode is "dynamic" or "readOnly",
 // this involves ensuring the namespace specified has the proper "vendor" and
@@ -646,7 +728,8 @@ func ValidateNamespacesWatched(clientset *kubernetes.Clientset,
 	var err error
 	var currNSList []string
 	if namespaceOperatingMode != NamespaceOperatingModeDisabled {
-		currNSList, err = GetCurrentNamespaceList(clientset, installationName)
+		currNSList, err = GetCurrentNamespaceList(clientset, installationName,
+			namespaceOperatingMode)
 		if err != nil {
 			return err
 		}
@@ -706,174 +789,6 @@ func ValidateNamespaceNames(namespace ...string) error {
 	return nil
 }
 
-// createPGODefaultServiceAccount creates the default SA.
-func createPGODefaultServiceAccount(clientset *kubernetes.Clientset, targetNamespace string, imagePullSecrets []v1.LocalObjectReference) error {
-
-	_, found, _ := kubeapi.GetServiceAccount(clientset, PGO_DEFAULT_SERVICE_ACCOUNT, targetNamespace)
-	if found {
-		log.Infof("serviceaccount %s already exists, will delete and re-create", PGO_DEFAULT_SERVICE_ACCOUNT)
-		err := kubeapi.DeleteServiceAccount(clientset, PGO_DEFAULT_SERVICE_ACCOUNT, targetNamespace)
-		if err != nil {
-			log.Errorf("error deleting serviceaccount %s %s", PGO_DEFAULT_SERVICE_ACCOUNT, err.Error())
-			return err
-		}
-	}
-	var buffer bytes.Buffer
-	err := config.PgoDefaultServiceAccountTemplate.Execute(&buffer,
-		PgoDefaultServiceAccount{
-			TargetNamespace: targetNamespace,
-		})
-	if err != nil {
-		log.Error(err.Error() + " on " + config.PGODefaultServiceAccountPath)
-		return err
-	}
-	log.Info(buffer.String())
-
-	var sa v1.ServiceAccount
-	if err = json.Unmarshal(buffer.Bytes(), &sa); err != nil {
-		log.Error("error unmarshalling " + config.PGODefaultServiceAccountPath + " json ServiceAccount " + err.Error())
-		return err
-	}
-	sa.ImagePullSecrets = imagePullSecrets
-
-	return kubeapi.CreateServiceAccount(clientset, &sa, targetNamespace)
-}
-
-func createPGOTargetServiceAccount(clientset *kubernetes.Clientset, targetNamespace string, imagePullSecrets []v1.LocalObjectReference) error {
-
-	//check for serviceaccount existing
-	_, found, _ := kubeapi.GetServiceAccount(clientset, PGO_TARGET_SERVICE_ACCOUNT, targetNamespace)
-	if found {
-		log.Infof("serviceaccount %s already exists, will delete and re-create", PGO_TARGET_SERVICE_ACCOUNT)
-		err := kubeapi.DeleteServiceAccount(clientset, PGO_TARGET_SERVICE_ACCOUNT, targetNamespace)
-		if err != nil {
-			log.Errorf("error deleting serviceaccount %s %s", PGO_TARGET_SERVICE_ACCOUNT, err.Error())
-			return err
-		}
-	}
-	var buffer bytes.Buffer
-	err := config.PgoTargetServiceAccountTemplate.Execute(&buffer,
-		PgoTargetServiceAccount{
-			TargetNamespace: targetNamespace,
-		})
-	if err != nil {
-		log.Error(err.Error() + " on " + config.PGOTargetServiceAccountPath)
-		return err
-	}
-	log.Info(buffer.String())
-
-	var sa v1.ServiceAccount
-	if err = json.Unmarshal(buffer.Bytes(), &sa); err != nil {
-		log.Error("error unmarshalling " + config.PGOTargetServiceAccountPath + " json ServiceAccount " + err.Error())
-		return err
-	}
-	sa.ImagePullSecrets = imagePullSecrets
-
-	return kubeapi.CreateServiceAccount(clientset, &sa, targetNamespace)
-}
-
-// createPGOPgServiceAccount creates the SA for use by PG pods
-func createPGOPgServiceAccount(clientset *kubernetes.Clientset, targetNamespace string, imagePullSecrets []v1.LocalObjectReference) error {
-
-	//check for serviceaccount existing
-	_, found, _ := kubeapi.GetServiceAccount(clientset, PGO_PG_SERVICE_ACCOUNT, targetNamespace)
-	if found {
-		log.Infof("serviceaccount %s already exists, will delete and re-create", PGO_PG_SERVICE_ACCOUNT)
-		err := kubeapi.DeleteServiceAccount(clientset, PGO_PG_SERVICE_ACCOUNT, targetNamespace)
-		if err != nil {
-			log.Errorf("error deleting serviceaccount %s %s", PGO_PG_SERVICE_ACCOUNT, err.Error())
-			return err
-		}
-	}
-	var buffer bytes.Buffer
-	err := config.PgoPgServiceAccountTemplate.Execute(&buffer,
-		PgoPgServiceAccount{
-			TargetNamespace: targetNamespace,
-		})
-	if err != nil {
-		log.Error(err.Error() + " on " + config.PGOPgServiceAccountPath)
-		return err
-	}
-	log.Info(buffer.String())
-
-	var sa v1.ServiceAccount
-	if err = json.Unmarshal(buffer.Bytes(), &sa); err != nil {
-		log.Error("error unmarshalling " + config.PGOPgServiceAccountPath + " json ServiceAccount " + err.Error())
-		return err
-	}
-	sa.ImagePullSecrets = imagePullSecrets
-
-	return kubeapi.CreateServiceAccount(clientset, &sa, targetNamespace)
-}
-
-// createPGOPgRole creates the role used by the 'pgo-sa' SA
-func createPGOPgRole(clientset *kubernetes.Clientset, targetNamespace string) error {
-	//check for role existing
-	_, found, _ := kubeapi.GetRole(clientset, PGO_PG_ROLE, targetNamespace)
-	if found {
-		log.Infof("role %s already exists, will delete and re-create", PGO_PG_ROLE)
-		err := kubeapi.DeleteRole(clientset, PGO_PG_ROLE, targetNamespace)
-		if err != nil {
-			log.Errorf("error deleting role %s %s", PGO_PG_ROLE, err.Error())
-			return err
-		}
-	}
-
-	var buffer bytes.Buffer
-	err := config.PgoPgRoleTemplate.Execute(&buffer,
-		PgoPgRole{
-			TargetNamespace: targetNamespace,
-		})
-
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-	log.Info(buffer.String())
-	r := rbacv1.Role{}
-	err = json.Unmarshal(buffer.Bytes(), &r)
-	if err != nil {
-		log.Error("error unmarshalling " + config.PGOPgRolePath + " json Role " + err.Error())
-		return err
-	}
-
-	return kubeapi.CreateRole(clientset, &r, targetNamespace)
-}
-
-// createPGOPgRoleBinding binds the 'pgo-pg-role' role to the 'pgo-sa' SA
-func createPGOPgRoleBinding(clientset *kubernetes.Clientset, targetNamespace string) error {
-	//check for rolebinding existing
-	_, found, _ := kubeapi.GetRoleBinding(clientset, PGO_PG_ROLE_BINDING, targetNamespace)
-	if found {
-		log.Infof("rolebinding %s already exists, will delete and re-create", PGO_PG_ROLE_BINDING)
-		err := kubeapi.DeleteRoleBinding(clientset, PGO_PG_ROLE_BINDING, targetNamespace)
-		if err != nil {
-			log.Errorf("error deleting rolebinding %s %s", PGO_PG_ROLE_BINDING, err.Error())
-			return err
-		}
-	}
-
-	var buffer bytes.Buffer
-	err := config.PgoPgRoleBindingTemplate.Execute(&buffer,
-		PgoPgRoleBinding{
-			TargetNamespace: targetNamespace,
-		})
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-	log.Info(buffer.String())
-
-	rb := rbacv1.RoleBinding{}
-	err = json.Unmarshal(buffer.Bytes(), &rb)
-	if err != nil {
-		log.Error("error unmarshalling " + config.PGOPgRoleBindingPath + " json RoleBinding " + err.Error())
-		return err
-	}
-
-	return kubeapi.CreateRoleBinding(clientset, &rb, targetNamespace)
-}
-
 // GetNamespaceOperatingMode is responsible for returning the proper namespace operating mode for
 // the current Operator install.  This is done by submitting a SubjectAccessReview in the local
 // Kubernetes cluster to determine whether or not certain cluster-level privileges have been
@@ -884,23 +799,28 @@ func createPGOPgRoleBinding(clientset *kubernetes.Clientset, targetNamespace str
 func GetNamespaceOperatingMode(clientset *kubernetes.Clientset) (NamespaceOperatingMode, error) {
 
 	// first check to see if dynamic namespace capabilities can be enabled
-	isDynamicCore, err := checkClusterPrivs(clientset, namespacePrivsCoreDynamic, "")
+	isDynamicCoreNS, err := CheckAccessPrivs(clientset, namespacePrivsCoreDynamic, "", "")
 	if err != nil {
 		return "", err
 	}
 
-	isDynamicRBAC, err := checkClusterPrivs(clientset, namespacePrivsRBACDynamic,
-		"rbac.authorization.k8s.io")
+	isDynamicCoreSA, err := CheckAccessPrivs(clientset, rbacPrivsCore, "", "")
 	if err != nil {
 		return "", err
 	}
 
-	if isDynamicCore && isDynamicRBAC {
+	isDynamicRBAC, err := CheckAccessPrivs(clientset, rbacPrivsRBAC,
+		"rbac.authorization.k8s.io", "")
+	if err != nil {
+		return "", err
+	}
+
+	if isDynamicCoreNS && isDynamicCoreSA && isDynamicRBAC {
 		return NamespaceOperatingModeDynamic, nil
 	}
 
 	// now check if read-only namespace capabilities can be enabled
-	isReadOnly, err := checkClusterPrivs(clientset, namespacePrivsCoreReadOnly, "")
+	isReadOnly, err := CheckAccessPrivs(clientset, namespacePrivsCoreReadOnly, "", "")
 	if err != nil {
 		return "", err
 	}
@@ -912,15 +832,15 @@ func GetNamespaceOperatingMode(clientset *kubernetes.Clientset) (NamespaceOperat
 	return NamespaceOperatingModeDisabled, nil
 }
 
-// checkClusterPrivs checks to see if the service account currently running the operator has
+// CheckAccessPrivs checks to see if the ServiceAccount currently running the operator has
 // the permissions defined for various resources as specified in the provided permissions
-// map. This function assumes the resource being checked is cluster-scoped.  If the Service
-// Account has all of the permissions defined in the permissions map, then "true" is returned.
-// Otherwise, if the Service Account is missing any of the permissions specified, or if an error
-// is encountered while attempting to deterine the permissions for the service account, then
-// "false" is retured (along with the error in the event an error is encountered).
-func checkClusterPrivs(clientset *kubernetes.Clientset,
-	privs map[string][]string, apiGroup string) (bool, error) {
+// map. If an empty namespace is provided then it is assumed the resource is cluster-scoped.
+// If the ServiceAccount has all of the permissions defined in the permissions map, then "true"
+// is returned.  Otherwise, if the Service Account is missing any of the permissions specified,
+// or if an error is encountered while attempting to deterine the permissions for the service
+// account, then "false" is returned (along with the error in the event an error is encountered).
+func CheckAccessPrivs(clientset *kubernetes.Clientset,
+	privs map[string][]string, apiGroup, namespace string) (bool, error) {
 
 	for resource, verbs := range privs {
 		for _, verb := range verbs {
@@ -928,6 +848,9 @@ func checkClusterPrivs(clientset *kubernetes.Clientset,
 				Resource: resource,
 				Verb:     verb,
 				Group:    apiGroup,
+			}
+			if namespace != "" {
+				resAttrs.Namespace = namespace
 			}
 			sar, err := kubeapi.CreateSelfSubjectAccessReview(clientset, resAttrs)
 			if err != nil {
@@ -972,7 +895,8 @@ func GetInitialNamespaceList(clientset *kubernetes.Clientset,
 	var err error
 	if namespaceOperatingMode == NamespaceOperatingModeDynamic ||
 		namespaceOperatingMode == NamespaceOperatingModeReadOnly {
-		namespaceListCluster, err = GetCurrentNamespaceList(clientset, installationName)
+		namespaceListCluster, err = GetCurrentNamespaceList(clientset, installationName,
+			namespaceOperatingMode)
 		if err != nil {
 			return nil, err
 		}

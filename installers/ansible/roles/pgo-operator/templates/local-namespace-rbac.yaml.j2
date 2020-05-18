@@ -2,23 +2,43 @@
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: pgo-role
-  namespace: {{ pgo_operator_namespace }}
+  name: pgo-local-ns
 rules:
+  - apiGroups:
+      - ''
+    resources:
+      - secrets
+    verbs:
+      - get
+      - create
+      - update
+      - delete
   - apiGroups:
       - ''
     resources:
       - serviceaccounts
     verbs:
       - get
+      - create
+      - update
+      - delete
   - apiGroups:
-      - ''
+      - rbac.authorization.k8s.io
     resources:
-      - configmaps
-      - secrets
+      - roles
     verbs:
       - get
-      - list
+      - create
+      - update
+      - delete
+      - bind
+      - escalate
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - rolebindings
+    verbs:
+      - get
       - create
       - update
       - delete
@@ -26,13 +46,13 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: pgo-role
-  namespace: {{ pgo_operator_namespace }}
+  name: pgo-local-ns
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: pgo-role
+  name: pgo-local-ns
 subjects:
 - kind: ServiceAccount
   name: postgres-operator
   namespace: {{ pgo_operator_namespace }}
+
