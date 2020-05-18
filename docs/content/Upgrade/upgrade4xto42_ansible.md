@@ -1,21 +1,21 @@
 ---
-title: "Upgrade PGO 4.X to 4.2.2 (Ansible)"
-Latest Release: 4.2.2 {docdate}
+title: "Upgrade PGO 4.X to 4.2.3 (Ansible)"
+Latest Release: 4.2.3 {docdate}
 draft: false
 weight: 8
 ---
 
-## Postgres Operator Ansible Upgrade Procedure from 4.X to 4.2.2
+## Postgres Operator Ansible Upgrade Procedure from 4.X to 4.2.3
 
-This procedure will give instructions on how to upgrade to version 4.2.2 of the Crunchy Postgres Operator using the Ansible installation method. This version of the Postgres Operator has several fundamental changes to the existing PGCluster structure and deployment model. Most notably, all PGClusters use the new Crunchy Postgres HA container in place of the previous Crunchy Postgres containers. The use of this new container is a breaking change from previous versions of the Operator.
+This procedure will give instructions on how to upgrade to version 4.2.3 of the Crunchy Postgres Operator using the Ansible installation method. This version of the Postgres Operator has several fundamental changes to the existing PGCluster structure and deployment model. Most notably, all PGClusters use the new Crunchy Postgres HA container in place of the previous Crunchy Postgres containers. The use of this new container is a breaking change from previous versions of the Operator.
 
 #### Crunchy Postgres High Availability Containers
 
-Using the PostgreSQL Operator 4.2.2 requires replacing your `crunchy-postgres` and `crunchy-postgres-gis` containers with the `crunchy-postgres-ha` and `crunchy-postgres-gis-ha` containers respectively. The underlying PostgreSQL installations in the container remain the same but are now optimized for Kubernetes environments to provide the new high-availability functionality.
+Using the PostgreSQL Operator 4.2.3 requires replacing your `crunchy-postgres` and `crunchy-postgres-gis` containers with the `crunchy-postgres-ha` and `crunchy-postgres-gis-ha` containers respectively. The underlying PostgreSQL installations in the container remain the same but are now optimized for Kubernetes environments to provide the new high-availability functionality.
 
 A major change to this container is that the PostgreSQL process is now managed by Patroni. This allows a PostgreSQL cluster that is deployed by the PostgreSQL Operator to manage its own uptime and availability, to elect a new leader in the event of a downtime scenario, and to automatically heal after a failover event.
 
-When creating your new clusters using version 4.2.2 of the Postgres Operator, the `pgo create cluster` command will automatically use the new `crunchy-postgres-ha` image if the image is unspecified. If you are creating a PostGIS enabled cluster, please be sure to use the updated image name, as with the command:
+When creating your new clusters using version 4.2.3 of the Postgres Operator, the `pgo create cluster` command will automatically use the new `crunchy-postgres-ha` image if the image is unspecified. If you are creating a PostGIS enabled cluster, please be sure to use the updated image name, as with the command:
 ```
 pgo create cluster mygiscluster --ccp-image=crunchy-postgres-gis-ha
 ```
@@ -28,7 +28,7 @@ As with any upgrade, please ensure you have taken recent backups of all relevant
 ##### Prerequisites.
 You will need the following items to complete the upgrade:
 
-* The latest 4.2.2 code for the Postgres Operator available
+* The latest 4.2.3 code for the Postgres Operator available
 
 These instructions assume you are executing in a terminal window and that your user has admin privileges in your Kubernetes or Openshift environment.
 
@@ -47,7 +47,7 @@ Please note the name of each cluster, the namespace used, and be sure not to del
 
 ##### Step 1
 
-Save a copy of your current inventory file with a new name (such as `inventory.backup)` and checkout the latest 4.2.2 tag of the Postgres Operator.
+Save a copy of your current inventory file with a new name (such as `inventory.backup)` and checkout the latest 4.2.3 tag of the Postgres Operator.
 
 
 ##### Step 2
@@ -69,7 +69,7 @@ And that it is upgraded to the appropriate version
     pgo version
 
 ##### Step 5
-Once the Operator is installed and functional, create a new 4.2.2 cluster with the same name and using the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs.
+Once the Operator is installed and functional, create a new 4.2.3 cluster with the same name and using the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs.
 
 	pgo create cluster <clustername> -n <namespace>
 

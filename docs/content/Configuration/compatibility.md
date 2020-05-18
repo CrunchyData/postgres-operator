@@ -1,7 +1,7 @@
 
 ---
 title: "Compatibility Requirements"
-Latest Release: 4.2.2 {docdate}
+Latest Release: 4.2.3 {docdate}
 draft: false
 weight: 1
 ---
@@ -13,6 +13,12 @@ version dependencies between the two projects. Below are the operator releases a
 
 | Operator Release   |      Container Release      | Postgres | PgBackrest Version
 |:----------|:-------------|:------------|:--------------
+| 4.2.3 | 4.2.3  | 12.3 | 2.20 |
+|||11.8|2.20|
+|||10.13|2.20|
+|||9.6.18|2.20|
+|||9.5.22|2.20|
+||||
 | 4.2.2 | 4.2.2  | 12.2 | 2.20 |
 |||11.7|2.20|
 |||10.12|2.20|
@@ -79,7 +85,7 @@ Red Hat UBI 7 as the base container image.
 
 Other Linux variants are possible but are not supported at this time.
 
-Also, please note that as of version 4.2.2 of the PostgreSQL Operator,
+Also, please note that as of version 4.2.3 of the PostgreSQL Operator,
 [Red Hat Universal Base Image (UBI)](https://www.redhat.com/en/blog/introducing-red-hat-universal-base-image) 7
 has replaced RHEL 7 as the base container image for the various PostgreSQL
 Operator containers.  You can find out more information about Red Hat UBI from

@@ -2,14 +2,14 @@
 
 CCP_IMAGE_PREFIX ?= crunchydata
 CCP_IMAGE_TAG ?= $(PGO_BASEOS)-$(CCP_PG_FULLVERSION)-$(PGO_VERSION)
-CCP_PG_FULLVERSION ?= 12.2
+CCP_PG_FULLVERSION ?= 12.3
 KUBECONFIG ?= $(HOME)/.kube/config
 OLM_TOOLS ?= registry.localhost:5000/postgres-operator-olm-tools:$(OLM_VERSION)
 OLM_VERSION ?= 0.13.0
 PGO_BASEOS ?= centos7
 PGO_IMAGE_PREFIX ?= crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
-PGO_VERSION ?= 4.2.2
+PGO_VERSION ?= 4.2.3
 
 OLM_TOOLS_BASH = docker run --net=host --rm --tty $(DOCKER_ARGS) \
 		 --mount 'type=bind,source=$(KUBECONFIG),target=/root/.kube/config,readonly' \

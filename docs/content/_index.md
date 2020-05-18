@@ -10,7 +10,7 @@ draft: false
 
 ## Run your own production-grade PostgreSQL-as-a-Service on Kubernetes!
 
-Latest Release: 4.2.2
+Latest Release: 4.2.3
 
 The Crunchy PostgreSQL Operator automates and simplifies deploying and managing open source PostgreSQL clusters on Kubernetes and other Kubernetes-enabled Platforms by providing the essential features you need to keep your PostgreSQL clusters up and running, including:
 
@@ -97,7 +97,7 @@ The Crunchy PostgreSQL Operator is tested on the following Platforms:
 - Google Kubernetes Engine (GKE), including Anthos
 - VMware Enterprise PKS 1.3+
 
-**NOTE**: At present, while the Crunchy PostgreSQL Operator has compatibility for Kubernetes 1.16 and beyond, it has not been verified for the v4.2.2 release.
+**NOTE**: At present, while the Crunchy PostgreSQL Operator has compatibility for Kubernetes 1.16 and beyond, it has not been verified for the v4.2.3 release.
 
 ## Storage
 

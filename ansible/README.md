@@ -4,7 +4,7 @@
   <img src="crunchy_logo.png?raw=false" alt="Mr. Crunchy" width="150"/>
 </p>
 
-Latest Release: 4.2.2
+Latest Release: 4.2.3
 
 ## General
 
