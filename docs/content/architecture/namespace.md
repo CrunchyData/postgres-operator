@@ -97,7 +97,8 @@ Kubernetetes cluster, and then create and run and/or remove controllers as names
 updated and deleted.  However, while in this mode the Operator is unable to create, delete or
 update namespaces itself, nor can it create the RBAC it requires in any of those namespaces to
 create PostgreSQL clusters.  Therefore, while in a `readonly` mode namespaces must be
-pre-configured with the proper RBAC, since the Operator cannot create the RBAC itself.
+preconfigured with the proper RBAC, since the Operator cannot create the RBAC itself (unless
+it has permission to do so in its ServiceAccount, as described further on in this document).
 
 The following represents the `ClusterRole` required for the `readonly` mode to be enabled:
 

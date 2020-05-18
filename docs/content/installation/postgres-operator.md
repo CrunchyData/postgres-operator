@@ -50,12 +50,14 @@ in the `postgres-operator.yml`, but can be updated based on your specific
 environmental requirements.
 
 By default, the `pgo-deployer` uses a ServiceAccount called `pgo-deployer-sa`
-that has a ClusterRoleBinding (`pgo-deployer-crb`) with the `cluster-admin`
-permission. This is required to create the [Custom Resource Definitions](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
+that has a ClusterRoleBinding (`pgo-deployer-crb`) with several ClusterRole
+permissions. This is required to create the [Custom Resource Definitions](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
 that power the PostgreSQL Operator. While the PostgreSQL Operator itself can be
 scoped to a specific namespace, you will need to have `cluster-admin` for the
 initial deployment, or privileges that allow you to install Custom Resource
-Definitions.
+Definitions. The required list of privileges are available in the [postgres-operator.yml](https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.1/installers/kubectl/postgres-operator.yml) file:
+
+[https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.1/installers/kubectl/postgres-operator.yml](https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.1/installers/kubectl/postgres-operator.yml)
 
 If you have already configured the ServiceAccount and ClusterRoleBinding for the
 installation process (e.g. from a previous installation), then you can remove
