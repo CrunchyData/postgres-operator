@@ -72,7 +72,7 @@ func ShowNamespace(clientset *kubernetes.Clientset, username string, request *ms
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = fmt.Sprintf("Error when determining whether user [%s] is allowed "+
-				"access to namespace [%s]: %w", username, nsList[i], err)
+				"access to namespace [%s]: %s", username, nsList[i], err.Error())
 			return resp
 		}
 		r := msgs.NamespaceResult{
