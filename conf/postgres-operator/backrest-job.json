@@ -75,7 +75,7 @@
                         }
                     }]
                 }],
-                "restartPolicy": "OnFailure"
+                "restartPolicy": "Never"
             }
         }
     }
