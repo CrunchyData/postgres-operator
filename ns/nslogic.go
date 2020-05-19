@@ -280,6 +280,13 @@ func ReconcileTargetRBAC(clientset *kubernetes.Clientset, pgoNamespace,
 		errs = append(errs, err.Error())
 	}
 
+	if err := reconcileRoles(clientset, targetNamespace); err != nil {
+		errs = append(errs, err.Error())
+	}
+	if err := reconcileRoleBindings(clientset, pgoNamespace, targetNamespace); err != nil {
+		errs = append(errs, err.Error())
+	}
+
 	// If a SA was created or updated, or if it doesnt exist, ensure the image pull secrets
 	// are up to date
 	for _, reference := range operator.ImagePullSecrets {
@@ -302,13 +309,6 @@ func ReconcileTargetRBAC(clientset *kubernetes.Clientset, pgoNamespace,
 				errs = append(errs, err.Error())
 			}
 		}
-	}
-
-	if err := reconcileRoles(clientset, targetNamespace); err != nil {
-		errs = append(errs, err.Error())
-	}
-	if err := reconcileRoleBindings(clientset, pgoNamespace, targetNamespace); err != nil {
-		errs = append(errs, err.Error())
 	}
 
 	if len(errs) > 0 {
