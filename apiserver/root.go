@@ -36,7 +36,7 @@ import (
 	"github.com/crunchydata/postgres-operator/tlsutil"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -583,33 +583,34 @@ func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool) {
 
 	}
 
-	//get the pgouser Secret for this username
-	userSecretName := "pgouser-" + username
-	userSecret, found, err := kubeapi.GetSecret(Clientset, userSecretName, PgoNamespace)
-	if !found {
-		uAccess = false
-		log.Error(err)
-		log.Errorf("could not find pgouser Secret for username %s", username)
-		return iAccess, uAccess
-	}
+	if iAccess {
+		//get the pgouser Secret for this username
+		userSecretName := "pgouser-" + username
+		userSecret, found, err := kubeapi.GetSecret(Clientset, userSecretName, PgoNamespace)
+		if !found {
+			uAccess = false
+			log.Error(err)
+			log.Errorf("could not find pgouser Secret for username %s", username)
+			return iAccess, uAccess
+		}
 
-	nsstring := string(userSecret.Data["namespaces"])
-	nsList := strings.Split(nsstring, ",")
-	for _, v := range nsList {
-		ns := strings.TrimSpace(v)
-		if ns == requestedNS {
+		nsstring := string(userSecret.Data["namespaces"])
+		nsList := strings.Split(nsstring, ",")
+		for _, v := range nsList {
+			ns := strings.TrimSpace(v)
+			if ns == requestedNS {
+				uAccess = true
+				return iAccess, uAccess
+			}
+		}
+
+		//handle the case of a user in pgouser with "" (all) namespaces
+		if nsstring == "" {
 			uAccess = true
 			return iAccess, uAccess
 		}
 	}
 
-	//handle the case of a user in pgouser with "" (all) namespaces
-	if nsstring == "" {
-		uAccess = true
-		return iAccess, uAccess
-	}
-
-	uAccess = false
 	return iAccess, uAccess
 }
 
