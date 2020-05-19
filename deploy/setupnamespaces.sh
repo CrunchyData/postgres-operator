@@ -45,7 +45,7 @@ IFS=', ' read -r -a array <<< "$NAMESPACE"
 if [ ${#array[@]} -eq 0 ]
 then
     echo "NAMESPACE is empty, updating Operator namespace ${PGO_OPERATOR_NAMESPACE}"
-    $PGOROOT/deploy/add-targeted-namespace.sh ${PGO_OPERATOR_NAMESPACE} > /dev/null
+    array=("${PGO_OPERATOR_NAMESPACE}")
 fi
 
 if [[ "${PGO_NAMESPACE_MODE:-dynamic}" != "dynamic" ]]
