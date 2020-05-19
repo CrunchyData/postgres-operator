@@ -337,7 +337,7 @@ func reconcileRoles(clientset *kubernetes.Clientset, targetNamespace string) err
 		if err != nil {
 			if kerrors.IsNotFound(err) {
 				log.Debugf("Role %s in namespace %s does not exist and will be created",
-					currRole.Name, targetNamespace)
+					role, targetNamespace)
 				createRole = true
 			} else {
 				errs = append(errs, err.Error())
@@ -408,7 +408,7 @@ func reconcileRoleBindings(clientset *kubernetes.Clientset, pgoNamespace,
 		if err != nil {
 			if kerrors.IsNotFound(err) {
 				log.Debugf("RoleBinding %s in namespace %s does not exist and will be created",
-					currRoleBinding.Name, targetNamespace)
+					roleBinding, targetNamespace)
 				createRoleBinding = true
 			} else {
 				errs = append(errs, err.Error())
@@ -489,7 +489,7 @@ func reconcileServiceAccounts(clientset *kubernetes.Clientset, targetNamespace s
 		if err != nil {
 			if kerrors.IsNotFound(err) {
 				log.Debugf("ServiceAccount %s in namespace %s does not exist and will be created",
-					currServiceAccount.Name, targetNamespace)
+					serviceAccount, targetNamespace)
 				createServiceAccount = true
 			} else {
 				errs = append(errs, err.Error())
