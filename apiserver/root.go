@@ -286,7 +286,7 @@ func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string)
 	iAccess, uAccess, err := UserIsPermittedInNamespace(username, requestedNS)
 	if err != nil {
 		return requestedNS, fmt.Errorf("Error when determining whether user [%s] is allowed access to "+
-			"namespace [%s]: %w", username, requestedNS, err)
+			"namespace [%s]: %s", username, requestedNS, err.Error())
 	}
 	if iAccess == false {
 		errMsg := fmt.Sprintf("namespace [%s] is not part of the Operator installation", requestedNS)
@@ -367,38 +367,45 @@ func ValidateNodeLabel(nodeLabel string) error {
 // UserIsPermittedInNamespace returns installation access and user access.
 // Installation access means a namespace belongs to this Operator installation.
 // User access means this user has access to a namespace.
-func UserIsPermittedInNamespace(username, requestedNS string) (iAccess, uAccess bool, err error) {
+func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool, error) {
 
-	if err = ns.ValidateNamespacesWatched(Clientset, NamespaceOperatingMode(), InstallationName,
-		requestedNS); err != nil && !errors.Is(err, ns.ErrNamespaceNotWatched) {
-		return
-	}
-	iAccess = true
+	var iAccess, uAccess bool
 
-	//get the pgouser Secret for this username
-	userSecretName := "pgouser-" + username
-	userSecret, err := kubeapi.GetSecret(Clientset, userSecretName, PgoNamespace)
-	if err != nil {
-		log.Errorf("could not get pgouser secret %s: %s", username, err.Error())
-		return
-	}
-
-	// handle the case of a user in pgouser with "" (all) namespaces, otherwise check the
-	// namespaces config in the user secret
-	nsstring := string(userSecret.Data["namespaces"])
-	if nsstring == "" {
-		uAccess = true
+	if err := ns.ValidateNamespacesWatched(Clientset, NamespaceOperatingMode(), InstallationName,
+		requestedNS); err != nil {
+		if !errors.Is(err, ns.ErrNamespaceNotWatched) {
+			return false, false, err
+		}
 	} else {
-		nsList := strings.Split(nsstring, ",")
-		for _, v := range nsList {
-			ns := strings.TrimSpace(v)
-			if ns == requestedNS {
-				uAccess = true
+		iAccess = true
+	}
+
+	if iAccess {
+		//get the pgouser Secret for this username
+		userSecretName := "pgouser-" + username
+		userSecret, err := kubeapi.GetSecret(Clientset, userSecretName, PgoNamespace)
+		if err != nil {
+			log.Errorf("could not get pgouser secret %s: %s", username, err.Error())
+			return false, false, err
+		}
+
+		// handle the case of a user in pgouser with "" (all) namespaces, otherwise check the
+		// namespaces config in the user secret
+		nsstring := string(userSecret.Data["namespaces"])
+		if nsstring == "" {
+			uAccess = true
+		} else {
+			nsList := strings.Split(nsstring, ",")
+			for _, v := range nsList {
+				ns := strings.TrimSpace(v)
+				if ns == requestedNS {
+					uAccess = true
+				}
 			}
 		}
 	}
 
-	return
+	return iAccess, uAccess, nil
 }
 
 // WriteTLSCert is a legacy method that writes the server certificate and key to
