@@ -369,6 +369,27 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 
 	log.Debugf("Controller Manager: added controller group for namespace %s", namespace)
 
+	// check if we can create RBAC in the namespace in order to the reconcile RBAC
+	// as needed to ensure proper operator functionality.  If we can't reconcile at this point
+	// we will try again on the next namespace refresh interval.
+	canCreateRBACInNamespace, err := ns.CanCreateRBACInNamespace(
+		c.controllers[namespace].kubeClientset,
+		namespace, c.namespaceOperatingMode)
+	if err != nil {
+		return err
+	}
+
+	log.Debugf("Controller Manager: canCreateRBACInNamespace is '%t' for namespace %s",
+		canCreateRBACInNamespace, namespace)
+
+	// now reconcile RBAC in the namespace if allowed
+	if canCreateRBACInNamespace {
+		if err := ns.ReconcileTargetRBAC(c.controllers[namespace].kubeClientset, c.pgoNamespace,
+			namespace); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -479,26 +500,6 @@ func (c *ControllerManager) runControllerGroup(namespace string) error {
 		return fmt.Errorf("Controller Manager: cannot start controller group for namespace %s "+
 			"because it does not have the required privs, will attempt to start on the next ns "+
 			"refresh interval", namespace)
-	}
-
-	// check if we can create RBAC in the namespace in order to the reconcile RBAC
-	// as needed to ensure proper operator functionality
-	canCreateRBACInNamespace, err := ns.CanCreateRBACInNamespace(
-		c.controllers[namespace].kubeClientset,
-		namespace, c.namespaceOperatingMode)
-	if err != nil {
-		return err
-	}
-
-	log.Debugf("Controller Manager: canCreateRBACInNamespace is '%t' for namespace %s",
-		canCreateRBACInNamespace, namespace)
-
-	// now reconcile RBAC in the namespace if allowed
-	if canCreateRBACInNamespace {
-		if err := ns.ReconcileTargetRBAC(c.controllers[namespace].kubeClientset, c.pgoNamespace,
-			namespace); err != nil {
-			return err
-		}
 	}
 
 	controllerGroup.kubeInformerFactory.Start(controllerGroup.stopCh)
