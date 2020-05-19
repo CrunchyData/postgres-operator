@@ -42,7 +42,7 @@ rm $DIR/fromcrd-key $DIR/fromcrd-key.pub
 ###############
 
 # generate a SSH public/private keypair for use by pgBackRest
-ssh-keygen -N '' -f $DIR/fromcrd-key
+ssh-keygen -t ed25519 -N '' -f $DIR/fromcrd-key
 
 # base64 encoded the keys for the generation of the Kube secret, and place
 # them into variables temporarily
