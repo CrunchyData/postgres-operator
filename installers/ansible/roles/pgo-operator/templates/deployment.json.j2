@@ -23,6 +23,10 @@
                 }
             },
             "spec": {
+                "securityContext" : {
+                  "runAsUser": "1001"
+                }
+                   
                 "serviceAccountName": "postgres-operator",
                 "containers": [
                     {
