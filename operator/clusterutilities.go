@@ -658,7 +658,7 @@ func GetSyncReplication(specSyncReplication *bool) bool {
 func OverrideClusterContainerImages(containers []v1.Container) {
 	// set the container image to an override value, if one exists, which involves
 	// looping through the containers array
-	for _, container := range containers {
+	for i, container := range containers {
 		var containerImageName string
 		// there are a few images we need to check for:
 		// 1. "database" image, which is PostgreSQL or some flavor of it
@@ -682,6 +682,6 @@ func OverrideClusterContainerImages(containers []v1.Container) {
 			containerImageName = config.CONTAINER_IMAGE_CRUNCHY_PGBADGER
 		}
 
-		SetContainerImageOverride(containerImageName, &container)
+		SetContainerImageOverride(containerImageName, &containers[i])
 	}
 }
