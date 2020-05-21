@@ -10,8 +10,8 @@ LABEL name="pgo-deployer" \
 RUN yum install -y https://download.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
  && yum -y install \
     --setopt=skip_missing_names_on_install=False \
-    --enablerepo='rhel-7-server-ose-3.11-rpms' \
-    atomic-openshift-clients \
+    --enablerepo='rhel-7-server-ose-4.4-rpms' \
+    openshift-clients \
     ansible \
     which \
     gettext
