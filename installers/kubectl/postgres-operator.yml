@@ -38,9 +38,9 @@ rules:
     resources:
       - configmaps
       - services
-      - serviceaccounts
       - persistentvolumeclaims
     verbs:
+      - get
       - create
       - delete
   - apiGroups:
@@ -48,6 +48,7 @@ rules:
     resources:
       - serviceaccounts
     verbs:
+      - get
       - create
       - delete
       - patch
@@ -77,6 +78,7 @@ rules:
       - roles
       - rolebindings
     verbs:
+      - get
       - create
       - delete
       - bind
