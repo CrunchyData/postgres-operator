@@ -134,7 +134,6 @@ spec:
             restartPolicy: Never
             containers:
             - name: pgo-deploy
-              command: ["/pgo-deploy.sh"]
               image: registry.developers.crunchydata.com/crunchydata/pgo-deployer:centos7-4.3.1
               imagePullPolicy: IfNotPresent
               env:
