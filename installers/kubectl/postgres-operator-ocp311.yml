@@ -14,9 +14,9 @@ roleRef:
     kind: ClusterRole
     name: cluster-admin
 subjects:
-- apiGroup: rbac.authorization.k8s.io
-  kind: User
-  name: system:serviceaccount:pgo:pgo-deployer-sa
+- kind: ServiceAccount
+  name: pgo-deployer-sa
+  namespace: pgo
 ---
 apiVersion: batch/v1
 kind: Job
