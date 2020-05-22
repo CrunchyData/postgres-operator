@@ -22,23 +22,24 @@ pgo create cluster [flags]
       --ccp-image-prefix string               The CCPImagePrefix to use for cluster creation. If specified, overrides the global configuration.
   -c, --ccp-image-tag string                  The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.
       --cpu string                            Set the number of millicores to request for the CPU, e.g. "100m" or "0.1".
+      --cpu-limit string                      Set the number of millicores to limit for the CPU, e.g. "100m" or "0.1".
       --custom-config string                  The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.
   -d, --database string                       If specified, sets the name of the initial database that is created for the user. Defaults to the value set in the PostgreSQL Operator configuration, or if that is not present, the name of the cluster
       --disable-autofail                      Disables autofail capabitilies in the cluster following cluster initialization.
-      --enable-memory-limit                   Enables PostgreSQL instances to be set with a memory limit on top of the memory request.
-      --enable-pgbackrest-memory-limit        Enables the pgBackRest repository to be set with a memory limit on top of the memory request.
-      --enable-pgbouncer-memory-limit         Enables pgBouncer instances to be set with a memory limit on top of the memory request. This has no effect if there is no pgBouncer deployment.
   -h, --help                                  help for cluster
   -l, --labels string                         The labels to apply to this cluster.
       --memory string                         Set the amount of RAM to request, e.g. 1GiB. Overrides the default server value.
+      --memory-limit string                   Set the amount of RAM to limit, e.g. 1GiB.
       --metrics                               Adds the crunchy-collect container to the database pod.
       --node-label string                     The node label (key=value) to use in placing the primary database. If not set, any node is used.
       --password string                       The password to use for standard user account created during cluster initialization.
       --password-length int                   If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.
       --password-replication string           The password to use for the PostgreSQL replication user.
       --password-superuser string             The password to use for the PostgreSQL superuser.
-      --pgbackrest-cpu string                 Set the number of millicores to request for CPU for the pgBackRest repository. Defaults to being unset.
-      --pgbackrest-memory string              Set the amount of Memory to request for the pgBackRest repository. Defaults to server value (48Mi).
+      --pgbackrest-cpu string                 Set the number of millicores to request for CPU for the pgBackRest repository.
+      --pgbackrest-cpu-limit string           Set the number of millicores to limit for CPU for the pgBackRest repository.
+      --pgbackrest-memory string              Set the amount of memory to request for the pgBackRest repository. Defaults to server value (48Mi).
+      --pgbackrest-memory-limit string        Set the amount of memory to limit for the pgBackRest repository.
       --pgbackrest-pvc-size string            The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "local" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"
       --pgbackrest-repo-path string           The pgBackRest repository path that should be utilized instead of the default. Required for standby
                                               clusters to define the location of an existing pgBackRest repository.
@@ -53,7 +54,9 @@ pgo create cluster [flags]
       --pgbadger                              Adds the crunchy-pgbadger container to the database pod.
       --pgbouncer                             Adds a crunchy-pgbouncer deployment to the cluster.
       --pgbouncer-cpu string                  Set the number of millicores to request for CPU for pgBouncer. Defaults to being unset.
-      --pgbouncer-memory string               Set the amount of Memory to request for pgBouncer. Defaults to server value (24Mi).
+      --pgbouncer-cpu-limit string            Set the number of millicores to limit for CPU for pgBouncer. Defaults to being unset.
+      --pgbouncer-memory string               Set the amount of memory to request for pgBouncer. Defaults to server value (24Mi).
+      --pgbouncer-memory-limit string         Set the amount of memory to limit for pgBouncer.
       --pgbouncer-replicas int32              Set the total number of pgBouncer instances to deploy. If not set, defaults to 1.
       --pgo-image-prefix string               The PGOImagePrefix to use for cluster creation. If specified, overrides the global configuration.
       --pod-anti-affinity string              Specifies the type of anti-affinity that should be utilized when applying  default pod anti-affinity rules to PG clusters (default "preferred")
@@ -103,4 +106,4 @@ pgo create cluster [flags]
 
 * [pgo create](/pgo-client/reference/pgo_create/)	 - Create a Postgres Operator resource
 
-###### Auto generated by spf13/cobra on 1-May-2020
+###### Auto generated by spf13/cobra on 22-May-2020

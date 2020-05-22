@@ -45,16 +45,30 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 	resp.Results = make([]string, 0)
 
 	// validate the CPU/Memory request parameters, if they are passed in
+	if err := apiserver.ValidateQuantity(request.CPULimit); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue,
+			request.CPULimit, err.Error())
+		return resp
+	}
+
 	if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest,
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue,
 			request.CPURequest, err.Error())
+		return resp
+	}
+
+	if err := apiserver.ValidateQuantity(request.MemoryLimit); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue,
+			request.MemoryLimit, err.Error())
 		return resp
 	}
 
 	if err := apiserver.ValidateQuantity(request.MemoryRequest); err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest,
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue,
 			request.MemoryRequest, err.Error())
 		return resp
 	}
@@ -91,6 +105,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 		log.Debugf("adding pgbouncer to cluster [%s]", cluster.Name)
 
 		resources := v1.ResourceList{}
+		limits := v1.ResourceList{}
 
 		// Set the value that enables the pgBouncer, which is the replicas
 		// Set the default value, and if there is a custom number of replicas
@@ -101,12 +116,24 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 			cluster.Spec.PgBouncer.Replicas = request.Replicas
 		}
 
-		// if the request has overriding CPURequest and/or MemoryRequest parameters,
+		// if the request has overriding CPU/memory parameters,
 		// these will take precedence over the defaults
+		if request.CPULimit != "" {
+			// as this was already validated, we can ignore the error
+			quantity, _ := resource.ParseQuantity(request.CPULimit)
+			limits[v1.ResourceCPU] = quantity
+		}
+
 		if request.CPURequest != "" {
 			// as this was already validated, we can ignore the error
 			quantity, _ := resource.ParseQuantity(request.CPURequest)
 			resources[v1.ResourceCPU] = quantity
+		}
+
+		if request.MemoryLimit != "" {
+			// as this was already validated, we can ignore the error
+			quantity, _ := resource.ParseQuantity(request.MemoryLimit)
+			limits[v1.ResourceMemory] = quantity
 		}
 
 		if request.MemoryRequest != "" {
@@ -115,11 +142,6 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 			resources[v1.ResourceMemory] = quantity
 		} else {
 			resources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultPgBouncerResourceMemory
-		}
-
-		// determine if we should apply a memory limit for the pgBouncer instances
-		if request.MemoryLimitStatus == msgs.MemoryLimitEnable {
-			cluster.Spec.PgBouncer.EnableMemoryLimit = true
 		}
 
 		cluster.Spec.PgBouncer.Resources = resources
@@ -189,9 +211,9 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 
 		// Disable the pgBouncer Deploymnet, which means setting Replicas to 0
 		cluster.Spec.PgBouncer.Replicas = 0
-		// Set the MemoryLimit of pgBouncer to false as well, as this is the default
-		// setting
-		cluster.Spec.PgBouncer.EnableMemoryLimit = false
+		// Set the resources/limits to their default values
+		cluster.Spec.PgBouncer.Resources = v1.ResourceList{}
+		cluster.Spec.PgBouncer.Limits = v1.ResourceList{}
 
 		// update the cluster CRD with these udpates. If there is an error
 		if err := kubeapi.Updatepgcluster(apiserver.RESTClient, &cluster, cluster.Name, request.Namespace); err != nil {
@@ -283,17 +305,32 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 		},
 	}
 
+	// validate the CPU/Memory parameters, if they are passed in
 	// validate the CPU/Memory request parameters, if they are passed in
+	if err := apiserver.ValidateQuantity(request.CPULimit); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue,
+			request.CPULimit, err.Error())
+		return response
+	}
+
 	if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
 		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest,
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue,
 			request.CPURequest, err.Error())
+		return response
+	}
+
+	if err := apiserver.ValidateQuantity(request.MemoryLimit); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue,
+			request.MemoryLimit, err.Error())
 		return response
 	}
 
 	if err := apiserver.ValidateQuantity(request.MemoryRequest); err != nil {
 		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest,
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue,
 			request.MemoryRequest, err.Error())
 		return response
 	}
@@ -354,39 +391,39 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 			}
 		}
 
-		// if the request has overriding CPURequest and/or MemoryRequest parameters,
+		// ensure the Resources/Limits are non-nil
+		if cluster.Spec.PgBouncer.Resources == nil {
+			cluster.Spec.PgBouncer.Resources = v1.ResourceList{}
+		}
+
+		if cluster.Spec.PgBouncer.Limits == nil {
+			cluster.Spec.PgBouncer.Limits = v1.ResourceList{}
+		}
+
+		// if the request has overriding CPU/Memory parameters,
 		// add them to the cluster's pgbouncer resource list
-		resources := v1.ResourceList{}
+		if request.CPULimit != "" {
+			// as this was already validated, we can ignore the error
+			quantity, _ := resource.ParseQuantity(request.CPULimit)
+			cluster.Spec.PgBouncer.Limits[v1.ResourceCPU] = quantity
+		}
 
 		if request.CPURequest != "" {
 			// as this was already validated, we can ignore the error
 			quantity, _ := resource.ParseQuantity(request.CPURequest)
-			resources[v1.ResourceCPU] = quantity
+			cluster.Spec.PgBouncer.Resources[v1.ResourceCPU] = quantity
+		}
+
+		if request.MemoryLimit != "" {
+			// as this was already validated, we can ignore the error
+			quantity, _ := resource.ParseQuantity(request.MemoryLimit)
+			cluster.Spec.PgBouncer.Limits[v1.ResourceMemory] = quantity
 		}
 
 		if request.MemoryRequest != "" {
 			// as this was already validated, we can ignore the error
 			quantity, _ := resource.ParseQuantity(request.MemoryRequest)
-			resources[v1.ResourceMemory] = quantity
-		}
-
-		// update the resources, if there are any changes
-		if len(resources) > 0 {
-			if cluster.Spec.PgBouncer.Resources == nil {
-				cluster.Spec.PgBouncer.Resources = resources
-			} else {
-				for resource, quantity := range resources {
-					cluster.Spec.PgBouncer.Resources[resource] = quantity
-				}
-			}
-		}
-
-		// determine if we should apply a memory limit for the pgBouncer instances
-		switch request.MemoryLimitStatus {
-		case msgs.MemoryLimitEnable:
-			cluster.Spec.PgBouncer.EnableMemoryLimit = true
-		case msgs.MemoryLimitDisable:
-			cluster.Spec.PgBouncer.EnableMemoryLimit = false
+			cluster.Spec.PgBouncer.Resources[v1.ResourceMemory] = quantity
 		}
 
 		// apply the replica count number if there is a change, i.e. replicas is not

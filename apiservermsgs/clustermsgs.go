@@ -118,38 +118,42 @@ type CreateClusterRequest struct {
 	// CASecret is the name of the secret that contains the CA to use along with
 	// the TLS keypair for deploying a TLS-enabled PostgreSQL cluster
 	CASecret string
+	// CPULimit is the value of the max CPU utilization for a Pod that has a
+	// PostgreSQL cluster
+	CPULimit string
 	// CPURequest is the value of how much CPU should be requested for deploying
 	// the PostgreSQL cluster
 	CPURequest string
-	// MemoryLimitStatus determines whether or not the Kubernetes Resource Limit
-	// for memory should be set on the request. Defaults to "do nothing", which
-	// effectively disable setting the memory limit, which is currently the
-	// preferred behavior
-	MemoryLimitStatus MemoryLimitStatus
+	// MemoryLimit is the value of of the limit of how much RAM a Pod with a
+	// PostgreSQL instance should use. At this time we do not recommend setting
+	// this.
+	MemoryLimit string
 	// MemoryRequest is the value of how much RAM should be requested for
 	// deploying the PostgreSQL cluster
 	MemoryRequest string
+	// PgBouncerCPULimit, if specified, is the value of the max CPU for a
+	// pgBouncer pod
+	PgBouncerCPULimit string
 	// PgBouncerCPURequest, if specified, is the value of how much CPU should be
 	// requested for deploying pgBouncer instances. Defaults to not being
 	// requested
 	PgBouncerCPURequest string
-	// PgBouncerMemoryLimitStatus determines whether or not the Kubernetes
-	// Resource Limit for memory should be set on the request. Defaults to
-	// "do nothing", which effectively disable setting the memory limit, which is
-	// currently the preferred behavior
-	PgBouncerMemoryLimitStatus MemoryLimitStatus
+	// PgBouncerMemoryLimit is the value of of the limit of how much RAM a Pod
+	// with a pgBouncer should use
+	PgBouncerMemoryLimit string
 	// PgBouncerMemoryRequest, if specified, is the value of how much RAM should
 	// be requested for deploying pgBouncer instances. Defaults to the server
 	// specified default
 	PgBouncerMemoryRequest string
+	// BackrestCPULimit, if specified, is the value of the max amount of CPU
+	// to be utilized for a pgBackRest Pod
+	BackrestCPULimit string
 	// BackrestCPURequest, if specified, is the value of how much CPU should be
 	// requested the pgBackRest repository. Defaults to not being requested
 	BackrestCPURequest string
-	// BackrestMemoryLimitStatus determines whether or not the Kubernetes
-	// Resource Limit for memory should be set on the request. Defaults to
-	// "do nothing", which effectively disable setting the memory limit, which is
-	// currently the preferred behavior
-	BackrestMemoryLimitStatus MemoryLimitStatus
+	// BackrestMemoryLimit, if specified is the max amount of memory a pgBackRest
+	// Pod should use
+	BackrestMemoryLimit string
 	// BackrestMemoryRequest, if specified, is the value of how much RAM should
 	// be requested for the pgBackRest repository. Defaults to the server
 	// specified default
@@ -324,23 +328,28 @@ type UpdateClusterRequest struct {
 	Namespace     string
 	AllFlag       bool
 	Autofail      UpdateClusterAutofailStatus
+	// BackrestCPULimit, if specified, is the value of the max amount of CPU
+	// to be utilized for a pgBackRest Pod
+	BackrestCPULimit string
 	// BackrestCPURequest, if specified, is the value of how much CPU should be
-	// requested the pgBackRest repository.
+	// requested the pgBackRest repository. Defaults to not being requested
 	BackrestCPURequest string
-	// BackrestMemoryLimitStatus determines whether or not the Kubernetes
-	// Resource Limit for memory should be set on the request. Defaults to
-	// "do nothing", which does nothing
-	BackrestMemoryLimitStatus MemoryLimitStatus
+	// BackrestMemoryLimit, if specified is the max amount of memory a pgBackRest
+	// Pod should use
+	BackrestMemoryLimit string
 	// BackrestMemoryRequest, if specified, is the value of how much RAM should
 	// be requested for the pgBackRest repository.
 	BackrestMemoryRequest string
+	// CPULimit is the value of the max CPU utilization for a Pod that has a
+	// PostgreSQL cluster
+	CPULimit string
 	// CPURequest is the value of how much CPU should be requested for deploying
 	// the PostgreSQL cluster
 	CPURequest string
-	// MemoryLimitStatus determines whether or not the Kubernetes Resource Limit
-	// for memory should be set on the request. Defaults to "do nothing", which
-	// does nothing
-	MemoryLimitStatus MemoryLimitStatus
+	// MemoryLimit is the value of of the limit of how much RAM a Pod with a
+	// PostgreSQL instance should use. At this time we do not recommend setting
+	// this.
+	MemoryLimit string
 	// MemoryRequest is the value of how much RAM should be requested for
 	// deploying the PostgreSQL cluster
 	MemoryRequest string

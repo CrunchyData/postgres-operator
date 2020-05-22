@@ -59,16 +59,16 @@ type PgclusterSpec struct {
 	// Resources behaves just like the "Requests" section of a Kubernetes
 	// container definition. You can set individual items such as "cpu" and
 	// "memory", e.g. "{ cpu: "0.5", memory: "2Gi" }"
+	Resources v1.ResourceList `json:"resources"`
+	// Limits stores the CPU/memory limits to use with PostgreSQL instances
 	//
-	// For memory requests, we only set the "Request" portion of the Container
-	// resource definition, but if we do allow for the "Limit" portion to be set,
-	// we would keep it unified to get a "Guaranteed" QoS.
+	// A long note on memory limits.
 	//
-	// We don't set the Limit you say? Yes: we want to avoid the OOM killer coming
-	// for the PostgreSQL process or any of their backends per lots of guidance
-	// from the PostgreSQL documentation. Based on Kubernetes' behavior with
-	// limits, the best thing is to not set them. However, if they ever do set,
-	// we'll ensure that we get the Guaranteed QoS to help avoid OOM risks.
+	//  We want to avoid the OOM killer coming for the PostgreSQL process or any
+	// of their backends per lots of guidance from the PostgreSQL documentation.
+	// Based on Kubernetes' behavior with limits, the best thing is to not set
+	// them. However, if they ever do set, we suggest that you have
+	// Request == Limit to get the Guaranteed QoS
 	//
 	// Guaranteed QoS prevents a backend from being first in line to be killed if
 	// the *Node* has memory pressure, but if there is, say
@@ -84,19 +84,13 @@ type PgclusterSpec struct {
 	//
 	// https://www.postgresql.org/docs/current/kernel-resources.html#LINUX-MEMORY-OVERCOMMIT
 	// https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#how-pods-with-resource-limits-are-run
-	//
-	// Now, for CPU, we set both the Request and the Limit, based on how
-	// Kubernetes interacts with these parameters
-	Resources v1.ResourceList `json:"resources"`
-	// EnableMemoryLimit specifies whether or not the "Limit" for memory
-	// should be set on the Pod. Defaults to false
-	EnableMemoryLimit bool `json:"enableMemoryLimit"`
+	Limits v1.ResourceList `json:"limits"`
 	// BackrestResources, if specified, contains the container request resources
 	// for the pgBackRest Deployment for this PostgreSQL cluster
 	BackrestResources v1.ResourceList `json:"backrestResources"`
-	// EnableBackrestMemoryLimit specifies whether or not the "Limit" for memory
-	// should be set on the Pod. Defaults to false
-	EnableBackrestMemoryLimit bool `json:"enableBackrestMemoryLimit"`
+	// BackrestLimits, if specified, contains the container resource limits
+	// for the pgBackRest Deployment for this PostgreSQL cluster
+	BackrestLimits v1.ResourceList `json:"backrestLimits"`
 	// PgBouncer contains all of the settings to properly maintain a pgBouncer
 	// implementation
 	PgBouncer          PgBouncerSpec            `json:"pgBouncer"`
@@ -178,9 +172,6 @@ type PodAntiAffinitySpec struct {
 // - what resources it should consume
 // - the total number of replicas
 type PgBouncerSpec struct {
-	// EnableMemoryLimit specifies whether or not the "Limit" for memory
-	// should be set on the Pod. Defaults to false
-	EnableMemoryLimit bool `json:"enableMemoryLimit"`
 	// Replicas represents the total number of Pods to deploy with pgBouncer,
 	// which effectively enables/disables the pgBouncer.
 	//
@@ -191,6 +182,9 @@ type PgBouncerSpec struct {
 	// Resources, if specified, contains the container request resources
 	// for any pgBouncer Deployments that are part of a PostgreSQL cluster
 	Resources v1.ResourceList `json:"resources"`
+	// Limits, if specified, contains the container resource limits
+	// for any pgBouncer Deployments that are part of a PostgreSQL cluster
+	Limits v1.ResourceList `json:"limits"`
 }
 
 // Enabled returns true if the pgBouncer is enabled for the cluster, i.e. there

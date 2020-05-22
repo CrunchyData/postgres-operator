@@ -62,7 +62,9 @@ func createPgbouncer(args []string, ns string) {
 		Args:          args,
 		ClientVersion: msgs.PGO_VERSION,
 		CPURequest:    PgBouncerCPURequest,
+		CPULimit:      PgBouncerCPULimit,
 		MemoryRequest: PgBouncerMemoryRequest,
+		MemoryLimit:   PgBouncerMemoryLimit,
 		Namespace:     ns,
 		Replicas:      PgBouncerReplicas,
 		Selector:      Selector,
@@ -73,16 +75,19 @@ func createPgbouncer(args []string, ns string) {
 		os.Exit(1)
 	}
 
+	if err := util.ValidateQuantity(request.CPULimit, "cpu-limit"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	if err := util.ValidateQuantity(request.MemoryRequest, "memory"); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	// check to see if EnableMemoryLimit is set. If so, set a value for
-	// MemoryLimitStatus. Do not need to worry about disabled as it's disabled by
-	// default
-	if EnablePgBouncerMemoryLimit {
-		request.MemoryLimitStatus = msgs.MemoryLimitEnable
+	if err := util.ValidateQuantity(request.MemoryLimit, "memory-limit"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	response, err := api.CreatePgbouncer(httpclient, &SessionCredentials, &request)
@@ -359,7 +364,9 @@ func updatePgBouncer(namespace string, clusterNames []string) {
 	request := msgs.UpdatePgBouncerRequest{
 		ClusterNames:   clusterNames,
 		CPURequest:     PgBouncerCPURequest,
+		CPULimit:       PgBouncerCPULimit,
 		MemoryRequest:  PgBouncerMemoryRequest,
+		MemoryLimit:    PgBouncerMemoryLimit,
 		Namespace:      namespace,
 		Replicas:       PgBouncerReplicas,
 		RotatePassword: RotatePassword,
@@ -371,17 +378,19 @@ func updatePgBouncer(namespace string, clusterNames []string) {
 		os.Exit(1)
 	}
 
+	if err := util.ValidateQuantity(request.CPULimit, "cpu-limit"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	if err := util.ValidateQuantity(request.MemoryRequest, "memory"); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	// check to see if DisableMemoryLimit/EnableMemoryLimit is set. If so, set a
-	// value for MemoryLimitStatus.
-	if EnablePgBouncerMemoryLimit {
-		request.MemoryLimitStatus = msgs.MemoryLimitEnable
-	} else if DisablePgBouncerMemoryLimit {
-		request.MemoryLimitStatus = msgs.MemoryLimitDisable
+	if err := util.ValidateQuantity(request.MemoryLimit, "memory-limit"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	// and make the API request!

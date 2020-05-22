@@ -30,7 +30,6 @@ import (
 	"github.com/crunchydata/postgres-operator/util"
 
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -211,9 +210,8 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	}
 
 	// see if any of the resource values have changed, and if so, update them
-	if oldcluster.Spec.Resources[v1.ResourceCPU] != newcluster.Spec.Resources[v1.ResourceCPU] ||
-		oldcluster.Spec.Resources[v1.ResourceMemory] != newcluster.Spec.Resources[v1.ResourceMemory] ||
-		oldcluster.Spec.EnableMemoryLimit != newcluster.Spec.EnableMemoryLimit {
+	if !reflect.DeepEqual(oldcluster.Spec.Resources, newcluster.Spec.Resources) ||
+		!reflect.DeepEqual(oldcluster.Spec.Limits, newcluster.Spec.Limits) {
 		if err := clusteroperator.UpdateResources(c.PgclusterClientset, c.PgclusterConfig, newcluster); err != nil {
 			log.Error(err)
 			return
@@ -222,9 +220,8 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 	// see if any of the pgBackRest repository resource values have changed, and
 	// if so, update them
-	if oldcluster.Spec.BackrestResources[v1.ResourceCPU] != newcluster.Spec.BackrestResources[v1.ResourceCPU] ||
-		oldcluster.Spec.BackrestResources[v1.ResourceMemory] != newcluster.Spec.BackrestResources[v1.ResourceMemory] ||
-		oldcluster.Spec.EnableBackrestMemoryLimit != newcluster.Spec.EnableBackrestMemoryLimit {
+	if !reflect.DeepEqual(oldcluster.Spec.BackrestResources, newcluster.Spec.BackrestResources) ||
+		!reflect.DeepEqual(oldcluster.Spec.BackrestLimits, newcluster.Spec.BackrestLimits) {
 		if err := backrestoperator.UpdateResources(c.PgclusterClientset, c.PgclusterConfig, newcluster); err != nil {
 			log.Error(err)
 			return

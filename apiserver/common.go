@@ -29,12 +29,12 @@ import (
 )
 
 const (
-	// ErrMessageCPURequest provides a standard error message when a CPURequest
+	// ErrMessageCPUValue provides a standard error message when a CPURequest
 	// is not specified to the Kubernetes sstandard
-	ErrMessageCPURequest = `could not parse CPU request "%s":%s (hint: try a value like "1" or "100m")`
-	// ErrMessageMemoryRequest provides a standard error message when a MemoryRequest
+	ErrMessageCPUValue = `could not parse CPU value "%s":%s (hint: try a value like "1" or "100m")`
+	// ErrMessageMemoryValue provides a standard error message when a MemoryRequest
 	// is not specified to the Kubernetes sstandard
-	ErrMessageMemoryRequest = `could not parse memory request "%s":%s (hint: try a value like "1Gi")`
+	ErrMessageMemoryValue = `could not parse memory value "%s":%s (hint: try a value like "1Gi")`
 	// ErrMessagePVCSize provides a standard error message when a PVCSize is not
 	// specified to the Kubernetes stnadard
 	ErrMessagePVCSize = `could not parse PVC size "%s": %s (hint: try a value like "1Gi")`
