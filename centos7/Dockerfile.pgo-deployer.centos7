@@ -26,6 +26,6 @@ RUN chmod g=u /uid_daemon.sh
 
 ENTRYPOINT ["/uid_daemon.sh"]
 
-USER daemon
+USER 2
 
 CMD ["/pgo-deploy.sh"]
