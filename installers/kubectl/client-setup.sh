@@ -39,7 +39,7 @@ install -d -m a-rwx,u+rwx "${OUTPUT_DIR}"
 
 echo "Operating System found is ${UNAME_RESULT}. Downloading ${BIN_NAME} client binary..."
 
-curl -Lo "${OUTPUT_DIR}/pgo" "${PGO_CLIENT_URL}/${BIN_NAME}"
+curl -C - -Lo "${OUTPUT_DIR}/pgo" "${PGO_CLIENT_URL}/${BIN_NAME}"
 chmod +x "${OUTPUT_DIR}/pgo"
 
 
