@@ -67,18 +67,15 @@ var WALPVCSize string
 
 // group the various container resource requests together, i.e. for CPU/Memory
 var (
-	// the resource requests for PostgreSQL instances
+	// the resource requests / limits for PostgreSQL instances
 	CPURequest, MemoryRequest string
-	// whether or not to set the memory limit for PostgreSQL instances
-	DisableMemoryLimit, EnableMemoryLimit bool
-	// the resource requests for the pgBackRest repository
+	CPULimit, MemoryLimit     string
+	// the resource requests / limits for the pgBackRest repository
 	BackrestCPURequest, BackrestMemoryRequest string
-	// whether or not to set the memory limit for the pgBackRest instance
-	DisableBackrestMemoryLimit, EnableBackrestMemoryLimit bool
-	// the resource requests for pgBouncer instances
+	BackrestCPULimit, BackrestMemoryLimit     string
+	// the resource requests / limits for pgBouncer instances
 	PgBouncerCPURequest, PgBouncerMemoryRequest string
-	// whether or not to set the memory limit for pgBouncer instances
-	DisablePgBouncerMemoryLimit, EnablePgBouncerMemoryLimit bool
+	PgBouncerCPULimit, PgBouncerMemoryLimit     string
 )
 
 // BackrestS3CASecretName, if provided, is the name of a secret to use that
@@ -324,18 +321,16 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&PGOImagePrefix, "pgo-image-prefix", "", "", "The PGOImagePrefix to use for cluster creation. If specified, overrides the global configuration.")
 	createClusterCmd.Flags().StringVar(&CPURequest, "cpu", "", "Set the number of millicores to request for the CPU, e.g. "+
 		"\"100m\" or \"0.1\".")
+	createClusterCmd.Flags().StringVar(&CPULimit, "cpu-limit", "", "Set the number of millicores to limit for the CPU, e.g. "+
+		"\"100m\" or \"0.1\".")
 	createClusterCmd.Flags().StringVarP(&CustomConfig, "custom-config", "", "", "The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.")
 	createClusterCmd.Flags().StringVarP(&Database, "database", "d", "", "If specified, sets the name of the initial database that is created for the user. Defaults to the value set in the PostgreSQL Operator configuration, or if that is not present, the name of the cluster")
 	createClusterCmd.Flags().BoolVarP(&DisableAutofailFlag, "disable-autofail", "", false, "Disables autofail capabitilies in the cluster following cluster initialization.")
-	createClusterCmd.Flags().BoolVar(&EnableMemoryLimit, "enable-memory-limit", false, "Enables PostgreSQL instances to be set with a "+
-		"memory limit on top of the memory request.")
-	createClusterCmd.Flags().BoolVar(&EnableBackrestMemoryLimit, "enable-pgbackrest-memory-limit", false, "Enables the pgBackRest "+
-		"repository to be set with a memory limit on top of the memory request.")
-	createClusterCmd.Flags().BoolVar(&EnablePgBouncerMemoryLimit, "enable-pgbouncer-memory-limit", false, "Enables pgBouncer instances "+
-		"to be set with a memory limit on top of the memory request. This has no effect if there is no pgBouncer deployment.")
 	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster.")
 	createClusterCmd.Flags().StringVar(&MemoryRequest, "memory", "", "Set the amount of RAM to request, e.g. "+
 		"1GiB. Overrides the default server value.")
+	createClusterCmd.Flags().StringVar(&MemoryLimit, "memory-limit", "", "Set the amount of RAM to limit, e.g. "+
+		"1GiB.")
 	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "", false, "Adds the crunchy-collect container to the database pod.")
 	createClusterCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the primary database. If not set, any node is used.")
 	createClusterCmd.Flags().StringVarP(&Password, "password", "", "", "The password to use for standard user account created during cluster initialization.")
@@ -343,9 +338,13 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&PasswordSuperuser, "password-superuser", "", "", "The password to use for the PostgreSQL superuser.")
 	createClusterCmd.Flags().StringVarP(&PasswordReplication, "password-replication", "", "", "The password to use for the PostgreSQL replication user.")
 	createClusterCmd.Flags().StringVar(&BackrestCPURequest, "pgbackrest-cpu", "", "Set the number of millicores to request for CPU "+
-		"for the pgBackRest repository. Defaults to being unset.")
-	createClusterCmd.Flags().StringVar(&BackrestMemoryRequest, "pgbackrest-memory", "", "Set the amount of Memory to request for "+
+		"for the pgBackRest repository.")
+	createClusterCmd.Flags().StringVar(&BackrestCPULimit, "pgbackrest-cpu-limit", "", "Set the number of millicores to limit for CPU "+
+		"for the pgBackRest repository.")
+	createClusterCmd.Flags().StringVar(&BackrestMemoryRequest, "pgbackrest-memory", "", "Set the amount of memory to request for "+
 		"the pgBackRest repository. Defaults to server value (48Mi).")
+	createClusterCmd.Flags().StringVar(&BackrestMemoryLimit, "pgbackrest-memory-limit", "", "Set the amount of memory to limit for "+
+		"the pgBackRest repository.")
 	createClusterCmd.Flags().StringVarP(&BackrestPVCSize, "pgbackrest-pvc-size", "", "",
 		`The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "local" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
 	createClusterCmd.Flags().StringVarP(&BackrestRepoPath, "pgbackrest-repo-path", "", "",
@@ -375,8 +374,12 @@ func init() {
 	createClusterCmd.Flags().BoolVarP(&PgbouncerFlag, "pgbouncer", "", false, "Adds a crunchy-pgbouncer deployment to the cluster.")
 	createClusterCmd.Flags().StringVar(&PgBouncerCPURequest, "pgbouncer-cpu", "", "Set the number of millicores to request for CPU "+
 		"for pgBouncer. Defaults to being unset.")
-	createClusterCmd.Flags().StringVar(&PgBouncerMemoryRequest, "pgbouncer-memory", "", "Set the amount of Memory to request for "+
+	createClusterCmd.Flags().StringVar(&PgBouncerCPULimit, "pgbouncer-cpu-limit", "", "Set the number of millicores to limit for CPU "+
+		"for pgBouncer. Defaults to being unset.")
+	createClusterCmd.Flags().StringVar(&PgBouncerMemoryRequest, "pgbouncer-memory", "", "Set the amount of memory to request for "+
 		"pgBouncer. Defaults to server value (24Mi).")
+	createClusterCmd.Flags().StringVar(&PgBouncerMemoryLimit, "pgbouncer-memory-limit", "", "Set the amount of memory to limit for "+
+		"pgBouncer.")
 	createClusterCmd.Flags().Int32Var(&PgBouncerReplicas, "pgbouncer-replicas", 0, "Set the total number of pgBouncer instances to deploy. If not set, defaults to 1.")
 	createClusterCmd.Flags().StringVarP(&ReplicaStorageConfig, "replica-storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster replica storage.")
 	createClusterCmd.Flags().StringVarP(&PodAntiAffinity, "pod-anti-affinity", "", "",
@@ -432,10 +435,12 @@ func init() {
 	// pgo create pgbouncer
 	createPgbouncerCmd.Flags().StringVar(&PgBouncerCPURequest, "cpu", "", "Set the number of millicores to request for CPU "+
 		"for pgBouncer. Defaults to being unset.")
-	createPgbouncerCmd.Flags().BoolVar(&EnablePgBouncerMemoryLimit, "enable-memory-limit", false, "Enables pgBouncer instances "+
-		"to be set with a memory limit on top of the memory request.")
-	createPgbouncerCmd.Flags().StringVar(&PgBouncerMemoryRequest, "memory", "", "Set the amount of Memory to request for "+
+	createPgbouncerCmd.Flags().StringVar(&PgBouncerCPULimit, "cpu-limit", "", "Set the number of millicores to request for CPU "+
+		"for pgBouncer.")
+	createPgbouncerCmd.Flags().StringVar(&PgBouncerMemoryRequest, "memory", "", "Set the amount of memory to request for "+
 		"pgBouncer. Defaults to server value (24Mi).")
+	createPgbouncerCmd.Flags().StringVar(&PgBouncerMemoryLimit, "memory-limit", "", "Set the amount of memory to limit for "+
+		"pgBouncer.")
 	createPgbouncerCmd.Flags().Int32Var(&PgBouncerReplicas, "replicas", 0, "Set the total number of pgBouncer instances to deploy. If not set, defaults to 1.")
 	createPgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 

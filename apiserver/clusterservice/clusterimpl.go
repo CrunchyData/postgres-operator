@@ -571,43 +571,79 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	}
 
 	// evaluate if the CPU / Memory have been set to custom values
+	if err := apiserver.ValidateQuantity(request.CPULimit); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.CPULimit, err.Error())
+		return resp
+	}
+
 	if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest, request.CPURequest, err.Error())
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.CPURequest, err.Error())
+		return resp
+	}
+
+	if err := apiserver.ValidateQuantity(request.MemoryLimit); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.MemoryLimit, err.Error())
 		return resp
 	}
 
 	if err := apiserver.ValidateQuantity(request.MemoryRequest); err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest, request.MemoryRequest, err.Error())
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.MemoryRequest, err.Error())
 		return resp
 	}
 
 	// similarly, if any of the pgBackRest repo CPU / Memory values have been set,
 	// evaluate those as well
+	if err := apiserver.ValidateQuantity(request.BackrestCPULimit); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.BackrestCPULimit, err.Error())
+		return resp
+	}
+
 	if err := apiserver.ValidateQuantity(request.BackrestCPURequest); err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest, request.BackrestCPURequest, err.Error())
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.BackrestCPURequest, err.Error())
+		return resp
+	}
+
+	if err := apiserver.ValidateQuantity(request.BackrestMemoryLimit); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.BackrestMemoryLimit, err.Error())
 		return resp
 	}
 
 	if err := apiserver.ValidateQuantity(request.BackrestMemoryRequest); err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest, request.BackrestMemoryRequest, err.Error())
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.BackrestMemoryRequest, err.Error())
 		return resp
 	}
 
 	// similarly, if any of the pgBouncer CPU / Memory values have been set,
 	// evaluate those as well
+	if err := apiserver.ValidateQuantity(request.PgBouncerCPULimit); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.PgBouncerCPULimit, err.Error())
+		return resp
+	}
+
 	if err := apiserver.ValidateQuantity(request.PgBouncerCPURequest); err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest, request.PgBouncerCPURequest, err.Error())
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.PgBouncerCPURequest, err.Error())
+		return resp
+	}
+
+	if err := apiserver.ValidateQuantity(request.PgBouncerMemoryLimit); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.PgBouncerMemoryLimit, err.Error())
 		return resp
 	}
 
 	if err := apiserver.ValidateQuantity(request.PgBouncerMemoryRequest); err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest, request.PgBouncerMemoryRequest, err.Error())
+		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.PgBouncerMemoryRequest, err.Error())
 		return resp
 	}
 
@@ -1019,22 +1055,37 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 	spec := crv1.PgclusterSpec{
 		BackrestResources: v1.ResourceList{},
+		BackrestLimits:    v1.ResourceList{},
+		Limits:            v1.ResourceList{},
+		Resources:         v1.ResourceList{},
 		PgBouncer: crv1.PgBouncerSpec{
+			Limits:    v1.ResourceList{},
 			Resources: v1.ResourceList{},
 		},
-		Resources: v1.ResourceList{},
 	}
 
 	if userLabelsMap[config.LABEL_CUSTOM_CONFIG] != "" {
 		spec.CustomConfig = userLabelsMap[config.LABEL_CUSTOM_CONFIG]
 	}
 
-	// if the request has overriding CPURequest and/or MemoryRequest parameters,
+	// if the request has overriding CPU/Memory requests/limits parameters,
 	// these will take precedence over the defaults
+	if request.CPULimit != "" {
+		// as this was already validated, we can ignore the error
+		quantity, _ := resource.ParseQuantity(request.CPULimit)
+		spec.Limits[v1.ResourceCPU] = quantity
+	}
+
 	if request.CPURequest != "" {
 		// as this was already validated, we can ignore the error
 		quantity, _ := resource.ParseQuantity(request.CPURequest)
 		spec.Resources[v1.ResourceCPU] = quantity
+	}
+
+	if request.MemoryLimit != "" {
+		// as this was already validated, we can ignore the error
+		quantity, _ := resource.ParseQuantity(request.MemoryLimit)
+		spec.Limits[v1.ResourceMemory] = quantity
 	}
 
 	if request.MemoryRequest != "" {
@@ -1045,17 +1096,24 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.Resources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultInstanceResourceMemory
 	}
 
-	// determine if we should apply a memory limit for the PostgreSQL clusters
-	if request.MemoryLimitStatus == msgs.MemoryLimitEnable {
-		spec.EnableMemoryLimit = true
-	}
-
 	// similarly, if there are any overriding pgBackRest repository container
 	// resource request values, set them here
+	if request.BackrestCPULimit != "" {
+		// as this was already validated, we can ignore the error
+		quantity, _ := resource.ParseQuantity(request.BackrestCPULimit)
+		spec.BackrestLimits[v1.ResourceCPU] = quantity
+	}
+
 	if request.BackrestCPURequest != "" {
 		// as this was already validated, we can ignore the error
 		quantity, _ := resource.ParseQuantity(request.BackrestCPURequest)
 		spec.BackrestResources[v1.ResourceCPU] = quantity
+	}
+
+	if request.BackrestMemoryLimit != "" {
+		// as this was already validated, we can ignore the error
+		quantity, _ := resource.ParseQuantity(request.BackrestMemoryLimit)
+		spec.BackrestLimits[v1.ResourceMemory] = quantity
 	}
 
 	if request.BackrestMemoryRequest != "" {
@@ -1064,11 +1122,6 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.BackrestResources[v1.ResourceMemory] = quantity
 	} else {
 		spec.BackrestResources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultBackrestResourceMemory
-	}
-
-	// determine if we should apply a memory limit for the pgBackRest repository
-	if request.BackrestMemoryLimitStatus == msgs.MemoryLimitEnable {
-		spec.EnableBackrestMemoryLimit = true
 	}
 
 	// if the pgBouncer flag is set to true, indicate that the pgBouncer
@@ -1081,19 +1134,26 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		if request.PgBouncerReplicas > 0 {
 			spec.PgBouncer.Replicas = request.PgBouncerReplicas
 		}
-
-		// determine if we should apply a memory limit for the pgBouncer instances
-		if request.PgBouncerMemoryLimitStatus == msgs.MemoryLimitEnable {
-			spec.PgBouncer.EnableMemoryLimit = true
-		}
 	}
 
 	// similarly, if there are any overriding pgBouncer container resource request
 	// values, set them here
+	if request.PgBouncerCPULimit != "" {
+		// as this was already validated, we can ignore the error
+		quantity, _ := resource.ParseQuantity(request.PgBouncerCPULimit)
+		spec.PgBouncer.Limits[v1.ResourceCPU] = quantity
+	}
+
 	if request.PgBouncerCPURequest != "" {
 		// as this was already validated, we can ignore the error
 		quantity, _ := resource.ParseQuantity(request.PgBouncerCPURequest)
 		spec.PgBouncer.Resources[v1.ResourceCPU] = quantity
+	}
+
+	if request.PgBouncerMemoryLimit != "" {
+		// as this was already validated, we can ignore the error
+		quantity, _ := resource.ParseQuantity(request.PgBouncerMemoryLimit)
+		spec.PgBouncer.Limits[v1.ResourceMemory] = quantity
 	}
 
 	if request.PgBouncerMemoryRequest != "" {
@@ -1600,29 +1660,53 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 	}
 
 	// evaluate if the CPU / Memory have been set to custom values
+	if err := apiserver.ValidateQuantity(request.CPULimit); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.CPULimit, err.Error())
+		return response
+	}
+
 	if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
 		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest, request.CPURequest, err.Error())
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.CPURequest, err.Error())
+		return response
+	}
+
+	if err := apiserver.ValidateQuantity(request.MemoryLimit); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.MemoryLimit, err.Error())
 		return response
 	}
 
 	if err := apiserver.ValidateQuantity(request.MemoryRequest); err != nil {
 		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest, request.MemoryRequest, err.Error())
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.MemoryRequest, err.Error())
 		return response
 	}
 
 	// similarly, if any of the pgBackRest repo CPU / Memory values have been set,
 	// evaluate those as well
+	if err := apiserver.ValidateQuantity(request.BackrestCPULimit); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.BackrestCPULimit, err.Error())
+		return response
+	}
+
 	if err := apiserver.ValidateQuantity(request.BackrestCPURequest); err != nil {
 		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPURequest, request.BackrestCPURequest, err.Error())
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.BackrestCPURequest, err.Error())
+		return response
+	}
+
+	if err := apiserver.ValidateQuantity(request.BackrestMemoryLimit); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.BackrestMemoryLimit, err.Error())
 		return response
 	}
 
 	if err := apiserver.ValidateQuantity(request.BackrestMemoryRequest); err != nil {
 		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryRequest, request.BackrestMemoryRequest, err.Error())
+		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.BackrestMemoryRequest, err.Error())
 		return response
 	}
 
@@ -1716,14 +1800,25 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 
 		// ensure there is a value for Resources
 		if cluster.Spec.Resources == nil {
+			cluster.Spec.Limits = v1.ResourceList{}
 			cluster.Spec.Resources = v1.ResourceList{}
 		}
 
 		// if the CPU or memory values have been modified, update the values in the
 		// cluster CRD
+		if request.CPULimit != "" {
+			quantity, _ := resource.ParseQuantity(request.CPULimit)
+			cluster.Spec.Limits[v1.ResourceCPU] = quantity
+		}
+
 		if request.CPURequest != "" {
 			quantity, _ := resource.ParseQuantity(request.CPURequest)
 			cluster.Spec.Resources[v1.ResourceCPU] = quantity
+		}
+
+		if request.MemoryLimit != "" {
+			quantity, _ := resource.ParseQuantity(request.MemoryLimit)
+			cluster.Spec.Limits[v1.ResourceMemory] = quantity
 		}
 
 		if request.MemoryRequest != "" {
@@ -1731,37 +1826,32 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 			cluster.Spec.Resources[v1.ResourceMemory] = quantity
 		}
 
-		// determine if the memory limit should be applied to PostgreSQL instances
-		switch request.MemoryLimitStatus {
-		case msgs.MemoryLimitEnable:
-			cluster.Spec.EnableMemoryLimit = true
-		case msgs.MemoryLimitDisable:
-			cluster.Spec.EnableMemoryLimit = false
-		}
-
 		// ensure there is a value for BackrestResources
 		if cluster.Spec.BackrestResources == nil {
+			cluster.Spec.BackrestLimits = v1.ResourceList{}
 			cluster.Spec.BackrestResources = v1.ResourceList{}
 		}
 
 		// if the pgBackRest repository CPU or memory values have been modified,
 		// update the values in the cluster CRD
+		if request.BackrestCPULimit != "" {
+			quantity, _ := resource.ParseQuantity(request.BackrestCPULimit)
+			cluster.Spec.BackrestLimits[v1.ResourceCPU] = quantity
+		}
+
 		if request.BackrestCPURequest != "" {
 			quantity, _ := resource.ParseQuantity(request.BackrestCPURequest)
 			cluster.Spec.BackrestResources[v1.ResourceCPU] = quantity
 		}
 
+		if request.BackrestMemoryLimit != "" {
+			quantity, _ := resource.ParseQuantity(request.BackrestMemoryLimit)
+			cluster.Spec.BackrestLimits[v1.ResourceMemory] = quantity
+		}
+
 		if request.BackrestMemoryRequest != "" {
 			quantity, _ := resource.ParseQuantity(request.BackrestMemoryRequest)
 			cluster.Spec.BackrestResources[v1.ResourceMemory] = quantity
-		}
-
-		// determine if the memory limit should be applied to pgBackRest
-		switch request.BackrestMemoryLimitStatus {
-		case msgs.MemoryLimitEnable:
-			cluster.Spec.EnableBackrestMemoryLimit = true
-		case msgs.MemoryLimitDisable:
-			cluster.Spec.EnableBackrestMemoryLimit = false
 		}
 
 		// if TablespaceMounts happens to be nil (e.g. an upgraded cluster), and

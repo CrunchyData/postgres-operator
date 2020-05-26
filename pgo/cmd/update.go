@@ -63,24 +63,24 @@ func init() {
 	UpdateClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
 	UpdateClusterCmd.Flags().StringVar(&CPURequest, "cpu", "", "Set the number of millicores to request for the CPU, e.g. "+
 		"\"100m\" or \"0.1\".")
+	UpdateClusterCmd.Flags().StringVar(&CPULimit, "cpu-limit", "", "Set the number of millicores to limit for the CPU, e.g. "+
+		"\"100m\" or \"0.1\".")
 	UpdateClusterCmd.Flags().BoolVar(&DisableAutofailFlag, "disable-autofail", false, "Disables autofail capabitilies in the cluster.")
-	UpdateClusterCmd.Flags().BoolVar(&DisableMemoryLimit, "disable-memory-limit", false, "Disables the PostgreSQL instances "+
-		"from being set with a memory limit on top of the memory request.")
-	UpdateClusterCmd.Flags().BoolVar(&DisableBackrestMemoryLimit, "disable-pgbackrest-memory-limit", false, "Disables the pgBackRest repository "+
-		"from being set with a memory limit on top of the memory request.")
-	UpdateClusterCmd.Flags().BoolVar(&EnableMemoryLimit, "enable-memory-limit", false, "Enables the PostgreSQL instances "+
-		"to be set with a memory limit on top of the memory request.")
-	UpdateClusterCmd.Flags().BoolVar(&EnableBackrestMemoryLimit, "enable-pgbackrest-memory-limit", false, "Enables the pgBackRest repository "+
-		"to be set with a memory limit on top of the memory request.")
 	UpdateClusterCmd.Flags().BoolVar(&EnableAutofailFlag, "enable-autofail", false, "Enables autofail capabitilies in the cluster.")
 	UpdateClusterCmd.Flags().StringVar(&MemoryRequest, "memory", "", "Set the amount of RAM to request, e.g. "+
+		"1GiB.")
+	UpdateClusterCmd.Flags().StringVar(&MemoryLimit, "memory-limit", "", "Set the amount of RAM to limit, e.g. "+
 		"1GiB.")
 	UpdateClusterCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	UpdateClusterCmd.Flags().BoolVarP(&DisableStandby, "promote-standby", "", false,
 		"Disables standby mode (if enabled) and promotes the cluster(s) specified.")
 	UpdateClusterCmd.Flags().StringVar(&BackrestCPURequest, "pgbackrest-cpu", "", "Set the number of millicores to request for CPU "+
 		"for the pgBackRest repository.")
-	UpdateClusterCmd.Flags().StringVar(&BackrestMemoryRequest, "pgbackrest-memory", "", "Set the amount of Memory to request for "+
+	UpdateClusterCmd.Flags().StringVar(&BackrestCPULimit, "pgbackrest-cpu-limit", "", "Set the number of millicores to limit for CPU "+
+		"for the pgBackRest repository.")
+	UpdateClusterCmd.Flags().StringVar(&BackrestMemoryRequest, "pgbackrest-memory", "", "Set the amount of memory to request for "+
+		"the pgBackRest repository.")
+	UpdateClusterCmd.Flags().StringVar(&BackrestMemoryLimit, "pgbackrest-memory-limit", "", "Set the amount of memory to limit for "+
 		"the pgBackRest repository.")
 	UpdateClusterCmd.Flags().BoolVarP(&EnableStandby, "enable-standby", "", false,
 		"Enables standby mode in the cluster(s) specified.")
@@ -100,11 +100,11 @@ func init() {
 			"--tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi")
 	UpdatePgBouncerCmd.Flags().StringVar(&PgBouncerCPURequest, "cpu", "", "Set the number of millicores to request for CPU "+
 		"for pgBouncer.")
-	UpdatePgBouncerCmd.Flags().BoolVar(&DisablePgBouncerMemoryLimit, "disable-memory-limit", false, "Disables pgBouncer instances "+
-		" from being set with a memory limit on top of the memory request.")
-	UpdatePgBouncerCmd.Flags().BoolVar(&EnablePgBouncerMemoryLimit, "enable-memory-limit", false, "Enables pgBouncer instances "+
-		"to be set with a memory limit on top of the memory request.")
-	UpdatePgBouncerCmd.Flags().StringVar(&PgBouncerMemoryRequest, "memory", "", "Set the amount of Memory to request for "+
+	UpdatePgBouncerCmd.Flags().StringVar(&PgBouncerCPULimit, "cpu-limit", "", "Set the number of millicores to limit for CPU "+
+		"for pgBouncer.")
+	UpdatePgBouncerCmd.Flags().StringVar(&PgBouncerMemoryRequest, "memory", "", "Set the amount of memory to request for "+
+		"pgBouncer.")
+	UpdatePgBouncerCmd.Flags().StringVar(&PgBouncerMemoryLimit, "memory-limit", "", "Set the amount of memory to limit for "+
 		"pgBouncer.")
 	UpdatePgBouncerCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdatePgBouncerCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
@@ -226,16 +226,16 @@ var UpdateClusterCmd = &cobra.Command{
 			fmt.Println("Adding tablespaces can cause downtime.")
 		}
 
-		if CPURequest != "" {
+		if CPURequest != "" || CPULimit != "" {
 			fmt.Println("Updating CPU resources can cause downtime.")
 		}
 
-		if MemoryRequest != "" || DisableMemoryLimit || EnableMemoryLimit {
+		if MemoryRequest != "" || MemoryLimit != "" {
 			fmt.Println("Updating memory resources can cause downtime.")
 		}
 
 		if BackrestCPURequest != "" || BackrestMemoryRequest != "" ||
-			DisableBackrestMemoryLimit || EnableBackrestMemoryLimit {
+			BackrestCPULimit != "" || BackrestMemoryLimit != "" {
 			fmt.Println("Updating pgBackRest resources can cause temporary unavailability of backups and WAL archives.")
 		}
 

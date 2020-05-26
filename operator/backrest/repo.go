@@ -107,7 +107,7 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 	fields := RepoDeploymentTemplateFields{
 		PGOImagePrefix:        util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, operator.Pgo.Pgo.PGOImagePrefix),
 		PGOImageTag:           operator.Pgo.Pgo.PGOImageTag,
-		ContainerResources:    operator.GetResourcesJSON(cluster.Spec.BackrestResources, cluster.Spec.EnableBackrestMemoryLimit),
+		ContainerResources:    operator.GetResourcesJSON(cluster.Spec.BackrestResources, cluster.Spec.BackrestLimits),
 		BackrestRepoClaimName: repoName,
 		SshdSecretsName:       "pgo-backrest-repo-config",
 		PGbackrestDBHost:      cluster.Name,
@@ -167,53 +167,18 @@ func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, c
 		return err
 	}
 
-	// iterate through each PostgreSQL instance deployment and update the
-	// resource values for the pgBackRest repository container. This is the first
-	// container
-	requestResourceList := v1.ResourceList{}
-	limitResourceList := v1.ResourceList{}
+	// first, initialize the requests/limits resource to empty Resource Lists
+	deployment.Spec.Template.Spec.Containers[0].Resources.Requests = v1.ResourceList{}
+	deployment.Spec.Template.Spec.Containers[0].Resources.Limits = v1.ResourceList{}
 
-	// if there is a request or limit resource list available already, use that
-	// one
-	// NOTE: this works as the "database" container is always first
-	if deployment.Spec.Template.Spec.Containers[0].Resources.Requests != nil {
-		requestResourceList = deployment.Spec.Template.Spec.Containers[0].Resources.Requests
+	// now, simply deep copy the values from the CRD
+	if cluster.Spec.BackrestResources != nil {
+		deployment.Spec.Template.Spec.Containers[0].Resources.Requests = cluster.Spec.BackrestResources.DeepCopy()
 	}
 
-	if deployment.Spec.Template.Spec.Containers[0].Resources.Limits != nil {
-		limitResourceList = deployment.Spec.Template.Spec.Containers[0].Resources.Limits
+	if cluster.Spec.BackrestLimits != nil {
+		deployment.Spec.Template.Spec.Containers[0].Resources.Limits = cluster.Spec.BackrestLimits.DeepCopy()
 	}
-
-	// handle the CPU update. For the CPU updates, we set both set/unset the
-	// request and the limit
-	if resource, ok := cluster.Spec.BackrestResources[v1.ResourceCPU]; ok {
-		requestResourceList[v1.ResourceCPU] = resource
-		limitResourceList[v1.ResourceCPU] = resource
-	} else {
-		delete(requestResourceList, v1.ResourceCPU)
-		delete(limitResourceList, v1.ResourceCPU)
-	}
-
-	// handle the memory update. For memory, due to behavior of the OOM killer,
-	// we only set the **request*
-	if resource, ok := cluster.Spec.BackrestResources[v1.ResourceMemory]; ok {
-		requestResourceList[v1.ResourceMemory] = resource
-		limitResourceList[v1.ResourceMemory] = resource
-	} else {
-		delete(requestResourceList, v1.ResourceMemory)
-		delete(limitResourceList, v1.ResourceMemory)
-	}
-
-	// we do need to separately determine whether or not to include the memory
-	// limit based on the user's preference we make this check regardless if the
-	// limit was cleared
-	if !cluster.Spec.EnableBackrestMemoryLimit {
-		delete(limitResourceList, v1.ResourceMemory)
-	}
-
-	// update the requests / limits resourcelist
-	deployment.Spec.Template.Spec.Containers[0].Resources.Requests = requestResourceList
-	deployment.Spec.Template.Spec.Containers[0].Resources.Limits = limitResourceList
 
 	// update the deployment with the new values
 	if err := kubeapi.UpdateDeployment(clientset, deployment); err != nil {

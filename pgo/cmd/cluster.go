@@ -193,6 +193,23 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 		fmt.Println(resourceStr)
 	}
 
+	// print out the limits
+	limits := detail.Cluster.Spec.Limits
+
+	if len(limits) > 0 {
+		limitsStr := fmt.Sprintf("%slimits :", TreeBranch)
+
+		if !limits.Cpu().IsZero() {
+			limitsStr += fmt.Sprintf(" CPU: %s", limits.Cpu().String())
+		}
+
+		if !limits.Memory().IsZero() {
+			limitsStr += fmt.Sprintf(" Memory: %s", limits.Memory().String())
+		}
+
+		fmt.Println(limitsStr)
+	}
+
 	storageStr := fmt.Sprintf("%sstorage : Primary=%s Replica=%s", TreeBranch, detail.Cluster.Spec.PrimaryStorage.Size, detail.Cluster.Spec.ReplicaStorage.Size)
 	fmt.Println(storageStr)
 
@@ -292,11 +309,17 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.BackrestRepoPath = BackrestRepoPath
 	// set the container resource requests
 	r.CPURequest = CPURequest
+	r.CPULimit = CPULimit
 	r.MemoryRequest = MemoryRequest
+	r.MemoryLimit = MemoryLimit
 	r.BackrestCPURequest = BackrestCPURequest
+	r.BackrestCPULimit = BackrestCPULimit
 	r.BackrestMemoryRequest = BackrestMemoryRequest
+	r.BackrestMemoryLimit = BackrestMemoryLimit
 	r.PgBouncerCPURequest = PgBouncerCPURequest
+	r.PgBouncerCPULimit = PgBouncerCPULimit
 	r.PgBouncerMemoryRequest = PgBouncerMemoryRequest
+	r.PgBouncerMemoryLimit = PgBouncerMemoryLimit
 	r.PgBouncerReplicas = PgBouncerReplicas
 	// determine if the user wants to create tablespaces as part of this request,
 	// and if so, set the values
@@ -316,7 +339,17 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 		os.Exit(1)
 	}
 
+	if err := util.ValidateQuantity(r.CPULimit, "cpu-limit"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	if err := util.ValidateQuantity(r.MemoryRequest, "memory"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.MemoryLimit, "memory-limit"); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -326,7 +359,17 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 		os.Exit(1)
 	}
 
+	if err := util.ValidateQuantity(r.BackrestCPULimit, "pgbackrest-cpu-limit"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	if err := util.ValidateQuantity(r.BackrestMemoryRequest, "pgbackrest-memory"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.BackrestMemoryLimit, "pgbackrest-memory-limit"); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -336,30 +379,19 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 		os.Exit(1)
 	}
 
+	if err := util.ValidateQuantity(r.PgBouncerCPULimit, "pgbouncer-cpu-limit"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	if err := util.ValidateQuantity(r.PgBouncerMemoryRequest, "pgbouncer-memory"); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	// check to see if EnableMemoryLimit is set. If so, set a value for
-	// MemoryLimitStatus. We do not need to worry about disable here as it is
-	// disabled by default
-	if EnableMemoryLimit {
-		r.MemoryLimitStatus = msgs.MemoryLimitEnable
-	}
-
-	// check to see if EnableBackrestMemoryLimit is set. If so, set a value for
-	// BackrestMemoryLimitStatus. We do not need to worry about disable here as
-	// it is disabled by default
-	if EnableBackrestMemoryLimit {
-		r.BackrestMemoryLimitStatus = msgs.MemoryLimitEnable
-	}
-
-	// check to see if EnablePgBouncerMemoryLimit is set. If so, set a value for
-	// PgBouncerMemoryLimitStatus. We do not need to worry about disable here as
-	// it is disabled by default
-	if EnablePgBouncerMemoryLimit {
-		r.PgBouncerMemoryLimitStatus = msgs.MemoryLimitEnable
+	if err := util.ValidateQuantity(r.PgBouncerMemoryLimit, "pgbouncer-memory-limit"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	response, err := api.CreateCluster(httpclient, &SessionCredentials, r)
@@ -470,13 +502,17 @@ func updateCluster(args []string, ns string) {
 	r.Namespace = ns
 	r.AllFlag = AllFlag
 	r.BackrestCPURequest = BackrestCPURequest
+	r.BackrestCPULimit = BackrestCPULimit
 	r.BackrestMemoryRequest = BackrestMemoryRequest
+	r.BackrestMemoryLimit = BackrestMemoryLimit
 	r.Clustername = args
 	r.Startup = Startup
 	r.Shutdown = Shutdown
 	// set the container resource requests
 	r.CPURequest = CPURequest
+	r.CPULimit = CPULimit
 	r.MemoryRequest = MemoryRequest
+	r.MemoryLimit = MemoryLimit
 	// determine if the user wants to create tablespaces as part of this request,
 	// and if so, set the values
 	r.Tablespaces = getTablespaces(Tablespaces)
@@ -497,25 +533,14 @@ func updateCluster(args []string, ns string) {
 		r.Autofail = msgs.UpdateClusterAutofailDisable
 	}
 
-	// check to see if Disable/EnableMemoryLimit is set. If so, set a
-	// value for MemoryLimitStatus.
-	if EnableMemoryLimit {
-		r.MemoryLimitStatus = msgs.MemoryLimitEnable
-	} else if DisableMemoryLimit {
-		r.MemoryLimitStatus = msgs.MemoryLimitDisable
-	}
-
-	// check to see if DisableBackrestMemoryLimit/EnableBackrestMemoryLimit is
-	// set. If so, set a value for BackrestMemoryLimitStatus.
-	if EnableBackrestMemoryLimit {
-		r.BackrestMemoryLimitStatus = msgs.MemoryLimitEnable
-	} else if DisableBackrestMemoryLimit {
-		r.BackrestMemoryLimitStatus = msgs.MemoryLimitDisable
-	}
-
 	// if the user provided resources for CPU or Memory, validate them to ensure
 	// they are valid Kubernetes values
 	if err := util.ValidateQuantity(r.CPURequest, "cpu"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.CPULimit, "cpu-limit"); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -525,12 +550,27 @@ func updateCluster(args []string, ns string) {
 		os.Exit(1)
 	}
 
+	if err := util.ValidateQuantity(r.MemoryLimit, "memory-limit"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	if err := util.ValidateQuantity(r.BackrestCPURequest, "pgbackrest-cpu"); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
+	if err := util.ValidateQuantity(r.BackrestCPULimit, "pgbackrest-cpu-limit"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	if err := util.ValidateQuantity(r.BackrestMemoryRequest, "pgbackrest-memory"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.BackrestMemoryLimit, "pgbackrest-memory-limit"); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

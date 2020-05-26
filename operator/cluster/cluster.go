@@ -335,48 +335,18 @@ func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, c
 	// so that all the replicas are updated first, and then the primary gets the
 	// update
 	for _, deployment := range deployments.Items {
-		requestResourceList := v1.ResourceList{}
-		limitResourceList := v1.ResourceList{}
+		// first, initialize the requests/limits resource to empty Resource Lists
+		deployment.Spec.Template.Spec.Containers[0].Resources.Requests = v1.ResourceList{}
+		deployment.Spec.Template.Spec.Containers[0].Resources.Limits = v1.ResourceList{}
 
-		// if there is a request / limit resource list available already, use that
-		// one
-		// NOTE: this works as the "database" container is always first
-		if deployment.Spec.Template.Spec.Containers[0].Resources.Requests != nil {
-			requestResourceList = deployment.Spec.Template.Spec.Containers[0].Resources.Requests
-		}
-		if deployment.Spec.Template.Spec.Containers[0].Resources.Limits != nil {
-			limitResourceList = deployment.Spec.Template.Spec.Containers[0].Resources.Limits
+		// now, simply deep copy the values from the CRD
+		if cluster.Spec.Resources != nil {
+			deployment.Spec.Template.Spec.Containers[0].Resources.Requests = cluster.Spec.Resources.DeepCopy()
 		}
 
-		// handle the CPU update. For the CPU updates, we set both set/unset the
-		// request and the limit
-		if resource, ok := cluster.Spec.Resources[v1.ResourceCPU]; ok {
-			requestResourceList[v1.ResourceCPU] = resource
-			limitResourceList[v1.ResourceCPU] = resource
-		} else {
-			delete(requestResourceList, v1.ResourceCPU)
-			delete(limitResourceList, v1.ResourceCPU)
+		if cluster.Spec.Limits != nil {
+			deployment.Spec.Template.Spec.Containers[0].Resources.Limits = cluster.Spec.Limits.DeepCopy()
 		}
-
-		// handle the memory update
-		if resource, ok := cluster.Spec.Resources[v1.ResourceMemory]; ok {
-			requestResourceList[v1.ResourceMemory] = resource
-			limitResourceList[v1.ResourceMemory] = resource
-		} else {
-			delete(requestResourceList, v1.ResourceMemory)
-			delete(limitResourceList, v1.ResourceMemory)
-		}
-
-		// we do need to separately determine whether or not to include the memory
-		// limit based on the user's preference we make this check regardless if the
-		// limit was cleared
-		if !cluster.Spec.EnableMemoryLimit {
-			delete(limitResourceList, v1.ResourceMemory)
-		}
-
-		// update the requests resourcelist
-		deployment.Spec.Template.Spec.Containers[0].Resources.Requests = requestResourceList
-		deployment.Spec.Template.Spec.Containers[0].Resources.Limits = limitResourceList
 
 		// Before applying the update, we want to explicitly stop PostgreSQL on each
 		// instance. This prevents PostgreSQL from having to boot up in crash

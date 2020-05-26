@@ -55,9 +55,8 @@ var ContainerImageOverrides = map[string]string{}
 var namespaceOperatingMode ns.NamespaceOperatingMode
 
 type containerResourcesTemplateFields struct {
-	// EnableMemoryLimit allows a user to determine if they want to apply a limit
-	// to the memory request
-	EnableMemoryLimit bool
+	// LimitsMemory and LimitsCPU detemrine the memory/CPU limits
+	LimitsMemory, LimitsCPU string
 	// RequestsMemory and RequestsCPU determine how much memory/CPU resources to
 	// request
 	RequestsMemory, RequestsCPU string
@@ -182,22 +181,32 @@ func GetPodSecurityContext(supplementalGroups []int64) string {
 // CPU and Memory settings. The settings are only included if:
 // a) they exist
 // b) they are nonzero
-func GetResourcesJSON(resources v1.ResourceList, enableMemoryLimit bool) string {
-	fields := containerResourcesTemplateFields{
-		EnableMemoryLimit: enableMemoryLimit,
-	}
+func GetResourcesJSON(resources, limits v1.ResourceList) string {
+	fields := containerResourcesTemplateFields{}
 
 	// first, if the contents of the resources list happen to be nil, exit out
-	if resources == nil {
+	if resources == nil && limits == nil {
 		return ""
 	}
 
-	if resources.Cpu() != nil && !resources.Cpu().IsZero() {
-		fields.RequestsCPU = resources.Cpu().String()
+	if resources != nil {
+		if resources.Cpu() != nil && !resources.Cpu().IsZero() {
+			fields.RequestsCPU = resources.Cpu().String()
+		}
+
+		if resources.Memory() != nil && !resources.Memory().IsZero() {
+			fields.RequestsMemory = resources.Memory().String()
+		}
 	}
 
-	if resources.Memory() != nil && !resources.Memory().IsZero() {
-		fields.RequestsMemory = resources.Memory().String()
+	if limits != nil {
+		if limits.Cpu() != nil && !limits.Cpu().IsZero() {
+			fields.LimitsCPU = limits.Cpu().String()
+		}
+
+		if limits.Memory() != nil && !limits.Memory().IsZero() {
+			fields.LimitsMemory = limits.Memory().String()
+		}
 	}
 
 	doc := bytes.Buffer{}
