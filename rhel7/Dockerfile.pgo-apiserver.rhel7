@@ -18,6 +18,6 @@ RUN yum -y install \
 ADD bin/apiserver /usr/local/bin
 ADD conf/postgres-operator /default-pgo-config
 
-USER daemon
+USER 2
 
 ENTRYPOINT ["/usr/local/bin/apiserver"]
