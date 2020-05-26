@@ -34,6 +34,13 @@ func (in *PgBouncerSpec) DeepCopyInto(out *PgBouncerSpec) {
 			(*out)[key] = val.DeepCopy()
 		}
 	}
+	if in.Limits != nil {
+		in, out := &in.Limits, &out.Limits
+		*out = make(corev1.ResourceList, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val.DeepCopy()
+		}
+	}
 	return
 }
 
@@ -128,6 +135,7 @@ func (in *PgclusterList) DeepCopyObject() runtime.Object {
 func (in *PgclusterSpec) DeepCopyInto(out *PgclusterSpec) {
 	*out = *in
 	out.PrimaryStorage = in.PrimaryStorage
+	out.WALStorage = in.WALStorage
 	out.ArchiveStorage = in.ArchiveStorage
 	out.ReplicaStorage = in.ReplicaStorage
 	out.BackrestStorage = in.BackrestStorage
@@ -138,8 +146,22 @@ func (in *PgclusterSpec) DeepCopyInto(out *PgclusterSpec) {
 			(*out)[key] = val.DeepCopy()
 		}
 	}
+	if in.Limits != nil {
+		in, out := &in.Limits, &out.Limits
+		*out = make(corev1.ResourceList, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val.DeepCopy()
+		}
+	}
 	if in.BackrestResources != nil {
 		in, out := &in.BackrestResources, &out.BackrestResources
+		*out = make(corev1.ResourceList, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val.DeepCopy()
+		}
+	}
+	if in.BackrestLimits != nil {
+		in, out := &in.BackrestLimits, &out.BackrestLimits
 		*out = make(corev1.ResourceList, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val.DeepCopy()

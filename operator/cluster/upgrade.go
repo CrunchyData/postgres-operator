@@ -537,9 +537,6 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 	// update the "is upgraded" label to indicate cluster has been upgraded
 	pgcluster.Annotations[config.ANNOTATION_IS_UPGRADED] = "true"
 
-	// set the default memory resource values
-	setMemoryResources(pgcluster)
-
 	// set the default CCPImagePrefix, if empty
 	if pgcluster.Spec.CCPImagePrefix == "" {
 		pgcluster.Spec.CCPImagePrefix = operator.Pgo.Cluster.CCPImagePrefix
@@ -556,45 +553,6 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 	pgcluster.Spec.Status = ""
 	pgcluster.Status.State = crv1.PgclusterStateCreated
 	pgcluster.Status.Message = "Created, not processed yet"
-}
-
-// setMemoryResources sets the default memory values for pgBackrest, pgBouncer and the
-// PostgreSQL instance in a cluster if they are not already set
-func setMemoryResources(pgcluster *crv1.Pgcluster) {
-	// check if BackrestResources exists, if not create the ResourceList
-	if pgcluster.Spec.BackrestResources == nil {
-		pgcluster.Spec.BackrestResources = v1.ResourceList{}
-	}
-
-	// if the memory value is either not set or is zero, set the default configuration value
-	if pgcluster.Spec.BackrestResources.Memory() == nil || pgcluster.Spec.BackrestResources.Memory().IsZero() {
-		pgcluster.Spec.BackrestResources[v1.ResourceMemory] = config.DefaultBackrestResourceMemory
-	}
-
-	// check if PgBouncer.Resources exists, if not create the ResourceList
-	if pgcluster.Spec.PgBouncer.Resources == nil {
-		pgcluster.Spec.PgBouncer.Resources = v1.ResourceList{}
-	}
-
-	// if the memory value is either not set or is zero, set the default configuration value
-	if pgcluster.Spec.PgBouncer.Resources.Memory() == nil || pgcluster.Spec.PgBouncer.Resources.Memory().IsZero() {
-		pgcluster.Spec.PgBouncer.Resources[v1.ResourceMemory] = config.DefaultPgBouncerResourceMemory
-	}
-
-	// check if PgBouncer.Resources exists, if not create the ResourceList
-	if pgcluster.Spec.PgBouncer.Resources == nil {
-		pgcluster.Spec.PgBouncer.Resources = v1.ResourceList{}
-	}
-
-	// check if BackrestResources exists, if not create the ResourceList
-	if pgcluster.Spec.Resources == nil {
-		pgcluster.Spec.Resources = v1.ResourceList{}
-	}
-
-	// if the memory value is either not set or is zero, set the default configuration value
-	if pgcluster.Spec.Resources.Memory() == nil || pgcluster.Spec.Resources.Memory().IsZero() {
-		pgcluster.Spec.Resources[v1.ResourceMemory] = config.DefaultInstanceResourceMemory
-	}
 }
 
 // createClusterRecreateWorkflowTask creates a cluster creation task for the upgraded cluster's recreation

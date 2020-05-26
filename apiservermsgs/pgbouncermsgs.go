@@ -20,15 +20,16 @@ limitations under the License.
 type CreatePgbouncerRequest struct {
 	Args          []string
 	ClientVersion string
+	// CPULimit, if specified, is the max CPU that should be used on a pgBouncer
+	// Pod. Defaults to not being set.
+	CPULimit string
 	// CPURequest, if specified, is the value of how much CPU should be
 	// requested for deploying pgBouncer instances. Defaults to not being
 	// requested
 	CPURequest string
-	// MemoryLimitStatus determines whether or not the Kubernetes Resource Limit
-	// for memory should be set on the request. Defaults to "do nothing", which
-	// effectively disable setting the memory limit, which is currently the
-	// preferred behavior
-	MemoryLimitStatus MemoryLimitStatus
+	// MemoryLimit, if specified, is the max CPU that should be used on a
+	// pgBouncer Pod. Defaults to not being set.
+	MemoryLimit string
 	// MemoryRequest, if specified, is the value of how much RAM should
 	// be requested for deploying pgBouncer instances. Defaults to the server
 	// specified default
@@ -150,16 +151,18 @@ type UpdatePgBouncerRequest struct {
 	// updated
 	ClusterNames []string
 
+	// CPULimit, if specified, is the max CPU that should be used on a pgBouncer
+	// Pod. Defaults to not being set.
+	CPULimit string
+
 	// CPURequest, if specified, is the value of how much CPU should be
 	// requested for deploying pgBouncer instances. Defaults to not being
 	// requested
 	CPURequest string
 
-	// MemoryLimitStatus determines whether or not the Kubernetes Resource Limit
-	// for memory should be set on the request. Defaults to "do nothing", which
-	// effectively disable setting the memory limit, which is currently the
-	// preferred behavior
-	MemoryLimitStatus MemoryLimitStatus
+	// MemoryLimit, if specified, is the max CPU that should be used on a
+	// pgBouncer Pod. Defaults to not being set.
+	MemoryLimit string
 
 	// MemoryRequest, if specified, is the value of how much RAM should
 	// be requested for deploying pgBouncer instances. Defaults to the server

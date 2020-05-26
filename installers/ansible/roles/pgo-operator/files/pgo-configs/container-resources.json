@@ -1,13 +1,16 @@
-{{ if or .RequestsMemory .RequestsCPU }}
+{{ if or .RequestsMemory .RequestsCPU .LimitsMemory .LimitsCPU }}
 "resources": {
+  {{ if or .LimitsMemory .LimitsCPU }}
   "limits": {
-    {{ if .RequestsCPU }}
-    "cpu": "{{.RequestsCPU}}"{{ if and .EnableMemoryLimit .RequestsMemory }},{{ end }}
+    {{ if .LimitsCPU }}
+    "cpu": "{{.LimitsCPU}}"{{ if .LimitsMemory }},{{ end }}
     {{ end }}
-    {{ if and .EnableMemoryLimit .RequestsMemory }}
-    "memory": "{{.RequestsMemory}}"
+    {{ if .LimitsMemory }}
+    "memory": "{{.LimitsMemory}}"
     {{ end }}
-  },
+  }{{ if or .RequestsMemory .RequestsCPU }},{{ end }}
+  {{ end }}
+  {{ if or .RequestsMemory .RequestsCPU }}
   "requests": {
     {{ if .RequestsCPU }}
     "cpu": "{{.RequestsCPU}}"{{ if .RequestsMemory }},{{ end }}
@@ -16,5 +19,6 @@
     "memory": "{{.RequestsMemory}}"
     {{ end }}
   }
+  {{ end }}
 },
 {{ end }}

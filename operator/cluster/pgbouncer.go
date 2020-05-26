@@ -407,7 +407,7 @@ func UpdatePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 
 	// check if the resources differ
 	if !reflect.DeepEqual(oldCluster.Spec.PgBouncer.Resources, newCluster.Spec.PgBouncer.Resources) ||
-		oldCluster.Spec.PgBouncer.EnableMemoryLimit != newCluster.Spec.PgBouncer.EnableMemoryLimit {
+		!reflect.DeepEqual(oldCluster.Spec.PgBouncer.Limits, newCluster.Spec.PgBouncer.Limits) {
 		if err := updatePgBouncerResources(clientset, restclient, newCluster); err != nil {
 			return err
 		}
@@ -467,7 +467,7 @@ func createPgBouncerDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pg
 		Port:            operator.Pgo.Cluster.Port,
 		PGBouncerSecret: util.GeneratePgBouncerSecretName(cluster.Name),
 		ContainerResources: operator.GetResourcesJSON(cluster.Spec.PgBouncer.Resources,
-			cluster.Spec.PgBouncer.EnableMemoryLimit),
+			cluster.Spec.PgBouncer.Limits),
 		PodAntiAffinity: operator.GetPodAntiAffinity(cluster,
 			crv1.PodAntiAffinityDeploymentPgBouncer, cluster.Spec.PodAntiAffinity.PgBouncer),
 		PodAntiAffinityLabelName: config.LABEL_POD_ANTI_AFFINITY,
@@ -905,12 +905,7 @@ func updatePgBouncerResources(clientset *kubernetes.Clientset, restclient *rest.
 	// the pgBouncer container is the first one, the resources can be updated
 	// from it
 	deployment.Spec.Template.Spec.Containers[0].Resources.Requests = cluster.Spec.PgBouncer.Resources.DeepCopy()
-	deployment.Spec.Template.Spec.Containers[0].Resources.Limits = cluster.Spec.PgBouncer.Resources.DeepCopy()
-
-	// delete the memory limit unless the user has enabled it
-	if !cluster.Spec.PgBouncer.EnableMemoryLimit {
-		delete(deployment.Spec.Template.Spec.Containers[0].Resources.Limits, v1.ResourceMemory)
-	}
+	deployment.Spec.Template.Spec.Containers[0].Resources.Limits = cluster.Spec.PgBouncer.Limits.DeepCopy()
 
 	// and update the deployment
 	// update the deployment with the new values
