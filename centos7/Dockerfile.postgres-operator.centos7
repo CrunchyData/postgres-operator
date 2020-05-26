@@ -14,6 +14,6 @@ RUN yum -y install hostname postgresql${PGVERSION}  && yum -y clean all
 ADD bin/postgres-operator /usr/local/bin
 ADD conf/postgres-operator /default-pgo-config
 
-USER daemon
+USER 2
 
 ENTRYPOINT ["postgres-operator"]
