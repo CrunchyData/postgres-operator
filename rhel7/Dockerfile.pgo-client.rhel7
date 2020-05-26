@@ -20,6 +20,6 @@ ENV PGO_CLIENT_KEY=${PGO_CLIENT_KEY}
 
 RUN chmod +x /usr/local/bin/pgo
 
-USER daemon
+USER 2
 
 CMD tail -f /dev/null

@@ -11,6 +11,6 @@ LABEL name="pgo-event" \
 
 ADD bin/pgo-event /usr/local/bin
 
-USER daemon
+USER 2
 
 ENTRYPOINT ["/usr/local/bin/pgo-event.sh"]
