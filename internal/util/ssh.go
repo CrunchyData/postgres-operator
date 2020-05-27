@@ -1,4 +1,4 @@
-package sshutil
+package util
 
 /*
  Copyright 2019 - 2020 Crunchy Data Solutions, Inc.
