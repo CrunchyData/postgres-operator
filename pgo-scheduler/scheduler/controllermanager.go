@@ -21,7 +21,7 @@ import (
 	"sync"
 
 	"github.com/crunchydata/postgres-operator/internal/controller"
-	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/semaphore"

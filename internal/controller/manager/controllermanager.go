@@ -30,7 +30,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/pgreplica"
 	"github.com/crunchydata/postgres-operator/internal/controller/pgtask"
 	"github.com/crunchydata/postgres-operator/internal/controller/pod"
-	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions"

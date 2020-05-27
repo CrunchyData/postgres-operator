@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
 	jsonpatch "github.com/evanphx/json-patch"
