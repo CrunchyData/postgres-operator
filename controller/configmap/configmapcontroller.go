@@ -16,7 +16,7 @@ limitations under the License.
 */
 
 import (
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	pgoinformers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	pgolisters "github.com/crunchydata/postgres-operator/pkg/generated/listers/crunchydata.com/v1"
 

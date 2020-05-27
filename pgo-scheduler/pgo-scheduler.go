@@ -24,9 +24,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/controller"
 	nscontroller "github.com/crunchydata/postgres-operator/controller/namespace"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	crunchylog "github.com/crunchydata/postgres-operator/logging"
 	"github.com/crunchydata/postgres-operator/ns"

@@ -16,7 +16,7 @@ limitations under the License.
 */
 
 import (
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 )
 
 // ShowConfigResponse ...

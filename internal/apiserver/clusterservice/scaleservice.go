@@ -20,8 +20,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"

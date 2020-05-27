@@ -16,7 +16,7 @@ limitations under the License.
 */
 
 import (
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
 	batchinformers "k8s.io/client-go/informers/batch/v1"

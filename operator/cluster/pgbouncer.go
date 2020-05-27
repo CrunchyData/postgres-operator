@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator"

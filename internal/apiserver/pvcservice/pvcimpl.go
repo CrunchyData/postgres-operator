@@ -18,8 +18,8 @@ limitations under the License.
 import (
 	"fmt"
 
-	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"

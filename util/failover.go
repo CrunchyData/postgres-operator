@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 
 	log "github.com/sirupsen/logrus"

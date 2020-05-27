@@ -18,7 +18,7 @@ limitations under the License.
 import (
 	"time"
 
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"

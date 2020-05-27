@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	pgoutil "github.com/crunchydata/postgres-operator/pgo/util"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"

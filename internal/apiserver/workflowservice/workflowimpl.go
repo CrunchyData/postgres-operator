@@ -18,8 +18,8 @@ limitations under the License.
 import (
 	"errors"
 
-	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"

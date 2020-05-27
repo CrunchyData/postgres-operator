@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/operator/pvc"
 	log "github.com/sirupsen/logrus"

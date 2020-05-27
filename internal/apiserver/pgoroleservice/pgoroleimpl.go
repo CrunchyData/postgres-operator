@@ -17,9 +17,9 @@ limitations under the License.
 
 import (
 	"errors"
-	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/pgouserservice"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pkg/events"
