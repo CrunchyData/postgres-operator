@@ -16,7 +16,7 @@ package operator
 */
 
 import (
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	core_v1 "k8s.io/api/core/v1"
 )
 

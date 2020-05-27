@@ -18,7 +18,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/crunchydata/postgres-operator/config"
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/spf13/cobra"
 )
 
