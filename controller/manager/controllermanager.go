@@ -21,7 +21,6 @@ import (
 	"sync"
 	"time"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/controller"
 	"github.com/crunchydata/postgres-operator/controller/configmap"
@@ -33,6 +32,7 @@ import (
 	"github.com/crunchydata/postgres-operator/controller/pod"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
+	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/semaphore"

@@ -20,7 +20,7 @@ package v1
 import (
 	time "time"
 
-	crunchydatacomv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
+	crunchydatacomv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	versioned "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	internalinterfaces "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/internalinterfaces"
 	v1 "github.com/crunchydata/postgres-operator/pkg/generated/listers/crunchydata.com/v1"
