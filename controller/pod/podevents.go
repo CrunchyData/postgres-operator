@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/config"
-	"github.com/crunchydata/postgres-operator/events"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"
 )
 
