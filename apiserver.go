@@ -27,7 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/routing"
 	crunchylog "github.com/crunchydata/postgres-operator/internal/logging"
-	"github.com/crunchydata/postgres-operator/tlsutil"
+	"github.com/crunchydata/postgres-operator/internal/tlsutil"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
