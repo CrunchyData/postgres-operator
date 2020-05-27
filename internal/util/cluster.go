@@ -24,7 +24,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/sshutil"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -116,7 +115,7 @@ var (
 func CreateBackrestRepoSecrets(clientset *kubernetes.Clientset,
 	backrestRepoConfig BackrestRepoConfig) error {
 
-	keys, err := sshutil.NewPrivatePublicKeyPair()
+	keys, err := NewPrivatePublicKeyPair()
 	if err != nil {
 		return err
 	}
