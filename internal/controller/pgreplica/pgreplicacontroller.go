@@ -20,7 +20,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	clusteroperator "github.com/crunchydata/postgres-operator/operator/cluster"
+	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
