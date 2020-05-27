@@ -21,10 +21,13 @@
             },
             "spec": {
                 "securityContext": {
-{% if grafana_supplemental_groups is defined and grafana_supplemental_groups != '' %}
-                    "supplementalGroups": [{{ grafana_supplemental_groups }}],
+{% if (grafana_supplemental_groups | default('')) != '' %}
+                    "supplementalGroups": [{{ grafana_supplemental_groups }}]
 {% endif %}
+{% if not (disable_fsgroup | default(false) | bool) %}
+                    {% if (grafana_supplemental_groups | default('')) != '' %},{% endif -%}
                     "fsGroup": 26
+{% endif %}
                 },
                 "serviceAccountName": "grafana",
                 "containers": [
