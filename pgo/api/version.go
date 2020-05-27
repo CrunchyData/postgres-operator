@@ -18,7 +18,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 )

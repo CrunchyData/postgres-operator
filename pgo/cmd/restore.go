@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"os"
 
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	pgoutil "github.com/crunchydata/postgres-operator/pgo/util"
+	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

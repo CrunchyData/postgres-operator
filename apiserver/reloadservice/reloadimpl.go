@@ -21,10 +21,10 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/apiserver"
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/config"
 	"github.com/crunchydata/postgres-operator/events"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
+	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"

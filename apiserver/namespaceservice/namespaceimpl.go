@@ -19,9 +19,9 @@ import (
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/apiserver"
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/kubeapi"
 	"github.com/crunchydata/postgres-operator/ns"
+	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 )
