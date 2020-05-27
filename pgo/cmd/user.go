@@ -20,10 +20,10 @@ import (
 	"os"
 	"strings"
 
+	utiloperator "github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
-	utiloperator "github.com/crunchydata/postgres-operator/util"
 
 	log "github.com/sirupsen/logrus"
 )

@@ -27,9 +27,9 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/pgadmin"
 	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/util"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"

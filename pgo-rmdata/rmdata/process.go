@@ -22,8 +22,8 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/util"
 
 	log "github.com/sirupsen/logrus"
 	kerror "k8s.io/apimachinery/pkg/api/errors"
