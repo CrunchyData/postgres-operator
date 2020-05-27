@@ -134,7 +134,7 @@ spec:
             restartPolicy: Never
             containers:
             - name: pgo-deploy
-              image: registry.developers.crunchydata.com/crunchydata/pgo-deployer:centos7-4.3.1
+              image: registry.developers.crunchydata.com/crunchydata/pgo-deployer:centos7-4.3.2
               imagePullPolicy: IfNotPresent
               env:
                   - name: ARCHIVE_MODE
@@ -152,7 +152,7 @@ spec:
                   - name: CCP_IMAGE_PREFIX
                     value: "registry.developers.crunchydata.com/crunchydata"
                   - name: CCP_IMAGE_TAG
-                    value: "centos7-12.3-4.3.1"
+                    value: "centos7-12.3-4.3.2"
                   - name: DB_PASSWORD_LENGTH
                     value: "24"
                   - name: DB_PORT
@@ -194,11 +194,11 @@ spec:
                   - name: PGO_ADMIN_USERNAME
                     value: "admin"
                   - name: PGO_CLIENT_VERSION
-                    value: "v4.3.1"
+                    value: "v4.3.2"
                   - name: PGO_IMAGE_PREFIX
                     value: "registry.developers.crunchydata.com/crunchydata"
                   - name: PGO_IMAGE_TAG
-                    value: "centos7-4.3.1"
+                    value: "centos7-4.3.2"
                   - name: PGO_INSTALLATION_NAME
                     value: "devtest"
                   - name: PGO_OPERATOR_NAMESPACE
