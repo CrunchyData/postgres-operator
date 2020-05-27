@@ -21,8 +21,8 @@ import (
 	"os"
 	"strings"
 
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
+	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/crunchydata/postgres-operator/pgo/api"

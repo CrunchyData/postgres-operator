@@ -16,7 +16,7 @@ limitations under the License.
 */
 
 import (
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 )
 
 //  Version ...

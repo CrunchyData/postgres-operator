@@ -20,7 +20,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
+	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 )
 
