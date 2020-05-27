@@ -19,8 +19,8 @@ import (
 	"fmt"
 	"time"
 
-	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/config"
+	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

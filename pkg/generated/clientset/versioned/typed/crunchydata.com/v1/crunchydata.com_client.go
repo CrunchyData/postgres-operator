@@ -18,7 +18,7 @@ limitations under the License.
 package v1
 
 import (
-	v1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
+	v1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
