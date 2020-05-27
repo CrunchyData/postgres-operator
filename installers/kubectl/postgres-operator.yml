@@ -285,7 +285,7 @@ spec:
                     value: "alternatesite"
                   - name: STORAGE8_NAME
                     value: "gce"
-                  - name: STORAGE8_ACCESS
+                  - name: STORAGE8_ACCESS_MODE
                     value: "ReadWriteOnce"
                   - name: STORAGE8_SIZE
                     value: "300M"
