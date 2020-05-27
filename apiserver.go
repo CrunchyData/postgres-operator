@@ -24,8 +24,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/apiserver"
-	"github.com/crunchydata/postgres-operator/apiserver/routing"
+	"github.com/crunchydata/postgres-operator/internal/apiserver"
+	"github.com/crunchydata/postgres-operator/internal/apiserver/routing"
 	crunchylog "github.com/crunchydata/postgres-operator/logging"
 	"github.com/crunchydata/postgres-operator/tlsutil"
 

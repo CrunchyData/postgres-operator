@@ -22,7 +22,7 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/apiserver"
+	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	log "github.com/sirupsen/logrus"
 
 	cv2 "github.com/robfig/cron"
