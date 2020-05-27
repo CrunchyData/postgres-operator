@@ -27,7 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/apiserver/policyservice"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/internal/operator"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pkg/events"

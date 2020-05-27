@@ -28,7 +28,7 @@ import (
 	nscontroller "github.com/crunchydata/postgres-operator/internal/controller/namespace"
 	crunchylog "github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/ns"
-	"github.com/crunchydata/postgres-operator/operator/operatorupgrade"
+	"github.com/crunchydata/postgres-operator/internal/operator/operatorupgrade"
 	log "github.com/sirupsen/logrus"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,7 +37,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	"github.com/crunchydata/postgres-operator/operator"
+	"github.com/crunchydata/postgres-operator/internal/operator"
 )
 
 func main() {
