@@ -44,7 +44,7 @@ import (
 const scramVerifierFormat = "SCRAM-SHA-256$%d:%s$%s:%s"
 
 // These constants are defined as part of the PostgreSQL implementation for
-// SCRAM, but can be overriden by the user
+// SCRAM, but can be overridden by the user
 // https://git.postgresql.org/gitweb/?p=postgresql.git;a=blob;f=src/include/common/scram-common.h
 const (
 	// scramDefaultIterations is the number of iterations to make as part of the PBKDF2

@@ -75,7 +75,7 @@ func TestOverrideClusterContainerImages(t *testing.T) {
 		}
 	})
 
-	// test overriding each container and ensure that it takes in the contianer
+	// test overriding each container and ensure that it takes in the container
 	// slice. Skip the "future" container, that will be in an upcoming test
 	for name, defaults := range containerDefaults {
 		if name == "future" {
@@ -84,12 +84,12 @@ func TestOverrideClusterContainerImages(t *testing.T) {
 
 		t.Run(fmt.Sprintf("override %s", name), func(t *testing.T) {
 			// override the struct that contains the value
-			ContainerImageOverrides[defaults.image] = "overriden"
+			ContainerImageOverrides[defaults.image] = "overridden"
 			containers := mockSetupContainers(containerDefaults)
 
 			OverrideClusterContainerImages(containers)
 
-			// determine if this container is overriden
+			// determine if this container is overridden
 			for _, container := range containers {
 				containerDefault, ok := containerDefaults[container.Name]
 
@@ -108,14 +108,14 @@ func TestOverrideClusterContainerImages(t *testing.T) {
 		})
 	}
 
-	// test that future does not get overriden
+	// test that future does not get overridden
 	t.Run("do not override unmanaged container", func(t *testing.T) {
-		ContainerImageOverrides["crunchy-future"] = "overriden"
+		ContainerImageOverrides["crunchy-future"] = "overridden"
 		containers := mockSetupContainers(containerDefaults)
 
 		OverrideClusterContainerImages(containers)
 
-		// determine if this container is overriden
+		// determine if this container is overridden
 		for _, container := range containers {
 			containerDefault, ok := containerDefaults[container.Name]
 
@@ -133,7 +133,7 @@ func TestOverrideClusterContainerImages(t *testing.T) {
 		delete(ContainerImageOverrides, "crunchy-future")
 	})
 
-	// test that gis can be overriden
+	// test that gis can be overridden
 	t.Run("override postgis", func(t *testing.T) {
 		defaults := containerDefaults
 
@@ -146,11 +146,11 @@ func TestOverrideClusterContainerImages(t *testing.T) {
 		}
 		containers := mockSetupContainers(defaults)
 
-		ContainerImageOverrides[config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_GIS_HA] = "overriden"
+		ContainerImageOverrides[config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_GIS_HA] = "overridden"
 
 		OverrideClusterContainerImages(containers)
 
-		// determine if this container is overriden
+		// determine if this container is overridden
 		for _, container := range containers {
 			containerDefault, ok := containerDefaults[container.Name]
 

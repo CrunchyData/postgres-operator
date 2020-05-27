@@ -692,7 +692,7 @@ func CanCreateRBACInNamespace(clientset *kubernetes.Clientset, namespace string,
 	namespaceOperatingMode NamespaceOperatingMode) (bool, error) {
 
 	// if using the "dynamic" namespace operating mode the we know we can create RBAC
-	// (specifically since a check to ensure we have the required RBAC happended during
+	// (specifically since a check to ensure we have the required RBAC happened during
 	// operator initialization)
 	if namespaceOperatingMode == NamespaceOperatingModeDynamic {
 		return true, nil
