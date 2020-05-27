@@ -23,7 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	"github.com/crunchydata/postgres-operator/ns"
+	"github.com/crunchydata/postgres-operator/internal/ns"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"

@@ -31,7 +31,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/pgtask"
 	"github.com/crunchydata/postgres-operator/internal/controller/pod"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	"github.com/crunchydata/postgres-operator/ns"
+	"github.com/crunchydata/postgres-operator/internal/ns"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions"
 	log "github.com/sirupsen/logrus"

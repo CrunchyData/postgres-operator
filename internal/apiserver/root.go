@@ -29,7 +29,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	"github.com/crunchydata/postgres-operator/ns"
+	"github.com/crunchydata/postgres-operator/internal/ns"
 	pgov1 "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	"github.com/crunchydata/postgres-operator/tlsutil"
 	log "github.com/sirupsen/logrus"
