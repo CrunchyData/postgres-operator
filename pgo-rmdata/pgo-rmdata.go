@@ -19,7 +19,7 @@ import (
 	"flag"
 	"os"
 
-	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crunchylog "github.com/crunchydata/postgres-operator/logging"
 	"github.com/crunchydata/postgres-operator/pgo-rmdata/rmdata"
 	log "github.com/sirupsen/logrus"

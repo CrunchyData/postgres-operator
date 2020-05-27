@@ -31,7 +31,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	cfg "github.com/crunchydata/postgres-operator/operator/config"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
