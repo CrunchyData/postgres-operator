@@ -119,7 +119,7 @@ sets of variables cannot be used at the same time.
 * `db_port`
 * `db_replicas`
 * `db_user`
-* `disable_auto_failover``
+* `disable_auto_failover`
 * `exporterport`
 * `kubernetes_context` (Comment out if deploying to am OpenShift environment)
 * `metrics`
@@ -180,14 +180,14 @@ sets of variables cannot be used at the same time.
 | `exporterport`                    | 9187        | **Required** | Set to configure the default port used to connect to postgres exporter.  |
 | `grafana_admin_password`          |             |          | Set to configure the login password for the Grafana administrator. |
 | `grafana_admin_username`          | admin       |          | Set to configure the login username for the Grafana administrator. |
-| `grafana_install`                 | true        |          | Set to true to install Crunchy Grafana to visualize metrics.                                                                                                                     |
+| `grafana_install`                 | false       |          | Set to true to install Crunchy Grafana to visualize metrics.                                                                                                                     |
 | `grafana_storage_access_mode`     |             |          | Set to the access mode used by the configured storage class for Grafana persistent volumes.                                                                                      |
 | `grafana_storage_class_name`      |             |          | Set to the name of the storage class used when creating Grafana persistent volumes.                                                                                              |
 | `grafana_volume_size`             |             |          | Set to the size of persistent volume to create for Grafana.                                                                                                                      |
 | `kubernetes_context`              |             | **Required**, if deploying to Kubernetes |When deploying to Kubernetes, set to configure the context name of the kubeconfig to be used for authentication.                                                                 |
 | `log_statement`                   | none        |          | Set to `none`, `ddl`, `mod`, or `all` to configure the statements that will be logged in PostgreSQL's logs on all newly created clusters.                                        |
 | `metrics`                         | false       | **Required** | Set to true enable performance metrics on all newly created clusters.  This can be disabled by the client.                                                                       |
-| `metrics_namespace`               | metrics     |          | Configures the target namespace when deploying Grafana and/or Prometheus                                                                                                         |
+| `metrics_namespace`               | pgo         |          | Configures the target namespace when deploying Grafana and/or Prometheus                                                                                                         |
 | `namespace`                       |             |          | Set to a comma delimited string of all the namespaces Operator will manage.                                                                                                      |
 | `namespace_mode`                  | dynamic     | **Required** | Determines which `ClusterRoles` will be installed as required to enable various namespace functionality within the Operator. Valid values are `dynamic`, `readonly` or `disabled`. If `disabled` is selected, then no `ClusterRoles` are installed.|
 | `openshift_host`                  |             | **Required**, if deploying to OpenShift | When deploying to OpenShift, set to configure the hostname of the OpenShift cluster to connect to.                                                                               |
@@ -220,7 +220,7 @@ sets of variables cannot be used at the same time.
 | `pod_anti_affinity_pgbackrest`    |             |           | If set, overrides the value of `pod_anti_affinity` for just the pgBackRest repository |
 | `pod_anti_affinity_pgbouncer`     |             |           | If set, overrides the value of `pod_anti_affinity` for just the pgBouncer Pods |
 | `primary_storage`                 | storageos   | **Required** | Set to configure which storage definition to use when creating volumes used by PostgreSQL primaries on all newly created clusters.                                               |
-| `prometheus_install`              | true        |          | Set to true to install Crunchy Prometheus timeseries database.                                                                                                                   |
+| `prometheus_install`              | false       |          | Set to true to install Crunchy Prometheus timeseries database.                                                                                                                   |
 | `prometheus_storage_access_mode`  |             |          | Set to the access mode used by the configured storage class for Prometheus persistent volumes.                                                                                   |
 | `prometheus_storage_class_name`   |             |          | Set to the name of the storage class used when creating Prometheus persistent volumes.                                                                                           |
 | `replica_storage`                 | storageos   | **Required** | Set to configure which storage definition to use when creating volumes used by PostgreSQL replicas on all newly created clusters.                                                |

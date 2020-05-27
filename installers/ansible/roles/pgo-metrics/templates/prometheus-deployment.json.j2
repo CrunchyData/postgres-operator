@@ -21,10 +21,13 @@
             },
             "spec": {
                 "securityContext": {
-{% if prometheus_supplemental_groups is defined and prometheus_supplemental_groups != '' %}
-                    "supplementalGroups": [{{ prometheus_supplemental_groups }}],
+{% if (prometheus_supplemental_groups | default('')) != '' %}
+                    "supplementalGroups": [{{ prometheus_supplemental_groups }}]
 {% endif %}
+{% if not (disable_fsgroup | default(false) | bool) %}
+                    {% if (prometheus_supplemental_groups | default('')) != '' %},{% endif -%}
                     "fsGroup": 26
+{% endif %}
                 },
                 "serviceAccountName": "prometheus-sa",
                 "containers": [
