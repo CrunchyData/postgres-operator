@@ -120,7 +120,7 @@ type PgbackrestS3EnvVarsTemplateFields struct {
 }
 
 type PgmonitorEnvVarsTemplateFields struct {
-	PgmonitorPassword string
+	CollectSecret string
 }
 
 // DeploymentTemplateFields ...
@@ -670,10 +670,12 @@ func GetPodAntiAffinityType(cluster *crv1.Pgcluster, deploymentType crv1.PodAnti
 	return crv1.PodAntiAffinityType(Pgo.Cluster.PodAntiAffinity)
 }
 
-func GetPgmonitorEnvVars(metricsEnabled string) string {
+// GetPgmonitorEnvVars populates the pgmonitor env var template, which contains any
+// pgmonitor env vars that need to be included in the Deployment spec for a PG cluster.
+func GetPgmonitorEnvVars(metricsEnabled, collectSecret string) string {
 	if metricsEnabled == "true" {
 		fields := PgmonitorEnvVarsTemplateFields{
-			PgmonitorPassword: Pgo.Cluster.PgmonitorPassword,
+			CollectSecret: collectSecret,
 		}
 
 		var doc bytes.Buffer
@@ -685,7 +687,6 @@ func GetPgmonitorEnvVars(metricsEnabled string) string {
 		return doc.String()
 	}
 	return ""
-
 }
 
 // GetPgbackrestS3EnvVars retrieves the values for the various configuration settings require to
