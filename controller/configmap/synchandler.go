@@ -72,18 +72,19 @@ func (c *Controller) handleConfigMapSync(key string) error {
 		return nil
 	}
 
-	c.syncPGHAConfig(c.createPGHAConfigs(configMap, clusterName))
+	c.syncPGHAConfig(c.createPGHAConfigs(configMap, clusterName,
+		cluster.GetObjectMeta().GetLabels()[config.LABEL_PGHA_SCOPE]))
 
 	return nil
 }
 
 // createConfigurerMap creates the configs needed to sync the PGHA configMap
 func (c *Controller) createPGHAConfigs(configMap *corev1.ConfigMap,
-	clusterName string) []cfg.Syncer {
+	clusterName, clusterScope string) []cfg.Syncer {
 
 	var configSyncers []cfg.Syncer
 
-	configSyncers = append(configSyncers, cfg.NewDCS(configMap, c.kubeclientset))
+	configSyncers = append(configSyncers, cfg.NewDCS(configMap, c.kubeclientset, clusterScope))
 
 	localDBConfig, err := cfg.NewLocalDB(configMap, c.cmRESTConfig, c.kubeclientset,
 		c.cmRESTClient)

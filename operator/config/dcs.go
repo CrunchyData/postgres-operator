@@ -48,6 +48,7 @@ type DCS struct {
 	kubeclientset kubernetes.Interface
 	configMap     *corev1.ConfigMap
 	configName    string
+	clusterScope  string
 }
 
 // DCSConfig represents the cluster-wide configuration that is stored in the Distributed
@@ -94,7 +95,8 @@ type SlotDCS struct {
 
 // NewDCS creates a new DCS config struct using the configMap provided.  The DCSConfig will
 // include a configMap that will be used to configure the DCS for a specific cluster.
-func NewDCS(configMap *corev1.ConfigMap, kubeclientset kubernetes.Interface) *DCS {
+func NewDCS(configMap *corev1.ConfigMap, kubeclientset kubernetes.Interface,
+	clusterScope string) *DCS {
 
 	clusterName := configMap.GetLabels()[config.LABEL_PG_CLUSTER]
 
@@ -102,6 +104,7 @@ func NewDCS(configMap *corev1.ConfigMap, kubeclientset kubernetes.Interface) *DC
 		kubeclientset: kubeclientset,
 		configMap:     configMap,
 		configName:    fmt.Sprintf(PGHADCSConfigName, clusterName),
+		clusterScope:  clusterScope,
 	}
 }
 
@@ -216,11 +219,10 @@ func (d *DCS) getClusterDCSConfig() (*DCSConfig, map[string]json.RawMessage, err
 
 	clusterDCS := &DCSConfig{}
 
-	clusterName := d.configMap.GetObjectMeta().GetLabels()[config.LABEL_PG_CLUSTER]
 	namespace := d.configMap.GetObjectMeta().GetNamespace()
 
 	dcsCM, err := d.kubeclientset.CoreV1().ConfigMaps(namespace).
-		Get(fmt.Sprintf(dcsConfigMapName, clusterName), metav1.GetOptions{})
+		Get(fmt.Sprintf(dcsConfigMapName, d.clusterScope), metav1.GetOptions{})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -266,11 +268,9 @@ func (d *DCS) GetDCSConfig() (*DCSConfig, map[string]json.RawMessage, error) {
 	return dcsConfig, rawJSON, nil
 }
 
-// patchDCSAnnotation patches the "config" annotation within the DCS configMap witth the
+// patchDCSAnnotation patches the "config" annotation within the DCS configMap with the
 // content provided.
 func (d *DCS) patchDCSAnnotation(content string) error {
-
-	clusterName := d.configMap.GetObjectMeta().GetLabels()[config.LABEL_PG_CLUSTER]
 
 	jsonOp := []util.JSONPatchOperation{{
 		Op:    "replace",
@@ -283,7 +283,7 @@ func (d *DCS) patchDCSAnnotation(content string) error {
 	}
 
 	if _, err := d.kubeclientset.CoreV1().ConfigMaps(d.configMap.GetNamespace()).Patch(
-		fmt.Sprintf(dcsConfigMapName, clusterName), types.JSONPatchType,
+		fmt.Sprintf(dcsConfigMapName, d.clusterScope), types.JSONPatchType,
 		jsonOpBytes); err != nil {
 		return err
 	}
