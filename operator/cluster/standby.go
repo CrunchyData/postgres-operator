@@ -74,7 +74,8 @@ func DisableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) erro
 	if err != nil {
 		return err
 	}
-	dcs := cfg.NewDCS(configMap, clientset)
+	dcs := cfg.NewDCS(configMap, clientset,
+		cluster.GetObjectMeta().GetLabels()[config.LABEL_PGHA_SCOPE])
 	dcsConfig, _, err := dcs.GetDCSConfig()
 	if err != nil {
 		return err
