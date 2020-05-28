@@ -21,6 +21,8 @@ function trap_sigterm() {
 
 trap 'trap_sigterm' SIGINT SIGTERM
 
+echo "Starting the pgBackRest repo"
+
 CONFIG=/sshd
 REPO=/backrestrepo
 
@@ -38,23 +40,24 @@ fi
 # (i.e. the value specified by the container running the command via SSH is used instead), it is
 # simply set to a dummy directory within the config file.
 mkdir -p /tmp/pg1path
-if ! grep -Fxq "[${PGBACKREST_STANZA}]" "/etc/pgbackrest/pgbackrest.conf"
+if ! grep -Fxq "[${PGBACKREST_STANZA}]" "/etc/pgbackrest/pgbackrest.conf" 2> /dev/null
 then
-    printf "[%s]\npg1-path=/tmp/pg1path\n" "$PGBACKREST_STANZA" > /etc/pgbackrest/pgbackrest.conf
+    
+	printf "[%s]\npg1-path=/tmp/pg1path\n" "$PGBACKREST_STANZA" > /etc/pgbackrest/pgbackrest.conf
 
-		# Additionally, if the PGBACKREST S3 variables are set, add them here
-		if [[ "${PGBACKREST_REPO1_S3_KEY}" != "" ]]
-		then
-			printf "repo1-s3-key=%s\n" "${PGBACKREST_REPO1_S3_KEY}" >> /etc/pgbackrest/pgbackrest.conf
-		fi
+	# Additionally, if the PGBACKREST S3 variables are set, add them here
+	if [[ "${PGBACKREST_REPO1_S3_KEY}" != "" ]]
+	then
+		printf "repo1-s3-key=%s\n" "${PGBACKREST_REPO1_S3_KEY}" >> /etc/pgbackrest/pgbackrest.conf
+	fi
 
-		if [[ "${PGBACKREST_REPO1_S3_KEY_SECRET}" != "" ]]
-		then
-			printf "repo1-s3-key-secret=%s\n" "${PGBACKREST_REPO1_S3_KEY_SECRET}" >> /etc/pgbackrest/pgbackrest.conf
-		fi
+	if [[ "${PGBACKREST_REPO1_S3_KEY_SECRET}" != "" ]]
+	then
+		printf "repo1-s3-key-secret=%s\n" "${PGBACKREST_REPO1_S3_KEY_SECRET}" >> /etc/pgbackrest/pgbackrest.conf
+	fi
 fi
 
-mkdir ~/.ssh/
+mkdir -p ~/.ssh/
 cp $CONFIG/config ~/.ssh/
 #cp $CONFIG/authorized_keys ~/.ssh/
 cp $CONFIG/id_ed25519 /tmp
@@ -62,5 +65,7 @@ chmod 400 /tmp/id_ed25519 ~/.ssh/config
 
 # start sshd which is used by pgbackrest for remote connections
 /usr/sbin/sshd -D -f $CONFIG/sshd_config   &
+
+echo "The pgBackRest repo has been started"
 
 wait
