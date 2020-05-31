@@ -11,7 +11,8 @@
     path: "{{ output_dir }}/server.pem"
     type: RSA
     size: 2048
-  tags: [install]
+  tags: 
+    - install
 
 - name: Generate CSR
   openssl_csr:
@@ -22,7 +23,8 @@
     locality_name: Charleston
     organization_name: CrunchyData    
     common_name: pg-operator
-  tags: [install]
+  tags: 
+    - install
 
 - name: Generate Self-signed Certificate
   openssl_certificate:
@@ -31,7 +33,8 @@
     privatekey_path: "{{ output_dir }}/server.pem"
     csr_path: "{{ output_dir }}/server.csr"
     provider: selfsigned
-  tags: [install]
+  tags: 
+    - install
 
 - name: Ensure {{ pgo_keys_dir }} Directory Exists
   file:
