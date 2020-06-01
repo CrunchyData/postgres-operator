@@ -13,11 +13,11 @@ RUN install -D /bin/create_manifests.sh /opt/postgres-operator/cloud-marketplace
 RUN if [ -f /etc/os-release ] && [ debian = "$(. /etc/os-release; echo $ID)" ] && [ 10 -ge "$(. /etc/os-release; echo $VERSION_ID)" ]; then \
       apt-get update && apt-get install -y --no-install-recommends gnupg && rm -rf /var/lib/apt/lists/* && \
       wget -qO- 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x93C4A3FD7BB9C367' | apt-key add && \
-      echo > /etc/apt/sources.list.d/ansible.list deb http://ppa.launchpad.net/ansible/ansible-2.8/ubuntu trusty main ; \
+      echo > /etc/apt/sources.list.d/ansible.list deb http://ppa.launchpad.net/ansible/ansible-2.9/ubuntu trusty main ; \
     fi
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ansible=2.8.* openssh-client \
+ && apt-get install -y --no-install-recommends ansible=2.9.* openssh-client \
  && rm -rf /var/lib/apt/lists/*
 
 COPY installers/ansible/* \
