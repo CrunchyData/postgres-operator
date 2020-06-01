@@ -185,7 +185,6 @@
                         "containerPort": 8009,
                         "protocol": "TCP"
                     }],
-                    "resources": {},
                     "imagePullPolicy": "IfNotPresent"
                 }{{if .EnableCrunchyadm}},
                 {
