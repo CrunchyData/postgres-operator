@@ -9,7 +9,7 @@ FROM gcr.io/cloud-marketplace-tools/k8s/deployer_envsubst:${MARKETPLACE_VERSION}
 
 RUN install -D /bin/create_manifests.sh /opt/postgres-operator/cloud-marketplace-tools/bin/create_manifests.sh
 
-# https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#latest-releases-via-apt-debian
+# https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-on-debian
 RUN if [ -f /etc/os-release ] && [ debian = "$(. /etc/os-release; echo $ID)" ] && [ 10 -ge "$(. /etc/os-release; echo $VERSION_ID)" ]; then \
       apt-get update && apt-get install -y --no-install-recommends gnupg && rm -rf /var/lib/apt/lists/* && \
       wget -qO- 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x93C4A3FD7BB9C367' | apt-key add && \
