@@ -24,6 +24,10 @@ import (
 	"os"
 )
 
+// ClientVersionOnly indicates that only the client version should be returned, not make
+// a call to the server
+var ClientVersionOnly bool
+
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version information for the PostgreSQL Operator",
@@ -38,10 +42,20 @@ var versionCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(versionCmd)
+	versionCmd.Flags().BoolVar(&ClientVersionOnly, "client", false, "Only return the version of the pgo client. This does not make a call to the API server.")
 }
 
 func showVersion() {
 
+	// print the client version
+	fmt.Println("pgo client version " + msgs.PGO_VERSION)
+
+	// if the user selects only to display the client version, return here
+	if ClientVersionOnly {
+		return
+	}
+
+	// otherwise, get the server version
 	response, err := api.ShowVersion(httpclient, &SessionCredentials)
 
 	if err != nil {
@@ -49,13 +63,10 @@ func showVersion() {
 		os.Exit(2)
 	}
 
-	fmt.Println("pgo client version " + msgs.PGO_VERSION)
-
-	if response.Status.Code == msgs.Ok {
-		fmt.Println("pgo-apiserver version " + response.Version)
-	} else {
+	if response.Status.Code != msgs.Ok {
 		fmt.Println("Error: " + response.Status.Msg)
-		os.Exit(2)
+		os.Exit(1)
 	}
 
+	fmt.Println("pgo-apiserver version " + response.Version)
 }
