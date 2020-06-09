@@ -570,80 +570,50 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		return resp
 	}
 
-	// evaluate if the CPU / Memory have been set to custom values
-	if err := apiserver.ValidateQuantity(request.CPULimit); err != nil {
+	// evaluate if the CPU / Memory have been set to custom values and ensure the
+	// limit is set to valid bounds
+	zeroQuantity := resource.Quantity{}
+
+	if err := apiserver.ValidateResourceRequestLimit(request.CPURequest, request.CPULimit, zeroQuantity); err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.CPULimit, err.Error())
+		resp.Status.Msg = err.Error()
 		return resp
 	}
 
-	if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
+	if err := apiserver.ValidateResourceRequestLimit(request.MemoryRequest, request.MemoryLimit,
+		apiserver.Pgo.Cluster.DefaultInstanceResourceMemory); err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.CPURequest, err.Error())
-		return resp
-	}
-
-	if err := apiserver.ValidateQuantity(request.MemoryLimit); err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.MemoryLimit, err.Error())
-		return resp
-	}
-
-	if err := apiserver.ValidateQuantity(request.MemoryRequest); err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.MemoryRequest, err.Error())
+		resp.Status.Msg = err.Error()
 		return resp
 	}
 
 	// similarly, if any of the pgBackRest repo CPU / Memory values have been set,
 	// evaluate those as well
-	if err := apiserver.ValidateQuantity(request.BackrestCPULimit); err != nil {
+	if err := apiserver.ValidateResourceRequestLimit(request.BackrestCPURequest, request.BackrestCPULimit, zeroQuantity); err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.BackrestCPULimit, err.Error())
+		resp.Status.Msg = err.Error()
 		return resp
 	}
 
-	if err := apiserver.ValidateQuantity(request.BackrestCPURequest); err != nil {
+	if err := apiserver.ValidateResourceRequestLimit(request.BackrestMemoryRequest, request.BackrestMemoryLimit,
+		apiserver.Pgo.Cluster.DefaultBackrestResourceMemory); err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.BackrestCPURequest, err.Error())
-		return resp
-	}
-
-	if err := apiserver.ValidateQuantity(request.BackrestMemoryLimit); err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.BackrestMemoryLimit, err.Error())
-		return resp
-	}
-
-	if err := apiserver.ValidateQuantity(request.BackrestMemoryRequest); err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.BackrestMemoryRequest, err.Error())
+		resp.Status.Msg = err.Error()
 		return resp
 	}
 
 	// similarly, if any of the pgBouncer CPU / Memory values have been set,
 	// evaluate those as well
-	if err := apiserver.ValidateQuantity(request.PgBouncerCPULimit); err != nil {
+	if err := apiserver.ValidateResourceRequestLimit(request.PgBouncerCPURequest, request.PgBouncerCPULimit, zeroQuantity); err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.PgBouncerCPULimit, err.Error())
+		resp.Status.Msg = err.Error()
 		return resp
 	}
 
-	if err := apiserver.ValidateQuantity(request.PgBouncerCPURequest); err != nil {
+	if err := apiserver.ValidateResourceRequestLimit(request.PgBouncerMemoryRequest, request.PgBouncerMemoryLimit,
+		apiserver.Pgo.Cluster.DefaultPgBouncerResourceMemory); err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.PgBouncerCPURequest, err.Error())
-		return resp
-	}
-
-	if err := apiserver.ValidateQuantity(request.PgBouncerMemoryLimit); err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.PgBouncerMemoryLimit, err.Error())
-		return resp
-	}
-
-	if err := apiserver.ValidateQuantity(request.PgBouncerMemoryRequest); err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.PgBouncerMemoryRequest, err.Error())
+		resp.Status.Msg = err.Error()
 		return resp
 	}
 
@@ -1660,53 +1630,39 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 	}
 
 	// evaluate if the CPU / Memory have been set to custom values
-	if err := apiserver.ValidateQuantity(request.CPULimit); err != nil {
+	zeroQuantity := resource.Quantity{}
+
+	if err := apiserver.ValidateResourceRequestLimit(request.CPURequest, request.CPULimit, zeroQuantity); err != nil {
 		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.CPULimit, err.Error())
+		response.Status.Msg = err.Error()
 		return response
 	}
 
-	if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
+	// Note: we don't consider the default value here because the cluster is
+	// already deployed. Additionally, this does not check to see if the
+	// request/limits are inline with what's already deployed in a pgcluster. That
+	// just becomes too complicated
+	if err := apiserver.ValidateResourceRequestLimit(request.MemoryRequest, request.MemoryLimit, zeroQuantity); err != nil {
 		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.CPURequest, err.Error())
-		return response
-	}
-
-	if err := apiserver.ValidateQuantity(request.MemoryLimit); err != nil {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.MemoryLimit, err.Error())
-		return response
-	}
-
-	if err := apiserver.ValidateQuantity(request.MemoryRequest); err != nil {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.MemoryRequest, err.Error())
+		response.Status.Msg = err.Error()
 		return response
 	}
 
 	// similarly, if any of the pgBackRest repo CPU / Memory values have been set,
 	// evaluate those as well
-	if err := apiserver.ValidateQuantity(request.BackrestCPULimit); err != nil {
+	if err := apiserver.ValidateResourceRequestLimit(request.BackrestCPURequest, request.BackrestCPULimit, zeroQuantity); err != nil {
 		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.BackrestCPULimit, err.Error())
+		response.Status.Msg = err.Error()
 		return response
 	}
 
-	if err := apiserver.ValidateQuantity(request.BackrestCPURequest); err != nil {
+	// Note: we don't consider the default value here because the cluster is
+	// already deployed. Additionally, this does not check to see if the
+	// request/limits are inline with what's already deployed for pgBackRest. That
+	// just becomes too complicated
+	if err := apiserver.ValidateResourceRequestLimit(request.BackrestMemoryRequest, request.BackrestMemoryLimit, zeroQuantity); err != nil {
 		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue, request.BackrestCPURequest, err.Error())
-		return response
-	}
-
-	if err := apiserver.ValidateQuantity(request.BackrestMemoryLimit); err != nil {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.BackrestMemoryLimit, err.Error())
-		return response
-	}
-
-	if err := apiserver.ValidateQuantity(request.BackrestMemoryRequest); err != nil {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue, request.BackrestMemoryRequest, err.Error())
+		response.Status.Msg = err.Error()
 		return response
 	}
 

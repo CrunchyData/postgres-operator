@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	crv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
@@ -29,12 +30,8 @@ import (
 )
 
 const (
-	// ErrMessageCPUValue provides a standard error message when a CPURequest
-	// is not specified to the Kubernetes sstandard
-	ErrMessageCPUValue = `could not parse CPU value "%s":%s (hint: try a value like "1" or "100m")`
-	// ErrMessageMemoryValue provides a standard error message when a MemoryRequest
-	// is not specified to the Kubernetes sstandard
-	ErrMessageMemoryValue = `could not parse memory value "%s":%s (hint: try a value like "1Gi")`
+	// ErrMessageLimitInvalid indicates that a limit is lower than the request
+	ErrMessageLimitInvalid = `limit %q is lower than the request %q`
 	// ErrMessagePVCSize provides a standard error message when a PVCSize is not
 	// specified to the Kubernetes stnadard
 	ErrMessagePVCSize = `could not parse PVC size "%s": %s (hint: try a value like "1Gi")`
@@ -123,6 +120,39 @@ func IsValidPVC(pvcName, ns string) bool {
 		return false
 	}
 	return pvc != nil
+}
+
+// ValidateResourceRequestLimit validates that a Kubernetes Requests/Limit pair
+// is valid, both by validating the values are valid quantity values, and then
+// by checking that the limit >= request. This also needs to check against the
+// configured values for a request, which must be provided as a value
+func ValidateResourceRequestLimit(request, limit string, defaultQuantity resource.Quantity) error {
+	// ensure that the request/limit are valid, as this simplifies the rest of
+	// this code. We know that the defaultRequest is already valid at this point,
+	// as otherwise the Operator will fail to load
+	if err := ValidateQuantity(request); err != nil {
+		return err
+	}
+
+	if err := ValidateQuantity(limit); err != nil {
+		return err
+	}
+
+	// parse the quantities so we can compare
+	requestQuantity, _ := resource.ParseQuantity(request)
+	limitQuantity, _ := resource.ParseQuantity(limit)
+
+	if requestQuantity.IsZero() {
+		requestQuantity = defaultQuantity
+	}
+
+	// if limit and request are nonzero and the limit is less than the request,
+	// error
+	if !limitQuantity.IsZero() && !requestQuantity.IsZero() && limitQuantity.Cmp(requestQuantity) == -1 {
+		return fmt.Errorf(ErrMessageLimitInvalid, limitQuantity.String(), requestQuantity.String())
+	}
+
+	return nil
 }
 
 // ValidateQuantity runs the Kubernetes "ParseQuantity" function on a string
