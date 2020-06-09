@@ -45,31 +45,16 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 	resp.Results = make([]string, 0)
 
 	// validate the CPU/Memory request parameters, if they are passed in
-	if err := apiserver.ValidateQuantity(request.CPULimit); err != nil {
+	if err := apiserver.ValidateResourceRequestLimit(request.CPURequest, request.CPULimit, resource.Quantity{}); err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue,
-			request.CPULimit, err.Error())
+		resp.Status.Msg = err.Error()
 		return resp
 	}
 
-	if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
+	if err := apiserver.ValidateResourceRequestLimit(request.MemoryRequest, request.MemoryLimit,
+		apiserver.Pgo.Cluster.DefaultPgBouncerResourceMemory); err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue,
-			request.CPURequest, err.Error())
-		return resp
-	}
-
-	if err := apiserver.ValidateQuantity(request.MemoryLimit); err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue,
-			request.MemoryLimit, err.Error())
-		return resp
-	}
-
-	if err := apiserver.ValidateQuantity(request.MemoryRequest); err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue,
-			request.MemoryRequest, err.Error())
+		resp.Status.Msg = err.Error()
 		return resp
 	}
 
@@ -306,32 +291,18 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 	}
 
 	// validate the CPU/Memory parameters, if they are passed in
-	// validate the CPU/Memory request parameters, if they are passed in
-	if err := apiserver.ValidateQuantity(request.CPULimit); err != nil {
+	zeroQuantity := resource.Quantity{}
+
+	if err := apiserver.ValidateResourceRequestLimit(request.CPURequest, request.CPULimit, zeroQuantity); err != nil {
 		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue,
-			request.CPULimit, err.Error())
+		response.Status.Msg = err.Error()
 		return response
 	}
 
-	if err := apiserver.ValidateQuantity(request.CPURequest); err != nil {
+	// Don't check the default value as pgBouncer is already deployed
+	if err := apiserver.ValidateResourceRequestLimit(request.MemoryRequest, request.MemoryLimit, zeroQuantity); err != nil {
 		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageCPUValue,
-			request.CPURequest, err.Error())
-		return response
-	}
-
-	if err := apiserver.ValidateQuantity(request.MemoryLimit); err != nil {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue,
-			request.MemoryLimit, err.Error())
-		return response
-	}
-
-	if err := apiserver.ValidateQuantity(request.MemoryRequest); err != nil {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(apiserver.ErrMessageMemoryValue,
-			request.MemoryRequest, err.Error())
+		response.Status.Msg = err.Error()
 		return response
 	}
 
