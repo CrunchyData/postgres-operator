@@ -83,9 +83,6 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 	// grab the existing pgo version
 	oldpgoversion := pgcluster.ObjectMeta.Labels[config.LABEL_PGO_VERSION]
 
-	// patch the existing services to add the potentially missing ports
-	patchServices(clientset, pgcluster.Name, namespace)
-
 	// grab the current primary value. In differnet versions of the Operator, this was stored in multiple
 	// ways depending on version. If the 'master' role is available on a particular pod (starting in 4.2.0),
 	// this is the most authoritative option. Next, in the current version, the current primary value is stored
@@ -136,58 +133,6 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 	PublishUpgradeEvent(events.EventUpgradeClusterCreateSubmitted, namespace, upgrade, "")
 
 	log.Debugf("finished main upgrade workflow for cluster: %s", upgradeTargetClusterName)
-
-}
-
-// patchServices updates the existing services to include the necessary ports for this
-// version of the Postgres Operator
-func patchServices(clientset *kubernetes.Clientset, serviceName, namespace string) {
-
-	// add the Patroni port mapping to both the primary and replica services
-	portPatch := kubeapi.PortPatch("patroni", "TCP", 8009, 8009)
-
-	// for both service definitions, use a JSON patch 'add' if found
-	// look for primary service
-	primaryService, found, _ := kubeapi.GetService(clientset, serviceName, namespace)
-	if found {
-		// check through service ports and see if the Patroni port is already set
-		var patroniFound bool
-		for _, ports := range primaryService.Spec.Ports {
-			if ports.Name == "patroni" {
-				patroniFound = true
-			}
-		}
-		// if the Patroni port does not exist, patch it into the service definition
-		if !patroniFound {
-			// update ports if found
-			kubeapi.PatchServicePort(clientset, serviceName, namespace, "add", "/spec/ports/-", portPatch[0])
-		}
-
-		// replace the selector section of the master service definition to match the Patroni required values
-		masterSelectorPatches := kubeapi.SelectorPatches(serviceName, "master")
-		kubeapi.PatchServiceSelector(clientset, serviceName, namespace, "replace", "/spec/selector", masterSelectorPatches[0])
-	}
-
-	// look for replica service, update if found
-	replicaService, found, _ := kubeapi.GetService(clientset, serviceName+replicaServicePostfix, namespace)
-	if found {
-		// check through service ports and see if the Patroni port is already set
-		var patroniFound bool
-		for _, ports := range replicaService.Spec.Ports {
-			if ports.Name == "patroni" {
-				patroniFound = true
-			}
-		}
-		// if the Patroni port does not exist, patch it into the service definition
-		if !patroniFound {
-			// update ports if found
-			kubeapi.PatchServicePort(clientset, serviceName+replicaServicePostfix, namespace, "add", "/spec/ports/-", portPatch[0])
-		}
-
-		// replace the selector section of the replica service definition to match the Patroni required values
-		replicaSelectorPatches := kubeapi.SelectorPatches(serviceName, "replica")
-		kubeapi.PatchServiceSelector(clientset, serviceName+replicaServicePostfix, namespace, "replace", "/spec/selector", replicaSelectorPatches[0])
-	}
 
 }
 
