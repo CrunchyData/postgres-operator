@@ -35,12 +35,6 @@
     "port": {{.ExporterPort}},
     "targetPort": {{.ExporterPort}},
     "nodePort": 0
-    }, {
-    "name": "patroni",
-    "protocol": "TCP",
-    "port": 8009,
-    "targetPort": 8009,
-    "nodePort": 0
     }
     ],
         "selector": {
