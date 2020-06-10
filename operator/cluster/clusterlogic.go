@@ -47,15 +47,33 @@ func addClusterCreateMissingService(clientset *kubernetes.Clientset, cl *crv1.Pg
 		st = cl.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
 	}
 
-	//create the primary service
+	// create the primary service
 	serviceFields := ServiceTemplateFields{
-		Name:         cl.Spec.Name,
-		ServiceName:  cl.Spec.Name,
-		ClusterName:  cl.Spec.Name,
-		Port:         cl.Spec.Port,
-		PGBadgerPort: cl.Spec.PGBadgerPort,
-		ExporterPort: cl.Spec.ExporterPort,
-		ServiceType:  st,
+		Name:        cl.Spec.Name,
+		ServiceName: cl.Spec.Name,
+		ClusterName: cl.Spec.Name,
+		Port:        cl.Spec.Port,
+		ServiceType: st,
+	}
+
+	// only add references to the collect / pgBadger ports
+	clusterLabels := cl.ObjectMeta.GetLabels()
+
+	if val, ok := clusterLabels[config.LABEL_BADGER]; ok && val == config.LABEL_TRUE {
+		serviceFields.PGBadgerPort = cl.Spec.PGBadgerPort
+	}
+
+	// ...due to legacy reasons, the collect label may not be available yet in the
+	// main labels. so we will check here first, and then check the user labels
+	if val, ok := clusterLabels[config.LABEL_COLLECT]; ok && val == config.LABEL_TRUE {
+		serviceFields.ExporterPort = cl.Spec.ExporterPort
+	}
+
+	// ...this condition should be targeted for removal in the future
+	if cl.Spec.UserLabels != nil {
+		if val, ok := cl.Spec.UserLabels[config.LABEL_COLLECT]; ok && val == config.LABEL_TRUE {
+			serviceFields.ExporterPort = cl.Spec.ExporterPort
+		}
 	}
 
 	return CreateService(clientset, &serviceFields, namespace)
@@ -256,13 +274,22 @@ func scaleReplicaCreateMissingService(clientset *kubernetes.Clientset, replica *
 
 	serviceName := fmt.Sprintf("%s-replica", replica.Spec.ClusterName)
 	serviceFields := ServiceTemplateFields{
-		Name:         serviceName,
-		ServiceName:  serviceName,
-		ClusterName:  replica.Spec.ClusterName,
-		Port:         cluster.Spec.Port,
-		PGBadgerPort: cluster.Spec.PGBadgerPort,
-		ExporterPort: cluster.Spec.ExporterPort,
-		ServiceType:  st,
+		Name:        serviceName,
+		ServiceName: serviceName,
+		ClusterName: replica.Spec.ClusterName,
+		Port:        cluster.Spec.Port,
+		ServiceType: st,
+	}
+
+	// only add references to the collect / pgBadger ports
+	clusterLabels := cluster.ObjectMeta.GetLabels()
+
+	if val, ok := clusterLabels[config.LABEL_COLLECT]; ok && val == config.LABEL_TRUE {
+		serviceFields.ExporterPort = cluster.Spec.ExporterPort
+	}
+
+	if val, ok := clusterLabels[config.LABEL_BADGER]; ok && val == config.LABEL_TRUE {
+		serviceFields.PGBadgerPort = cluster.Spec.PGBadgerPort
 	}
 
 	return CreateService(clientset, &serviceFields, namespace)
