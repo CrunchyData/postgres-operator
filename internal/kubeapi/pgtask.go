@@ -59,21 +59,6 @@ func GetpgtasksBySelector(client *rest.RESTClient, taskList *crv1.PgtaskList, se
 	return err
 }
 
-// Getpgtasks gets a list of pgtasks
-func Getpgtasks(client *rest.RESTClient, taskList *crv1.PgtaskList, namespace string) error {
-
-	err := client.Get().
-		Resource(crv1.PgtaskResourcePlural).
-		Namespace(namespace).
-		Do().Into(taskList)
-	if err != nil {
-		log.Error("error getting list of tasks " + err.Error())
-		return err
-	}
-
-	return err
-}
-
 // Getpgtask gets a pgtask by name
 func Getpgtask(client *rest.RESTClient, task *crv1.Pgtask, name, namespace string) (bool, error) {
 
@@ -147,23 +132,6 @@ func Updatepgtask(client *rest.RESTClient, task *crv1.Pgtask, name, namespace st
 	}
 
 	log.Debugf("updated pgtask %s", task.Name)
-	return err
-}
-
-// Deletepgtasks deletes pgtask by selector
-func Deletepgtasks(client *rest.RESTClient, selector, namespace string) error {
-	taskList := crv1.PgtaskList{}
-	err := GetpgtasksBySelector(client, &taskList, selector, namespace)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	for _, v := range taskList.Items {
-		err := Deletepgtask(client, v.ObjectMeta.Name, namespace)
-		if err != nil {
-			return err
-		}
-	}
 	return err
 }
 

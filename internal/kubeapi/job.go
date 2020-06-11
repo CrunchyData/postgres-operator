@@ -16,7 +16,6 @@ package kubeapi
 */
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -106,29 +105,6 @@ func DeleteJobs(clientset *kubernetes.Clientset, selector, namespace string) err
 	}
 
 	return err
-}
-
-func IsJobComplete(client *kubernetes.Clientset, namespace string, job *v1batch.Job, timeout time.Duration) error {
-	duration := time.After(timeout)
-	tick := time.NewTicker(500 * time.Millisecond)
-	defer tick.Stop()
-	for {
-		select {
-		case <-duration:
-			return fmt.Errorf("timed out waiting for job to complete: %s", job.Name)
-		case <-tick.C:
-			j, found := GetJob(client, job.Name, namespace)
-			if !found {
-				return errors.New("Job not found")
-			}
-			if j.Status.Failed != 0 {
-				return errors.New("job failed to run")
-			}
-			if j.Status.Succeeded != 0 {
-				return nil
-			}
-		}
-	}
 }
 
 func IsJobDeleted(client *kubernetes.Clientset, namespace string, job *v1batch.Job, timeout time.Duration) error {
