@@ -210,8 +210,8 @@ func GeneratedPasswordValidUntilDays(configuredValidUntilDays string) int {
 // the query gets multiple pods, then the first one in the list is returned
 func GetPrimaryPod(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) (*v1.Pod, error) {
 	// set up the selector for the primary pod
-	selector := fmt.Sprintf("%s=%s,%s=master",
-		config.LABEL_PG_CLUSTER, cluster.Spec.Name, config.LABEL_PGHA_ROLE)
+	selector := fmt.Sprintf("%s=%s,%s=%s",
+		config.LABEL_PG_CLUSTER, cluster.Spec.Name, config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
 	namespace := cluster.Spec.Namespace
 
 	// query the pods

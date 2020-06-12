@@ -197,7 +197,7 @@ func RemovePrimaryOnRoleChangeTag(clientset *kubernetes.Clientset, restconfig *r
 	clusterName, namespace string) error {
 
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName +
-		"," + config.LABEL_PGHA_ROLE + "=" + "master"
+		"," + config.LABEL_PGHA_ROLE + "=" + config.LABEL_PGHA_ROLE_PRIMARY
 	pods, err := kubeapi.GetPods(clientset, selector, namespace)
 	if err != nil {
 		log.Error(err)
