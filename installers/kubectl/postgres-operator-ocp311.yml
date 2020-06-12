@@ -40,8 +40,6 @@ spec:
                     value: "true"
                   - name: ARCHIVE_TIMEOUT
                     value: "60"
-                  - name: BACKREST
-                    value: "true"
                   - name: BADGER
                     value: "false"
                   - name: CRUNCHY_DEBUG

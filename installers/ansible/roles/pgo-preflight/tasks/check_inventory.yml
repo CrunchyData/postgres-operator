@@ -16,7 +16,6 @@
     - pgo_image_prefix
     - pgo_image_tag
     - disable_auto_failover
-    - backrest
     - badger
     - metrics
     - archive_mode
