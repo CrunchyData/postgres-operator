@@ -112,7 +112,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	// Handle the "role" label change from "replica" to "master" following a failover.  This
+	// Handle the "role" label change from "replica" to "primary" following a failover.  This
 	// logic is only triggered when the cluster has already been initialized, which implies
 	// a failover or switchover has occurred.
 	if isPromotedPostgresPod(oldPod, newPod) {
@@ -250,14 +250,14 @@ func isPostgresPod(newpod *apiv1.Pod) bool {
 // isPromotedPostgresPod determines if the Pod update is the result of the promotion of the pod
 // from a replica to the primary within a PG cluster.  This is determined by comparing the 'role'
 // label from the old Pod to the 'role' label in the New pod, specifically to determine if the
-// label has changed from "promoted" to "master" (this is the label change that will be performed
+// label has changed from "promoted" to "primary" (this is the label change that will be performed
 // by Patroni when promoting a pod).
 func isPromotedPostgresPod(oldPod, newPod *apiv1.Pod) bool {
 	if !isPostgresPod(newPod) {
 		return false
 	}
 	if oldPod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "promoted" &&
-		newPod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "master" {
+		newPod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == config.LABEL_PGHA_ROLE_PRIMARY {
 		return true
 	}
 	return false
@@ -266,7 +266,7 @@ func isPromotedPostgresPod(oldPod, newPod *apiv1.Pod) bool {
 // isPromotedStandby determines if the Pod update is the result of the promotion of the standby pod
 // from a replica to the primary within a PG cluster.  This is determined by comparing the 'role'
 // label from the old Pod to the 'role' label in the New pod, specifically to determine if the
-// label has changed from "standby_leader" to "master" (this is the label change that will be
+// label has changed from "standby_leader" to "primary" (this is the label change that will be
 // performed by Patroni when promoting a pod).
 func isPromotedStandby(oldPod, newPod *apiv1.Pod) bool {
 	if !isPostgresPod(newPod) {

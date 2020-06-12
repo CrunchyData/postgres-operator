@@ -52,7 +52,7 @@ var (
 
 // handlePostgresPodPromotion is responsible for handling updates to PG pods the occur as a result
 // of a failover.  Specifically, this handler is triggered when a replica has been promoted, and
-// it now has either the "promoted" or "master" role label.
+// it now has either the "promoted" or "primary" role label.
 func (c *Controller) handlePostgresPodPromotion(newPod *apiv1.Pod, cluster crv1.Pgcluster) error {
 
 	if cluster.Status.State == crv1.PgclusterStateShutdown {

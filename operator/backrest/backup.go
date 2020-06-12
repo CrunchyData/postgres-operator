@@ -292,7 +292,7 @@ func getCommandOptsFromPod(clientset *kubernetes.Clientset, task *crv1.Pgtask,
 	// the current primaty
 	selector := fmt.Sprintf("%s=%s,%s in (%s,%s)", config.LABEL_PG_CLUSTER,
 		task.Spec.Parameters[config.LABEL_PG_CLUSTER], config.LABEL_PGHA_ROLE,
-		"promoted", "master")
+		"promoted", config.LABEL_PGHA_ROLE_PRIMARY)
 	pods, err := kubeapi.GetPods(clientset, selector, namespace)
 	if err != nil {
 		return

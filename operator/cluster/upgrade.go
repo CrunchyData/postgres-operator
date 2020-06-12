@@ -84,12 +84,12 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 	oldpgoversion := pgcluster.ObjectMeta.Labels[config.LABEL_PGO_VERSION]
 
 	// grab the current primary value. In differnet versions of the Operator, this was stored in multiple
-	// ways depending on version. If the 'master' role is available on a particular pod (starting in 4.2.0),
+	// ways depending on version. If the 'primary' role is available on a particular pod (starting in 4.2.0),
 	// this is the most authoritative option. Next, in the current version, the current primary value is stored
-	// in an annotation on the pgcluster CRD and should be used if available and the master pod cannot be identified.
+	// in an annotation on the pgcluster CRD and should be used if available and the primary pod cannot be identified.
 	// Next, if the current primary label is present (used by previous Operator versions), we will use that.
 	// Finally, if none of the above is available, we will set the default pgcluster name as the current primary value
-	currentPrimaryFromPod := getMasterPodDeploymentName(clientset, &pgcluster)
+	currentPrimaryFromPod := getPrimaryPodDeploymentName(clientset, &pgcluster)
 	currentPrimaryFromAnnotation := pgcluster.Annotations[config.ANNOTATION_CURRENT_PRIMARY]
 	currentPrimaryFromLabel := pgcluster.ObjectMeta.Labels[config.LABEL_CURRENT_PRIMARY]
 
@@ -136,45 +136,45 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 
 }
 
-// getMasterPod searches through the pods associated with this pgcluster for the 'master' pod,
+// getPrimaryPodDeploymentName searches through the pods associated with this pgcluster for the 'primary' pod,
 // if set. This will not be applicable to releases before the Operator 4.2.0 HA features were
 // added. If this label does not exist or is otherwise not set as expected, return an empty
 // string value and call an alternate function to determine the current primary pod.
-func getMasterPodDeploymentName(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) string {
-	// first look for a 'master' role label on the current primary deployment
+func getPrimaryPodDeploymentName(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) string {
+	// first look for a 'primary' role label on the current primary deployment
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, cluster.Name,
-		config.LABEL_PGHA_ROLE, "master")
+		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
 	pods, err := kubeapi.GetPods(clientset, selector, cluster.Namespace)
 	if err != nil {
-		log.Errorf("no pod with the master role label was found for cluster %s. Error: %s", cluster.Name, err.Error())
+		log.Errorf("no pod with the primary role label was found for cluster %s. Error: %s", cluster.Name, err.Error())
 		return ""
 	}
 
-	// if no pod with that role is found, return an empty string since the current master pod
+	// if no pod with that role is found, return an empty string since the current primary pod
 	// cannot be established
 	if len(pods.Items) < 1 {
-		log.Debugf("no pod with the master role label was found for cluster %s", cluster.Name)
+		log.Debugf("no pod with the primary role label was found for cluster %s", cluster.Name)
 		return ""
 	}
 	// similarly, if more than one pod with that role is found, return an empty string since the
-	// true master pod cannot be determined
+	// true primary pod cannot be determined
 	if len(pods.Items) > 1 {
-		log.Errorf("%v pods with the master role label were found for cluster %s. There should only be one.",
+		log.Errorf("%v pods with the primary role label were found for cluster %s. There should only be one.",
 			len(pods.Items), cluster.Name)
 		return ""
 	}
 	// if only one pod was returned, this is the proper primary pod
 	primaryPod := pods.Items[0]
-	// now return the master pod's deployment name
+	// now return the primary pod's deployment name
 	return primaryPod.Labels[config.LABEL_DEPLOYMENT_NAME]
 }
 
 // getCurrentPrimary returns the correct current primary value to use for the upgrade.
-// the deployment name of the pod with the 'master' role is considered the most authoritative,
+// the deployment name of the pod with the 'primary' role is considered the most authoritative,
 // followed by the CRD's 'current-primary' annotation, followed then by the current primary
 // label. If none of these values are set, return the default name.
 func getCurrentPrimary(clusterName, podPrimary, crPrimary, labelPrimary string) string {
-	// the master pod is the preferred source of truth, as it will be correct
+	// the primary pod is the preferred source of truth, as it will be correct
 	// for 4.2 pgclusters and beyond, regardless of failover method
 	if podPrimary != "" {
 		return podPrimary
@@ -185,7 +185,7 @@ func getCurrentPrimary(clusterName, podPrimary, crPrimary, labelPrimary string) 
 		return crPrimary
 	}
 
-	// the current primary label should be used if the spec value and master pod
+	// the current primary label should be used if the spec value and primary pod
 	// values are missing
 	if labelPrimary != "" {
 		return labelPrimary

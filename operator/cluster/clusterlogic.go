@@ -500,7 +500,7 @@ func ShutdownCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 	// first ensure the current primary deployment is properly recorded in the pg cluster.  This
 	// is needed to ensure the cluster can be
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, cluster.Name,
-		config.LABEL_PGHA_ROLE, "master")
+		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
 	pods, err := kubeapi.GetPods(clientset, selector, cluster.Namespace)
 	if err != nil {
 		return err

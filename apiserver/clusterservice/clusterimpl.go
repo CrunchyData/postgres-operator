@@ -1475,9 +1475,9 @@ func getType(pod *v1.Pod, clusterName string) string {
 		return msgs.PodTypePgbackrest
 	} else if pod.ObjectMeta.Labels[config.LABEL_PGBOUNCER] != "" {
 		return msgs.PodTypePgbouncer
-	} else if pod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "master" {
+	} else if pod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == config.LABEL_PGHA_ROLE_PRIMARY {
 		return msgs.PodTypePrimary
-	} else if pod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == "replica" {
+	} else if pod.ObjectMeta.Labels[config.LABEL_PGHA_ROLE] == config.LABEL_PGHA_ROLE_REPLICA {
 		return msgs.PodTypeReplica
 	}
 	return msgs.PodTypeUnknown

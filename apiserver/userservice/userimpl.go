@@ -182,7 +182,7 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 
 	// Return an error if any clusters identified for user creation are in standby mode.  Users
 	// cannot be created in standby clusters because the database is in read-only mode while the
-	// cluster replicates from a remote master.
+	// cluster replicates from a remote primary.
 	if hasStandby, standbyClusters := apiserver.PGClusterListHasStandby(clusterList); hasStandby {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = fmt.Sprintf("Request rejected, unable to create users for clusters "+
@@ -636,7 +636,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 
 	// Return an error if any clusters identified for the user updare are in standby mode.  Users
 	// cannot be updated in standby clusters because the database is in read-only mode while the
-	// cluster replicates from a remote master
+	// cluster replicates from a remote primary
 	if hasStandby, standbyClusters := apiserver.PGClusterListHasStandby(clusterList); hasStandby {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = fmt.Sprintf("Request rejected, unable to update users for clusters "+

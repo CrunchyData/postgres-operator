@@ -38,8 +38,6 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-const primaryClusterLabel = "master"
-
 // ExecPolicy execute a sql policy against a cluster
 func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, namespace, policyName, serviceName, port string) error {
 	//fetch the policy sql
@@ -59,7 +57,7 @@ func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, re
 	// the LABEL_PGHA_ROLE labels
 	selector := fmt.Sprintf("%s=%s,%s=%s",
 		config.LABEL_SERVICE_NAME, serviceName,
-		config.LABEL_PGHA_ROLE, primaryClusterLabel)
+		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
 
 	podList, err := kubeapi.GetPods(clientset, selector, namespace)
 
