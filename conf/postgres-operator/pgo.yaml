@@ -13,7 +13,6 @@ Cluster:
   Replicas:  0
   ArchiveMode:  false
   ServiceType:  ClusterIP
-  Backrest:  true
   BackrestPort:  2022
   BackrestS3Bucket:
   BackrestS3Endpoint:

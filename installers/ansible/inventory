@@ -60,7 +60,7 @@ create_rbac='true'
 # determines what RBAC is created within the target namespace.  If set to
 # 'true', the RBAC created in those namespaces will allow the PostgreSQL
 # Operator itself to create the ServiceAccounts, Roles and RoleBindings
-# it requires to create PG clusters.  If set to 'false' (the default), 
+# it requires to create PG clusters.  If set to 'false' (the default),
 # the installer will instead create the ServiceAccounts, Roles and
 # RoleBindings), and the PostgreSQL Operator will not be granted the
 # ability to create the RBAC it requires within those namespaces.
@@ -146,7 +146,6 @@ pgo_client_version='v4.3.2'
 #pgo_cluster_admin='false'
 
 # This will set default enhancements for operator deployed PostgreSQL clusters
-backrest='true'
 badger='false'
 metrics='false'
 sync_replication='false'

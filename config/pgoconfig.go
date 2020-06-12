@@ -207,7 +207,6 @@ type ClusterStruct struct {
 	Replicas                       string
 	ServiceType                    string
 	BackrestPort                   int
-	Backrest                       bool
 	BackrestS3Bucket               string
 	BackrestS3Endpoint             string
 	BackrestS3Region               string
@@ -306,8 +305,6 @@ func (c *PgoConfig) Validate() error {
 			return errors.New(errPrefix + "Invalid Port: " + err.Error())
 		}
 	}
-
-	log.Infof("pgo.yaml Cluster.Backrest is %v", c.Cluster.Backrest)
 
 	{
 		storageNotDefined := func(setting, value string) error {
