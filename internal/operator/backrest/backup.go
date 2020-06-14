@@ -32,7 +32,9 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
+	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -293,7 +295,15 @@ func getCommandOptsFromPod(clientset *kubernetes.Clientset, task *crv1.Pgtask,
 	selector := fmt.Sprintf("%s=%s,%s in (%s,%s)", config.LABEL_PG_CLUSTER,
 		task.Spec.Parameters[config.LABEL_PG_CLUSTER], config.LABEL_PGHA_ROLE,
 		"promoted", config.LABEL_PGHA_ROLE_PRIMARY)
-	pods, err := kubeapi.GetPods(clientset, selector, namespace)
+
+	options := meta_v1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
+		LabelSelector: selector,
+	}
+
+	// only consider pods that are running
+	pods, err := clientset.CoreV1().Pods(namespace).List(options)
+
 	if err != nil {
 		return
 	} else if len(pods.Items) > 1 {

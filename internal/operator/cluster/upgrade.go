@@ -33,6 +33,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -144,7 +145,15 @@ func getPrimaryPodDeploymentName(clientset *kubernetes.Clientset, cluster *crv1.
 	// first look for a 'primary' role label on the current primary deployment
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, cluster.Name,
 		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
-	pods, err := kubeapi.GetPods(clientset, selector, cluster.Namespace)
+
+	options := meta_v1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
+		LabelSelector: selector,
+	}
+
+	// only consider pods that are running
+	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(options)
+
 	if err != nil {
 		log.Errorf("no pod with the primary role label was found for cluster %s. Error: %s", cluster.Name, err.Error())
 		return ""

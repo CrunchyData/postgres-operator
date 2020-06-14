@@ -30,6 +30,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -198,7 +200,15 @@ func RemovePrimaryOnRoleChangeTag(clientset *kubernetes.Clientset, restconfig *r
 
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName +
 		"," + config.LABEL_PGHA_ROLE + "=" + config.LABEL_PGHA_ROLE_PRIMARY
-	pods, err := kubeapi.GetPods(clientset, selector, namespace)
+
+	// only consider pods that are running
+	options := metav1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
+		LabelSelector: selector,
+	}
+
+	pods, err := clientset.CoreV1().Pods(namespace).List(options)
+
 	if err != nil {
 		log.Error(err)
 		return err
