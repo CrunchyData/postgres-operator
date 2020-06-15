@@ -231,11 +231,23 @@ type ShowClusterPod struct {
 	Name        string
 	Phase       string
 	NodeName    string
-	PVCName     map[string]string
+	PVC         []ShowClusterPodPVC
 	ReadyStatus string
 	Ready       bool
 	Primary     bool
 	Type        string
+}
+
+// ShowClusterPodPVC contains information about a PVC that is bound to a Pod
+//
+// swagger:model
+type ShowClusterPodPVC struct {
+	// Capacity is the total storage capacity available. This comes from a
+	// Kubernetes resource Quantity string
+	Capacity string
+
+	// Name is the name of the PVC
+	Name string
 }
 
 // ShowClusterDeployment

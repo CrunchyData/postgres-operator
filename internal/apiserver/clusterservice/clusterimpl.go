@@ -36,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
+	"k8s.io/client-go/kubernetes"
 )
 
 // DeleteCluster ...
@@ -154,7 +155,7 @@ func ShowCluster(name, selector, ccpimagetag, ns string, allflag bool) msgs.Show
 			response.Status.Msg = err.Error()
 			return response
 		}
-		detail.Pods, err = GetPods(&c, ns)
+		detail.Pods, err = GetPods(apiserver.Clientset, &c)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -213,25 +214,59 @@ func getDeployments(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterDeplo
 	return output, err
 }
 
-func GetPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterPod, error) {
-
-	output := make([]msgs.ShowClusterPod, 0)
+func GetPods(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
+	output := []msgs.ShowClusterPod{}
 
 	//get pods, but exclude backup pods and backrest repo
 	selector := config.LABEL_BACKREST_JOB + "!=true," + config.LABEL_BACKREST_RESTORE + "!=true," + config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	log.Debugf("selector for GetPods is %s", selector)
 
-	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	pods, err := kubeapi.GetPods(clientset, selector, cluster.Namespace)
 	if err != nil {
 		return output, err
 	}
+
 	for _, p := range pods.Items {
-		d := msgs.ShowClusterPod{}
+		d := msgs.ShowClusterPod{
+			PVC: []msgs.ShowClusterPodPVC{},
+		}
 		d.Name = p.Name
 		d.Phase = string(p.Status.Phase)
 		d.NodeName = p.Spec.NodeName
 		d.ReadyStatus, d.Ready = getReadyStatus(&p)
-		d.PVCName = apiserver.GetPVCName(&p)
+
+		// get information about several of the PVCs. This borrows from a legacy
+		// method to get this information
+		for _, v := range p.Spec.Volumes {
+			// if this volume is not a PVC, continue
+			if v.VolumeSource.PersistentVolumeClaim == nil {
+				continue
+			}
+
+			// if this is not any of the 3 mounted PVCs to a PostgreSQL Pod, continue
+			if !(v.Name == "pgdata" || v.Name == "pgwal-volume" || strings.HasPrefix(v.Name, "tablespace")) {
+				continue
+			}
+
+			pvcName := v.VolumeSource.PersistentVolumeClaim.ClaimName
+			// query the PVC to get the storage capacity
+			pvc, err := clientset.CoreV1().PersistentVolumeClaims(cluster.Namespace).Get(pvcName, meta_v1.GetOptions{})
+
+			// if there is an error, ignore it, and move on to the next one
+			if err != nil {
+				log.Warn(err)
+				continue
+			}
+
+			capacity := pvc.Status.Capacity[v1.ResourceStorage]
+
+			clusterPVCDetail := msgs.ShowClusterPodPVC{
+				Capacity: capacity.String(),
+				Name:     pvcName,
+			}
+
+			d.PVC = append(d.PVC, clusterPVCDetail)
+		}
 
 		d.Primary = false
 		d.Type = getType(&p, cluster.Spec.Name)
@@ -1859,7 +1894,6 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 		d.Phase = string(p.Status.Phase)
 		d.NodeName = p.Spec.NodeName
 		d.ReadyStatus, d.Ready = getReadyStatus(&p)
-		d.PVCName = apiserver.GetPVCName(&p)
 
 		d.Primary = false
 		d.Type = getType(&p, cluster.Spec.Name)
@@ -1882,7 +1916,6 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 		d.Phase = string(p.Status.Phase)
 		d.NodeName = p.Spec.NodeName
 		d.ReadyStatus, d.Ready = getReadyStatus(&p)
-		d.PVCName = apiserver.GetPVCName(&p)
 
 		d.Primary = false
 		d.Type = getType(&p, cluster.Spec.Name)
