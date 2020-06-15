@@ -59,7 +59,7 @@ do
         $PGO_CMD delete secret pgorole-$PGO_ROLENAME -n $PGO_OPERATOR_NAMESPACE
     fi
 
-    expenv -f $DIR/pgorole.yaml | $PGO_CMD create -f -
+    cat $DIR/pgorole.yaml | envsubst | $PGO_CMD create -f -
 done < "$ROLE_INPUT"
 
 
@@ -80,5 +80,5 @@ do
     if [ $? -eq 0 ]; then
         $PGO_CMD delete secret pgouser-$PGO_USERNAME -n $PGO_OPERATOR_NAMESPACE
     fi
-    expenv -f $DIR/pgouser.yaml | $PGO_CMD create -f -
+    cat $DIR/pgouser.yaml | envsubst | $PGO_CMD create -f -
 done < "$USER_INPUT"
