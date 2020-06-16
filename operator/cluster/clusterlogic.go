@@ -33,8 +33,11 @@ import (
 	"github.com/crunchydata/postgres-operator/operator/backrest"
 	"github.com/crunchydata/postgres-operator/util"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/apps/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -204,7 +207,7 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 		config.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
 	}
 
-	deployment := v1.Deployment{}
+	deployment := appsv1.Deployment{}
 	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
 	if err != nil {
 		log.Error("error unmarshalling primary json into Deployment " + err.Error())
@@ -404,7 +407,7 @@ func scaleReplicaCreateDeployment(clientset *kubernetes.Clientset, client *rest.
 		config.DeploymentTemplate.Execute(os.Stdout, replicaDeploymentFields)
 	}
 
-	replicaDeployment := v1.Deployment{}
+	replicaDeployment := appsv1.Deployment{}
 	err = json.Unmarshal(replicaDoc.Bytes(), &replicaDeployment)
 	if err != nil {
 		log.Error("error unmarshalling replica json into Deployment " + err.Error())
@@ -497,18 +500,29 @@ type ScaleClusterInfo struct {
 func ShutdownCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	cluster crv1.Pgcluster) error {
 
-	// first ensure the current primary deployment is properly recorded in the pg cluster.  This
-	// is needed to ensure the cluster can be
+	// first ensure the current primary deployment is properly recorded in the pg
+	// cluster. Only consider primaries that are running, as there could be
+	// evicted, etc. pods hanging around
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, cluster.Name,
 		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
-	pods, err := kubeapi.GetPods(clientset, selector, cluster.Namespace)
+
+	options := metav1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
+		LabelSelector: selector,
+	}
+
+	// only consider pods that are running
+	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(options)
+
 	if err != nil {
 		return err
 	}
+
 	if len(pods.Items) > 1 {
 		return fmt.Errorf("Cluster Operator: Invalid number of primary pods (%d) found when "+
 			"shutting down cluster %s", len(pods.Items), cluster.Name)
 	}
+
 	primaryPod := pods.Items[0]
 	if cluster.Annotations == nil {
 		cluster.Annotations = make(map[string]string)
@@ -594,7 +608,7 @@ func ScaleClusterDeployments(clientset *kubernetes.Clientset, cluster crv1.Pgclu
 	namespace := cluster.Namespace
 	// Get *all* remaining deployments for the cluster.  This includes the deployment for the
 	// primary, any replicas, the pgBackRest repo and any optional services (e.g. pgBouncer)
-	var deploymentList *v1.DeploymentList
+	var deploymentList *appsv1.DeploymentList
 	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, clusterName)
 	if deploymentList, err = kubeapi.GetDeployments(clientset, selector,
 		namespace); err != nil {
