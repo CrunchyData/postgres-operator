@@ -32,7 +32,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -146,7 +146,7 @@ func getPrimaryPodDeploymentName(clientset *kubernetes.Clientset, cluster *crv1.
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, cluster.Name,
 		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
 
-	options := meta_v1.ListOptions{
+	options := metav1.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
 		LabelSelector: selector,
 	}
@@ -299,7 +299,7 @@ func deleteBeforeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTC
 	checkDeleteConfigmap(clientset, clusterName+"-pgha-default-config", namespace)
 
 	// delete the backrest repo config secret, since key encryption has been updated from RSA to EdDSA
-	kubeapi.DeleteSecret(clientset, clusterName+"-backrest-repo-config", namespace)
+	clientset.CoreV1().Secrets(namespace).Delete(clusterName+"-backrest-repo-config", &metav1.DeleteOptions{})
 }
 
 // deploymentWait is modified from cluster.waitForDeploymentDelete. It simply waits for the current primary deployment
@@ -389,7 +389,7 @@ func createUpgradePGHAConfigMap(clientset *kubernetes.Clientset, cluster *crv1.P
 	}
 
 	configmap := &v1.ConfigMap{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:   cluster.Name + "-" + operator.PGHAConfigMapSuffix,
 			Labels: labels,
 		},
@@ -530,7 +530,7 @@ func createClusterRecreateWorkflowTask(restclient *rest.RESTClient, clusterName,
 	spec.Parameters[crv1.PgtaskWorkflowID] = string(u[:len(u)-1])
 
 	newInstance := &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: spec.Name,
 		},
 		Spec: spec,

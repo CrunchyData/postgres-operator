@@ -225,7 +225,7 @@ func DeleteNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 
 // CopySecret copies a secret from the Operator namespace to target namespace
 func CopySecret(clientset *kubernetes.Clientset, secretName, operatorNamespace, targetNamespace string) error {
-	secret, err := kubeapi.GetSecret(clientset, secretName, operatorNamespace)
+	secret, err := clientset.CoreV1().Secrets(operatorNamespace).Get(secretName, metav1.GetOptions{})
 
 	if err == nil {
 		secret.ObjectMeta = metav1.ObjectMeta{
@@ -233,8 +233,9 @@ func CopySecret(clientset *kubernetes.Clientset, secretName, operatorNamespace, 
 			Labels:      secret.ObjectMeta.Labels,
 			Name:        secret.ObjectMeta.Name,
 		}
-		if err = kubeapi.CreateSecret(clientset, secret, targetNamespace); kerrors.IsAlreadyExists(err) {
-			err = kubeapi.UpdateSecret(clientset, secret, targetNamespace)
+
+		if _, err = clientset.CoreV1().Secrets(targetNamespace).Create(secret); kerrors.IsAlreadyExists(err) {
+			_, err = clientset.CoreV1().Secrets(targetNamespace).Update(secret)
 		}
 	}
 

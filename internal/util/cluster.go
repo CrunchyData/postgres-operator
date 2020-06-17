@@ -27,7 +27,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -121,10 +121,12 @@ func CreateBackrestRepoSecrets(clientset *kubernetes.Clientset,
 	}
 
 	// Retrieve the S3/SSHD configuration files from secret
-	configs, err := kubeapi.GetSecret(clientset, "pgo-backrest-repo-config",
-		backrestRepoConfig.OperatorNamespace)
+	configs, err := clientset.
+		CoreV1().Secrets(backrestRepoConfig.OperatorNamespace).
+		Get("pgo-backrest-repo-config", metav1.GetOptions{})
 
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -152,7 +154,7 @@ func CreateBackrestRepoSecrets(clientset *kubernetes.Clientset,
 
 	// set up the secret for the cluster that contains the pgBackRest information
 	secret := v1.Secret{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("%s-%s", backrestRepoConfig.ClusterName,
 				config.LABEL_BACKREST_REPO_SECRET),
 			Labels: map[string]string{
@@ -173,7 +175,8 @@ func CreateBackrestRepoSecrets(clientset *kubernetes.Clientset,
 		},
 	}
 
-	return kubeapi.CreateSecret(clientset, &secret, backrestRepoConfig.ClusterNamespace)
+	_, err = clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).Create(&secret)
+	return err
 }
 
 // IsAutofailEnabled - returns true if autofail label is set to true, false if not.
@@ -239,7 +242,7 @@ func GetS3CredsFromBackrestRepoSecret(clientset *kubernetes.Clientset, namespace
 	secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
 	s3Secret := AWSS3Secret{}
 
-	secret, err := kubeapi.GetSecret(clientset, secretName, namespace)
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(secretName, metav1.GetOptions{})
 
 	if err != nil {
 		log.Error(err)

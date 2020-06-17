@@ -37,7 +37,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -236,7 +236,7 @@ func DeletePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 	// through
 	secretName := util.GeneratePgBouncerSecretName(clusterName)
 
-	if err := kubeapi.DeleteSecret(clientset, secretName, namespace); err != nil {
+	if err := clientset.CoreV1().Secrets(namespace).Delete(secretName, &metav1.DeleteOptions{}); err != nil {
 		log.Warn(err)
 	}
 
@@ -261,7 +261,7 @@ func RotatePgBouncerPassword(clientset *kubernetes.Clientset, restclient *rest.R
 	// let's also go ahead and get the secret that contains the pgBouncer
 	// information. If we can't find the secret, we're basically done here
 	secretName := util.GeneratePgBouncerSecretName(cluster.Name)
-	secret, err := kubeapi.GetSecret(clientset, secretName, namspace)
+	secret, err := clientset.CoreV1().Secrets(cluster.Namespace).Get(secretName, metav1.GetOptions{})
 
 	if err != nil {
 		return err
@@ -299,7 +299,7 @@ func RotatePgBouncerPassword(clientset *kubernetes.Clientset, restclient *rest.R
 		makePostgresPassword(pgpassword.MD5, password))
 
 	// update the secret
-	if err := kubeapi.UpdateSecret(clientset, secret, namspace); err != nil {
+	if _, err := clientset.CoreV1().Secrets(cluster.Namespace).Update(secret); err != nil {
 		return err
 	}
 
@@ -542,7 +542,7 @@ func createPgbouncerSecret(clientset *kubernetes.Clientset, cluster *crv1.Pgclus
 
 	// now, we can do what we came here to do, which is create the secret
 	secret := v1.Secret{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: secretName,
 			Labels: map[string]string{
 				config.LABEL_PG_CLUSTER: cluster.Name,
@@ -559,7 +559,7 @@ func createPgbouncerSecret(clientset *kubernetes.Clientset, cluster *crv1.Pgclus
 		},
 	}
 
-	if err := kubeapi.CreateSecret(clientset, &secret, cluster.Namespace); err != nil {
+	if _, err := clientset.CoreV1().Secrets(cluster.Namespace).Create(&secret); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -712,7 +712,7 @@ func generatePgtaskForPgBouncer(cluster *crv1.Pgcluster, pgouser, taskType, task
 
 	// create the pgtask object
 	task := &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: spec.Name,
 			Labels: map[string]string{
 				config.LABEL_PG_CLUSTER: cluster.Name,

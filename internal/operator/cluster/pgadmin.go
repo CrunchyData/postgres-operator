@@ -36,6 +36,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -208,7 +209,9 @@ func BootstrapPgAdminUsers(
 	// Get the secrets managed by Kubernetes - any users existing only in
 	// Postgres don't have their passwords available
 	sel := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, cluster.Name)
-	secretList, err := kubeapi.GetSecrets(clientset, sel, cluster.Namespace)
+	secretList, err := clientset.
+		CoreV1().Secrets(cluster.Namespace).
+		List(metav1.ListOptions{LabelSelector: sel})
 	if err != nil {
 		return err
 	}

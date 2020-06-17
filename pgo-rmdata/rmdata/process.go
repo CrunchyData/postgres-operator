@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
@@ -27,8 +28,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	kerror "k8s.io/apimachinery/pkg/api/errors"
-
-	"time"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -207,7 +207,7 @@ func removeBackupSecrets(request Request) {
 	//
 	// we'll also check to see if there was an error, but if there is we'll only
 	// log the fact there was an error; this function is just a pass through
-	if err := kubeapi.DeleteSecret(request.Clientset, secretName, request.Namespace); err != nil {
+	if err := request.Clientset.CoreV1().Secrets(request.Namespace).Delete(secretName, &metav1.DeleteOptions{}); err != nil {
 		log.Error(err)
 	}
 
@@ -349,7 +349,9 @@ func removeUserSecrets(request Request) {
 	//get all that match pg-cluster=db
 	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName
 
-	secrets, err := kubeapi.GetSecrets(request.Clientset, selector, request.Namespace)
+	secrets, err := request.Clientset.
+		CoreV1().Secrets(request.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		return
@@ -357,7 +359,7 @@ func removeUserSecrets(request Request) {
 
 	for _, s := range secrets.Items {
 		if s.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] == "" {
-			err := kubeapi.DeleteSecret(request.Clientset, s.ObjectMeta.Name, request.Namespace)
+			err := request.Clientset.CoreV1().Secrets(request.Namespace).Delete(s.ObjectMeta.Name, &metav1.DeleteOptions{})
 			if err != nil {
 				log.Error(err)
 			}
