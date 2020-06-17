@@ -169,7 +169,8 @@ func CreateNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 
 	n.Name = newNs
 
-	if err := kubeapi.CreateNamespace(clientset, &n); err != nil {
+	if _, err := clientset.CoreV1().Namespaces().Create(&n); err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -196,8 +197,9 @@ func CreateNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 // DeleteNamespace deletes the namespace specified.
 func DeleteNamespace(clientset *kubernetes.Clientset, installationName, pgoNamespace, deletedBy, ns string) error {
 
-	err := kubeapi.DeleteNamespace(clientset, ns)
+	err := clientset.CoreV1().Namespaces().Delete(ns, &metav1.DeleteOptions{})
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -420,7 +422,7 @@ func UpdateNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 
 	log.Debugf("UpdateNamespace %s %s %s %s", installationName, pgoNamespace, updatedBy, ns)
 
-	theNs, _, err := kubeapi.GetNamespace(clientset, ns)
+	theNs, err := clientset.CoreV1().Namespaces().Get(ns, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -430,7 +432,9 @@ func UpdateNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 	}
 	theNs.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
 	theNs.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] = installationName
-	if err := kubeapi.UpdateNamespace(clientset, theNs); err != nil {
+
+	if _, err := clientset.CoreV1().Namespaces().Update(theNs); err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -529,7 +533,7 @@ func GetCurrentNamespaceList(clientset *kubernetes.Clientset,
 
 	ns := make([]string, 0)
 
-	nsList, err := kubeapi.GetNamespaces(clientset)
+	nsList, err := clientset.CoreV1().Namespaces().List(metav1.ListOptions{})
 	if err != nil {
 		log.Error(err.Error())
 		return nil, err

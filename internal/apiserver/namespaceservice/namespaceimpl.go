@@ -19,10 +19,10 @@ import (
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/ns"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -38,7 +38,7 @@ func ShowNamespace(clientset *kubernetes.Clientset, username string, request *ms
 	nsList := make([]string, 0)
 
 	if request.AllFlag {
-		namespaceList, err := kubeapi.GetNamespaces(clientset)
+		namespaceList, err := clientset.CoreV1().Namespaces().List(metav1.ListOptions{})
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -55,8 +55,8 @@ func ShowNamespace(clientset *kubernetes.Clientset, username string, request *ms
 		}
 
 		for i := 0; i < len(request.Args); i++ {
-			_, found, _ := kubeapi.GetNamespace(clientset, request.Args[i])
-			if found == false {
+			_, err := clientset.CoreV1().Namespaces().Get(request.Args[i], metav1.GetOptions{})
+			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = "namespace " + request.Args[i] + " not found"
 
