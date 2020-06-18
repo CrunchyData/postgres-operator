@@ -31,7 +31,7 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/events"
 
 	log "github.com/sirupsen/logrus"
-	authorizationapi "k8s.io/api/authorization/v1"
+	authv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -672,15 +672,18 @@ func CheckAccessPrivs(clientset *kubernetes.Clientset,
 
 	for resource, verbs := range privs {
 		for _, verb := range verbs {
-			resAttrs := &authorizationapi.ResourceAttributes{
-				Resource: resource,
-				Verb:     verb,
-				Group:    apiGroup,
-			}
-			if namespace != "" {
-				resAttrs.Namespace = namespace
-			}
-			sar, err := kubeapi.CreateSelfSubjectAccessReview(clientset, resAttrs)
+			sar, err := clientset.
+				AuthorizationV1().SelfSubjectAccessReviews().
+				Create(&authv1.SelfSubjectAccessReview{
+					Spec: authv1.SelfSubjectAccessReviewSpec{
+						ResourceAttributes: &authv1.ResourceAttributes{
+							Namespace: namespace,
+							Group:     apiGroup,
+							Resource:  resource,
+							Verb:      verb,
+						},
+					},
+				})
 			if err != nil {
 				return false, err
 			}
