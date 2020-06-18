@@ -292,11 +292,11 @@ func deleteBeforeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTC
 	// delete the leader configmap used by the Postgres Operator since this information may change after
 	// the upgrade is complete
 	// Note: deletion is required for cluster recreation
-	checkDeleteConfigmap(clientset, clusterName+"-leader", namespace)
+	clientset.CoreV1().ConfigMaps(namespace).Delete(clusterName+"-leader", &metav1.DeleteOptions{})
 
 	// delete the '<cluster-name>-pgha-default-config' configmap, if it exists so the config syncer
 	// will not try to use it instead of '<cluster-name>-pgha-config'
-	checkDeleteConfigmap(clientset, clusterName+"-pgha-default-config", namespace)
+	clientset.CoreV1().ConfigMaps(namespace).Delete(clusterName+"-pgha-default-config", &metav1.DeleteOptions{})
 
 	// delete the backrest repo config secret, since key encryption has been updated from RSA to EdDSA
 	clientset.CoreV1().Secrets(namespace).Delete(clusterName+"-backrest-repo-config", &metav1.DeleteOptions{})
@@ -320,18 +320,6 @@ func deploymentWait(clientset *kubernetes.Clientset, namespace, deploymentName s
 			}
 			log.Debugf("deployment deleted: %t", !deploymentFound)
 		}
-	}
-}
-
-// deleteConfigmap will delete a configmap after checking if it exists
-// this is done to avoid unnecessary errors during attempted deletes of
-// configmaps that don't exist
-func checkDeleteConfigmap(clientset *kubernetes.Clientset, configmap, namespace string) {
-	// check for configmap
-	_, found := kubeapi.GetConfigMap(clientset, configmap, namespace)
-	// if found, delete it
-	if found {
-		kubeapi.DeleteConfigMap(clientset, configmap, namespace)
 	}
 }
 
@@ -374,8 +362,8 @@ func createUpgradePGHAConfigMap(clientset *kubernetes.Clientset, cluster *crv1.P
 
 	// if the "pgha-default-config" config map exists, this cluster is being upgraded
 	// and should use the initialization value from this existing configmap
-	defaultConfigmap, found := kubeapi.GetConfigMap(clientset, cluster.Name+"-pgha-default-config", namespace)
-	if found {
+	defaultConfigmap, err := clientset.CoreV1().ConfigMaps(namespace).Get(cluster.Name+"-pgha-default-config", metav1.GetOptions{})
+	if err == nil {
 		data[operator.PGHAConfigInitSetting] = defaultConfigmap.Data[operator.PGHAConfigInitSetting]
 	} else {
 		// set "init" to true in the postgres-ha configMap
@@ -396,7 +384,7 @@ func createUpgradePGHAConfigMap(clientset *kubernetes.Clientset, cluster *crv1.P
 		Data: data,
 	}
 
-	if err := kubeapi.CreateConfigMap(clientset, configmap, namespace); err != nil {
+	if _, err := clientset.CoreV1().ConfigMaps(namespace).Create(configmap); err != nil {
 		return err
 	}
 

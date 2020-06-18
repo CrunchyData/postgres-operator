@@ -245,7 +245,7 @@ func removeClusterConfigmaps(request Request) {
 	// We'll also check to see if there was an error, but if there is we'll only
 	// log the fact there was an error; this function is just a pass through
 	for _, cm := range clusterConfigmaps {
-		if err := kubeapi.DeleteConfigMap(request.Clientset, cm, request.Namespace); err != nil {
+		if err := request.Clientset.CoreV1().ConfigMaps(request.Namespace).Delete(cm, &metav1.DeleteOptions{}); err != nil {
 			log.Error(err)
 		}
 	}
@@ -692,7 +692,10 @@ func removeSchedules(request Request) {
 
 	// run the query the deletes all of the scheduled configmaps
 	// if there is an error, log it, but continue on without making a big stink
-	if err := kubeapi.DeleteConfigMaps(request.Clientset, selector, request.Namespace); err != nil {
+	err := request.Clientset.
+		CoreV1().ConfigMaps(request.Namespace).
+		DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
 		log.Error(err)
 	}
 }

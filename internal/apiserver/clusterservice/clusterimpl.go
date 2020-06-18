@@ -1550,18 +1550,13 @@ func getType(pod *v1.Pod, clusterName string) string {
 }
 
 func validateCustomConfig(configmapname, ns string) (bool, error) {
-	var err error
-	_, found := kubeapi.GetConfigMap(apiserver.Clientset, configmapname, ns)
-	if !found {
-		return found, err
-	}
-
-	return found, err
+	_, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Get(configmapname, metav1.GetOptions{})
+	return err == nil, err
 }
 
 func existsGlobalConfig(ns string) bool {
-	_, found := kubeapi.GetConfigMap(apiserver.Clientset, config.GLOBAL_CUSTOM_CONFIGMAP, ns)
-	return found
+	_, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Get(config.GLOBAL_CUSTOM_CONFIGMAP, metav1.GetOptions{})
+	return err == nil
 }
 
 func getReplicas(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterReplica, error) {

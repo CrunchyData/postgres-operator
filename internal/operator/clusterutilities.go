@@ -31,7 +31,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	apps_v1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 )
@@ -305,13 +305,12 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 
 //consolidate with cluster.GetConfVolume
 func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string) string {
-	var found bool
 	var configMapStr string
 
 	//check for user provided configmap
 	if cl.Spec.CustomConfig != "" {
-		_, found = kubeapi.GetConfigMap(clientset, cl.Spec.CustomConfig, namespace)
-		if !found {
+		_, err := clientset.CoreV1().ConfigMaps(namespace).Get(cl.Spec.CustomConfig, metav1.GetOptions{})
+		if err != nil {
 			//you should NOT get this error because of apiserver validation of this value!
 			log.Errorf("%s was not found, error, skipping user provided configMap", cl.Spec.CustomConfig)
 		} else {
@@ -321,8 +320,8 @@ func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespac
 	}
 
 	//check for global custom configmap "pgo-custom-pg-config"
-	_, found = kubeapi.GetConfigMap(clientset, config.GLOBAL_CUSTOM_CONFIGMAP, namespace)
-	if found {
+	_, err := clientset.CoreV1().ConfigMaps(namespace).Get(config.GLOBAL_CUSTOM_CONFIGMAP, metav1.GetOptions{})
+	if err == nil {
 		return `"pgo-custom-pg-config"`
 	}
 	log.Debug(config.GLOBAL_CUSTOM_CONFIGMAP + " was not found, skipping global configMap")
@@ -357,14 +356,14 @@ func CreatePGHAConfigMap(clientset *kubernetes.Clientset, cluster *crv1.Pgcluste
 	}
 
 	configmap := &v1.ConfigMap{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:   cluster.Name + "-" + PGHAConfigMapSuffix,
 			Labels: labels,
 		},
 		Data: data,
 	}
 
-	if err := kubeapi.CreateConfigMap(clientset, configmap, namespace); err != nil {
+	if _, err := clientset.CoreV1().ConfigMaps(namespace).Create(configmap); err != nil {
 		return err
 	}
 
@@ -798,9 +797,9 @@ func UpdatePGHAConfigInitFlag(clientset *kubernetes.Clientset, initVal bool, clu
 	log.Debugf("updating init value to %t in the pgha configMap for cluster %s", initVal, clusterName)
 
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGHA_CONFIGMAP + "=true"
-	configMapList, found := kubeapi.ListConfigMap(clientset, selector, namespace)
+	configMapList, err := clientset.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	switch {
-	case !found:
+	case err != nil:
 		return fmt.Errorf("unable to find the default pgha configMap found for cluster %s using selector %s, unable to set "+
 			"init value to false", clusterName, selector)
 	case len(configMapList.Items) > 1:
@@ -811,7 +810,7 @@ func UpdatePGHAConfigInitFlag(clientset *kubernetes.Clientset, initVal bool, clu
 	configMap := &configMapList.Items[0]
 	configMap.Data[PGHAConfigInitSetting] = strconv.FormatBool(initVal)
 
-	if err := kubeapi.UpdateConfigMap(clientset, configMap, namespace); err != nil {
+	if _, err := clientset.CoreV1().ConfigMaps(namespace).Update(configMap); err != nil {
 		return err
 	}
 

@@ -24,12 +24,12 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
@@ -739,8 +739,8 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 
 func getRootPath(clientset *kubernetes.Clientset, namespace string) (*v1.ConfigMap, string) {
 
-	cMap, found := kubeapi.GetConfigMap(clientset, CustomConfigMapName, namespace)
-	if found {
+	cMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(CustomConfigMapName, metav1.GetOptions{})
+	if err == nil {
 		log.Infof("Config: %s ConfigMap found, using config files from the configmap", CustomConfigMapName)
 		return cMap, ""
 	}

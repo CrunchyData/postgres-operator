@@ -557,8 +557,8 @@ func ShutdownCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 		return err
 	}
 
-	if err := kubeapi.DeleteConfigMap(clientset, fmt.Sprintf("%s-leader",
-		cluster.Labels[config.LABEL_PGHA_SCOPE]), cluster.Namespace); err != nil {
+	if err := clientset.CoreV1().ConfigMaps(cluster.Namespace).Delete(fmt.Sprintf("%s-leader",
+		cluster.Labels[config.LABEL_PGHA_SCOPE]), &metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 

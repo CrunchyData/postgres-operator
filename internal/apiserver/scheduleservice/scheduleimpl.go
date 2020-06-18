@@ -30,7 +30,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type scheduleRequest struct {
@@ -179,8 +179,8 @@ func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateS
 		}
 
 		log.Debug("Getting configmap..")
-		_, exists := kubeapi.GetConfigMap(apiserver.Clientset, schedule.Name, schedule.Namespace)
-		if exists {
+		_, err = apiserver.Clientset.CoreV1().ConfigMaps(schedule.Namespace).Get(schedule.Name, metav1.GetOptions{})
+		if err == nil {
 			sr.Response.Status.Code = msgs.Error
 			sr.Response.Status.Msg = fmt.Sprintf("Schedule %s already exists", schedule.Name)
 			return *sr.Response
@@ -194,7 +194,7 @@ func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateS
 		data[schedule.Name] = string(blob)
 
 		configmap := &v1.ConfigMap{
-			ObjectMeta: meta_v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:   schedule.Name,
 				Labels: labels,
 			},
@@ -202,7 +202,7 @@ func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateS
 		}
 
 		log.Debug("Creating configmap..")
-		err = kubeapi.CreateConfigMap(apiserver.Clientset, configmap, schedule.Namespace)
+		_, err = apiserver.Clientset.CoreV1().ConfigMaps(schedule.Namespace).Create(configmap)
 		if err != nil {
 			sr.Response.Status.Code = msgs.Error
 			sr.Response.Status.Msg = err.Error()
@@ -248,7 +248,7 @@ func DeleteSchedule(request *msgs.DeleteScheduleRequest, ns string) msgs.DeleteS
 
 	log.Debug("Deleting configMaps")
 	for _, schedule := range schedules {
-		err := kubeapi.DeleteConfigMap(apiserver.Clientset, schedule, ns)
+		err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Delete(schedule, &metav1.DeleteOptions{})
 		if err != nil {
 			sr.Status.Code = msgs.Error
 			sr.Status.Msg = fmt.Sprintf("Could not delete ConfigMap %s: %s", schedule, err)
@@ -294,8 +294,8 @@ func ShowSchedule(request *msgs.ShowScheduleRequest, ns string) msgs.ShowSchedul
 
 	log.Debug("Parsing configMaps")
 	for _, schedule := range schedules {
-		cm, exists := kubeapi.GetConfigMap(apiserver.Clientset, schedule, ns)
-		if !exists {
+		cm, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Get(schedule, metav1.GetOptions{})
+		if err != nil {
 			sr.Status.Code = msgs.Error
 			sr.Status.Msg = fmt.Sprintf("Could not delete ConfigMap %s: %s", schedule, err)
 			return *sr
@@ -331,8 +331,8 @@ func getSchedules(clusterName, selector, ns string) ([]string, error) {
 	}
 
 	log.Debugf("Finding configMaps with selector: %s", label)
-	list, ok := kubeapi.ListConfigMap(apiserver.Clientset, label, ns)
-	if !ok {
+	list, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).List(metav1.ListOptions{LabelSelector: label})
+	if err != nil {
 		return nil, fmt.Errorf("No schedules found for selector: %s", label)
 	}
 

@@ -34,7 +34,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	apps_v1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -151,7 +151,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 			labels[config.LABEL_NAME] = cl.Spec.Name + "-" + uniqueName
 			spec.Name = labels[config.LABEL_NAME]
 			newInstance := &crv1.Pgreplica{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:   labels[config.LABEL_NAME],
 					Labels: labels,
 				},
@@ -484,13 +484,13 @@ func UpdateTablespaces(clientset *kubernetes.Clientset, restConfig *rest.Config,
 
 func deleteConfigMaps(clientset *kubernetes.Clientset, clusterName, ns string) error {
 	label := fmt.Sprintf("pg-cluster=%s", clusterName)
-	list, ok := kubeapi.ListConfigMap(clientset, label, ns)
-	if !ok {
+	list, err := clientset.CoreV1().ConfigMaps(ns).List(metav1.ListOptions{LabelSelector: label})
+	if err != nil {
 		return fmt.Errorf("No configMaps found for selector: %s", label)
 	}
 
 	for _, configmap := range list.Items {
-		err := kubeapi.DeleteConfigMap(clientset, configmap.Name, ns)
+		err := clientset.CoreV1().ConfigMaps(ns).Delete(configmap.Name, &metav1.DeleteOptions{})
 		if err != nil {
 			return err
 		}

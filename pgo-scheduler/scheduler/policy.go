@@ -31,7 +31,7 @@ import (
 	v1batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type PolicyJob struct {
@@ -118,14 +118,14 @@ func (p PolicyJob) Run() {
 	labels["pg-schedule"] = "true"
 
 	configmap := &v1.ConfigMap{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:   name,
 			Labels: labels,
 		},
 		Data: data,
 	}
 
-	err = kubeapi.DeleteConfigMap(apiserver.Clientset, name, p.namespace)
+	err = apiserver.Clientset.CoreV1().ConfigMaps(p.namespace).Delete(name, &metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		contextLogger.WithFields(log.Fields{
 			"error":     err,
@@ -135,7 +135,7 @@ func (p PolicyJob) Run() {
 	}
 
 	log.Debug("Creating configmap..")
-	err = kubeapi.CreateConfigMap(apiserver.Clientset, configmap, p.namespace)
+	_, err = apiserver.Clientset.CoreV1().ConfigMaps(p.namespace).Create(configmap)
 	if err != nil {
 		contextLogger.WithFields(log.Fields{
 			"error": err,

@@ -25,6 +25,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -243,9 +244,8 @@ func ToggleAutoFailover(clientset *kubernetes.Clientset, enable bool, pghaScope,
 	configMapName := pghaScope + "-config"
 	log.Debugf("setting autofailover to %t for cluster with pgha scope %s", enable, pghaScope)
 
-	configMap, found := kubeapi.GetConfigMap(clientset, configMapName, namespace)
-	if !found {
-		err := fmt.Errorf("Unable to find configMap %s when attempting disable autofailover", configMapName)
+	configMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(configMapName, metav1.GetOptions{})
+	if err != nil {
 		log.Error(err)
 		return err
 	}
@@ -310,7 +310,7 @@ func enableFailover(clientset *kubernetes.Clientset, configMap *v1.ConfigMap, co
 			return err
 		}
 		configMap.ObjectMeta.Annotations["config"] = string(configJSONFinalStr)
-		err = kubeapi.UpdateConfigMap(clientset, configMap, namespace)
+		_, err = clientset.CoreV1().ConfigMaps(namespace).Update(configMap)
 		if err != nil {
 			return err
 		}
@@ -335,7 +335,7 @@ func disableFailover(clientset *kubernetes.Clientset, configMap *v1.ConfigMap, c
 			return err
 		}
 		configMap.ObjectMeta.Annotations["config"] = string(configJSONFinalStr)
-		err = kubeapi.UpdateConfigMap(clientset, configMap, namespace)
+		_, err = clientset.CoreV1().ConfigMaps(namespace).Update(configMap)
 		if err != nil {
 			return err
 		}

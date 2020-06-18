@@ -170,8 +170,8 @@ func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) erro
 
 	// find the "config" configMap created by Patroni
 	dcsConfigMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-config"
-	dcsConfigMap, found := kubeapi.GetConfigMap(clientset, dcsConfigMapName, namespace)
-	if !found {
+	dcsConfigMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(dcsConfigMapName, metav1.GetOptions{})
+	if err != nil {
 		return fmt.Errorf("Unable to find configMap %s when attempting to enable standby",
 			dcsConfigMapName)
 	}
@@ -199,14 +199,14 @@ func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) erro
 		return err
 	}
 	dcsConfigMap.ObjectMeta.Annotations["config"] = string(configJSONFinalStr)
-	err = kubeapi.UpdateConfigMap(clientset, dcsConfigMap, namespace)
+	_, err = clientset.CoreV1().ConfigMaps(namespace).Update(dcsConfigMap)
 	if err != nil {
 		return err
 	}
 
 	leaderConfigMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-leader"
 	// Delete the "leader" configMap
-	if err = kubeapi.DeleteConfigMap(clientset, leaderConfigMapName, namespace); err != nil &&
+	if err = clientset.CoreV1().ConfigMaps(namespace).Delete(leaderConfigMapName, &metav1.DeleteOptions{}); err != nil &&
 		!kerrors.IsNotFound(err) {
 		log.Error("Unable to delete configMap %s while enabling standby mode for cluster "+
 			"%s: %w", leaderConfigMapName, clusterName, err)
@@ -215,8 +215,8 @@ func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) erro
 
 	// override to the repo type to ensure s3 is utilized for standby creation
 	pghaConfigMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-pgha-config"
-	pghaConfigMap, found := kubeapi.GetConfigMap(clientset, pghaConfigMapName, namespace)
-	if !found {
+	pghaConfigMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(pghaConfigMapName, metav1.GetOptions{})
+	if err != nil {
 		return fmt.Errorf("Unable to find configMap %s when attempting to enable standby",
 			pghaConfigMapName)
 	}
@@ -225,7 +225,7 @@ func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) erro
 	// delete the DCS config so that it will refresh with the included standby settings
 	delete(pghaConfigMap.Data, fmt.Sprintf(cfg.PGHADCSConfigName, clusterName))
 
-	if err := kubeapi.UpdateConfigMap(clientset, pghaConfigMap, namespace); err != nil {
+	if _, err := clientset.CoreV1().ConfigMaps(namespace).Update(pghaConfigMap); err != nil {
 		return err
 	}
 
