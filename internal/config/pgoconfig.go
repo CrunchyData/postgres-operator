@@ -210,6 +210,7 @@ type ClusterStruct struct {
 	BackrestS3Bucket               string
 	BackrestS3Endpoint             string
 	BackrestS3Region               string
+	BackrestS3URIStyle             string
 	DisableAutofail                bool
 	PgmonitorPassword              string
 	EnableCrunchyadm               bool

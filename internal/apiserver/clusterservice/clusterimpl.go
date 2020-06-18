@@ -837,6 +837,16 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			string(strconv.FormatBool(*request.SyncReplication))
 	}
 
+	// pgBackRest URI style must be set to either 'path' or 'host'. If it is neither,
+	// log an error and stop the cluster from being created.
+	if request.BackrestS3URIStyle != "" {
+		if request.BackrestS3URIStyle != "path" && request.BackrestS3URIStyle != "host" {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = "pgBackRest S3 URI style must be set to either \"path\" or \"host\"."
+			return resp
+		}
+	}
+
 	// Create an instance of our CRD
 	newInstance := getClusterParams(request, clusterName, userLabelsMap, ns)
 	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
@@ -1356,6 +1366,9 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	}
 	if request.BackrestS3Region != "" {
 		spec.BackrestS3Region = request.BackrestS3Region
+	}
+	if request.BackrestS3URIStyle != "" {
+		spec.BackrestS3URIStyle = request.BackrestS3URIStyle
 	}
 
 	// create a map for the annotations

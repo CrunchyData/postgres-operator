@@ -111,6 +111,7 @@ type PgclusterSpec struct {
 	BackrestS3Bucket   string                   `json:"backrestS3Bucket"`
 	BackrestS3Region   string                   `json:"backrestS3Region"`
 	BackrestS3Endpoint string                   `json:"backrestS3Endpoint"`
+	BackrestS3URIStyle string                   `json:"backrestS3URIStyle"`
 	BackrestRepoPath   string                   `json:"backrestRepoPath"`
 	TablespaceMounts   map[string]PgStorageSpec `json:"tablespaceMounts"`
 	TLS                TLSSpec                  `json:"tls"`

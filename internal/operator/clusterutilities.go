@@ -117,6 +117,7 @@ type PgbackrestS3EnvVarsTemplateFields struct {
 	PgbackrestS3Key        string
 	PgbackrestS3KeySecret  string
 	PgbackrestS3SecretName string
+	PgbackrestS3URIStyle   string
 }
 
 type PgmonitorEnvVarsTemplateFields struct {
@@ -734,6 +735,25 @@ func GetPgbackrestS3EnvVars(cluster crv1.Pgcluster, clientset *kubernetes.Client
 		s3EnvVars.PgbackrestS3Region = cluster.Spec.BackrestS3Region
 	} else {
 		s3EnvVars.PgbackrestS3Region = Pgo.Cluster.BackrestS3Region
+	}
+	if cluster.Spec.BackrestS3URIStyle != "" {
+		s3EnvVars.PgbackrestS3URIStyle = cluster.Spec.BackrestS3URIStyle
+	} else {
+		s3EnvVars.PgbackrestS3URIStyle = Pgo.Cluster.BackrestS3URIStyle
+	}
+
+	// if set, pgBackRest URI style must be set to either 'path' or 'host'. If it is neither,
+	// log an error and stop the cluster from being created.
+	if s3EnvVars.PgbackrestS3URIStyle != "path" && s3EnvVars.PgbackrestS3URIStyle != "host" &&
+		s3EnvVars.PgbackrestS3URIStyle != "" {
+		log.Error("pgBackRest S3 URI style must be set to either \"path\" or \"host\".")
+		return ""
+	}
+
+	if cluster.Spec.BackrestS3VerifyTLS != "" {
+		s3EnvVars.PgbackrestS3VerifyTLS = cluster.Spec.BackrestS3VerifyTLS
+	} else {
+		s3EnvVars.PgbackrestS3VerifyTLS = Pgo.Cluster.BackrestS3VerifyTLS
 	}
 
 	doc := bytes.Buffer{}
