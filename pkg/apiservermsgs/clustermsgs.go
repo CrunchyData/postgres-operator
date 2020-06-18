@@ -88,6 +88,7 @@ type CreateClusterRequest struct {
 	BackrestS3Bucket          string
 	BackrestS3Region          string
 	BackrestS3Endpoint        string
+	BackrestS3URIStyle        string
 	Standby                   bool
 	BackrestRepoPath          string
 

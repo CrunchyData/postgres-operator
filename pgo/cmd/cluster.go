@@ -294,6 +294,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.BackrestS3Bucket = BackrestS3Bucket
 	r.BackrestS3Region = BackrestS3Region
 	r.BackrestS3Endpoint = BackrestS3Endpoint
+	r.BackrestS3URIStyle = BackrestS3URIStyle
 	r.PVCSize = PVCSize
 	r.BackrestPVCSize = BackrestPVCSize
 	r.Username = Username

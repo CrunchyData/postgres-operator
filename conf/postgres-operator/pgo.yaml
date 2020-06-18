@@ -17,6 +17,8 @@ Cluster:
   BackrestS3Bucket:
   BackrestS3Endpoint:
   BackrestS3Region:
+  BackrestS3VerifyTLS: "y"
+  BackrestS3URIStyle: ""
   DisableAutofail:  false
   PodAntiAffinity: preferred
   PodAntiAffinityPgBackRest: ""

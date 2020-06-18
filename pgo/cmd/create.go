@@ -60,6 +60,7 @@ var BackrestS3KeySecret string
 var BackrestS3Bucket string
 var BackrestS3Endpoint string
 var BackrestS3Region string
+var BackrestS3URIStyle string
 var PVCSize string
 var BackrestPVCSize string
 var WALStorageConfig string
@@ -368,6 +369,8 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&BackrestS3Region, "pgbackrest-s3-region", "", "",
 		"The AWS S3 region that should be utilized for the cluster when the \"s3\" "+
 			"storage type is enabled for pgBackRest.")
+	createClusterCmd.Flags().StringVarP(&BackrestS3URIStyle, "pgbackrest-s3-uri-style", "", "", "Specifies whether \"host\" or \"path\" style URIs will be used when connecting to S3.")
+	createClusterCmd.Flags().BoolVarP(&BackrestS3VerifyTLS, "pgbackrest-s3-verify-tls", "", false, "Set this value to true to enable TLS verification when making a pgBackRest connection to S3. Defaults to false.")
 	createClusterCmd.Flags().StringVar(&BackrestStorageConfig, "pgbackrest-storage-config", "", "The name of the storage config in pgo.yaml to use for the pgBackRest local repository.")
 	createClusterCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use with pgBackRest. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
