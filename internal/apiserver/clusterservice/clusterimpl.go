@@ -286,7 +286,7 @@ func getServices(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterService,
 	output := make([]msgs.ShowClusterService, 0)
 	selector := config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
-	services, err := kubeapi.GetServices(apiserver.Clientset, selector, ns)
+	services, err := apiserver.Clientset.CoreV1().Services(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}

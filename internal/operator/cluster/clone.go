@@ -35,7 +35,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	batch_v1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -288,7 +288,7 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, restCo
 	// to do this, we are going to mock out a targetPgcluster with the exact
 	// attributes we need to make this successful
 	targetPgcluster := crv1.Pgcluster{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      targetClusterName,
 			Namespace: namespace,
 			Labels: map[string]string{
@@ -455,7 +455,7 @@ func cloneStep3(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 	// ignore errors here...we can let the errors occur later on, e.g. if there is
 	// a failure to delete
 	_ = kubeapi.DeleteDeployment(clientset, backrestRepoDeploymentName, namespace)
-	_ = kubeapi.DeleteService(clientset, backrestRepoDeploymentName, namespace)
+	_ = clientset.CoreV1().Services(namespace).Delete(backrestRepoDeploymentName, &metav1.DeleteOptions{})
 
 	// let's actually wait to see if they are deleted
 	if err := waitForDeploymentDelete(clientset, namespace, backrestRepoDeploymentName, 30, 3); err != nil {
@@ -499,7 +499,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 
 	// set up the job template to synchronize the pgBackRest repo
 	job := batch_v1.Job{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: jobName,
 			Annotations: map[string]string{
 				// these annotations are used for the subsequent steps to be
@@ -520,7 +520,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 		},
 		Spec: batch_v1.JobSpec{
 			Template: v1.PodTemplateSpec{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: jobName,
 					Labels: map[string]string{
 						config.LABEL_VENDOR:           config.LABEL_CRUNCHY,
@@ -551,7 +551,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 								{
 									Name: "NEW_PGBACKREST_REPO",
 									Value: util.GetPGBackRestRepoPath(crv1.Pgcluster{
-										ObjectMeta: meta_v1.ObjectMeta{
+										ObjectMeta: metav1.ObjectMeta{
 											Name: targetClusterName,
 										},
 									}),
@@ -753,7 +753,7 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 
 	// set up the target cluster
 	targetPgcluster := &crv1.Pgcluster{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				config.ANNOTATION_CURRENT_PRIMARY: targetClusterName,
 			},
@@ -1006,7 +1006,8 @@ func waitForDeploymentDelete(clientset *kubernetes.Clientset, namespace, deploym
 			return errors.New(fmt.Sprintf("Timed out waiting for deployment to be deleted: [%s]", deploymentName))
 		case <-tick.C:
 			_, deploymentFound, _ := kubeapi.GetDeployment(clientset, deploymentName, namespace)
-			_, serviceFound, _ := kubeapi.GetService(clientset, deploymentName, namespace)
+			_, serviceErr := clientset.CoreV1().Services(namespace).Get(deploymentName, metav1.GetOptions{})
+			serviceFound := serviceErr == nil
 			if !(deploymentFound || serviceFound) {
 				return nil
 			}

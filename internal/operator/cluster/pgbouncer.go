@@ -224,7 +224,7 @@ func DeletePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 	// First, delete the Service and Deployment, which share the same naem
 	pgbouncerDeploymentName := fmt.Sprintf(pgBouncerDeploymentFormat, clusterName)
 
-	if err := kubeapi.DeleteService(clientset, pgbouncerDeploymentName, namespace); err != nil {
+	if err := clientset.CoreV1().Services(namespace).Delete(pgbouncerDeploymentName, &metav1.DeleteOptions{}); err != nil {
 		log.Warn(err)
 	}
 

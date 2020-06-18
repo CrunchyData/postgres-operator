@@ -26,7 +26,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 
 	log "github.com/sirupsen/logrus"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const pgAdminServiceSuffix = "-pgadmin"
@@ -74,7 +74,7 @@ func CreatePgAdmin(request *msgs.CreatePgAdminRequest, ns, pgouser string) msgs.
 		}
 
 		task := &crv1.Pgtask{
-			ObjectMeta: meta_v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: spec.Name,
 				Labels: map[string]string{
 					config.LABEL_PG_CLUSTER:       cluster.Name,
@@ -140,7 +140,7 @@ func DeletePgAdmin(request *msgs.DeletePgAdminRequest, ns string) msgs.DeletePgA
 		}
 
 		task := &crv1.Pgtask{
-			ObjectMeta: meta_v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name: spec.Name,
 				Labels: map[string]string{
 					config.LABEL_PG_CLUSTER:          cluster.Name,
@@ -206,10 +206,9 @@ func ShowPgAdmin(request *msgs.ShowPgAdminRequest, namespace string) msgs.ShowPg
 
 		// This takes advantage of pgadmin deployment and pgadmin service
 		// sharing a name that is clustername + pgAdminServiceSuffix
-		service, _, err := kubeapi.GetService(
-			apiserver.Clientset,
-			cluster.Name+pgAdminServiceSuffix,
-			cluster.Namespace)
+		service, err := apiserver.Clientset.
+			CoreV1().Services(cluster.Namespace).
+			Get(cluster.Name+pgAdminServiceSuffix, metav1.GetOptions{})
 		if err != nil {
 			response.SetError(err.Error())
 			return response

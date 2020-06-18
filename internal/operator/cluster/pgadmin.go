@@ -192,15 +192,12 @@ func BootstrapPgAdminUsers(
 	}
 
 	// Get service details and prep connection metadata
-	service, svcFound, err := kubeapi.GetService(clientset, cluster.Name, cluster.Namespace)
+	service, err := clientset.CoreV1().Services(cluster.Namespace).Get(cluster.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	dbService := pgadmin.ServerEntry{}
-	if svcFound {
-		dbService = pgadmin.ServerEntryFromPgService(service, cluster.Name)
-	}
+	dbService := pgadmin.ServerEntryFromPgService(service, cluster.Name)
 
 	// Get current users of cluster and add them to pgadmin's db if they
 	// have kubernetes-stored passwords, using the connection info above
@@ -286,7 +283,7 @@ func DeletePgAdmin(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 		log.Warn(err)
 	}
 
-	if err := kubeapi.DeleteService(clientset, pgAdminDeploymentName, namespace); err != nil {
+	if err := clientset.CoreV1().Services(namespace).Delete(pgAdminDeploymentName, &metav1.DeleteOptions{}); err != nil {
 		log.Warn(err)
 	}
 
@@ -422,7 +419,7 @@ func createPgAdminService(clientset *kubernetes.Clientset, cluster *crv1.Pgclust
 		return err
 	}
 
-	if _, err := kubeapi.CreateService(clientset, &service, cluster.Namespace); err != nil {
+	if _, err := clientset.CoreV1().Services(cluster.Namespace).Create(&service); err != nil {
 		return err
 	}
 

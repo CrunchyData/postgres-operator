@@ -31,6 +31,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -193,8 +194,8 @@ func createService(clientset *kubernetes.Clientset, fields *RepoServiceTemplateF
 
 	var b bytes.Buffer
 
-	_, found, err := kubeapi.GetService(clientset, fields.Name, namespace)
-	if !found || err != nil {
+	_, err = clientset.CoreV1().Services(namespace).Get(fields.Name, metav1.GetOptions{})
+	if err != nil {
 
 		err = config.PgoBackrestRepoServiceTemplate.Execute(&b, fields)
 		if err != nil {
@@ -213,7 +214,7 @@ func createService(clientset *kubernetes.Clientset, fields *RepoServiceTemplateF
 			return err
 		}
 
-		_, err = kubeapi.CreateService(clientset, &s, namespace)
+		_, err = clientset.CoreV1().Services(namespace).Create(&s)
 	}
 
 	return err

@@ -175,7 +175,9 @@ func removeBackrestRepo(request Request) {
 	}
 
 	//delete the service for the backrest repo
-	err = kubeapi.DeleteService(request.Clientset, deploymentName, request.Namespace)
+	err = request.Clientset.
+		CoreV1().Services(request.Namespace).
+		Delete(deploymentName, &metav1.DeleteOptions{})
 	if err != nil {
 		log.Error(err)
 	}
@@ -381,11 +383,9 @@ func removeAddons(request Request) {
 
 	//delete the service name=<clustename>-pgbouncer
 
-	_, found, _ = kubeapi.GetService(request.Clientset, pgbouncerDepName, request.Namespace)
-	if found {
-		kubeapi.DeleteService(request.Clientset, pgbouncerDepName, request.Namespace)
-	}
-
+	_ = request.Clientset.
+		CoreV1().Services(request.Namespace).
+		Delete(pgbouncerDepName, &metav1.DeleteOptions{})
 }
 
 func removeServices(request Request) {
@@ -394,15 +394,18 @@ func removeServices(request Request) {
 
 	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName
 
-	services, err := kubeapi.GetServices(request.Clientset, selector, request.Namespace)
+	services, err := request.Clientset.
+		CoreV1().Services(request.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	for i := 0; i < len(services.Items); i++ {
-		svc := services.Items[i]
-		err := kubeapi.DeleteService(request.Clientset, svc.Name, request.Namespace)
+		err := request.Clientset.
+			CoreV1().Services(request.Namespace).
+			Delete(services.Items[i].Name, &metav1.DeleteOptions{})
 		if err != nil {
 			log.Error(err)
 		}
@@ -668,8 +671,10 @@ func removeReplicaServices(request Request) {
 		return
 	case 1:
 		log.Debug("removing replica service when scaling down to 0 replicas")
-		if kubeapi.DeleteService(request.Clientset, request.ClusterName+"-replica",
-			request.Namespace); err != nil {
+		err := request.Clientset.
+			CoreV1().Services(request.Namespace).
+			Delete(request.ClusterName+"-replica", &metav1.DeleteOptions{})
+		if err != nil {
 			log.Error(err)
 			return
 		}

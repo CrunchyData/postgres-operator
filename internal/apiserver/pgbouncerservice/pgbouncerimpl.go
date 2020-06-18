@@ -30,6 +30,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const pgBouncerServiceSuffix = "-pgbouncer"
@@ -494,7 +495,9 @@ func setPgBouncerServiceDetail(cluster crv1.Pgcluster, result *msgs.ShowPgBounce
 	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, cluster.Spec.Name)
 
 	// have to go through a bunch of services because "current design"
-	services, err := kubeapi.GetServices(apiserver.Clientset, selector, cluster.Spec.Namespace)
+	services, err := apiserver.Clientset.
+		CoreV1().Services(cluster.Spec.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 
 	// if there is an error, return without making any adjustments
 	if err != nil {

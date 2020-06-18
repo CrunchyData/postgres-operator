@@ -1026,7 +1026,7 @@ func updatePgAdmin(cluster *crv1.Pgcluster, username, password string) error {
 
 	// proceed onward
 	// Get service details and prep connection metadata
-	service, _, err := kubeapi.GetService(apiserver.Clientset, cluster.Name, cluster.Namespace)
+	service, err := apiserver.Clientset.CoreV1().Services(cluster.Namespace).Get(cluster.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
