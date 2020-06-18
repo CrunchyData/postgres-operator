@@ -31,6 +31,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	apiv1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -209,8 +210,11 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 			crv1.PgtaskBackrestStanzaCreate), namespace); err != nil && !kerrors.IsNotFound(err) {
 			return err
 		}
-		if err := kubeapi.DeleteJob(c.PodClientset, fmt.Sprintf("%s-%s", clusterName,
-			crv1.PgtaskBackrestStanzaCreate), namespace); err != nil && !kerrors.IsNotFound(err) {
+		deletePropagation := metav1.DeletePropagationForeground
+		if err := c.PodClientset.
+			BatchV1().Jobs(namespace).
+			Delete(fmt.Sprintf("%s-%s", clusterName, crv1.PgtaskBackrestStanzaCreate),
+				&metav1.DeleteOptions{PropagationPolicy: &deletePropagation}); err != nil && !kerrors.IsNotFound(err) {
 			return err
 		}
 		backrestoperator.StanzaCreate(namespace, clusterName,

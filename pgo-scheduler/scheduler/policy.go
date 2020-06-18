@@ -32,6 +32,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type PolicyJob struct {
@@ -162,26 +163,22 @@ func (p PolicyJob) Run() {
 		return
 	}
 
-	oldJob, found := kubeapi.GetJob(kubeClient, name, p.namespace)
-	if found {
-		err = kubeapi.DeleteJob(kubeClient, name, p.namespace)
-		if err != nil {
-			contextLogger.WithFields(log.Fields{
-				"job":   name,
-				"error": err,
-			}).Error("error deleting policy job")
-			return
-		}
-
-		timeout := time.Second * 60
-		err = kubeapi.IsJobDeleted(kubeClient, p.namespace, oldJob, timeout)
-		if err != nil {
-			contextLogger.WithFields(log.Fields{
-				"job":   name,
-				"error": err,
-			}).Error("error waiting for job to delete")
-			return
-		}
+	deletePropagation := metav1.DeletePropagationForeground
+	err = kubeClient.
+		BatchV1().Jobs(p.namespace).
+		Delete(name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+	if err == nil {
+		err = wait.Poll(time.Second/2, time.Minute, func() (bool, error) {
+			_, err := kubeClient.BatchV1().Jobs(p.namespace).Get(name, metav1.GetOptions{})
+			return false, err
+		})
+	}
+	if !kerrors.IsNotFound(err) {
+		contextLogger.WithFields(log.Fields{
+			"job":   name,
+			"error": err,
+		}).Error("error deleting policy job")
+		return
 	}
 
 	newJob := &v1batch.Job{}
@@ -196,7 +193,7 @@ func (p PolicyJob) Run() {
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_SQL_RUNNER,
 		&newJob.Spec.Template.Spec.Containers[0])
 
-	_, err = kubeapi.CreateJob(kubeClient, newJob, p.namespace)
+	_, err = kubeClient.BatchV1().Jobs(p.namespace).Create(newJob)
 	if err != nil {
 		contextLogger.WithFields(log.Fields{
 			"error": err,

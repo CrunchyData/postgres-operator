@@ -280,7 +280,12 @@ func deleteBeforeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTC
 	kubeapi.Deletepgcluster(restclient, clusterName, namespace)
 
 	// delete all existing job references
-	kubeapi.DeleteJobs(clientset, config.LABEL_PG_CLUSTER+"="+clusterName, namespace)
+	deletePropagation := metav1.DeletePropagationForeground
+	clientset.
+		BatchV1().Jobs(namespace).
+		DeleteCollection(
+			&metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
+			metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + clusterName})
 
 	// delete all existing pgtask references except for the upgrade task
 	// Note: this will be deleted by the existing pgcluster creation process once the

@@ -255,14 +255,18 @@ func removeClusterConfigmaps(request Request) {
 
 func removeClusterJobs(request Request) {
 	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName
-	jobs, err := kubeapi.GetJobs(request.Clientset, selector, request.Namespace)
+	jobs, err := request.Clientset.
+		BatchV1().Jobs(request.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		return
 	}
 	for i := 0; i < len(jobs.Items); i++ {
-		job := jobs.Items[i]
-		err := kubeapi.DeleteJob(request.Clientset, job.Name, request.Namespace)
+		deletePropagation := metav1.DeletePropagationForeground
+		err := request.Clientset.
+			BatchV1().Jobs(request.Namespace).
+			Delete(jobs.Items[i].Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 		if err != nil {
 			log.Error(err)
 		}
@@ -580,7 +584,9 @@ func removeBackupJobs(request Request) {
 		log.Debugf("backup job selector: [%s]", selector)
 
 		// find all the jobs associated with this selector
-		jobs, err := kubeapi.GetJobs(request.Clientset, selector, request.Namespace)
+		jobs, err := request.Clientset.
+			BatchV1().Jobs(request.Namespace).
+			List(metav1.ListOptions{LabelSelector: selector})
 
 		if err != nil {
 			log.Error(err)
@@ -589,9 +595,11 @@ func removeBackupJobs(request Request) {
 
 		// iterate through the list of jobs and attempt to delete them
 		for i := 0; i < len(jobs.Items); i++ {
-			job := jobs.Items[i]
-
-			if err := kubeapi.DeleteJob(request.Clientset, job.Name, request.Namespace); err != nil {
+			deletePropagation := metav1.DeletePropagationForeground
+			err := request.Clientset.
+				BatchV1().Jobs(request.Namespace).
+				Delete(jobs.Items[i].Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+			if err != nil {
 				log.Error(err)
 			}
 		}
@@ -600,7 +608,9 @@ func removeBackupJobs(request Request) {
 		var completed bool
 
 		for i := 0; i < MAX_TRIES; i++ {
-			jobs, err := kubeapi.GetJobs(request.Clientset, selector, request.Namespace)
+			jobs, err := request.Clientset.
+				BatchV1().Jobs(request.Namespace).
+				List(metav1.ListOptions{LabelSelector: selector})
 
 			if len(jobs.Items) > 0 || err != nil {
 				log.Debug("sleeping to wait for backup jobs to fully terminate")

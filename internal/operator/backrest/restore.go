@@ -215,12 +215,12 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_RESTORE,
 		&job.Spec.Template.Spec.Containers[0])
 
-	if jobName, err := kubeapi.CreateJob(clientset, &job, namespace); err != nil {
+	if j, err := clientset.BatchV1().Jobs(namespace).Create(&job); err != nil {
 		log.Error(err)
 		log.Error("restore workflow: error in creating restore job")
 		return
 	} else {
-		log.Debugf("restore workflow: restore job %s created", jobName)
+		log.Debugf("restore workflow: restore job %s created", j.Name)
 	}
 
 	publishRestore(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clusterName, task.ObjectMeta.Labels[config.LABEL_PGOUSER], namespace)

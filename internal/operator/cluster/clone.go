@@ -418,12 +418,12 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, restCo
 	job.ObjectMeta.Labels[config.LABEL_PGOUSER] = task.ObjectMeta.Labels[config.LABEL_PGOUSER]
 
 	// create the Job in Kubernetes
-	if jobName, err := kubeapi.CreateJob(clientset, &job, namespace); err != nil {
+	if j, err := clientset.BatchV1().Jobs(namespace).Create(&job); err != nil {
 		log.Error(err)
 		errorMessage := fmt.Sprintf("Could not create pgbackrest restore job: %s", err.Error())
 		PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, errorMessage)
 	} else {
-		log.Debugf("clone step 2: created restore job [%s]", jobName)
+		log.Debugf("clone step 2: created restore job [%s]", j.Name)
 	}
 
 	// finally, update the pgtask to indicate it's complete
@@ -663,12 +663,12 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 	}
 
 	// create the job!
-	if jobName, err := kubeapi.CreateJob(clientset, &job, namespace); err != nil {
+	if j, err := clientset.BatchV1().Jobs(namespace).Create(&job); err != nil {
 		log.Error(err)
 		// the error event occurs at a different level
 		return "", err
 	} else {
-		return jobName, nil
+		return j.Name, nil
 	}
 }
 

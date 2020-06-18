@@ -33,7 +33,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -123,7 +123,7 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 	if backupType != "" {
 		newjob.ObjectMeta.Labels[config.LABEL_PGHA_BACKUP_TYPE] = backupType
 	}
-	kubeapi.CreateJob(clientset, &newjob, namespace)
+	clientset.BatchV1().Jobs(namespace).Create(&newjob)
 
 	//publish backrest backup event
 	if cmd == "backup" {
@@ -206,7 +206,7 @@ func CreateBackup(restclient *rest.RESTClient, namespace, clusterName, podName s
 	}
 
 	newInstance = &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: taskName,
 		},
 		Spec: spec,
@@ -254,7 +254,12 @@ func CleanBackupResources(restclient *rest.RESTClient, clientset *kubernetes.Cli
 	//remove previous backup job
 	selector := config.LABEL_BACKREST_COMMAND + "=" + crv1.PgtaskBackrestBackup + "," +
 		config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_BACKREST + "=true"
-	err = kubeapi.DeleteJobs(clientset, selector, namespace)
+	deletePropagation := metav1.DeletePropagationForeground
+	err = clientset.
+		BatchV1().Jobs(namespace).
+		DeleteCollection(
+			&metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
+			metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 	}
@@ -268,7 +273,9 @@ func CleanBackupResources(restclient *rest.RESTClient, clientset *kubernetes.Cli
 			return fmt.Errorf("Timed out waiting for deletion of pgBackRest backup job for "+
 				"cluster %s", clusterName)
 		case <-tick.C:
-			jobList, err := kubeapi.GetJobs(clientset, selector, namespace)
+			jobList, err := clientset.
+				BatchV1().Jobs(namespace).
+				List(metav1.ListOptions{LabelSelector: selector})
 			if err != nil {
 				log.Error(err)
 				return err
@@ -296,7 +303,7 @@ func getCommandOptsFromPod(clientset *kubernetes.Clientset, task *crv1.Pgtask,
 		task.Spec.Parameters[config.LABEL_PG_CLUSTER], config.LABEL_PGHA_ROLE,
 		"promoted", config.LABEL_PGHA_ROLE_PRIMARY)
 
-	options := meta_v1.ListOptions{
+	options := metav1.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
 		LabelSelector: selector,
 	}

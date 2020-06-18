@@ -24,6 +24,8 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type BackRestBackupJob struct {
@@ -106,28 +108,24 @@ func (b BackRestBackupJob) Run() {
 			return
 		}
 
-		job, found := kubeapi.GetJob(kubeClient, taskName, b.namespace)
-
-		if found {
-			err = kubeapi.DeleteJob(kubeClient, taskName, b.namespace)
-			if err != nil {
-				contextLogger.WithFields(log.Fields{
-					"task":  taskName,
-					"error": err,
-				}).Error("error deleting backup job")
-				return
-			}
-
-			timeout := time.Second * 60
-			err = kubeapi.IsJobDeleted(kubeClient, b.namespace, job, timeout)
-			if err != nil {
-				contextLogger.WithFields(log.Fields{
-					"task":  taskName,
-					"error": err,
-				}).Error("error waiting for job to delete")
-				return
-			}
+		deletePropagation := metav1.DeletePropagationForeground
+		err = kubeClient.
+			BatchV1().Jobs(b.namespace).
+			Delete(taskName, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+		if err == nil {
+			err = wait.Poll(time.Second/2, time.Minute, func() (bool, error) {
+				_, err := kubeClient.BatchV1().Jobs(b.namespace).Get(taskName, metav1.GetOptions{})
+				return false, err
+			})
 		}
+		if !kerrors.IsNotFound(err) {
+			contextLogger.WithFields(log.Fields{
+				"task":  taskName,
+				"error": err,
+			}).Error("error deleting backup job")
+			return
+		}
+
 	} else if err != nil && !kerrors.IsNotFound(err) {
 		contextLogger.WithFields(log.Fields{
 			"task":  taskName,

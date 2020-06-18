@@ -117,13 +117,12 @@ func Restore(namespace string, clientset *kubernetes.Clientset, restclient *rest
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGRESTORE,
 		&newjob.Spec.Template.Spec.Containers[0])
 
-	var jobName string
-	jobName, err = kubeapi.CreateJob(clientset, &newjob, namespace)
+	j, err := clientset.BatchV1().Jobs(namespace).Create(&newjob)
 	if err != nil {
 		log.Error(err)
 		log.Error("restore workflow: error in creating restore job")
 		return
 	}
-	log.Debugf("pgrestore job %s created", jobName)
+	log.Debugf("pgrestore job %s created", j.Name)
 
 }

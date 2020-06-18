@@ -140,7 +140,7 @@ func Dump(namespace string, clientset *kubernetes.Clientset, client *rest.RESTCl
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGDUMP,
 		&newjob.Spec.Template.Spec.Containers[0])
 
-	_, err = kubeapi.CreateJob(clientset, &newjob, namespace)
+	_, err = clientset.BatchV1().Jobs(namespace).Create(&newjob)
 
 	if err != nil {
 		return
