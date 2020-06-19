@@ -171,7 +171,6 @@ pgo status
 which yields output similar to:
 
 ```
-Operator Start:          2019-12-26 17:53:45 +0000 UTC
 Databases:               8
 Claims:                  8
 Total Volume Size:       8Gi       
