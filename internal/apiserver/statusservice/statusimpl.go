@@ -31,48 +31,17 @@ import (
 )
 
 func Status(ns string) msgs.StatusResponse {
-	var err error
-
-	response := msgs.StatusResponse{}
-	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
-
-	err = getStatus(&response.Result, ns)
-	if err != nil {
-		response.Status.Code = msgs.Error
-		response.Status.Msg = "error getting status report"
+	return msgs.StatusResponse{
+		Result: msgs.StatusDetail{
+			DbTags:       getDBTags(ns),
+			NotReady:     getNotReady(ns),
+			NumClaims:    getNumClaims(ns),
+			NumDatabases: getNumDatabases(ns),
+			Labels:       getLabels(ns),
+			VolumeCap:    getVolumeCap(ns),
+		},
+		Status: msgs.Status{Code: msgs.Ok, Msg: ""},
 	}
-
-	return response
-}
-
-func getStatus(results *msgs.StatusDetail, ns string) error {
-
-	var err error
-	results.OperatorStartTime = getOperatorStart(apiserver.PgoNamespace)
-	results.NumClaims = getNumClaims(ns)
-	results.NumDatabases = getNumDatabases(ns)
-	results.VolumeCap = getVolumeCap(ns)
-	results.DbTags = getDBTags(ns)
-	results.NotReady = getNotReady(ns)
-	results.Labels = getLabels(ns)
-	return err
-}
-
-func getOperatorStart(ns string) string {
-	pods, err := kubeapi.GetPods(apiserver.Clientset, "name="+config.LABEL_OPERATOR, ns)
-	if err != nil {
-		log.Error(err)
-		return "error"
-	}
-
-	for _, p := range pods.Items {
-		if string(p.Status.Phase) == "Running" {
-			return p.Status.StartTime.String()
-		}
-	}
-	log.Error("a running postgres-operator pod is not found")
-
-	return "error"
 }
 
 func getNumClaims(ns string) int {

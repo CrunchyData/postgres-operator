@@ -35,14 +35,13 @@ type KeyValue struct {
 // by means of a volume mounted json blob it generates
 // swagger:model
 type StatusDetail struct {
-	OperatorStartTime string
-	NumDatabases      int
-	NumClaims         int
-	VolumeCap         string
-	DbTags            map[string]int
-	NotReady          []string
-	Nodes             []NodeInfo
-	Labels            []KeyValue
+	NumDatabases int
+	NumClaims    int
+	VolumeCap    string
+	DbTags       map[string]int
+	NotReady     []string
+	Nodes        []NodeInfo
+	Labels       []KeyValue
 }
 
 // ShowClusterResponse ...
