@@ -358,7 +358,7 @@ func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, c
 		}
 
 		// update the deployment with the new values
-		if err := kubeapi.UpdateDeployment(clientset, &deployment); err != nil {
+		if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(&deployment); err != nil {
 			return err
 		}
 	}
@@ -474,7 +474,7 @@ func UpdateTablespaces(clientset *kubernetes.Clientset, restConfig *rest.Config,
 
 		// finally, update the Deployment. Potential to put things into an
 		// inconsistent state if any of these updates fail
-		if err := kubeapi.UpdateDeployment(clientset, &deployment); err != nil {
+		if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(&deployment); err != nil {
 			return err
 		}
 	}

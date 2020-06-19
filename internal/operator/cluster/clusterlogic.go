@@ -222,8 +222,8 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 	// determine if any of the container images need to be overridden
 	operator.OverrideClusterContainerImages(deployment.Spec.Template.Spec.Containers)
 
-	if _, found, _ := kubeapi.GetDeployment(clientset, cl.Spec.Name, namespace); !found {
-		err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
+	if _, err = clientset.AppsV1().Deployments(namespace).Get(cl.Spec.Name, metav1.GetOptions{}); err != nil {
+		_, err = clientset.AppsV1().Deployments(namespace).Create(&deployment)
 		if err != nil {
 			return err
 		}
@@ -428,7 +428,8 @@ func scaleReplicaCreateDeployment(clientset *kubernetes.Clientset, client *rest.
 	replicaDeployment.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_PGHA_SCOPE]
 	replicaDeployment.Spec.Template.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_PGHA_SCOPE]
 
-	return kubeapi.CreateDeployment(clientset, &replicaDeployment, namespace)
+	_, err = clientset.AppsV1().Deployments(namespace).Create(&replicaDeployment)
+	return err
 }
 
 // DeleteReplica ...
@@ -437,7 +438,12 @@ func DeleteReplica(clientset *kubernetes.Clientset, cl *crv1.Pgreplica, namespac
 	var err error
 	log.Info("deleting Pgreplica object" + " in namespace " + namespace)
 	log.Info("deleting with Name=" + cl.Spec.Name + " in namespace " + namespace)
-	err = kubeapi.DeleteDeployment(clientset, cl.Spec.Name, namespace)
+	deletePropagation := metav1.DeletePropagationForeground
+	err = clientset.
+		AppsV1().Deployments(namespace).
+		Delete(cl.Spec.Name, &metav1.DeleteOptions{
+			PropagationPolicy: &deletePropagation,
+		})
 
 	return err
 
@@ -612,8 +618,10 @@ func ScaleClusterDeployments(clientset *kubernetes.Clientset, cluster crv1.Pgclu
 	// primary, any replicas, the pgBackRest repo and any optional services (e.g. pgBouncer)
 	var deploymentList *appsv1.DeploymentList
 	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, clusterName)
-	if deploymentList, err = kubeapi.GetDeployments(clientset, selector,
-		namespace); err != nil {
+	deploymentList, err = clientset.
+		AppsV1().Deployments(namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
 		return
 	}
 
@@ -654,7 +662,8 @@ func ScaleClusterDeployments(clientset *kubernetes.Clientset, cluster crv1.Pgclu
 
 		// Scale the deployment accoriding to the number of replicas specified.  If an error is
 		// encountered, log it and move on to scaling the next deployment.
-		if err = kubeapi.ScaleDeployment(clientset, deployment, replicas); err != nil {
+		deployment.Spec.Replicas = kubeapi.Int32(int32(replicas))
+		if _, err = clientset.AppsV1().Deployments(deployment.Namespace).Update(&deployment); err != nil {
 			log.Errorf("Error scaling deployment %s to %d: %w", deployment.Name, replicas, err)
 		}
 	}

@@ -454,7 +454,8 @@ func cloneStep3(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 	backrestRepoDeploymentName := fmt.Sprintf(util.BackrestRepoDeploymentName, targetClusterName)
 	// ignore errors here...we can let the errors occur later on, e.g. if there is
 	// a failure to delete
-	_ = kubeapi.DeleteDeployment(clientset, backrestRepoDeploymentName, namespace)
+	deletePropagation := metav1.DeletePropagationForeground
+	_ = clientset.AppsV1().Deployments(namespace).Delete(backrestRepoDeploymentName, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	_ = clientset.CoreV1().Services(namespace).Delete(backrestRepoDeploymentName, &metav1.DeleteOptions{})
 
 	// let's actually wait to see if they are deleted
@@ -1005,8 +1006,9 @@ func waitForDeploymentDelete(clientset *kubernetes.Clientset, namespace, deploym
 		case <-timeout:
 			return errors.New(fmt.Sprintf("Timed out waiting for deployment to be deleted: [%s]", deploymentName))
 		case <-tick.C:
-			_, deploymentFound, _ := kubeapi.GetDeployment(clientset, deploymentName, namespace)
+			_, deploymentErr := clientset.AppsV1().Deployments(namespace).Get(deploymentName, metav1.GetOptions{})
 			_, serviceErr := clientset.CoreV1().Services(namespace).Get(deploymentName, metav1.GetOptions{})
+			deploymentFound := deploymentErr == nil
 			serviceFound := serviceErr == nil
 			if !(deploymentFound || serviceFound) {
 				return nil
@@ -1028,10 +1030,10 @@ func waitForDeploymentReady(clientset *kubernetes.Clientset, namespace, deployme
 		case <-timeout:
 			return errors.New(fmt.Sprintf("Timed out waiting for deployment to become ready: [%s]", deploymentName))
 		case <-tick.C:
-			if deployment, found, err := kubeapi.GetDeployment(clientset, deploymentName, namespace); err != nil {
+			if deployment, err := clientset.AppsV1().Deployments(namespace).Get(deploymentName, metav1.GetOptions{}); err != nil {
 				// if there is an error, log it but continue through the loop
 				log.Error(err)
-			} else if found {
+			} else {
 				// check to see if the deployment status has succeed...if so, break out
 				// of the loop
 				if deployment.Status.ReadyReplicas == *deployment.Spec.Replicas {

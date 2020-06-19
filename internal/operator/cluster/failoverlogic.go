@@ -28,7 +28,6 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"
-	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -85,8 +84,7 @@ func Failover(identifier string, clientset *kubernetes.Clientset, client *rest.R
 
 	targetDepName := upod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
 	log.Debugf("targetDepName %s", targetDepName)
-	var targetDep *appsv1.Deployment
-	targetDep, _, err = kubeapi.GetDeployment(clientset, targetDepName, namespace)
+	targetDep, err := clientset.AppsV1().Deployments(namespace).Get(targetDepName, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		log.Errorf("not found error in getting Deployment during failover relabel %s", targetDepName)

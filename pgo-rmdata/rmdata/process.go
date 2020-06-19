@@ -169,7 +169,10 @@ func removeBackrestRepo(request Request) {
 	log.Debugf("deleting the pgbackrest repo [%s]", deploymentName)
 
 	// now delete the deployment and services
-	err := kubeapi.DeleteDeployment(request.Clientset, deploymentName, request.Namespace)
+	deletePropagation := metav1.DeletePropagationForeground
+	err := request.Clientset.
+		AppsV1().Deployments(request.Namespace).
+		Delete(deploymentName, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	if err != nil {
 		log.Error(err)
 	}
@@ -281,7 +284,9 @@ func removeCluster(request Request) {
 	selector := fmt.Sprintf("%s=%s,%s!=true",
 		config.LABEL_PG_CLUSTER, request.ClusterName, config.LABEL_PGO_BACKREST_REPO)
 
-	deployments, err := kubeapi.GetDeployments(request.Clientset, selector, request.Namespace)
+	deployments, err := request.Clientset.
+		AppsV1().Deployments(request.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 
 	// if there is an error here, return as we cannot iterate over the deployment
 	// list
@@ -292,7 +297,11 @@ func removeCluster(request Request) {
 
 	// iterate through each deployment and delete it
 	for _, d := range deployments.Items {
-		if err := kubeapi.DeleteDeployment(request.Clientset, d.ObjectMeta.Name, request.Namespace); err != nil {
+		deletePropagation := metav1.DeletePropagationForeground
+		err := request.Clientset.
+			AppsV1().Deployments(request.Namespace).
+			Delete(d.Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+		if err != nil {
 			log.Error(err)
 		}
 	}
@@ -301,8 +310,9 @@ func removeCluster(request Request) {
 	// deleted. the only thing I'm modifying is the selector
 	var completed bool
 	for i := 0; i < MAX_TRIES; i++ {
-		deployments, err := kubeapi.GetDeployments(request.Clientset, selector,
-			request.Namespace)
+		deployments, err := request.Clientset.
+			AppsV1().Deployments(request.Namespace).
+			List(metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			log.Error(err)
 		}
@@ -319,14 +329,10 @@ func removeCluster(request Request) {
 }
 func removeReplica(request Request) error {
 
-	d, found, err := kubeapi.GetDeployment(request.Clientset,
-		request.ReplicaName, request.Namespace)
-	if !found || err != nil {
-		log.Error(err)
-		return err
-	}
-
-	err = kubeapi.DeleteDeployment(request.Clientset, d.ObjectMeta.Name, request.Namespace)
+	deletePropagation := metav1.DeletePropagationForeground
+	err := request.Clientset.
+		AppsV1().Deployments(request.Namespace).
+		Delete(request.ReplicaName, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	if err != nil {
 		log.Error(err)
 		return err
@@ -335,9 +341,10 @@ func removeReplica(request Request) error {
 	//wait for the deployment to go away fully
 	var completed bool
 	for i := 0; i < MAX_TRIES; i++ {
-		_, found, _ := kubeapi.GetDeployment(request.Clientset,
-			request.ReplicaName, request.Namespace)
-		if found {
+		_, err = request.Clientset.
+			AppsV1().Deployments(request.Namespace).
+			Get(request.ReplicaName, metav1.GetOptions{})
+		if err == nil {
 			log.Info("sleeping to wait for Deployments to fully terminate")
 			time.Sleep(time.Second * time.Duration(4))
 		} else {
@@ -379,11 +386,10 @@ func removeAddons(request Request) {
 
 	pgbouncerDepName := request.ClusterName + "-pgbouncer"
 
-	_, found, _ := kubeapi.GetDeployment(request.Clientset, pgbouncerDepName, request.Namespace)
-	if found {
-
-		kubeapi.DeleteDeployment(request.Clientset, pgbouncerDepName, request.Namespace)
-	}
+	deletePropagation := metav1.DeletePropagationForeground
+	_ = request.Clientset.
+		AppsV1().Deployments(request.Namespace).
+		Delete(pgbouncerDepName, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 
 	//delete the service name=<clustename>-pgbouncer
 

@@ -287,7 +287,10 @@ func DeletePgAdmin(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 		log.Warn(err)
 	}
 
-	if err := kubeapi.DeleteDeployment(clientset, pgAdminDeploymentName, namespace); err != nil {
+	deletePropagation := metav1.DeletePropagationForeground
+	if err := clientset.AppsV1().Deployments(namespace).Delete(pgAdminDeploymentName, &metav1.DeleteOptions{
+		PropagationPolicy: &deletePropagation,
+	}); err != nil {
 		log.Warn(err)
 	}
 
@@ -380,7 +383,7 @@ func createPgAdminDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pgcl
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGADMIN,
 		&deployment.Spec.Template.Spec.Containers[0])
 
-	if err := kubeapi.CreateDeployment(clientset, &deployment, cluster.Namespace); err != nil {
+	if _, err := clientset.AppsV1().Deployments(cluster.Namespace).Create(&deployment); err != nil {
 		return err
 	}
 

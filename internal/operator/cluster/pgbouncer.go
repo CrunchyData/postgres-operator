@@ -228,7 +228,10 @@ func DeletePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 		log.Warn(err)
 	}
 
-	if err := kubeapi.DeleteDeployment(clientset, pgbouncerDeploymentName, namespace); err != nil {
+	deletePropagation := metav1.DeletePropagationForeground
+	if err := clientset.AppsV1().Deployments(namespace).Delete(pgbouncerDeploymentName, &metav1.DeleteOptions{
+		PropagationPolicy: &deletePropagation,
+	}); err != nil {
 		log.Warn(err)
 	}
 
@@ -499,7 +502,7 @@ func createPgBouncerDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pg
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGBOUNCER,
 		&deployment.Spec.Template.Spec.Containers[0])
 
-	if err := kubeapi.CreateDeployment(clientset, &deployment, cluster.Namespace); err != nil {
+	if _, err := clientset.AppsV1().Deployments(cluster.Namespace).Create(&deployment); err != nil {
 		return err
 	}
 
@@ -761,7 +764,7 @@ func getPgBouncerDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pgclu
 	// service
 	pgbouncerDeploymentName := fmt.Sprintf(pgBouncerDeploymentFormat, cluster.Name)
 
-	deployment, _, err := kubeapi.GetDeployment(clientset, pgbouncerDeploymentName, cluster.Namespace)
+	deployment, err := clientset.AppsV1().Deployments(cluster.Namespace).Get(pgbouncerDeploymentName, metav1.GetOptions{})
 
 	if err != nil {
 		return nil, err
@@ -883,7 +886,7 @@ func updatePgBouncerReplicas(clientset *kubernetes.Clientset, restclient *rest.R
 
 	// and update the deployment
 	// update the deployment with the new values
-	if err := kubeapi.UpdateDeployment(clientset, deployment); err != nil {
+	if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(deployment); err != nil {
 		return err
 	}
 
@@ -909,7 +912,7 @@ func updatePgBouncerResources(clientset *kubernetes.Clientset, restclient *rest.
 
 	// and update the deployment
 	// update the deployment with the new values
-	if err := kubeapi.UpdateDeployment(clientset, deployment); err != nil {
+	if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(deployment); err != nil {
 		return err
 	}
 

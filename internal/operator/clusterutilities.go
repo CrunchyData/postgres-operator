@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
@@ -238,8 +237,7 @@ func GetPgbackrestEnvVars(cluster *crv1.Pgcluster, backrestEnabled, depName, por
 func GetBackrestDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) (*apps_v1.Deployment, error) {
 	// find the pgBackRest repository Deployment, which follows a known pattern
 	deploymentName := fmt.Sprintf(util.BackrestRepoDeploymentName, cluster.Name)
-	// get the deployment, dropping the "bool" variable
-	deployment, _, err := kubeapi.GetDeployment(clientset, deploymentName, cluster.Namespace)
+	deployment, err := clientset.AppsV1().Deployments(cluster.Namespace).Get(deploymentName, metav1.GetOptions{})
 
 	return deployment, err
 }
@@ -403,7 +401,9 @@ func GetInstanceDeployments(clientset *kubernetes.Clientset, cluster *crv1.Pgclu
 		config.LABEL_PG_CLUSTER, cluster.Name)
 
 	// get the deployments for this specific PostgreSQL luster
-	clusterDeployments, err := kubeapi.GetDeployments(clientset, selector, cluster.Namespace)
+	clusterDeployments, err := clientset.
+		AppsV1().Deployments(cluster.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 
 	if err != nil {
 		return nil, err

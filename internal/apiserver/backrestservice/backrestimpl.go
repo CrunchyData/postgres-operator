@@ -263,7 +263,9 @@ func getDeployName(cluster *crv1.Pgcluster, ns string) (string, error) {
 
 	selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
-	deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
+	deps, err := apiserver.Clientset.
+		AppsV1().Deployments(ns).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return depName, err
 	}

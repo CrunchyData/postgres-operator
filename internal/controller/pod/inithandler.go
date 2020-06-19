@@ -256,7 +256,7 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 	replica, _ := kubeapi.Getpgreplica(c.PodClient, &pgreplica, depName, ns)
 	log.Debugf("checkPostgresPods --- dep %s replica %t", depName, replica)
 
-	dep, _, err := kubeapi.GetDeployment(c.PodClientset, depName, ns)
+	dep, err := c.PodClientset.AppsV1().Deployments(ns).Get(depName, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("could not get Deployment on pod Add %s", newpod.Name)
 		return

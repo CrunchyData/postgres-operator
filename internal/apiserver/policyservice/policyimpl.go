@@ -30,7 +30,7 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/apps/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 )
 
@@ -63,7 +63,7 @@ func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile
 	myLabels[config.LABEL_PGOUSER] = pgouser
 
 	newInstance := &crv1.Pgpolicy{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:   policyName,
 			Labels: myLabels,
 		},
@@ -211,7 +211,9 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 	var allDeployments []v1.Deployment
 	for _, c := range clusterList.Items {
 		depSelector := config.LABEL_SERVICE_NAME + "=" + c.Name
-		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, depSelector, ns)
+		deployments, err := apiserver.Clientset.
+			AppsV1().Deployments(ns).
+			List(metav1.ListOptions{LabelSelector: depSelector})
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()

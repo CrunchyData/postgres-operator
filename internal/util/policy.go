@@ -32,6 +32,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"k8s.io/client-go/kubernetes"
@@ -168,8 +169,8 @@ func ValidatePolicy(restclient *rest.RESTClient, namespace string, policyName st
 // UpdatePolicyLabels ...
 func UpdatePolicyLabels(clientset *kubernetes.Clientset, clusterName string, namespace string, newLabels map[string]string) error {
 
-	deployment, found, err := kubeapi.GetDeployment(clientset, clusterName, namespace)
-	if !found {
+	deployment, err := clientset.AppsV1().Deployments(namespace).Get(clusterName, metav1.GetOptions{})
+	if err != nil {
 		return err
 	}
 

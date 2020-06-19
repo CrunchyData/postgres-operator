@@ -192,7 +192,9 @@ func getDeployments(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterDeplo
 	output := make([]msgs.ShowClusterDeployment, 0)
 
 	selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
-	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
+	deployments, err := apiserver.Clientset.
+		AppsV1().Deployments(ns).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}

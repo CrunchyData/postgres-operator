@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -56,7 +57,9 @@ func getNumClaims(ns string) int {
 
 func getNumDatabases(ns string) int {
 	//count number of Deployments with pg-cluster
-	deps, err := kubeapi.GetDeployments(apiserver.Clientset, config.LABEL_PG_CLUSTER, ns)
+	deps, err := apiserver.Clientset.
+		AppsV1().Deployments(ns).
+		List(metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER})
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -145,8 +148,9 @@ func getClaimCapacity(clientset *kubernetes.Clientset, pvc *v1.PersistentVolumeC
 func getLabels(ns string) []msgs.KeyValue {
 	var ss []msgs.KeyValue
 	results := make(map[string]int)
-	// GetDeployments gets a list of deployments using a label selector
-	deps, err := kubeapi.GetDeployments(apiserver.Clientset, "", ns)
+	deps, err := apiserver.Clientset.
+		AppsV1().Deployments(ns).
+		List(metav1.ListOptions{})
 	if err != nil {
 		log.Error(err)
 		return ss

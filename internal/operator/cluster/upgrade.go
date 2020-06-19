@@ -259,14 +259,21 @@ func SetReplicaNumber(pgcluster *crv1.Pgcluster, numReplicas string) {
 func deleteBeforeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, clusterName, currentPrimary, namespace string, isStandby bool) {
 
 	// first, get all deployments for the pgcluster in question
-	deployments, err := kubeapi.GetDeployments(clientset, config.LABEL_PG_CLUSTER+"="+clusterName, namespace)
+	deployments, err := clientset.
+		AppsV1().Deployments(namespace).
+		List(metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + clusterName})
 	if err != nil {
 		log.Errorf("unable to get deployments. Error: %s", err)
 	}
 
 	// next, delete those deployments
 	for index := range deployments.Items {
-		kubeapi.DeleteDeployment(clientset, deployments.Items[index].Name, namespace)
+		deletePropagation := metav1.DeletePropagationForeground
+		_ = clientset.
+			AppsV1().Deployments(namespace).
+			Delete(deployments.Items[index].Name, &metav1.DeleteOptions{
+				PropagationPolicy: &deletePropagation,
+			})
 	}
 
 	// wait until the backrest shared repo pod deployment has been deleted before continuing
@@ -319,11 +326,10 @@ func deploymentWait(clientset *kubernetes.Clientset, namespace, deploymentName s
 		case <-timeout:
 			return fmt.Sprintf("Timed out waiting for deployment to be deleted: [%s]", deploymentName)
 		case <-tick.C:
-			_, deploymentFound, _ := kubeapi.GetDeployment(clientset, deploymentName, namespace)
-			if !(deploymentFound) {
+			_, err := clientset.AppsV1().Deployments(namespace).Get(deploymentName, metav1.GetOptions{})
+			if err != nil {
 				return fmt.Sprintf("Deployment %s has been deleted.", deploymentName)
 			}
-			log.Debugf("deployment deleted: %t", !deploymentFound)
 		}
 	}
 }

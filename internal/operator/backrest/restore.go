@@ -34,6 +34,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -93,8 +94,9 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	log.Debugf("restore workflow: created pvc %s for cluster %s", restoreToName, clusterName)
 	//delete current primary and all replica deployments
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PG_DATABASE + "=true"
-	var depList *appsv1.DeploymentList
-	depList, err = kubeapi.GetDeployments(clientset, selector, namespace)
+	depList, err := clientset.
+		AppsV1().Deployments(namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Errorf("restore workflow error: could not get depList using %s", selector)
 		return
@@ -104,7 +106,12 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		log.Debugf("restore workflow: no primary or replicas found using selector %s. Skipping deployment deletion.", selector)
 	} else {
 		for _, depToDelete := range depList.Items {
-			err = kubeapi.DeleteDeployment(clientset, depToDelete.Name, namespace)
+			deletePropagation := metav1.DeletePropagationForeground
+			err = clientset.
+				AppsV1().Deployments(namespace).
+				Delete(depToDelete.Name, &metav1.DeleteOptions{
+					PropagationPolicy: &deletePropagation,
+				})
 			if err != nil {
 				log.Errorf("restore workflow error: could not delete primary or replica %s", depToDelete.Name)
 				return
@@ -402,7 +409,7 @@ func createRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	// determine if any of the container images need to be overridden
 	operator.OverrideClusterContainerImages(deployment.Spec.Template.Spec.Containers)
 
-	err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
+	_, err = clientset.AppsV1().Deployments(namespace).Create(&deployment)
 	if err != nil {
 		return err
 	}

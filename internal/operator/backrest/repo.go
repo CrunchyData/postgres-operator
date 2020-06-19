@@ -152,7 +152,7 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_REPO,
 		&deployment.Spec.Template.Spec.Containers[0])
 
-	err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
+	_, err = clientset.AppsV1().Deployments(namespace).Create(&deployment)
 
 	return err
 
@@ -182,7 +182,7 @@ func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, c
 	}
 
 	// update the deployment with the new values
-	if err := kubeapi.UpdateDeployment(clientset, deployment); err != nil {
+	if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(deployment); err != nil {
 		return err
 	}
 
