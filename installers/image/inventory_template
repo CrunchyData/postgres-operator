@@ -177,6 +177,7 @@ backrest_aws_s3_bucket='$BACKREST_AWS_S3_BUCKET'
 backrest_aws_s3_endpoint='$BACKREST_AWS_S3_ENDPOINT'
 backrest_aws_s3_region='$BACKREST_AWS_S3_REGION'
 backrest_aws_s3_uri_style='$BACKREST_AWS_S3_URI_STYLE'
+backrest_aws_s3_verify_tls='$BACKREST_AWS_S3_VERIFY_TLS'
 
 # Service Type for PG Primary & Replica Services
 service_type='$SERVICE_TYPE'

@@ -39,8 +39,10 @@ fi
 # Additionally, since the value for pg1-path setting in the repository container is irrelevant
 # (i.e. the value specified by the container running the command via SSH is used instead), it is
 # simply set to a dummy directory within the config file.
-# Finally, if the URI style is set to 'path' instead of the default 'host' value, pgBackRest will
+# If the URI style is set to 'path' instead of the default 'host' value, pgBackRest will
 # connect to S3 by prependinging bucket names to URIs instead of the default 'bucket.endpoint' style
+# Finally, if TLS verification is set to 'n', pgBackRest disables verification of the S3 server
+# certificate.
 mkdir -p /tmp/pg1path
 if ! grep -Fxq "[${PGBACKREST_STANZA}]" "/etc/pgbackrest/pgbackrest.conf" 2> /dev/null
 then
@@ -62,6 +64,12 @@ then
 	then
 		printf "repo1-s3-uri-style=%s\n" "${PGBACKREST_REPO1_S3_URI_STYLE}" >> /etc/pgbackrest/pgbackrest.conf
 	fi
+
+        if [[ "${PGBACKREST_REPO1_S3_VERIFY_TLS}" != "" ]]
+	then
+		printf "repo1-s3-verify-tls=%s\n" "${PGBACKREST_REPO1_S3_VERIFY_TLS}" >> /etc/pgbackrest/pgbackrest.conf
+	fi
+
 fi
 
 mkdir -p ~/.ssh/

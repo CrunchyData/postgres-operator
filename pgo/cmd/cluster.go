@@ -329,6 +329,17 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	if createClusterCmd.Flag("sync-replication").Changed {
 		r.SyncReplication = &SyncReplication
 	}
+	// only set BackrestS3VerifyTLS in the request if actually provided via the CLI
+	// if set, store provided value accordingly
+	r.BackrestS3VerifyTLS = msgs.UpdateBackrestS3VerifyTLSDoNothing
+
+	if createClusterCmd.Flag("pgbackrest-s3-verify-tls").Changed {
+		if BackrestS3VerifyTLS {
+			r.BackrestS3VerifyTLS = msgs.UpdateBackrestS3VerifyTLSEnable
+		} else {
+			r.BackrestS3VerifyTLS = msgs.UpdateBackrestS3VerifyTLSDisable
+		}
+	}
 
 	// if the user provided resources for CPU or Memory, validate them to ensure
 	// they are valid Kubernetes values

@@ -1371,6 +1371,16 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.BackrestS3URIStyle = request.BackrestS3URIStyle
 	}
 
+	// if the pgbackrest-s3-verify-tls flag was set, update the CR spec
+	// value accordingly, otherwise, do not set
+	if request.BackrestS3VerifyTLS != msgs.UpdateBackrestS3VerifyTLSDoNothing {
+		if request.BackrestS3VerifyTLS == msgs.UpdateBackrestS3VerifyTLSDisable {
+			spec.BackrestS3VerifyTLS = "false"
+		} else {
+			spec.BackrestS3VerifyTLS = "true"
+		}
+	}
+
 	// create a map for the annotations
 	annotations := map[string]string{}
 	// store the default current primary value as an annotation

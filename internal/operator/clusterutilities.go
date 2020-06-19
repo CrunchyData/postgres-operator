@@ -118,6 +118,7 @@ type PgbackrestS3EnvVarsTemplateFields struct {
 	PgbackrestS3KeySecret  string
 	PgbackrestS3SecretName string
 	PgbackrestS3URIStyle   string
+	PgbackrestS3VerifyTLS  string
 }
 
 type PgmonitorEnvVarsTemplateFields struct {
@@ -741,6 +742,11 @@ func GetPgbackrestS3EnvVars(cluster crv1.Pgcluster, clientset *kubernetes.Client
 	} else {
 		s3EnvVars.PgbackrestS3URIStyle = Pgo.Cluster.BackrestS3URIStyle
 	}
+	if cluster.Spec.BackrestS3VerifyTLS != "" {
+		s3EnvVars.PgbackrestS3VerifyTLS = cluster.Spec.BackrestS3VerifyTLS
+	} else {
+		s3EnvVars.PgbackrestS3VerifyTLS = Pgo.Cluster.BackrestS3VerifyTLS
+	}
 
 	// if set, pgBackRest URI style must be set to either 'path' or 'host'. If it is neither,
 	// log an error and stop the cluster from being created.
@@ -750,10 +756,22 @@ func GetPgbackrestS3EnvVars(cluster crv1.Pgcluster, clientset *kubernetes.Client
 		return ""
 	}
 
+	// If the pgcluster has already been set, either by the PGO client or from the
+	// CRD definition, parse the boolean value given.
+	// If this value is not set, then parse the value stored in the default
+	// configuration and set the value accordingly
+	verifyTLS, _ := strconv.ParseBool(Pgo.Cluster.BackrestS3VerifyTLS)
+
 	if cluster.Spec.BackrestS3VerifyTLS != "" {
-		s3EnvVars.PgbackrestS3VerifyTLS = cluster.Spec.BackrestS3VerifyTLS
-	} else {
-		s3EnvVars.PgbackrestS3VerifyTLS = Pgo.Cluster.BackrestS3VerifyTLS
+		verifyTLS, _ = strconv.ParseBool(cluster.Spec.BackrestS3VerifyTLS)
+	}
+
+	// Now, assign the expected value for use by pgBackRest, in this case either 'y'
+	// to enable or 'n' to disable TLS verification.
+	s3EnvVars.PgbackrestS3VerifyTLS = "n"
+
+	if verifyTLS {
+		s3EnvVars.PgbackrestS3VerifyTLS = "y"
 	}
 
 	doc := bytes.Buffer{}
