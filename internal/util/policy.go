@@ -60,7 +60,7 @@ func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, re
 		config.LABEL_SERVICE_NAME, serviceName,
 		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
 
-	podList, err := kubeapi.GetPods(clientset, selector, namespace)
+	podList, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: selector})
 
 	if err != nil {
 		return err

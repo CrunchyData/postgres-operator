@@ -675,7 +675,9 @@ func removeReplicaServices(request Request) {
 	// which will grab any/all replicas
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName,
 		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_REPLICA)
-	replicaList, err := kubeapi.GetPods(request.Clientset, selector, request.Namespace)
+	replicaList, err := request.Clientset.
+		CoreV1().Pods(request.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		return

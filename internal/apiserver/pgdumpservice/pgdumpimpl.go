@@ -326,7 +326,7 @@ func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 
 	selector := config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
-	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return podname, err
 	}

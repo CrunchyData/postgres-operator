@@ -135,7 +135,7 @@ func (b BackRestBackupJob) Run() {
 	}
 
 	selector := fmt.Sprintf("%s=%s,pgo-backrest-repo=true", config.LABEL_PG_CLUSTER, b.cluster)
-	pods, err := kubeapi.GetPods(kubeClient, selector, b.namespace)
+	pods, err := kubeClient.CoreV1().Pods(b.namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		contextLogger.WithFields(log.Fields{
 			"selector": selector,

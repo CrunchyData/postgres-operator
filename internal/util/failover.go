@@ -97,7 +97,7 @@ func GetPod(clientset *kubernetes.Clientset, deploymentName, namespace string) (
 	var pods *v1.PodList
 
 	selector := config.LABEL_DEPLOYMENT_NAME + "=" + deploymentName + "," + config.LABEL_PGHA_ROLE + "=replica"
-	pods, err = kubeapi.GetPods(clientset, selector, namespace)
+	pods, err = clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return pod, err
 	}
@@ -153,7 +153,7 @@ func ReplicationStatus(request ReplicationStatusRequest, includePrimary bool) (R
 	selector := fmt.Sprintf("%s=%s,%s", config.LABEL_PG_CLUSTER, request.ClusterName, roleSelector)
 
 	log.Debugf(`searching for pods with "%s"`, selector)
-	pods, err := kubeapi.GetPods(request.Clientset, selector, request.Namespace)
+	pods, err := request.Clientset.CoreV1().Pods(request.Namespace).List(metav1.ListOptions{LabelSelector: selector})
 
 	// If there is an error trying to get the pods, return here. Allow the caller
 	// to handle the error

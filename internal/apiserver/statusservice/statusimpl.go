@@ -88,7 +88,7 @@ func getVolumeCap(ns string) string {
 func getDBTags(ns string) map[string]int {
 	results := make(map[string]int)
 	//count all pods with pg-cluster, sum by image tag value
-	pods, err := kubeapi.GetPods(apiserver.Clientset, config.LABEL_PG_CLUSTER, ns)
+	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER})
 	if err != nil {
 		log.Error(err)
 		return results
@@ -111,7 +111,7 @@ func getNotReady(ns string) []string {
 	for _, cluster := range clusterList.Items {
 
 		selector := fmt.Sprintf("%s=crunchydata,name=%s", config.LABEL_VENDOR, cluster.Spec.ClusterName)
-		pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+		pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			log.Error(err)
 			return agg

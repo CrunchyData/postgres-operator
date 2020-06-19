@@ -22,14 +22,13 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 
 	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ScaleCluster ...
@@ -145,7 +144,7 @@ func ScaleCluster(name, replicaCount, storageConfig, nodeLabel,
 		spec.Name = labels[config.LABEL_NAME]
 
 		newInstance := &crv1.Pgreplica{
-			ObjectMeta: meta_v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:   labels[config.LABEL_NAME],
 				Labels: labels,
 			},
@@ -296,7 +295,7 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 	// which will grab the primary and any/all replicas
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, clusterName,
 		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_REPLICA)
-	replicaList, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	replicaList, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()

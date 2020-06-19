@@ -20,11 +20,11 @@ import (
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -160,7 +160,7 @@ func GetPgAdminQueryRunner(clientset *kubernetes.Clientset, restconfig *rest.Con
 
 	selector := fmt.Sprintf("%s=true,%s=%s", config.LABEL_PGADMIN, config.LABEL_PG_CLUSTER, cluster.Name)
 
-	pods, err := kubeapi.GetPods(clientset, selector, cluster.Namespace)
+	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Errorf("failed to find pgadmin pod [%v]", err)
 		return nil, err

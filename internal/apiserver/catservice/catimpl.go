@@ -26,6 +26,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -72,7 +73,7 @@ func Cat(request *msgs.CatRequest, ns string) msgs.CatResponse {
 
 	var podList *v1.PodList
 	selector := config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
-	podList, err = kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	podList, err = apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()

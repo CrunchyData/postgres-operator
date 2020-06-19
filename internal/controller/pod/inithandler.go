@@ -129,8 +129,7 @@ func (c *Controller) handleRestoreInit(cluster *crv1.Pgcluster) error {
 	//look up the backrest-repo pod name
 	selector := fmt.Sprintf("%s=%s,pgo-backrest-repo=true",
 		config.LABEL_PG_CLUSTER, clusterName)
-	pods, err := kubeapi.GetPods(c.PodClientset, selector,
-		namespace)
+	pods, err := c.PodClientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if len(pods.Items) != 1 {
 		return fmt.Errorf("pods len != 1 for cluster %s", clusterName)
 	}

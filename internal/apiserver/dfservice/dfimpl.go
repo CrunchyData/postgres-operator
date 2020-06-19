@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -134,7 +135,7 @@ func getClusterDf(cluster *crv1.Pgcluster, clusterResultsChannel chan msgs.DfDet
 
 	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, cluster.Spec.Name)
 
-	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, cluster.Spec.Namespace)
+	pods, err := apiserver.Clientset.CoreV1().Pods(cluster.Spec.Namespace).List(metav1.ListOptions{LabelSelector: selector})
 
 	// if there is an error attempting to get the pods, just return
 	if err != nil {

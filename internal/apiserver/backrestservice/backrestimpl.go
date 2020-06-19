@@ -284,7 +284,7 @@ func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 
 	//look up the backrest-repo pod name
 	selector := "pg-cluster=" + cluster.Spec.Name + ",pgo-backrest-repo=true"
-	repopods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	repopods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if len(repopods.Items) != 1 {
 		log.Errorf("pods len != 1 for cluster %s", cluster.Spec.Name)
 		return "", errors.New("backrestrepo pod not found for cluster " + cluster.Spec.Name)
@@ -301,7 +301,7 @@ func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 	//make sure the primary pod is in the ready state
 	selector = config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
-	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return "", err
 	}

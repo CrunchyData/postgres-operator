@@ -557,7 +557,7 @@ func stopPostgreSQLInstance(clientset *kubernetes.Clientset, restConfig *rest.Co
 	// First, attempt to get the PostgreSQL instance Pod attachd to this
 	// particular deployment
 	selector := fmt.Sprintf("%s=%s", config.LABEL_DEPLOYMENT_NAME, deployment.Name)
-	pods, err := kubeapi.GetPods(clientset, selector, deployment.ObjectMeta.Namespace)
+	pods, err := clientset.CoreV1().Pods(deployment.Namespace).List(metav1.ListOptions{LabelSelector: selector})
 
 	// if there is a bona fide error, return.
 	// However, if no Pods are found, issue a warning, but do not return an error

@@ -887,7 +887,7 @@ func getCloneTaskIdentifiers(task *crv1.Pgtask) (string, string, string) {
 
 // getLinkMap returns the pgBackRest argument to support a WAL volume.
 func getLinkMap(clientset *kubernetes.Clientset, restConfig *rest.Config, cluster crv1.Pgcluster, targetClusterName string) (string, error) {
-	pods, err := kubeapi.GetPods(clientset, "pgo-pg-database=true,pg-cluster="+cluster.Name, cluster.Namespace)
+	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(metav1.ListOptions{LabelSelector: "pgo-pg-database=true,pg-cluster=" + cluster.Name})
 	if err != nil {
 		return "", err
 	}

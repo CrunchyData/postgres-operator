@@ -21,50 +21,9 @@ import (
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
-
-// DeletePod deletes a Pod
-func DeletePod(clientset *kubernetes.Clientset, name, namespace string) error {
-	err := clientset.CoreV1().Pods(namespace).Delete(name, &meta_v1.DeleteOptions{})
-	if err != nil {
-		log.Error(err)
-		log.Error("error deleting Pod " + name)
-	}
-	log.Info("delete pod " + name)
-	return err
-}
-
-// GetPods gets a list of Pods by selector
-func GetPods(clientset *kubernetes.Clientset, selector, namespace string) (*v1.PodList, error) {
-
-	lo := meta_v1.ListOptions{LabelSelector: selector}
-
-	pods, err := clientset.CoreV1().Pods(namespace).List(lo)
-	if err != nil {
-		log.Error(err)
-		log.Error("error getting pods selector=[" + selector + "]")
-		return pods, err
-	}
-
-	return pods, err
-}
-
-// GetPod gets a Pod by name
-func GetPod(clientset *kubernetes.Clientset, name, namespace string) (*v1.Pod, bool, error) {
-	svc, err := clientset.CoreV1().Pods(namespace).Get(name, meta_v1.GetOptions{})
-	if kerrors.IsNotFound(err) {
-		return svc, false, err
-	}
-	if err != nil {
-		return svc, false, err
-	}
-
-	return svc, true, err
-}
 
 func AddLabelToPod(clientset *kubernetes.Clientset, origPod *v1.Pod, key, value, namespace string) error {
 	var newData, patchBytes []byte

@@ -218,7 +218,7 @@ func GetPrimaryPod(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) (*v
 	namespace := cluster.Spec.Namespace
 
 	// query the pods
-	pods, err := kubeapi.GetPods(clientset, selector, namespace)
+	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: selector})
 
 	// if there is an error, log it and abort
 	if err != nil {

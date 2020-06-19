@@ -29,6 +29,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -173,7 +174,7 @@ func cleanAndCreatePostFailoverBackup(restClient *rest.RESTClient,
 	//look up the backrest-repo pod name
 	selector := fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER,
 		clusterName, config.LABEL_PGO_BACKREST_REPO)
-	pods, err := kubeapi.GetPods(clientset, selector, namespace)
+	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if len(pods.Items) != 1 {
 		return fmt.Errorf("pods len != 1 for cluster %s", clusterName)
 	} else if err != nil {

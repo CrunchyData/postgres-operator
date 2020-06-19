@@ -63,8 +63,7 @@ func Failover(identifier string, clientset *kubernetes.Clientset, client *rest.R
 
 	//relabel the deployment with primary labels
 	//by setting service-name=clustername
-	var upod *v1.Pod
-	upod, _, err = kubeapi.GetPod(clientset, pod.Name, namespace)
+	upod, err := clientset.CoreV1().Pods(namespace).Get(pod.Name, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		log.Error("error in getting pod during failover relabel")

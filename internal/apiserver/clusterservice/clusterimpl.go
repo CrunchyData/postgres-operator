@@ -223,7 +223,7 @@ func GetPods(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) ([]msgs.S
 	selector := config.LABEL_BACKREST_JOB + "!=true," + config.LABEL_BACKREST_RESTORE + "!=true," + config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	log.Debugf("selector for GetPods is %s", selector)
 
-	pods, err := kubeapi.GetPods(clientset, selector, cluster.Namespace)
+	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}
@@ -1913,7 +1913,7 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 	selector := config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "," + config.LABEL_DEPLOYMENT_NAME
 	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
 
-	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}
@@ -1935,7 +1935,7 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 	selector = config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "-replica" + "," + config.LABEL_DEPLOYMENT_NAME
 	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
 
-	pods, err = kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	pods, err = apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}

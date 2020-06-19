@@ -253,7 +253,6 @@ func DeletePgbouncer(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 // which involves updating the password in the PostgreSQL cluster as well as
 // the users secret that is available in the pgbouncer Pod
 func RotatePgBouncerPassword(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
-	namspace := cluster.Namespace
 	// determine if we are able to access the primary Pod
 	primaryPod, err := util.GetPrimaryPod(clientset, cluster)
 
@@ -306,25 +305,19 @@ func RotatePgBouncerPassword(clientset *kubernetes.Clientset, restclient *rest.R
 		return err
 	}
 
-	// now we wait for the password to propagate to all of the pgbouncer pods in
+	// force the password to propagate to all of the pgbouncer pods in
 	// the deployment
-	// set up the selector for the primary pod
 	selector := fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER, cluster.Name,
 		config.LABEL_PGBOUNCER)
 
 	// query the pods
-	pods, err := kubeapi.GetPods(clientset, selector, namspace)
-
+	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return err
 	}
 
-	// iterate through each pod and restart it, which will force an update of the
-	// secret
 	for _, pod := range pods.Items {
-		// after this waiting period has passed, delete Pod. If the pod fails to
-		// delete, warn but continue on
-		if err := kubeapi.DeletePod(clientset, pod.Name, pod.Namespace); err != nil {
+		if err := clientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{}); err != nil {
 			log.Warn(err)
 		}
 	}
