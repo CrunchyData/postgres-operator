@@ -89,6 +89,7 @@ type CreateClusterRequest struct {
 	BackrestS3Region          string
 	BackrestS3Endpoint        string
 	BackrestS3URIStyle        string
+	BackrestS3VerifyTLS       UpdateBackrestS3VerifyTLS
 	Standby                   bool
 	BackrestRepoPath          string
 
@@ -328,6 +329,16 @@ const (
 	UpdateClusterStandbyDoNothing UpdateClusterStandbyStatus = iota
 	UpdateClusterStandbyEnable
 	UpdateClusterStandbyDisable
+)
+
+// UpdateBackrestS3VerifyTLS defines the types for updating the S3 TLS verification configuration
+type UpdateBackrestS3VerifyTLS int
+
+// set the different values around updating the S3 TLS verification configuration
+const (
+	UpdateBackrestS3VerifyTLSDoNothing UpdateBackrestS3VerifyTLS = iota
+	UpdateBackrestS3VerifyTLSEnable
+	UpdateBackrestS3VerifyTLSDisable
 )
 
 // UpdateClusterRequest ...

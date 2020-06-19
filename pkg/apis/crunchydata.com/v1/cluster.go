@@ -93,31 +93,32 @@ type PgclusterSpec struct {
 	BackrestLimits v1.ResourceList `json:"backrestLimits"`
 	// PgBouncer contains all of the settings to properly maintain a pgBouncer
 	// implementation
-	PgBouncer          PgBouncerSpec            `json:"pgBouncer"`
-	PrimaryHost        string                   `json:"primaryhost"`
-	User               string                   `json:"user"`
-	Database           string                   `json:"database"`
-	Replicas           string                   `json:"replicas"`
-	SecretFrom         string                   `json:"secretfrom"`
-	UserSecretName     string                   `json:"usersecretname"`
-	RootSecretName     string                   `json:"rootsecretname"`
-	PrimarySecretName  string                   `json:"primarysecretname"`
-	CollectSecretName  string                   `json:"collectSecretName"`
-	Status             string                   `json:"status"`
-	CustomConfig       string                   `json:"customconfig"`
-	UserLabels         map[string]string        `json:"userlabels"`
-	PodAntiAffinity    PodAntiAffinitySpec      `json:"podAntiAffinity"`
-	SyncReplication    *bool                    `json:"syncReplication"`
-	BackrestS3Bucket   string                   `json:"backrestS3Bucket"`
-	BackrestS3Region   string                   `json:"backrestS3Region"`
-	BackrestS3Endpoint string                   `json:"backrestS3Endpoint"`
-	BackrestS3URIStyle string                   `json:"backrestS3URIStyle"`
-	BackrestRepoPath   string                   `json:"backrestRepoPath"`
-	TablespaceMounts   map[string]PgStorageSpec `json:"tablespaceMounts"`
-	TLS                TLSSpec                  `json:"tls"`
-	TLSOnly            bool                     `json:"tlsOnly"`
-	Standby            bool                     `json:"standby"`
-	Shutdown           bool                     `json:"shutdown"`
+	PgBouncer           PgBouncerSpec            `json:"pgBouncer"`
+	PrimaryHost         string                   `json:"primaryhost"`
+	User                string                   `json:"user"`
+	Database            string                   `json:"database"`
+	Replicas            string                   `json:"replicas"`
+	SecretFrom          string                   `json:"secretfrom"`
+	UserSecretName      string                   `json:"usersecretname"`
+	RootSecretName      string                   `json:"rootsecretname"`
+	PrimarySecretName   string                   `json:"primarysecretname"`
+	CollectSecretName   string                   `json:"collectSecretName"`
+	Status              string                   `json:"status"`
+	CustomConfig        string                   `json:"customconfig"`
+	UserLabels          map[string]string        `json:"userlabels"`
+	PodAntiAffinity     PodAntiAffinitySpec      `json:"podAntiAffinity"`
+	SyncReplication     *bool                    `json:"syncReplication"`
+	BackrestS3Bucket    string                   `json:"backrestS3Bucket"`
+	BackrestS3Region    string                   `json:"backrestS3Region"`
+	BackrestS3Endpoint  string                   `json:"backrestS3Endpoint"`
+	BackrestS3URIStyle  string                   `json:"backrestS3URIStyle"`
+	BackrestS3VerifyTLS string                   `json:"backrestS3VerifyTLS"`
+	BackrestRepoPath    string                   `json:"backrestRepoPath"`
+	TablespaceMounts    map[string]PgStorageSpec `json:"tablespaceMounts"`
+	TLS                 TLSSpec                  `json:"tls"`
+	TLSOnly             bool                     `json:"tlsOnly"`
+	Standby             bool                     `json:"standby"`
+	Shutdown            bool                     `json:"shutdown"`
 }
 
 // PgclusterList is the CRD that defines a Crunchy PG Cluster List

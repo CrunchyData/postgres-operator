@@ -54,7 +54,6 @@ var pgBackRestOptsDenyList = []string{
 	"--repo-s3-endpoint",
 	"--repo-s3-host",
 	"--repo-s3-region",
-	"--repo-s3-uri-style",
 	"--repo-s3-verify-tls",
 	"--repo-s3-uri-style",
 	"--repo-type",
