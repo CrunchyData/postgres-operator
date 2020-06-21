@@ -28,7 +28,6 @@ import (
 	nscontroller "github.com/crunchydata/postgres-operator/internal/controller/namespace"
 	crunchylog "github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/ns"
-	"github.com/crunchydata/postgres-operator/internal/operator/operatorupgrade"
 	log "github.com/sirupsen/logrus"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,7 +61,6 @@ func main() {
 	}
 
 	kubeClientset := clients.Kubeclientset
-	pgoRESTclient := clients.PGORestclient
 
 	operator.Initialize(kubeClientset)
 
@@ -72,13 +70,6 @@ func main() {
 	namespaceList, err := operator.SetupNamespaces(kubeClientset)
 	if err != nil {
 		log.Errorf("Error configuring operator namespaces: %w", err)
-		os.Exit(2)
-	}
-
-	// check the cluster version against the operator version and label if the cluster
-	// needs to be upgraded
-	if operatorupgrade.OperatorCRPgoVersionCheck(kubeClientset, pgoRESTclient, namespaceList); err != nil {
-		log.Error(err)
 		os.Exit(2)
 	}
 
@@ -93,11 +84,7 @@ func main() {
 		log.Error(err)
 		os.Exit(2)
 	}
-	if err := controllerManager.RunAll(); err != nil {
-		log.Error(err)
-		os.Exit(2)
-	}
-	log.Debug("controller manager created and all included controllers are now running")
+	log.Debug("controller manager created")
 
 	// If not using the "disabled" namespace operating mode, start a real namespace controller
 	// that is able to resond to namespace events in the Kube cluster.  If using the "disabled"

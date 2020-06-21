@@ -177,7 +177,8 @@
 
 - name: Delete existing PGO Role Bindings (Watched Namespaces)
   shell: |
-    {{ kubectl_or_oc }} delete rolebinding pgo-backrest-role-binding pgo-pg-role-binding pgo-target-role-binding -n {{ item }}
+    {{ kubectl_or_oc }} delete rolebinding pgo-backrest-role-binding pgo-pg-role-binding \
+      pgo-target-role-binding pgo-local-ns -n {{ item }}
   with_items:
   - "{{ watched_namespaces }}"
   ignore_errors: yes
@@ -198,7 +199,7 @@
 
 - name: Delete existing PGO Roles (Watched Namespaces)
   shell: |
-    {{ kubectl_or_oc }} delete role pgo-backrest-role pgo-pg-role pgo-target-role -n {{ item }}
+    {{ kubectl_or_oc }} delete role pgo-backrest-role pgo-pg-role pgo-target-role pgo-local-ns -n {{ item }}
   with_items:
   - "{{ watched_namespaces }}"
   ignore_errors: yes
@@ -207,7 +208,7 @@
   - uninstall
   when: create_rbac|bool
 
-- name: Delete existing PGO Role Binding (Operator Namespace)
+- name: Delete existing PGO Role (Operator Namespace)
   shell: |
     {{ kubectl_or_oc }} delete role pgo-role -n {{ pgo_operator_namespace }}
   ignore_errors: yes

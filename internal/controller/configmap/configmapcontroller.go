@@ -156,6 +156,7 @@ func (c *Controller) processNextWorkItem() bool {
 		c.workqueue.AddRateLimited(key)
 		log.Errorf("ConfigMap Controller: error syncing ConfigMap '%s', will now requeue: %w"+
 			key, err)
+		return true
 	}
 
 	// Finally if no error has occurred forget this item

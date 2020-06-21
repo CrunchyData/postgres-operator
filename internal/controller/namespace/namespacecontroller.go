@@ -20,8 +20,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+
 	coreinformers "k8s.io/client-go/informers/core/v1"
+	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )
@@ -30,6 +33,7 @@ import (
 type Controller struct {
 	ControllerManager controller.Manager
 	Informer          coreinformers.NamespaceInformer
+	namespaceLister   corelisters.NamespaceLister
 	workqueue         workqueue.RateLimitingInterface
 	workerCount       int
 }
@@ -43,9 +47,10 @@ func NewNamespaceController(controllerManager controller.Manager,
 	controller := &Controller{
 		ControllerManager: controllerManager,
 		Informer:          informer,
+		namespaceLister:   informer.Lister(),
+		workerCount:       workerCount,
 		workqueue: workqueue.NewNamedRateLimitingQueue(workqueue.DefaultControllerRateLimiter(),
 			"Namespaces"),
-		workerCount: workerCount,
 	}
 
 	informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -53,11 +58,7 @@ func NewNamespaceController(controllerManager controller.Manager,
 			controller.enqueueNamespace(obj)
 		},
 		UpdateFunc: func(old, new interface{}) {
-			newNs := new.(*corev1.Namespace)
-			// if terminating, ignore updates and wait for the delete event
-			if newNs.Status.Phase != corev1.NamespaceTerminating {
-				controller.enqueueNamespace(new)
-			}
+			controller.enqueueNamespace(new)
 		},
 		DeleteFunc: func(obj interface{}) {
 			controller.enqueueNamespace(obj)
@@ -130,6 +131,21 @@ func (c *Controller) processNextWorkItem() bool {
 	_, namespace, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
 		log.Error(err)
+		return true
+	}
+
+	// remove the controller group for the namespace if the namespace no longer exists or is
+	// termininating
+	ns, err := c.namespaceLister.Get(namespace)
+	if (err == nil && ns.Status.Phase == corev1.NamespaceTerminating) ||
+		(err != nil && kerrors.IsNotFound(err)) {
+		c.ControllerManager.RemoveGroup(namespace)
+		c.workqueue.Forget(obj)
+		return true
+	} else if err != nil {
+		log.Errorf("Namespace Controller: error getting namespace %s from namespaceLister, will "+
+			"now requeue: %v", key, err)
+		c.workqueue.AddRateLimited(key)
 		return true
 	}
 

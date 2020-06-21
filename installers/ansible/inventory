@@ -51,21 +51,22 @@ create_rbac='true'
 # ==================
 # namespace_mode='dynamic'
 
-# Dynamic RBAC
+# Reconcile RBAC
 # ==================
-# Note: this setting is only applicable if 'namespace_mode' is set to
-# 'readonly' or 'disabled'.
 #
 # When creating target namespaces during installation, this setting
-# determines what RBAC is created within the target namespace.  If set to
-# 'true', the RBAC created in those namespaces will allow the PostgreSQL
-# Operator itself to create the ServiceAccounts, Roles and RoleBindings
-# it requires to create PG clusters.  If set to 'false' (the default),
-# the installer will instead create the ServiceAccounts, Roles and
-# RoleBindings), and the PostgreSQL Operator will not be granted the
-# ability to create the RBAC it requires within those namespaces.
+# determines what RBAC is installed and assigned to the PostgreSQL Operator
+# ServiceAccount in order to reconcile its own RBAC in a target namespace.
+# If set to 'true' (the default) and the 'namespace_mode' is 'dynamic',
+# then a ClusterRole and ClusterRoleBinding is created allowing the
+# Operator to reconcile its own RBAC in any namespace.  If set to 'true' 
+# and 'namespace_mode' is 'readonly' or 'disabled', then local Role and
+# RoleBindings are created in each target namespace that allow the Operator
+# to reconcile it's RBAC in those specific namespaces.  And finally, if set
+# to 'false', the Operator will not be assigned any permissions to 
+# reconcile its own RBAC, and will therefore not attempt to do so.
 # ==================
-# dynamic_rbac='false'
+# reconcile_rbac='false'
 
 # ===================
 # PGO Client Container Settings

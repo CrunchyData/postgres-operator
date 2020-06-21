@@ -48,16 +48,22 @@ then
     array=("${PGO_OPERATOR_NAMESPACE}")
 fi
 
-if [[ "${PGO_NAMESPACE_MODE:-dynamic}" != "dynamic" ]]
+# determine which "add namespace" script to run based on namespace mode and whether or not RBAC
+# reconciliation is enabled (when using a 'dynamic' namespace mode with RBAC reconciliation
+# enabled, no script is run since the PostgreSQL Operator is assigned the permissions to reconcile
+# RBAC in any namespace a ClusterRole, and will also handle namespace creation itself).
+if [[ "${PGO_RECONCILE_RBAC:-true}" == "true" ]] && 
+	[[ "${PGO_NAMESPACE_MODE:-dynamic}" != "dynamic" ]]
 then
+	add_ns_script=add-targeted-namespace-reconcile-rbac.sh
+elif [[ "${PGO_RECONCILE_RBAC}" == "false" ]]
+then
+	add_ns_script=add-targeted-namespace.sh
+fi
 
-	if [[ "${PGO_DYNAMIC_RBAC}" == "true" ]]
-	then
-		add_ns_script=add-targeted-namespace-dynamic-rbac.sh
-	else	
-		add_ns_script=add-targeted-namespace.sh
-	fi
-
+# now run the proper "add namespace" script for any namespaces if needed
+if [[ "${add_ns_script}" != "" ]]
+then
 	for ns in "${array[@]}"
 	do
 		$PGO_CMD get namespace $ns > /dev/null 2> /dev/null

@@ -34,4 +34,4 @@
     - exporterport
     - scheduler_timeout
     - namespace_mode
-    - dynamic_rbac
+    - reconcile_rbac
