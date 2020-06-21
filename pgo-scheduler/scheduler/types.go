@@ -21,7 +21,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	cv2 "github.com/robfig/cron"
+	cv2 "github.com/robfig/cron/v3"
 )
 
 var kubeClient *kubernetes.Clientset

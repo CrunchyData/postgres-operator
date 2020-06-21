@@ -40,9 +40,6 @@ $DIR/install-rbac.sh
 # Deploy the new Operator
 $DIR/deploy.sh
 
-# Run 'dep ensure' to update needed libraries
-dep ensure
-
 # Store the current location of the PGO client
 MYPGO=`which pgo`
 # Store the expected location of the PGO client
@@ -53,7 +50,7 @@ if [ "$MYPGO" != "$BASHPGO" ]; then
 	echo "Current location\(${MYPG}O\) does not match the expected location \(${BASHPGO}\). You will need to manually install the updated Posgres Operator client in your preferred location."
 
 else
-	# install the new PGO client	
+	# install the new PGO client
 	go install $PGOROOT/pgo/pgo.go
 	cp $GOBIN/pgo $PGOROOT/bin/pgo
 fi

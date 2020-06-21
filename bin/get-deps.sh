@@ -81,13 +81,6 @@ else
 	fi
 fi
 
-if which dep; then
-	echo -n "  Found: " && (dep version | egrep '^ version')
-else
-	echo "=== Installing dep ==="
-	curl -S https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-fi
-
 if which expenv; then
 	echo "  Found expenv"
 else

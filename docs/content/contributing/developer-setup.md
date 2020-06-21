@@ -63,7 +63,6 @@ The setup target ensures the presence of:
 * `GOPATH` and `PATH` as described in the prerequisites
 * EPEL yum repository
 * golang compiler
-* `dep` dependency manager
 * NSQ messaging binaries
 * `docker` container tool
 * `buildah` OCI image building tool
@@ -107,9 +106,6 @@ You will build all the Operator binaries and Docker images by running:
 This assumes you have Docker installed and running on your development host.
 
 By default, the Makefile will use buildah to build the container images, to override this default to use docker to build the images, set the IMGBUILDER variable to `docker`
-
-
-The project uses the golang dep package manager to vendor all the golang source dependencies into the `vendor` directory.  You typically do not need to run any `dep` commands unless you are adding new golang package dependencies into the project outside of what is within the project for a given release.
 
 After a full compile, you will have a `pgo` binary in `$HOME/odev/bin` and the Operator images in your local Docker registry.
 

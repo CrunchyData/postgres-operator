@@ -20,7 +20,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/kubernetes/sample-controller/pkg/signals"
+	"k8s.io/sample-controller/pkg/signals"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller"
