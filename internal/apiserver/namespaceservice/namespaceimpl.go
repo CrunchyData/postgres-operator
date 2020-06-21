@@ -154,13 +154,6 @@ func UpdateNamespace(clientset *kubernetes.Clientset, updatedBy string, request 
 			resp.Status.Msg = err.Error()
 			return resp
 		}
-		//apply targeted rbac rules here
-		if err := ns.ReconcileTargetRBAC(clientset, apiserver.PgoNamespace,
-			namespace); err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
 
 		resp.Results = append(resp.Results, "updated namespace "+namespace)
 	}

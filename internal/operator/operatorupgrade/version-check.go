@@ -16,44 +16,33 @@ package operatorupgrade
 */
 
 import (
+	"fmt"
+
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
-// OperatorCRPgoVersionCheck - checks the version value for any existing PG Cluster. If the values do not match the current
-// Operator version, add a label to this cluster. This is called each time the operator starts up.
-// (Previously, OperatorUpdateCRPgoVersion updated existing pgcluster custom resources to show current operator version.
-func OperatorCRPgoVersionCheck(clientset *kubernetes.Clientset, restclient *rest.RESTClient, ns []string) error {
-	var err error
-	log.Info("Operator version version check starts")
-	for i := 0; i < len(ns); i++ {
-		err = checkVersion(restclient, ns[i])
-		if err != nil {
-			log.Error("problem running operator version check")
-			return err
-		}
-	}
-	log.Info("Operator version Update ends")
-	return err
-}
+const (
+	// ErrUnsuccessfulVersionCheck defines the error string that is displayed when a pgcluster
+	// version check in a target namespace is unsuccessful
+	ErrUnsuccessfulVersionCheck = "unsuccessful pgcluster version check"
+)
 
-// checkVersion looks at the Postgres Operator version information for existing pgclusters and replicas
+// CheckVersion looks at the Postgres Operator version information for existing pgclusters and replicas
 // if the Operator version listed does not match the current Operator version, create an annotation indicating
 // it has not been upgraded
-func checkVersion(restclient *rest.RESTClient, ns string) error {
+func CheckVersion(restclient *rest.RESTClient, ns string) error {
 	var err error
 	clusterList := crv1.PgclusterList{}
 
 	// get all pgclusters
 	err = kubeapi.Getpgclusters(restclient, &clusterList, ns)
 	if err != nil {
-		log.Error(err)
-		return err
+		return fmt.Errorf("%s: %w", ErrUnsuccessfulVersionCheck, err)
 	}
 
 	// where the Operator versions do not match, label the pgclusters accordingly
@@ -68,7 +57,7 @@ func checkVersion(restclient *rest.RESTClient, ns string) error {
 			cluster.Annotations[config.ANNOTATION_IS_UPGRADED] = config.ANNOTATIONS_FALSE
 			err = kubeapi.Updatepgcluster(restclient, &cluster, cluster.Name, ns)
 			if err != nil {
-				return err
+				return fmt.Errorf("%s: %w", ErrUnsuccessfulVersionCheck, err)
 			}
 		}
 	}
@@ -80,7 +69,7 @@ func checkVersion(restclient *rest.RESTClient, ns string) error {
 	err = kubeapi.Getpgreplicas(restclient, &replicaList, ns)
 	if err != nil {
 		log.Error(err)
-		return err
+		return fmt.Errorf("%s: %w", ErrUnsuccessfulVersionCheck, err)
 	}
 
 	// where the Operator versions do not match, label the replicas accordingly
@@ -95,7 +84,7 @@ func checkVersion(restclient *rest.RESTClient, ns string) error {
 			replica.Annotations[config.ANNOTATION_IS_UPGRADED] = config.ANNOTATIONS_FALSE
 			err = kubeapi.Updatepgreplica(restclient, &replica, replica.Name, ns)
 			if err != nil {
-				return err
+				return fmt.Errorf("%s: %w", ErrUnsuccessfulVersionCheck, err)
 			}
 		}
 	}

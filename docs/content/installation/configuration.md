@@ -53,7 +53,6 @@ Operator.
 | `DELETE_WATCHED_NAMESPACES` | false |  | 	Set to configure whether or not the PGO watched namespaces (defined using variable `namespace`) are deleted when uninstalling the PGO. |
 | `DISABLE_AUTO_FAILOVER` | false |  | If set, will disable autofail capabilities by default in any newly created cluster |
 | `DISABLE_FSGROUP` | false |  | Set to `true` for deployments where you do not want to have the default PostgreSQL fsGroup (26) set. The typical usage is in OpenShift environments that have a `restricted` Security Context Constraints. |
-| `DYNAMIC_RBAC` | false | | When using a `readonly` or `disabled` `NAMESPACE_MODE`, determines whether or not the PostgreSQL Operator itself will granted the permissions needed to create required RBAC within a target namespace. |
 | `EXPORTERPORT` | 9187 | **Required** | Set to configure the default port used to connect to postgres exporter. |
 | `GRAFANA_ADMIN_PASSWORD` |  |  | Set to configure the login password for the Grafana administrator. |
 | `GRAFANA_ADMIN_USERNAME` | admin |  | Set to configure the login username for the Grafana administrator. |
@@ -65,7 +64,7 @@ Operator.
 | `METRICS` | false | **Required** | Set to true enable performance metrics on all newly created clusters. This can be disabled by the client. |
 | `METRICS_NAMESPACE` | `pgo` |  | Namespace in which the `metrics` deployments with be run. |
 | `NAMESPACE` |  |  | Set to a comma delimited string of all the namespaces Operator will manage. |
-| `NAMESPACE_MODE` | dynamic |  | When installing RBAC using 'create_rbac', the namespace mode determines what Cluster Roles are installed. Options: `dynamic`, `readonly`, and `disabled` |
+| `NAMESPACE_MODE` | dynamic |  | Determines which namespace permissions are assigned to the PostgreSQL Operator using a ClusterRole. Options: `dynamic`, `readonly`, and `disabled` |
 | `PGBADGERPORT` | 10000 | **Required** | Set to configure the default port used to connect to pgbadger. |
 | `PGO_ADD_OS_CA_STORE` | false | **Required** | When true, includes system default certificate authorities. |
 | `PGO_ADMIN_PASSWORD` |  | **Required** | Configures the pgo administrator password. |
@@ -93,6 +92,7 @@ Operator.
 | `PROMETHEUS_STORAGE_CLASS_NAME` | fast |  | Set to the name of the storage class used when creating Prometheus persistent volumes. |
 | `PROMETHEUS_SUPPLEMENTAL_GROUPS` | 65534 |  | Set to configure any supplemental groups that should be added to security contexts for Prometheus. |
 | `PROMETHEUS_VOLUME_SIZE` | 1G |  | Set to the size of persistent volume to create for Prometheus. |
+| `RECONCILE_RBAC` | true | | Determines whether or not the PostgreSQL Operator will granted the permissions needed to reconcile RBAC within targeted namespaces. |
 | `SCHEDULER_TIMEOUT` | 3600 | **Required** | Set to a value in seconds to configure the `pgo-scheduler` timeout threshold when waiting for schedules to complete. |
 | `SERVICE_TYPE` | ClusterIP |  | Set to configure the type of Kubernetes service provisioned on all newly created clusters. |
 | `SYNC_REPLICATION` | false |  | If set to `true` will automatically enable synchronous replication in new PostgreSQL clusters. |

@@ -176,8 +176,6 @@ spec:
                     value: "false"
                   - name: DISABLE_FSGROUP
                     value: "false"
-                  - name: DYNAMIC_RBAC
-                    value: "false"
                   - name: EXPORTERPORT
                     value: "9187"
                   - name: METRICS
@@ -206,6 +204,8 @@ spec:
                     value: "devtest"
                   - name: PGO_OPERATOR_NAMESPACE
                     value: "pgo"
+                  - name: RECONCILE_RBAC
+                    value: "true"
                   - name: SCHEDULER_TIMEOUT
                     value: "3600"
                   - name: BACKREST_STORAGE

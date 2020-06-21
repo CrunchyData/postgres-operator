@@ -32,6 +32,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/pod"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/ns"
+	"github.com/crunchydata/postgres-operator/internal/operator/operatorupgrade"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions"
 	log "github.com/sirupsen/logrus"
@@ -39,6 +40,7 @@ import (
 
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )
@@ -75,6 +77,7 @@ type controllerGroup struct {
 	controllersWithWorkers         []controller.WorkerRunner
 	informerSyncedFuncs            []cache.InformerSynced
 	kubeClientset                  *kubernetes.Clientset
+	pgoRESTClient                  *rest.RESTClient
 }
 
 // NewControllerManager returns a new ControllerManager comprised of controllerGroups for each
@@ -136,41 +139,12 @@ func (c *ControllerManager) AddGroup(namespace string) error {
 // namespace specified, and then immediately runs the controllers in that group.
 func (c *ControllerManager) AddAndRunGroup(namespace string) error {
 
-	if c.controllers[namespace] != nil {
-		// first try to clean if one is not already in progress
-		if err := c.clean(namespace); err != nil {
-			log.Infof("Controller Manager: %s", err.Error())
-		}
-
-		// if we just cleaned the current namespace's controller, then return
-		if _, ok := c.controllers[namespace]; !ok {
-			log.Infof("Controller Manager: controller group for namespace %s has already "+
-				"been cleaned", namespace)
-			return nil
-		}
-
-		// check if we can create RBAC in the namespace in order to the reconcile RBAC
-		// as needed to ensure proper operator functionality
-		canCreateRBACInNamespace, err := ns.CanCreateRBACInNamespace(
-			c.controllers[namespace].kubeClientset,
-			namespace, c.namespaceOperatingMode)
-		if err != nil {
-			return err
-		}
-
-		log.Debugf("Controller Manager: canCreateRBACInNamespace is '%t' for namespace %s",
-			canCreateRBACInNamespace, namespace)
-
-		// now reconcile RBAC in the namespace if allowed
-		if canCreateRBACInNamespace {
-			if err := ns.ReconcileTargetRBAC(c.controllers[namespace].kubeClientset, c.pgoNamespace,
-				namespace); err != nil {
-				return err
-			}
-		}
+	if c.controllers[namespace] != nil && !c.pgoConfig.Pgo.DisableReconcileRBAC {
+		// first reconcile RBAC in the target namespace if RBAC reconciliation is enabled
+		c.reconcileRBAC(namespace)
 	}
 
-	// now finally add and run the controller group
+	// now add and run the controller group
 	c.mgrMutex.Lock()
 	defer c.mgrMutex.Unlock()
 
@@ -344,6 +318,7 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 
 	group := &controllerGroup{
 		kubeClientset:                  kubeClientset,
+		pgoRESTClient:                  pgoRESTClient,
 		stopCh:                         make(chan struct{}),
 		doneCh:                         make(chan struct{}),
 		pgoInformerFactory:             pgoInformerFactory,
@@ -369,62 +344,9 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 
 	log.Debugf("Controller Manager: added controller group for namespace %s", namespace)
 
-	// check if we can create RBAC in the namespace in order to the reconcile RBAC
-	// as needed to ensure proper operator functionality.  If we can't reconcile at this point
-	// we will try again on the next namespace refresh interval.
-	canCreateRBACInNamespace, err := ns.CanCreateRBACInNamespace(
-		c.controllers[namespace].kubeClientset,
-		namespace, c.namespaceOperatingMode)
-	if err != nil {
-		return err
-	}
-
-	log.Debugf("Controller Manager: canCreateRBACInNamespace is '%t' for namespace %s",
-		canCreateRBACInNamespace, namespace)
-
-	// now reconcile RBAC in the namespace if allowed
-	if canCreateRBACInNamespace {
-		if err := ns.ReconcileTargetRBAC(c.controllers[namespace].kubeClientset, c.pgoNamespace,
-			namespace); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// clean removes and controller groups that no longer correspond to a valid namespace within
-// the Kubernetes cluster, e.g. in the event that a namespace has been deleted.
-func (c *ControllerManager) clean(namespace string) error {
-
-	if !c.sem.TryAcquire(1) {
-		return fmt.Errorf("controller group clean already in progress, namespace %s will not "+
-			"clean", namespace)
-	}
-	defer c.sem.Release(1)
-
-	log.Debugf("Controller Manager: namespace %s acquired clean lock and will clean the "+
-		"controller groups", namespace)
-
-	nsList, err := ns.GetCurrentNamespaceList(c.controllers[namespace].kubeClientset,
-		c.installationName, c.namespaceOperatingMode)
-	if err != nil {
-		log.Errorf(err.Error())
-	}
-
-	for controlledNamespace := range c.controllers {
-		cleanNamespace := true
-		for _, currNamespace := range nsList {
-			if controlledNamespace == currNamespace {
-				cleanNamespace = false
-				break
-			}
-		}
-		if cleanNamespace {
-			log.Debugf("Controller Manager: removing controller group for namespace %s",
-				controlledNamespace)
-			c.removeControllerGroup(controlledNamespace)
-		}
+	// now reconcile RBAC in the namespace if RBAC reconciliation is enabled
+	if !c.pgoConfig.Pgo.DisableReconcileRBAC {
+		c.reconcileRBAC(namespace)
 	}
 
 	return nil
@@ -502,6 +424,14 @@ func (c *ControllerManager) runControllerGroup(namespace string) error {
 			"refresh interval", namespace)
 	}
 
+	// before starting, first successfully check the versions of all pgcluster's in the namespace
+	if err := operatorupgrade.CheckVersion(c.controllers[namespace].pgoRESTClient,
+		namespace); err != nil {
+		log.Errorf("Controller Manager: Unsuccessful pgcluster version check for namespace %s, "+
+			"the controller group will not be started", namespace)
+		return err
+	}
+
 	controllerGroup.kubeInformerFactory.Start(controllerGroup.stopCh)
 	controllerGroup.pgoInformerFactory.Start(controllerGroup.stopCh)
 	controllerGroup.kubeInformerFactoryWithRefresh.Start(controllerGroup.stopCh)
@@ -530,7 +460,7 @@ func (c *ControllerManager) runControllerGroup(namespace string) error {
 func (c *ControllerManager) removeControllerGroup(namespace string) {
 
 	if _, ok := c.controllers[namespace]; !ok {
-		log.Debugf("Controller Manager: no controller group to remove for ns %s ", namespace)
+		log.Debugf("Controller Manager: no controller group to remove for ns %s", namespace)
 		return
 	}
 
@@ -548,6 +478,12 @@ func (c *ControllerManager) stopControllerGroup(namespace string) {
 	if _, ok := c.controllers[namespace]; !ok {
 		log.Debugf("Controller Manager: unable to stop controller group for namespace %s because "+
 			"a controller group for this namespace does not exist", namespace)
+		return
+	}
+
+	if !c.controllers[namespace].started {
+		log.Debugf("Controller Manager: controller group for namespace %s was never started, "+
+			"skipping worker shutdown", namespace)
 		return
 	}
 

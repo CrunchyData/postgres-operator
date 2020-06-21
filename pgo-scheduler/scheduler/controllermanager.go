@@ -341,7 +341,7 @@ func (c *ControllerManager) runControllerGroup(namespace string) error {
 func (c *ControllerManager) removeControllerGroup(namespace string) {
 
 	if _, ok := c.controllers[namespace]; !ok {
-		log.Debugf("Controller Manager: no controller group to remove for ns %s ", namespace)
+		log.Debugf("Controller Manager: no controller group to remove for ns %s", namespace)
 		return
 	}
 

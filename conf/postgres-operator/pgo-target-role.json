@@ -8,16 +8,28 @@
     "rules": [
         {
             "apiGroups": [
-                "crunchydata.com"
+                ""
             ],
             "resources": [
-                "pgclusters",
-                "pgpolicies",
-                "pgtasks",
-                "pgreplicas"
+                "configmaps",
+                "endpoints",
+                "pods",
+                "pods/exec",
+                "pods/log",
+                "replicasets",
+                "secrets",
+                "services",
+                "persistentvolumeclaims"
             ],
-            "verbs": [
-                "*"
+            "verbs":[
+                "get",
+                "list",
+                "watch",
+                "create",
+                "patch",
+                "update",
+                "delete",
+                "deletecollection"
             ]
         },
         {
@@ -27,27 +39,15 @@
             "resources": [
                 "deployments"
             ],
-            "verbs": [
-                "*"
-            ]
-        },
-        {
-            "apiGroups": [
-                ""
-            ],
-            "resources": [
-                "secrets",
-                "pods",
-                "configmaps",
-                "pods/exec",
-                "pods/log",
-                "services",
-                "replicasets",
-                "endpoints",
-                "persistentvolumeclaims"
-            ],
-            "verbs": [
-                "*"
+            "verbs":[
+                "get",
+                "list",
+                "watch",
+                "create",
+                "patch",
+                "update",
+                "delete",
+                "deletecollection"
             ]
         },
         {
@@ -57,8 +57,36 @@
             "resources": [
                 "jobs"
             ],
-            "verbs": [
-                "*"
+            "verbs":[
+                "get",
+                "list",
+                "watch",
+                "create",
+                "patch",
+                "update",
+                "delete",
+                "deletecollection"
+            ]
+        },
+        {
+            "apiGroups": [
+                "crunchydata.com"
+            ],
+            "resources": [
+                "pgclusters",
+                "pgpolicies",
+                "pgtasks",
+                "pgreplicas"
+            ],
+            "verbs":[
+                "get",
+                "list",
+                "watch",
+                "create",
+                "patch",
+                "update",
+                "delete",
+                "deletecollection"
             ]
         }
     ]

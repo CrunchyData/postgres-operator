@@ -18,11 +18,12 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Enforce required environment variables
 test="${PGO_CMD:?Need to set PGO_CMD env variable}"
+test="${PGOROOT:?Need to set PGOROOT env variable}"
 test="${PGO_OPERATOR_NAMESPACE:?Need to set PGO_OPERATOR_NAMESPACE env variable}"
 test="${PGO_INSTALLATION_NAME:?Need to set PGO_INSTALLATION_NAME env variable}"
 
 if [[ -z "$1" ]]; then
-	echo "usage:  add-targeted-namespace.sh mynewnamespace"
+	echo "usage:  add-targeted-namespace-reconcile-rbac.sh mynewnamespace"
 	exit
 fi
 
@@ -39,6 +40,8 @@ else
 	cat $DIR/target-namespace.yaml | sed -e 's/$TARGET_NAMESPACE/'"$1"'/' -e 's/$PGO_INSTALLATION_NAME/'"$PGO_INSTALLATION_NAME"'/' | $PGO_CMD create -f -
 fi
 
-export TARGET_NAMESPACE=$1
+$PGO_CMD -n $1 delete --ignore-not-found rolebinding pgo-target-role-binding pgo-local-ns
+$PGO_CMD -n $1 delete --ignore-not-found role pgo-target-role pgo-local-ns
 
-cat $DIR/local-namespace-rbac.yaml | envsubst | $PGO_CMD create -f -
+cat $PGOROOT/conf/postgres-operator/pgo-target-role.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
+cat $DIR/local-namespace-rbac.yaml | envsubst | $PGO_CMD -n $1 create -f -

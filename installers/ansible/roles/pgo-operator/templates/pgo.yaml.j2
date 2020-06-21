@@ -53,5 +53,6 @@ Storage:
 {% endfor %}
 Pgo:
   Audit:  false
+  DisableReconcileRBAC: {{ not reconcile_rbac | bool }}
   PGOImagePrefix:  {{ pgo_image_prefix }}
   PGOImageTag:  {{ pgo_image_tag }}

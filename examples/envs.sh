@@ -43,6 +43,14 @@ export PGO_CA_CERT=$PGOROOT/conf/postgres-operator/server.crt
 export PGO_CLIENT_CERT=$PGOROOT/conf/postgres-operator/server.crt
 export PGO_CLIENT_KEY=$PGOROOT/conf/postgres-operator/server.key
 
+# During a Bash install determines which namespace permissions are assigned to the PostgreSQL
+# Operator using a ClusterRole.  Options: `dynamic`, `readonly`, and `disabled`
+export PGO_NAMESPACE_MODE=dynamic
+
+# During a Bash install determines whether or not the PostgreSQL Operator will granted the 
+# permissions needed to reconcile RBAC within targeted namespaces.
+export PGO_RECONCILE_RBAC=true
+
 # common bash functions for working with the Operator
 setip()
 {

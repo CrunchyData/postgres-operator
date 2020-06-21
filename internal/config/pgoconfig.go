@@ -238,6 +238,7 @@ type PgoStruct struct {
 	Audit                          bool
 	ConfigMapWorkerCount           *int
 	ControllerGroupRefreshInterval *int
+	DisableReconcileRBAC           bool
 	NamespaceRefreshInterval       *int
 	NamespaceWorkerCount           *int
 	PGClusterWorkerCount           *int
