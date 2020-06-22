@@ -478,7 +478,9 @@ func getInstancePVCs(request Request) ([]string, error) {
 	log.Debugf("instance pvcs overall selector: [%s]", selector)
 
 	// get all of the PVCs to analyze (see the step below)
-	pvcs, err := kubeapi.GetPVCs(request.Clientset, selector, request.Namespace)
+	pvcs, err := request.Clientset.
+		CoreV1().PersistentVolumeClaims(request.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 
 	// if there is an error, return here and log the error in the calling function
 	if err != nil {
@@ -528,7 +530,9 @@ func getReplicaPVC(request Request) ([]string, error) {
 	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName)
 
 	// get all of the PVCs that are specific to this replica and remove them
-	pvcs, err := kubeapi.GetPVCs(request.Clientset, selector, request.Namespace)
+	pvcs, err := request.Clientset.
+		CoreV1().PersistentVolumeClaims(request.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 
 	// if there is an error, return here and log the error in the calling function
 	if err != nil {
@@ -559,7 +563,10 @@ func removePVCs(pvcList []string, request Request) error {
 
 	for _, p := range pvcList {
 		log.Infof("deleting pvc %s", p)
-		err := kubeapi.DeletePVC(request.Clientset, p, request.Namespace)
+		deletePropagation := metav1.DeletePropagationForeground
+		err := request.Clientset.
+			CoreV1().PersistentVolumeClaims(request.Namespace).
+			Delete(p, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 		if err != nil {
 			log.Error(err)
 		}

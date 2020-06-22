@@ -230,7 +230,10 @@ func handleReplicas(clientset *kubernetes.Clientset, restclient *rest.RESTClient
 			// those will require manual deletion so as to avoid any accidental
 			// deletion of valid PVCs.
 			if replicaList.Items[index].Name != currentPrimaryPVC {
-				kubeapi.DeletePVC(clientset, replicaList.Items[index].Name, namespace)
+				deletePropagation := metav1.DeletePropagationForeground
+				clientset.
+					CoreV1().PersistentVolumeClaims(namespace).
+					Delete(replicaList.Items[index].Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 				log.Debugf("deleting replica pvc: %s", replicaList.Items[index].Name)
 			}
 

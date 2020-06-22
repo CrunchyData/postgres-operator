@@ -110,7 +110,7 @@ loop:
 func getClaimCapacity(clientset *kubernetes.Clientset, pvcName, ns string) (string, error) {
 	log.Debugf("in df pvc name found to be %s", pvcName)
 
-	pvc, err := kubeapi.GetPVC(clientset, pvcName, ns)
+	pvc, err := clientset.CoreV1().PersistentVolumeClaims(ns).Get(pvcName, metav1.GetOptions{})
 
 	if err != nil {
 		log.Error(err)

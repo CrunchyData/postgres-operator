@@ -47,7 +47,9 @@ func Status(ns string) msgs.StatusResponse {
 
 func getNumClaims(ns string) int {
 	//count number of PVCs with pgremove=true
-	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, config.LABEL_PGREMOVE, ns)
+	pvcs, err := apiserver.Clientset.
+		CoreV1().PersistentVolumeClaims(ns).
+		List(metav1.ListOptions{LabelSelector: config.LABEL_PGREMOVE})
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -69,7 +71,9 @@ func getNumDatabases(ns string) int {
 
 func getVolumeCap(ns string) string {
 	//sum all PVCs storage capacity
-	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, config.LABEL_PGREMOVE, ns)
+	pvcs, err := apiserver.Clientset.
+		CoreV1().PersistentVolumeClaims(ns).
+		List(metav1.ListOptions{LabelSelector: config.LABEL_PGREMOVE})
 	if err != nil {
 		log.Error(err)
 		return "error"

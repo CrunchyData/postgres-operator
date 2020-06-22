@@ -23,6 +23,7 @@ import (
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
@@ -31,7 +32,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	cfg "github.com/crunchydata/postgres-operator/internal/operator/config"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -129,7 +129,9 @@ func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) erro
 	// These should be the only remaining PVCs for the cluster since all replica PVCs
 	// were deleted when scaling down the cluster in order to shut down the database.
 	remainingPVCSelector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, clusterName)
-	remainingPVC, err := kubeapi.GetPVCs(clientset, remainingPVCSelector, namespace)
+	remainingPVC, err := clientset.
+		CoreV1().PersistentVolumeClaims(namespace).
+		List(metav1.ListOptions{LabelSelector: remainingPVCSelector})
 	if err != nil {
 		log.Error(err)
 		return fmt.Errorf("Unable to get remaining PVCs while enabling standby mode: %w", err)
@@ -138,12 +140,17 @@ func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) erro
 	for _, currPVC := range remainingPVC.Items {
 
 		// delete the original PVC and wait for it to be removed
-		if err := kubeapi.DeletePVC(clientset, currPVC.Name, namespace); !kerrors.IsNotFound(err) &&
-			err != nil {
-			log.Error(err)
+		deletePropagation := metav1.DeletePropagationForeground
+		err := clientset.
+			CoreV1().PersistentVolumeClaims(namespace).
+			Delete(currPVC.Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+		if err == nil {
+			err = wait.Poll(time.Second/2, time.Minute, func() (bool, error) {
+				_, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(currPVC.Name, metav1.GetOptions{})
+				return false, err
+			})
 		}
-		if err := kubeapi.IsPVCDeleted(clientset, time.Second*60, currPVC.Name,
-			namespace); err != nil {
+		if !kerrors.IsNotFound(err) {
 			log.Error(err)
 			return err
 		}

@@ -22,7 +22,6 @@ import (
 	"os"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
 	"github.com/crunchydata/postgres-operator/internal/util"
@@ -31,6 +30,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -89,18 +89,17 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 	// if createPVC is set to true, attempt to create the PVC
 	if createPVC {
 		// create backrest repo PVC with same name as repoName
-		existing, err := kubeapi.GetPVCIfExists(clientset, repoName, namespace)
-		if err != nil {
-			return err
-		}
-		if existing != nil {
+		_, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(repoName, metav1.GetOptions{})
+		if err == nil {
 			log.Debugf("pvc [%s] already present, will not recreate", repoName)
-		} else {
+		} else if kerrors.IsNotFound(err) {
 			_, err = pvc.CreatePVC(clientset, &cluster.Spec.BackrestStorage, repoName, cluster.Name, namespace)
 			if err != nil {
 				return err
 			}
 			log.Debugf("created backrest-shared-repo pvc [%s]", repoName)
+		} else {
+			return err
 		}
 	}
 

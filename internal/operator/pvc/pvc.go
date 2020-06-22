@@ -23,11 +23,12 @@ import (
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -94,7 +95,7 @@ func CreateIfNotExists(clientset *kubernetes.Clientset, spec crv1.PgStorageSpec,
 	case "create", "dynamic":
 		result.PersistentVolumeClaimName = pvcName
 		err := Create(clientset, pvcName, clusterName, &spec, namespace)
-		if err != nil && !kubeapi.IsAlreadyExists(err) {
+		if err != nil && !kerrors.IsAlreadyExists(err) {
 			log.Errorf("error in pvc create: %v", err)
 			return result, err
 		}
@@ -185,9 +186,10 @@ func Create(clientset *kubernetes.Clientset, name, clusterName string, storageSp
 
 // Delete a pvc
 func DeleteIfExists(clientset *kubernetes.Clientset, name string, namespace string) error {
-	pvc, err := kubeapi.GetPVCIfExists(clientset, name, namespace)
-	if pvc == nil {
-		// nothing to delete. return any other error.
+	pvc, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
+	if kerrors.IsNotFound(err) {
+		return nil
+	} else if err != nil {
 		return err
 	}
 
@@ -195,15 +197,18 @@ func DeleteIfExists(clientset *kubernetes.Clientset, name string, namespace stri
 
 	if pvc.ObjectMeta.Labels[config.LABEL_PGREMOVE] == "true" {
 		log.Debugf("delete PVC %s in namespace %s", name, namespace)
-		err = kubeapi.DeletePVC(clientset, name, namespace)
+		deletePropagation := metav1.DeletePropagationForeground
+		err = clientset.
+			CoreV1().PersistentVolumeClaims(namespace).
+			Delete(name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	}
 	return err
 }
 
 // Exists test to see if pvc exists
 func Exists(clientset *kubernetes.Clientset, name string, namespace string) bool {
-	pvc, _ := kubeapi.GetPVCIfExists(clientset, name, namespace)
-	return pvc != nil
+	_, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
+	return err == nil
 }
 
 func getMatchLabels(key, value string) string {

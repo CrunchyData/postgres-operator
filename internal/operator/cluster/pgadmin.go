@@ -279,7 +279,10 @@ func DeletePgAdmin(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	// Delete the PVC, Service and Deployment, which share the same naem
 	pgAdminDeploymentName := fmt.Sprintf(pgAdminDeploymentFormat, clusterName)
 
-	if err := kubeapi.DeletePVC(clientset, pgAdminDeploymentName, namespace); err != nil {
+	deletePropagation := metav1.DeletePropagationForeground
+	if err := clientset.CoreV1().PersistentVolumeClaims(namespace).Delete(pgAdminDeploymentName, &metav1.DeleteOptions{
+		PropagationPolicy: &deletePropagation,
+	}); err != nil {
 		log.Warn(err)
 	}
 
@@ -287,7 +290,6 @@ func DeletePgAdmin(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 		log.Warn(err)
 	}
 
-	deletePropagation := metav1.DeletePropagationForeground
 	if err := clientset.AppsV1().Deployments(namespace).Delete(pgAdminDeploymentName, &metav1.DeleteOptions{
 		PropagationPolicy: &deletePropagation,
 	}); err != nil {

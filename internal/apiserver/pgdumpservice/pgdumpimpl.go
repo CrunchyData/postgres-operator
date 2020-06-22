@@ -470,7 +470,8 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 		return resp
 	}
 
-	if _, err := kubeapi.GetPVC(apiserver.Clientset, request.FromPVC, ns); err != nil {
+	_, err = apiserver.Clientset.CoreV1().PersistentVolumeClaims(ns).Get(request.FromPVC, metav1.GetOptions{})
+	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
