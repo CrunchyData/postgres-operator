@@ -21,7 +21,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
@@ -133,7 +132,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 		cluster.Spec.PgBouncer.Resources = resources
 
 		// update the cluster CRD with these udpates. If there is an error
-		if err := kubeapi.Updatepgcluster(apiserver.RESTClient, &cluster, cluster.Name, request.Namespace); err != nil {
+		if _, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(request.Namespace).Update(&cluster); err != nil {
 			log.Error(err)
 			resp.Results = append(resp.Results, err.Error())
 			continue
@@ -202,7 +201,7 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 		cluster.Spec.PgBouncer.Limits = v1.ResourceList{}
 
 		// update the cluster CRD with these udpates. If there is an error
-		if err := kubeapi.Updatepgcluster(apiserver.RESTClient, &cluster, cluster.Name, request.Namespace); err != nil {
+		if _, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(request.Namespace).Update(&cluster); err != nil {
 			log.Error(err)
 			resp.Status.Code = msgs.Error
 			resp.Results = append(resp.Results, err.Error())
@@ -404,7 +403,7 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 			cluster.Spec.PgBouncer.Replicas = request.Replicas
 		}
 
-		if err := kubeapi.Updatepgcluster(apiserver.RESTClient, &cluster, cluster.Name, cluster.Namespace); err != nil {
+		if _, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(cluster.Namespace).Update(&cluster); err != nil {
 			log.Error(err)
 			result.Error = true
 			result.ErrorMessage = err.Error()
@@ -434,29 +433,26 @@ func getClusterList(namespace string, clusterNames []string, selector string) (c
 	// try to build the cluster list based on either the selector or the list
 	// of arguments...or both. First, start with the selector
 	if selector != "" {
-		err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList,
-			selector, namespace)
+		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(namespace).List(metav1.ListOptions{LabelSelector: selector})
 
 		// if there is an error, return here with an empty cluster list
 		if err != nil {
 			return crv1.PgclusterList{}, err
 		}
+		clusterList = *cl
 	}
 
 	// now try to get clusters based specific cluster names
 	for _, clusterName := range clusterNames {
-		cluster := crv1.Pgcluster{}
-
-		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster,
-			clusterName, namespace)
+		cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
 
 		// if there is an error, capture it here and return here with an empty list
-		if !found || err != nil {
+		if err != nil {
 			return crv1.PgclusterList{}, err
 		}
 
 		// if successful, append to the cluster list
-		clusterList.Items = append(clusterList.Items, cluster)
+		clusterList.Items = append(clusterList.Items, *cluster)
 	}
 
 	log.Debugf("clusters founds: [%d]", len(clusterList.Items))

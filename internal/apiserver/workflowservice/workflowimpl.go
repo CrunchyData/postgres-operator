@@ -20,10 +20,10 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ShowWorkflow ...
@@ -36,9 +36,7 @@ func ShowWorkflow(id, ns string) (msgs.ShowWorkflowDetail, error) {
 
 	selector := crv1.PgtaskWorkflowID + "=" + id
 
-	taskList := crv1.PgtaskList{}
-
-	err := kubeapi.GetpgtasksBySelector(apiserver.RESTClient, &taskList, selector, ns)
+	taskList, err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return detail, err
 	}

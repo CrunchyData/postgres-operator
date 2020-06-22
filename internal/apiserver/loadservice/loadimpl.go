@@ -26,7 +26,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/policyservice"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
@@ -34,6 +33,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/rand"
 )
@@ -120,13 +120,13 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 		}
 
 		//get the clusters list
-		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector, ns)
+		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: request.Selector})
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
 		}
+		clusterList = *cl
 
 		if len(clusterList.Items) == 0 {
 			log.Debug("no clusters found")
@@ -134,9 +134,8 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 
 	} else {
 		for i := 0; i < len(request.Args); i++ {
-			cl := crv1.Pgcluster{}
-			found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cl, request.Args[i], ns)
-			if !found {
+			cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(request.Args[i], metav1.GetOptions{})
+			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = err.Error()
 				return resp
@@ -150,7 +149,7 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 				return resp
 			}
 
-			clusterList.Items = append(clusterList.Items, cl)
+			clusterList.Items = append(clusterList.Items, *cl)
 		}
 	}
 

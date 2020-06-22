@@ -24,12 +24,11 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 
 	log "github.com/sirupsen/logrus"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
 
@@ -63,9 +62,10 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 		log.Debugf("myselector is %s", myselector.String())
 
 		// get the clusters list
-		clusterList := crv1.PgclusterList{}
-		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector, ns)
+
+		clusterList, err := apiserver.PGOClientset.
+			CrunchydataV1().Pgclusters(ns).
+			List(metav1.ListOptions{LabelSelector: request.Selector})
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -127,7 +127,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 		labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
 
 		newInstance := &crv1.Pgtask{
-			ObjectMeta: meta_v1.ObjectMeta{
+			ObjectMeta: metav1.ObjectMeta{
 				Name:   spec.Name,
 				Labels: labels,
 			},
@@ -135,20 +135,17 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 		}
 
 		// remove any existing pgtask for this upgrade
-		task := crv1.Pgtask{}
-		found, err := kubeapi.Getpgtask(apiserver.RESTClient, &task, spec.Name, ns)
+		task, err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Get(spec.Name, metav1.GetOptions{})
 
-		if found && task.Spec.Status != crv1.CompletedStatus {
+		if err == nil && task.Spec.Status != crv1.CompletedStatus {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = fmt.Sprintf("Could not upgrade cluster: there exists an ongoing upgrade task: [%s]. If you believe this is an error, try deleting this pgtask CR.", task.Spec.Name)
 			return response
 		}
 
 		// validate the cluster name and ensure autofail is turned off for each cluster.
-		cl := crv1.Pgcluster{}
-		found, err = kubeapi.Getpgcluster(apiserver.RESTClient,
-			&cl, clusterName, ns)
-		if !found {
+		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
+		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = clusterName + " is not a valid pgcluster"
 			return response
@@ -176,7 +173,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 		}
 
 		// Create an instance of our CRD
-		err = kubeapi.Createpgtask(apiserver.RESTClient, newInstance, ns)
+		_, err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()

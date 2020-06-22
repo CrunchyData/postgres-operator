@@ -25,19 +25,19 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 type BackrestRestoreJobTemplateFields struct {
@@ -62,15 +62,13 @@ type BackrestRestoreJobTemplateFields struct {
 }
 
 // Restore ...
-func Restore(restclient *rest.RESTClient, namespace string, clientset kubernetes.Interface, task *crv1.Pgtask) {
+func Restore(pgoClient pgo.Interface, namespace string, clientset kubernetes.Interface, task *crv1.Pgtask) {
 
 	clusterName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
 	log.Debugf("restore workflow: started for cluster %s", clusterName)
 
-	cluster := crv1.Pgcluster{}
-
-	found, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace)
-	if !found || err != nil {
+	cluster, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	if err != nil {
 		log.Errorf("restore workflow error: could not find a pgcluster in Restore Workflow for %s", clusterName)
 		return
 	}
@@ -85,7 +83,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset kubernetes
 	//create the "to-cluster" PVC to hold the new dataPVC]
 	restoreToName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_TO_PVC]
 	dataVolume, walVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
-		clientset, &cluster, namespace, restoreToName, cluster.Spec.PrimaryStorage)
+		clientset, cluster, namespace, restoreToName, cluster.Spec.PrimaryStorage)
 	if err != nil {
 		log.Error(err)
 		return
@@ -120,17 +118,23 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset kubernetes
 		}
 	}
 
-	message := "Cluster is being restored"
-	err = kubeapi.PatchpgclusterStatus(restclient, crv1.PgclusterStateRestore, message, &cluster, namespace)
+	patch, err := json.Marshal(map[string]interface{}{
+		"status": crv1.PgclusterStatus{
+			State:   crv1.PgclusterStateRestore,
+			Message: "Cluster is being restored",
+		},
+	})
+	if err == nil {
+		_, err = pgoClient.CrunchydataV1().Pgclusters(namespace).Patch(cluster.Name, types.MergePatchType, patch)
+	}
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	pgreplicaList := &crv1.PgreplicaList{}
 	selector = config.LABEL_PG_CLUSTER + "=" + clusterName
 	log.Debugf("Restored cluster %s went to ready, patching replicas", clusterName)
-	err = kubeapi.GetpgreplicasBySelector(restclient, pgreplicaList, selector, namespace)
+	pgreplicaList, err := pgoClient.CrunchydataV1().Pgreplicas(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		return
@@ -139,7 +143,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset kubernetes
 		pgreplica.Status.State = crv1.PgreplicaStatePendingRestore
 		pgreplica.Spec.Status = "restore"
 		delete(pgreplica.Annotations, config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA)
-		err = kubeapi.Updatepgreplica(restclient, &pgreplica, pgreplica.Name, namespace)
+		_, err = pgoClient.CrunchydataV1().Pgreplicas(namespace).Update(&pgreplica)
 		if err != nil {
 			log.Error(err)
 			return
@@ -175,10 +179,10 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset kubernetes
 		PGOImageTag:            operator.Pgo.Pgo.PGOImageTag,
 		PgbackrestStanza:       task.Spec.Parameters[config.LABEL_PGBACKREST_STANZA],
 		PgbackrestDBPath:       task.Spec.Parameters[config.LABEL_PGBACKREST_DB_PATH],
-		PgbackrestRepo1Path:    util.GetPGBackRestRepoPath(cluster),
+		PgbackrestRepo1Path:    util.GetPGBackRestRepoPath(*cluster),
 		PgbackrestRepo1Host:    task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_HOST],
 		NodeSelector:           operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),
-		PgbackrestS3EnvVars:    operator.GetPgbackrestS3EnvVars(cluster, clientset, namespace),
+		PgbackrestS3EnvVars:    operator.GetPgbackrestS3EnvVars(*cluster, clientset, namespace),
 		TablespaceVolumes:      operator.GetTablespaceVolumesJSON(restoreToName, tablespaceStorageTypeMap),
 		TablespaceVolumeMounts: operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
 	}
@@ -208,7 +212,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset kubernetes
 	// If TLS verification is disabled for this pgcluster, pass in the appropriate
 	// flag to the restore command. Otherwise, leave the default behavior, which will
 	// perform the normal certificate validation.
-	verifyTLS, _ := strconv.ParseBool(operator.GetS3VerifyTLSSetting(&cluster))
+	verifyTLS, _ := strconv.ParseBool(operator.GetS3VerifyTLSSetting(cluster))
 	if pgBackrestRepoType == "s3" && !verifyTLS &&
 		!strings.Contains(jobFields.CommandOpts, "--no-repo1-s3-verify-tls") {
 		jobFields.CommandOpts = strings.TrimSpace(jobFields.CommandOpts + " --no-repo1-s3-verify-tls")
@@ -250,7 +254,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset kubernetes
 
 	publishRestore(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clusterName, task.ObjectMeta.Labels[config.LABEL_PGOUSER], namespace)
 
-	err = updateWorkflow(restclient, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestoreJobCreatedStatus)
+	err = updateWorkflow(pgoClient, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestoreJobCreatedStatus)
 	if err != nil {
 		log.Error(err)
 		log.Error("restore workflow: error in updating workflow status")
@@ -258,15 +262,13 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset kubernetes
 
 }
 
-func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset kubernetes.Interface, clusterName, status, namespace,
+func UpdateRestoreWorkflow(pgoClient pgo.Interface, clientset kubernetes.Interface, clusterName, status, namespace,
 	workflowID, restoreToName string, affinity *v1.Affinity) {
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
 	log.Debugf("restore workflow phase 2: taskName is %s", taskName)
 
-	cluster := crv1.Pgcluster{}
-
-	found, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace)
-	if !found || err != nil {
+	cluster, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	if err != nil {
 		log.Errorf("restore workflow phase 2 error: could not find a pgclustet in updateRestoreWorkflow for %s", clusterName)
 		return
 	}
@@ -275,22 +277,21 @@ func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset kubernetes.Int
 	operator.UpdatePGHAConfigInitFlag(clientset, true, clusterName, namespace)
 
 	//create the new primary deployment
-	createRestoredDeployment(restclient, &cluster, clientset, namespace, restoreToName, workflowID, affinity)
+	createRestoredDeployment(pgoClient, cluster, clientset, namespace, restoreToName, workflowID, affinity)
 
 	log.Debugf("restore workflow phase  2: created restored primary was %s now %s", cluster.Spec.Name, restoreToName)
 
 	//update workflow
-	if err := updateWorkflow(restclient, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestorePrimaryCreatedStatus); err != nil {
+	if err := updateWorkflow(pgoClient, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestorePrimaryCreatedStatus); err != nil {
 		log.Warn(err)
 	}
 }
 
-func updateWorkflow(restclient *rest.RESTClient, workflowID, namespace, status string) error {
+func updateWorkflow(clientset pgo.Interface, workflowID, namespace, status string) error {
 	//update workflow
 	log.Debugf("restore workflow: update workflow %s", workflowID)
 	selector := crv1.PgtaskWorkflowID + "=" + workflowID
-	taskList := crv1.PgtaskList{}
-	err := kubeapi.GetpgtasksBySelector(restclient, &taskList, selector, namespace)
+	taskList, err := clientset.CrunchydataV1().Pgtasks(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Errorf("restore workflow error: could not get workflow %s", workflowID)
 		return err
@@ -302,7 +303,7 @@ func updateWorkflow(restclient *rest.RESTClient, workflowID, namespace, status s
 
 	task := taskList.Items[0]
 	task.Spec.Parameters[status] = time.Now().Format(time.RFC3339)
-	err = kubeapi.Updatepgtask(restclient, &task, task.Name, namespace)
+	_, err = clientset.CrunchydataV1().Pgtasks(namespace).Update(&task)
 	if err != nil {
 		log.Errorf("restore workflow error: could not update workflow %s to status %s", workflowID, status)
 		return err
@@ -310,7 +311,7 @@ func updateWorkflow(restclient *rest.RESTClient, workflowID, namespace, status s
 	return err
 }
 
-func createRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgcluster, clientset kubernetes.Interface,
+func createRestoredDeployment(pgoClient pgo.Interface, cluster *crv1.Pgcluster, clientset kubernetes.Interface,
 	namespace, restoreToName, workflowID string, affinity *v1.Affinity) error {
 
 	// interpret the storage specs again. the volumes were already created during
@@ -434,7 +435,7 @@ func createRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	// store the workflowID in a user label
 	cluster.Spec.UserLabels[crv1.PgtaskWorkflowID] = workflowID
 	// patch the pgcluster CRD with the updated info
-	if err = util.PatchClusterCRD(restclient, cluster.Spec.UserLabels, cluster, restoreToName, namespace); err != nil {
+	if err = util.PatchClusterCRD(pgoClient, cluster.Spec.UserLabels, cluster, restoreToName, namespace); err != nil {
 		log.Error("could not patch primary crv1 with labels")
 		return err
 	}

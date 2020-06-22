@@ -23,11 +23,11 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 
 	log "github.com/sirupsen/logrus"
 
@@ -35,7 +35,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 // Store image names as constants to use later
@@ -59,7 +58,7 @@ const replicaServicePostfix = "-replica"
 // 6) Recreate the BackrestRepo secret, since the key encryption algorithm has been updated
 // 7) Update the existing pgcluster CRD instance to match the current version
 // 8) Submit the pgcluster CRD for recreation
-func AddUpgrade(clientset kubernetes.Interface, restclient *rest.RESTClient, upgrade *crv1.Pgtask, namespace string) {
+func AddUpgrade(clientset kubernetes.Interface, pgoClient pgo.Interface, upgrade *crv1.Pgtask, namespace string) {
 
 	upgradeTargetClusterName := upgrade.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
 
@@ -68,10 +67,8 @@ func AddUpgrade(clientset kubernetes.Interface, restclient *rest.RESTClient, upg
 	// publish our upgrade event
 	PublishUpgradeEvent(events.EventUpgradeCluster, namespace, upgrade, "")
 
-	// the pgcluster to hold the new pgcluster CR
-	pgcluster := crv1.Pgcluster{}
-	// get the pgcluster CRD
-	if _, err := kubeapi.Getpgcluster(restclient, &pgcluster, upgradeTargetClusterName, namespace); err != nil {
+	pgcluster, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Get(upgradeTargetClusterName, metav1.GetOptions{})
+	if err != nil {
 		errormessage := "cound not find pgcluster for pgcluster upgrade"
 		log.Errorf("%s Error: %s", errormessage, err)
 		PublishUpgradeEvent(events.EventUpgradeClusterFailure, namespace, upgrade, errormessage)
@@ -79,7 +76,7 @@ func AddUpgrade(clientset kubernetes.Interface, restclient *rest.RESTClient, upg
 	}
 
 	// update the workflow status to 'in progress' while the upgrade takes place
-	updateUpgradeWorkflow(restclient, namespace, upgrade.ObjectMeta.Labels[crv1.PgtaskWorkflowID], crv1.PgtaskUpgradeInProgress)
+	updateUpgradeWorkflow(pgoClient, namespace, upgrade.ObjectMeta.Labels[crv1.PgtaskWorkflowID], crv1.PgtaskUpgradeInProgress)
 
 	// grab the existing pgo version
 	oldpgoversion := pgcluster.ObjectMeta.Labels[config.LABEL_PGO_VERSION]
@@ -90,7 +87,7 @@ func AddUpgrade(clientset kubernetes.Interface, restclient *rest.RESTClient, upg
 	// in an annotation on the pgcluster CRD and should be used if available and the primary pod cannot be identified.
 	// Next, if the current primary label is present (used by previous Operator versions), we will use that.
 	// Finally, if none of the above is available, we will set the default pgcluster name as the current primary value
-	currentPrimaryFromPod := getPrimaryPodDeploymentName(clientset, &pgcluster)
+	currentPrimaryFromPod := getPrimaryPodDeploymentName(clientset, pgcluster)
 	currentPrimaryFromAnnotation := pgcluster.Annotations[config.ANNOTATION_CURRENT_PRIMARY]
 	currentPrimaryFromLabel := pgcluster.ObjectMeta.Labels[config.LABEL_CURRENT_PRIMARY]
 
@@ -98,23 +95,23 @@ func AddUpgrade(clientset kubernetes.Interface, restclient *rest.RESTClient, upg
 	currentPrimary := getCurrentPrimary(pgcluster.Name, currentPrimaryFromPod, currentPrimaryFromAnnotation, currentPrimaryFromLabel)
 
 	// remove and count the existing replicas
-	replicas := handleReplicas(clientset, restclient, pgcluster.Name, currentPrimary, namespace)
-	SetReplicaNumber(&pgcluster, replicas)
+	replicas := handleReplicas(clientset, pgoClient, pgcluster.Name, currentPrimary, namespace)
+	SetReplicaNumber(pgcluster, replicas)
 
 	// create the 'pgha-config' configmap while taking the init value from any existing 'pgha-default-config' configmap
-	createUpgradePGHAConfigMap(clientset, &pgcluster, namespace)
+	createUpgradePGHAConfigMap(clientset, pgcluster, namespace)
 
 	// delete the existing pgcluster CRDs and other resources that will be recreated
-	deleteBeforeUpgrade(clientset, restclient, pgcluster.Name, currentPrimary, namespace, pgcluster.Spec.Standby)
+	deleteBeforeUpgrade(clientset, pgoClient, pgcluster.Name, currentPrimary, namespace, pgcluster.Spec.Standby)
 
 	// recreate new Backrest Repo secret that was just deleted
 	recreateBackrestRepoSecret(clientset, upgradeTargetClusterName, namespace, operator.PgoNamespace)
 
 	// set proper values for the pgcluster that are updated between CR versions
-	preparePgclusterForUpgrade(&pgcluster, upgrade.Spec.Parameters, oldpgoversion, currentPrimary)
+	preparePgclusterForUpgrade(pgcluster, upgrade.Spec.Parameters, oldpgoversion, currentPrimary)
 
 	// create a new workflow for this recreated cluster
-	workflowid, err := createClusterRecreateWorkflowTask(restclient, pgcluster.Name, namespace, upgrade.Spec.Parameters[config.LABEL_PGOUSER])
+	workflowid, err := createClusterRecreateWorkflowTask(pgoClient, pgcluster.Name, namespace, upgrade.Spec.Parameters[config.LABEL_PGOUSER])
 	if err != nil {
 		// we will log any errors here, but will attempt to continue to submit the cluster for recreation regardless
 		log.Errorf("error generating a new workflow task for the recreation of the upgraded cluster %s, Error: %s", pgcluster.Name, err)
@@ -123,7 +120,7 @@ func AddUpgrade(clientset kubernetes.Interface, restclient *rest.RESTClient, upg
 	// update pgcluster CRD workflow ID
 	pgcluster.Spec.UserLabels[config.LABEL_WORKFLOW_ID] = workflowid
 
-	err = kubeapi.Createpgcluster(restclient, &pgcluster, namespace)
+	_, err = pgoClient.CrunchydataV1().Pgclusters(namespace).Create(pgcluster)
 	if err != nil {
 		log.Errorf("error submitting upgraded pgcluster CRD for cluster recreation of cluster %s, Error: %v", pgcluster.Name, err)
 	} else {
@@ -209,12 +206,12 @@ func getCurrentPrimary(clusterName, podPrimary, crPrimary, labelPrimary string) 
 // will leave any other PVCs, whether they are from the current primary, previous primaries that are now
 // unassociated because of a failover or the backrest-shared-repo PVC. The total number of current replicas
 // will also be captured during this process so that the correct number of replicas can be recreated.
-func handleReplicas(clientset kubernetes.Interface, restclient *rest.RESTClient, clusterName, currentPrimaryPVC, namespace string) string {
+func handleReplicas(clientset kubernetes.Interface, pgoClient pgo.Interface, clusterName, currentPrimaryPVC, namespace string) string {
 	log.Debugf("deleting pgreplicas and noting the number found for cluster %s", clusterName)
-	replicaList := crv1.PgreplicaList{}
 	// Save the number of found replicas for this cluster
 	numReps := 0
-	if err := kubeapi.Getpgreplicas(restclient, &replicaList, namespace); err != nil {
+	replicaList, err := pgoClient.CrunchydataV1().Pgreplicas(namespace).List(metav1.ListOptions{})
+	if err != nil {
 		log.Errorf("unable to get pgreplicas. Error: %s", err)
 	}
 
@@ -222,9 +219,9 @@ func handleReplicas(clientset kubernetes.Interface, restclient *rest.RESTClient,
 	for index := range replicaList.Items {
 		if replicaList.Items[index].Spec.ClusterName == clusterName {
 			log.Debugf("scaling down pgreplica: %s", replicaList.Items[index].Name)
-			ScaleDownBase(clientset, restclient, &replicaList.Items[index], namespace)
+			ScaleDownBase(clientset, pgoClient, &replicaList.Items[index], namespace)
 			log.Debugf("deleting pgreplica CRD: %s", replicaList.Items[index].Name)
-			kubeapi.Deletepgreplica(restclient, replicaList.Items[index].Name, namespace)
+			pgoClient.CrunchydataV1().Pgreplicas(namespace).Delete(replicaList.Items[index].Name, &metav1.DeleteOptions{})
 			// if the existing replica PVC is not being used as the primary PVC, delete
 			// note this will not remove any leftover PVCs from previous failovers,
 			// those will require manual deletion so as to avoid any accidental
@@ -259,7 +256,7 @@ func SetReplicaNumber(pgcluster *crv1.Pgcluster, numReplicas string) {
 // deleteBeforeUpgrade deletes the deployments, services, pgcluster, jobs, tasks and default configmaps before attempting
 // to upgrade the pgcluster deployment. This preserves existing secrets, non-standard configmaps and service definitions
 // for use in the newly upgraded cluster.
-func deleteBeforeUpgrade(clientset kubernetes.Interface, restclient *rest.RESTClient, clusterName, currentPrimary, namespace string, isStandby bool) {
+func deleteBeforeUpgrade(clientset kubernetes.Interface, pgoClient pgo.Interface, clusterName, currentPrimary, namespace string, isStandby bool) {
 
 	// first, get all deployments for the pgcluster in question
 	deployments, err := clientset.
@@ -287,7 +284,7 @@ func deleteBeforeUpgrade(clientset kubernetes.Interface, restclient *rest.RESTCl
 	log.Debug(waitStatus)
 
 	// delete the pgcluster
-	kubeapi.Deletepgcluster(restclient, clusterName, namespace)
+	pgoClient.CrunchydataV1().Pgclusters(namespace).Delete(clusterName, &metav1.DeleteOptions{})
 
 	// delete all existing job references
 	deletePropagation := metav1.DeletePropagationForeground
@@ -300,7 +297,7 @@ func deleteBeforeUpgrade(clientset kubernetes.Interface, restclient *rest.RESTCl
 	// delete all existing pgtask references except for the upgrade task
 	// Note: this will be deleted by the existing pgcluster creation process once the
 	// updated pgcluster created and processed by the cluster controller
-	if err = deleteNonupgradePgtasks(restclient, config.LABEL_PG_CLUSTER+"="+clusterName, namespace); err != nil {
+	if err = deleteNonupgradePgtasks(pgoClient, config.LABEL_PG_CLUSTER+"="+clusterName, namespace); err != nil {
 		log.Errorf("error while deleting pgtasks for cluster %s, Error: %v", clusterName, err)
 	}
 
@@ -339,9 +336,8 @@ func deploymentWait(clientset kubernetes.Interface, namespace, deploymentName st
 
 // deleteNonupgradePgtasks deletes all existing pgtasks by selector with the exception of the
 // upgrade task itself
-func deleteNonupgradePgtasks(client *rest.RESTClient, selector, namespace string) error {
-	taskList := crv1.PgtaskList{}
-	err := kubeapi.GetpgtasksBySelector(client, &taskList, selector, namespace)
+func deleteNonupgradePgtasks(clientset pgo.Interface, selector, namespace string) error {
+	taskList, err := clientset.CrunchydataV1().Pgtasks(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return err
 	}
@@ -350,7 +346,7 @@ func deleteNonupgradePgtasks(client *rest.RESTClient, selector, namespace string
 	for _, v := range taskList.Items {
 		// if the pgtask is not for the upgrade, delete it
 		if v.ObjectMeta.Name != v.Name+"-"+config.LABEL_UPGRADE {
-			err = kubeapi.Deletepgtask(client, v.ObjectMeta.Name, namespace)
+			err = clientset.CrunchydataV1().Pgtasks(namespace).Delete(v.Name, &metav1.DeleteOptions{})
 			if err != nil {
 				return err
 			}
@@ -515,7 +511,7 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 
 // createClusterRecreateWorkflowTask creates a cluster creation task for the upgraded cluster's recreation
 // to maintain the expected workflow and tasking
-func createClusterRecreateWorkflowTask(restclient *rest.RESTClient, clusterName, ns, pgouser string) (string, error) {
+func createClusterRecreateWorkflowTask(clientset pgo.Interface, clusterName, ns, pgouser string) (string, error) {
 	// create pgtask CRD
 	spec := crv1.PgtaskSpec{}
 	spec.Namespace = ns
@@ -544,7 +540,7 @@ func createClusterRecreateWorkflowTask(restclient *rest.RESTClient, clusterName,
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
 
-	err = kubeapi.Createpgtask(restclient, newInstance, ns)
+	_, err = clientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
 	if err != nil {
 		log.Error(err)
 		return "", err
@@ -554,15 +550,14 @@ func createClusterRecreateWorkflowTask(restclient *rest.RESTClient, clusterName,
 
 // updateUpgradeWorkflow updates a Workflow with the current state of the pgcluster upgrade task
 // modified from the cluster.UpdateCloneWorkflow function
-func updateUpgradeWorkflow(client *rest.RESTClient, namespace, workflowID, status string) error {
+func updateUpgradeWorkflow(clientset pgo.Interface, namespace, workflowID, status string) error {
 	log.Debugf("pgcluster upgrade workflow: update workflow [%s]", workflowID)
 
 	// we have to look up the name of the workflow bt the workflow ID, which
 	// involves using a selector
 	selector := fmt.Sprintf("%s=%s", crv1.PgtaskWorkflowID, workflowID)
-	taskList := crv1.PgtaskList{}
-
-	if err := kubeapi.GetpgtasksBySelector(client, &taskList, selector, namespace); err != nil {
+	taskList, err := clientset.CrunchydataV1().Pgtasks(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
 		log.Errorf("pgcluster upgrade workflow: could not get workflow [%s]", workflowID)
 		return err
 	}
@@ -579,7 +574,7 @@ func updateUpgradeWorkflow(client *rest.RESTClient, namespace, workflowID, statu
 	task := taskList.Items[0]
 	task.Spec.Parameters[status] = time.Now().Format(time.RFC3339)
 
-	if err := kubeapi.Updatepgtask(client, &task, task.Name, namespace); err != nil {
+	if _, err := clientset.CrunchydataV1().Pgtasks(namespace).Update(&task); err != nil {
 		log.Errorf("pgcluster upgrade workflow: could not update workflow [%s] to status [%s]", workflowID, status)
 		return err
 	}

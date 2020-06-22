@@ -20,7 +20,6 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
@@ -64,7 +63,7 @@ func (c *Controller) handleRepoSyncUpdate(job *apiv1.Job) error {
 	}
 
 	// next, update the workflow to indicate that step 1 is complete
-	clusteroperator.UpdateCloneWorkflow(c.JobClient, namespace, workflowID, crv1.PgtaskWorkflowCloneRestoreBackup)
+	clusteroperator.UpdateCloneWorkflow(c.PGOClientset, namespace, workflowID, crv1.PgtaskWorkflowCloneRestoreBackup)
 
 	// determine the storage source (e.g. local or s3) to use for the restore based on the storage
 	// source utilized for the backrest repo sync job
@@ -93,7 +92,7 @@ func (c *Controller) handleRepoSyncUpdate(job *apiv1.Job) error {
 	task := cloneTask.Create()
 
 	// finally, create the pgtask!
-	if err := kubeapi.Createpgtask(c.JobClient, task, namespace); err != nil {
+	if _, err := c.PGOClientset.CrunchydataV1().Pgtasks(namespace).Create(task); err != nil {
 		log.Error(err)
 		errorMessage := fmt.Sprintf("Could not create pgtask for step 2: %s", err.Error())
 		clusteroperator.PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, errorMessage)

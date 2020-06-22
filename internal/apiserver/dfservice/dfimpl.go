@@ -50,10 +50,10 @@ func DfCluster(request msgs.DfRequest) msgs.DfResponse {
 	log.Debugf("df selector is [%s]", selector)
 
 	// get all of the clusters that match the selector
-	clusterList := crv1.PgclusterList{}
-
-	//get a list of matching clusters
-	if err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, selector, namespace); err != nil {
+	clusterList, err := apiserver.PGOClientset.
+		CrunchydataV1().Pgclusters(namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
 		return CreateErrorResponse(err.Error())
 	}
 

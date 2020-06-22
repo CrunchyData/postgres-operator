@@ -45,12 +45,7 @@ func ScaleCluster(name, replicaCount, storageConfig, nodeLabel,
 		return response
 	}
 
-	cluster := crv1.Pgcluster{}
-	err = apiserver.RESTClient.Get().
-		Resource(crv1.PgclusterResourcePlural).
-		Namespace(ns).
-		Name(name).
-		Do().Into(&cluster)
+	cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(name, metav1.GetOptions{})
 
 	if kerrors.IsNotFound(err) {
 		log.Error("no clusters found")
@@ -155,13 +150,7 @@ func ScaleCluster(name, replicaCount, storageConfig, nodeLabel,
 			},
 		}
 
-		result := crv1.Pgreplica{}
-
-		err = apiserver.RESTClient.Post().
-			Resource(crv1.PgreplicaResourcePlural).
-			Namespace(ns).
-			Body(newInstance).
-			Do().Into(&result)
+		_, err = apiserver.PGOClientset.CrunchydataV1().Pgreplicas(ns).Create(newInstance)
 		if err != nil {
 			log.Error(" in creating Pgreplica instance" + err.Error())
 		}
@@ -183,12 +172,7 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 		Status:  msgs.Status{Code: msgs.Ok, Msg: ""},
 	}
 
-	cluster := crv1.Pgcluster{}
-	err = apiserver.RESTClient.Get().
-		Resource(crv1.PgclusterResourcePlural).
-		Namespace(ns).
-		Name(name).
-		Do().Into(&cluster)
+	cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(name, metav1.GetOptions{})
 
 	// If no clusters are found, return a specific error message,
 	// otherwise, pass forward the generic error message that Kubernetes sends
@@ -262,12 +246,7 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]string, 0)
 
-	cluster := crv1.Pgcluster{}
-	err = apiserver.RESTClient.Get().
-		Resource(crv1.PgclusterResourcePlural).
-		Namespace(ns).
-		Name(clusterName).
-		Do().Into(&cluster)
+	cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
 
 	if kerrors.IsNotFound(err) {
 		log.Error("no clusters found")

@@ -24,7 +24,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/backupoptions"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
@@ -72,9 +71,9 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 	if request.Selector != "" {
 		//use the selector instead of an argument list to filter on
 
-		clusterList := crv1.PgclusterList{}
-
-		err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, request.Selector, ns)
+		clusterList, err := apiserver.PGOClientset.
+			CrunchydataV1().Pgclusters(ns).
+			List(metav1.ListOptions{LabelSelector: request.Selector})
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -99,9 +98,8 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 		log.Debugf("create pgdump called for %s", clusterName)
 		taskName := "backup-" + clusterName + pgDumpTaskExtension
 
-		cluster := crv1.Pgcluster{}
-		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, clusterName, ns)
-		if !found {
+		cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
+		if kerrors.IsNotFound(err) {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = clusterName + " was not found, verify cluster name"
 			return resp
@@ -124,11 +122,9 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 			BatchV1().Jobs(ns).
 			Delete(clusterName+pgDumpJobExtension, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 
-		result := crv1.Pgtask{}
-
 		// error if the task already exists
-		found, err = kubeapi.Getpgtask(apiserver.RESTClient, &result, taskName, ns)
-		if !found {
+		_, err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Get(taskName, metav1.GetOptions{})
+		if kerrors.IsNotFound(err) {
 			log.Debugf("pgdump pgtask %s was not found so we will create it", taskName)
 		} else if err != nil {
 
@@ -138,7 +134,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 
 			log.Debugf("pgtask %s was found so we will recreate it", taskName)
 			//remove the existing pgtask
-			err := kubeapi.Deletepgtask(apiserver.RESTClient, taskName, ns)
+			err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Delete(taskName, &metav1.DeleteOptions{})
 
 			if err != nil {
 				resp.Status.Code = msgs.Error
@@ -150,7 +146,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 		//get pod name from cluster
 		// var podname, deployName string
 		var podname string
-		podname, err = getPrimaryPodName(&cluster, ns)
+		podname, err = getPrimaryPodName(cluster, ns)
 
 		if err != nil {
 			log.Error(err)
@@ -163,7 +159,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 		// TODO: Needs error handling for invalid parameters in the request
 		theTask := buildPgTaskForDump(clusterName, taskName, crv1.PgtaskpgDump, podname, "database", request)
 
-		err = kubeapi.Createpgtask(apiserver.RESTClient, theTask, ns)
+		_, err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Create(theTask)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -198,11 +194,10 @@ func ShowpgDump(clusterName string, selector string, ns string) msgs.ShowBackupR
 		}
 	}
 
-	clusterList := crv1.PgclusterList{}
-
 	//get a list of all clusters
-	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-		&clusterList, selector, ns)
+	clusterList, err := apiserver.PGOClientset.
+		CrunchydataV1().Pgclusters(ns).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -399,12 +394,10 @@ func parseOptionFlags(allFlags string) (bool, string) {
 
 // if backup && err are nil, it simply wasn't found. Otherwise found or an error
 func getPgBackupForTask(clusterName string, taskName string, ns string) (*msgs.Pgbackup, error) {
-	task := crv1.Pgtask{}
+	task, err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Get(taskName, metav1.GetOptions{})
 
-	found, err := kubeapi.Getpgtask(apiserver.RESTClient, &task, taskName, ns)
-
-	if found {
-		return buildPgBackupFrompgTask(&task), nil
+	if err == nil {
+		return buildPgBackupFrompgTask(task), nil
 	} else if kerrors.IsNotFound(err) {
 		// keeping in this weird old logic for the moment
 		return nil, nil
@@ -462,9 +455,8 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 		}
 	}
 
-	cluster := crv1.Pgcluster{}
-	found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, request.FromCluster, ns)
-	if !found {
+	_, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(request.FromCluster, metav1.GetOptions{})
+	if kerrors.IsNotFound(err) {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = request.FromCluster + " was not found, verify cluster name"
 		return resp
@@ -488,29 +480,16 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 		return resp
 	}
 
-	existingTask := crv1.Pgtask{}
-
 	//delete any existing pgtask with the same name
-	found, err = kubeapi.Getpgtask(apiserver.RESTClient,
-		&existingTask,
-		pgtask.Name,
-		ns)
-	if found {
-		log.Debugf("deleting prior pgtask %s", pgtask.Name)
-		err = kubeapi.Deletepgtask(apiserver.RESTClient,
-			pgtask.Name,
-			ns)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
+	err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Delete(pgtask.Name, &metav1.DeleteOptions{})
+	if err != nil && !kerrors.IsNotFound(err) {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
 	}
 
 	//create a pgtask for the restore workflow
-	err = kubeapi.Createpgtask(apiserver.RESTClient,
-		pgtask,
-		ns)
+	_, err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Create(pgtask)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()

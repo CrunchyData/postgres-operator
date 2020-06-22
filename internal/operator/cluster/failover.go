@@ -23,11 +23,11 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
-	jsonpatch "github.com/evanphx/json-patch"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -35,7 +35,7 @@ import (
 
 // FailoverBase ...
 // gets called first on a failover
-func FailoverBase(namespace string, clientset kubernetes.Interface, client *rest.RESTClient, task *crv1.Pgtask, restconfig *rest.Config) {
+func FailoverBase(namespace string, clientset kubernetes.Interface, pgoClient pgo.Interface, client *rest.RESTClient, task *crv1.Pgtask, restconfig *rest.Config) {
 	var err error
 
 	//look up the pgcluster for this task
@@ -46,24 +46,21 @@ func FailoverBase(namespace string, clientset kubernetes.Interface, client *rest
 		clusterName = k
 	}
 
-	cluster := crv1.Pgcluster{}
-	_, err = kubeapi.Getpgcluster(client, &cluster,
-		clusterName, namespace)
+	cluster, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
 	if err != nil {
 		return
 	}
 
 	//create marker (clustername, namespace)
-	err = PatchpgtaskFailoverStatus(client, task, namespace)
+	err = PatchpgtaskFailoverStatus(pgoClient, task, namespace)
 	if err != nil {
 		log.Errorf("could not set failover started marker for task %s cluster %s", task.Spec.Name, clusterName)
 		return
 	}
 
 	//get initial count of replicas --selector=pg-cluster=clusterName
-	replicaList := crv1.PgreplicaList{}
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
-	err = kubeapi.GetpgreplicasBySelector(client, &replicaList, selector, namespace)
+	replicaList, err := pgoClient.CrunchydataV1().Pgreplicas(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		return
@@ -91,7 +88,7 @@ func FailoverBase(namespace string, clientset kubernetes.Interface, client *rest
 		log.Error(err)
 	}
 
-	Failover(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clientset, client, clusterName, task, namespace, restconfig)
+	Failover(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clientset, pgoClient, client, clusterName, task, namespace, restconfig)
 
 	//publish event for failover completed
 	topics = make([]string, 1)
@@ -118,36 +115,23 @@ func FailoverBase(namespace string, clientset kubernetes.Interface, client *rest
 
 }
 
-func PatchpgtaskFailoverStatus(restclient *rest.RESTClient, oldCrd *crv1.Pgtask, namespace string) error {
-
-	oldData, err := json.Marshal(oldCrd)
-	if err != nil {
-		return err
-	}
+func PatchpgtaskFailoverStatus(clientset pgo.Interface, oldCrd *crv1.Pgtask, namespace string) error {
 
 	//change it
 	oldCrd.Spec.Parameters[config.LABEL_FAILOVER_STARTED] = time.Now().Format(time.RFC3339)
 
 	//create the patch
-	var newData, patchBytes []byte
-	newData, err = json.Marshal(oldCrd)
+	patchBytes, err := json.Marshal(map[string]interface{}{
+		"spec": map[string]interface{}{
+			"parameters": oldCrd.Spec.Parameters,
+		},
+	})
 	if err != nil {
 		return err
 	}
-	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
-	if err != nil {
-		return err
-	}
-	log.Debug(string(patchBytes))
 
 	//apply patch
-	_, err6 := restclient.Patch(types.MergePatchType).
-		Namespace(namespace).
-		Resource(crv1.PgtaskResourcePlural).
-		Name(oldCrd.Spec.Name).
-		Body(patchBytes).
-		Do().
-		Get()
+	_, err6 := clientset.CrunchydataV1().Pgtasks(namespace).Patch(oldCrd.Name, types.MergePatchType, patchBytes)
 
 	return err6
 

@@ -23,10 +23,8 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/util"
-	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -65,28 +63,16 @@ func (p PolicyJob) Run() {
 
 	contextLogger.Info("Running Policy schedule")
 
-	cluster := crv1.Pgcluster{}
-	found, err := kubeapi.Getpgcluster(restClient, &cluster, p.cluster, p.namespace)
-	if !found {
-		contextLogger.WithFields(log.Fields{
-			"error": err,
-		}).Error("pgCluster not found")
-		return
-	} else if err != nil {
+	cluster, err := pgoClient.CrunchydataV1().Pgclusters(p.namespace).Get(p.cluster, metav1.GetOptions{})
+	if err != nil {
 		contextLogger.WithFields(log.Fields{
 			"error": err,
 		}).Error("error retrieving pgCluster")
 		return
 	}
 
-	policy := crv1.Pgpolicy{}
-	found, err = kubeapi.Getpgpolicy(restClient, &policy, p.policy, p.namespace)
-	if !found {
-		contextLogger.WithFields(log.Fields{
-			"error": err,
-		}).Error("pgPolicy not found")
-		return
-	} else if err != nil {
+	policy, err := pgoClient.CrunchydataV1().Pgpolicies(p.namespace).Get(p.policy, metav1.GetOptions{})
+	if err != nil {
 		contextLogger.WithFields(log.Fields{
 			"error": err,
 		}).Error("error retrieving pgPolicy")

@@ -27,6 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -63,7 +64,7 @@ func (c *Controller) handlePostgresPodPromotion(newPod *apiv1.Pod, cluster crv1.
 	}
 
 	if cluster.Status.State == crv1.PgclusterStateInitialized {
-		if err := cleanAndCreatePostFailoverBackup(c.PodClient, c.PodClientset,
+		if err := cleanAndCreatePostFailoverBackup(c.PGOClientset, c.PodClientset,
 			cluster.Name, newPod.Namespace); err != nil {
 			log.Error(err)
 			return err
@@ -79,7 +80,7 @@ func (c *Controller) handleStartupInit(cluster crv1.Pgcluster) error {
 
 	// since the cluster is just being restarted, it can just be set to initialized once the
 	// primary is ready
-	if err := controller.SetClusterInitializedStatus(c.PodClient, cluster.Name,
+	if err := controller.SetClusterInitializedStatus(c.PGOClientset, cluster.Name,
 		cluster.Namespace); err != nil {
 		log.Error(err)
 		return err
@@ -111,7 +112,7 @@ func (c *Controller) handleStandbyPromotion(newPod *apiv1.Pod, cluster crv1.Pgcl
 		}
 	}
 
-	if err := cleanAndCreatePostFailoverBackup(c.PodClient, c.PodClientset, clusterName,
+	if err := cleanAndCreatePostFailoverBackup(c.PGOClientset, c.PodClientset, clusterName,
 		namespace); err != nil {
 		log.Error(err)
 		return err
@@ -168,7 +169,7 @@ func waitForStandbyPromotion(restConfig *rest.Config, clientset kubernetes.Inter
 
 // cleanAndCreatePostFailoverBackup cleans up any existing backup resources and then creates
 // a pgtask to trigger the creation of a post-failover backup
-func cleanAndCreatePostFailoverBackup(restClient *rest.RESTClient,
+func cleanAndCreatePostFailoverBackup(pgoClient pgo.Interface,
 	clientset kubernetes.Interface, clusterName, namespace string) error {
 
 	//look up the backrest-repo pod name
@@ -181,12 +182,12 @@ func cleanAndCreatePostFailoverBackup(restClient *rest.RESTClient,
 		return err
 	}
 
-	if err := backrest.CleanBackupResources(restClient, clientset, namespace,
+	if err := backrest.CleanBackupResources(pgoClient, clientset, namespace,
 		clusterName); err != nil {
 		log.Error(err)
 		return err
 	}
-	if _, err := backrest.CreatePostFailoverBackup(restClient, namespace,
+	if _, err := backrest.CreatePostFailoverBackup(pgoClient, namespace,
 		clusterName, pods.Items[0].Name); err != nil {
 		log.Error(err)
 		return err

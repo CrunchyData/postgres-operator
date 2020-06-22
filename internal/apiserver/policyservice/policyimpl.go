@@ -23,34 +23,21 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/labelservice"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pkg/events"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/apps/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
 )
 
 // CreatePolicy ...
-func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile, ns, pgouser string) (bool, error) {
+func CreatePolicy(client pgo.Interface, policyName, policyURL, policyFile, ns, pgouser string) (bool, error) {
 
-	var found bool
 	log.Debugf("create policy called for %s", policyName)
-	result := crv1.Pgpolicy{}
-
-	// error if it already exists
-	found, err := kubeapi.Getpgpolicy(RESTClient, &result, policyName, ns)
-	if err == nil {
-		log.Debugf("pgpolicy %s was found so we will not create it", policyName)
-		return true, err
-	} else if !found {
-		log.Debugf("pgpolicy %s was not found so we will create it", policyName)
-	} else {
-		return false, err
-	}
 
 	// Create an instance of our CRD
 	spec := crv1.PgpolicySpec{}
@@ -70,11 +57,11 @@ func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile
 		Spec: spec,
 	}
 
-	err = kubeapi.Createpgpolicy(RESTClient,
-		newInstance, ns)
+	_, err := client.CrunchydataV1().Pgpolicies(ns).Create(newInstance)
 
-	if err != nil {
-		return false, err
+	if kerrors.IsAlreadyExists(err) {
+		log.Debugf("pgpolicy %s was found so we will not create it", policyName)
+		return true, nil
 	}
 
 	return false, err
@@ -82,26 +69,20 @@ func CreatePolicy(RESTClient *rest.RESTClient, policyName, policyURL, policyFile
 }
 
 // ShowPolicy ...
-func ShowPolicy(RESTClient *rest.RESTClient, name string, allflags bool, ns string) crv1.PgpolicyList {
+func ShowPolicy(client pgo.Interface, name string, allflags bool, ns string) crv1.PgpolicyList {
 	policyList := crv1.PgpolicyList{}
 
 	if allflags {
 		//get a list of all policies
-		err := kubeapi.Getpgpolicies(RESTClient,
-			&policyList,
-			ns)
-		if err != nil {
-			return policyList
+		list, err := client.CrunchydataV1().Pgpolicies(ns).List(metav1.ListOptions{})
+		if list != nil && err == nil {
+			policyList = *list
 		}
 	} else {
-		policy := crv1.Pgpolicy{}
-		_, err := kubeapi.Getpgpolicy(RESTClient,
-			&policy, name, ns)
-		if err != nil {
-			return policyList
+		policy, err := client.CrunchydataV1().Pgpolicies(ns).Get(name, metav1.GetOptions{})
+		if policy != nil && err == nil {
+			policyList.Items = []crv1.Pgpolicy{*policy}
 		}
-		policyList.Items = make([]crv1.Pgpolicy, 1)
-		policyList.Items[0] = policy
 	}
 
 	return policyList
@@ -109,17 +90,13 @@ func ShowPolicy(RESTClient *rest.RESTClient, name string, allflags bool, ns stri
 }
 
 // DeletePolicy ...
-func DeletePolicy(RESTClient *rest.RESTClient, policyName, ns, pgouser string) msgs.DeletePolicyResponse {
+func DeletePolicy(client pgo.Interface, policyName, ns, pgouser string) msgs.DeletePolicyResponse {
 	resp := msgs.DeletePolicyResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	var err error
-
-	policyList := crv1.PgpolicyList{}
-	err = kubeapi.Getpgpolicies(RESTClient,
-		&policyList, ns)
+	policyList, err := client.CrunchydataV1().Pgpolicies(ns).List(metav1.ListOptions{})
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -134,12 +111,11 @@ func DeletePolicy(RESTClient *rest.RESTClient, policyName, ns, pgouser string) m
 			//we can create an event holding the pgouser
 			//that deleted the policy
 			policy.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
-			err = kubeapi.Updatepgpolicy(RESTClient, &policy, policy.Spec.Name, ns)
+			_, err = client.CrunchydataV1().Pgpolicies(ns).Update(&policy)
 
 			//ok, now delete the pgpolicy
 			policyFound = true
-			err = kubeapi.Deletepgpolicy(RESTClient,
-				policy.Spec.Name, ns)
+			err = client.CrunchydataV1().Pgpolicies(ns).Delete(policy.Spec.Name, &metav1.DeleteOptions{})
 			if err == nil {
 				msg := "deleted policy " + policy.Spec.Name
 				log.Debug(msg)
@@ -175,7 +151,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 	resp.Status.Code = msgs.Ok
 
 	//validate policy
-	err = util.ValidatePolicy(apiserver.RESTClient, ns, request.Name)
+	err = util.ValidatePolicy(apiserver.PGOClientset, ns, request.Name)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "policy " + request.Name + " is not found, cancelling request"
@@ -187,10 +163,9 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 	log.Debugf("apply policy selector string=[%s]", selector)
 
 	//get a list of all clusters
-	clusterList := crv1.PgclusterList{}
-
-	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-		&clusterList, selector, ns)
+	clusterList, err := apiserver.PGOClientset.
+		CrunchydataV1().Pgclusters(ns).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -201,7 +176,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 	// Return an error if any clusters identified for the policy are in standby mode.  Standby
 	// clusters are in read-only mode, and therefore cannot have policies applied to them
 	// until standby mode has been disabled.
-	if hasStandby, standbyClusters := apiserver.PGClusterListHasStandby(clusterList); hasStandby {
+	if hasStandby, standbyClusters := apiserver.PGClusterListHasStandby(*clusterList); hasStandby {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = fmt.Sprintf("Request rejected, unable to load clusters %s: %s."+
 			strings.Join(standbyClusters, ","), apiserver.ErrStandbyNotAllowed.Error())
@@ -246,17 +221,16 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 
 		log.Debugf("apply policy %s on deployment %s based on selector %s", request.Name, d.ObjectMeta.Name, selector)
 
-		// ...to make this work, this needs to be here.
-		cl := crv1.Pgcluster{}
-
-		if _, err = kubeapi.Getpgcluster(apiserver.RESTClient, &cl,
-			d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME], ns); err != nil {
+		cl, err := apiserver.PGOClientset.
+			CrunchydataV1().Pgclusters(ns).
+			Get(d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME], metav1.GetOptions{})
+		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
 		}
 
-		if err := util.ExecPolicy(apiserver.Clientset, apiserver.RESTClient, apiserver.RESTConfig,
+		if err := util.ExecPolicy(apiserver.Clientset, apiserver.PGOClientset, apiserver.RESTConfig,
 			ns, request.Name, d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME], cl.Spec.Port); err != nil {
 			log.Error(err)
 			resp.Status.Code = msgs.Error
@@ -270,7 +244,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 		}
 
 		//update the pgcluster crd labels with the new policy
-		err = labelservice.PatchPgcluster(map[string]string{request.Name: config.LABEL_PGPOLICY}, cl, ns)
+		err = labelservice.PatchPgcluster(map[string]string{request.Name: config.LABEL_PGPOLICY}, *cl, ns)
 		if err != nil {
 			log.Error(err)
 		}

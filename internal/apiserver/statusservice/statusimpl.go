@@ -21,7 +21,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
@@ -109,8 +108,10 @@ func getDBTags(ns string) map[string]int {
 func getNotReady(ns string) []string {
 	//show all database pods for each pgcluster that are not yet running
 	agg := make([]string, 0)
-	clusterList := crv1.PgclusterList{}
-	kubeapi.Getpgclusters(apiserver.RESTClient, &clusterList, ns)
+	clusterList, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{})
+	if err != nil {
+		clusterList = &crv1.PgclusterList{}
+	}
 
 	for _, cluster := range clusterList.Items {
 

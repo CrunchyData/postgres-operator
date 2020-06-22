@@ -16,12 +16,14 @@ limitations under the License.
 */
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -34,6 +36,7 @@ import (
 type Controller struct {
 	PgpolicyClient    *rest.RESTClient
 	PgpolicyClientset kubernetes.Interface
+	PGOClientset      pgo.Interface
 	Informer          informers.PgpolicyInformer
 }
 
@@ -49,15 +52,15 @@ func (c *Controller) onAdd(obj interface{}) {
 		return
 	}
 
-	// NEVER modify objects from the store. It's a read-only, local cache.
-	// You can use policyScheme.Copy() to make a deep copy of original object and modify this copy
-	// Or create a copy manually for better performance
-	copyObj := policy.DeepCopyObject()
-	policyCopy := copyObj.(*crv1.Pgpolicy)
-
-	state := crv1.PgpolicyStateProcessed
-	message := "Successfully processed Pgpolicy by controller"
-	err := kubeapi.PatchpgpolicyStatus(c.PgpolicyClient, state, message, policyCopy, policy.ObjectMeta.Namespace)
+	patch, err := json.Marshal(map[string]interface{}{
+		"status": crv1.PgpolicyStatus{
+			State:   crv1.PgpolicyStateProcessed,
+			Message: "Successfully processed Pgpolicy by controller",
+		},
+	})
+	if err == nil {
+		_, err = c.PGOClientset.CrunchydataV1().Pgpolicies(policy.Namespace).Patch(policy.Name, types.MergePatchType, patch)
+	}
 	if err != nil {
 		log.Errorf("ERROR updating pgpolicy status: %s", err.Error())
 	}

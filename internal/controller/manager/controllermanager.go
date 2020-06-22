@@ -34,13 +34,13 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/ns"
 	"github.com/crunchydata/postgres-operator/internal/operator/operatorupgrade"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/semaphore"
 
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )
@@ -77,7 +77,7 @@ type controllerGroup struct {
 	controllersWithWorkers         []controller.WorkerRunner
 	informerSyncedFuncs            []cache.InformerSynced
 	kubeClientset                  kubernetes.Interface
-	pgoRESTClient                  *rest.RESTClient
+	pgoClientset                   pgo.Interface
 }
 
 // NewControllerManager returns a new ControllerManager comprised of controllerGroups for each
@@ -257,6 +257,7 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 		PgtaskConfig:      config,
 		PgtaskClient:      pgoRESTClient,
 		PgtaskClientset:   kubeClientset,
+		PGOClientset:      pgoClientset,
 		Queue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		Informer:          pgoInformerFactory.Crunchydata().V1().Pgtasks(),
 		PgtaskWorkerCount: *c.pgoConfig.Pgo.PGTaskWorkerCount,
@@ -266,6 +267,7 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 		PgclusterClient:      pgoRESTClient,
 		PgclusterClientset:   kubeClientset,
 		PgclusterConfig:      config,
+		PGOClientset:         pgoClientset,
 		Queue:                workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		Informer:             pgoInformerFactory.Crunchydata().V1().Pgclusters(),
 		PgclusterWorkerCount: *c.pgoConfig.Pgo.PGClusterWorkerCount,
@@ -274,6 +276,7 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 	pgReplicacontroller := &pgreplica.Controller{
 		PgreplicaClient:      pgoRESTClient,
 		PgreplicaClientset:   kubeClientset,
+		PGOClientset:         pgoClientset,
 		Queue:                workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		Informer:             pgoInformerFactory.Crunchydata().V1().Pgreplicas(),
 		PgreplicaWorkerCount: *c.pgoConfig.Pgo.PGReplicaWorkerCount,
@@ -282,6 +285,7 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 	pgPolicycontroller := &pgpolicy.Controller{
 		PgpolicyClient:    pgoRESTClient,
 		PgpolicyClientset: kubeClientset,
+		PGOClientset:      pgoClientset,
 		Informer:          pgoInformerFactory.Crunchydata().V1().Pgpolicies(),
 	}
 
@@ -289,6 +293,7 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 		PodConfig:    config,
 		PodClientset: kubeClientset,
 		PodClient:    pgoRESTClient,
+		PGOClientset: pgoClientset,
 		Informer:     kubeInformerFactory.Core().V1().Pods(),
 	}
 
@@ -296,6 +301,7 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 		JobConfig:    config,
 		JobClientset: kubeClientset,
 		JobClient:    pgoRESTClient,
+		PGOClientset: pgoClientset,
 		Informer:     kubeInformerFactory.Batch().V1().Jobs(),
 	}
 
@@ -318,7 +324,7 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 
 	group := &controllerGroup{
 		kubeClientset:                  kubeClientset,
-		pgoRESTClient:                  pgoRESTClient,
+		pgoClientset:                   pgoClientset,
 		stopCh:                         make(chan struct{}),
 		doneCh:                         make(chan struct{}),
 		pgoInformerFactory:             pgoInformerFactory,
@@ -425,7 +431,7 @@ func (c *ControllerManager) runControllerGroup(namespace string) error {
 	}
 
 	// before starting, first successfully check the versions of all pgcluster's in the namespace
-	if err := operatorupgrade.CheckVersion(c.controllers[namespace].pgoRESTClient,
+	if err := operatorupgrade.CheckVersion(c.controllers[namespace].pgoClientset,
 		namespace); err != nil {
 		log.Errorf("Controller Manager: Unsuccessful pgcluster version check for namespace %s, "+
 			"the controller group will not be started", namespace)

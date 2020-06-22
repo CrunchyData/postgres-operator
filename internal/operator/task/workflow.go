@@ -16,64 +16,59 @@ package task
 */
 
 import (
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
+	"encoding/json"
+	"time"
+
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 // CompleteCreateClusterWorkflow ... update the pgtask for the
 // create cluster workflow for a given cluster
-func CompleteCreateClusterWorkflow(clusterName string, Clientset kubernetes.Interface, RESTClient *rest.RESTClient, ns string) {
+func CompleteCreateClusterWorkflow(clusterName string, Clientset kubernetes.Interface, pgoClient pgo.Interface, ns string) {
 
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowCreateClusterType
 
-	task := crv1.Pgtask{}
-	task.Spec = crv1.PgtaskSpec{}
-	task.Spec.Name = taskName
-
-	found, err := kubeapi.Getpgtask(RESTClient, &task, taskName, ns)
-	if found && err == nil {
-		//mark this workflow as completed
-		id := task.Spec.Parameters[crv1.PgtaskWorkflowID]
-
-		log.Debugf("completing workflow %s  id %s", taskName, id)
-
-		//update pgtask
-		err := kubeapi.PatchpgtaskWorkflowStatus(RESTClient, &task, ns)
-		if err != nil {
-			log.Error(err)
-		}
-	} else {
-		log.Errorf("Error completing  workflow %s  id %s", taskName, task.Spec.Parameters[crv1.PgtaskWorkflowID])
-		log.Error(err)
-	}
+	completeWorkflow(pgoClient, ns, taskName)
 
 }
 
-func CompleteBackupWorkflow(clusterName string, clientSet kubernetes.Interface, RESTClient *rest.RESTClient, ns string) {
+func CompleteBackupWorkflow(clusterName string, clientSet kubernetes.Interface, pgoClient pgo.Interface, ns string) {
 
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackupType
 
-	task := crv1.Pgtask{}
-	task.Spec = crv1.PgtaskSpec{}
-	task.Spec.Name = taskName
+	completeWorkflow(pgoClient, ns, taskName)
 
-	found, err := kubeapi.Getpgtask(RESTClient, &task, taskName, ns)
-	if found && err == nil {
-		//mark this workflow as completed
-		id := task.Spec.Parameters[crv1.PgtaskWorkflowID]
+}
 
-		log.Debugf("completing workflow %s  id %s", taskName, id)
+func completeWorkflow(clientset pgo.Interface, taskNamespace, taskName string) {
 
-		//update pgtask
-		err := kubeapi.PatchpgtaskWorkflowStatus(RESTClient, &task, ns)
-		if err != nil {
-			log.Error(err)
-		}
-	} else {
-		log.Errorf("Error completing  workflow %s  id %s", taskName, task.Spec.Parameters[crv1.PgtaskWorkflowID])
+	task, err := clientset.CrunchydataV1().Pgtasks(taskNamespace).Get(taskName, metav1.GetOptions{})
+	if err != nil {
+		log.Errorf("Error completing  workflow %s", taskName)
+		log.Error(err)
+		return
+	}
+
+	//mark this workflow as completed
+	id := task.Spec.Parameters[crv1.PgtaskWorkflowID]
+	log.Debugf("completing workflow %s  id %s", taskName, id)
+
+	task.Spec.Parameters[crv1.PgtaskWorkflowCompletedStatus] = time.Now().Format(time.RFC3339)
+
+	patch, err := json.Marshal(map[string]interface{}{
+		"spec": map[string]interface{}{
+			"parameters": task.Spec.Parameters,
+		},
+	})
+	if err == nil {
+		_, err = clientset.CrunchydataV1().Pgtasks(task.Namespace).Patch(task.Name, types.MergePatchType, patch)
+	}
+	if err != nil {
 		log.Error(err)
 	}
 

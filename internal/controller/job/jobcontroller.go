@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"github.com/crunchydata/postgres-operator/internal/config"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
 	batchinformers "k8s.io/client-go/informers/batch/v1"
@@ -30,6 +31,7 @@ type Controller struct {
 	JobConfig    *rest.Config
 	JobClient    *rest.RESTClient
 	JobClientset kubernetes.Interface
+	PGOClientset pgo.Interface
 	Informer     batchinformers.JobInformer
 }
 
