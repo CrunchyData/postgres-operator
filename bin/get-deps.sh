@@ -87,11 +87,3 @@ else
 	echo "=== Installing dep ==="
 	curl -S https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 fi
-
-if which expenv; then
-	echo "  Found expenv"
-else
-	echo "=== Installing expenv ==="
-	# TODO: expenv uses Go modules, could retrieve specific version
-	go get github.com/blang/expenv
-fi

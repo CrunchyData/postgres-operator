@@ -3,7 +3,7 @@
 Loading a sample file, sample.json, requires some setup
 at the volume level.
 
-### Making Data Loadable 
+### Making Data Loadable
 
 #### NFS
 
@@ -29,8 +29,8 @@ the sample load configuration.
 We test with storageos and it offers a RWO storage class
 that can be used for volume provisioning.
 
-To accomplish this, download the storageos CLI from their 
-github site and ensure you have the following environement 
+To accomplish this, download the storageos CLI from their
+github site and ensure you have the following environement
 variables added to ~/.bashrc as follows:
 
 	export PGO_NAMESPACE=pgouser1 (update to match your environment)
@@ -40,18 +40,13 @@ Then execute
 
 	source ~/.bashrc
 
-Also, if not already installed, fetch a Go module for expanding environment 
-variables with:
-
-	go get github.com/blang/expenv
-
 Now, to prepare a volume with sample load data, you do the following
 for storageos:
 
 Create the PVC that will create a blank storageos volume
 for us to use:
 
-    expenv -f csv-pvc-sc.yaml | kubectl create -f -
+    cat csv-pvc-sc.yaml | envsubst | kubectl create -f -
 
 Next, locate the storageos Kube IP address:
 
@@ -95,4 +90,3 @@ To conclude, you would load using a storage class using a command similar
 to this one:
 
     pgo load --load-config=sample-json-load-config-sc.yaml  --selector=name=mycluster -n pgouser1
-

@@ -110,11 +110,9 @@ linuxpgo: build-pgo-client
 
 macpgo:
 	cd pgo && env GOOS=darwin GOARCH=amd64 go build pgo.go && mv pgo $(GOBIN)/pgo-mac
-	env GOOS=darwin GOARCH=amd64 go build github.com/blang/expenv && mv expenv $(GOBIN)/expenv-mac
 
 winpgo:
 	cd pgo && env GOOS=windows GOARCH=386 go build pgo.go && mv pgo.exe $(GOBIN)/pgo.exe
-	env GOOS=windows GOARCH=386 go build github.com/blang/expenv && mv expenv.exe $(GOBIN)/expenv.exe
 
 
 #======= Image builds =======
@@ -183,9 +181,6 @@ release:  linuxpgo macpgo winpgo
 	cp $(GOBIN)/pgo $(RELTMPDIR)
 	cp $(GOBIN)/pgo-mac $(RELTMPDIR)
 	cp $(GOBIN)/pgo.exe $(RELTMPDIR)
-	cp $(GOBIN)/expenv $(RELTMPDIR)
-	cp $(GOBIN)/expenv-mac $(RELTMPDIR)
-	cp $(GOBIN)/expenv.exe $(RELTMPDIR)
 	cp $(PGOROOT)/examples/pgo-bash-completion $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
 
