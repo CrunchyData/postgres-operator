@@ -16,17 +16,20 @@ limitations under the License.
 */
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	pgdumpoperator "github.com/crunchydata/postgres-operator/internal/operator/pgdump"
 	taskoperator "github.com/crunchydata/postgres-operator/internal/operator/task"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -38,6 +41,7 @@ type Controller struct {
 	PgtaskConfig      *rest.Config
 	PgtaskClient      *rest.RESTClient
 	PgtaskClientset   kubernetes.Interface
+	PGOClientset      pgo.Interface
 	Queue             workqueue.RateLimitingInterface
 	Informer          informers.PgtaskInformer
 	PgtaskWorkerCount int
@@ -83,18 +87,23 @@ func (c *Controller) processNextItem() bool {
 	// parallel.
 	defer c.Queue.Done(key)
 
-	tmpTask := crv1.Pgtask{}
-	found, err := kubeapi.Getpgtask(c.PgtaskClient, &tmpTask, keyResourceName, keyNamespace)
-	if !found {
+	tmpTask, err := c.PGOClientset.CrunchydataV1().Pgtasks(keyNamespace).Get(keyResourceName, metav1.GetOptions{})
+	if err != nil {
 		log.Errorf("ERROR onAdd getting pgtask : %s", err.Error())
 		c.Queue.Forget(key) // NB(cbandy): This should probably be a retry.
 		return true
 	}
 
 	//update pgtask
-	state := crv1.PgtaskStateProcessed
-	message := "Successfully processed Pgtask by controller"
-	err = kubeapi.PatchpgtaskStatus(c.PgtaskClient, state, message, &tmpTask, keyNamespace)
+	patch, err := json.Marshal(map[string]interface{}{
+		"status": crv1.PgtaskStatus{
+			State:   crv1.PgtaskStateProcessed,
+			Message: "Successfully processed Pgtask by controller",
+		},
+	})
+	if err == nil {
+		_, err = c.PGOClientset.CrunchydataV1().Pgtasks(keyNamespace).Patch(tmpTask.Name, types.MergePatchType, patch)
+	}
 	if err != nil {
 		log.Errorf("ERROR onAdd updating pgtask status: %s", err.Error())
 		c.Queue.Forget(key) // NB(cbandy): This should probably be a retry.
@@ -105,44 +114,44 @@ func (c *Controller) processNextItem() bool {
 	switch tmpTask.Spec.TaskType {
 	case crv1.PgtaskPgAdminAdd:
 		log.Debug("add pgadmin task added")
-		clusteroperator.AddPgAdminFromPgTask(c.PgtaskClientset, c.PgtaskClient, c.PgtaskConfig, &tmpTask)
+		clusteroperator.AddPgAdminFromPgTask(c.PgtaskClientset, c.PGOClientset, c.PgtaskConfig, tmpTask)
 	case crv1.PgtaskPgAdminDelete:
 		log.Debug("delete pgadmin task added")
-		clusteroperator.DeletePgAdminFromPgTask(c.PgtaskClientset, c.PgtaskClient, c.PgtaskConfig, &tmpTask)
+		clusteroperator.DeletePgAdminFromPgTask(c.PgtaskClientset, c.PGOClientset, c.PgtaskConfig, tmpTask)
 	case crv1.PgtaskUpgrade:
 		log.Debug("upgrade task added")
-		clusteroperator.AddUpgrade(c.PgtaskClientset, c.PgtaskClient, &tmpTask, keyNamespace)
+		clusteroperator.AddUpgrade(c.PgtaskClientset, c.PGOClientset, tmpTask, keyNamespace)
 	case crv1.PgtaskFailover:
 		log.Debug("failover task added")
-		if !dupeFailover(c.PgtaskClient, &tmpTask, keyNamespace) {
-			clusteroperator.FailoverBase(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask, c.PgtaskConfig)
+		if !dupeFailover(c.PGOClientset, tmpTask, keyNamespace) {
+			clusteroperator.FailoverBase(keyNamespace, c.PgtaskClientset, c.PGOClientset, c.PgtaskClient, tmpTask, c.PgtaskConfig)
 		} else {
 			log.Debugf("skipping duplicate onAdd failover task %s/%s", keyNamespace, keyResourceName)
 		}
 
 	case crv1.PgtaskDeleteData:
 		log.Debug("delete data task added")
-		if !dupeDeleteData(c.PgtaskClient, &tmpTask, keyNamespace) {
-			taskoperator.RemoveData(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask)
+		if !dupeDeleteData(c.PGOClientset, tmpTask, keyNamespace) {
+			taskoperator.RemoveData(keyNamespace, c.PgtaskClientset, c.PGOClientset, tmpTask)
 		} else {
 			log.Debugf("skipping duplicate onAdd delete data task %s/%s", keyNamespace, keyResourceName)
 		}
 	case crv1.PgtaskDeleteBackups:
 		log.Debug("delete backups task added")
-		taskoperator.RemoveBackups(keyNamespace, c.PgtaskClientset, &tmpTask)
+		taskoperator.RemoveBackups(keyNamespace, c.PgtaskClientset, tmpTask)
 	case crv1.PgtaskBackrest:
 		log.Debug("backrest task added")
-		backrestoperator.Backrest(keyNamespace, c.PgtaskClientset, &tmpTask)
+		backrestoperator.Backrest(keyNamespace, c.PgtaskClientset, tmpTask)
 	case crv1.PgtaskBackrestRestore:
 		log.Debug("backrest restore task added")
-		backrestoperator.Restore(c.PgtaskClient, keyNamespace, c.PgtaskClientset, &tmpTask)
+		backrestoperator.Restore(c.PGOClientset, keyNamespace, c.PgtaskClientset, tmpTask)
 
 	case crv1.PgtaskpgDump:
 		log.Debug("pgDump task added")
-		pgdumpoperator.Dump(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask)
+		pgdumpoperator.Dump(keyNamespace, c.PgtaskClientset, c.PGOClientset, c.PgtaskClient, tmpTask)
 	case crv1.PgtaskpgRestore:
 		log.Debug("pgDump restore task added")
-		pgdumpoperator.Restore(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask)
+		pgdumpoperator.Restore(keyNamespace, c.PgtaskClientset, c.PGOClientset, tmpTask)
 
 	case crv1.PgtaskAutoFailover:
 		log.Debugf("autofailover task added %s", keyResourceName)
@@ -151,7 +160,7 @@ func (c *Controller) processNextItem() bool {
 
 	case crv1.PgtaskCloneStep1, crv1.PgtaskCloneStep2, crv1.PgtaskCloneStep3:
 		log.Debugf("clone task added [%s]", keyResourceName)
-		clusteroperator.Clone(c.PgtaskClientset, c.PgtaskClient, c.PgtaskConfig, keyNamespace, &tmpTask)
+		clusteroperator.Clone(c.PgtaskClientset, c.PGOClientset, c.PgtaskClient, c.PgtaskConfig, keyNamespace, tmpTask)
 
 	default:
 		log.Debugf("unknown task type on pgtask added [%s]", tmpTask.Spec.TaskType)
@@ -206,11 +215,9 @@ func (c *Controller) AddPGTaskEventHandler() {
 //de-dupe logic for a failover, if the failover started
 //parameter is set, it means a failover has already been
 //started on this
-func dupeFailover(restClient *rest.RESTClient, task *crv1.Pgtask, ns string) bool {
-	tmp := crv1.Pgtask{}
-
-	found, _ := kubeapi.Getpgtask(restClient, &tmp, task.Spec.Name, ns)
-	if !found {
+func dupeFailover(clientset pgo.Interface, task *crv1.Pgtask, ns string) bool {
+	tmp, err := clientset.CrunchydataV1().Pgtasks(ns).Get(task.Spec.Name, metav1.GetOptions{})
+	if err != nil {
 		//a big time error if this occurs
 		return false
 	}
@@ -225,11 +232,9 @@ func dupeFailover(restClient *rest.RESTClient, task *crv1.Pgtask, ns string) boo
 //de-dupe logic for a delete data, if the delete data job started
 //parameter is set, it means a delete data job has already been
 //started on this
-func dupeDeleteData(restClient *rest.RESTClient, task *crv1.Pgtask, ns string) bool {
-	tmp := crv1.Pgtask{}
-
-	found, _ := kubeapi.Getpgtask(restClient, &tmp, task.Spec.Name, ns)
-	if !found {
+func dupeDeleteData(clientset pgo.Interface, task *crv1.Pgtask, ns string) bool {
+	tmp, err := clientset.CrunchydataV1().Pgtasks(ns).Get(task.Spec.Name, metav1.GetOptions{})
+	if err != nil {
 		//a big time error if this occurs
 		return false
 	}

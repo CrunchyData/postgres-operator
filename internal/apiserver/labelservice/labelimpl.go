@@ -22,7 +22,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pkg/events"
@@ -61,8 +60,7 @@ func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 
 	clusterList := crv1.PgclusterList{}
 	if len(request.Args) > 0 && request.Args[0] == "all" {
-		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, "", ns)
+		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{})
 		if err != nil {
 			log.Error("error getting list of clusters" + err.Error())
 			resp.Status.Code = msgs.Error
@@ -74,12 +72,12 @@ func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 			resp.Status.Msg = "no clusters found"
 			return resp
 		}
+		clusterList = *cl
 
 	} else if request.Selector != "" {
 		log.Debugf("label selector is %s and ns is %s", request.Selector, ns)
 
-		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector, ns)
+		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: request.Selector})
 		if err != nil {
 			log.Error("error getting list of clusters" + err.Error())
 			resp.Status.Code = msgs.Error
@@ -91,20 +89,19 @@ func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 			resp.Status.Msg = "no clusters found"
 			return resp
 		}
+		clusterList = *cl
 	} else {
 		//each arg represents a cluster name
 		items := make([]crv1.Pgcluster, 0)
 		for _, cluster := range request.Args {
-			result := crv1.Pgcluster{}
-			_, err := kubeapi.Getpgcluster(apiserver.RESTClient,
-				&result, cluster, ns)
+			result, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(cluster, metav1.GetOptions{})
 			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = "error getting list of clusters" + err.Error()
 				return resp
 			}
 
-			items = append(items, result)
+			items = append(items, *result)
 		}
 		clusterList.Items = items
 	}
@@ -247,13 +244,7 @@ func PatchPgcluster(newLabels map[string]string, oldCRD crv1.Pgcluster, ns strin
 	}
 
 	log.Debug(string(patchBytes))
-	_, err6 := apiserver.RESTClient.Patch(types.MergePatchType).
-		Namespace(ns).
-		Resource(crv1.PgclusterResourcePlural).
-		Name(oldCRD.Spec.Name).
-		Body(patchBytes).
-		Do().
-		Get()
+	_, err6 := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Patch(oldCRD.Spec.Name, types.MergePatchType, patchBytes)
 
 	return err6
 
@@ -310,8 +301,7 @@ func DeleteLabel(request *msgs.DeleteLabelRequest, ns string) msgs.LabelResponse
 
 	clusterList := crv1.PgclusterList{}
 	if len(request.Args) > 0 && request.Args[0] == "all" {
-		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, "", ns)
+		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{})
 		if err != nil {
 			log.Error("error getting list of clusters" + err.Error())
 			resp.Status.Code = msgs.Error
@@ -323,10 +313,10 @@ func DeleteLabel(request *msgs.DeleteLabelRequest, ns string) msgs.LabelResponse
 			resp.Status.Msg = "no clusters found"
 			return resp
 		}
+		clusterList = *cl
 
 	} else if request.Selector != "" {
-		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-			&clusterList, request.Selector, ns)
+		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: request.Selector})
 		if err != nil {
 			log.Error("error getting list of clusters" + err.Error())
 			resp.Status.Code = msgs.Error
@@ -338,20 +328,19 @@ func DeleteLabel(request *msgs.DeleteLabelRequest, ns string) msgs.LabelResponse
 			resp.Status.Msg = "no clusters found"
 			return resp
 		}
+		clusterList = *cl
 	} else {
 		//each arg represents a cluster name
 		items := make([]crv1.Pgcluster, 0)
 		for _, cluster := range request.Args {
-			result := crv1.Pgcluster{}
-			_, err := kubeapi.Getpgcluster(apiserver.RESTClient,
-				&result, cluster, ns)
+			result, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(cluster, metav1.GetOptions{})
 			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = "error getting list of clusters" + err.Error()
 				return resp
 			}
 
-			items = append(items, result)
+			items = append(items, *result)
 		}
 		clusterList.Items = items
 	}
@@ -429,13 +418,7 @@ func deletePatchPgcluster(labelsMap map[string]string, oldCRD crv1.Pgcluster, ns
 	}
 
 	log.Debug(string(patchBytes))
-	_, err6 := apiserver.RESTClient.Patch(types.MergePatchType).
-		Namespace(ns).
-		Resource(crv1.PgclusterResourcePlural).
-		Name(oldCRD.Spec.Name).
-		Body(patchBytes).
-		Do().
-		Get()
+	_, err6 := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Patch(oldCRD.Spec.Name, types.MergePatchType, patchBytes)
 
 	return err6
 

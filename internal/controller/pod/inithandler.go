@@ -87,7 +87,7 @@ func (c *Controller) handleBackRestRepoInit(newPod *apiv1.Pod, cluster *crv1.Pgc
 
 	// if the repo pod is for a cluster bootstrap, the kick of the bootstrap job and return
 	if _, ok := newPod.GetLabels()[config.LABEL_PGHA_BOOTSTRAP]; ok {
-		if err := clusteroperator.AddClusterBootstrap(c.PodClientset, c.PodClient,
+		if err := clusteroperator.AddClusterBootstrap(c.PodClientset, c.PGOClientset, c.PodClient,
 			cluster); err != nil {
 			log.Error(err)
 			return err
@@ -147,14 +147,14 @@ func (c *Controller) handleRestoreInit(cluster *crv1.Pgcluster) error {
 		log.Error(err)
 		return err
 	}
-	err = backrest.CleanBackupResources(c.PodClient, c.PodClientset,
+	err = backrest.CleanBackupResources(c.PGOClientset, c.PodClientset,
 		namespace, clusterName)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	backrestoperator.CreateInitialBackup(c.PodClient, namespace,
+	backrestoperator.CreateInitialBackup(c.PGOClientset, namespace,
 		clusterName, pods.Items[0].Name)
 
 	return nil
@@ -169,9 +169,9 @@ func (c *Controller) handleBootstrapInit(newPod *apiv1.Pod, cluster *crv1.Pgclus
 	namespace := cluster.Namespace
 
 	log.Debugf("%s went to Ready from Not Ready, apply policies...", clusterName)
-	taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PodClient, c.PodConfig, namespace)
+	taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PGOClientset, c.PodConfig, namespace)
 
-	taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient, namespace)
+	taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PGOClientset, namespace)
 
 	//publish event for cluster complete
 	publishClusterComplete(clusterName, namespace, cluster)
@@ -179,7 +179,7 @@ func (c *Controller) handleBootstrapInit(newPod *apiv1.Pod, cluster *crv1.Pgclus
 
 	// create the pgBackRest stanza
 	backrestoperator.StanzaCreate(newPod.ObjectMeta.Namespace, clusterName,
-		c.PodClientset, c.PodClient)
+		c.PodClientset, c.PGOClientset)
 
 	// if this is a pgbouncer enabled cluster, add a pgbouncer
 	// Note: we only warn if we cannot create the pgBouncer, so eecution can
@@ -200,7 +200,7 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
 
-	taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PodClient, namespace)
+	taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PGOClientset, namespace)
 
 	//publish event for cluster complete
 	publishClusterComplete(clusterName, namespace, cluster)
@@ -215,8 +215,8 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	// to "s3" for S3 storage only, set the cluster to an initialized status.
 	if cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE] != "s3" {
 		// first try to delete any existing stanza create task and/or job
-		if err := kubeapi.Deletepgtask(c.PodClient, fmt.Sprintf("%s-%s", clusterName,
-			crv1.PgtaskBackrestStanzaCreate), namespace); err != nil && !kerrors.IsNotFound(err) {
+		if err := c.PGOClientset.CrunchydataV1().Pgtasks(namespace).Delete(fmt.Sprintf("%s-%s", clusterName,
+			crv1.PgtaskBackrestStanzaCreate), &metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
 			return err
 		}
 		deletePropagation := metav1.DeletePropagationForeground
@@ -227,9 +227,9 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 			return err
 		}
 		backrestoperator.StanzaCreate(namespace, clusterName,
-			c.PodClientset, c.PodClient)
+			c.PodClientset, c.PGOClientset)
 	} else {
-		controller.SetClusterInitializedStatus(c.PodClient, clusterName,
+		controller.SetClusterInitializedStatus(c.PGOClientset, clusterName,
 			namespace)
 	}
 
@@ -238,7 +238,7 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	// stanza-creation and/or the creation of any backups, since the replicas
 	// will be generated from the pgBackRest repository of an external PostgreSQL
 	// database (which should already exist).
-	controller.InitializeReplicaCreation(c.PodClient, clusterName, namespace)
+	controller.InitializeReplicaCreation(c.PGOClientset, clusterName, namespace)
 
 	// if this is a pgbouncer enabled cluster, add a pgbouncer
 	// Note: we only warn if we cannot create the pgBouncer, so eecution can
@@ -261,8 +261,8 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 	depName := newpod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
 	ns := newpod.Namespace
 
-	pgreplica := crv1.Pgreplica{}
-	replica, _ := kubeapi.Getpgreplica(c.PodClient, &pgreplica, depName, ns)
+	_, err := c.PGOClientset.CrunchydataV1().Pgreplicas(ns).Get(depName, metav1.GetOptions{})
+	replica := err == nil
 	log.Debugf("checkPostgresPods --- dep %s replica %t", depName, replica)
 
 	dep, err := c.PodClientset.AppsV1().Deployments(ns).Get(depName, metav1.GetOptions{})

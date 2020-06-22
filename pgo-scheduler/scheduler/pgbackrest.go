@@ -20,8 +20,6 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,15 +64,8 @@ func (b BackRestBackupJob) Run() {
 
 	contextLogger.Info("Running pgBackRest backup")
 
-	cluster := crv1.Pgcluster{}
-	found, err := kubeapi.Getpgcluster(restClient, &cluster, b.cluster, b.namespace)
-
-	if !found {
-		contextLogger.WithFields(log.Fields{
-			"error": err,
-		}).Error("pgCluster not found")
-		return
-	} else if err != nil {
+	cluster, err := pgoClient.CrunchydataV1().Pgclusters(b.namespace).Get(b.cluster, metav1.GetOptions{})
+	if err != nil {
 		contextLogger.WithFields(log.Fields{
 			"error": err,
 		}).Error("error retrieving pgCluster")
@@ -95,19 +86,8 @@ func (b BackRestBackupJob) Run() {
 		return
 	}
 
-	result := crv1.Pgtask{}
-	found, err = kubeapi.Getpgtask(restClient, &result, taskName, b.namespace)
-
-	if found {
-		err := kubeapi.Deletepgtask(restClient, taskName, b.namespace)
-		if err != nil {
-			contextLogger.WithFields(log.Fields{
-				"task":  taskName,
-				"error": err,
-			}).Error("error deleting pgTask")
-			return
-		}
-
+	err = pgoClient.CrunchydataV1().Pgtasks(b.namespace).Delete(taskName, &metav1.DeleteOptions{})
+	if err == nil {
 		deletePropagation := metav1.DeletePropagationForeground
 		err = kubeClient.
 			BatchV1().Jobs(b.namespace).
@@ -125,12 +105,11 @@ func (b BackRestBackupJob) Run() {
 			}).Error("error deleting backup job")
 			return
 		}
-
-	} else if err != nil && !kerrors.IsNotFound(err) {
+	} else if !kerrors.IsNotFound(err) {
 		contextLogger.WithFields(log.Fields{
 			"task":  taskName,
 			"error": err,
-		}).Error("error getting pgTask")
+		}).Error("error deleting pgTask")
 		return
 	}
 
@@ -164,7 +143,7 @@ func (b BackRestBackupJob) Run() {
 		imagePrefix:   cluster.Spec.PGOImagePrefix,
 	}
 
-	err = kubeapi.Createpgtask(restClient, backrest.NewBackRestTask(), b.namespace)
+	_, err = pgoClient.CrunchydataV1().Pgtasks(b.namespace).Create(backrest.NewBackRestTask())
 	if err != nil {
 		contextLogger.WithFields(log.Fields{
 			"error": err,

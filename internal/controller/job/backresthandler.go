@@ -21,7 +21,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	"github.com/crunchydata/postgres-operator/internal/util"
@@ -29,6 +28,7 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // backrestUpdateHandler is responsible for handling updates to backrest jobs
@@ -86,7 +86,7 @@ func (c *Controller) handleBackrestRestoreUpdate(job *apiv1.Job) error {
 		log.Error("error in patching pgtask " + labels[config.LABEL_JOB_NAME] + err.Error())
 	}
 
-	backrestoperator.UpdateRestoreWorkflow(c.JobClient, c.JobClientset, labels[config.LABEL_PG_CLUSTER],
+	backrestoperator.UpdateRestoreWorkflow(c.PGOClientset, c.JobClientset, labels[config.LABEL_PG_CLUSTER],
 		crv1.PgtaskWorkflowBackrestRestorePVCCreatedStatus, job.ObjectMeta.Namespace, labels[crv1.PgtaskWorkflowID],
 		labels[config.LABEL_BACKREST_RESTORE_TO_PVC], job.Spec.Template.Spec.Affinity)
 	publishRestoreComplete(labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], job.ObjectMeta.Labels[config.LABEL_PGOUSER], job.ObjectMeta.Namespace)
@@ -117,7 +117,7 @@ func (c *Controller) handleCloneBackrestRestoreUpdate(job *apiv1.Job) error {
 		}
 
 		// next, update the workflow to indicate that step 2 is complete
-		clusteroperator.UpdateCloneWorkflow(c.JobClient, namespace, workflowID, crv1.PgtaskWorkflowCloneClusterCreate)
+		clusteroperator.UpdateCloneWorkflow(c.PGOClientset, namespace, workflowID, crv1.PgtaskWorkflowCloneClusterCreate)
 
 		// alright, we can move on the step 3 which is the final step, where we
 		// create the cluster
@@ -137,7 +137,7 @@ func (c *Controller) handleCloneBackrestRestoreUpdate(job *apiv1.Job) error {
 		task := cloneTask.Create()
 
 		// create the pgtask!
-		if err := kubeapi.Createpgtask(c.JobClient, task, namespace); err != nil {
+		if _, err := c.PGOClientset.CrunchydataV1().Pgtasks(namespace).Create(task); err != nil {
 			log.Error(err)
 			errorMessage := fmt.Sprintf("Could not create pgtask for step 3: %s", err.Error())
 			clusteroperator.PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, errorMessage)
@@ -168,11 +168,11 @@ func (c *Controller) handleBackrestBackupUpdate(job *apiv1.Job) error {
 	if labels[config.LABEL_PGHA_BACKUP_TYPE] == crv1.BackupTypeBootstrap {
 		log.Debugf("jobController onUpdate initial backup complete")
 
-		controller.SetClusterInitializedStatus(c.JobClient, labels[config.LABEL_PG_CLUSTER],
+		controller.SetClusterInitializedStatus(c.PGOClientset, labels[config.LABEL_PG_CLUSTER],
 			job.ObjectMeta.Namespace)
 
 		// now initialize the creation of any replica
-		controller.InitializeReplicaCreation(c.JobClient, labels[config.LABEL_PG_CLUSTER],
+		controller.InitializeReplicaCreation(c.PGOClientset, labels[config.LABEL_PG_CLUSTER],
 			job.ObjectMeta.Namespace)
 
 	} else if labels[config.LABEL_PGHA_BACKUP_TYPE] == crv1.BackupTypeFailover {
@@ -212,9 +212,8 @@ func (c *Controller) handleBackrestStanzaCreateUpdate(job *apiv1.Job) error {
 			}
 		}
 
-		cluster := crv1.Pgcluster{}
-		if _, err := kubeapi.Getpgcluster(c.JobClient, &cluster,
-			clusterName, namespace); err != nil {
+		cluster, err := c.PGOClientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+		if err != nil {
 			return err
 		}
 		// If the cluster is a standby cluster, then no need to proceed with backup creation.
@@ -222,11 +221,11 @@ func (c *Controller) handleBackrestStanzaCreateUpdate(job *apiv1.Job) error {
 		if cluster.Spec.Standby {
 			log.Debugf("job Controller: standby cluster %s will now be set to an initialized "+
 				"status", clusterName)
-			controller.SetClusterInitializedStatus(c.JobClient, clusterName, namespace)
+			controller.SetClusterInitializedStatus(c.PGOClientset, clusterName, namespace)
 			return nil
 		}
 
-		backrestoperator.CreateInitialBackup(c.JobClient, job.ObjectMeta.Namespace,
+		backrestoperator.CreateInitialBackup(c.PGOClientset, job.ObjectMeta.Namespace,
 			clusterName, backrestRepoPodName)
 
 	}

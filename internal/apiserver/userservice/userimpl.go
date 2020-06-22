@@ -818,36 +818,36 @@ func getClusterList(namespace string, clusterNames []string, selector string, al
 	// if the all flag is set, let's return all the clusters here and return
 	if all {
 		// return the value of cluster list or that of the error here
-		err := kubeapi.Getpgclusters(apiserver.RESTClient, &clusterList, namespace)
+		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(namespace).List(metav1.ListOptions{})
+		if err == nil {
+			clusterList = *cl
+		}
 		return clusterList, err
 	}
 
 	// try to build the cluster list based on either the selector or the list
 	// of arguments...or both. First, start with the selector
 	if selector != "" {
-		err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList,
-			selector, namespace)
+		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(namespace).List(metav1.ListOptions{LabelSelector: selector})
 
 		// if there is an error, return here with an empty cluster list
 		if err != nil {
 			return crv1.PgclusterList{}, err
 		}
+		clusterList = *cl
 	}
 
 	// now try to get clusters based specific cluster names
 	for _, clusterName := range clusterNames {
-		cluster := crv1.Pgcluster{}
-
-		found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster,
-			clusterName, namespace)
+		cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
 
 		// if there is an error, capture it here and return here with an empty list
-		if !found || err != nil {
+		if err != nil {
 			return crv1.PgclusterList{}, err
 		}
 
 		// if successful, append to the cluster list
-		clusterList.Items = append(clusterList.Items, cluster)
+		clusterList.Items = append(clusterList.Items, *cluster)
 	}
 
 	log.Debugf("clusters founds: [%d]", len(clusterList.Items))

@@ -19,12 +19,13 @@ import (
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -36,6 +37,7 @@ type Controller struct {
 	PodClient    *rest.RESTClient
 	PodClientset kubernetes.Interface
 	PodConfig    *rest.Config
+	PGOClientset pgo.Interface
 	Informer     coreinformers.PodInformer
 }
 
@@ -92,8 +94,8 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		clusterName = newPodLabels[config.LABEL_PG_CLUSTER]
 	}
 	namespace := newPod.ObjectMeta.Namespace
-	cluster := crv1.Pgcluster{}
-	if _, err := kubeapi.Getpgcluster(c.PodClient, &cluster, clusterName, namespace); err != nil {
+	cluster, err := c.PGOClientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	if err != nil {
 		log.Error(err.Error())
 		return
 	}
@@ -104,7 +106,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	if cluster.Status.State != crv1.PgclusterStateInitialized &&
 		(isDBContainerBecomingReady(oldPod, newPod) ||
 			isBackRestRepoBecomingReady(oldPod, newPod)) {
-		if err := c.handleClusterInit(newPod, &cluster); err != nil {
+		if err := c.handleClusterInit(newPod, cluster); err != nil {
 			log.Error(err)
 			return
 		}
@@ -119,9 +121,9 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 			"handler", newPod.Name, newPod.Namespace)
 
 		// update the pgcluster's current primary information to match the promotion
-		setCurrentPrimary(c.PodClient, newPod, &cluster)
+		setCurrentPrimary(c.PGOClientset, newPod, cluster)
 
-		if err := c.handlePostgresPodPromotion(newPod, cluster); err != nil {
+		if err := c.handlePostgresPodPromotion(newPod, *cluster); err != nil {
 			log.Error(err)
 			return
 		}
@@ -131,7 +133,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		log.Debugf("Pod Controller: standby pod %s in namespace %s promoted, calling standby pod "+
 			"promotion handler", newPod.Name, newPod.Namespace)
 
-		if err := c.handleStandbyPromotion(newPod, cluster); err != nil {
+		if err := c.handleStandbyPromotion(newPod, *cluster); err != nil {
 			log.Error(err)
 			return
 		}
@@ -142,10 +144,10 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 // setCurrentPrimary checks whether the newly promoted primary value differs from the pgcluster's
 // current primary value. If different, patch the CRD's annotation to match the new value
-func setCurrentPrimary(restclient *rest.RESTClient, newPod *apiv1.Pod, cluster *crv1.Pgcluster) {
+func setCurrentPrimary(clientset pgo.Interface, newPod *apiv1.Pod, cluster *crv1.Pgcluster) {
 	// if a failover has occurred and the current primary has changed, update the pgcluster CRD's annotation accordingly
 	if cluster.Annotations[config.ANNOTATION_CURRENT_PRIMARY] != newPod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME] {
-		err := util.CurrentPrimaryUpdate(restclient, cluster, newPod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME], newPod.Namespace)
+		err := util.CurrentPrimaryUpdate(clientset, cluster, newPod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME], newPod.Namespace)
 		if err != nil {
 			log.Errorf("PodController unable to patch pgcluster %s with currentprimary value %s Error: %s", cluster.Spec.ClusterName,
 				newPod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME], err)

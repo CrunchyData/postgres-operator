@@ -20,12 +20,15 @@ import (
 
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 )
 
 type Request struct {
 	RESTConfig       *rest.Config
 	RESTClient       *rest.RESTClient
 	Clientset        kubernetes.Interface
+	PGOClientset     pgo.Interface
 	RemoveData       bool
 	RemoveBackup     bool
 	IsBackup         bool

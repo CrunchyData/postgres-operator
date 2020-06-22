@@ -22,7 +22,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -47,10 +46,8 @@ func Cat(request *msgs.CatRequest, ns string) msgs.CatResponse {
 	}
 
 	clusterName := request.Args[0]
-
-	cluster := crv1.Pgcluster{}
-	found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &cluster, clusterName, ns)
-	if !found {
+	cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
+	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = clusterName + " was not found, verify cluster name"
 		return resp

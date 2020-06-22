@@ -16,13 +16,15 @@ limitations under the License.
 */
 
 import (
+	"encoding/json"
 	"errors"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/rest"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // ErrControllerGroupExists is the error that is thrown when a controller group for a specific
@@ -50,12 +52,11 @@ type Manager interface {
 // (i.e. non-standby) cluster this is called following the creation of the initial cluster backup,
 // which is needed to bootstrap replicas.  However, for a standby cluster this is called as
 // soon as the primary PG pod reports ready and the cluster is marked as initialized.
-func InitializeReplicaCreation(restclient *rest.RESTClient, clusterName,
+func InitializeReplicaCreation(clientset pgo.Interface, clusterName,
 	namespace string) error {
 
-	pgreplicaList := &crv1.PgreplicaList{}
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
-	err := kubeapi.GetpgreplicasBySelector(restclient, pgreplicaList, selector, namespace)
+	pgreplicaList, err := clientset.CrunchydataV1().Pgreplicas(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		return err
@@ -68,9 +69,7 @@ func InitializeReplicaCreation(restclient *rest.RESTClient, clusterName,
 
 		pgreplica.Annotations[config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA] = "true"
 
-		if err = kubeapi.Updatepgreplica(restclient, &pgreplica, pgreplica.Name,
-			namespace); err != nil {
-
+		if _, err = clientset.CrunchydataV1().Pgreplicas(namespace).Update(&pgreplica); err != nil {
 			log.Error(err)
 			return err
 		}
@@ -81,18 +80,19 @@ func InitializeReplicaCreation(restclient *rest.RESTClient, clusterName,
 // SetClusterInitializedStatus sets the status of a pgcluster CR to indicate that it has been
 // initialized.  This is specifically done by patching the status of the pgcluster CR with the
 // proper initialization status.
-func SetClusterInitializedStatus(restclient *rest.RESTClient, clusterName,
+func SetClusterInitializedStatus(clientset pgo.Interface, clusterName,
 	namespace string) error {
 
-	cluster := crv1.Pgcluster{}
-	if _, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName,
-		namespace); err != nil {
-		log.Error(err)
-		return err
+	patch, err := json.Marshal(map[string]interface{}{
+		"status": crv1.PgclusterStatus{
+			State:   crv1.PgclusterStateInitialized,
+			Message: "Cluster has been initialized",
+		},
+	})
+	if err == nil {
+		_, err = clientset.CrunchydataV1().Pgclusters(namespace).Patch(clusterName, types.MergePatchType, patch)
 	}
-	message := "Cluster has been initialized"
-	if err := kubeapi.PatchpgclusterStatus(restclient, crv1.PgclusterStateInitialized, message,
-		&cluster, namespace); err != nil {
+	if err != nil {
 		log.Error(err)
 		return err
 	}

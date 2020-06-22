@@ -24,7 +24,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 
 	"io/ioutil"
 
@@ -40,9 +40,9 @@ import (
 )
 
 // ExecPolicy execute a sql policy against a cluster
-func ExecPolicy(clientset kubernetes.Interface, restclient *rest.RESTClient, restconfig *rest.Config, namespace, policyName, serviceName, port string) error {
+func ExecPolicy(clientset kubernetes.Interface, pgoClient pgo.Interface, restconfig *rest.Config, namespace, policyName, serviceName, port string) error {
 	//fetch the policy sql
-	sql, err := GetPolicySQL(restclient, namespace, policyName)
+	sql, err := GetPolicySQL(pgoClient, namespace, policyName)
 
 	if err != nil {
 		return err
@@ -107,14 +107,8 @@ func ExecPolicy(clientset kubernetes.Interface, restclient *rest.RESTClient, res
 }
 
 // GetPolicySQL returns the SQL string from a policy
-func GetPolicySQL(restclient *rest.RESTClient, namespace, policyName string) (string, error) {
-	p := crv1.Pgpolicy{}
-	err := restclient.Get().
-		Name(policyName).
-		Namespace(namespace).
-		Resource(crv1.PgpolicyResourcePlural).
-		Do().
-		Into(&p)
+func GetPolicySQL(clientset pgo.Interface, namespace, policyName string) (string, error) {
+	p, err := clientset.CrunchydataV1().Pgpolicies(namespace).Get(policyName, metav1.GetOptions{})
 	if err == nil {
 		if p.Spec.URL != "" {
 			return readSQLFromURL(p.Spec.URL)
@@ -148,14 +142,8 @@ func readSQLFromURL(urlstring string) (string, error) {
 }
 
 // ValidatePolicy tests to see if a policy exists
-func ValidatePolicy(restclient *rest.RESTClient, namespace string, policyName string) error {
-	result := crv1.Pgpolicy{}
-	err := restclient.Get().
-		Resource(crv1.PgpolicyResourcePlural).
-		Namespace(namespace).
-		Name(policyName).
-		Do().
-		Into(&result)
+func ValidatePolicy(clientset pgo.Interface, namespace string, policyName string) error {
+	_, err := clientset.CrunchydataV1().Pgpolicies(namespace).Get(policyName, metav1.GetOptions{})
 	if err == nil {
 		log.Debugf("pgpolicy %s was validated", policyName)
 	} else if kerrors.IsNotFound(err) {

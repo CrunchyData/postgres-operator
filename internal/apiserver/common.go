@@ -21,7 +21,6 @@ import (
 	"strconv"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -83,7 +82,7 @@ func CreateRMDataTask(clusterName, replicaName, taskName string, deleteBackups, 
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[config.LABEL_RMDATA] = "true"
 
-	err = kubeapi.Createpgtask(RESTClient, newInstance, ns)
+	_, err = PGOClientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
 	if err != nil {
 		log.Error(err)
 		return err

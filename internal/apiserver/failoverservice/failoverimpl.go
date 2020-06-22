@@ -20,7 +20,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
@@ -72,7 +71,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns, pgouser string) msg
 	spec.Name = request.ClusterName + "-" + config.LABEL_FAILOVER
 
 	// previous failovers will leave a pgtask so remove it first
-	kubeapi.Deletepgtask(apiserver.RESTClient, spec.Name, ns)
+	apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Delete(spec.Name, &metav1.DeleteOptions{})
 
 	spec.TaskType = crv1.PgtaskFailover
 	spec.Parameters = make(map[string]string)
@@ -91,8 +90,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns, pgouser string) msg
 		Spec: spec,
 	}
 
-	err = kubeapi.Createpgtask(apiserver.RESTClient,
-		newInstance, ns)
+	_, err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -172,15 +170,13 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 }
 
 func validateClusterName(clusterName, ns string) (*crv1.Pgcluster, error) {
-	cluster := crv1.Pgcluster{}
-	found, err := kubeapi.Getpgcluster(apiserver.RESTClient,
-		&cluster, clusterName, ns)
+	cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
 
-	if !found {
-		return &cluster, errors.New("no cluster found named " + clusterName)
+	if err != nil {
+		return cluster, errors.New("no cluster found named " + clusterName)
 	}
 
-	return &cluster, err
+	return cluster, err
 }
 
 // isValidFailoverTarget checks to see if the failover target specified in the request is valid,

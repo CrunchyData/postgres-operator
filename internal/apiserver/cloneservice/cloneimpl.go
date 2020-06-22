@@ -23,13 +23,12 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 
 	log "github.com/sirupsen/logrus"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Clone allows a user to clone a cluster into a new deployment
@@ -48,9 +47,9 @@ func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResp
 
 	// get the information about the current pgcluster by name, to ensure it
 	// exists
-	sourcePgcluster := crv1.Pgcluster{}
-	_, err := kubeapi.Getpgcluster(apiserver.RESTClient, &sourcePgcluster,
-		request.SourceClusterName, namespace)
+	sourcePgcluster, err := apiserver.PGOClientset.
+		CrunchydataV1().Pgclusters(namespace).
+		Get(request.SourceClusterName, metav1.GetOptions{})
 
 	// if there is an error getting the pgcluster, abort here
 	if err != nil {
@@ -61,7 +60,7 @@ func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResp
 
 	// validate the parameters of the request that do not require setting
 	// additional information, so we can avoid additional API lookups
-	if err := validateCloneRequest(request, sourcePgcluster); err != nil {
+	if err := validateCloneRequest(request, *sourcePgcluster); err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
 		return response
@@ -76,11 +75,7 @@ func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResp
 	}
 
 	// now, let's ensure the target pgCluster does *not* exist
-	targetPgcluster := crv1.Pgcluster{}
-	targetPgclusterExists, _ := kubeapi.Getpgcluster(apiserver.RESTClient,
-		&targetPgcluster, request.TargetClusterName, namespace)
-
-	if targetPgclusterExists {
+	if _, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(namespace).Get(request.TargetClusterName, metav1.GetOptions{}); err == nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = fmt.Sprintf("Could not clone cluster: %s already exists",
 			request.TargetClusterName)
@@ -90,9 +85,8 @@ func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResp
 	// finally, let's make sure there is not already a task in progress for
 	// making the clone
 	selector := fmt.Sprintf("%s=true,pg-cluster=%s", config.LABEL_PGO_CLONE, request.TargetClusterName)
-	taskList := crv1.PgtaskList{}
-
-	if err := kubeapi.GetpgtasksBySelector(apiserver.RESTClient, &taskList, selector, namespace); err != nil {
+	taskList, err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
 		log.Error(err)
 		response.Status.Code = msgs.Error
 		response.Status.Msg = fmt.Sprintf("Could not clone cluster: could not validate %s", err.Error())
@@ -136,9 +130,7 @@ func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResp
 	task := cloneTask.Create()
 
 	// create the Pgtask CRD for the clone task
-	err = kubeapi.Createpgtask(apiserver.RESTClient, task, namespace)
-
-	if err != nil {
+	if _, err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(namespace).Create(task); err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = fmt.Sprintf("Could not create clone task: %s", err)
 		return response
@@ -165,7 +157,7 @@ func createWorkflowTask(targetClusterName, uid, namespace string) (string, error
 	// set up the workflow task
 	taskName := fmt.Sprintf("%s-%s-%s", targetClusterName, uid, crv1.PgtaskWorkflowCloneType)
 	task := &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: taskName,
 			Labels: map[string]string{
 				config.LABEL_PG_CLUSTER: targetClusterName,
@@ -185,9 +177,7 @@ func createWorkflowTask(targetClusterName, uid, namespace string) (string, error
 	}
 
 	// create the workflow task
-	err = kubeapi.Createpgtask(apiserver.RESTClient, task, namespace)
-
-	if err != nil {
+	if _, err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(namespace).Create(task); err != nil {
 		return "", err
 	}
 

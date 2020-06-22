@@ -25,13 +25,13 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
 	"github.com/crunchydata/postgres-operator/internal/pgadmin"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
@@ -77,7 +77,7 @@ const (
 // Any returned error is logged in the calling function
 func AddPgAdmin(
 	clientset kubernetes.Interface,
-	restclient *rest.RESTClient,
+	pgoClient pgo.Interface,
 	restconfig *rest.Config,
 	cluster *crv1.Pgcluster,
 	storageClass *crv1.PgStorageSpec) error {
@@ -93,7 +93,7 @@ func AddPgAdmin(
 
 	ns := cluster.Namespace
 
-	if err := kubeapi.Updatepgcluster(restclient, cluster, cluster.Name, ns); err != nil {
+	if _, err := pgoClient.CrunchydataV1().Pgclusters(ns).Update(cluster); err != nil {
 		return err
 	}
 
@@ -125,7 +125,7 @@ func AddPgAdmin(
 
 // AddPgAdminFromPgTask is a method that helps to bring up
 // the pgAdmin deployment that sits alongside a PostgreSQL cluster
-func AddPgAdminFromPgTask(clientset kubernetes.Interface, restclient *rest.RESTClient, restconfig *rest.Config, task *crv1.Pgtask) {
+func AddPgAdminFromPgTask(clientset kubernetes.Interface, pgoClient pgo.Interface, restconfig *rest.Config, task *crv1.Pgtask) {
 	clusterName := task.Spec.Parameters[config.LABEL_PGADMIN_TASK_CLUSTER]
 	namespace := task.Spec.Namespace
 	storage := task.Spec.StorageSpec
@@ -134,16 +134,14 @@ func AddPgAdminFromPgTask(clientset kubernetes.Interface, restclient *rest.RESTC
 		clusterName, namespace)
 
 	// first, check to ensure that the cluster still exosts
-	cluster := crv1.Pgcluster{}
-
-	if found, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace); !found || err != nil {
-		// even if it's not found, this is pretty bad and we cannot continue
+	cluster, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	// bring up the pgAdmin deployment
-	if err := AddPgAdmin(clientset, restclient, restconfig, &cluster, &storage); err != nil {
+	if err := AddPgAdmin(clientset, pgoClient, restconfig, cluster, &storage); err != nil {
 		log.Error(err)
 		return
 	}
@@ -153,7 +151,7 @@ func AddPgAdminFromPgTask(clientset kubernetes.Interface, restclient *rest.RESTC
 
 	// at this point, the pgtask is successful, so we can safely rvemove it
 	// we can fallthrough in the event of an error, because we're returning anyway
-	if err := kubeapi.Deletepgtask(restclient, task.Name, namespace); err != nil {
+	if err := pgoClient.CrunchydataV1().Pgtasks(namespace).Delete(task.Name, &metav1.DeleteOptions{}); err != nil {
 		log.Error(err)
 	}
 
@@ -163,7 +161,7 @@ func AddPgAdminFromPgTask(clientset kubernetes.Interface, restclient *rest.RESTC
 	}
 
 	// Lock down setup user and prepopulate connections for managed users
-	if err := BootstrapPgAdminUsers(clientset, restclient, restconfig, &cluster); err != nil {
+	if err := BootstrapPgAdminUsers(clientset, restconfig, cluster); err != nil {
 		log.Error(err)
 	}
 
@@ -172,7 +170,6 @@ func AddPgAdminFromPgTask(clientset kubernetes.Interface, restclient *rest.RESTC
 
 func BootstrapPgAdminUsers(
 	clientset kubernetes.Interface,
-	restclient *rest.RESTClient,
 	restconfig *rest.Config,
 	cluster *crv1.Pgcluster) error {
 
@@ -257,7 +254,7 @@ func BootstrapPgAdminUsers(
 //
 // Any errors that are returned should be logged in the calling function, though
 // some logging occurs in this function as well
-func DeletePgAdmin(clientset kubernetes.Interface, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
+func DeletePgAdmin(clientset kubernetes.Interface, pgoClient pgo.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
 
@@ -268,7 +265,7 @@ func DeletePgAdmin(clientset kubernetes.Interface, restclient *rest.RESTClient, 
 	// if we cannot update this we abort
 	cluster.Labels[config.LABEL_PGADMIN] = "false"
 
-	if err := kubeapi.Updatepgcluster(restclient, cluster, clusterName, namespace); err != nil {
+	if _, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Update(cluster); err != nil {
 		return err
 	}
 
@@ -301,7 +298,7 @@ func DeletePgAdmin(clientset kubernetes.Interface, restclient *rest.RESTClient, 
 
 // DeletePgAdminFromPgTask is effectively a legacy method that helps to delete
 // the pgAdmin deployment that sits alongside a PostgreSQL cluster
-func DeletePgAdminFromPgTask(clientset kubernetes.Interface, restclient *rest.RESTClient, restconfig *rest.Config, task *crv1.Pgtask) {
+func DeletePgAdminFromPgTask(clientset kubernetes.Interface, pgoClient pgo.Interface, restconfig *rest.Config, task *crv1.Pgtask) {
 	clusterName := task.Spec.Parameters[config.LABEL_PGADMIN_TASK_CLUSTER]
 	namespace := task.Spec.Namespace
 
@@ -309,16 +306,14 @@ func DeletePgAdminFromPgTask(clientset kubernetes.Interface, restclient *rest.RE
 		clusterName, namespace)
 
 	// find the pgcluster that is associated with this task
-	cluster := crv1.Pgcluster{}
-
-	if found, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace); !found || err != nil {
-		// if even if it's found and there is an error, it's pretty bad so abort
+	cluster, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	// attempt to delete the pgAdmin!
-	if err := DeletePgAdmin(clientset, restclient, restconfig, &cluster); err != nil {
+	if err := DeletePgAdmin(clientset, pgoClient, restconfig, cluster); err != nil {
 		log.Error(err)
 		return
 	}
@@ -327,7 +322,7 @@ func DeletePgAdminFromPgTask(clientset kubernetes.Interface, restclient *rest.RE
 	publishPgAdminEvent(events.EventDeletePgAdmin, task)
 
 	// lastly, remove the task
-	if err := kubeapi.Deletepgtask(restclient, task.Name, namespace); err != nil {
+	if err := pgoClient.CrunchydataV1().Pgtasks(namespace).Delete(task.Name, &metav1.DeleteOptions{}); err != nil {
 		log.Warn(err)
 	}
 }

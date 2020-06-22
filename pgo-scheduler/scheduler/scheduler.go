@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 
 	cv2 "github.com/robfig/cron"
@@ -30,10 +31,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func New(label, namespace string, client kubernetes.Interface) *Scheduler {
+func New(label, namespace string, client kubernetes.Interface, pc2 pgo.Interface) *Scheduler {
 	apiserver.ConnectToKube()
 	restClient = apiserver.RESTClient
 	kubeClient = client
+	pgoClient = pc2
 	cronClient := cv2.New()
 	cronClient.AddFunc("* * * * *", phony)
 	cronClient.AddFunc("* * * * *", heartbeat)

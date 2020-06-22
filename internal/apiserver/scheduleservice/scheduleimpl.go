@@ -23,7 +23,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/backupoptions"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
@@ -71,7 +70,7 @@ func (s scheduleRequest) createBackRestSchedule(cluster *crv1.Pgcluster, ns stri
 func (s scheduleRequest) createPolicySchedule(cluster *crv1.Pgcluster, ns string) *PgScheduleSpec {
 	name := fmt.Sprintf("%s-%s-%s", cluster.Name, s.Request.ScheduleType, s.Request.PolicyName)
 
-	err := util.ValidatePolicy(apiserver.RESTClient, ns, s.Request.PolicyName)
+	err := util.ValidatePolicy(apiserver.PGOClientset, ns, s.Request.PolicyName)
 	if err != nil {
 		s.Response.Status.Code = msgs.Error
 		s.Response.Status.Msg = fmt.Sprintf("policy %s not found", s.Request.PolicyName)
@@ -122,8 +121,7 @@ func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateS
 		selector = sr.Request.Selector
 	}
 
-	clusterList := crv1.PgclusterList{}
-	err := kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, selector, ns)
+	clusterList, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		sr.Response.Status.Code = msgs.Error
 		sr.Response.Status.Msg = fmt.Sprintf("Could not get cluster via selector: %s", err)

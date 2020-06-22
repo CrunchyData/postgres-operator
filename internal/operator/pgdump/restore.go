@@ -21,15 +21,15 @@ import (
 	"os"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 type restorejobTemplateFields struct {
@@ -51,7 +51,7 @@ type restorejobTemplateFields struct {
 }
 
 // Restore ...
-func Restore(namespace string, clientset kubernetes.Interface, restclient *rest.RESTClient, task *crv1.Pgtask) {
+func Restore(namespace string, clientset kubernetes.Interface, pgoClient pgo.Interface, task *crv1.Pgtask) {
 
 	log.Infof(" PgDump Restore not implemented %s, %s", namespace, task.Name)
 
@@ -64,10 +64,8 @@ func Restore(namespace string, clientset kubernetes.Interface, restclient *rest.
 		return
 	}
 
-	cluster := crv1.Pgcluster{}
-
-	found, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace)
-	if !found || err != nil {
+	cluster, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	if err != nil {
 		log.Errorf("pgrestore: could not find a pgcluster in Restore Workflow for %s", clusterName)
 		return
 	}

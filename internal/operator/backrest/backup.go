@@ -30,13 +30,13 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 type backrestJobTemplateFields struct {
@@ -154,30 +154,29 @@ func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtas
 
 // CreateInitialBackup creates a Pgtask in order to initiate the initial pgBackRest backup for a cluster
 // as needed to support replica creation
-func CreateInitialBackup(restclient *rest.RESTClient, namespace, clusterName, podName string) (*crv1.Pgtask, error) {
+func CreateInitialBackup(clientset pgo.Interface, namespace, clusterName, podName string) (*crv1.Pgtask, error) {
 	var params map[string]string
 	params = make(map[string]string)
 	params[config.LABEL_PGHA_BACKUP_TYPE] = crv1.BackupTypeBootstrap
-	return CreateBackup(restclient, namespace, clusterName, podName, params, "--type=full")
+	return CreateBackup(clientset, namespace, clusterName, podName, params, "--type=full")
 }
 
 // CreatePostFailoverBackup creates a Pgtask in order to initiate the a pgBackRest backup following a failure
 // event to ensure proper replica creation and/or reinitialization
-func CreatePostFailoverBackup(restclient *rest.RESTClient, namespace, clusterName, podName string) (*crv1.Pgtask, error) {
+func CreatePostFailoverBackup(clientset pgo.Interface, namespace, clusterName, podName string) (*crv1.Pgtask, error) {
 	var params map[string]string
 	params = make(map[string]string)
 	params[config.LABEL_PGHA_BACKUP_TYPE] = crv1.BackupTypeFailover
-	return CreateBackup(restclient, namespace, clusterName, podName, params, "")
+	return CreateBackup(clientset, namespace, clusterName, podName, params, "")
 }
 
 // CreateBackup creates a Pgtask in order to initiate a pgBackRest backup
-func CreateBackup(restclient *rest.RESTClient, namespace, clusterName, podName string, params map[string]string,
+func CreateBackup(clientset pgo.Interface, namespace, clusterName, podName string, params map[string]string,
 	backupOpts string) (*crv1.Pgtask, error) {
 
 	log.Debug("pgBackRest operator CreateBackup called")
 
-	cluster := crv1.Pgcluster{}
-	_, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace)
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -203,7 +202,7 @@ func CreateBackup(restclient *rest.RESTClient, namespace, clusterName, podName s
 	spec.Parameters[config.LABEL_BACKREST_OPTS] = backupOpts
 	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]
 	// Get 'true' or 'false' for setting the pgBackRest S3 verify TLS value
-	spec.Parameters[config.LABEL_BACKREST_S3_VERIFY_TLS] = operator.GetS3VerifyTLSSetting(&cluster)
+	spec.Parameters[config.LABEL_BACKREST_S3_VERIFY_TLS] = operator.GetS3VerifyTLSSetting(cluster)
 
 	for k, v := range params {
 		spec.Parameters[k] = v
@@ -220,7 +219,7 @@ func CreateBackup(restclient *rest.RESTClient, namespace, clusterName, podName s
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = cluster.ObjectMeta.Labels[config.LABEL_PGOUSER]
 
-	err = kubeapi.Createpgtask(restclient, newInstance, cluster.Namespace)
+	_, err = clientset.CrunchydataV1().Pgtasks(cluster.Namespace).Create(newInstance)
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -232,27 +231,14 @@ func CreateBackup(restclient *rest.RESTClient, namespace, clusterName, podName s
 // CleanBackupResources is responsible for cleaning up Kubernetes resources from a previous
 // pgBackRest backup.  Specifically, this function deletes the pgptask and job associate with a
 // previous pgBackRest backup for the cluster.
-func CleanBackupResources(restclient *rest.RESTClient, clientset kubernetes.Interface, namespace,
+func CleanBackupResources(pgoClient pgo.Interface, clientset kubernetes.Interface, namespace,
 	clusterName string) error {
 
 	taskName := "backrest-backup-" + clusterName
-	// lookup the pgBackRest backup pgtask for the cluster to determine if it exsits
-	found, err := kubeapi.Getpgtask(restclient, &crv1.Pgtask{}, taskName, namespace)
-	if err != nil {
+	err := pgoClient.CrunchydataV1().Pgtasks(namespace).Delete(taskName, &metav1.DeleteOptions{})
+	if err != nil && !kubeapi.IsNotFound(err) {
 		log.Error(err)
 		return err
-	}
-
-	log.Debugf("pgtask %s found was %t when cleaning backup resources prior to creating a "+
-		"new backrest backup pgtask for cluster %s", taskName, found, clusterName)
-	// if the pgBackRest backup pgtask was found, then delete it so that a new pgBackRest backup
-	// pgtask can be created in order to initiate a new backup
-	if found {
-		log.Debugf("deleting pgtask %s for cluster %s", taskName, clusterName)
-		// delete the existing pgBackRest backup pgtask
-		if err = kubeapi.Deletepgtask(restclient, taskName, namespace); err != nil {
-			return err
-		}
 	}
 
 	//remove previous backup job

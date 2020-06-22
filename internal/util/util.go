@@ -25,6 +25,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
@@ -57,7 +58,7 @@ type ThingSpec struct {
 }
 
 // Patch will patch a particular resource
-func Patch(restclient *rest.RESTClient, path string, value string, resource string, name string, namespace string) error {
+func Patch(restclient rest.Interface, path string, value string, resource string, name string, namespace string) error {
 	things := make([]ThingSpec, 1)
 	things[0].Op = "replace"
 	things[0].Path = path
@@ -94,7 +95,7 @@ func GetLabels(name, clustername string, replica bool) string {
 
 //CurrentPrimaryUpdate prepares the needed data structures with the correct current primary value
 //before passing them along to be patched into the current pgcluster CRD's annotations
-func CurrentPrimaryUpdate(restclient *rest.RESTClient, cluster *crv1.Pgcluster, currentPrimary, namespace string) error {
+func CurrentPrimaryUpdate(clientset pgo.Interface, cluster *crv1.Pgcluster, currentPrimary, namespace string) error {
 	//create a new map
 	metaLabels := make(map[string]string)
 	//copy the relevant values into the new map
@@ -105,7 +106,7 @@ func CurrentPrimaryUpdate(restclient *rest.RESTClient, cluster *crv1.Pgcluster, 
 	metaLabels[config.LABEL_DEPLOYMENT_NAME] = currentPrimary
 
 	//Update CRD with the current primary name and the new deployment to point to after the failover
-	if err := PatchClusterCRD(restclient, metaLabels, cluster, currentPrimary, namespace); err != nil {
+	if err := PatchClusterCRD(clientset, metaLabels, cluster, currentPrimary, namespace); err != nil {
 		log.Errorf("failoverlogic: could not patch pgcluster %s with the current primary", currentPrimary)
 	}
 
@@ -115,7 +116,7 @@ func CurrentPrimaryUpdate(restclient *rest.RESTClient, cluster *crv1.Pgcluster, 
 // PatchClusterCRD patches the pgcluster CRD with any updated labels, or an updated current
 // primary annotation value. As this uses a JSON merge patch, it will only updates those
 // values that are different between the old and new CRD values.
-func PatchClusterCRD(restclient *rest.RESTClient, labelMap map[string]string, oldCrd *crv1.Pgcluster, currentPrimary, namespace string) error {
+func PatchClusterCRD(clientset pgo.Interface, labelMap map[string]string, oldCrd *crv1.Pgcluster, currentPrimary, namespace string) error {
 	oldData, err := json.Marshal(oldCrd)
 	if err != nil {
 		return err
@@ -159,13 +160,7 @@ func PatchClusterCRD(restclient *rest.RESTClient, labelMap map[string]string, ol
 
 	log.Debug(string(patchBytes))
 
-	_, err6 := restclient.Patch(types.MergePatchType).
-		Namespace(namespace).
-		Resource(crv1.PgclusterResourcePlural).
-		Name(oldCrd.Spec.Name).
-		Body(patchBytes).
-		Do().
-		Get()
+	_, err6 := clientset.CrunchydataV1().Pgclusters(namespace).Patch(oldCrd.Spec.Name, types.MergePatchType, patchBytes)
 
 	return err6
 

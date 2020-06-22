@@ -17,11 +17,12 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"net/http"
+
 	apiserver "github.com/crunchydata/postgres-operator/internal/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/validation"
-	"net/http"
 )
 
 // CreatePolicyHandler ...
@@ -82,7 +83,7 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 		resp.Status.Msg = "invalid policy name format " + errs[0]
 	} else {
 
-		found, err := CreatePolicy(apiserver.RESTClient, request.Name, request.URL, request.SQL, ns, username)
+		found, err := CreatePolicy(apiserver.PGOClientset, request.Name, request.URL, request.SQL, ns, username)
 		if err != nil {
 			log.Error(err.Error())
 			resp.Status.Code = msgs.Error
@@ -156,7 +157,7 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = DeletePolicy(apiserver.RESTClient, policyname, ns, username)
+	resp = DeletePolicy(apiserver.PGOClientset, policyname, ns, username)
 
 	json.NewEncoder(w).Encode(resp)
 
@@ -223,7 +224,7 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.PolicyList = ShowPolicy(apiserver.RESTClient, policyname, request.AllFlag, ns)
+	resp.PolicyList = ShowPolicy(apiserver.PGOClientset, policyname, request.AllFlag, ns)
 
 	json.NewEncoder(w).Encode(resp)
 

@@ -16,21 +16,23 @@ limitations under the License.
 */
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -42,6 +44,7 @@ type Controller struct {
 	PgclusterClient      *rest.RESTClient
 	PgclusterClientset   kubernetes.Interface
 	PgclusterConfig      *rest.Config
+	PGOClientset         pgo.Interface
 	Queue                workqueue.RateLimitingInterface
 	Informer             informers.PgclusterInformer
 	PgclusterWorkerCount int
@@ -119,22 +122,20 @@ func (c *Controller) processNextItem() bool {
 	}
 
 	//get the pgcluster
-	cluster := crv1.Pgcluster{}
-	found, err := kubeapi.Getpgcluster(c.PgclusterClient, &cluster, keyResourceName, keyNamespace)
-	if !found {
+	cluster, err := c.PGOClientset.CrunchydataV1().Pgclusters(keyNamespace).Get(keyResourceName, metav1.GetOptions{})
+	if err != nil {
 		log.Debugf("cluster add - pgcluster not found, this is invalid")
 		c.Queue.Forget(key) // NB(cbandy): This should probably be a retry.
 		return true
 	}
 
-	addIdentifier(&cluster)
+	addIdentifier(cluster)
 
 	// If bootstrapping from an existing data source then attempt to create the pgBackRest repository.
 	// If a repo already exists (e.g. because it is associated with a currently running cluster) then
 	// proceed with bootstrapping.
 	if cluster.Spec.PGDataSource.RestoreFrom != "" {
-		repoCreated, err := clusteroperator.AddBootstrapRepo(c.PgclusterClientset, c.PgclusterClient,
-			&cluster)
+		repoCreated, err := clusteroperator.AddBootstrapRepo(c.PgclusterClientset, cluster)
 		if err != nil {
 			log.Error(err)
 			c.Queue.AddRateLimited(key)
@@ -143,8 +144,8 @@ func (c *Controller) processNextItem() bool {
 		// if no errors and no repo was created, then we know that the repo is for a currently running
 		// cluster and we can therefore proceed with bootstrapping.
 		if !repoCreated {
-			if err := clusteroperator.AddClusterBootstrap(c.PgclusterClientset, c.PgclusterClient,
-				&cluster); err != nil {
+			if err := clusteroperator.AddClusterBootstrap(c.PgclusterClientset, c.PGOClientset, c.PgclusterClient,
+				cluster); err != nil {
 				log.Error(err)
 				c.Queue.AddRateLimited(key)
 				return true
@@ -154,9 +155,15 @@ func (c *Controller) processNextItem() bool {
 		return true
 	}
 
-	state := crv1.PgclusterStateProcessed
-	message := "Successfully processed Pgcluster by controller"
-	err = kubeapi.PatchpgclusterStatus(c.PgclusterClient, state, message, &cluster, keyNamespace)
+	patch, err := json.Marshal(map[string]interface{}{
+		"status": crv1.PgclusterStatus{
+			State:   crv1.PgclusterStateProcessed,
+			Message: "Successfully processed Pgcluster by controller",
+		},
+	})
+	if err == nil {
+		_, err = c.PGOClientset.CrunchydataV1().Pgclusters(keyNamespace).Patch(cluster.Name, types.MergePatchType, patch)
+	}
 	if err != nil {
 		log.Errorf("ERROR updating pgcluster status on add: %s", err.Error())
 		c.Queue.Forget(key) // NB(cbandy): This should probably be a retry.
@@ -170,7 +177,7 @@ func (c *Controller) processNextItem() bool {
 	// ensures all deployments exist as needed to properly orchestrate initialization of the
 	// cluster, e.g. we need to ensure the primary DB deployment resource has been created before
 	// bringing the repo deployment online, since that in turn will bring the primary DB online.
-	clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, &cluster, cluster.ObjectMeta.Namespace)
+	clusteroperator.AddClusterBase(c.PgclusterClientset, c.PGOClientset, c.PgclusterClient, cluster, cluster.ObjectMeta.Namespace)
 
 	c.Queue.Forget(key)
 	return true
@@ -187,7 +194,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// if the status of the pgcluster shows that it has been bootstrapped, then proceed with
 	// creating the cluster (i.e. the cluster deployment, services, etc.)
 	if newcluster.Status.State == crv1.PgclusterStateBootstrapped {
-		clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, newcluster,
+		clusteroperator.AddClusterBase(c.PgclusterClientset, c.PGOClientset, c.PgclusterClient, newcluster,
 			newcluster.GetNamespace())
 		return
 	}
@@ -196,7 +203,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// shutdown or started but its current status does not properly reflect that it is, then
 	// proceed with the logic needed to either shutdown or start the cluster
 	if newcluster.Spec.Shutdown && newcluster.Status.State != crv1.PgclusterStateShutdown {
-		clusteroperator.ShutdownCluster(c.PgclusterClientset, c.PgclusterClient, *newcluster)
+		clusteroperator.ShutdownCluster(c.PgclusterClientset, c.PGOClientset, c.PgclusterClient, *newcluster)
 	} else if !newcluster.Spec.Shutdown &&
 		newcluster.Status.State == crv1.PgclusterStateShutdown {
 		clusteroperator.StartupCluster(c.PgclusterClientset, *newcluster)

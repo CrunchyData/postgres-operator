@@ -65,7 +65,7 @@ func main() {
 		log.Fatalln(err.Error())
 	}
 
-	_, request.RESTClient, _, err = kubeapi.NewPGOClient()
+	_, request.RESTClient, request.PGOClientset, err = kubeapi.NewPGOClient()
 	if err != nil {
 		log.Fatalln(err.Error())
 	}

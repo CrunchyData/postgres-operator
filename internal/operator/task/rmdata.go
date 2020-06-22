@@ -22,17 +22,17 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 type rmdatajobTemplateFields struct {
@@ -51,10 +51,10 @@ type rmdatajobTemplateFields struct {
 }
 
 // RemoveData ...
-func RemoveData(namespace string, clientset kubernetes.Interface, restclient *rest.RESTClient, task *crv1.Pgtask) {
+func RemoveData(namespace string, clientset kubernetes.Interface, pgoClient pgo.Interface, task *crv1.Pgtask) {
 
 	//create marker (clustername, namespace)
-	err := PatchpgtaskDeleteDataStatus(restclient, task, namespace)
+	err := PatchpgtaskDeleteDataStatus(pgoClient, task, namespace)
 	if err != nil {
 		log.Errorf("could not set delete data started marker for task %s cluster %s", task.Spec.Name, task.Spec.Parameters[config.LABEL_PG_CLUSTER])
 		return
@@ -77,8 +77,8 @@ func RemoveData(namespace string, clientset kubernetes.Interface, restclient *re
 	}
 
 	// if the clustername is not empty, get the pgcluster
-	cluster := crv1.Pgcluster{}
-	if _, err := kubeapi.Getpgcluster(restclient, &cluster, clusterName, namespace); err != nil {
+	cluster, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	if err != nil {
 		log.Error(err)
 		return
 	}
@@ -134,7 +134,7 @@ func RemoveData(namespace string, clientset kubernetes.Interface, restclient *re
 		task.ObjectMeta.Labels[config.LABEL_PGOUSER], namespace)
 }
 
-func PatchpgtaskDeleteDataStatus(restclient *rest.RESTClient, oldCrd *crv1.Pgtask, namespace string) error {
+func PatchpgtaskDeleteDataStatus(clientset pgo.Interface, oldCrd *crv1.Pgtask, namespace string) error {
 
 	oldData, err := json.Marshal(oldCrd)
 	if err != nil {
@@ -157,13 +157,7 @@ func PatchpgtaskDeleteDataStatus(restclient *rest.RESTClient, oldCrd *crv1.Pgtas
 	log.Debug(string(patchBytes))
 
 	//apply patch
-	_, err6 := restclient.Patch(types.MergePatchType).
-		Namespace(namespace).
-		Resource(crv1.PgtaskResourcePlural).
-		Name(oldCrd.Spec.Name).
-		Body(patchBytes).
-		Do().
-		Get()
+	_, err6 := clientset.CrunchydataV1().Pgtasks(namespace).Patch(oldCrd.Spec.Name, types.MergePatchType, patchBytes)
 
 	return err6
 

@@ -19,11 +19,10 @@ import (
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/rest"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -35,12 +34,9 @@ const (
 // CheckVersion looks at the Postgres Operator version information for existing pgclusters and replicas
 // if the Operator version listed does not match the current Operator version, create an annotation indicating
 // it has not been upgraded
-func CheckVersion(restclient *rest.RESTClient, ns string) error {
-	var err error
-	clusterList := crv1.PgclusterList{}
-
+func CheckVersion(clientset pgo.Interface, ns string) error {
 	// get all pgclusters
-	err = kubeapi.Getpgclusters(restclient, &clusterList, ns)
+	clusterList, err := clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("%s: %w", ErrUnsuccessfulVersionCheck, err)
 	}
@@ -55,7 +51,7 @@ func CheckVersion(restclient *rest.RESTClient, ns string) error {
 				cluster.Annotations = map[string]string{}
 			}
 			cluster.Annotations[config.ANNOTATION_IS_UPGRADED] = config.ANNOTATIONS_FALSE
-			err = kubeapi.Updatepgcluster(restclient, &cluster, cluster.Name, ns)
+			_, err = clientset.CrunchydataV1().Pgclusters(ns).Update(&cluster)
 			if err != nil {
 				return fmt.Errorf("%s: %w", ErrUnsuccessfulVersionCheck, err)
 			}
@@ -63,10 +59,7 @@ func CheckVersion(restclient *rest.RESTClient, ns string) error {
 	}
 
 	// update pgreplica CRD userlabels["pgo-version"] to current version
-	replicaList := crv1.PgreplicaList{}
-
-	// get all replicas
-	err = kubeapi.Getpgreplicas(restclient, &replicaList, ns)
+	replicaList, err := clientset.CrunchydataV1().Pgreplicas(ns).List(metav1.ListOptions{})
 	if err != nil {
 		log.Error(err)
 		return fmt.Errorf("%s: %w", ErrUnsuccessfulVersionCheck, err)
@@ -82,7 +75,7 @@ func CheckVersion(restclient *rest.RESTClient, ns string) error {
 				replica.Annotations = map[string]string{}
 			}
 			replica.Annotations[config.ANNOTATION_IS_UPGRADED] = config.ANNOTATIONS_FALSE
-			err = kubeapi.Updatepgreplica(restclient, &replica, replica.Name, ns)
+			_, err = clientset.CrunchydataV1().Pgreplicas(ns).Update(&replica)
 			if err != nil {
 				return fmt.Errorf("%s: %w", ErrUnsuccessfulVersionCheck, err)
 			}

@@ -65,11 +65,8 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pg
 	log.Debugf("delete-data is [%t]", deleteData)
 	log.Debugf("delete-backups is [%t]", deleteBackups)
 
-	clusterList := crv1.PgclusterList{}
-
 	//get the clusters list
-	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-		&clusterList, selector, ns)
+	clusterList, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -101,8 +98,8 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pg
 		clusterPGHAScope := cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE]
 
 		// first delete any existing rmdata pgtask with the same name
-		if err := kubeapi.Deletepgtask(apiserver.RESTClient, taskName, ns); err != nil &&
-			!kerrors.IsNotFound(err) {
+		err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Delete(taskName, &metav1.DeleteOptions{})
+		if err != nil && !kerrors.IsNotFound(err) {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
@@ -142,11 +139,8 @@ func ShowCluster(name, selector, ccpimagetag, ns string, allflag bool) msgs.Show
 
 	log.Debugf("selector on showCluster is %s", selector)
 
-	clusterList := crv1.PgclusterList{}
-
 	//get a list of all clusters
-	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient,
-		&clusterList, selector, ns)
+	clusterList, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -363,8 +357,7 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 	}
 
 	// Find a list of a clusters that match the given selector
-	clusterList := crv1.PgclusterList{}
-	err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, selector, ns)
+	clusterList, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: selector})
 
 	// If the response errors, return here, as we won't be able to return any
 	// useful information in the test
@@ -563,16 +556,15 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	}
 
 	log.Debugf("create cluster called for %s", clusterName)
-	result := crv1.Pgcluster{}
 
 	// error if it already exists
-	found, err := kubeapi.Getpgcluster(apiserver.RESTClient, &result, clusterName, ns)
+	_, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
 	if err == nil {
 		log.Debugf("pgcluster %s was found so we will not create it", clusterName)
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "pgcluster " + clusterName + " was found so we will not create it"
 		return resp
-	} else if !found {
+	} else if kerrors.IsNotFound(err) {
 		log.Debugf("pgcluster %s not found so we will create it", clusterName)
 	} else {
 		resp.Status.Code = msgs.Error
@@ -1011,8 +1003,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	resp.Result.Database = newInstance.Spec.Database
 
 	//create CRD for new cluster
-	err = kubeapi.Createpgcluster(apiserver.RESTClient,
-		newInstance, ns)
+	_, err = apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Create(newInstance)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -1045,16 +1036,8 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 	policies := strings.Split(configPolicies, ",")
 
 	for _, v := range policies {
-		result := crv1.Pgpolicy{}
-
 		// error if it already exists
-		found, err := kubeapi.Getpgpolicy(apiserver.RESTClient,
-			&result, v, ns)
-		if !found {
-			log.Error("policy " + v + " specified in configuration was not found")
-			return err
-		}
-
+		_, err := apiserver.PGOClientset.CrunchydataV1().Pgpolicies(ns).Get(v, metav1.GetOptions{})
 		if err != nil {
 			log.Error("error getting pgpolicy " + v + err.Error())
 			return err
@@ -1083,7 +1066,7 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 		Spec: spec,
 	}
 
-	kubeapi.Createpgtask(apiserver.RESTClient, newInstance, ns)
+	_, err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
 
 	return err
 }
@@ -1550,7 +1533,7 @@ func createWorkflowTask(clusterName, ns, pgouser string) (string, error) {
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
 
-	err = kubeapi.Createpgtask(apiserver.RESTClient, newInstance, ns)
+	_, err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
 	if err != nil {
 		log.Error(err)
 		return "", err
@@ -1587,12 +1570,10 @@ func existsGlobalConfig(ns string) bool {
 func getReplicas(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterReplica, error) {
 
 	output := make([]msgs.ShowClusterReplica, 0)
-	replicaList := crv1.PgreplicaList{}
 
 	selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
-	err := kubeapi.GetpgreplicasBySelector(apiserver.RESTClient,
-		&replicaList, selector, ns)
+	replicaList, err := apiserver.PGOClientset.CrunchydataV1().Pgreplicas(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}
@@ -1693,7 +1674,6 @@ func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluste
 
 // UpdateCluster ...
 func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterResponse {
-	var err error
 
 	response := msgs.UpdateClusterResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
@@ -1766,30 +1746,32 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 
 	//get the clusters list
 	if request.AllFlag {
-		err = kubeapi.Getpgclusters(apiserver.RESTClient, &clusterList, request.Namespace)
+		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(request.Namespace).List(metav1.ListOptions{})
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
+		clusterList = *cl
 	} else if request.Selector != "" {
-		err = kubeapi.GetpgclustersBySelector(apiserver.RESTClient, &clusterList, request.Selector, request.Namespace)
+		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(request.Namespace).List(metav1.ListOptions{
+			LabelSelector: request.Selector,
+		})
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
+		clusterList = *cl
 	} else {
 		for _, v := range request.Clustername {
-			cl := crv1.Pgcluster{}
-
-			_, err = kubeapi.Getpgcluster(apiserver.RESTClient, &cl, v, request.Namespace)
+			cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(request.Namespace).Get(v, metav1.GetOptions{})
 			if err != nil {
 				response.Status.Code = msgs.Error
 				response.Status.Msg = err.Error()
 				return response
 			}
-			clusterList.Items = append(clusterList.Items, cl)
+			clusterList.Items = append(clusterList.Items, *cl)
 		}
 	}
 
@@ -1917,7 +1899,7 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 			cluster.Spec.TablespaceMounts[tablespace.Name] = storageSpec
 		}
 
-		if err := kubeapi.Updatepgcluster(apiserver.RESTClient, &cluster, cluster.Spec.Name, request.Namespace); err != nil {
+		if _, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(request.Namespace).Update(&cluster); err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
@@ -2157,8 +2139,8 @@ func validateDataSourceParms(request *msgs.CreateClusterRequest) error {
 
 	// finally, verify that the cluster being restored from is in the proper status, and that no
 	// other clusters currently being bootstrapping from the same cluster
-	clusterList := &crv1.PgclusterList{}
-	if err := kubeapi.Getpgclusters(apiserver.RESTClient, clusterList, namespace); err != nil {
+	clusterList, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(namespace).List(metav1.ListOptions{})
+	if err != nil {
 		return fmt.Errorf("%s: %w", ErrInvalidDataSource, err)
 	}
 	for _, cl := range clusterList.Items {

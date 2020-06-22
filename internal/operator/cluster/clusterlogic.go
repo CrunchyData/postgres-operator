@@ -28,12 +28,12 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -88,11 +88,11 @@ func addClusterCreateMissingService(clientset kubernetes.Interface, cl *crv1.Pgc
 
 // addClusterBootstrapJob creates a job that will be used to bootstrap a PostgreSQL cluster from an
 // existing data source
-func addClusterBootstrapJob(clientset kubernetes.Interface, client *rest.RESTClient,
+func addClusterBootstrapJob(clientset kubernetes.Interface, pgoClient pgo.Interface,
 	cl *crv1.Pgcluster, namespace string, dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult) error {
 
-	bootstrapFields, err := getBootstrapJobFields(clientset, client, cl, dataVolume, walVolume,
+	bootstrapFields, err := getBootstrapJobFields(clientset, pgoClient, cl, dataVolume, walVolume,
 		tablespaceVolumes)
 	if err != nil {
 		return err
@@ -128,7 +128,7 @@ func addClusterBootstrapJob(clientset kubernetes.Interface, client *rest.RESTCli
 }
 
 // addClusterDeployments creates deployments for pgBackRest and PostgreSQL.
-func addClusterDeployments(clientset kubernetes.Interface, client *rest.RESTClient,
+func addClusterDeployments(clientset kubernetes.Interface, pgoClient pgo.Interface,
 	cl *crv1.Pgcluster, namespace string, dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult) error {
 
@@ -136,7 +136,7 @@ func addClusterDeployments(clientset kubernetes.Interface, client *rest.RESTClie
 		return err
 	}
 
-	deploymentFields := getClusterDeploymentFields(clientset, client, cl,
+	deploymentFields := getClusterDeploymentFields(clientset, pgoClient, cl,
 		dataVolume, walVolume, tablespaceVolumes)
 
 	var primaryDoc bytes.Buffer
@@ -168,7 +168,7 @@ func addClusterDeployments(clientset kubernetes.Interface, client *rest.RESTClie
 	// patch in the correct current primary value to the CRD spec, as well as
 	// any updated user labels. This will handle both new and updated clusters.
 	// Note: in previous operator versions, this was stored in a user label
-	if err := util.PatchClusterCRD(client, cl.Spec.UserLabels, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], namespace); err != nil {
+	if err := util.PatchClusterCRD(pgoClient, cl.Spec.UserLabels, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], namespace); err != nil {
 		log.Error("could not patch primary crv1 with labels")
 		return err
 	}
@@ -177,7 +177,7 @@ func addClusterDeployments(clientset kubernetes.Interface, client *rest.RESTClie
 }
 
 // getBootstrapJobFields obtains the fields needed to populate the cluster bootstrap job template
-func getBootstrapJobFields(clientset kubernetes.Interface, client *rest.RESTClient,
+func getBootstrapJobFields(clientset kubernetes.Interface, pgoClient pgo.Interface,
 	cluster *crv1.Pgcluster, dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult) (operator.BootstrapJobTemplateFields, error) {
 
@@ -185,7 +185,7 @@ func getBootstrapJobFields(clientset kubernetes.Interface, client *rest.RESTClie
 	restoreOpts := strconv.Quote(cluster.Spec.PGDataSource.RestoreOpts)
 
 	bootstrapFields := operator.BootstrapJobTemplateFields{
-		DeploymentTemplateFields: getClusterDeploymentFields(clientset, client, cluster, dataVolume,
+		DeploymentTemplateFields: getClusterDeploymentFields(clientset, pgoClient, cluster, dataVolume,
 			walVolume, tablespaceVolumes),
 		RestoreFrom: cluster.Spec.PGDataSource.RestoreFrom,
 		RestoreOpts: restoreOpts[1 : len(restoreOpts)-1],
@@ -215,10 +215,9 @@ func getBootstrapJobFields(clientset kubernetes.Interface, client *rest.RESTClie
 	}
 
 	// Grab the cluster to restore from to see if it still exists
-	restoreCluster := &crv1.Pgcluster{}
+	restoreCluster, err := pgoClient.CrunchydataV1().Pgclusters(cluster.GetNamespace()).Get(restoreClusterName, metav1.GetOptions{})
 	found := true
-	if _, err := kubeapi.Getpgcluster(client, restoreCluster, restoreClusterName,
-		cluster.GetNamespace()); err != nil {
+	if err != nil {
 		if !kerrors.IsNotFound(err) {
 			return bootstrapFields, err
 		}
@@ -256,7 +255,7 @@ func getBootstrapJobFields(clientset kubernetes.Interface, client *rest.RESTClie
 }
 
 // getClusterDeploymentFields obtains the fields needed to populate the cluster deployment template
-func getClusterDeploymentFields(clientset kubernetes.Interface, client *rest.RESTClient,
+func getClusterDeploymentFields(clientset kubernetes.Interface, pgoClient pgo.Interface,
 	cl *crv1.Pgcluster, dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult) operator.DeploymentTemplateFields {
 
@@ -603,7 +602,7 @@ type ScaleClusterInfo struct {
 // ShutdownCluster is responsible for shutting down a cluster that is currently running.  This
 // includes changing the replica count for all clusters to 0, and then updating the pgcluster
 // with a shutdown status.
-func ShutdownCluster(clientset kubernetes.Interface, restclient *rest.RESTClient,
+func ShutdownCluster(clientset kubernetes.Interface, pgoClient pgo.Interface, restclient *rest.RESTClient,
 	cluster crv1.Pgcluster) error {
 
 	// first ensure the current primary deployment is properly recorded in the pg
@@ -636,8 +635,7 @@ func ShutdownCluster(clientset kubernetes.Interface, restclient *rest.RESTClient
 	cluster.Annotations[config.ANNOTATION_PRIMARY_DEPLOYMENT] =
 		primaryPod.Labels[config.LABEL_DEPLOYMENT_NAME]
 
-	if err := kubeapi.Updatepgcluster(restclient, &cluster, cluster.Name,
-		cluster.Namespace); err != nil {
+	if _, err := pgoClient.CrunchydataV1().Pgclusters(cluster.Namespace).Update(&cluster); err != nil {
 		return fmt.Errorf("Cluster Operator: Unable to update the current primary deployment "+
 			"in the pgcluster when shutting down cluster %s", cluster.Name)
 	}
@@ -653,11 +651,19 @@ func ShutdownCluster(clientset kubernetes.Interface, restclient *rest.RESTClient
 	if err != nil {
 		return err
 	}
-	message := fmt.Sprintf("Database shutdown along with the following services: %v",
-		append(make([]string, 0), clusterInfo.PGBackRestRepoDeployment,
-			clusterInfo.PGBouncerDeployment))
-	if err := kubeapi.PatchpgclusterStatus(restclient, crv1.PgclusterStateShutdown,
-		message, &cluster, cluster.Namespace); err != nil {
+	patch, err := json.Marshal(map[string]interface{}{
+		"status": crv1.PgclusterStatus{
+			State: crv1.PgclusterStateShutdown,
+			Message: fmt.Sprintf("Database shutdown along with the following services: %v", []string{
+				clusterInfo.PGBackRestRepoDeployment,
+				clusterInfo.PGBouncerDeployment,
+			}),
+		},
+	})
+	if err == nil {
+		_, err = pgoClient.CrunchydataV1().Pgclusters(cluster.Namespace).Patch(cluster.Name, types.MergePatchType, patch)
+	}
+	if err != nil {
 		return err
 	}
 

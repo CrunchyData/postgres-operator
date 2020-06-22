@@ -27,6 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,7 +36,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func Failover(identifier string, clientset kubernetes.Interface, client *rest.RESTClient, clusterName string, task *crv1.Pgtask, namespace string, restconfig *rest.Config) error {
+func Failover(identifier string, clientset kubernetes.Interface, pgoClient pgo.Interface, client *rest.RESTClient, clusterName string, task *crv1.Pgtask, namespace string, restconfig *rest.Config) error {
 
 	var pod *v1.Pod
 	var err error
@@ -50,7 +51,7 @@ func Failover(identifier string, clientset kubernetes.Interface, client *rest.RE
 	}
 	log.Debugf("pod selected to failover to is %s", pod.Name)
 
-	updateFailoverStatus(client, task, namespace, clusterName, "deleted primary deployment "+clusterName)
+	updateFailoverStatus(pgoClient, task, namespace, clusterName, "deleted primary deployment "+clusterName)
 
 	//trigger the failover to the selected replica
 	if err := promote(pod, clientset, client, namespace, restconfig); err != nil {
@@ -59,7 +60,7 @@ func Failover(identifier string, clientset kubernetes.Interface, client *rest.RE
 
 	publishPromoteEvent(identifier, namespace, task.ObjectMeta.Labels[config.LABEL_PGOUSER], clusterName, target)
 
-	updateFailoverStatus(client, task, namespace, clusterName, "promoting pod "+pod.Name+" target "+target)
+	updateFailoverStatus(pgoClient, task, namespace, clusterName, "promoting pod "+pod.Name+" target "+target)
 
 	//relabel the deployment with primary labels
 	//by setting service-name=clustername
@@ -97,20 +98,18 @@ func Failover(identifier string, clientset kubernetes.Interface, client *rest.RE
 		return err
 	}
 
-	updateFailoverStatus(client, task, namespace, clusterName, "updating label deployment...pod "+pod.Name+"was the failover target...failover completed")
+	updateFailoverStatus(pgoClient, task, namespace, clusterName, "updating label deployment...pod "+pod.Name+"was the failover target...failover completed")
 
 	//update the pgcluster current-primary to new deployment name
-	var found bool
-	cluster := crv1.Pgcluster{}
-	found, err = kubeapi.Getpgcluster(client, &cluster, clusterName, namespace)
-	if !found {
+	cluster, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	if err != nil {
 		log.Errorf("could not find pgcluster %s with labels", clusterName)
 		return err
 	}
 
 	// update the CRD with the new current primary. If there is an error, log it
 	// here, otherwise return
-	if err := util.CurrentPrimaryUpdate(client, &cluster, target, namespace); err != nil {
+	if err := util.CurrentPrimaryUpdate(pgoClient, cluster, target, namespace); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -119,26 +118,24 @@ func Failover(identifier string, clientset kubernetes.Interface, client *rest.RE
 
 }
 
-func updateFailoverStatus(client *rest.RESTClient, task *crv1.Pgtask, namespace, clusterName, message string) {
+func updateFailoverStatus(clientset pgo.Interface, task *crv1.Pgtask, namespace, clusterName, message string) {
 
 	log.Debugf("updateFailoverStatus namespace=[%s] taskName=[%s] message=[%s]", namespace, task.Name, message)
 
 	//update the task
-	_, err := kubeapi.Getpgtask(client, task, task.ObjectMeta.Name,
-		task.ObjectMeta.Namespace)
+	t, err := clientset.CrunchydataV1().Pgtasks(task.Namespace).Get(task.Name, metav1.GetOptions{})
 	if err != nil {
 		return
 	}
+	*task = *t
 
 	task.Status.Message = message
 
-	err = kubeapi.Updatepgtask(client,
-		task,
-		task.ObjectMeta.Name,
-		task.ObjectMeta.Namespace)
+	t, err = clientset.CrunchydataV1().Pgtasks(task.Namespace).Update(task)
 	if err != nil {
 		return
 	}
+	*task = *t
 
 }
 

@@ -16,10 +16,10 @@ limitations under the License.
 */
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
@@ -27,6 +27,7 @@ import (
 	apiv1 "k8s.io/api/batch/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // handleBootstrapUpdate is responsible for handling updates to bootstrap jobs that are responsible
@@ -43,9 +44,8 @@ func (c *Controller) handleBootstrapUpdate(job *apiv1.Job) error {
 		return nil
 	}
 
-	cluster := &crv1.Pgcluster{}
-	if _, err := kubeapi.Getpgcluster(c.JobClient, cluster,
-		clusterName, namespace); err != nil {
+	cluster, err := c.PGOClientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	if err != nil {
 		return err
 	}
 
@@ -75,10 +75,16 @@ func (c *Controller) handleBootstrapUpdate(job *apiv1.Job) error {
 			return err
 		}
 
-		state := crv1.PgclusterStateBootstrapped
-		message := "Pgcluster successfully bootstrapped from an existing data source"
-		if err := kubeapi.PatchpgclusterStatus(c.JobClient, state, message, cluster,
-			namespace); err != nil {
+		patch, err := json.Marshal(map[string]interface{}{
+			"status": crv1.PgclusterStatus{
+				State:   crv1.PgclusterStateBootstrapped,
+				Message: "Pgcluster successfully bootstrapped from an existing data source",
+			},
+		})
+		if err == nil {
+			_, err = c.PGOClientset.CrunchydataV1().Pgclusters(namespace).Patch(cluster.Name, types.MergePatchType, patch)
+		}
+		if err != nil {
 			log.Error(err)
 			return err
 		}

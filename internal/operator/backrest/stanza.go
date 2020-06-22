@@ -19,17 +19,16 @@ import (
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
-func StanzaCreate(namespace, clusterName string, clientset kubernetes.Interface, RESTClient *rest.RESTClient) {
+func StanzaCreate(namespace, clusterName string, clientset kubernetes.Interface, pgoClient pgo.Interface) {
 
 	taskName := clusterName + "-" + crv1.PgtaskBackrestStanzaCreate
 
@@ -48,9 +47,7 @@ func StanzaCreate(namespace, clusterName string, clientset kubernetes.Interface,
 	podName := pods.Items[0].Name
 
 	// get the cluster to determine the proper storage type
-	cluster := crv1.Pgcluster{}
-	_, err = kubeapi.Getpgcluster(RESTClient, &cluster,
-		clusterName, namespace)
+	cluster, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
 	if err != nil {
 		return
 	}
@@ -94,7 +91,7 @@ func StanzaCreate(namespace, clusterName string, clientset kubernetes.Interface,
 	}
 
 	// Get 'true' or 'false' for setting the pgBackRest S3 verify TLS value
-	spec.Parameters[config.LABEL_BACKREST_S3_VERIFY_TLS] = operator.GetS3VerifyTLSSetting(&cluster)
+	spec.Parameters[config.LABEL_BACKREST_S3_VERIFY_TLS] = operator.GetS3VerifyTLSSetting(cluster)
 
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: metav1.ObjectMeta{
@@ -106,9 +103,7 @@ func StanzaCreate(namespace, clusterName string, clientset kubernetes.Interface,
 	newInstance.ObjectMeta.Labels = make(map[string]string)
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 
-	err = kubeapi.Createpgtask(RESTClient,
-		newInstance,
-		namespace)
+	_, err = pgoClient.CrunchydataV1().Pgtasks(namespace).Create(newInstance)
 	if err != nil {
 		log.Error(err)
 	}

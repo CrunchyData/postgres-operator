@@ -32,6 +32,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/ns"
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
 	sched "github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
+	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
@@ -54,6 +55,7 @@ var pgoNamespace string
 var timeout time.Duration
 var seconds int
 var kubeClient kubernetes.Interface
+var pgoClient pgo.Interface
 
 // this is used to prevent a race condition where an informer is being created
 // twice when a new scheduler-enabled ConfigMap is added.
@@ -109,6 +111,10 @@ func init() {
 	if err != nil {
 		log.WithFields(log.Fields{}).Fatalf("Failed to connect to kubernetes: %s", err)
 	}
+	_, _, pgoClient, err = kubeapi.NewPGOClient()
+	if err != nil {
+		log.WithFields(log.Fields{}).Fatalf("Failed to connect to kubernetes: %s", err)
+	}
 
 	var Pgo config.PgoConfig
 	if err := Pgo.GetConfig(kubeClient, pgoNamespace); err != nil {
@@ -128,7 +134,7 @@ func main() {
 	//give time for pgo-event to start up
 	time.Sleep(time.Duration(5) * time.Second)
 
-	scheduler := scheduler.New(schedulerLabel, pgoNamespace, kubeClient)
+	scheduler := scheduler.New(schedulerLabel, pgoNamespace, kubeClient, pgoClient)
 	scheduler.CronClient.Start()
 
 	sigs := make(chan os.Signal, 1)
