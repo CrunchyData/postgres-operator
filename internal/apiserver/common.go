@@ -24,7 +24,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -54,21 +53,6 @@ var (
 	ErrMethodNotAllowed = errors.New("This method has is not allowed in the current PostgreSQL " +
 		"Operator installation")
 )
-
-func GetPVCName(pod *v1.Pod) map[string]string {
-	pvcList := make(map[string]string)
-
-	for _, v := range pod.Spec.Volumes {
-		if v.Name == "backrestrepo" || v.Name == "pgdata" || v.Name == "pgwal-volume" {
-			if v.VolumeSource.PersistentVolumeClaim != nil {
-				pvcList[v.Name] = v.VolumeSource.PersistentVolumeClaim.ClaimName
-			}
-		}
-	}
-
-	return pvcList
-
-}
 
 func CreateRMDataTask(clusterName, replicaName, taskName string, deleteBackups, deleteData, isReplica, isBackup bool, ns, clusterPGHAScope string) error {
 	var err error

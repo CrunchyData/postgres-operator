@@ -171,8 +171,8 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 
 		podStr := fmt.Sprintf("%spod : %s (%s) on %s (%s) %s", TreeBranch, pod.Name, string(pod.Phase), pod.NodeName, pod.ReadyStatus, podType)
 		fmt.Println(podStr)
-		for _, pvc := range pod.PVCName {
-			fmt.Println(TreeBranch + "pvc : " + pvc)
+		for _, pvc := range pod.PVC {
+			fmt.Println(fmt.Sprintf("%spvc: %s (%s)", TreeBranch+TreeBranch, pvc.Name, pvc.Capacity))
 		}
 	}
 
@@ -209,9 +209,6 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 
 		fmt.Println(limitsStr)
 	}
-
-	storageStr := fmt.Sprintf("%sstorage : Primary=%s Replica=%s", TreeBranch, detail.Cluster.Spec.PrimaryStorage.Size, detail.Cluster.Spec.ReplicaStorage.Size)
-	fmt.Println(storageStr)
 
 	for _, d := range detail.Deployments {
 		fmt.Println(TreeBranch + "deployment : " + d.Name)
