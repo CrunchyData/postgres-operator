@@ -73,6 +73,11 @@ type LocalDBConfig struct {
 // PostgresLocalDB represents the PostgreSQL settings that can be applied to an individual
 // PostgreSQL server within a PostgreSQL cluster.
 type PostgresLocalDB struct {
+	// Authentication is the block for managing the Patroni managed accounts
+	// (superuser, replication, rewind). While the PostgreSQL Operator manages
+	// these overall, one may want to override them. We allow for this, but the
+	// deployer should take care when overriding this value
+	Authentication                         map[string]interface{} `json:"authentication,omitempty"`
 	Callbacks                              *Callbacks             `json:"callbacks,omitempty"`
 	CreateReplicaMethods                   []string               `json:"create_replica_methods,omitempty"`
 	ConfigDir                              string                 `json:"config_dir,omitempty"`
