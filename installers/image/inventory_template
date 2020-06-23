@@ -49,7 +49,7 @@ namespace_mode='$NAMESPACE_MODE'
 # to 'false', the Operator will not be assigned any permissions to 
 # reconcile its own RBAC, and will therefore not attempt to do so.
 # ==================
-# reconcile_rbac='false'
+reconcile_rbac='$RECONCILE_RBAC'
 
 # ===================
 # PGO Client Container Settings

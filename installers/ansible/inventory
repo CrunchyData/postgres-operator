@@ -66,7 +66,7 @@ create_rbac='true'
 # to 'false', the Operator will not be assigned any permissions to 
 # reconcile its own RBAC, and will therefore not attempt to do so.
 # ==================
-# reconcile_rbac='false'
+# reconcile_rbac='true'
 
 # ===================
 # PGO Client Container Settings

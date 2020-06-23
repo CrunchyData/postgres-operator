@@ -26,19 +26,17 @@ installation. When the PostgreSQL Operator is run, the Kubernetes environment is
 determine what cluster roles are currently assigned to the `pgo-operator` `ServiceAccount`
 (i.e. the `ServiceAccount` running the Pod the PostgreSQL Operator is deployed within).  Based
 on the `ClusterRoles` identified, one of the namespace operating modes described below will be
-enabled for the PostgreSQL Operator installation.  Please consult the
-[installation guides]({{< relref "installation" >}}) for the various installation methods
-available to determine proper setting for enabling each of the Namespace Operating Modes discussed
-below.
+enabled for the [PostgreSQL Operator Installation]({{< relref "installation" >}}). Please consult
+the [installation](({{< relref "installation" >}})) section for more information on the available
+settings.
 
 ### `dynamic`
 
 Enables full dynamic namespace capabilities, in which the Operator can create, delete and update
-any namespaces within the Kubernetes cluster.  Additionally, while  in this mode the Operator can
-listen for namespace events (e.g. namespace additions, updates and deletions), and then create or 
-remove controllers for various namespaces as those namespaces are added or removed from the 
-Kubernetes cluster and/or Operator install.  This mode therefore allows the Operator to dynamically
-respond to namespace events in the cluster.
+any namespaces within a Kubernetes cluster.  With `dynamic` mode enabled, the PostgreSQL Operator
+can respond to namespace events in a Kubernetes cluster, such as when a namespace is created, and 
+take an appropriate action, such as adding the PostgreSQL Operator controllers for the newly 
+created namespace.
 
 The following defines the namespace permissions required for the `dynamic` mode to be enabled:
 
@@ -64,12 +62,10 @@ rules:
 
 ### `readonly`
 
-While in this mode the PostgreSQL Operator is still able to listen for  namespace events within the
-Kubernetetes cluster, and then create and run and/or remove controllers as namespaces are added,
-updated and deleted.  Therefore, the Operator is able to dynamically respond to namespace events in 
-the Kubernetes cluster.  However, while in this mode the Operator is unable to create, delete or
-update namespaces itself, which means these actions must be performed externally by an
-administrator.
+In `readonly` mode, the PostgreSQL Operator is still able to listen to namespace events within a 
+Kubernetes cluster, but it can no longer modify (create, update, delete) namespaces. For example, 
+if a Kubernetes administrator creates a namespace, the PostgreSQL Operator can respond and create
+controllers for that namespace.
 
 The following defines the namespace permissions required for the `readonly` mode to be enabled:
 
@@ -91,12 +87,13 @@ rules:
 
 ### `disabled`
 
-Disables namespace capabilities within the PostgreSQL Operator altogether.  While in this mode the
-PostgreSQL Operator will simply attempt to work with the target namespaces specified during
-installation.  If no target namespaces are specified, then the Operator will be configured to work
-within the namespace in which it is deployed.  Since the Operator is unable to dynamically respond
-to namespace events in  the cluster, in the event that target namespaces are deleted or new target
-namespaces need to be added, the PostgreSQL Operator will need to be re-deployed.
+`disabled` mode disables namespace capabilities namespace capabilities within the PostgreSQL
+Operator altogether.  While in this mode the PostgreSQL Operator will simply attempt to work with
+the target namespaces specified during installation.  If no target namespaces are specified, then
+the Operator will be configured to work within the namespace in which it is deployed.  Since the
+Operator is unable to dynamically respond to namespace events in  the cluster, in the event that
+target namespaces are deleted or new target namespaces need to be added, the PostgreSQL Operator
+will need to be re-deployed.
 
 Please note that it is important to redeploy the PostgreSQL Operator following the deletion of a 
 target namespace to ensure it no longer attempts to listen for events in that namespace.
