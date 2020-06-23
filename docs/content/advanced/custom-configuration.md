@@ -227,11 +227,23 @@ exception being those that must be set via the DCS, as
 Also, please note that `pg_hba` and `pg_ident` sections exist to update both the `pg_hba.conf` and
 `pg_ident.conf` PostgreSQL configuration files as needed.
 
-#### Restarting Database Servers
+#### A Note on Customizing `authentication`
+
+One of the blocks that can be modified in a `local` database setting is the
+`authentication` block. This can be useful for setting customizations such as
+TLS connection requirements (`sslmode`). However, one should take care when
+modifying this block, as modifying certain parameters can interfere with the
+management features that the PostgreSQL Operator provides.
+
+In particular, one should **not** customize the `username` or `password`
+attributes within this section as that will interface with the PostgreSQL
+Operator.
+
+### Restarting Database Servers
 
 Changes to certain settings may require one or more PostgreSQL databases within the cluster to be
 restarted.  This can be accomplished using the `pgo restart` command included with the `pgo` client.
-To detect if a restart is needed for a instance within a cluster called `mycluster` after making a 
+To detect if a restart is needed for a instance within a cluster called `mycluster` after making a
 configuration change, the `query` flag can be utilized with the `pgo restart` command as follows:
 
 ```bash
