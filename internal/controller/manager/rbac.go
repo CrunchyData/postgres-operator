@@ -44,6 +44,8 @@ func (c *ControllerManager) reconcileRBAC(targetNamespace string) {
 	operator, err := c.controllers[targetNamespace].kubeClientset.CoreV1().
 		ServiceAccounts(c.pgoNamespace).Get(ns.OPERATOR_SERVICE_ACCOUNT, metav1.GetOptions{})
 	if err != nil {
+		// just log an error and continue so that we can attempt to reconcile other RBAC resources
+		// that are not dependent on the Operator ServiceAccount, e.g. Roles and RoleBindings
 		log.Errorf("%s: %v", ErrReconcileRBAC, err)
 	}
 
@@ -70,7 +72,7 @@ func (c *ControllerManager) reconcileRBAC(targetNamespace string) {
 		}
 
 		if doesNotExist || saCreatedOrUpdated {
-			if err = ns.CopySecret(c.controllers[targetNamespace].kubeClientset, reference.Name,
+			if err := ns.CopySecret(c.controllers[targetNamespace].kubeClientset, reference.Name,
 				c.pgoNamespace, targetNamespace); err != nil {
 				log.Errorf("%s: %v", ErrReconcileRBAC, err)
 			}
@@ -130,6 +132,7 @@ func (c *ControllerManager) reconcileServiceAccounts(targetNamespace string,
 			serviceAccount, targetNamespace, template, imagePullSecrets)
 		if err != nil {
 			log.Errorf("%s: %v", ErrReconcileRBAC, err)
+			continue
 		}
 		if !saCreatedOrUpdated && createdOrUpdated {
 			saCreatedOrUpdated = true
