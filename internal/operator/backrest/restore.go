@@ -372,6 +372,7 @@ func createRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		TLSEnabled:               cluster.Spec.TLS.IsTLSEnabled(),
 		TLSOnly:                  cluster.Spec.TLSOnly,
 		TLSSecret:                cluster.Spec.TLS.TLSSecret,
+		ReplicationTLSSecret:     cluster.Spec.TLS.ReplicationTLSSecret,
 		CASecret:                 cluster.Spec.TLS.CASecret,
 	}
 

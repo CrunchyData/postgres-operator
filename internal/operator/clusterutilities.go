@@ -178,6 +178,9 @@ type DeploymentTemplateFields struct {
 	// TLSSecret is the name of the Secret that has the PostgreSQL server's TLS
 	// keypair
 	TLSSecret string
+	// ReplicationTLSSecret is the name of the Secret that has the TLS keypair
+	// for performing certificate-based authentication between instances
+	ReplicationTLSSecret string
 	// CASecret is the name of the Secret that has the trusted CA that the
 	// PostgreSQL server is using
 	CASecret string

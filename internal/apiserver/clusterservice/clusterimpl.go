@@ -1338,6 +1338,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.TLSOnly = request.TLSOnly
 	spec.TLS.CASecret = request.CASecret
 	spec.TLS.TLSSecret = request.TLSSecret
+	spec.TLS.ReplicationTLSSecret = request.ReplicationTLSSecret
 
 	//pass along command line flags for a restore
 	if request.SecretFrom != "" {
@@ -1952,6 +1953,12 @@ func validateBackrestStorageTypeOnCreate(request *msgs.CreateClusterRequest) err
 // validateClusterTLS validates the parameters that allow a user to enable TLS
 // connections to a PostgreSQL cluster
 func validateClusterTLS(request *msgs.CreateClusterRequest) error {
+	// if ReplicationTLSSecret is set, but neither TLSSecret nor CASecret is not
+	// set, then return
+	if request.ReplicationTLSSecret != "" && (request.TLSSecret == "" || request.CASecret == "") {
+		return fmt.Errorf("Both TLS secret and CA secret must be set in order to enable certificate-based authentication for replication")
+	}
+
 	// if TLSOnly is not set and  neither TLSSecret no CASecret are set, just return
 	if !request.TLSOnly && request.TLSSecret == "" && request.CASecret == "" {
 		return nil
@@ -1959,11 +1966,11 @@ func validateClusterTLS(request *msgs.CreateClusterRequest) error {
 
 	// if TLS only is set, but there is no TLSSecret nor CASecret, return
 	if request.TLSOnly && !(request.TLSSecret != "" && request.CASecret != "") {
-		return fmt.Errorf("TLS only clusters requires both a TLS secret and CA secret")
+		return errors.New("TLS only clusters requires both a TLS secret and CA secret")
 	}
 	// if TLSSecret or CASecret is set, but not both are set, return
 	if (request.TLSSecret != "" && request.CASecret == "") || (request.TLSSecret == "" && request.CASecret != "") {
-		fmt.Errorf("Both TLS secret and CA secret must be set in order to enable TLS for PostgreSQL")
+		return errors.New("Both TLS secret and CA secret must be set in order to enable TLS for PostgreSQL")
 	}
 
 	// now check for the existence of the two secrets
@@ -1975,6 +1982,15 @@ func validateClusterTLS(request *msgs.CreateClusterRequest) error {
 	// then, the CA secret
 	if _, err := kubeapi.GetSecret(apiserver.Clientset, request.CASecret, request.Namespace); err != nil {
 		return err
+	}
+
+	// then, if set, the Replication TLS secret
+	if request.ReplicationTLSSecret != "" {
+		if _, err := apiserver.Clientset.
+			CoreV1().Secrets(request.Namespace).
+			Get(request.ReplicationTLSSecret, meta_v1.GetOptions{}); err != nil {
+			return err
+		}
 	}
 
 	// after this, we are validated!

@@ -301,6 +301,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.Database = Database
 	r.TLSOnly = TLSOnly
 	r.TLSSecret = TLSSecret
+	r.ReplicationTLSSecret = ReplicationTLSSecret
 	r.CASecret = CASecret
 	r.Standby = Standby
 	r.BackrestRepoPath = BackrestRepoPath

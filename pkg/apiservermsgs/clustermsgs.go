@@ -118,6 +118,14 @@ type CreateClusterRequest struct {
 	// CASecret is the name of the secret that contains the CA to use along with
 	// the TLS keypair for deploying a TLS-enabled PostgreSQL cluster
 	CASecret string
+	// ReplicationTLSSecret is the name of the secret that contains the keypair
+	// used for having instances in a PostgreSQL cluster authenticate each another
+	// using certificate-based authentication. The CN of the certificate must
+	// either be "primaryuser" (the current name of the replication user) OR
+	// have a mapping to primaryuser in the pg_ident file. The
+	// ReplicationTLSSecret must be verifable by the certificate chain in the
+	// CASecret
+	ReplicationTLSSecret string
 	// CPULimit is the value of the max CPU utilization for a Pod that has a
 	// PostgreSQL cluster
 	CPULimit string

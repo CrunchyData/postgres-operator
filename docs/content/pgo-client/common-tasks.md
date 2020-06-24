@@ -1029,6 +1029,60 @@ If you try to connect to a PostgreSQL cluster that is deployed using the
 `--tls-only` with TLS disabled (i.e. `PGSSLMODE=disable`), you will receive an
 error that connections without TLS are unsupported.
 
+### TLS Authentication for PostgreSQL Replication
+
+PostgreSQL supports [certificate-based authentication](https://www.postgresql.org/docs/current/auth-cert.html),
+which allows for PostgreSQL to authenticate users based on the common name (CN)
+in a certificate. Using this feature, the PostgreSQL Operator allows you to
+configure PostgreSQL replicas in a cluster to authenticate using a certificate
+instead of a password.
+
+To use this feature, first you will need to set up a Kubernetes TLS Secret that
+has a CN of `primaryuser`. If you do not wish to have this as your CN, you will
+need to map the CN of this certificate to the value of `primaryuser` using a
+[pg_ident](https://www.postgresql.org/docs/current/auth-username-maps.html)
+username map, which you can configure as part of a
+[custom PostgreSQL configuration]({{< relref "/advanced/custom-configuration.md" >}}).
+
+You also need to ensure that the certificate is verifiable by the certificate
+authority (CA) chain that you have provided for your PostgreSQL cluster. The CA
+is provided as part of the `--server-ca-secret` flag in the
+[`pgo create cluster`]({{< relref "/pgo-client/reference/pgo_create_cluster.md" >}})
+command.
+
+To create a PostgreSQL cluster that uses TLS authentication for replication,
+first create Kubernetes Secrets for the server and the CA. For the purposes of
+this example, we will use the ones that were created earlier: `postgresql-ca`
+and `hacluster-tls-keypair`. After generating a certificate that has a CN of
+`primaryuser`, create a Kubernetes Secret that references this TLS keypair
+called `hacluster-tls-replication-keypair`:
+
+```
+kubectl create secret tls hacluster-tls-replication-keypair \
+  --cert=/path/to/replication.crt \
+  --key=/path/to/replication.key
+```
+
+We can now create a PostgreSQL cluster and allow for it to use TLS
+authentication for its replicas! Let's create a PostgreSQL cluster with two
+replicas that also requires TLS for any connection:
+
+```
+pgo create cluster hippo \
+  --tls-only \
+  --server-ca-secret=hacluster-tls-keypair \
+  --server-tls-secret=postgresql-ca \
+  --replication-tls-secret=hacluster-tls-replication-keypair \
+  --replica-count=2
+```
+
+By default, the PostgreSQL Operator has each replica connect to PostgreSQL using
+a [PostgreSQL TLS mode](https://www.postgresql.org/docs/current/libpq-ssl.html#LIBPQ-SSL-SSLMODE-STATEMENTS)
+of `verify-ca`. If you wish to perform TLS mutual authentication between
+PostgreSQL instances (i.e. certificate-based authentication with SSL mode of
+`verify-full`), you will need to create a
+[PostgreSQL custom configuration]({{< relref "/advanced/custom-configuration.md" >}}).
+
 ## [Custom PostgreSQL Configuration]({{< relref "/advanced/custom-configuration.md" >}})
 
 Customizing PostgreSQL configuration is currently not subject to the `pgo`
