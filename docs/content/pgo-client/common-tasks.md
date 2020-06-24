@@ -125,6 +125,8 @@ Cluster:
   BackrestS3Bucket: ""
   BackrestS3Endpoint: ""
   BackrestS3Region: ""
+  BackrestS3URIStyle: ""
+  BackrestS3VerifyTLS: true
   DisableAutofail: false
   PgmonitorPassword: ""
   EnableCrunchyadm: false
@@ -1124,6 +1126,8 @@ pgo create cluster hippo --pgbouncer --replica-count=2 \
   --pgbackrest-s3-bucket=watering-hole \
   --pgbackrest-s3-endpoint=s3.amazonaws.com \
   --pgbackrest-s3-region=us-east-1 \
+  --pgbackrest-s3-uri-style=host \
+  --pgbackrest-s3-verify-tls=true \
   --password-superuser=supersecrethippo \
   --password-replication=somewhatsecrethippo \
   --password=opensourcehippo
@@ -1142,6 +1146,8 @@ pgo create cluster hippo-standby --standby --replica-count=2 \
   --pgbackrest-s3-bucket=watering-hole \
   --pgbackrest-s3-endpoint=s3.amazonaws.com \
   --pgbackrest-s3-region=us-east-1 \
+  --pgbackrest-s3-uri-style=host \
+  --pgbackrest-s3-verify-tls=true \
   --pgbackrest-repo-path=/backrestrepo/hippo-backrest-shared-repo \
   --password-superuser=supersecrethippo \
   --password-replication=somewhatsecrethippo \

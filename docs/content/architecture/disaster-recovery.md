@@ -210,6 +210,8 @@ Cluster:
   BackrestS3Bucket: my-postgresql-backups-example
   BackrestS3Endpoint: s3.amazonaws.com
   BackrestS3Region: us-east-1
+  BackrestS3URIStyle: host
+  BackrestS3VerifyTLS: true
 ```
 
 These values can also be set on a per-cluster basis with the
@@ -222,6 +224,9 @@ These values can also be set on a per-cluster basis with the
 - `--pgbackrest-s3-key-secret`- specifies the AWS S3 key secret that should be
 utilized
 - `--pgbackrest-s3-region` - specifies the AWS S3 region that should be utilized
+- `--pgbackrest-s3-uri-style` -  specifies whether "host" or "path" style URIs should be utilized
+- `--pgbackrest-s3-verify-tls` - set this value to "true" to enable TLS verification
+
 
 Sensitive information, such as the values of the AWS S3 keys and secrets, are
 stored in Kubernetes Secrets and are securely mounted to the PostgreSQL
