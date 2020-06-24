@@ -237,7 +237,10 @@ management features that the PostgreSQL Operator provides.
 
 In particular, one should **not** customize the `username` or `password`
 attributes within this section as that will interface with the PostgreSQL
-Operator.
+Operator. Additionally, is using the built-in support for certificate-based
+authentication for replication users, you should not modify the `sslcert`,
+`sslkey`, `sslrootcert`, and `sslcrl` entries in the `replication` block of the
+`authentication` block.
 
 ### Restarting Database Servers
 

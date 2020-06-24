@@ -108,6 +108,10 @@ var (
 	// TLSSecret is the name of the secret that contains the TLS information for
 	// enabling TLS in a PostgreSQL cluster
 	TLSSecret string
+	// ReplicationTLSSecret is the name of the secret that contains the TLS
+	// information for enabling certificate-based authentication between instances
+	// in a PostgreSQL cluster, particularly for replication
+	ReplicationTLSSecret string
 	// CASecret is the name of the secret that contains the CA information for
 	// enabling TLS in a PostgreSQL cluster
 	CASecret string
@@ -401,10 +405,13 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&PVCSize, "pvc-size", "", "",
 		`The size of the PVC capacity for primary and replica PostgreSQL instances. Overrides the value set in the storage class. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
 	createClusterCmd.Flags().IntVarP(&ClusterReplicaCount, "replica-count", "", 0, "The number of replicas to create as part of the cluster.")
+	createClusterCmd.Flags().StringVar(&ReplicationTLSSecret, "replication-tls-secret", "", "The name of the secret that contains "+
+		"the TLS keypair to use for enabling certificate-based authentication between PostgreSQL instances, "+
+		"particularly for the purpose of replication. Must be used with \"server-tls-secret\" and \"server-ca-secret\".")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets.")
 	createClusterCmd.Flags().StringVar(&CASecret, "server-ca-secret", "", "The name of the secret that contains "+
 		"the certficate authority (CA) to use for enabling the PostgreSQL cluster to accept TLS connections. "+
-		"Must be used with \"server-tls-secret\"")
+		"Must be used with \"server-tls-secret\".")
 	createClusterCmd.Flags().StringVar(&TLSSecret, "server-tls-secret", "", "The name of the secret that contains "+
 		"the TLS keypair to use for enabling the PostgreSQL cluster to accept TLS connections. "+
 		"Must be used with \"server-ca-secret\"")

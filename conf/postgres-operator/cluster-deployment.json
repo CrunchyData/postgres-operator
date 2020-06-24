@@ -155,6 +155,12 @@
                           "mountPath": "/pgconf/tls",
                           "name": "tls-server"
                         },
+                          {{if .ReplicationTLSSecret}}
+                          {
+                            "mountPath": "/pgconf/tls-replication",
+                            "name": "tls-replication"
+                          },
+                          {{ end }}
                         {{ end }}
                         {
                             "mountPath": "/sshd",
@@ -261,6 +267,23 @@
                                 "name": "{{.TLSSecret}}"
                             }
                           },
+                          {{if .ReplicationTLSSecret}}
+                          {
+                            "secret": {
+                                "name": "{{.ReplicationTLSSecret}}",
+                                "items": [
+                                  {
+                                    "key": "tls.key",
+                                    "path": "tls-replication.key"
+                                  },
+                                  {
+                                    "key": "tls.crt",
+                                    "path": "tls-replication.crt"
+                                  }
+                                ]
+                            }
+                          },
+                          {{ end }}
                           {
                             "secret": {
                                 "name": "{{.CASecret}}"
@@ -269,6 +292,15 @@
                         ]
                       }
                     },
+                      {{if .ReplicationTLSSecret}}
+                      {
+                        "name": "tls-replication",
+                        "emptyDir": {
+                          "medium": "Memory",
+                          "sizeLimit": "2Mi"
+                        }
+                      },
+                      {{ end }}
                     {{ end }}
                     {
                         "name": "recover-volume",

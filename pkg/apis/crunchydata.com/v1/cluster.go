@@ -202,6 +202,11 @@ type TLSSpec struct {
 	// This is our own format and should contain at least one key: "ca.crt"
 	// It can also contain a key "ca.crl" which is the certificate revocation list
 	CASecret string `json:"caSecret"`
+	// ReplicationTLSSecret contains the name of the secret that specifies a TLS
+	// keypair that can be used by the replication user (e.g. "primaryuser") to
+	// perform certificate based authentication between replicas.
+	// The keypair must be considered valid by the CA specified in the CASecret
+	ReplicationTLSSecret string `json:"replicationTLSSecret"`
 	// TLSSecret contains the name of the secret to use that contains the TLS
 	// keypair for the PostgreSQL server
 	// This follows the Kubernetes secret format ("kubernetes.io/tls") which has

@@ -179,6 +179,7 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 		TLSEnabled:               cl.Spec.TLS.IsTLSEnabled(),
 		TLSOnly:                  cl.Spec.TLSOnly,
 		TLSSecret:                cl.Spec.TLS.TLSSecret,
+		ReplicationTLSSecret:     cl.Spec.TLS.ReplicationTLSSecret,
 		CASecret:                 cl.Spec.TLS.CASecret,
 		Standby:                  cl.Spec.Standby,
 	}
@@ -386,6 +387,7 @@ func scaleReplicaCreateDeployment(clientset *kubernetes.Clientset, client *rest.
 		TLSEnabled:               cluster.Spec.TLS.IsTLSEnabled(),
 		TLSOnly:                  cluster.Spec.TLSOnly,
 		TLSSecret:                cluster.Spec.TLS.TLSSecret,
+		ReplicationTLSSecret:     cluster.Spec.TLS.ReplicationTLSSecret,
 		CASecret:                 cluster.Spec.TLS.CASecret,
 	}
 
