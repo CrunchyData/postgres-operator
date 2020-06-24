@@ -31,6 +31,8 @@ Operator.
 | `BACKREST_AWS_S3_KEY` |  |  | Set to configure the *key* used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3. |
 | `BACKREST_AWS_S3_REGION` |  |  | Set to configure the *region* used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3. |
 | `BACKREST_AWS_S3_SECRET` |  |  | Set to configure the *secret* used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3. |
+| `BACKREST_AWS_S3_URI_STYLE` |  |  | Set to configure whether “host” or “path” style URIs will be used when connecting to S3. |
+| `BACKREST_AWS_S3_VERIFY_TLS` | true  |  | Set this value to true to enable TLS verification when making a pgBackRest connection to S3. |
 | `BACKREST_PORT` | 2022 | **Required** | Defines the port where pgBackRest will run. |
 | `BADGER` | false | **Required** | Set to true enable pgBadger capabilities on all newly created clusters. This can be disabled by the client. |
 | `CCP_IMAGE_PREFIX` | crunchydata | **Required** | Configures the image prefix used when creating containers from Crunchy Container Suite. |
