@@ -1,6 +1,7 @@
 ARG BASEOS
 ARG BASEVER
 ARG PREFIX
+ARG ANSIBLE_VERSION
 FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
 LABEL name="pgo-deployer" \
@@ -12,7 +13,7 @@ RUN yum install -y https://download.fedoraproject.org/pub/epel/epel-release-late
     --setopt=skip_missing_names_on_install=False \
     --enablerepo='rhel-7-server-ose-4.4-rpms' \
     openshift-clients \
-    ansible \
+    ansible-${ANSIBLE_VERSION} \
     which \
     gettext
 
@@ -20,6 +21,9 @@ COPY installers/ansible /ansible
 COPY installers/image/bin/pgo-deploy.sh /pgo-deploy.sh
 COPY installers/image/inventory_template /inventory_template
 COPY bin/uid_daemon.sh /uid_daemon.sh
+
+ENV ANSIBLE_CONFIG="/ansible/ansible.cfg"
+ENV HOME="/tmp"
 
 RUN chmod g=u /etc/passwd
 RUN chmod g=u /uid_daemon.sh
