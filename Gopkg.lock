@@ -230,14 +230,6 @@
   version = "v1.0.2"
 
 [[projects]]
-  digest = "1:e1fc4a624e8497252148125a50cec64b416d69ef69afc2244498e0c9b73060d5"
-  name = "github.com/kubernetes/sample-controller"
-  packages = ["pkg/signals"]
-  pruneopts = "UT"
-  revision = "992aa503db6c707ce558a18ed155390e181f7edc"
-  version = "v0.18.0"
-
-[[projects]]
   digest = "1:7bbccd3dd7998f2a180264ec1d12e362ed8e02f55ea7b82ac0d0f48ffa2d8888"
   name = "github.com/mailru/easyjson"
   packages = [
@@ -976,6 +968,14 @@
   revision = "6496210b90e852b26b227eaedea39b286063fae6"
 
 [[projects]]
+  digest = "1:4fefb4676ce9bae0f81a5122e4fe6638ca51843567d0bdecce400cae401d4514"
+  name = "sigs.k8s.io/controller-runtime"
+  packages = ["pkg/manager/signals"]
+  pruneopts = "UT"
+  revision = "1c83ff6f06bc764c95dd69b0f743740c064c4bf6"
+  version = "v0.6.0"
+
+[[projects]]
   digest = "1:36d2b2cb1fa6e4a731e38c3582c203213cdbc52c5f202af07db6dc6eeaec88dc"
   name = "sigs.k8s.io/yaml"
   packages = ["."]
@@ -990,7 +990,6 @@
     "github.com/evanphx/json-patch",
     "github.com/fatih/color",
     "github.com/gorilla/mux",
-    "github.com/kubernetes/sample-controller/pkg/signals",
     "github.com/nsqio/go-nsq",
     "github.com/robfig/cron",
     "github.com/sirupsen/logrus",
@@ -1040,6 +1039,7 @@
     "k8s.io/client-go/util/flowcontrol",
     "k8s.io/client-go/util/workqueue",
     "k8s.io/code-generator",
+    "sigs.k8s.io/controller-runtime/pkg/manager/signals",
     "sigs.k8s.io/yaml",
   ]
   solver-name = "gps-cdcl"
