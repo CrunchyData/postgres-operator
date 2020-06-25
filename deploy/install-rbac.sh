@@ -66,7 +66,7 @@ if [[ "${PGO_NAMESPACE_MODE:-dynamic}" == "dynamic" ]]; then
 	then
 		# create the full ClusterRole with namespace and RBAC permissions if RBAC reconciliation 
 		# is enabled
-		envsubst < $DIR/cluster-roles.yaml | $PGO_CMD create -f -
+		$PGO_CMD create -f $DIR/cluster-roles.yaml 
 	else
 		# create a ClusterRole with only namespace permissions if RBAC reconciliation is disabled
 		sed '/- delete/q' $DIR/cluster-roles.yaml | $PGO_CMD create -f -

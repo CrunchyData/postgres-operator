@@ -34,8 +34,8 @@ const (
 	ErrReconcileRBAC = "operator is unable to reconcile RBAC resource"
 )
 
-// ReconcileRBAC is responsible for reconciling  a configMap resource that has obtained from
-// the ConfigMap controller's worker queue
+// reconcileRBAC is responsible for reconciling the RBAC resources (ServiceAccounts, Roles and
+// RoleBindings) required by the PostgreSQL Operator in a target namespace
 func (c *ControllerManager) reconcileRBAC(targetNamespace string) {
 
 	log.Debugf("Controller Manager: Now reconciling RBAC in namespace %s", targetNamespace)
