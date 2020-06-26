@@ -52,21 +52,17 @@ curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.2/inst
 
 There are many [configuration parameters]({{< relref "/installation/configuration.md">}}) to help you fine tune your installation, but there are a few that you may want to change to get the PostgreSQL Operator to run in your environment. Open up the `postgres-operator.yml` file and edit a few variables.
 
-Find the `PGO_ADMIN_PASSWORD` variable. This is the password you will use with the [`pgo` client]({{< relref "/installation/pgo-client" >}}) to manage your PostgreSQL clusters. The default is `password`, but you can change it to something like `hippo-elephant`.
+Find the `pgo_admin_password` variable. This is the password you will use with the [`pgo` client]({{< relref "/installation/pgo-client" >}}) to manage your PostgreSQL clusters. The default is `password`, but you can change it to something like `hippo-elephant`.
 
-You will need also need to set the storage default storage classes that you would like the PostgreSQL Operator to use. These variables are called `PRIMARY_STORAGE`, `REPLICA_STORAGE`, `BACKUP_STORAGE`, and `BACKREST_STORAGE`. There are several storage configurations listed out in the configuration file under the heading `STORAGE[1-9]_TYPE`. Find the one that you want to use, and set it to that value.
+You will need also need to set the storage default storage classes that you would like the PostgreSQL Operator to use. These variables are called `primary_storage`, `replica_storage`, `backup_storage`, and `backrest_storage`. There are several storage configurations listed out in the configuration file under the heading `storage[1-9]_name`. Find the one that you want to use, and set it to that value.
 
 For example, if your Kubernetes environment is using NFS storage, you would set these variables to the following:
 
 ```
-- name: BACKREST_STORAGE
-  value: "nfsstorage"
-- name: BACKUP_STORAGE
-  value: "nfsstorage"
-- name: PRIMARY_STORAGE
-  value: "nfsstorage"
-- name: REPLICA_STORAGE
-  value: "nfsstorage"
+backrest_storage: "nfsstorage"
+backup_storage: "nfsstorage"
+primary_storage: "nfsstorage"
+replica_storage: "nfsstorage"
 ```
 
 For a full list of available storage types that can be used with this installation method, please review the [configuration parameters]({{< relref "/installation/configuration.md">}}).
