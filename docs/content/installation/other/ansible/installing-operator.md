@@ -12,7 +12,7 @@ we can now install the PostgreSQL Operator.
 
 The commands should be run in the directory where the Crunchy PostgreSQL Operator
 playbooks are stored.  See the `installers/ansible` directory in the Crunchy PostgreSQL Operator
-project for the inventory file, main playbook and ansible roles.
+project for the inventory file, values file, main playbook and ansible roles.
 
 ## Installing on Linux
 
@@ -20,17 +20,7 @@ On a Linux host with Ansible installed we can run the following command to insta
 the PostgreSQL Operator:
 
 ```bash
-ansible-playbook -i /path/to/inventory --tags=install --ask-become-pass main.yml
-```
-
-If the Crunchy PostgreSQL Operator playbooks were installed using `yum`, use the
-following commands:
-
-```bash
-export ANSIBLE_ROLES_PATH=/usr/share/ansible/roles/crunchydata
-
-ansible-playbook -i /path/to/inventory --tags=install --ask-become-pass \
-    /usr/share/ansible/postgres-operator/playbooks/main.yml
+ansible-playbook -i /path/to/inventory.yaml --tags=install --ask-become-pass main.yml
 ```
 
 ## Installing on macOS
@@ -39,7 +29,7 @@ On a macOS host with Ansible installed we can run the following command to insta
 the PostgreSQL Operator.
 
 ```bash
-ansible-playbook -i /path/to/inventory --tags=install --ask-become-pass main.yml
+ansible-playbook -i /path/to/inventory.yaml --tags=install --ask-become-pass main.yml
 ```
 
 ## Installing on Windows Ubuntu Subsystem
@@ -48,7 +38,7 @@ On a Windows host with an Ubuntu subsystem we can run the following commands to 
 the PostgreSQL Operator.
 
 ```bash
-ansible-playbook -i /path/to/inventory --tags=install --ask-become-pass main.yml
+ansible-playbook -i /path/to/inventory.yaml --tags=install --ask-become-pass main.yml
 ```
 
 ## Verifying the Installation
