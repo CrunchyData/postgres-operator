@@ -35,7 +35,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	batch_v1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -59,7 +59,7 @@ const (
 // 4. Create a new cluster by using the old cluster as a template and providing
 // the specifications to the new cluster, with a few "opinionated" items (e.g.
 // copying over the secrets)
-func Clone(clientset *kubernetes.Clientset, client *rest.RESTClient, restConfig *rest.Config, namespace string, task *crv1.Pgtask) {
+func Clone(clientset kubernetes.Interface, client *rest.RESTClient, restConfig *rest.Config, namespace string, task *crv1.Pgtask) {
 	// have a guard -- if the task is completed, don't proceed furter
 	if task.Spec.Status == crv1.CompletedStatus {
 		log.Warn(fmt.Sprintf("pgtask [%s] has already completed", task.Spec.Name))
@@ -143,7 +143,7 @@ func UpdateCloneWorkflow(client *rest.RESTClient, namespace, workflowID, status 
 // cloneStep1 covers the creation of the PVCs for the new PostgreSQL cluster,
 // as well as sets up and executes a job to copy (via rsync) the PgBackRest
 // repository from the source cluster to the destination cluster
-func cloneStep1(clientset *kubernetes.Clientset, client *rest.RESTClient, namespace string, task *crv1.Pgtask) {
+func cloneStep1(clientset kubernetes.Interface, client *rest.RESTClient, namespace string, task *crv1.Pgtask) {
 	sourceClusterName, targetClusterName, workflowID := getCloneTaskIdentifiers(task)
 
 	log.Debugf("clone step 1 called: namespace:[%s] sourcecluster:[%s] targetcluster:[%s] workflowid:[%s]",
@@ -225,7 +225,7 @@ func cloneStep1(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 // cloneStep2 creates a pgBackRest restore job for the new PostgreSQL cluster by
 // running a restore from the new target cluster pgBackRest repository to the
 // new target cluster PVC
-func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, restConfig *rest.Config, namespace string, task *crv1.Pgtask) {
+func cloneStep2(clientset kubernetes.Interface, client *rest.RESTClient, restConfig *rest.Config, namespace string, task *crv1.Pgtask) {
 	sourceClusterName, targetClusterName, workflowID := getCloneTaskIdentifiers(task)
 
 	log.Debugf("clone step 2 called: namespace:[%s] sourcecluster:[%s] targetcluster:[%s] workflowid:[%s]",
@@ -288,7 +288,7 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, restCo
 	// to do this, we are going to mock out a targetPgcluster with the exact
 	// attributes we need to make this successful
 	targetPgcluster := crv1.Pgcluster{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      targetClusterName,
 			Namespace: namespace,
 			Labels: map[string]string{
@@ -418,12 +418,12 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, restCo
 	job.ObjectMeta.Labels[config.LABEL_PGOUSER] = task.ObjectMeta.Labels[config.LABEL_PGOUSER]
 
 	// create the Job in Kubernetes
-	if jobName, err := kubeapi.CreateJob(clientset, &job, namespace); err != nil {
+	if j, err := clientset.BatchV1().Jobs(namespace).Create(&job); err != nil {
 		log.Error(err)
 		errorMessage := fmt.Sprintf("Could not create pgbackrest restore job: %s", err.Error())
 		PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, errorMessage)
 	} else {
-		log.Debugf("clone step 2: created restore job [%s]", jobName)
+		log.Debugf("clone step 2: created restore job [%s]", j.Name)
 	}
 
 	// finally, update the pgtask to indicate it's complete
@@ -431,7 +431,7 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, restCo
 }
 
 // cloneStep3 creates the new cluster by creating a new Pgcluster
-func cloneStep3(clientset *kubernetes.Clientset, client *rest.RESTClient, namespace string, task *crv1.Pgtask) {
+func cloneStep3(clientset kubernetes.Interface, client *rest.RESTClient, namespace string, task *crv1.Pgtask) {
 	sourceClusterName, targetClusterName, workflowID := getCloneTaskIdentifiers(task)
 
 	log.Debugf("clone step 3 called: namespace:[%s] sourcecluster:[%s] targetcluster:[%s] workflowid:[%s]",
@@ -454,8 +454,9 @@ func cloneStep3(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 	backrestRepoDeploymentName := fmt.Sprintf(util.BackrestRepoDeploymentName, targetClusterName)
 	// ignore errors here...we can let the errors occur later on, e.g. if there is
 	// a failure to delete
-	_ = kubeapi.DeleteDeployment(clientset, backrestRepoDeploymentName, namespace)
-	_ = kubeapi.DeleteService(clientset, backrestRepoDeploymentName, namespace)
+	deletePropagation := metav1.DeletePropagationForeground
+	_ = clientset.AppsV1().Deployments(namespace).Delete(backrestRepoDeploymentName, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+	_ = clientset.CoreV1().Services(namespace).Delete(backrestRepoDeploymentName, &metav1.DeleteOptions{})
 
 	// let's actually wait to see if they are deleted
 	if err := waitForDeploymentDelete(clientset, namespace, backrestRepoDeploymentName, 30, 3); err != nil {
@@ -483,7 +484,7 @@ func cloneStep3(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 // rsync to synchronize two pgBackRest repositories, i.e. it will copy the files
 // from the source PostgreSQL cluster to the pgBackRest repository in the target
 // cluster
-func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace string, task *crv1.Pgtask, sourcePgcluster crv1.Pgcluster) (string, error) {
+func createPgBackRestRepoSyncJob(clientset kubernetes.Interface, namespace string, task *crv1.Pgtask, sourcePgcluster crv1.Pgcluster) (string, error) {
 	targetClusterName := task.Spec.Parameters["targetClusterName"]
 	workflowID := task.Spec.Parameters[crv1.PgtaskWorkflowID]
 	// set the name of the job, with the "entropy" that we add
@@ -499,7 +500,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 
 	// set up the job template to synchronize the pgBackRest repo
 	job := batch_v1.Job{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: jobName,
 			Annotations: map[string]string{
 				// these annotations are used for the subsequent steps to be
@@ -520,7 +521,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 		},
 		Spec: batch_v1.JobSpec{
 			Template: v1.PodTemplateSpec{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name: jobName,
 					Labels: map[string]string{
 						config.LABEL_VENDOR:           config.LABEL_CRUNCHY,
@@ -551,7 +552,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 								{
 									Name: "NEW_PGBACKREST_REPO",
 									Value: util.GetPGBackRestRepoPath(crv1.Pgcluster{
-										ObjectMeta: meta_v1.ObjectMeta{
+										ObjectMeta: metav1.ObjectMeta{
 											Name: targetClusterName,
 										},
 									}),
@@ -663,12 +664,12 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 	}
 
 	// create the job!
-	if jobName, err := kubeapi.CreateJob(clientset, &job, namespace); err != nil {
+	if j, err := clientset.BatchV1().Jobs(namespace).Create(&job); err != nil {
 		log.Error(err)
 		// the error event occurs at a different level
 		return "", err
 	} else {
-		return jobName, nil
+		return j.Name, nil
 	}
 }
 
@@ -683,7 +684,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 //
 // if the user spceified a different PVCSize than what is in the storage spec,
 // then that gets used
-func createPVCs(clientset *kubernetes.Clientset, client *rest.RESTClient,
+func createPVCs(clientset kubernetes.Interface, client *rest.RESTClient,
 	task *crv1.Pgtask, namespace string, sourcePgcluster crv1.Pgcluster, targetClusterName string,
 ) (
 	backrestVolume, dataVolume, walVolume operator.StorageResult,
@@ -733,7 +734,7 @@ func createPVCs(clientset *kubernetes.Clientset, client *rest.RESTClient,
 	return
 }
 
-func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, task *crv1.Pgtask, sourcePgcluster crv1.Pgcluster, namespace string, targetClusterName string, workflowID string) error {
+func createCluster(clientset kubernetes.Interface, client *rest.RESTClient, task *crv1.Pgtask, sourcePgcluster crv1.Pgcluster, namespace string, targetClusterName string, workflowID string) error {
 	// first, handle copying over the cluster secrets so they are available when
 	// the cluster is created
 	cloneClusterSecrets := util.CloneClusterSecrets{
@@ -753,7 +754,7 @@ func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, tas
 
 	// set up the target cluster
 	targetPgcluster := &crv1.Pgcluster{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				config.ANNOTATION_CURRENT_PRIMARY: targetClusterName,
 			},
@@ -885,8 +886,8 @@ func getCloneTaskIdentifiers(task *crv1.Pgtask) (string, string, string) {
 }
 
 // getLinkMap returns the pgBackRest argument to support a WAL volume.
-func getLinkMap(clientset *kubernetes.Clientset, restConfig *rest.Config, cluster crv1.Pgcluster, targetClusterName string) (string, error) {
-	pods, err := kubeapi.GetPods(clientset, "pgo-pg-database=true,pg-cluster="+cluster.Name, cluster.Namespace)
+func getLinkMap(clientset kubernetes.Interface, restConfig *rest.Config, cluster crv1.Pgcluster, targetClusterName string) (string, error) {
+	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(metav1.ListOptions{LabelSelector: "pgo-pg-database=true,pg-cluster=" + cluster.Name})
 	if err != nil {
 		return "", err
 	}
@@ -995,7 +996,7 @@ func publishCloneClusterFailureEvent(eventHeader events.EventHeader, sourceClust
 
 // waitForDeploymentDelete waits until a deployment and its associated service
 // are deleted
-func waitForDeploymentDelete(clientset *kubernetes.Clientset, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) error {
+func waitForDeploymentDelete(clientset kubernetes.Interface, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) error {
 	timeout := time.After(timeoutSecs * time.Second)
 	tick := time.NewTicker(periodSecs * time.Second)
 	defer tick.Stop()
@@ -1005,8 +1006,10 @@ func waitForDeploymentDelete(clientset *kubernetes.Clientset, namespace, deploym
 		case <-timeout:
 			return errors.New(fmt.Sprintf("Timed out waiting for deployment to be deleted: [%s]", deploymentName))
 		case <-tick.C:
-			_, deploymentFound, _ := kubeapi.GetDeployment(clientset, deploymentName, namespace)
-			_, serviceFound, _ := kubeapi.GetService(clientset, deploymentName, namespace)
+			_, deploymentErr := clientset.AppsV1().Deployments(namespace).Get(deploymentName, metav1.GetOptions{})
+			_, serviceErr := clientset.CoreV1().Services(namespace).Get(deploymentName, metav1.GetOptions{})
+			deploymentFound := deploymentErr == nil
+			serviceFound := serviceErr == nil
 			if !(deploymentFound || serviceFound) {
 				return nil
 			}
@@ -1016,7 +1019,7 @@ func waitForDeploymentDelete(clientset *kubernetes.Clientset, namespace, deploym
 }
 
 // waitFotDeploymentReady waits for a deployment to be ready, or times out
-func waitForDeploymentReady(clientset *kubernetes.Clientset, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) error {
+func waitForDeploymentReady(clientset kubernetes.Interface, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) error {
 	timeout := time.After(timeoutSecs * time.Second)
 	tick := time.NewTicker(periodSecs * time.Second)
 	defer tick.Stop()
@@ -1027,10 +1030,10 @@ func waitForDeploymentReady(clientset *kubernetes.Clientset, namespace, deployme
 		case <-timeout:
 			return errors.New(fmt.Sprintf("Timed out waiting for deployment to become ready: [%s]", deploymentName))
 		case <-tick.C:
-			if deployment, found, err := kubeapi.GetDeployment(clientset, deploymentName, namespace); err != nil {
+			if deployment, err := clientset.AppsV1().Deployments(namespace).Get(deploymentName, metav1.GetOptions{}); err != nil {
 				// if there is an error, log it but continue through the loop
 				log.Error(err)
-			} else if found {
+			} else {
 				// check to see if the deployment status has succeed...if so, break out
 				// of the loop
 				if deployment.Status.ReadyReplicas == *deployment.Spec.Replicas {

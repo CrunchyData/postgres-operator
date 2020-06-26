@@ -34,7 +34,7 @@ import (
 	pgov1 "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -49,7 +49,7 @@ var (
 	// PGOClientset is a client for PostgreSQL Operator resources
 	PGOClientset pgov1.Interface
 	// Clientset is a client for native Kubernetes resources
-	Clientset *kubernetes.Clientset
+	Clientset kubernetes.Interface
 	// RESTConfig holds the REST configuration for a Kube client
 	RESTConfig *rest.Config
 	// RESTClient is a REST client for the Kubernetes API
@@ -206,7 +206,7 @@ func BasicAuthCheck(username, password string) bool {
 
 	//see if there is a pgouser Secret for this username
 	secretName := "pgouser-" + username
-	secret, err := kubeapi.GetSecret(Clientset, secretName, PgoNamespace)
+	secret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(secretName, metav1.GetOptions{})
 
 	if err != nil {
 		log.Errorf("could not get pgouser secret %s: %s", username, err.Error())
@@ -219,7 +219,7 @@ func BasicAuthCheck(username, password string) bool {
 func BasicAuthzCheck(username, perm string) bool {
 
 	secretName := "pgouser-" + username
-	secret, err := kubeapi.GetSecret(Clientset, secretName, PgoNamespace)
+	secret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(secretName, metav1.GetOptions{})
 
 	if err != nil {
 		log.Errorf("could not get pgouser secret %s: %s", username, err.Error())
@@ -239,7 +239,7 @@ func BasicAuthzCheck(username, perm string) bool {
 
 		//get the pgorole
 		roleSecretName := "pgorole-" + r
-		rolesecret, err := kubeapi.GetSecret(Clientset, roleSecretName, PgoNamespace)
+		rolesecret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(roleSecretName, metav1.GetOptions{})
 
 		if err != nil {
 			log.Errorf("could not get pgorole secret %s: %s", r, err.Error())
@@ -275,7 +275,7 @@ func BasicAuthzCheck(username, perm string) bool {
 //GetNamespace determines if a user has permission for
 //a namespace they are requesting
 //a valid requested namespace is required
-func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string) (string, error) {
+func GetNamespace(clientset kubernetes.Interface, username, requestedNS string) (string, error) {
 
 	log.Debugf("GetNamespace username [%s] ns [%s]", username, requestedNS)
 
@@ -383,7 +383,7 @@ func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool, error
 	if iAccess {
 		//get the pgouser Secret for this username
 		userSecretName := "pgouser-" + username
-		userSecret, err := kubeapi.GetSecret(Clientset, userSecretName, PgoNamespace)
+		userSecret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(userSecretName, metav1.GetOptions{})
 		if err != nil {
 			log.Errorf("could not get pgouser secret %s: %s", username, err.Error())
 			return false, false, err
@@ -412,7 +412,7 @@ func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool, error
 // files from the PGOSecretName secret or generates a new key (writing to both
 // the secret and the expected files
 func WriteTLSCert(certPath, keyPath string) error {
-	pgoSecret, err := kubeapi.GetSecret(Clientset, PGOSecretName, PgoNamespace)
+	pgoSecret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(PGOSecretName, metav1.GetOptions{})
 
 	// if the TLS certificate secret is not found, attempt to generate one
 	if err != nil {
@@ -436,7 +436,7 @@ func WriteTLSCert(certPath, keyPath string) error {
 
 	log.Infof("private key data len is %d", len(pgoSecret.Data[corev1.TLSPrivateKeyKey]))
 
-	if err := ioutil.WriteFile(keyPath, pgoSecret.Data[v1.TLSPrivateKeyKey], 0644); err != nil {
+	if err := ioutil.WriteFile(keyPath, pgoSecret.Data[corev1.TLSPrivateKeyKey], 0644); err != nil {
 		return err
 	}
 
@@ -479,7 +479,7 @@ func generateTLSCert(certPath, keyPath string) error {
 	newSecret.Data[corev1.TLSPrivateKeyKey] = privateKeyBytes
 	newSecret.Type = corev1.SecretTypeTLS
 
-	err = kubeapi.CreateSecret(Clientset, &newSecret, PgoNamespace)
+	_, err = Clientset.CoreV1().Secrets(PgoNamespace).Create(&newSecret)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(2)

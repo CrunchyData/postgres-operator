@@ -51,7 +51,7 @@ type rmdatajobTemplateFields struct {
 }
 
 // RemoveData ...
-func RemoveData(namespace string, clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask) {
+func RemoveData(namespace string, clientset kubernetes.Interface, restclient *rest.RESTClient, task *crv1.Pgtask) {
 
 	//create marker (clustername, namespace)
 	err := PatchpgtaskDeleteDataStatus(restclient, task, namespace)
@@ -123,13 +123,12 @@ func RemoveData(namespace string, clientset *kubernetes.Clientset, restclient *r
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_RMDATA,
 		&newjob.Spec.Template.Spec.Containers[0])
 
-	var jobname string
-	jobname, err = kubeapi.CreateJob(clientset, &newjob, namespace)
+	j, err := clientset.BatchV1().Jobs(namespace).Create(&newjob)
 	if err != nil {
-		log.Errorf("got error when creating rmdata job %s", jobname)
+		log.Errorf("got error when creating rmdata job %s", newjob.Name)
 		return
 	}
-	log.Debugf("successfully created rmdata job %s", jobname)
+	log.Debugf("successfully created rmdata job %s", j.Name)
 
 	publishDeleteCluster(task.Spec.Parameters[config.LABEL_PG_CLUSTER], task.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 		task.ObjectMeta.Labels[config.LABEL_PGOUSER], namespace)

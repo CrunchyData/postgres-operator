@@ -30,7 +30,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const pgDumpCommand = "pgdump"
@@ -119,7 +119,10 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 			return resp
 		}
 
-		RemovePgDumpJob(clusterName+pgDumpJobExtension, ns)
+		deletePropagation := metav1.DeletePropagationForeground
+		apiserver.Clientset.
+			BatchV1().Jobs(ns).
+			Delete(clusterName+pgDumpJobExtension, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 
 		result := crv1.Pgtask{}
 
@@ -288,7 +291,7 @@ func buildPgTaskForDump(clusterName string, taskName string, action string, podN
 	spec.StorageSpec = storageSpec
 
 	newInstance = &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: taskName,
 		},
 		Spec: spec,
@@ -301,7 +304,9 @@ func getDeployName(cluster *crv1.Pgcluster, ns string) (string, error) {
 
 	selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
-	deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
+	deps, err := apiserver.Clientset.
+		AppsV1().Deployments(ns).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return depName, err
 	}
@@ -321,7 +326,7 @@ func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 
 	selector := config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
-	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return podname, err
 	}
@@ -465,7 +470,8 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 		return resp
 	}
 
-	if _, err := kubeapi.GetPVC(apiserver.Clientset, request.FromPVC, ns); err != nil {
+	_, err = apiserver.Clientset.CoreV1().PersistentVolumeClaims(ns).Get(request.FromPVC, metav1.GetOptions{})
+	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
@@ -556,23 +562,10 @@ func buildPgTaskForRestore(taskName string, action string, request *msgs.PgResto
 	spec.StorageSpec = storageSpec
 
 	newInstance = &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: taskName,
 		},
 		Spec: spec,
 	}
 	return newInstance, nil
-}
-
-// TODO: Needed?
-func RemovePgDumpJob(name, ns string) {
-
-	_, found := kubeapi.GetJob(apiserver.Clientset, name, ns)
-	if !found {
-		return
-	}
-
-	log.Debugf("found backup job %s will remove\n", name)
-
-	kubeapi.DeleteJob(apiserver.Clientset, name, ns)
 }

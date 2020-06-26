@@ -23,6 +23,7 @@ import (
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
@@ -31,7 +32,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	cfg "github.com/crunchydata/postgres-operator/internal/operator/config"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -112,7 +112,7 @@ func DisableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) erro
 }
 
 // EnableStandby enables standby mode for the cluster
-func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) error {
+func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error {
 
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
@@ -129,7 +129,9 @@ func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) erro
 	// These should be the only remaining PVCs for the cluster since all replica PVCs
 	// were deleted when scaling down the cluster in order to shut down the database.
 	remainingPVCSelector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, clusterName)
-	remainingPVC, err := kubeapi.GetPVCs(clientset, remainingPVCSelector, namespace)
+	remainingPVC, err := clientset.
+		CoreV1().PersistentVolumeClaims(namespace).
+		List(metav1.ListOptions{LabelSelector: remainingPVCSelector})
 	if err != nil {
 		log.Error(err)
 		return fmt.Errorf("Unable to get remaining PVCs while enabling standby mode: %w", err)
@@ -138,12 +140,17 @@ func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) erro
 	for _, currPVC := range remainingPVC.Items {
 
 		// delete the original PVC and wait for it to be removed
-		if err := kubeapi.DeletePVC(clientset, currPVC.Name, namespace); !kerrors.IsNotFound(err) &&
-			err != nil {
-			log.Error(err)
+		deletePropagation := metav1.DeletePropagationForeground
+		err := clientset.
+			CoreV1().PersistentVolumeClaims(namespace).
+			Delete(currPVC.Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+		if err == nil {
+			err = wait.Poll(time.Second/2, time.Minute, func() (bool, error) {
+				_, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(currPVC.Name, metav1.GetOptions{})
+				return false, err
+			})
 		}
-		if err := kubeapi.IsPVCDeleted(clientset, time.Second*60, currPVC.Name,
-			namespace); err != nil {
+		if !kerrors.IsNotFound(err) {
 			log.Error(err)
 			return err
 		}
@@ -170,8 +177,8 @@ func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) erro
 
 	// find the "config" configMap created by Patroni
 	dcsConfigMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-config"
-	dcsConfigMap, found := kubeapi.GetConfigMap(clientset, dcsConfigMapName, namespace)
-	if !found {
+	dcsConfigMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(dcsConfigMapName, metav1.GetOptions{})
+	if err != nil {
 		return fmt.Errorf("Unable to find configMap %s when attempting to enable standby",
 			dcsConfigMapName)
 	}
@@ -199,14 +206,14 @@ func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) erro
 		return err
 	}
 	dcsConfigMap.ObjectMeta.Annotations["config"] = string(configJSONFinalStr)
-	err = kubeapi.UpdateConfigMap(clientset, dcsConfigMap, namespace)
+	_, err = clientset.CoreV1().ConfigMaps(namespace).Update(dcsConfigMap)
 	if err != nil {
 		return err
 	}
 
 	leaderConfigMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-leader"
 	// Delete the "leader" configMap
-	if err = kubeapi.DeleteConfigMap(clientset, leaderConfigMapName, namespace); err != nil &&
+	if err = clientset.CoreV1().ConfigMaps(namespace).Delete(leaderConfigMapName, &metav1.DeleteOptions{}); err != nil &&
 		!kerrors.IsNotFound(err) {
 		log.Error("Unable to delete configMap %s while enabling standby mode for cluster "+
 			"%s: %w", leaderConfigMapName, clusterName, err)
@@ -215,8 +222,8 @@ func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) erro
 
 	// override to the repo type to ensure s3 is utilized for standby creation
 	pghaConfigMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-pgha-config"
-	pghaConfigMap, found := kubeapi.GetConfigMap(clientset, pghaConfigMapName, namespace)
-	if !found {
+	pghaConfigMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(pghaConfigMapName, metav1.GetOptions{})
+	if err != nil {
 		return fmt.Errorf("Unable to find configMap %s when attempting to enable standby",
 			pghaConfigMapName)
 	}
@@ -225,7 +232,7 @@ func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) erro
 	// delete the DCS config so that it will refresh with the included standby settings
 	delete(pghaConfigMap.Data, fmt.Sprintf(cfg.PGHADCSConfigName, clusterName))
 
-	if err := kubeapi.UpdateConfigMap(clientset, pghaConfigMap, namespace); err != nil {
+	if _, err := clientset.CoreV1().ConfigMaps(namespace).Update(pghaConfigMap); err != nil {
 		return err
 	}
 

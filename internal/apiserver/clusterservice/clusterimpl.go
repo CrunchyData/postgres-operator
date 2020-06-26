@@ -34,7 +34,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 )
@@ -192,7 +192,9 @@ func getDeployments(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterDeplo
 	output := make([]msgs.ShowClusterDeployment, 0)
 
 	selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
-	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
+	deployments, err := apiserver.Clientset.
+		AppsV1().Deployments(ns).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}
@@ -214,14 +216,14 @@ func getDeployments(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterDeplo
 	return output, err
 }
 
-func GetPods(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
+func GetPods(clientset kubernetes.Interface, cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 	output := []msgs.ShowClusterPod{}
 
 	//get pods, but exclude backup pods and backrest repo
 	selector := config.LABEL_BACKREST_JOB + "!=true," + config.LABEL_BACKREST_RESTORE + "!=true," + config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	log.Debugf("selector for GetPods is %s", selector)
 
-	pods, err := kubeapi.GetPods(clientset, selector, cluster.Namespace)
+	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}
@@ -250,7 +252,7 @@ func GetPods(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) ([]msgs.S
 
 			pvcName := v.VolumeSource.PersistentVolumeClaim.ClaimName
 			// query the PVC to get the storage capacity
-			pvc, err := clientset.CoreV1().PersistentVolumeClaims(cluster.Namespace).Get(pvcName, meta_v1.GetOptions{})
+			pvc, err := clientset.CoreV1().PersistentVolumeClaims(cluster.Namespace).Get(pvcName, metav1.GetOptions{})
 
 			// if there is an error, ignore it, and move on to the next one
 			if err != nil {
@@ -286,7 +288,7 @@ func getServices(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterService,
 	output := make([]msgs.ShowClusterService, 0)
 	selector := config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
-	services, err := kubeapi.GetServices(apiserver.Clientset, selector, ns)
+	services, err := apiserver.Clientset.CoreV1().Services(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}
@@ -932,12 +934,16 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	// the deployment template always tries to mount /sshd volume
 	secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
 
-	if _, err := kubeapi.GetSecret(apiserver.Clientset, secretName, request.Namespace); kubeapi.IsNotFound(err) {
+	if _, err := apiserver.Clientset.
+		CoreV1().Secrets(request.Namespace).
+		Get(secretName, metav1.GetOptions{}); kubeapi.IsNotFound(err) {
 		// determine if a custom CA secret should be used
 		backrestS3CACert := []byte{}
 
 		if request.BackrestS3CASecretName != "" {
-			backrestSecret, err := kubeapi.GetSecret(apiserver.Clientset, request.BackrestS3CASecretName, request.Namespace)
+			backrestSecret, err := apiserver.Clientset.
+				CoreV1().Secrets(request.Namespace).
+				Get(request.BackrestS3CASecretName, metav1.GetOptions{})
 
 			if err != nil {
 				log.Error(err)
@@ -1054,7 +1060,7 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 	labels[config.LABEL_PG_CLUSTER] = clusterName
 
 	newInstance := &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:   spec.Name,
 			Labels: labels,
 		},
@@ -1414,7 +1420,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	labels[config.LABEL_BACKREST] = "true"
 
 	newInstance := &crv1.Pgcluster{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
 			Labels:      labels,
 			Annotations: annotations,
@@ -1431,7 +1437,9 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 func validateSecretFrom(secretname, user, ns string) error {
 	var err error
 	selector := config.LABEL_PG_CLUSTER + "=" + secretname
-	secrets, err := kubeapi.GetSecrets(apiserver.Clientset, selector, ns)
+	secrets, err := apiserver.Clientset.
+		CoreV1().Secrets(ns).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return err
 	}
@@ -1509,7 +1517,7 @@ func createWorkflowTask(clusterName, ns, pgouser string) (string, error) {
 	spec.Parameters[crv1.PgtaskWorkflowID] = string(u[:len(u)-1])
 
 	newInstance := &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: spec.Name,
 		},
 		Spec: spec,
@@ -1544,18 +1552,13 @@ func getType(pod *v1.Pod, clusterName string) string {
 }
 
 func validateCustomConfig(configmapname, ns string) (bool, error) {
-	var err error
-	_, found := kubeapi.GetConfigMap(apiserver.Clientset, configmapname, ns)
-	if !found {
-		return found, err
-	}
-
-	return found, err
+	_, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Get(configmapname, metav1.GetOptions{})
+	return err == nil, err
 }
 
 func existsGlobalConfig(ns string) bool {
-	_, found := kubeapi.GetConfigMap(apiserver.Clientset, config.GLOBAL_CUSTOM_CONFIGMAP, ns)
-	return found
+	_, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Get(config.GLOBAL_CUSTOM_CONFIGMAP, metav1.GetOptions{})
+	return err == nil
 }
 
 func getReplicas(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterReplica, error) {
@@ -1607,7 +1610,9 @@ func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluste
 
 	// if the secret already exists, we can perform an early exit
 	// if there is an error, we'll ignore it
-	if secret, err := kubeapi.GetSecret(apiserver.Clientset, secretName, cluster.Spec.Namespace); err == nil {
+	if secret, err := apiserver.Clientset.
+		CoreV1().Secrets(cluster.Spec.Namespace).
+		Get(secretName, metav1.GetOptions{}); err == nil {
 		log.Infof("secret exists: [%s] - skipping", secretName)
 
 		return secretName, string(secret.Data["password"][:]), nil
@@ -1908,7 +1913,7 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 	selector := config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "," + config.LABEL_DEPLOYMENT_NAME
 	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
 
-	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}
@@ -1930,7 +1935,7 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 	selector = config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "-replica" + "," + config.LABEL_DEPLOYMENT_NAME
 	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
 
-	pods, err = kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	pods, err = apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}
@@ -1998,12 +2003,16 @@ func validateClusterTLS(request *msgs.CreateClusterRequest) error {
 
 	// now check for the existence of the two secrets
 	// First the TLS secret
-	if _, err := kubeapi.GetSecret(apiserver.Clientset, request.TLSSecret, request.Namespace); err != nil {
+	if _, err := apiserver.Clientset.
+		CoreV1().Secrets(request.Namespace).
+		Get(request.TLSSecret, metav1.GetOptions{}); err != nil {
 		return err
 	}
 
 	// then, the CA secret
-	if _, err := kubeapi.GetSecret(apiserver.Clientset, request.CASecret, request.Namespace); err != nil {
+	if _, err := apiserver.Clientset.
+		CoreV1().Secrets(request.Namespace).
+		Get(request.CASecret, metav1.GetOptions{}); err != nil {
 		return err
 	}
 
@@ -2011,7 +2020,7 @@ func validateClusterTLS(request *msgs.CreateClusterRequest) error {
 	if request.ReplicationTLSSecret != "" {
 		if _, err := apiserver.Clientset.
 			CoreV1().Secrets(request.Namespace).
-			Get(request.ReplicationTLSSecret, meta_v1.GetOptions{}); err != nil {
+			Get(request.ReplicationTLSSecret, metav1.GetOptions{}); err != nil {
 			return err
 		}
 	}

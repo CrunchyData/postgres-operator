@@ -33,6 +33,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -672,7 +673,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 func deleteUserSecret(cluster crv1.Pgcluster, username string) {
 	secretName := fmt.Sprintf(util.UserSecretFormat, cluster.Spec.ClusterName, username)
 
-	err := kubeapi.DeleteSecret(apiserver.Clientset, secretName, cluster.Spec.Namespace)
+	err := apiserver.Clientset.CoreV1().Secrets(cluster.Spec.Namespace).Delete(secretName, nil)
 
 	if err != nil {
 		log.Error(err)
@@ -1025,7 +1026,7 @@ func updatePgAdmin(cluster *crv1.Pgcluster, username, password string) error {
 
 	// proceed onward
 	// Get service details and prep connection metadata
-	service, _, err := kubeapi.GetService(apiserver.Clientset, cluster.Name, cluster.Namespace)
+	service, err := apiserver.Clientset.CoreV1().Services(cluster.Namespace).Get(cluster.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -1187,7 +1188,7 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 		secretName := fmt.Sprintf(util.UserSecretFormat, cluster.Spec.ClusterName, result.Username)
 
 		// only call update user secret if the secret exists
-		if _, err := kubeapi.GetSecret(apiserver.Clientset, secretName, cluster.Namespace); err == nil {
+		if _, err := apiserver.Clientset.CoreV1().Secrets(cluster.Namespace).Get(secretName, metav1.GetOptions{}); err == nil {
 			// if we cannot update the user secret, only warn that we cannot do so
 			if err := util.UpdateUserSecret(apiserver.Clientset, cluster.Spec.ClusterName,
 				result.Username, result.Password, cluster.Namespace); err != nil {

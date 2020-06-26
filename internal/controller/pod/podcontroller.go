@@ -34,7 +34,7 @@ import (
 // Controller holds the connections for the controller
 type Controller struct {
 	PodClient    *rest.RESTClient
-	PodClientset *kubernetes.Clientset
+	PodClientset kubernetes.Interface
 	PodConfig    *rest.Config
 	Informer     coreinformers.PodInformer
 }

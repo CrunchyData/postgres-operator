@@ -110,24 +110,6 @@ func Deletepgreplica(client *rest.RESTClient, name, namespace string) error {
 	return err
 }
 
-// Createpgreplica creates a pgreplica
-func Createpgreplica(client *rest.RESTClient, replica *crv1.Pgreplica, namespace string) error {
-
-	result := crv1.Pgreplica{}
-
-	err := client.Post().
-		Resource(crv1.PgreplicaResourcePlural).
-		Namespace(namespace).
-		Body(replica).
-		Do().
-		Into(&result)
-	if err != nil {
-		log.Error("error creating pgreplica " + err.Error())
-	}
-
-	return err
-}
-
 // Updatepgreplica updates a pgreplica
 func Updatepgreplica(client *rest.RESTClient, replica *crv1.Pgreplica, name, namespace string) error {
 

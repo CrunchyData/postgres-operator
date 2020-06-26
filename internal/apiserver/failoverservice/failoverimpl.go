@@ -26,7 +26,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/apps/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 //  CreateFailover ...
@@ -84,7 +84,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns, pgouser string) msg
 	labels[config.LABEL_PGOUSER] = pgouser
 
 	newInstance := &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:   spec.Name,
 			Labels: labels,
 		},
@@ -195,7 +195,9 @@ func isValidFailoverTarget(deployName, clusterName, ns string) (*v1.Deployment, 
 	// cluster specified using clusterName:
 	// pg-cluster=clusterName,deployment-name=deployName
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_DEPLOYMENT_NAME + "=" + deployName
-	deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
+	deployments, err := apiserver.Clientset.
+		AppsV1().Deployments(ns).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -210,7 +212,7 @@ func isValidFailoverTarget(deployName, clusterName, ns string) (*v1.Deployment, 
 	// pg-cluster=clusterName,deployment-name=deployName,role=primary
 	selector = config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_DEPLOYMENT_NAME + "=" + deployName +
 		"," + config.LABEL_PGHA_ROLE + "=" + config.LABEL_PGHA_ROLE_PRIMARY
-	pods, _ := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	pods, _ := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if len(pods.Items) > 0 {
 		return nil, errors.New("The primary database cannot be selected as a failover target")
 	}

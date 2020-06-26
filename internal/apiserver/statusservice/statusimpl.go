@@ -27,6 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -46,7 +47,9 @@ func Status(ns string) msgs.StatusResponse {
 
 func getNumClaims(ns string) int {
 	//count number of PVCs with pgremove=true
-	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, config.LABEL_PGREMOVE, ns)
+	pvcs, err := apiserver.Clientset.
+		CoreV1().PersistentVolumeClaims(ns).
+		List(metav1.ListOptions{LabelSelector: config.LABEL_PGREMOVE})
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -56,7 +59,9 @@ func getNumClaims(ns string) int {
 
 func getNumDatabases(ns string) int {
 	//count number of Deployments with pg-cluster
-	deps, err := kubeapi.GetDeployments(apiserver.Clientset, config.LABEL_PG_CLUSTER, ns)
+	deps, err := apiserver.Clientset.
+		AppsV1().Deployments(ns).
+		List(metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER})
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -66,7 +71,9 @@ func getNumDatabases(ns string) int {
 
 func getVolumeCap(ns string) string {
 	//sum all PVCs storage capacity
-	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, config.LABEL_PGREMOVE, ns)
+	pvcs, err := apiserver.Clientset.
+		CoreV1().PersistentVolumeClaims(ns).
+		List(metav1.ListOptions{LabelSelector: config.LABEL_PGREMOVE})
 	if err != nil {
 		log.Error(err)
 		return "error"
@@ -85,7 +92,7 @@ func getVolumeCap(ns string) string {
 func getDBTags(ns string) map[string]int {
 	results := make(map[string]int)
 	//count all pods with pg-cluster, sum by image tag value
-	pods, err := kubeapi.GetPods(apiserver.Clientset, config.LABEL_PG_CLUSTER, ns)
+	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER})
 	if err != nil {
 		log.Error(err)
 		return results
@@ -108,7 +115,7 @@ func getNotReady(ns string) []string {
 	for _, cluster := range clusterList.Items {
 
 		selector := fmt.Sprintf("%s=crunchydata,name=%s", config.LABEL_VENDOR, cluster.Spec.ClusterName)
-		pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+		pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			log.Error(err)
 			return agg
@@ -133,7 +140,7 @@ func getNotReady(ns string) []string {
 	return agg
 }
 
-func getClaimCapacity(clientset *kubernetes.Clientset, pvc *v1.PersistentVolumeClaim) int64 {
+func getClaimCapacity(clientset kubernetes.Interface, pvc *v1.PersistentVolumeClaim) int64 {
 	qty := pvc.Status.Capacity[v1.ResourceStorage]
 	diskSize := resource.MustParse(qty.String())
 	diskSizeInt64, _ := diskSize.AsInt64()
@@ -145,8 +152,9 @@ func getClaimCapacity(clientset *kubernetes.Clientset, pvc *v1.PersistentVolumeC
 func getLabels(ns string) []msgs.KeyValue {
 	var ss []msgs.KeyValue
 	results := make(map[string]int)
-	// GetDeployments gets a list of deployments using a label selector
-	deps, err := kubeapi.GetDeployments(apiserver.Clientset, "", ns)
+	deps, err := apiserver.Clientset.
+		AppsV1().Deployments(ns).
+		List(metav1.ListOptions{})
 	if err != nil {
 		log.Error(err)
 		return ss

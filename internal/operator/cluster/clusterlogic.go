@@ -44,7 +44,7 @@ import (
 
 // addClusterCreateMissingService creates a service for the cluster primary if
 // it does not yet exist.
-func addClusterCreateMissingService(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string) error {
+func addClusterCreateMissingService(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string) error {
 	st := operator.Pgo.Cluster.ServiceType
 	if cl.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
 		st = cl.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
@@ -83,7 +83,7 @@ func addClusterCreateMissingService(clientset *kubernetes.Clientset, cl *crv1.Pg
 }
 
 // addClusterCreateDeployments creates deployments for pgBackRest and PostgreSQL.
-func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.RESTClient,
+func addClusterCreateDeployments(clientset kubernetes.Interface, client *rest.RESTClient,
 	cl *crv1.Pgcluster, namespace string,
 	dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult,
@@ -222,8 +222,8 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 	// determine if any of the container images need to be overridden
 	operator.OverrideClusterContainerImages(deployment.Spec.Template.Spec.Containers)
 
-	if _, found, _ := kubeapi.GetDeployment(clientset, cl.Spec.Name, namespace); !found {
-		err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
+	if _, err = clientset.AppsV1().Deployments(namespace).Get(cl.Spec.Name, metav1.GetOptions{}); err != nil {
+		_, err = clientset.AppsV1().Deployments(namespace).Create(&deployment)
 		if err != nil {
 			return err
 		}
@@ -243,7 +243,7 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 }
 
 // DeleteCluster ...
-func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) error {
+func DeleteCluster(clientset kubernetes.Interface, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) error {
 
 	var err error
 	log.Info("deleting Pgcluster object" + " in namespace " + namespace)
@@ -268,7 +268,7 @@ func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 
 // scaleReplicaCreateMissingService creates a service for cluster replicas if
 // it does not yet exist.
-func scaleReplicaCreateMissingService(clientset *kubernetes.Clientset, replica *crv1.Pgreplica, cluster *crv1.Pgcluster, namespace string) error {
+func scaleReplicaCreateMissingService(clientset kubernetes.Interface, replica *crv1.Pgreplica, cluster *crv1.Pgcluster, namespace string) error {
 	st := operator.Pgo.Cluster.ServiceType
 	if replica.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
 		st = replica.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
@@ -300,7 +300,7 @@ func scaleReplicaCreateMissingService(clientset *kubernetes.Clientset, replica *
 }
 
 // scaleReplicaCreateDeployment creates a deployment for the cluster replica.
-func scaleReplicaCreateDeployment(clientset *kubernetes.Clientset, client *rest.RESTClient,
+func scaleReplicaCreateDeployment(clientset kubernetes.Interface, client *rest.RESTClient,
 	replica *crv1.Pgreplica, cluster *crv1.Pgcluster, namespace string,
 	dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult,
@@ -428,16 +428,22 @@ func scaleReplicaCreateDeployment(clientset *kubernetes.Clientset, client *rest.
 	replicaDeployment.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_PGHA_SCOPE]
 	replicaDeployment.Spec.Template.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_PGHA_SCOPE]
 
-	return kubeapi.CreateDeployment(clientset, &replicaDeployment, namespace)
+	_, err = clientset.AppsV1().Deployments(namespace).Create(&replicaDeployment)
+	return err
 }
 
 // DeleteReplica ...
-func DeleteReplica(clientset *kubernetes.Clientset, cl *crv1.Pgreplica, namespace string) error {
+func DeleteReplica(clientset kubernetes.Interface, cl *crv1.Pgreplica, namespace string) error {
 
 	var err error
 	log.Info("deleting Pgreplica object" + " in namespace " + namespace)
 	log.Info("deleting with Name=" + cl.Spec.Name + " in namespace " + namespace)
-	err = kubeapi.DeleteDeployment(clientset, cl.Spec.Name, namespace)
+	deletePropagation := metav1.DeletePropagationForeground
+	err = clientset.
+		AppsV1().Deployments(namespace).
+		Delete(cl.Spec.Name, &metav1.DeleteOptions{
+			PropagationPolicy: &deletePropagation,
+		})
 
 	return err
 
@@ -499,7 +505,7 @@ type ScaleClusterInfo struct {
 // ShutdownCluster is responsible for shutting down a cluster that is currently running.  This
 // includes changing the replica count for all clusters to 0, and then updating the pgcluster
 // with a shutdown status.
-func ShutdownCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
+func ShutdownCluster(clientset kubernetes.Interface, restclient *rest.RESTClient,
 	cluster crv1.Pgcluster) error {
 
 	// first ensure the current primary deployment is properly recorded in the pg
@@ -557,8 +563,8 @@ func ShutdownCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 		return err
 	}
 
-	if err := kubeapi.DeleteConfigMap(clientset, fmt.Sprintf("%s-leader",
-		cluster.Labels[config.LABEL_PGHA_SCOPE]), cluster.Namespace); err != nil {
+	if err := clientset.CoreV1().ConfigMaps(cluster.Namespace).Delete(fmt.Sprintf("%s-leader",
+		cluster.Labels[config.LABEL_PGHA_SCOPE]), &metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 
@@ -570,7 +576,7 @@ func ShutdownCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 // StartupCluster is responsible for starting a cluster that was previsouly shutdown.  This
 // includes changing the replica count for all clusters to 1, and then updating the pgcluster
 // with a shutdown status.
-func StartupCluster(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) error {
+func StartupCluster(clientset kubernetes.Interface, cluster crv1.Pgcluster) error {
 
 	log.Debugf("Cluster Operator: starting cluster %s", cluster.Name)
 
@@ -602,7 +608,7 @@ func StartupCluster(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) err
 // specified using the 'replicas' parameter.  This is typically used to scale-up or down the
 // primary deployment and any supporting services (pgBackRest and pgBouncer) when shutting down
 // or starting up the cluster due to a scale or scale-down request.
-func ScaleClusterDeployments(clientset *kubernetes.Clientset, cluster crv1.Pgcluster, replicas int,
+func ScaleClusterDeployments(clientset kubernetes.Interface, cluster crv1.Pgcluster, replicas int,
 	scalePrimary, scaleReplicas, scaleBackRestRepo,
 	scalePGBouncer bool) (clusterInfo ScaleClusterInfo, err error) {
 
@@ -612,8 +618,10 @@ func ScaleClusterDeployments(clientset *kubernetes.Clientset, cluster crv1.Pgclu
 	// primary, any replicas, the pgBackRest repo and any optional services (e.g. pgBouncer)
 	var deploymentList *appsv1.DeploymentList
 	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, clusterName)
-	if deploymentList, err = kubeapi.GetDeployments(clientset, selector,
-		namespace); err != nil {
+	deploymentList, err = clientset.
+		AppsV1().Deployments(namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
 		return
 	}
 
@@ -654,7 +662,8 @@ func ScaleClusterDeployments(clientset *kubernetes.Clientset, cluster crv1.Pgclu
 
 		// Scale the deployment accoriding to the number of replicas specified.  If an error is
 		// encountered, log it and move on to scaling the next deployment.
-		if err = kubeapi.ScaleDeployment(clientset, deployment, replicas); err != nil {
+		deployment.Spec.Replicas = kubeapi.Int32(int32(replicas))
+		if _, err = clientset.AppsV1().Deployments(deployment.Namespace).Update(&deployment); err != nil {
 			log.Errorf("Error scaling deployment %s to %d: %w", deployment.Name, replicas, err)
 		}
 	}

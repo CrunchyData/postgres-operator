@@ -24,18 +24,18 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
-func StanzaCreate(namespace, clusterName string, clientset *kubernetes.Clientset, RESTClient *rest.RESTClient) {
+func StanzaCreate(namespace, clusterName string, clientset kubernetes.Interface, RESTClient *rest.RESTClient) {
 
 	taskName := clusterName + "-" + crv1.PgtaskBackrestStanzaCreate
 
 	//look up the backrest-repo pod name
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGO_BACKREST_REPO + "=true"
-	pods, err := kubeapi.GetPods(clientset, selector, namespace)
+	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if len(pods.Items) != 1 {
 		log.Errorf("pods len != 1 for cluster %s", clusterName)
 		return
@@ -94,7 +94,7 @@ func StanzaCreate(namespace, clusterName string, clientset *kubernetes.Clientset
 	}
 
 	newInstance := &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: taskName,
 		},
 		Spec: spec,

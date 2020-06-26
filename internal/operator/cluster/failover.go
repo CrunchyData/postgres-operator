@@ -35,7 +35,7 @@ import (
 
 // FailoverBase ...
 // gets called first on a failover
-func FailoverBase(namespace string, clientset *kubernetes.Clientset, client *rest.RESTClient, task *crv1.Pgtask, restconfig *rest.Config) {
+func FailoverBase(namespace string, clientset kubernetes.Interface, client *rest.RESTClient, task *crv1.Pgtask, restconfig *rest.Config) {
 	var err error
 
 	//look up the pgcluster for this task

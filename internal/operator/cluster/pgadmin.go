@@ -36,6 +36,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -75,7 +76,7 @@ const (
 //
 // Any returned error is logged in the calling function
 func AddPgAdmin(
-	clientset *kubernetes.Clientset,
+	clientset kubernetes.Interface,
 	restclient *rest.RESTClient,
 	restconfig *rest.Config,
 	cluster *crv1.Pgcluster,
@@ -124,7 +125,7 @@ func AddPgAdmin(
 
 // AddPgAdminFromPgTask is a method that helps to bring up
 // the pgAdmin deployment that sits alongside a PostgreSQL cluster
-func AddPgAdminFromPgTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, task *crv1.Pgtask) {
+func AddPgAdminFromPgTask(clientset kubernetes.Interface, restclient *rest.RESTClient, restconfig *rest.Config, task *crv1.Pgtask) {
 	clusterName := task.Spec.Parameters[config.LABEL_PGADMIN_TASK_CLUSTER]
 	namespace := task.Spec.Namespace
 	storage := task.Spec.StorageSpec
@@ -170,7 +171,7 @@ func AddPgAdminFromPgTask(clientset *kubernetes.Clientset, restclient *rest.REST
 }
 
 func BootstrapPgAdminUsers(
-	clientset *kubernetes.Clientset,
+	clientset kubernetes.Interface,
 	restclient *rest.RESTClient,
 	restconfig *rest.Config,
 	cluster *crv1.Pgcluster) error {
@@ -191,15 +192,12 @@ func BootstrapPgAdminUsers(
 	}
 
 	// Get service details and prep connection metadata
-	service, svcFound, err := kubeapi.GetService(clientset, cluster.Name, cluster.Namespace)
+	service, err := clientset.CoreV1().Services(cluster.Namespace).Get(cluster.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	dbService := pgadmin.ServerEntry{}
-	if svcFound {
-		dbService = pgadmin.ServerEntryFromPgService(service, cluster.Name)
-	}
+	dbService := pgadmin.ServerEntryFromPgService(service, cluster.Name)
 
 	// Get current users of cluster and add them to pgadmin's db if they
 	// have kubernetes-stored passwords, using the connection info above
@@ -208,7 +206,9 @@ func BootstrapPgAdminUsers(
 	// Get the secrets managed by Kubernetes - any users existing only in
 	// Postgres don't have their passwords available
 	sel := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, cluster.Name)
-	secretList, err := kubeapi.GetSecrets(clientset, sel, cluster.Namespace)
+	secretList, err := clientset.
+		CoreV1().Secrets(cluster.Namespace).
+		List(metav1.ListOptions{LabelSelector: sel})
 	if err != nil {
 		return err
 	}
@@ -257,7 +257,7 @@ func BootstrapPgAdminUsers(
 //
 // Any errors that are returned should be logged in the calling function, though
 // some logging occurs in this function as well
-func DeletePgAdmin(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
+func DeletePgAdmin(clientset kubernetes.Interface, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
 
@@ -279,15 +279,20 @@ func DeletePgAdmin(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 	// Delete the PVC, Service and Deployment, which share the same naem
 	pgAdminDeploymentName := fmt.Sprintf(pgAdminDeploymentFormat, clusterName)
 
-	if err := kubeapi.DeletePVC(clientset, pgAdminDeploymentName, namespace); err != nil {
+	deletePropagation := metav1.DeletePropagationForeground
+	if err := clientset.CoreV1().PersistentVolumeClaims(namespace).Delete(pgAdminDeploymentName, &metav1.DeleteOptions{
+		PropagationPolicy: &deletePropagation,
+	}); err != nil {
 		log.Warn(err)
 	}
 
-	if err := kubeapi.DeleteService(clientset, pgAdminDeploymentName, namespace); err != nil {
+	if err := clientset.CoreV1().Services(namespace).Delete(pgAdminDeploymentName, &metav1.DeleteOptions{}); err != nil {
 		log.Warn(err)
 	}
 
-	if err := kubeapi.DeleteDeployment(clientset, pgAdminDeploymentName, namespace); err != nil {
+	if err := clientset.AppsV1().Deployments(namespace).Delete(pgAdminDeploymentName, &metav1.DeleteOptions{
+		PropagationPolicy: &deletePropagation,
+	}); err != nil {
 		log.Warn(err)
 	}
 
@@ -296,7 +301,7 @@ func DeletePgAdmin(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 
 // DeletePgAdminFromPgTask is effectively a legacy method that helps to delete
 // the pgAdmin deployment that sits alongside a PostgreSQL cluster
-func DeletePgAdminFromPgTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, task *crv1.Pgtask) {
+func DeletePgAdminFromPgTask(clientset kubernetes.Interface, restclient *rest.RESTClient, restconfig *rest.Config, task *crv1.Pgtask) {
 	clusterName := task.Spec.Parameters[config.LABEL_PGADMIN_TASK_CLUSTER]
 	namespace := task.Spec.Namespace
 
@@ -328,7 +333,7 @@ func DeletePgAdminFromPgTask(clientset *kubernetes.Clientset, restclient *rest.R
 }
 
 // createPgAdminDeployment creates the Kubernetes Deployment for pgAdmin
-func createPgAdminDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, pvcName string) error {
+func createPgAdminDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluster, pvcName string) error {
 	log.Debugf("creating pgAdmin deployment: %s", cluster.Name)
 
 	// derive the name of the Deployment...which is also used as the name of the
@@ -380,7 +385,7 @@ func createPgAdminDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pgcl
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGADMIN,
 		&deployment.Spec.Template.Spec.Containers[0])
 
-	if err := kubeapi.CreateDeployment(clientset, &deployment, cluster.Namespace); err != nil {
+	if _, err := clientset.AppsV1().Deployments(cluster.Namespace).Create(&deployment); err != nil {
 		return err
 	}
 
@@ -388,7 +393,7 @@ func createPgAdminDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pgcl
 }
 
 // createPgAdminService creates the Kubernetes Service for pgAdmin
-func createPgAdminService(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) error {
+func createPgAdminService(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
 	// pgAdminServiceName is the name of the Service of the pgAdmin, which
 	// matches that for the Deploymnt
 	pgAdminSvcName := fmt.Sprintf(pgAdminDeploymentFormat, cluster.Name)
@@ -419,7 +424,7 @@ func createPgAdminService(clientset *kubernetes.Clientset, cluster *crv1.Pgclust
 		return err
 	}
 
-	if _, err := kubeapi.CreateService(clientset, &service, cluster.Namespace); err != nil {
+	if _, err := clientset.CoreV1().Services(cluster.Namespace).Create(&service); err != nil {
 		return err
 	}
 

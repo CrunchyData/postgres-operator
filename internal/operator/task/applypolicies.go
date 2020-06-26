@@ -30,7 +30,7 @@ import (
 )
 
 // RemoveBackups ...
-func ApplyPolicies(clusterName string, Clientset *kubernetes.Clientset, RESTClient *rest.RESTClient, RESTConfig *rest.Config, ns string) {
+func ApplyPolicies(clusterName string, Clientset kubernetes.Interface, RESTClient *rest.RESTClient, RESTConfig *rest.Config, ns string) {
 
 	taskName := clusterName + "-policies"
 	task := crv1.Pgtask{}
@@ -49,7 +49,7 @@ func ApplyPolicies(clusterName string, Clientset *kubernetes.Clientset, RESTClie
 	}
 }
 
-func applyPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, policyName, clusterName, ns string) {
+func applyPolicy(clientset kubernetes.Interface, restclient *rest.RESTClient, restconfig *rest.Config, policyName, clusterName, ns string) {
 	cl := crv1.Pgcluster{}
 
 	if _, err := kubeapi.Getpgcluster(restclient, &cl, clusterName, ns); err != nil {

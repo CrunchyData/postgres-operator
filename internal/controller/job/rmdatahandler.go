@@ -20,10 +20,10 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -52,7 +52,11 @@ func (c *Controller) handleRMDataUpdate(job *apiv1.Job) error {
 
 	clusterName := labels[config.LABEL_PG_CLUSTER]
 
-	if err := kubeapi.DeleteJob(c.JobClientset, job.Name, job.Namespace); err != nil {
+	deletePropagation := metav1.DeletePropagationForeground
+	err := c.JobClientset.
+		BatchV1().Jobs(job.Namespace).
+		Delete(job.Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+	if err != nil {
 		log.Error(err)
 	}
 
@@ -60,8 +64,8 @@ func (c *Controller) handleRMDataUpdate(job *apiv1.Job) error {
 	for i := 0; i < deleteRMDataJobMaxTries; i++ {
 		log.Debugf("sleeping while job %s is removed cleanly", job.Name)
 		time.Sleep(time.Second * time.Duration(deleteRMDataJobDuration))
-		_, found := kubeapi.GetJob(c.JobClientset, job.Name, job.Namespace)
-		if !found {
+		_, err := c.JobClientset.BatchV1().Jobs(job.Namespace).Get(job.Name, metav1.GetOptions{})
+		if err != nil {
 			removed = true
 			break
 		}
@@ -80,7 +84,9 @@ func (c *Controller) handleRMDataUpdate(job *apiv1.Job) error {
 	}
 
 	//delete any completed jobs for this cluster as a cleanup
-	jobList, err := kubeapi.GetJobs(c.JobClientset, config.LABEL_PG_CLUSTER+"="+clusterName, job.Namespace)
+	jobList, err := c.JobClientset.
+		BatchV1().Jobs(job.Namespace).
+		List(metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + clusterName})
 	if err != nil {
 		log.Error(err)
 		return err
@@ -89,7 +95,10 @@ func (c *Controller) handleRMDataUpdate(job *apiv1.Job) error {
 	for _, j := range jobList.Items {
 		if j.Status.Succeeded > 0 {
 			log.Debugf("removing Job %s since it was completed", job.Name)
-			if err := kubeapi.DeleteJob(c.JobClientset, j.Name, job.Namespace); err != nil {
+			err := c.JobClientset.
+				BatchV1().Jobs(job.Namespace).
+				Delete(j.Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+			if err != nil {
 				log.Error(err)
 				return err
 			}

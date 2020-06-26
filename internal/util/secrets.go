@@ -27,6 +27,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -52,7 +53,7 @@ const (
 var passwordCharSelector = big.NewInt(passwordCharUpper - passwordCharLower)
 
 // CreateSecret create the secret, user, and primary secrets
-func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, password, namespace string) error {
+func CreateSecret(clientset kubernetes.Interface, db, secretName, username, password, namespace string) error {
 
 	var enUsername = username
 
@@ -66,7 +67,7 @@ func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, pas
 	secret.Data["username"] = []byte(enUsername)
 	secret.Data["password"] = []byte(password)
 
-	err := kubeapi.CreateSecret(clientset, &secret, namespace)
+	_, err := clientset.CoreV1().Secrets(namespace).Create(&secret)
 
 	return err
 
@@ -112,8 +113,8 @@ func GeneratedPasswordLength(configuredPasswordLength string) int {
 }
 
 // GetPasswordFromSecret will fetch the password from a user secret
-func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace, secretName string) (string, error) {
-	secret, err := kubeapi.GetSecret(clientset, secretName, namespace)
+func GetPasswordFromSecret(clientset kubernetes.Interface, namespace, secretName string) (string, error) {
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(secretName, metav1.GetOptions{})
 
 	if err != nil {
 		return "", err
@@ -138,7 +139,7 @@ type CloneClusterSecrets struct {
 	// any additional selectors that can be added to the query that is made
 	AdditionalSelectors []string
 	// The Kubernetes Clientset used to make API calls to Kubernetes`
-	ClientSet *kubernetes.Clientset
+	ClientSet kubernetes.Interface
 	// The Namespace that the clusters are in
 	Namespace string
 	// The name of the PostgreSQL cluster that the secrets are originating from
@@ -159,7 +160,9 @@ func (cs CloneClusterSecrets) Clone() error {
 	}
 
 	// get all the secrets that exist in the source PostgreSQL cluster
-	secrets, err := kubeapi.GetSecrets(cs.ClientSet, selector, cs.Namespace)
+	secrets, err := cs.ClientSet.
+		CoreV1().Secrets(cs.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 
 	// if this fails, log and return the error
 	if err != nil {
@@ -190,14 +193,14 @@ func (cs CloneClusterSecrets) Clone() error {
 		}
 
 		// create the secret
-		kubeapi.CreateSecret(cs.ClientSet, &secret, cs.Namespace)
+		cs.ClientSet.CoreV1().Secrets(cs.Namespace).Create(&secret)
 	}
 
 	return nil
 }
 
 // CreateUserSecret will create a new secret holding a user credential
-func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string) error {
+func CreateUserSecret(clientset kubernetes.Interface, clustername, username, password, namespace string) error {
 	secretName := fmt.Sprintf(UserSecretFormat, clustername, username)
 
 	if err := CreateSecret(clientset, clustername, secretName, username, password, namespace); err != nil {
@@ -213,11 +216,11 @@ func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 //
 // 1. If the Secret exists, it updates the value of the Secret
 // 2. If the Secret does not exist, it creates the secret
-func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string) error {
+func UpdateUserSecret(clientset kubernetes.Interface, clustername, username, password, namespace string) error {
 	secretName := fmt.Sprintf(UserSecretFormat, clustername, username)
 
 	// see if the secret already exists
-	secret, err := kubeapi.GetSecret(clientset, secretName, namespace)
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(secretName, metav1.GetOptions{})
 
 	// if this returns an error and it's not the "not found" error, return
 	// However, if it is the "not found" error, treat this as creating the user
@@ -233,5 +236,6 @@ func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 	// update the value of "password"
 	secret.Data["password"] = []byte(password)
 
-	return kubeapi.UpdateSecret(clientset, secret, secret.Namespace)
+	_, err = clientset.CoreV1().Secrets(secret.Namespace).Update(secret)
+	return err
 }

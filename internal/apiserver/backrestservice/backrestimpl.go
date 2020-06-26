@@ -33,7 +33,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const containername = "database"
@@ -172,14 +172,19 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 
 			//selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_BACKREST + "=true"
 			selector := config.LABEL_BACKREST_COMMAND + "=" + crv1.PgtaskBackrestBackup + "," + config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_BACKREST + "=true"
-			err = kubeapi.DeleteJobs(apiserver.Clientset, selector, ns)
+			deletePropagation := metav1.DeletePropagationForeground
+			err = apiserver.Clientset.
+				BatchV1().Jobs(ns).
+				DeleteCollection(
+					&metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
+					metav1.ListOptions{LabelSelector: selector})
 			if err != nil {
 				log.Error(err)
 			}
 
 			//a hack sort of due to slow propagation
 			for i := 0; i < 3; i++ {
-				jobList, err := kubeapi.GetJobs(apiserver.Clientset, selector, ns)
+				jobList, err := apiserver.Clientset.BatchV1().Jobs(ns).List(metav1.ListOptions{LabelSelector: selector})
 				if err != nil {
 					log.Error(err)
 				}
@@ -241,7 +246,7 @@ func getBackupParams(identifier, clusterName, taskName, action, podName, contain
 	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = backrestStorageType
 
 	newInstance = &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: taskName,
 		},
 		Spec: spec,
@@ -258,7 +263,9 @@ func getDeployName(cluster *crv1.Pgcluster, ns string) (string, error) {
 
 	selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
-	deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
+	deps, err := apiserver.Clientset.
+		AppsV1().Deployments(ns).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return depName, err
 	}
@@ -277,7 +284,7 @@ func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 
 	//look up the backrest-repo pod name
 	selector := "pg-cluster=" + cluster.Spec.Name + ",pgo-backrest-repo=true"
-	repopods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	repopods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if len(repopods.Items) != 1 {
 		log.Errorf("pods len != 1 for cluster %s", cluster.Spec.Name)
 		return "", errors.New("backrestrepo pod not found for cluster " + cluster.Spec.Name)
@@ -294,7 +301,7 @@ func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 	//make sure the primary pod is in the ready state
 	selector = config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
 
-	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
+	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return "", err
 	}
@@ -581,7 +588,7 @@ func getRestoreParams(request *msgs.RestoreRequest, ns string, cluster crv1.Pgcl
 
 	labels := make(map[string]string)
 	newInstance = &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Labels: labels,
 			Name:   spec.Name,
 		},
@@ -625,7 +632,7 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 	spec.Parameters[crv1.PgtaskWorkflowID] = string(u[:len(u)-1])
 
 	newInstance := &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: spec.Name,
 		},
 		Spec: spec,

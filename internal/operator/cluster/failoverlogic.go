@@ -28,7 +28,6 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"
-	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -36,7 +35,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func Failover(identifier string, clientset *kubernetes.Clientset, client *rest.RESTClient, clusterName string, task *crv1.Pgtask, namespace string, restconfig *rest.Config) error {
+func Failover(identifier string, clientset kubernetes.Interface, client *rest.RESTClient, clusterName string, task *crv1.Pgtask, namespace string, restconfig *rest.Config) error {
 
 	var pod *v1.Pod
 	var err error
@@ -64,8 +63,7 @@ func Failover(identifier string, clientset *kubernetes.Clientset, client *rest.R
 
 	//relabel the deployment with primary labels
 	//by setting service-name=clustername
-	var upod *v1.Pod
-	upod, _, err = kubeapi.GetPod(clientset, pod.Name, namespace)
+	upod, err := clientset.CoreV1().Pods(namespace).Get(pod.Name, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		log.Error("error in getting pod during failover relabel")
@@ -85,8 +83,7 @@ func Failover(identifier string, clientset *kubernetes.Clientset, client *rest.R
 
 	targetDepName := upod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
 	log.Debugf("targetDepName %s", targetDepName)
-	var targetDep *appsv1.Deployment
-	targetDep, _, err = kubeapi.GetDeployment(clientset, targetDepName, namespace)
+	targetDep, err := clientset.AppsV1().Deployments(namespace).Get(targetDepName, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		log.Errorf("not found error in getting Deployment during failover relabel %s", targetDepName)
@@ -147,7 +144,7 @@ func updateFailoverStatus(client *rest.RESTClient, task *crv1.Pgtask, namespace,
 
 func promote(
 	pod *v1.Pod,
-	clientset *kubernetes.Clientset,
+	clientset kubernetes.Interface,
 	client *rest.RESTClient, namespace string, restconfig *rest.Config) error {
 
 	// generate the curl command that will be run on the pod selected for the failover in order
@@ -195,7 +192,7 @@ func publishPromoteEvent(identifier, namespace, username, clusterName, target st
 // Patroni DCS, effectively removing the tag.  This is accomplished by exec'ing into
 // the primary PG pod, and sending a patch request to update the appropriate data (i.e.
 // the 'primary_on_role_change' tag) in the DCS.
-func RemovePrimaryOnRoleChangeTag(clientset *kubernetes.Clientset, restconfig *rest.Config,
+func RemovePrimaryOnRoleChangeTag(clientset kubernetes.Interface, restconfig *rest.Config,
 	clusterName, namespace string) error {
 
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName +

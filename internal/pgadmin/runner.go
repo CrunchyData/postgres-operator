@@ -41,7 +41,7 @@ type queryRunner struct {
 	Path          string
 	Pod           v1.Pod
 
-	clientset *kubernetes.Clientset
+	clientset kubernetes.Interface
 	apicfg    *rest.Config
 	secSalt   string // Cached value of the database-specific security salt
 	separator string // Field separator for multi-field queries
@@ -50,7 +50,7 @@ type queryRunner struct {
 
 // NewQueryRunner creates a query runner instance with the configuration
 // necessary to exec into the named pod in the provided namespace
-func NewQueryRunner(clientset *kubernetes.Clientset, apic *rest.Config, pod v1.Pod) *queryRunner {
+func NewQueryRunner(clientset kubernetes.Interface, apic *rest.Config, pod v1.Pod) *queryRunner {
 	qr := &queryRunner{
 		Namespace: pod.ObjectMeta.Namespace,
 		Path:      defaultPath,

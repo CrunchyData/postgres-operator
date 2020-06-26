@@ -20,9 +20,9 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ShowPVC ...
@@ -38,7 +38,9 @@ func ShowPVC(allflag bool, clusterName, ns string) ([]msgs.ShowPVCResponseResult
 		selector += fmt.Sprintf(",%s=%s", config.LABEL_PG_CLUSTER, clusterName)
 	}
 
-	pvcs, err := kubeapi.GetPVCs(apiserver.Clientset, selector, ns)
+	pvcs, err := apiserver.Clientset.
+		CoreV1().PersistentVolumeClaims(ns).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return pvcList, err
 	}

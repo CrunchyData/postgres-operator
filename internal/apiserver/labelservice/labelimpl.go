@@ -30,6 +30,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
@@ -155,7 +156,9 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 	for i := 0; i < len(items); i++ {
 		//get deployments for this CRD
 		selector := config.LABEL_PG_CLUSTER + "=" + items[i].Spec.Name
-		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
+		deployments, err := apiserver.Clientset.
+			AppsV1().Deployments(ns).
+			List(metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			return
 		}
@@ -384,7 +387,9 @@ func deleteLabels(items []crv1.Pgcluster, LabelCmdLabel string, labelsMap map[st
 	for i := 0; i < len(items); i++ {
 		//get deployments for this CRD
 		selector := config.LABEL_PG_CLUSTER + "=" + items[i].Spec.Name
-		deployments, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
+		deployments, err := apiserver.Clientset.
+			AppsV1().Deployments(ns).
+			List(metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			return err
 		}

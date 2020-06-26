@@ -34,6 +34,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -61,7 +62,7 @@ type BackrestRestoreJobTemplateFields struct {
 }
 
 // Restore ...
-func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
+func Restore(restclient *rest.RESTClient, namespace string, clientset kubernetes.Interface, task *crv1.Pgtask) {
 
 	clusterName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
 	log.Debugf("restore workflow: started for cluster %s", clusterName)
@@ -93,8 +94,9 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	log.Debugf("restore workflow: created pvc %s for cluster %s", restoreToName, clusterName)
 	//delete current primary and all replica deployments
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PG_DATABASE + "=true"
-	var depList *appsv1.DeploymentList
-	depList, err = kubeapi.GetDeployments(clientset, selector, namespace)
+	depList, err := clientset.
+		AppsV1().Deployments(namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Errorf("restore workflow error: could not get depList using %s", selector)
 		return
@@ -104,7 +106,12 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 		log.Debugf("restore workflow: no primary or replicas found using selector %s. Skipping deployment deletion.", selector)
 	} else {
 		for _, depToDelete := range depList.Items {
-			err = kubeapi.DeleteDeployment(clientset, depToDelete.Name, namespace)
+			deletePropagation := metav1.DeletePropagationForeground
+			err = clientset.
+				AppsV1().Deployments(namespace).
+				Delete(depToDelete.Name, &metav1.DeleteOptions{
+					PropagationPolicy: &deletePropagation,
+				})
 			if err != nil {
 				log.Errorf("restore workflow error: could not delete primary or replica %s", depToDelete.Name)
 				return
@@ -215,12 +222,12 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_RESTORE,
 		&job.Spec.Template.Spec.Containers[0])
 
-	if jobName, err := kubeapi.CreateJob(clientset, &job, namespace); err != nil {
+	if j, err := clientset.BatchV1().Jobs(namespace).Create(&job); err != nil {
 		log.Error(err)
 		log.Error("restore workflow: error in creating restore job")
 		return
 	} else {
-		log.Debugf("restore workflow: restore job %s created", jobName)
+		log.Debugf("restore workflow: restore job %s created", j.Name)
 	}
 
 	publishRestore(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clusterName, task.ObjectMeta.Labels[config.LABEL_PGOUSER], namespace)
@@ -233,7 +240,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 
 }
 
-func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Clientset, clusterName, status, namespace,
+func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset kubernetes.Interface, clusterName, status, namespace,
 	workflowID, restoreToName string, affinity *v1.Affinity) {
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
 	log.Debugf("restore workflow phase 2: taskName is %s", taskName)
@@ -285,7 +292,7 @@ func updateWorkflow(restclient *rest.RESTClient, workflowID, namespace, status s
 	return err
 }
 
-func createRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgcluster, clientset *kubernetes.Clientset,
+func createRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgcluster, clientset kubernetes.Interface,
 	namespace, restoreToName, workflowID string, affinity *v1.Affinity) error {
 
 	// interpret the storage specs again. the volumes were already created during
@@ -402,7 +409,7 @@ func createRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 	// determine if any of the container images need to be overridden
 	operator.OverrideClusterContainerImages(deployment.Spec.Template.Spec.Containers)
 
-	err = kubeapi.CreateDeployment(clientset, &deployment, namespace)
+	_, err = clientset.AppsV1().Deployments(namespace).Create(&deployment)
 	if err != nil {
 		return err
 	}

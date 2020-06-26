@@ -24,11 +24,11 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
 	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
@@ -181,12 +181,14 @@ func GetValueOrDefault(value, defaultValue string) string {
 }
 
 // GetSecretPassword ...
-func GetSecretPassword(clientset *kubernetes.Clientset, db, suffix, Namespace string) (string, error) {
+func GetSecretPassword(clientset kubernetes.Interface, db, suffix, Namespace string) (string, error) {
 
 	var err error
 
 	selector := "pg-cluster=" + db
-	secrets, err := kubeapi.GetSecrets(clientset, selector, Namespace)
+	secrets, err := clientset.
+		CoreV1().Secrets(Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return "", err
 	}

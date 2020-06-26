@@ -30,6 +30,7 @@ import (
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -39,7 +40,7 @@ import (
 // Controller holds the connections for the controller
 type Controller struct {
 	PgclusterClient      *rest.RESTClient
-	PgclusterClientset   *kubernetes.Clientset
+	PgclusterClientset   kubernetes.Interface
 	PgclusterConfig      *rest.Config
 	Queue                workqueue.RateLimitingInterface
 	Informer             informers.PgclusterInformer
@@ -109,16 +110,16 @@ func (c *Controller) processNextItem() bool {
 	// Invoke the method containing the business logic
 	// in this case, the de-dupe logic is to test whether a cluster
 	// deployment exists , if so, then we don't create another
-	_, found, err := kubeapi.GetDeployment(c.PgclusterClientset, keyResourceName, keyNamespace)
+	_, err := c.PgclusterClientset.AppsV1().Deployments(keyNamespace).Get(keyResourceName, metav1.GetOptions{})
 
-	if found {
+	if err == nil {
 		log.Debugf("cluster add - dep already found, not creating again")
 		return true
 	}
 
 	//get the pgcluster
 	cluster := crv1.Pgcluster{}
-	found, err = kubeapi.Getpgcluster(c.PgclusterClient, &cluster, keyResourceName, keyNamespace)
+	found, err := kubeapi.Getpgcluster(c.PgclusterClient, &cluster, keyResourceName, keyNamespace)
 	if !found {
 		log.Debugf("cluster add - pgcluster not found, this is invalid")
 		return false

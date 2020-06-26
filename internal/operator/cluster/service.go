@@ -21,22 +21,23 @@ package cluster
 import (
 	"bytes"
 	"encoding/json"
+	"os"
+
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"os"
 )
 
 // CreateService ...
-func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateFields, namespace string) error {
+func CreateService(clientset kubernetes.Interface, fields *ServiceTemplateFields, namespace string) error {
 	var serviceDoc bytes.Buffer
 
 	//create the service if it doesn't exist
-	_, found, err := kubeapi.GetService(clientset, fields.Name, namespace)
-	if !found || err != nil {
+	_, err := clientset.CoreV1().Services(namespace).Get(fields.Name, metav1.GetOptions{})
+	if err != nil {
 
 		err = config.ServiceTemplate.Execute(&serviceDoc, fields)
 		if err != nil {
@@ -48,14 +49,14 @@ func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateField
 			config.ServiceTemplate.Execute(os.Stdout, fields)
 		}
 
-		service := v1.Service{}
+		service := corev1.Service{}
 		err = json.Unmarshal(serviceDoc.Bytes(), &service)
 		if err != nil {
 			log.Error("error unmarshalling json into Service " + err.Error())
 			return err
 		}
 
-		_, err = kubeapi.CreateService(clientset, &service, namespace)
+		_, err = clientset.CoreV1().Services(namespace).Create(&service)
 	}
 
 	return err

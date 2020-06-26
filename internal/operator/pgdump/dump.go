@@ -55,7 +55,7 @@ type pgDumpJobTemplateFields struct {
 }
 
 // Dump ...
-func Dump(namespace string, clientset *kubernetes.Clientset, client *rest.RESTClient, task *crv1.Pgtask) {
+func Dump(namespace string, clientset kubernetes.Interface, client *rest.RESTClient, task *crv1.Pgtask) {
 
 	var err error
 	//create the Job to run the pgdump command
@@ -140,7 +140,7 @@ func Dump(namespace string, clientset *kubernetes.Clientset, client *rest.RESTCl
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGDUMP,
 		&newjob.Spec.Template.Spec.Containers[0])
 
-	_, err = kubeapi.CreateJob(clientset, &newjob, namespace)
+	_, err = clientset.BatchV1().Jobs(namespace).Create(&newjob)
 
 	if err != nil {
 		return

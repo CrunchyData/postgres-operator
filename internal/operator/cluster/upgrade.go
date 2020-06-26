@@ -32,7 +32,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -59,7 +59,7 @@ const replicaServicePostfix = "-replica"
 // 6) Recreate the BackrestRepo secret, since the key encryption algorithm has been updated
 // 7) Update the existing pgcluster CRD instance to match the current version
 // 8) Submit the pgcluster CRD for recreation
-func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, upgrade *crv1.Pgtask, namespace string) {
+func AddUpgrade(clientset kubernetes.Interface, restclient *rest.RESTClient, upgrade *crv1.Pgtask, namespace string) {
 
 	upgradeTargetClusterName := upgrade.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
 
@@ -141,12 +141,12 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 // if set. This will not be applicable to releases before the Operator 4.2.0 HA features were
 // added. If this label does not exist or is otherwise not set as expected, return an empty
 // string value and call an alternate function to determine the current primary pod.
-func getPrimaryPodDeploymentName(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) string {
+func getPrimaryPodDeploymentName(clientset kubernetes.Interface, cluster *crv1.Pgcluster) string {
 	// first look for a 'primary' role label on the current primary deployment
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, cluster.Name,
 		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
 
-	options := meta_v1.ListOptions{
+	options := metav1.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
 		LabelSelector: selector,
 	}
@@ -209,7 +209,7 @@ func getCurrentPrimary(clusterName, podPrimary, crPrimary, labelPrimary string) 
 // will leave any other PVCs, whether they are from the current primary, previous primaries that are now
 // unassociated because of a failover or the backrest-shared-repo PVC. The total number of current replicas
 // will also be captured during this process so that the correct number of replicas can be recreated.
-func handleReplicas(clientset *kubernetes.Clientset, restclient *rest.RESTClient, clusterName, currentPrimaryPVC, namespace string) string {
+func handleReplicas(clientset kubernetes.Interface, restclient *rest.RESTClient, clusterName, currentPrimaryPVC, namespace string) string {
 	log.Debugf("deleting pgreplicas and noting the number found for cluster %s", clusterName)
 	replicaList := crv1.PgreplicaList{}
 	// Save the number of found replicas for this cluster
@@ -230,7 +230,10 @@ func handleReplicas(clientset *kubernetes.Clientset, restclient *rest.RESTClient
 			// those will require manual deletion so as to avoid any accidental
 			// deletion of valid PVCs.
 			if replicaList.Items[index].Name != currentPrimaryPVC {
-				kubeapi.DeletePVC(clientset, replicaList.Items[index].Name, namespace)
+				deletePropagation := metav1.DeletePropagationForeground
+				clientset.
+					CoreV1().PersistentVolumeClaims(namespace).
+					Delete(replicaList.Items[index].Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 				log.Debugf("deleting replica pvc: %s", replicaList.Items[index].Name)
 			}
 
@@ -256,17 +259,24 @@ func SetReplicaNumber(pgcluster *crv1.Pgcluster, numReplicas string) {
 // deleteBeforeUpgrade deletes the deployments, services, pgcluster, jobs, tasks and default configmaps before attempting
 // to upgrade the pgcluster deployment. This preserves existing secrets, non-standard configmaps and service definitions
 // for use in the newly upgraded cluster.
-func deleteBeforeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, clusterName, currentPrimary, namespace string, isStandby bool) {
+func deleteBeforeUpgrade(clientset kubernetes.Interface, restclient *rest.RESTClient, clusterName, currentPrimary, namespace string, isStandby bool) {
 
 	// first, get all deployments for the pgcluster in question
-	deployments, err := kubeapi.GetDeployments(clientset, config.LABEL_PG_CLUSTER+"="+clusterName, namespace)
+	deployments, err := clientset.
+		AppsV1().Deployments(namespace).
+		List(metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + clusterName})
 	if err != nil {
 		log.Errorf("unable to get deployments. Error: %s", err)
 	}
 
 	// next, delete those deployments
 	for index := range deployments.Items {
-		kubeapi.DeleteDeployment(clientset, deployments.Items[index].Name, namespace)
+		deletePropagation := metav1.DeletePropagationForeground
+		_ = clientset.
+			AppsV1().Deployments(namespace).
+			Delete(deployments.Items[index].Name, &metav1.DeleteOptions{
+				PropagationPolicy: &deletePropagation,
+			})
 	}
 
 	// wait until the backrest shared repo pod deployment has been deleted before continuing
@@ -280,7 +290,12 @@ func deleteBeforeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTC
 	kubeapi.Deletepgcluster(restclient, clusterName, namespace)
 
 	// delete all existing job references
-	kubeapi.DeleteJobs(clientset, config.LABEL_PG_CLUSTER+"="+clusterName, namespace)
+	deletePropagation := metav1.DeletePropagationForeground
+	clientset.
+		BatchV1().Jobs(namespace).
+		DeleteCollection(
+			&metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
+			metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + clusterName})
 
 	// delete all existing pgtask references except for the upgrade task
 	// Note: this will be deleted by the existing pgcluster creation process once the
@@ -292,19 +307,19 @@ func deleteBeforeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTC
 	// delete the leader configmap used by the Postgres Operator since this information may change after
 	// the upgrade is complete
 	// Note: deletion is required for cluster recreation
-	checkDeleteConfigmap(clientset, clusterName+"-leader", namespace)
+	clientset.CoreV1().ConfigMaps(namespace).Delete(clusterName+"-leader", &metav1.DeleteOptions{})
 
 	// delete the '<cluster-name>-pgha-default-config' configmap, if it exists so the config syncer
 	// will not try to use it instead of '<cluster-name>-pgha-config'
-	checkDeleteConfigmap(clientset, clusterName+"-pgha-default-config", namespace)
+	clientset.CoreV1().ConfigMaps(namespace).Delete(clusterName+"-pgha-default-config", &metav1.DeleteOptions{})
 
 	// delete the backrest repo config secret, since key encryption has been updated from RSA to EdDSA
-	kubeapi.DeleteSecret(clientset, clusterName+"-backrest-repo-config", namespace)
+	clientset.CoreV1().Secrets(namespace).Delete(clusterName+"-backrest-repo-config", &metav1.DeleteOptions{})
 }
 
 // deploymentWait is modified from cluster.waitForDeploymentDelete. It simply waits for the current primary deployment
 // deletion to complete before proceeding with the rest of the pgcluster upgrade.
-func deploymentWait(clientset *kubernetes.Clientset, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) string {
+func deploymentWait(clientset kubernetes.Interface, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) string {
 	timeout := time.After(timeoutSecs * time.Second)
 	tick := time.NewTicker(periodSecs * time.Second)
 	defer tick.Stop()
@@ -314,24 +329,11 @@ func deploymentWait(clientset *kubernetes.Clientset, namespace, deploymentName s
 		case <-timeout:
 			return fmt.Sprintf("Timed out waiting for deployment to be deleted: [%s]", deploymentName)
 		case <-tick.C:
-			_, deploymentFound, _ := kubeapi.GetDeployment(clientset, deploymentName, namespace)
-			if !(deploymentFound) {
+			_, err := clientset.AppsV1().Deployments(namespace).Get(deploymentName, metav1.GetOptions{})
+			if err != nil {
 				return fmt.Sprintf("Deployment %s has been deleted.", deploymentName)
 			}
-			log.Debugf("deployment deleted: %t", !deploymentFound)
 		}
-	}
-}
-
-// deleteConfigmap will delete a configmap after checking if it exists
-// this is done to avoid unnecessary errors during attempted deletes of
-// configmaps that don't exist
-func checkDeleteConfigmap(clientset *kubernetes.Clientset, configmap, namespace string) {
-	// check for configmap
-	_, found := kubeapi.GetConfigMap(clientset, configmap, namespace)
-	// if found, delete it
-	if found {
-		kubeapi.DeleteConfigMap(clientset, configmap, namespace)
 	}
 }
 
@@ -362,7 +364,7 @@ func deleteNonupgradePgtasks(client *rest.RESTClient, selector, namespace string
 // cluster, but with the added step of looking for an existing configmap,
 // "<clustername>-pgha-default-config". If that configmap exists, it will get the init value, as this is
 // needed for the proper reinitialziation of Patroni.
-func createUpgradePGHAConfigMap(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster,
+func createUpgradePGHAConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
 	namespace string) error {
 
 	labels := make(map[string]string)
@@ -374,8 +376,8 @@ func createUpgradePGHAConfigMap(clientset *kubernetes.Clientset, cluster *crv1.P
 
 	// if the "pgha-default-config" config map exists, this cluster is being upgraded
 	// and should use the initialization value from this existing configmap
-	defaultConfigmap, found := kubeapi.GetConfigMap(clientset, cluster.Name+"-pgha-default-config", namespace)
-	if found {
+	defaultConfigmap, err := clientset.CoreV1().ConfigMaps(namespace).Get(cluster.Name+"-pgha-default-config", metav1.GetOptions{})
+	if err == nil {
 		data[operator.PGHAConfigInitSetting] = defaultConfigmap.Data[operator.PGHAConfigInitSetting]
 	} else {
 		// set "init" to true in the postgres-ha configMap
@@ -389,14 +391,14 @@ func createUpgradePGHAConfigMap(clientset *kubernetes.Clientset, cluster *crv1.P
 	}
 
 	configmap := &v1.ConfigMap{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:   cluster.Name + "-" + operator.PGHAConfigMapSuffix,
 			Labels: labels,
 		},
 		Data: data,
 	}
 
-	if err := kubeapi.CreateConfigMap(clientset, configmap, namespace); err != nil {
+	if _, err := clientset.CoreV1().ConfigMaps(namespace).Create(configmap); err != nil {
 		return err
 	}
 
@@ -405,7 +407,7 @@ func createUpgradePGHAConfigMap(clientset *kubernetes.Clientset, cluster *crv1.P
 
 // recreateBackrestRepoSecret deletes and recreates the secret for the pgBackRest repo. This is needed
 // because the key encryption algorithm has been updated from RSA to EdDSA
-func recreateBackrestRepoSecret(clientset *kubernetes.Clientset, clustername, namespace, operatorNamespace string) {
+func recreateBackrestRepoSecret(clientset kubernetes.Interface, clustername, namespace, operatorNamespace string) {
 	if err := util.CreateBackrestRepoSecrets(clientset,
 		util.BackrestRepoConfig{
 			BackrestS3Key:       "", // these are set to empty so that it can be generated
@@ -530,7 +532,7 @@ func createClusterRecreateWorkflowTask(restclient *rest.RESTClient, clusterName,
 	spec.Parameters[crv1.PgtaskWorkflowID] = string(u[:len(u)-1])
 
 	newInstance := &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: spec.Name,
 		},
 		Spec: spec,

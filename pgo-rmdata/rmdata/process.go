@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
@@ -27,8 +28,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	kerror "k8s.io/apimachinery/pkg/api/errors"
-
-	"time"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -169,13 +169,18 @@ func removeBackrestRepo(request Request) {
 	log.Debugf("deleting the pgbackrest repo [%s]", deploymentName)
 
 	// now delete the deployment and services
-	err := kubeapi.DeleteDeployment(request.Clientset, deploymentName, request.Namespace)
+	deletePropagation := metav1.DeletePropagationForeground
+	err := request.Clientset.
+		AppsV1().Deployments(request.Namespace).
+		Delete(deploymentName, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	if err != nil {
 		log.Error(err)
 	}
 
 	//delete the service for the backrest repo
-	err = kubeapi.DeleteService(request.Clientset, deploymentName, request.Namespace)
+	err = request.Clientset.
+		CoreV1().Services(request.Namespace).
+		Delete(deploymentName, &metav1.DeleteOptions{})
 	if err != nil {
 		log.Error(err)
 	}
@@ -207,7 +212,7 @@ func removeBackupSecrets(request Request) {
 	//
 	// we'll also check to see if there was an error, but if there is we'll only
 	// log the fact there was an error; this function is just a pass through
-	if err := kubeapi.DeleteSecret(request.Clientset, secretName, request.Namespace); err != nil {
+	if err := request.Clientset.CoreV1().Secrets(request.Namespace).Delete(secretName, &metav1.DeleteOptions{}); err != nil {
 		log.Error(err)
 	}
 
@@ -245,7 +250,7 @@ func removeClusterConfigmaps(request Request) {
 	// We'll also check to see if there was an error, but if there is we'll only
 	// log the fact there was an error; this function is just a pass through
 	for _, cm := range clusterConfigmaps {
-		if err := kubeapi.DeleteConfigMap(request.Clientset, cm, request.Namespace); err != nil {
+		if err := request.Clientset.CoreV1().ConfigMaps(request.Namespace).Delete(cm, &metav1.DeleteOptions{}); err != nil {
 			log.Error(err)
 		}
 	}
@@ -253,14 +258,18 @@ func removeClusterConfigmaps(request Request) {
 
 func removeClusterJobs(request Request) {
 	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName
-	jobs, err := kubeapi.GetJobs(request.Clientset, selector, request.Namespace)
+	jobs, err := request.Clientset.
+		BatchV1().Jobs(request.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		return
 	}
 	for i := 0; i < len(jobs.Items); i++ {
-		job := jobs.Items[i]
-		err := kubeapi.DeleteJob(request.Clientset, job.Name, request.Namespace)
+		deletePropagation := metav1.DeletePropagationForeground
+		err := request.Clientset.
+			BatchV1().Jobs(request.Namespace).
+			Delete(jobs.Items[i].Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 		if err != nil {
 			log.Error(err)
 		}
@@ -275,7 +284,9 @@ func removeCluster(request Request) {
 	selector := fmt.Sprintf("%s=%s,%s!=true",
 		config.LABEL_PG_CLUSTER, request.ClusterName, config.LABEL_PGO_BACKREST_REPO)
 
-	deployments, err := kubeapi.GetDeployments(request.Clientset, selector, request.Namespace)
+	deployments, err := request.Clientset.
+		AppsV1().Deployments(request.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 
 	// if there is an error here, return as we cannot iterate over the deployment
 	// list
@@ -286,7 +297,11 @@ func removeCluster(request Request) {
 
 	// iterate through each deployment and delete it
 	for _, d := range deployments.Items {
-		if err := kubeapi.DeleteDeployment(request.Clientset, d.ObjectMeta.Name, request.Namespace); err != nil {
+		deletePropagation := metav1.DeletePropagationForeground
+		err := request.Clientset.
+			AppsV1().Deployments(request.Namespace).
+			Delete(d.Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+		if err != nil {
 			log.Error(err)
 		}
 	}
@@ -295,8 +310,9 @@ func removeCluster(request Request) {
 	// deleted. the only thing I'm modifying is the selector
 	var completed bool
 	for i := 0; i < MAX_TRIES; i++ {
-		deployments, err := kubeapi.GetDeployments(request.Clientset, selector,
-			request.Namespace)
+		deployments, err := request.Clientset.
+			AppsV1().Deployments(request.Namespace).
+			List(metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			log.Error(err)
 		}
@@ -313,14 +329,10 @@ func removeCluster(request Request) {
 }
 func removeReplica(request Request) error {
 
-	d, found, err := kubeapi.GetDeployment(request.Clientset,
-		request.ReplicaName, request.Namespace)
-	if !found || err != nil {
-		log.Error(err)
-		return err
-	}
-
-	err = kubeapi.DeleteDeployment(request.Clientset, d.ObjectMeta.Name, request.Namespace)
+	deletePropagation := metav1.DeletePropagationForeground
+	err := request.Clientset.
+		AppsV1().Deployments(request.Namespace).
+		Delete(request.ReplicaName, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	if err != nil {
 		log.Error(err)
 		return err
@@ -329,9 +341,10 @@ func removeReplica(request Request) error {
 	//wait for the deployment to go away fully
 	var completed bool
 	for i := 0; i < MAX_TRIES; i++ {
-		_, found, _ := kubeapi.GetDeployment(request.Clientset,
-			request.ReplicaName, request.Namespace)
-		if found {
+		_, err = request.Clientset.
+			AppsV1().Deployments(request.Namespace).
+			Get(request.ReplicaName, metav1.GetOptions{})
+		if err == nil {
 			log.Info("sleeping to wait for Deployments to fully terminate")
 			time.Sleep(time.Second * time.Duration(4))
 		} else {
@@ -349,7 +362,9 @@ func removeUserSecrets(request Request) {
 	//get all that match pg-cluster=db
 	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName
 
-	secrets, err := kubeapi.GetSecrets(request.Clientset, selector, request.Namespace)
+	secrets, err := request.Clientset.
+		CoreV1().Secrets(request.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		return
@@ -357,7 +372,7 @@ func removeUserSecrets(request Request) {
 
 	for _, s := range secrets.Items {
 		if s.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO] == "" {
-			err := kubeapi.DeleteSecret(request.Clientset, s.ObjectMeta.Name, request.Namespace)
+			err := request.Clientset.CoreV1().Secrets(request.Namespace).Delete(s.ObjectMeta.Name, &metav1.DeleteOptions{})
 			if err != nil {
 				log.Error(err)
 			}
@@ -371,19 +386,16 @@ func removeAddons(request Request) {
 
 	pgbouncerDepName := request.ClusterName + "-pgbouncer"
 
-	_, found, _ := kubeapi.GetDeployment(request.Clientset, pgbouncerDepName, request.Namespace)
-	if found {
-
-		kubeapi.DeleteDeployment(request.Clientset, pgbouncerDepName, request.Namespace)
-	}
+	deletePropagation := metav1.DeletePropagationForeground
+	_ = request.Clientset.
+		AppsV1().Deployments(request.Namespace).
+		Delete(pgbouncerDepName, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 
 	//delete the service name=<clustename>-pgbouncer
 
-	_, found, _ = kubeapi.GetService(request.Clientset, pgbouncerDepName, request.Namespace)
-	if found {
-		kubeapi.DeleteService(request.Clientset, pgbouncerDepName, request.Namespace)
-	}
-
+	_ = request.Clientset.
+		CoreV1().Services(request.Namespace).
+		Delete(pgbouncerDepName, &metav1.DeleteOptions{})
 }
 
 func removeServices(request Request) {
@@ -392,15 +404,18 @@ func removeServices(request Request) {
 
 	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName
 
-	services, err := kubeapi.GetServices(request.Clientset, selector, request.Namespace)
+	services, err := request.Clientset.
+		CoreV1().Services(request.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	for i := 0; i < len(services.Items); i++ {
-		svc := services.Items[i]
-		err := kubeapi.DeleteService(request.Clientset, svc.Name, request.Namespace)
+		err := request.Clientset.
+			CoreV1().Services(request.Namespace).
+			Delete(services.Items[i].Name, &metav1.DeleteOptions{})
 		if err != nil {
 			log.Error(err)
 		}
@@ -463,7 +478,9 @@ func getInstancePVCs(request Request) ([]string, error) {
 	log.Debugf("instance pvcs overall selector: [%s]", selector)
 
 	// get all of the PVCs to analyze (see the step below)
-	pvcs, err := kubeapi.GetPVCs(request.Clientset, selector, request.Namespace)
+	pvcs, err := request.Clientset.
+		CoreV1().PersistentVolumeClaims(request.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 
 	// if there is an error, return here and log the error in the calling function
 	if err != nil {
@@ -513,7 +530,9 @@ func getReplicaPVC(request Request) ([]string, error) {
 	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName)
 
 	// get all of the PVCs that are specific to this replica and remove them
-	pvcs, err := kubeapi.GetPVCs(request.Clientset, selector, request.Namespace)
+	pvcs, err := request.Clientset.
+		CoreV1().PersistentVolumeClaims(request.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 
 	// if there is an error, return here and log the error in the calling function
 	if err != nil {
@@ -544,7 +563,10 @@ func removePVCs(pvcList []string, request Request) error {
 
 	for _, p := range pvcList {
 		log.Infof("deleting pvc %s", p)
-		err := kubeapi.DeletePVC(request.Clientset, p, request.Namespace)
+		deletePropagation := metav1.DeletePropagationForeground
+		err := request.Clientset.
+			CoreV1().PersistentVolumeClaims(request.Namespace).
+			Delete(p, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 		if err != nil {
 			log.Error(err)
 		}
@@ -575,7 +597,9 @@ func removeBackupJobs(request Request) {
 		log.Debugf("backup job selector: [%s]", selector)
 
 		// find all the jobs associated with this selector
-		jobs, err := kubeapi.GetJobs(request.Clientset, selector, request.Namespace)
+		jobs, err := request.Clientset.
+			BatchV1().Jobs(request.Namespace).
+			List(metav1.ListOptions{LabelSelector: selector})
 
 		if err != nil {
 			log.Error(err)
@@ -584,9 +608,11 @@ func removeBackupJobs(request Request) {
 
 		// iterate through the list of jobs and attempt to delete them
 		for i := 0; i < len(jobs.Items); i++ {
-			job := jobs.Items[i]
-
-			if err := kubeapi.DeleteJob(request.Clientset, job.Name, request.Namespace); err != nil {
+			deletePropagation := metav1.DeletePropagationForeground
+			err := request.Clientset.
+				BatchV1().Jobs(request.Namespace).
+				Delete(jobs.Items[i].Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+			if err != nil {
 				log.Error(err)
 			}
 		}
@@ -595,7 +621,9 @@ func removeBackupJobs(request Request) {
 		var completed bool
 
 		for i := 0; i < MAX_TRIES; i++ {
-			jobs, err := kubeapi.GetJobs(request.Clientset, selector, request.Namespace)
+			jobs, err := request.Clientset.
+				BatchV1().Jobs(request.Namespace).
+				List(metav1.ListOptions{LabelSelector: selector})
 
 			if len(jobs.Items) > 0 || err != nil {
 				log.Debug("sleeping to wait for backup jobs to fully terminate")
@@ -654,7 +682,9 @@ func removeReplicaServices(request Request) {
 	// which will grab any/all replicas
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName,
 		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_REPLICA)
-	replicaList, err := kubeapi.GetPods(request.Clientset, selector, request.Namespace)
+	replicaList, err := request.Clientset.
+		CoreV1().Pods(request.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		return
@@ -666,8 +696,10 @@ func removeReplicaServices(request Request) {
 		return
 	case 1:
 		log.Debug("removing replica service when scaling down to 0 replicas")
-		if kubeapi.DeleteService(request.Clientset, request.ClusterName+"-replica",
-			request.Namespace); err != nil {
+		err := request.Clientset.
+			CoreV1().Services(request.Namespace).
+			Delete(request.ClusterName+"-replica", &metav1.DeleteOptions{})
+		if err != nil {
 			log.Error(err)
 			return
 		}
@@ -690,7 +722,10 @@ func removeSchedules(request Request) {
 
 	// run the query the deletes all of the scheduled configmaps
 	// if there is an error, log it, but continue on without making a big stink
-	if err := kubeapi.DeleteConfigMaps(request.Clientset, selector, request.Namespace); err != nil {
+	err := request.Clientset.
+		CoreV1().ConfigMaps(request.Namespace).
+		DeleteCollection(&metav1.DeleteOptions{}, metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
 		log.Error(err)
 	}
 }

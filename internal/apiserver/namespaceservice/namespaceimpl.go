@@ -19,14 +19,14 @@ import (
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/ns"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-func ShowNamespace(clientset *kubernetes.Clientset, username string, request *msgs.ShowNamespaceRequest) msgs.ShowNamespaceResponse {
+func ShowNamespace(clientset kubernetes.Interface, username string, request *msgs.ShowNamespaceRequest) msgs.ShowNamespaceResponse {
 	log.Debug("ShowNamespace called")
 	resp := msgs.ShowNamespaceResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
@@ -38,7 +38,7 @@ func ShowNamespace(clientset *kubernetes.Clientset, username string, request *ms
 	nsList := make([]string, 0)
 
 	if request.AllFlag {
-		namespaceList, err := kubeapi.GetNamespaces(clientset)
+		namespaceList, err := clientset.CoreV1().Namespaces().List(metav1.ListOptions{})
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -55,8 +55,8 @@ func ShowNamespace(clientset *kubernetes.Clientset, username string, request *ms
 		}
 
 		for i := 0; i < len(request.Args); i++ {
-			_, found, _ := kubeapi.GetNamespace(clientset, request.Args[i])
-			if found == false {
+			_, err := clientset.CoreV1().Namespaces().Get(request.Args[i], metav1.GetOptions{})
+			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = "namespace " + request.Args[i] + " not found"
 
@@ -87,7 +87,7 @@ func ShowNamespace(clientset *kubernetes.Clientset, username string, request *ms
 }
 
 // CreateNamespace ...
-func CreateNamespace(clientset *kubernetes.Clientset, createdBy string, request *msgs.CreateNamespaceRequest) msgs.CreateNamespaceResponse {
+func CreateNamespace(clientset kubernetes.Interface, createdBy string, request *msgs.CreateNamespaceRequest) msgs.CreateNamespaceResponse {
 
 	log.Debugf("CreateNamespace %v", request)
 	resp := msgs.CreateNamespaceResponse{}
@@ -113,7 +113,7 @@ func CreateNamespace(clientset *kubernetes.Clientset, createdBy string, request 
 }
 
 // DeleteNamespace ...
-func DeleteNamespace(clientset *kubernetes.Clientset, deletedBy string, request *msgs.DeleteNamespaceRequest) msgs.DeleteNamespaceResponse {
+func DeleteNamespace(clientset kubernetes.Interface, deletedBy string, request *msgs.DeleteNamespaceRequest) msgs.DeleteNamespaceResponse {
 	resp := msgs.DeleteNamespaceResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -137,7 +137,7 @@ func DeleteNamespace(clientset *kubernetes.Clientset, deletedBy string, request 
 }
 
 // UpdateNamespace ...
-func UpdateNamespace(clientset *kubernetes.Clientset, updatedBy string, request *msgs.UpdateNamespaceRequest) msgs.UpdateNamespaceResponse {
+func UpdateNamespace(clientset kubernetes.Interface, updatedBy string, request *msgs.UpdateNamespaceRequest) msgs.UpdateNamespaceResponse {
 
 	log.Debugf("UpdateNamespace %v", request)
 	resp := msgs.UpdateNamespaceResponse{}

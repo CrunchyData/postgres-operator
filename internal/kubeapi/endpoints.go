@@ -26,9 +26,9 @@ import (
 // current Kubernetes request context, as well as the namespace / endpoint name
 // being requested
 type GetEndpointRequest struct {
-	Clientset *kubernetes.Clientset // Kubernetes Clientset that interfaces with the Kubernetes cluster
-	Name      string                // Name of the endpoint that is being queried
-	Namespace string                // Namespace the endpoint being queried resides in
+	Clientset kubernetes.Interface // Kubernetes Clientset that interfaces with the Kubernetes cluster
+	Name      string               // Name of the endpoint that is being queried
+	Namespace string               // Namespace the endpoint being queried resides in
 }
 
 // GetEndpointResponse contains the results from a successful request to the

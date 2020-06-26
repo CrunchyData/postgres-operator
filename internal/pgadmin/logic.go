@@ -20,11 +20,11 @@ import (
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -153,14 +153,14 @@ func GetUsernames(qr *queryRunner) ([]string, error) {
 // queries against the pgAdmin database
 //
 // The pointer will be nil if there is no pgAdmin deployed for the cluster
-func GetPgAdminQueryRunner(clientset *kubernetes.Clientset, restconfig *rest.Config, cluster *crv1.Pgcluster) (*queryRunner, error) {
+func GetPgAdminQueryRunner(clientset kubernetes.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster) (*queryRunner, error) {
 	if active, ok := cluster.Labels[config.LABEL_PGADMIN]; !ok || active != "true" {
 		return nil, nil
 	}
 
 	selector := fmt.Sprintf("%s=true,%s=%s", config.LABEL_PGADMIN, config.LABEL_PG_CLUSTER, cluster.Name)
 
-	pods, err := kubeapi.GetPods(clientset, selector, cluster.Namespace)
+	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Errorf("failed to find pgadmin pod [%v]", err)
 		return nil, err

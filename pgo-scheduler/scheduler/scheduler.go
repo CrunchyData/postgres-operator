@@ -30,7 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func New(label, namespace string, client *kubernetes.Clientset) *Scheduler {
+func New(label, namespace string, client kubernetes.Interface) *Scheduler {
 	apiserver.ConnectToKube()
 	restClient = apiserver.RESTClient
 	kubeClient = client

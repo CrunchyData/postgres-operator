@@ -24,7 +24,7 @@ import (
 	cv2 "github.com/robfig/cron"
 )
 
-var kubeClient *kubernetes.Clientset
+var kubeClient kubernetes.Interface
 var restClient *rest.RESTClient
 
 type Scheduler struct {

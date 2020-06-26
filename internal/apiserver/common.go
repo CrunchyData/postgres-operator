@@ -24,8 +24,9 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -73,7 +74,7 @@ func CreateRMDataTask(clusterName, replicaName, taskName string, deleteBackups, 
 	spec.Parameters[config.LABEL_PGHA_SCOPE] = clusterPGHAScope
 
 	newInstance := &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: taskName,
 		},
 		Spec: spec,
@@ -98,7 +99,10 @@ func GetBackrestStorageTypes() []string {
 
 // IsValidPVC determines if a PVC with the name provided exits
 func IsValidPVC(pvcName, ns string) bool {
-	pvc, err := kubeapi.GetPVCIfExists(Clientset, pvcName, ns)
+	pvc, err := Clientset.CoreV1().PersistentVolumeClaims(ns).Get(pvcName, metav1.GetOptions{})
+	if kerrors.IsNotFound(err) {
+		return false
+	}
 	if err != nil {
 		log.Error(err)
 		return false

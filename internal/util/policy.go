@@ -32,6 +32,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	"k8s.io/client-go/kubernetes"
@@ -39,7 +40,7 @@ import (
 )
 
 // ExecPolicy execute a sql policy against a cluster
-func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, namespace, policyName, serviceName, port string) error {
+func ExecPolicy(clientset kubernetes.Interface, restclient *rest.RESTClient, restconfig *rest.Config, namespace, policyName, serviceName, port string) error {
 	//fetch the policy sql
 	sql, err := GetPolicySQL(restclient, namespace, policyName)
 
@@ -59,7 +60,7 @@ func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, re
 		config.LABEL_SERVICE_NAME, serviceName,
 		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
 
-	podList, err := kubeapi.GetPods(clientset, selector, namespace)
+	podList, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: selector})
 
 	if err != nil {
 		return err
@@ -166,10 +167,10 @@ func ValidatePolicy(restclient *rest.RESTClient, namespace string, policyName st
 }
 
 // UpdatePolicyLabels ...
-func UpdatePolicyLabels(clientset *kubernetes.Clientset, clusterName string, namespace string, newLabels map[string]string) error {
+func UpdatePolicyLabels(clientset kubernetes.Interface, clusterName string, namespace string, newLabels map[string]string) error {
 
-	deployment, found, err := kubeapi.GetDeployment(clientset, clusterName, namespace)
-	if !found {
+	deployment, err := clientset.AppsV1().Deployments(namespace).Get(clusterName, metav1.GetOptions{})
+	if err != nil {
 		return err
 	}
 

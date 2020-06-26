@@ -31,6 +31,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	apiv1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -128,8 +129,7 @@ func (c *Controller) handleRestoreInit(cluster *crv1.Pgcluster) error {
 	//look up the backrest-repo pod name
 	selector := fmt.Sprintf("%s=%s,pgo-backrest-repo=true",
 		config.LABEL_PG_CLUSTER, clusterName)
-	pods, err := kubeapi.GetPods(c.PodClientset, selector,
-		namespace)
+	pods, err := c.PodClientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if len(pods.Items) != 1 {
 		return fmt.Errorf("pods len != 1 for cluster %s", clusterName)
 	}
@@ -209,8 +209,11 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 			crv1.PgtaskBackrestStanzaCreate), namespace); err != nil && !kerrors.IsNotFound(err) {
 			return err
 		}
-		if err := kubeapi.DeleteJob(c.PodClientset, fmt.Sprintf("%s-%s", clusterName,
-			crv1.PgtaskBackrestStanzaCreate), namespace); err != nil && !kerrors.IsNotFound(err) {
+		deletePropagation := metav1.DeletePropagationForeground
+		if err := c.PodClientset.
+			BatchV1().Jobs(namespace).
+			Delete(fmt.Sprintf("%s-%s", clusterName, crv1.PgtaskBackrestStanzaCreate),
+				&metav1.DeleteOptions{PropagationPolicy: &deletePropagation}); err != nil && !kerrors.IsNotFound(err) {
 			return err
 		}
 		backrestoperator.StanzaCreate(namespace, clusterName,
@@ -252,7 +255,7 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 	replica, _ := kubeapi.Getpgreplica(c.PodClient, &pgreplica, depName, ns)
 	log.Debugf("checkPostgresPods --- dep %s replica %t", depName, replica)
 
-	dep, _, err := kubeapi.GetDeployment(c.PodClientset, depName, ns)
+	dep, err := c.PodClientset.AppsV1().Deployments(ns).Get(depName, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("could not get Deployment on pod Add %s", newpod.Name)
 		return

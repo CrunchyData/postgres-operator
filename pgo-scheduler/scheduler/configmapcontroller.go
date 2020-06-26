@@ -26,7 +26,7 @@ import (
 // Controller holds the client and informer for the controller, along with a pointer to a
 // Scheduler.
 type Controller struct {
-	ConfigmapClientset *kubernetes.Clientset
+	ConfigmapClientset kubernetes.Interface
 	Informer           coreinformers.ConfigMapInformer
 	Scheduler          *Scheduler
 }

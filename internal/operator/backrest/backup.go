@@ -33,7 +33,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -63,7 +63,7 @@ var backrestPgHostRegex = regexp.MustCompile("--db-host|--pg1-host")
 var backrestPgPathRegex = regexp.MustCompile("--db-path|--pg1-path")
 
 // Backrest ...
-func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
+func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtask) {
 
 	//create the Job to run the backrest command
 
@@ -123,7 +123,7 @@ func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgta
 	if backupType != "" {
 		newjob.ObjectMeta.Labels[config.LABEL_PGHA_BACKUP_TYPE] = backupType
 	}
-	kubeapi.CreateJob(clientset, &newjob, namespace)
+	clientset.BatchV1().Jobs(namespace).Create(&newjob)
 
 	//publish backrest backup event
 	if cmd == "backup" {
@@ -206,7 +206,7 @@ func CreateBackup(restclient *rest.RESTClient, namespace, clusterName, podName s
 	}
 
 	newInstance = &crv1.Pgtask{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name: taskName,
 		},
 		Spec: spec,
@@ -228,7 +228,7 @@ func CreateBackup(restclient *rest.RESTClient, namespace, clusterName, podName s
 // CleanBackupResources is responsible for cleaning up Kubernetes resources from a previous
 // pgBackRest backup.  Specifically, this function deletes the pgptask and job associate with a
 // previous pgBackRest backup for the cluster.
-func CleanBackupResources(restclient *rest.RESTClient, clientset *kubernetes.Clientset, namespace,
+func CleanBackupResources(restclient *rest.RESTClient, clientset kubernetes.Interface, namespace,
 	clusterName string) error {
 
 	taskName := "backrest-backup-" + clusterName
@@ -254,7 +254,12 @@ func CleanBackupResources(restclient *rest.RESTClient, clientset *kubernetes.Cli
 	//remove previous backup job
 	selector := config.LABEL_BACKREST_COMMAND + "=" + crv1.PgtaskBackrestBackup + "," +
 		config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_BACKREST + "=true"
-	err = kubeapi.DeleteJobs(clientset, selector, namespace)
+	deletePropagation := metav1.DeletePropagationForeground
+	err = clientset.
+		BatchV1().Jobs(namespace).
+		DeleteCollection(
+			&metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
+			metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 	}
@@ -268,7 +273,9 @@ func CleanBackupResources(restclient *rest.RESTClient, clientset *kubernetes.Cli
 			return fmt.Errorf("Timed out waiting for deletion of pgBackRest backup job for "+
 				"cluster %s", clusterName)
 		case <-tick.C:
-			jobList, err := kubeapi.GetJobs(clientset, selector, namespace)
+			jobList, err := clientset.
+				BatchV1().Jobs(namespace).
+				List(metav1.ListOptions{LabelSelector: selector})
 			if err != nil {
 				log.Error(err)
 				return err
@@ -287,7 +294,7 @@ func CleanBackupResources(restclient *rest.RESTClient, clientset *kubernetes.Cli
 // through the primary pod's service (which could be unreliable). also if not already specified
 // in the command options provided in the pgtask, then lookup the primary pod for the cluster
 // and add the PGDATA dir of the pod as the value for the "--db-path" parameter
-func getCommandOptsFromPod(clientset *kubernetes.Clientset, task *crv1.Pgtask,
+func getCommandOptsFromPod(clientset kubernetes.Interface, task *crv1.Pgtask,
 	namespace string) (commandOpts string, err error) {
 
 	// lookup the primary pod in order to determine the IP of the primary and the PGDATA directory for
@@ -296,7 +303,7 @@ func getCommandOptsFromPod(clientset *kubernetes.Clientset, task *crv1.Pgtask,
 		task.Spec.Parameters[config.LABEL_PG_CLUSTER], config.LABEL_PGHA_ROLE,
 		"promoted", config.LABEL_PGHA_ROLE_PRIMARY)
 
-	options := meta_v1.ListOptions{
+	options := metav1.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
 		LabelSelector: selector,
 	}

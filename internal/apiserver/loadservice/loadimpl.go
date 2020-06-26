@@ -257,9 +257,7 @@ func createJob(clusterName string, template *loadJobTemplateFields, ns string) (
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_LOAD,
 		&newjob.Spec.Template.Spec.Containers[0])
 
-	var jobName string
-	jobName, err = kubeapi.CreateJob(apiserver.Clientset, &newjob, ns)
-
-	return jobName, err
+	job, err := apiserver.Clientset.BatchV1().Jobs(ns).Create(&newjob)
+	return job.Name, err
 
 }

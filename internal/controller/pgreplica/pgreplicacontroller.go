@@ -24,6 +24,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -33,7 +34,7 @@ import (
 // Controller holds the connections for the controller
 type Controller struct {
 	PgreplicaClient      *rest.RESTClient
-	PgreplicaClientset   *kubernetes.Clientset
+	PgreplicaClientset   kubernetes.Interface
 	Queue                workqueue.RateLimitingInterface
 	Informer             informers.PgreplicaInformer
 	PgreplicaWorkerCount int
@@ -82,12 +83,11 @@ func (c *Controller) processNextItem() bool {
 	// in this case, the de-dupe logic is to test whether a replica
 	// deployment exists already , if so, then we don't create another
 	// backup job
-	_, found, _ := kubeapi.GetDeployment(c.PgreplicaClientset, keyResourceName, keyNamespace)
+	_, err := c.PgreplicaClientset.
+		AppsV1().Deployments(keyNamespace).
+		Get(keyResourceName, metav1.GetOptions{})
 
-	depRunning := false
-	if found {
-		depRunning = true
-	}
+	depRunning := err == nil
 
 	if depRunning {
 		log.Debugf("working...found replica already, would do nothing")
@@ -195,8 +195,10 @@ func (c *Controller) onDelete(obj interface{}) {
 
 	//make sure we are not removing a replica deployment
 	//that is now the primary after a failover
-	dep, found, _ := kubeapi.GetDeployment(c.PgreplicaClientset, replica.Spec.Name, replica.ObjectMeta.Namespace)
-	if found {
+	dep, err := c.PgreplicaClientset.
+		AppsV1().Deployments(replica.ObjectMeta.Namespace).
+		Get(replica.Spec.Name, metav1.GetOptions{})
+	if err == nil {
 		if dep.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == dep.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] {
 			//the replica was made a primary at some point
 			//we will not scale down the deployment

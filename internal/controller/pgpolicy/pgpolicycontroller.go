@@ -33,7 +33,7 @@ import (
 // Controller holds connections for the controller
 type Controller struct {
 	PgpolicyClient    *rest.RESTClient
-	PgpolicyClientset *kubernetes.Clientset
+	PgpolicyClientset kubernetes.Interface
 	Informer          informers.PgpolicyInformer
 }
 

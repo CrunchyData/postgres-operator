@@ -17,19 +17,23 @@ package task
 
 import (
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
 // RemoveBackups ...
-func RemoveBackups(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
+func RemoveBackups(namespace string, clientset kubernetes.Interface, task *crv1.Pgtask) {
 
 	//delete any backup jobs for this cluster
 	//kubectl delete job --selector=pg-cluster=clustername
 
 	log.Debugf("deleting backup jobs with selector=%s=%s", config.LABEL_PG_CLUSTER, task.Spec.Parameters[config.LABEL_PG_CLUSTER])
-	kubeapi.DeleteJobs(clientset, config.LABEL_PG_CLUSTER+"="+task.Spec.Parameters[config.LABEL_PG_CLUSTER], namespace)
-
+	deletePropagation := metav1.DeletePropagationForeground
+	clientset.
+		BatchV1().Jobs(namespace).
+		DeleteCollection(
+			&metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
+			metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + task.Spec.Parameters[config.LABEL_PG_CLUSTER]})
 }

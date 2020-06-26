@@ -25,7 +25,6 @@ import (
 	"strconv"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
@@ -46,8 +45,7 @@ type RmdataJob struct {
 	IsReplica    string
 }
 
-// CreateService ...
-func CreateRmdataJob(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string, removeData, removeBackup, isReplica, isBackup bool) error {
+func CreateRmdataJob(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string, removeData, removeBackup, isReplica, isBackup bool) error {
 	var err error
 
 	jobName := cl.Spec.Name + "-rmdata-" + util.RandStringBytesRmndr(4)
@@ -85,10 +83,6 @@ func CreateRmdataJob(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namesp
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_RMDATA,
 		&newjob.Spec.Template.Spec.Containers[0])
 
-	_, err = kubeapi.CreateJob(clientset, &newjob, namespace)
-	if err != nil {
-		return err
-	}
-
+	_, err = clientset.BatchV1().Jobs(namespace).Create(&newjob)
 	return err
 }
