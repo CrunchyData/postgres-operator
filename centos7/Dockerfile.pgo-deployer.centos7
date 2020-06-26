@@ -19,7 +19,6 @@ RUN yum -y install epel-release \
 
 COPY installers/ansible /ansible
 COPY installers/image/bin/pgo-deploy.sh /pgo-deploy.sh
-COPY installers/image/inventory_template /inventory_template
 COPY bin/uid_daemon.sh /uid_daemon.sh
 
 ENV ANSIBLE_CONFIG="/ansible/ansible.cfg"
