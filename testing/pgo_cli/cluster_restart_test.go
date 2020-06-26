@@ -137,7 +137,7 @@ func TestRestart(t *testing.T) {
 							"to show a pending restart", cluster(), namespace())
 
 					// now restart the cluster
-					_, err = pgo("restart", cluster(), "--no-prompt").Exec(t)
+					_, err = pgo("restart", cluster(), "-n", namespace(), "--no-prompt").Exec(t)
 					require.NoError(t, err)
 
 					output, err = pgo(restartQueryCMD...).Exec(t)
@@ -222,8 +222,8 @@ func TestRestart(t *testing.T) {
 							"to show a pending restart", cluster(), namespace())
 
 					// now restart the cluster
-					_, err = pgo("restart", cluster(), "--no-prompt", "--target",
-						primaries[0].Labels["deployment-name"]).Exec(t)
+					_, err = pgo("restart", cluster(), "-n", namespace(), "--no-prompt",
+						"--target", primaries[0].Labels["deployment-name"]).Exec(t)
 					require.NoError(t, err)
 
 					output, err = pgo(restartQueryCMD...).Exec(t)
