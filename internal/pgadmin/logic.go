@@ -153,7 +153,7 @@ func GetUsernames(qr *queryRunner) ([]string, error) {
 // queries against the pgAdmin database
 //
 // The pointer will be nil if there is no pgAdmin deployed for the cluster
-func GetPgAdminQueryRunner(clientset *kubernetes.Clientset, restconfig *rest.Config, cluster *crv1.Pgcluster) (*queryRunner, error) {
+func GetPgAdminQueryRunner(clientset kubernetes.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster) (*queryRunner, error) {
 	if active, ok := cluster.Labels[config.LABEL_PGADMIN]; !ok || active != "true" {
 		return nil, nil
 	}

@@ -112,7 +112,7 @@ func DisableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) erro
 }
 
 // EnableStandby enables standby mode for the cluster
-func EnableStandby(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) error {
+func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error {
 
 	clusterName := cluster.Name
 	namespace := cluster.Namespace

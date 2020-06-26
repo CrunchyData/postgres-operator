@@ -24,7 +24,7 @@ import (
 )
 
 // RemoveBackups ...
-func RemoveBackups(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
+func RemoveBackups(namespace string, clientset kubernetes.Interface, task *crv1.Pgtask) {
 
 	//delete any backup jobs for this cluster
 	//kubectl delete job --selector=pg-cluster=clustername

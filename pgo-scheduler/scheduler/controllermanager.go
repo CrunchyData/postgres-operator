@@ -51,7 +51,7 @@ type controllerGroup struct {
 	started             bool
 	kubeInformerFactory kubeinformers.SharedInformerFactory
 	informerSyncedFuncs []cache.InformerSynced
-	kubeClientset       *kubernetes.Clientset
+	kubeClientset       kubernetes.Interface
 }
 
 // NewControllerManager returns a new ControllerManager comprised of controllerGroups for each

@@ -32,7 +32,7 @@ import (
 )
 
 // CreateService ...
-func CreateService(clientset *kubernetes.Clientset, fields *ServiceTemplateFields, namespace string) error {
+func CreateService(clientset kubernetes.Interface, fields *ServiceTemplateFields, namespace string) error {
 	var serviceDoc bytes.Buffer
 
 	//create the service if it doesn't exist

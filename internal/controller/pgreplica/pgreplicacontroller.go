@@ -34,7 +34,7 @@ import (
 // Controller holds the connections for the controller
 type Controller struct {
 	PgreplicaClient      *rest.RESTClient
-	PgreplicaClientset   *kubernetes.Clientset
+	PgreplicaClientset   kubernetes.Interface
 	Queue                workqueue.RateLimitingInterface
 	Informer             informers.PgreplicaInformer
 	PgreplicaWorkerCount int

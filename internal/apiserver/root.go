@@ -49,7 +49,7 @@ var (
 	// PGOClientset is a client for PostgreSQL Operator resources
 	PGOClientset pgov1.Interface
 	// Clientset is a client for native Kubernetes resources
-	Clientset *kubernetes.Clientset
+	Clientset kubernetes.Interface
 	// RESTConfig holds the REST configuration for a Kube client
 	RESTConfig *rest.Config
 	// RESTClient is a REST client for the Kubernetes API
@@ -275,7 +275,7 @@ func BasicAuthzCheck(username, perm string) bool {
 //GetNamespace determines if a user has permission for
 //a namespace they are requesting
 //a valid requested namespace is required
-func GetNamespace(clientset *kubernetes.Clientset, username, requestedNS string) (string, error) {
+func GetNamespace(clientset kubernetes.Interface, username, requestedNS string) (string, error) {
 
 	log.Debugf("GetNamespace username [%s] ns [%s]", username, requestedNS)
 

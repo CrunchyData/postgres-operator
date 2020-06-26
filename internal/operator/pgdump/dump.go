@@ -55,7 +55,7 @@ type pgDumpJobTemplateFields struct {
 }
 
 // Dump ...
-func Dump(namespace string, clientset *kubernetes.Clientset, client *rest.RESTClient, task *crv1.Pgtask) {
+func Dump(namespace string, clientset kubernetes.Interface, client *rest.RESTClient, task *crv1.Pgtask) {
 
 	var err error
 	//create the Job to run the pgdump command

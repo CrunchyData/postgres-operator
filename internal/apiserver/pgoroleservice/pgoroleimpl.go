@@ -32,7 +32,7 @@ import (
 )
 
 // CreatePgorole ...
-func CreatePgorole(clientset *kubernetes.Clientset, createdBy string, request *msgs.CreatePgoroleRequest) msgs.CreatePgoroleResponse {
+func CreatePgorole(clientset kubernetes.Interface, createdBy string, request *msgs.CreatePgoroleRequest) msgs.CreatePgoroleResponse {
 
 	log.Debugf("CreatePgorole %v", request)
 	resp := msgs.CreatePgoroleResponse{}
@@ -80,7 +80,7 @@ func CreatePgorole(clientset *kubernetes.Clientset, createdBy string, request *m
 }
 
 // ShowPgorole ...
-func ShowPgorole(clientset *kubernetes.Clientset, request *msgs.ShowPgoroleRequest) msgs.ShowPgoroleResponse {
+func ShowPgorole(clientset kubernetes.Interface, request *msgs.ShowPgoroleRequest) msgs.ShowPgoroleResponse {
 	resp := msgs.ShowPgoroleResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -124,7 +124,7 @@ func ShowPgorole(clientset *kubernetes.Clientset, request *msgs.ShowPgoroleReque
 }
 
 // DeletePgorole ...
-func DeletePgorole(clientset *kubernetes.Clientset, deletedBy string, request *msgs.DeletePgoroleRequest) msgs.DeletePgoroleResponse {
+func DeletePgorole(clientset kubernetes.Interface, deletedBy string, request *msgs.DeletePgoroleRequest) msgs.DeletePgoroleResponse {
 	resp := msgs.DeletePgoroleResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -164,7 +164,7 @@ func DeletePgorole(clientset *kubernetes.Clientset, deletedBy string, request *m
 
 }
 
-func UpdatePgorole(clientset *kubernetes.Clientset, updatedBy string, request *msgs.UpdatePgoroleRequest) msgs.UpdatePgoroleResponse {
+func UpdatePgorole(clientset kubernetes.Interface, updatedBy string, request *msgs.UpdatePgoroleRequest) msgs.UpdatePgoroleResponse {
 
 	resp := msgs.UpdatePgoroleResponse{}
 	resp.Status.Msg = ""
@@ -223,7 +223,7 @@ func UpdatePgorole(clientset *kubernetes.Clientset, updatedBy string, request *m
 
 }
 
-func createSecret(clientset *kubernetes.Clientset, createdBy, pgorolename, permissions string) error {
+func createSecret(clientset kubernetes.Interface, createdBy, pgorolename, permissions string) error {
 
 	var enRolename = pgorolename
 
@@ -262,7 +262,7 @@ func validPermissions(perms string) error {
 	return err
 }
 
-func deleteRoleFromUsers(clientset *kubernetes.Clientset, roleName string) error {
+func deleteRoleFromUsers(clientset kubernetes.Interface, roleName string) error {
 
 	//get pgouser Secrets
 

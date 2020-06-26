@@ -105,7 +105,7 @@ func Cat(request *msgs.CatRequest, ns string) msgs.CatResponse {
 // first container in the pod is always the postgres container.
 func cat(
 	pod *v1.Pod,
-	clientset *kubernetes.Clientset,
+	clientset kubernetes.Interface,
 	client *rest.RESTClient, restconfig *rest.Config, ns string, args []string) (string, error) {
 
 	command := make([]string, 0)

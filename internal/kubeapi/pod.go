@@ -25,7 +25,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func AddLabelToPod(clientset *kubernetes.Clientset, origPod *v1.Pod, key, value, namespace string) error {
+func AddLabelToPod(clientset kubernetes.Interface, origPod *v1.Pod, key, value, namespace string) error {
 	var newData, patchBytes []byte
 	var err error
 

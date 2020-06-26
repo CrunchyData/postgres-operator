@@ -60,7 +60,7 @@ const (
 	crunchyadmCCPImage = "crunchy-admin"
 )
 
-func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
+func AddClusterBase(clientset kubernetes.Interface, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 	var err error
 
 	if cl.Spec.Status == crv1.CompletedStatus {
@@ -179,7 +179,7 @@ func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl
 }
 
 // DeleteClusterBase ...
-func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
+func DeleteClusterBase(clientset kubernetes.Interface, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 
 	DeleteCluster(clientset, restclient, cl, namespace)
 
@@ -211,7 +211,7 @@ func DeleteClusterBase(clientset *kubernetes.Clientset, restclient *rest.RESTCli
 }
 
 // ScaleBase ...
-func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *crv1.Pgreplica, namespace string) {
+func ScaleBase(clientset kubernetes.Interface, client *rest.RESTClient, replica *crv1.Pgreplica, namespace string) {
 	var err error
 
 	if replica.Spec.Status == crv1.CompletedStatus {
@@ -282,7 +282,7 @@ func ScaleBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica
 }
 
 // ScaleDownBase ...
-func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, replica *crv1.Pgreplica, namespace string) {
+func ScaleDownBase(clientset kubernetes.Interface, client *rest.RESTClient, replica *crv1.Pgreplica, namespace string) {
 	var err error
 
 	//get the pgcluster CRD for this replica
@@ -320,7 +320,7 @@ func ScaleDownBase(clientset *kubernetes.Clientset, client *rest.RESTClient, rep
 
 // UpdateResources updates the PostgreSQL instance Deployments to reflect the
 // update resources (i.e. CPU, memory)
-func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, cluster *crv1.Pgcluster) error {
+func UpdateResources(clientset kubernetes.Interface, restConfig *rest.Config, cluster *crv1.Pgcluster) error {
 	// get a list of all of the instance deployments for the cluster
 	deployments, err := operator.GetInstanceDeployments(clientset, cluster)
 
@@ -374,7 +374,7 @@ func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, c
 //
 // To do this, iterate through the tablespace mount map that is present in the
 // new cluster.
-func UpdateTablespaces(clientset *kubernetes.Clientset, restConfig *rest.Config,
+func UpdateTablespaces(clientset kubernetes.Interface, restConfig *rest.Config,
 	cluster *crv1.Pgcluster, newTablespaces map[string]crv1.PgStorageSpec) error {
 	// first, get a list of all of the instance deployments for the cluster
 	deployments, err := operator.GetInstanceDeployments(clientset, cluster)
@@ -482,7 +482,7 @@ func UpdateTablespaces(clientset *kubernetes.Clientset, restConfig *rest.Config,
 	return nil
 }
 
-func deleteConfigMaps(clientset *kubernetes.Clientset, clusterName, ns string) error {
+func deleteConfigMaps(clientset kubernetes.Interface, clusterName, ns string) error {
 	label := fmt.Sprintf("pg-cluster=%s", clusterName)
 	list, err := clientset.CoreV1().ConfigMaps(ns).List(metav1.ListOptions{LabelSelector: label})
 	if err != nil {
@@ -553,7 +553,7 @@ func publishClusterShutdown(cluster crv1.Pgcluster) error {
 // StopPostgreSQLInstance function, as it preps a Deployment to have its
 // PostgreSQL instance shut down. This helps to ensure that a PostgreSQL
 // instance will launch and not be in crash recovery mode
-func stopPostgreSQLInstance(clientset *kubernetes.Clientset, restConfig *rest.Config, deployment apps_v1.Deployment) error {
+func stopPostgreSQLInstance(clientset kubernetes.Interface, restConfig *rest.Config, deployment apps_v1.Deployment) error {
 	// First, attempt to get the PostgreSQL instance Pod attachd to this
 	// particular deployment
 	selector := fmt.Sprintf("%s=%s", config.LABEL_DEPLOYMENT_NAME, deployment.Name)

@@ -26,7 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func AddLabelToDeployment(clientset *kubernetes.Clientset, origDeployment *v1.Deployment, key, value, namespace string) error {
+func AddLabelToDeployment(clientset kubernetes.Interface, origDeployment *v1.Deployment, key, value, namespace string) error {
 	var newData, patchBytes []byte
 	var err error
 

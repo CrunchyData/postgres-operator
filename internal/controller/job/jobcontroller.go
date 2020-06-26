@@ -29,7 +29,7 @@ import (
 type Controller struct {
 	JobConfig    *rest.Config
 	JobClient    *rest.RESTClient
-	JobClientset *kubernetes.Clientset
+	JobClientset kubernetes.Interface
 	Informer     batchinformers.JobInformer
 }
 

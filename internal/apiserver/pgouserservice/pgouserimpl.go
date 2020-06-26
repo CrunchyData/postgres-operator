@@ -37,7 +37,7 @@ const MAP_KEY_ROLES = "roles"
 const MAP_KEY_NAMESPACES = "namespaces"
 
 // CreatePgouser ...
-func CreatePgouser(clientset *kubernetes.Clientset, createdBy string, request *msgs.CreatePgouserRequest) msgs.CreatePgouserResponse {
+func CreatePgouser(clientset kubernetes.Interface, createdBy string, request *msgs.CreatePgouserRequest) msgs.CreatePgouserResponse {
 
 	log.Debugf("CreatePgouser %v", request)
 	resp := msgs.CreatePgouserResponse{}
@@ -97,7 +97,7 @@ func CreatePgouser(clientset *kubernetes.Clientset, createdBy string, request *m
 }
 
 // ShowPgouser ...
-func ShowPgouser(clientset *kubernetes.Clientset, request *msgs.ShowPgouserRequest) msgs.ShowPgouserResponse {
+func ShowPgouser(clientset kubernetes.Interface, request *msgs.ShowPgouserRequest) msgs.ShowPgouserResponse {
 	resp := msgs.ShowPgouserResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -149,7 +149,7 @@ func ShowPgouser(clientset *kubernetes.Clientset, request *msgs.ShowPgouserReque
 }
 
 // DeletePgouser ...
-func DeletePgouser(clientset *kubernetes.Clientset, deletedBy string, request *msgs.DeletePgouserRequest) msgs.DeletePgouserResponse {
+func DeletePgouser(clientset kubernetes.Interface, deletedBy string, request *msgs.DeletePgouserRequest) msgs.DeletePgouserResponse {
 	resp := msgs.DeletePgouserResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -199,7 +199,7 @@ func DeletePgouser(clientset *kubernetes.Clientset, deletedBy string, request *m
 }
 
 // UpdatePgouser - update the pgouser secret
-func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *msgs.UpdatePgouserRequest) msgs.UpdatePgouserResponse {
+func UpdatePgouser(clientset kubernetes.Interface, updatedBy string, request *msgs.UpdatePgouserRequest) msgs.UpdatePgouserResponse {
 
 	resp := msgs.UpdatePgouserResponse{}
 	resp.Status.Msg = ""
@@ -275,7 +275,7 @@ func UpdatePgouser(clientset *kubernetes.Clientset, updatedBy string, request *m
 
 }
 
-func createSecret(clientset *kubernetes.Clientset, createdBy string, request *msgs.CreatePgouserRequest) error {
+func createSecret(clientset kubernetes.Interface, createdBy string, request *msgs.CreatePgouserRequest) error {
 
 	secretName := "pgouser-" + request.PgouserName
 
@@ -301,7 +301,7 @@ func createSecret(clientset *kubernetes.Clientset, createdBy string, request *ms
 	return err
 }
 
-func validRoles(clientset *kubernetes.Clientset, roles string) error {
+func validRoles(clientset kubernetes.Interface, roles string) error {
 	var err error
 	fields := strings.Split(roles, ",")
 	for _, v := range fields {

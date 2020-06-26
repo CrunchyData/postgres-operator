@@ -36,7 +36,7 @@ import (
 type Controller struct {
 	cmRESTConfig    *rest.Config
 	cmRESTClient    *rest.RESTClient
-	kubeclientset   *kubernetes.Clientset
+	kubeclientset   kubernetes.Interface
 	cmLister        corelisters.ConfigMapLister
 	cmSynced        cache.InformerSynced
 	pgclusterLister pgolisters.PgclusterLister
@@ -47,7 +47,7 @@ type Controller struct {
 
 // NewConfigMapController is responsible for creating a new ConfigMap controller
 func NewConfigMapController(restConfig *rest.Config, restClient *rest.RESTClient,
-	clientset *kubernetes.Clientset, coreInformer coreinformers.ConfigMapInformer,
+	clientset kubernetes.Interface, coreInformer coreinformers.ConfigMapInformer,
 	pgoInformer pgoinformers.PgclusterInformer, workerCount int) (*Controller, error) {
 
 	controller := &Controller{

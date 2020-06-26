@@ -59,7 +59,7 @@ const replicaServicePostfix = "-replica"
 // 6) Recreate the BackrestRepo secret, since the key encryption algorithm has been updated
 // 7) Update the existing pgcluster CRD instance to match the current version
 // 8) Submit the pgcluster CRD for recreation
-func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, upgrade *crv1.Pgtask, namespace string) {
+func AddUpgrade(clientset kubernetes.Interface, restclient *rest.RESTClient, upgrade *crv1.Pgtask, namespace string) {
 
 	upgradeTargetClusterName := upgrade.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
 
@@ -141,7 +141,7 @@ func AddUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, up
 // if set. This will not be applicable to releases before the Operator 4.2.0 HA features were
 // added. If this label does not exist or is otherwise not set as expected, return an empty
 // string value and call an alternate function to determine the current primary pod.
-func getPrimaryPodDeploymentName(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) string {
+func getPrimaryPodDeploymentName(clientset kubernetes.Interface, cluster *crv1.Pgcluster) string {
 	// first look for a 'primary' role label on the current primary deployment
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, cluster.Name,
 		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
@@ -209,7 +209,7 @@ func getCurrentPrimary(clusterName, podPrimary, crPrimary, labelPrimary string) 
 // will leave any other PVCs, whether they are from the current primary, previous primaries that are now
 // unassociated because of a failover or the backrest-shared-repo PVC. The total number of current replicas
 // will also be captured during this process so that the correct number of replicas can be recreated.
-func handleReplicas(clientset *kubernetes.Clientset, restclient *rest.RESTClient, clusterName, currentPrimaryPVC, namespace string) string {
+func handleReplicas(clientset kubernetes.Interface, restclient *rest.RESTClient, clusterName, currentPrimaryPVC, namespace string) string {
 	log.Debugf("deleting pgreplicas and noting the number found for cluster %s", clusterName)
 	replicaList := crv1.PgreplicaList{}
 	// Save the number of found replicas for this cluster
@@ -259,7 +259,7 @@ func SetReplicaNumber(pgcluster *crv1.Pgcluster, numReplicas string) {
 // deleteBeforeUpgrade deletes the deployments, services, pgcluster, jobs, tasks and default configmaps before attempting
 // to upgrade the pgcluster deployment. This preserves existing secrets, non-standard configmaps and service definitions
 // for use in the newly upgraded cluster.
-func deleteBeforeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTClient, clusterName, currentPrimary, namespace string, isStandby bool) {
+func deleteBeforeUpgrade(clientset kubernetes.Interface, restclient *rest.RESTClient, clusterName, currentPrimary, namespace string, isStandby bool) {
 
 	// first, get all deployments for the pgcluster in question
 	deployments, err := clientset.
@@ -319,7 +319,7 @@ func deleteBeforeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTC
 
 // deploymentWait is modified from cluster.waitForDeploymentDelete. It simply waits for the current primary deployment
 // deletion to complete before proceeding with the rest of the pgcluster upgrade.
-func deploymentWait(clientset *kubernetes.Clientset, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) string {
+func deploymentWait(clientset kubernetes.Interface, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) string {
 	timeout := time.After(timeoutSecs * time.Second)
 	tick := time.NewTicker(periodSecs * time.Second)
 	defer tick.Stop()
@@ -364,7 +364,7 @@ func deleteNonupgradePgtasks(client *rest.RESTClient, selector, namespace string
 // cluster, but with the added step of looking for an existing configmap,
 // "<clustername>-pgha-default-config". If that configmap exists, it will get the init value, as this is
 // needed for the proper reinitialziation of Patroni.
-func createUpgradePGHAConfigMap(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster,
+func createUpgradePGHAConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
 	namespace string) error {
 
 	labels := make(map[string]string)
@@ -407,7 +407,7 @@ func createUpgradePGHAConfigMap(clientset *kubernetes.Clientset, cluster *crv1.P
 
 // recreateBackrestRepoSecret deletes and recreates the secret for the pgBackRest repo. This is needed
 // because the key encryption algorithm has been updated from RSA to EdDSA
-func recreateBackrestRepoSecret(clientset *kubernetes.Clientset, clustername, namespace, operatorNamespace string) {
+func recreateBackrestRepoSecret(clientset kubernetes.Interface, clustername, namespace, operatorNamespace string) {
 	if err := util.CreateBackrestRepoSecrets(clientset,
 		util.BackrestRepoConfig{
 			BackrestS3Key:       "", // these are set to empty so that it can be generated

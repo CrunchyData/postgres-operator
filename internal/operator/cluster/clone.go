@@ -59,7 +59,7 @@ const (
 // 4. Create a new cluster by using the old cluster as a template and providing
 // the specifications to the new cluster, with a few "opinionated" items (e.g.
 // copying over the secrets)
-func Clone(clientset *kubernetes.Clientset, client *rest.RESTClient, restConfig *rest.Config, namespace string, task *crv1.Pgtask) {
+func Clone(clientset kubernetes.Interface, client *rest.RESTClient, restConfig *rest.Config, namespace string, task *crv1.Pgtask) {
 	// have a guard -- if the task is completed, don't proceed furter
 	if task.Spec.Status == crv1.CompletedStatus {
 		log.Warn(fmt.Sprintf("pgtask [%s] has already completed", task.Spec.Name))
@@ -143,7 +143,7 @@ func UpdateCloneWorkflow(client *rest.RESTClient, namespace, workflowID, status 
 // cloneStep1 covers the creation of the PVCs for the new PostgreSQL cluster,
 // as well as sets up and executes a job to copy (via rsync) the PgBackRest
 // repository from the source cluster to the destination cluster
-func cloneStep1(clientset *kubernetes.Clientset, client *rest.RESTClient, namespace string, task *crv1.Pgtask) {
+func cloneStep1(clientset kubernetes.Interface, client *rest.RESTClient, namespace string, task *crv1.Pgtask) {
 	sourceClusterName, targetClusterName, workflowID := getCloneTaskIdentifiers(task)
 
 	log.Debugf("clone step 1 called: namespace:[%s] sourcecluster:[%s] targetcluster:[%s] workflowid:[%s]",
@@ -225,7 +225,7 @@ func cloneStep1(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 // cloneStep2 creates a pgBackRest restore job for the new PostgreSQL cluster by
 // running a restore from the new target cluster pgBackRest repository to the
 // new target cluster PVC
-func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, restConfig *rest.Config, namespace string, task *crv1.Pgtask) {
+func cloneStep2(clientset kubernetes.Interface, client *rest.RESTClient, restConfig *rest.Config, namespace string, task *crv1.Pgtask) {
 	sourceClusterName, targetClusterName, workflowID := getCloneTaskIdentifiers(task)
 
 	log.Debugf("clone step 2 called: namespace:[%s] sourcecluster:[%s] targetcluster:[%s] workflowid:[%s]",
@@ -431,7 +431,7 @@ func cloneStep2(clientset *kubernetes.Clientset, client *rest.RESTClient, restCo
 }
 
 // cloneStep3 creates the new cluster by creating a new Pgcluster
-func cloneStep3(clientset *kubernetes.Clientset, client *rest.RESTClient, namespace string, task *crv1.Pgtask) {
+func cloneStep3(clientset kubernetes.Interface, client *rest.RESTClient, namespace string, task *crv1.Pgtask) {
 	sourceClusterName, targetClusterName, workflowID := getCloneTaskIdentifiers(task)
 
 	log.Debugf("clone step 3 called: namespace:[%s] sourcecluster:[%s] targetcluster:[%s] workflowid:[%s]",
@@ -484,7 +484,7 @@ func cloneStep3(clientset *kubernetes.Clientset, client *rest.RESTClient, namesp
 // rsync to synchronize two pgBackRest repositories, i.e. it will copy the files
 // from the source PostgreSQL cluster to the pgBackRest repository in the target
 // cluster
-func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace string, task *crv1.Pgtask, sourcePgcluster crv1.Pgcluster) (string, error) {
+func createPgBackRestRepoSyncJob(clientset kubernetes.Interface, namespace string, task *crv1.Pgtask, sourcePgcluster crv1.Pgcluster) (string, error) {
 	targetClusterName := task.Spec.Parameters["targetClusterName"]
 	workflowID := task.Spec.Parameters[crv1.PgtaskWorkflowID]
 	// set the name of the job, with the "entropy" that we add
@@ -684,7 +684,7 @@ func createPgBackRestRepoSyncJob(clientset *kubernetes.Clientset, namespace stri
 //
 // if the user spceified a different PVCSize than what is in the storage spec,
 // then that gets used
-func createPVCs(clientset *kubernetes.Clientset, client *rest.RESTClient,
+func createPVCs(clientset kubernetes.Interface, client *rest.RESTClient,
 	task *crv1.Pgtask, namespace string, sourcePgcluster crv1.Pgcluster, targetClusterName string,
 ) (
 	backrestVolume, dataVolume, walVolume operator.StorageResult,
@@ -734,7 +734,7 @@ func createPVCs(clientset *kubernetes.Clientset, client *rest.RESTClient,
 	return
 }
 
-func createCluster(clientset *kubernetes.Clientset, client *rest.RESTClient, task *crv1.Pgtask, sourcePgcluster crv1.Pgcluster, namespace string, targetClusterName string, workflowID string) error {
+func createCluster(clientset kubernetes.Interface, client *rest.RESTClient, task *crv1.Pgtask, sourcePgcluster crv1.Pgcluster, namespace string, targetClusterName string, workflowID string) error {
 	// first, handle copying over the cluster secrets so they are available when
 	// the cluster is created
 	cloneClusterSecrets := util.CloneClusterSecrets{
@@ -886,7 +886,7 @@ func getCloneTaskIdentifiers(task *crv1.Pgtask) (string, string, string) {
 }
 
 // getLinkMap returns the pgBackRest argument to support a WAL volume.
-func getLinkMap(clientset *kubernetes.Clientset, restConfig *rest.Config, cluster crv1.Pgcluster, targetClusterName string) (string, error) {
+func getLinkMap(clientset kubernetes.Interface, restConfig *rest.Config, cluster crv1.Pgcluster, targetClusterName string) (string, error) {
 	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(metav1.ListOptions{LabelSelector: "pgo-pg-database=true,pg-cluster=" + cluster.Name})
 	if err != nil {
 		return "", err
@@ -996,7 +996,7 @@ func publishCloneClusterFailureEvent(eventHeader events.EventHeader, sourceClust
 
 // waitForDeploymentDelete waits until a deployment and its associated service
 // are deleted
-func waitForDeploymentDelete(clientset *kubernetes.Clientset, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) error {
+func waitForDeploymentDelete(clientset kubernetes.Interface, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) error {
 	timeout := time.After(timeoutSecs * time.Second)
 	tick := time.NewTicker(periodSecs * time.Second)
 	defer tick.Stop()
@@ -1019,7 +1019,7 @@ func waitForDeploymentDelete(clientset *kubernetes.Clientset, namespace, deploym
 }
 
 // waitFotDeploymentReady waits for a deployment to be ready, or times out
-func waitForDeploymentReady(clientset *kubernetes.Clientset, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) error {
+func waitForDeploymentReady(clientset kubernetes.Interface, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) error {
 	timeout := time.After(timeoutSecs * time.Second)
 	tick := time.NewTicker(periodSecs * time.Second)
 	defer tick.Stop()

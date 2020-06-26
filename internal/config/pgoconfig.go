@@ -515,7 +515,7 @@ func (c *PgoConfig) GetStorageSpec(name string) (crv1.PgStorageSpec, error) {
 
 }
 
-func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string) error {
+func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) error {
 
 	cMap, rootPath := getRootPath(clientset, namespace)
 
@@ -737,7 +737,7 @@ func (c *PgoConfig) GetConfig(clientset *kubernetes.Clientset, namespace string)
 	return nil
 }
 
-func getRootPath(clientset *kubernetes.Clientset, namespace string) (*v1.ConfigMap, string) {
+func getRootPath(clientset kubernetes.Interface, namespace string) (*v1.ConfigMap, string) {
 
 	cMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(CustomConfigMapName, metav1.GetOptions{})
 	if err == nil {

@@ -62,7 +62,7 @@ type containerResourcesTemplateFields struct {
 	RequestsMemory, RequestsCPU string
 }
 
-func Initialize(clientset *kubernetes.Clientset) {
+func Initialize(clientset kubernetes.Interface) {
 
 	tmp := os.Getenv("CRUNCHY_DEBUG")
 	if tmp == "true" {
@@ -364,7 +364,7 @@ func initializeControllerWorkerCounts() {
 // install.  This includes setting the proper namespace operating mode, creating and/or updating
 // namespaces as needed (or as permitted by the current operator mode), and returning a valid list
 // of namespaces for the current Operator install.
-func SetupNamespaces(clientset *kubernetes.Clientset) ([]string, error) {
+func SetupNamespaces(clientset kubernetes.Interface) ([]string, error) {
 
 	// First set the proper namespace operating mode for the Operator install.  The mode identified
 	// determines whether or not certain namespace capabilities are enabled.
@@ -393,7 +393,7 @@ func SetupNamespaces(clientset *kubernetes.Clientset) ([]string, error) {
 // setNamespaceOperatingMode set the namespace operating mode for the Operator by calling the
 // proper utility function to determine which mode is applicable based on the current
 // permissions assigned to the Operator Service Account.
-func setNamespaceOperatingMode(clientset *kubernetes.Clientset) error {
+func setNamespaceOperatingMode(clientset kubernetes.Interface) error {
 	nsOpMode, err := ns.GetNamespaceOperatingMode(clientset)
 	if err != nil {
 		return err

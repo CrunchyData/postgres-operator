@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func StanzaCreate(namespace, clusterName string, clientset *kubernetes.Clientset, RESTClient *rest.RESTClient) {
+func StanzaCreate(namespace, clusterName string, clientset kubernetes.Interface, RESTClient *rest.RESTClient) {
 
 	taskName := clusterName + "-" + crv1.PgtaskBackrestStanzaCreate
 

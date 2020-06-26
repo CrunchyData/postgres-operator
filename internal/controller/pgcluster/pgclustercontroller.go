@@ -40,7 +40,7 @@ import (
 // Controller holds the connections for the controller
 type Controller struct {
 	PgclusterClient      *rest.RESTClient
-	PgclusterClientset   *kubernetes.Clientset
+	PgclusterClientset   kubernetes.Interface
 	PgclusterConfig      *rest.Config
 	Queue                workqueue.RateLimitingInterface
 	Informer             informers.PgclusterInformer

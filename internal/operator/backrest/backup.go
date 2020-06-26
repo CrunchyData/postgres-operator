@@ -63,7 +63,7 @@ var backrestPgHostRegex = regexp.MustCompile("--db-host|--pg1-host")
 var backrestPgPathRegex = regexp.MustCompile("--db-path|--pg1-path")
 
 // Backrest ...
-func Backrest(namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
+func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtask) {
 
 	//create the Job to run the backrest command
 
@@ -228,7 +228,7 @@ func CreateBackup(restclient *rest.RESTClient, namespace, clusterName, podName s
 // CleanBackupResources is responsible for cleaning up Kubernetes resources from a previous
 // pgBackRest backup.  Specifically, this function deletes the pgptask and job associate with a
 // previous pgBackRest backup for the cluster.
-func CleanBackupResources(restclient *rest.RESTClient, clientset *kubernetes.Clientset, namespace,
+func CleanBackupResources(restclient *rest.RESTClient, clientset kubernetes.Interface, namespace,
 	clusterName string) error {
 
 	taskName := "backrest-backup-" + clusterName
@@ -294,7 +294,7 @@ func CleanBackupResources(restclient *rest.RESTClient, clientset *kubernetes.Cli
 // through the primary pod's service (which could be unreliable). also if not already specified
 // in the command options provided in the pgtask, then lookup the primary pod for the cluster
 // and add the PGDATA dir of the pod as the value for the "--db-path" parameter
-func getCommandOptsFromPod(clientset *kubernetes.Clientset, task *crv1.Pgtask,
+func getCommandOptsFromPod(clientset kubernetes.Interface, task *crv1.Pgtask,
 	namespace string) (commandOpts string, err error) {
 
 	// lookup the primary pod in order to determine the IP of the primary and the PGDATA directory for

@@ -45,7 +45,7 @@ type RmdataJob struct {
 	IsReplica    string
 }
 
-func CreateRmdataJob(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string, removeData, removeBackup, isReplica, isBackup bool) error {
+func CreateRmdataJob(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string, removeData, removeBackup, isReplica, isBackup bool) error {
 	var err error
 
 	jobName := cl.Spec.Name + "-rmdata-" + util.RandStringBytesRmndr(4)

@@ -44,7 +44,7 @@ import (
 
 // addClusterCreateMissingService creates a service for the cluster primary if
 // it does not yet exist.
-func addClusterCreateMissingService(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string) error {
+func addClusterCreateMissingService(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string) error {
 	st := operator.Pgo.Cluster.ServiceType
 	if cl.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
 		st = cl.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
@@ -83,7 +83,7 @@ func addClusterCreateMissingService(clientset *kubernetes.Clientset, cl *crv1.Pg
 }
 
 // addClusterCreateDeployments creates deployments for pgBackRest and PostgreSQL.
-func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.RESTClient,
+func addClusterCreateDeployments(clientset kubernetes.Interface, client *rest.RESTClient,
 	cl *crv1.Pgcluster, namespace string,
 	dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult,
@@ -243,7 +243,7 @@ func addClusterCreateDeployments(clientset *kubernetes.Clientset, client *rest.R
 }
 
 // DeleteCluster ...
-func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) error {
+func DeleteCluster(clientset kubernetes.Interface, restclient *rest.RESTClient, cl *crv1.Pgcluster, namespace string) error {
 
 	var err error
 	log.Info("deleting Pgcluster object" + " in namespace " + namespace)
@@ -268,7 +268,7 @@ func DeleteCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 
 // scaleReplicaCreateMissingService creates a service for cluster replicas if
 // it does not yet exist.
-func scaleReplicaCreateMissingService(clientset *kubernetes.Clientset, replica *crv1.Pgreplica, cluster *crv1.Pgcluster, namespace string) error {
+func scaleReplicaCreateMissingService(clientset kubernetes.Interface, replica *crv1.Pgreplica, cluster *crv1.Pgcluster, namespace string) error {
 	st := operator.Pgo.Cluster.ServiceType
 	if replica.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
 		st = replica.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
@@ -300,7 +300,7 @@ func scaleReplicaCreateMissingService(clientset *kubernetes.Clientset, replica *
 }
 
 // scaleReplicaCreateDeployment creates a deployment for the cluster replica.
-func scaleReplicaCreateDeployment(clientset *kubernetes.Clientset, client *rest.RESTClient,
+func scaleReplicaCreateDeployment(clientset kubernetes.Interface, client *rest.RESTClient,
 	replica *crv1.Pgreplica, cluster *crv1.Pgcluster, namespace string,
 	dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult,
@@ -433,7 +433,7 @@ func scaleReplicaCreateDeployment(clientset *kubernetes.Clientset, client *rest.
 }
 
 // DeleteReplica ...
-func DeleteReplica(clientset *kubernetes.Clientset, cl *crv1.Pgreplica, namespace string) error {
+func DeleteReplica(clientset kubernetes.Interface, cl *crv1.Pgreplica, namespace string) error {
 
 	var err error
 	log.Info("deleting Pgreplica object" + " in namespace " + namespace)
@@ -505,7 +505,7 @@ type ScaleClusterInfo struct {
 // ShutdownCluster is responsible for shutting down a cluster that is currently running.  This
 // includes changing the replica count for all clusters to 0, and then updating the pgcluster
 // with a shutdown status.
-func ShutdownCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
+func ShutdownCluster(clientset kubernetes.Interface, restclient *rest.RESTClient,
 	cluster crv1.Pgcluster) error {
 
 	// first ensure the current primary deployment is properly recorded in the pg
@@ -576,7 +576,7 @@ func ShutdownCluster(clientset *kubernetes.Clientset, restclient *rest.RESTClien
 // StartupCluster is responsible for starting a cluster that was previsouly shutdown.  This
 // includes changing the replica count for all clusters to 1, and then updating the pgcluster
 // with a shutdown status.
-func StartupCluster(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) error {
+func StartupCluster(clientset kubernetes.Interface, cluster crv1.Pgcluster) error {
 
 	log.Debugf("Cluster Operator: starting cluster %s", cluster.Name)
 
@@ -608,7 +608,7 @@ func StartupCluster(clientset *kubernetes.Clientset, cluster crv1.Pgcluster) err
 // specified using the 'replicas' parameter.  This is typically used to scale-up or down the
 // primary deployment and any supporting services (pgBackRest and pgBouncer) when shutting down
 // or starting up the cluster due to a scale or scale-down request.
-func ScaleClusterDeployments(clientset *kubernetes.Clientset, cluster crv1.Pgcluster, replicas int,
+func ScaleClusterDeployments(clientset kubernetes.Interface, cluster crv1.Pgcluster, replicas int,
 	scalePrimary, scaleReplicas, scaleBackRestRepo,
 	scalePGBouncer bool) (clusterInfo ScaleClusterInfo, err error) {
 

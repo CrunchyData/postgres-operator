@@ -181,7 +181,7 @@ func GetValueOrDefault(value, defaultValue string) string {
 }
 
 // GetSecretPassword ...
-func GetSecretPassword(clientset *kubernetes.Clientset, db, suffix, Namespace string) (string, error) {
+func GetSecretPassword(clientset kubernetes.Interface, db, suffix, Namespace string) (string, error) {
 
 	var err error
 

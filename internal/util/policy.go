@@ -40,7 +40,7 @@ import (
 )
 
 // ExecPolicy execute a sql policy against a cluster
-func ExecPolicy(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, namespace, policyName, serviceName, port string) error {
+func ExecPolicy(clientset kubernetes.Interface, restclient *rest.RESTClient, restconfig *rest.Config, namespace, policyName, serviceName, port string) error {
 	//fetch the policy sql
 	sql, err := GetPolicySQL(restclient, namespace, policyName)
 
@@ -167,7 +167,7 @@ func ValidatePolicy(restclient *rest.RESTClient, namespace string, policyName st
 }
 
 // UpdatePolicyLabels ...
-func UpdatePolicyLabels(clientset *kubernetes.Clientset, clusterName string, namespace string, newLabels map[string]string) error {
+func UpdatePolicyLabels(clientset kubernetes.Interface, clusterName string, namespace string, newLabels map[string]string) error {
 
 	deployment, err := clientset.AppsV1().Deployments(namespace).Get(clusterName, metav1.GetOptions{})
 	if err != nil {

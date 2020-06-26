@@ -124,7 +124,7 @@ func (c *Controller) handleStandbyPromotion(newPod *apiv1.Pod, cluster crv1.Pgcl
 // been promoted.  This is done by verifying that recovery is no longer enabled in the database,
 // while also ensuring there are not any pending restarts for the database.
 // done by confirming
-func waitForStandbyPromotion(restConfig *rest.Config, clientset *kubernetes.Clientset, newPod apiv1.Pod,
+func waitForStandbyPromotion(restConfig *rest.Config, clientset kubernetes.Interface, newPod apiv1.Pod,
 	cluster crv1.Pgcluster) error {
 
 	var recoveryDisabled bool
@@ -169,7 +169,7 @@ func waitForStandbyPromotion(restConfig *rest.Config, clientset *kubernetes.Clie
 // cleanAndCreatePostFailoverBackup cleans up any existing backup resources and then creates
 // a pgtask to trigger the creation of a post-failover backup
 func cleanAndCreatePostFailoverBackup(restClient *rest.RESTClient,
-	clientset *kubernetes.Clientset, clusterName, namespace string) error {
+	clientset kubernetes.Interface, clusterName, namespace string) error {
 
 	//look up the backrest-repo pod name
 	selector := fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER,

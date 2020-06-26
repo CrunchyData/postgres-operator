@@ -62,7 +62,7 @@ type BackrestRestoreJobTemplateFields struct {
 }
 
 // Restore ...
-func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernetes.Clientset, task *crv1.Pgtask) {
+func Restore(restclient *rest.RESTClient, namespace string, clientset kubernetes.Interface, task *crv1.Pgtask) {
 
 	clusterName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
 	log.Debugf("restore workflow: started for cluster %s", clusterName)
@@ -240,7 +240,7 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset *kubernete
 
 }
 
-func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset *kubernetes.Clientset, clusterName, status, namespace,
+func UpdateRestoreWorkflow(restclient *rest.RESTClient, clientset kubernetes.Interface, clusterName, status, namespace,
 	workflowID, restoreToName string, affinity *v1.Affinity) {
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
 	log.Debugf("restore workflow phase 2: taskName is %s", taskName)
@@ -292,7 +292,7 @@ func updateWorkflow(restclient *rest.RESTClient, workflowID, namespace, status s
 	return err
 }
 
-func createRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgcluster, clientset *kubernetes.Clientset,
+func createRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgcluster, clientset kubernetes.Interface,
 	namespace, restoreToName, workflowID string, affinity *v1.Affinity) error {
 
 	// interpret the storage specs again. the volumes were already created during

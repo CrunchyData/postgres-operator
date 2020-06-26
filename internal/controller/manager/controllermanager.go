@@ -76,7 +76,7 @@ type controllerGroup struct {
 	kubeInformerFactoryWithRefresh kubeinformers.SharedInformerFactory
 	controllersWithWorkers         []controller.WorkerRunner
 	informerSyncedFuncs            []cache.InformerSynced
-	kubeClientset                  *kubernetes.Clientset
+	kubeClientset                  kubernetes.Interface
 	pgoRESTClient                  *rest.RESTClient
 }
 

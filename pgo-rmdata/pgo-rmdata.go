@@ -28,7 +28,7 @@ import (
 
 var request rmdata.Request
 
-var Clientset *kubernetes.Clientset
+var Clientset kubernetes.Interface
 
 func main() {
 	request = rmdata.Request{

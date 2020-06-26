@@ -53,7 +53,7 @@ var namespace string
 var pgoNamespace string
 var timeout time.Duration
 var seconds int
-var kubeClient *kubernetes.Clientset
+var kubeClient kubernetes.Interface
 
 // this is used to prevent a race condition where an informer is being created
 // twice when a new scheduler-enabled ConfigMap is added.
@@ -210,7 +210,7 @@ func main() {
 // setNamespaceOperatingMode set the namespace operating mode for the Operator by calling the
 // proper utility function to determine which mode is applicable based on the current
 // permissions assigned to the Operator Service Account.
-func setNamespaceOperatingMode(clientset *kubernetes.Clientset) error {
+func setNamespaceOperatingMode(clientset kubernetes.Interface) error {
 	nsOpMode, err := ns.GetNamespaceOperatingMode(clientset)
 	if err != nil {
 		return err

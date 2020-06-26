@@ -140,7 +140,7 @@ func getNotReady(ns string) []string {
 	return agg
 }
 
-func getClaimCapacity(clientset *kubernetes.Clientset, pvc *v1.PersistentVolumeClaim) int64 {
+func getClaimCapacity(clientset kubernetes.Interface, pvc *v1.PersistentVolumeClaim) int64 {
 	qty := pvc.Status.Capacity[v1.ResourceStorage]
 	diskSize := resource.MustParse(qty.String())
 	diskSizeInt64, _ := diskSize.AsInt64()

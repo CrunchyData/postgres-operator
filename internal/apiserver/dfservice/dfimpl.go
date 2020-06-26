@@ -107,7 +107,7 @@ loop:
 
 // getClaimCapacity makes a call to the PVC API to get the total capacity
 // available on the PVC
-func getClaimCapacity(clientset *kubernetes.Clientset, pvcName, ns string) (string, error) {
+func getClaimCapacity(clientset kubernetes.Interface, pvcName, ns string) (string, error) {
 	log.Debugf("in df pvc name found to be %s", pvcName)
 
 	pvc, err := clientset.CoreV1().PersistentVolumeClaims(ns).Get(pvcName, metav1.GetOptions{})

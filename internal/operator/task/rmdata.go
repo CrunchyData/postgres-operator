@@ -51,7 +51,7 @@ type rmdatajobTemplateFields struct {
 }
 
 // RemoveData ...
-func RemoveData(namespace string, clientset *kubernetes.Clientset, restclient *rest.RESTClient, task *crv1.Pgtask) {
+func RemoveData(namespace string, clientset kubernetes.Interface, restclient *rest.RESTClient, task *crv1.Pgtask) {
 
 	//create marker (clustername, namespace)
 	err := PatchpgtaskDeleteDataStatus(restclient, task, namespace)

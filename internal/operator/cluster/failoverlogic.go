@@ -35,7 +35,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func Failover(identifier string, clientset *kubernetes.Clientset, client *rest.RESTClient, clusterName string, task *crv1.Pgtask, namespace string, restconfig *rest.Config) error {
+func Failover(identifier string, clientset kubernetes.Interface, client *rest.RESTClient, clusterName string, task *crv1.Pgtask, namespace string, restconfig *rest.Config) error {
 
 	var pod *v1.Pod
 	var err error
@@ -144,7 +144,7 @@ func updateFailoverStatus(client *rest.RESTClient, task *crv1.Pgtask, namespace,
 
 func promote(
 	pod *v1.Pod,
-	clientset *kubernetes.Clientset,
+	clientset kubernetes.Interface,
 	client *rest.RESTClient, namespace string, restconfig *rest.Config) error {
 
 	// generate the curl command that will be run on the pod selected for the failover in order
@@ -192,7 +192,7 @@ func publishPromoteEvent(identifier, namespace, username, clusterName, target st
 // Patroni DCS, effectively removing the tag.  This is accomplished by exec'ing into
 // the primary PG pod, and sending a patch request to update the appropriate data (i.e.
 // the 'primary_on_role_change' tag) in the DCS.
-func RemovePrimaryOnRoleChangeTag(clientset *kubernetes.Clientset, restconfig *rest.Config,
+func RemovePrimaryOnRoleChangeTag(clientset kubernetes.Interface, restconfig *rest.Config,
 	clusterName, namespace string) error {
 
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName +

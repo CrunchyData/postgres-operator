@@ -155,7 +155,7 @@ func CreateFakeNamespaceClient(installationName string) (kubernetes.Interface, e
 }
 
 // CreateNamespace creates a new namespace that is owned by the Operator.
-func CreateNamespace(clientset *kubernetes.Clientset, installationName, pgoNamespace,
+func CreateNamespace(clientset kubernetes.Interface, installationName, pgoNamespace,
 	createdBy, newNs string) error {
 
 	log.Debugf("CreateNamespace %s %s %s", pgoNamespace, createdBy, newNs)
@@ -195,7 +195,7 @@ func CreateNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 }
 
 // DeleteNamespace deletes the namespace specified.
-func DeleteNamespace(clientset *kubernetes.Clientset, installationName, pgoNamespace, deletedBy, ns string) error {
+func DeleteNamespace(clientset kubernetes.Interface, installationName, pgoNamespace, deletedBy, ns string) error {
 
 	err := clientset.CoreV1().Namespaces().Delete(ns, &metav1.DeleteOptions{})
 	if err != nil {
@@ -224,7 +224,7 @@ func DeleteNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 }
 
 // CopySecret copies a secret from the Operator namespace to target namespace
-func CopySecret(clientset *kubernetes.Clientset, secretName, operatorNamespace, targetNamespace string) error {
+func CopySecret(clientset kubernetes.Interface, secretName, operatorNamespace, targetNamespace string) error {
 	secret, err := clientset.CoreV1().Secrets(operatorNamespace).Get(secretName, metav1.GetOptions{})
 
 	if err == nil {
@@ -418,7 +418,7 @@ func ReconcileServiceAccount(clientset kubernetes.Interface,
 }
 
 // UpdateNamespace updates a new namespace to be owned by the Operator.
-func UpdateNamespace(clientset *kubernetes.Clientset, installationName, pgoNamespace,
+func UpdateNamespace(clientset kubernetes.Interface, installationName, pgoNamespace,
 	updatedBy, ns string) error {
 
 	log.Debugf("UpdateNamespace %s %s %s %s", installationName, pgoNamespace, updatedBy, ns)
@@ -460,7 +460,7 @@ func UpdateNamespace(clientset *kubernetes.Clientset, installationName, pgoNames
 // ConfigureInstallNamespaces is responsible for properly configuring up any namespaces provided for
 // the installation of the Operator.  This includes creating or updating those namespaces so they can
 // be utilized by the Operator to deploy PG clusters.
-func ConfigureInstallNamespaces(clientset *kubernetes.Clientset, installationName, pgoNamespace string,
+func ConfigureInstallNamespaces(clientset kubernetes.Interface, installationName, pgoNamespace string,
 	namespaceNames []string, namespaceOperatingMode NamespaceOperatingMode) error {
 
 	// now loop through all namespaces and either create or update them
@@ -525,7 +525,7 @@ func ConfigureInstallNamespaces(clientset *kubernetes.Clientset, installationNam
 // namespace mode is "disabled", a list of namespaces specified using the NAMESPACE env var during
 // installation is returned (with the list defaulting to the Operator's own namespace in the event
 // that NAMESPACE is empty).
-func GetCurrentNamespaceList(clientset *kubernetes.Clientset,
+func GetCurrentNamespaceList(clientset kubernetes.Interface,
 	installationName string, namespaceOperatingMode NamespaceOperatingMode) ([]string, error) {
 
 	if namespaceOperatingMode == NamespaceOperatingModeDisabled {
@@ -560,7 +560,7 @@ func GetCurrentNamespaceList(clientset *kubernetes.Clientset,
 // Operator's own namespace in the event that NAMESPACE is empty).  If any namespaces are found to
 // be invalid, an ErrNamespaceNotWatched error is returned containing an error message listing
 // the invalid namespaces.
-func ValidateNamespacesWatched(clientset *kubernetes.Clientset,
+func ValidateNamespacesWatched(clientset kubernetes.Interface,
 	namespaceOperatingMode NamespaceOperatingMode,
 	installationName string, namespaces ...string) error {
 
@@ -635,7 +635,7 @@ func ValidateNamespaceNames(namespace ...string) error {
 // a the proper NamespaceOperatingMode will be returned as applicable for those privileges
 // (please see the various NamespaceOperatingMode types for a detailed explanation of each
 // operating mode).
-func GetNamespaceOperatingMode(clientset *kubernetes.Clientset) (NamespaceOperatingMode, error) {
+func GetNamespaceOperatingMode(clientset kubernetes.Interface) (NamespaceOperatingMode, error) {
 
 	// first check to see if dynamic namespace capabilities can be enabled
 	isDynamic, err := CheckAccessPrivs(clientset, namespacePrivsCoreDynamic, "", "")
@@ -667,7 +667,7 @@ func GetNamespaceOperatingMode(clientset *kubernetes.Clientset) (NamespaceOperat
 // is returned.  Otherwise, if the Service Account is missing any of the permissions specified,
 // or if an error is encountered while attempting to deterine the permissions for the service
 // account, then "false" is returned (along with the error in the event an error is encountered).
-func CheckAccessPrivs(clientset *kubernetes.Clientset,
+func CheckAccessPrivs(clientset kubernetes.Interface,
 	privs map[string][]string, apiGroup, namespace string) (bool, error) {
 
 	for resource, verbs := range privs {
@@ -702,7 +702,7 @@ func CheckAccessPrivs(clientset *kubernetes.Clientset,
 // namespaces that are part of the install, but not included in the env var.  If no namespaces are
 // identified via either of these methods, then the the PGO namespaces is returned as the default
 // namespace.
-func GetInitialNamespaceList(clientset *kubernetes.Clientset,
+func GetInitialNamespaceList(clientset kubernetes.Interface,
 	namespaceOperatingMode NamespaceOperatingMode,
 	installationName, pgoNamespace string) ([]string, error) {
 

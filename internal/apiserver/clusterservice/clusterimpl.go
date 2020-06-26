@@ -216,7 +216,7 @@ func getDeployments(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterDeplo
 	return output, err
 }
 
-func GetPods(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
+func GetPods(clientset kubernetes.Interface, cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
 	output := []msgs.ShowClusterPod{}
 
 	//get pods, but exclude backup pods and backrest repo

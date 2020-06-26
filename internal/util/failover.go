@@ -44,7 +44,7 @@ type InstanceReplicationInfo struct {
 
 type ReplicationStatusRequest struct {
 	RESTConfig  *rest.Config
-	Clientset   *kubernetes.Clientset
+	Clientset   kubernetes.Interface
 	Namespace   string
 	ClusterName string
 }
@@ -89,7 +89,7 @@ var (
 )
 
 // GetPod determines the best target to fail to
-func GetPod(clientset *kubernetes.Clientset, deploymentName, namespace string) (*v1.Pod, error) {
+func GetPod(clientset kubernetes.Interface, deploymentName, namespace string) (*v1.Pod, error) {
 
 	var err error
 
@@ -238,7 +238,7 @@ func ReplicationStatus(request ReplicationStatusRequest, includePrimary bool) (R
 // Patroni, which will result in Patroni stepping aside from managing the cluster.  This will effectively cause
 // Patroni to stop responding to failures or other database activities, e.g. it will not attempt to start the
 // database when stopped to perform maintenance
-func ToggleAutoFailover(clientset *kubernetes.Clientset, enable bool, pghaScope, namespace string) error {
+func ToggleAutoFailover(clientset kubernetes.Interface, enable bool, pghaScope, namespace string) error {
 
 	// find the "config" configMap created by Patroni
 	configMapName := pghaScope + "-config"
@@ -299,7 +299,7 @@ func createInstanceInfoMap(pods *v1.PodList) map[string]instanceInfo {
 // failover.  Otherwise, if "pause" isn't present in the config or if it has a value other than
 // true, then assume autofail is enabled and do nothing (when Patroni see's an invalid value for
 // "pause" it sets it to "true")
-func enableFailover(clientset *kubernetes.Clientset, configMap *v1.ConfigMap, configJSON map[string]interface{},
+func enableFailover(clientset kubernetes.Interface, configMap *v1.ConfigMap, configJSON map[string]interface{},
 	namespace string) error {
 	if _, ok := configJSON["pause"]; ok && configJSON["pause"] == true {
 		log.Debugf("updating pause key in configMap %s to enable autofailover", configMap.Name)
@@ -324,7 +324,7 @@ func enableFailover(clientset *kubernetes.Clientset, configMap *v1.ConfigMap, co
 // If "pause" isn't present in the config then assume autofail is enabled and needs to be disabled
 // by setting "pause" to true.  Or if it is present and set to something other than "true" (e.g.
 // "false" or "null"), then it also needs to be disabled by setting "pause" to true.
-func disableFailover(clientset *kubernetes.Clientset, configMap *v1.ConfigMap, configJSON map[string]interface{},
+func disableFailover(clientset kubernetes.Interface, configMap *v1.ConfigMap, configJSON map[string]interface{},
 	namespace string) error {
 	if _, ok := configJSON["pause"]; !ok || configJSON["pause"] != true {
 		log.Debugf("updating pause key in configMap %s to disable autofailover", configMap.Name)

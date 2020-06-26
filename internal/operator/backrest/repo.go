@@ -65,7 +65,7 @@ type RepoServiceTemplateFields struct {
 	Port        string
 }
 
-func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, cluster *crv1.Pgcluster, createPVC bool,
+func CreateRepoDeployment(clientset kubernetes.Interface, namespace string, cluster *crv1.Pgcluster, createPVC bool,
 	replicas int) error {
 
 	var b bytes.Buffer
@@ -159,7 +159,7 @@ func CreateRepoDeployment(clientset *kubernetes.Clientset, namespace string, clu
 
 // UpdateResources updates the pgBackRest repository Deployment to reflect any
 // resource updates
-func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, cluster *crv1.Pgcluster) error {
+func UpdateResources(clientset kubernetes.Interface, restConfig *rest.Config, cluster *crv1.Pgcluster) error {
 	// get a list of all of the instance deployments for the cluster
 	deployment, err := operator.GetBackrestDeployment(clientset, cluster)
 
@@ -188,7 +188,7 @@ func UpdateResources(clientset *kubernetes.Clientset, restConfig *rest.Config, c
 	return nil
 }
 
-func createService(clientset *kubernetes.Clientset, fields *RepoServiceTemplateFields, namespace string) error {
+func createService(clientset kubernetes.Interface, fields *RepoServiceTemplateFields, namespace string) error {
 	var err error
 
 	var b bytes.Buffer

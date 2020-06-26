@@ -76,7 +76,7 @@ const (
 //
 // Any returned error is logged in the calling function
 func AddPgAdmin(
-	clientset *kubernetes.Clientset,
+	clientset kubernetes.Interface,
 	restclient *rest.RESTClient,
 	restconfig *rest.Config,
 	cluster *crv1.Pgcluster,
@@ -125,7 +125,7 @@ func AddPgAdmin(
 
 // AddPgAdminFromPgTask is a method that helps to bring up
 // the pgAdmin deployment that sits alongside a PostgreSQL cluster
-func AddPgAdminFromPgTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, task *crv1.Pgtask) {
+func AddPgAdminFromPgTask(clientset kubernetes.Interface, restclient *rest.RESTClient, restconfig *rest.Config, task *crv1.Pgtask) {
 	clusterName := task.Spec.Parameters[config.LABEL_PGADMIN_TASK_CLUSTER]
 	namespace := task.Spec.Namespace
 	storage := task.Spec.StorageSpec
@@ -171,7 +171,7 @@ func AddPgAdminFromPgTask(clientset *kubernetes.Clientset, restclient *rest.REST
 }
 
 func BootstrapPgAdminUsers(
-	clientset *kubernetes.Clientset,
+	clientset kubernetes.Interface,
 	restclient *rest.RESTClient,
 	restconfig *rest.Config,
 	cluster *crv1.Pgcluster) error {
@@ -257,7 +257,7 @@ func BootstrapPgAdminUsers(
 //
 // Any errors that are returned should be logged in the calling function, though
 // some logging occurs in this function as well
-func DeletePgAdmin(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
+func DeletePgAdmin(clientset kubernetes.Interface, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
 
@@ -301,7 +301,7 @@ func DeletePgAdmin(clientset *kubernetes.Clientset, restclient *rest.RESTClient,
 
 // DeletePgAdminFromPgTask is effectively a legacy method that helps to delete
 // the pgAdmin deployment that sits alongside a PostgreSQL cluster
-func DeletePgAdminFromPgTask(clientset *kubernetes.Clientset, restclient *rest.RESTClient, restconfig *rest.Config, task *crv1.Pgtask) {
+func DeletePgAdminFromPgTask(clientset kubernetes.Interface, restclient *rest.RESTClient, restconfig *rest.Config, task *crv1.Pgtask) {
 	clusterName := task.Spec.Parameters[config.LABEL_PGADMIN_TASK_CLUSTER]
 	namespace := task.Spec.Namespace
 
@@ -333,7 +333,7 @@ func DeletePgAdminFromPgTask(clientset *kubernetes.Clientset, restclient *rest.R
 }
 
 // createPgAdminDeployment creates the Kubernetes Deployment for pgAdmin
-func createPgAdminDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster, pvcName string) error {
+func createPgAdminDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluster, pvcName string) error {
 	log.Debugf("creating pgAdmin deployment: %s", cluster.Name)
 
 	// derive the name of the Deployment...which is also used as the name of the
@@ -393,7 +393,7 @@ func createPgAdminDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pgcl
 }
 
 // createPgAdminService creates the Kubernetes Service for pgAdmin
-func createPgAdminService(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) error {
+func createPgAdminService(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
 	// pgAdminServiceName is the name of the Service of the pgAdmin, which
 	// matches that for the Deploymnt
 	pgAdminSvcName := fmt.Sprintf(pgAdminDeploymentFormat, cluster.Name)

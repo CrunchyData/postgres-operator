@@ -37,7 +37,7 @@ import (
 type Controller struct {
 	PgtaskConfig      *rest.Config
 	PgtaskClient      *rest.RESTClient
-	PgtaskClientset   *kubernetes.Clientset
+	PgtaskClientset   kubernetes.Interface
 	Queue             workqueue.RateLimitingInterface
 	Informer          informers.PgtaskInformer
 	PgtaskWorkerCount int

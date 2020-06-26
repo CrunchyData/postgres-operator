@@ -234,7 +234,7 @@ func GetPgbackrestEnvVars(cluster *crv1.Pgcluster, backrestEnabled, depName, por
 
 // GetBackrestDeployment finds the pgBackRest repository Deployments for a
 // PostgreQL cluster
-func GetBackrestDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) (*apps_v1.Deployment, error) {
+func GetBackrestDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (*apps_v1.Deployment, error) {
 	// find the pgBackRest repository Deployment, which follows a known pattern
 	deploymentName := fmt.Sprintf(util.BackrestRepoDeploymentName, cluster.Name)
 	deployment, err := clientset.AppsV1().Deployments(cluster.Namespace).Get(deploymentName, metav1.GetOptions{})
@@ -242,7 +242,7 @@ func GetBackrestDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pgclus
 	return deployment, err
 }
 
-func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, cluster *crv1.Pgcluster, pgbadger_target string) string {
+func GetBadgerAddon(clientset kubernetes.Interface, namespace string, cluster *crv1.Pgcluster, pgbadger_target string) string {
 
 	spec := cluster.Spec
 
@@ -269,7 +269,7 @@ func GetBadgerAddon(clientset *kubernetes.Clientset, namespace string, cluster *
 	return ""
 }
 
-func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *crv1.PgclusterSpec) string {
+func GetCollectAddon(clientset kubernetes.Interface, namespace string, spec *crv1.PgclusterSpec) string {
 
 	if spec.UserLabels[config.LABEL_COLLECT] == "true" {
 		log.Debug("crunchy_collect was found as a label on cluster create")
@@ -302,7 +302,7 @@ func GetCollectAddon(clientset *kubernetes.Clientset, namespace string, spec *cr
 }
 
 //consolidate with cluster.GetConfVolume
-func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string) string {
+func GetConfVolume(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string) string {
 	var configMapStr string
 
 	//check for user provided configmap
@@ -335,7 +335,7 @@ func GetConfVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespac
 // than once, such as following a restart of the container.  In the future this configMap can also
 // be leveraged to manage other configuration settings for the PostgreSQL cluster and its
 // associated containers.
-func CreatePGHAConfigMap(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster,
+func CreatePGHAConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
 	namespace string) error {
 
 	labels := make(map[string]string)
@@ -369,7 +369,7 @@ func CreatePGHAConfigMap(clientset *kubernetes.Clientset, cluster *crv1.Pgcluste
 }
 
 // sets the proper collect secret in the deployment spec if collect is enabled
-func GetCollectVolume(clientset *kubernetes.Clientset, cl *crv1.Pgcluster, namespace string) string {
+func GetCollectVolume(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string) string {
 	if cl.Spec.UserLabels[config.LABEL_COLLECT] == "true" {
 		return "\"secret\": { \"secretName\": \"" + cl.Spec.CollectSecretName + "\" }"
 	}
@@ -392,7 +392,7 @@ func GetTablespaceNamePVCMap(clusterName string, tablespaceStorageTypeMap map[st
 
 // GetInstanceDeployments finds the Deployments that represent PostgreSQL
 // instances
-func GetInstanceDeployments(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) (*apps_v1.DeploymentList, error) {
+func GetInstanceDeployments(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (*apps_v1.DeploymentList, error) {
 	// first, get a list of all of the available deployments so we can properly
 	// mount the tablespace PVCs after we create them
 	// NOTE: this will also get the pgBackRest deployments, but we will filter
@@ -701,7 +701,7 @@ func GetPgmonitorEnvVars(metricsEnabled, collectSecret string) string {
 // pgBackRest environment variables required to enable S3 support.  After the template has been
 // executed with the proper values, the result is then returned a string for inclusion in the PG
 // and pgBackRest deployments.
-func GetPgbackrestS3EnvVars(cluster crv1.Pgcluster, clientset *kubernetes.Clientset,
+func GetPgbackrestS3EnvVars(cluster crv1.Pgcluster, clientset kubernetes.Interface,
 	ns string) string {
 
 	if !strings.Contains(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], "s3") {
@@ -791,7 +791,7 @@ func GetPgbackrestS3EnvVars(cluster crv1.Pgcluster, clientset *kubernetes.Client
 // initialization of a PG cluster this function will be utilized to set the "init" value to false
 // to ensure the primary does not attempt to run initialization logic in the event that it is
 // restarted.
-func UpdatePGHAConfigInitFlag(clientset *kubernetes.Clientset, initVal bool, clusterName,
+func UpdatePGHAConfigInitFlag(clientset kubernetes.Interface, initVal bool, clusterName,
 	namespace string) error {
 
 	log.Debugf("updating init value to %t in the pgha configMap for cluster %s", initVal, clusterName)

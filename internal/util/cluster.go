@@ -112,7 +112,7 @@ var (
 
 // CreateBackrestRepoSecrets creates the secrets required to manage the
 // pgBackRest repo container
-func CreateBackrestRepoSecrets(clientset *kubernetes.Clientset,
+func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 	backrestRepoConfig BackrestRepoConfig) error {
 
 	keys, err := NewPrivatePublicKeyPair()
@@ -211,7 +211,7 @@ func GeneratedPasswordValidUntilDays(configuredValidUntilDays string) int {
 
 // GetPrimaryPod gets the Pod of the primary PostgreSQL instance. If somehow
 // the query gets multiple pods, then the first one in the list is returned
-func GetPrimaryPod(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) (*v1.Pod, error) {
+func GetPrimaryPod(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (*v1.Pod, error) {
 	// set up the selector for the primary pod
 	selector := fmt.Sprintf("%s=%s,%s=%s",
 		config.LABEL_PG_CLUSTER, cluster.Spec.Name, config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
@@ -238,7 +238,7 @@ func GetPrimaryPod(clientset *kubernetes.Clientset, cluster *crv1.Pgcluster) (*v
 
 // GetS3CredsFromBackrestRepoSecret retrieves the AWS S3 credentials, i.e. the key and key
 // secret, from a specific cluster's backrest repo secret
-func GetS3CredsFromBackrestRepoSecret(clientset *kubernetes.Clientset, namespace, clusterName string) (AWSS3Secret, error) {
+func GetS3CredsFromBackrestRepoSecret(clientset kubernetes.Interface, namespace, clusterName string) (AWSS3Secret, error) {
 	secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
 	s3Secret := AWSS3Secret{}
 
@@ -263,7 +263,7 @@ func GetS3CredsFromBackrestRepoSecret(clientset *kubernetes.Clientset, namespace
 // Note: it is recommended to pre-hash the password (e.g. md5, SCRAM) so that
 // way the plaintext password is not logged anywhere. This also avoids potential
 // SQL injections
-func SetPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod, port, username, password, sqlCustom string) error {
+func SetPostgreSQLPassword(clientset kubernetes.Interface, restconfig *rest.Config, pod *v1.Pod, port, username, password, sqlCustom string) error {
 	log.Debugf("set PostgreSQL password for user [%s]", username)
 
 	// if custom SQL is not set, use the default SQL
@@ -299,7 +299,7 @@ func SetPostgreSQLPassword(clientset *kubernetes.Clientset, restconfig *rest.Con
 // StopPostgreSQLInstance issues a "fast" shutdown command to the PostgreSQL
 // instance. This will immediately terminate any connections and safely shut
 // down PostgreSQL so it does not have to start up in crash recovery mode
-func StopPostgreSQLInstance(clientset *kubernetes.Clientset, restconfig *rest.Config, pod *v1.Pod, instanceName string) error {
+func StopPostgreSQLInstance(clientset kubernetes.Interface, restconfig *rest.Config, pod *v1.Pod, instanceName string) error {
 	log.Debugf("shutting down PostgreSQL on pod [%s]", pod.Name)
 
 	// append the data directory, which is the name of the instance

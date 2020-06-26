@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"fmt"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -24,7 +25,7 @@ import (
 type Request struct {
 	RESTConfig       *rest.Config
 	RESTClient       *rest.RESTClient
-	Clientset        *kubernetes.Clientset
+	Clientset        kubernetes.Interface
 	RemoveData       bool
 	RemoveBackup     bool
 	IsBackup         bool

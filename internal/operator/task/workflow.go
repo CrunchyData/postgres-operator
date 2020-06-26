@@ -25,7 +25,7 @@ import (
 
 // CompleteCreateClusterWorkflow ... update the pgtask for the
 // create cluster workflow for a given cluster
-func CompleteCreateClusterWorkflow(clusterName string, Clientset *kubernetes.Clientset, RESTClient *rest.RESTClient, ns string) {
+func CompleteCreateClusterWorkflow(clusterName string, Clientset kubernetes.Interface, RESTClient *rest.RESTClient, ns string) {
 
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowCreateClusterType
 
@@ -52,7 +52,7 @@ func CompleteCreateClusterWorkflow(clusterName string, Clientset *kubernetes.Cli
 
 }
 
-func CompleteBackupWorkflow(clusterName string, clientSet *kubernetes.Clientset, RESTClient *rest.RESTClient, ns string) {
+func CompleteBackupWorkflow(clusterName string, clientSet kubernetes.Interface, RESTClient *rest.RESTClient, ns string) {
 
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackupType
 

@@ -53,7 +53,7 @@ const (
 var passwordCharSelector = big.NewInt(passwordCharUpper - passwordCharLower)
 
 // CreateSecret create the secret, user, and primary secrets
-func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, password, namespace string) error {
+func CreateSecret(clientset kubernetes.Interface, db, secretName, username, password, namespace string) error {
 
 	var enUsername = username
 
@@ -113,7 +113,7 @@ func GeneratedPasswordLength(configuredPasswordLength string) int {
 }
 
 // GetPasswordFromSecret will fetch the password from a user secret
-func GetPasswordFromSecret(clientset *kubernetes.Clientset, namespace, secretName string) (string, error) {
+func GetPasswordFromSecret(clientset kubernetes.Interface, namespace, secretName string) (string, error) {
 	secret, err := clientset.CoreV1().Secrets(namespace).Get(secretName, metav1.GetOptions{})
 
 	if err != nil {
@@ -139,7 +139,7 @@ type CloneClusterSecrets struct {
 	// any additional selectors that can be added to the query that is made
 	AdditionalSelectors []string
 	// The Kubernetes Clientset used to make API calls to Kubernetes`
-	ClientSet *kubernetes.Clientset
+	ClientSet kubernetes.Interface
 	// The Namespace that the clusters are in
 	Namespace string
 	// The name of the PostgreSQL cluster that the secrets are originating from
@@ -200,7 +200,7 @@ func (cs CloneClusterSecrets) Clone() error {
 }
 
 // CreateUserSecret will create a new secret holding a user credential
-func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string) error {
+func CreateUserSecret(clientset kubernetes.Interface, clustername, username, password, namespace string) error {
 	secretName := fmt.Sprintf(UserSecretFormat, clustername, username)
 
 	if err := CreateSecret(clientset, clustername, secretName, username, password, namespace); err != nil {
@@ -216,7 +216,7 @@ func CreateUserSecret(clientset *kubernetes.Clientset, clustername, username, pa
 //
 // 1. If the Secret exists, it updates the value of the Secret
 // 2. If the Secret does not exist, it creates the secret
-func UpdateUserSecret(clientset *kubernetes.Clientset, clustername, username, password, namespace string) error {
+func UpdateUserSecret(clientset kubernetes.Interface, clustername, username, password, namespace string) error {
 	secretName := fmt.Sprintf(UserSecretFormat, clustername, username)
 
 	// see if the secret already exists

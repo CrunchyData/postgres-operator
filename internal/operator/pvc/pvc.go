@@ -50,7 +50,7 @@ type TemplateFields struct {
 // CreateMissingPostgreSQLVolumes converts the storage specifications of cluster
 // related to PostgreSQL into StorageResults. When a specification calls for a
 // PVC to be created, the PVC is created unless it already exists.
-func CreateMissingPostgreSQLVolumes(clientset *kubernetes.Clientset,
+func CreateMissingPostgreSQLVolumes(clientset kubernetes.Interface,
 	cluster *crv1.Pgcluster, namespace string,
 	pvcNamePrefix string, dataStorageSpec crv1.PgStorageSpec,
 ) (
@@ -80,7 +80,7 @@ func CreateMissingPostgreSQLVolumes(clientset *kubernetes.Clientset,
 
 // CreateIfNotExists converts a storage specification into a StorageResult. If
 // spec calls for a PVC to be created and pvcName does not exist, it will be created.
-func CreateIfNotExists(clientset *kubernetes.Clientset, spec crv1.PgStorageSpec, pvcName, clusterName, namespace string) (operator.StorageResult, error) {
+func CreateIfNotExists(clientset kubernetes.Interface, spec crv1.PgStorageSpec, pvcName, clusterName, namespace string) (operator.StorageResult, error) {
 	result := operator.StorageResult{
 		SupplementalGroups: spec.GetSupplementalGroups(),
 	}
@@ -105,7 +105,7 @@ func CreateIfNotExists(clientset *kubernetes.Clientset, spec crv1.PgStorageSpec,
 }
 
 // CreatePVC create a pvc
-func CreatePVC(clientset *kubernetes.Clientset, storageSpec *crv1.PgStorageSpec, pvcName, clusterName, namespace string) (string, error) {
+func CreatePVC(clientset kubernetes.Interface, storageSpec *crv1.PgStorageSpec, pvcName, clusterName, namespace string) (string, error) {
 	var err error
 
 	switch storageSpec.StorageType {
@@ -131,7 +131,7 @@ func CreatePVC(clientset *kubernetes.Clientset, storageSpec *crv1.PgStorageSpec,
 }
 
 // Create a pvc
-func Create(clientset *kubernetes.Clientset, name, clusterName string, storageSpec *crv1.PgStorageSpec, namespace string) error {
+func Create(clientset kubernetes.Interface, name, clusterName string, storageSpec *crv1.PgStorageSpec, namespace string) error {
 	log.Debug("in createPVC")
 	var doc2 bytes.Buffer
 	var err error
@@ -185,7 +185,7 @@ func Create(clientset *kubernetes.Clientset, name, clusterName string, storageSp
 }
 
 // Delete a pvc
-func DeleteIfExists(clientset *kubernetes.Clientset, name string, namespace string) error {
+func DeleteIfExists(clientset kubernetes.Interface, name string, namespace string) error {
 	pvc, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 		return nil
@@ -206,7 +206,7 @@ func DeleteIfExists(clientset *kubernetes.Clientset, name string, namespace stri
 }
 
 // Exists test to see if pvc exists
-func Exists(clientset *kubernetes.Clientset, name string, namespace string) bool {
+func Exists(clientset kubernetes.Interface, name string, namespace string) bool {
 	_, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
 	return err == nil
 }
