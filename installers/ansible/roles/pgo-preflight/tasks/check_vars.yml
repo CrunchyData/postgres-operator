@@ -1,7 +1,7 @@
 ---
-- name: Check if mandatory inventory file variables are defined
+- name: Check if mandatory variables are defined
   fail:
-    msg: Please specify a value for variable {{ item }} in your inventory file
+    msg: Please specify a value for variable {{ item }} in your values.yaml
   tags: always
   when: "lookup('vars', item, default='') == ''"
   with_items:

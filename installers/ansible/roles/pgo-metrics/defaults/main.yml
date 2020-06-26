@@ -3,11 +3,13 @@ kubernetes_context: ""
 kubernetes_in_cluster: "false"
 openshift_host: ""
 
+metrics_namespace: "pgo"
+
+grafana_install: "false"
 grafana_default_dashboards: "true"
 grafana_port: "3000"
 grafana_service_name: "crunchy-grafana"
 
-metrics_namespace: "pgo"
-
+prometheus_install: "false"
 prometheus_port: "9090"
 prometheus_service_name: "crunchy-prometheus"
