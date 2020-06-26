@@ -17,17 +17,7 @@ With the correct playbooks acquired and prerequisites satisfied, simply run
 the following command:
 
 ```bash
-ansible-playbook -i /path/to/inventory --tags=uninstall-metrics main.yml
-```
-
-If the Crunchy PostgreSQL Operator playbooks were installed using `yum`, use the
-following commands:
-
-```bash
-export ANSIBLE_ROLES_PATH=/usr/share/ansible/roles/crunchydata
-
-ansible-playbook -i /path/to/inventory --tags=uninstall-metrics \
-    /usr/share/ansible/postgres-operator/playbooks/main.yml
+ansible-playbook -i /path/to/inventory.yaml --tags=uninstall-metrics main.yml
 ```
 
 [ansible-prerequisites]: {{< relref "/installation/other/ansible/prerequisites.md" >}}

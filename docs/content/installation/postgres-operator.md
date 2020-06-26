@@ -63,6 +63,13 @@ If you have already configured the ServiceAccount and ClusterRoleBinding for the
 installation process (e.g. from a previous installation), then you can remove
 these objects from the `postgres-operator.yml` manifest.
 
+### Config Map
+
+The `pgo-deployer` uses a [Kubernetes ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/)
+to pass configuration options into the installer. The ConfigMap is defined in
+the `postgres-operator.yaml` file and can be updated based on your configuration
+preferences.
+
 ### Namespaces
 
 By default, the installer will run in the `pgo` Namespace. This can be

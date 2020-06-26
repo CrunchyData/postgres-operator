@@ -17,7 +17,6 @@ The playbooks provided allow users to:
 * install PostgreSQL Operator on Kubernetes and OpenShift
 * install PostgreSQL Operator from a Linux, Mac or Windows (Ubuntu subsystem) host
 * generate TLS certificates required by the PostgreSQL Operator
-* configure PostgreSQL Operator settings from a single inventory file
 * support a variety of deployment models
 
 ## Resources

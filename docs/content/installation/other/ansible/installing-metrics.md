@@ -19,7 +19,7 @@ using the provided Ansible roles.
 The following assumes the proper [prerequisites are satisfied][ansible-prerequisites]
 we can now install the PostgreSQL Operator.
 
-At a minimum, the following inventory variables should be configured to install the
+At a minimum, the following variables should be configured to install the
 metrics infrastructure:
 
 | Name                              | Default     | Description                                                                                                                                                                      |
@@ -47,12 +47,12 @@ metrics infrastructure:
 
 {{% notice tip %}}
 Administrators can choose to install Grafana, Prometheus or both by configuring the
-`grafana_install` and `prometheus_install` variables in the inventory files.
+`grafana_install` and `prometheus_install` variables in the `values.yaml` file.
 {{% /notice %}}
 
 The following commands should be run in the directory where the Crunchy PostgreSQL Operator
 playbooks are located.  See the `ansible` directory in the Crunchy PostgreSQL Operator
-project for the inventory file, main playbook and ansible roles.
+project for the inventory file, values file, main playbook and ansible roles.
 
 {{% notice tip %}}
 At this time the Crunchy PostgreSQL Operator Playbooks only support storage classes.
@@ -65,17 +65,7 @@ On a Linux host with Ansible installed we can run the following command to insta
 the Metrics stack:
 
 ```bash
-ansible-playbook -i /path/to/inventory --tags=install-metrics main.yml
-```
-
-If the Crunchy PostgreSQL Operator playbooks were installed using `yum`, use the
-following commands:
-
-```bash
-export ANSIBLE_ROLES_PATH=/usr/share/ansible/roles/crunchydata
-
-ansible-playbook -i /path/to/inventory --tags=install-metrics --ask-become-pass \
-    /usr/share/ansible/postgres-operator/playbooks/main.yml
+ansible-playbook -i /path/to/inventory.yaml --tags=install-metrics main.yml
 ```
 
 ## Installing on macOS
@@ -84,7 +74,7 @@ On a macOS host with Ansible installed we can run the following command to insta
 the Metrics stack:
 
 ```bash
-ansible-playbook -i /path/to/inventory --tags=install-metrics main.yml
+ansible-playbook -i /path/to/inventory.yaml --tags=install-metrics main.yml
 ```
 
 ## Installing on Windows
@@ -93,7 +83,7 @@ On a Windows host with the Ubuntu subsystem we can run the following commands to
 the Metrics stack:
 
 ```bash
-ansible-playbook -i /path/to/inventory --tags=install-metrics main.yml
+ansible-playbook -i /path/to/inventory.yaml --tags=install-metrics main.yml
 ```
 
 ## Verifying the Installation

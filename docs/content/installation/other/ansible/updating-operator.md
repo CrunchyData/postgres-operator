@@ -13,7 +13,7 @@ of the service.  Using the `update` flag will:
 * Update and redeploy the operator deployment
 * Recreate configuration maps used by operator
 * Remove any deprecated objects
-* Allow administrators to change settings configured in the `inventory`
+* Allow administrators to change settings configured in the `values.yaml`
 * Reinstall the `pgo` client if a new version is specified
 
 The following assumes the proper [prerequisites are satisfied][ansible-prerequisites]
@@ -21,7 +21,7 @@ we can now update the PostgreSQL Operator.
 
 The commands should be run in the directory where the Crunchy PostgreSQL Operator
 playbooks is stored.  See the `ansible` directory in the Crunchy PostgreSQL Operator
-project for the inventory file, main playbook and ansible roles.
+project for the inventory file, values file, main playbook and ansible roles.
 
 ## Updating on Linux
 
@@ -29,17 +29,7 @@ On a Linux host with Ansible installed we can run the following command to updat
 the PostgreSQL Operator:
 
 ```bash
-ansible-playbook -i /path/to/inventory --tags=update --ask-become-pass main.yml
-```
-
-If the Crunchy PostgreSQL Operator playbooks were installed using `yum`, use the
-following commands:
-
-```bash
-export ANSIBLE_ROLES_PATH=/usr/share/ansible/roles/crunchydata
-
-ansible-playbook -i /path/to/inventory --tags=update --ask-become-pass \
-    /usr/share/ansible/postgres-operator/playbooks/main.yml
+ansible-playbook -i /path/to/inventory.yaml --tags=update --ask-become-pass main.yml
 ```
 
 ## Updating on macOS
@@ -48,7 +38,7 @@ On a macOS host with Ansible installed we can run the following command to updat
 the PostgreSQL Operator.
 
 ```bash
-ansible-playbook -i /path/to/inventory --tags=update --ask-become-pass main.yml
+ansible-playbook -i /path/to/inventory.yaml --tags=update --ask-become-pass main.yml
 ```
 
 ## Updating on Windows Ubuntu Subsystem
@@ -57,7 +47,7 @@ On a Windows host with an Ubuntu subsystem we can run the following commands to 
 the PostgreSQL Operator.
 
 ```bash
-ansible-playbook -i /path/to/inventory --tags=update --ask-become-pass main.yml
+ansible-playbook -i /path/to/inventory.yaml --tags=update --ask-become-pass main.yml
 ```
 
 ## Verifying the Update
