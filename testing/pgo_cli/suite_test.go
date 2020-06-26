@@ -77,7 +77,7 @@ func TestMain(m *testing.M) {
 				TestContext.DefaultEnvironment = append(TestContext.DefaultEnvironment,
 					"PGO_CA_CERT="+filepath.Join(home, ".pgo", ns, "output", "server.crt"),
 					"PGO_CLIENT_CERT="+filepath.Join(home, ".pgo", ns, "output", "server.crt"),
-					"PGO_CLIENT_KEY="+filepath.Join(home, ".pgo", ns, "output", "server.pem"),
+					"PGO_CLIENT_KEY="+filepath.Join(home, ".pgo", ns, "output", "server.key"),
 				)
 			}
 		}

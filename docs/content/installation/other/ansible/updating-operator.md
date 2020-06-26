@@ -91,7 +91,7 @@ cat <<EOF >> ~/.bashrc
 export PGOUSER="${HOME?}/.pgo/<PGO_NAMESPACE>/pgouser"
 export PGO_CA_CERT="${HOME?}/.pgo/<PGO_NAMESPACE>/client.crt"
 export PGO_CLIENT_CERT="${HOME?}/.pgo/<PGO_NAMESPACE>/client.crt"
-export PGO_CLIENT_KEY="${HOME?}/.pgo/<PGO_NAMESPACE>/client.pem"
+export PGO_CLIENT_KEY="${HOME?}/.pgo/<PGO_NAMESPACE>/client.key"
 export PGO_APISERVER_URL='https://127.0.0.1:8443'
 EOF
 ```
