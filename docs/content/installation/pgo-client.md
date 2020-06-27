@@ -63,7 +63,7 @@ Next, copy the certificates to this new directory:
 
 ```bash
 cp /PATH/TO/client.crt ${HOME?}/.pgo/client.crt && chmod 600 ${HOME?}/.pgo/client.crt
-cp /PATH/TO/client.pem ${HOME?}/.pgo/client.pem && chmod 400 ${HOME?}/.pgo/client.pem
+cp /PATH/TO/client.key ${HOME?}/.pgo/client.key && chmod 400 ${HOME?}/.pgo/client.key
 ```
 
 Finally, set the following environment variables to point to the client TLS files:
@@ -72,7 +72,7 @@ Finally, set the following environment variables to point to the client TLS file
 cat <<EOF >> ${HOME?}/.bashrc
 export PGO_CA_CERT="${HOME?}/.pgo/client.crt"
 export PGO_CLIENT_CERT="${HOME?}/.pgo/client.crt"
-export PGO_CLIENT_KEY="${HOME?}/.pgo/client.pem"
+export PGO_CLIENT_KEY="${HOME?}/.pgo/client.key"
 EOF
 ```
 
@@ -220,7 +220,7 @@ Next, copy the certificates to this new directory:
 
 ```bash
 copy \PATH\TO\client.crt "%HOMEPATH%\pgo"
-copy \PATH\TO\client.pem "%HOMEPATH%\pgo"
+copy \PATH\TO\client.key "%HOMEPATH%\pgo"
 ```
 
 Finally, set the following environment variables to point to the client TLS files:
@@ -228,7 +228,7 @@ Finally, set the following environment variables to point to the client TLS file
 ```bash
 setx PGO_CA_CERT "%HOMEPATH%\pgo\client.crt"
 setx PGO_CLIENT_CERT "%HOMEPATH%\pgo\client.crt"
-setx PGO_CLIENT_KEY "%HOMEPATH%\pgo\client.pem"
+setx PGO_CLIENT_KEY "%HOMEPATH%\pgo\client.key"
 ```
 
 #### Configuring `pgouser`
