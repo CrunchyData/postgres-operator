@@ -41,7 +41,7 @@ func (c *ControllerManager) reconcileRBAC(targetNamespace string) {
 	log.Debugf("Controller Manager: Now reconciling RBAC in namespace %s", targetNamespace)
 
 	// Use the image pull secrets of the operator service account in the new namespace.
-	operator, err := c.controllers[targetNamespace].kubeClientset.CoreV1().
+	operator, err := c.controllers[targetNamespace].clientset.CoreV1().
 		ServiceAccounts(c.pgoNamespace).Get(ns.OPERATOR_SERVICE_ACCOUNT, metav1.GetOptions{})
 	if err != nil {
 		// just log an error and continue so that we can attempt to reconcile other RBAC resources
@@ -60,7 +60,7 @@ func (c *ControllerManager) reconcileRBAC(targetNamespace string) {
 
 		var doesNotExist bool
 
-		if _, err := c.controllers[targetNamespace].kubeClientset.CoreV1().
+		if _, err := c.controllers[targetNamespace].clientset.CoreV1().
 			Secrets(targetNamespace).Get(
 			reference.Name, metav1.GetOptions{}); err != nil {
 			if kerrors.IsNotFound(err) {
@@ -72,7 +72,7 @@ func (c *ControllerManager) reconcileRBAC(targetNamespace string) {
 		}
 
 		if doesNotExist || saCreatedOrUpdated {
-			if err := ns.CopySecret(c.controllers[targetNamespace].kubeClientset, reference.Name,
+			if err := ns.CopySecret(c.controllers[targetNamespace].clientset, reference.Name,
 				c.pgoNamespace, targetNamespace); err != nil {
 				log.Errorf("%s: %v", ErrReconcileRBAC, err)
 			}
@@ -90,7 +90,7 @@ func (c *ControllerManager) reconcileRoles(targetNamespace string) {
 	}
 
 	for role, template := range reconcileRoles {
-		if err := ns.ReconcileRole(c.controllers[targetNamespace].kubeClientset, role,
+		if err := ns.ReconcileRole(c.controllers[targetNamespace].clientset, role,
 			targetNamespace, template); err != nil {
 			log.Errorf("%s: %v", ErrReconcileRBAC, err)
 		}
@@ -108,7 +108,7 @@ func (c *ControllerManager) reconcileRoleBindings(targetNamespace string) {
 	}
 
 	for roleBinding, template := range reconcileRoleBindings {
-		if err := ns.ReconcileRoleBinding(c.controllers[targetNamespace].kubeClientset,
+		if err := ns.ReconcileRoleBinding(c.controllers[targetNamespace].clientset,
 			c.pgoNamespace, roleBinding, targetNamespace, template); err != nil {
 			log.Errorf("%s: %v", ErrReconcileRBAC, err)
 		}
@@ -128,7 +128,7 @@ func (c *ControllerManager) reconcileServiceAccounts(targetNamespace string,
 	}
 
 	for serviceAccount, template := range reconcileServiceAccounts {
-		createdOrUpdated, err := ns.ReconcileServiceAccount(c.controllers[targetNamespace].kubeClientset,
+		createdOrUpdated, err := ns.ReconcileServiceAccount(c.controllers[targetNamespace].clientset,
 			serviceAccount, targetNamespace, template, imagePullSecrets)
 		if err != nil {
 			log.Errorf("%s: %v", ErrReconcileRBAC, err)

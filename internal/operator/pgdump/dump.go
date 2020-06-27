@@ -21,16 +21,14 @@ import (
 	"os"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 type pgDumpJobTemplateFields struct {
@@ -56,7 +54,7 @@ type pgDumpJobTemplateFields struct {
 }
 
 // Dump ...
-func Dump(namespace string, clientset kubernetes.Interface, pgoClient pgo.Interface, client *rest.RESTClient, task *crv1.Pgtask) {
+func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 
 	var err error
 	//create the Job to run the pgdump command
@@ -90,7 +88,7 @@ func Dump(namespace string, clientset kubernetes.Interface, pgoClient pgo.Interf
 	}
 
 	// get the pgcluster CRD for cases where a CCPImagePrefix is specified
-	cluster, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		return
@@ -148,7 +146,7 @@ func Dump(namespace string, clientset kubernetes.Interface, pgoClient pgo.Interf
 	}
 
 	//update the pgdump task status to submitted - updates task, not the job.
-	err = util.Patch(client, "/spec/status", crv1.PgBackupJobSubmitted, "pgtasks", task.Spec.Name, namespace)
+	err = util.Patch(clientset.Discovery().RESTClient(), "/spec/status", crv1.PgBackupJobSubmitted, "pgtasks", task.Spec.Name, namespace)
 
 	if err != nil {
 		log.Error(err.Error())

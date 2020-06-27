@@ -50,7 +50,7 @@ func DfCluster(request msgs.DfRequest) msgs.DfResponse {
 	log.Debugf("df selector is [%s]", selector)
 
 	// get all of the clusters that match the selector
-	clusterList, err := apiserver.PGOClientset.
+	clusterList, err := apiserver.Clientset.
 		CrunchydataV1().Pgclusters(namespace).
 		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {

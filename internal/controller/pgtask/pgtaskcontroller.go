@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	pgdumpoperator "github.com/crunchydata/postgres-operator/internal/operator/pgdump"
@@ -30,18 +31,13 @@ import (
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )
 
 // Controller holds connections for the controller
 type Controller struct {
-	PgtaskConfig      *rest.Config
-	PgtaskClient      *rest.RESTClient
-	PgtaskClientset   kubernetes.Interface
-	PGOClientset      pgo.Interface
+	Client            *kubeapi.Client
 	Queue             workqueue.RateLimitingInterface
 	Informer          informers.PgtaskInformer
 	PgtaskWorkerCount int
@@ -87,7 +83,7 @@ func (c *Controller) processNextItem() bool {
 	// parallel.
 	defer c.Queue.Done(key)
 
-	tmpTask, err := c.PGOClientset.CrunchydataV1().Pgtasks(keyNamespace).Get(keyResourceName, metav1.GetOptions{})
+	tmpTask, err := c.Client.CrunchydataV1().Pgtasks(keyNamespace).Get(keyResourceName, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("ERROR onAdd getting pgtask : %s", err.Error())
 		c.Queue.Forget(key) // NB(cbandy): This should probably be a retry.
@@ -102,7 +98,7 @@ func (c *Controller) processNextItem() bool {
 		},
 	})
 	if err == nil {
-		_, err = c.PGOClientset.CrunchydataV1().Pgtasks(keyNamespace).Patch(tmpTask.Name, types.MergePatchType, patch)
+		_, err = c.Client.CrunchydataV1().Pgtasks(keyNamespace).Patch(tmpTask.Name, types.MergePatchType, patch)
 	}
 	if err != nil {
 		log.Errorf("ERROR onAdd updating pgtask status: %s", err.Error())
@@ -114,44 +110,44 @@ func (c *Controller) processNextItem() bool {
 	switch tmpTask.Spec.TaskType {
 	case crv1.PgtaskPgAdminAdd:
 		log.Debug("add pgadmin task added")
-		clusteroperator.AddPgAdminFromPgTask(c.PgtaskClientset, c.PGOClientset, c.PgtaskConfig, tmpTask)
+		clusteroperator.AddPgAdminFromPgTask(c.Client, c.Client.Config, tmpTask)
 	case crv1.PgtaskPgAdminDelete:
 		log.Debug("delete pgadmin task added")
-		clusteroperator.DeletePgAdminFromPgTask(c.PgtaskClientset, c.PGOClientset, c.PgtaskConfig, tmpTask)
+		clusteroperator.DeletePgAdminFromPgTask(c.Client, c.Client.Config, tmpTask)
 	case crv1.PgtaskUpgrade:
 		log.Debug("upgrade task added")
-		clusteroperator.AddUpgrade(c.PgtaskClientset, c.PGOClientset, tmpTask, keyNamespace)
+		clusteroperator.AddUpgrade(c.Client, tmpTask, keyNamespace)
 	case crv1.PgtaskFailover:
 		log.Debug("failover task added")
-		if !dupeFailover(c.PGOClientset, tmpTask, keyNamespace) {
-			clusteroperator.FailoverBase(keyNamespace, c.PgtaskClientset, c.PGOClientset, c.PgtaskClient, tmpTask, c.PgtaskConfig)
+		if !dupeFailover(c.Client, tmpTask, keyNamespace) {
+			clusteroperator.FailoverBase(keyNamespace, c.Client, tmpTask, c.Client.Config)
 		} else {
 			log.Debugf("skipping duplicate onAdd failover task %s/%s", keyNamespace, keyResourceName)
 		}
 
 	case crv1.PgtaskDeleteData:
 		log.Debug("delete data task added")
-		if !dupeDeleteData(c.PGOClientset, tmpTask, keyNamespace) {
-			taskoperator.RemoveData(keyNamespace, c.PgtaskClientset, c.PGOClientset, tmpTask)
+		if !dupeDeleteData(c.Client, tmpTask, keyNamespace) {
+			taskoperator.RemoveData(keyNamespace, c.Client, tmpTask)
 		} else {
 			log.Debugf("skipping duplicate onAdd delete data task %s/%s", keyNamespace, keyResourceName)
 		}
 	case crv1.PgtaskDeleteBackups:
 		log.Debug("delete backups task added")
-		taskoperator.RemoveBackups(keyNamespace, c.PgtaskClientset, tmpTask)
+		taskoperator.RemoveBackups(keyNamespace, c.Client, tmpTask)
 	case crv1.PgtaskBackrest:
 		log.Debug("backrest task added")
-		backrestoperator.Backrest(keyNamespace, c.PgtaskClientset, tmpTask)
+		backrestoperator.Backrest(keyNamespace, c.Client, tmpTask)
 	case crv1.PgtaskBackrestRestore:
 		log.Debug("backrest restore task added")
-		backrestoperator.Restore(c.PGOClientset, keyNamespace, c.PgtaskClientset, tmpTask)
+		backrestoperator.Restore(keyNamespace, c.Client, tmpTask)
 
 	case crv1.PgtaskpgDump:
 		log.Debug("pgDump task added")
-		pgdumpoperator.Dump(keyNamespace, c.PgtaskClientset, c.PGOClientset, c.PgtaskClient, tmpTask)
+		pgdumpoperator.Dump(keyNamespace, c.Client, tmpTask)
 	case crv1.PgtaskpgRestore:
 		log.Debug("pgDump restore task added")
-		pgdumpoperator.Restore(keyNamespace, c.PgtaskClientset, c.PGOClientset, tmpTask)
+		pgdumpoperator.Restore(keyNamespace, c.Client, tmpTask)
 
 	case crv1.PgtaskAutoFailover:
 		log.Debugf("autofailover task added %s", keyResourceName)
@@ -160,7 +156,7 @@ func (c *Controller) processNextItem() bool {
 
 	case crv1.PgtaskCloneStep1, crv1.PgtaskCloneStep2, crv1.PgtaskCloneStep3:
 		log.Debugf("clone task added [%s]", keyResourceName)
-		clusteroperator.Clone(c.PgtaskClientset, c.PGOClientset, c.PgtaskClient, c.PgtaskConfig, keyNamespace, tmpTask)
+		clusteroperator.Clone(c.Client, c.Client.Config, keyNamespace, tmpTask)
 
 	default:
 		log.Debugf("unknown task type on pgtask added [%s]", tmpTask.Spec.TaskType)

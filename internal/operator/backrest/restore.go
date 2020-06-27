@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
 	"github.com/crunchydata/postgres-operator/internal/util"
@@ -37,7 +38,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
 )
 
 type BackrestRestoreJobTemplateFields struct {
@@ -62,12 +62,12 @@ type BackrestRestoreJobTemplateFields struct {
 }
 
 // Restore ...
-func Restore(pgoClient pgo.Interface, namespace string, clientset kubernetes.Interface, task *crv1.Pgtask) {
+func Restore(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 
 	clusterName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
 	log.Debugf("restore workflow: started for cluster %s", clusterName)
 
-	cluster, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("restore workflow error: could not find a pgcluster in Restore Workflow for %s", clusterName)
 		return
@@ -125,7 +125,7 @@ func Restore(pgoClient pgo.Interface, namespace string, clientset kubernetes.Int
 		},
 	})
 	if err == nil {
-		_, err = pgoClient.CrunchydataV1().Pgclusters(namespace).Patch(cluster.Name, types.MergePatchType, patch)
+		_, err = clientset.CrunchydataV1().Pgclusters(namespace).Patch(cluster.Name, types.MergePatchType, patch)
 	}
 	if err != nil {
 		log.Error(err)
@@ -134,7 +134,7 @@ func Restore(pgoClient pgo.Interface, namespace string, clientset kubernetes.Int
 
 	selector = config.LABEL_PG_CLUSTER + "=" + clusterName
 	log.Debugf("Restored cluster %s went to ready, patching replicas", clusterName)
-	pgreplicaList, err := pgoClient.CrunchydataV1().Pgreplicas(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	pgreplicaList, err := clientset.CrunchydataV1().Pgreplicas(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		return
@@ -143,7 +143,7 @@ func Restore(pgoClient pgo.Interface, namespace string, clientset kubernetes.Int
 		pgreplica.Status.State = crv1.PgreplicaStatePendingRestore
 		pgreplica.Spec.Status = "restore"
 		delete(pgreplica.Annotations, config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA)
-		_, err = pgoClient.CrunchydataV1().Pgreplicas(namespace).Update(&pgreplica)
+		_, err = clientset.CrunchydataV1().Pgreplicas(namespace).Update(&pgreplica)
 		if err != nil {
 			log.Error(err)
 			return
@@ -254,7 +254,7 @@ func Restore(pgoClient pgo.Interface, namespace string, clientset kubernetes.Int
 
 	publishRestore(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clusterName, task.ObjectMeta.Labels[config.LABEL_PGOUSER], namespace)
 
-	err = updateWorkflow(pgoClient, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestoreJobCreatedStatus)
+	err = updateWorkflow(clientset, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestoreJobCreatedStatus)
 	if err != nil {
 		log.Error(err)
 		log.Error("restore workflow: error in updating workflow status")
@@ -262,12 +262,12 @@ func Restore(pgoClient pgo.Interface, namespace string, clientset kubernetes.Int
 
 }
 
-func UpdateRestoreWorkflow(pgoClient pgo.Interface, clientset kubernetes.Interface, clusterName, status, namespace,
+func UpdateRestoreWorkflow(clientset kubeapi.Interface, clusterName, status, namespace,
 	workflowID, restoreToName string, affinity *v1.Affinity) {
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
 	log.Debugf("restore workflow phase 2: taskName is %s", taskName)
 
-	cluster, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("restore workflow phase 2 error: could not find a pgclustet in updateRestoreWorkflow for %s", clusterName)
 		return
@@ -277,12 +277,12 @@ func UpdateRestoreWorkflow(pgoClient pgo.Interface, clientset kubernetes.Interfa
 	operator.UpdatePGHAConfigInitFlag(clientset, true, clusterName, namespace)
 
 	//create the new primary deployment
-	createRestoredDeployment(pgoClient, cluster, clientset, namespace, restoreToName, workflowID, affinity)
+	createRestoredDeployment(clientset, cluster, namespace, restoreToName, workflowID, affinity)
 
 	log.Debugf("restore workflow phase  2: created restored primary was %s now %s", cluster.Spec.Name, restoreToName)
 
 	//update workflow
-	if err := updateWorkflow(pgoClient, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestorePrimaryCreatedStatus); err != nil {
+	if err := updateWorkflow(clientset, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestorePrimaryCreatedStatus); err != nil {
 		log.Warn(err)
 	}
 }
@@ -311,7 +311,7 @@ func updateWorkflow(clientset pgo.Interface, workflowID, namespace, status strin
 	return err
 }
 
-func createRestoredDeployment(pgoClient pgo.Interface, cluster *crv1.Pgcluster, clientset kubernetes.Interface,
+func createRestoredDeployment(clientset kubeapi.Interface, cluster *crv1.Pgcluster,
 	namespace, restoreToName, workflowID string, affinity *v1.Affinity) error {
 
 	// interpret the storage specs again. the volumes were already created during
@@ -435,7 +435,7 @@ func createRestoredDeployment(pgoClient pgo.Interface, cluster *crv1.Pgcluster, 
 	// store the workflowID in a user label
 	cluster.Spec.UserLabels[crv1.PgtaskWorkflowID] = workflowID
 	// patch the pgcluster CRD with the updated info
-	if err = util.PatchClusterCRD(pgoClient, cluster.Spec.UserLabels, cluster, restoreToName, namespace); err != nil {
+	if err = util.PatchClusterCRD(clientset, cluster.Spec.UserLabels, cluster, restoreToName, namespace); err != nil {
 		log.Error("could not patch primary crv1 with labels")
 		return err
 	}

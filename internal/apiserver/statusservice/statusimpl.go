@@ -27,7 +27,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 func Status(ns string) msgs.StatusResponse {
@@ -81,7 +80,7 @@ func getVolumeCap(ns string) string {
 	var capTotal int64
 	capTotal = 0
 	for _, p := range pvcs.Items {
-		capTotal = capTotal + getClaimCapacity(apiserver.Clientset, &p)
+		capTotal = capTotal + getClaimCapacity(&p)
 	}
 	q := resource.NewQuantity(capTotal, resource.BinarySI)
 	//log.Infof("capTotal string is %s\n", q.String())
@@ -108,7 +107,7 @@ func getDBTags(ns string) map[string]int {
 func getNotReady(ns string) []string {
 	//show all database pods for each pgcluster that are not yet running
 	agg := make([]string, 0)
-	clusterList, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{})
+	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{})
 	if err != nil {
 		clusterList = &crv1.PgclusterList{}
 	}
@@ -141,7 +140,7 @@ func getNotReady(ns string) []string {
 	return agg
 }
 
-func getClaimCapacity(clientset kubernetes.Interface, pvc *v1.PersistentVolumeClaim) int64 {
+func getClaimCapacity(pvc *v1.PersistentVolumeClaim) int64 {
 	qty := pvc.Status.Capacity[v1.ResourceStorage]
 	diskSize := resource.MustParse(qty.String())
 	diskSizeInt64, _ := diskSize.AsInt64()

@@ -84,7 +84,7 @@ func main() {
 	PGHA_PGBACKREST_S3_VERIFY_TLS, _ := strconv.ParseBool(os.Getenv("PGHA_PGBACKREST_S3_VERIFY_TLS"))
 	log.Debugf("setting PGHA_PGBACKREST_S3_VERIFY_TLS to %v", PGHA_PGBACKREST_S3_VERIFY_TLS)
 
-	config, clientset, err := kubeapi.NewKubeClient()
+	client, err := kubeapi.NewClient()
 	if err != nil {
 		panic(err)
 	}
@@ -139,7 +139,7 @@ func main() {
 
 	log.Infof("command is %s ", strings.Join(cmdStrs, " "))
 	reader := strings.NewReader(strings.Join(cmdStrs, " "))
-	output, stderr, err := kubeapi.ExecToPodThroughAPI(config, clientset, bashcmd, containername, PODNAME, Namespace, reader)
+	output, stderr, err := kubeapi.ExecToPodThroughAPI(client.Config, client, bashcmd, containername, PODNAME, Namespace, reader)
 	if err != nil {
 		log.Info("output=[" + output + "]")
 		log.Info("stderr=[" + stderr + "]")

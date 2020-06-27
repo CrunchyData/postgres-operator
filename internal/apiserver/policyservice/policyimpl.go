@@ -151,7 +151,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 	resp.Status.Code = msgs.Ok
 
 	//validate policy
-	err = util.ValidatePolicy(apiserver.PGOClientset, ns, request.Name)
+	err = util.ValidatePolicy(apiserver.Clientset, ns, request.Name)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "policy " + request.Name + " is not found, cancelling request"
@@ -163,7 +163,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 	log.Debugf("apply policy selector string=[%s]", selector)
 
 	//get a list of all clusters
-	clusterList, err := apiserver.PGOClientset.
+	clusterList, err := apiserver.Clientset.
 		CrunchydataV1().Pgclusters(ns).
 		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
@@ -221,7 +221,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 
 		log.Debugf("apply policy %s on deployment %s based on selector %s", request.Name, d.ObjectMeta.Name, selector)
 
-		cl, err := apiserver.PGOClientset.
+		cl, err := apiserver.Clientset.
 			CrunchydataV1().Pgclusters(ns).
 			Get(d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME], metav1.GetOptions{})
 		if err != nil {
@@ -230,7 +230,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 			return resp
 		}
 
-		if err := util.ExecPolicy(apiserver.Clientset, apiserver.PGOClientset, apiserver.RESTConfig,
+		if err := util.ExecPolicy(apiserver.Clientset, apiserver.RESTConfig,
 			ns, request.Name, d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME], cl.Spec.Port); err != nil {
 			log.Error(err)
 			resp.Status.Code = msgs.Error

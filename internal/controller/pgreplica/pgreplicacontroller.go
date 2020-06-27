@@ -20,24 +20,20 @@ import (
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )
 
 // Controller holds the connections for the controller
 type Controller struct {
-	PgreplicaClient      *rest.RESTClient
-	PgreplicaClientset   kubernetes.Interface
-	PGOClientset         pgo.Interface
+	Clientset            kubeapi.Interface
 	Queue                workqueue.RateLimitingInterface
 	Informer             informers.PgreplicaInformer
 	PgreplicaWorkerCount int
@@ -86,7 +82,7 @@ func (c *Controller) processNextItem() bool {
 	// in this case, the de-dupe logic is to test whether a replica
 	// deployment exists already , if so, then we don't create another
 	// backup job
-	_, err := c.PgreplicaClientset.
+	_, err := c.Clientset.
 		AppsV1().Deployments(keyNamespace).
 		Get(keyResourceName, metav1.GetOptions{})
 
@@ -99,7 +95,7 @@ func (c *Controller) processNextItem() bool {
 
 		//handle the case of when a pgreplica is added which is
 		//scaling up a cluster
-		replica, err := c.PGOClientset.CrunchydataV1().Pgreplicas(keyNamespace).Get(keyResourceName, metav1.GetOptions{})
+		replica, err := c.Clientset.CrunchydataV1().Pgreplicas(keyNamespace).Get(keyResourceName, metav1.GetOptions{})
 		if err != nil {
 			log.Error(err)
 			c.Queue.Forget(key) // NB(cbandy): This should probably be a retry.
@@ -107,7 +103,7 @@ func (c *Controller) processNextItem() bool {
 		}
 
 		// get the pgcluster resource for the cluster the replica is a part of
-		cluster, err := c.PGOClientset.CrunchydataV1().Pgclusters(keyNamespace).Get(replica.Spec.ClusterName, metav1.GetOptions{})
+		cluster, err := c.Clientset.CrunchydataV1().Pgclusters(keyNamespace).Get(replica.Spec.ClusterName, metav1.GetOptions{})
 		if err != nil {
 			log.Error(err)
 			c.Queue.Forget(key) // NB(cbandy): This should probably be a retry.
@@ -116,7 +112,7 @@ func (c *Controller) processNextItem() bool {
 
 		// only process pgreplica if cluster has been initialized
 		if cluster.Status.State == crv1.PgclusterStateInitialized {
-			clusteroperator.ScaleBase(c.PgreplicaClientset, c.PGOClientset, c.PgreplicaClient, replica, replica.ObjectMeta.Namespace)
+			clusteroperator.ScaleBase(c.Clientset, replica, replica.ObjectMeta.Namespace)
 
 			patch, err := json.Marshal(map[string]interface{}{
 				"status": crv1.PgreplicaStatus{
@@ -125,7 +121,7 @@ func (c *Controller) processNextItem() bool {
 				},
 			})
 			if err == nil {
-				_, err = c.PGOClientset.CrunchydataV1().Pgreplicas(replica.Namespace).Patch(replica.Name, types.MergePatchType, patch)
+				_, err = c.Clientset.CrunchydataV1().Pgreplicas(replica.Namespace).Patch(replica.Name, types.MergePatchType, patch)
 			}
 			if err != nil {
 				log.Errorf("ERROR updating pgreplica status: %s", err.Error())
@@ -138,7 +134,7 @@ func (c *Controller) processNextItem() bool {
 				},
 			})
 			if err == nil {
-				_, err = c.PGOClientset.CrunchydataV1().Pgreplicas(replica.Namespace).Patch(replica.Name, types.MergePatchType, patch)
+				_, err = c.Clientset.CrunchydataV1().Pgreplicas(replica.Namespace).Patch(replica.Name, types.MergePatchType, patch)
 			}
 			if err != nil {
 				log.Errorf("ERROR updating pgreplica status: %s", err.Error())
@@ -178,7 +174,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		newPgreplica.ObjectMeta.SelfLink)
 
 	// get the pgcluster resource for the cluster the replica is a part of
-	cluster, err := c.PGOClientset.
+	cluster, err := c.Clientset.
 		CrunchydataV1().Pgclusters(newPgreplica.Namespace).
 		Get(newPgreplica.Spec.ClusterName, metav1.GetOptions{})
 	if err != nil {
@@ -188,7 +184,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 	// only process pgreplica if cluster has been initialized
 	if cluster.Status.State == crv1.PgclusterStateInitialized && newPgreplica.Spec.Status != "complete" {
-		clusteroperator.ScaleBase(c.PgreplicaClientset, c.PGOClientset, c.PgreplicaClient, newPgreplica,
+		clusteroperator.ScaleBase(c.Clientset, newPgreplica,
 			newPgreplica.ObjectMeta.Namespace)
 
 		patch, err := json.Marshal(map[string]interface{}{
@@ -198,7 +194,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 			},
 		})
 		if err == nil {
-			_, err = c.PGOClientset.CrunchydataV1().Pgreplicas(newPgreplica.Namespace).Patch(newPgreplica.Name, types.MergePatchType, patch)
+			_, err = c.Clientset.CrunchydataV1().Pgreplicas(newPgreplica.Namespace).Patch(newPgreplica.Name, types.MergePatchType, patch)
 		}
 		if err != nil {
 			log.Errorf("ERROR updating pgreplica status: %s", err.Error())
@@ -213,7 +209,7 @@ func (c *Controller) onDelete(obj interface{}) {
 
 	//make sure we are not removing a replica deployment
 	//that is now the primary after a failover
-	dep, err := c.PgreplicaClientset.
+	dep, err := c.Clientset.
 		AppsV1().Deployments(replica.ObjectMeta.Namespace).
 		Get(replica.Spec.Name, metav1.GetOptions{})
 	if err == nil {
@@ -222,7 +218,7 @@ func (c *Controller) onDelete(obj interface{}) {
 			//we will not scale down the deployment
 			log.Debugf("[pgreplica Controller] OnDelete not scaling down the replica since it is acting as a primary")
 		} else {
-			clusteroperator.ScaleDownBase(c.PgreplicaClientset, c.PGOClientset, replica, replica.ObjectMeta.Namespace)
+			clusteroperator.ScaleDownBase(c.Clientset, replica, replica.ObjectMeta.Namespace)
 		}
 	}
 

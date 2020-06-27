@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
@@ -26,36 +27,35 @@ import (
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
 // RemoveBackups ...
-func ApplyPolicies(clusterName string, Clientset kubernetes.Interface, pgoClient pgo.Interface, RESTConfig *rest.Config, ns string) {
+func ApplyPolicies(clusterName string, clientset kubeapi.Interface, RESTConfig *rest.Config, ns string) {
 
 	taskName := clusterName + "-policies"
 
-	task, err := pgoClient.CrunchydataV1().Pgtasks(ns).Get(taskName, metav1.GetOptions{})
+	task, err := clientset.CrunchydataV1().Pgtasks(ns).Get(taskName, metav1.GetOptions{})
 	if err == nil {
 		//apply those policies
 		for k := range task.Spec.Parameters {
 			log.Debugf("applying policy %s to %s", k, clusterName)
-			applyPolicy(Clientset, pgoClient, RESTConfig, k, clusterName, ns)
+			applyPolicy(clientset, RESTConfig, k, clusterName, ns)
 		}
 		//delete the pgtask to not redo this again
-		pgoClient.CrunchydataV1().Pgtasks(ns).Delete(taskName, &metav1.DeleteOptions{})
+		clientset.CrunchydataV1().Pgtasks(ns).Delete(taskName, &metav1.DeleteOptions{})
 	}
 }
 
-func applyPolicy(clientset kubernetes.Interface, pgoClient pgo.Interface, restconfig *rest.Config, policyName, clusterName, ns string) {
+func applyPolicy(clientset kubeapi.Interface, restconfig *rest.Config, policyName, clusterName, ns string) {
 
-	cl, err := pgoClient.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
+	cl, err := clientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
-	if err := util.ExecPolicy(clientset, pgoClient, restconfig, ns, policyName, clusterName, cl.Spec.Port); err != nil {
+	if err := util.ExecPolicy(clientset, restconfig, ns, policyName, clusterName, cl.Spec.Port); err != nil {
 		log.Error(err)
 		return
 	}
@@ -68,7 +68,7 @@ func applyPolicy(clientset kubernetes.Interface, pgoClient pgo.Interface, restco
 	}
 
 	//update the pgcluster crd labels with the new policy
-	if err := PatchPgcluster(pgoClient, policyName+"=pgpolicy", *cl, ns); err != nil {
+	if err := PatchPgcluster(clientset, policyName+"=pgpolicy", *cl, ns); err != nil {
 		log.Error(err)
 	}
 

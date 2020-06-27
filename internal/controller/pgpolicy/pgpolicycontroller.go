@@ -20,12 +20,10 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
@@ -34,10 +32,8 @@ import (
 
 // Controller holds connections for the controller
 type Controller struct {
-	PgpolicyClient    *rest.RESTClient
-	PgpolicyClientset kubernetes.Interface
-	PGOClientset      pgo.Interface
-	Informer          informers.PgpolicyInformer
+	Clientset kubeapi.Interface
+	Informer  informers.PgpolicyInformer
 }
 
 // onAdd is called when a pgpolicy is added
@@ -59,7 +55,7 @@ func (c *Controller) onAdd(obj interface{}) {
 		},
 	})
 	if err == nil {
-		_, err = c.PGOClientset.CrunchydataV1().Pgpolicies(policy.Namespace).Patch(policy.Name, types.MergePatchType, patch)
+		_, err = c.Clientset.CrunchydataV1().Pgpolicies(policy.Namespace).Patch(policy.Name, types.MergePatchType, patch)
 	}
 	if err != nil {
 		log.Errorf("ERROR updating pgpolicy status: %s", err.Error())

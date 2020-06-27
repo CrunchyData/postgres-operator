@@ -66,7 +66,7 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pg
 	log.Debugf("delete-backups is [%t]", deleteBackups)
 
 	//get the clusters list
-	clusterList, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: selector})
+	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -98,7 +98,7 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pg
 		clusterPGHAScope := cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE]
 
 		// first delete any existing rmdata pgtask with the same name
-		err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Delete(taskName, &metav1.DeleteOptions{})
+		err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Delete(taskName, &metav1.DeleteOptions{})
 		if err != nil && !kerrors.IsNotFound(err) {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -140,7 +140,7 @@ func ShowCluster(name, selector, ccpimagetag, ns string, allflag bool) msgs.Show
 	log.Debugf("selector on showCluster is %s", selector)
 
 	//get a list of all clusters
-	clusterList, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: selector})
+	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -357,7 +357,7 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 	}
 
 	// Find a list of a clusters that match the given selector
-	clusterList, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: selector})
+	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: selector})
 
 	// If the response errors, return here, as we won't be able to return any
 	// useful information in the test
@@ -558,7 +558,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	log.Debugf("create cluster called for %s", clusterName)
 
 	// error if it already exists
-	_, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
+	_, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
 	if err == nil {
 		log.Debugf("pgcluster %s was found so we will not create it", clusterName)
 		resp.Status.Code = msgs.Error
@@ -1003,7 +1003,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	resp.Result.Database = newInstance.Spec.Database
 
 	//create CRD for new cluster
-	_, err = apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Create(newInstance)
+	_, err = apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Create(newInstance)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -1037,7 +1037,7 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 
 	for _, v := range policies {
 		// error if it already exists
-		_, err := apiserver.PGOClientset.CrunchydataV1().Pgpolicies(ns).Get(v, metav1.GetOptions{})
+		_, err := apiserver.Clientset.CrunchydataV1().Pgpolicies(ns).Get(v, metav1.GetOptions{})
 		if err != nil {
 			log.Error("error getting pgpolicy " + v + err.Error())
 			return err
@@ -1066,7 +1066,7 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 		Spec: spec,
 	}
 
-	_, err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
+	_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
 
 	return err
 }
@@ -1533,7 +1533,7 @@ func createWorkflowTask(clusterName, ns, pgouser string) (string, error) {
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
 
-	_, err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
+	_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
 	if err != nil {
 		log.Error(err)
 		return "", err
@@ -1573,7 +1573,7 @@ func getReplicas(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterReplica,
 
 	selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
-	replicaList, err := apiserver.PGOClientset.CrunchydataV1().Pgreplicas(ns).List(metav1.ListOptions{LabelSelector: selector})
+	replicaList, err := apiserver.Clientset.CrunchydataV1().Pgreplicas(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}
@@ -1746,7 +1746,7 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 
 	//get the clusters list
 	if request.AllFlag {
-		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(request.Namespace).List(metav1.ListOptions{})
+		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).List(metav1.ListOptions{})
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -1754,7 +1754,7 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		}
 		clusterList = *cl
 	} else if request.Selector != "" {
-		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(request.Namespace).List(metav1.ListOptions{
+		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).List(metav1.ListOptions{
 			LabelSelector: request.Selector,
 		})
 		if err != nil {
@@ -1765,7 +1765,7 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		clusterList = *cl
 	} else {
 		for _, v := range request.Clustername {
-			cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(request.Namespace).Get(v, metav1.GetOptions{})
+			cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Get(v, metav1.GetOptions{})
 			if err != nil {
 				response.Status.Code = msgs.Error
 				response.Status.Msg = err.Error()
@@ -1899,7 +1899,7 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 			cluster.Spec.TablespaceMounts[tablespace.Name] = storageSpec
 		}
 
-		if _, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(request.Namespace).Update(&cluster); err != nil {
+		if _, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Update(&cluster); err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
@@ -2139,7 +2139,7 @@ func validateDataSourceParms(request *msgs.CreateClusterRequest) error {
 
 	// finally, verify that the cluster being restored from is in the proper status, and that no
 	// other clusters currently being bootstrapping from the same cluster
-	clusterList, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(namespace).List(metav1.ListOptions{})
+	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("%s: %w", ErrInvalidDataSource, err)
 	}

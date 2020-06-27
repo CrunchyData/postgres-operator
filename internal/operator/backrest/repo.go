@@ -35,7 +35,6 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 // s3RepoTypeRegex defines a regex to detect if an S3 restore has been specified using the
@@ -238,7 +237,7 @@ func getRepoDeploymentFields(clientset kubernetes.Interface, cluster *crv1.Pgclu
 
 // UpdateResources updates the pgBackRest repository Deployment to reflect any
 // resource updates
-func UpdateResources(clientset kubernetes.Interface, restConfig *rest.Config, cluster *crv1.Pgcluster) error {
+func UpdateResources(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
 	// get a list of all of the instance deployments for the cluster
 	deployment, err := operator.GetBackrestDeployment(clientset, cluster)
 

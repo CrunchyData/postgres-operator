@@ -42,7 +42,7 @@ func (c *Controller) handlePGDumpUpdate(job *apiv1.Job) error {
 
 	//update the pgdump task status to submitted - updates task, not the job.
 	dumpTask := labels[config.LABEL_PGTASK]
-	if err := util.Patch(c.JobClient, patchURL, status, patchResource, dumpTask,
+	if err := util.Patch(c.Client.Discovery().RESTClient(), patchURL, status, patchResource, dumpTask,
 		job.ObjectMeta.Namespace); err != nil {
 		log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
 		return err
@@ -72,7 +72,7 @@ func (c *Controller) handlePGRestoreUpdate(job *apiv1.Job) error {
 
 	//update the pgdump task status to submitted - updates task, not the job.
 	restoreTask := labels[config.LABEL_PGTASK]
-	if err := util.Patch(c.JobClient, patchURL, status, patchResource, restoreTask,
+	if err := util.Patch(c.Client.Discovery().RESTClient(), patchURL, status, patchResource, restoreTask,
 		job.ObjectMeta.Namespace); err != nil {
 		log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
 		return err

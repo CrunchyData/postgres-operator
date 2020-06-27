@@ -119,7 +119,7 @@ type CreateReplicaMethod struct {
 // various resources within the Kubernetes cluster in support of configuring the included database
 // servers.
 func NewLocalDB(configMap *corev1.ConfigMap, restConfig *rest.Config,
-	kubeclientset kubernetes.Interface, pgoRESTClient *rest.RESTClient) (*LocalDB, error) {
+	kubeclientset kubernetes.Interface) (*LocalDB, error) {
 
 	clusterName := configMap.GetLabels()[config.LABEL_PG_CLUSTER]
 	namespace := configMap.GetObjectMeta().GetNamespace()

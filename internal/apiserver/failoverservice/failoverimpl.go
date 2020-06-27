@@ -71,7 +71,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns, pgouser string) msg
 	spec.Name = request.ClusterName + "-" + config.LABEL_FAILOVER
 
 	// previous failovers will leave a pgtask so remove it first
-	apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Delete(spec.Name, &metav1.DeleteOptions{})
+	apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Delete(spec.Name, &metav1.DeleteOptions{})
 
 	spec.TaskType = crv1.PgtaskFailover
 	spec.Parameters = make(map[string]string)
@@ -90,7 +90,7 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns, pgouser string) msg
 		Spec: spec,
 	}
 
-	_, err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
+	_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -170,7 +170,7 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 }
 
 func validateClusterName(clusterName, ns string) (*crv1.Pgcluster, error) {
-	cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
+	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
 
 	if err != nil {
 		return cluster, errors.New("no cluster found named " + clusterName)

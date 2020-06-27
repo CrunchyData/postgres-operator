@@ -17,22 +17,17 @@ limitations under the License.
 
 import (
 	"github.com/crunchydata/postgres-operator/internal/config"
-	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
 	batchinformers "k8s.io/client-go/informers/batch/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 )
 
 // Controller holds the connections for the controller
 type Controller struct {
-	JobConfig    *rest.Config
-	JobClient    *rest.RESTClient
-	JobClientset kubernetes.Interface
-	PGOClientset pgo.Interface
-	Informer     batchinformers.JobInformer
+	Client   *kubeapi.Client
+	Informer batchinformers.JobInformer
 }
 
 const (

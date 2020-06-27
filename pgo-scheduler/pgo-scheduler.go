@@ -32,7 +32,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/ns"
 	"github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
 	sched "github.com/crunchydata/postgres-operator/pgo-scheduler/scheduler"
-	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
@@ -54,8 +53,7 @@ var namespace string
 var pgoNamespace string
 var timeout time.Duration
 var seconds int
-var kubeClient kubernetes.Interface
-var pgoClient pgo.Interface
+var clientset kubeapi.Interface
 
 // this is used to prevent a race condition where an informer is being created
 // twice when a new scheduler-enabled ConfigMap is added.
@@ -107,23 +105,19 @@ func init() {
 	log.WithFields(log.Fields{}).Infof("Setting timeout to: %d", seconds)
 	timeout = time.Second * time.Duration(seconds)
 
-	_, kubeClient, err = kubeapi.NewKubeClient()
-	if err != nil {
-		log.WithFields(log.Fields{}).Fatalf("Failed to connect to kubernetes: %s", err)
-	}
-	_, _, pgoClient, err = kubeapi.NewPGOClient()
+	clientset, err = kubeapi.NewClient()
 	if err != nil {
 		log.WithFields(log.Fields{}).Fatalf("Failed to connect to kubernetes: %s", err)
 	}
 
 	var Pgo config.PgoConfig
-	if err := Pgo.GetConfig(kubeClient, pgoNamespace); err != nil {
+	if err := Pgo.GetConfig(clientset, pgoNamespace); err != nil {
 		log.WithFields(log.Fields{}).Fatalf("error in Pgo configuration: %s", err)
 	}
 
 	// Configure namespaces for the Scheduler.  This includes determining the namespace
 	// operating mode and obtaining a valid list of target namespaces for the operator install.
-	if err := setNamespaceOperatingMode(kubeClient); err != nil {
+	if err := setNamespaceOperatingMode(clientset); err != nil {
 		log.Errorf("Error configuring operator namespaces: %w", err)
 		os.Exit(2)
 	}
@@ -134,7 +128,7 @@ func main() {
 	//give time for pgo-event to start up
 	time.Sleep(time.Duration(5) * time.Second)
 
-	scheduler := scheduler.New(schedulerLabel, pgoNamespace, kubeClient, pgoClient)
+	scheduler := scheduler.New(schedulerLabel, pgoNamespace, clientset)
 	scheduler.CronClient.Start()
 
 	sigs := make(chan os.Signal, 1)
@@ -151,7 +145,7 @@ func main() {
 
 	stop := make(chan struct{})
 
-	nsList, err := ns.GetInitialNamespaceList(kubeClient, namespaceOperatingMode,
+	nsList, err := ns.GetInitialNamespaceList(clientset, namespaceOperatingMode,
 		installationName, pgoNamespace)
 	if err != nil {
 		log.WithFields(log.Fields{}).Fatalf("Failed to obtain initial namespace list: %s", err)
@@ -170,7 +164,7 @@ func main() {
 	// if the namespace operating mode is not disabled, then create and start a namespace
 	// controller
 	if namespaceOperatingMode != ns.NamespaceOperatingModeDisabled {
-		if err := createAndStartNamespaceController(kubeClient, controllerManager,
+		if err := createAndStartNamespaceController(clientset, controllerManager,
 			scheduler, stop); err != nil {
 			log.WithFields(log.Fields{}).Fatalf("Failed to create namespace informer factory: %s",
 				err)
@@ -185,7 +179,7 @@ func main() {
 	// controller.  This allows for namespace and RBAC reconciliation logic to be run in a
 	// consistent manner regardless of the namespace operating mode being utilized.
 	if namespaceOperatingMode != ns.NamespaceOperatingModeDisabled {
-		if err := createAndStartNamespaceController(kubeClient, controllerManager, scheduler,
+		if err := createAndStartNamespaceController(clientset, controllerManager, scheduler,
 			stop); err != nil {
 			log.Fatal(err)
 		}

@@ -86,8 +86,7 @@ func (c *Controller) createPGHAConfigs(configMap *corev1.ConfigMap,
 
 	configSyncers = append(configSyncers, cfg.NewDCS(configMap, c.kubeclientset, clusterScope))
 
-	localDBConfig, err := cfg.NewLocalDB(configMap, c.cmRESTConfig, c.kubeclientset,
-		c.cmRESTClient)
+	localDBConfig, err := cfg.NewLocalDB(configMap, c.cmRESTConfig, c.kubeclientset)
 	// Just log the error and don't add to the map so a sync can still be attempted with
 	// any other configurers
 	if err != nil {

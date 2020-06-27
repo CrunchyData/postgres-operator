@@ -19,16 +19,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	coreinformers "k8s.io/client-go/informers/core/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 )
 
 // Controller holds the client and informer for the controller, along with a pointer to a
 // Scheduler.
 type Controller struct {
-	ConfigmapClientset kubernetes.Interface
-	Informer           coreinformers.ConfigMapInformer
-	Scheduler          *Scheduler
+	Informer  coreinformers.ConfigMapInformer
+	Scheduler *Scheduler
 }
 
 // onAdd is called when a configMap is added

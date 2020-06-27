@@ -49,7 +49,7 @@ func Reload(request *msgs.ReloadRequest, ns, username string) msgs.ReloadRespons
 	}
 
 	if request.Selector != "" {
-		clusterList, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{})
+		clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{})
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -70,7 +70,7 @@ func Reload(request *msgs.ReloadRequest, ns, username string) msgs.ReloadRespons
 
 		log.Debugf("reload requested for cluster %s", clusterName)
 
-		cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(clusterName,
+		cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(clusterName,
 			metav1.GetOptions{})
 		// maintain same "is not found" error message for backwards compatibility
 		if kerrors.IsNotFound(err) {

@@ -231,11 +231,10 @@ func CreateBackup(clientset pgo.Interface, namespace, clusterName, podName strin
 // CleanBackupResources is responsible for cleaning up Kubernetes resources from a previous
 // pgBackRest backup.  Specifically, this function deletes the pgptask and job associate with a
 // previous pgBackRest backup for the cluster.
-func CleanBackupResources(pgoClient pgo.Interface, clientset kubernetes.Interface, namespace,
-	clusterName string) error {
+func CleanBackupResources(clientset kubeapi.Interface, namespace, clusterName string) error {
 
 	taskName := "backrest-backup-" + clusterName
-	err := pgoClient.CrunchydataV1().Pgtasks(namespace).Delete(taskName, &metav1.DeleteOptions{})
+	err := clientset.CrunchydataV1().Pgtasks(namespace).Delete(taskName, &metav1.DeleteOptions{})
 	if err != nil && !kubeapi.IsNotFound(err) {
 		log.Error(err)
 		return err

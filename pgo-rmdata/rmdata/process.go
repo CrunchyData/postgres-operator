@@ -68,7 +68,7 @@ func Delete(request Request) {
 			log.Error(err)
 		}
 		//delete the pgreplica CRD
-		if err := request.PGOClientset.
+		if err := request.Clientset.
 			CrunchydataV1().Pgreplicas(request.Namespace).
 			Delete(request.ReplicaName, &metav1.DeleteOptions{}); err != nil {
 			// If the name of the replica being deleted matches the scope for the cluster, then
@@ -122,7 +122,7 @@ func Delete(request Request) {
 
 	//handle the case of 'pgo delete cluster mycluster'
 	removeCluster(request)
-	if err := request.PGOClientset.
+	if err := request.Clientset.
 		CrunchydataV1().Pgclusters(request.Namespace).
 		Delete(request.ClusterName, &metav1.DeleteOptions{}); err != nil {
 		log.Error(err)
@@ -429,7 +429,7 @@ func removeServices(request Request) {
 func removePgreplicas(request Request) {
 
 	//get a list of pgreplicas for this cluster
-	replicaList, err := request.PGOClientset.CrunchydataV1().Pgreplicas(request.Namespace).List(metav1.ListOptions{
+	replicaList, err := request.Clientset.CrunchydataV1().Pgreplicas(request.Namespace).List(metav1.ListOptions{
 		LabelSelector: config.LABEL_PG_CLUSTER + "=" + request.ClusterName,
 	})
 	if err != nil {
@@ -440,7 +440,7 @@ func removePgreplicas(request Request) {
 	log.Debugf("pgreplicas found len is %d\n", len(replicaList.Items))
 
 	for _, r := range replicaList.Items {
-		if err := request.PGOClientset.
+		if err := request.Clientset.
 			CrunchydataV1().Pgreplicas(request.Namespace).
 			Delete(r.Spec.Name, &metav1.DeleteOptions{}); err != nil {
 			log.Warn(err)
@@ -452,7 +452,7 @@ func removePgreplicas(request Request) {
 func removePgtasks(request Request) {
 
 	//get a list of pgtasks for this cluster
-	taskList, err := request.PGOClientset.
+	taskList, err := request.Clientset.
 		CrunchydataV1().Pgtasks(request.Namespace).
 		List(metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + request.ClusterName})
 	if err != nil {
@@ -463,7 +463,7 @@ func removePgtasks(request Request) {
 	log.Debugf("pgtasks to remove is %d\n", len(taskList.Items))
 
 	for _, r := range taskList.Items {
-		if err := request.PGOClientset.CrunchydataV1().Pgtasks(request.Namespace).Delete(r.Spec.Name, &metav1.DeleteOptions{}); err != nil {
+		if err := request.Clientset.CrunchydataV1().Pgtasks(request.Namespace).Delete(r.Spec.Name, &metav1.DeleteOptions{}); err != nil {
 			log.Warn(err)
 		}
 	}

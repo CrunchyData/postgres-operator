@@ -132,7 +132,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 		cluster.Spec.PgBouncer.Resources = resources
 
 		// update the cluster CRD with these udpates. If there is an error
-		if _, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(request.Namespace).Update(&cluster); err != nil {
+		if _, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Update(&cluster); err != nil {
 			log.Error(err)
 			resp.Results = append(resp.Results, err.Error())
 			continue
@@ -201,7 +201,7 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 		cluster.Spec.PgBouncer.Limits = v1.ResourceList{}
 
 		// update the cluster CRD with these udpates. If there is an error
-		if _, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(request.Namespace).Update(&cluster); err != nil {
+		if _, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Update(&cluster); err != nil {
 			log.Error(err)
 			resp.Status.Code = msgs.Error
 			resp.Results = append(resp.Results, err.Error())
@@ -354,7 +354,7 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 
 		// if we are rotating the password, perform the request inline
 		if request.RotatePassword {
-			if err := clusteroperator.RotatePgBouncerPassword(apiserver.Clientset, apiserver.RESTClient, apiserver.RESTConfig, &cluster); err != nil {
+			if err := clusteroperator.RotatePgBouncerPassword(apiserver.Clientset, apiserver.RESTConfig, &cluster); err != nil {
 				log.Error(err)
 				result.Error = true
 				result.ErrorMessage = err.Error()
@@ -403,7 +403,7 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 			cluster.Spec.PgBouncer.Replicas = request.Replicas
 		}
 
-		if _, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(cluster.Namespace).Update(&cluster); err != nil {
+		if _, err := apiserver.Clientset.CrunchydataV1().Pgclusters(cluster.Namespace).Update(&cluster); err != nil {
 			log.Error(err)
 			result.Error = true
 			result.ErrorMessage = err.Error()
@@ -433,7 +433,7 @@ func getClusterList(namespace string, clusterNames []string, selector string) (c
 	// try to build the cluster list based on either the selector or the list
 	// of arguments...or both. First, start with the selector
 	if selector != "" {
-		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(namespace).List(metav1.ListOptions{LabelSelector: selector})
+		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).List(metav1.ListOptions{LabelSelector: selector})
 
 		// if there is an error, return here with an empty cluster list
 		if err != nil {
@@ -444,7 +444,7 @@ func getClusterList(namespace string, clusterNames []string, selector string) (c
 
 	// now try to get clusters based specific cluster names
 	for _, clusterName := range clusterNames {
-		cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+		cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
 
 		// if there is an error, capture it here and return here with an empty list
 		if err != nil {

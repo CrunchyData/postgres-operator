@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
@@ -32,7 +33,6 @@ import (
 	v1batch "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
 )
 
 type rmdatajobTemplateFields struct {
@@ -51,10 +51,10 @@ type rmdatajobTemplateFields struct {
 }
 
 // RemoveData ...
-func RemoveData(namespace string, clientset kubernetes.Interface, pgoClient pgo.Interface, task *crv1.Pgtask) {
+func RemoveData(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 
 	//create marker (clustername, namespace)
-	err := PatchpgtaskDeleteDataStatus(pgoClient, task, namespace)
+	err := PatchpgtaskDeleteDataStatus(clientset, task, namespace)
 	if err != nil {
 		log.Errorf("could not set delete data started marker for task %s cluster %s", task.Spec.Name, task.Spec.Parameters[config.LABEL_PG_CLUSTER])
 		return
@@ -77,7 +77,7 @@ func RemoveData(namespace string, clientset kubernetes.Interface, pgoClient pgo.
 	}
 
 	// if the clustername is not empty, get the pgcluster
-	cluster, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		return

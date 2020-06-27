@@ -23,19 +23,19 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
 // FailoverBase ...
 // gets called first on a failover
-func FailoverBase(namespace string, clientset kubernetes.Interface, pgoClient pgo.Interface, client *rest.RESTClient, task *crv1.Pgtask, restconfig *rest.Config) {
+func FailoverBase(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask, restconfig *rest.Config) {
 	var err error
 
 	//look up the pgcluster for this task
@@ -46,13 +46,13 @@ func FailoverBase(namespace string, clientset kubernetes.Interface, pgoClient pg
 		clusterName = k
 	}
 
-	cluster, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
 	if err != nil {
 		return
 	}
 
 	//create marker (clustername, namespace)
-	err = PatchpgtaskFailoverStatus(pgoClient, task, namespace)
+	err = PatchpgtaskFailoverStatus(clientset, task, namespace)
 	if err != nil {
 		log.Errorf("could not set failover started marker for task %s cluster %s", task.Spec.Name, clusterName)
 		return
@@ -60,7 +60,7 @@ func FailoverBase(namespace string, clientset kubernetes.Interface, pgoClient pg
 
 	//get initial count of replicas --selector=pg-cluster=clusterName
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
-	replicaList, err := pgoClient.CrunchydataV1().Pgreplicas(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	replicaList, err := clientset.CrunchydataV1().Pgreplicas(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		return
@@ -88,7 +88,7 @@ func FailoverBase(namespace string, clientset kubernetes.Interface, pgoClient pg
 		log.Error(err)
 	}
 
-	Failover(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clientset, pgoClient, client, clusterName, task, namespace, restconfig)
+	Failover(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clientset, clusterName, task, namespace, restconfig)
 
 	//publish event for failover completed
 	topics = make([]string, 1)

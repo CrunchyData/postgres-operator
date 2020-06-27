@@ -47,7 +47,7 @@ func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResp
 
 	// get the information about the current pgcluster by name, to ensure it
 	// exists
-	sourcePgcluster, err := apiserver.PGOClientset.
+	sourcePgcluster, err := apiserver.Clientset.
 		CrunchydataV1().Pgclusters(namespace).
 		Get(request.SourceClusterName, metav1.GetOptions{})
 
@@ -75,7 +75,7 @@ func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResp
 	}
 
 	// now, let's ensure the target pgCluster does *not* exist
-	if _, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(namespace).Get(request.TargetClusterName, metav1.GetOptions{}); err == nil {
+	if _, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).Get(request.TargetClusterName, metav1.GetOptions{}); err == nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = fmt.Sprintf("Could not clone cluster: %s already exists",
 			request.TargetClusterName)
@@ -85,7 +85,7 @@ func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResp
 	// finally, let's make sure there is not already a task in progress for
 	// making the clone
 	selector := fmt.Sprintf("%s=true,pg-cluster=%s", config.LABEL_PGO_CLONE, request.TargetClusterName)
-	taskList, err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	taskList, err := apiserver.Clientset.CrunchydataV1().Pgtasks(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		response.Status.Code = msgs.Error
@@ -130,7 +130,7 @@ func Clone(request *msgs.CloneRequest, namespace, pgouser string) msgs.CloneResp
 	task := cloneTask.Create()
 
 	// create the Pgtask CRD for the clone task
-	if _, err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(namespace).Create(task); err != nil {
+	if _, err := apiserver.Clientset.CrunchydataV1().Pgtasks(namespace).Create(task); err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = fmt.Sprintf("Could not create clone task: %s", err)
 		return response
@@ -177,7 +177,7 @@ func createWorkflowTask(targetClusterName, uid, namespace string) (string, error
 	}
 
 	// create the workflow task
-	if _, err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(namespace).Create(task); err != nil {
+	if _, err := apiserver.Clientset.CrunchydataV1().Pgtasks(namespace).Create(task); err != nil {
 		return "", err
 	}
 
