@@ -1,0 +1,23 @@
+Thank you for installing the Crunchy PostgreSQL Operator v{{ .Chart.AppVersion }}!
+
+  .-''''-. _    
+ ('    '  '0)-/)
+ '..____..:    \._
+   \u  u (        '-..------._
+   |     /      :   '.        '--.
+  .nn_nn/ (      :   '            '\
+ ( '' '' /      ;     .             \
+  ''----' "\          :            : '.
+         .'/                           '.
+        / /                             '.
+       /_|       )                     .\|
+         |      /\                     . '
+         '--.__|  '--._  ,            /
+                      /'-,          .'
+                     /   |        _.' 
+                    (____\       /    
+                          \      \    
+                           '-'-'-'
+
+More information on using the postgres-operator can be found in the docs:
+https://crunchydata.github.io/postgres-operator/latest/
