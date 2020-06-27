@@ -18,16 +18,11 @@ package scheduler
 import (
 	"time"
 
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
-	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	cv2 "github.com/robfig/cron"
 )
 
-var kubeClient kubernetes.Interface
-var restClient *rest.RESTClient
-var pgoClient pgo.Interface
+var clientset kubeapi.Interface
 
 type Scheduler struct {
 	entries       map[string]cv2.EntryID

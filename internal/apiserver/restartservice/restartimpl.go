@@ -45,7 +45,7 @@ func Restart(request *msgs.RestartRequest, pgouser string) msgs.RestartResponse 
 	clusterName := request.ClusterName
 	namespace := request.Namespace
 
-	cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName,
+	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName,
 		metav1.GetOptions{})
 	if err != nil {
 		resp.Status.Code = msgs.Error
@@ -105,7 +105,7 @@ func QueryRestart(clusterName, namespace string) msgs.QueryRestartResponse {
 		},
 	}
 
-	cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName,
+	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName,
 		metav1.GetOptions{})
 	if err != nil {
 		resp.Status.Code = msgs.Error

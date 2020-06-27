@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/util"
@@ -63,7 +62,7 @@ func (p PolicyJob) Run() {
 
 	contextLogger.Info("Running Policy schedule")
 
-	cluster, err := pgoClient.CrunchydataV1().Pgclusters(p.namespace).Get(p.cluster, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(p.namespace).Get(p.cluster, metav1.GetOptions{})
 	if err != nil {
 		contextLogger.WithFields(log.Fields{
 			"error": err,
@@ -71,7 +70,7 @@ func (p PolicyJob) Run() {
 		return
 	}
 
-	policy, err := pgoClient.CrunchydataV1().Pgpolicies(p.namespace).Get(p.policy, metav1.GetOptions{})
+	policy, err := clientset.CrunchydataV1().Pgpolicies(p.namespace).Get(p.policy, metav1.GetOptions{})
 	if err != nil {
 		contextLogger.WithFields(log.Fields{
 			"error": err,
@@ -112,7 +111,7 @@ func (p PolicyJob) Run() {
 		Data: data,
 	}
 
-	err = apiserver.Clientset.CoreV1().ConfigMaps(p.namespace).Delete(name, &metav1.DeleteOptions{})
+	err = clientset.CoreV1().ConfigMaps(p.namespace).Delete(name, &metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		contextLogger.WithFields(log.Fields{
 			"error":     err,
@@ -122,7 +121,7 @@ func (p PolicyJob) Run() {
 	}
 
 	log.Debug("Creating configmap..")
-	_, err = apiserver.Clientset.CoreV1().ConfigMaps(p.namespace).Create(configmap)
+	_, err = clientset.CoreV1().ConfigMaps(p.namespace).Create(configmap)
 	if err != nil {
 		contextLogger.WithFields(log.Fields{
 			"error": err,
@@ -150,12 +149,12 @@ func (p PolicyJob) Run() {
 	}
 
 	deletePropagation := metav1.DeletePropagationForeground
-	err = kubeClient.
+	err = clientset.
 		BatchV1().Jobs(p.namespace).
 		Delete(name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	if err == nil {
 		err = wait.Poll(time.Second/2, time.Minute, func() (bool, error) {
-			_, err := kubeClient.BatchV1().Jobs(p.namespace).Get(name, metav1.GetOptions{})
+			_, err := clientset.BatchV1().Jobs(p.namespace).Get(name, metav1.GetOptions{})
 			return false, err
 		})
 	}
@@ -179,7 +178,7 @@ func (p PolicyJob) Run() {
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_SQL_RUNNER,
 		&newJob.Spec.Template.Spec.Containers[0])
 
-	_, err = kubeClient.BatchV1().Jobs(p.namespace).Create(newJob)
+	_, err = clientset.BatchV1().Jobs(p.namespace).Create(newJob)
 	if err != nil {
 		contextLogger.WithFields(log.Fields{
 			"error": err,

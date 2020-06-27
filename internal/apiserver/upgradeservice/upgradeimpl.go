@@ -63,7 +63,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 
 		// get the clusters list
 
-		clusterList, err := apiserver.PGOClientset.
+		clusterList, err := apiserver.Clientset.
 			CrunchydataV1().Pgclusters(ns).
 			List(metav1.ListOptions{LabelSelector: request.Selector})
 		if err != nil {
@@ -135,7 +135,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 		}
 
 		// remove any existing pgtask for this upgrade
-		task, err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Get(spec.Name, metav1.GetOptions{})
+		task, err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Get(spec.Name, metav1.GetOptions{})
 
 		if err == nil && task.Spec.Status != crv1.CompletedStatus {
 			response.Status.Code = msgs.Error
@@ -144,7 +144,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 		}
 
 		// validate the cluster name and ensure autofail is turned off for each cluster.
-		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
+		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = clusterName + " is not a valid pgcluster"
@@ -173,7 +173,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 		}
 
 		// Create an instance of our CRD
-		_, err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
+		_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()

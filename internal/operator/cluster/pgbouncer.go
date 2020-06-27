@@ -128,7 +128,7 @@ var (
 // Deployment to a PostgreSQL cluster
 //
 // Any returned error is logged in the calling function
-func AddPgbouncer(clientset kubernetes.Interface, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
+func AddPgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
 	log.Debugf("adding a pgbouncer")
 
 	// get the primary pod, which is needed to update the password for the
@@ -203,7 +203,7 @@ func AddPgbouncer(clientset kubernetes.Interface, restclient *rest.RESTClient, r
 //
 // Any errors that are returned should be logged in the calling function, though
 // some logging occurs in this function as well
-func DeletePgbouncer(clientset kubernetes.Interface, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
+func DeletePgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
 
@@ -252,7 +252,7 @@ func DeletePgbouncer(clientset kubernetes.Interface, restclient *rest.RESTClient
 // RotatePgBouncerPassword rotates the password for a pgBouncer PostgreSQL user,
 // which involves updating the password in the PostgreSQL cluster as well as
 // the users secret that is available in the pgbouncer Pod
-func RotatePgBouncerPassword(clientset kubernetes.Interface, restclient *rest.RESTClient, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
+func RotatePgBouncerPassword(clientset kubernetes.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
 	// determine if we are able to access the primary Pod
 	primaryPod, err := util.GetPrimaryPod(clientset, cluster)
 
@@ -381,7 +381,7 @@ func UninstallPgBouncer(clientset kubernetes.Interface, restconfig *rest.Config,
 //
 // Any errors that are returned should be logged in the calling function, though
 // some logging occurs in this function as well
-func UpdatePgbouncer(clientset kubernetes.Interface, restclient *rest.RESTClient, oldCluster, newCluster *crv1.Pgcluster) error {
+func UpdatePgbouncer(clientset kubernetes.Interface, oldCluster, newCluster *crv1.Pgcluster) error {
 	clusterName := newCluster.Name
 	namespace := newCluster.Namespace
 
@@ -396,7 +396,7 @@ func UpdatePgbouncer(clientset kubernetes.Interface, restclient *rest.RESTClient
 
 	// check if the replicas differ
 	if oldCluster.Spec.PgBouncer.Replicas != newCluster.Spec.PgBouncer.Replicas {
-		if err := updatePgBouncerReplicas(clientset, restclient, newCluster); err != nil {
+		if err := updatePgBouncerReplicas(clientset, newCluster); err != nil {
 			return err
 		}
 	}
@@ -404,7 +404,7 @@ func UpdatePgbouncer(clientset kubernetes.Interface, restclient *rest.RESTClient
 	// check if the resources differ
 	if !reflect.DeepEqual(oldCluster.Spec.PgBouncer.Resources, newCluster.Spec.PgBouncer.Resources) ||
 		!reflect.DeepEqual(oldCluster.Spec.PgBouncer.Limits, newCluster.Spec.PgBouncer.Limits) {
-		if err := updatePgBouncerResources(clientset, restclient, newCluster); err != nil {
+		if err := updatePgBouncerResources(clientset, newCluster); err != nil {
 			return err
 		}
 	}
@@ -864,7 +864,7 @@ func setPostgreSQLPassword(clientset kubernetes.Interface, restconfig *rest.Conf
 // of replicas (Pods) that it should run. Presently, this is fairly naive, but
 // as pgBouncer is "semi-stateful" we may want to improve upon this in the
 // future
-func updatePgBouncerReplicas(clientset kubernetes.Interface, restclient *rest.RESTClient, cluster *crv1.Pgcluster) error {
+func updatePgBouncerReplicas(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
 	log.Debugf("scale pgbouncer replicas to [%d]", cluster.Spec.PgBouncer.Replicas)
 
 	// get the pgBouncer deployment so the resources can be updated
@@ -888,7 +888,7 @@ func updatePgBouncerReplicas(clientset kubernetes.Interface, restclient *rest.RE
 
 // updatePgBouncerResources updates the pgBouncer Deployment with the container
 // resource request values that are desired
-func updatePgBouncerResources(clientset kubernetes.Interface, restclient *rest.RESTClient, cluster *crv1.Pgcluster) error {
+func updatePgBouncerResources(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
 	log.Debugf("update pgbouncer resources to [%+v]", cluster.Spec.PgBouncer.Resources)
 
 	// get the pgBouncer deployment so the resources can be updated

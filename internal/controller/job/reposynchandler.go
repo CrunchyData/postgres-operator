@@ -57,13 +57,13 @@ func (c *Controller) handleRepoSyncUpdate(job *apiv1.Job) error {
 
 	// first, make sure the Pgtask resource knows that the job is complete,
 	// which is using this legacy bit of code
-	if err := util.Patch(c.JobClient, patchURL, crv1.JobCompletedStatus, patchResource, job.Name, namespace); err != nil {
+	if err := util.Patch(c.Client.Discovery().RESTClient(), patchURL, crv1.JobCompletedStatus, patchResource, job.Name, namespace); err != nil {
 		log.Error(err)
 		// we can continue on, even if this fails...
 	}
 
 	// next, update the workflow to indicate that step 1 is complete
-	clusteroperator.UpdateCloneWorkflow(c.PGOClientset, namespace, workflowID, crv1.PgtaskWorkflowCloneRestoreBackup)
+	clusteroperator.UpdateCloneWorkflow(c.Client, namespace, workflowID, crv1.PgtaskWorkflowCloneRestoreBackup)
 
 	// determine the storage source (e.g. local or s3) to use for the restore based on the storage
 	// source utilized for the backrest repo sync job
@@ -92,7 +92,7 @@ func (c *Controller) handleRepoSyncUpdate(job *apiv1.Job) error {
 	task := cloneTask.Create()
 
 	// finally, create the pgtask!
-	if _, err := c.PGOClientset.CrunchydataV1().Pgtasks(namespace).Create(task); err != nil {
+	if _, err := c.Client.CrunchydataV1().Pgtasks(namespace).Create(task); err != nil {
 		log.Error(err)
 		errorMessage := fmt.Sprintf("Could not create pgtask for step 2: %s", err.Error())
 		clusteroperator.PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, errorMessage)

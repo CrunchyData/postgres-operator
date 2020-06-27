@@ -60,7 +60,7 @@ func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 
 	clusterList := crv1.PgclusterList{}
 	if len(request.Args) > 0 && request.Args[0] == "all" {
-		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{})
+		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{})
 		if err != nil {
 			log.Error("error getting list of clusters" + err.Error())
 			resp.Status.Code = msgs.Error
@@ -77,7 +77,7 @@ func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 	} else if request.Selector != "" {
 		log.Debugf("label selector is %s and ns is %s", request.Selector, ns)
 
-		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: request.Selector})
+		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: request.Selector})
 		if err != nil {
 			log.Error("error getting list of clusters" + err.Error())
 			resp.Status.Code = msgs.Error
@@ -94,7 +94,7 @@ func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 		//each arg represents a cluster name
 		items := make([]crv1.Pgcluster, 0)
 		for _, cluster := range request.Args {
-			result, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(cluster, metav1.GetOptions{})
+			result, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(cluster, metav1.GetOptions{})
 			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = "error getting list of clusters" + err.Error()
@@ -244,7 +244,7 @@ func PatchPgcluster(newLabels map[string]string, oldCRD crv1.Pgcluster, ns strin
 	}
 
 	log.Debug(string(patchBytes))
-	_, err6 := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Patch(oldCRD.Spec.Name, types.MergePatchType, patchBytes)
+	_, err6 := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Patch(oldCRD.Spec.Name, types.MergePatchType, patchBytes)
 
 	return err6
 
@@ -301,7 +301,7 @@ func DeleteLabel(request *msgs.DeleteLabelRequest, ns string) msgs.LabelResponse
 
 	clusterList := crv1.PgclusterList{}
 	if len(request.Args) > 0 && request.Args[0] == "all" {
-		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{})
+		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{})
 		if err != nil {
 			log.Error("error getting list of clusters" + err.Error())
 			resp.Status.Code = msgs.Error
@@ -316,7 +316,7 @@ func DeleteLabel(request *msgs.DeleteLabelRequest, ns string) msgs.LabelResponse
 		clusterList = *cl
 
 	} else if request.Selector != "" {
-		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: request.Selector})
+		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: request.Selector})
 		if err != nil {
 			log.Error("error getting list of clusters" + err.Error())
 			resp.Status.Code = msgs.Error
@@ -333,7 +333,7 @@ func DeleteLabel(request *msgs.DeleteLabelRequest, ns string) msgs.LabelResponse
 		//each arg represents a cluster name
 		items := make([]crv1.Pgcluster, 0)
 		for _, cluster := range request.Args {
-			result, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(cluster, metav1.GetOptions{})
+			result, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(cluster, metav1.GetOptions{})
 			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = "error getting list of clusters" + err.Error()
@@ -418,7 +418,7 @@ func deletePatchPgcluster(labelsMap map[string]string, oldCRD crv1.Pgcluster, ns
 	}
 
 	log.Debug(string(patchBytes))
-	_, err6 := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Patch(oldCRD.Spec.Name, types.MergePatchType, patchBytes)
+	_, err6 := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Patch(oldCRD.Spec.Name, types.MergePatchType, patchBytes)
 
 	return err6
 

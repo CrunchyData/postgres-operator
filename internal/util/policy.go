@@ -40,9 +40,9 @@ import (
 )
 
 // ExecPolicy execute a sql policy against a cluster
-func ExecPolicy(clientset kubernetes.Interface, pgoClient pgo.Interface, restconfig *rest.Config, namespace, policyName, serviceName, port string) error {
+func ExecPolicy(clientset kubeapi.Interface, restconfig *rest.Config, namespace, policyName, serviceName, port string) error {
 	//fetch the policy sql
-	sql, err := GetPolicySQL(pgoClient, namespace, policyName)
+	sql, err := GetPolicySQL(clientset, namespace, policyName)
 
 	if err != nil {
 		return err

@@ -74,7 +74,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 	var err error
 	if request.Selector != "" {
 		//use the selector instead of an argument list to filter on
-		cl, err := apiserver.PGOClientset.
+		cl, err := apiserver.Clientset.
 			CrunchydataV1().Pgclusters(ns).
 			List(metav1.ListOptions{LabelSelector: request.Selector})
 		if err != nil {
@@ -122,7 +122,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 		log.Debugf("create backrestbackup called for %s", clusterName)
 		taskName := "backrest-backup-" + clusterName
 
-		cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
+		cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
 		if kubeapi.IsNotFound(err) {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = clusterName + " was not found, verify cluster name"
@@ -155,7 +155,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 			return resp
 		}
 
-		err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Delete(taskName, &metav1.DeleteOptions{})
+		err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Delete(taskName, &metav1.DeleteOptions{})
 		if err != nil && !kubeapi.IsNotFound(err) {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -204,7 +204,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 		jobName := "backrest-" + crv1.PgtaskBackrestBackup + "-" + clusterName
 		log.Debugf("setting jobName to %s", jobName)
 
-		_, err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Create(
+		_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(
 			getBackupParams(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database",
 				util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, apiserver.Pgo.Pgo.PGOImagePrefix), request.BackupOpts, request.BackrestStorageType, operator.GetS3VerifyTLSSetting(cluster), jobName, ns, pgouser),
 		)
@@ -353,7 +353,7 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 	}
 
 	//get a list of all clusters
-	clusterList, err := apiserver.PGOClientset.
+	clusterList, err := apiserver.Clientset.
 		CrunchydataV1().Pgclusters(ns).
 		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
@@ -475,7 +475,7 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 		}
 	}
 
-	cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(request.FromCluster, metav1.GetOptions{})
+	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(request.FromCluster, metav1.GetOptions{})
 	if kubeapi.IsNotFound(err) {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = request.FromCluster + " was not found, verify cluster name"
@@ -540,7 +540,7 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 	pgtask.Spec.Parameters[crv1.PgtaskWorkflowID] = id
 
 	//create a pgtask for the restore workflow
-	if _, err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Create(pgtask); err != nil {
+	if _, err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(pgtask); err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
@@ -601,7 +601,7 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
 
 	//delete any existing pgtask with the same name
-	if err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Delete(taskName, &metav1.DeleteOptions{}); err != nil && !kubeapi.IsNotFound(err) {
+	if err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Delete(taskName, &metav1.DeleteOptions{}); err != nil && !kubeapi.IsNotFound(err) {
 		return "", err
 	}
 
@@ -632,7 +632,7 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
 
-	if _, err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Create(newInstance); err != nil {
+	if _, err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(newInstance); err != nil {
 		log.Error(err)
 		return "", err
 	}
@@ -645,7 +645,7 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 func clusterNamesToPGClusterList(namespace string, clusterNames []string) (crv1.PgclusterList,
 	error) {
 	selector := fmt.Sprintf("%s in(%s)", config.LABEL_NAME, strings.Join(clusterNames, ","))
-	clusterList, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return crv1.PgclusterList{}, err
 	}

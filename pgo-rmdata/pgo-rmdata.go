@@ -23,12 +23,9 @@ import (
 	crunchylog "github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/pgo-rmdata/rmdata"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/client-go/kubernetes"
 )
 
 var request rmdata.Request
-
-var Clientset kubernetes.Interface
 
 func main() {
 	request = rmdata.Request{
@@ -59,16 +56,12 @@ func main() {
 		log.Info("debug flag set to false")
 	}
 
-	var err error
-	request.RESTConfig, request.Clientset, err = kubeapi.NewKubeClient()
+	client, err := kubeapi.NewClient()
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
 
-	_, request.RESTClient, request.PGOClientset, err = kubeapi.NewPGOClient()
-	if err != nil {
-		log.Fatalln(err.Error())
-	}
+	request.Clientset = client
 
 	log.Infoln("pgo-rmdata starts")
 	log.Infof("request is %s", request.String())

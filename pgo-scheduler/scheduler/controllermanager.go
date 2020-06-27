@@ -51,7 +51,7 @@ type controllerGroup struct {
 	started             bool
 	kubeInformerFactory kubeinformers.SharedInformerFactory
 	informerSyncedFuncs []cache.InformerSynced
-	kubeClientset       kubernetes.Interface
+	clientset           kubernetes.Interface
 }
 
 // NewControllerManager returns a new ControllerManager comprised of controllerGroups for each
@@ -206,28 +206,25 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 	}
 
 	// create a client for kube resources
-	clients, err := kubeapi.NewControllerClients()
+	client, err := kubeapi.NewClient()
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	kubeClientset := clients.Kubeclientset
-
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientset, 0,
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(client, 0,
 		kubeinformers.WithNamespace(namespace))
 
 	configmapController := &Controller{
-		ConfigmapClientset: kubeClientset,
-		Informer:           kubeInformerFactory.Core().V1().ConfigMaps(),
-		Scheduler:          c.Scheduler,
+		Informer:  kubeInformerFactory.Core().V1().ConfigMaps(),
+		Scheduler: c.Scheduler,
 	}
 
 	// add the proper event handler to the informer in each controller
 	configmapController.AddConfigMapEventHandler()
 
 	group := &controllerGroup{
-		kubeClientset:       kubeClientset,
+		clientset:           client,
 		stopCh:              make(chan struct{}),
 		kubeInformerFactory: kubeInformerFactory,
 		informerSyncedFuncs: []cache.InformerSynced{
@@ -255,7 +252,7 @@ func (c *ControllerManager) clean(namespace string) error {
 	log.Debugf("Controller Manager: namespace %s acquired clean lock and will clean the "+
 		"controller groups", namespace)
 
-	nsList, err := ns.GetCurrentNamespaceList(c.controllers[namespace].kubeClientset,
+	nsList, err := ns.GetCurrentNamespaceList(c.controllers[namespace].clientset,
 		c.installationName, c.namespaceOperatingMode)
 	if err != nil {
 		log.Errorf(err.Error())
@@ -288,7 +285,7 @@ func (c *ControllerManager) hasListerPrivs(namespace string) bool {
 	var err error
 	var hasCorePrivs bool
 
-	hasCorePrivs, err = ns.CheckAccessPrivs(controllerGroup.kubeClientset,
+	hasCorePrivs, err = ns.CheckAccessPrivs(controllerGroup.clientset,
 		map[string][]string{"configmaps": []string{"list"}},
 		"", namespace)
 	if err != nil {

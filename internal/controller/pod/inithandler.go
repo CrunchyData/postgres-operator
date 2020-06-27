@@ -87,15 +87,14 @@ func (c *Controller) handleBackRestRepoInit(newPod *apiv1.Pod, cluster *crv1.Pgc
 
 	// if the repo pod is for a cluster bootstrap, the kick of the bootstrap job and return
 	if _, ok := newPod.GetLabels()[config.LABEL_PGHA_BOOTSTRAP]; ok {
-		if err := clusteroperator.AddClusterBootstrap(c.PodClientset, c.PGOClientset, c.PodClient,
-			cluster); err != nil {
+		if err := clusteroperator.AddClusterBootstrap(c.Client, cluster); err != nil {
 			log.Error(err)
 			return err
 		}
 		return nil
 	}
 
-	clusterInfo, err := clusteroperator.ScaleClusterDeployments(c.PodClientset, *cluster, 1,
+	clusterInfo, err := clusteroperator.ScaleClusterDeployments(c.Client, *cluster, 1,
 		true, false, false, false)
 	if err != nil {
 		log.Error(err)
@@ -120,11 +119,11 @@ func (c *Controller) handleCommonInit(cluster *crv1.Pgcluster) error {
 		log.Error(err)
 		return err
 	} else if !autofailEnabled {
-		util.ToggleAutoFailover(c.PodClientset, false,
+		util.ToggleAutoFailover(c.Client, false,
 			cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE], cluster.Namespace)
 	}
 
-	operator.UpdatePGHAConfigInitFlag(c.PodClientset, false, cluster.Name,
+	operator.UpdatePGHAConfigInitFlag(c.Client, false, cluster.Name,
 		cluster.Namespace)
 
 	return nil
@@ -139,7 +138,7 @@ func (c *Controller) handleRestoreInit(cluster *crv1.Pgcluster) error {
 	//look up the backrest-repo pod name
 	selector := fmt.Sprintf("%s=%s,pgo-backrest-repo=true",
 		config.LABEL_PG_CLUSTER, clusterName)
-	pods, err := c.PodClientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	pods, err := c.Client.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: selector})
 	if len(pods.Items) != 1 {
 		return fmt.Errorf("pods len != 1 for cluster %s", clusterName)
 	}
@@ -147,14 +146,14 @@ func (c *Controller) handleRestoreInit(cluster *crv1.Pgcluster) error {
 		log.Error(err)
 		return err
 	}
-	err = backrest.CleanBackupResources(c.PGOClientset, c.PodClientset,
+	err = backrest.CleanBackupResources(c.Client,
 		namespace, clusterName)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	backrestoperator.CreateInitialBackup(c.PGOClientset, namespace,
+	backrestoperator.CreateInitialBackup(c.Client, namespace,
 		clusterName, pods.Items[0].Name)
 
 	return nil
@@ -169,23 +168,22 @@ func (c *Controller) handleBootstrapInit(newPod *apiv1.Pod, cluster *crv1.Pgclus
 	namespace := cluster.Namespace
 
 	log.Debugf("%s went to Ready from Not Ready, apply policies...", clusterName)
-	taskoperator.ApplyPolicies(clusterName, c.PodClientset, c.PGOClientset, c.PodConfig, namespace)
+	taskoperator.ApplyPolicies(clusterName, c.Client, c.Client.Config, namespace)
 
-	taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PGOClientset, namespace)
+	taskoperator.CompleteCreateClusterWorkflow(clusterName, c.Client, namespace)
 
 	//publish event for cluster complete
 	publishClusterComplete(clusterName, namespace, cluster)
 	//
 
 	// create the pgBackRest stanza
-	backrestoperator.StanzaCreate(newPod.ObjectMeta.Namespace, clusterName,
-		c.PodClientset, c.PGOClientset)
+	backrestoperator.StanzaCreate(newPod.ObjectMeta.Namespace, clusterName, c.Client)
 
 	// if this is a pgbouncer enabled cluster, add a pgbouncer
 	// Note: we only warn if we cannot create the pgBouncer, so eecution can
 	// continue
 	if cluster.Spec.PgBouncer.Enabled() {
-		if err := clusteroperator.AddPgbouncer(c.PodClientset, c.PodClient, c.PodConfig, cluster); err != nil {
+		if err := clusteroperator.AddPgbouncer(c.Client, c.Client.Config, cluster); err != nil {
 			log.Warn(err)
 		}
 	}
@@ -200,14 +198,14 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
 
-	taskoperator.CompleteCreateClusterWorkflow(clusterName, c.PodClientset, c.PGOClientset, namespace)
+	taskoperator.CompleteCreateClusterWorkflow(clusterName, c.Client, namespace)
 
 	//publish event for cluster complete
 	publishClusterComplete(clusterName, namespace, cluster)
 	//
 
 	// now scale any replicas deployments to 1
-	clusteroperator.ScaleClusterDeployments(c.PodClientset, *cluster, 1, false, true, false, false)
+	clusteroperator.ScaleClusterDeployments(c.Client, *cluster, 1, false, true, false, false)
 
 	// Proceed with stanza-creation of this is not a standby cluster, or if its
 	// a standby cluster that does not have "s3" storage only enabled.
@@ -215,22 +213,20 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	// to "s3" for S3 storage only, set the cluster to an initialized status.
 	if cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE] != "s3" {
 		// first try to delete any existing stanza create task and/or job
-		if err := c.PGOClientset.CrunchydataV1().Pgtasks(namespace).Delete(fmt.Sprintf("%s-%s", clusterName,
+		if err := c.Client.CrunchydataV1().Pgtasks(namespace).Delete(fmt.Sprintf("%s-%s", clusterName,
 			crv1.PgtaskBackrestStanzaCreate), &metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
 			return err
 		}
 		deletePropagation := metav1.DeletePropagationForeground
-		if err := c.PodClientset.
+		if err := c.Client.
 			BatchV1().Jobs(namespace).
 			Delete(fmt.Sprintf("%s-%s", clusterName, crv1.PgtaskBackrestStanzaCreate),
 				&metav1.DeleteOptions{PropagationPolicy: &deletePropagation}); err != nil && !kerrors.IsNotFound(err) {
 			return err
 		}
-		backrestoperator.StanzaCreate(namespace, clusterName,
-			c.PodClientset, c.PGOClientset)
+		backrestoperator.StanzaCreate(namespace, clusterName, c.Client)
 	} else {
-		controller.SetClusterInitializedStatus(c.PGOClientset, clusterName,
-			namespace)
+		controller.SetClusterInitializedStatus(c.Client, clusterName, namespace)
 	}
 
 	// If a standby cluster initialize the creation of any replicas.  Replicas
@@ -238,13 +234,13 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	// stanza-creation and/or the creation of any backups, since the replicas
 	// will be generated from the pgBackRest repository of an external PostgreSQL
 	// database (which should already exist).
-	controller.InitializeReplicaCreation(c.PGOClientset, clusterName, namespace)
+	controller.InitializeReplicaCreation(c.Client, clusterName, namespace)
 
 	// if this is a pgbouncer enabled cluster, add a pgbouncer
 	// Note: we only warn if we cannot create the pgBouncer, so eecution can
 	// continue
 	if cluster.Spec.PgBouncer.Enabled() {
-		if err := clusteroperator.AddPgbouncer(c.PodClientset, c.PodClient, c.PodConfig, cluster); err != nil {
+		if err := clusteroperator.AddPgbouncer(c.Client, c.Client.Config, cluster); err != nil {
 			log.Warn(err)
 		}
 	}
@@ -261,11 +257,11 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 	depName := newpod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
 	ns := newpod.Namespace
 
-	_, err := c.PGOClientset.CrunchydataV1().Pgreplicas(ns).Get(depName, metav1.GetOptions{})
+	_, err := c.Client.CrunchydataV1().Pgreplicas(ns).Get(depName, metav1.GetOptions{})
 	replica := err == nil
 	log.Debugf("checkPostgresPods --- dep %s replica %t", depName, replica)
 
-	dep, err := c.PodClientset.AppsV1().Deployments(ns).Get(depName, metav1.GetOptions{})
+	dep, err := c.Client.AppsV1().Deployments(ns).Get(depName, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("could not get Deployment on pod Add %s", newpod.Name)
 		return
@@ -288,7 +284,7 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 		serviceName = newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] + "-replica"
 	}
 
-	err = kubeapi.AddLabelToPod(c.PodClientset, newpod, config.LABEL_SERVICE_NAME, serviceName, ns)
+	err = kubeapi.AddLabelToPod(c.Client, newpod, config.LABEL_SERVICE_NAME, serviceName, ns)
 	if err != nil {
 		log.Error(err)
 		log.Errorf(" could not add pod label for pod %s and label %s ...", newpod.Name, serviceName)
@@ -296,7 +292,7 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 	}
 
 	//add the service name label to the Deployment
-	err = kubeapi.AddLabelToDeployment(c.PodClientset, dep, config.LABEL_SERVICE_NAME, serviceName, ns)
+	err = kubeapi.AddLabelToDeployment(c.Client, dep, config.LABEL_SERVICE_NAME, serviceName, ns)
 
 	if err != nil {
 		log.Error("could not add label to deployment on pod add")

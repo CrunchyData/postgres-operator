@@ -120,7 +120,7 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 		}
 
 		//get the clusters list
-		cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: request.Selector})
+		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: request.Selector})
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -134,7 +134,7 @@ func Load(request *msgs.LoadRequest, ns, pgouser string) msgs.LoadResponse {
 
 	} else {
 		for i := 0; i < len(request.Args); i++ {
-			cl, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(request.Args[i], metav1.GetOptions{})
+			cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(request.Args[i], metav1.GetOptions{})
 			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = err.Error()

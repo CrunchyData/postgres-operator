@@ -18,17 +18,11 @@ limitations under the License.
 import (
 	"fmt"
 
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-
-	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 )
 
 type Request struct {
-	RESTConfig       *rest.Config
-	RESTClient       *rest.RESTClient
-	Clientset        kubernetes.Interface
-	PGOClientset     pgo.Interface
+	Clientset        kubeapi.Interface
 	RemoveData       bool
 	RemoveBackup     bool
 	IsBackup         bool

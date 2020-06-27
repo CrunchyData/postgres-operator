@@ -22,20 +22,15 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/internal/apiserver"
-	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	log "github.com/sirupsen/logrus"
 
 	cv2 "github.com/robfig/cron"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
-func New(label, namespace string, client kubernetes.Interface, pc2 pgo.Interface) *Scheduler {
-	apiserver.ConnectToKube()
-	restClient = apiserver.RESTClient
-	kubeClient = client
-	pgoClient = pc2
+func New(label, namespace string, client kubeapi.Interface) *Scheduler {
+	clientset = client
 	cronClient := cv2.New()
 	cronClient.AddFunc("* * * * *", phony)
 	cronClient.AddFunc("* * * * *", heartbeat)

@@ -61,7 +61,7 @@ const (
 // 4. Create a new cluster by using the old cluster as a template and providing
 // the specifications to the new cluster, with a few "opinionated" items (e.g.
 // copying over the secrets)
-func Clone(clientset kubernetes.Interface, pgoClient pgo.Interface, client *rest.RESTClient, restConfig *rest.Config, namespace string, task *crv1.Pgtask) {
+func Clone(clientset kubeapi.Interface, restConfig *rest.Config, namespace string, task *crv1.Pgtask) {
 	// have a guard -- if the task is completed, don't proceed furter
 	if task.Spec.Status == crv1.CompletedStatus {
 		log.Warn(fmt.Sprintf("pgtask [%s] has already completed", task.Spec.Name))
@@ -74,14 +74,14 @@ func Clone(clientset kubernetes.Interface, pgoClient pgo.Interface, client *rest
 	// contents of the pgBackRes repo from the source cluster to a destination
 	// cluster
 	case crv1.PgtaskCloneStep1:
-		cloneStep1(clientset, pgoClient, client, namespace, task)
+		cloneStep1(clientset, namespace, task)
 	// The second step is to kick off a pgBackRest restore job to the target
 	// cluster PVC
 	case crv1.PgtaskCloneStep2:
-		cloneStep2(clientset, pgoClient, client, restConfig, namespace, task)
+		cloneStep2(clientset, restConfig, namespace, task)
 	// The third step is to create the new cluster!
 	case crv1.PgtaskCloneStep3:
-		cloneStep3(clientset, pgoClient, client, namespace, task)
+		cloneStep3(clientset, namespace, task)
 	}
 }
 
@@ -144,7 +144,7 @@ func UpdateCloneWorkflow(clientset pgo.Interface, namespace, workflowID, status 
 // cloneStep1 covers the creation of the PVCs for the new PostgreSQL cluster,
 // as well as sets up and executes a job to copy (via rsync) the PgBackRest
 // repository from the source cluster to the destination cluster
-func cloneStep1(clientset kubernetes.Interface, pgoClient pgo.Interface, client *rest.RESTClient, namespace string, task *crv1.Pgtask) {
+func cloneStep1(clientset kubeapi.Interface, namespace string, task *crv1.Pgtask) {
 	sourceClusterName, targetClusterName, workflowID := getCloneTaskIdentifiers(task)
 
 	log.Debugf("clone step 1 called: namespace:[%s] sourcecluster:[%s] targetcluster:[%s] workflowid:[%s]",
@@ -157,14 +157,14 @@ func cloneStep1(clientset kubernetes.Interface, pgoClient pgo.Interface, client 
 
 	// first, update the workflow to indicate that we are creating the PVCs
 	// update the workflow to indicate that the cluster is being created
-	if err := UpdateCloneWorkflow(pgoClient, namespace, workflowID, crv1.PgtaskWorkflowCloneCreatePVC); err != nil {
+	if err := UpdateCloneWorkflow(clientset, namespace, workflowID, crv1.PgtaskWorkflowCloneCreatePVC); err != nil {
 		log.Error(err)
 		// if updating the workflow fails, we can continue onward
 	}
 
 	// get the information about the current pgcluster by name, to ensure it
 	// exists
-	sourcePgcluster, err := getSourcePgcluster(pgoClient, namespace, sourceClusterName)
+	sourcePgcluster, err := getSourcePgcluster(clientset, namespace, sourceClusterName)
 
 	// if there is an error getting the pgcluster, abort here
 	if err != nil {
@@ -189,7 +189,7 @@ func cloneStep1(clientset kubernetes.Interface, pgoClient pgo.Interface, client 
 	}
 
 	// Ensure that there does *not* already exist a Pgcluster for the target
-	if found := checkTargetPgCluster(pgoClient, namespace, targetClusterName); found {
+	if found := checkTargetPgCluster(clientset, namespace, targetClusterName); found {
 		log.Errorf("[%s] already exists", targetClusterName)
 		errorMessage := fmt.Sprintf("Not cloning the cluster: %s already exists", targetClusterName)
 		PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, errorMessage)
@@ -197,7 +197,7 @@ func cloneStep1(clientset kubernetes.Interface, pgoClient pgo.Interface, client 
 	}
 
 	// create PVCs for pgBackRest and PostgreSQL
-	if _, _, _, _, err = createPVCs(clientset, client, task, namespace, *sourcePgcluster, targetClusterName); err != nil {
+	if _, _, _, _, err = createPVCs(clientset, task, namespace, *sourcePgcluster, targetClusterName); err != nil {
 		log.Error(err)
 		PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, err.Error())
 		return
@@ -209,7 +209,7 @@ func cloneStep1(clientset kubernetes.Interface, pgoClient pgo.Interface, client 
 	// pgBackRest repositories
 
 	// update the workflow to indicate that we are going to sync the repositories
-	if err := UpdateCloneWorkflow(pgoClient, namespace, workflowID, crv1.PgtaskWorkflowCloneSyncRepo); err != nil {
+	if err := UpdateCloneWorkflow(clientset, namespace, workflowID, crv1.PgtaskWorkflowCloneSyncRepo); err != nil {
 		log.Error(err)
 		// if updating the workflow fails, we can continue onward
 	}
@@ -220,13 +220,13 @@ func cloneStep1(clientset kubernetes.Interface, pgoClient pgo.Interface, client 
 	}
 
 	// finally, update the pgtask to indicate that it's completed
-	patchPgtaskComplete(client, namespace, task.Spec.Name)
+	patchPgtaskComplete(clientset, namespace, task.Spec.Name)
 }
 
 // cloneStep2 creates a pgBackRest restore job for the new PostgreSQL cluster by
 // running a restore from the new target cluster pgBackRest repository to the
 // new target cluster PVC
-func cloneStep2(clientset kubernetes.Interface, pgoClient pgo.Interface, client *rest.RESTClient, restConfig *rest.Config, namespace string, task *crv1.Pgtask) {
+func cloneStep2(clientset kubeapi.Interface, restConfig *rest.Config, namespace string, task *crv1.Pgtask) {
 	sourceClusterName, targetClusterName, workflowID := getCloneTaskIdentifiers(task)
 
 	log.Debugf("clone step 2 called: namespace:[%s] sourcecluster:[%s] targetcluster:[%s] workflowid:[%s]",
@@ -234,7 +234,7 @@ func cloneStep2(clientset kubernetes.Interface, pgoClient pgo.Interface, client 
 
 	// get the information about the current pgcluster by name, to ensure it
 	// exists, as we still need information about the PrimaryStorage
-	sourcePgcluster, err := getSourcePgcluster(pgoClient, namespace, sourceClusterName)
+	sourcePgcluster, err := getSourcePgcluster(clientset, namespace, sourceClusterName)
 
 	// if there is an error getting the pgcluster, abort here
 	if err != nil {
@@ -247,7 +247,7 @@ func cloneStep2(clientset kubernetes.Interface, pgoClient pgo.Interface, client 
 	// interpret the storage specs again. the volumes were already created during
 	// a prior step.
 	_, dataVolume, walVolume, tablespaceVolumes, err := createPVCs(
-		clientset, client, task, namespace, *sourcePgcluster, targetClusterName)
+		clientset, task, namespace, *sourcePgcluster, targetClusterName)
 	if err != nil {
 		log.Error(err)
 		PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, err.Error())
@@ -446,11 +446,11 @@ func cloneStep2(clientset kubernetes.Interface, pgoClient pgo.Interface, client 
 	}
 
 	// finally, update the pgtask to indicate it's complete
-	patchPgtaskComplete(client, namespace, task.Spec.Name)
+	patchPgtaskComplete(clientset, namespace, task.Spec.Name)
 }
 
 // cloneStep3 creates the new cluster by creating a new Pgcluster
-func cloneStep3(clientset kubernetes.Interface, pgoClient pgo.Interface, client *rest.RESTClient, namespace string, task *crv1.Pgtask) {
+func cloneStep3(clientset kubeapi.Interface, namespace string, task *crv1.Pgtask) {
 	sourceClusterName, targetClusterName, workflowID := getCloneTaskIdentifiers(task)
 
 	log.Debugf("clone step 3 called: namespace:[%s] sourcecluster:[%s] targetcluster:[%s] workflowid:[%s]",
@@ -458,7 +458,7 @@ func cloneStep3(clientset kubernetes.Interface, pgoClient pgo.Interface, client 
 
 	// get the information about the current pgcluster by name, to ensure we can
 	// copy over some of the necessary cluster attributes
-	sourcePgcluster, err := getSourcePgcluster(pgoClient, namespace, sourceClusterName)
+	sourcePgcluster, err := getSourcePgcluster(clientset, namespace, sourceClusterName)
 
 	// if there is an error getting the pgcluster, abort here
 	if err != nil {
@@ -486,7 +486,7 @@ func cloneStep3(clientset kubernetes.Interface, pgoClient pgo.Interface, client 
 	}
 
 	// and go forth and create the cluster!
-	if err := createCluster(clientset, pgoClient, client, task, *sourcePgcluster, namespace, targetClusterName, workflowID); err != nil {
+	if err := createCluster(clientset, task, *sourcePgcluster, namespace, targetClusterName, workflowID); err != nil {
 		log.Error(err)
 		errorMessage := fmt.Sprintf("Could not create cloned cluster: %s", err.Error())
 		PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, errorMessage)
@@ -496,7 +496,7 @@ func cloneStep3(clientset kubernetes.Interface, pgoClient pgo.Interface, client 
 	PublishCloneEvent(events.EventCloneClusterCompleted, namespace, task, "")
 
 	// finally, update the pgtask to indicate it's complete
-	patchPgtaskComplete(client, namespace, task.Spec.Name)
+	patchPgtaskComplete(clientset, namespace, task.Spec.Name)
 }
 
 // createPgBackRestRepoSyncJob prepares and creates the job that will use
@@ -703,7 +703,7 @@ func createPgBackRestRepoSyncJob(clientset kubernetes.Interface, namespace strin
 //
 // if the user spceified a different PVCSize than what is in the storage spec,
 // then that gets used
-func createPVCs(clientset kubernetes.Interface, client *rest.RESTClient,
+func createPVCs(clientset kubernetes.Interface,
 	task *crv1.Pgtask, namespace string, sourcePgcluster crv1.Pgcluster, targetClusterName string,
 ) (
 	backrestVolume, dataVolume, walVolume operator.StorageResult,
@@ -753,7 +753,7 @@ func createPVCs(clientset kubernetes.Interface, client *rest.RESTClient,
 	return
 }
 
-func createCluster(clientset kubernetes.Interface, pgoClient pgo.Interface, client *rest.RESTClient, task *crv1.Pgtask, sourcePgcluster crv1.Pgcluster, namespace string, targetClusterName string, workflowID string) error {
+func createCluster(clientset kubeapi.Interface, task *crv1.Pgtask, sourcePgcluster crv1.Pgcluster, namespace string, targetClusterName string, workflowID string) error {
 	// first, handle copying over the cluster secrets so they are available when
 	// the cluster is created
 	cloneClusterSecrets := util.CloneClusterSecrets{
@@ -865,13 +865,13 @@ func createCluster(clientset kubernetes.Interface, pgoClient pgo.Interface, clie
 	}
 
 	// update the workflow to indicate that the cluster is being created
-	if err := UpdateCloneWorkflow(pgoClient, namespace, workflowID, crv1.PgtaskWorkflowCloneClusterCreate); err != nil {
+	if err := UpdateCloneWorkflow(clientset, namespace, workflowID, crv1.PgtaskWorkflowCloneClusterCreate); err != nil {
 		log.Error(err)
 		return err
 	}
 
 	// create the new cluster!
-	if _, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Create(targetPgcluster); err != nil {
+	if _, err := clientset.CrunchydataV1().Pgclusters(namespace).Create(targetPgcluster); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -942,8 +942,8 @@ func getSourcePgcluster(clientset pgo.Interface, namespace, sourceClusterName st
 
 // patchPgtaskComplete updates the pgtask CRD to indicate that the task is now
 // complete
-func patchPgtaskComplete(client *rest.RESTClient, namespace, taskName string) {
-	if err := util.Patch(client, patchURL, crv1.CompletedStatus, patchResource, taskName, namespace); err != nil {
+func patchPgtaskComplete(clientset kubeapi.Interface, namespace, taskName string) {
+	if err := util.Patch(clientset.Discovery().RESTClient(), patchURL, crv1.CompletedStatus, patchResource, taskName, namespace); err != nil {
 		log.Error("error in status patch " + err.Error())
 	}
 }

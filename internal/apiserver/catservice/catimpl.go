@@ -26,8 +26,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 // pgo cat mycluster /pgdata/mycluster/postgresql.conf
@@ -46,7 +44,7 @@ func Cat(request *msgs.CatRequest, ns string) msgs.CatResponse {
 	}
 
 	clusterName := request.Args[0]
-	cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
+	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = clusterName + " was not found, verify cluster name"
@@ -86,7 +84,7 @@ func Cat(request *msgs.CatRequest, ns string) msgs.CatResponse {
 	log.Debugf("cat called for cluster %s", clusterName)
 
 	var results string
-	results, err = cat(&podList.Items[0], apiserver.Clientset, apiserver.RESTClient, apiserver.RESTConfig, ns, request.Args)
+	results, err = cat(&podList.Items[0], ns, request.Args)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -100,10 +98,7 @@ func Cat(request *msgs.CatRequest, ns string) msgs.CatResponse {
 
 // run cat on the postgres pod, remember we are assuming
 // first container in the pod is always the postgres container.
-func cat(
-	pod *v1.Pod,
-	clientset kubernetes.Interface,
-	client *rest.RESTClient, restconfig *rest.Config, ns string, args []string) (string, error) {
+func cat(pod *v1.Pod, ns string, args []string) (string, error) {
 
 	command := make([]string, 0)
 	command = append(command, "cat")
@@ -113,7 +108,7 @@ func cat(
 
 	log.Debugf("running Exec in namespace=[%s] podname=[%s] container name=[%s] command=[%v]", ns, pod.Name, pod.Spec.Containers[0].Name, command)
 
-	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, apiserver.Clientset, command, pod.Spec.Containers[0].Name, pod.Name, ns, nil)
+	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, command, pod.Spec.Containers[0].Name, pod.Name, ns, nil)
 	if err != nil {
 		log.Error(err)
 		return "error in exec to pod", err

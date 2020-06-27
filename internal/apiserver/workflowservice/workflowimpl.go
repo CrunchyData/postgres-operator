@@ -36,7 +36,7 @@ func ShowWorkflow(id, ns string) (msgs.ShowWorkflowDetail, error) {
 
 	selector := crv1.PgtaskWorkflowID + "=" + id
 
-	taskList, err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).List(metav1.ListOptions{LabelSelector: selector})
+	taskList, err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return detail, err
 	}

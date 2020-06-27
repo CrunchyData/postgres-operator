@@ -24,24 +24,23 @@ import (
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes"
 )
 
 // CompleteCreateClusterWorkflow ... update the pgtask for the
 // create cluster workflow for a given cluster
-func CompleteCreateClusterWorkflow(clusterName string, Clientset kubernetes.Interface, pgoClient pgo.Interface, ns string) {
+func CompleteCreateClusterWorkflow(clusterName string, clientset pgo.Interface, ns string) {
 
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowCreateClusterType
 
-	completeWorkflow(pgoClient, ns, taskName)
+	completeWorkflow(clientset, ns, taskName)
 
 }
 
-func CompleteBackupWorkflow(clusterName string, clientSet kubernetes.Interface, pgoClient pgo.Interface, ns string) {
+func CompleteBackupWorkflow(clusterName string, clientset pgo.Interface, ns string) {
 
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackupType
 
-	completeWorkflow(pgoClient, ns, taskName)
+	completeWorkflow(clientset, ns, taskName)
 
 }
 

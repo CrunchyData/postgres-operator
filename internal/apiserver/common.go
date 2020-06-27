@@ -82,7 +82,7 @@ func CreateRMDataTask(clusterName, replicaName, taskName string, deleteBackups, 
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[config.LABEL_RMDATA] = "true"
 
-	_, err = PGOClientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
+	_, err = Clientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
 	if err != nil {
 		log.Error(err)
 		return err

@@ -34,13 +34,11 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/ns"
 	"github.com/crunchydata/postgres-operator/internal/operator/operatorupgrade"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sync/semaphore"
 
 	kubeinformers "k8s.io/client-go/informers"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 )
@@ -76,8 +74,7 @@ type controllerGroup struct {
 	kubeInformerFactoryWithRefresh kubeinformers.SharedInformerFactory
 	controllersWithWorkers         []controller.WorkerRunner
 	informerSyncedFuncs            []cache.InformerSynced
-	kubeClientset                  kubernetes.Interface
-	pgoClientset                   pgo.Interface
+	clientset                      kubeapi.Interface
 }
 
 // NewControllerManager returns a new ControllerManager comprised of controllerGroups for each
@@ -232,81 +229,60 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 	}
 
 	// create a client for kube resources
-	clients, err := kubeapi.NewControllerClients()
+	client, err := kubeapi.NewClient()
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	config := clients.Config
-	pgoClientset := clients.PGOClientset
-	pgoRESTClient := clients.PGORestclient
-	kubeClientset := clients.Kubeclientset
-
-	pgoInformerFactory := informers.NewSharedInformerFactoryWithOptions(pgoClientset, 0,
+	pgoInformerFactory := informers.NewSharedInformerFactoryWithOptions(client, 0,
 		informers.WithNamespace(namespace))
 
-	kubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientset, 0,
+	kubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(client, 0,
 		kubeinformers.WithNamespace(namespace))
 
-	kubeInformerFactoryWithRefresh := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientset,
+	kubeInformerFactoryWithRefresh := kubeinformers.NewSharedInformerFactoryWithOptions(client,
 		time.Duration(*c.pgoConfig.Pgo.ControllerGroupRefreshInterval)*time.Second,
 		kubeinformers.WithNamespace(namespace))
 
 	pgTaskcontroller := &pgtask.Controller{
-		PgtaskConfig:      config,
-		PgtaskClient:      pgoRESTClient,
-		PgtaskClientset:   kubeClientset,
-		PGOClientset:      pgoClientset,
+		Client:            client,
 		Queue:             workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		Informer:          pgoInformerFactory.Crunchydata().V1().Pgtasks(),
 		PgtaskWorkerCount: *c.pgoConfig.Pgo.PGTaskWorkerCount,
 	}
 
 	pgClustercontroller := &pgcluster.Controller{
-		PgclusterClient:      pgoRESTClient,
-		PgclusterClientset:   kubeClientset,
-		PgclusterConfig:      config,
-		PGOClientset:         pgoClientset,
+		Client:               client,
 		Queue:                workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		Informer:             pgoInformerFactory.Crunchydata().V1().Pgclusters(),
 		PgclusterWorkerCount: *c.pgoConfig.Pgo.PGClusterWorkerCount,
 	}
 
 	pgReplicacontroller := &pgreplica.Controller{
-		PgreplicaClient:      pgoRESTClient,
-		PgreplicaClientset:   kubeClientset,
-		PGOClientset:         pgoClientset,
+		Clientset:            client,
 		Queue:                workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		Informer:             pgoInformerFactory.Crunchydata().V1().Pgreplicas(),
 		PgreplicaWorkerCount: *c.pgoConfig.Pgo.PGReplicaWorkerCount,
 	}
 
 	pgPolicycontroller := &pgpolicy.Controller{
-		PgpolicyClient:    pgoRESTClient,
-		PgpolicyClientset: kubeClientset,
-		PGOClientset:      pgoClientset,
-		Informer:          pgoInformerFactory.Crunchydata().V1().Pgpolicies(),
+		Clientset: client,
+		Informer:  pgoInformerFactory.Crunchydata().V1().Pgpolicies(),
 	}
 
 	podcontroller := &pod.Controller{
-		PodConfig:    config,
-		PodClientset: kubeClientset,
-		PodClient:    pgoRESTClient,
-		PGOClientset: pgoClientset,
-		Informer:     kubeInformerFactory.Core().V1().Pods(),
+		Client:   client,
+		Informer: kubeInformerFactory.Core().V1().Pods(),
 	}
 
 	jobcontroller := &job.Controller{
-		JobConfig:    config,
-		JobClientset: kubeClientset,
-		JobClient:    pgoRESTClient,
-		PGOClientset: pgoClientset,
-		Informer:     kubeInformerFactory.Batch().V1().Jobs(),
+		Client:   client,
+		Informer: kubeInformerFactory.Batch().V1().Jobs(),
 	}
 
-	configMapController, err := configmap.NewConfigMapController(config, pgoRESTClient,
-		kubeClientset, kubeInformerFactoryWithRefresh.Core().V1().ConfigMaps(),
+	configMapController, err := configmap.NewConfigMapController(client.Config,
+		client, kubeInformerFactoryWithRefresh.Core().V1().ConfigMaps(),
 		pgoInformerFactory.Crunchydata().V1().Pgclusters(),
 		*c.pgoConfig.Pgo.ConfigMapWorkerCount)
 	if err != nil {
@@ -323,8 +299,7 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 	jobcontroller.AddJobEventHandler()
 
 	group := &controllerGroup{
-		kubeClientset:                  kubeClientset,
-		pgoClientset:                   pgoClientset,
+		clientset:                      client,
 		stopCh:                         make(chan struct{}),
 		doneCh:                         make(chan struct{}),
 		pgoInformerFactory:             pgoInformerFactory,
@@ -368,7 +343,7 @@ func (c *ControllerManager) hasListerPrivs(namespace string) bool {
 	var hasCrunchyPrivs, hasCorePrivs, hasBatchPrivs bool
 
 	for _, listerResource := range listerResourcesCrunchy {
-		hasCrunchyPrivs, err = ns.CheckAccessPrivs(controllerGroup.kubeClientset,
+		hasCrunchyPrivs, err = ns.CheckAccessPrivs(controllerGroup.clientset,
 			map[string][]string{listerResource: []string{"list"}},
 			crv1.GroupName, namespace)
 		if err != nil {
@@ -381,7 +356,7 @@ func (c *ControllerManager) hasListerPrivs(namespace string) bool {
 	}
 
 	for _, listerResource := range listerResourcesCore {
-		hasCorePrivs, err = ns.CheckAccessPrivs(controllerGroup.kubeClientset,
+		hasCorePrivs, err = ns.CheckAccessPrivs(controllerGroup.clientset,
 			map[string][]string{listerResource: []string{"list"}},
 			"", namespace)
 		if err != nil {
@@ -393,7 +368,7 @@ func (c *ControllerManager) hasListerPrivs(namespace string) bool {
 		}
 	}
 
-	hasBatchPrivs, err = ns.CheckAccessPrivs(controllerGroup.kubeClientset,
+	hasBatchPrivs, err = ns.CheckAccessPrivs(controllerGroup.clientset,
 		map[string][]string{"jobs": []string{"list"}},
 		"batch", namespace)
 	if err != nil {
@@ -412,14 +387,14 @@ func (c *ControllerManager) hasListerPrivs(namespace string) bool {
 func (c *ControllerManager) runControllerGroup(namespace string) error {
 
 	controllerGroup := c.controllers[namespace]
-
 	hasListerPrivs := c.hasListerPrivs(namespace)
+
 	switch {
-	case c.controllers[namespace].started && hasListerPrivs:
+	case controllerGroup.started && hasListerPrivs:
 		log.Debugf("Controller Manager: controller group for namespace %s is already running",
 			namespace)
 		return nil
-	case c.controllers[namespace].started && !hasListerPrivs:
+	case controllerGroup.started && !hasListerPrivs:
 		c.removeControllerGroup(namespace)
 		return fmt.Errorf("Controller Manager: removing the running controller group for "+
 			"namespace %s because it no longer has the required privs, will attempt to "+
@@ -431,8 +406,7 @@ func (c *ControllerManager) runControllerGroup(namespace string) error {
 	}
 
 	// before starting, first successfully check the versions of all pgcluster's in the namespace
-	if err := operatorupgrade.CheckVersion(c.controllers[namespace].pgoClientset,
-		namespace); err != nil {
+	if err := operatorupgrade.CheckVersion(controllerGroup.clientset, namespace); err != nil {
 		log.Errorf("Controller Manager: Unsuccessful pgcluster version check for namespace %s, "+
 			"the controller group will not be started", namespace)
 		return err
@@ -447,7 +421,7 @@ func (c *ControllerManager) runControllerGroup(namespace string) error {
 		return fmt.Errorf("Controller Manager: failed waiting for caches to sync")
 	}
 
-	for _, worker := range c.controllers[namespace].controllersWithWorkers {
+	for _, worker := range controllerGroup.controllersWithWorkers {
 		for i := 0; i < worker.WorkerCount(); i++ {
 			go worker.RunWorker(controllerGroup.stopCh, controllerGroup.doneCh)
 		}

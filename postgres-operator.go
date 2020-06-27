@@ -53,20 +53,18 @@ func main() {
 	//give time for pgo-event to start up
 	time.Sleep(time.Duration(5) * time.Second)
 
-	clients, err := kubeapi.NewControllerClients()
+	client, err := kubeapi.NewClient()
 	if err != nil {
 		log.Error(err)
 		os.Exit(2)
 	}
 
-	kubeClientset := clients.Kubeclientset
-
-	operator.Initialize(kubeClientset)
+	operator.Initialize(client)
 
 	// Configure namespaces for the Operator.  This includes determining the namespace
 	// operating mode, creating/updating namespaces (if permitted), and obtaining a valid
 	// list of target namespaces for the operator install
-	namespaceList, err := operator.SetupNamespaces(kubeClientset)
+	namespaceList, err := operator.SetupNamespaces(client)
 	if err != nil {
 		log.Errorf("Error configuring operator namespaces: %w", err)
 		os.Exit(2)
@@ -92,7 +90,7 @@ func main() {
 	// controller.  This allows for namespace and RBAC reconciliation logic to be run in a
 	// consistent manner regardless of the namespace operating mode being utilized.
 	if operator.NamespaceOperatingMode() != ns.NamespaceOperatingModeDisabled {
-		if err := createAndStartNamespaceController(kubeClientset, controllerManager,
+		if err := createAndStartNamespaceController(client, controllerManager,
 			stopCh); err != nil {
 			log.Fatal(err)
 		}

@@ -83,7 +83,7 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 		resp.Status.Msg = "invalid policy name format " + errs[0]
 	} else {
 
-		found, err := CreatePolicy(apiserver.PGOClientset, request.Name, request.URL, request.SQL, ns, username)
+		found, err := CreatePolicy(apiserver.Clientset, request.Name, request.URL, request.SQL, ns, username)
 		if err != nil {
 			log.Error(err.Error())
 			resp.Status.Code = msgs.Error
@@ -157,7 +157,7 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp = DeletePolicy(apiserver.PGOClientset, policyname, ns, username)
+	resp = DeletePolicy(apiserver.Clientset, policyname, ns, username)
 
 	json.NewEncoder(w).Encode(resp)
 
@@ -224,7 +224,7 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp.PolicyList = ShowPolicy(apiserver.PGOClientset, policyname, request.AllFlag, ns)
+	resp.PolicyList = ShowPolicy(apiserver.Clientset, policyname, request.AllFlag, ns)
 
 	json.NewEncoder(w).Encode(resp)
 

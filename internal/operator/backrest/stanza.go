@@ -19,16 +19,15 @@ import (
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
-func StanzaCreate(namespace, clusterName string, clientset kubernetes.Interface, pgoClient pgo.Interface) {
+func StanzaCreate(namespace, clusterName string, clientset kubeapi.Interface) {
 
 	taskName := clusterName + "-" + crv1.PgtaskBackrestStanzaCreate
 
@@ -47,7 +46,7 @@ func StanzaCreate(namespace, clusterName string, clientset kubernetes.Interface,
 	podName := pods.Items[0].Name
 
 	// get the cluster to determine the proper storage type
-	cluster, err := pgoClient.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
 	if err != nil {
 		return
 	}
@@ -103,7 +102,7 @@ func StanzaCreate(namespace, clusterName string, clientset kubernetes.Interface,
 	newInstance.ObjectMeta.Labels = make(map[string]string)
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 
-	_, err = pgoClient.CrunchydataV1().Pgtasks(namespace).Create(newInstance)
+	_, err = clientset.CrunchydataV1().Pgtasks(namespace).Create(newInstance)
 	if err != nil {
 		log.Error(err)
 	}

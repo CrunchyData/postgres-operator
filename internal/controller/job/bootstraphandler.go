@@ -44,7 +44,7 @@ func (c *Controller) handleBootstrapUpdate(job *apiv1.Job) error {
 		return nil
 	}
 
-	cluster, err := c.PGOClientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := c.Client.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func (c *Controller) handleBootstrapUpdate(job *apiv1.Job) error {
 			},
 		})
 		if err == nil {
-			_, err = c.PGOClientset.CrunchydataV1().Pgclusters(namespace).Patch(cluster.Name, types.MergePatchType, patch)
+			_, err = c.Client.CrunchydataV1().Pgclusters(namespace).Patch(cluster.Name, types.MergePatchType, patch)
 		}
 		if err != nil {
 			log.Error(err)
@@ -103,7 +103,7 @@ func (c *Controller) cleanupBootstrapResources(job *apiv1.Job, cluster *crv1.Pgc
 	restoreClusterName := cluster.Spec.PGDataSource.RestoreFrom
 
 	repoName := fmt.Sprintf(util.BackrestRepoServiceName, restoreClusterName)
-	repoDeployment, err := c.JobClientset.AppsV1().Deployments(namespace).Get(repoName,
+	repoDeployment, err := c.Client.AppsV1().Deployments(namespace).Get(repoName,
 		metav1.GetOptions{})
 	if err != nil {
 		return err
@@ -111,14 +111,14 @@ func (c *Controller) cleanupBootstrapResources(job *apiv1.Job, cluster *crv1.Pgc
 
 	if _, ok := repoDeployment.GetLabels()[config.LABEL_PGHA_BOOTSTRAP]; ok {
 		// now delete the service for the bootstrap repo
-		if err := c.JobClientset.CoreV1().Services(namespace).Delete(
+		if err := c.Client.CoreV1().Services(namespace).Delete(
 			fmt.Sprintf(util.BackrestRepoServiceName, restoreClusterName),
 			&metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
 			return err
 		}
 
 		// and finally delete the bootstrap repo deployment
-		if err := c.JobClientset.AppsV1().Deployments(namespace).Delete(
+		if err := c.Client.AppsV1().Deployments(namespace).Delete(
 			fmt.Sprintf(util.BackrestRepoServiceName, restoreClusterName),
 			&metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
 			return err

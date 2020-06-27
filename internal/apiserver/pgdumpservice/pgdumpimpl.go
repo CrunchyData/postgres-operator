@@ -71,7 +71,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 	if request.Selector != "" {
 		//use the selector instead of an argument list to filter on
 
-		clusterList, err := apiserver.PGOClientset.
+		clusterList, err := apiserver.Clientset.
 			CrunchydataV1().Pgclusters(ns).
 			List(metav1.ListOptions{LabelSelector: request.Selector})
 		if err != nil {
@@ -98,7 +98,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 		log.Debugf("create pgdump called for %s", clusterName)
 		taskName := "backup-" + clusterName + pgDumpTaskExtension
 
-		cluster, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
+		cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
 		if kerrors.IsNotFound(err) {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = clusterName + " was not found, verify cluster name"
@@ -123,7 +123,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 			Delete(clusterName+pgDumpJobExtension, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 
 		// error if the task already exists
-		_, err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Get(taskName, metav1.GetOptions{})
+		_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Get(taskName, metav1.GetOptions{})
 		if kerrors.IsNotFound(err) {
 			log.Debugf("pgdump pgtask %s was not found so we will create it", taskName)
 		} else if err != nil {
@@ -134,7 +134,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 
 			log.Debugf("pgtask %s was found so we will recreate it", taskName)
 			//remove the existing pgtask
-			err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Delete(taskName, &metav1.DeleteOptions{})
+			err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Delete(taskName, &metav1.DeleteOptions{})
 
 			if err != nil {
 				resp.Status.Code = msgs.Error
@@ -159,7 +159,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 		// TODO: Needs error handling for invalid parameters in the request
 		theTask := buildPgTaskForDump(clusterName, taskName, crv1.PgtaskpgDump, podname, "database", request)
 
-		_, err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Create(theTask)
+		_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(theTask)
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -195,7 +195,7 @@ func ShowpgDump(clusterName string, selector string, ns string) msgs.ShowBackupR
 	}
 
 	//get a list of all clusters
-	clusterList, err := apiserver.PGOClientset.
+	clusterList, err := apiserver.Clientset.
 		CrunchydataV1().Pgclusters(ns).
 		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
@@ -394,7 +394,7 @@ func parseOptionFlags(allFlags string) (bool, string) {
 
 // if backup && err are nil, it simply wasn't found. Otherwise found or an error
 func getPgBackupForTask(clusterName string, taskName string, ns string) (*msgs.Pgbackup, error) {
-	task, err := apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Get(taskName, metav1.GetOptions{})
+	task, err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Get(taskName, metav1.GetOptions{})
 
 	if err == nil {
 		return buildPgBackupFrompgTask(task), nil
@@ -455,7 +455,7 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 		}
 	}
 
-	_, err := apiserver.PGOClientset.CrunchydataV1().Pgclusters(ns).Get(request.FromCluster, metav1.GetOptions{})
+	_, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(request.FromCluster, metav1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = request.FromCluster + " was not found, verify cluster name"
@@ -481,7 +481,7 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 	}
 
 	//delete any existing pgtask with the same name
-	err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Delete(pgtask.Name, &metav1.DeleteOptions{})
+	err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Delete(pgtask.Name, &metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -489,7 +489,7 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 	}
 
 	//create a pgtask for the restore workflow
-	_, err = apiserver.PGOClientset.CrunchydataV1().Pgtasks(ns).Create(pgtask)
+	_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(pgtask)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()

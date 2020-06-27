@@ -35,7 +35,6 @@ import (
 // Controller holds connections and other resources for the ConfigMap controller
 type Controller struct {
 	cmRESTConfig    *rest.Config
-	cmRESTClient    *rest.RESTClient
 	kubeclientset   kubernetes.Interface
 	cmLister        corelisters.ConfigMapLister
 	cmSynced        cache.InformerSynced
@@ -46,13 +45,12 @@ type Controller struct {
 }
 
 // NewConfigMapController is responsible for creating a new ConfigMap controller
-func NewConfigMapController(restConfig *rest.Config, restClient *rest.RESTClient,
+func NewConfigMapController(restConfig *rest.Config,
 	clientset kubernetes.Interface, coreInformer coreinformers.ConfigMapInformer,
 	pgoInformer pgoinformers.PgclusterInformer, workerCount int) (*Controller, error) {
 
 	controller := &Controller{
 		cmRESTConfig:    restConfig,
-		cmRESTClient:    restClient,
 		kubeclientset:   clientset,
 		cmLister:        coreInformer.Lister(),
 		cmSynced:        coreInformer.Informer().HasSynced,
