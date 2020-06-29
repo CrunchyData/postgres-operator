@@ -678,11 +678,18 @@ provide only a subset of a database, such as a table.
 
 #### Create a Logical Backup
 
-To create a logical backup of a full database, you can run the following
+To create a logical backup of the 'postgres' database, you can run the following
 command:
 
 ```shell
 pgo backup hacluster --backup-type=pgdump
+```
+
+To create a logical backup of a specific database, you can use the `--database` flag,
+as in the following command:
+
+```shell
+pgo backup hacluster --backup-type=pgdump --database=mydb
 ```
 
 You can pass in specific options to `--backup-opts`, which can accept most of
@@ -724,6 +731,14 @@ You can restore a logical backup using the following command:
 ```shell
 pgo restore hacluster --backup-type=pgdump --backup-pvc=hacluster-pgdump-pvc \
   --pitr-target="2019-01-15-00-03-25" -n pgouser1
+```
+
+To restore to a specific database, add the `--pgdump-database` flag to the
+command from above:
+
+```shell
+pgo restore hacluster --backup-type=pgdump --backup-pvc=hacluster-pgdump-pvc \
+  --pgdump-database=mydb --pitr-target="2019-01-15-00-03-25" -n pgouser1
 ```
 
 ## High-Availability: Scaling Up & Down

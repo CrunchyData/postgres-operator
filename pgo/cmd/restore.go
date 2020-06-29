@@ -68,6 +68,7 @@ func init() {
 		"the restore job, and in the case of a pgBackRest restore, also the new (i.e. restored) primary deployment. If not set, any node is used.")
 	restoreCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	restoreCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "", "", "The PVC containing the pgdump to restore from.")
+	restoreCmd.Flags().StringVarP(&PGDumpDB, "pgdump-database", "d", "postgres", "The name of the database pgdump will restore.")
 	restoreCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The type of backup to restore from, default is pgbackrest. Valid types are pgbackrest or pgdump.")
 	restoreCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use for a pgBackRest restore. Either \"local\", \"s3\". (default \"local\")")
 }
@@ -88,6 +89,7 @@ func restore(args []string, ns string) {
 		request.RestoreOpts = BackupOpts
 		request.PITRTarget = PITRTarget
 		request.FromPVC = BackupPVC // use PVC specified on command line for pgrestore
+		request.PGDumpDB = PGDumpDB
 		request.NodeLabel = NodeLabel
 
 		response, err = api.RestoreDump(httpclient, &SessionCredentials, request)
