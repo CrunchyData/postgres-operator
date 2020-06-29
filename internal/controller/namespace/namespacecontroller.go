@@ -130,6 +130,7 @@ func (c *Controller) processNextWorkItem() bool {
 
 	_, namespace, err := cache.SplitMetaNamespaceKey(key)
 	if err != nil {
+		c.workqueue.Forget(obj)
 		log.Error(err)
 		return true
 	}
