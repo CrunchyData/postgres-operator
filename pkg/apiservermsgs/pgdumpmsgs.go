@@ -32,6 +32,7 @@ type CreatepgDumpBackupRequest struct {
 	Namespace     string
 	Args          []string
 	Selector      string
+	PGDumpDB      string
 	PVCName       string
 	StorageConfig string
 	BackupOpts    string
@@ -57,6 +58,7 @@ type PgRestoreRequest struct {
 	Namespace   string
 	FromCluster string
 	FromPVC     string
+	PGDumpDB    string
 	RestoreOpts string
 	PITRTarget  string
 	NodeLabel   string

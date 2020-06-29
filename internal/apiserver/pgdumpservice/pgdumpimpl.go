@@ -247,8 +247,8 @@ func ShowpgDump(clusterName string, selector string, ns string) msgs.ShowBackupR
 }
 
 // builds out a pgTask structure that can be handed to kube
-func buildPgTaskForDump(clusterName string, taskName string, action string, podName string,
-	containerName string, request *msgs.CreatepgDumpBackupRequest) *crv1.Pgtask {
+func buildPgTaskForDump(clusterName, taskName, action, podName, containerName string,
+	request *msgs.CreatepgDumpBackupRequest) *crv1.Pgtask {
 
 	var newInstance *crv1.Pgtask
 	var storageSpec crv1.PgStorageSpec
@@ -266,7 +266,11 @@ func buildPgTaskForDump(clusterName string, taskName string, action string, podN
 	if len(request.PVCName) > 0 {
 		pvcName = request.PVCName
 	} else {
-		pvcName = taskName + "-pvc"
+		// Set the default PVC name using the pgcluster name and the
+		// database name. For example, a pgcluster 'mycluster' with
+		// a databsae 'postgres' would have a PVC named
+		// backup-mycluster-pgdump-postgres-pvc
+		pvcName = taskName + "-" + request.PGDumpDB + "-pvc"
 	}
 
 	// get dumpall flag, separate from dumpOpts, validate options
@@ -282,7 +286,7 @@ func buildPgTaskForDump(clusterName string, taskName string, action string, podN
 	spec.Parameters[config.LABEL_CONTAINER_NAME] = containerName // ??
 	spec.Parameters[config.LABEL_PGDUMP_COMMAND] = action
 	spec.Parameters[config.LABEL_PGDUMP_OPTS] = dumpOpts
-	spec.Parameters[config.LABEL_PGDUMP_DB] = "postgres"
+	spec.Parameters[config.LABEL_PGDUMP_DB] = request.PGDumpDB
 	spec.Parameters[config.LABEL_PGDUMP_USER] = backupUser
 	spec.Parameters[config.LABEL_PGDUMP_PORT] = apiserver.Pgo.Cluster.Port
 	spec.Parameters[config.LABEL_PGDUMP_ALL] = strconv.FormatBool(dumpAllFlag)
@@ -532,7 +536,7 @@ func buildPgTaskForRestore(taskName string, action string, request *msgs.PgResto
 	spec.Namespace = request.Namespace
 	spec.TaskType = crv1.PgtaskpgRestore
 	spec.Parameters = make(map[string]string)
-	spec.Parameters[config.LABEL_PGRESTORE_DB] = "postgres"
+	spec.Parameters[config.LABEL_PGRESTORE_DB] = request.PGDumpDB
 	spec.Parameters[config.LABEL_PGRESTORE_HOST] = request.FromCluster
 	spec.Parameters[config.LABEL_PGRESTORE_FROM_CLUSTER] = request.FromCluster
 	spec.Parameters[config.LABEL_PGRESTORE_FROM_PVC] = request.FromPVC
