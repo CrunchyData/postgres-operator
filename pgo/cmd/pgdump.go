@@ -18,10 +18,12 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	msgs "github.com/crunchydata/postgres-operator/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pgo/api"
+
 	log "github.com/sirupsen/logrus"
-	"os"
 )
 
 // createpgDumpBackup
@@ -33,6 +35,7 @@ func createpgDumpBackup(args []string, ns string) {
 	request.Namespace = ns
 	request.Selector = Selector
 	request.PVCName = PVCName
+	request.PGDumpDB = PGDumpDB
 	request.StorageConfig = StorageConfig
 	request.BackupOpts = BackupOpts
 

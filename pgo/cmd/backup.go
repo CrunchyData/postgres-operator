@@ -26,6 +26,10 @@ import (
 
 var PVCName string
 
+// PGDumpDB is used to store the name of the pgDump database when
+// performing either a backup or restore
+var PGDumpDB string
+
 var backupCmd = &cobra.Command{
 	Use:   "backup",
 	Short: "Perform a Backup",
@@ -82,6 +86,7 @@ func init() {
 	backupCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The options to pass into pgbackrest.")
 	backupCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	backupCmd.Flags().StringVarP(&PVCName, "pvc-name", "", "", "The PVC name to use for the backup instead of the default.")
+	backupCmd.Flags().StringVarP(&PGDumpDB, "database", "d", "postgres", "The name of the database pgdump will backup.")
 	backupCmd.Flags().StringVar(&backupType, "backup-type", "pgbackrest", "The backup type to perform. Default is pgbackrest. Valid backup types are pgbackrest and pgdump.")
 	backupCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use when scheduling pgBackRest backups. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
 
