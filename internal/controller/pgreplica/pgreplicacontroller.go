@@ -100,7 +100,8 @@ func (c *Controller) processNextItem() bool {
 		found, err := kubeapi.Getpgreplica(c.PgreplicaClient, &replica, keyResourceName, keyNamespace)
 		if !found {
 			log.Error(err)
-			return false
+			c.Queue.Forget(key) // NB(cbandy): This should probably be a retry.
+			return true
 		}
 
 		// get the pgcluster resource for the cluster the replica is a part of
@@ -108,7 +109,8 @@ func (c *Controller) processNextItem() bool {
 		_, err = kubeapi.Getpgcluster(c.PgreplicaClient, &cluster, replica.Spec.ClusterName, keyNamespace)
 		if err != nil {
 			log.Error(err)
-			return false
+			c.Queue.Forget(key) // NB(cbandy): This should probably be a retry.
+			return true
 		}
 
 		// only process pgreplica if cluster has been initialized
@@ -130,10 +132,9 @@ func (c *Controller) processNextItem() bool {
 				log.Errorf("ERROR updating pgreplica status: %s", err.Error())
 			}
 		}
-
-		//no error, tell the queue to stop tracking history
-		c.Queue.Forget(key)
 	}
+
+	c.Queue.Forget(key)
 	return true
 }
 
