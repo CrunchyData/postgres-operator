@@ -113,6 +113,7 @@ func (c *Controller) processNextItem() bool {
 
 	if found {
 		log.Debugf("cluster add - dep already found, not creating again")
+		c.Queue.Forget(key)
 		return true
 	}
 
@@ -121,7 +122,8 @@ func (c *Controller) processNextItem() bool {
 	found, err = kubeapi.Getpgcluster(c.PgclusterClient, &cluster, keyResourceName, keyNamespace)
 	if !found {
 		log.Debugf("cluster add - pgcluster not found, this is invalid")
-		return false
+		c.Queue.Forget(key) // NB(cbandy): This should probably be a retry.
+		return true
 	}
 
 	addIdentifier(&cluster)
@@ -131,7 +133,8 @@ func (c *Controller) processNextItem() bool {
 	err = kubeapi.PatchpgclusterStatus(c.PgclusterClient, state, message, &cluster, keyNamespace)
 	if err != nil {
 		log.Errorf("ERROR updating pgcluster status on add: %s", err.Error())
-		return false
+		c.Queue.Forget(key) // NB(cbandy): This should probably be a retry.
+		return true
 	}
 
 	log.Debugf("pgcluster added: %s", cluster.ObjectMeta.Name)
@@ -150,11 +153,13 @@ func (c *Controller) processNextItem() bool {
 	if err != nil {
 		log.Error(err)
 		c.Queue.AddRateLimited(key)
+		return true
 	}
 
 	log.Debugf("Scaled pgBackRest repo deployment %s to 1 to proceed with initializing "+
 		"cluster %s", clusterInfo.PrimaryDeployment, cluster.Name)
 
+	c.Queue.Forget(key)
 	return true
 }
 
