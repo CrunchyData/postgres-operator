@@ -41,6 +41,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -762,11 +763,12 @@ func ScaleClusterDeployments(clientset kubernetes.Interface, cluster crv1.Pgclus
 		log.Debugf("scaling deployment %s to %d for cluster %s", deployment.Name, replicas,
 			clusterName)
 
-		// Scale the deployment accoriding to the number of replicas specified.  If an error is
-		// encountered, log it and move on to scaling the next deployment.
-		deployment.Spec.Replicas = kubeapi.Int32(int32(replicas))
-		if _, err = clientset.AppsV1().Deployments(deployment.Namespace).Update(&deployment); err != nil {
-			log.Errorf("Error scaling deployment %s to %d: %w", deployment.Name, replicas, err)
+		// Scale the deployment according to the number of replicas specified.  If an error is
+		// encountered, log it and move on to scaling the next deployment
+		patchString := fmt.Sprintf(`{"spec":{"replicas":%d}}`, replicas)
+		if _, err := clientset.AppsV1().Deployments(namespace).Patch(deployment.GetName(),
+			types.MergePatchType, []byte(patchString)); err != nil {
+			log.Errorf("Error scaling deployment %s to %d: %v", deployment.Name, replicas, err)
 		}
 	}
 	return
