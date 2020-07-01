@@ -38,9 +38,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// S3RepoTypeRegexString defines a regex to detect if an S3 restore has been specified using the
+// s3RepoTypeRegex defines a regex to detect if an S3 restore has been specified using the
 // pgBackRest --repo-type option
-const S3RepoTypeRegexString = `--repo-type=["']?s3["']?`
+var s3RepoTypeRegex = regexp.MustCompile(`--repo-type=["']?s3["']?`)
 
 type RepoDeploymentTemplateFields struct {
 	SecurityContext           string
@@ -188,10 +188,7 @@ func setBootstrapRepoOverrides(clientset kubernetes.Interface, cluster *crv1.Pgc
 
 	// if an s3 restore is detected, override or set the pgbackrest S3 env vars, otherwise do
 	// not set the s3 env vars at all
-	s3Restore, err := S3RepoTypeCLIOptionExists(cluster.Spec.PGDataSource.RestoreOpts)
-	if err != nil {
-		return err
-	}
+	s3Restore := S3RepoTypeCLIOptionExists(cluster.Spec.PGDataSource.RestoreOpts)
 	if s3Restore {
 		// Now override any backrest S3 env vars for the bootstrap job
 		repoFields.PgbackrestS3EnvVars = operator.GetPgbackrestBootstrapS3EnvVars(cluster,
@@ -303,10 +300,6 @@ func createService(clientset kubernetes.Interface, fields *RepoServiceTemplateFi
 
 // S3RepoTypeCLIOptionExists detects if a S3 restore was requested via the '--repo-type'
 // command line option
-func S3RepoTypeCLIOptionExists(opts string) (exists bool, err error) {
-	exists, err = regexp.MatchString(S3RepoTypeRegexString, opts)
-	if err != nil {
-		return false, err
-	}
-	return exists, nil
+func S3RepoTypeCLIOptionExists(opts string) bool {
+	return s3RepoTypeRegex.MatchString(opts)
 }
