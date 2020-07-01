@@ -310,7 +310,7 @@ func cloneStep2(clientset kubernetes.Interface, client *rest.RESTClient, restCon
 	}
 
 	// create the deployment without creating the PVC given we've already done that
-	if err := backrest.CreateRepoDeployment(clientset, namespace, &targetPgcluster, false,
+	if err := backrest.CreateRepoDeployment(clientset, &targetPgcluster, false, false,
 		1); err != nil {
 		log.Error(err)
 		// publish a failure event

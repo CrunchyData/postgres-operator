@@ -176,6 +176,9 @@ type CreateClusterRequest struct {
 	// BackrestS3CASecretName specifies the name of a secret to use for the
 	// pgBackRest S3 CA instead of the default
 	BackrestS3CASecretName string
+	// PGDataSourceSpec defines the data source that should be used to populate the initial PGDATA
+	// directory when bootstrapping a new PostgreSQL cluster
+	PGDataSource crv1.PGDataSourceSpec
 }
 
 // CreateClusterDetail provides details about the PostgreSQL cluster that is

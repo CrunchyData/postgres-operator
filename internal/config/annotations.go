@@ -32,4 +32,28 @@ const (
 	ANNOTATION_UPGRADE_INFO = "upgrade-info"
 	// annotation to store the string boolean, used when checking upgrade status
 	ANNOTATIONS_FALSE = "false"
+	// ANNOTATION_REPO_PATH is for storing the repository path for the pgBackRest repo in a cluster
+	ANNOTATION_REPO_PATH = "repo-path"
+	// ANNOTATION_PG_PORT is for storing the PostgreSQL port for a cluster
+	ANNOTATION_PG_PORT = "pg-port"
+	// ANNOTATION_S3_BUCKET is for storing the name of the S3 bucket used by pgBackRest in
+	// a cluster
+	ANNOTATION_S3_BUCKET = "s3-bucket"
+	// ANNOTATION_S3_ENDPOINT is for storing the name of the S3 endpoint used by pgBackRest in
+	// a cluster
+	ANNOTATION_S3_ENDPOINT = "s3-endpoint"
+	// ANNOTATION_S3_REGION is for storing the name of the S3 region used by pgBackRest in
+	// a cluster
+	ANNOTATION_S3_REGION = "s3-region"
+	// ANNOTATION_S3_URI_STYLE is for storing the the URI style that should be used to access a
+	// pgBackRest repository
+	ANNOTATION_S3_URI_STYLE = "s3-uri-style"
+	// ANNOTATION_S3_VERIFY_TLS is for storing the setting that determines whether or not TLS should
+	// be used to access a pgBackRest repository
+	ANNOTATION_S3_VERIFY_TLS = "s3-verify-tls"
+	// ANNOTATION_S3_BUCKET is for storing the SSHD port used by the pgBackRest repository
+	// service in a cluster
+	ANNOTATION_SSHD_PORT = "sshd-port"
+	// ANNOTATION_SUPPLEMENTAL_GROUPS is for storing the supplemental groups used with a cluster
+	ANNOTATION_SUPPLEMENTAL_GROUPS = "supplemental-groups"
 )

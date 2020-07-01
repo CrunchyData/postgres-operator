@@ -19,6 +19,7 @@ package cluster
 */
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -26,6 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
+	"github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
@@ -34,7 +36,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	apps_v1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -84,10 +88,40 @@ func AddClusterBase(clientset kubernetes.Interface, client *rest.RESTClient, cl 
 		return
 	}
 
-	if err = addClusterCreateDeployments(clientset, client, cl, namespace, dataVolume, walVolume, tablespaceVolumes); err != nil {
+	// Create a configMap for the cluster that will be utilized to configure whether or not
+	// initialization logic should be executed when the postgres-ha container is run.  This
+	// ensures that the original primary in a PG cluster does not attempt to run any initialization
+	// logic following a restart of the container.
+	// If the configmap already exists, the cluster creation will continue as this is required
+	// for certain pgcluster upgrades.
+	if err = operator.CreatePGHAConfigMap(clientset, cl, namespace); err != nil &&
+		!kerrors.IsAlreadyExists(err) {
+		log.Error(err)
 		publishClusterCreateFailure(cl, err.Error())
 		return
 	}
+
+	if err := annotateBackrestSecret(clientset, cl); err != nil {
+		log.Error(err)
+		publishClusterCreateFailure(cl, err.Error())
+	}
+
+	if err := addClusterDeployments(clientset, client, cl, namespace,
+		dataVolume, walVolume, tablespaceVolumes); err != nil {
+		log.Error(err)
+		publishClusterCreateFailure(cl, err.Error())
+		return
+	}
+
+	// Now scale the repo deployment only to ensure it is initialized prior to the primary DB.
+	// Once the repo is ready, the primary database deployment will then also be scaled to 1.
+	clusterInfo, err := ScaleClusterDeployments(clientset, *cl, 1, false, false, true, false)
+	if err != nil {
+		log.Error(err)
+		publishClusterCreateFailure(cl, err.Error())
+	}
+	log.Debugf("Scaled pgBackRest repo deployment %s to 1 to proceed with initializing "+
+		"cluster %s", clusterInfo.PrimaryDeployment, cl.GetName())
 
 	err = util.Patch(client, "/spec/status", crv1.CompletedStatus, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 	if err != nil {
@@ -175,7 +209,82 @@ func AddClusterBase(clientset kubernetes.Interface, client *rest.RESTClient, cl 
 
 		}
 	}
+}
 
+// AddClusterBootstrap creates the resources needed to bootstrap a new cluster from an existing
+// data source.  Specifically, this function creates the bootstrap job that will be run to
+// bootstrap the cluster, along with supporting resources (e.g. ConfigMaps and volumes).
+func AddClusterBootstrap(clientset kubernetes.Interface, client *rest.RESTClient,
+	cluster *crv1.Pgcluster) error {
+
+	namespace := cluster.GetNamespace()
+
+	if err := operator.CreatePGHAConfigMap(clientset, cluster, namespace); err != nil &&
+		!kerrors.IsAlreadyExists(err) {
+		publishClusterCreateFailure(cluster, err.Error())
+		return err
+	}
+
+	dataVolume, walVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
+		clientset, cluster, namespace,
+		cluster.Annotations[config.ANNOTATION_CURRENT_PRIMARY], cluster.Spec.PrimaryStorage)
+	if err != nil {
+		publishClusterCreateFailure(cluster, err.Error())
+		return err
+	}
+
+	if err := addClusterBootstrapJob(clientset, client, cluster, namespace, dataVolume,
+		walVolume, tablespaceVolumes); err != nil && !kerrors.IsAlreadyExists(err) {
+		publishClusterCreateFailure(cluster, err.Error())
+		return err
+	}
+
+	state := crv1.PgclusterStateBootstrapping
+	message := "Bootstapping cluster from an existing data source"
+	if err := kubeapi.PatchpgclusterStatus(client, state, message, cluster,
+		namespace); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// AddBootstrapRepo creates a pgBackRest repository and associated service to use when
+// bootstrapping a cluster from an existing data source.  If an existing repo is detected
+// and is being used to bootstrap another cluster, then an error is returned.  If an existing
+// repo is detected and is not associated with a bootstrap job (but rather an active cluster),
+// then no action is taken and the function resturns.  Also, in addition to returning an error
+// in the event an error is encountered, the function also returns a 'repoCreated' bool that
+// specifies whether or not a repo was actually created.
+func AddBootstrapRepo(clientset kubernetes.Interface, client *rest.RESTClient,
+	cluster *crv1.Pgcluster) (repoCreated bool, err error) {
+
+	restoreClusterName := cluster.Spec.PGDataSource.RestoreFrom
+	repoName := fmt.Sprintf(util.BackrestRepoServiceName, restoreClusterName)
+
+	found := true
+	repoDeployment, err := clientset.AppsV1().Deployments(cluster.GetNamespace()).Get(
+		repoName, metav1.GetOptions{})
+	if err != nil {
+		if !kerrors.IsNotFound(err) {
+			return
+		}
+		found = false
+	}
+
+	if !found {
+		if err = backrest.CreateRepoDeployment(clientset, cluster, false, true, 1); err != nil {
+			return
+		}
+		repoCreated = true
+	} else if _, ok := repoDeployment.GetLabels()[config.LABEL_PGHA_BOOTSTRAP]; ok {
+		err = fmt.Errorf("Unable to create bootstrap repo %s to bootstrap cluster %s "+
+			"(namespace %s) because it is already running to bootstrap another cluster",
+			repoName, cluster.GetName(), cluster.GetNamespace())
+		return
+	}
+
+	return
 }
 
 // DeleteClusterBase ...
@@ -477,6 +586,53 @@ func UpdateTablespaces(clientset kubernetes.Interface, restConfig *rest.Config,
 		if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(&deployment); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+// annotateBackrestSecret annotates the pgBackRest repository secret with relevant cluster
+// configuration as needed to support bootstrapping from the repository after the cluster
+// has been deleted
+func annotateBackrestSecret(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
+
+	clusterName := cluster.GetName()
+	namespace := cluster.GetNamespace()
+
+	// simple helper that takes two config options, returning the first if populated, and
+	// if not the returning the second (which also might now be populated)
+	cfg := func(cl, op string) string {
+		if cl != "" {
+			return cl
+		}
+		return op
+	}
+	cl := cluster.Spec
+	op := operator.Pgo.Cluster
+	values := map[string]string{
+		config.ANNOTATION_PG_PORT:             cluster.Spec.Port,
+		config.ANNOTATION_REPO_PATH:           util.GetPGBackRestRepoPath(*cluster),
+		config.ANNOTATION_S3_BUCKET:           cfg(cl.BackrestS3Bucket, op.BackrestS3Bucket),
+		config.ANNOTATION_S3_ENDPOINT:         cfg(cl.BackrestS3Endpoint, op.BackrestS3Endpoint),
+		config.ANNOTATION_S3_REGION:           cfg(cl.BackrestS3Region, op.BackrestS3Region),
+		config.ANNOTATION_SSHD_PORT:           strconv.Itoa(operator.Pgo.Cluster.BackrestPort),
+		config.ANNOTATION_SUPPLEMENTAL_GROUPS: cluster.Spec.BackrestStorage.SupplementalGroups,
+		config.ANNOTATION_S3_URI_STYLE:        cfg(cl.BackrestS3URIStyle, op.BackrestS3URIStyle),
+		config.ANNOTATION_S3_VERIFY_TLS:       cfg(cl.BackrestS3VerifyTLS, op.BackrestS3VerifyTLS),
+	}
+	valuesJSON, err := json.Marshal(values)
+	if err != nil {
+		return err
+	}
+
+	secretName := fmt.Sprintf(util.BackrestRepoSecretName, clusterName)
+	patchString := fmt.Sprintf(`{"metadata":{"annotations":%s}}`, string(valuesJSON))
+
+	log.Debugf("About to patch secret %s (namespace %s) using:\n%s", secretName, namespace,
+		patchString)
+	if _, err := clientset.CoreV1().Secrets(namespace).Patch(secretName, types.MergePatchType,
+		[]byte(patchString)); err != nil {
+		return err
 	}
 
 	return nil

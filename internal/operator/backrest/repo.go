@@ -20,6 +20,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
+	"strconv"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/operator"
@@ -35,6 +37,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
+
+// S3RepoTypeRegexString defines a regex to detect if an S3 restore has been specified using the
+// pgBackRest --repo-type option
+const S3RepoTypeRegexString = `--repo-type=["']?s3["']?`
 
 type RepoDeploymentTemplateFields struct {
 	SecurityContext           string
@@ -57,6 +63,7 @@ type RepoDeploymentTemplateFields struct {
 	PodAntiAffinityLabelName  string
 	PodAntiAffinityLabelValue string
 	Replicas                  int
+	BootstrapCluster          string
 }
 
 type RepoServiceTemplateFields struct {
@@ -65,13 +72,28 @@ type RepoServiceTemplateFields struct {
 	Port        string
 }
 
-func CreateRepoDeployment(clientset kubernetes.Interface, namespace string, cluster *crv1.Pgcluster, createPVC bool,
-	replicas int) error {
+// CreateRepoDeployment creates a pgBackRest repository deployment for a PostgreSQL cluster,
+// while also creating the associated Service and PersistentVolumeClaim.
+func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
+	createPVC, bootstrapRepo bool, replicas int) error {
 
-	var b bytes.Buffer
+	namespace := cluster.GetNamespace()
+	restoreClusterName := cluster.Spec.PGDataSource.RestoreFrom
 
-	repoName := fmt.Sprintf(util.BackrestRepoPVCName, cluster.Name)
-	serviceName := fmt.Sprintf(util.BackrestRepoServiceName, cluster.Name)
+	repoFields := getRepoDeploymentFields(clientset, cluster, replicas)
+
+	var repoName, serviceName string
+	// if this is a bootstrap repository then we now override certain fields as needed
+	if bootstrapRepo {
+		if err := setBootstrapRepoOverrides(clientset, cluster, repoFields); err != nil {
+			return err
+		}
+		repoName = fmt.Sprintf(util.BackrestRepoPVCName, restoreClusterName)
+		serviceName = fmt.Sprintf(util.BackrestRepoServiceName, restoreClusterName)
+	} else {
+		repoName = fmt.Sprintf(util.BackrestRepoPVCName, cluster.Name)
+		serviceName = fmt.Sprintf(util.BackrestRepoServiceName, cluster.Name)
+	}
 
 	//create backrest repo service
 	serviceFields := RepoServiceTemplateFields{
@@ -103,41 +125,15 @@ func CreateRepoDeployment(clientset kubernetes.Interface, namespace string, clus
 		}
 	}
 
-	//create backrest repo deployment
-	fields := RepoDeploymentTemplateFields{
-		PGOImagePrefix:        util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, operator.Pgo.Pgo.PGOImagePrefix),
-		PGOImageTag:           operator.Pgo.Pgo.PGOImageTag,
-		ContainerResources:    operator.GetResourcesJSON(cluster.Spec.BackrestResources, cluster.Spec.BackrestLimits),
-		BackrestRepoClaimName: repoName,
-		SshdSecretsName:       "pgo-backrest-repo-config",
-		PGbackrestDBHost:      cluster.Name,
-		PgbackrestRepoPath:    util.GetPGBackRestRepoPath(*cluster),
-		PgbackrestDBPath:      "/pgdata/" + cluster.Name,
-		PgbackrestPGPort:      cluster.Spec.Port,
-		SshdPort:              operator.Pgo.Cluster.BackrestPort,
-		PgbackrestStanza:      "db",
-		PgbackrestRepoType:    operator.GetRepoType(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
-		PgbackrestS3EnvVars:   operator.GetPgbackrestS3EnvVars(*cluster, clientset, namespace),
-		Name:                  serviceName,
-		ClusterName:           cluster.Name,
-		SecurityContext:       operator.GetPodSecurityContext(cluster.Spec.BackrestStorage.GetSupplementalGroups()),
-		Replicas:              replicas,
-		PodAntiAffinity: operator.GetPodAntiAffinity(cluster,
-			crv1.PodAntiAffinityDeploymentPgBackRest, cluster.Spec.PodAntiAffinity.PgBackRest),
-		PodAntiAffinityLabelName: config.LABEL_POD_ANTI_AFFINITY,
-		PodAntiAffinityLabelValue: string(operator.GetPodAntiAffinityType(cluster,
-			crv1.PodAntiAffinityDeploymentPgBackRest, cluster.Spec.PodAntiAffinity.PgBackRest)),
-	}
-	log.Debugf(fields.Name)
-
-	err = config.PgoBackrestRepoTemplate.Execute(&b, fields)
+	var b bytes.Buffer
+	err = config.PgoBackrestRepoTemplate.Execute(&b, repoFields)
 	if err != nil {
 		log.Error(err.Error())
 		return err
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		config.PgoBackrestRepoTemplate.Execute(os.Stdout, fields)
+		config.PgoBackrestRepoTemplate.Execute(os.Stdout, repoFields)
 	}
 
 	deployment := appsv1.Deployment{}
@@ -155,6 +151,92 @@ func CreateRepoDeployment(clientset kubernetes.Interface, namespace string, clus
 
 	return err
 
+}
+
+// setBootstrapRepoOverrides overrides certain fields used to populate the pgBackRest repository template
+// as needed to support the creation of a bootstrap repository need to bootstrap a new cluster from an
+// existing data source.
+func setBootstrapRepoOverrides(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
+	repoFields *RepoDeploymentTemplateFields) error {
+
+	restoreClusterName := cluster.Spec.PGDataSource.RestoreFrom
+	namespace := cluster.GetNamespace()
+
+	repoFields.ClusterName = restoreClusterName
+	repoFields.BootstrapCluster = cluster.GetName()
+	repoFields.Name = fmt.Sprintf(util.BackrestRepoServiceName, restoreClusterName)
+	repoFields.SshdSecretsName = fmt.Sprintf(util.BackrestRepoSecretName, restoreClusterName)
+
+	// set the proper PVC name for the "restore from" cluster
+	repoFields.BackrestRepoClaimName = fmt.Sprintf(util.BackrestRepoPVCName, restoreClusterName)
+
+	restoreFromSecret, err := clientset.CoreV1().Secrets(namespace).Get(
+		fmt.Sprintf("%s-%s", restoreClusterName, config.LABEL_BACKREST_REPO_SECRET),
+		metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	repoFields.PgbackrestRepoPath = restoreFromSecret.Annotations[config.ANNOTATION_REPO_PATH]
+	repoFields.PgbackrestPGPort = restoreFromSecret.Annotations[config.ANNOTATION_PG_PORT]
+
+	sshdPort, err := strconv.Atoi(restoreFromSecret.Annotations[config.ANNOTATION_SSHD_PORT])
+	if err != nil {
+		return err
+	}
+	repoFields.SshdPort = sshdPort
+
+	// if an s3 restore is detected, override or set the pgbackrest S3 env vars, otherwise do
+	// not set the s3 env vars at all
+	s3Restore, err := S3RepoTypeCLIOptionExists(cluster.Spec.PGDataSource.RestoreOpts)
+	if err != nil {
+		return err
+	}
+	if s3Restore {
+		// Now override any backrest S3 env vars for the bootstrap job
+		repoFields.PgbackrestS3EnvVars = operator.GetPgbackrestBootstrapS3EnvVars(cluster,
+			restoreFromSecret)
+	} else {
+		repoFields.PgbackrestS3EnvVars = ""
+	}
+
+	return nil
+}
+
+// getRepoDeploymentFields returns a RepoDeploymentTemplateFields struct populated with the fields
+// needed to populate the pgBackRest repository template and create a pgBackRest repository for a
+// specific PostgreSQL cluster.
+func getRepoDeploymentFields(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
+	replicas int) *RepoDeploymentTemplateFields {
+
+	namespace := cluster.GetNamespace()
+
+	repoFields := RepoDeploymentTemplateFields{
+		PGOImagePrefix:        util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, operator.Pgo.Pgo.PGOImagePrefix),
+		PGOImageTag:           operator.Pgo.Pgo.PGOImageTag,
+		ContainerResources:    operator.GetResourcesJSON(cluster.Spec.BackrestResources, cluster.Spec.BackrestLimits),
+		BackrestRepoClaimName: fmt.Sprintf(util.BackrestRepoPVCName, cluster.Name),
+		SshdSecretsName:       fmt.Sprintf(util.BackrestRepoSecretName, cluster.Name),
+		PGbackrestDBHost:      cluster.Name,
+		PgbackrestRepoPath:    util.GetPGBackRestRepoPath(*cluster),
+		PgbackrestDBPath:      "/pgdata/" + cluster.Name,
+		PgbackrestPGPort:      cluster.Spec.Port,
+		SshdPort:              operator.Pgo.Cluster.BackrestPort,
+		PgbackrestStanza:      "db",
+		PgbackrestRepoType:    operator.GetRepoType(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
+		PgbackrestS3EnvVars:   operator.GetPgbackrestS3EnvVars(*cluster, clientset, namespace),
+		Name:                  fmt.Sprintf(util.BackrestRepoServiceName, cluster.Name),
+		ClusterName:           cluster.Name,
+		SecurityContext:       operator.GetPodSecurityContext(cluster.Spec.BackrestStorage.GetSupplementalGroups()),
+		Replicas:              replicas,
+		PodAntiAffinity: operator.GetPodAntiAffinity(cluster,
+			crv1.PodAntiAffinityDeploymentPgBackRest, cluster.Spec.PodAntiAffinity.PgBackRest),
+		PodAntiAffinityLabelName: config.LABEL_POD_ANTI_AFFINITY,
+		PodAntiAffinityLabelValue: string(operator.GetPodAntiAffinityType(cluster,
+			crv1.PodAntiAffinityDeploymentPgBackRest, cluster.Spec.PodAntiAffinity.PgBackRest)),
+	}
+
+	return &repoFields
 }
 
 // UpdateResources updates the pgBackRest repository Deployment to reflect any
@@ -217,4 +299,14 @@ func createService(clientset kubernetes.Interface, fields *RepoServiceTemplateFi
 	}
 
 	return err
+}
+
+// S3RepoTypeCLIOptionExists detects if a S3 restore was requested via the '--repo-type'
+// command line option
+func S3RepoTypeCLIOptionExists(opts string) (exists bool, err error) {
+	exists, err = regexp.MatchString(S3RepoTypeRegexString, opts)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
 }

@@ -129,6 +129,31 @@ func (c *Controller) processNextItem() bool {
 
 	addIdentifier(&cluster)
 
+	// If bootstrapping from an existing data source then attempt to create the pgBackRest repository.
+	// If a repo already exists (e.g. because it is associated with a currently running cluster) then
+	// proceed with bootstrapping.
+	if cluster.Spec.PGDataSource.RestoreFrom != "" {
+		repoCreated, err := clusteroperator.AddBootstrapRepo(c.PgclusterClientset, c.PgclusterClient,
+			&cluster)
+		if err != nil {
+			log.Error(err)
+			c.Queue.AddRateLimited(key)
+			return true
+		}
+		// if no errors and no repo was created, then we know that the repo is for a currently running
+		// cluster and we can therefore proceed with bootstrapping.
+		if !repoCreated {
+			if err := clusteroperator.AddClusterBootstrap(c.PgclusterClientset, c.PgclusterClient,
+				&cluster); err != nil {
+				log.Error(err)
+				c.Queue.AddRateLimited(key)
+				return true
+			}
+		}
+		c.Queue.Forget(key)
+		return true
+	}
+
 	state := crv1.PgclusterStateProcessed
 	message := "Successfully processed Pgcluster by controller"
 	err = kubeapi.PatchpgclusterStatus(c.PgclusterClient, state, message, &cluster, keyNamespace)
@@ -147,19 +172,6 @@ func (c *Controller) processNextItem() bool {
 	// bringing the repo deployment online, since that in turn will bring the primary DB online.
 	clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, &cluster, cluster.ObjectMeta.Namespace)
 
-	// Now scale the repo deployment only to ensure it is initialized prior to the primary DB.
-	// Once the repo is ready, the primary database deployment will then also be scaled to 1.
-	clusterInfo, err := clusteroperator.ScaleClusterDeployments(c.PgclusterClientset,
-		cluster, 1, false, false, true, false)
-	if err != nil {
-		log.Error(err)
-		c.Queue.AddRateLimited(key)
-		return true
-	}
-
-	log.Debugf("Scaled pgBackRest repo deployment %s to 1 to proceed with initializing "+
-		"cluster %s", clusterInfo.PrimaryDeployment, cluster.Name)
-
 	c.Queue.Forget(key)
 	return true
 }
@@ -168,7 +180,17 @@ func (c *Controller) processNextItem() bool {
 func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	oldcluster := oldObj.(*crv1.Pgcluster)
 	newcluster := newObj.(*crv1.Pgcluster)
-	//	log.Debugf("pgcluster ns=%s %s onUpdate", newcluster.ObjectMeta.Namespace, newcluster.ObjectMeta.Name)
+
+	log.Debugf("pgcluster onUpdate for cluster %s (namespace %s)", newcluster.ObjectMeta.Namespace,
+		newcluster.ObjectMeta.Name)
+
+	// if the status of the pgcluster shows that it has been bootstrapped, then proceed with
+	// creating the cluster (i.e. the cluster deployment, services, etc.)
+	if newcluster.Status.State == crv1.PgclusterStateBootstrapped {
+		clusteroperator.AddClusterBase(c.PgclusterClientset, c.PgclusterClient, newcluster,
+			newcluster.GetNamespace())
+		return
+	}
 
 	// if the 'shutdown' parameter in the pgcluster update shows that the cluster should be either
 	// shutdown or started but its current status does not properly reflect that it is, then

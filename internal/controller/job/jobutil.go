@@ -20,6 +20,14 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// isBackoffLimitExceeded returns true if the jobs backoff limit has been exceeded
+func isBackoffLimitExceeded(job *apiv1.Job) bool {
+	if job.Spec.BackoffLimit != nil {
+		return job.Status.Failed >= *job.Spec.BackoffLimit
+	}
+	return false
+}
+
 // isJobSuccessful returns true if the job provided completed successfully.  Otherwise
 // it returns false.  Per the Kubernetes documentation, "the completion time is only set
 // when the job finishes successfully".  Therefore, the presence of a completion time can

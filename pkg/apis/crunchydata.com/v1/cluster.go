@@ -119,6 +119,15 @@ type PgclusterSpec struct {
 	TLSOnly             bool                     `json:"tlsOnly"`
 	Standby             bool                     `json:"standby"`
 	Shutdown            bool                     `json:"shutdown"`
+	PGDataSource        PGDataSourceSpec         `json:"pgDataSource"`
+}
+
+// PGDataSourceSpec defines the data source that should be used to populate the initial PGDATA
+// directory when bootstrapping a new PostgreSQL cluster
+// swagger:ignore
+type PGDataSourceSpec struct {
+	RestoreFrom string `json:"restoreFrom"`
+	RestoreOpts string `json:"restoreOpts"`
 }
 
 // PgclusterList is the CRD that defines a Crunchy PG Cluster List
@@ -227,6 +236,12 @@ const (
 	PgclusterStateProcessed PgclusterState = "pgcluster Processed"
 	// PgclusterStateInitialized ...
 	PgclusterStateInitialized PgclusterState = "pgcluster Initialized"
+	// PgclusterStateBootstrapping defines the state of a cluster when it is being bootstrapped
+	// from an existing data source
+	PgclusterStateBootstrapping PgclusterState = "pgcluster Bootstrapping"
+	// PgclusterStateBootstrapped defines the state of a cluster when it has been bootstrapped
+	// successfully from an existing data source
+	PgclusterStateBootstrapped PgclusterState = "pgcluster Bootstrapped"
 	// PgclusterStateRestore ...
 	PgclusterStateRestore PgclusterState = "pgcluster Restoring"
 	// PgclusterStateShutdown indicates that the cluster has been shut down (i.e. the primary)

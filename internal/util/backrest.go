@@ -27,6 +27,7 @@ const (
 	BackrestRepoDeploymentName = "%s-backrest-shared-repo"
 	BackrestRepoServiceName    = "%s-backrest-shared-repo"
 	BackrestRepoPVCName        = "%s-pgbr-repo"
+	BackrestRepoSecretName     = "%s-backrest-repo-config"
 )
 
 // defines the default repo1-path for pgBackRest for use when a specic path is not provided

@@ -191,6 +191,10 @@ var DeploymentTemplate *template.Template
 
 const deploymentTemplatePath = "cluster-deployment.json"
 
+var BootstrapTemplate *template.Template
+
+const bootstrapTemplatePath = "cluster-bootstrap-job.json"
+
 type ClusterStruct struct {
 	CCPImagePrefix                 string
 	CCPImageTag                    string
@@ -730,6 +734,11 @@ func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) 
 	}
 
 	DeploymentTemplate, err = c.LoadTemplate(cMap, rootPath, deploymentTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	BootstrapTemplate, err = c.LoadTemplate(cMap, rootPath, bootstrapTemplatePath)
 	if err != nil {
 		return err
 	}

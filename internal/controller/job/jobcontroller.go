@@ -70,6 +70,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		job.ObjectMeta.Namespace, job.ObjectMeta.SelfLink, job.Status.Active, job.Status.Succeeded,
 		job.Status.Conditions)
 
+	labelExists := func(k string) bool { _, ok := labels[k]; return ok }
 	// determine determine which handler to route the update event to
 	switch {
 	case labels[config.LABEL_RMDATA] == "true":
@@ -85,6 +86,8 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		err = c.handleLoadUpdate(job)
 	case labels[config.LABEL_PGO_CLONE_STEP_1] == "true":
 		err = c.handleRepoSyncUpdate(job)
+	case labelExists(config.LABEL_PGHA_BOOTSTRAP):
+		err = c.handleBootstrapUpdate(job)
 	}
 
 	if err != nil {

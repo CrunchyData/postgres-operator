@@ -23,6 +23,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -34,6 +36,7 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -82,34 +85,189 @@ func addClusterCreateMissingService(clientset kubernetes.Interface, cl *crv1.Pgc
 	return CreateService(clientset, &serviceFields, namespace)
 }
 
-// addClusterCreateDeployments creates deployments for pgBackRest and PostgreSQL.
-func addClusterCreateDeployments(clientset kubernetes.Interface, client *rest.RESTClient,
-	cl *crv1.Pgcluster, namespace string,
-	dataVolume, walVolume operator.StorageResult,
-	tablespaceVolumes map[string]operator.StorageResult,
-) error {
-	var primaryDoc bytes.Buffer
-	var err error
+// addClusterBootstrapJob creates a job that will be used to bootstrap a PostgreSQL cluster from an
+// existing data source
+func addClusterBootstrapJob(clientset kubernetes.Interface, client *rest.RESTClient,
+	cl *crv1.Pgcluster, namespace string, dataVolume, walVolume operator.StorageResult,
+	tablespaceVolumes map[string]operator.StorageResult) error {
 
-	log.Info("creating Pgcluster object  in namespace " + namespace)
-	log.Info("created with Name=" + cl.Spec.Name + " in namespace " + namespace)
+	bootstrapFields, err := getBootstrapJobFields(clientset, client, cl, dataVolume, walVolume,
+		tablespaceVolumes)
+	if err != nil {
+		return err
+	}
+
+	var bootstrapSpec bytes.Buffer
+	if err := config.BootstrapTemplate.Execute(&bootstrapSpec, bootstrapFields); err != nil {
+		return err
+	}
+
+	if operator.CRUNCHY_DEBUG {
+		config.DeploymentTemplate.Execute(os.Stdout, bootstrapFields)
+	}
+
+	job := &batchv1.Job{}
+	if err := json.Unmarshal(bootstrapSpec.Bytes(), job); err != nil {
+		return err
+	}
+
+	if cl.Spec.WALStorage.StorageType != "" {
+		operator.AddWALVolumeAndMountsToPostgreSQL(&job.Spec.Template.Spec, walVolume,
+			cl.Spec.Name)
+	}
+
+	// determine if any of the container images need to be overridden
+	operator.OverrideClusterContainerImages(job.Spec.Template.Spec.Containers)
+
+	if _, err := clientset.BatchV1().Jobs(namespace).Create(job); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// addClusterDeployments creates deployments for pgBackRest and PostgreSQL.
+func addClusterDeployments(clientset kubernetes.Interface, client *rest.RESTClient,
+	cl *crv1.Pgcluster, namespace string, dataVolume, walVolume operator.StorageResult,
+	tablespaceVolumes map[string]operator.StorageResult) error {
+
+	if err := backrest.CreateRepoDeployment(clientset, cl, true, false, 0); err != nil {
+		return err
+	}
+
+	deploymentFields := getClusterDeploymentFields(clientset, client, cl,
+		dataVolume, walVolume, tablespaceVolumes)
+
+	var primaryDoc bytes.Buffer
+	if err := config.DeploymentTemplate.Execute(&primaryDoc, deploymentFields); err != nil {
+		return err
+	}
+
+	if operator.CRUNCHY_DEBUG {
+		config.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
+	}
+
+	deployment := &appsv1.Deployment{}
+	if err := json.Unmarshal(primaryDoc.Bytes(), deployment); err != nil {
+		return err
+	}
+
+	if cl.Spec.WALStorage.StorageType != "" {
+		operator.AddWALVolumeAndMountsToPostgreSQL(&deployment.Spec.Template.Spec, walVolume,
+			cl.Spec.Name)
+	}
+
+	// determine if any of the container images need to be overridden
+	operator.OverrideClusterContainerImages(deployment.Spec.Template.Spec.Containers)
+
+	if _, err := clientset.AppsV1().Deployments(namespace).Create(deployment); err != nil {
+		return err
+	}
+
+	// patch in the correct current primary value to the CRD spec, as well as
+	// any updated user labels. This will handle both new and updated clusters.
+	// Note: in previous operator versions, this was stored in a user label
+	if err := util.PatchClusterCRD(client, cl.Spec.UserLabels, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], namespace); err != nil {
+		log.Error("could not patch primary crv1 with labels")
+		return err
+	}
+
+	return nil
+}
+
+// getBootstrapJobFields obtains the fields needed to populate the cluster bootstrap job template
+func getBootstrapJobFields(clientset kubernetes.Interface, client *rest.RESTClient,
+	cluster *crv1.Pgcluster, dataVolume, walVolume operator.StorageResult,
+	tablespaceVolumes map[string]operator.StorageResult) (operator.BootstrapJobTemplateFields, error) {
+
+	restoreClusterName := cluster.Spec.PGDataSource.RestoreFrom
+	restoreOpts := strconv.Quote(cluster.Spec.PGDataSource.RestoreOpts)
+
+	bootstrapFields := operator.BootstrapJobTemplateFields{
+		DeploymentTemplateFields: getClusterDeploymentFields(clientset, client, cluster, dataVolume,
+			walVolume, tablespaceVolumes),
+		RestoreFrom: cluster.Spec.PGDataSource.RestoreFrom,
+		RestoreOpts: restoreOpts[1 : len(restoreOpts)-1],
+	}
+
+	// A recovery target should also have a recovery target action. The PostgreSQL
+	// and pgBackRest defaults are `pause` which requires the user to execute SQL
+	// before the cluster will accept any writes. If no action has been specified,
+	// use `promote` which accepts writes as soon as recovery succeeds.
+	//
+	// - https://www.postgresql.org/docs/current/runtime-config-wal.html#RUNTIME-CONFIG-WAL-RECOVERY-TARGET
+	// - https://pgbackrest.org/command.html#command-restore/category-command/option-target-action
+	//
+	if strings.Contains(restoreOpts, "--target") &&
+		!strings.Contains(restoreOpts, "--target-action") {
+		bootstrapFields.RestoreOpts =
+			strings.TrimSpace(bootstrapFields.RestoreOpts + " --target-action=promote")
+	}
+
+	// Grab the pgBackRest secret from the "restore from" cluster to obtain the annotations
+	// containing the additional configuration details needed to bootstrap from the clusters
+	// pgBackRest repository
+	restoreFromSecret, err := clientset.CoreV1().Secrets(cluster.GetNamespace()).Get(
+		fmt.Sprintf(util.BackrestRepoSecretName, restoreClusterName), metav1.GetOptions{})
+	if err != nil {
+		return bootstrapFields, err
+	}
+
+	// Grab the cluster to restore from to see if it still exists
+	restoreCluster := &crv1.Pgcluster{}
+	found := true
+	if _, err := kubeapi.Getpgcluster(client, restoreCluster, restoreClusterName,
+		cluster.GetNamespace()); err != nil {
+		if !kerrors.IsNotFound(err) {
+			return bootstrapFields, err
+		}
+		found = false
+	}
+
+	// If the cluster exists, only proceed if it isnt shutdown
+	if found && (restoreCluster.Status.State == crv1.PgclusterStateShutdown) {
+		return bootstrapFields, fmt.Errorf("Unable to bootstrap cluster %s from cluster %s "+
+			"(namespace %s) because it has a %s status", cluster.GetName(),
+			restoreClusterName, cluster.GetNamespace(),
+			string(restoreCluster.Status.State))
+	}
+
+	// Now override any backrest env vars for the bootstrap job
+	bootstrapBackrestVars, err := operator.GetPgbackrestBootstrapEnvVars(restoreClusterName,
+		cluster.GetName(), restoreFromSecret)
+	if err != nil {
+		return bootstrapFields, err
+	}
+	bootstrapFields.PgbackrestEnvVars = bootstrapBackrestVars
+
+	// if an s3 restore is detected, override or set the pgbackrest S3 env vars, otherwise do
+	// not set the s3 env vars at all
+	s3Restore, err := backrest.S3RepoTypeCLIOptionExists(cluster.Spec.PGDataSource.RestoreOpts)
+	if err != nil {
+		return bootstrapFields, err
+	}
+	if s3Restore {
+		// Now override any backrest S3 env vars for the bootstrap job
+		bootstrapFields.PgbackrestS3EnvVars = operator.GetPgbackrestBootstrapS3EnvVars(cluster,
+			restoreFromSecret)
+	} else {
+		bootstrapFields.PgbackrestS3EnvVars = ""
+	}
+
+	return bootstrapFields, nil
+}
+
+// getClusterDeploymentFields obtains the fields needed to populate the cluster deployment template
+func getClusterDeploymentFields(clientset kubernetes.Interface, client *rest.RESTClient,
+	cl *crv1.Pgcluster, dataVolume, walVolume operator.StorageResult,
+	tablespaceVolumes map[string]operator.StorageResult) operator.DeploymentTemplateFields {
+
+	namespace := cl.GetNamespace()
+
+	log.Infof("creating Pgcluster %s in namespace %s", cl.Name, namespace)
 
 	cl.Spec.UserLabels["name"] = cl.Spec.Name
 	cl.Spec.UserLabels[config.LABEL_PG_CLUSTER] = cl.Spec.ClusterName
-
-	archiveMode := "off"
-	if cl.Spec.UserLabels[config.LABEL_ARCHIVE] == "true" {
-		archiveMode = "on"
-	}
-	if cl.Labels[config.LABEL_BACKREST] == "true" {
-		//backrest requires us to turn on archive mode
-		archiveMode = "on"
-		if err := backrest.CreateRepoDeployment(clientset, namespace, cl, true,
-			0); err != nil {
-			log.Error("could not create backrest repo deployment")
-			return err
-		}
-	}
 
 	// if the current deployment label value does not match current primary name
 	// update the label so that the new deployment will match the existing PVC
@@ -153,7 +311,6 @@ func addClusterCreateDeployments(clientset kubernetes.Interface, client *rest.RE
 		PodLabels:          operator.GetLabelsFromMap(cl.Spec.UserLabels),
 		DataPathOverride:   cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY],
 		Database:           cl.Spec.Database,
-		ArchiveMode:        archiveMode,
 		SecurityContext:    operator.GetPodSecurityContext(supplementalGroups),
 		RootSecretName:     cl.Spec.RootSecretName,
 		PrimarySecretName:  cl.Spec.PrimarySecretName,
@@ -184,62 +341,7 @@ func addClusterCreateDeployments(clientset kubernetes.Interface, client *rest.RE
 		Standby:                  cl.Spec.Standby,
 	}
 
-	// Create a configMap for the cluster that will be utilized to configure whether or not
-	// initialization logic should be executed when the postgres-ha container is run.  This
-	// ensures that the original primary in a PG cluster does not attempt to run any initialization
-	// logic following a restart of the container.
-	// If the configmap already exists, the cluster creation will continue as this is required
-	// for certain pgcluster upgrades.
-	if err = operator.CreatePGHAConfigMap(clientset, cl, namespace); err != nil &&
-		!kerrors.IsAlreadyExists(err) {
-		log.Error(err.Error())
-		return err
-	}
-
-	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
-	err = config.DeploymentTemplate.Execute(&primaryDoc, deploymentFields)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-
-	//a form of debugging
-	if operator.CRUNCHY_DEBUG {
-		config.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
-	}
-
-	deployment := appsv1.Deployment{}
-	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
-	if err != nil {
-		log.Error("error unmarshalling primary json into Deployment " + err.Error())
-		return err
-	}
-
-	if cl.Spec.WALStorage.StorageType != "" {
-		operator.AddWALVolumeAndMountsToPostgreSQL(&deployment.Spec.Template.Spec, walVolume, cl.Spec.Name)
-	}
-
-	// determine if any of the container images need to be overridden
-	operator.OverrideClusterContainerImages(deployment.Spec.Template.Spec.Containers)
-
-	if _, err = clientset.AppsV1().Deployments(namespace).Get(cl.Spec.Name, metav1.GetOptions{}); err != nil {
-		_, err = clientset.AppsV1().Deployments(namespace).Create(&deployment)
-		if err != nil {
-			return err
-		}
-	} else {
-		log.Info("primary Deployment " + cl.Spec.Name + " in namespace " + namespace + " already existed so not creating it ")
-	}
-
-	// patch in the correct current primary value to the CRD spec, as well as
-	// any updated user labels. This will handle both new and updated clusters.
-	// Note: in previous operator versions, this was stored in a user label
-	if err = util.PatchClusterCRD(client, cl.Spec.UserLabels, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], namespace); err != nil {
-		log.Error("could not patch primary crv1 with labels")
-		return err
-	}
-
-	return err
+	return deploymentFields
 }
 
 // DeleteCluster ...

@@ -66,6 +66,7 @@ var PVCSize string
 var BackrestPVCSize string
 var WALStorageConfig string
 var WALPVCSize string
+var RestoreFrom string
 
 // group the various container resource requests together, i.e. for CPU/Memory
 var (
@@ -408,6 +409,10 @@ func init() {
 	createClusterCmd.Flags().StringVar(&ReplicationTLSSecret, "replication-tls-secret", "", "The name of the secret that contains "+
 		"the TLS keypair to use for enabling certificate-based authentication between PostgreSQL instances, "+
 		"particularly for the purpose of replication. Must be used with \"server-tls-secret\" and \"server-ca-secret\".")
+	createClusterCmd.Flags().StringVarP(&RestoreFrom, "restore-from", "", "", "The name of cluster to restore from when bootstrapping a new cluster")
+	createClusterCmd.Flags().StringVarP(&BackupOpts, "restore-opts", "", "",
+		"The options to pass into pgbackrest where performing a restore to bootrap the cluster. "+
+			"Only applicable when a \"restore-from\" value is specified")
 	createClusterCmd.Flags().StringVarP(&SecretFrom, "secret-from", "s", "", "The cluster name to use when restoring secrets.")
 	createClusterCmd.Flags().StringVar(&CASecret, "server-ca-secret", "", "The name of the secret that contains "+
 		"the certficate authority (CA) to use for enabling the PostgreSQL cluster to accept TLS connections. "+

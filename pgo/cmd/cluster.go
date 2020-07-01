@@ -325,6 +325,8 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.Tablespaces = getTablespaces(Tablespaces)
 	r.WALStorageConfig = WALStorageConfig
 	r.WALPVCSize = WALPVCSize
+	r.PGDataSource.RestoreFrom = RestoreFrom
+	r.PGDataSource.RestoreOpts = BackupOpts
 
 	// only set SyncReplication in the request if actually provided via the CLI
 	if createClusterCmd.Flag("sync-replication").Changed {
