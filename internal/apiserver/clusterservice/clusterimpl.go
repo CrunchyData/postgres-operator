@@ -2145,10 +2145,7 @@ func validateDataSourceParms(request *msgs.CreateClusterRequest) error {
 
 	// now detect if an 's3' repo type was specified via the restore opts, and if so verify that s3
 	// settings are present in backrest repo secret for the backup being restored from
-	s3Restore, err := backrest.S3RepoTypeCLIOptionExists(restoreOpts)
-	if err != nil {
-		return fmt.Errorf("%s: %w", ErrInvalidDataSource, err)
-	}
+	s3Restore := backrest.S3RepoTypeCLIOptionExists(restoreOpts)
 	if s3Restore && isMissingExistingDataSourceS3Config(backrestRepoSecret) {
 		return fmt.Errorf("Secret %s is missing the S3 configuration required to restore "+
 			"from an S3 repository", backrestRepoSecret.GetName())
