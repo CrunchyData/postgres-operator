@@ -124,6 +124,18 @@ type PgmonitorEnvVarsTemplateFields struct {
 	CollectSecret string
 }
 
+// BootstrapJobTemplateFields defines the fields needed to populate the cluster bootstrap job
+// template
+type BootstrapJobTemplateFields struct {
+	DeploymentTemplateFields
+	// RestoreFrom defines the name of a cluster to restore from when bootstrapping from an
+	// existing data source
+	RestoreFrom string
+	// RestoreOpts defines the command line options that should be passed to the restore utility
+	// (e.g. pgBackRest) when bootstrapping the cluster from an existing data source
+	RestoreOpts string
+}
+
 // DeploymentTemplateFields ...
 type DeploymentTemplateFields struct {
 	Name                string
@@ -230,6 +242,28 @@ func GetPgbackrestEnvVars(cluster *crv1.Pgcluster, backrestEnabled, depName, por
 	}
 	return ""
 
+}
+
+// GetPgbackrestBootstrapEnvVars returns a string containing the pgBackRest environment variables
+// for a bootstrap job
+func GetPgbackrestBootstrapEnvVars(restoreClusterName, depName string,
+	restoreFromSecret *v1.Secret) (string, error) {
+
+	fields := PgbackrestEnvVarsTemplateFields{
+		PgbackrestStanza:    "db",
+		PgbackrestDBPath:    fmt.Sprintf("/pgdata/%s", depName),
+		PgbackrestRepo1Path: restoreFromSecret.Annotations[config.ANNOTATION_REPO_PATH],
+		PgbackrestPGPort:    restoreFromSecret.Annotations[config.ANNOTATION_PG_PORT],
+		PgbackrestRepo1Host: fmt.Sprintf(util.BackrestRepoDeploymentName, restoreClusterName),
+		PgbackrestRepo1Type: "posix", // just set to the default, can be overridden via CLI args
+	}
+
+	var doc bytes.Buffer
+	if err := config.PgbackrestEnvVarsTemplate.Execute(&doc, fields); err != nil {
+		log.Error(err.Error())
+		return "", err
+	}
+	return doc.String(), nil
 }
 
 // GetBackrestDeployment finds the pgBackRest repository Deployments for a
@@ -773,6 +807,46 @@ func GetPgbackrestS3EnvVars(cluster crv1.Pgcluster, clientset kubernetes.Interfa
 	s3EnvVars.PgbackrestS3VerifyTLS = "n"
 
 	if verifyTLS {
+		s3EnvVars.PgbackrestS3VerifyTLS = "y"
+	}
+
+	doc := bytes.Buffer{}
+
+	if err := config.PgbackrestS3EnvVarsTemplate.Execute(&doc, s3EnvVars); err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	return doc.String()
+}
+
+// GetPgbackrestBootstrapS3EnvVars retrieves the values for the various configuration settings
+// required to configure pgBackRest for AWS S3, specifically for a bootstrap job (includes a
+// bucket, endpoint, region, key and key secret. The bucket, endpoint & region are obtained from
+// annotations in the pgbackrest secret from the cluster being restored from during the bootstrap
+// job, while the key and key secret are then obtained from the data in this same secret.  Once
+// these values have been obtained, they are used to populate a template containing the various
+// pgBackRest environment variables required to enable S3 support for the boostrap job.  After
+// the template has been executed with the proper values, the result is then returned a string
+// for inclusion in the PG and pgBackRest deployments.
+func GetPgbackrestBootstrapS3EnvVars(cluster *crv1.Pgcluster, restoreFromSecret *v1.Secret) string {
+
+	s3EnvVars := PgbackrestS3EnvVarsTemplateFields{
+		PgbackrestS3Key:       util.BackRestRepoSecretKeyAWSS3KeyAWSS3Key,
+		PgbackrestS3KeySecret: util.BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret,
+		PgbackrestS3Bucket:    restoreFromSecret.Annotations[config.ANNOTATION_S3_BUCKET],
+		PgbackrestS3Endpoint:  restoreFromSecret.Annotations[config.ANNOTATION_S3_ENDPOINT],
+		PgbackrestS3Region:    restoreFromSecret.Annotations[config.ANNOTATION_S3_REGION],
+		PgbackrestS3URIStyle:  restoreFromSecret.Annotations[config.ANNOTATION_S3_URI_STYLE],
+		PgbackrestS3VerifyTLS: restoreFromSecret.Annotations[config.ANNOTATION_S3_VERIFY_TLS],
+		PgbackrestS3SecretName: fmt.Sprintf(util.BackrestRepoSecretName,
+			cluster.Spec.PGDataSource.RestoreFrom),
+	}
+
+	verifyTLS := restoreFromSecret.Annotations[config.ANNOTATION_S3_VERIFY_TLS]
+	if verifyTLS != "" {
+		s3EnvVars.PgbackrestS3VerifyTLS = verifyTLS
+	} else {
 		s3EnvVars.PgbackrestS3VerifyTLS = "y"
 	}
 

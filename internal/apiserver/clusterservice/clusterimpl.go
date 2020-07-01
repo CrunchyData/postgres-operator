@@ -24,19 +24,28 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
+	"github.com/crunchydata/postgres-operator/internal/apiserver/backupoptions"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 
 	log "github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
+)
+
+const (
+	// ErrInvalidDataSource defines the error string that is displayed when the data source
+	// parameters for a create cluster request are invalid
+	ErrInvalidDataSource = "Unable to validate data source"
 )
 
 // DeleteCluster ...
@@ -583,6 +592,13 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			}
 			userLabelsMap[p[0]] = p[1]
 		}
+	}
+
+	// validate any parameters provided to bootstrap the cluster from an existing data source
+	if err := validateDataSourceParms(request); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
 	}
 
 	// if any of the the PVCSizes are set to a customized value, ensure that they
@@ -1388,6 +1404,9 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		}
 	}
 
+	// set the data source that should be utilized to bootstrap the cluster
+	spec.PGDataSource = request.PGDataSource
+
 	// create a map for the annotations
 	annotations := map[string]string{}
 	// store the default current primary value as an annotation
@@ -2061,6 +2080,102 @@ func isMissingS3Config(request *msgs.CreateClusterRequest) bool {
 		return true
 	}
 	return false
+}
+
+// isMissingExistingDataSourceS3Config determines if any of the required S3 configuration
+// settings (bucket, endpoint, region, key and key secret) are missing from the annotations
+// in the pgBackRest repo secret as needed to bootstrap a cluster from an existing S3 repository
+func isMissingExistingDataSourceS3Config(backrestRepoSecret *corev1.Secret) bool {
+	switch {
+	case backrestRepoSecret.Annotations[config.ANNOTATION_S3_BUCKET] == "":
+		return true
+	case backrestRepoSecret.Annotations[config.ANNOTATION_S3_ENDPOINT] == "":
+		return true
+	case backrestRepoSecret.Annotations[config.ANNOTATION_S3_REGION] == "":
+		return true
+	case len(backrestRepoSecret.Data[util.BackRestRepoSecretKeyAWSS3KeyAWSS3Key]) == 0:
+		return true
+	case len(backrestRepoSecret.Data[util.BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret]) == 0:
+		return true
+	}
+	return false
+}
+
+// validateDataSourceParms performs validation of any data source parameters included in a request
+// to create a new cluster
+func validateDataSourceParms(request *msgs.CreateClusterRequest) error {
+
+	namespace := request.Namespace
+	restoreClusterName := request.PGDataSource.RestoreFrom
+	restoreOpts := request.PGDataSource.RestoreOpts
+
+	if restoreClusterName == "" && restoreOpts == "" {
+		return nil
+	}
+
+	// first verify that a "restore from" parameter was specified if the restore options
+	// are not empty
+	if restoreOpts != "" && restoreClusterName == "" {
+		return fmt.Errorf("A cluster to restore from must be specified when providing restore " +
+			"options")
+	}
+
+	// next verify whether or not a PVC exists for the cluster we are restoring from
+	if _, err := apiserver.Clientset.CoreV1().PersistentVolumeClaims(namespace).Get(
+		fmt.Sprintf(util.BackrestRepoPVCName, restoreClusterName),
+		metav1.GetOptions{}); err != nil {
+		return fmt.Errorf("Unable to find PVC %s for cluster %s, cannot to restore from the "+
+			"specified data source", fmt.Sprintf(util.BackrestRepoPVCName, restoreClusterName),
+			restoreClusterName)
+	}
+
+	// now verify that a pgBackRest repo secret exists for the cluster we are restoring from
+	backrestRepoSecret, err := apiserver.Clientset.CoreV1().Secrets(namespace).Get(
+		fmt.Sprintf(util.BackrestRepoSecretName, restoreClusterName), metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("Unable to find secret %s for cluster %s, cannot restore from the "+
+			"specified data source",
+			fmt.Sprintf(util.BackrestRepoSecretName, restoreClusterName), restoreClusterName)
+	}
+
+	// next perform general validation of the restore options
+	if err := backupoptions.ValidateBackupOpts(restoreOpts, request); err != nil {
+		return fmt.Errorf("%s: %w", ErrInvalidDataSource, err)
+	}
+
+	// now detect if an 's3' repo type was specified via the restore opts, and if so verify that s3
+	// settings are present in backrest repo secret for the backup being restored from
+	s3Restore, err := backrest.S3RepoTypeCLIOptionExists(restoreOpts)
+	if err != nil {
+		return fmt.Errorf("%s: %w", ErrInvalidDataSource, err)
+	}
+	if s3Restore && isMissingExistingDataSourceS3Config(backrestRepoSecret) {
+		return fmt.Errorf("Secret %s is missing the S3 configuration required to restore "+
+			"from an S3 repository", backrestRepoSecret.GetName())
+	}
+
+	// finally, verify that the cluster being restored from is in the proper status, and that no
+	// other clusters currently being bootstrapping from the same cluster
+	clusterList := &crv1.PgclusterList{}
+	if err := kubeapi.Getpgclusters(apiserver.RESTClient, clusterList, namespace); err != nil {
+		return fmt.Errorf("%s: %w", ErrInvalidDataSource, err)
+	}
+	for _, cl := range clusterList.Items {
+
+		if cl.GetName() == restoreClusterName &&
+			cl.Status.State == crv1.PgclusterStateShutdown {
+			return fmt.Errorf("Unable to restore from cluster %s because it has a %s "+
+				"status", restoreClusterName, string(cl.Status.State))
+		}
+
+		if cl.Spec.PGDataSource.RestoreFrom == restoreClusterName &&
+			cl.Status.State == crv1.PgclusterStateBootstrapping {
+			return fmt.Errorf("Cluster %s is currently bootstrapping from cluster %s, please "+
+				"try again once it is completes", cl.GetName(), restoreClusterName)
+		}
+	}
+
+	return nil
 }
 
 func validateStandbyCluster(request *msgs.CreateClusterRequest) error {

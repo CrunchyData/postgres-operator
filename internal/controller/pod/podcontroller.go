@@ -82,13 +82,18 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	// Lookup the pgcluster CR for PG cluster associated with this Pod.  Since a 'pg-cluster'
-	// label was found on updated Pod, this lookup should always succeed.
-	clusterName := newPodLabels[config.LABEL_PG_CLUSTER]
+	var clusterName string
+	bootstrapCluster := newPodLabels[config.LABEL_PGHA_BOOTSTRAP]
+	// Lookup the pgcluster CR for PG cluster associated with this Pod.  Typically we will use the
+	// 'pg-cluster' label, but if a bootstrap pod we use the 'pgha-bootstrap' label.
+	if bootstrapCluster != "" {
+		clusterName = bootstrapCluster
+	} else {
+		clusterName = newPodLabels[config.LABEL_PG_CLUSTER]
+	}
 	namespace := newPod.ObjectMeta.Namespace
 	cluster := crv1.Pgcluster{}
-	_, err := kubeapi.Getpgcluster(c.PodClient, &cluster, clusterName, namespace)
-	if err != nil {
+	if _, err := kubeapi.Getpgcluster(c.PodClient, &cluster, clusterName, namespace); err != nil {
 		log.Error(err.Error())
 		return
 	}

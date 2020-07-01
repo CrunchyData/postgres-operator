@@ -46,7 +46,7 @@ func (c *Controller) handleClusterInit(newPod *apiv1.Pod, cluster *crv1.Pgcluste
 	// return since the other handlers are only applicable to PG pods
 	if isBackRestRepoPod(newPod) {
 		log.Debugf("Pod Controller: calling pgBackRest repo init for cluster %s", clusterName)
-		if err := c.handleBackRestRepoInit(cluster); err != nil {
+		if err := c.handleBackRestRepoInit(newPod, cluster); err != nil {
 			log.Error(err)
 			return err
 		}
@@ -82,8 +82,18 @@ func (c *Controller) handleClusterInit(newPod *apiv1.Pod, cluster *crv1.Pgcluste
 }
 
 // handleBackRestRepoInit handles cluster initialization tasks that must be executed once
-// as a result of an update to a cluster's pgBackRest repostiroy pod
-func (c *Controller) handleBackRestRepoInit(cluster *crv1.Pgcluster) error {
+// as a result of an update to a cluster's pgBackRest repository pod
+func (c *Controller) handleBackRestRepoInit(newPod *apiv1.Pod, cluster *crv1.Pgcluster) error {
+
+	// if the repo pod is for a cluster bootstrap, the kick of the bootstrap job and return
+	if _, ok := newPod.GetLabels()[config.LABEL_PGHA_BOOTSTRAP]; ok {
+		if err := clusteroperator.AddClusterBootstrap(c.PodClientset, c.PodClient,
+			cluster); err != nil {
+			log.Error(err)
+			return err
+		}
+		return nil
+	}
 
 	clusterInfo, err := clusteroperator.ScaleClusterDeployments(c.PodClientset, *cluster, 1,
 		true, false, false, false)

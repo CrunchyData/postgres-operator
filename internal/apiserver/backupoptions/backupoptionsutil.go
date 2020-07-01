@@ -141,7 +141,7 @@ func createBackupOptionsStruct(backupOpts string, request interface{}) (backupOp
 	switch request.(type) {
 	case *msgs.CreateBackrestBackupRequest:
 		return &pgBackRestBackupOptions{}, "pgBackRest", nil
-	case *msgs.RestoreRequest:
+	case *msgs.RestoreRequest, *msgs.CreateClusterRequest:
 		return &pgBackRestRestoreOptions{}, "pgBackRest", nil
 	case *msgs.CreatepgDumpBackupRequest:
 		if strings.Contains(backupOpts, "--dump-all") {

@@ -4,6 +4,9 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
+            {{if .BootstrapCluster}}
+            "pgha-bootstrap": "{{.BootstrapCluster}}",
+            {{ end }}
             "name": "{{.Name}}",
             "pg-cluster": "{{.ClusterName}}",
             "service-name": "{{.Name}}",
@@ -26,6 +29,9 @@
         "template": {
             "metadata": {
                 "labels": {
+                    {{if .BootstrapCluster}}
+                    "pgha-bootstrap": "{{.BootstrapCluster}}",
+                    {{ end }}
                     "name": "{{.Name}}",
                     "pg-cluster": "{{.ClusterName}}",
                     "service-name": "{{.Name}}",
@@ -93,7 +99,7 @@
                 "volumes": [{
                     "name": "sshd",
                     "secret": {
-                        "secretName": "{{.ClusterName}}-backrest-repo-config",
+                        "secretName": "{{.SshdSecretsName}}",
                         "defaultMode": 511
                     }
                 }, {
