@@ -43,7 +43,7 @@ helm uninstall postgres-operator . -n pgo
 
 The following shows the configurable parameters that are relevant to the Helm
 Chart. A full list of all Crunchy PostgreSQL Operator configuration options can
-be found in the [documentation](https://crunchydata.github.io/postgres-operator/latest/installation/configuration/).
+be found in the [documentation](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/configuration/).
 
 | Name | Default | Description |
 | ---- | ------- | ----------- |
