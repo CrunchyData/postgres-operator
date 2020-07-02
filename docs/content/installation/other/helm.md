@@ -172,8 +172,8 @@ pgo version
 If successful, you should see output similar to this:
 
 ```
-pgo client version 4.3.2
-pgo-apiserver version 4.3.2
+pgo client version 4.4.0-beta.1
+pgo-apiserver version 4.4.0-beta.1
 ```
 
 ## Upgrade and Uninstall
