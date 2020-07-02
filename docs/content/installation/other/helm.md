@@ -130,7 +130,7 @@ export PGO_CLIENT_CERT=$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.crt
 export PGO_CLIENT_KEY=$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.key
 ```
 
-For convenience, after the script has finished, you can permanently at these
+For convenience, after the script has finished, you can permanently add these
 environmental variables to your environment:
 
 
