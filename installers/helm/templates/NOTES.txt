@@ -31,4 +31,4 @@ Thank you for installing the Crunchy PostgreSQL Operator v{{ .Chart.AppVersion }
                       %%                         %%%%
 
 More information on using the postgres-operator can be found in the docs:
-https://crunchydata.github.io/postgres-operator/latest/
+https://access.crunchydata.com/documentation/postgres-operator/
