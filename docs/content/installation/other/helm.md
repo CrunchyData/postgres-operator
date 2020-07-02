@@ -88,7 +88,7 @@ upgrade and uninstall the PostgreSQL Operator.
 ### Install the [`pgo` Client]({{< relref "/installation/pgo-client" >}})
 
 To use the [`pgo` Client]({{< relref "/installation/pgo-client" >}}),
-there are a few additional steps to take in order to get it to work with you
+there are a few additional steps to take in order to get it to work with your
 PostgreSQL Operator installation. For convenience, you can download and run the
 [`client-setup.sh`](https://raw.githubusercontent.com/CrunchyData/postgres-operator/master/installers/kubectl/client-setup.sh)
 script in your local environment:
