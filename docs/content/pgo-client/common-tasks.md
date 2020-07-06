@@ -348,6 +348,30 @@ pgo create cluster hactsluster \
     --tablespace=name=ts2:storageconfig=gce:pvcsize=20Gi
 ```
 
+#### Create a PostgreSQL Cluster Using a Backup from Another PostgreSQL Cluster
+
+It is also possible to create a new PostgreSQL Cluster using a backup from another
+PostgreSQL cluster.  To do so, simply specify the cluster containing the backup
+that you would like to utilize using the `restore-from` option:
+
+
+```shell
+pgo create cluster hacluster2 --restore-from=hacluster1
+```
+
+When using this approach, a `pgbackrest restore` will be performed using the pgBackRest
+repository for the `restore-from` cluster specified in order to populate the initial 
+`PGDATA` directory for the new PostgreSQL cluster.  By default, pgBackRest will restore
+to the latest backup available and replay all WAL.  However, a `restore-opts` option
+is also available that allows the `restore` command to be further customized, e.g. to
+perform a point-in-time restore and/or restore from an S3 storage bucket:
+
+```shell
+pgo create cluster hacluster2 \
+  --restore-from=hacluster1 \
+  --restore-opts="--repo-type=s3 --type=time --target='2020-07-02 20:19:36.13557+00'"
+```
+
 #### Tracking a Newly Provisioned Cluster
 
 A new PostgreSQL cluster can take a few moments to provision. You may have
