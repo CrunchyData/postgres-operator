@@ -21,22 +21,22 @@ git clone https://github.com/CrunchyData/postgres-operator.git
 ## Installing
 
 ```
-cd postgres-operator/installers/helm
+cd postgres-operator/installers/helm/postgres-operator
 helm install postgres-operator . -n pgo
 ```
 
 ## Upgrading
 
 ```
-cd postgres-operator/installers/helm
+cd postgres-operator/installers/helm/postgres-operator
 helm upgrade postgres-operator . -n pgo
 ```
 
 ## Uninstalling
 
 ```
-cd postgres-operator/installers/helm
-helm uninstall postgres-operator . -n pgo
+cd postgres-operator/installers/helm/postgres-operator
+helm uninstall postgres-operator -n pgo
 ```
 
 ## Configuraiton 
