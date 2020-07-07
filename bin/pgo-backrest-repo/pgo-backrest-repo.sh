@@ -64,12 +64,7 @@ then
 	then
 		printf "repo1-s3-uri-style=%s\n" "${PGBACKREST_REPO1_S3_URI_STYLE}" >> /etc/pgbackrest/pgbackrest.conf
 	fi
-
-        if [[ "${PGBACKREST_REPO1_S3_VERIFY_TLS}" != "" ]]
-	then
-		printf "repo1-s3-verify-tls=%s\n" "${PGBACKREST_REPO1_S3_VERIFY_TLS}" >> /etc/pgbackrest/pgbackrest.conf
-	fi
-
+	
 fi
 
 mkdir -p ~/.ssh/

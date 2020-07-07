@@ -778,19 +778,35 @@ func GetPgbackrestS3EnvVars(cluster crv1.Pgcluster, clientset kubernetes.Interfa
 	} else {
 		s3EnvVars.PgbackrestS3URIStyle = Pgo.Cluster.BackrestS3URIStyle
 	}
-	if cluster.Spec.BackrestS3VerifyTLS != "" {
-		s3EnvVars.PgbackrestS3VerifyTLS = cluster.Spec.BackrestS3VerifyTLS
-	} else {
-		s3EnvVars.PgbackrestS3VerifyTLS = Pgo.Cluster.BackrestS3VerifyTLS
-	}
 
+	// if the URI style is not configured, set to the default value
+	if s3EnvVars.PgbackrestS3URIStyle == "" {
+		s3EnvVars.PgbackrestS3URIStyle = "host"
+	}
 	// if set, pgBackRest URI style must be set to either 'path' or 'host'. If it is neither,
 	// log an error and stop the cluster from being created.
-	if s3EnvVars.PgbackrestS3URIStyle != "path" && s3EnvVars.PgbackrestS3URIStyle != "host" &&
-		s3EnvVars.PgbackrestS3URIStyle != "" {
+	if s3EnvVars.PgbackrestS3URIStyle != "path" && s3EnvVars.PgbackrestS3URIStyle != "host" {
 		log.Error("pgBackRest S3 URI style must be set to either \"path\" or \"host\".")
 		return ""
 	}
+
+	// get the verify TLS boolean value as a string
+	s3EnvVars.PgbackrestS3VerifyTLS = GetS3VerifyTLSSetting(&cluster)
+
+	doc := bytes.Buffer{}
+
+	if err := config.PgbackrestS3EnvVarsTemplate.Execute(&doc, s3EnvVars); err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	return doc.String()
+}
+
+// GetS3VerifyTLSSetting parses the configured value as a boolean to ensure a valid
+// option is used, then returns the pgBackRest S3 configuration value to either enable
+// or disable TLS verification as the expected string value.
+func GetS3VerifyTLSSetting(cluster *crv1.Pgcluster) string {
 
 	// If the pgcluster has already been set, either by the PGO client or from the
 	// CRD definition, parse the boolean value given.
@@ -802,22 +818,7 @@ func GetPgbackrestS3EnvVars(cluster crv1.Pgcluster, clientset kubernetes.Interfa
 		verifyTLS, _ = strconv.ParseBool(cluster.Spec.BackrestS3VerifyTLS)
 	}
 
-	// Now, assign the expected value for use by pgBackRest, in this case either 'y'
-	// to enable or 'n' to disable TLS verification.
-	s3EnvVars.PgbackrestS3VerifyTLS = "n"
-
-	if verifyTLS {
-		s3EnvVars.PgbackrestS3VerifyTLS = "y"
-	}
-
-	doc := bytes.Buffer{}
-
-	if err := config.PgbackrestS3EnvVarsTemplate.Execute(&doc, s3EnvVars); err != nil {
-		log.Error(err.Error())
-		return ""
-	}
-
-	return doc.String()
+	return strconv.FormatBool(verifyTLS)
 }
 
 // GetPgbackrestBootstrapS3EnvVars retrieves the values for the various configuration settings
@@ -847,7 +848,7 @@ func GetPgbackrestBootstrapS3EnvVars(cluster *crv1.Pgcluster, restoreFromSecret 
 	if verifyTLS != "" {
 		s3EnvVars.PgbackrestS3VerifyTLS = verifyTLS
 	} else {
-		s3EnvVars.PgbackrestS3VerifyTLS = "y"
+		s3EnvVars.PgbackrestS3VerifyTLS = "true"
 	}
 
 	doc := bytes.Buffer{}

@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -353,11 +354,29 @@ func cloneStep2(clientset kubernetes.Interface, client *rest.RESTClient, restCon
 		PgbackrestDBPath:    fmt.Sprintf(targetClusterPGDATAPath, targetClusterName),
 		PgbackrestRepo1Path: util.GetPGBackRestRepoPath(targetPgcluster),
 		PgbackrestRepo1Host: fmt.Sprintf(util.BackrestRepoServiceName, targetClusterName),
-		PgbackrestRepoType:  operator.GetRepoType(task.Spec.Parameters["backrestStorageType"]),
 		PgbackrestS3EnvVars: operator.GetPgbackrestS3EnvVars(sourcePgcluster, clientset, namespace),
 
 		TablespaceVolumes:      operator.GetTablespaceVolumesJSON(targetClusterName, tablespaceStorageTypeMap),
 		TablespaceVolumeMounts: operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
+	}
+
+	// If the pgBackRest repo type is set to 's3', pass in the relevant command line argument.
+	// This is used in place of the environment variable so that it works as expected with
+	// the --no-repo1-s3-verify-tls flag, added below
+	pgBackrestRepoType := operator.GetRepoType(task.Spec.Parameters["backrestStorageType"])
+	if pgBackrestRepoType == "s3" &&
+		!strings.Contains(backrestRestoreJobFields.CommandOpts, "--repo1-type") &&
+		!strings.Contains(backrestRestoreJobFields.CommandOpts, "--repo-type") {
+		backrestRestoreJobFields.CommandOpts = strings.TrimSpace(backrestRestoreJobFields.CommandOpts + " --repo1-type=s3")
+	}
+
+	// If TLS verification is disabled for this pgcluster, pass in the appropriate
+	// flag to the restore command. Otherwise, leave the default behavior, which will
+	// perform the normal certificate validation.
+	verifyTLS, _ := strconv.ParseBool(operator.GetS3VerifyTLSSetting(&targetPgcluster))
+	if pgBackrestRepoType == "s3" && !verifyTLS &&
+		!strings.Contains(backrestRestoreJobFields.CommandOpts, "--no-repo1-s3-verify-tls") {
+		backrestRestoreJobFields.CommandOpts = strings.TrimSpace(backrestRestoreJobFields.CommandOpts + " --no-repo1-s3-verify-tls")
 	}
 
 	if sourcePgcluster.Spec.WALStorage.StorageType != "" {
