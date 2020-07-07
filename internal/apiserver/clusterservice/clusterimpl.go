@@ -229,7 +229,7 @@ func GetPods(clientset kubernetes.Interface, cluster *crv1.Pgcluster) ([]msgs.Sh
 	output := []msgs.ShowClusterPod{}
 
 	//get pods, but exclude backup pods and backrest repo
-	selector := config.LABEL_BACKREST_JOB + "!=true," + config.LABEL_BACKREST_RESTORE + "!=true," + config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
+	selector := fmt.Sprintf("%s=%s,%s", config.LABEL_PG_CLUSTER, cluster.GetName(), config.LABEL_PG_DATABASE)
 	log.Debugf("selector for GetPods is %s", selector)
 
 	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(metav1.ListOptions{LabelSelector: selector})

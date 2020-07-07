@@ -5,7 +5,6 @@
         "name": "{{.Name}}-bootstrap",
         "labels": {
             "vendor": "crunchydata",
-            "pgo-pg-database": "true",
             "pgo-backrest-job": "true",
             "pgha-bootstrap": "{{.Name}}",
             {{.DeploymentLabels}}
@@ -17,7 +16,7 @@
                 "labels": {
                     "name": "{{.Name}}",
                     "vendor": "crunchydata",
-                    "pgo-pg-database": "true",
+                    "pgha-bootstrap": "{{.Name}}",
                     {{.PodLabels}}
                 }
             },
