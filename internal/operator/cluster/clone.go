@@ -824,7 +824,19 @@ func createCluster(clientset kubernetes.Interface, client *rest.RESTClient, task
 				config.LABEL_BACKREST_STORAGE_TYPE: sourcePgcluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE],
 			},
 			TablespaceMounts: sourcePgcluster.Spec.TablespaceMounts,
-			WALStorage:       sourcePgcluster.Spec.WALStorage,
+			// Copy the TLS attributes. This does take the attributes 1-1, which means
+			// the cloned cluster uses a copy of the source cluster server TLS
+			// keypair. This is tough to make assumptions about, as we're unsure how
+			// clients may be connecting to the PostgreSQL cluster. Likely a better
+			// path forward is to do a restore and set different TLS and, if needed,
+			// CA settings.
+			TLS: crv1.TLSSpec{
+				CASecret:             sourcePgcluster.Spec.TLS.CASecret,
+				ReplicationTLSSecret: sourcePgcluster.Spec.TLS.ReplicationTLSSecret,
+				TLSSecret:            sourcePgcluster.Spec.TLS.TLSSecret,
+			},
+			TLSOnly:    sourcePgcluster.Spec.TLSOnly,
+			WALStorage: sourcePgcluster.Spec.WALStorage,
 		},
 		Status: crv1.PgclusterStatus{
 			State:   crv1.PgclusterStateCreated,
