@@ -272,6 +272,52 @@ If successful, you should see output similar to this:
 pgo client version 4.4.0-beta.1
 pgo-apiserver version 4.4.0-beta.1
 ```
+## Installing Metrics Infrastructure
+
+The `pgo-deployer` image can be used to deploy Grafana and Prometheus alongside
+the PostgreSQL Operator. The settings outlined in the [Installing-metrics]({{< relref "/installation/other/ansible/installing-metrics" >}})
+seciton of the documentation can be defined in your `values.yaml` configmap.
+Once you have updated the relevant metrics options you can update the
+`DEPLOY_ACTION` of the job manifest. By updating the environment variable to
+include `install-metrics` the installer will use the metrics settings when
+deploying.
+
+### Installing
+
+The following can be used to install the PostgreSQL Operator and metrics
+infrastructure at the same time.
+
+```yaml
+env:
+  - name: DEPLOY_ACTION
+    value: install,install-metrics
+```
+
+### Uninstalling
+
+The following can be used to uninstall the PostgreSQL Operator and metrics 
+infrastructure at the same time.
+```yaml
+env:
+  - name: DEPLOY_ACTION
+    value: uninstall,uninstall-metrics
+```
+
+### Updating Previous Deployment
+
+If you have previously deployed the PostgreSQL Operator, you can install or
+uninstall the metrics infrastructure separately using these settings:
+
+```yaml
+# Install
+env:
+  - name: DEPLOY_ACTION
+    value: install-metrics
+# Uninstall
+env:
+  - name: DEPLOY_ACTION
+    value: uninstall-metrics
+```
 
 ## Post-Installation
 
