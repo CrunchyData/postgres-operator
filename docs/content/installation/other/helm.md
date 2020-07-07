@@ -179,10 +179,10 @@ pgo-apiserver version 4.4.0-beta.1
 ## Metrics Chart
 
 The PostgreSQL Operator metrics infrastructure can be installed using a separate
-Helm chart. This chart can install or uninstall metrics in a namespace where
-the operator is currently running. The metrics installer runs similarly to the
-`postgres-operator` chart by creating the ServiceAccount, RBAC resources,
-and ConfigMap that are needed to run the install job.
+Helm chart. This chart can install or uninstall the Grafana and Prometheus
+deployments that are part of the metrics stack. The metrics installer runs
+similarly to the `postgres-operator` chart by creating the ServiceAccount, RBAC
+resources, and ConfigMap that are needed to run the install job.
 
 The `metrics` Helm chart is available in the [Helm](https://github.com/CrunchyData/postgres-operator/tree/master/installers/helm)
 directory in the PostgreSQL Operator repository.
