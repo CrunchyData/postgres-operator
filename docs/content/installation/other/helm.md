@@ -64,7 +64,7 @@ file will be used to populate the configuation options in the ConfigMap.
 ### Configuration - `values.yaml`
 
 The `values.yaml` file contains all of the configuration parametes for deploying
-the PostgreSQL Operator. The [values.yaml file]() contains the defaults that
+the PostgreSQL Operator. The [values.yaml file](https://github.com/CrunchyData/postgres-operator/blob/master/installers/helm/postgres-operator/values.yaml) contains the defaults that
 should work in most Kubernetes environments, but it may require some customization.
 
 For a detailed description of each configuration parameter, please read the

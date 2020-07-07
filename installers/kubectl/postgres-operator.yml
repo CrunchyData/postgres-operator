@@ -119,7 +119,7 @@ rules:
   data:
     values.yaml: |+
       ---
-      archive_mode: "true"
+      archive_mode: true
       archive_timeout: "60"
       backrest_aws_s3_bucket: ""
       backrest_aws_s3_endpoint: ""
@@ -127,13 +127,13 @@ rules:
       backrest_aws_s3_region: ""
       backrest_aws_s3_secret: ""
       backrest_port: "2022"
-      badger: "false"
+      badger: false
       ccp_image_prefix: "registry.developers.crunchydata.com/crunchydata"
       ccp_image_pull_secret: ""
       ccp_image_pull_secret_manifest: ""
       ccp_image_tag: "centos7-12.3-4.4.0-beta.1"
-      create_rbac: "true"
-      crunchy_debug: "false"
+      create_rbac: true
+      crunchy_debug: false
       db_name: ""
       db_password_age_days: "0"
       db_password_length: "24"
@@ -143,26 +143,26 @@ rules:
       default_instance_memory: "128Mi"
       default_pgbackrest_memory: "48Mi"
       default_pgbouncer_memory: "24Mi"
-      delete_metrics_namespace: "false"
-      delete_operator_namespace: "false"
-      delete_watched_namespaces: "false"
-      disable_auto_failover: "false"
-      disable_fsgroup: "false"
-      reconcile_rbac: "true"
+      delete_metrics_namespace: false
+      delete_operator_namespace: false
+      delete_watched_namespaces: false
+      disable_auto_failover: false
+      disable_fsgroup: false
+      reconcile_rbac: true
       exporterport: "9187"
       grafana_admin_password: ""
       grafana_admin_username: "admin"
-      grafana_install: "false"
+      grafana_install: false
       grafana_storage_access_mode: "ReadWriteOnce"
       grafana_storage_class_name: "fast"
       grafana_supplemental_groups: "65534"
       grafana_volume_size: "1G"
-      metrics: "false"
+      metrics: false
       metrics_namespace: "pgo"
       namespace: "pgo"
       namespace_mode: "dynamic"
       pgbadgerport: "10000"
-      pgo_add_os_ca_store: "false"
+      pgo_add_os_ca_store: false
       pgo_admin_password: "examplepassword"
       pgo_admin_perms: "*"
       pgo_admin_role_name: "pgoadmin"
@@ -170,11 +170,11 @@ rules:
       pgo_apiserver_port: "8443"
       pgo_apiserver_url: "https://postgres-operator"
       pgo_client_cert_secret: "pgo.tls"
-      pgo_client_container_install: "false"
+      pgo_client_container_install: false
       pgo_client_version: "4.4.0-beta.1"
-      pgo_cluster_admin: "false"
-      pgo_disable_eventing: "false"
-      pgo_disable_tls: "false"
+      pgo_cluster_admin: false
+      pgo_disable_eventing: false
+      pgo_disable_tls: false
       pgo_image_prefix: "registry.developers.crunchydata.com/crunchydata"
       pgo_image_pull_secret: ""
       pgo_image_pull_secret_manifest: ""
@@ -183,18 +183,18 @@ rules:
       pgo_noauth_routes: ""
       pgo_operator_namespace: "pgo"
       pgo_tls_ca_store: ""
-      pgo_tls_no_verify: "false"
+      pgo_tls_no_verify: false
       pod_anti_affinity: "preferred"
       pod_anti_affinity_pgbackrest: ""
       pod_anti_affinity_pgbouncer: ""
-      prometheus_install: "false"
+      prometheus_install: false
       prometheus_storage_access_mode: "ReadWriteOnce"
       prometheus_storage_class_name: "fast"
       prometheus_supplemental_groups: "65534"
       prometheus_volume_size: "1G"
       scheduler_timeout: "3600"
       service_type: "ClusterIP"
-      sync_replication: "false"
+      sync_replication: false
       backrest_storage: "hostpathstorage"
       backup_storage: "hostpathstorage"
       primary_storage: "hostpathstorage"
