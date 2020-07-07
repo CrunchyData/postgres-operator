@@ -20,7 +20,7 @@ After configuring the `values.yaml` file with you configuration options, the
 installer will be run using the `helm` command line tool and takes care of
 setting up all of the objects required to run the PostgreSQL Operator.
 
-The Helm chart is available in the [Helm](https://github.com/CrunchyData/postgres-operator/tree/master/installers/helm)
+The `postgres-operator` Helm chart is available in the [Helm](https://github.com/CrunchyData/postgres-operator/tree/master/installers/helm)
 directory in the PostgreSQL Operator repository.
 
 ## Requirements
@@ -174,6 +174,33 @@ If successful, you should see output similar to this:
 ```
 pgo client version 4.4.0-beta.1
 pgo-apiserver version 4.4.0-beta.1
+```
+
+## Metrics Chart
+
+The PostgreSQL Operator metrics infrastructure can be installed using a separate
+Helm chart. This chart can install or uninstall metrics in a namespace where
+the operator is currently running. The metrics installer runs similarly to the
+`postgres-operator` chart by creating the ServiceAccount, RBAC resources,
+and ConfigMap that are needed to run the install job.
+
+The `metrics` Helm chart is available in the [Helm](https://github.com/CrunchyData/postgres-operator/tree/master/installers/helm)
+directory in the PostgreSQL Operator repository.
+
+### Installing
+
+{{% notice tip %}}
+Ensure that you have install the PostgreSQL Operator before installing metrics.
+{{% /notice %}}
+
+```shell
+helm install metrics -n pgo /path/to/metrics/chart_dir
+```
+
+### Uninstalling
+
+```shell
+helm install metrics -n pgo /path/to/metrics/chart_dir
 ```
 
 ## Upgrade and Uninstall
