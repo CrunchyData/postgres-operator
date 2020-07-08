@@ -81,7 +81,6 @@
     },
     "policies": "",
     "port": "5432",
-    "primaryhost": "fromcrd",
     "primarysecretname": "fromcrd-primaryuser-secret",
     "replicas": "0",
     "rootsecretname": "fromcrd-postgres-secret",

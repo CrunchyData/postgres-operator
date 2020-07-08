@@ -342,7 +342,6 @@ func createRestoredDeployment(restclient *rest.RESTClient, cluster *crv1.Pgclust
 		IsInit:            true,
 		Replicas:          "1",
 		ClusterName:       cluster.Spec.Name,
-		PrimaryHost:       restoreToName,
 		Port:              cluster.Spec.Port,
 		CCPImagePrefix:    util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
 		CCPImage:          cluster.Spec.CCPImage,
