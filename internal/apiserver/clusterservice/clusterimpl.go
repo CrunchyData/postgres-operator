@@ -1310,7 +1310,6 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.Port = apiserver.Pgo.Cluster.Port
 	spec.PGBadgerPort = apiserver.Pgo.Cluster.PGBadgerPort
 	spec.ExporterPort = apiserver.Pgo.Cluster.ExporterPort
-	spec.SecretFrom = ""
 	if request.Policies == "" {
 		spec.Policies = apiserver.Pgo.Cluster.Policies
 		log.Debugf("Pgo.Cluster.Policies %s", apiserver.Pgo.Cluster.Policies)
@@ -1370,11 +1369,6 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.TLS.CASecret = request.CASecret
 	spec.TLS.TLSSecret = request.TLSSecret
 	spec.TLS.ReplicationTLSSecret = request.ReplicationTLSSecret
-
-	//pass along command line flags for a restore
-	if request.SecretFrom != "" {
-		spec.SecretFrom = request.SecretFrom
-	}
 
 	spec.CustomConfig = request.CustomConfig
 	spec.SyncReplication = request.SyncReplication

@@ -97,7 +97,6 @@ type PgclusterSpec struct {
 	User                string                   `json:"user"`
 	Database            string                   `json:"database"`
 	Replicas            string                   `json:"replicas"`
-	SecretFrom          string                   `json:"secretfrom"`
 	UserSecretName      string                   `json:"usersecretname"`
 	RootSecretName      string                   `json:"rootsecretname"`
 	PrimarySecretName   string                   `json:"primarysecretname"`

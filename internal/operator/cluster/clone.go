@@ -805,14 +805,10 @@ func createCluster(clientset kubernetes.Interface, client *rest.RESTClient, task
 			PrimarySecretName: fmt.Sprintf("%s%s", targetClusterName, crv1.PrimarySecretSuffix),
 			// Replicas is set to "0" because we want to ensure that no replicas are
 			// provisioned with the clone
-			Replicas:       "0",
-			ReplicaStorage: sourcePgcluster.Spec.ReplicaStorage,
-			Resources:      sourcePgcluster.Spec.Resources,
-			RootSecretName: fmt.Sprintf("%s%s", targetClusterName, crv1.RootSecretSuffix),
-			// SecretFrom needs to be set as the "sourcePgcluster.Spec.ClusterName"
-			// as this will indicate we got our secrets from the original cluster
-			// ...this does NOT copy over the secrets as I thought it would.
-			SecretFrom:      sourcePgcluster.Spec.ClusterName,
+			Replicas:        "0",
+			ReplicaStorage:  sourcePgcluster.Spec.ReplicaStorage,
+			Resources:       sourcePgcluster.Spec.Resources,
+			RootSecretName:  fmt.Sprintf("%s%s", targetClusterName, crv1.RootSecretSuffix),
 			SyncReplication: sourcePgcluster.Spec.SyncReplication,
 			User:            sourcePgcluster.Spec.User,
 			UserSecretName:  fmt.Sprintf("%s-%s%s", targetClusterName, sourcePgcluster.Spec.User, crv1.UserSecretSuffix),
