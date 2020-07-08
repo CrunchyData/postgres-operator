@@ -117,7 +117,7 @@ registry() (
 	kc create --filename=- <<< "$deployment_json"
 	kc expose deploy "$registry_name" --port=50051
 
-	if ! kc wait --for='condition=available' --timeout='30s' deploy "$registry_name"; then
+	if ! kc wait --for='condition=available' --timeout='90s' deploy "$registry_name"; then
 		kc logs --selector="name=$registry_name" --tail='-1' --previous ||
 		kc logs --selector="name=$registry_name" --tail='-1'
 		exit 1

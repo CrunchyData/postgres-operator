@@ -66,6 +66,7 @@ spec:
       clusterPermissions:
         - serviceAccountName: postgres-operator
           rules:
+            # dynamic namespace mode
             - apiGroups:
                 - ''
               resources:
@@ -77,6 +78,7 @@ spec:
                 - create
                 - update
                 - delete
+            # reconcile rbac
             - apiGroups:
                 - ''
               resources:
@@ -90,23 +92,75 @@ spec:
                 - rbac.authorization.k8s.io
               resources:
                 - roles
-              verbs:
-                - '*' # BUG(cbandy): spec.install.spec.clusterPermissions.rules.verbs in body should be one of [* assign get list watch create update patch put post delete deletecollection initialize use]
-                #- get
-                #- create
-                #- update
-                #- delete
-                #- bind
-                #- escalate
-            - apiGroups:
-                - rbac.authorization.k8s.io
-              resources:
                 - rolebindings
               verbs:
                 - get
                 - create
                 - update
                 - delete
+            - apiGroups:
+                - ''
+              resources:
+                - configmaps
+                - endpoints
+                - pods
+                - pods/exec
+                - pods/log
+                - replicasets
+                - secrets
+                - services
+                - persistentvolumeclaims
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - patch
+                - update
+                - delete
+                - deletecollection
+            - apiGroups:
+                - apps
+              resources:
+                - deployments
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - patch
+                - update
+                - delete
+                - deletecollection
+            - apiGroups:
+                - batch
+              resources:
+                - jobs
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - patch
+                - update
+                - delete
+                - deletecollection
+            - apiGroups:
+                - crunchydata.com
+              resources:
+                - pgclusters
+                - pgpolicies
+                - pgreplicas
+                - pgtasks
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - patch
+                - update
+                - delete
+                - deletecollection
 
       permissions:
         - serviceAccountName: postgres-operator
