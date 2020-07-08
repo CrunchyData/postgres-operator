@@ -138,35 +138,33 @@ type BootstrapJobTemplateFields struct {
 
 // DeploymentTemplateFields ...
 type DeploymentTemplateFields struct {
-	Name                string
-	ClusterName         string
-	Port                string
-	CCPImagePrefix      string
-	CCPImageTag         string
-	CCPImage            string
-	Database            string
-	DeploymentLabels    string
-	PodLabels           string
-	DataPathOverride    string
-	ArchiveMode         string
-	PVCName             string
-	RootSecretName      string
-	UserSecretName      string
-	PrimarySecretName   string
-	SecurityContext     string
-	ContainerResources  string
-	NodeSelector        string
-	ConfVolume          string
-	CollectAddon        string
-	CollectVolume       string
-	BadgerAddon         string
-	PgbackrestEnvVars   string
-	PgbackrestS3EnvVars string
-	PgmonitorEnvVars    string
-	ScopeLabel          string
-	//next 2 are for the replica deployment only
+	Name                     string
+	ClusterName              string
+	Port                     string
+	CCPImagePrefix           string
+	CCPImageTag              string
+	CCPImage                 string
+	Database                 string
+	DeploymentLabels         string
+	PodLabels                string
+	DataPathOverride         string
+	ArchiveMode              string
+	PVCName                  string
+	RootSecretName           string
+	UserSecretName           string
+	PrimarySecretName        string
+	SecurityContext          string
+	ContainerResources       string
+	NodeSelector             string
+	ConfVolume               string
+	CollectAddon             string
+	CollectVolume            string
+	BadgerAddon              string
+	PgbackrestEnvVars        string
+	PgbackrestS3EnvVars      string
+	PgmonitorEnvVars         string
+	ScopeLabel               string
 	Replicas                 string
-	PrimaryHost              string
 	IsInit                   bool
 	EnableCrunchyadm         bool
 	ReplicaReinitOnStartFail bool
