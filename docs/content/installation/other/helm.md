@@ -190,7 +190,7 @@ directory in the PostgreSQL Operator repository.
 ### Installing
 
 {{% notice tip %}}
-Ensure that you have install the PostgreSQL Operator before installing metrics.
+Ensure that you have installed the PostgreSQL Operator before installing metrics.
 {{% /notice %}}
 
 ```shell
