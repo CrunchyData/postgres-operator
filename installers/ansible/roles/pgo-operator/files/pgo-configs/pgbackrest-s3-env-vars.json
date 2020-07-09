@@ -39,8 +39,7 @@
 {
   "name": "PGBACKREST_REPO1_S3_URI_STYLE",
   "value": "{{.PgbackrestS3URIStyle}}"
-},
-{
-  "name": "PGBACKREST_REPO1_S3_VERIFY_TLS",
+},{
+  "name": "PGHA_PGBACKREST_S3_VERIFY_TLS",
   "value": "{{.PgbackrestS3VerifyTLS}}"
 },

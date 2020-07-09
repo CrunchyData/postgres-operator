@@ -1374,17 +1374,26 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	spec.SyncReplication = request.SyncReplication
 
 	// set pgBackRest S3 settings in the spec if included in the request
+	// otherwise set to the default configuration value
 	if request.BackrestS3Bucket != "" {
 		spec.BackrestS3Bucket = request.BackrestS3Bucket
+	} else {
+		spec.BackrestS3Bucket = apiserver.Pgo.Cluster.BackrestS3Bucket
 	}
 	if request.BackrestS3Endpoint != "" {
 		spec.BackrestS3Endpoint = request.BackrestS3Endpoint
+	} else {
+		spec.BackrestS3Endpoint = apiserver.Pgo.Cluster.BackrestS3Endpoint
 	}
 	if request.BackrestS3Region != "" {
 		spec.BackrestS3Region = request.BackrestS3Region
+	} else {
+		spec.BackrestS3Region = apiserver.Pgo.Cluster.BackrestS3Region
 	}
 	if request.BackrestS3URIStyle != "" {
 		spec.BackrestS3URIStyle = request.BackrestS3URIStyle
+	} else {
+		spec.BackrestS3URIStyle = apiserver.Pgo.Cluster.BackrestS3URIStyle
 	}
 
 	// if the pgbackrest-s3-verify-tls flag was set, update the CR spec
@@ -1395,6 +1404,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		} else {
 			spec.BackrestS3VerifyTLS = "true"
 		}
+	} else {
+		spec.BackrestS3VerifyTLS = apiserver.Pgo.Cluster.BackrestS3VerifyTLS
 	}
 
 	// set the data source that should be utilized to bootstrap the cluster

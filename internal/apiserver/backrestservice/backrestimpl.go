@@ -20,10 +20,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver/backupoptions"
+	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/util"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
@@ -44,7 +46,11 @@ var pgBackRestInfoCommand = []string{"pgbackrest", "info", "--output", "json"}
 
 // repoTypeFlagS3 is used for getting the pgBackRest info for a repository that
 // is stored in S3
-var repoTypeFlagS3 = []string{"--repo-type", "s3"}
+var repoTypeFlagS3 = []string{"--repo1-type", "s3"}
+
+// noRepoS3VerifyTLS is used to disable SSL certificate verification when getting
+// the pgBackRest info for a repository that is stored in S3
+var noRepoS3VerifyTLS = "--no-repo1-s3-verify-tls"
 
 //  CreateBackup ...
 // pgo backup mycluster
@@ -212,7 +218,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 
 		err = kubeapi.Createpgtask(apiserver.RESTClient,
 			getBackupParams(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database",
-				util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, apiserver.Pgo.Pgo.PGOImagePrefix), request.BackupOpts, request.BackrestStorageType, jobName, ns, pgouser),
+				util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, apiserver.Pgo.Pgo.PGOImagePrefix), request.BackupOpts, request.BackrestStorageType, operator.GetS3VerifyTLSSetting(&cluster), jobName, ns, pgouser),
 			ns)
 		if err != nil {
 			resp.Status.Code = msgs.Error
@@ -226,7 +232,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 	return resp
 }
 
-func getBackupParams(identifier, clusterName, taskName, action, podName, containerName, imagePrefix, backupOpts, backrestStorageType, jobName, ns, pgouser string) *crv1.Pgtask {
+func getBackupParams(identifier, clusterName, taskName, action, podName, containerName, imagePrefix, backupOpts, backrestStorageType, s3VerifyTLS, jobName, ns, pgouser string) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 	spec := crv1.PgtaskSpec{}
 	spec.Name = taskName
@@ -244,6 +250,7 @@ func getBackupParams(identifier, clusterName, taskName, action, podName, contain
 	spec.Parameters[config.LABEL_BACKREST_COMMAND] = action
 	spec.Parameters[config.LABEL_BACKREST_OPTS] = backupOpts
 	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = backrestStorageType
+	spec.Parameters[config.LABEL_BACKREST_S3_VERIFY_TLS] = s3VerifyTLS
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: metav1.ObjectMeta{
@@ -404,8 +411,10 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 				StorageType: storageType,
 			}
 
+			verifyTLS, _ := strconv.ParseBool(operator.GetS3VerifyTLSSetting(&c))
+
 			// get the pgBackRest info using this legacy function
-			info, err := getInfo(c.Name, storageType, podname, ns)
+			info, err := getInfo(c.Name, storageType, podname, ns, verifyTLS)
 
 			// see if the function returned successfully, and if so, unmarshal the JSON
 			if err != nil {
@@ -433,13 +442,17 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 	return response
 }
 
-func getInfo(clusterName, storageType, podname, ns string) (string, error) {
+func getInfo(clusterName, storageType, podname, ns string, verifyTLS bool) (string, error) {
 	log.Debug("backrest info command requested")
 
 	cmd := pgBackRestInfoCommand
 
 	if storageType == "s3" {
 		cmd = append(cmd, repoTypeFlagS3...)
+
+		if !verifyTLS {
+			cmd = append(cmd, noRepoS3VerifyTLS)
+		}
 	}
 
 	output, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
@@ -572,6 +585,7 @@ func getRestoreParams(request *msgs.RestoreRequest, ns string, cluster crv1.Pgcl
 	spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH] = "/backrestrepo/" + request.FromCluster + "-backrest-shared-repo"
 	spec.Parameters[config.LABEL_PGBACKREST_REPO_HOST] = request.FromCluster + "-backrest-shared-repo"
 	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
+	spec.Parameters[config.LABEL_BACKREST_S3_VERIFY_TLS] = operator.GetS3VerifyTLSSetting(&cluster)
 
 	// validate & parse nodeLabel if exists
 	if request.NodeLabel != "" {

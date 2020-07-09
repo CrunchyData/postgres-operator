@@ -31,7 +31,8 @@ const backrestBackupCommand = `backup`
 const backrestInfoCommand = `info`
 const backrestStanzaCreateCommand = `stanza-create`
 const containername = "database"
-const repoTypeFlagS3 = "--repo-type=s3"
+const repoTypeFlagS3 = "--repo1-type=s3"
+const noRepoS3VerifyTLS = "--no-repo1-s3-verify-tls"
 
 func main() {
 	log.Info("pgo-backrest starts")
@@ -77,6 +78,12 @@ func main() {
 	PGHA_PGBACKREST_LOCAL_S3_STORAGE, _ := strconv.ParseBool(os.Getenv("PGHA_PGBACKREST_LOCAL_S3_STORAGE"))
 	log.Debugf("setting PGHA_PGBACKREST_LOCAL_S3_STORAGE to %v", PGHA_PGBACKREST_LOCAL_S3_STORAGE)
 
+	// parse the environment variable and store the appropriate boolean value
+	// we will discard the error and treat the value as "false" if it is not
+	// explicitly set
+	PGHA_PGBACKREST_S3_VERIFY_TLS, _ := strconv.ParseBool(os.Getenv("PGHA_PGBACKREST_S3_VERIFY_TLS"))
+	log.Debugf("setting PGHA_PGBACKREST_S3_VERIFY_TLS to %v", PGHA_PGBACKREST_S3_VERIFY_TLS)
+
 	config, clientset, err := kubeapi.NewKubeClient()
 	if err != nil {
 		panic(err)
@@ -112,9 +119,19 @@ func main() {
 		cmdStrs = append(cmdStrs, "&&")
 		cmdStrs = append(cmdStrs, strings.Join(firstCmd, " "))
 		cmdStrs = append(cmdStrs, repoTypeFlagS3)
+		// pass in the flag to disable TLS verification, if set
+		// otherwise, maintain default behavior and verify TLS
+		if !PGHA_PGBACKREST_S3_VERIFY_TLS {
+			cmdStrs = append(cmdStrs, noRepoS3VerifyTLS)
+		}
 		log.Info("backrest command will be executed for both local and s3 storage")
 	} else if REPO_TYPE == "s3" {
 		cmdStrs = append(cmdStrs, repoTypeFlagS3)
+		// pass in the flag to disable TLS verification, if set
+		// otherwise, maintain default behavior and verify TLS
+		if !PGHA_PGBACKREST_S3_VERIFY_TLS {
+			cmdStrs = append(cmdStrs, noRepoS3VerifyTLS)
+		}
 		log.Info("s3 flag enabled for backrest command")
 	}
 

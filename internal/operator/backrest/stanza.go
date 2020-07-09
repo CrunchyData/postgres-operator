@@ -93,6 +93,9 @@ func StanzaCreate(namespace, clusterName string, clientset kubernetes.Interface,
 		spec.Parameters[config.LABEL_BACKREST_OPTS] = ""
 	}
 
+	// Get 'true' or 'false' for setting the pgBackRest S3 verify TLS value
+	spec.Parameters[config.LABEL_BACKREST_S3_VERIFY_TLS] = operator.GetS3VerifyTLSSetting(&cluster)
+
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: taskName,

@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -53,7 +54,6 @@ type BackrestRestoreJobTemplateFields struct {
 	PgbackrestDBPath       string
 	PgbackrestRepo1Path    string
 	PgbackrestRepo1Host    string
-	PgbackrestRepoType     string
 	PgbackrestS3EnvVars    string
 	NodeSelector           string
 	Tablespaces            string
@@ -178,7 +178,6 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset kubernetes
 		PgbackrestRepo1Path:    util.GetPGBackRestRepoPath(cluster),
 		PgbackrestRepo1Host:    task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_HOST],
 		NodeSelector:           operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),
-		PgbackrestRepoType:     operator.GetRepoType(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars:    operator.GetPgbackrestS3EnvVars(cluster, clientset, namespace),
 		TablespaceVolumes:      operator.GetTablespaceVolumesJSON(restoreToName, tablespaceStorageTypeMap),
 		TablespaceVolumeMounts: operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
@@ -194,6 +193,25 @@ func Restore(restclient *rest.RESTClient, namespace string, clientset kubernetes
 	//
 	if jobFields.PITRTarget != "" && !strings.Contains(jobFields.CommandOpts, "--target-action") {
 		jobFields.CommandOpts = strings.TrimSpace(jobFields.CommandOpts + " --target-action=promote")
+	}
+
+	// If the pgBackRest repo type is set to 's3', pass in the relevant command line argument.
+	// This is used in place of the environment variable so that it works as expected with
+	// the --no-repo1-s3-verify-tls flag, added below
+	pgBackrestRepoType := operator.GetRepoType(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE])
+	if pgBackrestRepoType == "s3" &&
+		!strings.Contains(jobFields.CommandOpts, "--repo1-type") &&
+		!strings.Contains(jobFields.CommandOpts, "--repo-type") {
+		jobFields.CommandOpts = strings.TrimSpace(jobFields.CommandOpts + " --repo1-type=s3")
+	}
+
+	// If TLS verification is disabled for this pgcluster, pass in the appropriate
+	// flag to the restore command. Otherwise, leave the default behavior, which will
+	// perform the normal certificate validation.
+	verifyTLS, _ := strconv.ParseBool(operator.GetS3VerifyTLSSetting(&cluster))
+	if pgBackrestRepoType == "s3" && !verifyTLS &&
+		!strings.Contains(jobFields.CommandOpts, "--no-repo1-s3-verify-tls") {
+		jobFields.CommandOpts = strings.TrimSpace(jobFields.CommandOpts + " --no-repo1-s3-verify-tls")
 	}
 
 	jobTemplate := bytes.Buffer{}

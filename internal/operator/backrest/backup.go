@@ -55,6 +55,7 @@ type backrestJobTemplateFields struct {
 	PgbackrestRepoPath            string
 	PgbackrestRepoType            string
 	BackrestLocalAndS3Storage     bool
+	PgbackrestS3VerifyTLS         string
 	PgbackrestRestoreVolumes      string
 	PgbackrestRestoreVolumeMounts string
 }
@@ -86,6 +87,7 @@ func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtas
 		PgbackrestRestoreVolumeMounts: "",
 		PgbackrestRepoType:            operator.GetRepoType(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
 		BackrestLocalAndS3Storage:     operator.IsLocalAndS3Storage(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
+		PgbackrestS3VerifyTLS:         task.Spec.Parameters[config.LABEL_BACKREST_S3_VERIFY_TLS],
 	}
 
 	podCommandOpts, err := getCommandOptsFromPod(clientset, task, namespace)
@@ -200,6 +202,8 @@ func CreateBackup(restclient *rest.RESTClient, namespace, clusterName, podName s
 	spec.Parameters[config.LABEL_BACKREST_COMMAND] = crv1.PgtaskBackrestBackup
 	spec.Parameters[config.LABEL_BACKREST_OPTS] = backupOpts
 	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]
+	// Get 'true' or 'false' for setting the pgBackRest S3 verify TLS value
+	spec.Parameters[config.LABEL_BACKREST_S3_VERIFY_TLS] = operator.GetS3VerifyTLSSetting(&cluster)
 
 	for k, v := range params {
 		spec.Parameters[k] = v
