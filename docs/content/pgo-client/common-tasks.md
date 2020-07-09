@@ -292,10 +292,13 @@ pgo create cluster hacluster --cpu=4 --memory=16Gi
 #### Create a PostgreSQL Cluster with PostGIS
 
 To create a PostgreSQL cluster that uses the geospatial extension PostGIS, you
-can execute the following command:
+can execute the following command, updated with your desired image tag. In the
+example below, the cluster will use PostgreSQL {{< param postgresVersion >}} and PostGIS {{< param postgisVersion >}}:
 
 ```shell
-pgo create cluster hagiscluster --ccp-image=crunchy-postgres-gis-ha
+pgo create cluster hagiscluster \
+  --ccp-image=crunchy-postgres-gis-ha \
+  --ccp-image-tag={{< param centosBase >}}-{{< param postgresVersion >}}-{{< param postgisVersion >}}-{{< param operatorVersion >}}
 ```
 
 #### Create a PostgreSQL Cluster with a Tablespace
