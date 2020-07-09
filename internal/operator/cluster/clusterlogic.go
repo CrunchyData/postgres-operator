@@ -681,8 +681,8 @@ func StartupCluster(clientset kubernetes.Interface, cluster crv1.Pgcluster) erro
 	// ensure autofailover is enabled to ensure proper startup of the cluster
 	if err := util.ToggleAutoFailover(clientset, true, cluster.Labels[config.LABEL_PGHA_SCOPE],
 		cluster.Namespace); err != nil {
-		return fmt.Errorf("Cluster Operator: Unable to toggle autofailover when shutting "+
-			"down cluster %s", cluster.Name)
+		return fmt.Errorf("Cluster Operator: Unable to toggle autofailover when starting "+
+			"cluster %s", cluster.Name)
 	}
 
 	// Scale up the primary and supporting services, but not the replicas.  Replicas will be
