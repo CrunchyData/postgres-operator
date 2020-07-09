@@ -131,7 +131,7 @@ func PatchClusterCRD(restclient *rest.RESTClient, labelMap map[string]string, ol
 		oldCrd.Annotations = make(map[string]string)
 	}
 	// update our pgcluster annotation with the correct current primary value
-	oldCrd.Annotations[config.ANNOTATION_CURRENT_PRIMARY] = currentPrimary
+	oldCrd.Annotations[crv1.PgclusterCurrentPrimary] = currentPrimary
 	oldCrd.Annotations[config.ANNOTATION_PRIMARY_DEPLOYMENT] = currentPrimary
 
 	// update the stored primary storage value to match the current primary and deployment name

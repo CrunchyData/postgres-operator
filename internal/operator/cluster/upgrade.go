@@ -91,8 +91,8 @@ func AddUpgrade(clientset kubernetes.Interface, restclient *rest.RESTClient, upg
 	// Next, if the current primary label is present (used by previous Operator versions), we will use that.
 	// Finally, if none of the above is available, we will set the default pgcluster name as the current primary value
 	currentPrimaryFromPod := getPrimaryPodDeploymentName(clientset, &pgcluster)
-	currentPrimaryFromAnnotation := pgcluster.Annotations[config.ANNOTATION_CURRENT_PRIMARY]
-	currentPrimaryFromLabel := pgcluster.ObjectMeta.Labels[config.LABEL_CURRENT_PRIMARY]
+	currentPrimaryFromAnnotation := pgcluster.CurrentPrimary()
+	currentPrimaryFromLabel := pgcluster.ObjectMeta.GetLabels()[crv1.PgclusterCurrentPrimary]
 
 	// compare the three values, and return the correct current primary value
 	currentPrimary := getCurrentPrimary(pgcluster.Name, currentPrimaryFromPod, currentPrimaryFromAnnotation, currentPrimaryFromLabel)
@@ -431,7 +431,7 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 
 	// since the current primary label is not used in this version of the Postgres Operator,
 	// delete it before moving on to other upgrade tasks
-	delete(pgcluster.ObjectMeta.Labels, config.LABEL_CURRENT_PRIMARY)
+	delete(pgcluster.ObjectMeta.Labels, crv1.PgclusterCurrentPrimary)
 
 	// next, update the image name to the appropriate image
 	if pgcluster.Spec.CCPImage == postgresImage {
@@ -448,7 +448,7 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 		pgcluster.Annotations = make(map[string]string)
 	}
 	// update our pgcluster annotation with the correct current primary value
-	pgcluster.Annotations[config.ANNOTATION_CURRENT_PRIMARY] = currentPrimary
+	pgcluster.Annotations[crv1.PgclusterCurrentPrimary] = currentPrimary
 
 	// if the current primary value is set to a different value than the default deployment label, a failover has occurred.
 	// update the deployment label to match this updated value so that the deployment will match the underlying PVC name.

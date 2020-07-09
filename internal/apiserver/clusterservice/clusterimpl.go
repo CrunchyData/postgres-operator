@@ -1414,7 +1414,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	// create a map for the annotations
 	annotations := map[string]string{}
 	// store the default current primary value as an annotation
-	annotations[config.ANNOTATION_CURRENT_PRIMARY] = spec.Name
+	annotations[crv1.PgclusterCurrentPrimary] = spec.Name
 	// store the initial deployment value, which will match the
 	// cluster name initially
 	annotations[config.ANNOTATION_PRIMARY_DEPLOYMENT] = spec.Name

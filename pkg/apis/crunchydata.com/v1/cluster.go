@@ -25,6 +25,10 @@ import (
 // PgclusterResourcePlural ..
 const PgclusterResourcePlural = "pgclusters"
 
+// PgclusterCurrentPrimary references an annotation that indicates the name
+// of the PostgreSQL instance that is the primary instance for a cluster
+const PgclusterCurrentPrimary = "current-primary"
+
 // Pgcluster is the CRD that defines a Crunchy PG Cluster
 //
 // swagger:ignore Pgcluster
@@ -35,6 +39,16 @@ type Pgcluster struct {
 	metav1.ObjectMeta `json:"metadata"`
 	Spec              PgclusterSpec   `json:"spec"`
 	Status            PgclusterStatus `json:"status,omitempty"`
+}
+
+// returns the value of the current primary as dictated by the current primary
+// annotation
+func (p *Pgcluster) CurrentPrimary() string {
+	if currentPrimary, ok := p.ObjectMeta.GetAnnotations()[PgclusterCurrentPrimary]; ok {
+		return currentPrimary
+	}
+
+	return ""
 }
 
 // PgclusterSpec is the CRD that defines a Crunchy PG Cluster Spec

@@ -143,7 +143,6 @@ const LABEL_PGO_CLONE_STEP_3 = "pgo-clone-step-3"
 
 const LABEL_DEPLOYMENT_NAME = "deployment-name"
 const LABEL_SERVICE_NAME = "service-name"
-const LABEL_CURRENT_PRIMARY = "current-primary"
 
 const LABEL_CLAIM_NAME = "claimName"
 

@@ -75,7 +75,7 @@ func AddClusterBase(clientset kubernetes.Interface, client *rest.RESTClient, cl 
 	}
 
 	dataVolume, walVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
-		clientset, cl, namespace, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], cl.Spec.PrimaryStorage)
+		clientset, cl, namespace, cl.CurrentPrimary(), cl.Spec.PrimaryStorage)
 	if err != nil {
 		log.Error(err)
 		publishClusterCreateFailure(cl, err.Error())
@@ -227,7 +227,7 @@ func AddClusterBootstrap(clientset kubernetes.Interface, client *rest.RESTClient
 
 	dataVolume, walVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
 		clientset, cluster, namespace,
-		cluster.Annotations[config.ANNOTATION_CURRENT_PRIMARY], cluster.Spec.PrimaryStorage)
+		cluster.CurrentPrimary(), cluster.Spec.PrimaryStorage)
 	if err != nil {
 		publishClusterCreateFailure(cluster, err.Error())
 		return err

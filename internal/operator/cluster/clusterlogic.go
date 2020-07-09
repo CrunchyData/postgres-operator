@@ -168,7 +168,7 @@ func addClusterDeployments(clientset kubernetes.Interface, client *rest.RESTClie
 	// patch in the correct current primary value to the CRD spec, as well as
 	// any updated user labels. This will handle both new and updated clusters.
 	// Note: in previous operator versions, this was stored in a user label
-	if err := util.PatchClusterCRD(client, cl.Spec.UserLabels, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], namespace); err != nil {
+	if err := util.PatchClusterCRD(client, cl.Spec.UserLabels, cl, cl.CurrentPrimary(), namespace); err != nil {
 		log.Error("could not patch primary crv1 with labels")
 		return err
 	}
@@ -272,8 +272,8 @@ func getClusterDeploymentFields(clientset kubernetes.Interface, client *rest.RES
 	// as determined previously
 	// Note that the use of this value brings the initial deployment creation in line with
 	// the paradigm used during cluster restoration, as in operator/backrest/restore.go
-	if cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY] != cl.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] {
-		cl.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY]
+	if cl.CurrentPrimary() != cl.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] {
+		cl.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = cl.CurrentPrimary()
 	}
 
 	cl.Spec.UserLabels[config.LABEL_PGOUSER] = cl.ObjectMeta.Labels[config.LABEL_PGOUSER]
@@ -295,7 +295,7 @@ func getClusterDeploymentFields(clientset kubernetes.Interface, client *rest.RES
 
 	//create the primary deployment
 	deploymentFields := operator.DeploymentTemplateFields{
-		Name:               cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY],
+		Name:               cl.CurrentPrimary(),
 		IsInit:             true,
 		Replicas:           "0",
 		ClusterName:        cl.Spec.Name,
@@ -306,7 +306,7 @@ func getClusterDeploymentFields(clientset kubernetes.Interface, client *rest.RES
 		PVCName:            dataVolume.InlineVolumeSource(),
 		DeploymentLabels:   operator.GetLabelsFromMap(cl.Spec.UserLabels),
 		PodLabels:          operator.GetLabelsFromMap(cl.Spec.UserLabels),
-		DataPathOverride:   cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY],
+		DataPathOverride:   cl.CurrentPrimary(),
 		Database:           cl.Spec.Database,
 		SecurityContext:    operator.GetPodSecurityContext(supplementalGroups),
 		RootSecretName:     cl.Spec.RootSecretName,
@@ -318,17 +318,17 @@ func getClusterDeploymentFields(clientset kubernetes.Interface, client *rest.RES
 		ConfVolume:         operator.GetConfVolume(clientset, cl, namespace),
 		CollectAddon:       operator.GetCollectAddon(clientset, namespace, &cl.Spec),
 		CollectVolume:      operator.GetCollectVolume(clientset, cl, namespace),
-		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY]),
+		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cl, cl.CurrentPrimary()),
 		PgmonitorEnvVars:   operator.GetPgmonitorEnvVars(cl.Spec.UserLabels[config.LABEL_COLLECT], cl.Spec.CollectSecretName),
 		ScopeLabel:         config.LABEL_PGHA_SCOPE,
-		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cl, cl.Labels[config.LABEL_BACKREST], cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY],
+		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cl, cl.Labels[config.LABEL_BACKREST], cl.CurrentPrimary(),
 			cl.Spec.Port, cl.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars:      operator.GetPgbackrestS3EnvVars(*cl, clientset, namespace),
 		EnableCrunchyadm:         operator.Pgo.Cluster.EnableCrunchyadm,
 		ReplicaReinitOnStartFail: !operator.Pgo.Cluster.DisableReplicaStartFailReinit,
 		SyncReplication:          operator.GetSyncReplication(cl.Spec.SyncReplication),
 		Tablespaces:              operator.GetTablespaceNames(cl.Spec.TablespaceMounts),
-		TablespaceVolumes:        operator.GetTablespaceVolumesJSON(cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], tablespaceStorageTypeMap),
+		TablespaceVolumes:        operator.GetTablespaceVolumesJSON(cl.CurrentPrimary(), tablespaceStorageTypeMap),
 		TablespaceVolumeMounts:   operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
 		TLSEnabled:               cl.Spec.TLS.IsTLSEnabled(),
 		TLSOnly:                  cl.Spec.TLSOnly,
@@ -728,7 +728,7 @@ func ScaleClusterDeployments(clientset kubernetes.Interface, cluster crv1.Pgclus
 		// determine if the deployment is a primary, replica, or supporting service (pgBackRest,
 		// pgBouncer, etc.)
 		switch {
-		case deployment.Name == cluster.Annotations[config.ANNOTATION_CURRENT_PRIMARY]:
+		case deployment.Name == cluster.CurrentPrimary():
 			clusterInfo.PrimaryDeployment = deployment.Name
 			// if not scaling the primary simply move on to the next deployment
 			if !scalePrimary {
