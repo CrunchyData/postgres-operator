@@ -27,6 +27,7 @@ menushortcutsnewtab = false # set true to open shortcuts links to a new tab/wind
 enableGitInfo = true
 operatorVersion = "4.4.0-beta.2"
 postgresVersion = "12.3"
+postgisVersion = "3.0"
 centosBase = "centos7"
 
 [outputs]
