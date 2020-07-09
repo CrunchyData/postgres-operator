@@ -86,7 +86,7 @@ make changes, as described below.
 | BackrestStorage | `create` | A specification that gives information about the storage attributes for the pgBackRest repository, which stores backups and archives, of the PostgreSQL cluster. For details, please see the `Storage Specification` section below. This is required. |
 | CCPImage | `create` | The name of the PostgreSQL container image to use, e.g. `crunchy-postgres-ha` or `crunchy-postgres-ha-gis`. |
 | CCPImagePrefix | `create` | If provided, the image prefix (or registry) of the PostgreSQL container image, e.g. `registry.developers.crunchydata.com/crunchydata`. The default is to use the image prefix set in the PostgreSQL Operator configuration. |
-| CCPImageTag | `create` | The tag of the PostgreSQL container image to use, e.g. `centos7-12.3-4.4.0-beta.1`. |
+| CCPImageTag | `create` | The tag of the PostgreSQL container image to use, e.g. `centos7-12.3-4.4.0-beta.2`. |
 | CollectSecretName | `create` | An optional attribute unless `crunchy_collect` is specified in the `UserLabels`; contains the name of a Kubernetes Secret that contains the credentials for a PostgreSQL user that is used for metrics collection, and is created when the PostgreSQL cluster is first bootstrapped. For more information, please see `User Secret Specification`.|
 | ClusterName | `create` | The name of the PostgreSQL cluster, e.g. `hippo`. This is used to group PostgreSQL instances (primary, replicas) together. |
 | CustomConfig | `create` | If specified, references a custom ConfigMap to use when bootstrapping a PostgreSQL cluster. For the shape of this file, please see the section on [Custom Configuration]({{< relref "/advanced/custom-configuration.md" >}}) |
@@ -339,7 +339,7 @@ metadata:
     pg-cluster: ${pgo_cluster_name}
     pg-pod-anti-affinity: ""
     pgo-backrest: "true"
-    pgo-version: 4.4.0-beta.1
+    pgo-version: 4.4.0-beta.2
     pgouser: admin
   name: ${pgo_cluster_name}
   namespace: ${cluster_namespace}
@@ -416,7 +416,7 @@ spec:
   userlabels:
     crunchy_collect: "false"
     pg-pod-anti-affinity: ""
-    pgo-version: 4.4.0-beta.1
+    pgo-version: 4.4.0-beta.2
   usersecretname: ${pgo_cluster_name}-hippo-secret
 EOF
 

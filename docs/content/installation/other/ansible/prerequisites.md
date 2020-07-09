@@ -90,7 +90,7 @@ kubectl config current-context
 ## Configuring - `values.yaml`
 
 The `values.yaml` file contains all of the configuration parameters
-for deploying the PostgreSQL Operator. The [example file](https://github.com/CrunchyData/postgres-operator/blob/v4.4.0-beta.1/installers/ansible/values.yaml)
+for deploying the PostgreSQL Operator. The [example file](https://github.com/CrunchyData/postgres-operator/blob/v4.4.0-beta.2/installers/ansible/values.yaml)
 contains defaults that should work in most Kubernetes environments, but it may
 require some customization.
 
