@@ -34,8 +34,8 @@ how to maintain a high-availability cluster, etc.
 replicas within a PostgreSQL cluster. This includes things like the number of
 replicas, what storage and resource classes to use, special affinity rules, etc.
 - `pgtasks.crunchydata.com`: A general purpose CRD that accepts a type of task
-that is needed to run against a cluster (e.g. create a cluster, take a backup,
-  perform a clone) and tracks the state of said task through its workflow.
+that is needed to run against a cluster (e.g. take a backup, perform a clone)
+and tracks the state of said task through its workflow.
 - `pgpolicies.crunchydata.com`: Stores a reference to a SQL file that can be
 executed against a PostgreSQL cluster. In the past, this was used to manage RLS
 policies on PostgreSQL clusters.
