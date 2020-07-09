@@ -175,7 +175,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	if newcluster.Spec.Shutdown && newcluster.Status.State != crv1.PgclusterStateShutdown {
 		clusteroperator.ShutdownCluster(c.PgclusterClientset, c.PgclusterClient, *newcluster)
 	} else if !newcluster.Spec.Shutdown &&
-		newcluster.Status.State != crv1.PgclusterStateInitialized {
+		newcluster.Status.State == crv1.PgclusterStateShutdown {
 		clusteroperator.StartupCluster(c.PgclusterClientset, *newcluster)
 	}
 
