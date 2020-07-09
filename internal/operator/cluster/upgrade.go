@@ -459,8 +459,10 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 	// for this cluster.
 	pgcluster.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME] = currentPrimary
 
-	// update the image tag to the standard value set in the Postgres Operator's main
-	// configuration (which has already been verified to match the MAJOR PostgreSQL version)
+	// update the image tag to the value provided with the upgrade task. This will either be
+	// the standard value set in the Postgres Operator's main configuration (which will have already
+	// been verified to match the MAJOR PostgreSQL version) or the value provided by the user for
+	// use with PostGIS enabled pgclusters
 	pgcluster.Spec.CCPImageTag = parameters[config.LABEL_CCP_IMAGE_KEY]
 
 	// set a default autofail value of "true" to enable Patroni's replication. If left to an existing

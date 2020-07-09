@@ -32,6 +32,12 @@ import (
 // to continue
 var IgnoreValidation bool
 
+// UpgradeCCPImageTag stores the image tag for the cluster being upgraded.
+// This is specifically required when upgrading PostGIS clusters because
+// that tag will necessarily differ from the other images tags due to the
+// inclusion of the PostGIS version.
+var UpgradeCCPImageTag string
+
 var UpgradeCmd = &cobra.Command{
 	Use:   "upgrade",
 	Short: "Perform a cluster upgrade.",
@@ -64,6 +70,7 @@ func init() {
 
 	// flags for "pgo upgrade"
 	UpgradeCmd.Flags().BoolVarP(&IgnoreValidation, "ignore-validation", "", false, "Disables version checking against the image tags when performing an cluster upgrade.")
+	UpgradeCmd.Flags().StringVarP(&UpgradeCCPImageTag, "ccp-image-tag", "", "", "The image tag to use for cluster creation. If specified, it overrides the default configuration setting and disables tag validation checking.")
 }
 
 func createUpgrade(args []string, ns string) {
@@ -80,6 +87,7 @@ func createUpgrade(args []string, ns string) {
 	request.Selector = Selector
 	request.ClientVersion = msgs.PGO_VERSION
 	request.IgnoreValidation = IgnoreValidation
+	request.UpgradeCCPImageTag = UpgradeCCPImageTag
 
 	response, err := api.CreateUpgrade(httpclient, &SessionCredentials, &request)
 

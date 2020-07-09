@@ -107,8 +107,13 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 		}
 		spec.Parameters[crv1.PgtaskWorkflowID] = string(u[:len(u)-1])
 
-		// pass the CCP Image Tag from the apiserver
-		spec.Parameters[config.LABEL_CCP_IMAGE_KEY] = apiserver.Pgo.Cluster.CCPImageTag
+		if request.UpgradeCCPImageTag != "" {
+			// pass the PostGIS CCP Image Tag provided with the upgrade command
+			spec.Parameters[config.LABEL_CCP_IMAGE_KEY] = request.UpgradeCCPImageTag
+		} else {
+			// pass the CCP Image Tag from the apiserver
+			spec.Parameters[config.LABEL_CCP_IMAGE_KEY] = apiserver.Pgo.Cluster.CCPImageTag
+		}
 		// pass the PGO version for the upgrade
 		spec.Parameters[config.LABEL_PGO_VERSION] = msgs.PGO_VERSION
 		// pass the PGO username for use in the updated CR if missing
@@ -161,16 +166,14 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 		// for the upgrade procedure, we only upgrade to the current image used by the
 		// Postgres Operator. As such, we will validate that the Postgres Operator's configured
 		// image tag (first value) is compatible (i.e. is the same Major PostgreSQL version) as the
-		// existing cluster's PG value, unless the --ignore-validation flag is set.
-		if !upgradeTagValid(cl.Spec.CCPImageTag, apiserver.Pgo.Cluster.CCPImageTag) && !request.IgnoreValidation {
+		// existing cluster's PG value, unless the --ignore-validation flag is set or the --post-gis-image-tag
+		// flag is used
+		if !upgradeTagValid(cl.Spec.CCPImageTag, apiserver.Pgo.Cluster.CCPImageTag) && !request.IgnoreValidation && request.UpgradeCCPImageTag != "" {
 			log.Debugf("Cannot upgrade from %s to %s. Image must be the same base OS and the upgrade must be within the same major PG version.", cl.Spec.CCPImageTag, apiserver.Pgo.Cluster.CCPImageTag)
 			response.Status.Code = msgs.Error
 			response.Status.Msg = fmt.Sprintf("cannot upgrade from %s to %s, upgrade task failed.", cl.Spec.CCPImageTag, apiserver.Pgo.Cluster.CCPImageTag)
 			return response
 		}
-
-		// given the above check passed, save the CCP image tag value
-		spec.Parameters["CCPImageTag"] = cl.Spec.CCPImageTag
 
 		// Create an instance of our CRD
 		err = kubeapi.Createpgtask(apiserver.RESTClient, newInstance, ns)

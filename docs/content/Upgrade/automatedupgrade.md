@@ -104,10 +104,19 @@ Previously, the existing cluster upgrade focused on updating a cluster's underly
 
 The automated upgrade process provides a mechanism where, instead of being deleted, the existing PostgreSQL clusters will be left in place during the PostgreSQL Operator upgrade. While normal Operator functionality will be restricted on these existing clusters until they are upgraded to the currently installed PostgreSQL Operator version, the pods, services, etc will still be in place and accessible via other methods (e.g. kubectl, service IP, etc).
 
-To upgrade a particular cluster, use
+To upgrade a PostgreSQL cluster using the standard (`crunchy-postgres-ha`) image, you can run the following command:
 ```    
 pgo upgrade mycluster
 ```
+
+If you are using the PostGIS-enabled image (i.e. `crunchy-postgres-gis-ha`) or any other custom images, you will need to add the `--ccp-image-tag`:
+```    
+pgo upgrade --ccp-image-tag={{< param centosBase >}}-{{< param postgresVersion >}}-{{< param postgisVersion >}}-{{< param operatorVersion >}} mygiscluster
+```
+Where `{{< param postgresVersion >}}` is the PostgreSQL version, `{{< param postgisVersion >}}` is the PostGIS version and `{{< param operatorVersion >}}` is the PostgreSQL Operator version.
+Please note, no tag validation will be performed and additional steps may be required to upgrade your PostGIS extension implementation. For more information on PostGIS upgrade considerations, please see
+[PostGIS Upgrade Documentation](https://access.crunchydata.com/documentation/postgis/latest/postgis_installation.html#upgrading).
+
 This will follow a similar process to the documented manual process, where the pods, deployments, replicasets, pgtasks and jobs are deleted, the cluster's replicas are scaled down and replica PVCs deleted, but the primary PVC and backrest-repo PVC are left in place. Existing services for the primary, replica and backrest-shared-repo are also kept and will be updated to the requirements of the current version. Configmaps and secrets are kept except where deletion is required. For a cluster 'mycluster', the following configmaps will be deleted (if they exist) and recreated:
 ```    
 mycluster-leader
