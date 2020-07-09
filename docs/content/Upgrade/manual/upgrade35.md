@@ -49,7 +49,7 @@ For example, given the following output:
 ```
 $ pgo show cluster mycluster
 
-cluster : mycluster (crunchy-postgres:{{< param centosBase >}}-11.5-2.4.2)
+cluster : mycluster (crunchy-postgres:centos7-11.5-2.4.2)
 	pod : mycluster-7bbf54d785-pk5dq (Running) on kubernetes1 (1/1) (replica)
 	pvc : mycluster
 	pod : mycluster-ypvq-5b9b8d645-nvlb6 (Running) on kubernetes1 (1/1) (primary)

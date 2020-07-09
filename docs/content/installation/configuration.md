@@ -31,7 +31,7 @@ Operator.
 | `ccp_image_prefix` | registry.developers.crunchydata.com/crunchydata | **Required** | Configures the image prefix used when creating containers from Crunchy Container Suite. |
 | `ccp_image_pull_secret` |  |  | Name of a Secret containing credentials for container image registries. |
 | `ccp_image_pull_secret_manifest` |  |  | Provide a path to the Secret manifest to be installed in each namespace. (optional) |
-| `ccp_image_tag` | {{< param centosBase >}}-12.3-{{< param operatorVersion >}} | **Required** | Configures the image tag (version) used when creating containers from Crunchy Container Suite. |
+| `ccp_image_tag` | {{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}} | **Required** | Configures the image tag (version) used when creating containers from Crunchy Container Suite. |
 | `create_rbac` | true | **Required** | Set to true if the installer should create the RBAC resources required to run the PostgreSQL Operator. |
 | `crunchy_debug` | false |  | Set to configure Operator to use debugging mode. Note: this can cause sensitive data such as passwords to appear in Operator logs. |
 | `db_name` |  |  | Set to a value to configure the default database name on all newly created clusters. By default, the PostgreSQL Operator will set it to the name of the cluster that is being created. |
