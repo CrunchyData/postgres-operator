@@ -25,6 +25,7 @@ disableNavChevron = false # set true to hide next/prev chevron, default is false
 highlightClientSide = false # set true to use highlight.pack.js instead of the default hugo chroma highlighter
 menushortcutsnewtab = false # set true to open shortcuts links to a new tab/window
 enableGitInfo = true
+operatorVersion = "4.4.0-beta.2"
 
 [outputs]
 home = [ "HTML", "RSS", "JSON"]

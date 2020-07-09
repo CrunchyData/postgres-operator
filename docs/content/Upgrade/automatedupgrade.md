@@ -1,6 +1,5 @@
 ---
 title: "Automated PostgreSQL Operator Upgrade - Operator 4.1+"
-Latest Release: 4.4.0-beta.2 {docdate}
 draft: false
 weight: 80
 ---
@@ -10,7 +9,7 @@ weight: 80
 The automated upgrade to a new release of the PostgreSQL Operator comprises two main steps:
 
 * Upgrading the PostgreSQL Operator itself
-* Upgrading the existing PostgreSQL Clusters to the new release 
+* Upgrading the existing PostgreSQL Clusters to the new release
 
 The first step will result in an upgraded PostgreSQL Operator that is able to create and manage new clusters as expected, but will be unable to manage existing clusters until they have been upgraded. The second step upgrades the clusters to the current Operator version, allowing them to once again be fully managed by the Operator.
 
@@ -35,10 +34,10 @@ The automated upgrade procedure is designed to facilate the quickest and most ef
 8. Metrics - While the PostgreSQL Operator upgrade process will not delete an existing Metrics Stack, it does not currently support the upgrade of existing metrics infrastructure.
 
 ##### NOTE: As with any upgrade procedure, it is strongly recommended that a full logical backup is taken before any upgrade procedure is started. Please see the [Logical Backups](/pgo-client/common-tasks#logical-backups-pg_dump--pg_dumpall) section of the Common Tasks page for more information.
- 
+
 ### Automated Upgrade when using an Ansible installation of the PostgreSQL Operator
 
-For existing PostgreSQL Operator deployments that were installed using Ansible, the upgrade process is straightforward. 
+For existing PostgreSQL Operator deployments that were installed using Ansible, the upgrade process is straightforward.
 
 First, you will copy your existing inventory file as a backup for your existing settings. You will reference these settings, but you will need to use the updated version of the inventory file for the current version of PostgreSQL Operator.
 
@@ -71,18 +70,18 @@ export NOAUTH_ROUTES=""
 export EXCLUDE_OS_TRUST=false
 ```
 
-Then, for either 4.1.X or 4.2.X, 
+Then, for either 4.1.X or 4.2.X,
 
-Update the `PGO_VERSION` variable to `4.4.0-beta.2`
+Update the `PGO_VERSION` variable to `{{< param operatorVersion >}}`
 
-Finally, source this file with 
+Finally, source this file with
 ```
 source $HOME/.bashrc
 ```
 
 ##### PostgreSQL Operator Configuration File updates
 
-Next, you will and save a copy of your existing pgo.yaml file (`$PGOROOT/conf/postgres-operator/pgo.yaml`) as pgo_old.yaml or similar. 
+Next, you will and save a copy of your existing pgo.yaml file (`$PGOROOT/conf/postgres-operator/pgo.yaml`) as pgo_old.yaml or similar.
 
 Once this is saved, you will checkout the current release of the PostgreSQL Operator and update the pgo.yaml for the current version, making sure to make updates to the CCPImageTag and storage settings in line with the [Considerations](/upgrade/automatedupgrade#considerations) given above.
 
@@ -100,15 +99,15 @@ This script will undeploy the current PostgreSQL Operator, configure the desired
 After this script completes, it is strongly recommended that you create a test cluster to validate the Operator is functioning as expected before moving on to the individual cluster upgrades.
 
 ## PostgreSQL Operator Automated Cluster Upgrade
-    
+
 Previously, the existing cluster upgrade focused on updating a cluster's underlying container images. However, due to the various changes in the PostgreSQL Operator's operation between the various versions (including numerous updates to the relevant CRDs, integration of Patroni for HA and other significant changes), updates between PostgreSQL Operator releases required the manual deletion of the existing clusters while preserving the underlying PVC storage. After installing the new PostgreSQL Operator version, the clusters could be recreated manually with the name of the new cluster matching the existing PVC's name.
 
 The automated upgrade process provides a mechanism where, instead of being deleted, the existing PostgreSQL clusters will be left in place during the PostgreSQL Operator upgrade. While normal Operator functionality will be restricted on these existing clusters until they are upgraded to the currently installed PostgreSQL Operator version, the pods, services, etc will still be in place and accessible via other methods (e.g. kubectl, service IP, etc).
-    
+
 To upgrade a particular cluster, use
 ```    
 pgo upgrade mycluster
-``` 
+```
 This will follow a similar process to the documented manual process, where the pods, deployments, replicasets, pgtasks and jobs are deleted, the cluster's replicas are scaled down and replica PVCs deleted, but the primary PVC and backrest-repo PVC are left in place. Existing services for the primary, replica and backrest-shared-repo are also kept and will be updated to the requirements of the current version. Configmaps and secrets are kept except where deletion is required. For a cluster 'mycluster', the following configmaps will be deleted (if they exist) and recreated:
 ```    
 mycluster-leader

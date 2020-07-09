@@ -84,8 +84,8 @@ pgo version
 which, if working, will yield results similar to:
 
 ```
-pgo client version 4.4.0-beta.2
-pgo-apiserver version 4.4.0-beta.2
+pgo client version {{< param operatorVersion >}}
+pgo-apiserver version {{< param operatorVersion >}}
 ```
 
 ### Inspecting the PostgreSQL Operator Configuration
@@ -107,7 +107,7 @@ which yields output similar to:
 BasicAuth: ""
 Cluster:
   CCPImagePrefix: crunchydata
-  CCPImageTag: centos7-12.3-4.4.0-beta.2
+  CCPImageTag: centos7-12.3-{{< param operatorVersion >}}
   Policies: ""
   Metrics: false
   Badger: false
@@ -136,7 +136,7 @@ Cluster:
 Pgo:
   Audit: false
   PGOImagePrefix: crunchydata
-  PGOImageTag: centos7-4.4.0-beta.2
+  PGOImageTag: centos7-{{< param operatorVersion >}}
 PrimaryStorage: nfsstorage
 BackupStorage: nfsstorage
 ReplicaStorage: nfsstorage
@@ -178,9 +178,9 @@ Claims:                  8
 Total Volume Size:       8Gi       
 
 Database Images:
-                         4	crunchydata/crunchy-postgres-ha:centos7-12.3-4.4.0-beta.2
-                         4	crunchydata/pgo-backrest-repo:centos7-4.4.0-beta.2
-                         8	crunchydata/pgo-backrest:centos7-4.4.0-beta.2
+                         4	crunchydata/crunchy-postgres-ha:centos7-12.3-{{< param operatorVersion >}}
+                         4	crunchydata/pgo-backrest-repo:centos7-{{< param operatorVersion >}}
+                         8	crunchydata/pgo-backrest:centos7-{{< param operatorVersion >}}
 
 Databases Not Ready:
 
@@ -191,7 +191,7 @@ Labels (count > 1): [count] [label]
 	[4]	[pgo-pg-database=true]
 	[4]	[crunchy_collect=false]
 	[4]	[pg-pod-anti-affinity=]
-	[4]	[pgo-version=4.4.0-beta.2]
+	[4]	[pgo-version={{< param operatorVersion >}}]
 	[4]	[archive-timeout=60]
 	[2]	[pg-cluster=hacluster]
 ```
@@ -420,7 +420,7 @@ pgo show cluster hacluster
 which will yield output similar to:
 
 ```
-cluster : hacluster (crunchy-postgres-ha:centos7-12.3-4.4.0-beta.2)
+cluster : hacluster (crunchy-postgres-ha:centos7-12.3-{{< param operatorVersion >}})
 	pod : hacluster-6dc6cfcfb9-f9knq (Running) on node01 (1/1) (primary)
 	pvc : hacluster
 	resources : CPU Limit= Memory Limit=, CPU Request= Memory Request=
@@ -428,7 +428,7 @@ cluster : hacluster (crunchy-postgres-ha:centos7-12.3-4.4.0-beta.2)
 	deployment : hacluster
 	deployment : hacluster-backrest-shared-repo
 	service : hacluster - ClusterIP (10.102.20.42)
-	labels : pg-pod-anti-affinity= archive-timeout=60 crunchy-pgbadger=false crunchy_collect=false deployment-name=hacluster pg-cluster=hacluster crunchy-pgha-scope=hacluster autofail=true pgo-backrest=true pgo-version=4.4.0-beta.2 current-primary=hacluster name=hacluster pgouser=admin workflowid=ae714d12-f5d0-4fa9-910f-21944b41dec8
+	labels : pg-pod-anti-affinity= archive-timeout=60 crunchy-pgbadger=false crunchy_collect=false deployment-name=hacluster pg-cluster=hacluster crunchy-pgha-scope=hacluster autofail=true pgo-backrest=true pgo-version={{< param operatorVersion >}} current-primary=hacluster name=hacluster pgouser=admin workflowid=ae714d12-f5d0-4fa9-910f-21944b41dec8
 ```
 
 ### Deleting a Cluster

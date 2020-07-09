@@ -1,23 +1,22 @@
 ---
 title: "Manual Upgrade - Operator 4"
-Latest Release: 4.4.0-beta.2 {docdate}
 draft: false
 weight: 8
 ---
 
 ## Manual PostgreSQL Operator 4 Upgrade Procedure
 
-Below are the procedures for upgrading to version 4.4.0-beta.2 of the Crunchy PostgreSQL Operator using the Bash or Ansible installation methods. This version of the PostgreSQL Operator has several fundamental changes to the existing PGCluster structure and deployment model. Most notably for those upgrading from 4.1 and below, all PGClusters use the new Crunchy PostgreSQL HA container in place of the previous Crunchy PostgreSQL containers. The use of this new container is a breaking change from previous versions of the Operator did not use the HA containers.
+Below are the procedures for upgrading to version {{< param operatorVersion >}} of the Crunchy PostgreSQL Operator using the Bash or Ansible installation methods. This version of the PostgreSQL Operator has several fundamental changes to the existing PGCluster structure and deployment model. Most notably for those upgrading from 4.1 and below, all PGClusters use the new Crunchy PostgreSQL HA container in place of the previous Crunchy PostgreSQL containers. The use of this new container is a breaking change from previous versions of the Operator did not use the HA containers.
 
-NOTE: If you are upgrading from Crunchy PostgreSQL Operator version 4.1.0 or later, the [Automated Upgrade Procedure](/upgrade/automatedupgrade) is recommended. If you are upgrading PostgreSQL 12 clusters, you MUST use the [Automated Upgrade Procedure](/upgrade/automatedupgrade). 
+NOTE: If you are upgrading from Crunchy PostgreSQL Operator version 4.1.0 or later, the [Automated Upgrade Procedure](/upgrade/automatedupgrade) is recommended. If you are upgrading PostgreSQL 12 clusters, you MUST use the [Automated Upgrade Procedure](/upgrade/automatedupgrade).
 
 #### Crunchy PostgreSQL High Availability Containers
 
-Using the PostgreSQL Operator 4.4.0-beta.2 requires replacing your `crunchy-postgres` and `crunchy-postgres-gis` containers with the `crunchy-postgres-ha` and `crunchy-postgres-gis-ha` containers respectively. The underlying PostgreSQL installations in the container remain the same but are now optimized for Kubernetes environments to provide the new high-availability functionality.
+Using the PostgreSQL Operator {{< param operatorVersion >}} requires replacing your `crunchy-postgres` and `crunchy-postgres-gis` containers with the `crunchy-postgres-ha` and `crunchy-postgres-gis-ha` containers respectively. The underlying PostgreSQL installations in the container remain the same but are now optimized for Kubernetes environments to provide the new high-availability functionality.
 
 A major change to this container is that the PostgreSQL process is now managed by Patroni. This allows a PostgreSQL cluster that is deployed by the PostgreSQL Operator to manage its own uptime and availability, to elect a new leader in the event of a downtime scenario, and to automatically heal after a failover event.
 
-When creating your new clusters using version 4.4.0-beta.2 of the PostgreSQL Operator, the `pgo create cluster` command will automatically use the new `crunchy-postgres-ha` image if the image is unspecified. If you are creating a PostGIS enabled cluster, please be sure to use the updated image name, as with the command:
+When creating your new clusters using version {{< param operatorVersion >}} of the PostgreSQL Operator, the `pgo create cluster` command will automatically use the new `crunchy-postgres-ha` image if the image is unspecified. If you are creating a PostGIS enabled cluster, please be sure to use the updated image name, as with the command:
 
 ```
 pgo create cluster mygiscluster --ccp-image=crunchy-postgres-gis-ha
@@ -35,7 +34,7 @@ Below are the procedures for upgrading the PostgreSQL Operator and PostgreSQL cl
 
 You will need the following items to complete the upgrade:
 
-* The latest 4.4.0-beta.2 code for the Postgres Operator available
+* The latest {{< param operatorVersion >}} code for the Postgres Operator available
 
 These instructions assume you are executing in a terminal window and that your user has admin privileges in your Kubernetes or Openshift environment.
 
@@ -102,7 +101,7 @@ and then, for all versions, delete the "backrest-repo-config" secret, if it exis
 kubectl delete secret <clustername>-backrest-repo-config
 ```
 
-If there are any remaining jobs for this deleted cluster, use 
+If there are any remaining jobs for this deleted cluster, use
 
 ```
 kubectl -n <namespace> delete job <jobname>
@@ -116,7 +115,7 @@ NOTE: Please note the name of each cluster, the namespace used, and be sure not 
 
 ##### Step 4
 
-Save a copy of your current inventory file with a new name (such as `inventory.backup)` and checkout the latest 4.4.0-beta.2 tag of the Postgres Operator.
+Save a copy of your current inventory file with a new name (such as `inventory.backup)` and checkout the latest {{< param operatorVersion >}} tag of the Postgres Operator.
 
 
 ##### Step 5
@@ -147,7 +146,7 @@ We strongly recommend that you create a test cluster before proceeding to the ne
 
 ##### Step 8
 
-Once the Operator is installed and functional, create a new 4.4.0-beta.2 cluster matching the cluster details recorded in Step 1. Be sure to use the primary PVC name (also noted in Step 1) and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs. 
+Once the Operator is installed and functional, create a new {{< param operatorVersion >}} cluster matching the cluster details recorded in Step 1. Be sure to use the primary PVC name (also noted in Step 1) and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs.
 
 NOTE: If you have existing pgBackRest backups stored that you would like to have available in the upgraded cluster, you will need to follow the [PVC Renaming Procedure]( {{< relref "Upgrade/manual/upgrade4#pgbackrest-repo-pvc-renaming" >}}).
 
@@ -181,7 +180,7 @@ Scale up to the required number of replicas, as needed.
 
 Congratulations! Your cluster is upgraded and ready to use!
 
-### Bash Installation Upgrade Procedure 
+### Bash Installation Upgrade Procedure
 
 Below are the procedures for upgrading the PostgreSQL Operator and PostgreSQL clusters using the Bash installation method.
 
@@ -284,7 +283,7 @@ $PGOROOT/deploy/cleanup-rbac.sh
 For versions 4.0, 4.1 and 4.2, update environment variables in the bashrc:
 
 ```
-export PGO_VERSION=4.4.0-beta.2
+export PGO_VERSION={{< param operatorVersion >}}
 ```
 
 NOTE: This will be the only update to the bashrc file for 4.2.
@@ -341,9 +340,9 @@ source ~/.bashrc
 
 ##### Step 8
 
-Ensure you have checked out the latest 4.4.0-beta.2 version of the source code and update the pgo.yaml file in `$PGOROOT/conf/postgres-operator/pgo.yaml`
+Ensure you have checked out the latest {{< param operatorVersion >}} version of the source code and update the pgo.yaml file in `$PGOROOT/conf/postgres-operator/pgo.yaml`
 
-You will want to use the 4.4.0-beta.2 pgo.yaml file and update custom settings such as image locations, storage, and resource configs.
+You will want to use the {{< param operatorVersion >}} pgo.yaml file and update custom settings such as image locations, storage, and resource configs.
 
 ##### Step 9
 
@@ -359,7 +358,7 @@ You will need to update the `$HOME/.pgouser`file to match the values you set in 
 
 ##### Step 10
 
-Install the 4.4.0-beta.2 Operator:
+Install the {{< param operatorVersion >}} Operator:
 
 Setup the configured namespaces:
 
@@ -387,7 +386,7 @@ kubectl get pod -n <operator namespace>
 
 ##### Step 11
 
-Next, update the PGO client binary to 4.4.0-beta.2 by replacing the existing 4.X binary with the latest 4.4.0-beta.2 binary available.
+Next, update the PGO client binary to {{< param operatorVersion >}} by replacing the existing 4.X binary with the latest {{< param operatorVersion >}} binary available.
 
 You can run:
 
@@ -416,7 +415,7 @@ make deployoperator
 
 ##### Step 13
 
-The Operator is now upgraded to 4.4.0-beta.2 and all users and roles have been recreated.
+The Operator is now upgraded to {{< param operatorVersion >}} and all users and roles have been recreated.
 Verify this by running:
 
 ```
@@ -427,7 +426,7 @@ We strongly recommend that you create a test cluster before proceeding to the ne
 
 ##### Step 14
 
-Once the Operator is installed and functional, create a new 4.4.0-beta.2 cluster matching the cluster details recorded in Step 1. Be sure to use the same name and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs. A simple example is given below, but more information on cluster creation can be found [here](/pgo-client/common-tasks#creating-a-postgresql-cluster)
+Once the Operator is installed and functional, create a new {{< param operatorVersion >}} cluster matching the cluster details recorded in Step 1. Be sure to use the same name and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs. A simple example is given below, but more information on cluster creation can be found [here](/pgo-client/common-tasks#creating-a-postgresql-cluster)
 
 NOTE: If you have existing pgBackRest backups stored that you would like to have available in the upgraded cluster, you will need to follow the [PVC Renaming Procedure]( {{< relref "Upgrade/manual/upgrade4#pgbackrest-repo-pvc-renaming" >}}).
 
@@ -479,7 +478,7 @@ In 4.1 and later:
 kubectl -n <namespace> describe pvc mycluster-pgbr-repo
 ```
 
-for later use when recreating this PVC with the new name. In this output, note the "Volume" name, which is the name of the underlying PV. 
+for later use when recreating this PVC with the new name. In this output, note the "Volume" name, which is the name of the underlying PV.
 
 ##### Step 2
 
@@ -518,7 +517,7 @@ You will remove the "claimRef" section of the PV with
 kubectl -n <namespace> patch pv <PV name> --type=json -p='[{"op": "remove", "path": "/spec/claimRef"}]'
 ```
 
-which will make the PV "Available" so it may be reused by the new PVC. 
+which will make the PV "Available" so it may be reused by the new PVC.
 
 ##### Step 5
 
@@ -528,7 +527,7 @@ Now, create a file with contents similar to the following:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: mycluster-pgbr-repo 
+  name: mycluster-pgbr-repo
   namespace: demo
 spec:
   storageClassName: ""
@@ -557,4 +556,4 @@ To check that your PVC is "Bound", run
 kubectl -n <namespace> get pvc mycluster-pgbr-repo
 ```
 
-Congratulations, you have renamed your PVC! Once the PVC Status is "Bound", your cluster can be recreated. If you altered the Reclaim Policy on your PV in Step 1, you will want to reset it now. 
+Congratulations, you have renamed your PVC! Once the PVC Status is "Bound", your cluster can be recreated. If you altered the Reclaim Policy on your PV in Step 1, you will want to reset it now.

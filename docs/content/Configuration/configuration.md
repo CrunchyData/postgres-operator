@@ -1,7 +1,5 @@
-
 ---
 title: "Configuration Resources"
-Latest Release: 4.4.0-beta.2 {docdate}
 draft: false
 weight: 2
 ---
