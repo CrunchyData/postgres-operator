@@ -107,7 +107,7 @@ which yields output similar to:
 BasicAuth: ""
 Cluster:
   CCPImagePrefix: crunchydata
-  CCPImageTag: centos7-{{< param postgresVersion >}}-{{< param operatorVersion >}}
+  CCPImageTag: {{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}
   Policies: ""
   Metrics: false
   Badger: false
@@ -136,7 +136,7 @@ Cluster:
 Pgo:
   Audit: false
   PGOImagePrefix: crunchydata
-  PGOImageTag: centos7-{{< param operatorVersion >}}
+  PGOImageTag: {{< param centosBase >}}-{{< param operatorVersion >}}
 PrimaryStorage: nfsstorage
 BackupStorage: nfsstorage
 ReplicaStorage: nfsstorage
@@ -178,9 +178,9 @@ Claims:                  8
 Total Volume Size:       8Gi       
 
 Database Images:
-                         4	crunchydata/crunchy-postgres-ha:centos7-{{< param postgresVersion >}}-{{< param operatorVersion >}}
-                         4	crunchydata/pgo-backrest-repo:centos7-{{< param operatorVersion >}}
-                         8	crunchydata/pgo-backrest:centos7-{{< param operatorVersion >}}
+                         4	crunchydata/crunchy-postgres-ha:{{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}
+                         4	crunchydata/pgo-backrest-repo:{{< param centosBase >}}-{{< param operatorVersion >}}
+                         8	crunchydata/pgo-backrest:{{< param centosBase >}}-{{< param operatorVersion >}}
 
 Databases Not Ready:
 
@@ -420,7 +420,7 @@ pgo show cluster hacluster
 which will yield output similar to:
 
 ```
-cluster : hacluster (crunchy-postgres-ha:centos7-{{< param postgresVersion >}}-{{< param operatorVersion >}})
+cluster : hacluster (crunchy-postgres-ha:{{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}})
 	pod : hacluster-6dc6cfcfb9-f9knq (Running) on node01 (1/1) (primary)
 	pvc : hacluster
 	resources : CPU Limit= Memory Limit=, CPU Request= Memory Request=
