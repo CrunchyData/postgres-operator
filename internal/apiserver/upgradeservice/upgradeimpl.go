@@ -149,7 +149,10 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 			return response
 		}
 
-		if !supportedOperatorVersion(cl.ObjectMeta.Labels[config.LABEL_PGO_VERSION]) {
+		// for the upgrade procedure, we only upgrade to the current image used by the
+		// Postgres Operator. As such, we will validate that the Postgres Operator version is
+		// is supported by the upgrade, unless the --ignore-validation flag is set.
+		if !supportedOperatorVersion(cl.ObjectMeta.Labels[config.LABEL_PGO_VERSION]) && !request.IgnoreValidation {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = "Cannot upgrade " + clusterName + " from Postgres Operator version " + cl.ObjectMeta.Labels[config.LABEL_PGO_VERSION]
 			return response
