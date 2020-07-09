@@ -208,7 +208,7 @@ command.
 ```
 pgo show cluster hippo
 
-cluster : standby (crunchy-postgres-ha:centos7-12.3-4.4.0-beta.2)
+cluster : standby (crunchy-postgres-ha:centos7-12.3-{{< param operatorVersion >}})
        standby : true
 ```
 ## Promoting a Standby Cluster
