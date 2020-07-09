@@ -2,7 +2,7 @@
 title: "Using Custom Resources"
 date:
 draft: false
-weight: 1000
+weight: 55
 ---
 
 ![Operator Architecture with CRDs](/Operator-Architecture-wCRDs.png)
@@ -29,7 +29,8 @@ The Kubernetes community trend has been to move towards supporting a
 "custom resource only" workflow for using Operators, and this is something that
 the PostgreSQL Operator aims to do as well. Certain workflows are fully driven
 by Custom Resources (e.g. creating a PostgreSQL cluster), while others still
-need to interface through the `pgo` client (e.g. adding a PostgreSQL user).
+need to interface through the [`pgo` client]({{< relref "/pgo-client/_index.md" >}})
+(e.g. adding a PostgreSQL user).
 
 The following sections will describe the functionality that is available today
 when manipulating the PostgreSQL Operator Custom Resources directly.
