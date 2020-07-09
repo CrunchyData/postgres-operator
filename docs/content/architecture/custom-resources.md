@@ -191,6 +191,21 @@ a PostgreSQL cluster to help with failover scenarios too.
 | Replicas | `create`, `update` | The number of pgBouncer instances to deploy. Must be set to at least `1` to deploy pgBouncer. Setting to `0` removes an existing pgBouncer deployment for the PostgreSQL cluster. |
 | Resources | `create`, `update` | Specify the container resource requests that the pgBouncer Pods should use. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 
+### `pgreplicas.crunchydata.com`
+
+The `pgreplicas.crunchydata.com` Custom Resource Definition contains information
+pertaning to the structure of PostgreSQL replicas associated within a PostgreSQL
+cluster. All of the attributes only affect the replica when it is created.
+
+#### Specification (`Spec`)
+
+| Attribute | Action | Description |
+|-----------|--------|-------------|
+| ClusterName | `create` | The name of the PostgreSQL cluster, e.g. `hippo`. This is used to group PostgreSQL instances (primary, replicas) together. |
+| Name | `create` | The name of this PostgreSQL replica. It should be unique within a `ClusterName`. |
+| Namespace | `create` | The Kubernetes Namespace that the PostgreSQL cluster is deployed in. |
+| ReplicaStorage | `create` | A specification that gives information about the storage attributes for any replicas in the PostgreSQL cluster. For details, please see the `Storage Specification` section in the `pgclusters.crunchydata.com` description. This will likely be changed in the future based on the nature of the high-availability system, but presently it is still required that you set it. It is recommended you use similar settings to that of `PrimaryStorage`. |
+| UserLabels | `create` | A set of key-value string pairs that are used as a sort of "catch-all" for things that really should be modeled in the CRD. These values do get copied to the actually CR labels. If you want to set up metrics collection, you would specify `"crunchy_collect": "true"` here. This also allows for node selector pinning using `NodeLabelKey` and `NodeLabelValue`. However, this structure does need to be set, so just follow whatever is in the example. |
 
 ## Custom Resource Workflows
 
@@ -422,3 +437,181 @@ EOF
 
 kubectl apply -f "${pgo_cluster_name}-pgcluster.yaml"
 ```
+
+### Modify a Cluster
+
+There following modification operations are supported on the
+`pgclusters.crunchydata.com` custom resource definition:
+
+#### Modify Resource Requests & Limits
+
+Modifying the `resources`, `limits`, `backrestResources`, `backRestLimits`,
+`pgBouncer.resources`, or `pgbouncer.limits` will cause the PostgreSQL Operator
+to apply the new values to the affected [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/).
+
+For example, if we wanted to make a memory request of 512Mi for the `hippo`
+cluster created in the previous example, we could do the following:
+
+```
+# this variable is the name of the cluster being created
+export pgo_cluster_name=hippo
+# this variable is the namespace the cluster is being deployed into
+export cluster_namespace=pgo
+
+kubectl edit pgclusters.crunchydata.com -n "${cluster_namespace}" "${pgo_cluster_name}"
+```
+
+This will open up your editor. Find the `resources` block, and have it read as
+the following:
+
+```
+resources:
+  memory: 256Mi
+```
+
+The PostgreSQL Operator will respond and modify the PostgreSQL instances to
+request 256Mi of memory.
+
+Be careful when editing these values for a variety of reasons, mainly that
+modifying these values will cause the Pods to restart, which in turn will create
+potential downtime events. It's best to modify the values for a deployment group
+together and not mix and match, i.e.
+
+- PostgreSQL instances: `resources`, `limits`
+- pgBackRest: `backrestResources`, `backrestLimits`
+- pgBouncer: `pgBouncer.resources`, `pgBouncer.limits`
+
+### Scale
+
+Once you have created a PostgreSQL cluster, you may want to add a replica to
+create a high-availability environment. Replicas are added and removed using the
+`pgreplicas.crunchydata.com` custom resource definition. Each replica must have
+a unique name, e.g. `hippo-rpl1` could be one unique replica for a PostgreSQL
+cluster.
+
+Using the above example cluster, `hippo`, let's add a replica called
+`hippo-rpl1` using the configuration below. Be sure to change the
+`replicastorage` block to match the storage configuration for your environment:
+
+```
+# this variable is the name of the cluster being created
+export pgo_cluster_name=hippo
+# this helps to name the replica, in this case "rpl1"
+export pgo_cluster_replica_suffix=rpl1
+# this variable is the namespace the cluster is being deployed into
+export cluster_namespace=pgo
+
+cat <<-EOF > "${pgo_cluster_name}-${pgo_cluster_replica_suffix}-pgreplica.yaml"
+apiVersion: crunchydata.com/v1
+kind: Pgreplica
+metadata:
+  labels:
+    name: ${pgo_cluster_name}-${pgo_cluster_replica_suffix}
+    pg-cluster: ${pgo_cluster_name}
+    pgouser: admin
+  name: ${pgo_cluster_name}-${pgo_cluster_replica_suffix}
+  namespace: ${cluster_namespace}
+spec:
+  clustername: ${pgo_cluster_name}
+  name: ${pgo_cluster_name}-${pgo_cluster_replica_suffix}
+  namespace: ${cluster_namespace}
+  replicastorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ${pgo_cluster_name}-${pgo_cluster_replica_suffix}
+    size: 1G
+    storageclass: ""
+    storagetype: create
+    supplementalgroups: ""
+  userlabels:
+    NodeLabelKey: ""
+    NodeLabelValue: ""
+    crunchy_collect: "false"
+    pg-pod-anti-affinity: ""
+    pgo-version: 4.4.0-beta.2
+EOF
+
+kubectl apply -f "${pgo_cluster_name}-${pgo_cluster_replica_suffix}-pgreplica.yaml"
+```
+
+Add this time, removing a replica must be handled through the [`pgo` client]({{< relref "/pgo-client/common-tasks.md#high-availability-scaling-up-down">}}).
+
+### Add a Tablespace
+
+Tablespaces can be added during the lifetime of a PostgreSQL cluster (tablespaces can be removed as well, but for a detailed explanation as to how, please see the [Tablespaces]({{< relref "/architecture/tablespaces.md">}}) section).
+
+To add a tablespace, you need to add an entry to the `tablespaceMounts` section
+of a custom entry, where the key is the name of the tablespace (unique to the
+`pgclusters.crunchydata.com` custom resource entry) and the value is a storage
+configuration as defined in the `pgclusters.crunchydata.com` section above.
+
+For example, to add a tablespace named `lake` to our `hippo` cluster, we can
+open up the editor with the following code:
+
+```
+# this variable is the name of the cluster being created
+export pgo_cluster_name=hippo
+# this variable is the namespace the cluster is being deployed into
+export cluster_namespace=pgo
+
+kubectl edit pgclusters.crunchydata.com -n "${cluster_namespace}" "${pgo_cluster_name}"
+```
+
+and add an entry to the `tablespaceMounts` block that looks similar to this,
+with the addition of the correct storage configuration for your environment:
+
+```
+tablespaceMounts:
+  lake:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    size: 5Gi
+    storageclass: ""
+    storagetype: create
+    supplementalgroups: ""
+```
+
+### pgBouncer
+
+[pgBouncer](https://www.pgbouncer.org/) is a PostgreSQL connection pooler and
+state manager that can be useful for high-availability setups as well as
+managing overall performance of a PostgreSQL cluster. A pgBouncer deployment for
+a PostgreSQL cluster can be fully managed from a `pgclusters.crunchydata.com`
+custom resource.
+
+For example, to add a pgBouncer deployment to our `hippo` cluster with two
+instances and a memory limit of 36Mi, you can edit the custom resource:
+
+```
+# this variable is the name of the cluster being created
+export pgo_cluster_name=hippo
+# this variable is the namespace the cluster is being deployed into
+export cluster_namespace=pgo
+
+kubectl edit pgclusters.crunchydata.com -n "${cluster_namespace}" "${pgo_cluster_name}"
+```
+
+And modify the `pgBouncer` block to look like this:
+
+```
+pgBouncer:
+  limits:
+    memory: 36Mi
+  replicas: 2
+```
+
+Likewise, to remove pgBouncer from a PostgreSQL cluster, you would set
+`replicas` to `0`:
+
+```
+pgBouncer:
+  replicas: 0
+```
+
+### Start / Stop a Cluster
+
+A PostgreSQL cluster can be start and stopped by toggling the `shutdown`
+parameter in a `pgclusters.crunchydata.com` custom resource. Setting `shutdown`
+to `true` will stop a PostgreSQL cluster, whereas a value of `false` will make
+a cluster available. This affects all of the associated instances of a
+PostgreSQL cluster.
