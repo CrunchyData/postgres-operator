@@ -23,7 +23,7 @@ Variable | Example | Description
 -------- | ------- | -----------
 `GOPATH` | $HOME/odev | Golang project directory
 `PGOROOT` | $GOPATH/src/github.com/crunchydata/postgres-operator | Operator repository location
-`PGO_BASEOS` | centos7 | Base OS for container images
+`PGO_BASEOS` | {{< param centosBase >}} | Base OS for container images
 `PGO_CMD` | kubectl | Cluster management tool executable
 `PGO_IMAGE_PREFIX` | crunchydata | Container image prefix
 `PGO_OPERATOR_NAMESPACE` | pgo | Kubernetes namespace for the operator
