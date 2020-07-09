@@ -107,7 +107,7 @@ which yields output similar to:
 BasicAuth: ""
 Cluster:
   CCPImagePrefix: crunchydata
-  CCPImageTag: centos7-12.3-{{< param operatorVersion >}}
+  CCPImageTag: centos7-{{< param postgresVersion >}}-{{< param operatorVersion >}}
   Policies: ""
   Metrics: false
   Badger: false
@@ -178,7 +178,7 @@ Claims:                  8
 Total Volume Size:       8Gi       
 
 Database Images:
-                         4	crunchydata/crunchy-postgres-ha:centos7-12.3-{{< param operatorVersion >}}
+                         4	crunchydata/crunchy-postgres-ha:centos7-{{< param postgresVersion >}}-{{< param operatorVersion >}}
                          4	crunchydata/pgo-backrest-repo:centos7-{{< param operatorVersion >}}
                          8	crunchydata/pgo-backrest:centos7-{{< param operatorVersion >}}
 
@@ -360,7 +360,7 @@ pgo create cluster hacluster2 --restore-from=hacluster1
 ```
 
 When using this approach, a `pgbackrest restore` will be performed using the pgBackRest
-repository for the `restore-from` cluster specified in order to populate the initial 
+repository for the `restore-from` cluster specified in order to populate the initial
 `PGDATA` directory for the new PostgreSQL cluster.  By default, pgBackRest will restore
 to the latest backup available and replay all WAL.  However, a `restore-opts` option
 is also available that allows the `restore` command to be further customized, e.g. to
@@ -420,7 +420,7 @@ pgo show cluster hacluster
 which will yield output similar to:
 
 ```
-cluster : hacluster (crunchy-postgres-ha:centos7-12.3-{{< param operatorVersion >}})
+cluster : hacluster (crunchy-postgres-ha:centos7-{{< param postgresVersion >}}-{{< param operatorVersion >}})
 	pod : hacluster-6dc6cfcfb9-f9knq (Running) on node01 (1/1) (primary)
 	pvc : hacluster
 	resources : CPU Limit= Memory Limit=, CPU Request= Memory Request=
