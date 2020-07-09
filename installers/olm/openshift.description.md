@@ -124,7 +124,7 @@ Create an external service or forward a port locally.
 
 ```
 oc -n "$PGO_OPERATOR_NAMESPACE" expose deployment postgres-operator
-oc -n "$PGO_OPERATOR_NAMESPACE" create route postgres-operator --service=postgres-operator
+oc -n "$PGO_OPERATOR_NAMESPACE" create route passthrough postgres-operator --service=postgres-operator
 
 export PGO_APISERVER_URL="https://$(oc -n "$PGO_OPERATOR_NAMESPACE" get route postgres-operator -o jsonpath="{.spec.host}")"
 ```

@@ -1,4 +1,5 @@
 .DEFAULT_GOAL := help
+.SUFFIXES:
 
 CCP_IMAGE_PREFIX ?= registry.developers.crunchydata.com/crunchydata
 CCP_IMAGE_TAG ?= $(PGO_BASEOS)-$(CCP_PG_FULLVERSION)-$(PGO_VERSION)
