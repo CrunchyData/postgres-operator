@@ -209,8 +209,9 @@ func GeneratedPasswordValidUntilDays(configuredValidUntilDays string) int {
 	return validUntilDays
 }
 
-// GetPrimaryPod gets the Pod of the primary PostgreSQL instance. If somehow
-// the query gets multiple pods, then the first one in the list is returned
+// GetPrimaryPod gets the Pod of the primary PostgreSQL instance. We then try
+// to match the Pod to the labl of the current primary based on the CRD. If we
+// cannot find it, then we default to using the first pod in the list.
 func GetPrimaryPod(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (*v1.Pod, error) {
 	// set up the selector for the primary pod
 	selector := fmt.Sprintf("%s=%s,%s=%s",
@@ -231,9 +232,16 @@ func GetPrimaryPod(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (*v1
 		return nil, err
 	}
 
-	// Grab the first pod from the list as this is presumably the primary pod
-	pod := pods.Items[0]
-	return &pod, nil
+	// try to patch the pod based on the current primary from the CRD
+	for _, pod := range pods.Items {
+		if instanceName, ok := pod.ObjectMeta.GetLabels()[config.LABEL_DEPLOYMENT_NAME]; ok && instanceName == cluster.CurrentPrimary() {
+			return &pod, nil
+		}
+	}
+
+	// if we can't find anything from the above for whatever reason, return the
+	// first Pod, as it technically has the primary label
+	return &(pods.Items[0]), nil
 }
 
 // GetS3CredsFromBackrestRepoSecret retrieves the AWS S3 credentials, i.e. the key and key
