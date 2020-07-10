@@ -315,9 +315,16 @@ func (l *LocalDB) getLocalConfigFromCluster(configName string) (*LocalDBConfig, 
 	dbPodList, err := l.kubeclientset.CoreV1().Pods(namespace).List(metav1.ListOptions{
 		LabelSelector: selector,
 	})
+
 	if err != nil {
 		return nil, err
 	}
+
+	// if the pod list is empty, also return an error
+	if len(dbPodList.Items) == 0 {
+		return nil, fmt.Errorf("no pod found for %q", clusterName)
+	}
+
 	dbPod := &dbPodList.Items[0]
 
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(l.restConfig, l.kubeclientset, readConfigCMD,
