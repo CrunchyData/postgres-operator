@@ -1000,8 +1000,8 @@ accept both TLS and non-TLS connections, execute the following command:
 
 ```shell
 pgo create cluster hacluster-tls \
-  --server-ca-secret=hacluster-tls-keypair \
-  --server-tls-secret=postgresql-ca
+  --server-ca-secret=postgresql-ca \
+  --server-tls-secret=hacluster-tls-keypair
 ```
 
 Including the `--server-ca-secret` and `--server-tls-secret` flags automatically
