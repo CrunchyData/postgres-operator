@@ -39,7 +39,7 @@ db_user: "testuser"
 delete_metrics_namespace: false
 disable_auto_failover: false
 disable_fsgroup: false
-dynamic_rbac: false
+reconcile_rbac: true
 exporterport: "9187"
 grafana_admin_password: ""
 grafana_admin_username: "admin"

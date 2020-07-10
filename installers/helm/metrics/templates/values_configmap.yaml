@@ -25,7 +25,7 @@ data:
     delete_metrics_namespace: "{{ .Values.delete_metrics_namespace}}"
     disable_auto_failover: "{{ .Values.disable_auto_failover}}"
     disable_fsgroup: "{{ .Values.disable_fsgroup}}"
-    dynamic_rbac: "{{ .Values.dynamic_rbac}}"
+    reconcile_rbac: "{{ .Values.reconcile_rbac}}"
     exporterport: "{{ .Values.exporterport}}"
     grafana_admin_password: "{{ .Values.grafana_admin_password}}"
     grafana_admin_username: "{{ .Values.grafana_admin_username}}"

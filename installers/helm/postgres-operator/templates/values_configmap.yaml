@@ -37,7 +37,7 @@ data:
     delete_watched_namespaces: "{{ .Values.delete_watched_namespaces}}"
     disable_auto_failover: "{{ .Values.disable_auto_failover}}"
     disable_fsgroup: "{{ .Values.disable_fsgroup}}"
-    dynamic_rbac: "{{ .Values.dynamic_rbac}}"
+    reconcile_rbac: "{{ .Values.reconcile_rbac}}"
     exporterport: "{{ .Values.exporterport}}"
     metrics: "{{ .Values.metrics}}"
     namespace: "{{ .Values.namespace}}"
