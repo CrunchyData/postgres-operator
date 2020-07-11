@@ -37,10 +37,12 @@ var (
 )
 
 var cloneCmd = &cobra.Command{
-	Use:   "clone",
-	Short: "Copies the primary database of an existing cluster to a new cluster",
+	Use:        "clone",
+	Deprecated: `Use "pgo create cluster newcluster --restore-from=oldcluster" instead. "pgo clone" will be removed in a future release.`,
+	Short:      "Copies the primary database of an existing cluster to a new cluster",
 	Long: `Clone makes a copy of an existing PostgreSQL cluster managed by the Operator and creates a new PostgreSQL cluster managed by the Operator, with the data from the old cluster.
 
+	pgo create cluster newcluster --restore-from=oldcluster
 	pgo clone oldcluster newcluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 		// if the namespace is not specified, default to the PGONamespace specified
