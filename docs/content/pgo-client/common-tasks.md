@@ -638,42 +638,96 @@ pgo create schedule hacluster --schedule="0 0 * * *" \
 ### Restore a Cluster
 
 The PostgreSQL Operator supports the ability to perform a full restore on a
-PostgreSQL cluster as well as a point-in-time-recovery using the `pgo restore`
-command. Note that both of these options are **destructive** to the existing
-PostgreSQL cluster; to "restore" the PostgreSQL cluster to a new deployment,
-please see the [clone](#clone-a-postgresql-cluster) section.
+PostgreSQL cluster (i.e. a "clone" or "copy") as well as a
+point-in-time-recovery. There are two types of ways to restore a cluster:
 
-After a restore, there are some cleanup steps you will need to perform. Please
-review the [Post Restore Cleanup](#post-restore-cleanup) section.
+- Restore to a new cluster using the `--restore-from` flag in the
+[`pgo create cluster`]({{< relref "/pgo-client/reference/pgo_create_cluster.md" >}})
+command. This is effectively a [clone](#clone-a-postgresql-cluster) or a copy.
+- Restore in-place using the [`pgo restore`]({{< relref "/pgo-client/reference/pgo_restore.md" >}})
+command. Note that this is **destructive**.
 
-#### Full Restore
+It is typically better to perform a restore to a new cluster, particularly when
+performing a point-in-time-recovery, as it can allow you to more effectively
+manage your downtime and avoid making undesired changes to your production data.
 
-To perform a full restore of a PostgreSQL cluster, you can execute the following
-command:
+Additionally, the "restore to a new cluster" technique works so long as you have
+a pgBackRest repository available: the pgBackRest repository does not need to be
+attached to an active cluster! For example, if a cluster named `hippo` was
+deleted as such:
 
-```shell
-pgo restore hacluster
+```
+pgo delete cluster hippo --keep-backups
 ```
 
-If you want your PostgreSQL cluster to be restored to a specific node, you can
+you can create a new cluster from the backups like so:
+
+```
+pgo create cluster datalake --restore-from=hippo
+```
+
+Below provides guidance on how to perform a restore to a new PostgreSQL cluster
+both as a full copy and to a specific point in time. Additionally, it also
+shows how to restore in place to a specific point in time.
+
+#### Restore to a New Cluster (aka "copy" or "clone")
+
+Restoring to a new PostgreSQL cluster allows one to take a backup and create a
+new PostgreSQL cluster that can run alongside an existing PostgreSQL cluster.
+There are several scenarios where using this technique is helpful:
+
+- Creating a copy of a PostgreSQL cluster that can be used for other purposes.
+Another way of putting this is "creating a clone."
+- Restore to a point-in-time and inspect the state of the data without affecting
+the current cluster
+
+and more.
+
+##### Full Restore
+
+To create a new PostgreSQL cluster from a backup and restore it fully, you can
 execute the following command:
 
-```shell
-pgo restore hacluster --node-label=failure-domain.beta.kubernetes.io/zone=us-central1-a
+```
+pgo create cluster newcluster --restore-from=oldcluster
 ```
 
-There are very few reasons why you will want to execute a full restore. If you
-want to make a copy of your PostgreSQL cluster, please use
-[`pgo clone`](/pgo-client/reference/pgo_clone).
+##### Point-in-time-Recovery (PITR)
 
-#### Point-in-time-Recovery (PITR)
+To create a new PostgreSQL cluster and restore it to specific point-in-time
+(e.g. before a key table was dropped), you can use the following command,
+substituting the time that you wish to restore to:
+
+```
+pgo create cluster newcluster \
+  --restore-from oldcluster \
+  --restore-opts "--type=time --target='2019-12-31 11:59:59.999999+00'"
+```
+
+When the restore is complete, the cluster is immediately available for reads and
+writes. To inspect the data before allowing connections, add pgBackRest's
+`--target-action=pause` option to the `--restore-opts` parameter.
+
+The PostgreSQL Operator supports the full set of pgBackRest restore options,
+which can be passed into the `--backup-opts` parameter. For more information,
+please review the [pgBackRest restore options](https://pgbackrest.org/command.html#command-restore)
+
+#### Restore in-place
+
+Restoring a PostgreSQL cluster in-place is a **destructive** action that will
+perform a recovery on your existing data directory. This is accomplished using
+the [`pgo restore`]({{< relref "/pgo-client/reference/pgo_restore.md" >}})
+command. The most common scenario is to restore the database to a specific point
+in time.
+
+##### Point-in-time-Recovery (PITR)
 
 The more likely scenario when performing a PostgreSQL cluster restore is to
 recover to a particular point-in-time (e.g. before a key table was dropped). For
-example, to restore a cluster to December 23, 2019 at 8:00am:
+example, to restore a cluster to December 31, 2019 at 11:59pm:
 
-```shell
-pgo restore hacluster --pitr-target="2019-12-23 08:00:00.000000+00" \
+```
+pgo restore hacluster --pitr-target="2019-12-31 11:59:59.999999+00" \
   --backup-opts="--type=time"
 ```
 
@@ -685,13 +739,11 @@ The PostgreSQL Operator supports the full set of pgBackRest restore options,
 which can be passed into the `--backup-opts` parameter. For more information,
 please review the [pgBackRest restore options](https://pgbackrest.org/command.html#command-restore)
 
-#### Post Restore Cleanup
+Using this technique, after a restore is complete, you will need to re-enable
+high availability on the PostgreSQL cluster manually. You can re-enable high
+availability by executing the following command:
 
-After a restore is complete, you will need to re-enable high-availability on a
-PostgreSQL cluster manually. You can re-enable high-availability by executing
-the following command:
-
-```shell
+```
 pgo update cluster hacluster --autofail=true
 ```
 
@@ -917,14 +969,26 @@ section of the documentation.
 ## Clone a PostgreSQL Cluster
 
 You can create a copy of an existing PostgreSQL cluster in a new PostgreSQL
-cluster by using the [`pgo clone`](/pgo-client/reference/pgo_clone/) command.
-The command copies the pgBackRest repository from the existing cluster and
-creates a new, single instance primary as its own cluster. To
-create the new, single instance, copy of a PostgreSQL cluster, you can execute
-the following command:
+cluster by using the [`pgo create cluster`]({{< relref "/pgo-client/reference/pgo_create_cluster.md" >}})
+command with the `--restore-from` flag (and, if needed, `--restore-opts`).
+The command copies the pgBackRest repository from either an active PostgreSQL
+cluster, or a pgBackRest repository that exists from a former cluster that was
+deleted using `pgo delete cluster --keep-backups`.
 
-```shell
+You can clone a PostgreSQL cluster by running the following command:
+
+```
 pgo clone hacluster newhacluster
+```
+
+By leveraging `pgo create cluster`, you are able to copy the data from a
+PostgreSQL cluster while creating the topology of a new cluster the way you want
+to. For instance, if you want to copy data from an existing cluster that does
+not have metrics to a new cluster that does, you can accomplish that with the
+following command:
+
+```
+pgo create cluster newcluster --restore-from=oldcluster --metrics
 ```
 
 ### Clone a PostgreSQL Cluster to Different PVC Size
@@ -935,7 +999,7 @@ clone a PostgreSQL cluster to a 256GiB PVC, you can execute the following
 command:
 
 ```shell
-pgo clone hacluster newhacluster --pvc-size=256Gi
+pgo create cluster bighippo --restore-from=hippo  --pvc-size=256Gi
 ```
 
 You can also have the cloned PostgreSQL cluster use a larger pgBackRest
@@ -944,7 +1008,7 @@ PostgreSQL cluster use a 1TiB pgBackRest repository, you can execute the
 following command:
 
 ```shell
-pgo clone hacluster newhacluster --pgbackrest-pvc-size=1Ti
+pgo create cluster bighippo --restore-from=hippo --pgbackrest-pvc-size=1Ti
 ```
 
 ## Enable TLS
