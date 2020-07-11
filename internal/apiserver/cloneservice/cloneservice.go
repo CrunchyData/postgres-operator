@@ -45,7 +45,8 @@ func CloneHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var username, ns string
 
-	log.Debug("cloneservice.CloneHanlder called")
+	log.Debug("cloneservice.CloneHandler called")
+	log.Warn(`cloneservice.CloneHandler is deprecated. Please use "pgo create cluster --restore-from" instead.`)
 
 	var request msgs.CloneRequest
 	_ = json.NewDecoder(r.Body).Decode(&request)
