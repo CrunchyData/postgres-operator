@@ -45,7 +45,7 @@ Choose between [asynchronous replication](https://access.crunchydata.com/documen
 
 #### Clone
 
-Create new clusters from your existing clusters with a simple [`pgo clone`](https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/reference/pgo_clone/) command.
+Create new clusters from your existing clusters or backups with [`pgo create cluster --restore-from`](https://access.crunchydata.com/documentation/postgres-operator/latest/pgo_create_cluster).
 
 #### Connection Pooling
 

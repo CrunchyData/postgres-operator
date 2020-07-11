@@ -50,7 +50,7 @@ Choose between [asynchronous replication](/architecture/high-availability/) and 
 
 #### Clone
 
-Create new clusters from your existing clusters with a simple [`pgo clone`](/pgo-client/reference/pgo_clone/) command.
+Create new clusters from your existing clusters or backups with [`pgo create cluster --restore-from`](/pgo-client/reference/pgo_create_cluster/).
 
 #### Connection Pooling
 

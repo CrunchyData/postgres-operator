@@ -69,7 +69,7 @@ different lifecycle events that occur on a PostgreSQL cluster, including:
 and is available after a downtime event
 - Disaster Recovery: Tablespaces are backed up and are properly restored during
 a recovery
-- Clone: Tablespaces are created in any cloned cluster
+- Clone: Tablespaces are created in any cloned or restored cluster
 - Deprovisioining: Tablespaces are deleted when a PostgreSQL instance or cluster
 is deleted
 
