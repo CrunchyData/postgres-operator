@@ -2,7 +2,7 @@ baseURL= ""
 
 languageCode = "en-us"
 DefaultContentLanguage = "en"
-title = "Crunchy Data PostgreSQL Operator Documentation"
+title = "Crunchy PostgreSQL Operator Documentation"
 theme = "crunchy-hugo-theme"
 pygmentsCodeFences = true
 pygmentsStyle = "monokailight"
