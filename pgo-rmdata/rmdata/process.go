@@ -40,6 +40,8 @@ const (
 	tablespacePathFormat = "/tablespaces/%s/%s"
 	// the tablespace on a replcia follows the pattern "<replicaName-tablespace-.."
 	tablespaceReplicaPVCPattern = "%s-tablespace-"
+	// the WAL PVC has the following suffix
+	walPVCSuffix = "-wal"
 
 	// the following constants define the suffixes for the various configMaps created by Patroni
 	configConfigMapSuffix   = "config"
@@ -505,11 +507,12 @@ func getReplicaPVC(request Request) ([]string, error) {
 	//when isReplica=true
 	pvcList = append(pvcList, request.ReplicaName)
 
-	// see if there are any tablespaces assigned to this replica, and add them to
-	// the list
+	// see if there are any tablespaces or WAL volumes assigned to this replica,
+	// and add them to the list.
+	//
 	// ...this is a bit janky, as we have to iterate through ALL the PVCs
 	// associated with this managed cluster, and pull out anyones that have a name
-	// with the pattern "<replicaName-tablespace>"
+	// with the pattern "<replicaName-tablespace>" or "<replicaName-wal>"
 	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName)
 
 	// get all of the PVCs that are specific to this replica and remove them
@@ -528,7 +531,7 @@ func getReplicaPVC(request Request) ([]string, error) {
 		pvcName := pvc.ObjectMeta.Name
 
 		// it does not start with the tablespace replica PVC pattern, continue
-		if !strings.HasPrefix(pvcName, tablespaceReplicaPVCPrefix) {
+		if !(strings.HasPrefix(pvcName, tablespaceReplicaPVCPrefix) || strings.HasSuffix(pvcName, walPVCSuffix)) {
 			continue
 		}
 
