@@ -131,7 +131,7 @@ func ShowClusterHandler(w http.ResponseWriter, r *http.Request) {
 	namespace := request.Namespace
 	allflag := request.AllFlag
 
-	log.Debugf("ShowClusterHandler: parameters name [%s] selector [%s] ccpimagetag [%s] version [%s] namespace [%s] allflag [%s]", clustername, selector, ccpimagetag, clientVersion, namespace, allflag)
+	log.Debugf("ShowClusterHandler: parameters name [%s] selector [%s] ccpimagetag [%s] version [%s] namespace [%s] allflag [%v]", clustername, selector, ccpimagetag, clientVersion, namespace, allflag)
 
 	username, err := apiserver.Authn(apiserver.SHOW_CLUSTER_PERM, w, r)
 	if err != nil {
@@ -206,7 +206,7 @@ func DeleteClusterHandler(w http.ResponseWriter, r *http.Request) {
 	deleteData := request.DeleteData
 	deleteBackups := request.DeleteBackups
 
-	log.Debugf("DeleteClusterHandler: parameters namespace [%s] selector [%s] delete-data [%t] delete-backups [%t]", namespace, selector, clientVersion, deleteData, deleteBackups)
+	log.Debugf("DeleteClusterHandler: parameters namespace [%s] selector [%s] delete-data [%t] delete-backups [%t]", namespace, selector, deleteData, deleteBackups)
 
 	username, err := apiserver.Authn(apiserver.DELETE_CLUSTER_PERM, w, r)
 	if err != nil {

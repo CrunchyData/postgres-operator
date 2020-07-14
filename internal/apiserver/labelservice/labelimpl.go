@@ -483,7 +483,7 @@ func deleteTheLabel(deployment *v1.Deployment, clusterName string, labelsMap map
 
 	_, err = apiserver.Clientset.AppsV1().Deployments(ns).Patch(deployment.Name, types.MergePatchType, patchBytes, "")
 	if err != nil {
-		log.Debugf("error patching deployment ", err.Error())
+		log.Debugf("error patching deployment: %v", err.Error())
 	}
 	return err
 

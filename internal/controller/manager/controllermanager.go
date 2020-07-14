@@ -304,7 +304,7 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 		pgoInformerFactory.Crunchydata().V1().Pgclusters(),
 		*c.pgoConfig.Pgo.ConfigMapWorkerCount)
 	if err != nil {
-		log.Errorf("Unable to create ConfigMap controller: %w", err)
+		log.Errorf("Unable to create ConfigMap controller: %v", err)
 		return err
 	}
 
