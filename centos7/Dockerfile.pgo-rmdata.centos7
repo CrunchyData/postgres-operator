@@ -11,6 +11,6 @@ LABEL name="pgo-rmdata" \
 
 ADD bin/pgo-rmdata/ /usr/local/bin
 
-USER 0
+USER 2
 
 CMD ["/usr/local/bin/start.sh"]
