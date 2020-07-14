@@ -106,12 +106,6 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	// the handlers called below are only applicable to PG pods when the cluster is
-	// in an initialized status
-	if cluster.Status.State != crv1.PgclusterStateInitialized || !isPostgresPod(newPod) {
-		return
-	}
-
 	// Handle the "role" label change from "replica" to "primary" following a failover.  This
 	// logic is only triggered when the cluster has already been initialized, which implies
 	// a failover or switchover has occurred.
