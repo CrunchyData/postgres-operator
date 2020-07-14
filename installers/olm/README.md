@@ -10,4 +10,4 @@ tests. Consult the [technical requirements][hub-contrib] when making changes.
 [hub-listing]: https://operatorhub.io/operator/postgresql
 [olm-csv]: https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/building-your-csv.md
 [OLM]: https://github.com/operator-framework/operator-lifecycle-manager
-[scorecard]: https://github.com/operator-framework/operator-sdk/blob/master/doc/test-framework/scorecard.md
+[scorecard]: https://sdk.operatorframework.io/docs/scorecard/
