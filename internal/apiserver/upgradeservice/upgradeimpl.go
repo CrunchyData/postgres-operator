@@ -222,7 +222,7 @@ func supportedOperatorVersion(version string) bool {
 	// then the upgrade cannot continue
 	minor, err := strconv.Atoi(operatorVersion[2])
 	if err != nil {
-		log.Errorf("Cannot convert Postgres Operator's minor version to an integer. Error: ", err)
+		log.Errorf("Cannot convert Postgres Operator's minor version to an integer. Error: %v", err)
 		return false
 	}
 	if minor < MINIMUM_MINOR_PGO_VERSION || minor > MAXIMUM_MINOR_PGO_VERSION {

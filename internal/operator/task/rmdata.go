@@ -56,7 +56,7 @@ func RemoveData(namespace string, clientset kubernetes.Interface, restclient *re
 	//create marker (clustername, namespace)
 	err := PatchpgtaskDeleteDataStatus(restclient, task, namespace)
 	if err != nil {
-		log.Error("could not set delete data started marker for task %s cluster %s", task.Spec.Name, task.Spec.Parameters[config.LABEL_PG_CLUSTER])
+		log.Errorf("could not set delete data started marker for task %s cluster %s", task.Spec.Name, task.Spec.Parameters[config.LABEL_PG_CLUSTER])
 		return
 	}
 

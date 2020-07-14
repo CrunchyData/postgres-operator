@@ -339,7 +339,7 @@ func getServices(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterService,
 func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterTestResponse {
 	var err error
 
-	log.Debugf("TestCluster(%s,%s,%s,%s,%s): Called",
+	log.Debugf("TestCluster(%s,%s,%s,%s,%v): Called",
 		name, selector, ns, pgouser, allFlag)
 
 	response := msgs.ClusterTestResponse{}
@@ -355,7 +355,7 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 	// be used
 	if selector == "" {
 		if allFlag {
-			log.Debug("selector is : all clusters in %s", ns)
+			log.Debugf("selector is : all clusters in %s", ns)
 		} else {
 			selector = "name=" + name
 			log.Debugf("selector is: %s", selector)
@@ -446,7 +446,7 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 			case msgs.PodTypeReplica:
 				instance.InstanceType = msgs.ClusterTestInstanceTypeReplica
 			}
-			log.Debugf("Instance found with attributes: (%s, %s, %s)",
+			log.Debugf("Instance found with attributes: (%s, %s, %v)",
 				instance.InstanceType, instance.Message, instance.Available)
 			// Add the report on the pods to this set
 			result.Instances = append(result.Instances, instance)
@@ -514,7 +514,7 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 				}
 			}
 
-			log.Debugf("Endpoint found with attributes: (%s, %s, %s)",
+			log.Debugf("Endpoint found with attributes: (%s, %s, %v)",
 				endpoint.InstanceType, endpoint.Message, endpoint.Available)
 
 			// append the endpoint to the list
@@ -1699,7 +1699,7 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]string, 0)
 
-	log.Debugf("autofail is [%t]\n", request.Autofail)
+	log.Debugf("autofail is [%v]\n", request.Autofail)
 
 	switch {
 	case request.Startup && request.Shutdown:

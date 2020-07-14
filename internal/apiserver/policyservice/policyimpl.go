@@ -220,7 +220,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 			return resp
 		}
 		if len(deployments.Items) < 1 {
-			log.Error("%s  did not have a deployment for some reason", c.Name)
+			log.Errorf("%s  did not have a deployment for some reason", c.Name)
 		} else {
 			allDeployments = append(allDeployments, deployments.Items[0])
 		}
@@ -239,7 +239,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 
 	for _, d := range allDeployments {
 		if d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] != d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] {
-			log.Debug("skipping apply policy on deployment %s", d.Name)
+			log.Debugf("skipping apply policy on deployment %s", d.Name)
 			continue
 			//skip non primary deployments
 		}

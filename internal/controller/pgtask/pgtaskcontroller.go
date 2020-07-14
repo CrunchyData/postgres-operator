@@ -117,7 +117,7 @@ func (c *Controller) processNextItem() bool {
 		if !dupeFailover(c.PgtaskClient, &tmpTask, keyNamespace) {
 			clusteroperator.FailoverBase(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask, c.PgtaskConfig)
 		} else {
-			log.Debug("skipping duplicate onAdd failover task %s/%s", keyNamespace, keyResourceName)
+			log.Debugf("skipping duplicate onAdd failover task %s/%s", keyNamespace, keyResourceName)
 		}
 
 	case crv1.PgtaskDeleteData:
@@ -125,7 +125,7 @@ func (c *Controller) processNextItem() bool {
 		if !dupeDeleteData(c.PgtaskClient, &tmpTask, keyNamespace) {
 			taskoperator.RemoveData(keyNamespace, c.PgtaskClientset, c.PgtaskClient, &tmpTask)
 		} else {
-			log.Debug("skipping duplicate onAdd delete data task %s/%s", keyNamespace, keyResourceName)
+			log.Debugf("skipping duplicate onAdd delete data task %s/%s", keyNamespace, keyResourceName)
 		}
 	case crv1.PgtaskDeleteBackups:
 		log.Debug("delete backups task added")
@@ -150,7 +150,7 @@ func (c *Controller) processNextItem() bool {
 		log.Debugf("workflow task added [%s] ID [%s]", keyResourceName, tmpTask.Spec.Parameters[crv1.PgtaskWorkflowID])
 
 	case crv1.PgtaskCloneStep1, crv1.PgtaskCloneStep2, crv1.PgtaskCloneStep3:
-		log.Debug("clone task added [%s]", keyResourceName)
+		log.Debugf("clone task added [%s]", keyResourceName)
 		clusteroperator.Clone(c.PgtaskClientset, c.PgtaskClient, c.PgtaskConfig, keyNamespace, &tmpTask)
 
 	default:

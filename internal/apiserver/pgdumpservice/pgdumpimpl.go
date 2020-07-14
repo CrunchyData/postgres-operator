@@ -237,7 +237,7 @@ func ShowpgDump(clusterName string, selector string, ns string) msgs.ShowBackupR
 			// nothing found, no error
 			log.Debugf("pgTask %s not found, no erros", pgTaskName)
 			response.Status.Code = msgs.Ok
-			response.Status.Msg = fmt.Sprintln("pgDump %s not found.", pgTaskName)
+			response.Status.Msg = fmt.Sprintf("pgDump %s not found.", pgTaskName)
 		}
 
 	}
