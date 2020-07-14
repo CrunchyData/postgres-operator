@@ -190,10 +190,10 @@ func TestClusterBackup(t *testing.T) {
 						}
 						return len(after) > len(before)
 					}
-					requireWaitFor(t, more, 2*time.Minute, time.Second,
-						"timeout waiting for restore of %q in %q", cluster(), namespace())
+					requireWaitFor(t, more, time.Minute, time.Second,
+						"timeout waiting for restore to begin on %q in %q", cluster(), namespace())
 
-					requireClusterReady(t, namespace(), cluster(), time.Minute)
+					requireClusterReady(t, namespace(), cluster(), 2*time.Minute)
 				})
 			})
 
@@ -254,7 +254,7 @@ func TestClusterBackup(t *testing.T) {
 							strings.Contains(stdout, "(1 row)")
 					}
 					requireWaitFor(t, restored, 2*time.Minute, time.Second,
-						"timeout waiting for restore of %q in %q", cluster(), namespace())
+						"timeout waiting for restore to finish on %q in %q", cluster(), namespace())
 
 					requireClusterReady(t, namespace(), cluster(), time.Minute)
 				})
