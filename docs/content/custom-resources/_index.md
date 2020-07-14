@@ -243,7 +243,7 @@ environment requires it, you can also use RSA keys.
 
 In your working directory, run the following commands:
 
-```
+<pre style="overflow-x: auto; white-space: pre-wrap; white-space: -moz-pre-wrap; white-space: -pre-wrap; white-space: -o-pre-wrap; word-wrap: break-word;">
 # this variable is the name of the cluster being created
 export pgo_cluster_name=hippo
 # this variable is the namespace the cluster is being deployed into
@@ -283,7 +283,7 @@ unset pgbackrest_public_key pgbackrest_private_key
 
 # create the pgBackRest secret
 kubectl apply -f "${pgo_cluster_name}-backrest-repo-config.yaml"
-```
+</pre>
 
 #### Step 2: Creating the PostgreSQL User Secrets
 
