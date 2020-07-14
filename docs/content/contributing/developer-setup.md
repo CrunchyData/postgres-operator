@@ -62,8 +62,8 @@ The setup target ensures the presence of:
 
 * `GOPATH` and `PATH` as described in the prerequisites
 * EPEL yum repository
-* golang compiler
-* `dep` dependency manager
+* [`go`](https://golang.org/) compiler version 1.13+
+* [`dep`](https://golang.github.io/dep/) dependency manager
 * NSQ messaging binaries
 * `docker` container tool
 * `buildah` OCI image building tool
