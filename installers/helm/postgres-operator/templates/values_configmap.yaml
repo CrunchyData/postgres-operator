@@ -8,7 +8,7 @@ metadata:
 data:
   values.yaml: |
     ---
-    archive_mode: "{{ .Values.archive_mode}}"
+    archive_mode: {{ .Values.archive_mode}}
     archive_timeout: "{{ .Values.archive_timeout}}"
     backrest_aws_s3_bucket: "{{ .Values.backrest_aws_s3_bucket}}"
     backrest_aws_s3_endpoint: "{{ .Values.backrest_aws_s3_endpoint}}"
@@ -16,15 +16,15 @@ data:
     backrest_aws_s3_region: "{{ .Values.backrest_aws_s3_region}}"
     backrest_aws_s3_secret: "{{ .Values.backrest_aws_s3_secret}}"
     backrest_aws_s3_uri_style: "{{ .Values.backrest_aws_s3_uri_style }}"
-    backrest_aws_s3_verify_tls: "{{ .Values.backrest_aws_s3_verify_tls }}"
+    backrest_aws_s3_verify_tls: {{ .Values.backrest_aws_s3_verify_tls }}
     backrest_port: "{{ .Values.backrest_port}}"
-    badger: "{{ .Values.badger}}"
+    badger: {{ .Values.badger}}
     ccp_image_prefix: "{{ .Values.ccp_image_prefix}}"
     ccp_image_pull_secret: "{{ .Values.ccp_image_pull_secret}}"
     ccp_image_pull_secret_manifest: "{{ .Values.ccp_image_pull_secret_manifest}}"
     ccp_image_tag: "{{ .Values.ccp_image_tag}}"
-    create_rbac: "{{ .Values.create_rbac}}"
-    crunchy_debug: "{{ .Values.crunchy_debug}}"
+    create_rbac: {{ .Values.create_rbac}}
+    crunchy_debug: {{ .Values.crunchy_debug}}
     db_name: "{{ .Values.db_name}}"
     db_password_age_days: "{{ .Values.db_password_age_days}}"
     db_password_length: "{{ .Values.db_password_length}}"
@@ -34,18 +34,18 @@ data:
     default_instance_memory: "{{ .Values.default_instance_memory}}"
     default_pgbackrest_memory: "{{ .Values.default_pgbackrest_memory}}"
     default_pgbouncer_memory: "{{ .Values.default_pgbouncer_memory}}"
-    delete_metrics_namespace: "{{ .Values.delete_metrics_namespace}}"
-    delete_operator_namespace: "{{ .Values.delete_operator_namespace}}"
-    delete_watched_namespaces: "{{ .Values.delete_watched_namespaces}}"
-    disable_auto_failover: "{{ .Values.disable_auto_failover}}"
-    disable_fsgroup: "{{ .Values.disable_fsgroup}}"
-    reconcile_rbac: "{{ .Values.reconcile_rbac}}"
+    delete_metrics_namespace: {{ .Values.delete_metrics_namespace}}
+    delete_operator_namespace: {{ .Values.delete_operator_namespace}}
+    delete_watched_namespaces: {{ .Values.delete_watched_namespaces}}
+    disable_auto_failover: {{ .Values.disable_auto_failover}}
+    disable_fsgroup: {{ .Values.disable_fsgroup}}
+    reconcile_rbac: {{ .Values.reconcile_rbac}}
     exporterport: "{{ .Values.exporterport}}"
-    metrics: "{{ .Values.metrics}}"
+    metrics: {{ .Values.metrics}}
     namespace: "{{ .Values.namespace}}"
     namespace_mode: "{{ .Values.namespace_mode}}"
     pgbadgerport: "{{ .Values.pgbadgerport}}"
-    pgo_add_os_ca_store: "{{ .Values.pgo_add_os_ca_store}}"
+    pgo_add_os_ca_store: {{ .Values.pgo_add_os_ca_store}}
     pgo_admin_password: "{{ .Values.pgo_admin_password}}"
     pgo_admin_perms: "{{ .Values.pgo_admin_perms}}"
     pgo_admin_role_name: "{{ .Values.pgo_admin_role_name}}"
@@ -53,11 +53,11 @@ data:
     pgo_apiserver_port: "{{ .Values.pgo_apiserver_port}}"
     pgo_apiserver_url: "{{ .Values.pgo_apiserver_url}}"
     pgo_client_cert_secret: "{{ .Values.pgo_client_cert_secret}}"
-    pgo_client_container_install: "{{ .Values.pgo_client_container_install}}"
+    pgo_client_container_install: {{ .Values.pgo_client_container_install}}
     pgo_client_version: "{{ .Values.pgo_client_version}}"
-    pgo_cluster_admin: "{{ .Values.pgo_cluster_admin}}"
-    pgo_disable_eventing: "{{ .Values.pgo_disable_eventing}}"
-    pgo_disable_tls: "{{ .Values.pgo_disable_tls}}"
+    pgo_cluster_admin: {{ .Values.pgo_cluster_admin}}
+    pgo_disable_eventing: {{ .Values.pgo_disable_eventing}}
+    pgo_disable_tls: {{ .Values.pgo_disable_tls}}
     pgo_image_prefix: "{{ .Values.pgo_image_prefix}}"
     pgo_image_pull_secret: "{{ .Values.pgo_image_pull_secret}}"
     pgo_image_pull_secret_manifest: "{{ .Values.pgo_image_pull_secret_manifest}}"
@@ -66,13 +66,13 @@ data:
     pgo_noauth_routes: "{{ .Values.pgo_noauth_routes}}"
     pgo_operator_namespace: "{{ .Values.pgo_operator_namespace}}"
     pgo_tls_ca_store: "{{ .Values.pgo_tls_ca_store}}"
-    pgo_tls_no_verify: "{{ .Values.pgo_tls_no_verify}}"
+    pgo_tls_no_verify: {{ .Values.pgo_tls_no_verify}}
     pod_anti_affinity: "{{ .Values.pod_anti_affinity}}"
     pod_anti_affinity_pgbackrest: "{{ .Values.pod_anti_affinity_pgbackrest}}"
     pod_anti_affinity_pgbouncer: "{{ .Values.pod_anti_affinity_pgbouncer}}"
     scheduler_timeout: "{{ .Values.scheduler_timeout}}"
     service_type: "{{ .Values.service_type}}"
-    sync_replication: "{{ .Values.sync_replication}}"
+    sync_replication: {{ .Values.sync_replication}}
     backrest_storage: "{{ .Values.backrest_storage}}"
     backup_storage: "{{ .Values.backup_storage}}"
     primary_storage: "{{ .Values.primary_storage}}"
