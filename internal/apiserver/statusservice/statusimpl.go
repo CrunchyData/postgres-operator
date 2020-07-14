@@ -174,7 +174,7 @@ func getLabels(ns string) []msgs.KeyValue {
 	}
 
 	for k, v := range results {
-		ss = append(ss, msgs.KeyValue{k, v})
+		ss = append(ss, msgs.KeyValue{Key: k, Value: v})
 	}
 
 	sort.Slice(ss, func(i, j int) bool {

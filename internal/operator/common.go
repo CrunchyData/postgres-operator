@@ -369,7 +369,7 @@ func SetupNamespaces(clientset kubernetes.Interface) ([]string, error) {
 	// First set the proper namespace operating mode for the Operator install.  The mode identified
 	// determines whether or not certain namespace capabilities are enabled.
 	if err := setNamespaceOperatingMode(clientset); err != nil {
-		log.Errorf("Error detecting namespace operating mode: %w", err)
+		log.Errorf("Error detecting namespace operating mode: %v", err)
 		return nil, err
 	}
 	log.Debugf("Namespace operating mode is '%s'", NamespaceOperatingMode())
@@ -383,7 +383,7 @@ func SetupNamespaces(clientset kubernetes.Interface) ([]string, error) {
 	// proceed with creating and/or updating any namespaces provided for the installation
 	if err := ns.ConfigureInstallNamespaces(clientset, InstallationName,
 		PgoNamespace, namespaceList, NamespaceOperatingMode()); err != nil {
-		log.Errorf("Unable to setup namespaces: %w", err)
+		log.Errorf("Unable to setup namespaces: %v", err)
 		return nil, err
 	}
 

@@ -244,7 +244,7 @@ func UpdatePgouser(clientset kubernetes.Interface, updatedBy string, request *ms
 	log.Info("Updating secret for: ", request.PgouserName)
 	_, err = clientset.CoreV1().Secrets(apiserver.PgoNamespace).Update(secret)
 	if err != nil {
-		log.Debug("Error updating pgouser secret: ", err.Error)
+		log.Debug("Error updating pgouser secret: ", err.Error())
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp

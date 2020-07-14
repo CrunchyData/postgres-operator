@@ -53,7 +53,7 @@ func ShowPVCHandler(w http.ResponseWriter, r *http.Request) {
 	clientVersion := request.ClientVersion
 	namespace := request.Namespace
 
-	log.Debugf("ShowPVCHandler parameters version [%s] namespace [%s] pvcname [%s] nodeLabel [%]", clientVersion, namespace, clusterName)
+	log.Debugf("ShowPVCHandler parameters version [%s] namespace [%s] pvcname [%s]", clientVersion, namespace, clusterName)
 
 	switch r.Method {
 	case "GET":
