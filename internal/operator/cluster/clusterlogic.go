@@ -740,6 +740,11 @@ func ScaleClusterDeployments(clientset kubernetes.Interface, cluster crv1.Pgclus
 			if !scalePGBouncer {
 				continue
 			}
+			// if the replica total is greater than 0, set number of pgBouncer
+			// replicas to the number that is specified in the cluster entry
+			if replicas > 0 {
+				replicas = int(cluster.Spec.PgBouncer.Replicas)
+			}
 		case deployment.Labels[config.LABEL_PGO_BACKREST_REPO] == "true":
 			clusterInfo.PGBackRestRepoDeployment = deployment.Name
 			// if not scaling services simply move on to the next deployment
