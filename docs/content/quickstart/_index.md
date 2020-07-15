@@ -54,7 +54,7 @@ There are many [configuration parameters]({{< relref "/installation/configuratio
 
 Find the `pgo_admin_password` variable. This is the password you will use with the [`pgo` client]({{< relref "/installation/pgo-client" >}}) to manage your PostgreSQL clusters. The default is `password`, but you can change it to something like `hippo-elephant`.
 
-You will need also need to set the storage default storage classes that you would like the PostgreSQL Operator to use. These variables are called `primary_storage`, `replica_storage`, `backup_storage`, and `backrest_storage`. There are several storage configurations listed out in the configuration file under the heading `storage[1-9]_name`. Find the one that you want to use, and set it to that value.
+You will also need to set the storage default storage classes that you would like the PostgreSQL Operator to use. These variables are called `primary_storage`, `replica_storage`, `backup_storage`, and `backrest_storage`. There are several storage configurations listed out in the configuration file under the heading `storage[1-9]_name`. Find the one that you want to use, and set it to that value.
 
 For example, if your Kubernetes environment is using NFS storage, you would set these variables to the following:
 
@@ -64,6 +64,8 @@ backup_storage: "nfsstorage"
 primary_storage: "nfsstorage"
 replica_storage: "nfsstorage"
 ```
+
+If you are using either Openshift or CodeReady Containers, you will need to set `disable_fsgroup` to 'true' in order to deploy the PostgreSQL Operator in OpenShift environments that have the typical restricted Security Context Constraints.
 
 For a full list of available storage types that can be used with this installation method, please review the [configuration parameters]({{< relref "/installation/configuration.md">}}).
 
