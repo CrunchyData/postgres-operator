@@ -144,51 +144,49 @@ As described in the Namespace Operating Mode section above, when using either th
 clusters within those namespaces.  However,  this can done in one of the following two ways:
 
 1. Assign the `postgres-operator` ServiceAccount the permissions required to create the RBAC it requires
-within the namespace to create PostgreSQL clusters.  This is specifically be done by creating the following
-Role and RoleBinding within the target namespace:
+    within the namespace to create PostgreSQL clusters.  This is specifically be done by creating the following
+    Role and RoleBinding within the target namespace:
 
-    ```yaml
-    ---
-    kind: Role
-    apiVersion: rbac.authorization.k8s.io/v1
-    metadata:
-      name: pgo-local-ns
-      namespace: <target-namespace>
-    rules:
-      - apiGroups:
-          - ''
-        resources:
-          - serviceaccounts
-        verbs:
-          - get
-          - create
-          - delete
-      - apiGroups:
-          - rbac.authorization.k8s.io
-        resources:
-          - roles
-          - rolebindings
-        verbs:
-          - get
-          - create
-          - delete
-          - bind
-          - escalate
-    ---
-    apiVersion: rbac.authorization.k8s.io/v1
-    kind: RoleBinding
-    metadata:
-      name: pgo-local-ns
-      namespace: $TARGET_NAMESPACE
-    roleRef:
-      apiGroup: rbac.authorization.k8s.io
-      kind: Role
-      name: pgo-local-ns
-    subjects:
-    - kind: ServiceAccount
-      name: postgres-operator
-      namespace: <postgresql-operator-namespace>
-    ```
+        ---
+        kind: Role
+        apiVersion: rbac.authorization.k8s.io/v1
+        metadata:
+          name: pgo-local-ns
+          namespace: <target-namespace>
+        rules:
+          - apiGroups:
+              - ''
+            resources:
+              - serviceaccounts
+            verbs:
+              - get
+              - create
+              - delete
+          - apiGroups:
+              - rbac.authorization.k8s.io
+            resources:
+              - roles
+              - rolebindings
+            verbs:
+              - get
+              - create
+              - delete
+              - bind
+              - escalate
+        ---
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: RoleBinding
+        metadata:
+          name: pgo-local-ns
+          namespace: $TARGET_NAMESPACE
+        roleRef:
+          apiGroup: rbac.authorization.k8s.io
+          kind: Role
+          name: pgo-local-ns
+        subjects:
+        - kind: ServiceAccount
+          name: postgres-operator
+          namespace: <postgresql-operator-namespace>
 
     When the PostgreSQL Operator detects that it has the permissions defined in the `pgo-local-ns`
     during initialization, it will create any RBAC it requires within that namespace  (recreating 
