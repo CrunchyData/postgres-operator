@@ -187,11 +187,11 @@ kubectl apply -f /path/to/postgres-operator.yml
 To use the [`pgo` Client]({{< relref "/installation/pgo-client" >}}),
 there are a few additional steps to take in order to get it to work with you
 PostgreSQL Operator installation. For convenience, you can download and run the
-[`client-setup.sh`](https://raw.githubusercontent.com/CrunchyData/postgres-operator/master/installers/kubectl/client-setup.sh)
+[`client-setup.sh`](https://raw.githubusercontent.com/CrunchyData/postgres-operator/v{{< param operatorVersion >}}/installers/kubectl/client-setup.sh)
 script in your local environment:
 
 ```shell
-curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/master/installers/kubectl/client-setup.sh > client-setup.sh
+curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v{{< param operatorVersion >}}/installers/kubectl/client-setup.sh > client-setup.sh
 chmod +x client-setup.sh
 ./client-setup.sh
 ```
@@ -260,7 +260,21 @@ In a new console window, run the following command to set up a port forward:
 kubectl -n pgo port-forward svc/postgres-operator 8443:8443
 ```
 
-In another console window, run the `pgo version` command:
+Next, in another console window, set the following environment variable to configure the API server address:
+
+```bash
+cat <<EOF >> ${HOME?}/.bashrc
+export PGO_APISERVER_URL="https://127.0.0.1:8443"
+EOF
+```
+
+Apply those changes to the current session by running:
+
+```bash
+source ${HOME?}/.bashrc
+```
+
+Now run the `pgo version` command:
 
 ```shell
 pgo version
