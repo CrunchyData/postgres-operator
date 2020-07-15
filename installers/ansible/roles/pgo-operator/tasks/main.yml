@@ -367,7 +367,7 @@
     - install
     - update
   when:
-    - pgo_client_install | default(False) | bool
+    - pgo_client_install | bool
     - not (kubernetes_in_cluster | default(False) | bool)
   block:
     - name: Download PGO Linux Client
@@ -393,7 +393,7 @@
   tags:
     - install
     - update
-  when: pgo_client_container_install | default(False) | bool
+  when: pgo_client_container_install | bool
   block:
     - name: Template PGO-Client Deployment
       template:
