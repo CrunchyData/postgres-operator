@@ -366,7 +366,9 @@
   tags:
     - install
     - update
-  when: pgo_client_install == "true" and kubernetes_in_cluster == "false"
+  when:
+    - pgo_client_install | default(False) | bool
+    - not (kubernetes_in_cluster | default(False) | bool)
   block:
     - name: Download PGO Linux Client
       become: yes
@@ -391,7 +393,7 @@
   tags:
     - install
     - update
-  when: "pgo_client_container_install == 'true'"
+  when: pgo_client_container_install | default(False) | bool
   block:
     - name: Template PGO-Client Deployment
       template:

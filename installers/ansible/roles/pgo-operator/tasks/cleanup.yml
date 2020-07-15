@@ -276,7 +276,7 @@
   file:
     state: absent
     path: "/usr/local/bin/pgo"
-  when: pgo_client_install == "true"
+  when: pgo_client_install | default(False) | bool
   ignore_errors: yes
   no_log: false
   tags: uninstall

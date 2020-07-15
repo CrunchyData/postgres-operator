@@ -1,11 +1,11 @@
 ---
 - include_tasks: "preflight-grafana.yml"
   tags: always
-  when: "grafana_install == 'true'"
+  when: grafana_install | default(False) | bool
 
 - include_tasks: "preflight-prometheus.yml"
   tags: always
-  when: "prometheus_install == 'true'"
+  when: prometheus_install | default(False) | bool
 
 - include_tasks: "{{ tasks }}"
   with_items:
@@ -46,9 +46,9 @@
   tags: always
 
 - include_tasks: prometheus.yml
-  when: prometheus_install == "true"
+  when: prometheus_install | default(False) | bool
   tags: always
 
 - include_tasks: grafana.yml
-  when: grafana_install == "true"
+  when: grafana_install | default(False) | bool
   tags: always
