@@ -28,7 +28,7 @@
   with_items: "{{ nslist.split(',') | map('trim') | list }}"
   when:
     - namespace_mode != 'dynamic'
-    - not (reconcile_rbac | bool)
+    - reconcile_rbac | bool
   tags:
     - install
     - update
@@ -40,7 +40,7 @@
   with_items: "{{ nslist.split(',') | map('trim') | list }}"
   when:
     - namespace_mode != 'dynamic'
-    - not (reconcile_rbac | bool)
+    - reconcile_rbac | bool
   tags:
     - install
     - update
@@ -50,7 +50,7 @@
   with_items: "{{ nslist.split(',') | map('trim') | list }}"
   when:
     - namespace_mode != 'dynamic'
-    - not (reconcile_rbac | bool)
+    - reconcile_rbac | bool
   ignore_errors: yes
   tags:
     - install
@@ -64,7 +64,7 @@
   with_items: "{{ nslist.split(',') | map('trim') | list }}"
   when:
     - namespace_mode != 'dynamic'
-    - not (reconcile_rbac | bool)
+    - reconcile_rbac | bool
   tags:
     - install
     - update
@@ -76,7 +76,7 @@
     mode: '0600'
   when:
     - namespace_mode != 'dynamic'
-    - not (reconcile_rbac | bool)
+    - reconcile_rbac | bool
   tags:
     - install
     - update
@@ -86,7 +86,7 @@
   with_items: "{{ nslist.split(',') | map('trim') | list }}"
   when:
     - namespace_mode != 'dynamic'
-    - not (reconcile_rbac | bool)
+    - reconcile_rbac | bool
   ignore_errors: yes
   tags:
     - install
@@ -97,7 +97,7 @@
   with_items: "{{ nslist.split(',') | map('trim') | list }}"
   when:
     - namespace_mode != 'dynamic'
-    - not (reconcile_rbac | bool)
+    - reconcile_rbac | bool
   tags:
     - install
     - update
