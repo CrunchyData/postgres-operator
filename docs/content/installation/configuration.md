@@ -70,6 +70,7 @@ Operator.
 | `pgo_apiserver_url` | https://postgres-operator |  | Sets the `pgo_apiserver_url` for the `pgo-client` deployment. |
 | `pgo_client_cert_secret` | pgo.tls |  | Sets the secret that the `pgo-client` will use when connecting to the PostgreSQL Operator. |
 | `pgo_client_container_install` | false |  | Run the `pgo-client` deployment with the PostgreSQL Operator. |
+| `pgo_client_install` | true |  | Enable to download the `pgo` client binary as part of the Ansible install |
 | `pgo_client_version` | {{< param operatorVersion >}} | **Required** |  |
 | `pgo_cluster_admin` | false | **Required** | Determines whether or not the cluster-admin role is assigned to the PGO service account. Must be true to enable PGO namespace & role creation when installing in OpenShift. |
 | `pgo_disable_eventing` | false |  | Set to configure whether or not eventing should be enabled for the Crunchy PostgreSQL Operator installation. |
