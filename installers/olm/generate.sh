@@ -2,7 +2,7 @@
 # vim: set noexpandtab :
 set -eu
 
-render() { envsubst '$CCP_IMAGE_PREFIX $CCP_IMAGE_TAG $PACKAGE_NAME $PGO_IMAGE_PREFIX $PGO_IMAGE_TAG $PGO_VERSION'; }
+render() { envsubst '$CCP_IMAGE_PREFIX $CCP_IMAGE_TAG $CCP_POSTGIS_IMAGE_TAG $PACKAGE_NAME $PGO_IMAGE_PREFIX $PGO_IMAGE_TAG $PGO_VERSION'; }
 
 mkdir -p "./package/${PGO_VERSION}"
 
