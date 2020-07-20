@@ -270,7 +270,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 		}
 
 		//update the pgcluster crd labels with the new policy
-		err = labelservice.PatchPgcluster(request.Name+"="+config.LABEL_PGPOLICY, cl, ns)
+		err = labelservice.PatchPgcluster(map[string]string{request.Name: config.LABEL_PGPOLICY}, cl, ns)
 		if err != nil {
 			log.Error(err)
 		}
