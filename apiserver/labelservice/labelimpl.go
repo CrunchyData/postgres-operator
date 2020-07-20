@@ -124,7 +124,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 			log.Debug("dry run only")
 		} else {
 			log.Debugf("adding label to cluster %s", items[i].Spec.Name)
-			err := PatchPgcluster(LabelCmdLabel, items[i], ns)
+			err := PatchPgcluster(newLabels, items[i], ns)
 			if err != nil {
 				log.Error(err.Error())
 			}
@@ -221,11 +221,8 @@ func updateLabels(deployment *v1.Deployment, clusterName string, newLabels map[s
 
 }
 
-func PatchPgcluster(newLabel string, oldCRD crv1.Pgcluster, ns string) error {
+func PatchPgcluster(newLabels map[string]string, oldCRD crv1.Pgcluster, ns string) error {
 
-	fields := strings.Split(newLabel, "=")
-	labelKey := fields[0]
-	labelValue := fields[1]
 	oldData, err := json.Marshal(oldCRD)
 	if err != nil {
 		return err
@@ -233,7 +230,9 @@ func PatchPgcluster(newLabel string, oldCRD crv1.Pgcluster, ns string) error {
 	if oldCRD.ObjectMeta.Labels == nil {
 		oldCRD.ObjectMeta.Labels = make(map[string]string)
 	}
-	oldCRD.ObjectMeta.Labels[labelKey] = labelValue
+	for key, value := range newLabels {
+		oldCRD.ObjectMeta.Labels[key] = value
+	}
 	var newData, patchBytes []byte
 	newData, err = json.Marshal(oldCRD)
 	if err != nil {
@@ -374,7 +373,7 @@ func deleteLabels(items []crv1.Pgcluster, LabelCmdLabel string, labelsMap map[st
 
 	for i := 0; i < len(items); i++ {
 		log.Debugf("deleting label from %s", items[i].Spec.Name)
-		err = deletePatchPgcluster(LabelCmdLabel, items[i], ns)
+		err = deletePatchPgcluster(labelsMap, items[i], ns)
 		if err != nil {
 			log.Error(err.Error())
 			return err
@@ -401,11 +400,8 @@ func deleteLabels(items []crv1.Pgcluster, LabelCmdLabel string, labelsMap map[st
 	return err
 }
 
-func deletePatchPgcluster(newLabel string, oldCRD crv1.Pgcluster, ns string) error {
+func deletePatchPgcluster(labelsMap map[string]string, oldCRD crv1.Pgcluster, ns string) error {
 
-	fields := strings.Split(newLabel, "=")
-	labelKey := fields[0]
-	//labelValue := fields[1]
 	oldData, err := json.Marshal(oldCRD)
 	if err != nil {
 		return err
@@ -413,7 +409,9 @@ func deletePatchPgcluster(newLabel string, oldCRD crv1.Pgcluster, ns string) err
 	if oldCRD.ObjectMeta.Labels == nil {
 		oldCRD.ObjectMeta.Labels = make(map[string]string)
 	}
-	delete(oldCRD.ObjectMeta.Labels, labelKey)
+	for k := range labelsMap {
+		delete(oldCRD.ObjectMeta.Labels, k)
+	}
 
 	var newData, patchBytes []byte
 	newData, err = json.Marshal(oldCRD)
