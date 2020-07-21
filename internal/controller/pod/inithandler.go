@@ -129,13 +129,16 @@ func (c *Controller) handleBootstrapInit(newPod *apiv1.Pod, cluster *crv1.Pgclus
 	namespace := cluster.Namespace
 
 	// determine if restore, and if delete the restore label since it is no longer needed
-	restoreLabelPatch := fmt.Sprintf(`[{"op": "remove", "path": "/metadata/annotations/%s"}]`,
-		config.LABEL_BACKREST_RESTORE)
 	if _, restore := cluster.GetAnnotations()[config.ANNOTATION_BACKREST_RESTORE]; restore {
 		log.Debugf("Pod Controller: restore detected for pgcluster %s, restore annotation will "+
 			"be removed", cluster.GetName())
-		if _, err := c.Client.CrunchydataV1().Pgclusters(namespace).Patch(cluster.GetName(),
-			types.JSONPatchType, []byte(restoreLabelPatch)); err != nil {
+		patch, err := kubeapi.NewJSONPatch().
+			Remove("metadata", "annotations", config.LABEL_BACKREST_RESTORE).Bytes()
+		if err == nil {
+			_, err = c.Client.CrunchydataV1().Pgclusters(namespace).
+				Patch(cluster.GetName(), types.JSONPatchType, patch)
+		}
+		if err != nil {
 			log.Errorf("Pod Controller unable to remove backrest restore annotation from "+
 				"pgcluster %s: %s", cluster.GetName(), err.Error())
 		}
@@ -266,7 +269,10 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 		serviceName = newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] + "-replica"
 	}
 
-	err = kubeapi.AddLabelToPod(c.Client, newpod, config.LABEL_SERVICE_NAME, serviceName, ns)
+	patch, err := kubeapi.NewMergePatch().Add(serviceName, "metadata", "labels", config.LABEL_SERVICE_NAME).Bytes()
+	if err == nil {
+		_, err = c.Client.CoreV1().Pods(ns).Patch(newpod.Name, types.MergePatchType, patch)
+	}
 	if err != nil {
 		log.Error(err)
 		log.Errorf(" could not add pod label for pod %s and label %s ...", newpod.Name, serviceName)
@@ -274,8 +280,7 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 	}
 
 	//add the service name label to the Deployment
-	err = kubeapi.AddLabelToDeployment(c.Client, dep, config.LABEL_SERVICE_NAME, serviceName, ns)
-
+	_, err = c.Client.AppsV1().Deployments(ns).Patch(dep.Name, types.MergePatchType, patch)
 	if err != nil {
 		log.Error("could not add label to deployment on pod add")
 		return

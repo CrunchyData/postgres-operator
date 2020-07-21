@@ -16,14 +16,8 @@ package task
 */
 
 import (
-	"encoding/json"
-	"strings"
-
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/util"
-	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
-	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -63,43 +57,20 @@ func applyPolicy(clientset kubeapi.Interface, restconfig *rest.Config, policyNam
 	labels := make(map[string]string)
 	labels[policyName] = "pgpolicy"
 
-	if err := util.UpdatePolicyLabels(clientset, clusterName, ns, labels); err != nil {
+	patch, err := kubeapi.NewMergePatch().Add(labels, "metadata", "labels").Bytes()
+	if err != nil {
+		log.Error(err)
+	}
+
+	_, err = clientset.AppsV1().Deployments(ns).Patch(clusterName, types.MergePatchType, patch)
+	if err != nil {
 		log.Error(err)
 	}
 
 	//update the pgcluster crd labels with the new policy
-	if err := PatchPgcluster(clientset, policyName+"=pgpolicy", *cl, ns); err != nil {
+	_, err = clientset.CrunchydataV1().Pgclusters(ns).Patch(cl.Spec.Name, types.MergePatchType, patch)
+	if err != nil {
 		log.Error(err)
 	}
-
-}
-
-func PatchPgcluster(clientset pgo.Interface, newLabel string, oldCRD crv1.Pgcluster, ns string) error {
-
-	fields := strings.Split(newLabel, "=")
-	labelKey := fields[0]
-	labelValue := fields[1]
-	oldData, err := json.Marshal(oldCRD)
-	if err != nil {
-		return err
-	}
-	if oldCRD.ObjectMeta.Labels == nil {
-		oldCRD.ObjectMeta.Labels = make(map[string]string)
-	}
-	oldCRD.ObjectMeta.Labels[labelKey] = labelValue
-	var newData, patchBytes []byte
-	newData, err = json.Marshal(oldCRD)
-	if err != nil {
-		return err
-	}
-	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
-	if err != nil {
-		return err
-	}
-
-	log.Debug(string(patchBytes))
-	_, err6 := clientset.CrunchydataV1().Pgclusters(ns).Patch(oldCRD.Spec.Name, types.MergePatchType, patchBytes)
-
-	return err6
 
 }

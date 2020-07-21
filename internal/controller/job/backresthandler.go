@@ -22,9 +22,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
@@ -87,7 +89,11 @@ func (c *Controller) handleCloneBackrestRestoreUpdate(job *apiv1.Job) error {
 
 		// first, make sure the Pgtask resource knows that the job is complete,
 		// which is using this legacy bit of code
-		if err := util.Patch(c.Client.CrunchydataV1().RESTClient(), patchURL, crv1.JobCompletedStatus, patchResource, job.Name, namespace); err != nil {
+		patch, err := kubeapi.NewJSONPatch().Add(crv1.JobCompletedStatus, "spec", "status").Bytes()
+		if err == nil {
+			_, err = c.Client.CrunchydataV1().Pgtasks(namespace).Patch(job.Name, types.JSONPatchType, patch)
+		}
+		if err != nil {
 			log.Warn(err)
 			// we can continue on, even if this fails...
 		}
@@ -132,8 +138,11 @@ func (c *Controller) handleBackrestBackupUpdate(job *apiv1.Job) error {
 	log.Debugf("got a backrest job status=%d", job.Status.Succeeded)
 	log.Debugf("update the status to completed here for backrest %s job %s", labels[config.LABEL_PG_CLUSTER], job.Name)
 
-	if err := util.Patch(c.Client.CrunchydataV1().RESTClient(), patchURL, crv1.JobCompletedStatus, patchResource, job.Name,
-		job.ObjectMeta.Namespace); err != nil {
+	patch, err := kubeapi.NewJSONPatch().Add(crv1.JobCompletedStatus, "spec", "status").Bytes()
+	if err == nil {
+		_, err = c.Client.CrunchydataV1().Pgtasks(job.Namespace).Patch(job.Name, types.JSONPatchType, patch)
+	}
+	if err != nil {
 		log.Errorf("error in patching pgtask %s: %s", job.ObjectMeta.SelfLink, err.Error())
 	}
 	publishBackupComplete(labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], job.ObjectMeta.Labels[config.LABEL_PGOUSER], "pgbackrest", job.ObjectMeta.Namespace, "")

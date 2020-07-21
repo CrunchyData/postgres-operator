@@ -30,11 +30,6 @@ type Controller struct {
 	Informer batchinformers.JobInformer
 }
 
-const (
-	patchResource = "pgtasks"
-	patchURL      = "/spec/status"
-)
-
 // onAdd is called when a postgresql operator job is created and an associated add event is
 // generated
 func (c *Controller) onAdd(obj interface{}) {

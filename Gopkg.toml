@@ -12,10 +12,6 @@ required = [
 ]
 
 [[constraint]]
-  name = "github.com/evanphx/json-patch"
-  version = "4.6.0"
-
-[[constraint]]
   name = "github.com/fatih/color"
   version = "1.9.0"
 

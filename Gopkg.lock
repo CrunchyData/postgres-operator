@@ -64,14 +64,6 @@
   version = "v2.12.0"
 
 [[projects]]
-  digest = "1:55672a73a23bb7e4f59691db22eb3939e748d410320fd63d3bfc328c0037ef70"
-  name = "github.com/evanphx/json-patch"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "63b09d42374be6de7cff01f036f467438066a6eb"
-  version = "v4.7.0"
-
-[[projects]]
   digest = "1:bde2a1ce1de28312f165a88926c12f4acd19dc4d7da96a445dfa5a29eae07a93"
   name = "github.com/fatih/color"
   packages = ["."]
@@ -986,7 +978,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/evanphx/json-patch",
     "github.com/fatih/color",
     "github.com/gorilla/mux",
     "github.com/nsqio/go-nsq",
@@ -1005,7 +996,6 @@
     "k8s.io/api/core/v1",
     "k8s.io/api/rbac/v1",
     "k8s.io/apimachinery/pkg/api/errors",
-    "k8s.io/apimachinery/pkg/api/meta",
     "k8s.io/apimachinery/pkg/api/resource",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/fields",

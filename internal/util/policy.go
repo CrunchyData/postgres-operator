@@ -16,7 +16,6 @@ package util
 */
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -28,14 +27,9 @@ import (
 
 	"io/ioutil"
 
-	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
@@ -152,57 +146,4 @@ func ValidatePolicy(clientset pgo.Interface, namespace string, policyName string
 		log.Error("error getting pgpolicy " + policyName + err.Error())
 	}
 	return err
-}
-
-// UpdatePolicyLabels ...
-func UpdatePolicyLabels(clientset kubernetes.Interface, clusterName string, namespace string, newLabels map[string]string) error {
-
-	deployment, err := clientset.AppsV1().Deployments(namespace).Get(clusterName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	var patchBytes, newData, origData []byte
-	origData, err = json.Marshal(deployment)
-	if err != nil {
-		return err
-	}
-
-	accessor, err2 := meta.Accessor(deployment)
-	if err2 != nil {
-		return err2
-	}
-
-	objLabels := accessor.GetLabels()
-	if objLabels == nil {
-		objLabels = make(map[string]string)
-	}
-
-	//update the deployment labels
-	for key, value := range newLabels {
-		objLabels[key] = value
-	}
-	log.Debugf("updated labels are %v\n", objLabels)
-
-	accessor.SetLabels(objLabels)
-	newData, err = json.Marshal(deployment)
-	if err != nil {
-		return err
-	}
-
-	patchBytes, err = jsonpatch.CreateMergePatch(origData, newData)
-	createdPatch := err == nil
-	if err != nil {
-		return err
-	}
-	if createdPatch {
-		log.Debug("created merge patch")
-	}
-
-	_, err = clientset.AppsV1().Deployments(namespace).Patch(clusterName, types.MergePatchType, patchBytes, "")
-	if err != nil {
-		log.Debug("error patching deployment " + err.Error())
-	}
-	return err
-
 }

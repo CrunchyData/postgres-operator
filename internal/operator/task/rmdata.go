@@ -27,8 +27,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
-	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
-	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,7 +52,12 @@ type rmdatajobTemplateFields struct {
 func RemoveData(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 
 	//create marker (clustername, namespace)
-	err := PatchpgtaskDeleteDataStatus(clientset, task, namespace)
+	patch, err := kubeapi.NewJSONPatch().
+		Add(time.Now().Format(time.RFC3339), "spec", "parameters", config.LABEL_DELETE_DATA_STARTED).
+		Bytes()
+	if err == nil {
+		_, err = clientset.CrunchydataV1().Pgtasks(namespace).Patch(task.Spec.Name, types.JSONPatchType, patch)
+	}
 	if err != nil {
 		log.Errorf("could not set delete data started marker for task %s cluster %s", task.Spec.Name, task.Spec.Parameters[config.LABEL_PG_CLUSTER])
 		return
@@ -132,35 +135,6 @@ func RemoveData(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask
 
 	publishDeleteCluster(task.Spec.Parameters[config.LABEL_PG_CLUSTER], task.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 		task.ObjectMeta.Labels[config.LABEL_PGOUSER], namespace)
-}
-
-func PatchpgtaskDeleteDataStatus(clientset pgo.Interface, oldCrd *crv1.Pgtask, namespace string) error {
-
-	oldData, err := json.Marshal(oldCrd)
-	if err != nil {
-		return err
-	}
-
-	//change it
-	oldCrd.Spec.Parameters[config.LABEL_DELETE_DATA_STARTED] = time.Now().Format(time.RFC3339)
-
-	//create the patch
-	var newData, patchBytes []byte
-	newData, err = json.Marshal(oldCrd)
-	if err != nil {
-		return err
-	}
-	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
-	if err != nil {
-		return err
-	}
-	log.Debug(string(patchBytes))
-
-	//apply patch
-	_, err6 := clientset.CrunchydataV1().Pgtasks(namespace).Patch(oldCrd.Spec.Name, types.MergePatchType, patchBytes)
-
-	return err6
-
 }
 
 func publishDeleteCluster(clusterName, identifier, username, namespace string) {

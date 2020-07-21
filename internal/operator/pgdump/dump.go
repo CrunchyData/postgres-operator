@@ -29,6 +29,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 type pgDumpJobTemplateFields struct {
@@ -146,8 +147,10 @@ func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	}
 
 	//update the pgdump task status to submitted - updates task, not the job.
-	err = util.Patch(clientset.CrunchydataV1().RESTClient(), "/spec/status", crv1.PgBackupJobSubmitted, "pgtasks", task.Spec.Name, namespace)
-
+	patch, err := kubeapi.NewJSONPatch().Add(crv1.PgBackupJobSubmitted, "spec", "status").Bytes()
+	if err == nil {
+		_, err = clientset.CrunchydataV1().Pgtasks(namespace).Patch(task.Spec.Name, types.JSONPatchType, patch)
+	}
 	if err != nil {
 		log.Error(err.Error())
 	}

@@ -419,43 +419,24 @@ func updatePGConfigDCS(t testing.TB, clusterName, namespace string, pgConfig map
 	require.NoError(t, err)
 
 	dcsConf := &dcsConfig{}
-	if err := yaml.Unmarshal([]byte(clusterConfig.Data[dcsConfigName]),
-		dcsConf); err != nil {
-	}
+	err = yaml.Unmarshal([]byte(clusterConfig.Data[dcsConfigName]), dcsConf)
 	require.NoError(t, err)
 
-newConf:
 	for newParamKey, newParamVal := range pgConfig {
-		for currParamKey := range dcsConf.PostgreSQL.Parameters {
-			// update setting if it already exists
-			if newParamKey == currParamKey {
-				dcsConf.PostgreSQL.Parameters[currParamKey] = newParamVal
-				// move to the next new setting provided
-				continue newConf
-			}
-		}
-		// add new setting if doesn't already exist
 		dcsConf.PostgreSQL.Parameters[newParamKey] = newParamVal
 	}
 
 	content, err := yaml.Marshal(dcsConf)
 	require.NoError(t, err)
 
-	jsonOpBytes, err := json.Marshal([]struct {
-		Op    string `json:"op"`
-		Path  string `json:"path"`
-		Value string `json:"value"`
-	}{{
-		"replace",
-		fmt.Sprintf("/data/%s", dcsConfigName),
-		string(content),
+	jsonOpBytes, err := json.Marshal([]map[string]interface{}{{
+		"op":    "replace",
+		"path":  fmt.Sprintf("/data/%s", dcsConfigName),
+		"value": string(content),
 	}})
 	require.NoError(t, err)
 
-	if _, err := TestContext.Kubernetes.Client.CoreV1().ConfigMaps(namespace).
-		Patch(clusterConfig.GetName(),
-			types.JSONPatchType, jsonOpBytes); err != nil {
-		require.NoError(t, err)
-	}
-
+	_, err = TestContext.Kubernetes.Client.CoreV1().ConfigMaps(namespace).
+		Patch(clusterConfig.GetName(), types.JSONPatchType, jsonOpBytes)
+	require.NoError(t, err)
 }

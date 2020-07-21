@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
 	"github.com/crunchydata/postgres-operator/internal/util"
@@ -87,12 +88,7 @@ func DisableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) erro
 
 	// ensure any repo override is removed
 	pghaConfigMapName := fmt.Sprintf("%s-pgha-config", cluster.Labels[config.LABEL_PGHA_SCOPE])
-	jsonOp := []util.JSONPatchOperation{{
-		Op:   "remove",
-		Path: fmt.Sprintf("/data/%s", operator.PGHAConfigReplicaBootstrapRepoType),
-	}}
-
-	jsonOpBytes, err := json.Marshal(jsonOp)
+	jsonOpBytes, err := kubeapi.NewJSONPatch().Remove("data", operator.PGHAConfigReplicaBootstrapRepoType).Bytes()
 	if err != nil {
 		return err
 	}

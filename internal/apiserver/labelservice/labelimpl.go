@@ -16,19 +16,16 @@ limitations under the License.
 */
 
 import (
-	"encoding/json"
 	"errors"
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	"github.com/crunchydata/postgres-operator/pkg/events"
-	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -117,12 +114,18 @@ func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 }
 
 func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLabels map[string]string, ns, pgouser string) {
+	patchBytes, err := kubeapi.NewMergePatch().Add(newLabels, "metadata", "labels").Bytes()
+	if err != nil {
+		log.Error(err.Error())
+		return
+	}
+
 	for i := 0; i < len(items); i++ {
 		if DryRun {
 			log.Debug("dry run only")
 		} else {
 			log.Debugf("adding label to cluster %s", items[i].Spec.Name)
-			err := PatchPgcluster(newLabels, items[i], ns)
+			_, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Patch(items[i].Spec.Name, types.MergePatchType, patchBytes)
 			if err != nil {
 				log.Error(err.Error())
 			}
@@ -163,8 +166,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 		for _, d := range deployments.Items {
 			//update Deployment with the label
 			if !DryRun {
-				//err := updateLabels(&d, items[i].Spec.Name, newLabels)
-				err := updateLabels(&d, d.Name, newLabels, ns)
+				_, err := apiserver.Clientset.AppsV1().Deployments(ns).Patch(d.Name, types.MergePatchType, patchBytes)
 				if err != nil {
 					log.Error(err.Error())
 				}
@@ -172,82 +174,6 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 		}
 
 	}
-}
-
-func updateLabels(deployment *v1.Deployment, clusterName string, newLabels map[string]string, ns string) error {
-
-	var err error
-
-	log.Debugf("%v are the labels to apply", newLabels)
-
-	var patchBytes, newData, origData []byte
-	origData, err = json.Marshal(deployment)
-	if err != nil {
-		return err
-	}
-
-	accessor, err2 := meta.Accessor(deployment)
-	if err2 != nil {
-		return err2
-	}
-
-	objLabels := accessor.GetLabels()
-	if objLabels == nil {
-		objLabels = make(map[string]string)
-	}
-
-	//update the deployment labels
-	for key, value := range newLabels {
-		objLabels[key] = value
-	}
-	log.Debugf("updated labels are %v", objLabels)
-
-	accessor.SetLabels(objLabels)
-	newData, err = json.Marshal(deployment)
-	if err != nil {
-		return err
-	}
-
-	patchBytes, err = jsonpatch.CreateMergePatch(origData, newData)
-	if err != nil {
-		return err
-	}
-
-	_, err = apiserver.Clientset.AppsV1().Deployments(ns).Patch(clusterName, types.MergePatchType, patchBytes, "")
-	if err != nil {
-		log.Debugf("error updating patching deployment %s", err.Error())
-	}
-	return err
-
-}
-
-func PatchPgcluster(newLabels map[string]string, oldCRD crv1.Pgcluster, ns string) error {
-
-	oldData, err := json.Marshal(oldCRD)
-	if err != nil {
-		return err
-	}
-	if oldCRD.ObjectMeta.Labels == nil {
-		oldCRD.ObjectMeta.Labels = make(map[string]string)
-	}
-	for key, value := range newLabels {
-		oldCRD.ObjectMeta.Labels[key] = value
-	}
-	var newData, patchBytes []byte
-	newData, err = json.Marshal(oldCRD)
-	if err != nil {
-		return err
-	}
-	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
-	if err != nil {
-		return err
-	}
-
-	log.Debug(string(patchBytes))
-	_, err6 := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Patch(oldCRD.Spec.Name, types.MergePatchType, patchBytes)
-
-	return err6
-
 }
 
 func validateLabel(LabelCmdLabel, ns string) (map[string]string, error) {
@@ -361,11 +287,19 @@ func DeleteLabel(request *msgs.DeleteLabelRequest, ns string) msgs.LabelResponse
 }
 
 func deleteLabels(items []crv1.Pgcluster, LabelCmdLabel string, labelsMap map[string]string, ns string) error {
-	var err error
+	patch := kubeapi.NewMergePatch()
+	for key := range labelsMap {
+		patch.Remove("metadata", "labels", key)
+	}
+	patchBytes, err := patch.Bytes()
+	if err != nil {
+		log.Error(err.Error())
+		return err
+	}
 
 	for i := 0; i < len(items); i++ {
 		log.Debugf("deleting label from %s", items[i].Spec.Name)
-		err = deletePatchPgcluster(labelsMap, items[i], ns)
+		_, err = apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Patch(items[i].Spec.Name, types.MergePatchType, patchBytes)
 		if err != nil {
 			log.Error(err.Error())
 			return err
@@ -383,7 +317,7 @@ func deleteLabels(items []crv1.Pgcluster, LabelCmdLabel string, labelsMap map[st
 		}
 
 		for _, d := range deployments.Items {
-			err = deleteTheLabel(&d, items[i].Spec.Name, labelsMap, ns)
+			_, err = apiserver.Clientset.AppsV1().Deployments(ns).Patch(d.Name, types.MergePatchType, patchBytes)
 			if err != nil {
 				log.Error(err.Error())
 				return err
@@ -392,80 +326,4 @@ func deleteLabels(items []crv1.Pgcluster, LabelCmdLabel string, labelsMap map[st
 
 	}
 	return err
-}
-
-func deletePatchPgcluster(labelsMap map[string]string, oldCRD crv1.Pgcluster, ns string) error {
-
-	oldData, err := json.Marshal(oldCRD)
-	if err != nil {
-		return err
-	}
-	if oldCRD.ObjectMeta.Labels == nil {
-		oldCRD.ObjectMeta.Labels = make(map[string]string)
-	}
-	for k := range labelsMap {
-		delete(oldCRD.ObjectMeta.Labels, k)
-	}
-
-	var newData, patchBytes []byte
-	newData, err = json.Marshal(oldCRD)
-	if err != nil {
-		return err
-	}
-	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
-	if err != nil {
-		return err
-	}
-
-	log.Debug(string(patchBytes))
-	_, err6 := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Patch(oldCRD.Spec.Name, types.MergePatchType, patchBytes)
-
-	return err6
-
-}
-
-func deleteTheLabel(deployment *v1.Deployment, clusterName string, labelsMap map[string]string, ns string) error {
-
-	var err error
-
-	log.Debugf("%v are the labels to delete", labelsMap)
-
-	var patchBytes, newData, origData []byte
-	origData, err = json.Marshal(deployment)
-	if err != nil {
-		return err
-	}
-
-	accessor, err2 := meta.Accessor(deployment)
-	if err2 != nil {
-		return err2
-	}
-
-	objLabels := accessor.GetLabels()
-	if objLabels == nil {
-		objLabels = make(map[string]string)
-	}
-
-	for k := range labelsMap {
-		delete(objLabels, k)
-	}
-	log.Debugf("revised labels after delete are %v", objLabels)
-
-	accessor.SetLabels(objLabels)
-	newData, err = json.Marshal(deployment)
-	if err != nil {
-		return err
-	}
-
-	patchBytes, err = jsonpatch.CreateMergePatch(origData, newData)
-	if err != nil {
-		return err
-	}
-
-	_, err = apiserver.Clientset.AppsV1().Deployments(ns).Patch(deployment.Name, types.MergePatchType, patchBytes, "")
-	if err != nil {
-		log.Debugf("error patching deployment: %v", err.Error())
-	}
-	return err
-
 }

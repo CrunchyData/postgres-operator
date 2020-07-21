@@ -24,7 +24,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	"github.com/crunchydata/postgres-operator/internal/util"
 
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -271,7 +270,7 @@ func (l *LocalDB) apply(configName string) error {
 // LocalDB if the database server they are associated with no longer exists
 func (l *LocalDB) clean() error {
 
-	var jsonPatch = []util.JSONPatchOperation{}
+	var patch = kubeapi.NewJSONPatch()
 	var cmlocalConfigs []string
 
 	// first grab all current local configs from the configMap
@@ -291,15 +290,11 @@ func (l *LocalDB) clean() error {
 			}
 		}
 		if deleteConfig {
-			jsonPatch = append(jsonPatch, util.JSONPatchOperation{
-				Op:   "remove",
-				Path: fmt.Sprintf("/data/%s", cmLocalConfig),
-			})
-
+			patch.Remove("data", cmLocalConfig)
 		}
 	}
 
-	jsonOpBytes, err := json.Marshal(jsonPatch)
+	jsonOpBytes, err := patch.Bytes()
 	if err != nil {
 		return err
 	}

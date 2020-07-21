@@ -38,6 +38,7 @@ import (
 	batch_v1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -46,8 +47,6 @@ const (
 	pgBackRestRepoSyncContainerImageName = "%s/pgo-backrest-repo-sync:%s"
 	pgBackRestRepoSyncJobNamePrefix      = "pgo-backrest-repo-sync-%s-%s"
 	pgBackRestStanza                     = "db" // this is hardcoded throughout...
-	patchResource                        = "pgtasks"
-	patchURL                             = "/spec/status"
 	targetClusterPGDATAPath              = "/pgdata/%s"
 )
 
@@ -946,7 +945,11 @@ func getSourcePgcluster(clientset pgo.Interface, namespace, sourceClusterName st
 // patchPgtaskComplete updates the pgtask CRD to indicate that the task is now
 // complete
 func patchPgtaskComplete(clientset kubeapi.Interface, namespace, taskName string) {
-	if err := util.Patch(clientset.CrunchydataV1().RESTClient(), patchURL, crv1.CompletedStatus, patchResource, taskName, namespace); err != nil {
+	patch, err := kubeapi.NewJSONPatch().Add(crv1.CompletedStatus, "spec", "status").Bytes()
+	if err == nil {
+		_, err = clientset.CrunchydataV1().Pgtasks(namespace).Patch(taskName, types.JSONPatchType, patch)
+	}
+	if err != nil {
 		log.Error("error in status patch " + err.Error())
 	}
 }

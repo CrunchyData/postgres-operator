@@ -16,11 +16,9 @@ package config
 */
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 
-	"github.com/crunchydata/postgres-operator/internal/util"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -57,12 +55,7 @@ type Syncer interface {
 func patchConfigMapData(kubeclientset kubernetes.Interface, configMap *corev1.ConfigMap,
 	configName string, content []byte) error {
 
-	jsonOp := []util.JSONPatchOperation{{
-		Op:    "replace",
-		Path:  fmt.Sprintf("/data/%s", configName),
-		Value: string(content),
-	}}
-	jsonOpBytes, err := json.Marshal(jsonOp)
+	jsonOpBytes, err := kubeapi.NewJSONPatch().Replace(string(content), "data", configName).Bytes()
 	if err != nil {
 		return err
 	}
