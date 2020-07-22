@@ -36,7 +36,7 @@ The PostgreSQL Operator orchestrates a series of PostgreSQL and PostgreSQL relat
 
 ### Metrics and Monitoring
 
-* **Metrics Collection** (crunchy-collect). The crunchy-collect container provides real time metrics about the PostgreSQL database via an API. These metrics are scraped and stored by a Prometheus time-series database and are then graphed and visualized through the open source data visualizer Grafana.  
+* **Metrics Collection** (crunchy-postgres-exporter). The crunchy-postgres-exporter container provides real time metrics about the PostgreSQL database via an API. These metrics are scraped and stored by a Prometheus time-series database and are then graphed and visualized through the open source data visualizer Grafana.  
 
 * **Grafana** (grafana).  Hosts an open source web-based graphing dashboard called Grafana.  Provides visual dashboards for monitoring PostgreSQL clusters, specifically using Crunchy PostgreSQL Exporter data stored within Prometheus.
 

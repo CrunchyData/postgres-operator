@@ -92,6 +92,7 @@ images = pgo-apiserver \
 	pgo-sqlrunner \
 	pgo-client \
 	pgo-deployer \
+	crunchy-postgres-exporter \
 	postgres-operator
 
 .PHONY: all installrbac setup setupnamespaces cleannamespaces bounce \
@@ -152,6 +153,9 @@ build-pgo-client:
 	cp $(GOBIN)/pgo bin/pgo
 
 build-pgo-%:
+	$(info No binary build needed for $@)
+
+build-crunchy-postgres-exporter:
 	$(info No binary build needed for $@)
 
 linuxpgo: build-pgo-client

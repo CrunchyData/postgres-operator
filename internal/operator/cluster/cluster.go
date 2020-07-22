@@ -57,13 +57,6 @@ type ServiceTemplateFields struct {
 // ReplicaSuffix ...
 const ReplicaSuffix = "-replica"
 
-// contstants defining the names of the various sidecar containers
-const (
-	collectCCPImage    = "crunchy-collect"
-	pgBadgerCCPImage   = "crunchy-pgbadger"
-	crunchyadmCCPImage = "crunchy-admin"
-)
-
 func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace string) {
 	var err error
 

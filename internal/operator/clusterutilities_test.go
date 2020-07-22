@@ -56,7 +56,7 @@ func TestOverrideClusterContainerImages(t *testing.T) {
 	}{
 		"database":   {name: "database", image: config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_HA},
 		"crunchyadm": {name: "crunchyadm", image: config.CONTAINER_IMAGE_CRUNCHY_ADMIN},
-		"collect":    {name: "collect", image: config.CONTAINER_IMAGE_CRUNCHY_COLLECT},
+		"exporter":   {name: "exporter", image: config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_EXPORTER},
 		"pgbadger":   {name: "pgbadger", image: config.CONTAINER_IMAGE_CRUNCHY_PGBADGER},
 		"future":     {name: "future", image: "crunchy-future"},
 	}

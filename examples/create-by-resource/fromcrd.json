@@ -9,7 +9,7 @@
       "autofail": "true",
       "crunchy-pgbadger": "false",
       "crunchy-pgha-scope": "fromcrd",
-      "crunchy_collect": "false",
+      "crunchy-postgres-exporter": "false",
       "current-primary": "fromcrd",
       "deployment-name": "fromcrd",
       "name": "fromcrd",
@@ -93,7 +93,7 @@
     "tls": {},
     "user": "testuser",
     "userlabels": {
-      "crunchy_collect": "false",
+      "crunchy-postgres-exporter": "false",
       "pg-pod-anti-affinity": "",
       "pgo-version": "4.4.0",
       "pgouser": "pgoadmin",

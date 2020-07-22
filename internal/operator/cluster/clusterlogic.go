@@ -62,22 +62,22 @@ func addClusterCreateMissingService(clientset kubernetes.Interface, cl *crv1.Pgc
 		ServiceType: st,
 	}
 
-	// only add references to the collect / pgBadger ports
+	// only add references to the exporter / pgBadger ports
 	clusterLabels := cl.ObjectMeta.GetLabels()
 
 	if val, ok := clusterLabels[config.LABEL_BADGER]; ok && val == config.LABEL_TRUE {
 		serviceFields.PGBadgerPort = cl.Spec.PGBadgerPort
 	}
 
-	// ...due to legacy reasons, the collect label may not be available yet in the
+	// ...due to legacy reasons, the exporter label may not be available yet in the
 	// main labels. so we will check here first, and then check the user labels
-	if val, ok := clusterLabels[config.LABEL_COLLECT]; ok && val == config.LABEL_TRUE {
+	if val, ok := clusterLabels[config.LABEL_EXPORTER]; ok && val == config.LABEL_TRUE {
 		serviceFields.ExporterPort = cl.Spec.ExporterPort
 	}
 
 	// ...this condition should be targeted for removal in the future
 	if cl.Spec.UserLabels != nil {
-		if val, ok := cl.Spec.UserLabels[config.LABEL_COLLECT]; ok && val == config.LABEL_TRUE {
+		if val, ok := cl.Spec.UserLabels[config.LABEL_EXPORTER]; ok && val == config.LABEL_TRUE {
 			serviceFields.ExporterPort = cl.Spec.ExporterPort
 		}
 	}
@@ -314,10 +314,9 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 		PodAntiAffinity:    operator.GetPodAntiAffinity(cl, crv1.PodAntiAffinityDeploymentDefault, cl.Spec.PodAntiAffinity.Default),
 		ContainerResources: operator.GetResourcesJSON(cl.Spec.Resources, cl.Spec.Limits),
 		ConfVolume:         operator.GetConfVolume(clientset, cl, namespace),
-		CollectAddon:       operator.GetCollectAddon(clientset, namespace, &cl.Spec),
-		CollectVolume:      operator.GetCollectVolume(clientset, cl, namespace),
+		ExporterAddon:      operator.GetExporterAddon(clientset, namespace, &cl.Spec),
 		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY]),
-		PgmonitorEnvVars:   operator.GetPgmonitorEnvVars(cl.Spec.UserLabels[config.LABEL_COLLECT], cl.Spec.CollectSecretName),
+		PgmonitorEnvVars:   operator.GetPgmonitorEnvVars(cl.Spec.UserLabels[config.LABEL_EXPORTER], cl.Spec.CollectSecretName),
 		ScopeLabel:         config.LABEL_PGHA_SCOPE,
 		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cl, cl.Labels[config.LABEL_BACKREST], cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY],
 			cl.Spec.Port, cl.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
@@ -382,10 +381,10 @@ func scaleReplicaCreateMissingService(clientset kubernetes.Interface, replica *c
 		ServiceType: st,
 	}
 
-	// only add references to the collect / pgBadger ports
+	// only add references to the exporter / pgBadger ports
 	clusterLabels := cluster.ObjectMeta.GetLabels()
 
-	if val, ok := clusterLabels[config.LABEL_COLLECT]; ok && val == config.LABEL_TRUE {
+	if val, ok := clusterLabels[config.LABEL_EXPORTER]; ok && val == config.LABEL_TRUE {
 		serviceFields.ExporterPort = cluster.Spec.ExporterPort
 	}
 
@@ -467,8 +466,7 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 		ContainerResources: operator.GetResourcesJSON(cluster.Spec.Resources, cluster.Spec.Limits),
 		NodeSelector:       operator.GetAffinity(replica.Spec.UserLabels["NodeLabelKey"], replica.Spec.UserLabels["NodeLabelValue"], "In"),
 		PodAntiAffinity:    operator.GetPodAntiAffinity(cluster, crv1.PodAntiAffinityDeploymentDefault, cluster.Spec.PodAntiAffinity.Default),
-		CollectAddon:       operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
-		CollectVolume:      operator.GetCollectVolume(clientset, cluster, namespace),
+		ExporterAddon:      operator.GetExporterAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cluster, replica.Spec.Name),
 		ScopeLabel:         config.LABEL_PGHA_SCOPE,
 		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster, cluster.Labels[config.LABEL_BACKREST], replica.Spec.Name,

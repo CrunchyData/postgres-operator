@@ -179,9 +179,9 @@ var PVCStorageClassTemplate *template.Template
 
 const pvcSCPath = "pvc-storageclass.json"
 
-var CollectTemplate *template.Template
+var ExporterTemplate *template.Template
 
-const collectTemplatePath = "collect.json"
+const exporterTemplatePath = "exporter.json"
 
 var BadgerTemplate *template.Template
 
@@ -723,7 +723,7 @@ func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) 
 		return err
 	}
 
-	CollectTemplate, err = c.LoadTemplate(cMap, rootPath, collectTemplatePath)
+	ExporterTemplate, err = c.LoadTemplate(cMap, rootPath, exporterTemplatePath)
 	if err != nil {
 		return err
 	}

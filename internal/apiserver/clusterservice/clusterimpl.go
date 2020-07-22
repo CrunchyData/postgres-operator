@@ -696,14 +696,14 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	}
 
 	//set the metrics flag with the global setting first
-	userLabelsMap[config.LABEL_COLLECT] = strconv.FormatBool(apiserver.MetricsFlag)
+	userLabelsMap[config.LABEL_EXPORTER] = strconv.FormatBool(apiserver.MetricsFlag)
 	if err != nil {
 		log.Error(err)
 	}
 
 	//if metrics is chosen on the pgo command, stick it into the user labels
 	if request.MetricsFlag {
-		userLabelsMap[config.LABEL_COLLECT] = "true"
+		userLabelsMap[config.LABEL_EXPORTER] = "true"
 	}
 	if request.ServiceType != "" {
 		if request.ServiceType != config.DEFAULT_SERVICE_TYPE && request.ServiceType != config.LOAD_BALANCER_SERVICE_TYPE && request.ServiceType != config.NODEPORT_SERVICE_TYPE {
@@ -935,7 +935,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	}
 
 	// there's a secret for the monitoring user too
-	newInstance.Spec.CollectSecretName = clusterName + crv1.CollectSecretSuffix
+	newInstance.Spec.CollectSecretName = clusterName + crv1.ExporterSecretSuffix
 
 	// Create Backrest secret for S3/SSH Keys:
 	// We make this regardless if backrest is enabled or not because

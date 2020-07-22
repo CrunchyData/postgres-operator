@@ -86,13 +86,14 @@ type podAntiAffinityTemplateFields struct {
 }
 
 // consolidate
-type collectTemplateFields struct {
-	Name           string
-	JobName        string
-	CCPImageTag    string
-	CCPImagePrefix string
-	PgPort         string
-	ExporterPort   string
+type exporterTemplateFields struct {
+	Name              string
+	JobName           string
+	PGOImageTag       string
+	PGOImagePrefix    string
+	PgPort            string
+	ExporterPort      string
+	CollectSecretName string
 }
 
 //consolidate
@@ -125,7 +126,7 @@ type PgbackrestS3EnvVarsTemplateFields struct {
 }
 
 type PgmonitorEnvVarsTemplateFields struct {
-	CollectSecret string
+	ExporterSecret string
 }
 
 // BootstrapJobTemplateFields defines the fields needed to populate the cluster bootstrap job
@@ -161,8 +162,7 @@ type DeploymentTemplateFields struct {
 	ContainerResources       string
 	NodeSelector             string
 	ConfVolume               string
-	CollectAddon             string
-	CollectVolume            string
+	ExporterAddon            string
 	BadgerAddon              string
 	PgbackrestEnvVars        string
 	PgbackrestS3EnvVars      string
@@ -305,34 +305,35 @@ func GetBadgerAddon(clientset kubernetes.Interface, namespace string, cluster *c
 	return ""
 }
 
-func GetCollectAddon(clientset kubernetes.Interface, namespace string, spec *crv1.PgclusterSpec) string {
+func GetExporterAddon(clientset kubernetes.Interface, namespace string, spec *crv1.PgclusterSpec) string {
 
-	if spec.UserLabels[config.LABEL_COLLECT] == "true" {
-		log.Debug("crunchy_collect was found as a label on cluster create")
+	if spec.UserLabels[config.LABEL_EXPORTER] == "true" {
+		log.Debug("crunchy-postgres-exporter was found as a label on cluster create")
 
-		log.Debugf("creating collect secret for cluster %s", spec.Name)
-		err := util.CreateSecret(clientset, spec.Name, spec.CollectSecretName, config.LABEL_COLLECT_PG_USER,
+		log.Debugf("creating exporter secret for cluster %s", spec.Name)
+		err := util.CreateSecret(clientset, spec.Name, spec.CollectSecretName, config.LABEL_EXPORTER_PG_USER,
 			Pgo.Cluster.PgmonitorPassword, namespace)
 
-		collectTemplateFields := collectTemplateFields{}
-		collectTemplateFields.Name = spec.Name
-		collectTemplateFields.JobName = spec.Name
-		collectTemplateFields.CCPImageTag = spec.CCPImageTag
-		collectTemplateFields.ExporterPort = spec.ExporterPort
-		collectTemplateFields.CCPImagePrefix = util.GetValueOrDefault(spec.CCPImagePrefix, Pgo.Cluster.CCPImagePrefix)
-		collectTemplateFields.PgPort = spec.Port
+		exporterTemplateFields := exporterTemplateFields{}
+		exporterTemplateFields.Name = spec.Name
+		exporterTemplateFields.JobName = spec.Name
+		exporterTemplateFields.PGOImageTag = Pgo.Pgo.PGOImageTag
+		exporterTemplateFields.ExporterPort = spec.ExporterPort
+		exporterTemplateFields.PGOImagePrefix = util.GetValueOrDefault(spec.PGOImagePrefix, Pgo.Pgo.PGOImagePrefix)
+		exporterTemplateFields.PgPort = spec.Port
+		exporterTemplateFields.CollectSecretName = spec.CollectSecretName
 
-		var collectDoc bytes.Buffer
-		err = config.CollectTemplate.Execute(&collectDoc, collectTemplateFields)
+		var exporterDoc bytes.Buffer
+		err = config.ExporterTemplate.Execute(&exporterDoc, exporterTemplateFields)
 		if err != nil {
 			log.Error(err.Error())
 			return ""
 		}
 
 		if CRUNCHY_DEBUG {
-			config.CollectTemplate.Execute(os.Stdout, collectTemplateFields)
+			config.ExporterTemplate.Execute(os.Stdout, exporterTemplateFields)
 		}
-		return collectDoc.String()
+		return exporterDoc.String()
 	}
 	return ""
 }
@@ -402,15 +403,6 @@ func CreatePGHAConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcluster
 	}
 
 	return nil
-}
-
-// sets the proper collect secret in the deployment spec if collect is enabled
-func GetCollectVolume(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string) string {
-	if cl.Spec.UserLabels[config.LABEL_COLLECT] == "true" {
-		return "\"secret\": { \"secretName\": \"" + cl.Spec.CollectSecretName + "\" }"
-	}
-
-	return "\"emptyDir\": { \"secretName\": \"Memory\" }"
 }
 
 // GetTablespaceNamePVCMap returns a map of the tablespace name to the PVC name
@@ -712,10 +704,10 @@ func GetPodAntiAffinityType(cluster *crv1.Pgcluster, deploymentType crv1.PodAnti
 
 // GetPgmonitorEnvVars populates the pgmonitor env var template, which contains any
 // pgmonitor env vars that need to be included in the Deployment spec for a PG cluster.
-func GetPgmonitorEnvVars(metricsEnabled, collectSecret string) string {
+func GetPgmonitorEnvVars(metricsEnabled, exporterSecret string) string {
 	if metricsEnabled == "true" {
 		fields := PgmonitorEnvVarsTemplateFields{
-			CollectSecret: collectSecret,
+			ExporterSecret: exporterSecret,
 		}
 
 		var doc bytes.Buffer
@@ -923,12 +915,12 @@ func OverrideClusterContainerImages(containers []v1.Container) {
 		// there are a few images we need to check for:
 		// 1. "database" image, which is PostgreSQL or some flavor of it
 		// 2. "crunchyadm" image, which helps with administration
-		// 3. "collect" image, which helps with monitoring
+		// 3. "exporter" image, which helps with monitoring
 		// 4. "pgbadger" image, which helps with...pgbadger
 		switch container.Name {
 
-		case "collect":
-			containerImageName = config.CONTAINER_IMAGE_CRUNCHY_COLLECT
+		case "exporter":
+			containerImageName = config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_EXPORTER
 		case "crunchyadm":
 			containerImageName = config.CONTAINER_IMAGE_CRUNCHY_ADMIN
 		case "database":

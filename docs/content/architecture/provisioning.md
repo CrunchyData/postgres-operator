@@ -68,7 +68,7 @@ all of the replicas. Additionally, if the connection pooler pgBouncer is
 deployed with this cluster, it will also have a service as well.
 
 An optional monitoring sidecar can be deployed as well. The sidecar, called
-`collect`, uses the `crunchy-collect` container that is a part of pgMonitor and
+`exporter`, uses the `crunchy-postgres-exporter` container that is a part of pgMonitor and
 scrapes key health metrics into a Prometheus instance. See Monitoring for more
 information on how this works.
 
@@ -100,7 +100,7 @@ backup before performing scaling up.)
 time. This allows it to catch up to the current primary.
 - Once the replica has recovered, it joins the primary as a streaming replica!
 
-If pgMonitor is enabled, a `collect` sidecar is also added to the replica
+If pgMonitor is enabled, an `exporter` sidecar is also added to the replica
 Deployment.
 
 Scaling down works in the opposite way:
