@@ -35,15 +35,31 @@ The automated upgrade procedure is designed to facilate the quickest and most ef
 
 ##### NOTE: As with any upgrade procedure, it is strongly recommended that a full logical backup is taken before any upgrade procedure is started. Please see the [Logical Backups](/pgo-client/common-tasks#logical-backups-pg_dump--pg_dumpall) section of the Common Tasks page for more information.
 
-### Automated Upgrade when using an Ansible installation of the PostgreSQL Operator
+### Automated Upgrade when using the PostgreSQL Operator Installer (`pgo-deployer`), Helm or Ansible
 
-For existing PostgreSQL Operator deployments that were installed using Ansible, the upgrade process is straightforward.
+For all existing PostgreSQL Operator deployments that were installed using the Ansible installation method, the PostgreSQL Operator Installer or the Helm Chart Installation of the PostgreSQL Operator, the upgrade process is straightforward.
 
-First, you will copy your existing inventory file as a backup for your existing settings. You will reference these settings, but you will need to use the updated version of the inventory file for the current version of PostgreSQL Operator.
+First, you will copy your existing configuration file (whether inventory, postgres-operator.yml, values.yaml, etc, depending on method and version) as a backup for your existing settings. You will reference these settings, but you will need to use the updated version of this file for the current version of PostgreSQL Operator.
 
-Once you've checked out the appropriate release tag, please follow the [Update Instructions]({{< relref "installation/other/ansible/updating-operator.md" >}}), being sure to update the new inventory file with your required settings. Please keep the above [Considerations](/upgrade/automatedupgrade#considerations) in mind, particularly with regard to the version and storage requirements listed.
+In all three cases, you will need to use the relevant update functionality available with your chosen installation method. For all three options, please keep the above [Considerations](/upgrade/automatedupgrade#considerations) in mind, particularly with regard to the version and storage requirements listed.
 
-Once the update is complete, you should now see the PostgreSQL Operator pods are up and ready. It is strongly recommended that you create a test cluster to validate proper functionality before moving on to the [Automated Cluster Upgrade](/upgrade/automatedupgrade#postgresql-operator-automated-cluster-upgrade) section below.
+#### PostgreSQL Operator Installer
+
+For existing PostgreSQL Operator deployments that were installed using the PostgreSQL Operator Installer, you will check out the appropriate release tag and update your the new configuration files. After this, you will need to update your Operator installation using the `DEPLOY_ACTION` method described in the [Configuring to Update and Uninstall](/installation/postgres-operator#configuring-to-update-and-uninstall) section of the documentation.
+
+Please note, you will need to ensure that you have executed the [post-installation cleanup](/installation/postgres-operator#post-installation) between each `DEPLOY_ACTION` activity.
+
+#### Helm
+
+For existing PostgreSQL Operator deployments that were installed using the Helm installer, you will check out the appropriate release tag and update your the new configuration files. Then you will need to use the `helm upgrade` command as described in the [Helm Upgrade](/installation/other/helm#upgrade) section of the Helm installation documentation.
+
+#### Ansible
+
+For existing PostgreSQL Operator deployments that were installed using Ansible, you will first need to check out the appropriate release tag of the Operator. Then please follow the [Update Instructions]({{< relref "installation/other/ansible/updating-operator.md" >}}), being sure to update the new inventory file with your required settings.
+
+#### Wrapping Up the PostgreSQL Operator Upgrade
+
+Once the upgrade is complete, you should now see the PostgreSQL Operator pods are up and ready. It is strongly recommended that you create a test cluster to validate proper functionality before moving on to the [Automated Cluster Upgrade](/upgrade/automatedupgrade#postgresql-operator-automated-cluster-upgrade) section below.
 
 ### Automated Upgrade when using a Bash installation of the PostgreSQL Operator
 
