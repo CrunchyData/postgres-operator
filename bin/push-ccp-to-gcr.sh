@@ -21,7 +21,6 @@ CCP_IMAGE_TAG=centos7-12.3-4.4.0
 IMAGES=(
 crunchy-prometheus
 crunchy-grafana
-crunchy-collect
 crunchy-pgbadger
 crunchy-backup
 crunchy-postgres

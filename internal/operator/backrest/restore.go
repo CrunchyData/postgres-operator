@@ -380,8 +380,7 @@ func createRestoredDeployment(clientset kubeapi.Interface, cluster *crv1.Pgclust
 			crv1.PodAntiAffinityDeploymentDefault, cluster.Spec.PodAntiAffinity.Default),
 		ContainerResources: operator.GetResourcesJSON(cluster.Spec.Resources, cluster.Spec.Limits),
 		ConfVolume:         operator.GetConfVolume(clientset, cluster, namespace),
-		CollectAddon:       operator.GetCollectAddon(clientset, namespace, &cluster.Spec),
-		CollectVolume:      operator.GetCollectVolume(clientset, cluster, namespace),
+		ExporterAddon:      operator.GetExporterAddon(clientset, namespace, &cluster.Spec),
 		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cluster, restoreToName),
 		ScopeLabel:         config.LABEL_PGHA_SCOPE,
 		Standby:            false, // always disabled since standby clusters cannot be restored
@@ -401,7 +400,7 @@ func createRestoredDeployment(clientset kubeapi.Interface, cluster *crv1.Pgclust
 		CASecret:                 cluster.Spec.TLS.CASecret,
 	}
 
-	log.Debug("collectaddon value is [" + deploymentFields.CollectAddon + "]")
+	log.Debug("ExporterAddon value is [" + deploymentFields.ExporterAddon + "]")
 	var primaryDoc bytes.Buffer
 	err = config.DeploymentTemplate.Execute(&primaryDoc, deploymentFields)
 	if err != nil {

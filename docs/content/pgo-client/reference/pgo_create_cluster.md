@@ -30,7 +30,7 @@ pgo create cluster [flags]
   -l, --labels string                         The labels to apply to this cluster.
       --memory string                         Set the amount of RAM to request, e.g. 1GiB. Overrides the default server value.
       --memory-limit string                   Set the amount of RAM to limit, e.g. 1GiB.
-      --metrics                               Adds the crunchy-collect container to the database pod.
+      --metrics                               Adds the crunchy-postgres-exporter container to the database pod.
       --node-label string                     The node label (key=value) to use in placing the primary database. If not set, any node is used.
       --password string                       The password to use for standard user account created during cluster initialization.
       --password-length int                   If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.

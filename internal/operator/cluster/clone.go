@@ -804,9 +804,9 @@ func createCluster(clientset kubeapi.Interface, task *crv1.Pgtask, sourcePgclust
 			CCPImage:           sourcePgcluster.Spec.CCPImage,
 			CCPImagePrefix:     sourcePgcluster.Spec.CCPImagePrefix,
 			CCPImageTag:        sourcePgcluster.Spec.CCPImageTag,
-			// We're not copying over the collect container in the clone...but we will
-			// maintain the secret in case one brings up the collect container
-			CollectSecretName: fmt.Sprintf("%s%s", targetClusterName, crv1.CollectSecretSuffix),
+			// We're not copying over the exporter container in the clone...but we will
+			// maintain the secret in case one brings up the exporter container
+			CollectSecretName: fmt.Sprintf("%s%s", targetClusterName, crv1.ExporterSecretSuffix),
 			// CustomConfig is not set as in the future this will be a parameter we
 			// allow the user to pass in
 			Database:       sourcePgcluster.Spec.Database,
@@ -861,7 +861,7 @@ func createCluster(clientset kubeapi.Interface, task *crv1.Pgtask, sourcePgclust
 
 	// check to see if the metrics collection should be performed
 	if task.Spec.Parameters[util.CloneParameterEnableMetrics] == "true" {
-		targetPgcluster.Spec.UserLabels[config.LABEL_COLLECT] = "true"
+		targetPgcluster.Spec.UserLabels[config.LABEL_EXPORTER] = "true"
 	}
 
 	// update the workflow to indicate that the cluster is being created

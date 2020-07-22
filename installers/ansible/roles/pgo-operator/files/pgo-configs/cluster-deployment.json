@@ -227,7 +227,7 @@
                     "imagePullPolicy": "IfNotPresent"
                 }{{ end }}
 
-                {{.CollectAddon }}
+                {{.ExporterAddon }}
 
                 {{.BadgerAddon }}
 
@@ -245,9 +245,6 @@
                         "secret": {
                             "secretName": "{{.PrimarySecretName}}"
                         }
-                    }, {
-                        "name": "collect-volume",
-                        {{.CollectVolume}}
                     }, {
                         "name": "sshd",
                         "secret": {

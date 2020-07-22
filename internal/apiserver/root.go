@@ -51,7 +51,7 @@ var (
 	RESTConfig *rest.Config
 )
 
-// MetricsFlag if set to true will cause crunchy-collect to be added into new clusters
+// MetricsFlag if set to true will cause crunchy-postgres-exporter to be added into new clusters
 var MetricsFlag, BadgerFlag bool
 
 // AuditFlag if set to true will cause auditing to occur in the logs
