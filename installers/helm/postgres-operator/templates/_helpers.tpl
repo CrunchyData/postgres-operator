@@ -84,3 +84,14 @@ cluster-admin
 {{ include "postgres-operator.fullname" . }}-cr
 {{- end }}
 {{- end }}
+
+{{/*
+Generate Configmap based on Values defined in values.yaml
+*/}}
+{{- define "postgres-operator.values" -}}
+values.yaml: |
+  ---
+{{- range $index, $value := .Values }}
+{{ $index | indent 2 }}: {{ $value | quote }}
+{{- end }}
+{{- end }}
