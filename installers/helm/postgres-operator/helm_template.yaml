@@ -1,0 +1,20 @@
+---
+# ======================
+# Installer Controls
+# ======================
+fullnameOverride: ""
+
+# rbac: settings for deployer RBAC creation
+rbac:
+    # rbac.create: if false RBAC resources should be in place
+    create: true
+    # rbac.useClusterAdmin: creates a ClusterRoleBinding giving cluster-admin to serviceAccount.name
+    useClusterAdmin: false
+
+# serviceAccount: settings for Service Account used by the deployer
+serviceAccount:
+    # serviceAccount.create: Whether to create a Service Account or not
+    create: true
+    # serviceAccount.name: The name of the Service Account to create or use
+    name: ""
+
