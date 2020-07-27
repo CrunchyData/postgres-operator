@@ -118,8 +118,12 @@ metadata:
   name: pgo-deployer-cm
   namespace: pgo
 data:
-  values.yaml: |+
-    ---
+  values.yaml: |-
+    # =====================
+    # Configuration Options
+    # More info for these options can be found in the docs
+    # https://crunchydata.github.io/postgres-operator/latest/installation/configuration/
+    # =====================
     archive_mode: "true"
     archive_timeout: "60"
     backrest_aws_s3_bucket: ""
@@ -174,6 +178,7 @@ data:
     pgo_apiserver_url: "https://postgres-operator"
     pgo_client_cert_secret: "pgo.tls"
     pgo_client_container_install: "false"
+    pgo_client_install: "true"
     pgo_client_version: "4.4.1"
     pgo_cluster_admin: "false"
     pgo_disable_eventing: "false"

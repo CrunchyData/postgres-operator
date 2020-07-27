@@ -1,4 +1,8 @@
----
+# =====================
+# Configuration Options
+# More info for these options can be found in the docs
+# https://crunchydata.github.io/postgres-operator/latest/installation/configuration/
+# =====================
 archive_mode: "true"
 archive_timeout: "60"
 backrest_aws_s3_bucket: ""
