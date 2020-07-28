@@ -260,6 +260,12 @@ export pgbackrest_public_key="${public_key_temp//[$'\n']}" pgbackrest_private_ke
 
 # create the backrest-repo-config example file and substitute in the newly
 # created keys
+#
+# (Note: that the "config" / "sshd_config" entries contain configuration to
+# ensure that PostgreSQL instances are able to communicate with the pgBackRest
+# repository, which houses backups and archives, and vice versa. Most of the
+# settings follow the sshd defaults, with a few overrides. Edit at your own
+# discretion.)
 cat <<-EOF > "${pgo_cluster_name}-backrest-repo-config.yaml"
 apiVersion: v1
 kind: Secret
