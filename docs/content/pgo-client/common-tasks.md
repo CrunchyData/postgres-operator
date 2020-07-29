@@ -189,7 +189,7 @@ Labels (count > 1): [count] [label]
 	[4]	[pgo-backrest-repo=true]
 	[4]	[pgouser=admin]
 	[4]	[pgo-pg-database=true]
-	[4]	[crunchy_exporter=false]
+	[4]	[crunchy-postgres-exporter=false]
 	[4]	[pg-pod-anti-affinity=]
 	[4]	[pgo-version={{< param operatorVersion >}}]
 	[4]	[archive-timeout=60]
@@ -431,7 +431,7 @@ cluster : hacluster (crunchy-postgres-ha:{{< param centosBase >}}-{{< param post
 	deployment : hacluster
 	deployment : hacluster-backrest-shared-repo
 	service : hacluster - ClusterIP (10.102.20.42)
-	labels : pg-pod-anti-affinity= archive-timeout=60 crunchy-pgbadger=false crunchy_exporter=false deployment-name=hacluster pg-cluster=hacluster crunchy-pgha-scope=hacluster autofail=true pgo-backrest=true pgo-version={{< param operatorVersion >}} current-primary=hacluster name=hacluster pgouser=admin workflowid=ae714d12-f5d0-4fa9-910f-21944b41dec8
+	labels : pg-pod-anti-affinity= archive-timeout=60 crunchy-pgbadger=false crunchy-postgres-exporter=false deployment-name=hacluster pg-cluster=hacluster crunchy-pgha-scope=hacluster autofail=true pgo-backrest=true pgo-version={{< param operatorVersion >}} current-primary=hacluster name=hacluster pgouser=admin workflowid=ae714d12-f5d0-4fa9-910f-21944b41dec8
 ```
 
 ### Deleting a Cluster
