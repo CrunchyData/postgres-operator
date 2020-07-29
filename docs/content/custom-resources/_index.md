@@ -88,11 +88,11 @@ make changes, as described below.
 | CCPImage | `create` | The name of the PostgreSQL container image to use, e.g. `crunchy-postgres-ha` or `crunchy-postgres-ha-gis`. |
 | CCPImagePrefix | `create` | If provided, the image prefix (or registry) of the PostgreSQL container image, e.g. `registry.developers.crunchydata.com/crunchydata`. The default is to use the image prefix set in the PostgreSQL Operator configuration. |
 | CCPImageTag | `create` | The tag of the PostgreSQL container image to use, e.g. `{{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}`. |
-| ExporterSecretName | `create` | An optional attribute unless `crunchy_exporter` is specified in the `UserLabels`; contains the name of a Kubernetes Secret that contains the credentials for a PostgreSQL user that is used for metrics collection, and is created when the PostgreSQL cluster is first bootstrapped. For more information, please see `User Secret Specification`.|
+| CollectSecretName | `create` | An optional attribute unless `crunchy-postgres-exporter` is specified in the `UserLabels`; contains the name of a Kubernetes Secret that contains the credentials for a PostgreSQL user that is used for metrics collection, and is created when the PostgreSQL cluster is first bootstrapped. For more information, please see `User Secret Specification`.|
 | ClusterName | `create` | The name of the PostgreSQL cluster, e.g. `hippo`. This is used to group PostgreSQL instances (primary, replicas) together. |
 | CustomConfig | `create` | If specified, references a custom ConfigMap to use when bootstrapping a PostgreSQL cluster. For the shape of this file, please see the section on [Custom Configuration]({{< relref "/advanced/custom-configuration.md" >}}) |
 | Database | `create` | The name of a database that the PostgreSQL user can log into after the PostgreSQL cluster is created. |
-| ExporterPort | `create` | If the `"crunchy_exporter"` label is set in `UserLabels`, then this specifies the port that the metrics sidecar runs on (e.g. `9187`) |
+| ExporterPort | `create` | If the `"crunchy-postgres-exporter"` label is set in `UserLabels`, then this specifies the port that the metrics sidecar runs on (e.g. `9187`) |
 | Limits | `create`, `update` | Specify the container resource limits that the PostgreSQL cluster should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | Name | `create` | The name of the PostgreSQL instance that is the primary. On creation, this should be set to be the same as `ClusterName`. |
 | Namespace | `create` | The Kubernetes Namespace that the PostgreSQL cluster is deployed in. |
@@ -111,7 +111,7 @@ make changes, as described below.
 | RootSecretName | `create` | The name of a Kubernetes Secret that contains the credentials for a PostgreSQL superuser that is created when the PostgreSQL cluster is first bootstrapped. For more information, please see `User Secret Specification`.|
 | SyncReplication | `create` | If set to `true`, specifies the PostgreSQL cluster to use [synchronous replication]({{< relref "/architecture/high-availability/_index.md#how-the-crunchy-postgresql-operator-uses-pod-anti-affinity#synchronous-replication-guarding-against-transactions-loss" >}}).|
 | User | `create` | The name of the PostgreSQL user that is created when the PostgreSQL cluster is first created. |
-| UserLabels | `create` | A set of key-value string pairs that are used as a sort of "catch-all" for things that really should be modeled in the CRD. These values do get copied to the actually CR labels. If you want to set up metrics collection or pgBadger, you would specify `"crunchy_exporter": "true"` and `"crunchy-pgbadger": "true"` here, respectively. However, this structure does need to be set, so just follow whatever is in the example. |
+| UserLabels | `create` | A set of key-value string pairs that are used as a sort of "catch-all" for things that really should be modeled in the CRD. These values do get copied to the actually CR labels. If you want to set up metrics collection or pgBadger, you would specify `"crunchy-postgres-exporter": "true"` and `"crunchy-pgbadger": "true"` here, respectively. However, this structure does need to be set, so just follow whatever is in the example. |
 | UserSecretName | `create` | The name of a Kubernetes Secret that contains the credentials for a standard PostgreSQL user that is created when the PostgreSQL cluster is first bootstrapped. For more information, please see `User Secret Specification`.|
 | TablespaceMounts | `create`,`update` | Lists any tablespaces that are attached to the PostgreSQL cluster. Tablespaces can be added at a later time by updating the `TablespaceMounts` entry, but they cannot be removed. Stores a map of information, with the key being the name of the tablespace, and the value being a Storage Specification, defined below. |
 | TLS | `create` | Defines the attributes for enabling TLS for a PostgreSQL cluster. See TLS Specification below. |
@@ -206,7 +206,7 @@ cluster. All of the attributes only affect the replica when it is created.
 | Name | `create` | The name of this PostgreSQL replica. It should be unique within a `ClusterName`. |
 | Namespace | `create` | The Kubernetes Namespace that the PostgreSQL cluster is deployed in. |
 | ReplicaStorage | `create` | A specification that gives information about the storage attributes for any replicas in the PostgreSQL cluster. For details, please see the `Storage Specification` section in the `pgclusters.crunchydata.com` description. This will likely be changed in the future based on the nature of the high-availability system, but presently it is still required that you set it. It is recommended you use similar settings to that of `PrimaryStorage`. |
-| UserLabels | `create` | A set of key-value string pairs that are used as a sort of "catch-all" for things that really should be modeled in the CRD. These values do get copied to the actually CR labels. If you want to set up metrics collection, you would specify `"crunchy_exporter": "true"` here. This also allows for node selector pinning using `NodeLabelKey` and `NodeLabelValue`. However, this structure does need to be set, so just follow whatever is in the example. |
+| UserLabels | `create` | A set of key-value string pairs that are used as a sort of "catch-all" for things that really should be modeled in the CRD. These values do get copied to the actually CR labels. If you want to set up metrics collection, you would specify `"crunchy-postgres-exporter": "true"` here. This also allows for node selector pinning using `NodeLabelKey` and `NodeLabelValue`. However, this structure does need to be set, so just follow whatever is in the example. |
 
 ## Custom Resource Workflows
 
@@ -355,7 +355,7 @@ metadata:
     autofail: "true"
     crunchy-pgbadger: "false"
     crunchy-pgha-scope: ${pgo_cluster_name}
-    crunchy_exporter: "false"
+    crunchy-postgres-exporter: "false"
     deployment-name: ${pgo_cluster_name}
     name: ${pgo_cluster_name}
     pg-cluster: ${pgo_cluster_name}
@@ -436,7 +436,7 @@ spec:
   tlsOnly: false
   user: hippo
   userlabels:
-    crunchy_exporter: "false"
+    crunchy-postgres-exporter: "false"
     pg-pod-anti-affinity: ""
     pgo-version: {{< param operatorVersion >}}
   usersecretname: ${pgo_cluster_name}-hippo-secret
@@ -533,7 +533,7 @@ spec:
   userlabels:
     NodeLabelKey: ""
     NodeLabelValue: ""
-    crunchy_exporter: "false"
+    crunchy-postgres-exporter: "false"
     pg-pod-anti-affinity: ""
     pgo-version: {{< param operatorVersion >}}
 EOF
