@@ -19,7 +19,7 @@ This script will install the PostreSQL Operator Custom Resource Definitions, CRD
 
 | Setting |Definition  |
 |---|---|
-| Custom Resource Definitions (crd.yaml) | pgclusters|
+| Custom Resource Definitions | pgclusters|
 |  | pgpolicies|
 |  | pgreplicas|
 |  | pgtasks|
