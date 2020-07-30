@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+test="${PGO_CONF_DIR:?Need to set PGO_CONF_DIR env variable}"
+
 # awsKeySecret is borrowed from the legacy way to pull out the AWS s3
 # credentials in an environmental variable. This is only here while we
 # transition away from whatever this was
@@ -45,9 +47,9 @@ pgbackrest_aws_s3_key=$(awsKeySecret "aws-s3-key")
 pgbackrest_aws_s3_key_secret=$(awsKeySecret "aws-s3-key-secret")
 
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create secret generic pgo-backrest-repo-config \
-	--from-file=config=$PGOROOT/conf/pgo-backrest-repo/config \
-	--from-file=sshd_config=$PGOROOT/conf/pgo-backrest-repo/sshd_config \
-	--from-file=aws-s3-ca.crt=$PGOROOT/conf/pgo-backrest-repo/aws-s3-ca.crt \
+	--from-file=config=${PGO_CONF_DIR}/pgo-backrest-repo/config \
+	--from-file=sshd_config=${PGO_CONF_DIR}/pgo-backrest-repo/sshd_config \
+	--from-file=aws-s3-ca.crt=${PGO_CONF_DIR}/pgo-backrest-repo/aws-s3-ca.crt \
 	--from-literal=aws-s3-key="${pgbackrest_aws_s3_key}" \
 	--from-literal=aws-s3-key-secret="${pgbackrest_aws_s3_key_secret}"
 
@@ -60,10 +62,11 @@ then
 	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete secret pgo.tls
 fi
 
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create secret tls pgo.tls --key=$PGOROOT/conf/postgres-operator/server.key --cert=$PGOROOT/conf/postgres-operator/server.crt
+$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create secret tls pgo.tls --key=${PGOROOT}/conf/postgres-operator/server.key --cert=${PGOROOT}/conf/postgres-operator/server.crt
 
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create configmap pgo-config \
-	--from-file=$PGOROOT/conf/postgres-operator
+	--from-file=${PGOROOT}/conf/postgres-operator/pgo.yaml \
+	--from-file=${PGO_CONF_DIR}/pgo-configs
 
 
 #

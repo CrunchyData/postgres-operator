@@ -24,6 +24,7 @@ test="${PGO_CMD:?Need to set PGO_CMD env variable}"
 test="${PGOROOT:?Need to set PGOROOT env variable}"
 test="${PGO_OPERATOR_NAMESPACE:?Need to set PGO_OPERATOR_NAMESPACE env variable}"
 test="${PGO_INSTALLATION_NAME:?Need to set PGO_INSTALLATION_NAME env variable}"
+test="${PGO_CONF_DIR:?Need to set PGO_CONF_DIR env variable}"
 
 if [[ -z "$1" ]]; then
 	echo "usage:  add-targeted-namespace.sh mynewnamespace"
@@ -52,9 +53,9 @@ if [ $? -ne 0 ]; then
 	$PGO_CMD -n $1 delete --ignore-not-found role pgo-pg-role
 	$PGO_CMD -n $1 delete --ignore-not-found rolebinding pgo-pg-role-binding
 
-	cat $PGOROOT/conf/postgres-operator/pgo-pg-sa.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
-	cat $PGOROOT/conf/postgres-operator/pgo-pg-role.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
-	cat $PGOROOT/conf/postgres-operator/pgo-pg-role-binding.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
+	cat $PGO_CONF_DIR/pgo-configs/pgo-pg-sa.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
+	cat $PGO_CONF_DIR/pgo-configs/pgo-pg-role.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
+	cat $PGO_CONF_DIR/pgo-configs/pgo-pg-role-binding.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
 else
 	echo "Running pods found using SA '${PG_SA}' in namespace $1, will not recreate"
 fi
@@ -64,13 +65,13 @@ $PGO_CMD -n $1 delete --ignore-not-found sa pgo-backrest pgo-default pgo-target
 $PGO_CMD -n $1 delete --ignore-not-found role pgo-backrest-role pgo-target-role
 $PGO_CMD -n $1 delete --ignore-not-found rolebinding pgo-backrest-role-binding pgo-target-role-binding
 
-cat $PGOROOT/conf/postgres-operator/pgo-default-sa.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
-cat $PGOROOT/conf/postgres-operator/pgo-target-sa.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
-cat $PGOROOT/conf/postgres-operator/pgo-target-role.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
-cat $PGOROOT/conf/postgres-operator/pgo-target-role-binding.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | sed 's/{{.OperatorNamespace}}/'"$PGO_OPERATOR_NAMESPACE"'/' | $PGO_CMD -n $1 create -f -
-cat $PGOROOT/conf/postgres-operator/pgo-backrest-sa.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
-cat $PGOROOT/conf/postgres-operator/pgo-backrest-role.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
-cat $PGOROOT/conf/postgres-operator/pgo-backrest-role-binding.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
+cat $PGO_CONF_DIR/pgo-configs/pgo-default-sa.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
+cat $PGO_CONF_DIR/pgo-configs/pgo-target-sa.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
+cat $PGO_CONF_DIR/pgo-configs/pgo-target-role.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
+cat $PGO_CONF_DIR/pgo-configs/pgo-target-role-binding.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | sed 's/{{.OperatorNamespace}}/'"$PGO_OPERATOR_NAMESPACE"'/' | $PGO_CMD -n $1 create -f -
+cat $PGO_CONF_DIR/pgo-configs/pgo-backrest-sa.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
+cat $PGO_CONF_DIR/pgo-configs/pgo-backrest-role.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
+cat $PGO_CONF_DIR/pgo-configs/pgo-backrest-role-binding.json | sed 's/{{.TargetNamespace}}/'"$1"'/' | $PGO_CMD -n $1 create -f -
 
 if [ -r "$PGO_IMAGE_PULL_SECRET_MANIFEST" ]; then
 	$PGO_CMD -n $1 create -f "$PGO_IMAGE_PULL_SECRET_MANIFEST"
