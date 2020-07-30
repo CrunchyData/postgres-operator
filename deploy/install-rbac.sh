@@ -17,11 +17,16 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $DIR/cleanup-rbac.sh
+test="${PGO_CONF_DIR:?Need to set PGO_CONF_DIR env variable}"
 
 # see if CRDs need to be created
 $PGO_CMD get crd pgclusters.crunchydata.com > /dev/null
 if [ $? -eq 1 ]; then
-	$PGO_CMD create -f $DIR/crd.yaml
+	$PGO_CMD create \
+		-f ${PGO_CONF_DIR}/crds/pgclusters-crd.yaml \
+		-f ${PGO_CONF_DIR}/crds/pgpolicies-crd.yaml \
+		-f ${PGO_CONF_DIR}/crds/pgreplicas-crd.yaml \
+		-f ${PGO_CONF_DIR}/crds/pgtasks-crd.yaml
 fi
 
 # create the initial pgo admin credential
