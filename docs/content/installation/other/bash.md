@@ -85,7 +85,7 @@ the use of namespaces within the Operator.
 
 ## Default Installation - Configure Operator Templates
 
-Within the Operator *conf* directory are several configuration files and templates used by the Operator to determine the various resources that it deploys on your Kubernetes cluster, specifically the PostgreSQL clusters it deploys.
+Within the Operator [*PGO_CONF_DIR*](/developer-setup/) directory are several configuration files and templates used by the Operator to determine the various resources that it deploys on your Kubernetes cluster, specifically the PostgreSQL clusters it deploys.
 
 When you install the Operator you must make choices as to what kind of storage the Operator has to work with for example.  Storage varies with each installation.  As an installer, you would modify these configuration templates used by the Operator to customize its behavior.
 

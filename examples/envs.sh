@@ -17,6 +17,9 @@ export PGO_CMD=kubectl
 # the directory location of the Operator scripts
 export PGOROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 
+# the directory location of the Json Config Templates
+export PGO_CONF_DIR=$PGOROOT/installers/ansible/roles/pgo-operator/files
+
 # the version of the Operator you run is set by these vars
 export PGO_IMAGE_PREFIX=registry.developers.crunchydata.com/crunchydata
 export PGO_BASEOS=centos7

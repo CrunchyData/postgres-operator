@@ -15,10 +15,6 @@
 
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PGO_CONF="$PGOROOT/conf/postgres-operator"
-
-ROLE_INPUT="$PGO_CONF/pgorole"
-USER_INPUT="$PGO_CONF/pgouser"
 
 if [ $# -eq 2 ] && [ -f $1 ] && [ -f $2 ]; then
     ROLE_INPUT=${1}
