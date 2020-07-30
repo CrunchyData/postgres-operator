@@ -254,7 +254,7 @@ func validPermissions(perms string) error {
 	fields := strings.Split(perms, ",")
 
 	for _, v := range fields {
-		if apiserver.PermMap[strings.TrimSpace(v)] == "" {
+		if apiserver.PermMap[strings.TrimSpace(v)] == "" && strings.TrimSpace(v) != "*" {
 			return errors.New(v + " not a valid Permission")
 		}
 	}
