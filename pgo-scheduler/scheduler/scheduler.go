@@ -25,13 +25,13 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	log "github.com/sirupsen/logrus"
 
-	cv2 "github.com/robfig/cron"
+	cv3 "gopkg.in/robfig/cron.v3"
 	v1 "k8s.io/api/core/v1"
 )
 
 func New(label, namespace string, client kubeapi.Interface) *Scheduler {
 	clientset = client
-	cronClient := cv2.New()
+	cronClient := cv3.New()
 	cronClient.AddFunc("* * * * *", phony)
 	cronClient.AddFunc("* * * * *", heartbeat)
 
@@ -39,7 +39,7 @@ func New(label, namespace string, client kubeapi.Interface) *Scheduler {
 		namespace:  namespace,
 		label:      label,
 		CronClient: cronClient,
-		entries:    make(map[string]cv2.EntryID),
+		entries:    make(map[string]cv3.EntryID),
 	}
 }
 
@@ -93,8 +93,8 @@ func (s *Scheduler) DeleteSchedule(config *v1.ConfigMap) {
 	delete(s.entries, name)
 }
 
-func (s *Scheduler) schedule(st ScheduleTemplate) (cv2.EntryID, error) {
-	var job cv2.Job
+func (s *Scheduler) schedule(st ScheduleTemplate) (cv3.EntryID, error) {
+	var job cv3.Job
 
 	switch st.Type {
 	case "pgbackrest":
@@ -102,7 +102,7 @@ func (s *Scheduler) schedule(st ScheduleTemplate) (cv2.EntryID, error) {
 	case "policy":
 		job = st.NewPolicySchedule()
 	default:
-		var id cv2.EntryID
+		var id cv3.EntryID
 		return id, fmt.Errorf("schedule type not implemented yet")
 	}
 	return s.CronClient.AddJob(st.Schedule, job)

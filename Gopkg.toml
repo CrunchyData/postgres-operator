@@ -24,7 +24,7 @@ required = [
   version = "1.0.8"
 
 [[constraint]]
-  name = "github.com/robfig/cron"
+  name = "gopkg.in/robfig/cron.v3"
   version = "3.0.1"
 
 [[constraint]]
