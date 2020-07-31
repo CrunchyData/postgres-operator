@@ -12,7 +12,8 @@ LABEL name="postgres-operator" \
 RUN yum -y install hostname postgresql${PGVERSION}  && yum -y clean all
 
 ADD bin/postgres-operator /usr/local/bin
-ADD conf/postgres-operator /default-pgo-config
+ADD installers/ansible/roles/pgo-operator/files/pgo-configs /default-pgo-config
+ADD conf/postgres-operator/pgo.yaml /default-pgo-config/pgo.yaml
 
 USER 2
 
