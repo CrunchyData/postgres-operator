@@ -13,7 +13,8 @@ RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /pgo-config \
  && chown -R 2:2 /opt/cpm /pgo-config
 
 ADD bin/pgo-scheduler /opt/cpm/bin
-ADD conf/postgres-operator /default-pgo-config
+ADD installers/ansible/roles/pgo-operator/files/pgo-configs /default-pgo-config
+ADD conf/postgres-operator/pgo.yaml /default-pgo-config/pgo.yaml
 
 USER 2
 
