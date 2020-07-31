@@ -282,14 +282,6 @@
   version = "v0.9.1"
 
 [[projects]]
-  digest = "1:32db15a47b5be06a5d40e863ab0ebed107741845fd2d8676121f788284d26923"
-  name = "github.com/robfig/cron"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "ccba498c397bb90a9c84945bbb0f7af2d72b6309"
-  version = "v3.0.1"
-
-[[projects]]
   digest = "1:b36a0ede02c4c2aef7df7f91cbbb7bb88a98b5d253509d4f997dda526e50c88c"
   name = "github.com/russross/blackfriday"
   packages = ["."]
@@ -531,6 +523,14 @@
   pruneopts = "UT"
   revision = "d2d2541c53f18d2a059457998ce2876cc8e67cbf"
   version = "v0.9.1"
+
+[[projects]]
+  digest = "1:32db15a47b5be06a5d40e863ab0ebed107741845fd2d8676121f788284d26923"
+  name = "gopkg.in/robfig/cron.v3"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ccba498c397bb90a9c84945bbb0f7af2d72b6309"
+  version = "v3.0.1"
 
 [[projects]]
   digest = "1:55b110c99c5fdc4f14930747326acce56b52cfce60b24b1c03ef686ac0e46bb1"
@@ -981,7 +981,6 @@
     "github.com/fatih/color",
     "github.com/gorilla/mux",
     "github.com/nsqio/go-nsq",
-    "github.com/robfig/cron",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
     "github.com/spf13/cobra/doc",
@@ -990,6 +989,7 @@
     "golang.org/x/crypto/pbkdf2",
     "golang.org/x/crypto/ssh",
     "golang.org/x/sync/semaphore",
+    "gopkg.in/robfig/cron.v3",
     "k8s.io/api/apps/v1",
     "k8s.io/api/authorization/v1",
     "k8s.io/api/batch/v1",

@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	cv3 "github.com/robfig/cron"
+	cv3 "gopkg.in/robfig/cron.v3"
 )
 
 func validate(s ScheduleTemplate) error {

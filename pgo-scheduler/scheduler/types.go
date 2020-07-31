@@ -19,14 +19,14 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	cv2 "github.com/robfig/cron"
+	cv3 "gopkg.in/robfig/cron.v3"
 )
 
 var clientset kubeapi.Interface
 
 type Scheduler struct {
-	entries       map[string]cv2.EntryID
-	CronClient    *cv2.Cron
+	entries       map[string]cv3.EntryID
+	CronClient    *cv3.Cron
 	label         string
 	namespace     string
 	namespaceList []string
