@@ -180,6 +180,10 @@
                         {
                             "mountPath": "/crunchyadm",
                             "name": "crunchyadm"
+                        },
+                        {
+                            "mountPath": "/etc/podinfo",
+                            "name": "podinfo"
                         }
                         {{.TablespaceVolumeMounts}}
                     ],
@@ -337,6 +341,58 @@
                                         "name": "{{.ClusterName}}-pgha-config",
                                         "optional": true
                                     }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "podinfo",
+                        "downwardAPI": {
+                            "defaultMode": 420,
+                            "items": [
+                                {
+                                    "path": "cpu_limit",
+                                    "resourceFieldRef": {
+                                        "containerName": "database",
+                                        "divisor": "1m",
+                                        "resource": "limits.cpu"
+                                    }
+                                },
+                                {
+                                    "path": "cpu_request",
+                                    "resourceFieldRef": {
+                                        "containerName": "database",
+                                        "divisor": "1m",
+                                        "resource": "requests.cpu"
+                                    }
+                                },
+                                {
+                                    "path": "mem_limit",
+                                    "resourceFieldRef": {
+                                        "containerName": "database",
+                                        "resource": "limits.memory"
+                                    }
+                                },
+                                {
+                                    "path": "mem_request",
+                                    "resourceFieldRef": {
+                                        "containerName": "database",
+                                        "resource": "requests.memory"
+                                    }
+                                },
+                                {
+                                    "fieldRef": {
+                                        "apiVersion": "v1",
+                                        "fieldPath": "metadata.labels"
+                                    },
+                                    "path": "labels"
+                                },
+                                {
+                                    "fieldRef": {
+                                        "apiVersion": "v1",
+                                        "fieldPath": "metadata.annotations"
+                                    },
+                                    "path": "annotations"
                                 }
                             ]
                         }
