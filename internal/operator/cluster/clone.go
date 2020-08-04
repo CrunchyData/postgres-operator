@@ -414,6 +414,8 @@ func cloneStep2(clientset kubeapi.Interface, restConfig *rest.Config, namespace 
 		operator.AddWALVolumeAndMountsToBackRest(&job.Spec.Template.Spec, walVolume)
 	}
 
+	operator.AddBackRestConfigVolumeAndMounts(&job.Spec.Template.Spec, sourcePgcluster.Name, sourcePgcluster.Spec.BackrestConfig)
+
 	// set the container image to an override value, if one exists
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_RESTORE,
 		&job.Spec.Template.Spec.Containers[0])
@@ -795,6 +797,7 @@ func createCluster(clientset kubeapi.Interface, task *crv1.Pgtask, sourcePgclust
 		},
 		Spec: crv1.PgclusterSpec{
 			ArchiveStorage:     sourcePgcluster.Spec.ArchiveStorage,
+			BackrestConfig:     sourcePgcluster.Spec.BackrestConfig,
 			BackrestStorage:    sourcePgcluster.Spec.BackrestStorage,
 			BackrestS3Bucket:   sourcePgcluster.Spec.BackrestS3Bucket,
 			BackrestS3Endpoint: sourcePgcluster.Spec.BackrestS3Endpoint,

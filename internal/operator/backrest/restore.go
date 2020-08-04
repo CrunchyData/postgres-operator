@@ -240,6 +240,8 @@ func Restore(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 		operator.AddWALVolumeAndMountsToBackRest(&job.Spec.Template.Spec, walVolume)
 	}
 
+	operator.AddBackRestConfigVolumeAndMounts(&job.Spec.Template.Spec, cluster.Name, cluster.Spec.BackrestConfig)
+
 	// set the container image to an override value, if one exists
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_RESTORE,
 		&job.Spec.Template.Spec.Containers[0])
@@ -423,6 +425,8 @@ func createRestoredDeployment(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	if cluster.Spec.WALStorage.StorageType != "" {
 		operator.AddWALVolumeAndMountsToPostgreSQL(&deployment.Spec.Template.Spec, walVolume, restoreToName)
 	}
+
+	operator.AddBackRestConfigVolumeAndMounts(&deployment.Spec.Template.Spec, cluster.Name, cluster.Spec.BackrestConfig)
 
 	// determine if any of the container images need to be overridden
 	operator.OverrideClusterContainerImages(deployment.Spec.Template.Spec.Containers)

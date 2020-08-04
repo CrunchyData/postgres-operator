@@ -138,9 +138,6 @@
                             "name": "pgdata",
                             "readOnly": false
                         }, {
-                            "mountPath": "/backrestrepo",
-                            "name": "backrestrepo"
-                        }, {
                             "mountPath": "/pgconf/pguser",
                             "name": "user-volume"
                         }, {
@@ -176,6 +173,10 @@
                         {
                             "mountPath": "/dev/shm",
                             "name": "dshm"
+                        },
+                        {
+                            "mountPath": "/etc/pgbackrest/conf.d",
+                            "name": "pgbackrest-config"
                         },
                         {
                             "mountPath": "/crunchyadm",
@@ -313,9 +314,6 @@
                         "name": "report",
                         "emptyDir": { "medium": "Memory" }
                     }, {
-                        "name": "backrestrepo",
-                        "emptyDir": { "medium": "Memory" }
-                    }, {
                         "name": "crunchyadm",
                         "emptyDir": {}
                     },
@@ -324,6 +322,10 @@
                       "emptyDir": {
                         "medium": "Memory"
                       }
+                    },
+                    {
+                      "name": "pgbackrest-config",
+                      "projected": { "sources": [] }
                     },
                     {
                         "name": "pgconf-volume",

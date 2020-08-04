@@ -725,6 +725,16 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		}
 	}
 
+	// check that the specified ConfigMap exists
+	if request.BackrestConfig != "" {
+		_, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Get(request.BackrestConfig, metav1.GetOptions{})
+		if err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+	}
+
 	// ensure the backrest storage type specified for the cluster is valid, and that the
 	// configuration required to use that storage type (e.g. a bucket, endpoint and region
 	// when using aws s3 storage) has been provided
@@ -1355,6 +1365,12 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 	spec.CustomConfig = request.CustomConfig
 	spec.SyncReplication = request.SyncReplication
+
+	if request.BackrestConfig != "" {
+		configmap := v1.ConfigMapProjection{}
+		configmap.Name = request.BackrestConfig
+		spec.BackrestConfig = append(spec.BackrestConfig, v1.VolumeProjection{ConfigMap: &configmap})
+	}
 
 	// set pgBackRest S3 settings in the spec if included in the request
 	// otherwise set to the default configuration value

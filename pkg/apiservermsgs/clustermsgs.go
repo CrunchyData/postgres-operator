@@ -83,6 +83,7 @@ type CreateClusterRequest struct {
 	PodAntiAffinityPgBackRest string
 	PodAntiAffinityPgBouncer  string
 	SyncReplication           *bool
+	BackrestConfig            string
 	BackrestS3Key             string
 	BackrestS3KeySecret       string
 	BackrestS3Bucket          string

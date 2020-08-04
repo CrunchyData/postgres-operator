@@ -288,6 +288,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.PodAntiAffinity = PodAntiAffinity
 	r.PodAntiAffinityPgBackRest = PodAntiAffinityPgBackRest
 	r.PodAntiAffinityPgBouncer = PodAntiAffinityPgBouncer
+	r.BackrestConfig = BackrestConfig
 	r.BackrestS3CASecretName = BackrestS3CASecretName
 	r.BackrestS3Key = BackrestS3Key
 	r.BackrestS3KeySecret = BackrestS3KeySecret
