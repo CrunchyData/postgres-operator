@@ -40,6 +40,8 @@ DFSET=$(PGO_BASEOS)
 # repository using docker (otherwise the images may not be recognized)
 export BUILDAH_FORMAT ?= docker
 
+DOCKERBASEREGISTRY=registry.access.redhat.com/
+
 # Allows simplification of IMGBUILDER switching
 ifeq ("$(IMGBUILDER)","docker")
         IMGCMDSTEM=docker build
@@ -206,6 +208,7 @@ pgo-base-build: $(PGOROOT)/build/pgo-base/Dockerfile
 		--build-arg PG_FULL=$(PGO_PG_FULLVERSION) \
 		--build-arg DFSET=$(DFSET) \
 		--build-arg PACKAGER=$(PACKAGER) \
+		--build-arg DOCKERBASEREGISTRY=$(DOCKERBASEREGISTRY) \
 		$(PGOROOT)
 
 pgo-base-buildah: pgo-base-build ;
