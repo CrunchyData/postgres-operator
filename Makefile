@@ -196,7 +196,7 @@ endif
 
 pgo-base: pgo-base-$(IMGBUILDER)
 
-pgo-base-build: $(PGOROOT)/pgo-base/Dockerfile
+pgo-base-build: $(PGOROOT)/build/pgo-base/Dockerfile
 	$(IMGCMDSTEM) \
 		-f $(PGOROOT)/build/pgo-base/Dockerfile \
 		-t $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) \
