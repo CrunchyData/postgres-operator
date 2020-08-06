@@ -49,7 +49,7 @@
   tags:
     - uninstall-metrics
 
-- name: Install Crunchy PostgreSQL Operator Metrics
+- name: Install Crunchy PostgreSQL Operator Monitoring
   tags:
     - install-metrics
     - update-metrics

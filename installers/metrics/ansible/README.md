@@ -1,4 +1,4 @@
-# Crunchy Data PostgreSQL Operator Metrics Playbook
+# Crunchy Data PostgreSQL Operator Monitoring Playbook
 
 <p align="center">
   <img width="150" src="../../../crunchy_logo.png" alt="Crunchy Data"/>

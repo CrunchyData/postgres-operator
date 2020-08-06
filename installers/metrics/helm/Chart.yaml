@@ -1,6 +1,6 @@
 apiVersion: v2
 name: postgres-operator-metrics
-description: Install for Crunchy PostgreSQL Operator Metrics
+description: Install for Crunchy PostgreSQL Operator Monitoring
 type: application
 version: 0.1.0
 appVersion: 4.4.0

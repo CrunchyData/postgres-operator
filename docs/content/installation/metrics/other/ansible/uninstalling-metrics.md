@@ -1,14 +1,14 @@
 ---
-title: "Uninstalling the Metrics Infrastructure"
+title: "Uninstalling the Monitoring Infrastructure"
 date:
 draft: false
 weight: 41
 ---
 
-# Uninstalling the Metrics Infrastructure
+# Uninstalling the Monitoring Infrastructure
 
 The following assumes the proper [prerequisites are satisfied][ansible-prerequisites]
-we can now uninstall the PostgreSQL Operator Metrics infrastructure.
+we can now uninstall the PostgreSQL Operator Monitoring infrastructure.
 
 First, it is recommended to use the playbooks tagged with the same version
 of the Metrics infratructure currently deployed.

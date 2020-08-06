@@ -1,24 +1,24 @@
 ---
-title: "Metrics Configuration Reference"
+title: "Monitoring Configuration Reference"
 date:
 draft: false
 weight: 30
 ---
 
-# PostgreSQL Operator Metrics Installer Configuration
+# PostgreSQL Operator Monitoring Installer Configuration
 
-When installing the PostgreSQL Operator Metrics infrastructure you have various configuration options available, which
+When installing the PostgreSQL Operator Monitoring infrastructure you have various configuration options available, which
 are defined below.
 
 ## General Configuration
 
-These variables affect the general configuration of PostgreSQL Operator Metrics.
+These variables affect the general configuration of PostgreSQL Operator Monitoring.
 
 | Name | Default | Required | Description |
 |------|---------|----------|-------------|
-| `create_rbac` | true | **Required** | Set to true if the installer should create the RBAC resources required to run the PostgreSQL Operator Metrics infrastructure. |
+| `create_rbac` | true | **Required** | Set to true if the installer should create the RBAC resources required to run the PostgreSQL Operator Monitoring infrastructure. |
 | `db_port` | 5432 | **Required** | Set to configure the PostgreSQL port used by all PostgreSQL clusters. |
-| `delete_metrics_namespace` | false |  | Set to configure whether or not the metrics namespace (defined using variable `metrics_namespace`) is deleted when uninstalling the metrics infrastructure. |
+| `delete_metrics_namespace` | false |  | Set to configure whether or not the metrics namespace (defined using variable `metrics_namespace`) is deleted when uninstalling the monitoring infrastructure. |
 | `disable_fsgroup` | false |  | Set to `true` for deployments where you do not want to have the default PostgreSQL fsGroup (26) set. The typical usage is in OpenShift environments that have a `restricted` Security Context Constraints. |
 | `grafana_admin_password` | admin | **Required** | Set to configure the login password for the Grafana administrator. |
 | `grafana_admin_username` | admin | **Required** | Set to configure the login username for the Grafana administrator. |
@@ -41,11 +41,11 @@ These variables affect the general configuration of PostgreSQL Operator Metrics.
 
 ## Custom Configuration
 
-When installing the PostgreSQL Operator Metrics infrastructure, it is possible to further customize
+When installing the PostgreSQL Operator Monitoring infrastructure, it is possible to further customize
 the various Deployments included (e.g. Grafana and/or Prometheus) using custom configuration files.
-Specifically, by pointing the PostgreSQL Operator Metrics installer to one or more ConfigMaps
+Specifically, by pointing the PostgreSQL Operator Monitoring installer to one or more ConfigMaps
 containing any desired custom configuration settings, those settings will then be applied during
-configuration and installation of the PostgreSQL Operator Metrics infrastructure.  
+configuration and installation of the PostgreSQL Operator Monitoring infrastructure.  
 
 The specific custom configuration settings available are as follows:
 
@@ -60,7 +60,7 @@ for the specific configuration being customized are no longer applied._
 
 ## Using RedHat Certified Containers & Custom Images
 
-By default, the PostgreSQL Operator Metrics installer will deploy the official Grafana and
+By default, the PostgreSQL Operator Monitoring installer will deploy the official Grafana and
 Prometheus containers that are publically available on [dockerhub](https://hub.docker.com/):
 
 - https://hub.docker.com/r/grafana/grafana
@@ -115,7 +115,7 @@ grafana_dashboards:
 
 When using Helm, the following settings can be defined to control the image prefix and image tag
 utilized for the `pgo-deployer` container that is run to install, update or uninstall the
-PostgreSQL Operator Metrics infrastructure:
+PostgreSQL Operator Monitoring infrastructure:
 
 | Name | Default | Required | Description |
 |------|---------|----------|-------------|

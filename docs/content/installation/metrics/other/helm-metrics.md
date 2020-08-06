@@ -1,16 +1,16 @@
 ---
-title: "Metrics Helm Chart"
+title: "Monitoring Helm Chart"
 date:
 draft: false
 weight: 20
 ---
 
-# The PostgreSQL Operator Metrics Helm Chart
+# The PostgreSQL Operator Monitoring Helm Chart
 
 ## Overview
 
 The PostgreSQL Operator comes with a container called `pgo-deployer` which
-handles a variety of lifecycle actions for the PostgreSQL Operator Metrics infrastructure,
+handles a variety of lifecycle actions for the PostgreSQL Operator Monitoring infrastructure,
 including:
 
 - Installation
@@ -21,7 +21,7 @@ After configuring the `values.yaml` file with you configuration options, the
 installer will be run using the `helm` command line tool and takes care of
 setting up all of the objects required to run the PostgreSQL Operator.
 
-The PostgreSQL Operator Metrics Helm chart is available in the
+The PostgreSQL Operator Monitoring Helm chart is available in the
 [Helm](https://github.com/CrunchyData/postgres-operator/tree/master/installers/metrics/helm)
 directory in the PostgreSQL Operator repository.
 
@@ -57,17 +57,17 @@ file will be used to populate the configuation options in the ConfigMap.
 ### Configuration - `values.yaml`
 
 The `values.yaml` file contains all of the configuration parameters for deploying
-the PostgreSQL Operator Metrics infrastructure. 
+the PostgreSQL Operator Monitoring infrastructure. 
 The [values.yaml file](https://github.com/CrunchyData/postgres-operator/blob/master/installers/metrics/helm/values.yaml)
 contains the defaults that should work in most Kubernetes environments, but it may require some customization.
 
 For a detailed description of each configuration parameter, please read the
-[PostgreSQL Operator Metrics Installer Configuration Reference](<{{< relref "/installation/metrics/metrics-configuration.md">}}>)
+[PostgreSQL Operator Monitoring Installer Configuration Reference](<{{< relref "/installation/metrics/metrics-configuration.md">}}>)
 
 ## Installation
 
-Once you have configured the PostgreSQL Operator Metrics installer to your
-specification, you can install the PostgreSQL Operator Metrics infrastructure
+Once you have configured the PostgreSQL Operator Monitoring installer to your
+specification, you can install the PostgreSQL Operator Monitoring infrastructure
 with the following command:
 
 ```shell
