@@ -29,7 +29,8 @@
 {% endif %}
 {% if not (disable_fsgroup | default(false) | bool) %}
                     {% if (grafana_supplemental_groups | default('')) != '' %},{% endif -%}
-                    "fsGroup": 26
+                    "fsGroup": 26,
+                    "runAsUser": 2
 {% endif %}
                 },
                 "serviceAccountName": "grafana",
@@ -59,6 +60,10 @@
                         },
                         "env": [
                             {
+                                "name": "GF_PATHS_DATA",
+                                "value": "/data/grafana/data"
+                            },
+                            {
                                 "name": "GF_SECURITY_ADMIN_USERNAME__FILE",
                                 "value": "/conf/admin/username"
                             },
@@ -77,7 +82,7 @@
                         ],
                         "volumeMounts": [
                             {
-                                "mountPath": "/var/lib/grafana",
+                                "mountPath": "/data",
                                 "name": "grafanadata"
                             },
                             {
