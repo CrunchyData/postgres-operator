@@ -50,15 +50,15 @@
     - uninstall-metrics
 
 - name: Install Crunchy PostgreSQL Operator Metrics
+  tags:
+    - install-metrics
+    - update-metrics
   block:
     - name: Download pgmonitor {{ pgmonitor_version }}
       get_url:
         url: https://github.com/CrunchyData/pgmonitor/archive/{{ pgmonitor_version }}.tar.gz
         dest: "{{ metrics_dir }}"
         mode: "0600"
-      tags:
-        - install-metrics
-        - update-metrics
 
     - name: Extract pgmonitor
       unarchive:
@@ -101,6 +101,3 @@
       until: deployment_poll_results.finished
       retries: 60
       delay: 10
-  tags:
-    - install-metrics
-    - update-metrics

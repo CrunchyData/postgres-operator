@@ -1,17 +1,18 @@
 ---
 - name: Deploy Prometheus
+  tags:
+    - install-metrics
+    - update-metrics
   block:
     - name: Set Prometheus Output Directory Fact
       set_fact:
         prom_output_dir: "{{ metrics_dir }}/output/prom"
-      tags: always
 
     - name: Ensure Output Directory Exists
       file: 
         path: "{{ prom_output_dir }}"
         state: "directory"
         mode: "0700"
-      tags: always
 
     - name: Template Prometheus RBAC
       template:
@@ -85,6 +86,3 @@
       failed_when:
         - create_prometheus_deployment_result.rc != 0
         - "'AlreadyExists' not in create_prometheus_deployment_result.stderr"
-  tags:
-    - install-metrics
-    - update-metrics
