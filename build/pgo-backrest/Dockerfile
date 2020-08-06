@@ -1,19 +1,22 @@
 ARG BASEOS
 ARG BASEVER
 ARG PREFIX
+FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
+
 ARG PGVERSION
 ARG BACKREST_VERSION
-FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
+ARG PACKAGER
+ARG DFSET
 
 LABEL name="pgo-backrest" \
     summary="Crunchy PostgreSQL Operator - pgBackRest" \
     description="pgBackRest image that is integrated for use with Crunchy Data's PostgreSQL Operator."
 
-RUN yum -y install \
+RUN ${PACKAGER} -y install \
 	--setopt=skip_missing_names_on_install=False \
 	postgresql${PGVERSION}-server \
 	crunchy-backrest-"${BACKREST_VERSION}" \
-	&& yum -y clean all
+	&& ${PACKAGER} -y clean all
 
 RUN mkdir -p /opt/cpm/bin /pgdata /backrestrepo && chown -R 26:26 /opt/cpm
 ADD bin/pgo-backrest/ /opt/cpm/bin

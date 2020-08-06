@@ -1,13 +1,16 @@
 ARG BASEOS
 ARG BASEVER
 ARG PREFIX
-ARG PGVERSION
-ARG BACKREST_VERSION
 FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
+ARG PGVERSION
+ARG BACKREST_VERSION
+ARG PACKAGER
+ARG DFSET
+
 LABEL name="pgo-client" \
-	summary="Crunchy PostgreSQL Operator - pgo client" \
-	description="Crunchy PostgreSQL Operator - pgo client"
+  summary="Crunchy PostgreSQL Operator - pgo client" \
+  description="Crunchy PostgreSQL Operator - pgo client"
 
 ADD bin/pgo /usr/local/bin
 

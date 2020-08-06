@@ -1,9 +1,12 @@
 ARG BASEOS
 ARG BASEVER
 ARG PREFIX
+FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
+
 ARG PGVERSION
 ARG BACKREST_VERSION
-FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
+ARG PACKAGER
+ARG DFSET
 
 LABEL name="pgo-event" \
     summary="Crunchy PostgreSQL Operator - pgo-event" \

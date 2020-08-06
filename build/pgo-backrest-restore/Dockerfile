@@ -1,15 +1,18 @@
 ARG BASEOS
 ARG BASEVER
 ARG PREFIX
+FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
+
 ARG PGVERSION
 ARG BACKREST_VERSION
-FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
+ARG PACKAGER
+ARG DFSET
 
 LABEL name="pgo-backrest-restore" \
 	summary="Crunchy PostgreSQL Operator - pgBackRest Restore" \
 	description="Performs a restore operation for a PostgreSQL database using pgBackRest."
 
-RUN yum -y install \
+RUN ${PACKAGER} -y install \
 	--setopt=skip_missing_names_on_install=False \
 	crunchy-backrest-"${BACKREST_VERSION}" \
 	openssh-clients \
@@ -17,7 +20,7 @@ RUN yum -y install \
 	postgresql${PGVERSION}-server \
 	procps-ng \
 	psmisc \
-	&& yum -y clean all
+	&& ${PACKAGER} -y clean all
 
 RUN mkdir -p /opt/cpm/bin /pgdata /tablespaces && \
 		chown -R 26:26 /opt/cpm /tablespaces
