@@ -1,5 +1,5 @@
 ---
-title: "Metrics Prerequisites"
+title: "Monitoring Prerequisites"
 date:
 draft: false
 weight: 10
@@ -7,11 +7,11 @@ weight: 10
 
 # Prerequisites
 
-The following is required prior to installing PostgreSQL Operator Metrics.
+The following is required prior to installing PostgreSQL Operator Monitoring.
 
 ## Environment
 
-PostgreSQL Operator Metrics is tested in the following environments:
+PostgreSQL Operator Monitoring is tested in the following environments:
 
 * Kubernetes v1.13+
 * Red Hat OpenShift v3.11+
@@ -20,8 +20,8 @@ PostgreSQL Operator Metrics is tested in the following environments:
 
 ### Application Ports
 
-The PostgreSQL Operator Metrics installer deploys different services as needed to support 
-PostgreSQL Operator metrics collection and monitoring. Below is a list of the applications
+The PostgreSQL Operator Monitoring installer deploys different services as needed to support 
+PostgreSQL Operator Monitoring collection and monitoring. Below is a list of the applications
 and their default Service ports.
 
 | Service | Port |

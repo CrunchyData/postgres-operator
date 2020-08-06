@@ -1,4 +1,4 @@
-# Installing Metrics Infrastructure
+# Installing the Monitoring Infrastructure
 
 This Helm chart installs the metrics deployment for Crunchy PostgreSQL Operator
 by using its “pgo-deployer” container. Helm will setup the ServiceAccount, RBAC,

@@ -1,17 +1,17 @@
 ---
-title: "Updating the Metrics Infrastructure"
+title: "Updating the Monitoring Infrastructure"
 date:
 draft: false
 weight: 30
 ---
 
-# Updating the Metrics Infrastructure
+# Updating the Monitoring Infrastructure
 
-Updating the PostgreSQL Operator Metrics infrastrcutre is essential to the lifecycle management
+Updating the PostgreSQL Operator Monitoring infrastrcutre is essential to the lifecycle management
 of the service.  Using the `update-metrics` flag will:
 
-* Update and redeploy the metrics infrastructure deployments
-* Recreate configuration maps and/or secrets used by the metrics infrastructure
+* Update and redeploy the monitoring infrastructure deployments
+* Recreate configuration maps and/or secrets used by the monitoring infrastructure
 * Remove any deprecated objects
 * Allow administrators to change settings configured in the `values.yaml`
 

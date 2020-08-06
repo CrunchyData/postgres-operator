@@ -298,7 +298,7 @@ kubectl delete -f /path/to/postgres-operator.yml
 Note that if you still have the ServiceAccount and ClusterRoleBinding in there,
 you will need to have elevated privileges.
 
-## Installing the PostgreSQL Opertator Metrics Infrastructure
+## Installing the PostgreSQL Operator Monitoring Infrastructure
 
-Please see the [PostgreSQL Operator Metrics installation section]({{< relref "/installation/metrics" >}})
-for instructions on how to install the PostgreSQL Opertator Metrics infrastructure.
+Please see the [PostgreSQL Operator Monitoring installation section]({{< relref "/installation/metrics" >}})
+for instructions on how to install the PostgreSQL Operator Monitoring infrastructure.

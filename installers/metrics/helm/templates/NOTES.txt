@@ -1,4 +1,4 @@
-Thank you for installing Crunchy PostgreSQL Operator Metrics v{{ .Chart.AppVersion }}!
+Thank you for installing Crunchy PostgreSQL Operator Monitoring v{{ .Chart.AppVersion }}!
 
                           ((((((((((((((((((((((
                     (((((((((((((%%%%%%%(((((((((((((((
@@ -30,5 +30,5 @@ Thank you for installing Crunchy PostgreSQL Operator Metrics v{{ .Chart.AppVersi
                 ####%%%                        %%%%%  %
                       %%                         %%%%
 
-More information about Crunchy PostgreSQL Operator Metrics can be found in the docs:
+More information about Crunchy PostgreSQL Operator Monitoring can be found in the docs:
 https://access.crunchydata.com/documentation/postgres-operator/

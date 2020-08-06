@@ -1,11 +1,11 @@
 ---
-title: Install PostgreSQL Operator Metrics
+title: Install PostgreSQL Operator Monitoring
 date:
 draft: false
 weight: 20
 ---
 
-# PostgreSQL Operator Metrics Installer
+# PostgreSQL Operator Monitoring Installer
 
 ## Quickstart
 
@@ -19,12 +19,12 @@ kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator
 ```
 
 However, we still advise that you read onward to see how to properly configure
-the PostgreSQL Operator Metrics infrastructure.
+the PostgreSQL Operator Monitoring infrastructure.
 
 ## Overview
 
 The PostgreSQL Operator comes with a container called `pgo-deployer` which
-handles a variety of lifecycle actions for the PostgreSQL Operator Metrics infrastructure,
+handles a variety of lifecycle actions for the PostgreSQL Operator Monitoring infrastructure,
 including:
 
 - Installation
@@ -53,7 +53,7 @@ environmental requirements.
 By default, the `pgo-deployer` uses a ServiceAccount called `pgo-metrics-deployer-sa`
 that has a ClusterRoleBinding (`pgo-metrics-deployer-crb`) with several ClusterRole
 permissions.  This ClusterRole is needed for the initial configuration and deployment
-of the various applications comprising the metrics infrastructure.  This includes permissions 
+of the various applications comprising the monitoring infrastructure.  This includes permissions 
 to create:
 
 * RBAC for use by Prometheus and/or Grafana
@@ -78,7 +78,7 @@ preferences.
 
 ### Namespaces
 
-By default, the PostgreSQL Operator Metrics installer will run in the `pgo` Namespace. This can be
+By default, the PostgreSQL Operator Monitoring installer will run in the `pgo` Namespace. This can be
 updated in the `postgres-operator-metrics.yml` file. **Please ensure that this namespace
 exists before the job is run**.
 
@@ -91,24 +91,24 @@ kubectl create namespace pgo
 ## Configuration - `postgres-operator-metrics.yml`
 
 The `postgres-operator-metrics.yml` file contains all of the configuration parameters
-for deploying PostgreSQL Operator Metrics. The [example file](https://github.com/CrunchyData/postgres-operator/blob/v{{< param operatorVersion >}}/installers/metrics/kubectl/postgres-operator-metrics.yml)
+for deploying PostgreSQL Operator Monitoring. The [example file](https://github.com/CrunchyData/postgres-operator/blob/v{{< param operatorVersion >}}/installers/metrics/kubectl/postgres-operator-metrics.yml)
 contains defaults that should work in most Kubernetes environments, but it may
 require some customization.
 
 For a detailed description of each configuration parameter, please read the
-[PostgreSQL Operator Metrics Installer Configuration Reference](<{{< relref "/installation/metrics/metrics-configuration.md">}}>)
+[PostgreSQL Operator Monitoring Installer Configuration Reference](<{{< relref "/installation/metrics/metrics-configuration.md">}}>)
 
 #### Configuring to Update and Uninstall
 
 The deploy job can be used to perform different deployment actions for the
-PostgreSQL Operator Metrics infrastructure. When you run the job it will install
-the metrics infrastructure by default but you can change the deployment action to
+PostgreSQL Operator Monitoring infrastructure. When you run the job it will install
+the monitoring infrastructure by default but you can change the deployment action to
 uninstall or update. The `DEPLOY_ACTION` environment variable in the `postgres-operator-metrics.yml` 
 file can be set to `install-metrics`, `update-metrics`, and `uninstall-metrics`.
 
 ### Image Pull Secrets
 
-If you are pulling PostgreSQL Operator Metrics images from a private registry, you
+If you are pulling PostgreSQL Operator Monitoring images from a private registry, you
 will need to setup an
 [imagePullSecret](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/)
 with access to the registry. The image pull secret will need to be added to the
@@ -144,8 +144,8 @@ oc secrets link <registry-secret> <deployer-sa> --for=pull --namespace=<install-
 
 ## Installation
 
-Once you have configured the PostgreSQL Operator Metrics installer to your
-specification, you can install the PostgreSQL Operator Metrics infrastructure
+Once you have configured the PostgreSQL Operator Monitoring installer to your
+specification, you can install the PostgreSQL Operator Monitoring infrastructure
 with the following command:
 
 ```shell

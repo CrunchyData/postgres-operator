@@ -7,7 +7,7 @@ weight: 10
 
 # Prerequisites
 
-The following is required prior to installing the Crunchy PostgreSQL Operator Metrics infrastructure using Ansible:
+The following is required prior to installing the Crunchy PostgreSQL Operator Monitoring infrastructure using Ansible:
 
 * [postgres-operator playbooks](https://github.com/CrunchyData/postgres-operator/) source code for the target version
 * Ansible 2.9.0+
@@ -34,7 +34,7 @@ are required:
 
 ## Permissions
 
-The installation of the Crunchy PostgreSQL Operator Metrics infrastructure requires elevated
+The installation of the Crunchy PostgreSQL Operator Monitoring infrastructure requires elevated
 privileges, as the following objects need to be created:
 
 * RBAC for use by Prometheus and/or Grafana
@@ -52,7 +52,7 @@ directory in the [source code](https://github.com/CrunchyData/postgres-operator)
 
 ## Configuring the Inventory File
 
-The `inventory.yaml` file included with the PostgreSQL Operator Metrics Playbooks allows installers
+The `inventory.yaml` file included with the PostgreSQL Operator Monitoring Playbooks allows installers
 to configure how Ansible will connect to your Kubernetes cluster.  This file
 should contain the following connection variables:
 
@@ -83,7 +83,7 @@ kubectl config current-context
 ## Configuring - `values.yaml`
 
 The `values.yaml` file contains all of the configuration parameters
-for deploying the PostgreSQL Operator Metrics infrastructure. 
+for deploying the PostgreSQL Operator Monitoring infrastructure. 
 The [example file](https://github.com/CrunchyData/postgres-operator/blob/v{{< param operatorVersion >}}/installers/metrics/ansible/values.yaml)
 contains defaults that should work in most Kubernetes environments, but it may
 require some customization.

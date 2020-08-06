@@ -1,11 +1,11 @@
 ---
-title: "Installing the Metrics Infrastructure"
+title: "Installing the Monitoring Infrastructure"
 date:
 draft: false
 weight: 22
 ---
 
-# Installing the Metrics Infrastructure
+# Installing the Monitoring Infrastructure
 
 PostgreSQL clusters created by the Crunchy PostgreSQL Operator can optionally be
 configured to serve performance metrics via Prometheus Exporters.  The metric exporters

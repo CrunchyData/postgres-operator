@@ -1,5 +1,5 @@
 ---
-- name: Deploy Crunchy PostgreSQL Operator Metrics
+- name: Deploy Crunchy PostgreSQL Operator Monitoring
   hosts: all
   gather_facts: true
   roles:
