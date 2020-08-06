@@ -1,25 +1,34 @@
 ARG BASEOS
 ARG BASEVER
 ARG PREFIX
+FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
+
 ARG PGVERSION
 ARG BACKREST_VERSION
-FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
+ARG PACKAGER
+ARG DFSET
 
 LABEL name="pgo-scheduler" \
 	summary="Crunchy PostgreSQL Operator - Scheduler" \
 	description="Crunchy PostgreSQL Operator - Scheduler"
 
-RUN yum -y install epel-release \
-	&& yum -y install \
-                --setopt=skip_missing_names_on_install=False \
+RUN if [ "$DFSET" = "centos" ] ; then \
+	mkdir -p /opt/cpm/bin /opt/cpm/conf /configs \
+	&& chown -R 2:2 /opt/cpm /configs \
+	&& ${PACKAGER} -y install epel-release \
+	&& ${PACKAGER} -y install \
+		--setopt=skip_missing_names_on_install=False \
 		gettext \
 		hostname  \
 		nss_wrapper \
 		procps-ng \
-	&& yum clean all -y
+	&& ${PACKAGER} -y clean all ; \
+fi
 
-RUN mkdir -p /opt/cpm/bin /opt/cpm/conf /configs \
- && chown -R 2:2 /opt/cpm /configs
+RUN if [ "$DFSET" = "rhel" ] ; then \
+	mkdir -p /opt/cpm/bin /opt/cpm/conf /pgo-config \
+	&& chown -R 2:2 /opt/cpm /pgo-config ; \
+fi
 
 ADD bin/pgo-scheduler /opt/cpm/bin
 ADD installers/ansible/roles/pgo-operator/files/pgo-configs /default-pgo-config

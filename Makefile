@@ -13,6 +13,7 @@ PGO_VERSION ?= 4.4.0
 PGO_PG_VERSION ?= 12
 PGO_PG_FULLVERSION ?= 12.3
 PGO_BACKREST_VERSION ?= 2.27
+PACKAGER ?= yum
 
 RELTMPDIR=/tmp/release.$(PGO_VERSION)
 RELFILE=/tmp/postgres-operator.$(PGO_VERSION).tar.gz
@@ -41,12 +42,37 @@ export BUILDAH_FORMAT ?= docker
 
 # Allows simplification of IMGBUILDER switching
 ifeq ("$(IMGBUILDER)","docker")
-	IMGCMDSTEM=docker build
+        IMGCMDSTEM=docker build
 endif
 
-# Allows consolidation of ubi/rhel Dockerfile sets
-ifeq ("$(PGO_BASEOS)", "ubi7")
-	DFSET=rhel7
+# Allows consolidation of ubi/rhel/centos Dockerfile sets
+ifeq ("$(CCP_BASEOS)", "rhel7")
+        DFSET=rhel
+endif
+
+ifeq ("$(CCP_BASEOS)", "ubi7")
+        DFSET=rhel
+endif
+
+ifeq ("$(CCP_BASEOS)", "rhel8")
+        DFSET=rhel
+        PACKAGER=dnf
+endif
+
+ifeq ("$(CCP_BASEOS)", "ubi8")
+        DFSET=rhel
+        PACKAGER=dnf
+endif
+
+ifeq ("$(CCP_BASEOS)", "centos7")
+        DFSET=centos
+        DOCKERBASEREGISTRY=centos:
+endif
+
+ifeq ("$(CCP_BASEOS)", "centos8")
+        DFSET=centos
+        PACKAGER=dnf
+        DOCKERBASEREGISTRY=centos:
 endif
 
 DEBUG_BUILD ?= false
@@ -141,12 +167,12 @@ winpgo:
 
 
 #======= Image builds =======
-$(PGOROOT)/$(DFSET)/Dockerfile.%.$(DFSET):
+$(PGOROOT)/build/%/Dockerfile:
 	$(error No Dockerfile found for $* naming pattern: [$@])
 
-%-img-build: pgo-base-$(IMGBUILDER) build-% $(PGOROOT)/$(DFSET)/Dockerfile.%.$(DFSET)
+%-img-build: pgo-base-$(IMGBUILDER) build-% $(PGOROOT)/build/%/Dockerfile
 	$(IMGCMDSTEM) \
-		-f $(PGOROOT)/$(DFSET)/Dockerfile.$*.$(DFSET) \
+		-f $(PGOROOT)/build/$*/Dockerfile \
 		-t $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG) \
 		--build-arg BASEOS=$(PGO_BASEOS) \
 		--build-arg BASEVER=$(PGO_VERSION) \
@@ -154,6 +180,8 @@ $(PGOROOT)/$(DFSET)/Dockerfile.%.$(DFSET):
 		--build-arg PGVERSION=$(PGO_PG_VERSION) \
 		--build-arg BACKREST_VERSION=$(PGO_BACKREST_VERSION) \
 		--build-arg ANSIBLE_VERSION=$(ANSIBLE_VERSION) \
+		--build-arg DFSET=$(DFSET) \
+		--build-arg PACKAGER=$(PACKAGER) \
 		$(PGOROOT)
 
 %-img-buildah: %-img-build ;
@@ -168,14 +196,16 @@ endif
 
 pgo-base: pgo-base-$(IMGBUILDER)
 
-pgo-base-build: $(PGOROOT)/$(DFSET)/Dockerfile.pgo-base.$(DFSET)
+pgo-base-build: $(PGOROOT)/pgo-base/Dockerfile
 	$(IMGCMDSTEM) \
-		-f $(PGOROOT)/$(DFSET)/Dockerfile.pgo-base.$(DFSET) \
+		-f $(PGOROOT)/build/pgo-base/Dockerfile \
 		-t $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) \
 		--build-arg BASEOS=$(PGO_BASEOS) \
 		--build-arg RELVER=$(PGO_VERSION) \
 		--build-arg PGVERSION=$(PGO_PG_VERSION) \
 		--build-arg PG_FULL=$(PGO_PG_FULLVERSION) \
+		--build-arg DFSET=$(DFSET) \
+		--build-arg PACKAGER=$(PACKAGER) \
 		$(PGOROOT)
 
 pgo-base-buildah: pgo-base-build ;
