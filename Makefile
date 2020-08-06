@@ -48,30 +48,30 @@ ifeq ("$(IMGBUILDER)","docker")
 endif
 
 # Allows consolidation of ubi/rhel/centos Dockerfile sets
-ifeq ("$(CCP_BASEOS)", "rhel7")
+ifeq ("$(PGO_BASEOS)", "rhel7")
         DFSET=rhel
 endif
 
-ifeq ("$(CCP_BASEOS)", "ubi7")
+ifeq ("$(PGO_BASEOS)", "ubi7")
         DFSET=rhel
 endif
 
-ifeq ("$(CCP_BASEOS)", "rhel8")
-        DFSET=rhel
-        PACKAGER=dnf
-endif
-
-ifeq ("$(CCP_BASEOS)", "ubi8")
+ifeq ("$(PGO_BASEOS)", "rhel8")
         DFSET=rhel
         PACKAGER=dnf
 endif
 
-ifeq ("$(CCP_BASEOS)", "centos7")
+ifeq ("$(PGO_BASEOS)", "ubi8")
+        DFSET=rhel
+        PACKAGER=dnf
+endif
+
+ifeq ("$(PGO_BASEOS)", "centos7")
         DFSET=centos
         DOCKERBASEREGISTRY=centos:
 endif
 
-ifeq ("$(CCP_BASEOS)", "centos8")
+ifeq ("$(PGO_BASEOS)", "centos8")
         DFSET=centos
         PACKAGER=dnf
         DOCKERBASEREGISTRY=centos:
