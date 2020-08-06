@@ -3,7 +3,7 @@
   tags: always
 
 - fail:
-    msg: "Please specify the a tag: uninstall, uninstall-metrics, install, install-metrics or update"
+    msg: "Please specify the a tag: install, update or uninstall"
   tags: always
   when: ansible_run_tags[0] == "all"
 

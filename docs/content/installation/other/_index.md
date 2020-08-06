@@ -2,7 +2,7 @@
 title: "Other Methods"
 date:
 draft: false
-weight: 100
+weight: 50
 ---
 
 Though the years, we have built up several other methods for installing the

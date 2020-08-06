@@ -1,0 +1,17 @@
+---
+- name: Check if inventory file variables are defined for Prometheus
+  fail: msg="Please specify the value of {{item}} in your inventory file"
+  tags: always
+  when: lookup('vars', item, default='') == ''
+  loop:
+    - db_port
+    - pgbadgerport
+    - prometheus_configmap
+    - prometheus_image_name
+    - prometheus_image_prefix
+    - prometheus_image_tag
+    - prometheus_port
+    - prometheus_service_name
+    - prometheus_service_type
+    - prometheus_storage_access_mode
+    - prometheus_volume_size

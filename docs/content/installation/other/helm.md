@@ -64,7 +64,7 @@ file will be used to populate the configuation options in the ConfigMap.
 ### Configuration - `values.yaml`
 
 The `values.yaml` file contains all of the configuration parametes for deploying
-the PostgreSQL Operator. The [values.yaml file](https://github.com/CrunchyData/postgres-operator/blob/master/installers/helm/postgres-operator/values.yaml) contains the defaults that
+the PostgreSQL Operator. The [values.yaml file](https://github.com/CrunchyData/postgres-operator/blob/master/installers/helm/values.yaml) contains the defaults that
 should work in most Kubernetes environments, but it may require some customization.
 
 For a detailed description of each configuration parameter, please read the
@@ -174,33 +174,6 @@ If successful, you should see output similar to this:
 ```
 pgo client version {{< param operatorVersion >}}
 pgo-apiserver version {{< param operatorVersion >}}
-```
-
-## Metrics Chart
-
-The PostgreSQL Operator metrics infrastructure can be installed using a separate
-Helm chart. This chart can install or uninstall the Grafana and Prometheus
-deployments that are part of the metrics stack. The metrics installer runs
-similarly to the `postgres-operator` chart by creating the ServiceAccount, RBAC
-resources, and ConfigMap that are needed to run the install job.
-
-The `metrics` Helm chart is available in the [Helm](https://github.com/CrunchyData/postgres-operator/tree/master/installers/helm)
-directory in the PostgreSQL Operator repository.
-
-### Installing
-
-{{% notice tip %}}
-Ensure that you have installed the PostgreSQL Operator before installing metrics.
-{{% /notice %}}
-
-```shell
-helm install metrics -n pgo /path/to/metrics/chart_dir
-```
-
-### Uninstalling
-
-```shell
-helm install metrics -n pgo /path/to/metrics/chart_dir
 ```
 
 ## Upgrade and Uninstall

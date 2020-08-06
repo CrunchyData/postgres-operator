@@ -1,0 +1,64 @@
+---
+- name: Cleanup Metrics Resources
+  block:
+    - name: Delete Prometheus Deployment
+      command: "{{ kubectl_or_oc }} delete deployment crunchy-prometheus -n {{ metrics_namespace }}"
+      ignore_errors: yes
+
+    - name: Delete Grafana Deployment
+      command: "{{ kubectl_or_oc }} delete deployment crunchy-grafana -n {{ metrics_namespace }}"
+      ignore_errors: yes
+
+    - name: Delete Prometheus Service
+      command: "{{ kubectl_or_oc }} delete service {{ prometheus_service_name }} -n {{ metrics_namespace }}"
+      ignore_errors: yes
+
+    - name: Delete Grafana Service 
+      command: "{{ kubectl_or_oc }} delete service {{ grafana_service_name }} -n {{ metrics_namespace }}"
+      ignore_errors: yes
+
+    - name: Delete Prometheus Cluster Roles & Cluster Role Bindings
+      command: |
+        {{ kubectl_or_oc }} delete clusterrole,clusterrolebinding \
+          {{ metrics_namespace }}-prometheus-sa -n {{ metrics_namespace }}
+      ignore_errors: yes
+      when: create_rbac|bool
+
+    - name: Delete Grafana Service Account
+      command: "{{ kubectl_or_oc }} delete serviceaccount grafana -n {{ metrics_namespace }}"
+      ignore_errors: yes
+      when: create_rbac | bool
+
+    - name: Delete Prometheus Service Account
+      command: "{{ kubectl_or_oc }} delete serviceaccount prometheus-sa -n {{ metrics_namespace }}"
+      ignore_errors: yes
+      when: create_rbac | bool
+
+    - name: Delete Grafana Secret
+      command: "{{ kubectl_or_oc }} delete secret grafana-secret -n {{ metrics_namespace }}"
+      ignore_errors: yes
+
+    - name: Delete Grafana ConfigMaps
+      command: |
+        {{ kubectl_or_oc }} delete configmap \
+          {{ grafana_datasources_configmap }} {{ grafana_dashboards_configmap }} \
+          -n {{ metrics_namespace }}
+      ignore_errors: yes
+
+    - name: Delete Prometheus ConfigMap
+      command: "{{ kubectl_or_oc }} delete configmap crunchy-prometheus -n {{ metrics_namespace }}"
+      ignore_errors: yes
+  tags:
+    - update-metrics
+    - uninstall-metrics
+
+- name: Cleanup Metrics Volumes
+  block:
+    - name: Delete Grafana PVC
+      command: "{{ kubectl_or_oc }} delete pvc grafanadata -n {{ metrics_namespace }}"
+      ignore_errors: yes
+
+    - name: Delete Prometheus PVC
+      command: "{{ kubectl_or_oc }} delete pvc prometheusdata -n {{ metrics_namespace }}"
+      ignore_errors: yes
+  tags: uninstall-metrics
