@@ -29,7 +29,8 @@
 {% endif %}
 {% if not (disable_fsgroup | default(false) | bool) %}
                     {% if (prometheus_supplemental_groups | default('')) != '' %},{% endif -%}
-                    "fsGroup": 26
+                    "fsGroup": 26,
+                    "runAsUser": 2
 {% endif %}
                 },
                 "serviceAccountName": "prometheus-sa",
