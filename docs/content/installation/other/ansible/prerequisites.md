@@ -96,21 +96,3 @@ require some customization.
 
 For a detailed description of each configuration parameter, please read the
 [PostgreSQL Operator Installer Configuration Reference](<{{< relref "/installation/configuration.md">}}>)
-
-## Deploying Grafana and Prometheus
-
-PostgreSQL clusters created by the operator can be configured to create additional containers for collecting metrics.  
-These metrics are very useful for understanding the overall health and performance of PostgreSQL database deployments
-over time.  The collectors included by the operator are:
-
-* PostgreSQL Exporter - PostgreSQL metrics
-
-The operator, however, does not install the necessary timeseries database (Prometheus) for storing the collected
-metrics or the front end visualization (Grafana) of those metrics.
-
-Included in these playbooks are roles for deploying Granfana and/or Prometheus.  See the `values.yaml` file
-for options to install the metrics stack.
-
-{{% notice tip %}}
-At this time the Crunchy PostgreSQL Operator Playbooks only support storage classes.
-{{% /notice %}}

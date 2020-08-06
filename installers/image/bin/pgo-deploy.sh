@@ -14,8 +14,8 @@
 export DEPLOY_ACTION=${DEPLOY_ACTION:-install}
 
 /usr/bin/env ansible-playbook \
-    -i /ansible/inventory.yaml \
+    -i "/ansible/${PLAYBOOK:-postgres-operator}/inventory.yaml" \
     --extra-vars "kubernetes_in_cluster=true" \
     --extra-vars "config_path=/conf/values.yaml" \
     --tags=$DEPLOY_ACTION \
-    /ansible/main.yml
+    "/ansible/${PLAYBOOK:-postgres-operator}/main.yml"

@@ -63,11 +63,12 @@ RUN if [ "$BASEOS" = "ubi8" ] ; then \
 	&& ${PACKAGER} -y clean all ; \
 fi
 
-COPY installers/ansible /ansible
+COPY installers/ansible /ansible/postgres-operator
+COPY installers/metrics/ansible /ansible/metrics
 COPY installers/image/bin/pgo-deploy.sh /pgo-deploy.sh
 COPY bin/uid_daemon.sh /uid_daemon.sh
 
-ENV ANSIBLE_CONFIG="/ansible/ansible.cfg"
+ENV ANSIBLE_CONFIG="/ansible/postgres-operator/ansible.cfg"
 ENV HOME="/tmp"
 
 RUN chmod g=u /etc/passwd

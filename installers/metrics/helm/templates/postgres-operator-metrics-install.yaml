@@ -1,0 +1,13 @@
+{{ $_ := set . "deployAction" "install-metrics" }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pgo-metrics-deploy
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "postgres-operator.labels" . | indent 4 }}
+  annotations:
+    helm.sh/hook: post-install
+    helm.sh/hook-delete-policy: hook-succeeded,before-hook-creation
+{{ template "deployerJob.spec" . }}

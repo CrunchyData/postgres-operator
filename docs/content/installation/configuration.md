@@ -43,21 +43,12 @@ Operator.
 | `default_instance_memory` | 128Mi |  | Represents the memory request for a PostgreSQL instance. |
 | `default_pgbackrest_memory` | 48Mi |  | Represents the memory request for a pgBackRest repository. |
 | `default_pgbouncer_memory` | 24Mi |  | Represents the memory request for a pgBouncer instance. |
-| `delete_metrics_namespace` | false |  | Set to configure whether or not the metrics namespace (defined using variable `metrics_namespace`) is deleted when uninstalling the metrics infrastructure. |
 | `delete_operator_namespace` | false |  | Set to configure whether or not the PGO operator namespace (defined using variable `pgo_operator_namespace`) is deleted when uninstalling the PGO. |
 | `delete_watched_namespaces` | false |  | Set to configure whether or not the PGO watched namespaces (defined using variable `namespace`) are deleted when uninstalling the PGO. |
 | `disable_auto_failover` | false |  | If set, will disable autofail capabilities by default in any newly created cluster |
 | `disable_fsgroup` | false |  | Set to `true` for deployments where you do not want to have the default PostgreSQL fsGroup (26) set. The typical usage is in OpenShift environments that have a `restricted` Security Context Constraints. |
 | `exporterport` | 9187 | **Required** | Set to configure the default port used to connect to postgres exporter. |
-| `grafana_admin_password` |  |  | Set to configure the login password for the Grafana administrator. |
-| `grafana_admin_username` | admin |  | Set to configure the login username for the Grafana administrator. |
-| `grafana_install` | false |  | Set to true to install Crunchy Grafana to visualize metrics. |
-| `grafana_storage_access_mode` | ReadWriteOnce |  | Set to the access mode used by the configured storage class for Grafana persistent volumes. |
-| `grafana_storage_class_name` | fast |  | Set to the name of the storage class used when creating Grafana persistent volumes. |
-| `grafana_supplemental_groups` | 65534 |  | Set to configure any supplemental groups that should be added to security contexts for Grafana. |
-| `grafana_volume_size` | 1G |  | Set to the size of persistent volume to create for Grafana. |
 | `metrics` | false | **Required** | Set to true enable performance metrics on all newly created clusters. This can be disabled by the client. |
-| `metrics_namespace` | pgo |  | Namespace in which the `metrics` deployments with be run. |
 | `namespace` | pgo |  | Set to a comma delimited string of all the namespaces Operator will manage. |
 | `namespace_mode` | dynamic |  | Determines which namespace permissions are assigned to the PostgreSQL Operator using a ClusterRole. Options: `dynamic`, `readonly`, and `disabled` |
 | `pgbadgerport` | 10000 | **Required** | Set to configure the default port used to connect to pgbadger. |
@@ -84,11 +75,6 @@ Operator.
 | `pgo_operator_namespace` | pgo | **Required** | Set to configure the namespace where Operator will be deployed. |
 | `pgo_tls_ca_store` |  |  | Set to add additional Certificate Authorities for Operator to trust (PEM-encoded file). |
 | `pgo_tls_no_verify` | false |  | Set to configure Operator to verify TLS certificates. |
-| `prometheus_install` | false |  | Set to true to install Crunchy Grafana to visualize metrics. |
-| `prometheus_storage_access_mode` | ReadWriteOnce |  | Set to the access mode used by the configured storage class for Prometheus persistent volumes. |
-| `prometheus_storage_class_name` | fast |  | Set to the name of the storage class used when creating Prometheus persistent volumes. |
-| `prometheus_supplemental_groups` | 65534 |  | Set to configure any supplemental groups that should be added to security contexts for Prometheus. |
-| `prometheus_volume_size` | 1G |  | Set to the size of persistent volume to create for Prometheus. |
 | `reconcile_rbac` | true |  | Determines whether or not the PostgreSQL Operator will granted the permissions needed to reconcile RBAC within targeted namespaces. |
 | `scheduler_timeout` | 3600 | **Required** | Set to a value in seconds to configure the `pgo-scheduler` timeout threshold when waiting for schedules to complete. |
 | `service_type` | ClusterIP |  | Set to configure the type of Kubernetes service provisioned on all newly created clusters. |

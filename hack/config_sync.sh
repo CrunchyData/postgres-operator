@@ -15,10 +15,23 @@
 
 test="${PGOROOT:?Need to set PGOROOT env variable}"
 
-INSTALLER_DIR="$PGOROOT/installers"
-MASTER_CONFIG="$PGOROOT/installers/ansible/values.yaml"
+# sync a master config file with kubectl and helm installers
+sync_config() {
 
-yq write --inplace --doc 2 "$INSTALLER_DIR/kubectl/postgres-operator.yml" 'data"values.yaml"' -- "$(cat $MASTER_CONFIG)"
-yq write --inplace --doc 2 "$INSTALLER_DIR/kubectl/postgres-operator-ocp311.yml" 'data"values.yaml"' -- "$(cat $MASTER_CONFIG)"
+    KUBECTL_SPEC_PREFIX=$1
+    INSTALLER_ROOT=$2
+    MASTER_CONFIG=$3
 
-cat "$INSTALLER_DIR/helm/postgres-operator/helm_template.yaml" "$MASTER_CONFIG" > "$INSTALLER_DIR/helm/postgres-operator/values.yaml"
+    yq write --inplace --doc 2 "$INSTALLER_ROOT/kubectl/$KUBECTL_SPEC_PREFIX.yml" 'data"values.yaml"' -- "$(cat $MASTER_CONFIG)"
+    yq write --inplace --doc 2 "$INSTALLER_ROOT/kubectl/$KUBECTL_SPEC_PREFIX-ocp311.yml" 'data"values.yaml"' -- "$(cat $MASTER_CONFIG)"
+
+    cat "$INSTALLER_ROOT/helm/helm_template.yaml" "$MASTER_CONFIG" > "$INSTALLER_ROOT/helm/values.yaml"
+}
+
+# sync operator configuration
+sync_config "postgres-operator" "$PGOROOT/installers" "$PGOROOT/installers/ansible/values.yaml"
+
+# sync metrics configuration
+sync_config "postgres-operator-metrics" "$PGOROOT/installers/metrics" "$PGOROOT/installers/metrics/ansible/values.yaml"
+
+echo "Configuration sync complete"

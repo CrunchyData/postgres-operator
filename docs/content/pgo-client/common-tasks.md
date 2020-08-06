@@ -1371,11 +1371,10 @@ deploying the "crunchy-collect" sidecar with the PostgreSQL cluster:
 pgo create cluster hacluster --metrics
 ```
 
-Note: To store and visualize the metrics, you must deploy Prometheus and Grafana
-with yoru PostgreSQL cluster. For instructions on installing Grafana and
-Prometheus in your environment, please review the
-[installation instructions]({{< relref "/installation/other/ansible/installing-metrics.md" >}})
-for the metrics stack.
+Note: To store and visualize the metrics, you must deploy the PostgreSQL Operator
+Metrics infrastrcture. For instructions on installing the PostgreSQL Operator
+Metrics infrastrcture in your environment, please review the
+[installation instructions]({{< relref "/installation/metrics" >}}).
 
 ## Labels
 

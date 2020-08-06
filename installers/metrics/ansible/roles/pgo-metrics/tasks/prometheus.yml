@@ -1,0 +1,90 @@
+---
+- name: Deploy Prometheus
+  block:
+    - name: Set Prometheus Output Directory Fact
+      set_fact:
+        prom_output_dir: "{{ metrics_dir }}/output/prom"
+      tags: always
+
+    - name: Ensure Output Directory Exists
+      file: 
+        path: "{{ prom_output_dir }}"
+        state: "directory"
+        mode: "0700"
+      tags: always
+
+    - name: Template Prometheus RBAC
+      template:
+        src: "{{ item }}"
+        dest: "{{ prom_output_dir }}/{{ item | replace('.j2', '') }}"
+        mode: "0600"
+      loop:
+        - prometheus-rbac.json.j2
+      when: create_rbac | bool
+      
+    - name: Create Prometheus RBAC
+      command: "{{ kubectl_or_oc }} create -f {{ prom_output_dir }}/{{ item }} -n {{ metrics_namespace }}"
+      loop:
+        - prometheus-rbac.json
+      register: create_prometheus_rbac_result
+      failed_when:
+        - create_prometheus_rbac_result.rc != 0
+        - "'AlreadyExists' not in create_prometheus_rbac_result.stderr"
+      when: create_rbac | bool
+
+    - name: Copy Prometheus Config to Output Directory
+      command: "cp {{ role_path }}/files/prometheus.yml {{ prom_output_dir }}"
+
+    - name: Add Prometheus Port Configuration
+      lineinfile:
+        path: "{{ prom_output_dir }}/prometheus.yml"
+        regex: "{{ item.regex }}"
+        line: "{{ item.line }}"
+      loop:
+        - regex: "^[ ]{4,}regex: 5432"
+          line: "    regex: {{ db_port }}"
+        - regex: "^[ ]{4,}regex: 10000"
+          line: "    regex: {{ pgbadgerport }}"
+
+    - name: Create Prometheus ConfigMap
+      shell: |
+        {{ kubectl_or_oc }} create configmap crunchy-prometheus \
+          --from-file={{ prom_output_dir }}/prometheus.yml \
+          -n {{ metrics_namespace }} --dry-run -o yaml | \
+            {{ kubectl_or_oc }} label configmap --local vendor=crunchydata -f - \
+              -n {{ metrics_namespace }} --dry-run -o yaml | \
+                {{ kubectl_or_oc }} create -f -
+      when: prometheus_custom_config == ""
+      register: create_prometheus_datasources_result
+      failed_when:
+        - create_prometheus_datasources_result.rc != 0
+        - "'AlreadyExists' not in create_prometheus_datasources_result.stderr"
+
+    - name: Set Prometheus ConfigMap Name
+      set_fact:
+        prometheus_configmap: "{{ prometheus_custom_config }}"
+      when: prometheus_custom_config != ""
+
+    - name: Template Prometheus PVC, Service & Deployment
+      template:
+        src: "{{ item }}"
+        dest: "{{ prom_output_dir }}/{{ item | replace('.j2', '') }}"
+        mode: "0600"
+      loop: 
+        - prometheus-pvc.json.j2
+        - prometheus-service.json.j2
+        - prometheus-deployment.json.j2
+
+    - name: Create Prometheus PVC, Service & Deployment
+      command: "{{ kubectl_or_oc }} create -f {{ prom_output_dir }}/{{ item }} -n {{ metrics_namespace }}"
+      loop:
+        - prometheus-pvc.json
+        - prometheus-service.json
+        - prometheus-deployment.json
+      register: create_prometheus_deployment_result
+      failed_when:
+        - create_prometheus_deployment_result.rc != 0
+        - "'AlreadyExists' not in create_prometheus_deployment_result.stderr"
+  tags:
+    - install-metrics
+    - update-metrics

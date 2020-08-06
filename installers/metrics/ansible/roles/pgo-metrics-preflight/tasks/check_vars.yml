@@ -1,0 +1,9 @@
+---
+- name: Check if mandatory metrics variables are defined
+  fail:
+    msg: Please specify a value for variable {{ item }} in your values.yaml
+  tags: always
+  when: "lookup('vars', item, default='') == ''"
+  loop:
+    - metrics_namespace
+    - pgmonitor_version

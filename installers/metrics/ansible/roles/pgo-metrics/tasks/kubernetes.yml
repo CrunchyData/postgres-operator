@@ -1,0 +1,8 @@
+---
+- name: Create Namespace {{ metrics_namespace }}
+  command: "kubectl create namespace {{ metrics_namespace }}"
+  register: create_metrics_namespace_result
+  failed_when:
+    - create_metrics_namespace_result.rc != 0
+    - "'AlreadyExists' not in create_metrics_namespace_result.stderr" 
+  tags: install-metrics
