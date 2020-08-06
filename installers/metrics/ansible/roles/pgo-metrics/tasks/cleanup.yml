@@ -1,5 +1,8 @@
 ---
 - name: Cleanup Metrics Resources
+  tags:
+    - update-metrics
+    - uninstall-metrics
   block:
     - name: Delete Prometheus Deployment
       command: "{{ kubectl_or_oc }} delete deployment crunchy-prometheus -n {{ metrics_namespace }}"
@@ -48,11 +51,9 @@
     - name: Delete Prometheus ConfigMap
       command: "{{ kubectl_or_oc }} delete configmap crunchy-prometheus -n {{ metrics_namespace }}"
       ignore_errors: yes
-  tags:
-    - update-metrics
-    - uninstall-metrics
 
 - name: Cleanup Metrics Volumes
+  tags: uninstall-metrics
   block:
     - name: Delete Grafana PVC
       command: "{{ kubectl_or_oc }} delete pvc grafanadata -n {{ metrics_namespace }}"
@@ -61,4 +62,3 @@
     - name: Delete Prometheus PVC
       command: "{{ kubectl_or_oc }} delete pvc prometheusdata -n {{ metrics_namespace }}"
       ignore_errors: yes
-  tags: uninstall-metrics

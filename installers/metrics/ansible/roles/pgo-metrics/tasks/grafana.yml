@@ -1,17 +1,18 @@
 ---
 - name: Deploy Grafana
+  tags:
+    - install-metrics
+    - update-metrics
   block:
     - name: Set Grafana Output Directory Fact
       set_fact:
         grafana_output_dir: "{{ metrics_dir }}/output/grafana"
-      tags: always
 
     - name: Ensure Output Directory Exists
       file: 
         path: "{{ grafana_output_dir }}"
         state: "directory"
         mode: "0700"
-      tags: always
 
     - name: Template Grafana RBAC
       template:
@@ -127,7 +128,4 @@
       register: create_grafana_deployment_result
       failed_when:
         - create_grafana_deployment_result.rc != 0
-        - "'AlreadyExists' not in create_grafana_deployment_result.stderr"    
-  tags:
-    - install-metrics
-    - update-metrics
+        - "'AlreadyExists' not in create_grafana_deployment_result.stderr"

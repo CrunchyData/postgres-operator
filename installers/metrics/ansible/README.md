@@ -11,5 +11,5 @@ Latest Release: 4.4.0
 This repository contains Ansible Roles for deploying the metrics stack for the
 Crunchy PostgreSQL Operator.
 
-See the [official Crunchy PostgreSQL Operator documentation](https://crunchydata.github.io/postgres-operator/stable/)
+See the [official Crunchy PostgreSQL Operator documentation](https://access.crunchydata.com/documentation/postgres-operator/)
 for more information.
