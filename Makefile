@@ -56,11 +56,6 @@ ifeq ("$(PGO_BASEOS)", "ubi7")
         DFSET=rhel
 endif
 
-ifeq ("$(PGO_BASEOS)", "rhel8")
-        DFSET=rhel
-        PACKAGER=dnf
-endif
-
 ifeq ("$(PGO_BASEOS)", "ubi8")
         DFSET=rhel
         PACKAGER=dnf
