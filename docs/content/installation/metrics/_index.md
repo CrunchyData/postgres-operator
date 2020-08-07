@@ -5,7 +5,33 @@ draft: false
 weight: 60
 ---
 
-There are several different ways to install and deploy the
+The PostgreSQL Operator Monitoring infrastructure is a fully integrated solution for monitoring
+and visualizing metrics captured from PostgreSQL clusters created using the PostgreSQL Operator.
+By leveraging [pgmonitor](https://github.com/CrunchyData/pgmonitor) to configure and integrate
+the various tools, components and metrics needed to effectively monitor PostgreSQL clusters,
+the PostgreSQL Operator Monitoring infrastructure provides an powerful and easy-to-use solution
+to effectively monitor and visualize pertinent PostgreSQL database and container metrics.
+Included in the monitoring infrastructure are the following components:
+
+- [pgmonitor](https://github.com/CrunchyData/pgmonitor) - Provides the configuration
+needed to enable the effective capture and visualization of PostgreSQL database metrics using
+the various tools comprising the PostgreSQL Operator Monitoring infrastructure
+- [Grafana](https://grafana.com/) - Enables visual dashboard capabilities for monitoring
+PostgreSQL clusters, specifically using Crunchy PostgreSQL Exporter data stored within Prometheus
+- [Prometheus](https://prometheus.io/) - A multi-dimensional data model with time series data,
+which is used in collaboration with the Crunchy PostgreSQL Exporter to provide and store
+metrics
+
+When installing the monitoring infrastructure, various configuration options and settings
+are available to tailor the installation according to your needs.  For instance, custom dashboards
+and datasources can be utilized with Grafana, while custom scrape configurations can be utilized
+with Promtheus.  Please see the
+[monitoring configuration reference](<{{< relref "/installation/metrics/metrics-configuration.md">}}>)
+for additional details.
+
+By leveraging the various installation methods described in this section, the PostgreSQL Operator
+Metrics infrastructure can be deployed alongside the PostgreSQL Operator.  There are several
+different ways to install and deploy the
 [PostgreSQL Operator Monitoring infrastructure](https://www.crunchydata.com/developers/download-postgres/containers/postgres-operator)
 based upon your use case.
 
