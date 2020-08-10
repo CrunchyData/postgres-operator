@@ -16,12 +16,18 @@ package operator
 */
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	fakekubeapi "github.com/crunchydata/postgres-operator/internal/kubeapi/fake"
+	"github.com/crunchydata/postgres-operator/internal/util"
 
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func mockSetupContainers(values map[string]struct {
@@ -166,5 +172,119 @@ func TestOverrideClusterContainerImages(t *testing.T) {
 		}
 
 		delete(ContainerImageOverrides, config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_GIS_HA)
+	})
+}
+
+func TestGetPgbackrestBootstrapS3EnvVars(t *testing.T) {
+
+	// create a fake client that will be used to "fake" the initialization of the operator for
+	// this test
+	fakePGOClient, err := fakekubeapi.NewFakePGOClient()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// now initialize the operator using the fake client.  This loads various configs, templates,
+	// global vars, etc. as needed to run the tests below
+	Initialize(fakePGOClient)
+
+	// create a mock backrest repo secret with default values populated for the various S3
+	// annotations
+	mockBackRestRepoSecret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				config.ANNOTATION_S3_BUCKET:     "bucket",
+				config.ANNOTATION_S3_ENDPOINT:   "endpoint",
+				config.ANNOTATION_S3_REGION:     "region",
+				config.ANNOTATION_S3_URI_STYLE:  "path",
+				config.ANNOTATION_S3_VERIFY_TLS: "false",
+			},
+		},
+	}
+	defaultRestoreFromCluster := "restoreFromCluster"
+
+	type Env struct {
+		EnvVars []corev1.EnvVar
+	}
+
+	// test all env vars are properly set according the contents of an existing pgBackRest
+	// repo secret
+	t.Run("populate from secret", func(t *testing.T) {
+
+		backRestRepoSecret := mockBackRestRepoSecret.DeepCopy()
+		s3EnvVars := GetPgbackrestBootstrapS3EnvVars(defaultRestoreFromCluster, backRestRepoSecret)
+		// massage the results a bit so that we can parse as proper JSON to validate contents
+		s3EnvVarsJSON := strings.TrimSuffix(`{"EnvVars": [`+s3EnvVars, ",\n") + "]}"
+
+		s3Env := &Env{}
+		if err := json.Unmarshal([]byte(s3EnvVarsJSON), s3Env); err != nil {
+			t.Fatal(err)
+		}
+
+		for _, envVar := range s3Env.EnvVars {
+			validValue := true
+			switch envVar.Name {
+			case "PGBACKREST_REPO1_S3_BUCKET":
+				validValue = (envVar.Value == mockBackRestRepoSecret.
+					GetAnnotations()[config.ANNOTATION_S3_BUCKET])
+			case "PGBACKREST_REPO1_S3_ENDPOINT":
+				validValue = (envVar.Value == mockBackRestRepoSecret.
+					GetAnnotations()[config.ANNOTATION_S3_ENDPOINT])
+			case "PGBACKREST_REPO1_S3_REGION":
+				validValue = (envVar.Value == mockBackRestRepoSecret.
+					GetAnnotations()[config.ANNOTATION_S3_REGION])
+			case "PGBACKREST_REPO1_S3_URI_STYLE":
+				validValue = (envVar.Value == mockBackRestRepoSecret.
+					GetAnnotations()[config.ANNOTATION_S3_URI_STYLE])
+			case "PGHA_PGBACKREST_S3_VERIFY_TLS":
+				validValue = (envVar.Value == mockBackRestRepoSecret.
+					GetAnnotations()[config.ANNOTATION_S3_VERIFY_TLS])
+			case "PGBACKREST_REPO1_S3_KEY":
+				validValue = (envVar.ValueFrom.SecretKeyRef.Name ==
+					fmt.Sprintf(util.BackrestRepoSecretName, defaultRestoreFromCluster)) &&
+					(envVar.ValueFrom.SecretKeyRef.Key ==
+						util.BackRestRepoSecretKeyAWSS3KeyAWSS3Key)
+			case "PGBACKREST_REPO1_S3_KEY_SECRET":
+				validValue = (envVar.ValueFrom.SecretKeyRef.Name ==
+					fmt.Sprintf(util.BackrestRepoSecretName, defaultRestoreFromCluster)) &&
+					(envVar.ValueFrom.SecretKeyRef.Key ==
+						util.BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret)
+			}
+			if !validValue {
+				t.Errorf("Invalid value for env var %s", envVar.Name)
+			}
+		}
+	})
+
+	// test that the proper default S3 URI style is set for the bootstrap S3 env vars when the
+	// S3 URI style annotation is an empty string in a pgBackRest repo secret
+	t.Run("default URI style", func(t *testing.T) {
+
+		// the expected default for the pgBackRest URI style
+		defaultURIStyle := "host"
+
+		backRestRepoSecret := mockBackRestRepoSecret.DeepCopy()
+		// set the URI style annotation to an empty string so that we can ensure the proper
+		// default is set when no URI style annotation value is present
+		backRestRepoSecret.GetAnnotations()[config.ANNOTATION_S3_URI_STYLE] = ""
+
+		s3EnvVars := GetPgbackrestBootstrapS3EnvVars("restoreFromCluster", backRestRepoSecret)
+		// massage the results a bit so that we can parse as proper JSON to validate contents
+		s3EnvVarsJSON := strings.TrimSuffix(`{"EnvVars": [`+s3EnvVars, ",\n") + "]}"
+
+		s3Env := &Env{}
+		if err := json.Unmarshal([]byte(s3EnvVarsJSON), s3Env); err != nil {
+			t.Error(err)
+		}
+
+		validValue := false
+		for _, envVar := range s3Env.EnvVars {
+			if envVar.Name == "PGBACKREST_REPO1_S3_URI_STYLE" &&
+				envVar.Value == defaultURIStyle {
+				validValue = true
+			}
+		}
+		if !validValue {
+			t.Errorf("Invalid default URI style, it should be '%s'", defaultURIStyle)
+		}
 	})
 }
