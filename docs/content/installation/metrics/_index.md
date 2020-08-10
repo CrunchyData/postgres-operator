@@ -7,13 +7,13 @@ weight: 60
 
 The PostgreSQL Operator Monitoring infrastructure is a fully integrated solution for monitoring
 and visualizing metrics captured from PostgreSQL clusters created using the PostgreSQL Operator.
-By leveraging [pgmonitor](https://github.com/CrunchyData/pgmonitor) to configure and integrate
+By leveraging [pgMonitor][] to configure and integrate
 the various tools, components and metrics needed to effectively monitor PostgreSQL clusters,
 the PostgreSQL Operator Monitoring infrastructure provides an powerful and easy-to-use solution
 to effectively monitor and visualize pertinent PostgreSQL database and container metrics.
 Included in the monitoring infrastructure are the following components:
 
-- [pgmonitor](https://github.com/CrunchyData/pgmonitor) - Provides the configuration
+- [pgMonitor][] - Provides the configuration
 needed to enable the effective capture and visualization of PostgreSQL database metrics using
 the various tools comprising the PostgreSQL Operator Monitoring infrastructure
 - [Grafana](https://grafana.com/) - Enables visual dashboard capabilities for monitoring
@@ -46,3 +46,5 @@ Before selecting your installation method, it's important that you first read
 the [prerequisites]({{< relref "/installation/metrics/metrics-prerequisites.md" >}}) for your
 deployment environment to ensure that your setup meets the needs for installing
 the PostgreSQL Operator Monitoring infrastructure.
+
+[pgMonitor]: https://github.com/CrunchyData/pgmonitor
