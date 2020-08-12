@@ -57,6 +57,10 @@ const (
 	PGHAConfigReplicaBootstrapRepoType = "replica-bootstrap-repo-type"
 )
 
+// defaultPGBackRestS3URIStyle is the default pgBackRest S3 URI style to use if a specific style is
+// not provided
+const defaultPGBackRestS3URIStyle = "host"
+
 // affinityType represents the two affinity types provided by Kubernetes, specifically
 // either preferredDuringSchedulingIgnoredDuringExecution or
 // requiredDuringSchedulingIgnoredDuringExecution
@@ -779,7 +783,7 @@ func GetPgbackrestS3EnvVars(cluster crv1.Pgcluster, clientset kubernetes.Interfa
 
 	// if the URI style is not configured, set to the default value
 	if s3EnvVars.PgbackrestS3URIStyle == "" {
-		s3EnvVars.PgbackrestS3URIStyle = "host"
+		s3EnvVars.PgbackrestS3URIStyle = defaultPGBackRestS3URIStyle
 	}
 	// if set, pgBackRest URI style must be set to either 'path' or 'host'. If it is neither,
 	// log an error and stop the cluster from being created.
@@ -828,18 +832,23 @@ func GetS3VerifyTLSSetting(cluster *crv1.Pgcluster) string {
 // pgBackRest environment variables required to enable S3 support for the boostrap job.  After
 // the template has been executed with the proper values, the result is then returned a string
 // for inclusion in the PG and pgBackRest deployments.
-func GetPgbackrestBootstrapS3EnvVars(cluster *crv1.Pgcluster, restoreFromSecret *v1.Secret) string {
+func GetPgbackrestBootstrapS3EnvVars(pgDataSourceRestoreFrom string,
+	restoreFromSecret *v1.Secret) string {
 
 	s3EnvVars := PgbackrestS3EnvVarsTemplateFields{
-		PgbackrestS3Key:       util.BackRestRepoSecretKeyAWSS3KeyAWSS3Key,
-		PgbackrestS3KeySecret: util.BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret,
-		PgbackrestS3Bucket:    restoreFromSecret.Annotations[config.ANNOTATION_S3_BUCKET],
-		PgbackrestS3Endpoint:  restoreFromSecret.Annotations[config.ANNOTATION_S3_ENDPOINT],
-		PgbackrestS3Region:    restoreFromSecret.Annotations[config.ANNOTATION_S3_REGION],
-		PgbackrestS3URIStyle:  restoreFromSecret.Annotations[config.ANNOTATION_S3_URI_STYLE],
-		PgbackrestS3VerifyTLS: restoreFromSecret.Annotations[config.ANNOTATION_S3_VERIFY_TLS],
-		PgbackrestS3SecretName: fmt.Sprintf(util.BackrestRepoSecretName,
-			cluster.Spec.PGDataSource.RestoreFrom),
+		PgbackrestS3Key:        util.BackRestRepoSecretKeyAWSS3KeyAWSS3Key,
+		PgbackrestS3KeySecret:  util.BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret,
+		PgbackrestS3Bucket:     restoreFromSecret.Annotations[config.ANNOTATION_S3_BUCKET],
+		PgbackrestS3Endpoint:   restoreFromSecret.Annotations[config.ANNOTATION_S3_ENDPOINT],
+		PgbackrestS3Region:     restoreFromSecret.Annotations[config.ANNOTATION_S3_REGION],
+		PgbackrestS3SecretName: fmt.Sprintf(util.BackrestRepoSecretName, pgDataSourceRestoreFrom),
+	}
+
+	// if the URI style annotation is empty then set the proper default
+	if restoreFromSecret.Annotations[config.ANNOTATION_S3_URI_STYLE] != "" {
+		s3EnvVars.PgbackrestS3URIStyle = restoreFromSecret.Annotations[config.ANNOTATION_S3_URI_STYLE]
+	} else {
+		s3EnvVars.PgbackrestS3URIStyle = defaultPGBackRestS3URIStyle
 	}
 
 	verifyTLS := restoreFromSecret.Annotations[config.ANNOTATION_S3_VERIFY_TLS]
