@@ -81,7 +81,7 @@ func (c *Controller) handleBackrestRestoreUpdate(job *apiv1.Job) error {
 	log.Debugf("set status to restore job completed  for %s", labels[config.LABEL_PG_CLUSTER])
 	log.Debugf("workflow to update is %s", labels[crv1.PgtaskWorkflowID])
 
-	if err := util.Patch(c.Client.Discovery().RESTClient(), patchURL, crv1.JobCompletedStatus, patchResource, job.Name,
+	if err := util.Patch(c.Client.CrunchydataV1().RESTClient(), patchURL, crv1.JobCompletedStatus, patchResource, job.Name,
 		job.ObjectMeta.Namespace); err != nil {
 		log.Error("error in patching pgtask " + labels[config.LABEL_JOB_NAME] + err.Error())
 	}
@@ -111,7 +111,7 @@ func (c *Controller) handleCloneBackrestRestoreUpdate(job *apiv1.Job) error {
 
 		// first, make sure the Pgtask resource knows that the job is complete,
 		// which is using this legacy bit of code
-		if err := util.Patch(c.Client.Discovery().RESTClient(), patchURL, crv1.JobCompletedStatus, patchResource, job.Name, namespace); err != nil {
+		if err := util.Patch(c.Client.CrunchydataV1().RESTClient(), patchURL, crv1.JobCompletedStatus, patchResource, job.Name, namespace); err != nil {
 			log.Warn(err)
 			// we can continue on, even if this fails...
 		}
@@ -156,7 +156,7 @@ func (c *Controller) handleBackrestBackupUpdate(job *apiv1.Job) error {
 	log.Debugf("got a backrest job status=%d", job.Status.Succeeded)
 	log.Debugf("update the status to completed here for backrest %s job %s", labels[config.LABEL_PG_CLUSTER], job.Name)
 
-	if err := util.Patch(c.Client.Discovery().RESTClient(), patchURL, crv1.JobCompletedStatus, patchResource, job.Name,
+	if err := util.Patch(c.Client.CrunchydataV1().RESTClient(), patchURL, crv1.JobCompletedStatus, patchResource, job.Name,
 		job.ObjectMeta.Namespace); err != nil {
 		log.Errorf("error in patching pgtask %s: %s", job.ObjectMeta.SelfLink, err.Error())
 	}

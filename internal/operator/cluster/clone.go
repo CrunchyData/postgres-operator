@@ -943,7 +943,7 @@ func getSourcePgcluster(clientset pgo.Interface, namespace, sourceClusterName st
 // patchPgtaskComplete updates the pgtask CRD to indicate that the task is now
 // complete
 func patchPgtaskComplete(clientset kubeapi.Interface, namespace, taskName string) {
-	if err := util.Patch(clientset.Discovery().RESTClient(), patchURL, crv1.CompletedStatus, patchResource, taskName, namespace); err != nil {
+	if err := util.Patch(clientset.CrunchydataV1().RESTClient(), patchURL, crv1.CompletedStatus, patchResource, taskName, namespace); err != nil {
 		log.Error("error in status patch " + err.Error())
 	}
 }
