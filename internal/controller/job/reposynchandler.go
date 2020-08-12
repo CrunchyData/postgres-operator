@@ -57,7 +57,7 @@ func (c *Controller) handleRepoSyncUpdate(job *apiv1.Job) error {
 
 	// first, make sure the Pgtask resource knows that the job is complete,
 	// which is using this legacy bit of code
-	if err := util.Patch(c.Client.Discovery().RESTClient(), patchURL, crv1.JobCompletedStatus, patchResource, job.Name, namespace); err != nil {
+	if err := util.Patch(c.Client.CrunchydataV1().RESTClient(), patchURL, crv1.JobCompletedStatus, patchResource, job.Name, namespace); err != nil {
 		log.Error(err)
 		// we can continue on, even if this fails...
 	}

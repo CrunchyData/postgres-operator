@@ -146,7 +146,7 @@ func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	}
 
 	//update the pgdump task status to submitted - updates task, not the job.
-	err = util.Patch(clientset.Discovery().RESTClient(), "/spec/status", crv1.PgBackupJobSubmitted, "pgtasks", task.Spec.Name, namespace)
+	err = util.Patch(clientset.CrunchydataV1().RESTClient(), "/spec/status", crv1.PgBackupJobSubmitted, "pgtasks", task.Spec.Name, namespace)
 
 	if err != nil {
 		log.Error(err.Error())
