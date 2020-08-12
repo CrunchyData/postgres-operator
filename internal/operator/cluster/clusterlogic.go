@@ -246,8 +246,8 @@ func getBootstrapJobFields(clientset kubernetes.Interface, client *rest.RESTClie
 	s3Restore := backrest.S3RepoTypeCLIOptionExists(cluster.Spec.PGDataSource.RestoreOpts)
 	if s3Restore {
 		// Now override any backrest S3 env vars for the bootstrap job
-		bootstrapFields.PgbackrestS3EnvVars = operator.GetPgbackrestBootstrapS3EnvVars(cluster,
-			restoreFromSecret)
+		bootstrapFields.PgbackrestS3EnvVars = operator.GetPgbackrestBootstrapS3EnvVars(
+			cluster.Spec.PGDataSource.RestoreFrom, restoreFromSecret)
 	} else {
 		bootstrapFields.PgbackrestS3EnvVars = ""
 	}

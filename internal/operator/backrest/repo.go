@@ -191,8 +191,8 @@ func setBootstrapRepoOverrides(clientset kubernetes.Interface, cluster *crv1.Pgc
 	s3Restore := S3RepoTypeCLIOptionExists(cluster.Spec.PGDataSource.RestoreOpts)
 	if s3Restore {
 		// Now override any backrest S3 env vars for the bootstrap job
-		repoFields.PgbackrestS3EnvVars = operator.GetPgbackrestBootstrapS3EnvVars(cluster,
-			restoreFromSecret)
+		repoFields.PgbackrestS3EnvVars = operator.GetPgbackrestBootstrapS3EnvVars(
+			cluster.Spec.PGDataSource.RestoreFrom, restoreFromSecret)
 	} else {
 		repoFields.PgbackrestS3EnvVars = ""
 	}
