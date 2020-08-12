@@ -17,7 +17,7 @@ echo "Ensuring project dependencies..."
 BINDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 EVTDIR="$BINDIR/pgo-event"
 POSTGRES_EXPORTER_VERSION=0.8.0
-PGMONITOR_COMMIT='v4.2'
+PGMONITOR_COMMIT='v4.4-RC2'
 
 # Precondition checks
 if [ "$GOPATH" = "" ]; then
@@ -121,3 +121,4 @@ ln -s $PGOROOT/tools/pgmonitor/exporter/postgres/queries_pg11.yml $PGOROOT/docs/
 ln -s $PGOROOT/tools/pgmonitor/exporter/postgres/queries_pg10.yml $PGOROOT/docs/data/pgmonitor/queries_pg10.yml
 ln -s $PGOROOT/tools/pgmonitor/exporter/postgres/queries_pg96.yml $PGOROOT/docs/data/pgmonitor/queries_pg96.yml
 ln -s $PGOROOT/tools/pgmonitor/exporter/postgres/queries_pg95.yml $PGOROOT/docs/data/pgmonitor/queries_pg95.yml
+ln -s $PGOROOT/tools/pgmonitor/exporter/postgres/queries_nodemx.yml $PGOROOT/docs/data/pgmonitor/queries_nodemx.yml

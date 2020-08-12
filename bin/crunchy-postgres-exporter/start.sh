@@ -24,6 +24,7 @@ QUERIES=(
     queries_backrest
     queries_common
     queries_per_db
+    queries_nodemx
 )
 
 function trap_sigterm() {
