@@ -426,6 +426,18 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 	pgcluster.ObjectMeta.Labels[config.LABEL_PGO_VERSION] = parameters[config.LABEL_PGO_VERSION]
 	pgcluster.Spec.UserLabels[config.LABEL_PGO_VERSION] = parameters[config.LABEL_PGO_VERSION]
 
+	// next, capture the existing Crunchy Postgres Exporter configuration settings (previous to version
+	// 4.5.0 referred to as Crunchy Collect), if they exist, and store them in the current labels
+	if value, ok := pgcluster.ObjectMeta.Labels["crunchy_collect"]; ok {
+		pgcluster.ObjectMeta.Labels[config.LABEL_EXPORTER] = value
+		delete(pgcluster.ObjectMeta.Labels, "crunchy_collect")
+	}
+
+	if value, ok := pgcluster.Spec.UserLabels["crunchy_collect"]; ok {
+		pgcluster.Spec.UserLabels[config.LABEL_EXPORTER] = value
+		delete(pgcluster.Spec.UserLabels, "crunchy_collect")
+	}
+
 	// since the current primary label is not used in this version of the Postgres Operator,
 	// delete it before moving on to other upgrade tasks
 	delete(pgcluster.ObjectMeta.Labels, config.LABEL_CURRENT_PRIMARY)
