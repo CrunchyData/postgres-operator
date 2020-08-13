@@ -662,6 +662,21 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		return resp
 	}
 
+	// similarly, if any of the Crunchy Postgres Exporter CPU / Memory values have been set,
+	// evaluate those as well
+	if err := apiserver.ValidateResourceRequestLimit(request.ExporterCPURequest, request.ExporterCPULimit, zeroQuantity); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
+	if err := apiserver.ValidateResourceRequestLimit(request.ExporterMemoryRequest, request.ExporterMemoryLimit,
+		apiserver.Pgo.Cluster.DefaultPgBouncerResourceMemory); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
 	// validate the storage type for each specified tablespace actually exists.
 	// if a PVCSize is passed in, also validate that it follows the Kubernetes
 	// format
@@ -1094,6 +1109,8 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		BackrestLimits:    v1.ResourceList{},
 		Limits:            v1.ResourceList{},
 		Resources:         v1.ResourceList{},
+		ExporterResources: v1.ResourceList{},
+		ExporterLimits:    v1.ResourceList{},
 		PgBouncer: crv1.PgBouncerSpec{
 			Limits:    v1.ResourceList{},
 			Resources: v1.ResourceList{},
@@ -1158,6 +1175,34 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.BackrestResources[v1.ResourceMemory] = quantity
 	} else {
 		spec.BackrestResources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultBackrestResourceMemory
+	}
+
+	// similarly, if there are any overriding pgBackRest repository container
+	// resource request values, set them here
+	if request.ExporterCPULimit != "" {
+		// as this was already validated, we can ignore the error
+		quantity, _ := resource.ParseQuantity(request.ExporterCPULimit)
+		spec.ExporterLimits[v1.ResourceCPU] = quantity
+	}
+
+	if request.ExporterCPURequest != "" {
+		// as this was already validated, we can ignore the error
+		quantity, _ := resource.ParseQuantity(request.ExporterCPURequest)
+		spec.ExporterResources[v1.ResourceCPU] = quantity
+	}
+
+	if request.ExporterMemoryLimit != "" {
+		// as this was already validated, we can ignore the error
+		quantity, _ := resource.ParseQuantity(request.ExporterMemoryLimit)
+		spec.ExporterLimits[v1.ResourceMemory] = quantity
+	}
+
+	if request.ExporterMemoryRequest != "" {
+		// as this was already validated, we can ignore the error
+		quantity, _ := resource.ParseQuantity(request.ExporterMemoryRequest)
+		spec.ExporterResources[v1.ResourceMemory] = quantity
+	} else {
+		spec.ExporterResources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultExporterResourceMemory
 	}
 
 	// if the pgBouncer flag is set to true, indicate that the pgBouncer
@@ -1763,6 +1808,24 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		return response
 	}
 
+	// similarly, if any of the Crunchy Postgres Exporter repo CPU / Memory values have been set,
+	// evaluate those as well
+	if err := apiserver.ValidateResourceRequestLimit(request.ExporterCPURequest, request.ExporterCPULimit, zeroQuantity); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
+	// Note: we don't consider the default value here because the cluster is
+	// already deployed. Additionally, this does not check to see if the
+	// request/limits are inline with what's already deployed for Crunchy Postgres
+	// Exporter. That just becomes too complicated
+	if err := apiserver.ValidateResourceRequestLimit(request.ExporterMemoryRequest, request.ExporterMemoryLimit, zeroQuantity); err != nil {
+		response.Status.Code = msgs.Error
+		response.Status.Msg = err.Error()
+		return response
+	}
+
 	// validate the storage type for each specified tablespace actually exists.
 	// if a PVCSize is passed in, also validate that it follows the Kubernetes
 	// format
@@ -1907,6 +1970,34 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		if request.BackrestMemoryRequest != "" {
 			quantity, _ := resource.ParseQuantity(request.BackrestMemoryRequest)
 			cluster.Spec.BackrestResources[v1.ResourceMemory] = quantity
+		}
+
+		// ensure there is a value for ExporterResources
+		if cluster.Spec.ExporterResources == nil {
+			cluster.Spec.ExporterLimits = v1.ResourceList{}
+			cluster.Spec.ExporterResources = v1.ResourceList{}
+		}
+
+		// if the Exporter CPU or memory values have been modified,
+		// update the values in the cluster CRD
+		if request.ExporterCPULimit != "" {
+			quantity, _ := resource.ParseQuantity(request.ExporterCPULimit)
+			cluster.Spec.ExporterLimits[v1.ResourceCPU] = quantity
+		}
+
+		if request.ExporterCPURequest != "" {
+			quantity, _ := resource.ParseQuantity(request.ExporterCPURequest)
+			cluster.Spec.ExporterResources[v1.ResourceCPU] = quantity
+		}
+
+		if request.ExporterMemoryLimit != "" {
+			quantity, _ := resource.ParseQuantity(request.ExporterMemoryLimit)
+			cluster.Spec.ExporterLimits[v1.ResourceMemory] = quantity
+		}
+
+		if request.ExporterMemoryRequest != "" {
+			quantity, _ := resource.ParseQuantity(request.ExporterMemoryRequest)
+			cluster.Spec.ExporterResources[v1.ResourceMemory] = quantity
 		}
 
 		// set any user-defined annotations

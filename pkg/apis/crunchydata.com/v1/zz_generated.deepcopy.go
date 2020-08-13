@@ -227,6 +227,20 @@ func (in *PgclusterSpec) DeepCopyInto(out *PgclusterSpec) {
 			(*out)[key] = val.DeepCopy()
 		}
 	}
+	if in.ExporterResources != nil {
+		in, out := &in.ExporterResources, &out.ExporterResources
+		*out = make(corev1.ResourceList, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val.DeepCopy()
+		}
+	}
+	if in.ExporterLimits != nil {
+		in, out := &in.ExporterLimits, &out.ExporterLimits
+		*out = make(corev1.ResourceList, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val.DeepCopy()
+		}
+	}
 	in.PgBouncer.DeepCopyInto(&out.PgBouncer)
 	if in.UserLabels != nil {
 		in, out := &in.UserLabels, &out.UserLabels
@@ -240,6 +254,13 @@ func (in *PgclusterSpec) DeepCopyInto(out *PgclusterSpec) {
 		in, out := &in.SyncReplication, &out.SyncReplication
 		*out = new(bool)
 		**out = **in
+	}
+	if in.BackrestConfig != nil {
+		in, out := &in.BackrestConfig, &out.BackrestConfig
+		*out = make([]corev1.VolumeProjection, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
 	}
 	if in.TablespaceMounts != nil {
 		in, out := &in.TablespaceMounts, &out.TablespaceMounts

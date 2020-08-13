@@ -223,6 +223,7 @@ type ClusterStruct struct {
 	DefaultInstanceResourceMemory  resource.Quantity `json:"DefaultInstanceMemory"`
 	DefaultBackrestResourceMemory  resource.Quantity `json:"DefaultBackrestMemory"`
 	DefaultPgBouncerResourceMemory resource.Quantity `json:"DefaultPgBouncerMemory"`
+	DefaultExporterResourceMemory  resource.Quantity `json:"DefaultExporterMemory"`
 	DisableFSGroup                 bool
 }
 

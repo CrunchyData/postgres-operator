@@ -5,6 +5,7 @@
         "containerPort": {{.ExporterPort}},
         "protocol": "TCP"
     }],
+    {{.ContainerResources }}
     "env": [
         {
             "name": "EXPORTER_PG_HOST",
@@ -48,11 +49,5 @@
               }
             }
           }
-    ],
-    "resources": {
-      "limits": {
-        "cpu": "100m",
-        "memory": "24Mi"
-      }
-    }
+    ]
 }

@@ -56,6 +56,7 @@ data:
     default_instance_memory: "128Mi"
     default_pgbackrest_memory: "48Mi"
     default_pgbouncer_memory: "24Mi"
+    default_exporter_memory: "24Mi"
     delete_operator_namespace: "false"
     delete_watched_namespaces: "false"
     disable_auto_failover: "false"

@@ -39,6 +39,9 @@ var (
 	// DefaultPgBouncerResourceMemory is the default value of the resource request
 	// for memory of a pgBouncer instance
 	DefaultPgBouncerResourceMemory = resource.MustParse("24Mi")
+	// DefaultExporterResourceMemory is the default value of the resource request
+	// for memory of a Crunchy Postgres Exporter instance
+	DefaultExporterResourceMemory = resource.MustParse("24Mi")
 )
 
 // The following constants define the default refresh intervals for any informers created

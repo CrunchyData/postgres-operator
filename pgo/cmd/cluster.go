@@ -276,6 +276,10 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.CCPImagePrefix = CCPImagePrefix
 	r.PGOImagePrefix = PGOImagePrefix
 	r.MetricsFlag = MetricsFlag
+	r.ExporterCPURequest = ExporterCPURequest
+	r.ExporterCPULimit = ExporterCPULimit
+	r.ExporterMemoryRequest = ExporterMemoryRequest
+	r.ExporterMemoryLimit = ExporterMemoryLimit
 	r.BadgerFlag = BadgerFlag
 	r.ServiceType = ServiceType
 	r.AutofailFlag = !DisableAutofailFlag
@@ -387,6 +391,26 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	}
 
 	if err := util.ValidateQuantity(r.BackrestMemoryLimit, "pgbackrest-memory-limit"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.ExporterCPURequest, "exporter-cpu"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.ExporterCPULimit, "exporter-cpu-limit"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.ExporterMemoryRequest, "exporter-memory"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.ExporterMemoryLimit, "exporter-memory-limit"); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -577,6 +601,11 @@ func updateCluster(args []string, ns string) {
 	r.BackrestCPULimit = BackrestCPULimit
 	r.BackrestMemoryRequest = BackrestMemoryRequest
 	r.BackrestMemoryLimit = BackrestMemoryLimit
+	// set the Crunchy Postgres Exporter resource requests
+	r.ExporterCPURequest = ExporterCPURequest
+	r.ExporterCPULimit = ExporterCPULimit
+	r.ExporterMemoryRequest = ExporterMemoryRequest
+	r.ExporterMemoryLimit = ExporterMemoryLimit
 	r.Clustername = args
 	r.Startup = Startup
 	r.Shutdown = Shutdown
@@ -646,6 +675,26 @@ func updateCluster(args []string, ns string) {
 	}
 
 	if err := util.ValidateQuantity(r.BackrestMemoryLimit, "pgbackrest-memory-limit"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.ExporterCPURequest, "exporter-cpu"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.ExporterCPULimit, "exporter-cpu-limit"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.ExporterMemoryRequest, "exporter-memory"); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	if err := util.ValidateQuantity(r.ExporterMemoryLimit, "exporter-memory-limit"); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

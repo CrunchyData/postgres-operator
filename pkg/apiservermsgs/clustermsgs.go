@@ -62,6 +62,22 @@ type CreateClusterRequest struct {
 	ReplicaCount        int
 	ServiceType         string
 	MetricsFlag         bool
+	// ExporterCPULimit, if specified, is the value of the max CPU for a
+	// Crunchy Postgres Exporter sidecar container
+	ExporterCPULimit string
+	// ExporterCPURequest, if specified, is the value of how much CPU should be
+	// requested for a Crunchy Postgres Exporter sidecar container. Defaults to
+	// not being requested
+	ExporterCPURequest string
+	// ExporterMemoryLimit is the value of of the limit of how much RAM a
+	// Crunchy Postgres Exporter sidecar container should use
+	ExporterMemoryLimit string
+	// ExporterMemoryRequest, if specified, is the value of how much RAM should
+	// be requested for a Crunchy Postgres Exporter sidecar container. Defaults
+	// to the server specified default
+	ExporterMemoryRequest string
+	// ExporterCPULimit, if specified, is the value of the max amount of CPU
+	// to be utilized for a Crunchy Postgres Exporter sidecar container
 	BadgerFlag          bool
 	AutofailFlag        bool
 	ArchiveFlag         bool
@@ -380,6 +396,18 @@ type UpdateClusterRequest struct {
 	// BackrestMemoryRequest, if specified, is the value of how much RAM should
 	// be requested for the pgBackRest repository.
 	BackrestMemoryRequest string
+	// ExporterCPULimit, if specified, is the value of the max amount of CPU
+	// to be utilized for a Crunchy Postgres Exporter instance
+	ExporterCPULimit string
+	// ExporterCPURequest, if specified, is the value of how much CPU should be
+	// requested the Crunchy Postgres Exporter. Defaults to not being requested
+	ExporterCPURequest string
+	// ExporterMemoryLimit, if specified is the max amount of memory a Crunchy
+	// Postgres Exporter instance should use
+	ExporterMemoryLimit string
+	// ExporterMemoryRequest, if specified, is the value of how much RAM should
+	// be requested for the Crunchy Postgres Exporter instance.
+	ExporterMemoryRequest string
 	// CPULimit is the value of the max CPU utilization for a Pod that has a
 	// PostgreSQL cluster
 	CPULimit string

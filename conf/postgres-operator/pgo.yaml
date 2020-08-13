@@ -27,6 +27,7 @@ Cluster:
   DefaultInstanceMemory: "128Mi"
   DefaultBackrestMemory:
   DefaultPgBouncerMemory:
+  DefaultExporterMemory:
   DisableFSGroup: false
 PrimaryStorage: storageos
 WALStorage:

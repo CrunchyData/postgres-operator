@@ -91,6 +91,13 @@ type PgclusterSpec struct {
 	// BackrestLimits, if specified, contains the container resource limits
 	// for the pgBackRest Deployment for this PostgreSQL cluster
 	BackrestLimits v1.ResourceList `json:"backrestLimits"`
+	// ExporterResources, if specified, contains the container request resources
+	// for the Crunchy Postgres Exporter Deployment for this PostgreSQL cluster
+	ExporterResources v1.ResourceList `json:"exporterResources"`
+	// ExporterLimits, if specified, contains the container resource limits
+	// for the Crunchy Postgres Exporter Deployment for this PostgreSQL cluster
+	ExporterLimits v1.ResourceList `json:"exporterLimits"`
+
 	// PgBouncer contains all of the settings to properly maintain a pgBouncer
 	// implementation
 	PgBouncer           PgBouncerSpec            `json:"pgBouncer"`
