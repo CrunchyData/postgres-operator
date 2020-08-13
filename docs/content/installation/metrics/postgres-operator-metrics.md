@@ -36,7 +36,7 @@ After configuring the Job template, the installer can be run using
 and takes care of setting up all of the objects required to run the PostgreSQL
 Operator.
 
-The installation manifest, called [`postgres-operator-metrics.yaml`](https://github.com/CrunchyData/postgres-operator/blob/v{{< param operatorVersion >}}/installers/metrics/kubectl/postgres-operator.yml), is available in the [`installers/metrics/kubectl/postgres-operator-metrics.yml`](https://github.com/CrunchyData/postgres-operator/blob/v{{< param operatorVersion >}}/installers/metrics/kubectl/postgres-operator.yml)
+The installation manifest, called [`postgres-operator-metrics.yml`](https://github.com/CrunchyData/postgres-operator/blob/v{{< param operatorVersion >}}/installers/metrics/kubectl/postgres-operator-metrics.yml), is available in the [`installers/metrics/kubectl/postgres-operator-metrics.yml`](https://github.com/CrunchyData/postgres-operator/blob/v{{< param operatorVersion >}}/installers/metrics/kubectl/postgres-operator-metrics.yml)
 path in the PostgreSQL Operator repository.
 
 

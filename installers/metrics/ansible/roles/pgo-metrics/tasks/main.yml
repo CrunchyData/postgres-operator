@@ -73,8 +73,13 @@
         - create_rbac | bool
         - metrics_image_pull_secret_manifest != ''
 
-    - include_tasks: prometheus.yml
-      when: prometheus_install | bool
+    - block:
+      - include_tasks: alertmanager.yml
+        when: alertmanager_install | bool
+        # alertmanager tasks must be run before prometheus to ensure that a custom
+        # rules configmap can be used
+      - include_tasks: prometheus.yml
+        when: prometheus_install | bool
 
     - include_tasks: grafana.yml
       when: grafana_install | bool
@@ -90,8 +95,9 @@
       set_fact: deployments="{{ deployments | default([]) + [ item.name ] }}"
       when: item.deployed
       loop:
-        - { deployed: "{{ prometheus_install | bool }}", name: "crunchy-prometheus" }
+        - { deployed: "{{ alertmanager_install | bool }}", name: "crunchy-alertmanager" }
         - { deployed: "{{ grafana_install | bool }}", name: "crunchy-grafana" }
+        - { deployed: "{{ prometheus_install | bool }}", name: "crunchy-prometheus" }
 
     - name: Wait for Metrics to Finish Deploying
       command: |

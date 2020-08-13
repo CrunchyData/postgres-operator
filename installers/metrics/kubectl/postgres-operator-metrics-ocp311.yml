@@ -30,6 +30,17 @@ data:
     # More info for these options can be found in the docs
     # https://access.crunchydata.com/documentation/postgres-operator/latest/installation/metrics/metrics-configuration/
     # =====================
+    alertmanager_custom_config: ""
+    alertmanager_custom_rules_config: ""
+    alertmanager_install: "true"
+    alertmanager_log_level: "info"
+    alertmanager_port: "9093"
+    alertmanager_service_name: "crunchy-alertmanager"
+    alertmanager_service_type: "ClusterIP"
+    alertmanager_storage_access_mode: "ReadWriteOnce"
+    alertmanager_storage_class_name: "fast"
+    alertmanager_supplemental_groups: "65534"
+    alertmanager_volume_size: "1Gi"
     create_rbac: "true"
     db_port: "5432"
     delete_metrics_namespace: "false"
@@ -45,7 +56,7 @@ data:
     grafana_storage_access_mode: "ReadWriteOnce"
     grafana_storage_class_name: "fast"
     grafana_supplemental_groups: "65534"
-    grafana_volume_size: "1G"
+    grafana_volume_size: "1Gi"
     metrics_image_pull_secret: ""
     metrics_image_pull_secret_manifest: ""
     metrics_namespace: "pgo"
@@ -58,7 +69,7 @@ data:
     prometheus_storage_access_mode: "ReadWriteOnce"
     prometheus_storage_class_name: "fast"
     prometheus_supplemental_groups: "65534"
-    prometheus_volume_size: "1G"
+    prometheus_volume_size: "1Gi"
 ---
 apiVersion: batch/v1
 kind: Job

@@ -45,14 +45,15 @@
                             }
                         ],
                         "readinessProbe": {
-                            "tcpSocket": {
+                            "httpGet": {
+                                "path": "/api/health",
                                 "port": {{ grafana_port }}
                             },
-                            "initialDelaySeconds": 20,
                             "periodSeconds": 10
                         },
                         "livenessProbe": {
-                            "tcpSocket": {
+                            "httpGet": {
+                                "path": "/api/health",
                                 "port": {{ grafana_port }}
                             },
                             "initialDelaySeconds": 25,

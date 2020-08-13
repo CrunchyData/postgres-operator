@@ -33,8 +33,14 @@
         - "'AlreadyExists' not in create_prometheus_rbac_result.stderr"
       when: create_rbac | bool
 
+    - name: Set pgmonitor Prometheus Directory Fact
+      set_fact:
+        pgmonitor_prometheus_dir: "{{ metrics_dir }}/pgmonitor-{{ pgmonitor_version | replace('v','') }}/prometheus"
+
     - name: Copy Prometheus Config to Output Directory
-      command: "cp {{ role_path }}/files/prometheus.yml {{ prom_output_dir }}"
+      command: "cp {{ pgmonitor_prometheus_dir }}/{{ item.src }} {{ prom_output_dir }}/{{ item.dst }}"
+      loop:
+        - { src: 'crunchy-prometheus.yml.containers', dst: 'prometheus.yml'}
 
     - name: Add Prometheus Port Configuration
       lineinfile:
@@ -46,6 +52,18 @@
           line: "    regex: {{ db_port }}"
         - regex: "^[ ]{4,}regex: 10000"
           line: "    regex: {{ pgbadgerport }}"
+
+    - name: Add Alerting Configuration
+      lineinfile:
+        path: "{{ prom_output_dir }}/prometheus.yml"
+        line: |
+          alerting:
+            alertmanagers:
+            - scheme: http
+              static_configs:
+              - targets:
+                - "{{ alertmanager_service_name }}:{{ alertmanager_port }}"
+      when: alertmanager_install | bool
 
     - name: Create Prometheus ConfigMap
       shell: |

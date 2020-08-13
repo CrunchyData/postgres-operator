@@ -12,6 +12,7 @@
     - grafana_datasources_configmap
     - grafana_image_name
     - grafana_image_prefix
+    - grafana_image_tag
     - grafana_port
     - grafana_service_name
     - grafana_service_type

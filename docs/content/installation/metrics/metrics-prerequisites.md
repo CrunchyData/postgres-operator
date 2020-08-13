@@ -28,3 +28,4 @@ and their default Service ports.
 | --- | --- |
 | Grafana | 9090 |
 | Prometheus | 3000 |
+| Alertmanager | 9093 |
