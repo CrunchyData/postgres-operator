@@ -8,9 +8,19 @@
   tags: always
 
 - assert:
-    msg: Grafana and Prometheus installs are disabled, nothing to install, update or uninstall
-    that: grafana_install | bool or prometheus_install | bool
-  tags: always
+    msg: Alertmanager, Grafana, and Prometheus installs are disabled, nothing to install, update or uninstall
+    that: grafana_install | bool or prometheus_install | bool or alertmanager_install | bool
+  tags:
+    - install-metrics
+    - update-metrics
+
+- assert:
+    msg: Alertmanager can only be installed alongside of Prometheus, please enable prometheus_install
+    that: prometheus_install | bool
+  when: alertmanager_install | bool
+  tags:
+    - install-metrics
+    - update-metrics
 
 - assert:
     msg: Please specify either OpenShift or Kubernetes variables in inventory
@@ -61,4 +71,8 @@
 
 - include_tasks: "preflight-prometheus.yml"
   when: prometheus_install | bool
+  tags: always
+
+- include_tasks: "preflight-alertmanager.yml"
+  when: alertmanager_install | bool
   tags: always

@@ -21,6 +21,8 @@ PostgreSQL clusters, specifically using Crunchy PostgreSQL Exporter data stored 
 - [Prometheus](https://prometheus.io/) - A multi-dimensional data model with time series data,
 which is used in collaboration with the Crunchy PostgreSQL Exporter to provide and store
 metrics
+- [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/) - Handles alerts 
+sent by Prometheus by deduplicating, grouping, and routing them to reciever integrations.
 
 When installing the monitoring infrastructure, various configuration options and settings
 are available to tailor the installation according to your needs.  For instance, custom dashboards

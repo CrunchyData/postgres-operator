@@ -42,6 +42,8 @@ The PostgreSQL Operator orchestrates a series of PostgreSQL and PostgreSQL relat
 
 * **Prometheus** (prometheus).  Prometheus is a multi-dimensional time series data model with an elastic query language. It is used in collaboration with the Crunchy PostgreSQL Exporter and Grafana to provide and store metrics.
 
+* **Alertmanager** (alertmanager). Handles alerts sent by Prometheus by deduplicating, grouping, and routing them to reciever integrations.
+
 ### Connection Pooling
 
 * **pgbouncer** (crunchy-pgbouncer).  pgbouncer is a lightweight connection pooler for PostgreSQL. The crunchy-pgbouncer container provides a pgbouncer image.

@@ -64,6 +64,21 @@ oc get deployments -n <metrics_namespace>
 oc get pods -n <metrics_namespace>
 ```
 
+## Verify Alertmanager
+
+In a separate terminal we need to setup a port forward to the Crunchy Alertmanager deployment
+to ensure connection can be made outside of the cluster:
+
+```bash
+# If deployed to Kubernetes
+kubectl port-forward -n <METRICS_NAMESPACE> svc/crunchy-alertmanager  9093:9093
+
+# If deployed to OpenShift
+oc port-forward -n <METRICS_NAMESPACE> svc/crunchy-alertmanager 9093:9093
+```
+
+In a browser navigate to `http://127.0.0.1:9093` to access the Alertmanager dashboard.
+
 ## Verify Grafana
 
 In a separate terminal we need to setup a port forward to the Crunchy Grafana deployment
