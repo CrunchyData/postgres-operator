@@ -99,6 +99,15 @@ func init() {
 		"the pgBackRest repository.")
 	UpdateClusterCmd.Flags().StringVar(&BackrestMemoryLimit, "pgbackrest-memory-limit", "", "Set the amount of memory to limit for "+
 		"the pgBackRest repository.")
+	UpdateClusterCmd.Flags().StringVar(&ExporterCPURequest, "exporter-cpu", "", "Set the number of millicores to request for CPU "+
+		"for the Crunchy Postgres Exporter sidecar container, e.g. \"100m\" or \"0.1\".")
+	UpdateClusterCmd.Flags().StringVar(&ExporterCPULimit, "exporter-cpu-limit", "", "Set the number of millicores to limit for CPU "+
+		"for the Crunchy Postgres Exporter sidecar container, e.g. \"100m\" or \"0.1\".")
+	UpdateClusterCmd.Flags().StringVar(&ExporterMemoryRequest, "exporter-memory", "", "Set the amount of memory to request for "+
+		"the Crunchy Postgres Exporter sidecar container.")
+	UpdateClusterCmd.Flags().StringVar(&ExporterMemoryLimit, "exporter-memory-limit", "", "Set the amount of memory to limit for "+
+		"the Crunchy Postgres Exporter sidecar container.")
+
 	UpdateClusterCmd.Flags().BoolVarP(&EnableStandby, "enable-standby", "", false,
 		"Enables standby mode in the cluster(s) specified.")
 	UpdateClusterCmd.Flags().BoolVar(&Startup, "startup", false, "Restart the database cluster if it "+
@@ -254,6 +263,11 @@ var UpdateClusterCmd = &cobra.Command{
 		if BackrestCPURequest != "" || BackrestMemoryRequest != "" ||
 			BackrestCPULimit != "" || BackrestMemoryLimit != "" {
 			fmt.Println("Updating pgBackRest resources can cause temporary unavailability of backups and WAL archives.")
+		}
+
+		if ExporterCPURequest != "" || ExporterMemoryRequest != "" ||
+			ExporterCPULimit != "" || ExporterMemoryLimit != "" {
+			fmt.Println("Updating Crunchy Postgres Exporter resources can cause downtime.")
 		}
 
 		if !util.AskForConfirmation(NoPrompt, "") {

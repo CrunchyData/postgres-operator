@@ -23,6 +23,7 @@ disable_fsgroup: "false"
 default_instance_memory: ""
 default_pgbackrest_memory: ""
 default_pgbouncer_memory: ""
+default_exporter_memory: ""
 
 pgo_client_install: "true"
 pgo_client_container_install: "false"

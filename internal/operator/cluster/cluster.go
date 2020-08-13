@@ -464,25 +464,45 @@ func UpdateResources(clientset kubernetes.Interface, restConfig *rest.Config, cl
 	}
 
 	// iterate through each PostgreSQL instance deployment and update the
-	// resource values for the database container
+	// resource values for the database or exporter containers
 	//
 	// NOTE: a future version (near future) will first try to detect the primary
 	// so that all the replicas are updated first, and then the primary gets the
 	// update
 	for _, deployment := range deployments.Items {
-		// first, initialize the requests/limits resource to empty Resource Lists
-		deployment.Spec.Template.Spec.Containers[0].Resources.Requests = v1.ResourceList{}
-		deployment.Spec.Template.Spec.Containers[0].Resources.Limits = v1.ResourceList{}
+		// now, iterate through each container within that deployment
+		for index, container := range deployment.Spec.Template.Spec.Containers {
+			// first check for the database container
+			if container.Name == "database" {
+				// first, initialize the requests/limits resource to empty Resource Lists
+				deployment.Spec.Template.Spec.Containers[index].Resources.Requests = v1.ResourceList{}
+				deployment.Spec.Template.Spec.Containers[index].Resources.Limits = v1.ResourceList{}
 
-		// now, simply deep copy the values from the CRD
-		if cluster.Spec.Resources != nil {
-			deployment.Spec.Template.Spec.Containers[0].Resources.Requests = cluster.Spec.Resources.DeepCopy()
+				// now, simply deep copy the values from the CRD
+				if cluster.Spec.Resources != nil {
+					deployment.Spec.Template.Spec.Containers[index].Resources.Requests = cluster.Spec.Resources.DeepCopy()
+				}
+
+				if cluster.Spec.Limits != nil {
+					deployment.Spec.Template.Spec.Containers[index].Resources.Limits = cluster.Spec.Limits.DeepCopy()
+				}
+				// next, check for the exporter container
+			} else if container.Name == "exporter" {
+				// first, initialize the requests/limits resource to empty Resource Lists
+				deployment.Spec.Template.Spec.Containers[index].Resources.Requests = v1.ResourceList{}
+				deployment.Spec.Template.Spec.Containers[index].Resources.Limits = v1.ResourceList{}
+
+				// now, simply deep copy the values from the CRD
+				if cluster.Spec.ExporterResources != nil {
+					deployment.Spec.Template.Spec.Containers[index].Resources.Requests = cluster.Spec.ExporterResources.DeepCopy()
+				}
+
+				if cluster.Spec.ExporterLimits != nil {
+					deployment.Spec.Template.Spec.Containers[index].Resources.Limits = cluster.Spec.ExporterLimits.DeepCopy()
+				}
+
+			}
 		}
-
-		if cluster.Spec.Limits != nil {
-			deployment.Spec.Template.Spec.Containers[0].Resources.Limits = cluster.Spec.Limits.DeepCopy()
-		}
-
 		// Before applying the update, we want to explicitly stop PostgreSQL on each
 		// instance. This prevents PostgreSQL from having to boot up in crash
 		// recovery mode.
@@ -491,7 +511,6 @@ func UpdateResources(clientset kubernetes.Interface, restConfig *rest.Config, cl
 		if err := stopPostgreSQLInstance(clientset, restConfig, deployment); err != nil {
 			log.Warn(err)
 		}
-
 		// update the deployment with the new values
 		if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(&deployment); err != nil {
 			return err

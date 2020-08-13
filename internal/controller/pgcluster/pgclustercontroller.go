@@ -237,9 +237,12 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
-	// see if any of the resource values have changed, and if so, update them
+	// see if any of the resource values have changed for the database or exporter container,
+	// if so, update them
 	if !reflect.DeepEqual(oldcluster.Spec.Resources, newcluster.Spec.Resources) ||
-		!reflect.DeepEqual(oldcluster.Spec.Limits, newcluster.Spec.Limits) {
+		!reflect.DeepEqual(oldcluster.Spec.Limits, newcluster.Spec.Limits) ||
+		!reflect.DeepEqual(oldcluster.Spec.ExporterResources, newcluster.Spec.ExporterResources) ||
+		!reflect.DeepEqual(oldcluster.Spec.ExporterLimits, newcluster.Spec.ExporterLimits) {
 		if err := clusteroperator.UpdateResources(c.Client, c.Client.Config, newcluster); err != nil {
 			log.Error(err)
 			return

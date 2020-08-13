@@ -87,13 +87,14 @@ type podAntiAffinityTemplateFields struct {
 
 // consolidate
 type exporterTemplateFields struct {
-	Name              string
-	JobName           string
-	PGOImageTag       string
-	PGOImagePrefix    string
-	PgPort            string
-	ExporterPort      string
-	CollectSecretName string
+	Name               string
+	JobName            string
+	PGOImageTag        string
+	PGOImagePrefix     string
+	PgPort             string
+	ExporterPort       string
+	CollectSecretName  string
+	ContainerResources string
 }
 
 //consolidate
@@ -370,6 +371,7 @@ func GetExporterAddon(clientset kubernetes.Interface, namespace string, spec *cr
 		exporterTemplateFields.PGOImagePrefix = util.GetValueOrDefault(spec.PGOImagePrefix, Pgo.Pgo.PGOImagePrefix)
 		exporterTemplateFields.PgPort = spec.Port
 		exporterTemplateFields.CollectSecretName = spec.CollectSecretName
+		exporterTemplateFields.ContainerResources = GetResourcesJSON(spec.ExporterResources, spec.ExporterLimits)
 
 		var exporterDoc bytes.Buffer
 		err = config.ExporterTemplate.Execute(&exporterDoc, exporterTemplateFields)

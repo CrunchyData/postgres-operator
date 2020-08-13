@@ -95,6 +95,9 @@ var (
 	// the resource requests / limits for pgBouncer instances
 	PgBouncerCPURequest, PgBouncerMemoryRequest string
 	PgBouncerCPULimit, PgBouncerMemoryLimit     string
+	// the resource requests / limits for Crunchy Postgres Exporter the sidecar container
+	ExporterCPURequest, ExporterMemoryRequest string
+	ExporterCPULimit, ExporterMemoryLimit     string
 )
 
 // BackrestS3CASecretName, if provided, is the name of a secret to use that
@@ -372,6 +375,14 @@ func init() {
 	createClusterCmd.Flags().StringVar(&MemoryLimit, "memory-limit", "", "Set the amount of RAM to limit, e.g. "+
 		"1GiB.")
 	createClusterCmd.Flags().BoolVarP(&MetricsFlag, "metrics", "", false, "Adds the crunchy-postgres-exporter container to the database pod.")
+	createClusterCmd.Flags().StringVar(&ExporterCPURequest, "exporter-cpu", "", "Set the number of millicores to request for CPU "+
+		"for the Crunchy Postgres Exporter sidecar container, e.g. \"100m\" or \"0.1\". Defaults to being unset.")
+	createClusterCmd.Flags().StringVar(&ExporterCPULimit, "exporter-cpu-limit", "", "Set the number of millicores to limit for CPU "+
+		"for the Crunchy Postgres Exporter sidecar container, e.g. \"100m\" or \"0.1\". Defaults to being unset.")
+	createClusterCmd.Flags().StringVar(&ExporterMemoryRequest, "exporter-memory", "", "Set the amount of memory to request for "+
+		"the Crunchy Postgres Exporter sidecar container. Defaults to server value (24Mi).")
+	createClusterCmd.Flags().StringVar(&ExporterMemoryLimit, "exporter-memory-limit", "", "Set the amount of memory to limit for "+
+		"the Crunchy Postgres Exporter sidecar container.")
 	createClusterCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the primary database. If not set, any node is used.")
 	createClusterCmd.Flags().StringVarP(&Password, "password", "", "", "The password to use for standard user account created during cluster initialization.")
 	createClusterCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 0, "If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.")
