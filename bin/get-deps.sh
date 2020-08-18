@@ -17,7 +17,6 @@ echo "Ensuring project dependencies..."
 BINDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 EVTDIR="$BINDIR/pgo-event"
 POSTGRES_EXPORTER_VERSION=0.8.0
-PGMONITOR_COMMIT='v4.4-RC2'
 
 # Precondition checks
 if [ "$GOPATH" = "" ]; then
@@ -94,31 +93,4 @@ fi
 wget -O $PGOROOT/postgres_exporter.tar.gz https://github.com/wrouesnel/postgres_exporter/releases/download/v${POSTGRES_EXPORTER_VERSION?}/postgres_exporter_v${POSTGRES_EXPORTER_VERSION?}_linux-amd64.tar.gz
 
 # pgMonitor Setup
-if [[ -d ${PGOROOT?}/tools/pgmonitor ]]
-then
-    rm -rf ${PGOROOT?}/tools/pgmonitor
-fi
-
-git clone https://github.com/CrunchyData/pgmonitor.git ${PGOROOT?}/tools/pgmonitor
-cd ${PGOROOT?}/tools/pgmonitor
-git checkout ${PGMONITOR_COMMIT?}
-
-# create pgMonitor documentation data directory, if it doesn't exist
-if [[ ! -d ${PGOROOT?}/docs/data/pgmonitor ]]
-then
-    mkdir -p ${PGOROOT?}/docs/data/pgmonitor
-fi
-
-# pgMonitor Script Documentation Setup
-rm -rf ${PGOROOT?}/docs/data/pgmonitor/*
-
-# link pgMonitor metrics files to Hugo data directory
-ln -s $PGOROOT/tools/pgmonitor/exporter/postgres/queries_common.yml $PGOROOT/docs/data/pgmonitor/queries_common.yml
-ln -s $PGOROOT/tools/pgmonitor/exporter/postgres/queries_per_db.yml $PGOROOT/docs/data/pgmonitor/queries_per_db.yml
-ln -s $PGOROOT/tools/pgmonitor/exporter/postgres/queries_backrest.yml $PGOROOT/docs/data/pgmonitor/queries_backrest.yml
-ln -s $PGOROOT/tools/pgmonitor/exporter/postgres/queries_pg12.yml $PGOROOT/docs/data/pgmonitor/queries_pg12.yml
-ln -s $PGOROOT/tools/pgmonitor/exporter/postgres/queries_pg11.yml $PGOROOT/docs/data/pgmonitor/queries_pg11.yml
-ln -s $PGOROOT/tools/pgmonitor/exporter/postgres/queries_pg10.yml $PGOROOT/docs/data/pgmonitor/queries_pg10.yml
-ln -s $PGOROOT/tools/pgmonitor/exporter/postgres/queries_pg96.yml $PGOROOT/docs/data/pgmonitor/queries_pg96.yml
-ln -s $PGOROOT/tools/pgmonitor/exporter/postgres/queries_pg95.yml $PGOROOT/docs/data/pgmonitor/queries_pg95.yml
-ln -s $PGOROOT/tools/pgmonitor/exporter/postgres/queries_nodemx.yml $PGOROOT/docs/data/pgmonitor/queries_nodemx.yml
+source $BINDIR/get-pgmonitor.sh

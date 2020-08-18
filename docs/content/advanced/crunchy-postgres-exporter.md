@@ -69,3 +69,11 @@ Below are details on the various metrics available from the crunchy-postgres-exp
 The name, SQL query and metric details are given for each available item.
 
 {{< exporter_metrics >}}
+
+# [pgnodemx](https://github.com/CrunchyData/pgnodemx)
+
+In addition to the metrics above, the [pgnodemx](https://github.com/CrunchyData/pgnodemx) PostgreSQL extension provides SQL functions to allow the capture of node OS metrics via SQL queries. For more information, please see the [pgnodemx](https://github.com/CrunchyData/pgnodemx) project page:
+
+[https://github.com/CrunchyData/pgnodemx](https://github.com/CrunchyData/pgnodemx)
+
+{{< pgnodemx_metrics >}}
