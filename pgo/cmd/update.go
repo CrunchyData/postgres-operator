@@ -61,6 +61,23 @@ func init() {
 
 	UpdateClusterCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	UpdateClusterCmd.Flags().BoolVar(&AllFlag, "all", false, "all resources.")
+	UpdateClusterCmd.Flags().StringSliceVar(&Annotations, "annotation", []string{},
+		"Add an Annotation to all of the managed deployments (PostgreSQL, pgBackRest, pgBouncer)\n"+
+			"The format to add an annotation is \"name=value\"\n"+
+			"The format to remove an annotation is \"name-\"\n\n"+
+			"For example, to add two annotations: \"--annotation=hippo=awesome,elephant=cool\"")
+	UpdateClusterCmd.Flags().StringSliceVar(&AnnotationsBackrest, "annotation-pgbackrest", []string{},
+		"Add an Annotation specifically to pgBackRest deployments\n"+
+			"The format to add an annotation is \"name=value\"\n"+
+			"The format to remove an annotation is \"name-\"")
+	UpdateClusterCmd.Flags().StringSliceVar(&AnnotationsPgBouncer, "annotation-pgbouncer", []string{},
+		"Add an Annotation specifically to pgBouncer deployments\n"+
+			"The format to add an annotation is \"name=value\"\n"+
+			"The format to remove an annotation is \"name-\"")
+	UpdateClusterCmd.Flags().StringSliceVar(&AnnotationsPostgres, "annotation-postgres", []string{},
+		"Add an Annotation specifically to PostgreSQL deployments"+
+			"The format to add an annotation is \"name=value\"\n"+
+			"The format to remove an annotation is \"name-\"")
 	UpdateClusterCmd.Flags().StringVar(&CPURequest, "cpu", "", "Set the number of millicores to request for the CPU, e.g. "+
 		"\"100m\" or \"0.1\".")
 	UpdateClusterCmd.Flags().StringVar(&CPULimit, "cpu-limit", "", "Set the number of millicores to limit for the CPU, e.g. "+

@@ -18,12 +18,14 @@ package operator
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	fakekubeapi "github.com/crunchydata/postgres-operator/internal/kubeapi/fake"
 	"github.com/crunchydata/postgres-operator/internal/util"
+	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -46,6 +48,79 @@ func mockSetupContainers(values map[string]struct {
 	}
 
 	return containers
+}
+
+func TestGetAnnotations(t *testing.T) {
+	cluster := &crv1.Pgcluster{}
+	cluster.Spec.Annotations.Global = map[string]string{"global": "yes", "hey": "there"}
+	cluster.Spec.Annotations.Postgres = map[string]string{"postgres": "yup", "elephant": "yay"}
+	cluster.Spec.Annotations.Backrest = map[string]string{"backrest": "woo"}
+	cluster.Spec.Annotations.PgBouncer = map[string]string{"pgbouncer": "yas", "hippo": "awesome"}
+
+	t.Run("annotations empty", func(t *testing.T) {
+		cluster := &crv1.Pgcluster{}
+		ats := []crv1.ClusterAnnotationType{
+			crv1.ClusterAnnotationGlobal,
+			crv1.ClusterAnnotationPostgres,
+			crv1.ClusterAnnotationBackrest,
+			crv1.ClusterAnnotationPgBouncer,
+		}
+
+		for _, at := range ats {
+			result := GetAnnotations(cluster, at)
+
+			if result != "" {
+				t.Errorf("expected empty string, got %q", result)
+			}
+		}
+	})
+
+	tests := []struct {
+		testName string
+		expected string
+		arg      crv1.ClusterAnnotationType
+	}{
+		{
+			testName: "global",
+			expected: `{"global":"yes","hey":"there"}`,
+			arg:      crv1.ClusterAnnotationGlobal,
+		},
+		{
+			testName: "postgres",
+			expected: `{"global":"yes", "hey":"there", "postgres": "yup", "elephant": "yay"}`,
+			arg:      crv1.ClusterAnnotationPostgres,
+		},
+		{
+			testName: "pgbackrest",
+			expected: `{"global":"yes", "hey":"there", "backrest": "woo"}`,
+			arg:      crv1.ClusterAnnotationBackrest,
+		},
+		{
+			testName: "pgbouncer",
+			expected: `{"global":"yes", "hey":"there", "pgbouncer": "yas", "hippo": "awesome"}`,
+			arg:      crv1.ClusterAnnotationPgBouncer,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			var expected, actual interface{}
+
+			if err := json.Unmarshal([]byte(test.expected), &expected); err != nil {
+				t.Fatalf("could not unmarshal expected json: %q", err.Error())
+			}
+
+			result := GetAnnotations(cluster, test.arg)
+
+			if err := json.Unmarshal([]byte(result), &actual); err != nil {
+				t.Fatalf("could not unmarshal actual json: %q", err.Error())
+			}
+
+			if !reflect.DeepEqual(expected, actual) {
+				t.Errorf("expected %v, got %v", expected, actual)
+			}
+		})
+	}
 }
 
 func TestOverrideClusterContainerImages(t *testing.T) {

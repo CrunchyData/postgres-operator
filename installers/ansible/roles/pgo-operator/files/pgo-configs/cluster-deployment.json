@@ -19,6 +19,9 @@
         },
         "template": {
             "metadata": {
+                {{ if .PodAnnotations }}
+                "annotations": {{ .PodAnnotations }},
+                {{ end }}
                 "labels": {
                     "name": "{{.Name}}",
                     "vendor": "crunchydata",

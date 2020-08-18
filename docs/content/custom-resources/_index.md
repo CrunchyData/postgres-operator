@@ -77,6 +77,7 @@ make changes, as described below.
 
 | Attribute | Action | Description |
 |-----------|--------|-------------|
+| Annotations | `create`, `update` | Specify Kubernetes [Annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/) that can be applied to the different deployments managed by the PostgreSQL Operator (PostgreSQL, pgBackRest, pgBouncer). For more information, please see the "Annotations Specification" below. |
 | BackrestLimits | `create`, `update` | Specify the container resource limits that the pgBackRest repository should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | BackrestResources | `create`, `update` | Specify the container resource requests that the pgBackRest repository should use. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | BackrestS3Bucket | `create` | An optional parameter that specifies a S3 bucket that pgBackRest should use. |
@@ -191,6 +192,27 @@ a PostgreSQL cluster to help with failover scenarios too.
 | Limits | `create`, `update` | Specify the container resource limits that the pgBouncer Pods should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | Replicas | `create`, `update` | The number of pgBouncer instances to deploy. Must be set to at least `1` to deploy pgBouncer. Setting to `0` removes an existing pgBouncer deployment for the PostgreSQL cluster. |
 | Resources | `create`, `update` | Specify the container resource requests that the pgBouncer Pods should use. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
+
+##### Annotations Specification
+
+The `pgcluster.crunchydata.com` specification contains a block that allows for
+custom [Annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
+to be applied to the Deployments that are managed by the PostgreSQL Operator,
+including:
+
+- PostgreSQL
+- pgBackRest
+- pgBouncer
+
+This also includes the option to apply Annotations globally across the three
+different deployment groups.
+
+| Attribute | Action | Description |
+|-----------|--------|-------------|
+| Backrest | `create`, `update` | Specify annotations that are only applied to the pgBackRest deployments |
+| Global | `create`, `update` | Specify annotations that are applied to the PostgreSQL, pgBackRest, and pgBouncer deployments |
+| PgBouncer | `create`, `update` | Specify annotations that are only applied to the pgBouncer deployments |
+| Postgres | `create`, `update` | Specify annotations that are only applied to the PostgreSQL deployments |
 
 ### `pgreplicas.crunchydata.com`
 
@@ -390,6 +412,7 @@ spec:
     storageclass: ""
     storagetype: create
     supplementalgroups: ""
+  annotations:
   backrestLimits: {}
   backrestRepoPath: ""
   backrestResources:
@@ -622,3 +645,45 @@ parameter in a `pgclusters.crunchydata.com` custom resource. Setting `shutdown`
 to `true` will stop a PostgreSQL cluster, whereas a value of `false` will make
 a cluster available. This affects all of the associated instances of a
 PostgreSQL cluster.
+
+### Manage Annotations
+
+Kubernetes [Annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
+can be managed for PostgreSQL, pgBackRest, and pgBouncer Deployments, as well as
+being able to apply Annotations across all three. This is done via the
+`annotations` block in the `pgclusters.crunchydata.com` custom resource
+definition. For example, to apply Annotations in the `hippo` cluster, some that
+are global, some that are specific to each Deployment type, you could do the
+following.
+
+First, start editing the `hippo` custom resource:
+
+```
+# this variable is the name of the cluster being created
+export pgo_cluster_name=hippo
+# this variable is the namespace the cluster is being deployed into
+export cluster_namespace=pgo
+
+kubectl edit pgclusters.crunchydata.com -n "${cluster_namespace}" "${pgo_cluster_name}"
+```
+
+In the `hippo` specification, add the annotations block similar to this (note,
+this explicitly shows that this is the `spec` block. **Do not modify the
+`annotations` block in the `metadata` section**).
+
+
+```
+spec:
+  annotations:
+    global:
+      favorite: hippo
+    backrest:
+      chair: comfy
+    pgBouncer:
+      pool: swimming
+    postgres:
+      elephant: cool
+```
+
+Save your edits, and in a short period of time, you should see these annotations
+applied to the managed Deployments.

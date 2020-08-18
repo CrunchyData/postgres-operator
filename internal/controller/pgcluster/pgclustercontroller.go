@@ -273,6 +273,15 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 			return
 		}
 	}
+
+	// check to see if any of the annotations have been modified, in particular,
+	// the non-system annotations
+	if !reflect.DeepEqual(oldcluster.Spec.Annotations, newcluster.Spec.Annotations) {
+		if err := updateAnnotations(c, oldcluster, newcluster); err != nil {
+			log.Error(err)
+			return
+		}
+	}
 }
 
 // onDelete is called when a pgcluster is deleted
@@ -303,6 +312,77 @@ func addIdentifier(clusterCopy *crv1.Pgcluster) {
 	}
 
 	clusterCopy.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = string(u[:len(u)-1])
+}
+
+// updateAnnotations updates any custom annitations that may be on the managed
+// deployments, which includes:
+//
+// - globally applied annotations
+// - postgres instance specific annotations
+// - pgBackRest instance specific annotations
+// - pgBouncer instance specific annotations
+func updateAnnotations(c *Controller, oldCluster *crv1.Pgcluster, newCluster *crv1.Pgcluster) error {
+	// so we have a two-tier problem we need to solve:
+	// 1. Which of the deployment types are being modified (or in the case of
+	//    global, all of them)?
+	// 2. Which annotations are being added/modified/removed? Kubernetes actually
+	//    has a convenient function for updating the annotations, so we do no
+	//    need to do too much works
+	annotationsPostgres := map[string]string{}
+	annotationsBackrest := map[string]string{}
+	annotationsPgBouncer := map[string]string{}
+
+	// if the global ones differ, make the changes for all of the annotations
+	if !reflect.DeepEqual(oldCluster.Spec.Annotations.Global, newCluster.Spec.Annotations.Global) {
+		// set the annotations for all of them
+		for k, v := range newCluster.Spec.Annotations.Global {
+			annotationsPostgres[k] = v
+			annotationsBackrest[k] = v
+			annotationsPgBouncer[k] = v
+		}
+	}
+
+	// check the individual deployment groups. If the annotations differ, set them
+	// in their respective map
+	if !reflect.DeepEqual(oldCluster.Spec.Annotations.Postgres, newCluster.Spec.Annotations.Postgres) {
+		for k, v := range newCluster.Spec.Annotations.Postgres {
+			annotationsPostgres[k] = v
+		}
+	}
+
+	if !reflect.DeepEqual(oldCluster.Spec.Annotations.Backrest, newCluster.Spec.Annotations.Backrest) {
+		for k, v := range newCluster.Spec.Annotations.Backrest {
+			annotationsBackrest[k] = v
+		}
+	}
+
+	if !reflect.DeepEqual(oldCluster.Spec.Annotations.PgBouncer, newCluster.Spec.Annotations.PgBouncer) {
+		for k, v := range newCluster.Spec.Annotations.PgBouncer {
+			annotationsPgBouncer[k] = v
+		}
+	}
+
+	// so if there are changes, we can apply them to the various deployments,
+	// but only do so if we have to
+	if len(annotationsPostgres) != 0 {
+		if err := clusteroperator.UpdateAnnotations(c.Client, c.Client.Config, newCluster, annotationsPostgres); err != nil {
+			return err
+		}
+	}
+
+	if len(annotationsBackrest) != 0 {
+		if err := backrestoperator.UpdateAnnotations(c.Client, newCluster, annotationsBackrest); err != nil {
+			return err
+		}
+	}
+
+	if len(annotationsPgBouncer) != 0 {
+		if err := clusteroperator.UpdatePgBouncerAnnotations(c.Client, newCluster, annotationsPgBouncer); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // updatePgBouncer updates the pgBouncer Deployment to reflect any changes that

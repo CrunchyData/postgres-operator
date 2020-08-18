@@ -69,6 +69,21 @@ var WALStorageConfig string
 var WALPVCSize string
 var RestoreFrom string
 
+// group the annotation requests
+var (
+	// Annotations contains the global annotations for a cluster
+	Annotations []string
+
+	// AnnotationsBackrest contains annotations specifc to pgBackRest
+	AnnotationsBackrest []string
+
+	// AnnotationsPgBouncer contains annotations specifc to pgBouncer
+	AnnotationsPgBouncer []string
+
+	// AnnotationsPostgres contains annotations specifc to PostgreSQL instances
+	AnnotationsPostgres []string
+)
+
 // group the various container resource requests together, i.e. for CPU/Memory
 var (
 	// the resource requests / limits for PostgreSQL instances
@@ -323,6 +338,23 @@ func init() {
 	CreateCmd.AddCommand(createNamespaceCmd)
 
 	// flags for "pgo create cluster"
+	createClusterCmd.Flags().StringSliceVar(&Annotations, "annotation", []string{},
+		"Add an Annotation to all of the managed deployments (PostgreSQL, pgBackRest, pgBouncer)\n"+
+			"The format to add an annotation is \"name=value\"\n"+
+			"The format to remove an annotation is \"name-\"\n\n"+
+			"For example, to add two annotations: \"--annotation=hippo=awesome,elephant=cool\"")
+	createClusterCmd.Flags().StringSliceVar(&AnnotationsBackrest, "annotation-pgbackrest", []string{},
+		"Add an Annotation specifically to pgBackRest deployments\n"+
+			"The format to add an annotation is \"name=value\"\n"+
+			"The format to remove an annotation is \"name-\"")
+	createClusterCmd.Flags().StringSliceVar(&AnnotationsPgBouncer, "annotation-pgbouncer", []string{},
+		"Add an Annotation specifically to pgBouncer deployments\n"+
+			"The format to add an annotation is \"name=value\"\n"+
+			"The format to remove an annotation is \"name-\"")
+	createClusterCmd.Flags().StringSliceVar(&AnnotationsPostgres, "annotation-postgres", []string{},
+		"Add an Annotation specifically to PostgreSQL deployments\n"+
+			"The format to add an annotation is \"name=value\"\n"+
+			"The format to remove an annotation is \"name-\"")
 	createClusterCmd.Flags().StringVarP(&CCPImage, "ccp-image", "", "", "The CCPImage name to use for cluster creation. If specified, overrides the value crunchy-postgres.")
 	createClusterCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
 	createClusterCmd.Flags().StringVarP(&CCPImagePrefix, "ccp-image-prefix", "", "", "The CCPImagePrefix to use for cluster creation. If specified, overrides the global configuration.")

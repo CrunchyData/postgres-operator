@@ -28,6 +28,9 @@
         },
         "template": {
             "metadata": {
+                {{ if .PodAnnotations }}
+                "annotations": {{ .PodAnnotations }},
+                {{ end }}
                 "labels": {
                     {{if .BootstrapCluster}}
                     "pgha-bootstrap": "{{.BootstrapCluster}}",

@@ -180,6 +180,8 @@ type CreateClusterRequest struct {
 	// PGDataSourceSpec defines the data source that should be used to populate the initial PGDATA
 	// directory when bootstrapping a new PostgreSQL cluster
 	PGDataSource crv1.PGDataSourceSpec
+	// Annotations provide any custom annotations for a cluster
+	Annotations crv1.ClusterAnnotations `json:"annotations"`
 }
 
 // CreateClusterDetail provides details about the PostgreSQL cluster that is
@@ -363,7 +365,9 @@ type UpdateClusterRequest struct {
 	ClientVersion string
 	Namespace     string
 	AllFlag       bool
-	Autofail      UpdateClusterAutofailStatus
+	// Annotations provide any custom annotations for a cluster
+	Annotations crv1.ClusterAnnotations `json:"annotations"`
+	Autofail    UpdateClusterAutofailStatus
 	// BackrestCPULimit, if specified, is the value of the max amount of CPU
 	// to be utilized for a pgBackRest Pod
 	BackrestCPULimit string

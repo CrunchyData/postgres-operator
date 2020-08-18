@@ -413,6 +413,46 @@ func ScaleDownBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespa
 
 }
 
+// UpdateAnnotations updates the annotations in the "template" portion of a
+// PostgreSQL deployment
+func UpdateAnnotations(clientset kubernetes.Interface, restConfig *rest.Config,
+	cluster *crv1.Pgcluster, annotations map[string]string) error {
+	var updateError error
+
+	// first, get a list of all of the instance deployments for the cluster
+	deployments, err := operator.GetInstanceDeployments(clientset, cluster)
+
+	if err != nil {
+		return err
+	}
+
+	// now update each deployment with the new annotations
+	for _, deployment := range deployments.Items {
+		log.Debugf("update annotations on [%s]", deployment.Name)
+		log.Debugf("new annotations: %v", annotations)
+
+		deployment.Spec.Template.ObjectMeta.SetAnnotations(annotations)
+
+		// Before applying the update, we want to explicitly stop PostgreSQL on each
+		// instance. This prevents PostgreSQL from having to boot up in crash
+		// recovery mode.
+		//
+		// If an error is returned, we only issue a warning
+		if err := stopPostgreSQLInstance(clientset, restConfig, deployment); err != nil {
+			log.Warn(err)
+		}
+
+		// finally, update the Deployment. If something errors, we'll log that there
+		// was an error, but continue with processing the other deployments
+		if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(&deployment); err != nil {
+			log.Error(err)
+			updateError = err
+		}
+	}
+
+	return updateError
+}
+
 // UpdateResources updates the PostgreSQL instance Deployments to reflect the
 // update resources (i.e. CPU, memory)
 func UpdateResources(clientset kubernetes.Interface, restConfig *rest.Config, cluster *crv1.Pgcluster) error {

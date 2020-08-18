@@ -25,6 +25,9 @@
         },
         "template": {
             "metadata": {
+                {{ if .PodAnnotations }}
+                "annotations": {{ .PodAnnotations }},
+                {{ end }}
                 "labels": {
                     "name": "{{.Name}}",
                     "crunchy-pgbouncer": "true",
