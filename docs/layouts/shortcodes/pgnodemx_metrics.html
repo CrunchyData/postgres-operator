@@ -1,4 +1,4 @@
-{{ range $metricsfile, $value0 := .Site.Data.pgmonitor.general }}
+{{ range $metricsfile, $value0 := .Site.Data.pgmonitor.pgnodemx }}
 <h2>{{ $metricsfile }}</h2>
 
 {{ range $query, $value1 := $value0 }}
