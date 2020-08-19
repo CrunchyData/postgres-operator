@@ -57,8 +57,6 @@ const (
 	EventDeleteCluster                 = "DeleteCluster"
 	EventDeleteClusterCompleted        = "DeleteClusterCompleted"
 	EventCreateLabel                   = "CreateLabel"
-	EventLoad                          = "Load"
-	EventLoadCompleted                 = "LoadCompleted"
 
 	EventCreateBackup          = "CreateBackup"
 	EventCreateBackupCompleted = "CreateBackupCompleted"
@@ -480,38 +478,6 @@ func (p EventApplyPolicyFormat) GetHeader() EventHeader {
 
 func (lvl EventApplyPolicyFormat) String() string {
 	msg := fmt.Sprintf("Event %s (apply policy) - clustername %s - policy [%s]", lvl.EventHeader, lvl.Clustername, lvl.Policyname)
-	return msg
-}
-
-//----------------------------
-type EventLoadFormat struct {
-	EventHeader `json:"eventheader"`
-	Clustername string `json:"clustername"`
-	Loadconfig  string `json:"loadconfig"`
-}
-
-func (p EventLoadFormat) GetHeader() EventHeader {
-	return p.EventHeader
-}
-
-func (lvl EventLoadFormat) String() string {
-	msg := fmt.Sprintf("Event %s (load) - clustername %s - load config [%s]", lvl.EventHeader, lvl.Clustername, lvl.Loadconfig)
-	return msg
-}
-
-//----------------------------
-type EventLoadCompletedFormat struct {
-	EventHeader `json:"eventheader"`
-	Clustername string `json:"clustername"`
-	Loadconfig  string `json:"loadconfig"`
-}
-
-func (p EventLoadCompletedFormat) GetHeader() EventHeader {
-	return p.EventHeader
-}
-
-func (lvl EventLoadCompletedFormat) String() string {
-	msg := fmt.Sprintf("Event %s (load completed) - clustername %s - load config [%s]", lvl.EventHeader, lvl.Clustername, lvl.Loadconfig)
 	return msg
 }
 

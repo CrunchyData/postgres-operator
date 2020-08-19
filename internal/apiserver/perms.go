@@ -29,7 +29,6 @@ const (
 	CLONE_PERM        = "Clone"
 	DF_CLUSTER_PERM   = "DfCluster"
 	LABEL_PERM        = "Label"
-	LOAD_PERM         = "Load"
 	RELOAD_PERM       = "Reload"
 	RESTART_PERM      = "Restart"
 	RESTORE_PERM      = "Restore"
@@ -117,7 +116,6 @@ func initializePerms() {
 		CLONE_PERM:        "yes",
 		DF_CLUSTER_PERM:   "yes",
 		LABEL_PERM:        "yes",
-		LOAD_PERM:         "yes",
 		RELOAD_PERM:       "yes",
 		RESTORE_PERM:      "yes",
 		STATUS_PERM:       "yes",
