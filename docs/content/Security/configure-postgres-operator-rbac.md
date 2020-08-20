@@ -72,7 +72,6 @@ The following list shows the current complete list of possible pgo permissions t
 |DeleteUser | allow *pgo delete user*|
 |DfCluster | allow *pgo df*|
 |Label | allow *pgo label*|
-|Load | allow *pgo load*|
 |Reload | allow *pgo reload*|
 |Restore | allow *pgo restore*|
 |RestoreDump | allow *pgo restore* for pgdumps|

@@ -86,7 +86,6 @@ images = pgo-apiserver \
 	pgo-backrest-repo-sync \
 	pgo-backrest-restore \
 	pgo-event \
-	pgo-load \
 	pgo-rmdata \
 	pgo-scheduler \
 	pgo-sqlrunner \

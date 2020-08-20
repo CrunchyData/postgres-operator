@@ -91,10 +91,6 @@ var ContainerResourcesTemplate *template.Template
 
 const containerResourcesTemplatePath = "container-resources.json"
 
-var LoadTemplate *template.Template
-
-const loadTemplatePath = "pgo.load-template.json"
-
 var AffinityTemplate *template.Template
 
 const affinityTemplatePath = "affinity.json"
@@ -609,11 +605,6 @@ func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) 
 	}
 
 	ContainerResourcesTemplate, err = c.LoadTemplate(cMap, rootPath, containerResourcesTemplatePath)
-	if err != nil {
-		return err
-	}
-
-	LoadTemplate, err = c.LoadTemplate(cMap, rootPath, loadTemplatePath)
 	if err != nil {
 		return err
 	}

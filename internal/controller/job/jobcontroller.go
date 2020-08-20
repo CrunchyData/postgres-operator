@@ -79,8 +79,6 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		err = c.handlePGDumpUpdate(job)
 	case labels[config.LABEL_RESTORE_TYPE_PGRESTORE] == "true":
 		err = c.handlePGRestoreUpdate(job)
-	case labels[config.LABEL_PGO_LOAD] == "true":
-		err = c.handleLoadUpdate(job)
 	case labels[config.LABEL_PGO_CLONE_STEP_1] == "true":
 		err = c.handleRepoSyncUpdate(job)
 	case labelExists(config.LABEL_PGHA_BOOTSTRAP):

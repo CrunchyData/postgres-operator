@@ -114,7 +114,6 @@ provides:
 | failover    | `pgo failover mycluster`                                     | Perform a manual failover of a Postgres cluster.                                                |
 | help        | `pgo help`                                                   | Display general `pgo` help information.                                                         |
 | label       | `pgo label mycluster --label=environment=prod`               | Create a metadata label for a Postgres cluster(s).                                              |
-| load        | `pgo load --load-config=load.json --selector=name=mycluster` | Perform a data load into a Postgres cluster(s).                                                 |
 | reload      | `pgo reload mycluster`                                       | Perform a `pg_ctl` reload command on a Postgres cluster(s).                                     |
 | restore     | `pgo restore mycluster`                                      | Perform a `pgbackrest` or `pgdump` restore on a Postgres cluster.                               |
 | scale       | `pgo scale mycluster`                                        | Create a Postgres replica(s) for a given Postgres cluster.                                      |

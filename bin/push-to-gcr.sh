@@ -26,7 +26,6 @@ postgres-operator
 pgo-apiserver
 pgo-rmdata
 pgo-backrest
-pgo-load
 pgo-client
 pgo-deployer
 )

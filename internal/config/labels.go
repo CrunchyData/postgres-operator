@@ -123,8 +123,6 @@ const LABEL_PGADMIN_TASK_DELETE = "pgadmin-delete"
 
 const LABEL_PGBOUNCER = "crunchy-pgbouncer"
 
-const LABEL_PGO_LOAD = "pgo-load"
-
 const LABEL_JOB_NAME = "job-name"
 const LABEL_PGBACKREST_STANZA = "pgbackrest-stanza"
 const LABEL_PGBACKREST_DB_PATH = "pgbackrest-db-path"
