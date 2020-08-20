@@ -29,7 +29,7 @@ Variable | Ansible Inventory | Example | Description
 `PGO_IMAGE_TAG` | pgo_image_tag | $PGO_BASEOS-$PGO_VERSION | OS/Version tagging info for images
 `PGO_INSTALLATION_NAME` | pgo_installation_name | devtest | Unique name given to Operator installation
 `PGO_OPERATOR_NAMESPACE` | pgo_operator_namespace | pgo | Kubernetes namespace for the operator
-`PGO_VERSION` |  | 4.2.3 | Operator version 
+`PGO_VERSION` |  | 4.2.4 | Operator version 
 `TLS_NO_VERIFY` | pgo_tls_no_verify | false | Disable certificate verification (e.g. strict hostname checking)
 `TLS_CA_TRUST` | pgo_tls_ca_store | /var/pki/my_cas.crt | PEM-encoded list of trusted CA certificates
 `ADD_OS_TRUSTSTORE` | pgo_add_os_ca_store | false | Adds OS root trust collection to apiserver

@@ -8,7 +8,7 @@ PGO_CMD ?= kubectl
 PGO_IMAGE_PREFIX ?= crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
 PGO_OPERATOR_NAMESPACE ?= pgo
-PGO_VERSION ?= 4.2.3
+PGO_VERSION ?= 4.2.4
 
 RELTMPDIR=/tmp/release.$(PGO_VERSION)
 RELFILE=/tmp/postgres-operator.$(PGO_VERSION).tar.gz

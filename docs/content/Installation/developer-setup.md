@@ -26,7 +26,7 @@ Variable | Example | Description
 `PGO_CMD` | kubectl | Cluster management tool executable
 `PGO_IMAGE_PREFIX` | crunchydata | Container image prefix
 `PGO_OPERATOR_NAMESPACE` | pgo | Kubernetes namespace for the operator
-`PGO_VERSION` | 4.2.3 | Operator version
+`PGO_VERSION` | 4.2.4 | Operator version
 
 {{% notice tip %}}
 `examples/envs.sh` contains the above variable definitions as well as others used by postgres-operator tools

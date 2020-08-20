@@ -1,7 +1,7 @@
 
 ---
 title: "Compatibility Requirements"
-Latest Release: 4.2.3 {docdate}
+Latest Release: 4.2.4 {docdate}
 draft: false
 weight: 1
 ---
@@ -13,6 +13,12 @@ version dependencies between the two projects. Below are the operator releases a
 
 | Operator Release   |      Container Release      | Postgres | PgBackrest Version
 |:----------|:-------------|:------------|:--------------
+| 4.2.4 | 4.2.4  | 12.4 | 2.20 |
+|||11.9|2.20|
+|||10.14|2.20|
+|||9.6.19|2.20|
+|||9.5.23|2.20|
+||||
 | 4.2.3 | 4.2.3  | 12.3 | 2.20 |
 |||11.8|2.20|
 |||10.13|2.20|
