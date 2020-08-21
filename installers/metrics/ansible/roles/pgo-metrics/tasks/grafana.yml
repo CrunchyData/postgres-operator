@@ -75,7 +75,7 @@
           -n {{ metrics_namespace }} --dry-run -o yaml | \
             {{ kubectl_or_oc }} label configmap --local vendor=crunchydata -f - \
               -n {{ metrics_namespace }} --dry-run -o yaml | \
-                {{ kubectl_or_oc }} create -f -
+                {{ kubectl_or_oc }} create -f - -n {{ metrics_namespace }}
       when: grafana_datasources_custom_config == ""
       register: create_grafana_datasources_result
       failed_when:
@@ -90,7 +90,7 @@
           -n {{ metrics_namespace }} --dry-run -o yaml | \
             {{ kubectl_or_oc }} label configmap --local vendor=crunchydata -f - \
               -n {{ metrics_namespace }} --dry-run -o yaml | \
-                {{ kubectl_or_oc }} create -f -
+                {{ kubectl_or_oc }} create -f - -n {{ metrics_namespace }}
       args:
         chdir: "{{ pgmonitor_grafana_dir }}"
       when: grafana_dashboards_custom_config == ""
