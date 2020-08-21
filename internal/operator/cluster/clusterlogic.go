@@ -116,6 +116,8 @@ func addClusterBootstrapJob(clientset kubeapi.Interface,
 			cl.Spec.Name)
 	}
 
+	operator.AddBackRestConfigVolumeAndMounts(&job.Spec.Template.Spec, cl.Name, cl.Spec.BackrestConfig)
+
 	// determine if any of the container images need to be overridden
 	operator.OverrideClusterContainerImages(job.Spec.Template.Spec.Containers)
 
@@ -156,6 +158,8 @@ func addClusterDeployments(clientset kubeapi.Interface,
 		operator.AddWALVolumeAndMountsToPostgreSQL(&deployment.Spec.Template.Spec, walVolume,
 			cl.Spec.Name)
 	}
+
+	operator.AddBackRestConfigVolumeAndMounts(&deployment.Spec.Template.Spec, cl.Name, cl.Spec.BackrestConfig)
 
 	// determine if any of the container images need to be overridden
 	operator.OverrideClusterContainerImages(deployment.Spec.Template.Spec.Containers)
@@ -513,6 +517,8 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 	if cluster.Spec.WALStorage.StorageType != "" {
 		operator.AddWALVolumeAndMountsToPostgreSQL(&replicaDeployment.Spec.Template.Spec, walVolume, replica.Spec.Name)
 	}
+
+	operator.AddBackRestConfigVolumeAndMounts(&replicaDeployment.Spec.Template.Spec, cluster.Name, cluster.Spec.BackrestConfig)
 
 	// determine if any of the container images need to be overridden
 	operator.OverrideClusterContainerImages(replicaDeployment.Spec.Template.Spec.Containers)

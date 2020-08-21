@@ -55,6 +55,7 @@ var PodAntiAffinity string
 var PodAntiAffinityPgBackRest string
 var PodAntiAffinityPgBouncer string
 var SyncReplication bool
+var BackrestConfig string
 var BackrestS3Key string
 var BackrestS3KeySecret string
 var BackrestS3Bucket string
@@ -348,6 +349,7 @@ func init() {
 		"for the pgBackRest repository.")
 	createClusterCmd.Flags().StringVar(&BackrestCPULimit, "pgbackrest-cpu-limit", "", "Set the number of millicores to limit for CPU "+
 		"for the pgBackRest repository.")
+	createClusterCmd.Flags().StringVar(&BackrestConfig, "pgbackrest-custom-config", "", "The name of a ConfigMap containing pgBackRest configuration files.")
 	createClusterCmd.Flags().StringVar(&BackrestMemoryRequest, "pgbackrest-memory", "", "Set the amount of memory to request for "+
 		"the pgBackRest repository. Defaults to server value (48Mi).")
 	createClusterCmd.Flags().StringVar(&BackrestMemoryLimit, "pgbackrest-memory-limit", "", "Set the amount of memory to limit for "+

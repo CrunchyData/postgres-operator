@@ -106,6 +106,7 @@ type PgclusterSpec struct {
 	UserLabels          map[string]string        `json:"userlabels"`
 	PodAntiAffinity     PodAntiAffinitySpec      `json:"podAntiAffinity"`
 	SyncReplication     *bool                    `json:"syncReplication"`
+	BackrestConfig      []v1.VolumeProjection    `json:"backrestConfig"`
 	BackrestS3Bucket    string                   `json:"backrestS3Bucket"`
 	BackrestS3Region    string                   `json:"backrestS3Region"`
 	BackrestS3Endpoint  string                   `json:"backrestS3Endpoint"`

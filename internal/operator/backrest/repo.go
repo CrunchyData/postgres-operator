@@ -142,6 +142,8 @@ func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 		return err
 	}
 
+	operator.AddBackRestConfigVolumeAndMounts(&deployment.Spec.Template.Spec, cluster.Name, cluster.Spec.BackrestConfig)
+
 	// set the container image to an override value, if one exists
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_REPO,
 		&deployment.Spec.Template.Spec.Containers[0])

@@ -135,6 +135,9 @@
                         "mountPath": "/dev/shm",
                         "name": "dshm"
                     }, {
+                        "mountPath": "/etc/pgbackrest/conf.d",
+                        "name": "pgbackrest-config"
+                    }, {
                         "mountPath": "/crunchyadm",
                         "name": "crunchyadm"
                     }
@@ -196,6 +199,10 @@
                     "emptyDir": {
                         "medium": "Memory"
                     }
+                },
+                {
+                    "name": "pgbackrest-config",
+                    "projected": { "sources": [] }
                 },
                 {
                     "name": "pgconf-volume",
