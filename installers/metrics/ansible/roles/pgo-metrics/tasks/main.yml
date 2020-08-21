@@ -79,6 +79,13 @@
     - include_tasks: grafana.yml
       when: grafana_install | bool
 
+    - name: Check if Timeout Flag Supported
+      command: |
+        {{ kubectl_or_oc }} rollout status -n {{ metrics_namespace }} \
+          --watch=false --timeout=1s --help
+      register: timeout_flag_result
+      ignore_errors: yes
+
     - name: Set Metrics Deployments Fact
       set_fact: deployments="{{ deployments | default([]) + [ item.name ] }}"
       when: item.deployed
@@ -87,7 +94,9 @@
         - { deployed: "{{ grafana_install | bool }}", name: "crunchy-grafana" }
 
     - name: Wait for Metrics to Finish Deploying
-      command: "{{ kubectl_or_oc }} rollout status deployment/{{ item }} -n {{ metrics_namespace }} --timeout=600s"
+      command: |
+        {{ kubectl_or_oc }} rollout status deployment/{{ item }} -n {{ metrics_namespace }} \
+          {{ '--timeout=600s' if not 'unknown flag: --timeout' in timeout_flag_result.stderr }}
       async: 610  # must be > or = to the rollout status timeout (600s) to ensure proper timeout behavior
       poll: 0
       loop: "{{ deployments }}"
