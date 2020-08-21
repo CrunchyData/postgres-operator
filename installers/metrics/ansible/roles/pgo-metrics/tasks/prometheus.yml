@@ -54,7 +54,7 @@
           -n {{ metrics_namespace }} --dry-run -o yaml | \
             {{ kubectl_or_oc }} label configmap --local vendor=crunchydata -f - \
               -n {{ metrics_namespace }} --dry-run -o yaml | \
-                {{ kubectl_or_oc }} create -f -
+                {{ kubectl_or_oc }} create -f - -n {{ metrics_namespace }}
       when: prometheus_custom_config == ""
       register: create_prometheus_datasources_result
       failed_when:
