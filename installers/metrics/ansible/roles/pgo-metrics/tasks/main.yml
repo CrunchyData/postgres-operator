@@ -96,7 +96,7 @@
     - name: Wait for Metrics to Finish Deploying
       command: |
         {{ kubectl_or_oc }} rollout status deployment/{{ item }} -n {{ metrics_namespace }} \
-          {{ '--timeout=600s' if not 'unknown flag: --timeout' in timeout_flag_result.stderr }}
+          {{ '--timeout=600s' if not 'unknown flag: --timeout' in timeout_flag_result.stderr else '' }}
       async: 610  # must be > or = to the rollout status timeout (600s) to ensure proper timeout behavior
       poll: 0
       loop: "{{ deployments }}"
