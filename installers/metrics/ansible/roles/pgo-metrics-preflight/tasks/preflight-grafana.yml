@@ -7,7 +7,6 @@
   loop:
     - grafana_admin_username
     - grafana_admin_password
-    - grafana_dashboards
     - grafana_dashboards_configmap
     - grafana_datasources_configmap
     - grafana_image_name

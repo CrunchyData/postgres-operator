@@ -7,7 +7,7 @@ delete_metrics_namespace: "false"
 metrics_namespace: "pgo"
 metrics_image_pull_secret: ""
 metrics_image_pull_secret_manifest: ""
-pgmonitor_version: "v4.4-RC3"
+pgmonitor_version: "v4.4-RC4"
 
 alertmanager_configmap: "alertmanager-config"
 alertmanager_rules_configmap: "alertmanager-rules-config"
@@ -32,13 +32,6 @@ grafana_port: "3000"
 grafana_service_name: "crunchy-grafana"
 grafana_service_type: "ClusterIP"
 grafana_datasources_configmap: "grafana-datasources"
-grafana_dashboards:
-  - Bloat_Details.json
-  - CRUD_Details.json
-  - PGBackrest.json
-  - PG_Details.json
-  - PG_Overview.json
-  - TableSize_Details.json
 grafana_dashboards_configmap: "grafana-dashboards"
 grafana_datasources_custom_config: ""
 grafana_dashboards_custom_config: ""

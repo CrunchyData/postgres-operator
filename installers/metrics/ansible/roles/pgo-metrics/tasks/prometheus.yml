@@ -67,12 +67,10 @@
 
     - name: Create Prometheus ConfigMap
       shell: |
-        {{ kubectl_or_oc }} create configmap crunchy-prometheus \
+        {{ kubectl_or_oc }} create configmap crunchy-prometheus --dry-run --output=yaml \
           --from-file={{ prom_output_dir }}/prometheus.yml \
-          -n {{ metrics_namespace }} --dry-run -o yaml | \
-            {{ kubectl_or_oc }} label configmap --local vendor=crunchydata -f - \
-              -n {{ metrics_namespace }} --dry-run -o yaml | \
-                {{ kubectl_or_oc }} create -f - -n {{ metrics_namespace }}
+        | {{ kubectl_or_oc }} label --filename=- --local --dry-run --output=yaml vendor=crunchydata \
+        | {{ kubectl_or_oc }} create --filename=- -n {{ metrics_namespace }}
       when: prometheus_custom_config == ""
       register: create_prometheus_datasources_result
       failed_when:

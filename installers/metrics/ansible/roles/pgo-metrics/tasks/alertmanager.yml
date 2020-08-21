@@ -26,12 +26,10 @@
 
     - name: Create Alertmanager Config ConfigMap
       shell: |
-        {{ kubectl_or_oc }} create configmap {{ alertmanager_configmap }} \
+        {{ kubectl_or_oc }} create configmap {{ alertmanager_configmap }} --dry-run --output=yaml \ \
           --from-file={{ alertmanager_output_dir }}/alertmanager.yml \
-          -n {{ metrics_namespace }} --dry-run -o yaml | \
-            {{ kubectl_or_oc }} label configmap --local vendor=crunchydata -f - \
-              -n {{ metrics_namespace }} --dry-run -o yaml | \
-                {{ kubectl_or_oc }} create -f - -n {{ metrics_namespace }}
+        | {{ kubectl_or_oc }} label --filename=- --local --dry-run --output=yaml vendor=crunchydata \
+        | {{ kubectl_or_oc }} create --filename=- -n {{ metrics_namespace }}
       when: alertmanager_custom_config == ""
       register: create_alertmanager_result
       failed_when:
@@ -45,12 +43,10 @@
 
     - name: Create Alertmanager Rules ConfigMap
       shell: |
-        {{ kubectl_or_oc }} create configmap {{ alertmanager_rules_configmap }} \
+        {{ kubectl_or_oc }} create configmap {{ alertmanager_rules_configmap }} --dry-run --output=yaml \
           --from-file={{ alertmanager_output_dir }}/crunchy-alert-rules-pg.yml \
-          -n {{ metrics_namespace }} --dry-run -o yaml | \
-            {{ kubectl_or_oc }} label configmap --local vendor=crunchydata -f - \
-              -n {{ metrics_namespace }} --dry-run -o yaml | \
-                {{ kubectl_or_oc }} create -f - -n {{ metrics_namespace }}
+        | {{ kubectl_or_oc }} label --filename=- --local --dry-run --output=yaml vendor=crunchydata \
+        | {{ kubectl_or_oc }} create --filename=- -n {{ metrics_namespace }}
       when: alertmanager_custom_rules_config == ""
       register: create_alertmanager_result
       failed_when:

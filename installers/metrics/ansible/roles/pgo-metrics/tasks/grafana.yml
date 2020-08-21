@@ -70,12 +70,10 @@
 
     - name: Create Grafana Datasource ConfigMap
       shell: |
-        {{ kubectl_or_oc }} create configmap {{ grafana_datasources_configmap }} \
+        {{ kubectl_or_oc }} create configmap {{ grafana_datasources_configmap }} --dry-run --output=yaml \
           --from-file={{ grafana_output_dir }}/crunchy_grafana_datasource.yml \
-          -n {{ metrics_namespace }} --dry-run -o yaml | \
-            {{ kubectl_or_oc }} label configmap --local vendor=crunchydata -f - \
-              -n {{ metrics_namespace }} --dry-run -o yaml | \
-                {{ kubectl_or_oc }} create -f - -n {{ metrics_namespace }}
+        | {{ kubectl_or_oc }} label --filename=- --local --dry-run --output=yaml vendor=crunchydata \
+        | {{ kubectl_or_oc }} create --filename=- -n {{ metrics_namespace }}
       when: grafana_datasources_custom_config == ""
       register: create_grafana_datasources_result
       failed_when:
@@ -84,15 +82,12 @@
 
     - name: Create Grafana Dashboard ConfigMap
       shell: |
-        {{ kubectl_or_oc }} create configmap {{ grafana_dashboards_configmap }} \
+        {{ kubectl_or_oc }} create configmap {{ grafana_dashboards_configmap }} --dry-run --output=yaml \
           --from-file={{ grafana_output_dir }}/crunchy_grafana_dashboards.yml \
-          --from-file={{ grafana_dashboards | join(' --from-file=') }} \
-          -n {{ metrics_namespace }} --dry-run -o yaml | \
-            {{ kubectl_or_oc }} label configmap --local vendor=crunchydata -f - \
-              -n {{ metrics_namespace }} --dry-run -o yaml | \
-                {{ kubectl_or_oc }} create -f - -n {{ metrics_namespace }}
-      args:
-        chdir: "{{ pgmonitor_grafana_dir }}"
+          --from-file={{ pgmonitor_grafana_dir }}/containers/ \
+        | sed -e 's,${DS_PROMETHEUS},PROMETHEUS,' \
+        | {{ kubectl_or_oc }} label --filename=- --local --dry-run --output=yaml vendor=crunchydata \
+        | {{ kubectl_or_oc }} create --filename=- -n {{ metrics_namespace }}
       when: grafana_dashboards_custom_config == ""
       register: create_grafana_dashboards_result
       failed_when:
