@@ -1084,6 +1084,12 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabelsMap map[string]string, ns string) *crv1.Pgcluster {
 
 	spec := crv1.PgclusterSpec{
+		Annotations: crv1.ClusterAnnotations{
+			Backrest:  map[string]string{},
+			Global:    map[string]string{},
+			PgBouncer: map[string]string{},
+			Postgres:  map[string]string{},
+		},
 		BackrestResources: v1.ResourceList{},
 		BackrestLimits:    v1.ResourceList{},
 		Limits:            v1.ResourceList{},
@@ -1410,13 +1416,21 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	// set the data source that should be utilized to bootstrap the cluster
 	spec.PGDataSource = request.PGDataSource
 
-	// create a map for the annotations
+	// create a map for the CR specific annotations
 	annotations := map[string]string{}
 	// store the default current primary value as an annotation
 	annotations[config.ANNOTATION_CURRENT_PRIMARY] = spec.Name
 	// store the initial deployment value, which will match the
 	// cluster name initially
 	annotations[config.ANNOTATION_PRIMARY_DEPLOYMENT] = spec.Name
+
+	// set the user-defined annotations
+	// go through each annotation grouping and make the appropriate changes in the
+	// equivalent cluster annotation group
+	setClusterAnnotationGroup(spec.Annotations.Global, request.Annotations.Global)
+	setClusterAnnotationGroup(spec.Annotations.Postgres, request.Annotations.Postgres)
+	setClusterAnnotationGroup(spec.Annotations.Backrest, request.Annotations.Backrest)
+	setClusterAnnotationGroup(spec.Annotations.PgBouncer, request.Annotations.PgBouncer)
 
 	labels := make(map[string]string)
 	labels[config.LABEL_NAME] = name
@@ -1895,6 +1909,14 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 			cluster.Spec.BackrestResources[v1.ResourceMemory] = quantity
 		}
 
+		// set any user-defined annotations
+		// go through each annotation grouping and make the appropriate changes in the
+		// equivalent cluster annotation group
+		setClusterAnnotationGroup(cluster.Spec.Annotations.Global, request.Annotations.Global)
+		setClusterAnnotationGroup(cluster.Spec.Annotations.Postgres, request.Annotations.Postgres)
+		setClusterAnnotationGroup(cluster.Spec.Annotations.Backrest, request.Annotations.Backrest)
+		setClusterAnnotationGroup(cluster.Spec.Annotations.PgBouncer, request.Annotations.PgBouncer)
+
 		// if TablespaceMounts happens to be nil (e.g. an upgraded cluster), and
 		// the tablespaces are being updated, set it here
 		if len(request.Tablespaces) > 0 && cluster.Spec.TablespaceMounts == nil {
@@ -1978,6 +2000,18 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 
 	return output, err
 
+}
+
+// setClusterAnnotationGroup helps with setting the specific annotation group
+func setClusterAnnotationGroup(annotationGroup, annotations map[string]string) {
+	for k, v := range annotations {
+		switch v {
+		default:
+			annotationGroup[k] = v
+		case "":
+			delete(annotationGroup, k)
+		}
+	}
 }
 
 // validateBackrestStorageTypeOnCreate validates the pgbackrest storage type specified when

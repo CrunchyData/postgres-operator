@@ -119,7 +119,57 @@ type PgclusterSpec struct {
 	Standby             bool                     `json:"standby"`
 	Shutdown            bool                     `json:"shutdown"`
 	PGDataSource        PGDataSourceSpec         `json:"pgDataSource"`
+
+	// Annotations contains a set of Deployment (and by association, Pod)
+	// annotations that are propagated to all managed Deployments
+	Annotations ClusterAnnotations `json:"annotations"`
 }
+
+// ClusterAnnotations provides a set of annotations that can be propagated to
+// the managed deployments. These are subdivided into four categories, which
+// are explained further below:
+//
+// - Global
+// - Postgres
+// - Backrest
+// - PgBouncer
+type ClusterAnnotations struct {
+	// Backrest annotations will be propagated **only** to the pgBackRest managed
+	// Deployments
+	Backrest map[string]string `json:"backrest"`
+
+	// Global annotations will be propagated to **all** managed Deployments
+	Global map[string]string `json:"global"`
+
+	// PgBouncer annotations will be propagated **only** to the PgBouncer managed
+	// Deployments
+	PgBouncer map[string]string `json:"pgBouncer"`
+
+	// Postgres annotations will be propagated **only** to the PostgreSQL managed
+	// deployments
+	Postgres map[string]string `json:"postgres"`
+}
+
+// ClusterAnnotationType just helps with the various cluster annotation types
+// available
+type ClusterAnnotationType int
+
+// the following constants help with selecting which annotations we may want to
+// apply to a particular Deployment
+const (
+	// ClusterAnnotationGlobal indicates to apply the annotation regardless of
+	// deployment type
+	ClusterAnnotationGlobal ClusterAnnotationType = iota
+	// ClusterAnnotationPostgres indicates to apply the annotation to the
+	// PostgreSQL deployments
+	ClusterAnnotationPostgres
+	// ClusterAnnotationBackrest indicates to apply the annotation to the
+	// pgBackRest deployments
+	ClusterAnnotationBackrest
+	// ClusterAnnotationPgBouncer indicates to apply the annotation to the
+	// pgBouncer deployments
+	ClusterAnnotationPgBouncer
+)
 
 // PGDataSourceSpec defines the data source that should be used to populate the initial PGDATA
 // directory when bootstrapping a new PostgreSQL cluster

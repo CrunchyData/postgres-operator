@@ -58,6 +58,7 @@ type RepoDeploymentTemplateFields struct {
 	PgbackrestS3EnvVars       string
 	Name                      string
 	ClusterName               string
+	PodAnnotations            string
 	PodAntiAffinity           string
 	PodAntiAffinityLabelName  string
 	PodAntiAffinityLabelValue string
@@ -227,6 +228,7 @@ func getRepoDeploymentFields(clientset kubernetes.Interface, cluster *crv1.Pgclu
 		ClusterName:           cluster.Name,
 		SecurityContext:       operator.GetPodSecurityContext(cluster.Spec.BackrestStorage.GetSupplementalGroups()),
 		Replicas:              replicas,
+		PodAnnotations:        operator.GetAnnotations(cluster, crv1.ClusterAnnotationBackrest),
 		PodAntiAffinity: operator.GetPodAntiAffinity(cluster,
 			crv1.PodAntiAffinityDeploymentPgBackRest, cluster.Spec.PodAntiAffinity.PgBackRest),
 		PodAntiAffinityLabelName: config.LABEL_POD_ANTI_AFFINITY,
@@ -235,6 +237,32 @@ func getRepoDeploymentFields(clientset kubernetes.Interface, cluster *crv1.Pgclu
 	}
 
 	return &repoFields
+}
+
+// UpdateAnnotations updates the annotations in the "template" portion of a
+// pgBackRest deployment
+func UpdateAnnotations(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
+	annotations map[string]string) error {
+	// get a list of all of the instance deployments for the cluster
+	deployment, err := operator.GetBackrestDeployment(clientset, cluster)
+
+	if err != nil {
+		return err
+	}
+
+	// now update the pgBackRest deployment
+	log.Debugf("update annotations on [%s]", deployment.Name)
+	log.Debugf("new annotations: %v", annotations)
+
+	deployment.Spec.Template.SetAnnotations(annotations)
+
+	// finally, update the Deployment. If something errors, we'll log that there
+	// was an error, but continue with processing the other deployments
+	if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(deployment); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // UpdateResources updates the pgBackRest repository Deployment to reflect any

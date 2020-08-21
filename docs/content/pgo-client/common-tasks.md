@@ -1407,6 +1407,91 @@ key/value pair of `app=payment`, you could execute the following command:
 pgo label --selector=app=payment --label=env=production
 ```
 
+## Custom Annotations
+
+There are a variety of reasons why one may want to add additional
+[Annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
+to the Deployments, and by extension Pods, managed by the PostgreSQL Operator:
+
+- External applications that extend functionality via details in an annotation
+- Tracking purposes for an internal application
+
+etc.
+
+As such the `pgo` client allows you to manage your own custom annotations on the
+Operator. There are four different ways to add annotations:
+
+- On PostgreSQL instances
+- On pgBackRest instances
+- On pgBouncer instances
+- On all of the above
+
+The custom annotation feature follows the same syntax as Kubernetes for adding
+and removing annotations, e.g.:
+
+`--annotation=name=value`
+
+would add an annotation called `name` with a value of `value`, and:
+
+`--annotation=name-`
+
+would remove an annotation called `name`
+
+### Adding an Annotation
+
+There are two ways to add an Annotation during the lifecycle of a PostgreSQL
+cluster:
+
+- Cluster creation: ([`pgo create cluster`]({{< relref "/pgo-client/reference/pgo_create_cluster.md" >}}))
+- Updating a cluster: ([`pgo update cluster`]({{< relref "/pgo-client/reference/pgo_update_cluster.md" >}}))
+
+There are several flags available for managing Annotations, i.e.:
+
+- `--annotation`: adds an Annotation to all managed Deployments (PostgreSQL, pgBackRest, pgBouncer)
+- `--annotation-postgres`: adds an Annotation only to PostgreSQL Deployments
+- `--annotation-pgbackrest`: adds an Annotation only to pgBackrest Deployments
+- `--annotation-pgbouncer`: adds an Annotation only to pgBouncer Deployments
+
+To add an Annotation with key `hippo` and value `awesome` to all of the managed
+Deployments when creating a cluster, you would run the following command:
+
+`pgo create cluster hippo --annotation=hippo=awesome`
+
+To add an Annotation with key `elephant` and value `cool` to only the PostgreSQL
+Deployments when creating a cluster, you would run the following command:
+
+`pgo create cluster hippo --annotation-postgres=elephant=cool`
+
+To add an Annotation to all the managed Deployments in an existing cluster, you
+can use the `pgo update cluster` command:
+
+`pgo update cluster hippo --annotation=zebra=nice`
+
+### Adding Multiple Annotations
+
+There are two syntaxes you could use to add multiple Annotations to a cluster:
+
+`pgo create cluster hippo --annotation=hippo=awesome,elephant=cool`
+
+or
+
+`pgo create cluster hippo --annotation=hippo=awesome --annotation=elephant=cool`
+
+### Updating Annotations
+
+To update an Annotation, you can use the [`pgo update cluster`]({{< relref "/pgo-client/reference/pgo_update_cluster.md" >}})
+command and reference the original Annotation key. For intance, if I wanted to
+update the `hippo` annotation to be `rad`:
+
+`pgo update cluster hippo --annotation=hippo=rad`
+
+### Removing Annotations
+
+To remove an Annotation, you need to add a `-` to the end of the Annotation
+name. For example, to remove the `hippo` annotation:
+
+`pgo update cluster hippo --annotation=hippo-`
+
 ## Policy Management
 
 ### Create a Policy

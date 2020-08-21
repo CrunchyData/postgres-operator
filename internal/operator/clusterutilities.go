@@ -143,14 +143,17 @@ type BootstrapJobTemplateFields struct {
 
 // DeploymentTemplateFields ...
 type DeploymentTemplateFields struct {
-	Name                     string
-	ClusterName              string
-	Port                     string
-	CCPImagePrefix           string
-	CCPImageTag              string
-	CCPImage                 string
-	Database                 string
-	DeploymentLabels         string
+	Name             string
+	ClusterName      string
+	Port             string
+	CCPImagePrefix   string
+	CCPImageTag      string
+	CCPImage         string
+	Database         string
+	DeploymentLabels string
+	// PodAnnotations are user-specified annotations that can be applied to a
+	// Pod, e.g. annotations specific to a PostgreSQL instance
+	PodAnnotations           string
 	PodLabels                string
 	DataPathOverride         string
 	ArchiveMode              string
@@ -219,6 +222,51 @@ type tablespaceVolumePVCFields struct {
 type tablespaceVolumeMountFields struct {
 	Name      string `json:"name"`
 	MountPath string `json:"mountPath"`
+}
+
+// GetAnnotations returns the annotations in a JSON format can be used by the
+// template. If no annotations are found, returns an empty string
+func GetAnnotations(cluster *crv1.Pgcluster, annotationType crv1.ClusterAnnotationType) string {
+	annotations := map[string]string{}
+
+	// no matter what, grab any of the global annotations and put into the
+	// annotations list
+	for k, v := range cluster.Spec.Annotations.Global {
+		annotations[k] = v
+	}
+
+	// determine if we need to add any additional annotations to the list that may
+	// be pod specific
+	switch annotationType {
+	case crv1.ClusterAnnotationBackrest:
+		for k, v := range cluster.Spec.Annotations.Backrest {
+			annotations[k] = v
+		}
+	case crv1.ClusterAnnotationPgBouncer:
+		for k, v := range cluster.Spec.Annotations.PgBouncer {
+			annotations[k] = v
+		}
+	case crv1.ClusterAnnotationPostgres:
+		for k, v := range cluster.Spec.Annotations.Postgres {
+			annotations[k] = v
+		}
+	}
+
+	// if the map is empty, return an empty string
+	if len(annotations) == 0 {
+		return ""
+	}
+
+	// let's try to create a JSON document out of the above
+	doc, err := json.Marshal(annotations)
+
+	// if there is an error, warn in our logs and return an empty string
+	if err != nil {
+		log.Errorf("could not set custom annotations: %q", err)
+		return ""
+	}
+
+	return string(doc)
 }
 
 //consolidate with cluster.GetPgbackrestEnvVars

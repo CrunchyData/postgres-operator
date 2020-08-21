@@ -22,9 +22,11 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
+	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 )
@@ -278,7 +280,6 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.ServiceType = ServiceType
 	r.AutofailFlag = !DisableAutofailFlag
 	r.PgbouncerFlag = PgbouncerFlag
-	//r.ArchiveFlag = ArchiveFlagg
 	r.BackrestStorageConfig = BackrestStorageConfig
 	r.BackrestStorageType = BackrestStorageType
 	r.CustomConfig = CustomConfig
@@ -328,6 +329,9 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.WALPVCSize = WALPVCSize
 	r.PGDataSource.RestoreFrom = RestoreFrom
 	r.PGDataSource.RestoreOpts = BackupOpts
+	// set any annotations
+	r.Annotations = getClusterAnnotations(Annotations, AnnotationsPostgres, AnnotationsBackrest,
+		AnnotationsPgBouncer)
 
 	// only set SyncReplication in the request if actually provided via the CLI
 	if createClusterCmd.Flag("sync-replication").Changed {
@@ -429,6 +433,27 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	}
 }
 
+// getClusterAnnotations determines if there are any Annotations that were provided
+// via the various `--annotation` flags.
+func getClusterAnnotations(annotationsGlobal, annotationsPostgres, annotationsBackrest, annotationsPgBouncer []string) crv1.ClusterAnnotations {
+	annotations := crv1.ClusterAnnotations{
+		Backrest:  map[string]string{},
+		Global:    map[string]string{},
+		PgBouncer: map[string]string{},
+		Postgres:  map[string]string{},
+	}
+
+	// go through each annotation type and attempt to populate it in the
+	// structure. If the syntax is off anywhere, abort
+	setClusterAnnotationGroup(annotations.Global, annotationsGlobal)
+	setClusterAnnotationGroup(annotations.Postgres, annotationsPostgres)
+	setClusterAnnotationGroup(annotations.Backrest, annotationsBackrest)
+	setClusterAnnotationGroup(annotations.PgBouncer, annotationsPgBouncer)
+
+	// return the annotations
+	return annotations
+}
+
 // getTablespaces determines if there are any Tablespaces that were provided
 // via the `--tablespace` CLI flag, and if so, process their values. If
 // everything checks out, one or more tablespaces are added to the cluster
@@ -505,6 +530,40 @@ func isTablespaceParam(param string) bool {
 	return found
 }
 
+// setClusterAnnotationGroup sets up the annotations for a particular group
+func setClusterAnnotationGroup(annotationGroup map[string]string, annotations []string) {
+	for _, annotation := range annotations {
+		// there are two types of annotations syntaxes:
+		//
+		// 1: key=value (adding, editing)
+		// 2: key- (removing)
+		if strings.HasSuffix(annotation, "-") {
+			annotationGroup[strings.TrimSuffix(annotation, "-")] = ""
+			continue
+		}
+
+		parts := strings.Split(annotation, "=")
+
+		if len(parts) != 2 {
+			fmt.Println(`Error: Annotation was not specified in propert format (i.e. key=value), aborting.`)
+			os.Exit(1)
+		}
+
+		// validate if this the parts are valid annotation names
+		for _, v := range parts {
+			if errs := validation.IsValidLabelValue(v); len(errs) != 0 {
+				fmt.Println(fmt.Sprintf("Error: %q is not valid for an annotation.", v))
+				for _, e := range errs {
+					fmt.Println(e)
+				}
+				os.Exit(1)
+			}
+		}
+
+		annotationGroup[parts[0]] = parts[1]
+	}
+}
+
 // updateCluster ...
 func updateCluster(args []string, ns string) {
 	log.Debugf("updateCluster called %v", args)
@@ -529,6 +588,9 @@ func updateCluster(args []string, ns string) {
 	// determine if the user wants to create tablespaces as part of this request,
 	// and if so, set the values
 	r.Tablespaces = getTablespaces(Tablespaces)
+	// set any annotations
+	r.Annotations = getClusterAnnotations(Annotations, AnnotationsPostgres, AnnotationsBackrest,
+		AnnotationsPgBouncer)
 
 	// check to see if EnableStandby or DisableStandby is set. If so,
 	// set a value for Standby

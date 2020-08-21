@@ -61,6 +61,7 @@ type pgBouncerTemplateFields struct {
 	Port                      string
 	PrimaryServiceName        string
 	ContainerResources        string
+	PodAnnotations            string
 	PodAntiAffinity           string
 	PodAntiAffinityLabelName  string
 	PodAntiAffinityLabelValue string
@@ -416,6 +417,32 @@ func UpdatePgbouncer(clientset kubernetes.Interface, oldCluster, newCluster *crv
 	return nil
 }
 
+// UpdatePgBouncerAnnotations updates the annotations in the "template" portion
+// of a pgBouncer deployment
+func UpdatePgBouncerAnnotations(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
+	annotations map[string]string) error {
+	// get a list of all of the instance deployments for the cluster
+	deployment, err := getPgBouncerDeployment(clientset, cluster)
+
+	if err != nil {
+		return err
+	}
+
+	// now update the pgBackRest deployment
+	log.Debugf("update annotations on [%s]", deployment.Name)
+	log.Debugf("new annotations: %v", annotations)
+
+	deployment.Spec.Template.ObjectMeta.SetAnnotations(annotations)
+
+	// finally, update the Deployment. If something errors, we'll log that there
+	// was an error, but continue with processing the other deployments
+	if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(deployment); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // checkPgBouncerInstall checks to see if pgBouncer is installed in the
 // PostgreSQL custer, which involves check to see if the pgBouncer role is
 // present in the PostgreSQL cluster
@@ -464,6 +491,7 @@ func createPgBouncerDeployment(clientset kubernetes.Interface, cluster *crv1.Pgc
 		PGBouncerSecret: util.GeneratePgBouncerSecretName(cluster.Name),
 		ContainerResources: operator.GetResourcesJSON(cluster.Spec.PgBouncer.Resources,
 			cluster.Spec.PgBouncer.Limits),
+		PodAnnotations: operator.GetAnnotations(cluster, crv1.ClusterAnnotationPgBouncer),
 		PodAntiAffinity: operator.GetPodAntiAffinity(cluster,
 			crv1.PodAntiAffinityDeploymentPgBouncer, cluster.Spec.PodAntiAffinity.PgBouncer),
 		PodAntiAffinityLabelName: config.LABEL_POD_ANTI_AFFINITY,
