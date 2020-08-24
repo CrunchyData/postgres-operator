@@ -15,5 +15,4 @@
     - alertmanager_service_name
     - alertmanager_service_type
     - alertmanager_storage_access_mode
-    - alertmanager_storage_class_name
     - alertmanager_volume_size
