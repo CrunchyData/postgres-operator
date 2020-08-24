@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"reflect"
 	"strconv"
@@ -124,6 +125,15 @@ func (c *Controller) processNextItem() bool {
 		return true
 	}
 
+	if cluster.Spec.Status == crv1.CompletedStatus ||
+		cluster.Status.State == crv1.PgclusterStateBootstrapping {
+		errorMsg := fmt.Sprintf("pgcluster Contoller: onAdd event received for cluster %s but "+
+			"will not process because it either has a 'completed' status or is currently in a "+
+			"'bootstrapping' state", cluster.GetName())
+		log.Warn(errorMsg)
+		return true
+	}
+
 	addIdentifier(cluster)
 
 	// If bootstrapping from an existing data source then attempt to create the pgBackRest repository.
@@ -187,7 +197,8 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 	// if the status of the pgcluster shows that it has been bootstrapped, then proceed with
 	// creating the cluster (i.e. the cluster deployment, services, etc.)
-	if newcluster.Status.State == crv1.PgclusterStateBootstrapped {
+	if newcluster.Spec.Status != crv1.CompletedStatus &&
+		newcluster.Status.State == crv1.PgclusterStateBootstrapped {
 		clusteroperator.AddClusterBase(c.Client, newcluster, newcluster.GetNamespace())
 		return
 	}

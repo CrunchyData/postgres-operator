@@ -539,6 +539,14 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 	pgtask.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 	pgtask.Spec.Parameters[crv1.PgtaskWorkflowID] = id
 
+	// delete any previous restore task
+	err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Delete(pgtask.Name, &metav1.DeleteOptions{})
+	if err != nil && !kubeapi.IsNotFound(err) {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
 	//create a pgtask for the restore workflow
 	if _, err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(pgtask); err != nil {
 		resp.Status.Code = msgs.Error
@@ -546,7 +554,8 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 		return resp
 	}
 
-	resp.Results = append(resp.Results, "restore performed on "+request.FromCluster+" to "+request.ToPVC+" opts="+request.RestoreOpts+" pitr-target="+request.PITRTarget)
+	resp.Results = append(resp.Results, fmt.Sprintf("restore request for %s with opts %q and pitr-target=%q",
+		request.FromCluster, request.RestoreOpts, request.PITRTarget))
 
 	resp.Results = append(resp.Results, "workflow id "+id)
 
@@ -558,19 +567,13 @@ func getRestoreParams(request *msgs.RestoreRequest, ns string, cluster crv1.Pgcl
 
 	spec := crv1.PgtaskSpec{}
 	spec.Namespace = ns
-	spec.Name = "backrest-restore-" + request.FromCluster + "-to-" + request.ToPVC
+	spec.Name = "backrest-restore-" + request.FromCluster
 	spec.TaskType = crv1.PgtaskBackrestRestore
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER] = request.FromCluster
-	spec.Parameters[config.LABEL_BACKREST_RESTORE_TO_PVC] = request.ToPVC
 	spec.Parameters[config.LABEL_BACKREST_RESTORE_OPTS] = request.RestoreOpts
 	spec.Parameters[config.LABEL_BACKREST_PITR_TARGET] = request.PITRTarget
-	spec.Parameters[config.LABEL_PGBACKREST_STANZA] = "db"
-	spec.Parameters[config.LABEL_PGBACKREST_DB_PATH] = "/pgdata/" + request.ToPVC
-	spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH] = "/backrestrepo/" + request.FromCluster + "-backrest-shared-repo"
-	spec.Parameters[config.LABEL_PGBACKREST_REPO_HOST] = request.FromCluster + "-backrest-shared-repo"
 	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
-	spec.Parameters[config.LABEL_BACKREST_S3_VERIFY_TLS] = operator.GetS3VerifyTLSSetting(&cluster)
 
 	// validate & parse nodeLabel if exists
 	if request.NodeLabel != "" {
@@ -585,10 +588,9 @@ func getRestoreParams(request *msgs.RestoreRequest, ns string, cluster crv1.Pgcl
 		log.Debug("Restore node labels used from user entered flag")
 	}
 
-	labels := make(map[string]string)
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels: labels,
+			Labels: map[string]string{config.LABEL_PG_CLUSTER: request.FromCluster},
 			Name:   spec.Name,
 		},
 		Spec: spec,

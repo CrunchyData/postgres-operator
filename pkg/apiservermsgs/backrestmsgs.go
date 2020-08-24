@@ -126,7 +126,6 @@ type RestoreResponse struct {
 type RestoreRequest struct {
 	Namespace           string
 	FromCluster         string
-	ToPVC               string
 	RestoreOpts         string
 	PITRTarget          string
 	NodeLabel           string

@@ -17,9 +17,11 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
@@ -36,6 +38,7 @@ func (c *Controller) handleBootstrapUpdate(job *apiv1.Job) error {
 
 	clusterName := job.GetLabels()[config.LABEL_PG_CLUSTER]
 	namespace := job.GetNamespace()
+	labels := job.GetLabels()
 
 	// return if job is being deleted
 	if isJobInForegroundDeletion(job) {
@@ -49,11 +52,14 @@ func (c *Controller) handleBootstrapUpdate(job *apiv1.Job) error {
 		return err
 	}
 
+	// determine if cluster is labeled for restore
+	_, restore := cluster.GetAnnotations()[config.ANNOTATION_BACKREST_RESTORE]
+
 	// if the job has exceeded its backoff limit then simply cleanup and bootstrap resources
 	if isBackoffLimitExceeded(job) {
 		log.Debugf("Backoff limit exceeded for bootstrap Job %s, will now cleanup bootstrap "+
 			"resources", job.Name)
-		if err := c.cleanupBootstrapResources(job, cluster); err != nil {
+		if err := c.cleanupBootstrapResources(job, cluster, restore); err != nil {
 			return err
 		}
 		return nil
@@ -66,12 +72,18 @@ func (c *Controller) handleBootstrapUpdate(job *apiv1.Job) error {
 		return nil
 	}
 
+	if err := util.ToggleAutoFailover(c.Client, true, clusterName, namespace); err != nil &&
+		!errors.Is(err, util.ErrMissingConfigAnnotation) {
+		log.Warnf("jobController unable to toggle autofail during bootstrap, cluster could "+
+			"initialize in a paused state: %s", err.Error())
+	}
+
 	// If the job was successful we updated the state of the pgcluster to a "bootstrapped" status.
 	// This will then trigger full initialization of the cluster.  We also cleanup any resources
 	// from the bootstrap job.
 	if cluster.Status.State == crv1.PgclusterStateBootstrapping {
 
-		if err := c.cleanupBootstrapResources(job, cluster); err != nil {
+		if err := c.cleanupBootstrapResources(job, cluster, restore); err != nil {
 			return err
 		}
 
@@ -90,6 +102,15 @@ func (c *Controller) handleBootstrapUpdate(job *apiv1.Job) error {
 		}
 	}
 
+	if restore {
+		if err := backrestoperator.UpdateWorkflow(c.Client, labels[crv1.PgtaskWorkflowID],
+			namespace, crv1.PgtaskWorkflowBackrestRestorePrimaryCreatedStatus); err != nil {
+			log.Warn(err)
+		}
+		publishRestoreComplete(labels[config.LABEL_PG_CLUSTER], labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+			labels[config.LABEL_PGOUSER], job.ObjectMeta.Namespace)
+	}
+
 	return nil
 }
 
@@ -97,19 +118,33 @@ func (c *Controller) handleBootstrapUpdate(job *apiv1.Job) error {
 // This includes deleting any pgBackRest repository and service created specifically the restore
 // (i.e. a repository and service not associated with a current cluster but rather the cluster
 // being restored from to bootstrap the cluster).
-func (c *Controller) cleanupBootstrapResources(job *apiv1.Job, cluster *crv1.Pgcluster) error {
+func (c *Controller) cleanupBootstrapResources(job *apiv1.Job, cluster *crv1.Pgcluster,
+	restore bool) error {
 
 	namespace := job.GetNamespace()
-	restoreClusterName := cluster.Spec.PGDataSource.RestoreFrom
+	var restoreClusterName string
+	var repoName string
 
-	repoName := fmt.Sprintf(util.BackrestRepoServiceName, restoreClusterName)
-	repoDeployment, err := c.Client.AppsV1().Deployments(namespace).Get(repoName,
-		metav1.GetOptions{})
-	if err != nil {
-		return err
+	// clean the repo if a restore, or if a "bootstrap" repo
+	var cleanRepo bool
+	if restore {
+		restoreClusterName = job.GetLabels()[config.LABEL_PG_CLUSTER]
+		repoName = fmt.Sprintf(util.BackrestRepoDeploymentName, restoreClusterName)
+		cleanRepo = true
+	} else {
+		restoreClusterName = cluster.Spec.PGDataSource.RestoreFrom
+		repoName = fmt.Sprintf(util.BackrestRepoDeploymentName, restoreClusterName)
+		repoDeployment, err := c.Client.AppsV1().Deployments(namespace).Get(repoName,
+			metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		if _, ok := repoDeployment.GetLabels()[config.LABEL_PGHA_BOOTSTRAP]; ok {
+			cleanRepo = true
+		}
 	}
 
-	if _, ok := repoDeployment.GetLabels()[config.LABEL_PGHA_BOOTSTRAP]; ok {
+	if cleanRepo {
 		// now delete the service for the bootstrap repo
 		if err := c.Client.CoreV1().Services(namespace).Delete(
 			fmt.Sprintf(util.BackrestRepoServiceName, restoreClusterName),
@@ -118,8 +153,7 @@ func (c *Controller) cleanupBootstrapResources(job *apiv1.Job, cluster *crv1.Pgc
 		}
 
 		// and finally delete the bootstrap repo deployment
-		if err := c.Client.AppsV1().Deployments(namespace).Delete(
-			fmt.Sprintf(util.BackrestRepoServiceName, restoreClusterName),
+		if err := c.Client.AppsV1().Deployments(namespace).Delete(repoName,
 			&metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
 			return err
 		}

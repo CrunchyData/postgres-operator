@@ -149,10 +149,12 @@ func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_REPO,
 		&deployment.Spec.Template.Spec.Containers[0])
 
-	_, err = clientset.AppsV1().Deployments(namespace).Create(&deployment)
+	if _, err := clientset.AppsV1().Deployments(namespace).Create(&deployment); err != nil &&
+		!kerrors.IsAlreadyExists(err) {
+		return err
+	}
 
-	return err
-
+	return nil
 }
 
 // setBootstrapRepoOverrides overrides certain fields used to populate the pgBackRest repository template
