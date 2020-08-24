@@ -21,7 +21,6 @@ import (
 	"os"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	pgoutil "github.com/crunchydata/postgres-operator/pgo/util"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
@@ -98,7 +97,6 @@ func restore(args []string, ns string) {
 		request := new(msgs.RestoreRequest)
 		request.Namespace = ns
 		request.FromCluster = args[0]
-		request.ToPVC = request.FromCluster + "-" + util.RandStringBytesRmndr(4)
 		request.RestoreOpts = BackupOpts
 		request.PITRTarget = PITRTarget
 		request.NodeLabel = NodeLabel

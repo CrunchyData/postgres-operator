@@ -60,13 +60,6 @@ const ReplicaSuffix = "-replica"
 func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace string) {
 	var err error
 
-	if cl.Spec.Status == crv1.CompletedStatus {
-		errorMsg := "crv1 pgcluster " + cl.Spec.ClusterName + " is already marked complete, will not recreate"
-		log.Warn(errorMsg)
-		publishClusterCreateFailure(cl, errorMsg)
-		return
-	}
-
 	dataVolume, walVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
 		clientset, cl, namespace, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], cl.Spec.PrimaryStorage)
 	if err != nil {
@@ -121,6 +114,15 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 		log.Error("error in status patch " + err.Error())
 	}
 
+	// patch in the correct current primary value to the CRD spec, as well as
+	// any updated user labels. This will handle both new and updated clusters.
+	// Note: in previous operator versions, this was stored in a user label
+	if err := util.PatchClusterCRD(clientset, cl.Spec.UserLabels, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], namespace); err != nil {
+		log.Error("could not patch primary crv1 with labels")
+		publishClusterCreateFailure(cl, err.Error())
+		return
+	}
+
 	err = util.Patch(clientset.CrunchydataV1().RESTClient(), "/spec/PrimaryStorage/name", dataVolume.PersistentVolumeClaimName, crv1.PgclusterResourcePlural, cl.Spec.Name, namespace)
 
 	if err != nil {
@@ -150,8 +152,11 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 		log.Error(err.Error())
 	}
 
-	//add replicas if requested
-	if cl.Spec.Replicas != "" {
+	// determine if a restore
+	_, restore := cl.GetAnnotations()[config.ANNOTATION_BACKREST_RESTORE]
+
+	// add replicas if requested, and if not a restore
+	if cl.Spec.Replicas != "" && !restore {
 		replicaCount, err := strconv.Atoi(cl.Spec.Replicas)
 		if err != nil {
 			log.Error("error in replicas value " + err.Error())

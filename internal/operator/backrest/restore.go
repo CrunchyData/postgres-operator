@@ -16,28 +16,23 @@ package backrest
 */
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
-	"os"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	"github.com/crunchydata/postgres-operator/internal/operator"
-	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
+
 	log "github.com/sirupsen/logrus"
-	appsv1 "k8s.io/api/apps/v1"
-	v1batch "k8s.io/api/batch/v1"
-	v1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type BackrestRestoreJobTemplateFields struct {
@@ -61,235 +56,167 @@ type BackrestRestoreJobTemplateFields struct {
 	TablespaceVolumeMounts string
 }
 
-// Restore ...
-func Restore(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
+// UpdatePGClusterSpecForRestore updates the spec for pgcluster resource provided as need to
+// perform a restore
+func UpdatePGClusterSpecForRestore(clientset kubeapi.Interface, cluster *crv1.Pgcluster,
+	task *crv1.Pgtask) {
 
-	clusterName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
+	cluster.Spec.PGDataSource.RestoreFrom = cluster.GetName()
+
+	restoreOpts := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_OPTS]
+
+	// set the proper target for the restore job
+	pitrTarget := task.Spec.Parameters[config.LABEL_BACKREST_PITR_TARGET]
+	if pitrTarget != "" && !strings.Contains(restoreOpts, "--target") {
+		restoreOpts = fmt.Sprintf("%s --target=%s", restoreOpts, strconv.Quote(pitrTarget))
+	}
+
+	// set the proper backrest storage type for the restore job
+	storageType := task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]
+	if storageType != "" && !strings.Contains(restoreOpts, "--repo-type") {
+		restoreOpts = fmt.Sprintf("%s --repo-type=%s", restoreOpts, storageType)
+	}
+
+	cluster.Spec.PGDataSource.RestoreOpts = restoreOpts
+
+	// set the proper node affinity for the restore job
+	cluster.Spec.UserLabels[config.LABEL_NODE_LABEL_KEY] =
+		task.Spec.Parameters[config.LABEL_NODE_LABEL_KEY]
+	cluster.Spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] =
+		task.Spec.Parameters[config.LABEL_NODE_LABEL_VALUE]
+
+	return
+}
+
+// PrepareClusterForRestore prepares a PostgreSQL cluster for a restore.  This includes deleting
+// variousresources (Deployments, Jobs, PVCs & pgtasks) while also patching various custome
+// resources (pgreplicas) as needed to perform a restore.
+func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgcluster,
+	task *crv1.Pgtask) (*crv1.Pgcluster, error) {
+
+	var err error
+	var patchedCluster *crv1.Pgcluster
+	namespace := cluster.Namespace
+	clusterName := cluster.Name
 	log.Debugf("restore workflow: started for cluster %s", clusterName)
 
-	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
-	if err != nil {
-		log.Errorf("restore workflow error: could not find a pgcluster in Restore Workflow for %s", clusterName)
-		return
+	// prepare the pgcluster CR for restore
+	clusterPatch := fmt.Sprintf(`{"metadata":{"annotations":{"%s":"","%s":"%s"},`+
+		`"labels":{"%s":"%s"}},"spec":{"status":""},"status":{"message":"%s","state":"%s"}}`,
+		config.ANNOTATION_BACKREST_RESTORE, config.ANNOTATION_CURRENT_PRIMARY, clusterName,
+		config.LABEL_DEPLOYMENT_NAME, clusterName, "Cluster is being restored",
+		crv1.PgclusterStateRestore)
+	if patchedCluster, err = clientset.CrunchydataV1().Pgclusters(namespace).Patch(clusterName,
+		types.MergePatchType, []byte(clusterPatch)); err != nil {
+		log.Errorf("pgtask Controller: " + err.Error())
+		return nil, err
 	}
+	log.Debugf("restore workflow: patched pgcluster %s for restore", clusterName)
 
-	// disable autofail if it is currently enabled
-	if err = util.ToggleAutoFailover(clientset, false, cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE],
-		namespace); err != nil {
-		log.Error(err)
-		return
-	}
-
-	//create the "to-cluster" PVC to hold the new dataPVC]
-	restoreToName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_TO_PVC]
-	dataVolume, walVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
-		clientset, cluster, namespace, restoreToName, cluster.Spec.PrimaryStorage)
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
-	log.Debugf("restore workflow: created pvc %s for cluster %s", restoreToName, clusterName)
-	//delete current primary and all replica deployments
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PG_DATABASE + "=true"
-	depList, err := clientset.
-		AppsV1().Deployments(namespace).
-		List(metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		log.Errorf("restore workflow error: could not get depList using %s", selector)
-		return
-	}
-
-	if len(depList.Items) == 0 {
-		log.Debugf("restore workflow: no primary or replicas found using selector %s. Skipping deployment deletion.", selector)
-	} else {
-		for _, depToDelete := range depList.Items {
-			deletePropagation := metav1.DeletePropagationForeground
-			err = clientset.
-				AppsV1().Deployments(namespace).
-				Delete(depToDelete.Name, &metav1.DeleteOptions{
-					PropagationPolicy: &deletePropagation,
-				})
-			if err != nil {
-				log.Errorf("restore workflow error: could not delete primary or replica %s", depToDelete.Name)
-				return
-			}
-			log.Debugf("restore workflow: deleted primary or replica %s", depToDelete.Name)
-		}
-	}
-
-	patch, err := json.Marshal(map[string]interface{}{
-		"status": crv1.PgclusterStatus{
-			State:   crv1.PgclusterStateRestore,
-			Message: "Cluster is being restored",
-		},
+	// find all pgreplica CR's
+	replicas, err := clientset.CrunchydataV1().Pgreplicas(namespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, clusterName),
 	})
-	if err == nil {
-		_, err = clientset.CrunchydataV1().Pgclusters(namespace).Patch(cluster.Name, types.MergePatchType, patch)
-	}
 	if err != nil {
-		log.Error(err)
-		return
+		return nil, err
 	}
 
-	selector = config.LABEL_PG_CLUSTER + "=" + clusterName
-	log.Debugf("Restored cluster %s went to ready, patching replicas", clusterName)
-	pgreplicaList, err := clientset.CrunchydataV1().Pgreplicas(namespace).List(metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	for _, pgreplica := range pgreplicaList.Items {
-		pgreplica.Status.State = crv1.PgreplicaStatePendingRestore
-		pgreplica.Spec.Status = "restore"
-		delete(pgreplica.Annotations, config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA)
-		_, err = clientset.CrunchydataV1().Pgreplicas(namespace).Update(&pgreplica)
-		if err != nil {
-			log.Error(err)
-			return
+	// prepare pgreplica CR's for restore
+	replicaPatch := fmt.Sprintf(`{"metadata":{"annotations":{"%s":null}},"spec":{"status":""},`+
+		`"status":{"message":"%s","state":"%s"}}`, config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA,
+		"Cluster is being restored", crv1.PgclusterStateRestore)
+	for _, r := range replicas.Items {
+		if _, err := clientset.CrunchydataV1().Pgreplicas(namespace).Patch(r.GetName(),
+			types.MergePatchType, []byte(replicaPatch)); err != nil {
+			return nil, err
 		}
 	}
+	log.Debugf("restore workflow: patched replicas in cluster %s for restore", clusterName)
 
-	// set up a map of the names of the tablespaces as well as the storage classes
-	tablespaceStorageTypeMap := operator.GetTablespaceStorageTypeMap(cluster.Spec.TablespaceMounts)
-
-	// combine supplemental groups from all volumes
-	var supplementalGroups []int64
-	supplementalGroups = append(supplementalGroups, dataVolume.SupplementalGroups...)
-	for _, v := range tablespaceVolumes {
-		supplementalGroups = append(supplementalGroups, v.SupplementalGroups...)
-	}
-
-	//sleep for a bit to give the bounce time to take effect and let
-	//the backrest repo container come back and be able to service requests
-	time.Sleep(time.Second * time.Duration(30))
-
-	//create the Job to run the backrest restore container
-
-	workflowID := task.Spec.Parameters[crv1.PgtaskWorkflowID]
-	jobFields := BackrestRestoreJobTemplateFields{
-		JobName:                "restore-" + task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER] + "-" + util.RandStringBytesRmndr(4),
-		ClusterName:            task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER],
-		SecurityContext:        operator.GetPodSecurityContext(supplementalGroups),
-		ToClusterPVCName:       restoreToName,
-		WorkflowID:             workflowID,
-		CommandOpts:            task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_OPTS],
-		PITRTarget:             task.Spec.Parameters[config.LABEL_BACKREST_PITR_TARGET],
-		PGOImagePrefix:         util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, operator.Pgo.Pgo.PGOImagePrefix),
-		PGOImageTag:            operator.Pgo.Pgo.PGOImageTag,
-		PgbackrestStanza:       task.Spec.Parameters[config.LABEL_PGBACKREST_STANZA],
-		PgbackrestDBPath:       task.Spec.Parameters[config.LABEL_PGBACKREST_DB_PATH],
-		PgbackrestRepo1Path:    util.GetPGBackRestRepoPath(*cluster),
-		PgbackrestRepo1Host:    task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_HOST],
-		NodeSelector:           operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),
-		PgbackrestS3EnvVars:    operator.GetPgbackrestS3EnvVars(*cluster, clientset, namespace),
-		TablespaceVolumes:      operator.GetTablespaceVolumesJSON(restoreToName, tablespaceStorageTypeMap),
-		TablespaceVolumeMounts: operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
-	}
-
-	// A recovery target should also have a recovery target action. The PostgreSQL
-	// and pgBackRest defaults are `pause` which requires the user to execute SQL
-	// before the cluster will accept any writes. If no action has been specified,
-	// use `promote` which accepts writes as soon as recovery succeeds.
-	//
-	// - https://www.postgresql.org/docs/current/runtime-config-wal.html#RUNTIME-CONFIG-WAL-RECOVERY-TARGET
-	// - https://pgbackrest.org/command.html#command-restore/category-command/option-target-action
-	//
-	if jobFields.PITRTarget != "" && !strings.Contains(jobFields.CommandOpts, "--target-action") {
-		jobFields.CommandOpts = strings.TrimSpace(jobFields.CommandOpts + " --target-action=promote")
-	}
-
-	// If the pgBackRest repo type is set to 's3', pass in the relevant command line argument.
-	// This is used in place of the environment variable so that it works as expected with
-	// the --no-repo1-s3-verify-tls flag, added below
-	pgBackrestRepoType := operator.GetRepoType(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE])
-	if pgBackrestRepoType == "s3" &&
-		!strings.Contains(jobFields.CommandOpts, "--repo1-type") &&
-		!strings.Contains(jobFields.CommandOpts, "--repo-type") {
-		jobFields.CommandOpts = strings.TrimSpace(jobFields.CommandOpts + " --repo1-type=s3")
-	}
-
-	// If TLS verification is disabled for this pgcluster, pass in the appropriate
-	// flag to the restore command. Otherwise, leave the default behavior, which will
-	// perform the normal certificate validation.
-	verifyTLS, _ := strconv.ParseBool(operator.GetS3VerifyTLSSetting(cluster))
-	if pgBackrestRepoType == "s3" && !verifyTLS &&
-		!strings.Contains(jobFields.CommandOpts, "--no-repo1-s3-verify-tls") {
-		jobFields.CommandOpts = strings.TrimSpace(jobFields.CommandOpts + " --no-repo1-s3-verify-tls")
-	}
-
-	jobTemplate := bytes.Buffer{}
-
-	if err := config.BackrestRestorejobTemplate.Execute(&jobTemplate, jobFields); err != nil {
-		log.Error(err.Error())
-		log.Error("restore workflow: error executing job template")
-		return
-	}
-
-	if operator.CRUNCHY_DEBUG {
-		config.BackrestRestorejobTemplate.Execute(os.Stdout, jobFields)
-	}
-
-	job := v1batch.Job{}
-	if err := json.Unmarshal(jobTemplate.Bytes(), &job); err != nil {
-		log.Error("restore workflow: error unmarshalling json into Job " + err.Error())
-		return
-	}
-
-	if cluster.Spec.WALStorage.StorageType != "" {
-		operator.AddWALVolumeAndMountsToBackRest(&job.Spec.Template.Spec, walVolume)
-	}
-
-	operator.AddBackRestConfigVolumeAndMounts(&job.Spec.Template.Spec, cluster.Name, cluster.Spec.BackrestConfig)
-
-	// set the container image to an override value, if one exists
-	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_RESTORE,
-		&job.Spec.Template.Spec.Containers[0])
-
-	if j, err := clientset.BatchV1().Jobs(namespace).Create(&job); err != nil {
-		log.Error(err)
-		log.Error("restore workflow: error in creating restore job")
-		return
-	} else {
-		log.Debugf("restore workflow: restore job %s created", j.Name)
-	}
-
-	publishRestore(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clusterName, task.ObjectMeta.Labels[config.LABEL_PGOUSER], namespace)
-
-	err = updateWorkflow(clientset, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestoreJobCreatedStatus)
+	// find all current pg deployments
+	pgInstances, err := clientset.AppsV1().Deployments(namespace).List(metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s,%s", config.LABEL_PG_CLUSTER, clusterName,
+			config.LABEL_PG_DATABASE),
+	})
 	if err != nil {
-		log.Error(err)
-		log.Error("restore workflow: error in updating workflow status")
+		return nil, err
 	}
 
+	// delete all the primary and replica deployments
+	if err := clientset.AppsV1().Deployments(namespace).DeleteCollection(&metav1.DeleteOptions{},
+		metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s,%s", config.LABEL_PG_CLUSTER, clusterName,
+				config.LABEL_PG_DATABASE),
+		}); err != nil {
+		return nil, err
+	}
+	log.Debugf("restore workflow: deleted primary and replicas %v", pgInstances)
+
+	// delete all existing jobs
+	deletePropagation := metav1.DeletePropagationBackground
+	if err := clientset.BatchV1().Jobs(namespace).DeleteCollection(
+		&metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
+		metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, clusterName),
+		}); err != nil {
+		return nil, err
+	}
+	log.Debugf("restore workflow: deleted all existing jobs for cluster %s", clusterName)
+
+	// delete all PostgreSQL PVCs (the primary and all replica PVCs)
+	for _, deployment := range pgInstances.Items {
+		err := clientset.
+			CoreV1().PersistentVolumeClaims(namespace).
+			Delete(deployment.GetName(), &metav1.DeleteOptions{})
+		if err != nil && !kerrors.IsNotFound(err) {
+			return nil, err
+		}
+		log.Debugf("restore workflow: deleted primary or replica PVC %s", deployment.GetName())
+	}
+
+	// Wait for all PG PVCs to be removed.  If unable to verify that all PVCs have been
+	// removed, then the restore cannot proceed the function returns.
+	if err := wait.Poll(time.Second/2, time.Minute*3, func() (bool, error) {
+		notFound := true
+		for _, deployment := range pgInstances.Items {
+			if _, err := clientset.CoreV1().PersistentVolumeClaims(namespace).
+				Get(deployment.GetName(), metav1.GetOptions{}); err == nil {
+				notFound = false
+			}
+		}
+		return notFound, nil
+	}); err != nil {
+		return nil, err
+	}
+	log.Debugf("restore workflow: finished waiting for PVCs for cluster %s to be removed",
+		clusterName)
+
+	// Delete the DCS and leader ConfigMaps.  These will be recreated during the restore.
+	configMaps := []string{fmt.Sprintf("%s-config", clusterName),
+		fmt.Sprintf("%s-leader", clusterName)}
+	for _, c := range configMaps {
+		if err := clientset.CoreV1().ConfigMaps(namespace).Delete(c,
+			&metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
+			return nil, err
+		}
+	}
+	log.Debugf("restore workflow: deleted 'config' and 'leader' ConfigMaps for cluster %s",
+		clusterName)
+
+	initPatch := `{"data":{"init":"true"}}`
+	if _, err := clientset.CoreV1().ConfigMaps(namespace).Patch(fmt.Sprintf("%s-pgha-config",
+		clusterName), types.MergePatchType,
+		[]byte(initPatch)); err != nil {
+		return nil, err
+	}
+	log.Debugf("restore workflow: set 'init' flag to 'true' for cluster %s",
+		clusterName)
+
+	return patchedCluster, nil
 }
 
-func UpdateRestoreWorkflow(clientset kubeapi.Interface, clusterName, status, namespace,
-	workflowID, restoreToName string, affinity *v1.Affinity) {
-	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
-	log.Debugf("restore workflow phase 2: taskName is %s", taskName)
-
-	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
-	if err != nil {
-		log.Errorf("restore workflow phase 2 error: could not find a pgclustet in updateRestoreWorkflow for %s", clusterName)
-		return
-	}
-
-	// set the "init" flag to true in the PGHA configMap for the PG cluster
-	operator.UpdatePGHAConfigInitFlag(clientset, true, clusterName, namespace)
-
-	//create the new primary deployment
-	createRestoredDeployment(clientset, cluster, namespace, restoreToName, workflowID, affinity)
-
-	log.Debugf("restore workflow phase  2: created restored primary was %s now %s", cluster.Spec.Name, restoreToName)
-
-	//update workflow
-	if err := updateWorkflow(clientset, workflowID, namespace, crv1.PgtaskWorkflowBackrestRestorePrimaryCreatedStatus); err != nil {
-		log.Warn(err)
-	}
-}
-
-func updateWorkflow(clientset pgo.Interface, workflowID, namespace, status string) error {
+// UpdateWorkflow is responsible for updating the workflow for a restore
+func UpdateWorkflow(clientset pgo.Interface, workflowID, namespace, status string) error {
 	//update workflow
 	log.Debugf("restore workflow: update workflow %s", workflowID)
 	selector := crv1.PgtaskWorkflowID + "=" + workflowID
@@ -313,140 +240,8 @@ func updateWorkflow(clientset pgo.Interface, workflowID, namespace, status strin
 	return err
 }
 
-func createRestoredDeployment(clientset kubeapi.Interface, cluster *crv1.Pgcluster,
-	namespace, restoreToName, workflowID string, affinity *v1.Affinity) error {
-
-	// interpret the storage specs again. the volumes were already created during
-	// the restore job.
-	dataVolume, walVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
-		clientset, cluster, namespace, restoreToName, cluster.Spec.PrimaryStorage)
-
-	//primaryLabels := operator.GetPrimaryLabels(cluster.Spec.Name, cluster.Spec.ClusterName, false, cluster.Spec.UserLabels)
-
-	cluster.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = restoreToName
-	cluster.Spec.UserLabels["name"] = cluster.Spec.Name
-	cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER] = cluster.Spec.ClusterName
-
-	// Set the Patroni scope to the name of the primary deployment.  Replicas will get scope using the
-	// 'crunchy-pgha-scope' label
-	cluster.Spec.UserLabels[config.LABEL_PGHA_SCOPE] = restoreToName
-
-	archiveMode := "on"
-
-	var affinityStr string
-	if affinity != nil {
-		log.Debugf("Affinity found on restore job, and will applied to the restored deployment")
-		affinityBytes, err := json.MarshalIndent(affinity, "", "  ")
-		if err != nil {
-			log.Error("unable to marshall affinity obtained from restore job spec")
-		}
-		// Since the template for a cluster deployment contains the braces for the json
-		// defining any affinity rules, we trim them here from the affinity json obtained
-		// directly from the restore job (which also has the same braces)
-		affinityStr = strings.Trim(string(affinityBytes), "{}")
-	} else {
-		affinityStr = operator.GetAffinity(cluster.Spec.UserLabels["NodeLabelKey"], cluster.Spec.UserLabels["NodeLabelValue"], "In")
-	}
-
-	// set up a map of the names of the tablespaces as well as the storage classes
-	tablespaceStorageTypeMap := operator.GetTablespaceStorageTypeMap(cluster.Spec.TablespaceMounts)
-
-	// combine supplemental groups from all volumes
-	var supplementalGroups []int64
-	supplementalGroups = append(supplementalGroups, dataVolume.SupplementalGroups...)
-	for _, v := range tablespaceVolumes {
-		supplementalGroups = append(supplementalGroups, v.SupplementalGroups...)
-	}
-
-	deploymentFields := operator.DeploymentTemplateFields{
-		Name:              restoreToName,
-		IsInit:            true,
-		Replicas:          "1",
-		ClusterName:       cluster.Spec.Name,
-		Port:              cluster.Spec.Port,
-		CCPImagePrefix:    util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
-		CCPImage:          cluster.Spec.CCPImage,
-		CCPImageTag:       cluster.Spec.CCPImageTag,
-		PVCName:           dataVolume.InlineVolumeSource(),
-		DeploymentLabels:  operator.GetLabelsFromMap(cluster.Spec.UserLabels),
-		PodLabels:         operator.GetLabelsFromMap(cluster.Spec.UserLabels),
-		DataPathOverride:  restoreToName,
-		Database:          cluster.Spec.Database,
-		ArchiveMode:       archiveMode,
-		SecurityContext:   operator.GetPodSecurityContext(supplementalGroups),
-		RootSecretName:    cluster.Spec.RootSecretName,
-		PrimarySecretName: cluster.Spec.PrimarySecretName,
-		UserSecretName:    cluster.Spec.UserSecretName,
-		NodeSelector:      affinityStr,
-		PodAntiAffinity: operator.GetPodAntiAffinity(cluster,
-			crv1.PodAntiAffinityDeploymentDefault, cluster.Spec.PodAntiAffinity.Default),
-		ContainerResources: operator.GetResourcesJSON(cluster.Spec.Resources, cluster.Spec.Limits),
-		ConfVolume:         operator.GetConfVolume(clientset, cluster, namespace),
-		ExporterAddon:      operator.GetExporterAddon(clientset, namespace, &cluster.Spec),
-		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cluster, restoreToName),
-		ScopeLabel:         config.LABEL_PGHA_SCOPE,
-		Standby:            false, // always disabled since standby clusters cannot be restored
-		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster, cluster.Labels[config.LABEL_BACKREST], restoreToName,
-			cluster.Spec.Port, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
-		PgbackrestS3EnvVars:      operator.GetPgbackrestS3EnvVars(*cluster, clientset, namespace),
-		EnableCrunchyadm:         operator.Pgo.Cluster.EnableCrunchyadm,
-		ReplicaReinitOnStartFail: !operator.Pgo.Cluster.DisableReplicaStartFailReinit,
-		SyncReplication:          operator.GetSyncReplication(cluster.Spec.SyncReplication),
-		Tablespaces:              operator.GetTablespaceNames(cluster.Spec.TablespaceMounts),
-		TablespaceVolumes:        operator.GetTablespaceVolumesJSON(restoreToName, tablespaceStorageTypeMap),
-		TablespaceVolumeMounts:   operator.GetTablespaceVolumeMountsJSON(tablespaceStorageTypeMap),
-		TLSEnabled:               cluster.Spec.TLS.IsTLSEnabled(),
-		TLSOnly:                  cluster.Spec.TLSOnly,
-		TLSSecret:                cluster.Spec.TLS.TLSSecret,
-		ReplicationTLSSecret:     cluster.Spec.TLS.ReplicationTLSSecret,
-		CASecret:                 cluster.Spec.TLS.CASecret,
-	}
-
-	log.Debug("ExporterAddon value is [" + deploymentFields.ExporterAddon + "]")
-	var primaryDoc bytes.Buffer
-	err = config.DeploymentTemplate.Execute(&primaryDoc, deploymentFields)
-	if err != nil {
-		log.Error(err.Error())
-		return err
-	}
-	//a form of debugging
-	if operator.CRUNCHY_DEBUG {
-		config.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
-	}
-
-	deployment := appsv1.Deployment{}
-	err = json.Unmarshal(primaryDoc.Bytes(), &deployment)
-	if err != nil {
-		log.Error("error unmarshalling primary json into Deployment " + err.Error())
-		return err
-	}
-
-	if cluster.Spec.WALStorage.StorageType != "" {
-		operator.AddWALVolumeAndMountsToPostgreSQL(&deployment.Spec.Template.Spec, walVolume, restoreToName)
-	}
-
-	operator.AddBackRestConfigVolumeAndMounts(&deployment.Spec.Template.Spec, cluster.Name, cluster.Spec.BackrestConfig)
-
-	// determine if any of the container images need to be overridden
-	operator.OverrideClusterContainerImages(deployment.Spec.Template.Spec.Containers)
-
-	_, err = clientset.AppsV1().Deployments(namespace).Create(&deployment)
-	if err != nil {
-		return err
-	}
-
-	// store the workflowID in a user label
-	cluster.Spec.UserLabels[crv1.PgtaskWorkflowID] = workflowID
-	// patch the pgcluster CRD with the updated info
-	if err = util.PatchClusterCRD(clientset, cluster.Spec.UserLabels, cluster, restoreToName, namespace); err != nil {
-		log.Error("could not patch primary crv1 with labels")
-		return err
-	}
-	return err
-
-}
-
-func publishRestore(id, clusterName, username, namespace string) {
+// PublishRestore is responsible for publishing the 'RestoreCluster' event for a restore
+func PublishRestore(id, clusterName, username, namespace string) {
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 

@@ -23,7 +23,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
-	"github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	taskoperator "github.com/crunchydata/postgres-operator/internal/operator/task"
@@ -32,6 +31,7 @@ import (
 	apiv1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -59,26 +59,17 @@ func (c *Controller) handleClusterInit(newPod *apiv1.Pod, cluster *crv1.Pgcluste
 		log.Error(err)
 		return err
 	}
-	log.Debugf("Pod Controller: completed common init for pod %s in cluster %s", newPod.Name,
-		clusterName)
 
-	// call the appropriate initialization logic depending on the current state of the PG cluster,
-	// e.g. whether or not is is initializing for the first time or reinitializing as the result of
-	// a restore, and/or depending on certain properties for the cluster, e.g. whether or not it is
-	// a standby clusteer
-	switch {
-	case cluster.Status.State == crv1.PgclusterStateRestore:
-		log.Debugf("Pod Controller: restore detected during cluster %s init, calling restore "+
-			"handler", clusterName)
-		return c.handleRestoreInit(cluster)
-	case cluster.Spec.Standby:
+	// call the standby init logic if a standby cluster
+	if cluster.Spec.Standby {
 		log.Debugf("Pod Controller: standby cluster detected during cluster %s init, calling "+
 			"standby handler", clusterName)
 		return c.handleStandbyInit(cluster)
-	default:
-		log.Debugf("Pod Controller: calling bootstrap init for cluster %s", clusterName)
-		return c.handleBootstrapInit(newPod, cluster)
 	}
+
+	// call bootstrap init for all other cluster initialization
+	log.Debugf("Pod Controller: calling bootstrap init for cluster %s", clusterName)
+	return c.handleBootstrapInit(newPod, cluster)
 }
 
 // handleBackRestRepoInit handles cluster initialization tasks that must be executed once
@@ -129,36 +120,6 @@ func (c *Controller) handleCommonInit(cluster *crv1.Pgcluster) error {
 	return nil
 }
 
-// handleRestoreInit is resposible for handling cluster initilization for a restored PG cluster
-func (c *Controller) handleRestoreInit(cluster *crv1.Pgcluster) error {
-
-	clusterName := cluster.Name
-	namespace := cluster.Namespace
-
-	//look up the backrest-repo pod name
-	selector := fmt.Sprintf("%s=%s,pgo-backrest-repo=true",
-		config.LABEL_PG_CLUSTER, clusterName)
-	pods, err := c.Client.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: selector})
-	if len(pods.Items) != 1 {
-		return fmt.Errorf("pods len != 1 for cluster %s", clusterName)
-	}
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-	err = backrest.CleanBackupResources(c.Client,
-		namespace, clusterName)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	backrestoperator.CreateInitialBackup(c.Client, namespace,
-		clusterName, pods.Items[0].Name)
-
-	return nil
-}
-
 // handleBootstrapInit is resposible for handling cluster initilization (e.g. initiating pgBackRest
 // stanza creation) when a the database container within the primary PG Pod for a new PG cluster
 // enters a ready status
@@ -167,14 +128,35 @@ func (c *Controller) handleBootstrapInit(newPod *apiv1.Pod, cluster *crv1.Pgclus
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
 
-	log.Debugf("%s went to Ready from Not Ready, apply policies...", clusterName)
-	taskoperator.ApplyPolicies(clusterName, c.Client, c.Client.Config, namespace)
+	// determine if restore, and if delete the restore label since it is no longer needed
+	restoreLabelPatch := fmt.Sprintf(`[{"op": "remove", "path": "/metadata/annotations/%s"}]`,
+		config.LABEL_BACKREST_RESTORE)
+	if _, restore := cluster.GetAnnotations()[config.ANNOTATION_BACKREST_RESTORE]; restore {
+		log.Debugf("Pod Controller: restore detected for pgcluster %s, restore annotation will "+
+			"be removed", cluster.GetName())
+		if _, err := c.Client.CrunchydataV1().Pgclusters(namespace).Patch(cluster.GetName(),
+			types.JSONPatchType, []byte(restoreLabelPatch)); err != nil {
+			log.Errorf("Pod Controller unable to remove backrest restore annotation from "+
+				"pgcluster %s: %s", cluster.GetName(), err.Error())
+		}
+	} else {
+		log.Debugf("%s went to Ready from Not Ready, apply policies...", clusterName)
+		taskoperator.ApplyPolicies(clusterName, c.Client, c.Client.Config, namespace)
+	}
 
 	taskoperator.CompleteCreateClusterWorkflow(clusterName, c.Client, namespace)
 
 	//publish event for cluster complete
 	publishClusterComplete(clusterName, namespace, cluster)
 	//
+
+	// first clean any stanza create resources from a previous stanza-create, e.g. during a
+	// restore when these resources may already exist from initial creation of the cluster
+	if err := backrestoperator.CleanStanzaCreateResources(namespace, clusterName,
+		c.Client); err != nil {
+		log.Error(err)
+		return err
+	}
 
 	// create the pgBackRest stanza
 	backrestoperator.StanzaCreate(newPod.ObjectMeta.Namespace, clusterName, c.Client)

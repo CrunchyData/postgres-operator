@@ -164,15 +164,8 @@ func addClusterDeployments(clientset kubeapi.Interface,
 	// determine if any of the container images need to be overridden
 	operator.OverrideClusterContainerImages(deployment.Spec.Template.Spec.Containers)
 
-	if _, err := clientset.AppsV1().Deployments(namespace).Create(deployment); err != nil {
-		return err
-	}
-
-	// patch in the correct current primary value to the CRD spec, as well as
-	// any updated user labels. This will handle both new and updated clusters.
-	// Note: in previous operator versions, this was stored in a user label
-	if err := util.PatchClusterCRD(clientset, cl.Spec.UserLabels, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], namespace); err != nil {
-		log.Error("could not patch primary crv1 with labels")
+	if _, err := clientset.AppsV1().Deployments(namespace).Create(deployment); err != nil &&
+		!kerrors.IsAlreadyExists(err) {
 		return err
 	}
 

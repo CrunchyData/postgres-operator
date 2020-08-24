@@ -177,18 +177,32 @@ func TestClusterBackup(t *testing.T) {
 					before := clusterPVCs(t, namespace(), cluster())
 					require.NotEmpty(t, before, "expected volumes to exist")
 
+					// find the creation timestamp for the primary PVC, which wll have the same
+					// name as the cluster
+					var primaryPVCCreationTimestamp time.Time
+					for _, pvc := range before {
+						if pvc.GetName() == cluster() {
+							primaryPVCCreationTimestamp = pvc.GetCreationTimestamp().Time
+						}
+					}
+
 					output, err := pgo("restore", cluster(), "--no-prompt", "-n", namespace()).Exec(t)
 					require.NoError(t, err)
-					require.Contains(t, output, "performed")
+					require.Contains(t, output, "restore request")
 
+					// wait for primary PVC to be recreated
 					more := func() bool {
 						after := clusterPVCs(t, namespace(), cluster())
 						for _, pvc := range after {
-							if !kubeapi.IsPVCBound(pvc) {
-								return false
+							// check to see if the PVC for the primary is bound, and has a timestamp
+							// after the original timestamp for the primary PVC timestamp captured above,
+							// indicating that it been re-created
+							if pvc.GetName() == cluster() && kubeapi.IsPVCBound(pvc) &&
+								pvc.GetCreationTimestamp().Time.After(primaryPVCCreationTimestamp) {
+								return true
 							}
 						}
-						return len(after) > len(before)
+						return false
 					}
 					requireWaitFor(t, more, time.Minute, time.Second,
 						"timeout waiting for restore to begin on %q in %q", cluster(), namespace())

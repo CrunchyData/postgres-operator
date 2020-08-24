@@ -19,16 +19,18 @@ import (
 	"fmt"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+	apiv1 "k8s.io/api/batch/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller"
+	"github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
-	log "github.com/sirupsen/logrus"
-	apiv1 "k8s.io/api/batch/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // backrestUpdateHandler is responsible for handling updates to backrest jobs
@@ -61,35 +63,9 @@ func (c *Controller) handleBackrestUpdate(job *apiv1.Job) error {
 		c.handleBackrestBackupUpdate(job)
 	case labels[config.LABEL_PGO_CLONE_STEP_2] == "true":
 		c.handleCloneBackrestRestoreUpdate(job)
-	case labels[config.LABEL_BACKREST_RESTORE] == "true":
-		c.handleBackrestRestoreUpdate(job)
 	case labels[config.LABEL_BACKREST_COMMAND] == crv1.PgtaskBackrestStanzaCreate:
 		c.handleBackrestStanzaCreateUpdate(job)
 	}
-
-	return nil
-}
-
-// handleBackrestRestoreUpdate is responsible for handling updates to backrest restore,
-// (specifically those that have not been submitted as part of the clone process)
-func (c *Controller) handleBackrestRestoreUpdate(job *apiv1.Job) error {
-
-	labels := job.GetObjectMeta().GetLabels()
-
-	log.Debugf("jobController onUpdate backrest restore job case")
-	log.Debugf("got a backrest restore job status=%d", job.Status.Succeeded)
-	log.Debugf("set status to restore job completed  for %s", labels[config.LABEL_PG_CLUSTER])
-	log.Debugf("workflow to update is %s", labels[crv1.PgtaskWorkflowID])
-
-	if err := util.Patch(c.Client.CrunchydataV1().RESTClient(), patchURL, crv1.JobCompletedStatus, patchResource, job.Name,
-		job.ObjectMeta.Namespace); err != nil {
-		log.Error("error in patching pgtask " + labels[config.LABEL_JOB_NAME] + err.Error())
-	}
-
-	backrestoperator.UpdateRestoreWorkflow(c.Client, labels[config.LABEL_PG_CLUSTER],
-		crv1.PgtaskWorkflowBackrestRestorePVCCreatedStatus, job.ObjectMeta.Namespace, labels[crv1.PgtaskWorkflowID],
-		labels[config.LABEL_BACKREST_RESTORE_TO_PVC], job.Spec.Template.Spec.Affinity)
-	publishRestoreComplete(labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], job.ObjectMeta.Labels[config.LABEL_PGOUSER], job.ObjectMeta.Namespace)
 
 	return nil
 }
@@ -223,6 +199,14 @@ func (c *Controller) handleBackrestStanzaCreateUpdate(job *apiv1.Job) error {
 				"status", clusterName)
 			controller.SetClusterInitializedStatus(c.Client, clusterName, namespace)
 			return nil
+		}
+
+		// clean any backup resources that might already be present, e.g. when restoring and these
+		// resources might already exist from intial creation of the cluster
+		if err := backrest.CleanBackupResources(c.Client, job.ObjectMeta.Namespace,
+			clusterName); err != nil {
+			log.Error(err)
+			return err
 		}
 
 		backrestoperator.CreateInitialBackup(c.Client, job.ObjectMeta.Namespace,

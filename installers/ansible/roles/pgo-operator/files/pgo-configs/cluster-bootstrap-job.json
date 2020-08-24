@@ -14,7 +14,7 @@
         "template": {
             "metadata": {
                 "labels": {
-                    "name": "{{.Name}}",
+                    "name": "{{.Name}}-bootstrap",
                     "vendor": "crunchydata",
                     "pgha-bootstrap": "{{.Name}}",
                     {{.PodLabels}}

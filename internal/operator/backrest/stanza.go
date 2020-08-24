@@ -24,8 +24,33 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// CleanStanzaCreateResources deletes any existing stanza-create pgtask and job.  Useful during a
+// restore when an existing stanza-create pgtask or Job might still be present from initial
+// creation of the cluster.
+func CleanStanzaCreateResources(namespace, clusterName string, clientset kubeapi.Interface) error {
+
+	resourceName := clusterName + "-" + crv1.PgtaskBackrestStanzaCreate
+
+	if err := clientset.CrunchydataV1().Pgtasks(namespace).Delete(resourceName,
+		&metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
+		return err
+	}
+
+	// job name is the same as the task name
+	deletePropagation := metav1.DeletePropagationBackground
+	if err := clientset.BatchV1().Jobs(namespace).Delete(resourceName,
+		&metav1.DeleteOptions{
+			PropagationPolicy: &deletePropagation,
+		}); err != nil && !kerrors.IsNotFound(err) {
+		return err
+	}
+
+	return nil
+}
 
 func StanzaCreate(namespace, clusterName string, clientset kubeapi.Interface) {
 

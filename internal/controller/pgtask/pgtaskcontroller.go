@@ -140,7 +140,7 @@ func (c *Controller) processNextItem() bool {
 		backrestoperator.Backrest(keyNamespace, c.Client, tmpTask)
 	case crv1.PgtaskBackrestRestore:
 		log.Debug("backrest restore task added")
-		backrestoperator.Restore(keyNamespace, c.Client, tmpTask)
+		c.handleBackrestRestore(tmpTask)
 
 	case crv1.PgtaskpgDump:
 		log.Debug("pgDump task added")
