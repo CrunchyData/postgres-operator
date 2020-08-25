@@ -305,3 +305,22 @@ the DCS configuration settings for `mycluster`:
 kubectl patch configmap mycluster-pgha-config \
   --type='json' -p='[{"op": "remove", "path": "/data/mycluster-dcs-config"}]'
 ```
+
+
+## Custom pgBackRest Configuration
+
+Users can configure pgBackRest by passing the name of an existing ConfigMap to
+the `--pgbackrest-custom-config` flag when creating a PostgreSQL cluster. The
+entire contents of that ConfigMap appear as files in pgBackRest's
+[`config-include-path` directory](https://pgbackrest.org/user-guide.html).
+
+Regardless of the flags passed at creation, every PostgreSQL cluster is
+automatically configured to read from a ConfigMap named
+`<clusterName>-config-backrest` and a Secret named
+`<clusterName>-config-backrest`. These objects can be populated either before
+or _after_ a PostgreSQL cluster is created. The entire contents of each appear
+as files in pgBackRest's `config-include-path` directory.
+
+Though the above is very flexible, not all pgBackRest settings can be managed
+this way. There are a few that are always overridden by the PostgreSQL Operator
+(the path to the PostgreSQL data directory, for example).
