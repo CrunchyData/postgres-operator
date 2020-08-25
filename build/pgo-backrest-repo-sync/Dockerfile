@@ -13,7 +13,7 @@ LABEL name="pgo-backrest-repo-sync" \
 	summary="Crunchy PostgreSQL Operator - pgBackRest Repo Sync" \
 	description="Synchronizes the contents between two pgBackRest repositories."
 
-RUN if [ "$DFSET" = "centos" ] ; then \
+RUN if [ "$BASEOS" = "centos7" ] ; then \
         ${PACKAGER} -y install \
                 --setopt=skip_missing_names_on_install=False \
                 crunchy-backrest-"${BACKREST_VERSION}" \
@@ -25,6 +25,21 @@ RUN if [ "$DFSET" = "centos" ] ; then \
                 rsync \
                 awscli \
         && ${PACKAGER} -y clean all ; \
+fi
+
+RUN if [ "$BASEOS" = "centos8" ] ; then \
+	${PACKAGER} -y install \
+                --setopt=skip_missing_names_on_install=False \
+                crunchy-backrest-"${BACKREST_VERSION}" \
+                openssh-clients \
+                openssh-server \
+                postgresql${PGVERSION}-server \
+                procps-ng \
+                psmisc \
+                rsync \
+                python3-pip \
+	&& pip3 install --upgrade awscli \
+	&& ${PACKAGER} -y clean all ; \
 fi
 
 RUN if [ "$BASEOS" = "rhel7" ] ; then \

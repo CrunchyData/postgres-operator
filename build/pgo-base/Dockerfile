@@ -50,3 +50,12 @@ fi
 ADD conf/RPM-GPG-KEY-crunchydata* /
 ADD conf/crunchypg${PGVERSION}.repo /etc/yum.repos.d/
 RUN rpm --import RPM-GPG-KEY-crunchydata*
+
+# disable the EL 8 modularity feature
+RUN if [ "$BASEOS" = "centos8" ]; then \
+        ${PACKAGER} -qy module disable postgresql ; \
+fi
+
+RUN if  [ "$BASEOS" = "ubi8" ]; then \
+        ${PACKAGER} -qy module disable postgresql ; \
+fi
