@@ -78,6 +78,7 @@ make changes, as described below.
 | Attribute | Action | Description |
 |-----------|--------|-------------|
 | Annotations | `create`, `update` | Specify Kubernetes [Annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/) that can be applied to the different deployments managed by the PostgreSQL Operator (PostgreSQL, pgBackRest, pgBouncer). For more information, please see the "Annotations Specification" below. |
+| BackrestConfig | `create` | Optional references to pgBackRest configuration files
 | BackrestLimits | `create`, `update` | Specify the container resource limits that the pgBackRest repository should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | BackrestResources | `create`, `update` | Specify the container resource requests that the pgBackRest repository should use. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | BackrestS3Bucket | `create` | An optional parameter that specifies a S3 bucket that pgBackRest should use. |
