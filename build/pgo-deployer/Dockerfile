@@ -56,6 +56,7 @@ RUN if [ "$BASEOS" = "ubi8" ] ; then \
         && ${PACKAGER} install -y https://download.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm \
         && ${PACKAGER} -y install \
                 --setopt=skip_missing_names_on_install=False \
+                --enablerepo='rhocp-4.5-for-rhel-8-x86_64-rpms' \
                 openshift-clients \
                 ansible-${ANSIBLE_VERSION} \
                 which \
