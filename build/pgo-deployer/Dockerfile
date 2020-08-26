@@ -61,6 +61,7 @@ RUN if [ "$BASEOS" = "ubi8" ] ; then \
                 ansible-${ANSIBLE_VERSION} \
                 which \
                 gettext \
+                openssl \
 	&& ${PACKAGER} -y clean all ; \
 fi
 
