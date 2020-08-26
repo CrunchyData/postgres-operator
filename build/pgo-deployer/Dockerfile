@@ -62,7 +62,7 @@ RUN if [ "$BASEOS" = "ubi8" ] ; then \
                 which \
                 gettext \
                 openssl \
-	&& ${PACKAGER} -y clean all ; \
+	&& ${PACKAGER} -y clean all --enablerepo='rhocp-4.5-for-rhel-8-x86_64-rpms' ; \
 fi
 
 COPY installers/ansible /ansible/postgres-operator
