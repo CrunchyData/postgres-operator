@@ -32,7 +32,8 @@ ADD bin/uid_pgbackrest.sh /opt/cpm/bin
 
 RUN chmod g=u /etc/passwd \
 	&& chmod g=u /etc/group \
-	&& chmod -R g=u /etc/pgbackrest
+	&& chmod -R g=u /etc/pgbackrest \
+	&& rm -f /run/nologin
 
 RUN mkdir /.ssh && chown pgbackrest:pgbackrest /.ssh && chmod o+rwx /.ssh
 
