@@ -34,7 +34,7 @@
       loop:
         - alertmanager
         - grafana
-        - prometheus
+        - prometheus-sa
 
     - name: Delete Grafana Secret
       command: "{{ kubectl_or_oc }} delete secret grafana-secret -n {{ metrics_namespace }}"
