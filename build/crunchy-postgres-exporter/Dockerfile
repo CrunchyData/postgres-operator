@@ -1,7 +1,9 @@
+ARG BASEOS
 ARG BASEVER
 ARG PREFIX
-ARG PGVERSION
 FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
+
+ARG PGVERSION
 
 LABEL name="crunchy-postgres-exporter" \
 	summary="Metrics exporter for PostgreSQL" \
