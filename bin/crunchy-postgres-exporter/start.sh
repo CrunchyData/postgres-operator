@@ -79,7 +79,6 @@ set_default_postgres_exporter_env
 
 if [[ ! -v DATA_SOURCE_NAME ]]
 then
-    set_exporter_pg_credentials
     set_default_pg_exporter_env
     if [[ ! -z "${EXPORTER_PG_PARAMS}" ]]
     then
