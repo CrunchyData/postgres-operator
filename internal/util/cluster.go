@@ -176,6 +176,9 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 	}
 
 	_, err = clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).Create(&secret)
+	if kubeapi.IsAlreadyExists(err) {
+		_, err = clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).Update(&secret)
+	}
 	return err
 }
 

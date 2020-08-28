@@ -310,9 +310,6 @@ func deleteBeforeUpgrade(clientset kubeapi.Interface, clusterName, currentPrimar
 	// delete the '<cluster-name>-pgha-default-config' configmap, if it exists so the config syncer
 	// will not try to use it instead of '<cluster-name>-pgha-config'
 	clientset.CoreV1().ConfigMaps(namespace).Delete(clusterName+"-pgha-default-config", &metav1.DeleteOptions{})
-
-	// delete the backrest repo config secret, since key encryption has been updated from RSA to EdDSA
-	clientset.CoreV1().Secrets(namespace).Delete(clusterName+"-backrest-repo-config", &metav1.DeleteOptions{})
 }
 
 // deploymentWait is modified from cluster.waitForDeploymentDelete. It simply waits for the current primary deployment
@@ -402,17 +399,35 @@ func createUpgradePGHAConfigMap(clientset kubernetes.Interface, cluster *crv1.Pg
 	return nil
 }
 
-// recreateBackrestRepoSecret deletes and recreates the secret for the pgBackRest repo. This is needed
+// recreateBackrestRepoSecret overwrites the secret for the pgBackRest repo. This is needed
 // because the key encryption algorithm has been updated from RSA to EdDSA
 func recreateBackrestRepoSecret(clientset kubernetes.Interface, clustername, namespace, operatorNamespace string) {
-	if err := util.CreateBackrestRepoSecrets(clientset,
-		util.BackrestRepoConfig{
-			BackrestS3Key:       "", // these are set to empty so that it can be generated
-			BackrestS3KeySecret: "",
-			ClusterName:         clustername,
-			ClusterNamespace:    namespace,
-			OperatorNamespace:   operatorNamespace,
-		}); err != nil {
+	config := util.BackrestRepoConfig{
+		ClusterName:       clustername,
+		ClusterNamespace:  namespace,
+		OperatorNamespace: operatorNamespace,
+	}
+
+	secretName := clustername + "-backrest-repo-config"
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(secretName, metav1.GetOptions{})
+
+	// >= 4.3
+	if err == nil {
+		if b, ok := secret.Data["aws-s3-ca.crt"]; ok {
+			config.BackrestS3CA = b
+		}
+		if b, ok := secret.Data["aws-s3-key"]; ok {
+			config.BackrestS3Key = string(b)
+		}
+		if b, ok := secret.Data["aws-s3-key-secret"]; ok {
+			config.BackrestS3KeySecret = string(b)
+		}
+	}
+
+	if err == nil {
+		err = util.CreateBackrestRepoSecrets(clientset, config)
+	}
+	if err != nil {
 		log.Errorf("error generating new backrest repo secrets during pgcluster upgrade: %v", err)
 	}
 }
@@ -498,6 +513,11 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 	// ensure that the pgo-backrest label is set to 'true' since pgbackrest is required for normal
 	// cluster operations in this version of the Postgres Operator
 	pgcluster.ObjectMeta.Labels[config.LABEL_BACKREST] = "true"
+
+	// added in 4.4
+	if pgcluster.Spec.BackrestS3VerifyTLS == "" {
+		pgcluster.Spec.BackrestS3VerifyTLS = operator.Pgo.Cluster.BackrestS3VerifyTLS
+	}
 
 	// add a label with the PGO version upgraded from and to
 	pgcluster.Annotations[config.ANNOTATION_UPGRADE_INFO] = "From_" + oldpgoversion + "_to_" + parameters[config.LABEL_PGO_VERSION]
