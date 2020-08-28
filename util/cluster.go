@@ -28,6 +28,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -174,7 +175,11 @@ func CreateBackrestRepoSecrets(clientset *kubernetes.Clientset,
 		},
 	}
 
-	return kubeapi.CreateSecret(clientset, &secret, backrestRepoConfig.ClusterNamespace)
+	_, err = clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).Create(&secret)
+	if kerrors.IsAlreadyExists(err) {
+		_, err = clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).Update(&secret)
+	}
+	return err
 }
 
 // IsAutofailEnabled - returns true if autofail label is set to true, false if not.
