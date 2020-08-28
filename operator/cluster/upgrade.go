@@ -36,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/yaml"
 )
 
 // Store image names as constants to use later
@@ -297,9 +298,6 @@ func deleteBeforeUpgrade(clientset *kubernetes.Clientset, restclient *rest.RESTC
 	// delete the '<cluster-name>-pgha-default-config' configmap, if it exists so the config syncer
 	// will not try to use it instead of '<cluster-name>-pgha-config'
 	checkDeleteConfigmap(clientset, clusterName+"-pgha-default-config", namespace)
-
-	// delete the backrest repo config secret, since key encryption has been updated from RSA to EdDSA
-	kubeapi.DeleteSecret(clientset, clusterName+"-backrest-repo-config", namespace)
 }
 
 // deploymentWait is modified from cluster.waitForDeploymentDelete. It simply waits for the current primary deployment
@@ -403,17 +401,52 @@ func createUpgradePGHAConfigMap(clientset *kubernetes.Clientset, cluster *crv1.P
 	return nil
 }
 
-// recreateBackrestRepoSecret deletes and recreates the secret for the pgBackRest repo. This is needed
+// recreateBackrestRepoSecret overwrites the secret for the pgBackRest repo. This is needed
 // because the key encryption algorithm has been updated from RSA to EdDSA
 func recreateBackrestRepoSecret(clientset *kubernetes.Clientset, clustername, namespace, operatorNamespace string) {
-	if err := util.CreateBackrestRepoSecrets(clientset,
-		util.BackrestRepoConfig{
-			BackrestS3Key:       "", // these are set to empty so that it can be generated
-			BackrestS3KeySecret: "",
-			ClusterName:         clustername,
-			ClusterNamespace:    namespace,
-			OperatorNamespace:   operatorNamespace,
-		}); err != nil {
+	config := util.BackrestRepoConfig{
+		ClusterName:       clustername,
+		ClusterNamespace:  namespace,
+		OperatorNamespace: operatorNamespace,
+	}
+
+	secretName := clustername + "-backrest-repo-config"
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(secretName, meta_v1.GetOptions{})
+
+	// 4.1, 4.2
+	if err == nil {
+		if b, ok := secret.Data["aws-s3-ca.crt"]; ok {
+			config.BackrestS3CA = b
+		}
+		if b, ok := secret.Data["aws-s3-credentials.yaml"]; ok {
+			var parsed struct {
+				Key       string `yaml:"aws-s3-key"`
+				KeySecret string `yaml:"aws-s3-key-secret"`
+			}
+			if err = yaml.Unmarshal(b, &parsed); err == nil {
+				config.BackrestS3Key = parsed.Key
+				config.BackrestS3KeySecret = parsed.KeySecret
+			}
+		}
+	}
+
+	// >= 4.3
+	if err == nil {
+		if b, ok := secret.Data["aws-s3-ca.crt"]; ok {
+			config.BackrestS3CA = b
+		}
+		if b, ok := secret.Data["aws-s3-key"]; ok {
+			config.BackrestS3Key = string(b)
+		}
+		if b, ok := secret.Data["aws-s3-key-secret"]; ok {
+			config.BackrestS3KeySecret = string(b)
+		}
+	}
+
+	if err == nil {
+		err = util.CreateBackrestRepoSecrets(clientset, config)
+	}
+	if err != nil {
 		log.Errorf("error generating new backrest repo secrets during pgcluster upgrade: %v", err)
 	}
 }
