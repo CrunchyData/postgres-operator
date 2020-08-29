@@ -4,6 +4,8 @@ ARG PREFIX
 FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
 ARG PGVERSION
+ARG PACKAGER
+ARG DFSET
 
 LABEL name="crunchy-postgres-exporter" \
 	summary="Metrics exporter for PostgreSQL" \
