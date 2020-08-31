@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/util/validation"
 
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
@@ -571,17 +570,6 @@ func setClusterAnnotationGroup(annotationGroup map[string]string, annotations []
 		if len(parts) != 2 {
 			fmt.Println(`Error: Annotation was not specified in propert format (i.e. key=value), aborting.`)
 			os.Exit(1)
-		}
-
-		// validate if this the parts are valid annotation names
-		for _, v := range parts {
-			if errs := validation.IsValidLabelValue(v); len(errs) != 0 {
-				fmt.Println(fmt.Sprintf("Error: %q is not valid for an annotation.", v))
-				for _, e := range errs {
-					fmt.Println(e)
-				}
-				os.Exit(1)
-			}
 		}
 
 		annotationGroup[parts[0]] = parts[1]
