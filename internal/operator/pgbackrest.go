@@ -82,8 +82,8 @@ func AddBackRestConfigVolumeAndMounts(podSpec *v1.PodSpec, clusterName string, p
 	combined = append(combined, v1.VolumeProjection{Secret: &secret})
 
 	// The built-in configurations above also happen to bypass a bug in Kubernetes.
-	// Kubernetes 1.15 through 1.18 store an empty list of sources as `null` which
-	// breaks some clients, notably the Python client used by Patroni.
+	// Kubernetes 1.15 through 1.19 store an empty list of sources as `null` which
+	// breaks some clients, notably the Python client used by Patroni 1.6.5.
 	// - https://issue.k8s.io/93903
 
 	addBackRestConfigDirectoryVolumeAndMounts(podSpec, "pgbackrest-config", combined, "backrest", "database")
