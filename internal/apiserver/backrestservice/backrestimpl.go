@@ -36,6 +36,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 )
 
 const containername = "database"
@@ -291,7 +292,13 @@ func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 
 	//look up the backrest-repo pod name
 	selector := "pg-cluster=" + cluster.Spec.Name + ",pgo-backrest-repo=true"
-	repopods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
+
+	options := metav1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
+		LabelSelector: selector,
+	}
+
+	repopods, err := apiserver.Clientset.CoreV1().Pods(ns).List(options)
 	if len(repopods.Items) != 1 {
 		log.Errorf("pods len != 1 for cluster %s", cluster.Spec.Name)
 		return "", errors.New("backrestrepo pod not found for cluster " + cluster.Spec.Name)
