@@ -26,6 +26,6 @@ and their default Service ports.
 
 | Service | Port |
 | --- | --- |
-| Grafana | 9090 |
-| Prometheus | 3000 |
+| Grafana | 3000 |
+| Prometheus | 9090 |
 | Alertmanager | 9093 |
