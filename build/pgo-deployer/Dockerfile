@@ -22,20 +22,22 @@ RUN if [ "$DFSET" = "centos" ] ; then \
                 ansible-${ANSIBLE_VERSION} \
                 which \
                 gettext \
+                openssl \
         && ${PACKAGER} -y clean all ; \
 fi
 
 RUN if [ "$BASEOS" = "rhel7" ] ; then \
-	rm /etc/yum.repos.d/kubernetes.repo \
-	&& ${PACKAGER} install -y https://download.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
-	&& ${PACKAGER} -y install \
-		--setopt=skip_missing_names_on_install=False \
-		--enablerepo='rhel-7-server-ose-4.4-rpms' \
-		openshift-clients \
-		ansible-${ANSIBLE_VERSION} \
-		which \
-		gettext \
-	&& ${PACKAGER} -y clean all --enablerepo='rhel-7-server-ose-4.4-rpms' ; \
+        rm /etc/yum.repos.d/kubernetes.repo \
+        && ${PACKAGER} install -y https://download.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm \
+        && ${PACKAGER} -y install \
+                --setopt=skip_missing_names_on_install=False \
+                --enablerepo='rhel-7-server-ose-4.4-rpms' \
+                openshift-clients \
+                ansible-${ANSIBLE_VERSION} \
+                which \
+                gettext \
+                openssl \
+        && ${PACKAGER} -y clean all --enablerepo='rhel-7-server-ose-4.4-rpms' ; \
 fi
 
 RUN if [ "$BASEOS" = "ubi7" ] ; then \
@@ -48,6 +50,7 @@ RUN if [ "$BASEOS" = "ubi7" ] ; then \
                 ansible-${ANSIBLE_VERSION} \
                 which \
                 gettext \
+                openssl \
 	&& ${PACKAGER} -y clean all --enablerepo='rhel-7-server-ose-4.4-rpms' ; \
 fi
 
