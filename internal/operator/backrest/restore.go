@@ -18,6 +18,7 @@ package backrest
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -34,6 +35,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
+
+// restoreTargetRegex defines a regex to detect if a restore target has been specified
+// for pgBackRest using the '--target' option
+var restoreTargetRegex = regexp.MustCompile("--target(=| +)")
 
 type BackrestRestoreJobTemplateFields struct {
 	JobName                string
@@ -67,7 +72,7 @@ func UpdatePGClusterSpecForRestore(clientset kubeapi.Interface, cluster *crv1.Pg
 
 	// set the proper target for the restore job
 	pitrTarget := task.Spec.Parameters[config.LABEL_BACKREST_PITR_TARGET]
-	if pitrTarget != "" && !strings.Contains(restoreOpts, "--target") {
+	if pitrTarget != "" && !restoreTargetRegex.MatchString(restoreOpts) {
 		restoreOpts = fmt.Sprintf("%s --target=%s", restoreOpts, strconv.Quote(pitrTarget))
 	}
 
