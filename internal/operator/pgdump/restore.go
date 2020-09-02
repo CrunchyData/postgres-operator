@@ -18,6 +18,7 @@ package pgdump
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -75,7 +76,8 @@ func Restore(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	taskName := task.Name
 
 	jobFields := restorejobTemplateFields{
-		JobName:             "pgrestore-" + task.Spec.Parameters[config.LABEL_PGRESTORE_FROM_CLUSTER] + "-from-" + fromPvcName + "-" + util.RandStringBytesRmndr(4),
+		JobName: fmt.Sprintf("pgrestore-%s-%s", task.Spec.Parameters[config.LABEL_PGRESTORE_FROM_CLUSTER],
+			util.RandStringBytesRmndr(4)),
 		TaskName:            taskName,
 		ClusterName:         clusterName,
 		SecurityContext:     operator.GetPodSecurityContext(storage.GetSupplementalGroups()),
