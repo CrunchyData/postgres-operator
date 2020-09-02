@@ -36,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/yaml"
 )
 
 // Store image names as constants to use later
@@ -414,6 +415,23 @@ func recreateBackrestRepoSecret(clientset kubernetes.Interface, clustername, nam
 	secretName := clustername + "-backrest-repo-config"
 	secret, err := clientset.CoreV1().Secrets(namespace).Get(secretName, metav1.GetOptions{})
 
+	// 4.1, 4.2
+	if err == nil {
+		if b, ok := secret.Data["aws-s3-ca.crt"]; ok {
+			config.BackrestS3CA = b
+		}
+		if b, ok := secret.Data["aws-s3-credentials.yaml"]; ok {
+			var parsed struct {
+				Key       string `yaml:"aws-s3-key"`
+				KeySecret string `yaml:"aws-s3-key-secret"`
+			}
+			if err = yaml.Unmarshal(b, &parsed); err == nil {
+				config.BackrestS3Key = parsed.Key
+				config.BackrestS3KeySecret = parsed.KeySecret
+			}
+		}
+	}
+
 	// >= 4.3
 	if err == nil {
 		if b, ok := secret.Data["aws-s3-ca.crt"]; ok {
@@ -504,6 +522,17 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 	// ensure that the pgo-backrest label is set to 'true' since pgbackrest is required for normal
 	// cluster operations in this version of the Postgres Operator
 	pgcluster.ObjectMeta.Labels[config.LABEL_BACKREST] = "true"
+
+	// added in 4.2 and copied from configuration in 4.4
+	if pgcluster.Spec.BackrestS3Bucket == "" {
+		pgcluster.Spec.BackrestS3Bucket = operator.Pgo.Cluster.BackrestS3Bucket
+	}
+	if pgcluster.Spec.BackrestS3Endpoint == "" {
+		pgcluster.Spec.BackrestS3Endpoint = operator.Pgo.Cluster.BackrestS3Endpoint
+	}
+	if pgcluster.Spec.BackrestS3Region == "" {
+		pgcluster.Spec.BackrestS3Region = operator.Pgo.Cluster.BackrestS3Region
+	}
 
 	// added in 4.4
 	if pgcluster.Spec.BackrestS3VerifyTLS == "" {
