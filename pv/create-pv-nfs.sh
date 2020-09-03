@@ -50,7 +50,7 @@ do
         "capacity": {
             "storage": "1Gi"
         },
-        "accessModes": [ "ReadWriteMany" ],
+        "accessModes": [ "ReadWriteOnce", "ReadWriteMany", "ReadOnlyMany" ],
         "nfs": {
             "path": "${NFS_PV_PATH}",
             "server": "${PGO_NFS_IP}"

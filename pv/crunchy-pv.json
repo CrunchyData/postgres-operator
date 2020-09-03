@@ -8,7 +8,7 @@
     "capacity": {
         "storage": "1Gi"
     },
-    "accessModes": [ "ReadWriteMany" ],
+    "accessModes": [ "ReadWriteOnce", "ReadWriteMany", "ReadOnlyMany" ],
     "hostPath": {
         "path": "/data"
     },
