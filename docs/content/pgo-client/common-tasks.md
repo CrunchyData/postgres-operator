@@ -151,51 +151,6 @@ Storage:
     MatchLabels: ""
 ```
 
-### Viewing PostgreSQL Operator Key Metrics
-
-The [`pgo status`](/pgo-client/reference/pgo_status/) command provides a
-generalized statistical view of the overall resource consumption of the
-PostgreSQL Operator. These stats include:
-
-- The total number of PostgreSQL instances
-- The total number of Persistent Volume Claims (PVC) that are allocated, along with the total amount of disk the claims specify
-- The types of container images that are deployed, along with how many are deployed
-- The nodes that are used by the PostgreSQL Operator
-
-and more
-
-You can use the `pgo status` command by running:
-
-```shell
-pgo status
-```
-
-which yields output similar to:
-
-```
-Databases:               8
-Claims:                  8
-Total Volume Size:       8Gi       
-
-Database Images:
-                         4	crunchydata/crunchy-postgres-ha:{{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}
-                         4	crunchydata/pgo-backrest-repo:{{< param centosBase >}}-{{< param operatorVersion >}}
-                         8	crunchydata/pgo-backrest:{{< param centosBase >}}-{{< param operatorVersion >}}
-
-Databases Not Ready:
-
-Labels (count > 1): [count] [label]
-	[8]	[vendor=crunchydata]
-	[4]	[pgo-backrest-repo=true]
-	[4]	[pgouser=admin]
-	[4]	[pgo-pg-database=true]
-	[4]	[crunchy-postgres-exporter=false]
-	[4]	[pg-pod-anti-affinity=]
-	[4]	[pgo-version={{< param operatorVersion >}}]
-	[4]	[archive-timeout=60]
-	[2]	[pg-cluster=hacluster]
-```
-
 ### Viewing PostgreSQL Operator Managed Namespaces
 
 The PostgreSQL Operator has the ability to manage PostgreSQL clusters across
@@ -901,6 +856,35 @@ pgo scaledown hacluster --target=hacluster-abcd
 where `hacluster-abcd` is the name of the PostgreSQL replica that you want to
 destroy.
 
+## Monitoring
+
+### PostgreSQL Metrics via pgMonitor
+
+You can view metrics about your PostgreSQL cluster using [PostgreSQL Operator Monitoring]({{< relref "/installation/metrics" >}}),
+which uses open source [pgMonitor](https://github.com/CrunchyData/pgmonitor).
+First, you need to install the [PostgreSQL Operator Monitoring]({{< relref "/installation/metrics" >}})
+stack for your PostgreSQL Operator environment.
+
+After that, you need to ensure that you deploy the `crunchy-postgres-exporter`
+with each PostgreSQL cluster that you deploy:
+
+```
+pgo create cluster hippo --metrics
+```
+
+For more information on how monitoring with the PostgreSQL Operator works,
+please see the [Monitoring]({{< relref "/architecture/monitoring.md" >}})
+section of the documentation.
+
+### View Disk Utilization
+
+You can see a comparison of Postgres data size versus the Persistent
+volume claim size by entering the following:
+
+```shell
+pgo df hacluster -n pgouser1
+```
+
 ## Cluster Maintenance & Resource Management
 
 There are several operations that you can perform to modify a PostgreSQL cluster
@@ -1350,31 +1334,6 @@ cluster. When it is ready, you can start it up with the following command:
 ```
 pgo update cluster hippo --startup
 ```
-
-## Monitoring
-
-### View Disk Utilization
-
-You can see a comparison of Postgres data size versus the Persistent
-volume claim size by entering the following:
-
-```shell
-pgo df hacluster -n pgouser1
-```
-
-### PostgreSQL Metrics via pgMonitor
-
-You can view metrics about your PostgreSQL cluster using the pgMonitor stack by
-deploying the "crunchy-postgres-exporter" sidecar with the PostgreSQL cluster:
-
-```
-pgo create cluster hacluster --metrics
-```
-
-Note: To store and visualize the metrics, you must deploy the PostgreSQL Operator
-Metrics infrastrcture. For instructions on installing the PostgreSQL Operator
-Metrics infrastrcture in your environment, please review the
-[installation instructions]({{< relref "/installation/metrics" >}}).
 
 ## Labels
 
