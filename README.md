@@ -9,17 +9,17 @@
 
 The [Crunchy PostgreSQL Operator](https://access.crunchydata.com/documentation/postgres-operator/) automates and simplifies deploying and managing open source PostgreSQL clusters on Kubernetes and other Kubernetes-enabled Platforms by providing the essential features you need to keep your PostgreSQL clusters up and running, including:
 
-#### PostgreSQL Cluster Provisioning
+#### PostgreSQL Cluster [Provisioning](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/provisioning/)
 
 [Create, Scale, & Delete PostgreSQL clusters with ease](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/provisioning/), while fully customizing your Pods and PostgreSQL configuration!
 
-#### High-Availability
+#### [High Availability](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/)
 
 Safe, automated failover backed by a [distributed consensus based high-availability solution](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/). Uses [Pod Anti-Affinity](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity) to help resiliency; you can configure how aggressive this can be! Failed primaries automatically heal, allowing for faster recovery time.
 
 Support for [standby PostgreSQL clusters](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/multi-cluster-kubernetes/) that work both within an across [multiple Kubernetes clusters](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/multi-cluster-kubernetes/).
 
-#### Disaster Recovery
+#### [Disaster Recovery](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/)
 
 Backups and restores leverage the open source [pgBackRest](https://www.pgbackrest.org) utility and [includes support for full, incremental, and differential backups as well as efficient delta restores](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/). Set how long you want your backups retained for. Works great with very large databases!
 
@@ -27,9 +27,9 @@ Backups and restores leverage the open source [pgBackRest](https://www.pgbackres
 
 Secure communication between your applications and data servers by [enabling TLS for your PostgreSQL servers](https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/common-tasks/#enable-tls), including the ability to enforce that all of your connections to use TLS.
 
-#### Monitoring
+#### [Monitoring](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/monitoring/)
 
-Track the health of your PostgreSQL clusters using the open source [pgMonitor](https://github.com/CrunchyData/pgmonitor) library.
+[Track the health of your PostgreSQL clusters](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/monitoring/) using the open source [pgMonitor](https://github.com/CrunchyData/pgmonitor) library.
 
 #### PostgreSQL User Management
 
