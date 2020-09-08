@@ -22,15 +22,27 @@ import (
 )
 
 func TestGeneratePassword(t *testing.T) {
-	previous := []string{}
-
-	for i := 0; i < 10; i++ {
-		password, err := GeneratePassword(i + 10)
+	// different lengths
+	for _, length := range []int{1, 2, 3, 5, 20} {
+		password, err := GeneratePassword(length)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
-		if expected, actual := i+10, len(password); expected != actual {
+		if expected, actual := length, len(password); expected != actual {
 			t.Fatalf("expected length %v, got %v", expected, actual)
+		}
+		if i := strings.IndexFunc(password, unicode.IsPrint); i > 0 {
+			t.Fatalf("expected only printable characters, got %q in %q", password[i], password)
+		}
+	}
+
+	// random contents
+	previous := []string{}
+
+	for i := 0; i < 10; i++ {
+		password, err := GeneratePassword(5)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
 		}
 		if i := strings.IndexFunc(password, unicode.IsPrint); i > 0 {
 			t.Fatalf("expected only printable characters, got %q in %q", password[i], password)
