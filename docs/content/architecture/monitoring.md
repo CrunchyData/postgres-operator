@@ -18,7 +18,7 @@ There are many different ways to monitor systems within Kubernetes, including
 tools that come with Kubernetes itself. This is by no means to be a
 comprehensive on how to monitor everything in Kubernetes, but rather what the
 PostgreSQL Operator provides to give you an
-[out-of-the-box monitoring solution](({{< relref "installation/metrics/_index.md" >}}).
+[out-of-the-box monitoring solution]({{< relref "installation/metrics/_index.md" >}}).
 
 ## Getting Started
 
@@ -213,8 +213,9 @@ Not attending to this can lead to out-of-disk errors.
 ID wraparound. Issues a warning at 50% and goes critical at 75%. It's important
 that you [vacuum your database](https://info.crunchydata.com/blog/managing-transaction-id-wraparound-in-postgresql)
 to prevent this.
-- `PGEmergencyVacuum`: Indicates that autovacuum is not running, i.e. it's past
-its "freeze" age.  Issues a warning at 110% and goes critical at 125%.
+- `PGEmergencyVacuum`: Indicates that autovacuum is not running or cannot keep
+up with ongoing changes, i.e. it's past its "freeze" age.  Issues a warning at
+110% and goes critical at 125%.
 - `PGArchiveCommandStatus`: Indicates that the archive command, which is used
 to ship WAL archives to pgBackRest, is failing.
 - `PGSequenceExhaustion`: Indicates that a sequence is over 75% used.
