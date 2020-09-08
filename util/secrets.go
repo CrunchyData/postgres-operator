@@ -75,9 +75,7 @@ func CreateSecret(clientset *kubernetes.Clientset, db, secretName, username, pas
 // GeneratePassword generates a password of a given length out of the acceptable
 // ASCII characters suitable for a password
 func GeneratePassword(length int) (string, error) {
-	// for "length" times, we are going to get a random ASCII character, and
-	// append it to the  "password" string
-	password := ""
+	password := make([]byte, length)
 
 	for i := 0; i < length; i++ {
 		char, err := rand.Int(rand.Reader, passwordCharSelector)
@@ -87,10 +85,10 @@ func GeneratePassword(length int) (string, error) {
 			return "", err
 		}
 
-		password += string(passwordCharLower + char.Int64())
+		password[i] = byte(passwordCharLower + char.Int64())
 	}
 
-	return password, nil
+	return string(password), nil
 }
 
 // GeneratedPasswordLength returns the value for what the length of a
