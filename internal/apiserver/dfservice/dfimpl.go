@@ -57,7 +57,18 @@ func DfCluster(request msgs.DfRequest) msgs.DfResponse {
 		return CreateErrorResponse(err.Error())
 	}
 
-	log.Debugf("df clusters found len is %d", len(clusterList.Items))
+	totalClusters := len(clusterList.Items)
+
+	log.Debugf("df clusters found len is %d", totalClusters)
+
+	// if there are no clusters found, exit early
+	if totalClusters == 0 {
+		response.Status = msgs.Status{
+			Code: msgs.Error,
+			Msg:  fmt.Sprintf("no clusters found for selector %q in namespace %q", selector, namespace),
+		}
+		return response
+	}
 
 	// iterate through each cluster and get the information about the disk
 	// utilization. As there could be a lot of clusters doing this, we opt for
@@ -76,7 +87,6 @@ func DfCluster(request msgs.DfRequest) msgs.DfResponse {
 
 	// track the progress / completion, so we know when to exit
 	processed := 0
-	totalClusters := len(clusterList.Items)
 
 loop:
 	for {
