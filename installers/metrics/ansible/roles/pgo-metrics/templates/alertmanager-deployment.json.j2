@@ -4,7 +4,7 @@
     "metadata": {
         "name": "crunchy-alertmanager",
         "labels": {
-            "vendor": "crunchydata"
+            "app.kubernetes.io/name": "{{ app_name }}"
         }
     },
     "spec": {
@@ -12,14 +12,14 @@
         "selector": {
           "matchLabels": {
             "name": "{{ alertmanager_service_name }}",
-            "vendor": "crunchydata"
+            "app.kubernetes.io/name": "{{ app_name }}"
           }
         },
         "template": {
             "metadata": {
                 "labels": {
                     "name": "{{ alertmanager_service_name }}",
-                    "vendor": "crunchydata"
+                    "app.kubernetes.io/name": "{{ app_name }}"
                 }
             },
             "spec": {

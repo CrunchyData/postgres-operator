@@ -28,7 +28,8 @@
       shell: |
         {{ kubectl_or_oc }} create configmap {{ alertmanager_configmap }} --dry-run --output=yaml \ \
           --from-file={{ alertmanager_output_dir }}/alertmanager.yml \
-        | {{ kubectl_or_oc }} label --filename=- --local --dry-run --output=yaml vendor=crunchydata \
+        | {{ kubectl_or_oc }} label --filename=- --local --dry-run --output=yaml \
+          app.kubernetes.io/name={{ app_name }} \
         | {{ kubectl_or_oc }} create --filename=- -n {{ metrics_namespace }}
       when: alertmanager_custom_config == ""
       register: create_alertmanager_result
@@ -45,7 +46,8 @@
       shell: |
         {{ kubectl_or_oc }} create configmap {{ alertmanager_rules_configmap }} --dry-run --output=yaml \
           --from-file={{ alertmanager_output_dir }}/crunchy-alert-rules-pg.yml \
-        | {{ kubectl_or_oc }} label --filename=- --local --dry-run --output=yaml vendor=crunchydata \
+        | {{ kubectl_or_oc }} label --filename=- --local --dry-run --output=yaml \
+          app.kubernetes.io/name={{ app_name }} \
         | {{ kubectl_or_oc }} create --filename=- -n {{ metrics_namespace }}
       when: alertmanager_custom_rules_config == ""
       register: create_alertmanager_result

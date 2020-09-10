@@ -5,7 +5,7 @@
         "name": "{{ grafana_service_name }}",
         "labels": {
             "name": "{{ grafana_service_name }}",
-            "vendor": "crunchydata"
+            "app.kubernetes.io/name": "{{ app_name }}"
         }
     },
     "spec": {
