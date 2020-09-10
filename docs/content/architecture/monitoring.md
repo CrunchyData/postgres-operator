@@ -235,5 +235,5 @@ previous state.
 PostgreSQL instance. This could be a sign of data corruption.
 
 You can modify these alerts as you see fit, and add your own alerts as well!
-Please see the [installation instructions]((({{< relref "installation/metrics/_index.md" >}}))
+Please see the [installation instructions]({{< relref "installation/metrics/_index.md" >}})
 for general setup of the PostgreSQL Operator Monitoring stack.
