@@ -22,7 +22,7 @@
       command: "cp {{ pgmonitor_prometheus_dir }}/{{ item.src }} {{ alertmanager_output_dir }}/{{ item.dst }}"
       loop:
         - { src: 'crunchy-alertmanager.yml', dst: 'alertmanager.yml'}
-        - { src: 'alert-rules.d/crunchy-alert-rules-pg.yml.example', dst: 'crunchy-alert-rules-pg.yml'}
+        - { src: 'alert-rules.d/crunchy-alert-rules-pg.yml.containers.example', dst: 'crunchy-alert-rules-pg.yml'}
 
     - name: Create Alertmanager Config ConfigMap
       shell: |
