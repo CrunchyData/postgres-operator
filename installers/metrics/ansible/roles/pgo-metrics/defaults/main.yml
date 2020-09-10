@@ -1,4 +1,6 @@
 ---
+app_name: postgres-operator-monitoring
+
 kubernetes_context: ""
 kubernetes_in_cluster: "false"
 openshift_host: ""

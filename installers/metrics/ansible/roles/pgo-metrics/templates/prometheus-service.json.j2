@@ -5,7 +5,7 @@
         "name": "{{ prometheus_service_name }}",
         "labels": {
             "name": "{{ prometheus_service_name }}",
-            "vendor": "crunchydata"
+            "app.kubernetes.io/name": "{{ app_name }}"
         }
     },
     "spec": {

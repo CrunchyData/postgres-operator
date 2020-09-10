@@ -116,29 +116,6 @@ and tag as needed to use the RedHat certified containers:
 Additionally, these same settings can be utilized as needed to support custom image names,
 tags, and additional container registries.
 
-## Disabling Default Dashboards
-
-By default, the following Grafana Dashboards are enabled as provided by the [pgmonitor project](https://github.com/CrunchyData/pgmonitor):
-
-- Bloat_Details.json
-- CRUD_Details.json
-- PGBackrest.json
-- PG_Details.json
-- PG_Overview.json
-- TableSize_Details.json
-
-Using the `grafana-dashboard` configuration setting, it is possible to customize this list
-of dashboards, and therefore further control which dashboards are loaded into Grafana
-(specifically via the `grafana-dashboards` ConfigMap) by default.  For instance, the following
-setting can be utilized to enable only a subset of the default dashboards defined above:
-
-```yaml
-grafana_dashboards:
-  - CRUD_Details.json
-  - PG_Details.json
-  - PG_Overview.json
-```
-
 ## Helm Only Configuration Settings
 
 When using Helm, the following settings can be defined to control the image prefix and image tag
