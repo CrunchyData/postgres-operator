@@ -21,6 +21,11 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 )
 
+// pgBouncerConfigMapFormat is the format used for the name of the config
+// map associated with a pgBouncer cluster, and follows the pattern
+// "<clusterName>-pgbouncer-cm"
+const pgBouncerConfigMapFormat = "%s-pgbouncer-cm"
+
 // pgBouncerSecretFormat is the name of the Kubernetes Secret that pgBouncer
 // uses that stores configuration and pgbouncer user information, and follows
 // the format "<clusterName>-pgbouncer-secret"
@@ -29,6 +34,12 @@ const pgBouncerSecretFormat = "%s-pgbouncer-secret"
 // pgBouncerUserFileFormat is the format of what the pgBouncer user management
 // file looks like, i.e. `"username" "password"``
 const pgBouncerUserFileFormat = `"%s" "%s"`
+
+// GeneratePgBouncerConfigMapName generates the name of the configmap file
+// associated with the pgBouncer Deployment
+func GeneratePgBouncerConfigMapName(clusterName string) string {
+	return fmt.Sprintf(pgBouncerConfigMapFormat, clusterName)
+}
 
 // GeneratePgBouncerSecretName returns the name of the secret that contains
 // information around a pgBouncer deployment

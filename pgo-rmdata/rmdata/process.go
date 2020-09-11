@@ -223,8 +223,8 @@ func removeBackupSecrets(request Request) {
 	return
 }
 
-// removeClusterConfigmaps deletes the three configmaps that are created
-// for each cluster. The first two are created by Patroni when it initializes a new cluster:
+// removeClusterConfigmaps deletes the configmaps that are created for each
+// cluster. The first two are created by Patroni when it initializes a new cluster:
 // <cluster-name>-leader (stores data pertinent to the leader election process)
 // <cluster-name>-config (stores global/cluster-wide configuration settings)
 // Additionally, the Postgres Operator also creates a configMap for each cluster
@@ -232,7 +232,7 @@ func removeBackupSecrets(request Request) {
 // <cluster-name>-pgha-config (stores a Patroni config file in YAML format)
 func removeClusterConfigmaps(request Request) {
 	// Store the derived names of the three configmaps in an array
-	clusterConfigmaps := [4]string{
+	clusterConfigmaps := []string{
 		// first, derive the name of the PG HA default configmap, which is
 		// "`clusterName`-`LABEL_PGHA_CONFIGMAP`"
 		fmt.Sprintf("%s-%s", request.ClusterName, config.LABEL_PGHA_CONFIGMAP),
@@ -242,9 +242,11 @@ func removeClusterConfigmaps(request Request) {
 		// next, the name of the general configuration settings configmap, which is
 		// "`clusterName`-config"
 		fmt.Sprintf("%s-%s", request.ClusterName, configConfigMapSuffix),
-		// finally, the name of the failover configmap, which is
+		// next, the name of the failover configmap, which is
 		// "`clusterName`-failover"
 		fmt.Sprintf("%s-%s", request.ClusterName, failoverConfigMapSuffix),
+		// finally, if there is a pgbouncer, remove the pgbouncer configmap
+		util.GeneratePgBouncerConfigMapName(request.ClusterName),
 	}
 
 	// As with similar resources, we can attempt to delete the configmaps directly without
@@ -253,7 +255,7 @@ func removeClusterConfigmaps(request Request) {
 	// We'll also check to see if there was an error, but if there is we'll only
 	// log the fact there was an error; this function is just a pass through
 	for _, cm := range clusterConfigmaps {
-		if err := request.Clientset.CoreV1().ConfigMaps(request.Namespace).Delete(cm, &metav1.DeleteOptions{}); err != nil {
+		if err := request.Clientset.CoreV1().ConfigMaps(request.Namespace).Delete(cm, &metav1.DeleteOptions{}); err != nil && !kerror.IsNotFound(err) {
 			log.Error(err)
 		}
 	}

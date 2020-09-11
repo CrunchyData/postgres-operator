@@ -55,12 +55,13 @@ type PgbouncerConfFields struct {
 type pgBouncerTemplateFields struct {
 	Name                      string
 	ClusterName               string
-	PGBouncerSecret           string
 	CCPImagePrefix            string
 	CCPImageTag               string
 	Port                      string
 	PrimaryServiceName        string
 	ContainerResources        string
+	PGBouncerConfigMap        string
+	PGBouncerSecret           string
 	PodAnnotations            string
 	PodAntiAffinity           string
 	PodAntiAffinityLabelName  string
@@ -171,7 +172,14 @@ func AddPgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, clust
 		}
 	}
 
-	// next, create the secret that pgbouncer will use to be properly configure
+	// next, create the pgBouncer config map that will allow pgBouncer to be
+	// properly configured
+	if err := createPgbouncerConfigMap(clientset, cluster); err != nil {
+		return err
+	}
+
+	// next, create the secret that pgbouncer will include the pgBouncer
+	// credentials
 	if err := createPgbouncerSecret(clientset, cluster, pgBouncerPassword); err != nil {
 		return err
 	}
@@ -236,7 +244,15 @@ func DeletePgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, cl
 		log.Warn(err)
 	}
 
-	// remove the secret. again, if this fails, just log the error and apss
+	// remove the config map. again, if this fails, just log the error and pass
+	// through
+	configMapName := util.GeneratePgBouncerConfigMapName(clusterName)
+
+	if err := clientset.CoreV1().ConfigMaps(namespace).Delete(configMapName, &metav1.DeleteOptions{}); err != nil {
+		log.Warn(err)
+	}
+
+	// remove the secret. again, if this fails, just log the error and pass
 	// through
 	secretName := util.GeneratePgBouncerSecretName(clusterName)
 
@@ -473,6 +489,58 @@ func checkPgBouncerInstall(clientset kubernetes.Interface, restconfig *rest.Conf
 	}
 }
 
+// createPgbouncerConfigMap create a config map used by pgbouncer, specifically
+// containing the pgbouncer.ini configuration file. returns an error if it fails
+func createPgbouncerConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
+	// get the name of the configmap
+	configMapName := util.GeneratePgBouncerConfigMapName(cluster.Name)
+
+	// see if this config map already exists...if it does, then take an early exit
+	if _, err := clientset.CoreV1().ConfigMaps(cluster.Namespace).Get(configMapName, metav1.GetOptions{}); err == nil {
+		log.Infof("pgbouncer configmap %q already present, will reuse", configMapName)
+		return nil
+	}
+
+	// generate the pgbouncer.ini information
+	pgBouncerConf, err := generatePgBouncerConf(cluster)
+
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	// generate the pgbouncer HBA file
+	pgbouncerHBA, err := generatePgBouncerHBA()
+
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	// now, we can do what we came here to do, which is create the config map
+	cm := v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: configMapName,
+			Labels: map[string]string{
+				config.LABEL_PG_CLUSTER: cluster.Name,
+				config.LABEL_PGBOUNCER:  "true",
+				config.LABEL_VENDOR:     config.LABEL_CRUNCHY,
+			},
+		},
+		Data: map[string]string{
+			"pgbouncer.ini": pgBouncerConf,
+			"pg_hba.conf":   pgbouncerHBA,
+		},
+	}
+
+	if _, err := clientset.CoreV1().ConfigMaps(cluster.Namespace).Create(&cm); err != nil {
+		log.Error(err)
+		return err
+	}
+
+	return nil
+}
+
 // createPgBouncerDeployment creates the Kubernetes Deployment for pgBouncer
 func createPgBouncerDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
 	log.Debugf("creating pgbouncer deployment: %s", cluster.Name)
@@ -483,12 +551,13 @@ func createPgBouncerDeployment(clientset kubernetes.Interface, cluster *crv1.Pgc
 
 	// get the fields that will be substituted in the pgBouncer template
 	fields := pgBouncerTemplateFields{
-		Name:            pgbouncerDeploymentName,
-		ClusterName:     cluster.Name,
-		CCPImagePrefix:  util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
-		CCPImageTag:     cluster.Spec.CCPImageTag,
-		Port:            operator.Pgo.Cluster.Port,
-		PGBouncerSecret: util.GeneratePgBouncerSecretName(cluster.Name),
+		Name:               pgbouncerDeploymentName,
+		ClusterName:        cluster.Name,
+		CCPImagePrefix:     util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
+		CCPImageTag:        cluster.Spec.CCPImageTag,
+		Port:               operator.Pgo.Cluster.Port,
+		PGBouncerConfigMap: util.GeneratePgBouncerConfigMapName(cluster.Name),
+		PGBouncerSecret:    util.GeneratePgBouncerSecretName(cluster.Name),
 		ContainerResources: operator.GetResourcesJSON(cluster.Spec.PgBouncer.Resources,
 			cluster.Spec.PgBouncer.Limits),
 		PodAnnotations: operator.GetAnnotations(cluster, crv1.ClusterAnnotationPgBouncer),
@@ -537,32 +606,15 @@ func createPgbouncerSecret(clientset kubernetes.Interface, cluster *crv1.Pgclust
 
 	// see if this secret already exists...if it does, then take an early exit
 	if _, err := util.GetPasswordFromSecret(clientset, cluster.Namespace, secretName); err == nil {
-		log.Debugf("pgbouncer secret %s already present, will reuse", secretName)
+		log.Infof("pgbouncer secret %s already present, will reuse", secretName)
 		return nil
 	}
 
 	// the remainder of this is generating the various entries in the pgbouncer
 	// secret, i.e. substituting values into templates files that contain:
-	// - the pgbouncer.ini file
-	// - the pgbouncer HBA file
+	// - the pgbouncer user password
 	// - the pgbouncer "users.txt" file that contains the credentials for the
 	// "pgbouncer" user
-
-	// first, generate the pgbouncer.ini information
-	pgBouncerConf, err := generatePgBouncerConf(cluster)
-
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	// finally, generate the pgbouncer HBA file
-	pgbouncerHBA, err := generatePgBouncerHBA()
-
-	if err != nil {
-		log.Error(err)
-		return err
-	}
 
 	// now, we can do what we came here to do, which is create the secret
 	secret := v1.Secret{
@@ -575,9 +627,7 @@ func createPgbouncerSecret(clientset kubernetes.Interface, cluster *crv1.Pgclust
 			},
 		},
 		Data: map[string][]byte{
-			"password":      []byte(password),
-			"pgbouncer.ini": pgBouncerConf,
-			"pg_hba.conf":   pgbouncerHBA,
+			"password": []byte(password),
 			"users.txt": util.GeneratePgBouncerUsersFileBytes(
 				makePostgresPassword(pgpassword.MD5, password)),
 		},
@@ -675,7 +725,7 @@ func generatePassword() (string, error) {
 
 // generatePgBouncerConf generates the content that is stored in the secret
 // for the "pgbouncer.ini" file
-func generatePgBouncerConf(cluster *crv1.Pgcluster) ([]byte, error) {
+func generatePgBouncerConf(cluster *crv1.Pgcluster) (string, error) {
 	// first, get the port
 	port := cluster.Spec.Port
 	// if the "port" value is not set, default to the PostgreSQL port.
@@ -696,18 +746,18 @@ func generatePgBouncerConf(cluster *crv1.Pgcluster) ([]byte, error) {
 	if err := config.PgbouncerConfTemplate.Execute(&doc, fields); err != nil {
 		log.Error(err)
 
-		return []byte{}, err
+		return "", err
 	}
 
 	log.Debug(doc.String())
 
-	// and if not, return the full byte slice
-	return doc.Bytes(), nil
+	// and if not, return the full string
+	return doc.String(), nil
 }
 
-// generatePgBouncerConf generates the pgBouncer host-based authentication file
+// generatePgBouncerHBA generates the pgBouncer host-based authentication file
 // using the template that is vailable
-func generatePgBouncerHBA() ([]byte, error) {
+func generatePgBouncerHBA() (string, error) {
 	// ...apparently this is overkill, but this is here from the legacy method
 	// and it seems like it's "ok" to leave it like this for now...
 	doc := bytes.Buffer{}
@@ -715,12 +765,12 @@ func generatePgBouncerHBA() ([]byte, error) {
 	if err := config.PgbouncerHBATemplate.Execute(&doc, struct{}{}); err != nil {
 		log.Error(err)
 
-		return []byte{}, err
+		return "", err
 	}
 
 	log.Debug(doc.String())
 
-	return doc.Bytes(), nil
+	return doc.String(), nil
 }
 
 // generatePgtaskForPgBouncer generates a pgtask specific to a pgbouncer
