@@ -222,8 +222,12 @@ pgo-base-docker: pgo-base-build
 cli-docs:
 	cd $(PGOROOT)/docs/content/operatorcli/cli && go run $(PGOROOT)/pgo/generatedocs.go
 
-clean:
+clean: clean-deprecated
 	rm -rf $(GOPATH)/pkg/* $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
+
+clean-deprecated:
+	@# packages used to be downloaded into the vendor directory
+	[ ! -d vendor ] || rm -r vendor
 
 push: $(images:%=push-%) ;
 

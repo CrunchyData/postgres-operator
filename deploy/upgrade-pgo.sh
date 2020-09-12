@@ -40,9 +40,6 @@ $DIR/install-rbac.sh
 # Deploy the new Operator
 $DIR/deploy.sh
 
-# Run 'dep ensure' to update needed libraries
-dep ensure
-
 # Store the current location of the PGO client
 MYPGO=`which pgo`
 # Store the expected location of the PGO client

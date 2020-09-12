@@ -82,13 +82,6 @@ else
 	fi
 fi
 
-if which dep; then
-	echo -n "  Found: " && (dep version | egrep '^ version')
-else
-	echo "=== Installing dep ==="
-	curl -S https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-fi
-
 # Download Postgres Exporter, only required to build the Crunchy Postgres Exporter container
 wget -O $PGOROOT/postgres_exporter.tar.gz https://github.com/wrouesnel/postgres_exporter/releases/download/v${POSTGRES_EXPORTER_VERSION?}/postgres_exporter_v${POSTGRES_EXPORTER_VERSION?}_linux-amd64.tar.gz
 
