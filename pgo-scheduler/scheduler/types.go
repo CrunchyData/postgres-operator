@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	cv3 "gopkg.in/robfig/cron.v3"
+	cv3 "github.com/robfig/cron/v3"
 )
 
 var clientset kubeapi.Interface
