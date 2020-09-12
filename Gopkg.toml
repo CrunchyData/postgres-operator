@@ -61,7 +61,7 @@ required = [
 
 [[constraint]]
   name = "sigs.k8s.io/controller-runtime"
-  version = "0.6.0"
+  version = "< 0.6.0"
 
 # The following override is for generating the docs using the
 # "generatedocs" program in pgo

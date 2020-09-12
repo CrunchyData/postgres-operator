@@ -963,8 +963,8 @@
   name = "sigs.k8s.io/controller-runtime"
   packages = ["pkg/manager/signals"]
   pruneopts = "UT"
-  revision = "1c83ff6f06bc764c95dd69b0f743740c064c4bf6"
-  version = "v0.6.0"
+  revision = "d7b2d62de95dd9eee83c6430a3e9cc22a401f5ac"
+  version = "v0.5.10"
 
 [[projects]]
   digest = "1:36d2b2cb1fa6e4a731e38c3582c203213cdbc52c5f202af07db6dc6eeaec88dc"
