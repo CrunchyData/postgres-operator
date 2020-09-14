@@ -464,7 +464,7 @@ func createPgBouncerDeployment(clientset *kubernetes.Clientset, cluster *crv1.Pg
 		ClusterName:     cluster.Name,
 		CCPImagePrefix:  util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
 		CCPImageTag:     cluster.Spec.CCPImageTag,
-		Port:            operator.Pgo.Cluster.Port,
+		Port:            cluster.Spec.Port,
 		PGBouncerSecret: util.GeneratePgBouncerSecretName(cluster.Name),
 		ContainerResources: operator.GetResourcesJSON(cluster.Spec.PgBouncer.Resources,
 			cluster.Spec.PgBouncer.Limits),
