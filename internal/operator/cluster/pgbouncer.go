@@ -114,7 +114,7 @@ const (
 
 	// sqlGetDatabasesForPgBouncer gets all the databases where pgBouncer can be
 	// installed or uninstalled
-	sqlGetDatabasesForPgBouncer = `SELECT datname FROM pg_catalog.pg_database WHERE datname NOT IN ('postgres', 'template0') AND datallowconn;`
+	sqlGetDatabasesForPgBouncer = `SELECT datname FROM pg_catalog.pg_database WHERE datname NOT IN ('template0') AND datallowconn;`
 )
 
 var (
