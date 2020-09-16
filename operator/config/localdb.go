@@ -212,10 +212,10 @@ func (l *LocalDB) Update(configName string, localDBConfig LocalDBConfig) error {
 	return nil
 }
 
-// apply applies the configuration stored in the CusterConig's configMap for a
-// specific database server to that server.  This is done by updating the contents of that
-// database server's local configuration with the configuration for that cluster stored in
-// the LocalDB's configMap, and the issuing a Patroni "reload" for that specific server.
+// apply applies the configuration stored in the cluster ConfigMap for a specific database server
+// to that server.  This is done by updating the contents of that database server's local
+// configuration with the configuration for that cluster stored in the LocalDB's configMap, and
+// then issuing a Patroni "reload" for that specific server.
 func (l *LocalDB) apply(configName string) error {
 
 	clusterName := l.configMap.GetObjectMeta().GetLabels()[config.LABEL_PG_CLUSTER]
@@ -238,6 +238,11 @@ func (l *LocalDB) apply(configName string) error {
 	if err != nil {
 		return err
 	}
+	// if the pod list is empty, also return an error
+	if len(dbPodList.Items) == 0 {
+		return fmt.Errorf("no pod found for %q", clusterName)
+	}
+
 	dbPod := &dbPodList.Items[0]
 
 	// add the config name and patroni port as params for the call to the apply & reload script
