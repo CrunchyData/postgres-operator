@@ -24,7 +24,7 @@ yq_script="$( yq read --tojson "./package/${PGO_VERSION}/postgresoperator.v${PGO
 	--argjson images "$( yq read --tojson postgresoperator.csv.images.yaml | render )" \
 	--argjson crds "$( yq read --tojson postgresoperator.crd.descriptions.yaml | render )" \
 	--arg examples "$( yq read --tojson postgresoperator.crd.examples.yaml --doc='*' | render | jq . )" \
-	--arg description "$( render < postgresoperator.csv.description.md )" \
+	--arg description "$( render < description.upstream.md )" \
 	--arg icon "$( base64 ../seal.svg | tr -d '\n' )" \
 '{
 	"metadata.annotations.alm-examples": $examples,
@@ -42,7 +42,7 @@ yq write --inplace --script=- <<< "$yq_script" "./package/${PGO_VERSION}/postgre
 
 if [ "${K8S_DISTRIBUTION:-}" = 'openshift' ]; then
 	yq_script="$( jq <<< '{}' \
-		--arg description "$( render < openshift.description.md )" \
+		--arg description "$( render < description.openshift.md )" \
 	'{
 		"spec.description": $description,
 		"spec.displayName": "Crunchy PostgreSQL for OpenShift",
