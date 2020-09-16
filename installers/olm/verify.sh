@@ -74,7 +74,7 @@ for index in $(seq 0 $(jq <<< "$examples_array" 'length - 1')); do
 		--arg resource "${TMPDIR}/resource.json" \
 		--arg namespace "$test_namespace" \
 		--arg version "$PGO_VERSION" \
-	'{ scorecard: { plugins: [
+	'{ scorecard: { bundle: "./package", plugins: [
 		{ basic: {
 			"cr-manifest": $resource,
 			"crds-dir": "./package/\($version)",
@@ -95,7 +95,7 @@ for index in $(seq 0 $(jq <<< "$examples_array" 'length - 1')); do
 	jq '{ apiVersion, kind, name: .metadata.name }' "${TMPDIR}/resource.json"
 
 	start="$(date --utc +'%FT%TZ')"
-	if operator-sdk scorecard --config "${TMPDIR}/scorecard.json" --verbose; then
+	if operator-sdk scorecard --config "${TMPDIR}/scorecard.json"; then
 		: # no-op to preserve the exit code above
 	else
 		echo "Error: $?"
