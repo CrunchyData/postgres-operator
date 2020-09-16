@@ -16,7 +16,7 @@ ARG OLM_SDK_VERSION
 RUN python3 -m pip install operator-courier \
  && curl -Lo /usr/local/bin/operator-sdk -s "https://github.com/operator-framework/operator-sdk/releases/download/v${OLM_SDK_VERSION}/operator-sdk-v${OLM_SDK_VERSION}-x86_64-linux-gnu" \
  && chmod +x /usr/local/bin/operator-sdk \
- && sha256sum -c <<< "SHA256 (/usr/local/bin/operator-sdk) = 18446d7f31ffcf059be22f767d66a7df585e81b596a3f3e91e3a8eba571eb927"
+ && sha256sum -c <<< "SHA256 (/usr/local/bin/operator-sdk) = 5c8c06bd8a0c47f359aa56f85fe4e3ee2066d4e51b60b75e131dec601b7b3cd6"
 
 COPY --from=docker.io/bitnami/kubectl:1.11 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/kubectl-1.11
 COPY --from=docker.io/bitnami/kubectl:1.12 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/kubectl-1.12
@@ -25,3 +25,5 @@ COPY --from=docker.io/bitnami/kubectl:1.14 /opt/bitnami/kubectl/bin/kubectl /usr
 COPY --from=docker.io/bitnami/kubectl:1.15 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/kubectl-1.15
 COPY --from=docker.io/bitnami/kubectl:1.16 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/kubectl-1.16
 COPY --from=docker.io/bitnami/kubectl:1.17 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/kubectl-1.17
+COPY --from=docker.io/bitnami/kubectl:1.18 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/kubectl-1.18
+COPY --from=docker.io/bitnami/kubectl:1.19 /opt/bitnami/kubectl/bin/kubectl /usr/local/bin/kubectl-1.19

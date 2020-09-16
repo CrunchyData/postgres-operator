@@ -5,9 +5,9 @@ CCP_IMAGE_PREFIX ?= registry.developers.crunchydata.com/crunchydata
 CCP_PG_FULLVERSION ?= 12.4
 CCP_POSTGIS_VERSION ?= 3.0
 KUBECONFIG ?= $(HOME)/.kube/config
-OLM_SDK_VERSION ?= 0.13.0
+OLM_SDK_VERSION ?= 0.15.1
 OLM_TOOLS ?= registry.localhost:5000/postgres-operator-olm-tools:$(OLM_SDK_VERSION)
-OLM_VERSION ?= 0.14.2
+OLM_VERSION ?= 0.15.1
 PGO_BASEOS ?= centos7
 PGO_IMAGE_PREFIX ?= registry.developers.crunchydata.com/crunchydata
 PGO_VERSION ?= 4.5.0-beta.1
@@ -71,13 +71,8 @@ install: ## Install the package in a Kubernetes namespace
 
 .PHONY: install-olm
 install-olm: ## Install OLM in Kubernetes
-	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/raw/$(OLM_VERSION)/deploy/upstream/quickstart/crds.yaml
-	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/raw/$(OLM_VERSION)/deploy/upstream/quickstart/olm.yaml
-	@#
-	@# Release downloads are preferred, but 0.14.2 wasn't exactly a release:
-	@# https://github.com/operator-framework/operator-lifecycle-manager/blob/0.14.2/deploy/upstream/quickstart/install.sh
-	@#kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$(OLM_VERSION)/crds.yaml
-	@#kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$(OLM_VERSION)/olm.yaml
+	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$(OLM_VERSION)/crds.yaml
+	kubectl apply -f https://github.com/operator-framework/operator-lifecycle-manager/releases/download/$(OLM_VERSION)/olm.yaml
 
 .PHONY: package
 package: export PACKAGE_NAME := postgresql
