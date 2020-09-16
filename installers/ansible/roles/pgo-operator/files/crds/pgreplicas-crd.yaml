@@ -12,3 +12,10 @@ spec:
     singular: pgreplica
   scope: Namespaced
   version: v1
+  validation:
+    openAPIV3Schema:
+      properties:
+        status:
+          properties:
+            state: { type: string }
+            message: { type: string }
