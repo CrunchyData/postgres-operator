@@ -149,6 +149,17 @@
       description: The desired number of member Pods for the deployment.
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:podCount'
+  statusDescriptors:
+    - path: message
+      displayName: Message
+      description: Message
+      x-descriptors:
+        - 'urn:alm:descriptor:text'
+    - path: state
+      displayName: State
+      description: State
+      x-descriptors:
+        - 'urn:alm:descriptor:text'
 
 - name: pgpolicies.crunchydata.com
   kind: Pgpolicy
@@ -168,6 +179,17 @@
       description: The pgpolicy sql.
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
+  statusDescriptors:
+    - path: message
+      displayName: Message
+      description: Message
+      x-descriptors:
+        - 'urn:alm:descriptor:text'
+    - path: state
+      displayName: State
+      description: State
+      x-descriptors:
+        - 'urn:alm:descriptor:text'
 
 - name: pgtasks.crunchydata.com
   kind: Pgtask
