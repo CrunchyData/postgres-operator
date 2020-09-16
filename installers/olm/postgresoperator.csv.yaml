@@ -34,7 +34,7 @@ spec:
 
   # The following appear on the details page at OperatorHub.io:
   # https://operatorhub.io/operator/postgresql
-  description: '' # postgresoperator.csv.description.md
+  description: '' # description.*.md
   version: '${PGO_VERSION}'
   links:
     - name: Crunchy Data

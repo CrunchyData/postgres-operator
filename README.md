@@ -45,7 +45,7 @@ Choose between [asynchronous replication](https://access.crunchydata.com/documen
 
 #### Clone
 
-Create new clusters from your existing clusters or backups with [`pgo create cluster --restore-from`](https://access.crunchydata.com/documentation/postgres-operator/latest/pgo_create_cluster).
+Create new clusters from your existing clusters or backups with [`pgo create cluster --restore-from`][pgo-create-cluster].
 
 #### Connection Pooling
 
@@ -82,6 +82,10 @@ The Crunchy PostgreSQL Operator makes it easy to get your own PostgreSQL-as-a-Se
 - [Customize your PostgreSQL configuration](https://access.crunchydata.com/documentation/postgres-operator/latest/advanced/custom-configuration.md)
 - Bring your own trusted certificate authority (CA) for use with the Operator API server
 - Override your PostgreSQL configuration for each cluster
+
+
+[pgo-create-cluster]: https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/reference/pgo_create_cluster/
+
 
 ## Deployment Requirements
 

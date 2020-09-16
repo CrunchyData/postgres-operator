@@ -1,34 +1,34 @@
 Crunchy PostgreSQL for OpenShift lets you run your own production-grade PostgreSQL-as-a-Service on OpenShift!
 
 Powered by the Crunchy [PostgreSQL Operator](https://github.com/CrunchyData/postgres-operator), Crunchy PostgreSQL
-for OpenShift automates and simplifies deploying and managing open source PostgreSQL clusters on OpenShift by providing the
-essential features you need to keep your PostgreSQL clusters up and running, including:
+for OpenShift automates and simplifies deploying and managing open source PostgreSQL clusters on OpenShift by
+providing the essential features you need to keep your PostgreSQL clusters up and running, including:
 
 - **PostgreSQL Cluster Provisioning**: [Create, Scale, & Delete PostgreSQL clusters with ease][provisioning],
-while fully customizing your Pods and PostgreSQL configuration!
+  while fully customizing your Pods and PostgreSQL configuration!
 - **High-Availability**: Safe, automated failover backed by a [distributed consensus based high-availability solution][high-availability].
-Uses [Pod Anti-Affinity][anti-affinity] to help resiliency; you can configure how aggressive this can be!
-Failed primaries automatically heal, allowing for faster recovery time. You can even create regularly scheduled
-backups as well and set your backup retention policy
+  Uses [Pod Anti-Affinity][anti-affinity] to help resiliency; you can configure how aggressive this can be!
+  Failed primaries automatically heal, allowing for faster recovery time. You can even create regularly scheduled
+  backups as well and set your backup retention policy
 - **Disaster Recovery**: Backups and restores leverage the open source [pgBackRest][] utility
-and [includes support for full, incremental, and differential backups as well as efficient delta restores][disaster-recovery].
-Set how long you want your backups retained for. Works great with very large databases!
+  and [includes support for full, incremental, and differential backups as well as efficient delta restores][disaster-recovery].
+  Set how long you want your backups retained for. Works great with very large databases!
 - **Monitoring**: Track the health of your PostgreSQL clusters using the open source [pgMonitor][] library.
-- **Clone**: Create new clusters from your existing clusters with a simple [`pgo clone`][pgo-clone] command.
+- **Clone**: Create new clusters from your existing clusters or backups with a single [`pgo create cluster --restore-from`][pgo-create-cluster] command.
 - **Full Customizability**: Crunchy PostgreSQL for OpenShift makes it easy to get your own PostgreSQL-as-a-Service up and running on
-and lets make further enhancements to customize your deployments, including:
-  - Selecting different storage classes for your primary, replica, and backup storage
-  - Select your own container resources class for each PostgreSQL cluster deployment; differentiate between resources applied for primary and replica clusters!
-  - Use your own container image repository, including support `imagePullSecrets` and private repositories
-  - Bring your own trusted certificate authority (CA) for use with the Operator API server
-  - Override your PostgreSQL configuration for each cluster
+  and lets make further enhancements to customize your deployments, including:
+    - Selecting different storage classes for your primary, replica, and backup storage
+    - Select your own container resources class for each PostgreSQL cluster deployment; differentiate between resources applied for primary and replica clusters!
+    - Use your own container image repository, including support `imagePullSecrets` and private repositories
+    - Bring your own trusted certificate authority (CA) for use with the Operator API server
+    - Override your PostgreSQL configuration for each cluster
 
 and much more!
 
 [anti-affinity]: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity
 [disaster-recovery]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/
 [high-availability]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/
-[pgo-clone]: https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/reference/pgo_clone/
+[pgo-create-cluster]: https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/reference/pgo_create_cluster/
 [provisioning]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/provisioning/
 
 [pgBackRest]: https://www.pgbackrest.org
@@ -83,9 +83,9 @@ the `aws-s3` keys below.
 
 ```
 oc -n "$PGO_OPERATOR_NAMESPACE" create secret generic pgo-backrest-repo-config \
-  --from-file=config=./conf/pgo-backrest-repo/config \
-  --from-file=sshd_config=./conf/pgo-backrest-repo/sshd_config \
-  --from-file=aws-s3-ca.crt=./conf/pgo-backrest-repo/aws-s3-ca.crt \
+  --from-file=./installers/ansible/roles/pgo-operator/files/pgo-backrest-repo/config \
+  --from-file=./installers/ansible/roles/pgo-operator/files/pgo-backrest-repo/sshd_config \
+  --from-file=./installers/ansible/roles/pgo-operator/files/pgo-backrest-repo/aws-s3-ca.crt \
   --from-literal=aws-s3-key="<your-aws-s3-key>" \
   --from-literal=aws-s3-key-secret="<your-aws-s3-key-secret>"
 ```
