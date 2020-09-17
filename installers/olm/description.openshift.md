@@ -7,7 +7,7 @@ providing the essential features you need to keep your PostgreSQL clusters up an
 - **PostgreSQL Cluster Provisioning**: [Create, Scale, & Delete PostgreSQL clusters with ease][provisioning],
   while fully customizing your Pods and PostgreSQL configuration!
 - **High-Availability**: Safe, automated failover backed by a [distributed consensus based high-availability solution][high-availability].
-  Uses [Pod Anti-Affinity][anti-affinity] to help resiliency; you can configure how aggressive this can be!
+  Uses [Pod Anti-Affinity][k8s-anti-affinity] to help resiliency; you can configure how aggressive this can be!
   Failed primaries automatically heal, allowing for faster recovery time. You can even create regularly scheduled
   backups as well and set your backup retention policy
 - **Disaster Recovery**: Backups and restores leverage the open source [pgBackRest][] utility
@@ -25,11 +25,12 @@ providing the essential features you need to keep your PostgreSQL clusters up an
 
 and much more!
 
-[anti-affinity]: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity
 [disaster-recovery]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/
 [high-availability]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/
 [pgo-create-cluster]: https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/reference/pgo_create_cluster/
 [provisioning]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/provisioning/
+
+[k8s-anti-affinity]: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity
 
 [pgBackRest]: https://www.pgbackrest.org
 [pgMonitor]: https://github.com/CrunchyData/pgmonitor

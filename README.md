@@ -7,33 +7,42 @@
 
 # Run your own production-grade PostgreSQL-as-a-Service on Kubernetes!
 
-The [Crunchy PostgreSQL Operator](https://access.crunchydata.com/documentation/postgres-operator/) automates and simplifies deploying and managing open source PostgreSQL clusters on Kubernetes and other Kubernetes-enabled Platforms by providing the essential features you need to keep your PostgreSQL clusters up and running, including:
+The [Crunchy PostgreSQL Operator][documentation] automates and simplifies deploying and managing
+open source PostgreSQL clusters on Kubernetes and other Kubernetes-enabled Platforms by providing
+the essential features you need to keep your PostgreSQL clusters up and running, including:
 
-#### PostgreSQL Cluster [Provisioning](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/provisioning/)
+#### PostgreSQL Cluster [Provisioning][provisioning]
 
-[Create, Scale, & Delete PostgreSQL clusters with ease](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/provisioning/), while fully customizing your Pods and PostgreSQL configuration!
+[Create, Scale, & Delete PostgreSQL clusters with ease][provisioning], while fully customizing your
+Pods and PostgreSQL configuration!
 
-#### [High Availability](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/)
+#### [High Availability][high-availability]
 
-Safe, automated failover backed by a [distributed consensus based high-availability solution](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/). Uses [Pod Anti-Affinity](https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity) to help resiliency; you can configure how aggressive this can be! Failed primaries automatically heal, allowing for faster recovery time.
+Safe, automated failover backed by a [distributed consensus based high-availability solution][high-availability].
+Uses [Pod Anti-Affinity][k8s-anti-affinity] to help resiliency; you can configure how aggressive this can be!
+Failed primaries automatically heal, allowing for faster recovery time.
 
-Support for [standby PostgreSQL clusters](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/multi-cluster-kubernetes/) that work both within an across [multiple Kubernetes clusters](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/multi-cluster-kubernetes/).
+Support for [standby PostgreSQL clusters][multiple-cluster] that work both within and across [multiple Kubernetes clusters][multiple-cluster].
 
-#### [Disaster Recovery](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/)
+#### [Disaster Recovery][disaster-recovery]
 
-Backups and restores leverage the open source [pgBackRest](https://www.pgbackrest.org) utility and [includes support for full, incremental, and differential backups as well as efficient delta restores](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/). Set how long you want your backups retained for. Works great with very large databases!
+Backups and restores leverage the open source [pgBackRest][] utility and
+[includes support for full, incremental, and differential backups as well as efficient delta restores][disaster-recovery].
+Set how long you want your backups retained for. Works great with very large databases!
 
 #### TLS
 
-Secure communication between your applications and data servers by [enabling TLS for your PostgreSQL servers](https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/common-tasks/#enable-tls), including the ability to enforce that all of your connections to use TLS.
+Secure communication between your applications and data servers by [enabling TLS for your PostgreSQL servers][pgo-task-tls],
+including the ability to enforce that all of your connections to use TLS.
 
-#### [Monitoring](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/monitoring/)
+#### [Monitoring][monitoring]
 
-[Track the health of your PostgreSQL clusters](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/monitoring/) using the open source [pgMonitor](https://github.com/CrunchyData/pgmonitor) library.
+[Track the health of your PostgreSQL clusters][monitoring] using the open source [pgMonitor][] library.
 
 #### PostgreSQL User Management
 
-Quickly add and remove users from your PostgreSQL clusters with powerful commands. Manage password expiration policies or use your preferred PostgreSQL authentication scheme.
+Quickly add and remove users from your PostgreSQL clusters with powerful commands. Manage password
+expiration policies or use your preferred PostgreSQL authentication scheme.
 
 #### Upgrade Management
 
@@ -41,7 +50,8 @@ Safely apply PostgreSQL updates with minimal availability impact to your Postgre
 
 #### Advanced Replication Support
 
-Choose between [asynchronous replication](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/) and [synchronous replication](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/#synchronous-replication-guarding-against-transactions-loss) for workloads that are sensitive to losing transactions.
+Choose between [asynchronous replication][high-availability] and [synchronous replication][high-availability-sync]
+for workloads that are sensitive to losing transactions.
 
 #### Clone
 
@@ -49,27 +59,28 @@ Create new clusters from your existing clusters or backups with [`pgo create clu
 
 #### Connection Pooling
 
-Use [pgBouncer](https://access.crunchydata.com/documentation/pgbouncer/) for connection pooling
+Use [pgBouncer][] for connection pooling
 
 #### Node Affinity
 
-Have your PostgreSQL clusters deployed to [Kubernetes Nodes](https://kubernetes.io/docs/concepts/architecture/nodes/) of your preference
+Have your PostgreSQL clusters deployed to [Kubernetes Nodes][k8s-nodes] of your preference
 
 #### Scheduled Backups
 
-Choose the type of backup (full, incremental, differential) and [how frequently you want it to occur](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/#scheduling-backups) on each PostgreSQL cluster.
+Choose the type of backup (full, incremental, differential) and [how frequently you want it to occur][disaster-recovery-scheduling] on each PostgreSQL cluster.
 
 #### Backup to S3
 
-[Store your backups in Amazon S3](https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/#using-s3) or any object storage system that supports the S3 protocol. The PostgreSQL Operator can backup, restore, and create new clusters from these backups.
+[Store your backups in Amazon S3][disaster-recovery-s3] or any object storage system that supports
+the S3 protocol. The PostgreSQL Operator can backup, restore, and create new clusters from these backups.
 
 #### Multi-Namespace Support
 
-You can control how the PostgreSQL Operator leverages [Kubernetes Namespaces](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/) with several different deployment models:
+You can control how the PostgreSQL Operator leverages [Kubernetes Namespaces][k8s-namespaces] with several different deployment models:
 
 - Deploy the PostgreSQL Operator and all PostgreSQL clusters to the same namespace
 - Deploy the PostgreSQL Operator to one namespaces, and all PostgreSQL clusters to a different namespace
-- Deploy the PostgreSQL Operator to one namespace, and have your PostgreSQL clusters managed acrossed multiple namespaces
+- Deploy the PostgreSQL Operator to one namespace, and have your PostgreSQL clusters managed across multiple namespaces
 - Dynamically add and remove namespaces managed by the PostgreSQL Operator using the `pgo create namespace` and `pgo delete namespace` commands
 
 #### Full Customizability
@@ -79,12 +90,29 @@ The Crunchy PostgreSQL Operator makes it easy to get your own PostgreSQL-as-a-Se
 - Selecting different storage classes for your primary, replica, and backup storage
 - Select your own container resources class for each PostgreSQL cluster deployment; differentiate between resources applied for primary and replica clusters!
 - Use your own container image repository, including support `imagePullSecrets` and private repositories
-- [Customize your PostgreSQL configuration](https://access.crunchydata.com/documentation/postgres-operator/latest/advanced/custom-configuration.md)
+- [Customize your PostgreSQL configuration](https://access.crunchydata.com/documentation/postgres-operator/latest/advanced/custom-configuration/)
 - Bring your own trusted certificate authority (CA) for use with the Operator API server
 - Override your PostgreSQL configuration for each cluster
 
 
+[disaster-recovery]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/
+[disaster-recovery-s3]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/#using-s3
+[disaster-recovery-scheduling]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/#scheduling-backups
+[high-availability]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/
+[high-availability-sync]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/#synchronous-replication-guarding-against-transactions-loss
+[monitoring]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/monitoring/
+[multiple-cluster]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/multi-cluster-kubernetes/
 [pgo-create-cluster]: https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/reference/pgo_create_cluster/
+[pgo-task-tls]: https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/common-tasks/#enable-tls
+[provisioning]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/provisioning/
+
+[k8s-anti-affinity]: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+[k8s-namespaces]: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+[k8s-nodes]: https://kubernetes.io/docs/concepts/architecture/nodes/
+
+[pgBackRest]: https://www.pgbackrest.org
+[pgBouncer]: https://access.crunchydata.com/documentation/pgbouncer/
+[pgMonitor]: https://github.com/CrunchyData/pgmonitor
 
 
 ## Deployment Requirements
@@ -196,12 +224,13 @@ If you have any question you can submit a Support - Question and Answer issue an
 ## Complete Documentation
 
 For additional information regarding design, configuration and operation of the
-PostgreSQL Operator, pleases see the
-[Official Project Documentation](https://access.crunchydata.com/documentation/postgres-operator/)
+PostgreSQL Operator, pleases see the [Official Project Documentation][documentation].
 
 If you are looking for the [nightly builds of the documentation](https://crunchydata.github.io/postgres-operator/latest/), you can view them at:
 
 https://crunchydata.github.io/postgres-operator/latest/
+
+[documentation]: https://access.crunchydata.com/documentation/postgres-operator/
 
 ## Past Versions
 
