@@ -1106,7 +1106,7 @@ executing the following command:
 ```shell
 pgo create cluster hacluster-tls-only \
   --tls-only \
-  --server-ca-secret=hacluster-tls-keypair --server-tls-secret=postgresql-ca
+  --server-ca-secret=postgresql-ca --server-tls-secret=hacluster-tls-keypair
 ```
 
 If deployed successfully, when you connect to the PostgreSQL cluster, assuming
