@@ -13,6 +13,7 @@ There are two paths to quickly get you up and running with the PostgreSQL Operat
 
 - [Installation via the PostgreSQL Operator Installer](#postgresql-operator-installer)
 - Installation via a Marketplace
+  - Installation via [Operator Lifecycle Manager]({{< relref "/installation/other/operator-hub.md" >}})
   - Installation via [Google Cloud Marketplace]({{< relref "/installation/other/google-cloud-marketplace.md" >}})
 
 Marketplaces can help you get more quickly started in your environment as they provide a mostly automated process, but there are a few steps you will need to take to ensure you can fully utilize your PostgreSQL Operator environment.
