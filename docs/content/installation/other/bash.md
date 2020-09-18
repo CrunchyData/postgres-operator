@@ -2,7 +2,7 @@
 title: "Bash Scripts"
 date:
 draft: false
-weight: 200
+weight: 100
 ---
 
 A full installation of the Operator includes the following steps:

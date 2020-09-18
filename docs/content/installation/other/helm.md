@@ -2,7 +2,7 @@
 title: "Helm Chart"
 date:
 draft: false
-weight: 200
+weight: 100
 ---
 
 # The PostgreSQL Operator Helm Chart
