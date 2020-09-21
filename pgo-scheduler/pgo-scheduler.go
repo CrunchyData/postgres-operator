@@ -118,7 +118,7 @@ func init() {
 	// Configure namespaces for the Scheduler.  This includes determining the namespace
 	// operating mode and obtaining a valid list of target namespaces for the operator install.
 	if err := setNamespaceOperatingMode(clientset); err != nil {
-		log.Errorf("Error configuring operator namespaces: %w", err)
+		log.Errorf("Error configuring operator namespaces: %v", err)
 		os.Exit(2)
 	}
 }

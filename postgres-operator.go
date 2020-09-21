@@ -66,7 +66,7 @@ func main() {
 	// list of target namespaces for the operator install
 	namespaceList, err := operator.SetupNamespaces(client)
 	if err != nil {
-		log.Errorf("Error configuring operator namespaces: %w", err)
+		log.Errorf("Error configuring operator namespaces: %v", err)
 		os.Exit(2)
 	}
 

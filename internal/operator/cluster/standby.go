@@ -216,7 +216,7 @@ func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error
 	if err = clientset.CoreV1().ConfigMaps(namespace).Delete(leaderConfigMapName, &metav1.DeleteOptions{}); err != nil &&
 		!kerrors.IsNotFound(err) {
 		log.Error("Unable to delete configMap %s while enabling standby mode for cluster "+
-			"%s: %w", leaderConfigMapName, clusterName, err)
+			"%s: %v", leaderConfigMapName, clusterName, err)
 		return err
 	}
 
