@@ -13,7 +13,7 @@
         "accessModes": [
             "{{.AccessMode}}"
         ],
-    "storageClassName": "{{.StorageClass}}",
+        {{ if .StorageClass }}"storageClassName": "{{.StorageClass}}",{{ end }}
         "resources": {
             "requests": {
                 "storage": "{{.Size}}"
