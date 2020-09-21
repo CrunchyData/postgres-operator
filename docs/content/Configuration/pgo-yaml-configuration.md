@@ -49,7 +49,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
 |BackrestStorage    |required, the value of the storage configuration to use for the pgbackrest shared repository deployment created when a user specifies pgbackrest to be enabled on a cluster
 |WALStorage        | optional, the value of the storage configuration to use for PostgreSQL Write Ahead Log
-|StorageClass        |for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
+|StorageClass        | optional, for a dynamic storage type, you can specify the storage class used for storage provisioning (e.g. standard, gold, fast)
 |AccessMode        |the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
 |Size        |the size to use when creating new PVCs (e.g. 100M, 1Gi)
 |Storage.storage1.StorageType        |supported values are either *dynamic*,  *create*,  if not supplied, *create* is used
