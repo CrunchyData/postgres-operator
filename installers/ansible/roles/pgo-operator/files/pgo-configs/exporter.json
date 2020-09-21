@@ -21,7 +21,7 @@
         },
         {
             "name": "EXPORTER_PG_PARAMS",
-            "value": "sslmode=disable"
+            "value": {{ if .TLSOnly }}"sslmode=require"{{ else }}"sslmode=disable"{{ end }}
         },
         {
             "name": "JOB_NAME",

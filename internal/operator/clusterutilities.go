@@ -95,6 +95,7 @@ type exporterTemplateFields struct {
 	ExporterPort       string
 	CollectSecretName  string
 	ContainerResources string
+	TLSOnly            bool
 }
 
 //consolidate
@@ -372,6 +373,11 @@ func GetExporterAddon(clientset kubernetes.Interface, namespace string, spec *cr
 		exporterTemplateFields.PgPort = spec.Port
 		exporterTemplateFields.CollectSecretName = spec.CollectSecretName
 		exporterTemplateFields.ContainerResources = GetResourcesJSON(spec.ExporterResources, spec.ExporterLimits)
+		// see if TLS only is set. however, this also requires checking to see if
+		// TLS is enabled in this case. The reason is that even if TLS is only just
+		// enabled, because the connection is over an internal interface, we do not
+		// need to have the overhead of a TLS connection
+		exporterTemplateFields.TLSOnly = spec.TLS.IsTLSEnabled() && spec.TLSOnly
 
 		var exporterDoc bytes.Buffer
 		err = config.ExporterTemplate.Execute(&exporterDoc, exporterTemplateFields)
