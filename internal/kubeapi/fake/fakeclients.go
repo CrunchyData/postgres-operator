@@ -53,7 +53,7 @@ var (
 // a fake client containing a 'pgo-config' ConfigMap as needed to initialize the Operator
 // (i.e. call the 'operator' packages 'Initialize()' function).  This allows for the proper
 // initialization of the Operator in various unit tests where the various resources loaded
-// during intialization (e.g. templates, config and/or global variables) are required.
+// during initialization (e.g. templates, config and/or global variables) are required.
 func NewFakePGOClient() (kubeapi.Interface, error) {
 
 	if pgoRoot == "" {

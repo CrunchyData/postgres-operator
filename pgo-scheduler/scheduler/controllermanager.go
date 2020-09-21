@@ -286,7 +286,7 @@ func (c *ControllerManager) hasListerPrivs(namespace string) bool {
 	var hasCorePrivs bool
 
 	hasCorePrivs, err = ns.CheckAccessPrivs(controllerGroup.clientset,
-		map[string][]string{"configmaps": []string{"list"}},
+		map[string][]string{"configmaps": {"list"}},
 		"", namespace)
 	if err != nil {
 		log.Errorf(err.Error())

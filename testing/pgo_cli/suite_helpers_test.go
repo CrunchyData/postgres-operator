@@ -426,7 +426,7 @@ func updatePGConfigDCS(t testing.TB, clusterName, namespace string, pgConfig map
 
 newConf:
 	for newParamKey, newParamVal := range pgConfig {
-		for currParamKey, _ := range dcsConf.PostgreSQL.Parameters {
+		for currParamKey := range dcsConf.PostgreSQL.Parameters {
 			// update setting if it already exists
 			if newParamKey == currParamKey {
 				dcsConf.PostgreSQL.Parameters[currParamKey] = newParamVal

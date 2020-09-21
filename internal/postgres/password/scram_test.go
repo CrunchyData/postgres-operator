@@ -177,9 +177,9 @@ func TestSCRAMIsASCII(t *testing.T) {
 	}
 
 	tests := []stringStruct{
-		stringStruct{str: "hippo", isASCII: true},
-		stringStruct{str: "híppo", isASCII: false},
-		stringStruct{str: "こんにちは", isASCII: false},
+		{str: "hippo", isASCII: true},
+		{str: "híppo", isASCII: false},
+		{str: "こんにちは", isASCII: false},
 	}
 
 	for _, test := range tests {
@@ -203,12 +203,12 @@ func TestSCRAMSASLPrep(t *testing.T) {
 	//
 	// https://github.com/MagicStack/asyncpg/blob/master/tests/test_connect.py#L276-L287
 	tests := []stringStruct{
-		stringStruct{password: "hippo", expected: "hippo"},
-		stringStruct{password: "híppo", expected: "híppo"},
-		stringStruct{password: "こんにちは", expected: "こんにちは"},
-		stringStruct{password: "hippo\u1680lake", expected: "hippo lake"},
-		stringStruct{password: "hipp\ufe01o", expected: "hippo"},
-		stringStruct{password: "hipp\u206ao", expected: "hipp\u206ao"},
+		{password: "hippo", expected: "hippo"},
+		{password: "híppo", expected: "híppo"},
+		{password: "こんにちは", expected: "こんにちは"},
+		{password: "hippo\u1680lake", expected: "hippo lake"},
+		{password: "hipp\ufe01o", expected: "hippo"},
+		{password: "hipp\u206ao", expected: "hipp\u206ao"},
 	}
 
 	for _, test := range tests {

@@ -202,7 +202,7 @@ func (c *Controller) handleBackrestStanzaCreateUpdate(job *apiv1.Job) error {
 		}
 
 		// clean any backup resources that might already be present, e.g. when restoring and these
-		// resources might already exist from intial creation of the cluster
+		// resources might already exist from initial creation of the cluster
 		if err := backrest.CleanBackupResources(c.Client, job.ObjectMeta.Namespace,
 			clusterName); err != nil {
 			log.Error(err)

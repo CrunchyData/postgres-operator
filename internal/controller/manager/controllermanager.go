@@ -344,7 +344,7 @@ func (c *ControllerManager) hasListerPrivs(namespace string) bool {
 
 	for _, listerResource := range listerResourcesCrunchy {
 		hasCrunchyPrivs, err = ns.CheckAccessPrivs(controllerGroup.clientset,
-			map[string][]string{listerResource: []string{"list"}},
+			map[string][]string{listerResource: {"list"}},
 			crv1.GroupName, namespace)
 		if err != nil {
 			log.Errorf(err.Error())
@@ -357,7 +357,7 @@ func (c *ControllerManager) hasListerPrivs(namespace string) bool {
 
 	for _, listerResource := range listerResourcesCore {
 		hasCorePrivs, err = ns.CheckAccessPrivs(controllerGroup.clientset,
-			map[string][]string{listerResource: []string{"list"}},
+			map[string][]string{listerResource: {"list"}},
 			"", namespace)
 		if err != nil {
 			log.Errorf(err.Error())
@@ -369,7 +369,7 @@ func (c *ControllerManager) hasListerPrivs(namespace string) bool {
 	}
 
 	hasBatchPrivs, err = ns.CheckAccessPrivs(controllerGroup.clientset,
-		map[string][]string{"jobs": []string{"list"}},
+		map[string][]string{"jobs": {"list"}},
 		"batch", namespace)
 	if err != nil {
 		log.Errorf(err.Error())
