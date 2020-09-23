@@ -29,19 +29,19 @@ Cluster:
   DefaultPgBouncerMemory:
   DefaultExporterMemory:
   DisableFSGroup: false
-PrimaryStorage: storageos
+PrimaryStorage: default
 WALStorage:
-BackupStorage: storageos
-ReplicaStorage: storageos
-BackrestStorage: storageos
+BackupStorage: default
+ReplicaStorage: default
+BackrestStorage: default
 Storage:
+  default:
+    AccessMode:  ReadWriteOnce
+    Size:  1G
+    StorageType:  dynamic
   hostpathstorage:
     AccessMode:  ReadWriteMany
     Size:  1G
-    StorageType:  create
-  replicastorage:
-    AccessMode:  ReadWriteMany
-    Size:  700M
     StorageType:  create
   nfsstorage:
     AccessMode:  ReadWriteMany

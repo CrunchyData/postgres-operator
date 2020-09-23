@@ -168,20 +168,20 @@ containing the PostgreSQL primary pod that will be using it.
 
 ### Default Storage Configuration Types
 
+#### Default StorageClass
+
+| Name | Value |
+|------|-------|
+| storage1_name | default |
+| storage1_access_mode | ReadWriteOnce |
+| storage1_size | 1G |
+| storage1_type | dynamic |
+
 #### Host Path Storage
 
 | Name | Value |
 |------|-------|
-| storage1_name | hostpathstorage |
-| storage1_access_mode | ReadWriteMany |
-| storage1_size | 1G |
-| storage1_type | create |
-
-#### Replica Storage
-
-| Name | Value |
-|------|-------|
-| storage2_name | replicastorage |
+| storage2_name | hostpathstorage |
 | storage2_access_mode | ReadWriteMany |
 | storage2_size | 1G |
 | storage2_type | create |
