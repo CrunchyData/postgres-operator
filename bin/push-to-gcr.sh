@@ -28,6 +28,7 @@ pgo-rmdata
 pgo-backrest
 pgo-client
 pgo-deployer
+crunchy-postgres-exporter
 )
 
 for image in "${IMAGES[@]}"

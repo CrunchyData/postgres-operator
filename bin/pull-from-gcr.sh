@@ -30,6 +30,7 @@ IMAGES=(
     pgo-backrest
     pgo-client
     pgo-deployer
+    crunchy-postgres-exporter
 )
 
 function echo_green() {
