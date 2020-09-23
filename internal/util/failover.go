@@ -79,6 +79,14 @@ const (
 	// instanceReplicationInfoTypePrimaryStandby is the label used by Patroni to indicate that an
 	// instance is indeed a primary PostgreSQL instance, specifically within a standby cluster
 	instanceReplicationInfoTypePrimaryStandby = "Standby Leader"
+	// instanceRolePrimary indicates that an instance is a primary
+	instanceRolePrimary = "primary"
+	// instanceRoleReplica indicates that an instance is a replica
+	instanceRoleReplica = "replica"
+	// instanceRoleUnknown indicates taht an instance is of an unknown typ
+	instanceRoleUnknown = "unknown"
+	// instanceStatusUnavailable indicates an instance is unavailable
+	instanceStatusUnavailable = "unavailable"
 )
 
 var (
@@ -137,20 +145,34 @@ func GetPod(clientset kubernetes.Interface, deploymentName, namespace string) (*
 // By default information is only returned for replicas within the cluster.  However,
 // if primary information is also needed, the inlcudePrimary flag can set set to true
 // and primary information will will also be included in the ReplicationStatusResponse.
-func ReplicationStatus(request ReplicationStatusRequest, includePrimary bool) (ReplicationStatusResponse, error) {
+//
+// Also by default we do not include any "busted" Pods, e.g. a Pod that is not
+// in a happy phase. That Pod may be lacking a "role" label. From there, we zero
+// out the statistics and apply an error
+func ReplicationStatus(request ReplicationStatusRequest, includePrimary, includeBusted bool) (ReplicationStatusResponse, error) {
 	response := ReplicationStatusResponse{
 		Instances: make([]InstanceReplicationInfo, 0),
 	}
 
-	// First, get replica pods using selector pg-cluster=clusterName,role=replica if not including the primary,
-	// or pg-cluster=clusterName,pg-database if including the primary
-	var roleSelector string
+	// Build up the selector. First, create the base, which restricts to the
+	// current cluster
+	// pg-cluster=clusterName,pgo-pg-database
+	selector := fmt.Sprintf("%s=%s,%s",
+		config.LABEL_PG_CLUSTER, request.ClusterName, config.LABEL_PG_DATABASE)
+
+	// if we are not including the primary, determine if we are including busted
+	// replicas or not
 	if !includePrimary {
-		roleSelector = fmt.Sprintf("%s=%s", config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_REPLICA)
-	} else {
-		roleSelector = config.LABEL_PG_DATABASE
+		if includeBusted {
+			// include all Pods that identify as a database, but **not** a primary
+			// pg-cluster=clusterName,pgo-pg-database,role!=config.LABEL_PGHA_ROLE_PRIMARY
+			selector += fmt.Sprintf(",%s!=%s", config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
+		} else {
+			// include all Pods that identify as a database and have a replica label
+			// pg-cluster=clusterName,pgo-pg-database,role=replica
+			selector += fmt.Sprintf(",%s=%s", config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_REPLICA)
+		}
 	}
-	selector := fmt.Sprintf("%s=%s,%s", config.LABEL_PG_CLUSTER, request.ClusterName, roleSelector)
 
 	log.Debugf(`searching for pods with "%s"`, selector)
 	pods, err := request.Clientset.CoreV1().Pods(request.Namespace).List(metav1.ListOptions{LabelSelector: selector})
@@ -176,8 +198,36 @@ func ReplicationStatus(request ReplicationStatusRequest, includePrimary bool) (R
 	// Now get the statistics about the current state of the replicas, which we
 	// can delegate to Patroni vis-a-vis the information that it collects
 	// We can get the statistics about the current state of the managed instance
-	// From executing and running a command in the first pod
-	pod := pods.Items[0]
+	// From executing and running a command in the first active pod
+	var pod *v1.Pod
+
+	for _, p := range pods.Items {
+		if p.Status.Phase == v1.PodRunning {
+			pod = &p
+			break
+		}
+	}
+
+	// if no active Pod can be found, we can only assume that all of the instances
+	// are unavailable, and we should indicate as such
+	if pod == nil {
+		for _, p := range pods.Items {
+			// set up the instance that will be returned
+			instance := InstanceReplicationInfo{
+				Name:           instanceInfoMap[p.Name].name,
+				Node:           instanceInfoMap[p.Name].node,
+				ReplicationLag: -1,
+				Role:           instanceRoleUnknown,
+				Status:         instanceStatusUnavailable,
+				Timeline:       -1,
+			}
+
+			// append this newly created instance to the list that will be returned
+			response.Instances = append(response.Instances, instance)
+		}
+
+		return response, nil
+	}
 
 	// Execute the command that will retrieve the replica information from Patroni
 	commandStdOut, _, err := kubeapi.ExecToPodThroughAPI(
@@ -198,17 +248,25 @@ func ReplicationStatus(request ReplicationStatusRequest, includePrimary bool) (R
 	// We need to iterate through this list to format the information for the
 	// response
 	for _, rawInstance := range rawInstances {
-
 		var role string
+
 		// skip the primary unless explicitly enabled
-		if rawInstance.Type == instanceReplicationInfoTypePrimary ||
-			rawInstance.Type == instanceReplicationInfoTypePrimaryStandby {
-			if !includePrimary {
-				continue
-			}
-			role = "primary"
-		} else {
-			role = "replica"
+		if !includePrimary && (rawInstance.Type == instanceReplicationInfoTypePrimary ||
+			rawInstance.Type == instanceReplicationInfoTypePrimaryStandby) {
+			continue
+		}
+
+		// if this is a busted instance and we are not including it, skip
+		if !includeBusted && rawInstance.State == "" {
+			continue
+		}
+
+		// determine the role of the instnace
+		switch rawInstance.Type {
+		default:
+			role = instanceRoleReplica
+		case instanceReplicationInfoTypePrimary, instanceReplicationInfoTypePrimaryStandby:
+			role = instanceRolePrimary
 		}
 
 		// set up the instance that will be returned
@@ -219,11 +277,14 @@ func ReplicationStatus(request ReplicationStatusRequest, includePrimary bool) (R
 			Role:           role,
 			Name:           instanceInfoMap[rawInstance.PodName].name,
 			Node:           instanceInfoMap[rawInstance.PodName].node,
+			PendingRestart: rawInstance.PendingRestart == "*",
 		}
 
-		// indicate whether or not the instance has a pending restart
-		if rawInstance.PendingRestart == "*" {
-			instance.PendingRestart = true
+		// update the instance info if the instance is busted
+		if rawInstance.State == "" {
+			instance.Status = instanceStatusUnavailable
+			instance.ReplicationLag = -1
+			instance.Timeline = -1
 		}
 
 		// append this newly created instance to the list that will be returned

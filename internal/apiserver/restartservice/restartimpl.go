@@ -123,7 +123,9 @@ func QueryRestart(clusterName, namespace string) msgs.QueryRestartResponse {
 		ClusterName: clusterName,
 	}
 
-	replicationStatusResponse, err := util.ReplicationStatus(replicationStatusRequest, true)
+	// get a list of all the Pods...note that we can included "busted" pods as
+	// by including the primary, we're getting all of the database pods anyway.
+	replicationStatusResponse, err := util.ReplicationStatus(replicationStatusRequest, true, true)
 	if err != nil {
 		log.Error(err.Error())
 		resp.Status.Code = msgs.Error
