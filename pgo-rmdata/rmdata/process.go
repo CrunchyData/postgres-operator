@@ -38,8 +38,8 @@ const (
 	tablespacePathFormat = "/tablespaces/%s/%s"
 	// the tablespace on a replcia follows the pattern "<replicaName-tablespace-.."
 	tablespaceReplicaPVCPattern = "%s-tablespace-"
-	// the WAL PVC has the following suffix
-	walPVCSuffix = "-wal"
+	// the WAL PVC on a replcia follows the pattern "<replicaName-wal>"
+	walReplicaPVCPattern = "%s-wal"
 
 	// the following constants define the suffixes for the various configMaps created by Patroni
 	configConfigMapSuffix   = "config"
@@ -547,13 +547,16 @@ func getReplicaPVC(request Request) ([]string, error) {
 
 	// ...and where the fun begins
 	tablespaceReplicaPVCPrefix := fmt.Sprintf(tablespaceReplicaPVCPattern, request.ReplicaName)
+	walReplicaPVCName := fmt.Sprintf(walReplicaPVCPattern, request.ReplicaName)
 
 	// iterate over the PVC list and append the tablespace PVCs
 	for _, pvc := range pvcs.Items {
 		pvcName := pvc.ObjectMeta.Name
 
-		// it does not start with the tablespace replica PVC pattern, continue
-		if !(strings.HasPrefix(pvcName, tablespaceReplicaPVCPrefix) || strings.HasSuffix(pvcName, walPVCSuffix)) {
+		// if it does not start with the tablespace replica PVC pattern and does not equal the WAL
+		// PVC pattern then continue
+		if !(strings.HasPrefix(pvcName, tablespaceReplicaPVCPrefix) ||
+			pvcName == walReplicaPVCName) {
 			continue
 		}
 
