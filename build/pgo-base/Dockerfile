@@ -26,9 +26,18 @@ COPY redhat/atomic/help.1 /help.1
 COPY redhat/atomic/help.md /help.md
 COPY licenses /licenses
 
-RUN if [ "$DFSET" = "centos" ] ; then \
-        ${PACKAGER} -y update \
-        && ${PACKAGER} -y clean all ; \
+RUN if [ "$BASEOS" = "centos7" ]; then \
+    ${PACKAGER} -y update \
+    && ${PACKAGER} -y clean all ; \
+fi
+
+RUN if [ "$BASEOS" = "centos8" ]; then \
+    ${PACKAGER} -y update \
+    && ${PACKAGER} -y install \
+        --setopt=skip_missing_names_on_install=False \
+        glibc-langpack-en \
+    && ${PACKAGER} -y clean all \
+    && ${PACKAGER} -qy module disable postgresql ; \
 fi
 
 RUN if [ "$BASEOS" = "rhel7" ] ; then \
@@ -41,21 +50,16 @@ RUN if [ "$BASEOS" = "ubi7" ] ; then \
         && ${PACKAGER} -y --enablerepo=rhel-7-server-ose-3.11-rpms clean all ; \
 fi
 
-RUN if [ "$BASEOS" = "ubi8" ] ; then \
-        ${PACKAGER} -y update \
-        && ${PACKAGER} -y clean all ; \
+RUN if  [ "$BASEOS" = "ubi8" ]; then \
+    ${PACKAGER} -y update \
+    && ${PACKAGER} -y install \
+        --setopt=skip_missing_names_on_install=False \
+        glibc-langpack-en \
+    && ${PACKAGER} -y clean all \
+    && ${PACKAGER} -qy module disable postgresql ; \
 fi
 
 # Crunchy PostgreSQL repository
 ADD conf/RPM-GPG-KEY-crunchydata* /
 ADD conf/crunchypg${PGVERSION}.repo /etc/yum.repos.d/
 RUN rpm --import RPM-GPG-KEY-crunchydata*
-
-# disable the EL 8 modularity feature
-RUN if [ "$BASEOS" = "centos8" ]; then \
-        ${PACKAGER} -qy module disable postgresql ; \
-fi
-
-RUN if  [ "$BASEOS" = "ubi8" ]; then \
-        ${PACKAGER} -qy module disable postgresql ; \
-fi
