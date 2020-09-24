@@ -7,15 +7,6 @@ properties:
     default: 1
     minimum: 1
 
-  BACKUP_STORAGE_CLASS: # This key appears in the StorageClass name.
-    title: Backup Storage Class
-    description: Default storage class of new backup PVCs
-    type: string
-    x-google-marketplace:
-      type: STORAGE_CLASS
-      storageClass:
-        type: SSD
-
   INSTALLER_IMAGE: { type: string, x-google-marketplace: { type: DEPLOYER_IMAGE } }
 
   INSTALLER_SERVICE_ACCOUNT: # This key appears in the ClusterRoleBinding name.
@@ -69,15 +60,6 @@ properties:
     default: 2
     minimum: 2
 
-  PGBACKREST_STORAGE_CLASS: # This key appears in the StorageClass name.
-    title: pgBackRest Storage Class
-    description: Default storage class of new pgBackRest repositories
-    type: string
-    x-google-marketplace:
-      type: STORAGE_CLASS
-      storageClass:
-        type: SSD
-
   POSTGRES_CPU:
     title: PostgreSQL CPU [mCPU]
     description: Default mCPU allocated to new PostgreSQL clusters (1000 equals one Core)
@@ -112,15 +94,6 @@ properties:
     default: 1
     minimum: 1
 
-  POSTGRES_STORAGE_CLASS: # This key appears in the StorageClass name.
-    title: PostgreSQL Storage Class
-    description: Default storage class of new PostgreSQL clusters
-    type: string
-    x-google-marketplace:
-      type: STORAGE_CLASS
-      storageClass:
-        type: SSD
-
 required:
   - INSTALLER_IMAGE
   - INSTALLER_SERVICE_ACCOUNT
@@ -137,14 +110,11 @@ required:
   - POSTGRES_CPU
   - POSTGRES_MEM
   - POSTGRES_STORAGE_CAPACITY
-  - POSTGRES_STORAGE_CLASS
   - POSTGRES_METRICS
 
   - PGBACKREST_STORAGE_CAPACITY
-  - PGBACKREST_STORAGE_CLASS
 
   - BACKUP_STORAGE_CAPACITY
-  - BACKUP_STORAGE_CLASS
 
 x-google-marketplace:
   clusterConstraints:
