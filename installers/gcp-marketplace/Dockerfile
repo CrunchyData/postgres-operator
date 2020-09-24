@@ -25,7 +25,7 @@ COPY installers/ansible/* \
 COPY installers/favicon.png \
      installers/gcp-marketplace/install-job.yaml \
      installers/gcp-marketplace/install.sh \
-     installers/gcp-marketplace/inventory.ini \
+     installers/gcp-marketplace/values.yaml \
      /opt/postgres-operator/
 
 COPY installers/gcp-marketplace/install-hook.sh \

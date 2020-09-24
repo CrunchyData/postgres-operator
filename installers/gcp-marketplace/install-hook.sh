@@ -19,8 +19,8 @@ if [ -n "$existing" ]; then
 	exit 1
 fi
 
+install_values="$( /bin/config_env.py envsubst < /opt/postgres-operator/values.yaml )"
 installer="$( /bin/config_env.py envsubst < /opt/postgres-operator/install-job.yaml )"
-inventory="$( /bin/config_env.py envsubst < /opt/postgres-operator/inventory.ini )"
 
 kc create --filename=/dev/stdin <<< "$installer"
 kc patch job/install-postgres-operator --type=strategic --patch="$application_ownership"
@@ -33,7 +33,7 @@ job_ownership="$( jq <<< "$job_ownership" '{ metadata: {
 	}]
 } }' )"
 
-kc create secret generic install-postgres-operator --from-file=inventory=/dev/stdin <<< "$inventory"
+kc create secret generic install-postgres-operator --from-file=values.yaml=/dev/stdin <<< "$install_values"
 kc patch secret/install-postgres-operator --type=strategic --patch="$job_ownership"
 
 # Wait for either status condition then terminate the other.
