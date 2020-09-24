@@ -20,21 +20,21 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends ansible=2.9.* openssh-client \
  && rm -rf /var/lib/apt/lists/*
 
-COPY installers/ansible/* \
+COPY ansible/* \
      /opt/postgres-operator/ansible/
-COPY installers/favicon.png \
-     installers/gcp-marketplace/install-job.yaml \
-     installers/gcp-marketplace/install.sh \
-     installers/gcp-marketplace/values.yaml \
+COPY favicon.png \
+     gcp-marketplace/install-job.yaml \
+     gcp-marketplace/install.sh \
+     gcp-marketplace/values.yaml \
      /opt/postgres-operator/
 
-COPY installers/gcp-marketplace/install-hook.sh \
+COPY gcp-marketplace/install-hook.sh \
      /bin/create_manifests.sh
-COPY installers/gcp-marketplace/schema.yaml \
+COPY gcp-marketplace/schema.yaml \
      /data/
-COPY installers/gcp-marketplace/application.yaml \
+COPY gcp-marketplace/application.yaml \
      /data/manifest/
-COPY installers/gcp-marketplace/test-pod.yaml \
+COPY gcp-marketplace/test-pod.yaml \
      /data-test/manifest/
 
 ARG PGO_VERSION

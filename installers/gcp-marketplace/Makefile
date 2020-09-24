@@ -37,12 +37,12 @@ image: image-$(IMAGE_BUILDER)
 
 .PHONY: image-buildah
 image-buildah: ## Build the deployer image with Buildah
-	sudo buildah bud --file Dockerfile --tag '$(DEPLOYER_IMAGE)' $(IMAGE_BUILD_ARGS) --layers ../..
+	sudo buildah bud --file Dockerfile --tag '$(DEPLOYER_IMAGE)' $(IMAGE_BUILD_ARGS) --layers ..
 	sudo buildah push '$(DEPLOYER_IMAGE)' docker-daemon:'$(DEPLOYER_IMAGE)'
 
 .PHONY: image-docker
 image-docker: ## Build the deployer image with Docker
-	docker build --file Dockerfile --tag '$(DEPLOYER_IMAGE)' $(IMAGE_BUILD_ARGS) ../..
+	docker build --file Dockerfile --tag '$(DEPLOYER_IMAGE)' $(IMAGE_BUILD_ARGS) ..
 
 # PARAMETERS='{"OPERATOR_NAMESPACE": "", "OPERATOR_NAME": "", "OPERATOR_ADMIN_PASSWORD": ""}'
 .PHONY: install
