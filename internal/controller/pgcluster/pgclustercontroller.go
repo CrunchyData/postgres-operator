@@ -346,31 +346,42 @@ func updateAnnotations(c *Controller, oldCluster *crv1.Pgcluster, newCluster *cr
 	annotationsBackrest := map[string]string{}
 	annotationsPgBouncer := map[string]string{}
 
-	// if the global ones differ, make the changes for all of the annotations
-	if !reflect.DeepEqual(oldCluster.Spec.Annotations.Global, newCluster.Spec.Annotations.Global) {
-		// set the annotations for all of them
+	// check the individual deployment groups. If the annotations differ in either the specific group or
+	// in the global group, set them in their respective map
+	if !reflect.DeepEqual(oldCluster.Spec.Annotations.Postgres, newCluster.Spec.Annotations.Postgres) ||
+		!reflect.DeepEqual(oldCluster.Spec.Annotations.Global, newCluster.Spec.Annotations.Global) {
+		// store the global annotations first
 		for k, v := range newCluster.Spec.Annotations.Global {
 			annotationsPostgres[k] = v
-			annotationsBackrest[k] = v
-			annotationsPgBouncer[k] = v
 		}
-	}
 
-	// check the individual deployment groups. If the annotations differ, set them
-	// in their respective map
-	if !reflect.DeepEqual(oldCluster.Spec.Annotations.Postgres, newCluster.Spec.Annotations.Postgres) {
+		// then store the postgres specific annotations
 		for k, v := range newCluster.Spec.Annotations.Postgres {
 			annotationsPostgres[k] = v
 		}
 	}
 
-	if !reflect.DeepEqual(oldCluster.Spec.Annotations.Backrest, newCluster.Spec.Annotations.Backrest) {
+	if !reflect.DeepEqual(oldCluster.Spec.Annotations.Backrest, newCluster.Spec.Annotations.Backrest) ||
+		!reflect.DeepEqual(oldCluster.Spec.Annotations.Global, newCluster.Spec.Annotations.Global) {
+		// store the global annotations first
+		for k, v := range newCluster.Spec.Annotations.Global {
+			annotationsBackrest[k] = v
+		}
+
+		// then store the pgbackrest specific annotations
 		for k, v := range newCluster.Spec.Annotations.Backrest {
 			annotationsBackrest[k] = v
 		}
 	}
 
-	if !reflect.DeepEqual(oldCluster.Spec.Annotations.PgBouncer, newCluster.Spec.Annotations.PgBouncer) {
+	if !reflect.DeepEqual(oldCluster.Spec.Annotations.PgBouncer, newCluster.Spec.Annotations.PgBouncer) ||
+		!reflect.DeepEqual(oldCluster.Spec.Annotations.Global, newCluster.Spec.Annotations.Global) {
+		// store the global annotations first
+		for k, v := range newCluster.Spec.Annotations.Global {
+			annotationsPgBouncer[k] = v
+		}
+
+		// then store the pgbouncer specific annotations
 		for k, v := range newCluster.Spec.Annotations.PgBouncer {
 			annotationsPgBouncer[k] = v
 		}
