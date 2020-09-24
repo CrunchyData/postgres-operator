@@ -1,0 +1,72 @@
+---
+pgo_image: '${OPERATOR_IMAGE}'
+pgo_event_image: '${OPERATOR_IMAGE_EVENT}'
+pgo_apiserver_image: '${OPERATOR_IMAGE_API}'
+pgo_scheduler_image: '${OPERATOR_IMAGE_SCHEDULER}'
+
+archive_mode: "true"
+archive_timeout: "60"
+badger: "false"
+ccp_image_prefix: "registry.developers.crunchydata.com/crunchydata"
+ccp_image_pull_secret: ""
+ccp_image_pull_secret_manifest: ""
+ccp_image_tag: "centos7-12.4-4.5.0-beta.1"
+create_rbac: "true"
+db_name: ""
+db_password_age_days: "0"
+db_password_length: "24"
+db_port: "5432"
+db_replicas: "0"
+db_user: "testuser"
+default_instance_memory: "128Mi"
+default_pgbackrest_memory: "48Mi"
+default_pgbouncer_memory: "24Mi"
+default_exporter_memory: "24Mi"
+disable_auto_failover: "false"
+exporterport: "9187"
+metrics: '${POSTGRES_METRICS}'
+pgbadgerport: "10000"
+pgo_admin_password: '${OPERATOR_ADMIN_PASSWORD}'
+pgo_admin_perms: "*"
+pgo_admin_role_name: "pgoadmin"
+pgo_admin_username: "admin"
+pgo_client_container_install: "false"
+pgo_client_install: 'false'
+pgo_client_version: "4.5.0-beta.1"
+pgo_image_prefix: "registry.developers.crunchydata.com/crunchydata"
+pgo_image_tag: "centos7-4.5.0-beta.1"
+pgo_installation_name: '${OPERATOR_NAME}'
+pgo_operator_namespace: '${OPERATOR_NAMESPACE}'
+scheduler_timeout: "3600"
+service_type: '${POSTGRES_SERVICE_TYPE}'
+sync_replication: "false"
+
+backrest_storage: 'pgbackrest-default'
+backup_storage: 'backup-default'
+primary_storage: 'primary-default'
+replica_storage: 'replica-default'
+wal_storage: ''
+
+storage1_name: 'backup-default'
+storage1_access_mode: 'ReadWriteOnce'
+storage1_size: '${BACKUP_STORAGE_CAPACITY}Gi'
+storage1_type: 'dynamic'
+storage1_class: '${BACKUP_STORAGE_CLASS}'
+
+storage2_name: 'pgbackrest-default'
+storage2_access_mode: 'ReadWriteOnce'
+storage2_size: '${PGBACKREST_STORAGE_CAPACITY}Gi'
+storage2_type: 'dynamic'
+storage2_class: '${PGBACKREST_STORAGE_CLASS}'
+
+storage3_name: 'primary-default'
+storage3_access_mode: 'ReadWriteOnce'
+storage3_size: '${POSTGRES_STORAGE_CAPACITY}Gi'
+storage3_type: 'dynamic'
+storage3_class: '${POSTGRES_STORAGE_CLASS}'
+
+storage4_name: 'replica-default'
+storage4_access_mode: 'ReadWriteOnce'
+storage4_size: '${POSTGRES_STORAGE_CAPACITY}Gi'
+storage4_type: 'dynamic'
+storage4_class: '${POSTGRES_STORAGE_CLASS}'

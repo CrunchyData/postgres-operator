@@ -26,7 +26,11 @@ application_metadata="$( jq <<< '{}' --arg icon "$application_icon" '{ metadata:
 
 kc patch "applications.app.k8s.io/$NAME" --type=merge --patch="$application_metadata"
 
-/usr/bin/ansible-playbook --tags=install /opt/postgres-operator/ansible/main.yml
+/usr/bin/ansible-playbook \
+	--extra-vars 'kubernetes_in_cluster=true' \
+	--extra-vars 'config_path=/etc/ansible/values.yaml' \
+	--inventory    /opt/postgres-operator/ansible/inventory.yaml \
+	--tags=install /opt/postgres-operator/ansible/main.yml
 
 resources=(
 	clusterrole/pgo-cluster-role
