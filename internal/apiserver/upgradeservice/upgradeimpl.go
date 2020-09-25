@@ -35,7 +35,7 @@ import (
 // Currently supported version information for upgrades
 const (
 	REQUIRED_MAJOR_PGO_VERSION = 4
-	MAXIMUM_MINOR_PGO_VERSION  = 4
+	MAXIMUM_MINOR_PGO_VERSION  = 5
 	MINIMUM_MINOR_PGO_VERSION  = 1
 )
 
