@@ -216,7 +216,7 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 		ClusterName: name,
 	}
 
-	replicationStatusResponse, err := util.ReplicationStatus(replicationStatusRequest, false)
+	replicationStatusResponse, err := util.ReplicationStatus(replicationStatusRequest, false, true)
 
 	// if an error is return, log the message, and return the response
 	if err != nil {
@@ -291,10 +291,10 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 		return response
 	}
 
-	// selector in the format "pg-cluster=<cluster-name>,pg-ha-scope=<cluster-name>"
-	// which will grab the primary and any/all replicas
-	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, clusterName,
-		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_REPLICA)
+	// selector in the format "pg-cluster=<cluster-name>,pgo-pg-database,role!=config.LABEL_PGHA_ROLE_PRIMARY"
+	// which will grab all the replicas
+	selector := fmt.Sprintf("%s=%s,%s,%s!=%s", config.LABEL_PG_CLUSTER, clusterName,
+		config.LABEL_PG_DATABASE, config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
 	replicaList, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		response.Status.Code = msgs.Error
