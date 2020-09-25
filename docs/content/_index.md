@@ -104,6 +104,7 @@ The Crunchy PostgreSQL Operator is tested on the following Platforms:
 - Kubernetes 1.13+
 - OpenShift 3.11+
 - Google Kubernetes Engine (GKE), including Anthos
+- Amazon EKS
 - VMware Enterprise PKS 1.3+
 
 ## Storage
