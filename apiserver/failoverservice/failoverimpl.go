@@ -137,7 +137,7 @@ func QueryFailover(name, ns string) msgs.QueryFailoverResponse {
 		ClusterName: name,
 	}
 
-	replicationStatusResponse, err := util.ReplicationStatus(replicationStatusRequest, false)
+	replicationStatusResponse, err := util.ReplicationStatus(replicationStatusRequest, false, false)
 
 	// if an error is return, log the message, and return the response
 	if err != nil {

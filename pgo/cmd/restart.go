@@ -32,13 +32,13 @@ var restartCmd = &cobra.Command{
 	Use:   "restart",
 	Short: "Restarts the PostgrSQL database within a PostgreSQL cluster",
 	Long: `Restarts one or more PostgreSQL databases within a PostgreSQL cluster.
-	
+
 	For example, to restart the primary and all replicas:
 	pgo restart mycluster
 
 	Or target a specific instance within the cluster:
 	pgo restart mycluster --target=mycluster-abcd
-	
+
 	And use the 'query' flag obtain a list of all instances within the cluster:
 	pgo restart mycluster --query`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -169,9 +169,15 @@ func queryRestart(args []string, namespace string) {
 
 			log.Debugf("postgresql instance: %v", instance)
 
-			fmt.Printf("%-20s\t%-10s\t%-10s\t%-10s\t%12d %-7s\t%15t\n",
-				instance.Name, instance.Role, instance.Status, instance.Node, instance.ReplicationLag, "MB",
-				instance.PendingRestart)
+			if instance.ReplicationLag != -1 {
+				fmt.Printf("%-20s\t%-10s\t%-10s\t%-10s\t%12d %-7s\t%15t\n",
+					instance.Name, instance.Role, instance.Status, instance.Node, instance.ReplicationLag, "MB",
+					instance.PendingRestart)
+			} else {
+				fmt.Printf("%-20s\t%-10s\t%-10s\t%-10s\t%15s\t%23t\n",
+					instance.Name, instance.Role, instance.Status, instance.Node, "unknown",
+					instance.PendingRestart)
+			}
 		}
 	}
 }

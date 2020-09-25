@@ -120,9 +120,15 @@ func queryCluster(args []string, ns string) {
 
 			log.Debugf("postgresql instance: %v", instance)
 
-			fmt.Printf("%-20s\t%-10s\t%-10s\t%12d %-7s\t%15t\n",
-				instance.Name, instance.Status, instance.Node, instance.ReplicationLag, "MB",
-				instance.PendingRestart)
+			if instance.ReplicationLag != -1 {
+				fmt.Printf("%-20s\t%-10s\t%-10s\t%12d %-7s\t%15t\n",
+					instance.Name, instance.Status, instance.Node, instance.ReplicationLag, "MB",
+					instance.PendingRestart)
+			} else {
+				fmt.Printf("%-20s\t%-10s\t%-10s\t%15s\t%23t\n",
+					instance.Name, instance.Status, instance.Node, "unknown",
+					instance.PendingRestart)
+			}
 		}
 	}
 }
