@@ -182,6 +182,46 @@ If you have the PostgreSQL Operator installed in your environment, and are inter
 
 There is also a `pgo-client` container if you wish to deploy the client directly to your Kubernetes environment.
 
+### Included Components
+
+[PostgreSQL containers](https://github.com/CrunchyData/crunchy-containers) deployed with the PostgreSQL Operator include the following components:
+
+- [PostgreSQL](https://www.postgresql.org)
+  - [PostgreSQL Contrib Modules](https://www.postgresql.org/docs/current/contrib.html)
+  - [PL/Python + PL/Python 3](https://www.postgresql.org/docs/current/plpython.html)
+  - [pgAudit](https://www.pgaudit.org/)
+  - [pgAudit Analyze](https://github.com/pgaudit/pgaudit_analyze)
+  - [pgnodemx](https://github.com/CrunchyData/pgnodemx)
+  - [set_user](https://github.com/pgaudit/set_user)
+  - [wal2json](https://github.com/eulerto/wal2json)
+- [pgBackRest](https://pgbackrest.org/)
+- [pgBouncer](http://pgbouncer.github.io/)
+- [pgAdmin 4](https://www.pgadmin.org/)
+- [pgMonitor](https://github.com/CrunchyData/pgmonitor)
+- [Patroni](https://patroni.readthedocs.io/)
+- [LLVM](https://llvm.org/) (for [JIT compilation](https://www.postgresql.org/docs/current/jit.html))
+
+In addition to the above, the geospatially enhanced PostgreSQL + PostGIS container adds the following components:
+
+- [PostGIS](http://postgis.net/)
+- [pgRouting](https://pgrouting.org/)
+- [PL/R](https://github.com/postgres-plr/plr)
+
+[PostgreSQL Operator Monitoring](https://crunchydata.github.io/postgres-operator/latest/architecture/monitoring/) uses the following components:
+
+- [pgMonitor](https://github.com/CrunchyData/pgmonitor)
+- [Prometheus](https://github.com/prometheus/prometheus)
+- [Grafana](https://github.com/grafana/grafana)
+- [Alertmanager](https://github.com/prometheus/alertmanager)
+
+Additional containers that are not directly integrated with the PostgreSQL Operator but can work alongside it include:
+
+- [pgPool II](https://access.crunchydata.com/documentation/crunchy-postgres-containers/latest/container-specifications/crunchy-pgpool/)
+- [pg_upgrade](https://access.crunchydata.com/documentation/crunchy-postgres-containers/latest/container-specifications/crunchy-upgrade/)
+- [pgBench](https://access.crunchydata.com/documentation/crunchy-postgres-containers/latest/container-specifications/crunchy-pgbench/)
+
+For more information about which versions of the PostgreSQL Operator include which components, please visit the [compatibility](https://access.crunchydata.com/documentation/postgres-operator/latest/configuration/compatibility/) section of the documentation.
+
 ## Using the PostgreSQL Operator
 
 If you have the PostgreSQL and Client Interface installed in your environment and are interested in guidance on the use of the Crunchy PostgreSQL Operator, please start here:
