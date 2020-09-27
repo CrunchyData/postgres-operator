@@ -15,7 +15,8 @@ The PostgreSQL Operator is tested in the following environments:
 
 * Kubernetes v1.13+
 * Red Hat OpenShift v3.11+
-* Red Hat OpenShift v4.3+
+* Red Hat OpenShift v4.4+
+* Amazon EKS
 * VMWare Enterprise PKS 1.3+
 * IBM Cloud Pak Data
 

@@ -243,7 +243,7 @@ PGPASSWORD=datalake psql -h localhost -p 5432 -U testuser hippo
 You should then be greeted with the PostgreSQL prompt:
 
 ```
-psql (12.4)
+psql ({{< param postgresVersion >}})
 Type "help" for help.
 
 hippo=>
