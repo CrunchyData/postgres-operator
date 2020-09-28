@@ -13,62 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "Ensuring project dependencies..."
+echo "Getting project dependencies..."
 BINDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 EVTDIR="$BINDIR/pgo-event"
 POSTGRES_EXPORTER_VERSION=0.8.0
 
-
-# Idempotent installations
-if (yum repolist | egrep -q '^epel/') ; then
-	echo "Confirmed EPEL repo exists..."
-else
-	echo "=== Installing EPEL ==="
-	# Prefer distro-managed epel-release if it exists (e.g. CentOS)
-	if (yum -q list epel-release 2>/dev/null); then
-		sudo yum -y install epel-release
-	else
-		sudo yum -y install https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
-	fi
-fi
-
-if which go; then
-	echo -n "  Found: " && go version
-else
-	echo "=== Installing golang ==="
-	sudo yum -y install golang
-fi
 
 if ! [ -f $EVTDIR/nsqd -a -f $EVTDIR/nsqadmin ]; then
 	echo "=== Installing NSQ binaries ==="
 	NSQ=nsq-1.1.0.linux-amd64.go1.10.3
 	curl -S https://s3.amazonaws.com/bitly-downloads/nsq/$NSQ.tar.gz | \
 		tar xz --strip=2 -C $EVTDIR/ '*/bin/*'
-fi
-
-if which docker; then
-	# Suppress errors for this call, as docker returns non-zero when it can't talk to the daemon
-	set +e
-	echo -n "  Found: " && docker version --format '{{.Client.Version}}' 2>/dev/null
-	set -e
-else
-	echo "=== Installing docker ==="
-	if [ -f /etc/centos-release ]; then
-		sudo yum -y install docker
-	else
-		sudo yum -y install docker --enablerepo=rhel-7-server-extras-rpms
-	fi
-fi
-
-if which buildah; then
-	echo -n "  Found: " && buildah --version
-else
-	echo "=== Installing buildah ==="
-	if [ -f /etc/centos-release ]; then
-		sudo yum -y install buildah
-	else
-		sudo yum -y install buildah --enablerepo=rhel-7-server-extras-rpms
-	fi
 fi
 
 # Download Postgres Exporter, only required to build the Crunchy Postgres Exporter container
