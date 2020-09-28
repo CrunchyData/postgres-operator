@@ -168,11 +168,19 @@ else
         else
             echo_err "Custom Query file queries_pg11.yml does not exist (it should).."
         fi
-    elif (( ${VERSION?} >= 120000 ))
+    elif (( ${VERSION?} >= 120000 )) && (( ${VERSION?} < 130000 ))
     then
         if [[ -f ${CONFIG_DIR?}/queries_pg12.yml ]]
         then
             cat ${CONFIG_DIR?}/queries_pg12.yml >> /tmp/queries.yml
+        else
+            echo_err "Custom Query file queries_pg12.yml does not exist (it should).."
+        fi
+        elif (( ${VERSION?} >= 130000 ))
+    then
+        if [[ -f ${CONFIG_DIR?}/queries_pg13.yml ]]
+        then
+            cat ${CONFIG_DIR?}/queries_pg13.yml >> /tmp/queries.yml
         else
             echo_err "Custom Query file queries_pg12.yml does not exist (it should).."
         fi
