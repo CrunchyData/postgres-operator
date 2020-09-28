@@ -1,6 +1,3 @@
-export GOPATH=$HOME/odev
-export GOBIN=$GOPATH/bin
-export PATH=$PATH:$GOBIN
 # NAMESPACE is the list of namespaces the Operator will watch
 export NAMESPACE=pgouser1,pgouser2
 
@@ -15,7 +12,7 @@ export PGO_OPERATOR_NAMESPACE=pgo
 export PGO_CMD=kubectl
 
 # the directory location of the Operator scripts
-export PGOROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
+export PGOROOT=$HOME/postgres-operator
 
 # the directory location of the Json Config Templates
 export PGO_CONF_DIR=$PGOROOT/installers/ansible/roles/pgo-operator/files

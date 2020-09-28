@@ -1,2 +1,5 @@
-apiserver
-pgo
+/apiserver
+/pgo
+/pgo-mac
+/pgo.exe
+/postgres-operator
