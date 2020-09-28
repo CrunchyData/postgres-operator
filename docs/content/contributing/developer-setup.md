@@ -12,7 +12,7 @@ This guide is intended for those wanting to build the Operator from source or co
 
 # Prerequisites
 
-The target development host for these instructions is a CentOS 7 or RHEL 7 host. Others operating systems
+The target development host for these instructions is a CentOS 8 or RHEL 8 host. Others operating systems
 are possible, however we do not support building or running the Operator on others at this time.
 
 ## Environment Variables
@@ -23,11 +23,6 @@ Variable | Example | Description
 -------- | ------- | -----------
 `PGOROOT` | $HOME/postgres-operator | Operator repository location
 `PGO_CONF_DIR` | $PGOROOT/installers/ansible/roles/pgo-operator/files | Operator Config Template Directory
-`PGO_BASEOS` | {{< param centosBase >}} | Base OS for container images
-`PGO_CMD` | kubectl | Cluster management tool executable
-`PGO_IMAGE_PREFIX` | crunchydata | Container image prefix
-`PGO_OPERATOR_NAMESPACE` | pgo | Kubernetes namespace for the operator
-`PGO_VERSION` | {{< param operatorVersion >}} | Operator version
 
 {{% notice tip %}}
 `examples/envs.sh` contains the above variable definitions as well as others used by postgres-operator tools
@@ -36,10 +31,9 @@ Variable | Example | Description
 
 ## Other requirements
 
-* The development host has been created, has access to `yum` updates, and has a regular user account with `sudo` rights to run `yum`.
 * The development host has `git` installed and has cloned the [postgres-operator](https://github.com/CrunchyData/postgres-operator.git) repository. Makefile targets below are run from the repository directory.
 * Deploying the Operator will require deployment access to a Kubernetes or OpenShift cluster
-* Once you have cloned the git repository, you will need to download the CentOS 7 repository files and GPG keys and place them in the `$PGOROOT/conf` directory. You can do so with the following code:
+* Once you have cloned the git repository, you will need to download the CentOS repository files and GPG keys and place them in the `$PGOROOT/conf` directory. You can do so with the following code:
 
 ```shell
 cd $PGOROOT
@@ -58,13 +52,9 @@ Configuring build dependencies is automated via the `setup` target in the projec
 
 The setup target ensures the presence of:
 
-* EPEL yum repository
 * [`go`](https://golang.org/) compiler version 1.13+
 * NSQ messaging binaries
-* `docker` container tool
 * `buildah` OCI image building tool version 1.14.9+
-
-By default, docker is not configured to run its daemon. Refer to the [docker post-installation instructions](https://docs.docker.com/install/linux/linux-postinstall/) to configure it to run once or at system startup. This is not done automatically.
 
 ## Code Generation
 
@@ -110,17 +100,7 @@ After a full compile, you will have a `pgo` binary in `$PGOROOT/bin` and the Ope
 # Deployment
 
 Now that you have built the PostgreSQL Operator images, you can now deploy them
-to your Kubernetes cluster. To deploy the image and associated Kubernetes
-manifests, you can execute the following command:
-
-```shell
-make deployoperator
-```
-
-If your Kubernetes cluster is not local to your development host, you will need
-to specify a config file that will connect you to your Kubernetes cluster. See
-the [Kubernetes documentation](https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/)
-for details.
+to your Kubernetes cluster by following the [Bash Installation Guide]({{< relref "installation/other/bash.md" >}}).
 
 # Testing
 

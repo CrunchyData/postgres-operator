@@ -3,10 +3,8 @@
 ANSIBLE_VERSION ?= 2.9.*
 PGOROOT ?= $(CURDIR)
 PGO_BASEOS ?= centos7
-PGO_CMD ?= kubectl
 PGO_IMAGE_PREFIX ?= crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
-PGO_OPERATOR_NAMESPACE ?= pgo
 PGO_VERSION ?= 4.5.0
 PGO_PG_VERSION ?= 12
 PGO_PG_FULLVERSION ?= 12.4
@@ -104,6 +102,7 @@ installrbac:
 
 setup:
 	PGOROOT='$(PGOROOT)' ./bin/get-deps.sh
+	./bin/check-deps.sh
 
 setupnamespaces:
 	PGOROOT='$(PGOROOT)' ./deploy/setupnamespaces.sh
