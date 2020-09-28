@@ -31,28 +31,12 @@ read -n1 -rsp $'Press any key to continue the upgrade or Ctrl+C to exit...\n'
 # Remove the current Operator
 $DIR/cleanup.sh
 
-# Set up the defined namespaces for use with the new Operator version
-$DIR/setupnamespaces.sh
-
-# Install the correct RBAC
-$DIR/install-rbac.sh
-
 # Deploy the new Operator
-$DIR/deploy.sh
+make -C "$(dirname $DIR)" setupnamespaces installrbac deployoperator build-pgo-client
 
-# Store the current location of the PGO client
-MYPGO=`which pgo`
-# Store the expected location of the PGO client
-BASHPGO="${GOBIN}/pgo"
-
-if [ "$MYPGO" != "$BASHPGO" ]; then
-
-	echo "Current location\(${MYPG}O\) does not match the expected location \(${BASHPGO}\). You will need to manually install the updated Posgres Operator client in your preferred location."
-
-else
-	# install the new PGO client	
-	go install $PGOROOT/pgo/pgo.go
-	cp $GOBIN/pgo $PGOROOT/bin/pgo
+if [ ! "$(command -v pgo)" -ef "$(dirname $DIR)/bin/pgo" ]; then
+	echo "Current location ($(command -v pgo)) does not match the expected location ($(dirname $DIR)/bin/pgo)." \
+		'You will need to manually install the updated Postgres Operator client in your preferred location.'
 fi
 
 # Final instructions

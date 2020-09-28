@@ -18,17 +18,6 @@ BINDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 EVTDIR="$BINDIR/pgo-event"
 POSTGRES_EXPORTER_VERSION=0.8.0
 
-# Precondition checks
-if [ "$GOPATH" = "" ]; then
-	# Alternatively, take dep approach of go env GOPATH later in the process
-	echo "GOPATH not defined, exiting..." >&2
-	exit 1
-fi
-if ! (echo $PATH | egrep -q "$GOPATH/bin") ; then
-	echo '$GOPATH/bin not part of $PATH, exiting...' >&2
-	exit 2
-fi
-
 
 # Idempotent installations
 if (yum repolist | egrep -q '^epel/') ; then

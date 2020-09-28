@@ -21,8 +21,7 @@ The following environment variables are expected by the steps in this guide:
 
 Variable | Example | Description
 -------- | ------- | -----------
-`GOPATH` | $HOME/odev | Golang project directory
-`PGOROOT` | $GOPATH/src/github.com/crunchydata/postgres-operator | Operator repository location
+`PGOROOT` | $HOME/postgres-operator | Operator repository location
 `PGO_CONF_DIR` | $PGOROOT/installers/ansible/roles/pgo-operator/files | Operator Config Template Directory
 `PGO_BASEOS` | {{< param centosBase >}} | Base OS for container images
 `PGO_CMD` | kubectl | Cluster management tool executable
@@ -38,9 +37,7 @@ Variable | Example | Description
 ## Other requirements
 
 * The development host has been created, has access to `yum` updates, and has a regular user account with `sudo` rights to run `yum`.
-* `GOPATH` points to a directory containing `src`,`pkg`, and `bin` directories.
-* The development host has `$GOPATH/bin` added to its `PATH` environment variable. Development tools will be installed to this path. Defining a `GOBIN` environment variable other than `$GOPATH/bin` may yield unexpected results.
-* The development host has `git` installed and has cloned the postgres-operator repository to `$GOPATH/src/github.com/crunchydata/postgres-operator`. Makefile targets below are run from the repository directory.
+* The development host has `git` installed and has cloned the [postgres-operator](https://github.com/CrunchyData/postgres-operator.git) repository. Makefile targets below are run from the repository directory.
 * Deploying the Operator will require deployment access to a Kubernetes or OpenShift cluster
 * Once you have cloned the git repository, you will need to download the CentOS 7 repository files and GPG keys and place them in the `$PGOROOT/conf` directory. You can do so with the following code:
 
@@ -61,7 +58,6 @@ Configuring build dependencies is automated via the `setup` target in the projec
 
 The setup target ensures the presence of:
 
-* `GOPATH` and `PATH` as described in the prerequisites
 * EPEL yum repository
 * [`go`](https://golang.org/) compiler version 1.13+
 * NSQ messaging binaries
@@ -109,7 +105,7 @@ This assumes you have Docker installed and running on your development host.
 By default, the Makefile will use buildah to build the container images, to override this default to use docker to build the images, set the IMGBUILDER variable to `docker`
 
 
-After a full compile, you will have a `pgo` binary in `$HOME/odev/bin` and the Operator images in your local Docker registry.
+After a full compile, you will have a `pgo` binary in `$PGOROOT/bin` and the Operator images in your local Docker registry.
 
 # Deployment
 

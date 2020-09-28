@@ -1,9 +1,7 @@
-GOPATH ?= $(HOME)/odev/go
-GOBIN ?= $(GOPATH)/bin
 
 # Default values if not already set
 ANSIBLE_VERSION ?= 2.9.*
-PGOROOT ?= $(GOPATH)/src/github.com/crunchydata/postgres-operator
+PGOROOT ?= $(CURDIR)
 PGO_BASEOS ?= centos7
 PGO_CMD ?= kubectl
 PGO_IMAGE_PREFIX ?= crunchydata
@@ -73,10 +71,12 @@ ifeq ("$(PGO_BASEOS)", "centos8")
 endif
 
 DEBUG_BUILD ?= false
-GCFLAGS=
+GO_BUILD = $(GO_CMD) build
+GO_CMD = $(GO_ENV) go
+
 # Disable optimizations if creating a debug build
 ifeq ("$(DEBUG_BUILD)", "true")
-	GCFLAGS=all=-N -l
+	GO_BUILD += -gcflags='all=-N -l'
 endif
 
 # To build a specific image, run 'make <name>-image' (e.g. 'make pgo-apiserver-image')
@@ -92,62 +92,47 @@ images = pgo-apiserver \
 	crunchy-postgres-exporter \
 	postgres-operator
 
-.PHONY: all installrbac setup setupnamespaces cleannamespaces bounce \
-	deployoperator runmain runapiserver cli-docs clean push pull \
-	release default
+.PHONY: all installrbac setup setupnamespaces cleannamespaces \
+	deployoperator cli-docs clean push pull release
 
 
 #======= Main functions =======
 all: linuxpgo $(images:%=%-image)
 
 installrbac:
-	cd deploy && ./install-rbac.sh
+	PGOROOT='$(PGOROOT)' ./deploy/install-rbac.sh
 
 setup:
-	./bin/get-deps.sh
+	PGOROOT='$(PGOROOT)' ./bin/get-deps.sh
 
 setupnamespaces:
-	cd deploy && ./setupnamespaces.sh
+	PGOROOT='$(PGOROOT)' ./deploy/setupnamespaces.sh
 
 cleannamespaces:
-	cd deploy && ./cleannamespaces.sh
-
-bounce:
-	$(PGO_CMD) \
-		--namespace=$(PGO_OPERATOR_NAMESPACE) \
-		get pod \
-		--selector=name=postgres-operator \
-		-o=jsonpath="{.items[0].metadata.name}" \
-	| xargs $(PGO_CMD) --namespace=$(PGO_OPERATOR_NAMESPACE) delete pod
+	PGOROOT='$(PGOROOT)' ./deploy/cleannamespaces.sh
 
 deployoperator:
-	cd deploy && ./deploy.sh
+	PGOROOT='$(PGOROOT)' ./deploy/deploy.sh
 
 
 #======= Binary builds =======
 build-pgo-apiserver:
-	go install -gcflags='$(GCFLAGS)' apiserver.go
-	cp $(GOBIN)/apiserver bin/
+	$(GO_BUILD) -o bin/apiserver apiserver.go
 
 build-pgo-backrest:
-	go install -gcflags='$(GCFLAGS)' pgo-backrest/pgo-backrest.go
-	cp $(GOBIN)/pgo-backrest bin/pgo-backrest/
+	$(GO_BUILD) -o bin/pgo-backrest/pgo-backrest pgo-backrest/pgo-backrest.go
 
 build-pgo-rmdata:
-	go install -gcflags='$(GCFLAGS)' pgo-rmdata/pgo-rmdata.go
-	cp $(GOBIN)/pgo-rmdata bin/pgo-rmdata/
+	$(GO_BUILD) -o bin/pgo-rmdata/pgo-rmdata pgo-rmdata/pgo-rmdata.go
 
 build-pgo-scheduler:
-	go install -gcflags='$(GCFLAGS)' pgo-scheduler/pgo-scheduler.go
-	cp $(GOBIN)/pgo-scheduler bin/pgo-scheduler/
+	$(GO_BUILD) -o bin/pgo-scheduler/pgo-scheduler pgo-scheduler/pgo-scheduler.go
 
 build-postgres-operator:
-	go install -gcflags='$(GCFLAGS)' postgres-operator.go
-	cp $(GOBIN)/postgres-operator bin/postgres-operator/
+	$(GO_BUILD) -o bin/postgres-operator postgres-operator.go
 
 build-pgo-client:
-	go install -gcflags='$(GCFLAGS)' pgo/pgo.go
-	cp $(GOBIN)/pgo bin/pgo
+	$(GO_BUILD) -o bin/pgo pgo/pgo.go
 
 build-pgo-%:
 	$(info No binary build needed for $@)
@@ -155,13 +140,17 @@ build-pgo-%:
 build-crunchy-postgres-exporter:
 	$(info No binary build needed for $@)
 
-linuxpgo: build-pgo-client
+linuxpgo: GO_ENV += GOOS=linux GOARCH=amd64
+linuxpgo:
+	$(GO_BUILD) -o bin/pgo pgo/pgo.go
 
+macpgo: GO_ENV += GOOS=darwin GOARCH=amd64
 macpgo:
-	cd pgo && env GOOS=darwin GOARCH=amd64 go build pgo.go && mv pgo $(GOBIN)/pgo-mac
+	$(GO_BUILD) -o bin/pgo-mac pgo/pgo.go
 
+winpgo: GO_ENV += GOOS=windows GOARCH=386
 winpgo:
-	cd pgo && env GOOS=windows GOARCH=386 go build pgo.go && mv pgo.exe $(GOBIN)/pgo.exe
+	$(GO_BUILD) -o bin/pgo.exe pgo/pgo.go
 
 
 #======= Image builds =======
@@ -221,11 +210,19 @@ cli-docs:
 	cd $(PGOROOT)/docs/content/operatorcli/cli && go run $(PGOROOT)/pgo/generatedocs.go
 
 clean: clean-deprecated
-	rm -rf $(GOPATH)/pkg/* $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
+	rm -f bin/apiserver
+	rm -f bin/postgres-operator
+	rm -f bin/pgo bin/pgo-mac bin/pgo.exe
+	rm -f bin/pgo-backrest/pgo-backrest
+	rm -f bin/pgo-rmdata/pgo-rmdata
+	rm -f bin/pgo-scheduler/pgo-scheduler
 
 clean-deprecated:
 	@# packages used to be downloaded into the vendor directory
 	[ ! -d vendor ] || rm -r vendor
+	@# executables used to be compiled into the $GOBIN directory
+	[ ! -n '$(GOBIN)' ] || rm -f $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
+	[ ! -d bin/postgres-operator ] || rm -r bin/postgres-operator
 
 push: $(images:%=push-%) ;
 
@@ -243,9 +240,9 @@ release:  linuxpgo macpgo winpgo
 	cp -r $(PGOROOT)/examples $(RELTMPDIR)
 	cp -r $(PGOROOT)/deploy $(RELTMPDIR)
 	cp -r $(PGOROOT)/conf $(RELTMPDIR)
-	cp $(GOBIN)/pgo $(RELTMPDIR)
-	cp $(GOBIN)/pgo-mac $(RELTMPDIR)
-	cp $(GOBIN)/pgo.exe $(RELTMPDIR)
+	cp bin/pgo $(RELTMPDIR)
+	cp bin/pgo-mac $(RELTMPDIR)
+	cp bin/pgo.exe $(RELTMPDIR)
 	cp $(PGOROOT)/examples/pgo-bash-completion $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
 
