@@ -3,6 +3,6 @@ name: postgres-operator-monitoring
 description: Install for Crunchy PostgreSQL Operator Monitoring
 type: application
 version: 0.1.0
-appVersion: 4.5.0-beta.1
+appVersion: 4.5.0-rc.1
 home: https://github.com/CrunchyData/postgres-operator
 icon: https://github.com/CrunchyData/postgres-operator/raw/master/crunchy_logo.png

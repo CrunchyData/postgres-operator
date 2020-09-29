@@ -161,7 +161,7 @@ Based on your storage settings in your Kubernetes environment, you may be able t
 
 ```shell
 kubectl create namespace pgo
-kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.5.0-beta.1/installers/kubectl/postgres-operator.yml
+kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.5.0-rc.1/installers/kubectl/postgres-operator.yml
 ```
 
 Otherwise, we highly recommend following the instructions from our [Quickstart](https://access.crunchydata.com/documentation/postgres-operator/latest/quickstart/).

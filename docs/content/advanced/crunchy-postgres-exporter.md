@@ -1,6 +1,6 @@
 ---
 title: "Crunchy Postgres Exporter"
-date: 
+date:
 draft: false
 weight: 3
 ---
@@ -23,7 +23,7 @@ can be specified for the API to collect. For an example of a queries.yml file, s
 
 The crunchy-postgres-exporter Docker image contains the following packages (versions vary depending on PostgreSQL version):
 
-* PostgreSQL ({{< param postgresVersion12 >}}, {{< param postgresVersion11 >}}, {{< param postgresVersion10 >}}, {{< param postgresVersion96 >}} and {{< param postgresVersion95 >}})
+* PostgreSQL ({{< param postgresVersion13 >}}, {{< param postgresVersion12 >}}, {{< param postgresVersion11 >}}, {{< param postgresVersion10 >}}, {{< param postgresVersion96 >}} and {{< param postgresVersion95 >}})
 * CentOS7 - publicly available
 * UBI7 - customers only
 * [PostgreSQL Exporter](https://github.com/wrouesnel/postgres_exporter)
