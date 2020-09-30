@@ -70,8 +70,9 @@ ifeq ("$(PGO_BASEOS)", "centos8")
 endif
 
 DEBUG_BUILD ?= false
+GO ?= go
 GO_BUILD = $(GO_CMD) build -trimpath
-GO_CMD = $(GO_ENV) go
+GO_CMD = $(GO_ENV) $(GO)
 
 # Disable optimizations if creating a debug build
 ifeq ("$(DEBUG_BUILD)", "true")
@@ -210,12 +211,12 @@ pgo-base-docker: pgo-base-build
 #======== Utility =======
 .PHONY: check
 check:
-	PGOROOT=$(PGOROOT) go test -cover ./...
+	PGOROOT=$(PGOROOT) $(GO) test -cover ./...
 
 # - KUBEBUILDER_ATTACH_CONTROL_PLANE_OUTPUT=true
 .PHONY: check-envtest
 check-envtest: hack/tools/envtest
-	KUBEBUILDER_ASSETS="$(CURDIR)/$^/bin" go test -count=1 -cover -tags=envtest ./internal/controller/... ./internal/pgbackrest/...
+	KUBEBUILDER_ASSETS="$(CURDIR)/$^/bin" $(GO) test -count=1 -cover -tags=envtest ./internal/controller/... ./internal/pgbackrest/...
 
 .PHONY: check-generate
 check-generate: generate-crd generate-deepcopy
@@ -272,4 +273,4 @@ generate-deepcopy:
 # - ENVTEST_K8S_VERSION=1.19.2
 hack/tools/envtest: SHELL = bash
 hack/tools/envtest:
-	source '$(shell go list -f '{{ .Dir }}' -m 'sigs.k8s.io/controller-runtime')/hack/setup-envtest.sh' && fetch_envtest_tools $@
+	source '$(shell $(GO) list -f '{{ .Dir }}' -m 'sigs.k8s.io/controller-runtime')/hack/setup-envtest.sh' && fetch_envtest_tools $@
