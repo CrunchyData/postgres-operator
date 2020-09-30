@@ -27,6 +27,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	kerror "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"time"
 )
@@ -35,7 +36,7 @@ const (
 	MAX_TRIES            = 16
 	pgBackRestPathFormat = "/backrestrepo/%s"
 	pgBackRestRepoPVC    = "%s-pgbr-repo"
-	pgDumpPVC            = "backup-%s-pgdump-pvc"
+	pgDumpPVCPrefix      = "backup-%s-pgdump"
 	pgDataPathFormat     = "/pgdata/%s"
 	tablespacePathFormat = "/tablespaces/%s/%s"
 	// the tablespace on a replcia follows the pattern "<replicaName-tablespace-.."
@@ -459,7 +460,7 @@ func removePgtasks(request Request) {
 func getInstancePVCs(request Request) ([]string, error) {
 	pvcList := make([]string, 0)
 	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName)
-	pgDump, pgBackRest := fmt.Sprintf(pgDumpPVC, request.ClusterName),
+	pgDump, pgBackRest := fmt.Sprintf(pgDumpPVCPrefix, request.ClusterName),
 		fmt.Sprintf(pgBackRestRepoPVC, request.ClusterName)
 
 	log.Debugf("instance pvcs overall selector: [%s]", selector)
@@ -485,7 +486,7 @@ func getInstancePVCs(request Request) ([]string, error) {
 
 		log.Debugf("found pvc: [%s]", pvcName)
 
-		if pvcName == pgDump || pvcName == pgBackRest {
+		if strings.HasPrefix(pvcName, pgDump) || pvcName == pgBackRest {
 			log.Debug("skipping...")
 			continue
 		}
@@ -627,14 +628,35 @@ func removeBackupJobs(request Request) {
 // "rm -rf" like in other commands). Well, we could...we could write a job to do
 // this, but that will be saved for future work
 func removeLogicalBackupPVCs(request Request) {
-	// get the name of the PVC, which uses a format that is fixed
-	pvcName := fmt.Sprintf(pgDumpPVC, request.ClusterName)
 
-	log.Debugf("remove pgdump pvc name [%s]", pvcName)
+	pvcList := make([]string, 0)
+	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName)
+	dumpPrefix := fmt.Sprintf(pgDumpPVCPrefix, request.ClusterName)
 
-	// make a simple list of the PVCs that can be applied to the "removePVC"
-	// command
-	pvcList := []string{pvcName}
+	// get all of the PVCs to analyze (see the step below)
+	pvcs, err := request.Clientset.
+		CoreV1().PersistentVolumeClaims(request.Namespace).
+		List(metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	// Now iterate through all the PVCs to identify those that are for a logical backup and add
+	// them to the PVC list for deletion.  This pattern matching will be utilized until better
+	// labeling is in place to uniquely identify logical backup PVCs.
+	for _, pvc := range pvcs.Items {
+		pvcName := pvc.GetName()
+
+		if !strings.HasPrefix(pvcName, dumpPrefix) {
+			continue
+		}
+
+		pvcList = append(pvcList, pvcName)
+	}
+
+	log.Debugf("logical backup pvcs found: [%v]", pvcList)
+
 	removePVCs(pvcList, request)
 }
 
