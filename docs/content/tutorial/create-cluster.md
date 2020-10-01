@@ -98,6 +98,16 @@ Each deployment contains a single Pod. **Do not scale the deployments!**: furthe
 
 Some Job artifacts may be left around after the cluster creation process completes, including the stanza creation job (`hippo-stanza-create`) and initial backup job (`backrest-backup-hippo`). If the jobs completed successfully, you can safely delete these objects.
 
+## Create a PostgreSQL Cluster With Monitoring
+
+The [PostgreSQL Operator Monitoring]({{< relref "architecture/monitoring.md" >}}) stack provides a convenient way to gain insights into the availabilty and performance of your PostgreSQL clusters. In order to collect metrics from your PostgreSQL clusters, you have to enable the `crunchy-postgres-exporter` sidecar alongside your PostgreSQL cluster. You can do this with the `--metrics` flag on [`pgo create cluster`]({{< relref "pgo-client/reference/pgo_create_cluster.md" >}}):
+
+```
+pgo create cluster hippo --metrics
+```
+
+Note that the `--metrics` flag just enables a sidecar that can be scraped. You will need to install the [monitoring stack]({{< relref "installation/metrics/_index.md" >}}) separately, or tie it into your existing monitoring infrastructure.
+
 ## Troubleshooting
 
 ### PostgreSQL / pgBackRest Pods Stuck in `Pending` Phase
@@ -112,4 +122,4 @@ The most common occurrence of this is due to the Kubernetes network blocking SSH
 
 ## Next Steps
 
-Once your cluster is created, the next step is to [connect to your PostgreSQL cluster]({{< relref "tutorial/connect-cluster.md" >}}).
+Once your cluster is created, the next step is to [connect to your PostgreSQL cluster]({{< relref "tutorial/connect-cluster.md" >}}). You can also [learn how to customize your PostgreSQL cluster]({{< relref "tutorial/customize-cluster.md" >}})!

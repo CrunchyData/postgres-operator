@@ -146,4 +146,4 @@ You can also set the `ServiceType` attribute of the [PostgreSQL Operator configu
 
 ## Next Steps
 
-We've created a cluster and we've connected to it! Now, let's learn what customizations we can make as part of the cluster creation process.
+We've created a cluster and we've connected to it! Now, let's [learn what customizations we can make as part of the cluster creation process]({{< relref "tutorial/customize-cluster.md" >}}).
