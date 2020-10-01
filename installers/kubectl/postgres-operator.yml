@@ -138,7 +138,7 @@ data:
     ccp_image_prefix: "registry.developers.crunchydata.com/crunchydata"
     ccp_image_pull_secret: ""
     ccp_image_pull_secret_manifest: ""
-    ccp_image_tag: "centos7-12.4-4.5.0-rc.1"
+    ccp_image_tag: "centos7-12.4-4.5.0"
     create_rbac: "true"
     crunchy_debug: "false"
     db_name: ""
@@ -171,14 +171,14 @@ data:
     pgo_client_cert_secret: "pgo.tls"
     pgo_client_container_install: "false"
     pgo_client_install: "true"
-    pgo_client_version: "4.5.0-rc.1"
+    pgo_client_version: "4.5.0"
     pgo_cluster_admin: "false"
     pgo_disable_eventing: "false"
     pgo_disable_tls: "false"
     pgo_image_prefix: "registry.developers.crunchydata.com/crunchydata"
     pgo_image_pull_secret: ""
     pgo_image_pull_secret_manifest: ""
-    pgo_image_tag: "centos7-4.5.0-rc.1"
+    pgo_image_tag: "centos7-4.5.0"
     pgo_installation_name: "devtest"
     pgo_noauth_routes: ""
     pgo_operator_namespace: "pgo"
@@ -268,7 +268,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: pgo-deploy
-          image: registry.developers.crunchydata.com/crunchydata/pgo-deployer:centos7-4.5.0-rc.1
+          image: registry.developers.crunchydata.com/crunchydata/pgo-deployer:centos7-4.5.0
           imagePullPolicy: IfNotPresent
           env:
             - name: DEPLOY_ACTION
