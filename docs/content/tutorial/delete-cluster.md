@@ -50,3 +50,5 @@ We've covered the fundamental lifecycle elements of the PostgreSQL Operator, but
 
 - [Architecture]({{< relref "architecture/_index.md" >}})
 - [Common `pgo` Client Tasks]({{< relref "pgo-client/common-tasks.md" >}})
+
+The tutorial will now go into some more advanced topics. Up next, learn how to [secure connections to your PostgreSQL clusters with TLS]({{< relref "tutorial/tls.md" >}}).
