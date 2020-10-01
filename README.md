@@ -253,16 +253,15 @@ version branch (e.g. `REL_4_2` for 4.2)
 1. Please be as descriptive in your pull request as possible. If you are
 referencing an issue, please be sure to include the issue in your pull request
 
-## Submitting an Issue
+## Support
 
-Please use GitHub to submit an issue for the PostgreSQL Operator project.
+If you believe you have found a bug or have detailed feature request, please open a GitHub issue and follow the guidelines for submitting a bug.
 
-If you would like to work the issue, please add that information in the issue so that we can confirm we are not already working no need to duplicate efforts.
+For general questions or community support, we welcome you to join the PostgreSQL Operator community mailing list at [postgres-operator@crunchydata.com](mailto:postgres-operator@crunchydata.com) and ask your question there.
 
-If you have any question you can submit a Support - Question and Answer issue and we will work with you on how you can get more involved.
+For other information, please visit the [Support](https://access.crunchydata.com/documentation/postgres-operator/latest/support/) section of the documentation.
 
-
-## Complete Documentation
+## Documentation
 
 For additional information regarding design, configuration and operation of the
 PostgreSQL Operator, pleases see the [Official Project Documentation][documentation].
