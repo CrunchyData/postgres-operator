@@ -83,7 +83,7 @@ const (
 	instanceRolePrimary = "primary"
 	// instanceRoleReplica indicates that an instance is a replica
 	instanceRoleReplica = "replica"
-	// instanceRoleUnknown indicates taht an instance is of an unknown typ
+	// instanceRoleUnknown indicates that an instance is of an unknown typ
 	instanceRoleUnknown = "unknown"
 	// instanceStatusUnavailable indicates an instance is unavailable
 	instanceStatusUnavailable = "unavailable"
