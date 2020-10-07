@@ -63,9 +63,8 @@ kubectl --namespace="$olm_namespace" rollout status deploy olm-operator --timeou
 
 
 # Run the OLM test suite against each example stored in CSV annotations.
-examples_array="$( yq read \
-	"./package/${PGO_VERSION}/postgresoperator.v${PGO_VERSION}.clusterserviceversion.yaml" \
-	metadata.annotations.alm-examples )"
+examples_array="$( yq --raw-output '.metadata.annotations["alm-examples"]' \
+	"./package/${PGO_VERSION}/postgresoperator.v${PGO_VERSION}.clusterserviceversion.yaml" )"
 
 error=0
 for index in $(seq 0 $(jq <<< "$examples_array" 'length - 1')); do

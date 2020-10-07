@@ -63,7 +63,7 @@ registry() (
 	registry_namespace="$1"
 	registry_name="$2"
 
-	package_name="$( yq read ./package/*.package.yaml packageName )"
+	package_name="$( yq --raw-output '.packageName' ./package/*.package.yaml )"
 
 	kc() { kubectl --namespace="$registry_namespace" "$@"; }
 	kc get namespace "$registry_namespace" --output=jsonpath='{""}' 2>/dev/null ||
@@ -128,12 +128,12 @@ operator() (
 	operator_namespace="$1"
 	target_namespaces=("${@:2}")
 
-	package_json="$( yq read --tojson ./package/*.package.yaml )"
-	package_name="$( yq read ./package/*.package.yaml packageName )"
-	package_channel_name="$( yq read ./package/*.package.yaml defaultChannel )"
-	package_csv_name="$( jq <<< "$package_json" \
+	package_name="$( yq --raw-output '.packageName' ./package/*.package.yaml )"
+	package_channel_name="$( yq --raw-output '.defaultChannel' ./package/*.package.yaml )"
+	package_csv_name="$( yq \
 		--raw-output --arg channel "$package_channel_name" \
-		'.channels[] | select(.name == $channel).currentCSV' )"
+		'.channels[] | select(.name == $channel).currentCSV' \
+		./package/*.package.yaml )"
 
 	kc() { kubectl --namespace="$operator_namespace" "$@"; }
 
@@ -311,26 +311,23 @@ scorecard() (
 
 	# Inject a `scorecard-proxy` Container into the main Deployment and configure other containers
 	# to make Kubernetes API calls through it.
-	yq_script="$(mktemp)"
-	jq > "$yq_script" <<< '{}' \
-		--arg image "quay.io/operator-framework/scorecard-proxy:v$sdk_version" \
-	'{
-		"spec.template.spec.volumes[+]": {
+	jq_filter='
+		.spec.template.spec.volumes += [{
 			name: "scorecard-kubeconfig",
 			secret: {
 				secretName: "scorecard-kubeconfig",
 				items: [{ key: "kubeconfig", path: "config" }]
 			}
-		},
-		"spec.template.spec.containers[*].volumeMounts[+]": {
+		}] |
+		.spec.template.spec.containers[].volumeMounts += [{
 			name: "scorecard-kubeconfig",
 			mountPath: "/scorecard-secret"
-		},
-		"spec.template.spec.containers[*].env[+]": {
+		}] |
+		.spec.template.spec.containers[].env += [{
 			name: "KUBECONFIG",
 			value: "/scorecard-secret/config"
-		},
-		"spec.template.spec.containers[+]": {
+		}] |
+		.spec.template.spec.containers += [{
 			name: "scorecard-proxy",
 			image: $image, imagePullPolicy: "Always",
 			env: [{
@@ -338,10 +335,12 @@ scorecard() (
 				valueFrom: { fieldRef: { apiVersion: "v1", fieldPath: "metadata.namespace" } }
 			}],
 			ports: [{ name: "proxy", containerPort: 8889 }]
-		}
-	}'
-	KUBE_EDITOR="yq write --inplace --script=$yq_script" kc edit deploy postgres-operator
-	rm "$yq_script"
+		}] |
+	.'
+	KUBE_EDITOR="yq --in-place --yaml-roundtrip \
+		--arg image 'quay.io/operator-framework/scorecard-proxy:v$sdk_version' \
+		'$jq_filter' \
+	" kc edit deploy postgres-operator
 
 	kc rollout status deploy postgres-operator --watch
 )
