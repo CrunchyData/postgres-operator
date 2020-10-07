@@ -19,6 +19,8 @@ metadata:
     containerImage: '${PGO_IMAGE_PREFIX}/postgres-operator:${PGO_IMAGE_TAG}'
     repository: https://github.com/CrunchyData/postgres-operator
 
+    alm-examples: |- # postgresoperator.crd.examples.yaml
+
 spec:
   # The following affect how the package is indexed at OperatorHub.io:
   # https://operatorhub.io/
@@ -34,7 +36,7 @@ spec:
 
   # The following appear on the details page at OperatorHub.io:
   # https://operatorhub.io/operator/postgresql
-  description: '' # description.*.md
+  description: |- # description.*.md
   version: '${PGO_VERSION}'
   links:
     - name: Crunchy Data
@@ -52,7 +54,7 @@ spec:
     alm-status-descriptors: 'postgres-operator.v${PGO_VERSION}'
 
   customresourcedefinitions:
-    owned: {} # postgresoperator.crd.descriptions.yaml
+    owned: # postgresoperator.crd.descriptions.yaml
 
   installModes:
     - { type: OwnNamespace,    supported: true  }
