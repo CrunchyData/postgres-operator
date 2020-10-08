@@ -88,7 +88,4 @@ func CrunchyLogger(logDetails LogValues) {
 	// Output to stdout instead of the default stderr
 	// Can be any io.Writer, see below for File example
 	log.SetOutput(os.Stdout)
-
-	// Only log the debug severity or above.
-	log.SetLevel(log.DebugLevel)
 }
