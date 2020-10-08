@@ -116,22 +116,22 @@ deployoperator:
 
 #======= Binary builds =======
 build-pgo-apiserver:
-	$(GO_BUILD) -o bin/apiserver apiserver.go
+	$(GO_BUILD) -o bin/apiserver ./cmd/apiserver
 
 build-pgo-backrest:
-	$(GO_BUILD) -o bin/pgo-backrest/pgo-backrest pgo-backrest/pgo-backrest.go
+	$(GO_BUILD) -o bin/pgo-backrest/pgo-backrest ./cmd/pgo-backrest
 
 build-pgo-rmdata:
-	$(GO_BUILD) -o bin/pgo-rmdata/pgo-rmdata pgo-rmdata/pgo-rmdata.go
+	$(GO_BUILD) -o bin/pgo-rmdata/pgo-rmdata ./cmd/pgo-rmdata
 
 build-pgo-scheduler:
-	$(GO_BUILD) -o bin/pgo-scheduler/pgo-scheduler pgo-scheduler/pgo-scheduler.go
+	$(GO_BUILD) -o bin/pgo-scheduler/pgo-scheduler ./cmd/pgo-scheduler
 
 build-postgres-operator:
-	$(GO_BUILD) -o bin/postgres-operator postgres-operator.go
+	$(GO_BUILD) -o bin/postgres-operator ./cmd/postgres-operator
 
 build-pgo-client:
-	$(GO_BUILD) -o bin/pgo pgo/pgo.go
+	$(GO_BUILD) -o bin/pgo ./cmd/pgo
 
 build-pgo-%:
 	$(info No binary build needed for $@)
@@ -141,15 +141,15 @@ build-crunchy-postgres-exporter:
 
 linuxpgo: GO_ENV += GOOS=linux GOARCH=amd64
 linuxpgo:
-	$(GO_BUILD) -o bin/pgo pgo/pgo.go
+	$(GO_BUILD) -o bin/pgo ./cmd/pgo
 
 macpgo: GO_ENV += GOOS=darwin GOARCH=amd64
 macpgo:
-	$(GO_BUILD) -o bin/pgo-mac pgo/pgo.go
+	$(GO_BUILD) -o bin/pgo-mac ./cmd/pgo
 
 winpgo: GO_ENV += GOOS=windows GOARCH=386
 winpgo:
-	$(GO_BUILD) -o bin/pgo.exe pgo/pgo.go
+	$(GO_BUILD) -o bin/pgo.exe ./cmd/pgo
 
 
 #======= Image builds =======
@@ -206,7 +206,7 @@ pgo-base-docker: pgo-base-build
 
 #======== Utility =======
 cli-docs:
-	cd $(PGOROOT)/docs/content/operatorcli/cli && go run $(PGOROOT)/pgo/generatedocs.go
+	cd $(PGOROOT)/docs/content/operatorcli/cli && go run $(PGOROOT)/cmd/pgo/generatedocs.go
 
 clean: clean-deprecated
 	rm -f bin/apiserver
