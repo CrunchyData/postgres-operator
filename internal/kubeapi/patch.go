@@ -59,12 +59,20 @@ func (*JSON6902) pointer(tokens ...string) string {
 // > o  If the target location specifies an object member that does exist,
 // >    that member's value is replaced.
 //
-func (patch *JSON6902) Add(value interface{}, path ...string) *JSON6902 {
-	*patch = append(*patch, map[string]interface{}{
-		"op": "add", "path": patch.pointer(path...), "value": value,
-	})
+func (patch *JSON6902) Add(path ...string) func(value interface{}) *JSON6902 {
+	i := len(*patch)
+	f := func(value interface{}) *JSON6902 {
+		(*patch)[i] = map[string]interface{}{
+			"op":    "add",
+			"path":  patch.pointer(path...),
+			"value": value,
+		}
+		return patch
+	}
 
-	return patch
+	*patch = append(*patch, f)
+
+	return f
 }
 
 // Remove appends a "remove" operation to patch.
@@ -75,7 +83,8 @@ func (patch *JSON6902) Add(value interface{}, path ...string) *JSON6902 {
 //
 func (patch *JSON6902) Remove(path ...string) *JSON6902 {
 	*patch = append(*patch, map[string]interface{}{
-		"op": "remove", "path": patch.pointer(path...),
+		"op":   "remove",
+		"path": patch.pointer(path...),
 	})
 
 	return patch
@@ -88,12 +97,20 @@ func (patch *JSON6902) Remove(path ...string) *JSON6902 {
 // >
 // > The target location MUST exist for the operation to be successful.
 //
-func (patch *JSON6902) Replace(value interface{}, path ...string) *JSON6902 {
-	*patch = append(*patch, map[string]interface{}{
-		"op": "replace", "path": patch.pointer(path...), "value": value,
-	})
+func (patch *JSON6902) Replace(path ...string) func(value interface{}) *JSON6902 {
+	i := len(*patch)
+	f := func(value interface{}) *JSON6902 {
+		(*patch)[i] = map[string]interface{}{
+			"op":    "replace",
+			"path":  patch.pointer(path...),
+			"value": value,
+		}
+		return patch
+	}
 
-	return patch
+	*patch = append(*patch, f)
+
+	return f
 }
 
 // Bytes returns the JSON representation of patch.
@@ -116,7 +133,7 @@ func NewMergePatch() *Merge7386 { return &Merge7386{} }
 // > patch are given special meaning to indicate the removal of existing
 // > values in the target.
 //
-func (patch *Merge7386) Add(value interface{}, path ...string) *Merge7386 {
+func (patch *Merge7386) Add(path ...string) func(value interface{}) *Merge7386 {
 	position := *patch
 
 	for len(path) > 1 {
@@ -130,17 +147,24 @@ func (patch *Merge7386) Add(value interface{}, path ...string) *Merge7386 {
 		path = path[1:]
 	}
 
-	if len(path) == 1 {
-		position[path[0]] = value
+	if len(path) < 1 {
+		return func(interface{}) *Merge7386 { return patch }
 	}
 
-	return patch
+	f := func(value interface{}) *Merge7386 {
+		position[path[0]] = value
+		return patch
+	}
+
+	position[path[0]] = f
+
+	return f
 }
 
 // Remove modifies patch to indicate that the member at path should be removed
 // if it exists.
 func (patch *Merge7386) Remove(path ...string) *Merge7386 {
-	return patch.Add(nil, path...)
+	return patch.Add(path...)(nil)
 }
 
 // Bytes returns the JSON representation of patch.

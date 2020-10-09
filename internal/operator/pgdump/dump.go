@@ -147,7 +147,7 @@ func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	}
 
 	//update the pgdump task status to submitted - updates task, not the job.
-	patch, err := kubeapi.NewJSONPatch().Add(crv1.PgBackupJobSubmitted, "spec", "status").Bytes()
+	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(crv1.PgBackupJobSubmitted).Bytes()
 	if err == nil {
 		_, err = clientset.CrunchydataV1().Pgtasks(namespace).Patch(task.Spec.Name, types.JSONPatchType, patch)
 	}

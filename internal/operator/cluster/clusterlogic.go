@@ -768,7 +768,7 @@ func ScaleClusterDeployments(clientset kubernetes.Interface, cluster crv1.Pgclus
 
 		// Scale the deployment according to the number of replicas specified.  If an error is
 		// encountered, log it and move on to scaling the next deployment
-		patch, err := kubeapi.NewMergePatch().Add(replicas, "spec", "replicas").Bytes()
+		patch, err := kubeapi.NewMergePatch().Add("spec", "replicas")(replicas).Bytes()
 		if err == nil {
 			_, err = clientset.AppsV1().Deployments(namespace).Patch(deployment.GetName(), types.MergePatchType, patch)
 		}

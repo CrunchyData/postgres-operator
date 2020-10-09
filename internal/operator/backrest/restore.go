@@ -107,18 +107,18 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 
 	// prepare the pgcluster CR for restore
 	patch, err := kubeapi.NewMergePatch().
-		Add(map[string]string{
-			config.ANNOTATION_BACKREST_RESTORE: "",
-			config.ANNOTATION_CURRENT_PRIMARY:  clusterName,
-		}, "metadata", "annotations").
-		Add(map[string]string{
-			config.LABEL_DEPLOYMENT_NAME: clusterName,
-		}, "metadata", "labels").
-		Add("", "spec", "status").
-		Add(crv1.PgclusterStatus{
-			Message: "Cluster is being restored",
-			State:   crv1.PgclusterStateRestore,
-		}, "status").
+		Add("metadata", "annotations")(map[string]string{
+		config.ANNOTATION_BACKREST_RESTORE: "",
+		config.ANNOTATION_CURRENT_PRIMARY:  clusterName,
+	}).
+		Add("metadata", "labels")(map[string]string{
+		config.LABEL_DEPLOYMENT_NAME: clusterName,
+	}).
+		Add("spec", "status")("").
+		Add("status")(crv1.PgclusterStatus{
+		Message: "Cluster is being restored",
+		State:   crv1.PgclusterStateRestore,
+	}).
 		Bytes()
 	if err == nil {
 		patchedCluster, err = clientset.CrunchydataV1().
@@ -141,11 +141,11 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	// prepare pgreplica CR's for restore
 	patch, err = kubeapi.NewMergePatch().
 		Remove("metadata", "annotations", config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA).
-		Add("", "spec", "status").
-		Add(crv1.PgclusterStatus{
-			Message: "Cluster is being restored",
-			State:   crv1.PgclusterStateRestore,
-		}, "status").
+		Add("spec", "status")("").
+		Add("status")(crv1.PgclusterStatus{
+		Message: "Cluster is being restored",
+		State:   crv1.PgclusterStateRestore,
+	}).
 		Bytes()
 	if err != nil {
 		return nil, err
@@ -229,7 +229,7 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	log.Debugf("restore workflow: deleted 'config' and 'leader' ConfigMaps for cluster %s",
 		clusterName)
 
-	patch, err = kubeapi.NewMergePatch().Add("true", "data", "init").Bytes()
+	patch, err = kubeapi.NewMergePatch().Add("data", "init")("true").Bytes()
 	if err == nil {
 		_, err = clientset.CoreV1().ConfigMaps(namespace).
 			Patch(fmt.Sprintf("%s-pgha-config", clusterName), types.MergePatchType, patch)

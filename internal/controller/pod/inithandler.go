@@ -269,7 +269,7 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 		serviceName = newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] + "-replica"
 	}
 
-	patch, err := kubeapi.NewMergePatch().Add(serviceName, "metadata", "labels", config.LABEL_SERVICE_NAME).Bytes()
+	patch, err := kubeapi.NewMergePatch().Add("metadata", "labels", config.LABEL_SERVICE_NAME)(serviceName).Bytes()
 	if err == nil {
 		_, err = c.Client.CoreV1().Pods(ns).Patch(newpod.Name, types.MergePatchType, patch)
 	}

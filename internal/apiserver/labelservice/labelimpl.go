@@ -114,7 +114,7 @@ func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 }
 
 func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLabels map[string]string, ns, pgouser string) {
-	patchBytes, err := kubeapi.NewMergePatch().Add(newLabels, "metadata", "labels").Bytes()
+	patchBytes, err := kubeapi.NewMergePatch().Add("metadata", "labels")(newLabels).Bytes()
 	if err != nil {
 		log.Error(err.Error())
 		return

@@ -76,7 +76,7 @@ func Failover(identifier string, clientset kubeapi.Interface, clusterName string
 	//the primary service selector
 	log.Debugf("setting label on pod %s=%s", config.LABEL_SERVICE_NAME, clusterName)
 
-	patch, err := kubeapi.NewMergePatch().Add(clusterName, "metadata", "labels", config.LABEL_SERVICE_NAME).Bytes()
+	patch, err := kubeapi.NewMergePatch().Add("metadata", "labels", config.LABEL_SERVICE_NAME)(clusterName).Bytes()
 	if err == nil {
 		_, err = clientset.CoreV1().Pods(namespace).Patch(upod.Name, types.MergePatchType, patch)
 	}

@@ -55,7 +55,7 @@ type Syncer interface {
 func patchConfigMapData(kubeclientset kubernetes.Interface, configMap *corev1.ConfigMap,
 	configName string, content []byte) error {
 
-	jsonOpBytes, err := kubeapi.NewJSONPatch().Replace(string(content), "data", configName).Bytes()
+	jsonOpBytes, err := kubeapi.NewJSONPatch().Replace("data", configName)(string(content)).Bytes()
 	if err != nil {
 		return err
 	}

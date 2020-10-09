@@ -71,6 +71,7 @@ func TestEscapeJSONPointer(t *testing.T) {
 func TestJSON6902(t *testing.T) {
 	t.Parallel()
 
+	// An empty patch is valid.
 	{
 		b, err := NewJSONPatch().Bytes()
 		if err != nil {
@@ -78,13 +79,25 @@ func TestJSON6902(t *testing.T) {
 		}
 		assertJSON(t, `[]`, b)
 	}
+
+	// Calling Add without its value is an error.
 	{
-		b, err := NewJSONPatch().Add(9, "a", "x/y", "0").Bytes()
+		patch := NewJSONPatch()
+		patch.Add("a")
+		_, err := patch.Bytes()
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+	}
+	{
+		b, err := NewJSONPatch().Add("a", "x/y", "0")(9).Bytes()
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 		assertJSON(t, `[{"op":"add","path":"/a/x~1y/0","value":9}]`, b)
 	}
+
+	// Remove takes no value.
 	{
 		b, err := NewJSONPatch().Remove("b", "m/n/o").Bytes()
 		if err != nil {
@@ -92,18 +105,30 @@ func TestJSON6902(t *testing.T) {
 		}
 		assertJSON(t, `[{"op":"remove","path":"/b/m~1n~1o"}]`, b)
 	}
+
+	// Calling Replace without its value is an error.
 	{
-		b, err := NewJSONPatch().Replace("5", "metadata", "labels", "some/thing").Bytes()
+		patch := NewJSONPatch()
+		patch.Replace("a")
+		_, err := patch.Bytes()
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+	}
+	{
+		b, err := NewJSONPatch().Replace("metadata", "labels", "some/thing")("5").Bytes()
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 		assertJSON(t, `[{"op":"replace","path":"/metadata/labels/some~1thing","value":"5"}]`, b)
 	}
+
+	// Calls are chainable.
 	{
 		b, err := NewJSONPatch().
-			Add(1, "a", "b", "c").
+			Add("a", "b", "c")(1).
 			Remove("x", "y", "z").
-			Replace(nil, "1", "2", "3").
+			Replace("1", "2", "3")(nil).
 			Bytes()
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
@@ -119,6 +144,7 @@ func TestJSON6902(t *testing.T) {
 func TestMerge7386(t *testing.T) {
 	t.Parallel()
 
+	// An empty patch is valid.
 	{
 		b, err := NewMergePatch().Bytes()
 		if err != nil {
@@ -126,13 +152,34 @@ func TestMerge7386(t *testing.T) {
 		}
 		assertJSON(t, `{}`, b)
 	}
+
+	// Calling Add without a path does nothing.
 	{
-		b, err := NewMergePatch().Add(9, "a", "x/y", "0").Bytes()
+		b, err := NewMergePatch().Add()("anything").Bytes()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		assertJSON(t, `{}`, b)
+	}
+
+	// Calling Add without its value is an error.
+	{
+		patch := NewMergePatch()
+		patch.Add("a")
+		_, err := patch.Bytes()
+		if err == nil {
+			t.Fatal("expected an error, got none")
+		}
+	}
+	{
+		b, err := NewMergePatch().Add("a", "x/y", "0")(9).Bytes()
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 		assertJSON(t, `{"a":{"x/y":{"0":9}}}`, b)
 	}
+
+	// Remove takes no value.
 	{
 		b, err := NewMergePatch().Remove("b", "m/n/o").Bytes()
 		if err != nil {
@@ -140,9 +187,11 @@ func TestMerge7386(t *testing.T) {
 		}
 		assertJSON(t, `{"b":{"m/n/o":null}}`, b)
 	}
+
+	// Calls are chainable.
 	{
 		b, err := NewMergePatch().
-			Add(1, "a", "b", "c").
+			Add("a", "b", "c")(1).
 			Remove("x", "y", "z").
 			Bytes()
 		if err != nil {
@@ -170,33 +219,33 @@ func TestMerge7386Equivalence(t *testing.T) {
 	patches := []*Merge7386{
 		// multiple calls to Add
 		NewMergePatch().
-			Add("lv", "metadata", "labels", "lk").
-			Add("av1", "metadata", "annotations", "ak1").
-			Add("av2", "metadata", "annotations", "ak2"),
+			Add("metadata", "labels", "lk")("lv").
+			Add("metadata", "annotations", "ak1")("av1").
+			Add("metadata", "annotations", "ak2")("av2"),
 
 		// fewer calls using the patch type
 		NewMergePatch().
-			Add(Merge7386{"lk": "lv"}, "metadata", "labels").
-			Add(Merge7386{"ak1": "av1", "ak2": "av2"}, "metadata", "annotations"),
+			Add("metadata", "labels")(Merge7386{"lk": "lv"}).
+			Add("metadata", "annotations")(Merge7386{"ak1": "av1", "ak2": "av2"}),
 
 		// fewer calls using other types
 		NewMergePatch().
-			Add(labels.Set{"lk": "lv"}, "metadata", "labels").
-			Add(map[string]string{"ak1": "av1", "ak2": "av2"}, "metadata", "annotations"),
+			Add("metadata", "labels")(labels.Set{"lk": "lv"}).
+			Add("metadata", "annotations")(map[string]string{"ak1": "av1", "ak2": "av2"}),
 
 		// one call using the patch type
 		NewMergePatch().
-			Add(Merge7386{
-				"labels":      Merge7386{"lk": "lv"},
-				"annotations": Merge7386{"ak1": "av1", "ak2": "av2"},
-			}, "metadata"),
+			Add("metadata")(Merge7386{
+			"labels":      Merge7386{"lk": "lv"},
+			"annotations": Merge7386{"ak1": "av1", "ak2": "av2"},
+		}),
 
 		// one call using other types
 		NewMergePatch().
-			Add(map[string]interface{}{
-				"labels":      labels.Set{"lk": "lv"},
-				"annotations": map[string]string{"ak1": "av1", "ak2": "av2"},
-			}, "metadata"),
+			Add("metadata")(map[string]interface{}{
+			"labels":      labels.Set{"lk": "lv"},
+			"annotations": map[string]string{"ak1": "av1", "ak2": "av2"},
+		}),
 	}
 
 	for i, patch := range patches {

@@ -213,7 +213,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 	labels := make(map[string]string)
 	labels[request.Name] = "pgpolicy"
 
-	patch, err := kubeapi.NewMergePatch().Add(labels, "metadata", "labels").Bytes()
+	patch, err := kubeapi.NewMergePatch().Add("metadata", "labels")(labels).Bytes()
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()

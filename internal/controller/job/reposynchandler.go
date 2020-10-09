@@ -59,7 +59,7 @@ func (c *Controller) handleRepoSyncUpdate(job *apiv1.Job) error {
 
 	// first, make sure the Pgtask resource knows that the job is complete,
 	// which is using this legacy bit of code
-	patch, err := kubeapi.NewJSONPatch().Add(crv1.JobCompletedStatus, "spec", "status").Bytes()
+	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(crv1.JobCompletedStatus).Bytes()
 	if err == nil {
 		_, err = c.Client.CrunchydataV1().Pgtasks(namespace).Patch(job.Name, types.JSONPatchType, patch)
 	}

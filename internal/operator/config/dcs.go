@@ -273,7 +273,7 @@ func (d *DCS) GetDCSConfig() (*DCSConfig, map[string]json.RawMessage, error) {
 // content provided.
 func (d *DCS) patchDCSAnnotation(content string) error {
 
-	jsonOpBytes, err := kubeapi.NewJSONPatch().Replace(content, "metadata", "annotations", dcsConfigAnnotation).Bytes()
+	jsonOpBytes, err := kubeapi.NewJSONPatch().Replace("metadata", "annotations", dcsConfigAnnotation)(content).Bytes()
 	if err != nil {
 		return err
 	}

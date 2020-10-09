@@ -57,7 +57,7 @@ func applyPolicy(clientset kubeapi.Interface, restconfig *rest.Config, policyNam
 	labels := make(map[string]string)
 	labels[policyName] = "pgpolicy"
 
-	patch, err := kubeapi.NewMergePatch().Add(labels, "metadata", "labels").Bytes()
+	patch, err := kubeapi.NewMergePatch().Add("metadata", "labels")(labels).Bytes()
 	if err != nil {
 		log.Error(err)
 	}

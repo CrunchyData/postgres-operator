@@ -43,7 +43,7 @@ func (c *Controller) handlePGDumpUpdate(job *apiv1.Job) error {
 
 	//update the pgdump task status to submitted - updates task, not the job.
 	dumpTask := labels[config.LABEL_PGTASK]
-	patch, err := kubeapi.NewJSONPatch().Add(status, "spec", "status").Bytes()
+	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(status).Bytes()
 	if err == nil {
 		_, err = c.Client.CrunchydataV1().Pgtasks(job.Namespace).Patch(dumpTask, types.JSONPatchType, patch)
 	}
@@ -76,7 +76,7 @@ func (c *Controller) handlePGRestoreUpdate(job *apiv1.Job) error {
 
 	//update the pgdump task status to submitted - updates task, not the job.
 	restoreTask := labels[config.LABEL_PGTASK]
-	patch, err := kubeapi.NewJSONPatch().Add(status, "spec", "status").Bytes()
+	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(status).Bytes()
 	if err == nil {
 		_, err = c.Client.CrunchydataV1().Pgtasks(job.Namespace).Patch(restoreTask, types.JSONPatchType, patch)
 	}

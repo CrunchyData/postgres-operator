@@ -109,7 +109,7 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 	log.Debugf("Scaled pgBackRest repo deployment %s to 1 to proceed with initializing "+
 		"cluster %s", clusterInfo.PrimaryDeployment, cl.GetName())
 
-	patch, err := kubeapi.NewJSONPatch().Add(crv1.CompletedStatus, "spec", "status").Bytes()
+	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(crv1.CompletedStatus).Bytes()
 	if err == nil {
 		_, err = clientset.CrunchydataV1().Pgclusters(namespace).Patch(cl.Spec.Name, types.JSONPatchType, patch)
 	}
@@ -126,7 +126,7 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 		return
 	}
 
-	patch, err = kubeapi.NewJSONPatch().Add(dataVolume.PersistentVolumeClaimName, "spec", "PrimaryStorage", "name").Bytes()
+	patch, err = kubeapi.NewJSONPatch().Add("spec", "PrimaryStorage", "name")(dataVolume.PersistentVolumeClaimName).Bytes()
 	if err == nil {
 		_, err = clientset.CrunchydataV1().Pgclusters(namespace).Patch(cl.Spec.Name, types.JSONPatchType, patch)
 	}
@@ -344,7 +344,7 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 	}
 
 	//update the replica CRD pvcname
-	patch, err := kubeapi.NewJSONPatch().Add(dataVolume.PersistentVolumeClaimName, "spec", "replicastorage", "name").Bytes()
+	patch, err := kubeapi.NewJSONPatch().Add("spec", "replicastorage", "name")(dataVolume.PersistentVolumeClaimName).Bytes()
 	if err == nil {
 		_, err = clientset.CrunchydataV1().Pgreplicas(namespace).Patch(replica.Spec.Name, types.JSONPatchType, patch)
 	}
@@ -366,7 +366,7 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 	}
 
 	//update the replica CRD status
-	patch, err = kubeapi.NewJSONPatch().Add(crv1.CompletedStatus, "spec", "status").Bytes()
+	patch, err = kubeapi.NewJSONPatch().Add("spec", "status")(crv1.CompletedStatus).Bytes()
 	if err == nil {
 		_, err = clientset.CrunchydataV1().Pgreplicas(namespace).Patch(replica.Spec.Name, types.JSONPatchType, patch)
 	}
@@ -671,7 +671,7 @@ func annotateBackrestSecret(clientset kubernetes.Interface, cluster *crv1.Pgclus
 	cl := cluster.Spec
 	op := operator.Pgo.Cluster
 	secretName := fmt.Sprintf(util.BackrestRepoSecretName, clusterName)
-	patch, err := kubeapi.NewMergePatch().Add(map[string]string{
+	patch, err := kubeapi.NewMergePatch().Add("metadata", "annotations")(map[string]string{
 		config.ANNOTATION_PG_PORT:             cluster.Spec.Port,
 		config.ANNOTATION_REPO_PATH:           util.GetPGBackRestRepoPath(*cluster),
 		config.ANNOTATION_S3_BUCKET:           cfg(cl.BackrestS3Bucket, op.BackrestS3Bucket),
@@ -681,7 +681,7 @@ func annotateBackrestSecret(clientset kubernetes.Interface, cluster *crv1.Pgclus
 		config.ANNOTATION_SUPPLEMENTAL_GROUPS: cluster.Spec.BackrestStorage.SupplementalGroups,
 		config.ANNOTATION_S3_URI_STYLE:        cfg(cl.BackrestS3URIStyle, op.BackrestS3URIStyle),
 		config.ANNOTATION_S3_VERIFY_TLS:       cfg(cl.BackrestS3VerifyTLS, op.BackrestS3VerifyTLS),
-	}, "metadata", "annotations").Bytes()
+	}).Bytes()
 
 	log.Debugf("About to patch secret %s (namespace %s) using:\n%s", secretName, namespace, patch)
 	if err == nil {

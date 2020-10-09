@@ -53,7 +53,7 @@ func RemoveData(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask
 
 	//create marker (clustername, namespace)
 	patch, err := kubeapi.NewJSONPatch().
-		Add(time.Now().Format(time.RFC3339), "spec", "parameters", config.LABEL_DELETE_DATA_STARTED).
+		Add("spec", "parameters", config.LABEL_DELETE_DATA_STARTED)(time.Now().Format(time.RFC3339)).
 		Bytes()
 	if err == nil {
 		_, err = clientset.CrunchydataV1().Pgtasks(namespace).Patch(task.Spec.Name, types.JSONPatchType, patch)

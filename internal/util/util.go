@@ -79,15 +79,15 @@ func PatchClusterCRD(clientset pgo.Interface, labelMap map[string]string, oldCrd
 	patch := kubeapi.NewMergePatch()
 
 	// update our pgcluster annotation with the correct current primary value
-	patch.Add(currentPrimary, "metadata", "annotations", config.ANNOTATION_CURRENT_PRIMARY)
-	patch.Add(currentPrimary, "metadata", "annotations", config.ANNOTATION_PRIMARY_DEPLOYMENT)
+	patch.Add("metadata", "annotations", config.ANNOTATION_CURRENT_PRIMARY)(currentPrimary)
+	patch.Add("metadata", "annotations", config.ANNOTATION_PRIMARY_DEPLOYMENT)(currentPrimary)
 
 	// update the stored primary storage value to match the current primary and deployment name
-	patch.Add(currentPrimary, "spec", "PrimaryStorage", "name")
+	patch.Add("spec", "PrimaryStorage", "name")(currentPrimary)
 
 	for k, v := range labelMap {
 		if len(validation.IsQualifiedName(k)) == 0 && len(validation.IsValidLabelValue(v)) == 0 {
-			patch.Add(v, "metadata", "labels", k)
+			patch.Add("metadata", "labels", k)(v)
 		} else {
 			log.Debugf("user label %s:%s does not meet Kubernetes label requirements and will not be used to label "+
 				"pgcluster %s", k, v, oldCrd.Spec.Name)
