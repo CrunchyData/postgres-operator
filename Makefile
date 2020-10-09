@@ -206,7 +206,12 @@ pgo-base-docker: pgo-base-build
 
 #======== Utility =======
 cli-docs:
-	cd $(PGOROOT)/docs/content/operatorcli/cli && go run $(PGOROOT)/cmd/pgo/generatedocs.go
+	rm docs/content/pgo-client/reference/*.md
+	cd docs/content/pgo-client/reference && go run ../../../../cmd/pgo/generatedocs.go
+	sed -e '1,5 s|^title:.*|title: "pgo Client Reference"|' \
+		docs/content/pgo-client/reference/pgo.md > \
+		docs/content/pgo-client/reference/_index.md
+	rm docs/content/pgo-client/reference/pgo.md
 
 clean: clean-deprecated
 	rm -f bin/apiserver
