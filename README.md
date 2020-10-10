@@ -224,6 +224,10 @@ For more information about which versions of the PostgreSQL Operator include whi
 
 ## Using the PostgreSQL Operator
 
+If you are new to the PostgreSQL Operator, you can follow along the [tutorial](https://access.crunchydata.com/documentation/postgres-operator/latest/tutorial/) to learn how to install the PostgreSQL Operator and how to use many of its features!
+
+- [PostgreSQL Operator Tutorial](https://access.crunchydata.com/documentation/postgres-operator/latest/tutorial/)
+
 If you have the PostgreSQL and Client Interface installed in your environment and are interested in guidance on the use of the Crunchy PostgreSQL Operator, please start here:
 
 - [PostgreSQL Operator Documentation](https://access.crunchydata.com/documentation/postgres-operator/)
@@ -257,7 +261,7 @@ referencing an issue, please be sure to include the issue in your pull request
 
 If you believe you have found a bug or have detailed feature request, please open a GitHub issue and follow the guidelines for submitting a bug.
 
-For general questions or community support, we welcome you to join the PostgreSQL Operator community mailing list at [postgres-operator@crunchydata.com](mailto:postgres-operator@crunchydata.com) and ask your question there.
+For general questions or community support, we welcome you to [join the PostgreSQL Operator community mailing list](https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join) at [https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join](https://groups.google.com/a/crunchydata.com/forum/#!forum/postgres-operator/join) and ask your question there.
 
 For other information, please visit the [Support](https://access.crunchydata.com/documentation/postgres-operator/latest/support/) section of the documentation.
 
@@ -272,6 +276,18 @@ https://crunchydata.github.io/postgres-operator/latest/
 
 [documentation]: https://access.crunchydata.com/documentation/postgres-operator/
 
-## Past Versions
+### Past Versions
 
 Documentation for previous releases can be found at the [Crunchy Data Access Portal](https://access.crunchydata.com/documentation/)
+
+## Releases
+
+When a PostgreSQL Operator general availability (GA) release occurs, the container images are distributed on the following platforms in order:
+
+- [Crunchy Data Customer Portal](https://access.crunchydata.com/)
+- [Crunchy Data Developer Portal](https://www.crunchydata.com/developers)
+- [DockerHub](https://hub.docker.com/u/crunchydata)
+
+The image rollout can occur over the course of several days.
+
+To stay up-to-date on when releases are made available in the [Crunchy Data Developer Portal](https://www.crunchydata.com/developers), please sign up for the [Crunchy Data Developer Program Newsletter](https://www.crunchydata.com/developers/newsletter)
