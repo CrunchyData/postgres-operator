@@ -39,7 +39,7 @@
   "value": "{{.PgbackrestPGPort}}"
 },
 {
-  "name": "PGBACKREST_REPO_TYPE",
+  "name": "PGBACKREST_REPO1_TYPE",
   "value": "{{.PgbackrestRepo1Type}}"
 },
 {
