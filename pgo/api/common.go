@@ -28,7 +28,7 @@ func StatusCheck(resp *http.Response) error {
 	if resp.StatusCode == 401 {
 		return fmt.Errorf("Authentication Failed: %d\n", resp.StatusCode)
 	} else if resp.StatusCode == 405 {
-		return fmt.Errorf("Method %s for URL %s is not allowed in current the Operator "+
+		return fmt.Errorf("Method %s for URL %s is not allowed in the current Operator "+
 			"install: %d", resp.Request.Method, resp.Request.URL.Path, resp.StatusCode)
 	} else if resp.StatusCode != 200 {
 		return fmt.Errorf("Invalid Status Code: %d\n", resp.StatusCode)
