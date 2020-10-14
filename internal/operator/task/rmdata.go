@@ -56,6 +56,7 @@ func RemoveData(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask
 		Add("spec", "parameters", config.LABEL_DELETE_DATA_STARTED)(time.Now().Format(time.RFC3339)).
 		Bytes()
 	if err == nil {
+		log.Debugf("patching task %s: %s", task.Spec.Name, patch)
 		_, err = clientset.CrunchydataV1().Pgtasks(namespace).Patch(task.Spec.Name, types.JSONPatchType, patch)
 	}
 	if err != nil {

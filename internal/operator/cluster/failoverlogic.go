@@ -78,6 +78,7 @@ func Failover(identifier string, clientset kubeapi.Interface, clusterName string
 
 	patch, err := kubeapi.NewMergePatch().Add("metadata", "labels", config.LABEL_SERVICE_NAME)(clusterName).Bytes()
 	if err == nil {
+		log.Debugf("patching pod %s: %s", upod.Name, patch)
 		_, err = clientset.CoreV1().Pods(namespace).Patch(upod.Name, types.MergePatchType, patch)
 	}
 	if err != nil {
@@ -87,6 +88,7 @@ func Failover(identifier string, clientset kubeapi.Interface, clusterName string
 	}
 
 	targetDepName := upod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
+	log.Debugf("patching deployment %s: %s", targetDepName, patch)
 	_, err = clientset.AppsV1().Deployments(namespace).Patch(targetDepName, types.MergePatchType, patch)
 	if err != nil {
 		log.Error(err)

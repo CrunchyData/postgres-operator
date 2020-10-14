@@ -61,6 +61,7 @@ func (c *Controller) handleRepoSyncUpdate(job *apiv1.Job) error {
 	// which is using this legacy bit of code
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(crv1.JobCompletedStatus).Bytes()
 	if err == nil {
+		log.Debugf("patching task %s: %s", job.Name, patch)
 		_, err = c.Client.CrunchydataV1().Pgtasks(namespace).Patch(job.Name, types.JSONPatchType, patch)
 	}
 	if err != nil {

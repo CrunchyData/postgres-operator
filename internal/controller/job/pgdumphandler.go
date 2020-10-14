@@ -45,6 +45,7 @@ func (c *Controller) handlePGDumpUpdate(job *apiv1.Job) error {
 	dumpTask := labels[config.LABEL_PGTASK]
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(status).Bytes()
 	if err == nil {
+		log.Debugf("patching task %s: %s", dumpTask, patch)
 		_, err = c.Client.CrunchydataV1().Pgtasks(job.Namespace).Patch(dumpTask, types.JSONPatchType, patch)
 	}
 	if err != nil {
@@ -78,6 +79,7 @@ func (c *Controller) handlePGRestoreUpdate(job *apiv1.Job) error {
 	restoreTask := labels[config.LABEL_PGTASK]
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(status).Bytes()
 	if err == nil {
+		log.Debugf("patching task %s: %s", restoreTask, patch)
 		_, err = c.Client.CrunchydataV1().Pgtasks(job.Namespace).Patch(restoreTask, types.JSONPatchType, patch)
 	}
 	if err != nil {

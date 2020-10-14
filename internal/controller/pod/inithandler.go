@@ -130,13 +130,12 @@ func (c *Controller) handleBootstrapInit(newPod *apiv1.Pod, cluster *crv1.Pgclus
 
 	// determine if restore, and if delete the restore label since it is no longer needed
 	if _, restore := cluster.GetAnnotations()[config.ANNOTATION_BACKREST_RESTORE]; restore {
-		log.Debugf("Pod Controller: restore detected for pgcluster %s, restore annotation will "+
-			"be removed", cluster.GetName())
 		patch, err := kubeapi.NewJSONPatch().
 			Remove("metadata", "annotations", config.LABEL_BACKREST_RESTORE).Bytes()
 		if err == nil {
-			_, err = c.Client.CrunchydataV1().Pgclusters(namespace).
-				Patch(cluster.GetName(), types.JSONPatchType, patch)
+			log.Debugf("patching cluster %s: %s", cluster.GetName(), patch)
+			_, err = c.Client.CrunchydataV1().
+				Pgclusters(namespace).Patch(cluster.GetName(), types.JSONPatchType, patch)
 		}
 		if err != nil {
 			log.Errorf("Pod Controller unable to remove backrest restore annotation from "+
@@ -271,6 +270,7 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 
 	patch, err := kubeapi.NewMergePatch().Add("metadata", "labels", config.LABEL_SERVICE_NAME)(serviceName).Bytes()
 	if err == nil {
+		log.Debugf("patching pod %s: %s", newpod.Name, patch)
 		_, err = c.Client.CoreV1().Pods(ns).Patch(newpod.Name, types.MergePatchType, patch)
 	}
 	if err != nil {
@@ -280,6 +280,7 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 	}
 
 	//add the service name label to the Deployment
+	log.Debugf("patching deployment %s: %s", dep.Name, patch)
 	_, err = c.Client.AppsV1().Deployments(ns).Patch(dep.Name, types.MergePatchType, patch)
 	if err != nil {
 		log.Error("could not add label to deployment on pod add")

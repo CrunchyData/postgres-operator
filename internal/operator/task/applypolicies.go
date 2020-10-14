@@ -62,12 +62,14 @@ func applyPolicy(clientset kubeapi.Interface, restconfig *rest.Config, policyNam
 		log.Error(err)
 	}
 
+	log.Debugf("patching deployment %s: %s", clusterName, patch)
 	_, err = clientset.AppsV1().Deployments(ns).Patch(clusterName, types.MergePatchType, patch)
 	if err != nil {
 		log.Error(err)
 	}
 
 	//update the pgcluster crd labels with the new policy
+	log.Debugf("patching cluster %s: %s", cl.Spec.Name, patch)
 	_, err = clientset.CrunchydataV1().Pgclusters(ns).Patch(cl.Spec.Name, types.MergePatchType, patch)
 	if err != nil {
 		log.Error(err)

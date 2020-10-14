@@ -111,6 +111,7 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(crv1.CompletedStatus).Bytes()
 	if err == nil {
+		log.Debugf("patching cluster %s: %s", cl.Spec.Name, patch)
 		_, err = clientset.CrunchydataV1().Pgclusters(namespace).Patch(cl.Spec.Name, types.JSONPatchType, patch)
 	}
 	if err != nil {
@@ -128,6 +129,7 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 
 	patch, err = kubeapi.NewJSONPatch().Add("spec", "PrimaryStorage", "name")(dataVolume.PersistentVolumeClaimName).Bytes()
 	if err == nil {
+		log.Debugf("patching cluster %s: %s", cl.Spec.Name, patch)
 		_, err = clientset.CrunchydataV1().Pgclusters(namespace).Patch(cl.Spec.Name, types.JSONPatchType, patch)
 	}
 	if err != nil {
@@ -243,6 +245,7 @@ func AddClusterBootstrap(clientset kubeapi.Interface, cluster *crv1.Pgcluster) e
 		},
 	})
 	if err == nil {
+		log.Debugf("patching cluster %s: %s", cluster.Name, patch)
 		_, err = clientset.CrunchydataV1().Pgclusters(namespace).Patch(cluster.Name, types.MergePatchType, patch)
 	}
 	if err != nil {
@@ -346,6 +349,7 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 	//update the replica CRD pvcname
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "replicastorage", "name")(dataVolume.PersistentVolumeClaimName).Bytes()
 	if err == nil {
+		log.Debugf("patching replica %s: %s", replica.Spec.Name, patch)
 		_, err = clientset.CrunchydataV1().Pgreplicas(namespace).Patch(replica.Spec.Name, types.JSONPatchType, patch)
 	}
 	if err != nil {
@@ -368,6 +372,7 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 	//update the replica CRD status
 	patch, err = kubeapi.NewJSONPatch().Add("spec", "status")(crv1.CompletedStatus).Bytes()
 	if err == nil {
+		log.Debugf("patching replica %s: %s", replica.Spec.Name, patch)
 		_, err = clientset.CrunchydataV1().Pgreplicas(namespace).Patch(replica.Spec.Name, types.JSONPatchType, patch)
 	}
 	if err != nil {
@@ -683,8 +688,8 @@ func annotateBackrestSecret(clientset kubernetes.Interface, cluster *crv1.Pgclus
 		config.ANNOTATION_S3_VERIFY_TLS:       cfg(cl.BackrestS3VerifyTLS, op.BackrestS3VerifyTLS),
 	}).Bytes()
 
-	log.Debugf("About to patch secret %s (namespace %s) using:\n%s", secretName, namespace, patch)
 	if err == nil {
+		log.Debugf("patching secret %s: %s", secretName, patch)
 		_, err = clientset.CoreV1().Secrets(namespace).Patch(secretName, types.MergePatchType, patch)
 	}
 	return err

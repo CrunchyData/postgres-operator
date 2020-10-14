@@ -299,6 +299,7 @@ func (l *LocalDB) clean() error {
 		return err
 	}
 
+	log.Debugf("patching configmap %s: %s", l.configMap.GetName(), jsonOpBytes)
 	if _, err := l.kubeclientset.CoreV1().ConfigMaps(l.configMap.GetNamespace()).Patch(
 		l.configMap.GetName(), types.JSONPatchType, jsonOpBytes); err != nil {
 		return err

@@ -278,8 +278,10 @@ func (d *DCS) patchDCSAnnotation(content string) error {
 		return err
 	}
 
+	name := fmt.Sprintf(dcsConfigMapName, d.clusterScope)
+	log.Debugf("patching configmap %s: %s", name, jsonOpBytes)
 	if _, err := d.kubeclientset.CoreV1().ConfigMaps(d.configMap.GetNamespace()).Patch(
-		fmt.Sprintf(dcsConfigMapName, d.clusterScope), types.JSONPatchType,
+		name, types.JSONPatchType,
 		jsonOpBytes); err != nil {
 		return err
 	}

@@ -124,7 +124,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 		if DryRun {
 			log.Debug("dry run only")
 		} else {
-			log.Debugf("adding label to cluster %s", items[i].Spec.Name)
+			log.Debugf("patching cluster %s: %s", items[i].Spec.Name, patchBytes)
 			_, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Patch(items[i].Spec.Name, types.MergePatchType, patchBytes)
 			if err != nil {
 				log.Error(err.Error())
@@ -166,6 +166,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 		for _, d := range deployments.Items {
 			//update Deployment with the label
 			if !DryRun {
+				log.Debugf("patching deployment %s: %s", d.Name, patchBytes)
 				_, err := apiserver.Clientset.AppsV1().Deployments(ns).Patch(d.Name, types.MergePatchType, patchBytes)
 				if err != nil {
 					log.Error(err.Error())
@@ -298,7 +299,7 @@ func deleteLabels(items []crv1.Pgcluster, LabelCmdLabel string, labelsMap map[st
 	}
 
 	for i := 0; i < len(items); i++ {
-		log.Debugf("deleting label from %s", items[i].Spec.Name)
+		log.Debugf("patching cluster %s: %s", items[i].Spec.Name, patchBytes)
 		_, err = apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Patch(items[i].Spec.Name, types.MergePatchType, patchBytes)
 		if err != nil {
 			log.Error(err.Error())
@@ -317,6 +318,7 @@ func deleteLabels(items []crv1.Pgcluster, LabelCmdLabel string, labelsMap map[st
 		}
 
 		for _, d := range deployments.Items {
+			log.Debugf("patching deployment %s: %s", d.Name, patchBytes)
 			_, err = apiserver.Clientset.AppsV1().Deployments(ns).Patch(d.Name, types.MergePatchType, patchBytes)
 			if err != nil {
 				log.Error(err.Error())

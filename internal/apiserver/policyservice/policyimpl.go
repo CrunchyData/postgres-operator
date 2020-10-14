@@ -246,12 +246,14 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 			return resp
 		}
 
+		log.Debugf("patching deployment %s: %s", d.ObjectMeta.Name, patch)
 		_, err = apiserver.Clientset.AppsV1().Deployments(ns).Patch(d.ObjectMeta.Name, types.MergePatchType, patch)
 		if err != nil {
 			log.Error(err)
 		}
 
 		//update the pgcluster crd labels with the new policy
+		log.Debugf("patching cluster %s: %s", cl.Name, patch)
 		_, err = apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Patch(cl.Name, types.MergePatchType, patch)
 		if err != nil {
 			log.Error(err)

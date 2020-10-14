@@ -19,6 +19,7 @@ import (
 	"errors"
 
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
+	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 
@@ -60,6 +61,7 @@ func patchConfigMapData(kubeclientset kubernetes.Interface, configMap *corev1.Co
 		return err
 	}
 
+	log.Debugf("patching configmap %s: %s", configMap.GetName(), jsonOpBytes)
 	if _, err := kubeclientset.CoreV1().ConfigMaps(configMap.GetNamespace()).Patch(configMap.GetName(),
 		types.JSONPatchType, jsonOpBytes); err != nil {
 		return err

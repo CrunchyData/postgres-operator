@@ -121,6 +121,7 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	}).
 		Bytes()
 	if err == nil {
+		log.Debugf("patching cluster %s: %s", clusterName, patch)
 		patchedCluster, err = clientset.CrunchydataV1().
 			Pgclusters(namespace).Patch(clusterName, types.MergePatchType, patch)
 	}
@@ -151,8 +152,9 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 		return nil, err
 	}
 	for _, r := range replicas.Items {
-		_, err := clientset.CrunchydataV1().Pgreplicas(namespace).
-			Patch(r.GetName(), types.MergePatchType, patch)
+		log.Debugf("patching replica %s: %s", r.GetName(), patch)
+		_, err := clientset.CrunchydataV1().
+			Pgreplicas(namespace).Patch(r.GetName(), types.MergePatchType, patch)
 		if err != nil {
 			return nil, err
 		}
@@ -231,8 +233,10 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 
 	patch, err = kubeapi.NewMergePatch().Add("data", "init")("true").Bytes()
 	if err == nil {
-		_, err = clientset.CoreV1().ConfigMaps(namespace).
-			Patch(fmt.Sprintf("%s-pgha-config", clusterName), types.MergePatchType, patch)
+		name := fmt.Sprintf("%s-pgha-config", clusterName)
+		log.Debugf("patching configmap %s: %s", name, patch)
+		_, err = clientset.CoreV1().
+			ConfigMaps(namespace).Patch(name, types.MergePatchType, patch)
 	}
 	if err != nil {
 		return nil, err

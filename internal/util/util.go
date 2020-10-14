@@ -99,7 +99,7 @@ func PatchClusterCRD(clientset pgo.Interface, labelMap map[string]string, oldCrd
 		return err
 	}
 
-	log.Debug(string(patchBytes))
+	log.Debugf("patching cluster %s: %s", oldCrd.Spec.Name, patchBytes)
 
 	_, err6 := clientset.CrunchydataV1().Pgclusters(namespace).Patch(oldCrd.Spec.Name, types.MergePatchType, patchBytes)
 

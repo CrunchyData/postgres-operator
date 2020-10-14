@@ -93,6 +93,7 @@ func DisableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) erro
 		return err
 	}
 
+	log.Debugf("patching configmap %s: %s", pghaConfigMapName, jsonOpBytes)
 	if _, err := clientset.CoreV1().ConfigMaps(namespace).Patch(pghaConfigMapName,
 		types.JSONPatchType, jsonOpBytes); err != nil {
 		return err

@@ -947,6 +947,7 @@ func getSourcePgcluster(clientset pgo.Interface, namespace, sourceClusterName st
 func patchPgtaskComplete(clientset kubeapi.Interface, namespace, taskName string) {
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(crv1.CompletedStatus).Bytes()
 	if err == nil {
+		log.Debugf("patching task %s: %s", taskName, patch)
 		_, err = clientset.CrunchydataV1().Pgtasks(namespace).Patch(taskName, types.JSONPatchType, patch)
 	}
 	if err != nil {
