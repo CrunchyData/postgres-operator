@@ -155,10 +155,6 @@ var BackrestjobTemplate *template.Template
 
 const backrestjobPath = "backrest-job.json"
 
-var BackrestRestorejobTemplate *template.Template
-
-const backrestRestorejobPath = "backrest-restore-job.json"
-
 var PgDumpBackupJobTemplate *template.Template
 
 const pgDumpBackupJobPath = "pgdump-job.json"
@@ -676,11 +672,6 @@ func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) 
 	}
 
 	BackrestjobTemplate, err = c.LoadTemplate(cMap, rootPath, backrestjobPath)
-	if err != nil {
-		return err
-	}
-
-	BackrestRestorejobTemplate, err = c.LoadTemplate(cMap, rootPath, backrestRestorejobPath)
 	if err != nil {
 		return err
 	}

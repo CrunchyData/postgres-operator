@@ -18,14 +18,9 @@ package config
 // annotations used by the operator
 const (
 	// ANNOTATION_BACKREST_RESTORE is used to annotate pgclusters that are restoring
-	ANNOTATION_BACKREST_RESTORE          = "pgo-backrest-restore"
-	ANNOTATION_PGHA_BOOTSTRAP_REPLICA    = "pgo-pgha-bootstrap-replica"
-	ANNOTATION_CLONE_BACKREST_PVC_SIZE   = "clone-backrest-pvc-size"
-	ANNOTATION_CLONE_ENABLE_METRICS      = "clone-enable-metrics"
-	ANNOTATION_CLONE_PVC_SIZE            = "clone-pvc-size"
-	ANNOTATION_CLONE_SOURCE_CLUSTER_NAME = "clone-source-cluster-name"
-	ANNOTATION_CLONE_TARGET_CLUSTER_NAME = "clone-target-cluster-name"
-	ANNOTATION_PRIMARY_DEPLOYMENT        = "primary-deployment"
+	ANNOTATION_BACKREST_RESTORE       = "pgo-backrest-restore"
+	ANNOTATION_PGHA_BOOTSTRAP_REPLICA = "pgo-pgha-bootstrap-replica"
+	ANNOTATION_PRIMARY_DEPLOYMENT     = "primary-deployment"
 	// annotation to track the cluster's current primary
 	ANNOTATION_CURRENT_PRIMARY = "current-primary"
 	// annotation to indicate whether a cluster has been upgraded

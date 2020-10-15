@@ -107,7 +107,6 @@ provides:
 | apply       | `pgo apply mypolicy --selector=name=mycluster`               | Apply a SQL policy on a Postgres cluster(s) that have a label matching `service-name=mycluster` |
 | backup      | `pgo backup mycluster`                                       | Perform a backup on a Postgres cluster(s)                                                       |
 | cat         | `pgo cat mycluster filepath`                                 | Perform a Linux `cat` command on the cluster.                                                   |
-| clone      | `pgo clone oldcluster newcluster`                             | DEPRECATED: Copies the primary database of an existing cluster to a new cluster. For a more robust method to copy data, use `pgo create cluster newcluster --restore-from oldcluster `                         |
 | create      | `pgo create cluster mycluster`                               | Create an Operator resource type (e.g. cluster, policy, schedule, user, namespace, pgouser, pgorole)                         |
 | delete      | `pgo delete cluster mycluster`                               | Delete an Operator resource type (e.g. cluster, policy, user, schedule, namespace, pgouser, pgorole)                         |
 | df          | `pgo df mycluster`                                           | Display the disk status/capacity of a Postgres cluster.                                         |

@@ -26,7 +26,6 @@ const (
 	// MISC
 	APPLY_POLICY_PERM = "ApplyPolicy"
 	CAT_PERM          = "Cat"
-	CLONE_PERM        = "Clone"
 	DF_CLUSTER_PERM   = "DfCluster"
 	LABEL_PERM        = "Label"
 	RELOAD_PERM       = "Reload"
@@ -113,7 +112,6 @@ func initializePerms() {
 		// MISC
 		APPLY_POLICY_PERM: "yes",
 		CAT_PERM:          "yes",
-		CLONE_PERM:        "yes",
 		DF_CLUSTER_PERM:   "yes",
 		LABEL_PERM:        "yes",
 		RELOAD_PERM:       "yes",

@@ -154,10 +154,6 @@ func (c *Controller) processNextItem() bool {
 	case crv1.PgtaskWorkflow:
 		log.Debugf("workflow task added [%s] ID [%s]", keyResourceName, tmpTask.Spec.Parameters[crv1.PgtaskWorkflowID])
 
-	case crv1.PgtaskCloneStep1, crv1.PgtaskCloneStep2, crv1.PgtaskCloneStep3:
-		log.Debugf("clone task added [%s]", keyResourceName)
-		clusteroperator.Clone(c.Client, c.Client.Config, keyNamespace, tmpTask)
-
 	default:
 		log.Debugf("unknown task type on pgtask added [%s]", tmpTask.Spec.TaskType)
 	}

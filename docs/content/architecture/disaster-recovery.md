@@ -177,8 +177,7 @@ will occur during the restore.
 provided for the primary instance. This may have been set with the
 `--storage-class` flag when the cluster was originally created
 - A Kubernetes Job is created that will perform a pgBackRest restore operation
-to the newly allocated PVC. This is facilitated by the `pgo-backrest-restore`
-container image.
+to the newly allocated PVC.
 
 ![PostgreSQL Operator Restore Step 1](/images/postgresql-cluster-restore-step-1.png)
 

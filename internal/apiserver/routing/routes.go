@@ -18,7 +18,6 @@ limitations under the License.
 import (
 	"github.com/crunchydata/postgres-operator/internal/apiserver/backrestservice"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/catservice"
-	"github.com/crunchydata/postgres-operator/internal/apiserver/cloneservice"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/clusterservice"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/configservice"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/dfservice"
@@ -49,7 +48,6 @@ import (
 func RegisterAllRoutes(r *mux.Router) {
 	RegisterBackrestSvcRoutes(r)
 	RegisterCatSvcRoutes(r)
-	RegisterCloneSvcRoutes(r)
 	RegisterClusterSvcRoutes(r)
 	RegisterConfigSvcRoutes(r)
 	RegisterDfSvcRoutes(r)
@@ -83,11 +81,6 @@ func RegisterBackrestSvcRoutes(r *mux.Router) {
 // RegisterCatSvcRoutes registers all routes from the Cat Service
 func RegisterCatSvcRoutes(r *mux.Router) {
 	r.HandleFunc("/cat", catservice.CatHandler).Methods("POST")
-}
-
-// RegisterCloneSvcRoutes registers all routes from the Clone Service
-func RegisterCloneSvcRoutes(r *mux.Router) {
-	r.HandleFunc("/clone", cloneservice.CloneHandler).Methods("POST")
 }
 
 // RegisterClusterSvcRoutes registers all routes from the Cluster Service
