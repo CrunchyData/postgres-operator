@@ -40,22 +40,24 @@ type Pgcluster struct {
 // PgclusterSpec is the CRD that defines a Crunchy PG Cluster Spec
 // swagger:ignore
 type PgclusterSpec struct {
-	Namespace       string        `json:"namespace"`
-	Name            string        `json:"name"`
-	ClusterName     string        `json:"clustername"`
-	Policies        string        `json:"policies"`
-	CCPImage        string        `json:"ccpimage"`
-	CCPImageTag     string        `json:"ccpimagetag"`
-	CCPImagePrefix  string        `json:"ccpimageprefix"`
-	PGOImagePrefix  string        `json:"pgoimageprefix"`
-	Port            string        `json:"port"`
-	PGBadgerPort    string        `json:"pgbadgerport"`
-	ExporterPort    string        `json:"exporterport"`
-	PrimaryStorage  PgStorageSpec `json:primarystorage`
-	WALStorage      PgStorageSpec `json:walstorage`
-	ArchiveStorage  PgStorageSpec `json:archivestorage`
-	ReplicaStorage  PgStorageSpec `json:replicastorage`
-	BackrestStorage PgStorageSpec `json:backreststorage`
+	Namespace      string `json:"namespace"`
+	Name           string `json:"name"`
+	ClusterName    string `json:"clustername"`
+	Policies       string `json:"policies"`
+	CCPImage       string `json:"ccpimage"`
+	CCPImageTag    string `json:"ccpimagetag"`
+	CCPImagePrefix string `json:"ccpimageprefix"`
+	PGOImagePrefix string `json:"pgoimageprefix"`
+	Port           string `json:"port"`
+	PGBadgerPort   string `json:"pgbadgerport"`
+	ExporterPort   string `json:"exporterport"`
+
+	PrimaryStorage  PgStorageSpec
+	WALStorage      PgStorageSpec
+	ArchiveStorage  PgStorageSpec
+	ReplicaStorage  PgStorageSpec
+	BackrestStorage PgStorageSpec
+
 	// Resources behaves just like the "Requests" section of a Kubernetes
 	// container definition. You can set individual items such as "cpu" and
 	// "memory", e.g. "{ cpu: "0.5", memory: "2Gi" }"
