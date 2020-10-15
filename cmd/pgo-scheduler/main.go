@@ -163,8 +163,7 @@ func main() {
 	// if the namespace operating mode is not disabled, then create and start a namespace
 	// controller
 	if namespaceOperatingMode != ns.NamespaceOperatingModeDisabled {
-		if err := createAndStartNamespaceController(clientset, controllerManager,
-			scheduler, stop); err != nil {
+		if err := createAndStartNamespaceController(clientset, controllerManager, stop); err != nil {
 			log.WithFields(log.Fields{}).Fatalf("Failed to create namespace informer factory: %s",
 				err)
 			os.Exit(2)
@@ -178,8 +177,7 @@ func main() {
 	// controller.  This allows for namespace and RBAC reconciliation logic to be run in a
 	// consistent manner regardless of the namespace operating mode being utilized.
 	if namespaceOperatingMode != ns.NamespaceOperatingModeDisabled {
-		if err := createAndStartNamespaceController(clientset, controllerManager, scheduler,
-			stop); err != nil {
+		if err := createAndStartNamespaceController(clientset, controllerManager, stop); err != nil {
 			log.Fatal(err)
 		}
 	} else {
@@ -187,8 +185,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if err := createAndStartNamespaceController(fakeClient, controllerManager, scheduler,
-			stop); err != nil {
+		if err := createAndStartNamespaceController(fakeClient, controllerManager, stop); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -221,8 +218,7 @@ func setNamespaceOperatingMode(clientset kubernetes.Interface) error {
 
 // createAndStartNamespaceController creates a namespace controller and then starts it
 func createAndStartNamespaceController(kubeClientset kubernetes.Interface,
-	controllerManager controller.Manager, schedular *sched.Scheduler,
-	stopCh <-chan struct{}) error {
+	controllerManager controller.Manager, stopCh <-chan struct{}) error {
 
 	nsKubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientset,
 		nsRefreshInterval,

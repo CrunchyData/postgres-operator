@@ -1,4 +1,4 @@
-package rmdata
+package main
 
 /*
 Copyright 2019 - 2020 Crunchy Data
@@ -30,7 +30,7 @@ import (
 )
 
 const (
-	MAX_TRIES            = 16
+	maximumTries         = 16
 	pgBackRestPathFormat = "/backrestrepo/%s"
 	pgBackRestRepoPVC    = "%s-pgbr-repo"
 	pgDumpPVCPrefix      = "backup-%s-pgdump"
@@ -218,9 +218,6 @@ func removeBackupSecrets(request Request) {
 	if err := request.Clientset.CoreV1().Secrets(request.Namespace).Delete(secretName, &metav1.DeleteOptions{}); err != nil {
 		log.Error(err)
 	}
-
-	// and done!
-	return
 }
 
 // removeClusterConfigmaps deletes the configmaps that are created for each
@@ -314,7 +311,7 @@ func removeCluster(request Request) {
 	// this was here before...this looks like it ensures that deployments are
 	// deleted. the only thing I'm modifying is the selector
 	var completed bool
-	for i := 0; i < MAX_TRIES; i++ {
+	for i := 0; i < maximumTries; i++ {
 		deployments, err := request.Clientset.
 			AppsV1().Deployments(request.Namespace).
 			List(metav1.ListOptions{LabelSelector: selector})
@@ -345,7 +342,7 @@ func removeReplica(request Request) error {
 
 	//wait for the deployment to go away fully
 	var completed bool
-	for i := 0; i < MAX_TRIES; i++ {
+	for i := 0; i < maximumTries; i++ {
 		_, err = request.Clientset.
 			AppsV1().Deployments(request.Namespace).
 			Get(request.ReplicaName, metav1.GetOptions{})
@@ -629,7 +626,7 @@ func removeBackupJobs(request Request) {
 		// ...ensure all the jobs are deleted
 		var completed bool
 
-		for i := 0; i < MAX_TRIES; i++ {
+		for i := 0; i < maximumTries; i++ {
 			jobs, err := request.Clientset.
 				BatchV1().Jobs(request.Namespace).
 				List(metav1.ListOptions{LabelSelector: selector})
@@ -644,7 +641,7 @@ func removeBackupJobs(request Request) {
 		}
 
 		if !completed {
-			log.Error("could not remove all backup jobs for [%s]", selector)
+			log.Errorf("could not remove all backup jobs for [%s]", selector)
 		}
 	}
 }

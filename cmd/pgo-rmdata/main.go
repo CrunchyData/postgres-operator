@@ -21,15 +21,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/crunchydata/postgres-operator/cmd/pgo-rmdata/rmdata"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crunchylog "github.com/crunchydata/postgres-operator/internal/logging"
 )
 
-var request rmdata.Request
-
 func main() {
-	request = rmdata.Request{
+	request := Request{
 		RemoveData:       false,
 		IsReplica:        false,
 		IsBackup:         false,
@@ -67,6 +64,6 @@ func main() {
 	log.Infoln("pgo-rmdata starts")
 	log.Infof("request is %s", request.String())
 
-	rmdata.Delete(request)
+	Delete(request)
 
 }
