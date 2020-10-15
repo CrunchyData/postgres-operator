@@ -21,9 +21,6 @@ import (
 	"fmt"
 )
 
-// md5Prefix is used as a prefix to the hashed password, i.e. "md5[a-f0-9]{32}"
-const md5Prefix = "md5"
-
 var (
 	// ErrMD5PasswordInvalid is returned when the password attributes are invalid
 	ErrMD5PasswordInvalid = errors.New(`invalid password attributes. must provide "username" and "password"`)

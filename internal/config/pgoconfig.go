@@ -264,8 +264,6 @@ const LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
 const NODEPORT_SERVICE_TYPE = "NodePort"
 const CONFIG_PATH = "pgo.yaml"
 
-var log_statement_values = []string{"ddl", "none", "mod", "all"}
-
 const DEFAULT_BACKREST_PORT = 2022
 const DEFAULT_PGADMIN_PORT = "5050"
 const DEFAULT_PGBADGER_PORT = "10000"

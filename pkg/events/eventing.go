@@ -41,8 +41,6 @@ func Publish(e EventInterface) error {
 	}
 
 	cfg := nsq.NewConfig()
-	if cfg == nil {
-	}
 	//cfg.UserAgent = fmt.Sprintf("to_nsq/%s go-nsq/%s", version.Binary, nsq.VERSION)
 	cfg.UserAgent = fmt.Sprintf("go-nsq/%s", nsq.VERSION)
 

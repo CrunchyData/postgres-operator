@@ -49,24 +49,3 @@ func publishClusterComplete(clusterName, namespace string, cluster *crv1.Pgclust
 	return err
 
 }
-
-func publishPrimaryNotReady(clusterName, identifier, username, namespace string) {
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventPrimaryNotReadyFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  username,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventPrimaryNotReady,
-		},
-		Clustername: clusterName,
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		log.Error(err.Error())
-	}
-}

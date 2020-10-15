@@ -30,12 +30,9 @@ import (
 )
 
 const (
-	maximumTries         = 16
-	pgBackRestPathFormat = "/backrestrepo/%s"
-	pgBackRestRepoPVC    = "%s-pgbr-repo"
-	pgDumpPVCPrefix      = "backup-%s-pgdump"
-	pgDataPathFormat     = "/pgdata/%s"
-	tablespacePathFormat = "/tablespaces/%s/%s"
+	maximumTries      = 16
+	pgBackRestRepoPVC = "%s-pgbr-repo"
+	pgDumpPVCPrefix   = "backup-%s-pgdump"
 	// the tablespace on a replcia follows the pattern "<replicaName-tablespace-.."
 	tablespaceReplicaPVCPattern = "%s-tablespace-"
 	// the WAL PVC on a replcia follows the pattern "<replicaName-wal>"
@@ -253,26 +250,6 @@ func removeClusterConfigmaps(request Request) {
 	// log the fact there was an error; this function is just a pass through
 	for _, cm := range clusterConfigmaps {
 		if err := request.Clientset.CoreV1().ConfigMaps(request.Namespace).Delete(cm, &metav1.DeleteOptions{}); err != nil && !kerror.IsNotFound(err) {
-			log.Error(err)
-		}
-	}
-}
-
-func removeClusterJobs(request Request) {
-	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName
-	jobs, err := request.Clientset.
-		BatchV1().Jobs(request.Namespace).
-		List(metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	for i := 0; i < len(jobs.Items); i++ {
-		deletePropagation := metav1.DeletePropagationForeground
-		err := request.Clientset.
-			BatchV1().Jobs(request.Namespace).
-			Delete(jobs.Items[i].Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
-		if err != nil {
 			log.Error(err)
 		}
 	}

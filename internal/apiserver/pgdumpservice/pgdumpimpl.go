@@ -32,8 +32,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const pgDumpCommand = "pgdump"
-const pgDumpInfoCommand = "info"
 const pgDumpTaskExtension = "-pgdump"
 const pgDumpJobExtension = "-pgdump-job"
 
@@ -296,28 +294,6 @@ func buildPgTaskForDump(clusterName, taskName, action, podName, containerName st
 		Spec: spec,
 	}
 	return newInstance
-}
-
-func getDeployName(cluster *crv1.Pgcluster, ns string) (string, error) {
-	var depName string
-
-	selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
-
-	deps, err := apiserver.Clientset.
-		AppsV1().Deployments(ns).
-		List(metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		return depName, err
-	}
-
-	if len(deps.Items) != 1 {
-		return depName, errors.New("error:  deployment count is wrong for pgdump backup " + cluster.Spec.Name)
-	}
-	for _, d := range deps.Items {
-		return d.Name, err
-	}
-
-	return depName, errors.New("unknown error in pgdump backup")
 }
 
 func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {

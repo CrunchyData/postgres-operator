@@ -81,7 +81,6 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	if err != nil {
 		log.Error(err)
 	}
-	return
 }
 
 // onDelete is called when a postgresql operator job is deleted

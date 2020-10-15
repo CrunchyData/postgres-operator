@@ -138,7 +138,7 @@ func parseBackupOpts(backupOpts string) []string {
 
 func createBackupOptionsStruct(backupOpts string, request interface{}) (backupOptions, string, error) {
 
-	switch request.(type) {
+	switch request := request.(type) {
 	case *msgs.CreateBackrestBackupRequest:
 		return &pgBackRestBackupOptions{}, "pgBackRest", nil
 	case *msgs.RestoreRequest, *msgs.CreateClusterRequest:
@@ -152,7 +152,7 @@ func createBackupOptionsStruct(backupOpts string, request interface{}) (backupOp
 	case *msgs.PgRestoreRequest:
 		return &pgRestoreOptions{}, "pg_restore", nil
 	case *msgs.CreateScheduleRequest:
-		if request.(*msgs.CreateScheduleRequest).ScheduleType == "pgbackrest" {
+		if request.ScheduleType == "pgbackrest" {
 			return &pgBackRestBackupOptions{}, "pgBackRest", nil
 		}
 	}

@@ -113,6 +113,9 @@ func DeletePolicy(client pgo.Interface, policyName, ns, pgouser string) msgs.Del
 			//that deleted the policy
 			policy.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 			_, err = client.CrunchydataV1().Pgpolicies(ns).Update(&policy)
+			if err != nil {
+				log.Error(err)
+			}
 
 			//ok, now delete the pgpolicy
 			policyFound = true

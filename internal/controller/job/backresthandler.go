@@ -25,7 +25,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator/backrest"
-	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 )
@@ -149,7 +148,7 @@ func (c *Controller) handleBackrestStanzaCreateUpdate(job *apiv1.Job) error {
 			return err
 		}
 
-		backrestoperator.CreateInitialBackup(c.Client, job.ObjectMeta.Namespace,
+		backrest.CreateInitialBackup(c.Client, job.ObjectMeta.Namespace,
 			clusterName, backrestRepoPodName)
 
 	}

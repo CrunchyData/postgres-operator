@@ -32,7 +32,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	authv1 "k8s.io/api/authorization/v1"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -385,7 +384,7 @@ func ReconcileServiceAccount(clientset kubernetes.Interface,
 		return createdOrUpdated, err
 	}
 
-	templatedServiceAccount := corev1.ServiceAccount{}
+	templatedServiceAccount := v1.ServiceAccount{}
 	if err := json.Unmarshal(buffer.Bytes(), &templatedServiceAccount); err != nil {
 		return createdOrUpdated, err
 	}

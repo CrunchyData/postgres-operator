@@ -33,13 +33,6 @@ type showPgAdminTextPadding struct {
 	ServiceName int
 }
 
-// updatePgAdminTextPadding contains the values for what the text padding should be
-type updatePgAdminTextPadding struct {
-	ClusterName  int
-	ErrorMessage int
-	Status       int
-}
-
 func createPgAdmin(args []string, ns string) {
 	if Selector == "" && len(args) == 0 {
 		fmt.Println("Error: The --selector flag is required when cluster is unspecified.")
