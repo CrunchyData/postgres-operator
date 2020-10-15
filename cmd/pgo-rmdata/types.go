@@ -1,4 +1,4 @@
-package rmdata
+package main
 
 /*
 Copyright 2019 - 2020 Crunchy Data
@@ -34,6 +34,7 @@ type Request struct {
 }
 
 func (x Request) String() string {
-	msg := fmt.Sprintf("Request: Cluster [%s] ClusterPGHAScope [%s] Namespace [%s] ReplicaName [%] RemoveData [%t] RemoveBackup [%t] IsReplica [%t] IsBackup [%t]", x.ClusterName, x.ClusterPGHAScope, x.Namespace, x.ReplicaName, x.RemoveData, x.RemoveBackup, x.IsReplica, x.IsBackup)
+	msg := fmt.Sprintf("Request: Cluster [%s] ClusterPGHAScope [%s] Namespace [%s] ReplicaName [%s] RemoveData [%t] RemoveBackup [%t] IsReplica [%t] IsBackup [%t]",
+		x.ClusterName, x.ClusterPGHAScope, x.Namespace, x.ReplicaName, x.RemoveData, x.RemoveBackup, x.IsReplica, x.IsBackup)
 	return msg
 }

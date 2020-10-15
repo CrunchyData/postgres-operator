@@ -52,37 +52,37 @@ func main() {
 		os.Exit(2)
 	}
 
-	COMMAND := os.Getenv("COMMAND")
-	log.Debugf("setting COMMAND to %s", COMMAND)
-	if COMMAND == "" {
+	Command := os.Getenv("COMMAND")
+	log.Debugf("setting COMMAND to %s", Command)
+	if Command == "" {
 		log.Error("COMMAND env var not set")
 		os.Exit(2)
 	}
 
-	COMMAND_OPTS := os.Getenv("COMMAND_OPTS")
-	log.Debugf("setting COMMAND_OPTS to %s", COMMAND_OPTS)
+	CommandOpts := os.Getenv("COMMAND_OPTS")
+	log.Debugf("setting COMMAND_OPTS to %s", CommandOpts)
 
-	PODNAME := os.Getenv("PODNAME")
-	log.Debugf("setting PODNAME to %s", PODNAME)
-	if PODNAME == "" {
+	PodName := os.Getenv("PODNAME")
+	log.Debugf("setting PODNAME to %s", PodName)
+	if PodName == "" {
 		log.Error("PODNAME env var not set")
 		os.Exit(2)
 	}
 
-	REPO_TYPE := os.Getenv("PGBACKREST_REPO_TYPE")
-	log.Debugf("setting REPO_TYPE to %s", REPO_TYPE)
+	RepoType := os.Getenv("PGBACKREST_REPO_TYPE")
+	log.Debugf("setting REPO_TYPE to %s", RepoType)
 
 	// determine the setting of PGHA_PGBACKREST_LOCAL_S3_STORAGE
 	// we will discard the error and treat the value as "false" if it is not
 	// explicitly set
-	PGHA_PGBACKREST_LOCAL_S3_STORAGE, _ := strconv.ParseBool(os.Getenv("PGHA_PGBACKREST_LOCAL_S3_STORAGE"))
-	log.Debugf("setting PGHA_PGBACKREST_LOCAL_S3_STORAGE to %v", PGHA_PGBACKREST_LOCAL_S3_STORAGE)
+	LocalS3Storage, _ := strconv.ParseBool(os.Getenv("PGHA_PGBACKREST_LOCAL_S3_STORAGE"))
+	log.Debugf("setting PGHA_PGBACKREST_LOCAL_S3_STORAGE to %v", LocalS3Storage)
 
 	// parse the environment variable and store the appropriate boolean value
 	// we will discard the error and treat the value as "false" if it is not
 	// explicitly set
-	PGHA_PGBACKREST_S3_VERIFY_TLS, _ := strconv.ParseBool(os.Getenv("PGHA_PGBACKREST_S3_VERIFY_TLS"))
-	log.Debugf("setting PGHA_PGBACKREST_S3_VERIFY_TLS to %v", PGHA_PGBACKREST_S3_VERIFY_TLS)
+	S3VerifyTLS, _ := strconv.ParseBool(os.Getenv("PGHA_PGBACKREST_S3_VERIFY_TLS"))
+	log.Debugf("setting PGHA_PGBACKREST_S3_VERIFY_TLS to %v", S3VerifyTLS)
 
 	client, err := kubeapi.NewClient()
 	if err != nil {
@@ -93,43 +93,43 @@ func main() {
 	bashcmd[0] = "bash"
 	cmdStrs := make([]string, 0)
 
-	switch COMMAND {
+	switch Command {
 	case crv1.PgtaskBackrestStanzaCreate:
 		log.Info("backrest stanza-create command requested")
 		cmdStrs = append(cmdStrs, backrestCommand)
 		cmdStrs = append(cmdStrs, backrestStanzaCreateCommand)
-		cmdStrs = append(cmdStrs, COMMAND_OPTS)
+		cmdStrs = append(cmdStrs, CommandOpts)
 	case crv1.PgtaskBackrestInfo:
 		log.Info("backrest info command requested")
 		cmdStrs = append(cmdStrs, backrestCommand)
 		cmdStrs = append(cmdStrs, backrestInfoCommand)
-		cmdStrs = append(cmdStrs, COMMAND_OPTS)
+		cmdStrs = append(cmdStrs, CommandOpts)
 	case crv1.PgtaskBackrestBackup:
 		log.Info("backrest backup command requested")
 		cmdStrs = append(cmdStrs, backrestCommand)
 		cmdStrs = append(cmdStrs, backrestBackupCommand)
-		cmdStrs = append(cmdStrs, COMMAND_OPTS)
+		cmdStrs = append(cmdStrs, CommandOpts)
 	default:
-		log.Error("unsupported backup command specified " + COMMAND)
+		log.Error("unsupported backup command specified " + Command)
 		os.Exit(2)
 	}
 
-	if PGHA_PGBACKREST_LOCAL_S3_STORAGE {
+	if LocalS3Storage {
 		firstCmd := cmdStrs
 		cmdStrs = append(cmdStrs, "&&")
 		cmdStrs = append(cmdStrs, strings.Join(firstCmd, " "))
 		cmdStrs = append(cmdStrs, repoTypeFlagS3)
 		// pass in the flag to disable TLS verification, if set
 		// otherwise, maintain default behavior and verify TLS
-		if !PGHA_PGBACKREST_S3_VERIFY_TLS {
+		if !S3VerifyTLS {
 			cmdStrs = append(cmdStrs, noRepoS3VerifyTLS)
 		}
 		log.Info("backrest command will be executed for both local and s3 storage")
-	} else if REPO_TYPE == "s3" {
+	} else if RepoType == "s3" {
 		cmdStrs = append(cmdStrs, repoTypeFlagS3)
 		// pass in the flag to disable TLS verification, if set
 		// otherwise, maintain default behavior and verify TLS
-		if !PGHA_PGBACKREST_S3_VERIFY_TLS {
+		if !S3VerifyTLS {
 			cmdStrs = append(cmdStrs, noRepoS3VerifyTLS)
 		}
 		log.Info("s3 flag enabled for backrest command")
@@ -139,7 +139,7 @@ func main() {
 
 	log.Infof("command is %s ", strings.Join(cmdStrs, " "))
 	reader := strings.NewReader(strings.Join(cmdStrs, " "))
-	output, stderr, err := kubeapi.ExecToPodThroughAPI(client.Config, client, bashcmd, containername, PODNAME, Namespace, reader)
+	output, stderr, err := kubeapi.ExecToPodThroughAPI(client.Config, client, bashcmd, containername, PodName, Namespace, reader)
 	if err != nil {
 		log.Info("output=[" + output + "]")
 		log.Info("stderr=[" + stderr + "]")
