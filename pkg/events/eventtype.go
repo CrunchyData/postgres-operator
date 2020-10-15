@@ -37,9 +37,6 @@ const (
 	EventReloadCluster                 = "ReloadCluster"
 	EventPrimaryNotReady               = "PrimaryNotReady"
 	EventPrimaryDeleted                = "PrimaryDeleted"
-	EventCloneCluster                  = "CloneCluster"
-	EventCloneClusterCompleted         = "CloneClusterCompleted"
-	EventCloneClusterFailure           = "CloneClusterFailure"
 	EventCreateCluster                 = "CreateCluster"
 	EventCreateClusterCompleted        = "CreateClusterCompleted"
 	EventCreateClusterFailure          = "CreateClusterFailure"
@@ -119,61 +116,6 @@ func (p EventReloadClusterFormat) GetHeader() EventHeader {
 func (lvl EventReloadClusterFormat) String() string {
 	msg := fmt.Sprintf("Event %s - (reload) name %s", lvl.EventHeader, lvl.Clustername)
 	return msg
-}
-
-//----------------------------
-type EventCloneClusterFailureFormat struct {
-	EventHeader       `json:"eventheader"`
-	SourceClusterName string `json:"sourceClusterName"`
-	TargetClusterName string `json:"targetClusterName"`
-	ErrorMessage      string `json:"errormessage"`
-	WorkflowID        string `json:"workflowid"`
-}
-
-func (p EventCloneClusterFailureFormat) GetHeader() EventHeader {
-	return p.EventHeader
-}
-
-func (lvl EventCloneClusterFailureFormat) String() string {
-	return fmt.Sprintf(
-		"Event %s - (clone cluster failure) sourceclustername %s targetclustername %s workflow %s error %s",
-		lvl.EventHeader, lvl.SourceClusterName, lvl.TargetClusterName, lvl.WorkflowID, lvl.ErrorMessage)
-}
-
-//----------------------------
-type EventCloneClusterFormat struct {
-	EventHeader       `json:"eventheader"`
-	SourceClusterName string `json:"sourceClusterName"`
-	TargetClusterName string `json:"targetClusterName"`
-	WorkflowID        string `json:"workflowid"`
-}
-
-func (p EventCloneClusterFormat) GetHeader() EventHeader {
-	return p.EventHeader
-}
-
-func (lvl EventCloneClusterFormat) String() string {
-	return fmt.Sprintf(
-		"Event %s - (Clone cluster) sourceclustername %s targetclustername %s workflow %s",
-		lvl.EventHeader, lvl.SourceClusterName, lvl.TargetClusterName, lvl.WorkflowID)
-}
-
-//----------------------------
-type EventCloneClusterCompletedFormat struct {
-	EventHeader       `json:"eventheader"`
-	SourceClusterName string `json:"sourceClusterName"`
-	TargetClusterName string `json:"targetClusterName"`
-	WorkflowID        string `json:"workflowid"`
-}
-
-func (p EventCloneClusterCompletedFormat) GetHeader() EventHeader {
-	return p.EventHeader
-}
-
-func (lvl EventCloneClusterCompletedFormat) String() string {
-	return fmt.Sprintf(
-		"Event %s - (Clone cluster completed) sourceclustername %s targetclustername %s workflow %s",
-		lvl.EventHeader, lvl.SourceClusterName, lvl.TargetClusterName, lvl.WorkflowID)
 }
 
 //----------------------------

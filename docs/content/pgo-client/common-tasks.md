@@ -962,7 +962,7 @@ deleted using `pgo delete cluster --keep-backups`.
 You can clone a PostgreSQL cluster by running the following command:
 
 ```
-pgo clone hacluster newhacluster
+pgo create cluster newcluster --restore-from=oldcluster
 ```
 
 By leveraging `pgo create cluster`, you are able to copy the data from a

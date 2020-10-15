@@ -20,8 +20,6 @@ VERSION=$PGO_IMAGE_TAG
 IMAGES=(
     pgo-event
     pgo-backrest-repo
-    pgo-backrest-repo-sync
-    pgo-backrest-restore
     pgo-scheduler
     pgo-sqlrunner
     postgres-operator

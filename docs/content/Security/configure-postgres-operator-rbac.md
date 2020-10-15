@@ -51,7 +51,6 @@ The following list shows the current complete list of possible pgo permissions t
 |---|---|
 |ApplyPolicy | allow *pgo apply*|
 |Cat | allow *pgo cat*|
-|Clone | allow *pgo clone*|
 |CreateBackup | allow *pgo backup*|
 |CreateCluster | allow *pgo create cluster*|
 |CreateDump | allow *pgo create pgdump*|

@@ -36,7 +36,6 @@ const PgtaskPgAdminAdd = "add-pgadmin"
 const PgtaskPgAdminDelete = "delete-pgadmin"
 
 const PgtaskWorkflow = "workflow"
-const PgtaskWorkflowCloneType = "cloneworkflow"
 const PgtaskWorkflowCreateClusterType = "createcluster"
 const PgtaskWorkflowBackrestRestoreType = "pgbackrestrestore"
 const PgtaskWorkflowBackupType = "backupworkflow"
@@ -48,11 +47,6 @@ const PgtaskWorkflowBackrestRestorePVCCreatedStatus = "restored PVC created"
 const PgtaskWorkflowBackrestRestorePrimaryCreatedStatus = "restored Primary created"
 const PgtaskWorkflowBackrestRestoreJobCreatedStatus = "restore job created"
 
-const PgtaskWorkflowCloneCreatePVC = "clone 1.1: create pvc"
-const PgtaskWorkflowCloneSyncRepo = "clone 1.2: sync pgbackrest repo"
-const PgtaskWorkflowCloneRestoreBackup = "clone 2: restoring backup"
-const PgtaskWorkflowCloneClusterCreate = "clone 3: cluster creating"
-
 const PgtaskBackrest = "backrest"
 const PgtaskBackrestBackup = "backup"
 const PgtaskBackrestInfo = "info"
@@ -63,10 +57,6 @@ const PgtaskpgDump = "pgdump"
 const PgtaskpgDumpBackup = "pgdumpbackup"
 const PgtaskpgDumpInfo = "pgdumpinfo"
 const PgtaskpgRestore = "pgrestore"
-
-const PgtaskCloneStep1 = "clone-step1" // performs a pgBackRest repo sync
-const PgtaskCloneStep2 = "clone-step2" // performs a pgBackRest restore
-const PgtaskCloneStep3 = "clone-step3" // creates the Pgcluster
 
 // this is ported over from legacy backup code
 const PgBackupJobSubmitted = "Backup Job Submitted"

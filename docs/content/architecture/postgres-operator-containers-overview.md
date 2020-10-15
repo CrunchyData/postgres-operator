@@ -17,7 +17,7 @@ The PostgreSQL Operator orchestrates a series of PostgreSQL and PostgreSQL relat
 
 ### Backup and Restore
 
-* **pgBackRest** (crunchy-backrest-restore). pgBackRest is a high performance backup and restore utility for PostgreSQL.  The crunchy-backrest-restore container executes the pgBackRest utility, allowing FULL and DELTA restore capability.
+* **pgBackRest** (crunchy-postgres-ha). pgBackRest is a high performance backup and restore utility for PostgreSQL.  The crunchy-postgres-ha container executes the pgBackRest utility, allowing FULL and DELTA restore capability.
 
 * **pgdump** (crunchy-pgdump). The crunchy-pgdump container executes either a pg_dump or pg_dumpall database backup against another PostgreSQL database.
 

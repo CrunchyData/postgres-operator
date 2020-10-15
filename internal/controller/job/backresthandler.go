@@ -16,9 +16,6 @@ limitations under the License.
 */
 
 import (
-	"fmt"
-	"time"
-
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,9 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 )
 
 // backrestUpdateHandler is responsible for handling updates to backrest jobs
@@ -54,77 +49,11 @@ func (c *Controller) handleBackrestUpdate(job *apiv1.Job) error {
 
 	labels := job.GetObjectMeta().GetLabels()
 
-	// Route the backrest job update to the appropriate function depending on the type of
-	// job.  Please note that thee LABE_PGO_CLONE_STEP_2 label represents a special form of
-	// pgBackRest restore that is utilized as part of the clone process.  Since jobs with
-	// the LABEL_PGO_CLONE_STEP_2 also inlcude the LABEL_BACKREST_RESTORE label, it is
-	// necessary to first check for the presence of the LABEL_PGO_CLONE_STEP_2 prior to the
-	// LABEL_BACKREST_RESTORE label to determine if the restore is part of and ongoing clone.
 	switch {
 	case labels[config.LABEL_BACKREST_COMMAND] == "backup":
 		c.handleBackrestBackupUpdate(job)
-	case labels[config.LABEL_PGO_CLONE_STEP_2] == "true":
-		c.handleCloneBackrestRestoreUpdate(job)
 	case labels[config.LABEL_BACKREST_COMMAND] == crv1.PgtaskBackrestStanzaCreate:
 		c.handleBackrestStanzaCreateUpdate(job)
-	}
-
-	return nil
-}
-
-// handleBackrestRestoreUpdate is responsible for handling updates to backrest restore jobs that
-// have been submitted in order to clone a cluster
-func (c *Controller) handleCloneBackrestRestoreUpdate(job *apiv1.Job) error {
-
-	log.Debugf("jobController onUpdate clone step 2 job case")
-	log.Debugf("clone step 2 job status=%d", job.Status.Succeeded)
-
-	if job.Status.Succeeded == 1 {
-		namespace := job.ObjectMeta.Namespace
-		sourceClusterName := job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_SOURCE_CLUSTER_NAME]
-		targetClusterName := job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_TARGET_CLUSTER_NAME]
-		workflowID := job.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID]
-
-		log.Debugf("workflow to update is %s", workflowID)
-
-		// first, make sure the Pgtask resource knows that the job is complete,
-		// which is using this legacy bit of code
-		patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(crv1.JobCompletedStatus).Bytes()
-		if err == nil {
-			log.Debugf("patching task %s: %s", job.Name, patch)
-			_, err = c.Client.CrunchydataV1().Pgtasks(namespace).Patch(job.Name, types.JSONPatchType, patch)
-		}
-		if err != nil {
-			log.Warn(err)
-			// we can continue on, even if this fails...
-		}
-
-		// next, update the workflow to indicate that step 2 is complete
-		clusteroperator.UpdateCloneWorkflow(c.Client, namespace, workflowID, crv1.PgtaskWorkflowCloneClusterCreate)
-
-		// alright, we can move on the step 3 which is the final step, where we
-		// create the cluster
-		cloneTask := util.CloneTask{
-			BackrestPVCSize:   job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_BACKREST_PVC_SIZE],
-			EnableMetrics:     job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_ENABLE_METRICS] == "true",
-			PGOUser:           job.ObjectMeta.Labels[config.LABEL_PGOUSER],
-			PVCSize:           job.ObjectMeta.Annotations[config.ANNOTATION_CLONE_PVC_SIZE],
-			SourceClusterName: sourceClusterName,
-			TargetClusterName: targetClusterName,
-			TaskStepLabel:     config.LABEL_PGO_CLONE_STEP_3,
-			TaskType:          crv1.PgtaskCloneStep3,
-			Timestamp:         time.Now(),
-			WorkflowID:        workflowID,
-		}
-
-		task := cloneTask.Create()
-
-		// create the pgtask!
-		if _, err := c.Client.CrunchydataV1().Pgtasks(namespace).Create(task); err != nil {
-			log.Error(err)
-			errorMessage := fmt.Sprintf("Could not create pgtask for step 3: %s", err.Error())
-			clusteroperator.PublishCloneEvent(events.EventCloneClusterFailure, namespace, task, errorMessage)
-		}
 	}
 
 	return nil

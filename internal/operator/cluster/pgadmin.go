@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	weakrand "math/rand"
 	"os"
@@ -458,5 +459,31 @@ func publishPgAdminEvent(eventType string, task *crv1.Pgtask) {
 	// publish the event; if there is an error, log it, but we don't care
 	if err := events.Publish(event); err != nil {
 		log.Error(err.Error())
+	}
+}
+
+// waitFotDeploymentReady waits for a deployment to be ready, or times out
+func waitForDeploymentReady(clientset kubernetes.Interface, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) error {
+	timeout := time.After(timeoutSecs * time.Second)
+	tick := time.NewTicker(periodSecs * time.Second)
+	defer tick.Stop()
+
+	// loop until the timeout is met, or that all the replicas are ready
+	for {
+		select {
+		case <-timeout:
+			return errors.New(fmt.Sprintf("Timed out waiting for deployment to become ready: [%s]", deploymentName))
+		case <-tick.C:
+			if deployment, err := clientset.AppsV1().Deployments(namespace).Get(deploymentName, metav1.GetOptions{}); err != nil {
+				// if there is an error, log it but continue through the loop
+				log.Error(err)
+			} else {
+				// check to see if the deployment status has succeed...if so, break out
+				// of the loop
+				if deployment.Status.ReadyReplicas == *deployment.Spec.Replicas {
+					return nil
+				}
+			}
+		}
 	}
 }
