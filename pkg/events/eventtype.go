@@ -86,7 +86,7 @@ const (
 )
 
 type EventHeader struct {
-	EventType string    `json:eventtype`
+	EventType string
 	Namespace string    `json:"namespace"`
 	Username  string    `json:"username"`
 	Timestamp time.Time `json:"timestamp"`
