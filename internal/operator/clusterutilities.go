@@ -363,6 +363,9 @@ func GetExporterAddon(clientset kubernetes.Interface, namespace string, spec *cr
 		log.Debugf("creating exporter secret for cluster %s", spec.Name)
 		err := util.CreateSecret(clientset, spec.Name, spec.CollectSecretName, config.LABEL_EXPORTER_PG_USER,
 			Pgo.Cluster.PgmonitorPassword, namespace)
+		if err != nil {
+			log.Error(err)
+		}
 
 		exporterTemplateFields := exporterTemplateFields{}
 		exporterTemplateFields.Name = spec.Name

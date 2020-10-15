@@ -268,30 +268,3 @@ func publishStandbyEnabled(cluster *crv1.Pgcluster) error {
 
 	return nil
 }
-
-func publishStandbyDisabled(cluster *crv1.Pgcluster) error {
-
-	clusterName := cluster.Name
-
-	//capture the cluster creation event
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventStandbyDisabledFormat{
-		EventHeader: events.EventHeader{
-			Namespace: cluster.Namespace,
-			Username:  cluster.Spec.UserLabels[config.LABEL_PGOUSER],
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventStandbyDisabled,
-		},
-		Clustername: clusterName,
-	}
-
-	if err := events.Publish(f); err != nil {
-		log.Error(err.Error())
-		return err
-	}
-
-	return nil
-}

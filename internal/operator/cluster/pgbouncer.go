@@ -85,15 +85,6 @@ const (
 )
 
 const (
-	// pgBouncerSecretPropagationPeriod is the number of seconds between each
-	// check of when the secret is propogated
-	pgBouncerSecretPropagationPeriod = 5
-	// pgBouncerSecretPropagationTimeout is the maximum amount of time in seconds
-	// to wait for the secret to propagate
-	pgBouncerSecretPropagationTimeout = 60
-)
-
-const (
 	// a string to check to see if the pgbouncer machinery is installed in the
 	// PostgreSQL cluster
 	sqlCheckPgBouncerInstall = `SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'pgbouncer' LIMIT 1);`
@@ -118,9 +109,6 @@ const (
 )
 
 var (
-	// this command allows one to view the users.txt file secret to determine if
-	// it has propagated
-	cmdViewPgBouncerUsersSecret = []string{"cat", "/pgconf/users.txt"}
 	// sqlUninstallPgBouncer provides the final piece of SQL to uninstall
 	// pgbouncer, which is to remove the user
 	sqlUninstallPgBouncer = fmt.Sprintf(`DROP ROLE "%s";`, crv1.PGUserPgBouncer)
@@ -771,33 +759,6 @@ func generatePgBouncerHBA() (string, error) {
 	log.Debug(doc.String())
 
 	return doc.String(), nil
-}
-
-// generatePgtaskForPgBouncer generates a pgtask specific to a pgbouncer
-// deployment
-func generatePgtaskForPgBouncer(cluster *crv1.Pgcluster, pgouser, taskType, taskLabel string, parameters map[string]string) *crv1.Pgtask {
-	// create the specfile with the required parameters for creating a pgtask
-	spec := crv1.PgtaskSpec{
-		Namespace:  cluster.Namespace,
-		Name:       fmt.Sprintf("%s-%s", taskLabel, cluster.Name),
-		TaskType:   taskType,
-		Parameters: parameters,
-	}
-
-	// create the pgtask object
-	task := &crv1.Pgtask{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: spec.Name,
-			Labels: map[string]string{
-				config.LABEL_PG_CLUSTER: cluster.Name,
-				taskLabel:               "true",
-				config.LABEL_PGOUSER:    pgouser,
-			},
-		},
-		Spec: spec,
-	}
-
-	return task
 }
 
 // getPgBouncerDatabases gets the databases in a PostgreSQL cluster that have

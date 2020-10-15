@@ -47,7 +47,6 @@ type ControllerManager struct {
 // in a specific namespace
 type controllerGroup struct {
 	stopCh              chan struct{}
-	doneCh              chan struct{}
 	started             bool
 	kubeInformerFactory kubeinformers.SharedInformerFactory
 	informerSyncedFuncs []cache.InformerSynced

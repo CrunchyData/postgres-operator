@@ -27,7 +27,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -278,7 +277,7 @@ func TestGetPgbackrestBootstrapS3EnvVars(t *testing.T) {
 	defaultRestoreFromCluster := "restoreFromCluster"
 
 	type Env struct {
-		EnvVars []corev1.EnvVar
+		EnvVars []v1.EnvVar
 	}
 
 	// test all env vars are properly set according the contents of an existing pgBackRest

@@ -20,7 +20,6 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"sync"
 	"syscall"
 	"time"
 
@@ -42,22 +41,15 @@ const (
 	schedulerLabel       = "crunchy-scheduler=true"
 	pgoNamespaceEnv      = "PGO_OPERATOR_NAMESPACE"
 	timeoutEnv           = "TIMEOUT"
-	inCluster            = true
 	namespaceWorkerCount = 1
 )
 
 var nsRefreshInterval = 10 * time.Minute
 var installationName string
-var namespace string
 var pgoNamespace string
 var timeout time.Duration
 var seconds int
 var clientset kubeapi.Interface
-
-// this is used to prevent a race condition where an informer is being created
-// twice when a new scheduler-enabled ConfigMap is added.
-var informerNsMutex sync.Mutex
-var informerNamespaces map[string]struct{}
 
 // NamespaceOperatingMode defines the namespace operating mode for the cluster,
 // e.g. "dynamic", "readonly" or "disabled".  See type NamespaceOperatingMode

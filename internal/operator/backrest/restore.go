@@ -96,8 +96,6 @@ func UpdatePGClusterSpecForRestore(clientset kubeapi.Interface, cluster *crv1.Pg
 		task.Spec.Parameters[config.LABEL_NODE_LABEL_KEY]
 	cluster.Spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] =
 		task.Spec.Parameters[config.LABEL_NODE_LABEL_VALUE]
-
-	return
 }
 
 // PrepareClusterForRestore prepares a PostgreSQL cluster for a restore.  This includes deleting

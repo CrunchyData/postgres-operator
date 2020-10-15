@@ -101,23 +101,12 @@ WHERE rolcanlogin`
 const (
 	// sqlDelimiter is just a pipe
 	sqlDelimiter = "|"
-	// sqlTimeFormat is the defauly time format that is used
-	sqlTimeFormat = "2006-01-02 15:04:05.999999999Z07"
 )
 
 var (
 	// sqlCommand is the command that needs to be executed for running SQL
 	sqlCommand = []string{"psql", "-A", "-t"}
 )
-
-// connInfo ....
-type connInfo struct {
-	Username string
-	Hostip   string
-	Port     string
-	Database string
-	Password string
-}
 
 // CreatueUser allows one to create a PostgreSQL user in one of more PostgreSQL
 // clusters, and provides the abilit to do the following:

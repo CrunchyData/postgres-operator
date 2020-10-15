@@ -33,7 +33,6 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 
 	log "github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -1569,15 +1568,6 @@ func getReadyStatus(pod *v1.Pod) (string, bool) {
 
 }
 
-func createDeleteDataTasks(clusterName string, storageSpec crv1.PgStorageSpec, deleteBackups bool, ns string) error {
-
-	var err error
-
-	log.Debugf("creatingDeleteDataTasks deployments for pg-cluster=%s\n", clusterName)
-
-	return err
-}
-
 func createWorkflowTask(clusterName, ns, pgouser string) (string, error) {
 
 	//create pgtask CRD
@@ -2212,7 +2202,7 @@ func isMissingS3Config(request *msgs.CreateClusterRequest) bool {
 // isMissingExistingDataSourceS3Config determines if any of the required S3 configuration
 // settings (bucket, endpoint, region, key and key secret) are missing from the annotations
 // in the pgBackRest repo secret as needed to bootstrap a cluster from an existing S3 repository
-func isMissingExistingDataSourceS3Config(backrestRepoSecret *corev1.Secret) bool {
+func isMissingExistingDataSourceS3Config(backrestRepoSecret *v1.Secret) bool {
 	switch {
 	case backrestRepoSecret.Annotations[config.ANNOTATION_S3_BUCKET] == "":
 		return true

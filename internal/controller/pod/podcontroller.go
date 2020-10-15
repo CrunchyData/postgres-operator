@@ -134,8 +134,6 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 			return
 		}
 	}
-
-	return
 }
 
 // setCurrentPrimary checks whether the newly promoted primary value differs from the pgcluster's

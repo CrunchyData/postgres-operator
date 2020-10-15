@@ -47,9 +47,6 @@ const (
 	postgresGISHAImage = "crunchy-postgres-gis-ha"
 )
 
-// store the replica postfix string
-const replicaServicePostfix = "-replica"
-
 // AddUpgrade implements the upgrade workflow in accordance with the received pgtask
 // the general process is outlined below:
 // 1) get the existing pgcluster CRD instance that matches the name provided in the pgtask

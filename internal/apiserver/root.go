@@ -25,7 +25,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
@@ -38,8 +37,6 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-const rsaKeySize = 2048
-const duration365d = time.Hour * 24 * 365
 const PGOSecretName = "pgo.tls"
 
 const VERSION_MISMATCH_ERROR = "pgo client and server version mismatch"
@@ -66,9 +63,6 @@ var BasicAuth bool
 // Namespace comes from the apiserver config in this version
 var PgoNamespace string
 var InstallationName string
-
-// namespaceList is the list of namespaces identified at install time
-var namespaceList []string
 
 var CRUNCHY_DEBUG bool
 
@@ -138,7 +132,7 @@ func Initialize() {
 		os.Exit(2)
 	}
 
-	namespaceList, err = ns.GetInitialNamespaceList(Clientset, NamespaceOperatingMode(),
+	_, err = ns.GetInitialNamespaceList(Clientset, NamespaceOperatingMode(),
 		InstallationName, PgoNamespace)
 	if err != nil {
 		log.Error(err)

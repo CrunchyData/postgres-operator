@@ -25,12 +25,10 @@ import (
 var clientset kubeapi.Interface
 
 type Scheduler struct {
-	entries       map[string]cv3.EntryID
-	CronClient    *cv3.Cron
-	label         string
-	namespace     string
-	namespaceList []string
-	scheduleTypes []string
+	entries    map[string]cv3.EntryID
+	CronClient *cv3.Cron
+	label      string
+	namespace  string
 }
 
 type ScheduleTemplate struct {

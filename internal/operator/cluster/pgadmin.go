@@ -164,8 +164,6 @@ func AddPgAdminFromPgTask(clientset kubeapi.Interface, restconfig *rest.Config, 
 	if err := BootstrapPgAdminUsers(clientset, restconfig, cluster); err != nil {
 		log.Error(err)
 	}
-
-	return
 }
 
 func BootstrapPgAdminUsers(

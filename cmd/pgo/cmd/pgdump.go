@@ -90,14 +90,6 @@ func showpgDump(args []string, ns string) {
 	}
 }
 
-// printBackrest
-func printpgDump(result *msgs.ShowpgDumpDetail) {
-	fmt.Printf("%s%s\n", "", "")
-	fmt.Printf("%s%s\n", "", "pgDump : "+result.Name)
-	fmt.Printf("%s%s\n", "", result.Info)
-
-}
-
 // printBackupCRD ...
 func printDumpCRD(result *msgs.Pgbackup) {
 	fmt.Printf("%s%s\n", "", "")

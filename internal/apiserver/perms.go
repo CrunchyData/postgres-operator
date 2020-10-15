@@ -100,9 +100,6 @@ const (
 var RoleMap map[string]map[string]string
 var PermMap map[string]string
 
-const pgorolePath = "/default-pgo-config/pgorole"
-const pgoroleFile = "pgorole"
-
 func initializePerms() {
 	RoleMap = make(map[string]map[string]string)
 
