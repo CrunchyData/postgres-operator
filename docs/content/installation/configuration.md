@@ -58,7 +58,7 @@ Operator.
 | `pgo_admin_role_name` | pgoadmin | **Required** | Sets the name of the PostgreSQL Operator role that is utilized for administrative operations performed by the PostgreSQL Operator. |
 | `pgo_admin_username` | admin | **Required** | Configures the pgo administrator username. |
 | `pgo_apiserver_port` | 8443 |  | Set to configure the port used by the Crunchy PostgreSQL Operator apiserver. |
-| `pgo_apiserver_url` | https://postgres-operator |  | Sets the `pgo_apiserver_url` for the `pgo-client` deployment. |
+| `pgo_apiserver_url` | https://postgres-operator |  | Sets the `pgo_apiserver_url` for the `pgo-client` deployment. Note that the URL should **not** end in a `/`. |
 | `pgo_client_cert_secret` | pgo.tls |  | Sets the secret that the `pgo-client` will use when connecting to the PostgreSQL Operator. |
 | `pgo_client_container_install` | false |  | Run the `pgo-client` deployment with the PostgreSQL Operator. |
 | `pgo_client_install` | true |  | Enable to download the `pgo` client binary as part of the Ansible install |
