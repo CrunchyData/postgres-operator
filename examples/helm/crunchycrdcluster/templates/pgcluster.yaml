@@ -1,0 +1,95 @@
+apiVersion: crunchydata.com/v1
+kind: Pgcluster
+metadata:
+  annotations:
+    current-primary: {{ .Values.pgclustername }}
+  labels:
+    autofail: "true"
+    crunchy-pgbadger: "false"
+    crunchy-pgha-scope: {{ .Values.pgclustername }}
+    crunchy-postgres-exporter: "false"
+    deployment-name: {{ .Values.pgclustername }}
+    name: {{ .Values.pgclustername }}
+    pg-cluster: {{ .Values.pgclustername }}
+    pg-pod-anti-affinity: ""
+    pgo-backrest: "true"
+    pgo-version: 4.5.0
+    pgouser: admin
+  name: {{ .Values.pgclustername }}
+  namespace: {{ .Values.namespace }}
+spec:
+  BackrestStorage:
+    accessmode: ReadWriteOnce
+    matchLabels: ""
+    name: ""
+    size: 3G
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  PrimaryStorage:
+    accessmode: ReadWriteOnce
+    matchLabels: ""
+    name: {{ .Values.pgclustername }}
+    size: 3G
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  ReplicaStorage:
+    accessmode: ReadWriteOnce
+    matchLabels: ""
+    name: ""
+    size: 3G
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  annotations:
+  backrestLimits: {}
+  backrestRepoPath: ""
+  backrestResources:
+    memory: 48Mi
+  backrestS3Bucket: ""
+  backrestS3Endpoint: ""
+  backrestS3Region: ""
+  backrestS3URIStyle: ""
+  backrestS3VerifyTLS: ""
+  ccpimage: {{ .Values.ccpimage }}
+  ccpimageprefix: {{ .Values.ccpimageprefix }}
+  ccpimagetag: {{ .Values.ccpimagetag }}
+  clustername: {{ .Values.pgclustername }}
+  customconfig: ""
+  database: {{ .Values.pgclustername }}
+  exporterport: "9187"
+  limits: {}
+  name: {{ .Values.pgclustername }}
+  namespace: {{ .Values.namespace }}
+  pgBouncer:
+    limits: {}
+    replicas: 0
+  pgDataSource:
+    restoreFrom: ""
+    restoreOpts: ""
+  pgbadgerport: "10000"
+  pgoimageprefix: {{ .Values.pgoimageprefix }}
+  podAntiAffinity:
+    default: preferred
+    pgBackRest: preferred
+    pgBouncer: preferred
+  policies: ""
+  port: "5432"
+  primarysecretname: {{ .Values.pgclustername }}-primaryuser-secret
+  replicas: "0"
+  rootsecretname: {{ .Values.pgclustername }}-postgres-secret
+  shutdown: false
+  standby: false
+  tablespaceMounts: {}
+  tls:
+    caSecret: ""
+    replicationTLSSecret: ""
+    tlsSecret: ""
+  tlsOnly: false
+  user: hippo
+  userlabels:
+    crunchy-postgres-exporter: "false"
+    pg-pod-anti-affinity: ""
+    pgo-version: {{ .Values.pgoversion }}
+  usersecretname: {{ .Values.pgclustername }}-hippo-secret
