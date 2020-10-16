@@ -20,12 +20,14 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // handleRepoSyncUpdate is responsible for handling updates to repo sync jobs
@@ -57,7 +59,12 @@ func (c *Controller) handleRepoSyncUpdate(job *apiv1.Job) error {
 
 	// first, make sure the Pgtask resource knows that the job is complete,
 	// which is using this legacy bit of code
-	if err := util.Patch(c.Client.CrunchydataV1().RESTClient(), patchURL, crv1.JobCompletedStatus, patchResource, job.Name, namespace); err != nil {
+	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(crv1.JobCompletedStatus).Bytes()
+	if err == nil {
+		log.Debugf("patching task %s: %s", job.Name, patch)
+		_, err = c.Client.CrunchydataV1().Pgtasks(namespace).Patch(job.Name, types.JSONPatchType, patch)
+	}
+	if err != nil {
 		log.Error(err)
 		// we can continue on, even if this fails...
 	}

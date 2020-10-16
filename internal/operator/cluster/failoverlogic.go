@@ -32,6 +32,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -75,7 +76,11 @@ func Failover(identifier string, clientset kubeapi.Interface, clusterName string
 	//the primary service selector
 	log.Debugf("setting label on pod %s=%s", config.LABEL_SERVICE_NAME, clusterName)
 
-	err = kubeapi.AddLabelToPod(clientset, upod, config.LABEL_SERVICE_NAME, clusterName, namespace)
+	patch, err := kubeapi.NewMergePatch().Add("metadata", "labels", config.LABEL_SERVICE_NAME)(clusterName).Bytes()
+	if err == nil {
+		log.Debugf("patching pod %s: %s", upod.Name, patch)
+		_, err = clientset.CoreV1().Pods(namespace).Patch(upod.Name, types.MergePatchType, patch)
+	}
 	if err != nil {
 		log.Error(err)
 		log.Error("error in updating pod during failover relabel")
@@ -83,15 +88,8 @@ func Failover(identifier string, clientset kubeapi.Interface, clusterName string
 	}
 
 	targetDepName := upod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
-	log.Debugf("targetDepName %s", targetDepName)
-	targetDep, err := clientset.AppsV1().Deployments(namespace).Get(targetDepName, metav1.GetOptions{})
-	if err != nil {
-		log.Error(err)
-		log.Errorf("not found error in getting Deployment during failover relabel %s", targetDepName)
-		return err
-	}
-
-	err = kubeapi.AddLabelToDeployment(clientset, targetDep, config.LABEL_SERVICE_NAME, clusterName, namespace)
+	log.Debugf("patching deployment %s: %s", targetDepName, patch)
+	_, err = clientset.AppsV1().Deployments(namespace).Patch(targetDepName, types.MergePatchType, patch)
 	if err != nil {
 		log.Error(err)
 		log.Error("error in updating deployment during failover relabel")

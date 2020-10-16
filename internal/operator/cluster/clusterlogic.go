@@ -658,6 +658,7 @@ func ShutdownCluster(clientset kubeapi.Interface, cluster crv1.Pgcluster) error 
 		},
 	})
 	if err == nil {
+		log.Debugf("patching cluster %s: %s", cluster.Name, patch)
 		_, err = clientset.CrunchydataV1().Pgclusters(cluster.Namespace).Patch(cluster.Name, types.MergePatchType, patch)
 	}
 	if err != nil {
@@ -768,9 +769,12 @@ func ScaleClusterDeployments(clientset kubernetes.Interface, cluster crv1.Pgclus
 
 		// Scale the deployment according to the number of replicas specified.  If an error is
 		// encountered, log it and move on to scaling the next deployment
-		patchString := fmt.Sprintf(`{"spec":{"replicas":%d}}`, replicas)
-		if _, err := clientset.AppsV1().Deployments(namespace).Patch(deployment.GetName(),
-			types.MergePatchType, []byte(patchString)); err != nil {
+		patch, err := kubeapi.NewMergePatch().Add("spec", "replicas")(replicas).Bytes()
+		if err == nil {
+			log.Debugf("patching deployment %s: %s", deployment.GetName(), patch)
+			_, err = clientset.AppsV1().Deployments(namespace).Patch(deployment.GetName(), types.MergePatchType, patch)
+		}
+		if err != nil {
 			log.Errorf("Error scaling deployment %s to %d: %v", deployment.Name, replicas, err)
 		}
 	}

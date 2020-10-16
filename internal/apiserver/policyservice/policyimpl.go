@@ -21,8 +21,8 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
-	"github.com/crunchydata/postgres-operator/internal/apiserver/labelservice"
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
@@ -32,6 +32,7 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 // CreatePolicy ...
@@ -212,6 +213,13 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 	labels := make(map[string]string)
 	labels[request.Name] = "pgpolicy"
 
+	patch, err := kubeapi.NewMergePatch().Add("metadata", "labels")(labels).Bytes()
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	}
+
 	for _, d := range allDeployments {
 		if d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] != d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] {
 			log.Debugf("skipping apply policy on deployment %s", d.Name)
@@ -238,13 +246,15 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 			return resp
 		}
 
-		err = util.UpdatePolicyLabels(apiserver.Clientset, d.ObjectMeta.Name, ns, labels)
+		log.Debugf("patching deployment %s: %s", d.ObjectMeta.Name, patch)
+		_, err = apiserver.Clientset.AppsV1().Deployments(ns).Patch(d.ObjectMeta.Name, types.MergePatchType, patch)
 		if err != nil {
 			log.Error(err)
 		}
 
 		//update the pgcluster crd labels with the new policy
-		err = labelservice.PatchPgcluster(map[string]string{request.Name: config.LABEL_PGPOLICY}, *cl, ns)
+		log.Debugf("patching cluster %s: %s", cl.Name, patch)
+		_, err = apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Patch(cl.Name, types.MergePatchType, patch)
 		if err != nil {
 			log.Error(err)
 		}

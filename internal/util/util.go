@@ -16,7 +16,6 @@ package util
 */
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -24,61 +23,21 @@ import (
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 
-	jsonpatch "github.com/evanphx/json-patch"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyz"
 
-// JSONPatchOperation represents the structure for a JSON patch operation
-type JSONPatchOperation struct {
-	Op    string      `json:"op"`
-	Path  string      `json:"path"`
-	Value interface{} `json:"value"`
-}
-
 func init() {
 	rand.Seed(time.Now().UnixNano())
-
-}
-
-// ThingSpec is a json patch structure
-type ThingSpec struct {
-	Op    string `json:"op"`
-	Path  string `json:"path"`
-	Value string `json:"value"`
-}
-
-// Patch will patch a particular resource
-func Patch(restclient rest.Interface, path string, value string, resource string, name string, namespace string) error {
-	things := make([]ThingSpec, 1)
-	things[0].Op = "replace"
-	things[0].Path = path
-	things[0].Value = value
-
-	patchBytes, err4 := json.Marshal(things)
-	if err4 != nil {
-		log.Error("error in converting patch " + err4.Error())
-	}
-	log.Debug(string(patchBytes))
-
-	_, err6 := restclient.Patch(types.JSONPatchType).
-		Namespace(namespace).
-		Resource(resource).
-		Name(name).
-		Body(patchBytes).
-		Do().
-		Get()
-
-	return err6
 
 }
 
@@ -117,48 +76,30 @@ func CurrentPrimaryUpdate(clientset pgo.Interface, cluster *crv1.Pgcluster, curr
 // primary annotation value. As this uses a JSON merge patch, it will only updates those
 // values that are different between the old and new CRD values.
 func PatchClusterCRD(clientset pgo.Interface, labelMap map[string]string, oldCrd *crv1.Pgcluster, currentPrimary, namespace string) error {
-	oldData, err := json.Marshal(oldCrd)
-	if err != nil {
-		return err
-	}
+	patch := kubeapi.NewMergePatch()
 
-	// if there are no meta object lables on the current CRD, create a new map to hold them
-	if oldCrd.ObjectMeta.Labels == nil {
-		oldCrd.ObjectMeta.Labels = make(map[string]string)
-	}
-
-	// if there are not any annotation on the current CRD, create a new map to hold them
-	if oldCrd.Annotations == nil {
-		oldCrd.Annotations = make(map[string]string)
-	}
 	// update our pgcluster annotation with the correct current primary value
-	oldCrd.Annotations[config.ANNOTATION_CURRENT_PRIMARY] = currentPrimary
-	oldCrd.Annotations[config.ANNOTATION_PRIMARY_DEPLOYMENT] = currentPrimary
+	patch.Add("metadata", "annotations", config.ANNOTATION_CURRENT_PRIMARY)(currentPrimary)
+	patch.Add("metadata", "annotations", config.ANNOTATION_PRIMARY_DEPLOYMENT)(currentPrimary)
 
 	// update the stored primary storage value to match the current primary and deployment name
-	oldCrd.Spec.PrimaryStorage.Name = currentPrimary
+	patch.Add("spec", "PrimaryStorage", "name")(currentPrimary)
 
 	for k, v := range labelMap {
 		if len(validation.IsQualifiedName(k)) == 0 && len(validation.IsValidLabelValue(v)) == 0 {
-			oldCrd.ObjectMeta.Labels[k] = v
+			patch.Add("metadata", "labels", k)(v)
 		} else {
 			log.Debugf("user label %s:%s does not meet Kubernetes label requirements and will not be used to label "+
 				"pgcluster %s", k, v, oldCrd.Spec.Name)
 		}
 	}
 
-	var newData, patchBytes []byte
-	newData, err = json.Marshal(oldCrd)
+	patchBytes, err := patch.Bytes()
 	if err != nil {
 		return err
 	}
 
-	patchBytes, err = jsonpatch.CreateMergePatch(oldData, newData)
-	if err != nil {
-		return err
-	}
-
-	log.Debug(string(patchBytes))
+	log.Debugf("patching cluster %s: %s", oldCrd.Spec.Name, patchBytes)
 
 	_, err6 := clientset.CrunchydataV1().Pgclusters(namespace).Patch(oldCrd.Spec.Name, types.MergePatchType, patchBytes)
 

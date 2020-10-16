@@ -106,13 +106,26 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	log.Debugf("restore workflow: started for cluster %s", clusterName)
 
 	// prepare the pgcluster CR for restore
-	clusterPatch := fmt.Sprintf(`{"metadata":{"annotations":{"%s":"","%s":"%s"},`+
-		`"labels":{"%s":"%s"}},"spec":{"status":""},"status":{"message":"%s","state":"%s"}}`,
-		config.ANNOTATION_BACKREST_RESTORE, config.ANNOTATION_CURRENT_PRIMARY, clusterName,
-		config.LABEL_DEPLOYMENT_NAME, clusterName, "Cluster is being restored",
-		crv1.PgclusterStateRestore)
-	if patchedCluster, err = clientset.CrunchydataV1().Pgclusters(namespace).Patch(clusterName,
-		types.MergePatchType, []byte(clusterPatch)); err != nil {
+	patch, err := kubeapi.NewMergePatch().
+		Add("metadata", "annotations")(map[string]string{
+		config.ANNOTATION_BACKREST_RESTORE: "",
+		config.ANNOTATION_CURRENT_PRIMARY:  clusterName,
+	}).
+		Add("metadata", "labels")(map[string]string{
+		config.LABEL_DEPLOYMENT_NAME: clusterName,
+	}).
+		Add("spec", "status")("").
+		Add("status")(crv1.PgclusterStatus{
+		Message: "Cluster is being restored",
+		State:   crv1.PgclusterStateRestore,
+	}).
+		Bytes()
+	if err == nil {
+		log.Debugf("patching cluster %s: %s", clusterName, patch)
+		patchedCluster, err = clientset.CrunchydataV1().
+			Pgclusters(namespace).Patch(clusterName, types.MergePatchType, patch)
+	}
+	if err != nil {
 		log.Errorf("pgtask Controller: " + err.Error())
 		return nil, err
 	}
@@ -127,12 +140,22 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	}
 
 	// prepare pgreplica CR's for restore
-	replicaPatch := fmt.Sprintf(`{"metadata":{"annotations":{"%s":null}},"spec":{"status":""},`+
-		`"status":{"message":"%s","state":"%s"}}`, config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA,
-		"Cluster is being restored", crv1.PgclusterStateRestore)
+	patch, err = kubeapi.NewMergePatch().
+		Remove("metadata", "annotations", config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA).
+		Add("spec", "status")("").
+		Add("status")(crv1.PgclusterStatus{
+		Message: "Cluster is being restored",
+		State:   crv1.PgclusterStateRestore,
+	}).
+		Bytes()
+	if err != nil {
+		return nil, err
+	}
 	for _, r := range replicas.Items {
-		if _, err := clientset.CrunchydataV1().Pgreplicas(namespace).Patch(r.GetName(),
-			types.MergePatchType, []byte(replicaPatch)); err != nil {
+		log.Debugf("patching replica %s: %s", r.GetName(), patch)
+		_, err := clientset.CrunchydataV1().
+			Pgreplicas(namespace).Patch(r.GetName(), types.MergePatchType, patch)
+		if err != nil {
 			return nil, err
 		}
 	}
@@ -208,10 +231,14 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	log.Debugf("restore workflow: deleted 'config' and 'leader' ConfigMaps for cluster %s",
 		clusterName)
 
-	initPatch := `{"data":{"init":"true"}}`
-	if _, err := clientset.CoreV1().ConfigMaps(namespace).Patch(fmt.Sprintf("%s-pgha-config",
-		clusterName), types.MergePatchType,
-		[]byte(initPatch)); err != nil {
+	patch, err = kubeapi.NewMergePatch().Add("data", "init")("true").Bytes()
+	if err == nil {
+		name := fmt.Sprintf("%s-pgha-config", clusterName)
+		log.Debugf("patching configmap %s: %s", name, patch)
+		_, err = clientset.CoreV1().
+			ConfigMaps(namespace).Patch(name, types.MergePatchType, patch)
+	}
+	if err != nil {
 		return nil, err
 	}
 	log.Debugf("restore workflow: set 'init' flag to 'true' for cluster %s",

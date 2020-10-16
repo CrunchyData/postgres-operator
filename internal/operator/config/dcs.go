@@ -22,6 +22,7 @@ import (
 	"reflect"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
@@ -272,18 +273,15 @@ func (d *DCS) GetDCSConfig() (*DCSConfig, map[string]json.RawMessage, error) {
 // content provided.
 func (d *DCS) patchDCSAnnotation(content string) error {
 
-	jsonOp := []util.JSONPatchOperation{{
-		Op:    "replace",
-		Path:  fmt.Sprintf("/metadata/annotations/%s", dcsConfigAnnotation),
-		Value: content,
-	}}
-	jsonOpBytes, err := json.Marshal(jsonOp)
+	jsonOpBytes, err := kubeapi.NewJSONPatch().Replace("metadata", "annotations", dcsConfigAnnotation)(content).Bytes()
 	if err != nil {
 		return err
 	}
 
+	name := fmt.Sprintf(dcsConfigMapName, d.clusterScope)
+	log.Debugf("patching configmap %s: %s", name, jsonOpBytes)
 	if _, err := d.kubeclientset.CoreV1().ConfigMaps(d.configMap.GetNamespace()).Patch(
-		fmt.Sprintf(dcsConfigMapName, d.clusterScope), types.JSONPatchType,
+		name, types.JSONPatchType,
 		jsonOpBytes); err != nil {
 		return err
 	}
