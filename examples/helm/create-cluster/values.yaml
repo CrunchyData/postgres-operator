@@ -5,7 +5,7 @@
 ccpimage: crunchy-postgres-ha
 ccpimageprefix: registry.developers.crunchydata.com/crunchydata
 ccpimagetag: centos7-12.4-4.5.0
-namespace: test1
+namespace: pgo
 pgclustername: hippo
 pgoimageprefix: registry.developers.crunchydata.com/crunchydata
 pgoversion: 4.5.0
