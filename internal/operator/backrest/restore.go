@@ -36,6 +36,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
+const (
+	// tablespacePVCSuffixPattern represents the pattern of the suffix for a tablespace PVC name
+	tablespacePVCSuffixPattern = "%s-tablespace-"
+	// walPVCPattern represents the pattern of a WAL PVC name
+	walPVCPattern = "%s-wal"
+)
+
 // restoreTargetRegex defines a regex to detect if a restore target has been specified
 // for pgBackRest using the '--target' option
 var restoreTargetRegex = regexp.MustCompile("--target(=| +)")
@@ -168,24 +175,31 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	}
 	log.Debugf("restore workflow: deleted all existing jobs for cluster %s", clusterName)
 
+	// find all database PVCs for the entire PostgreSQL cluster.  Includes the PVCs for all PGDATA
+	// volumes, as well as the PVCs for any WAL and/or tablespace volumes
+	databasePVCList, err := getPGDatabasePVCNames(clientset, replicas, clusterName, namespace)
+	if err != nil {
+		return nil, err
+	}
+	log.Debugf("restore workflow: found PVCs %v for cluster %s", databasePVCList, clusterName)
+
 	// delete all PostgreSQL PVCs (the primary and all replica PVCs)
-	for _, deployment := range pgInstances.Items {
-		err := clientset.
-			CoreV1().PersistentVolumeClaims(namespace).
-			Delete(deployment.GetName(), &metav1.DeleteOptions{})
-		if err != nil && !kerrors.IsNotFound(err) {
+	for _, pvcName := range databasePVCList {
+		err := clientset.CoreV1().PersistentVolumeClaims(namespace).
+			Delete(pvcName, &metav1.DeleteOptions{})
+		if err != nil {
 			return nil, err
 		}
-		log.Debugf("restore workflow: deleted primary or replica PVC %s", deployment.GetName())
+		log.Debugf("restore workflow: deleted primary or replica PVC %s", pvcName)
 	}
 
 	// Wait for all PG PVCs to be removed.  If unable to verify that all PVCs have been
-	// removed, then the restore cannot proceed the function returns.
+	// removed, then the restore cannot proceed and the function returns.
 	if err := wait.Poll(time.Second/2, time.Minute*3, func() (bool, error) {
 		notFound := true
-		for _, deployment := range pgInstances.Items {
+		for _, pvcName := range databasePVCList {
 			if _, err := clientset.CoreV1().PersistentVolumeClaims(namespace).
-				Get(deployment.GetName(), metav1.GetOptions{}); err == nil {
+				Get(pvcName, metav1.GetOptions{}); err == nil {
 				notFound = false
 			}
 		}
@@ -266,4 +280,43 @@ func PublishRestore(id, clusterName, username, namespace string) {
 		log.Error(err.Error())
 	}
 
+}
+
+// getPGDatabasePVCNames returns the names of all PostgreSQL database PVCs for a specific
+// PostgreSQL cluster.  This includes the PVCs for the PGDATA volumes for all database
+// instances comprising the cluster, in addition to any additional volumes used by those
+// instances, e.g. PVCs for external WAL and/or tablespace volumes.
+func getPGDatabasePVCNames(clientset kubeapi.Interface, replicas *crv1.PgreplicaList,
+	clusterName, namespace string) ([]string, error) {
+
+	// create a slice with the names of all database instances in the cluster.  Even though the
+	// original primary database (with a name matching the cluster name) might no longer exist,
+	// add the cluster name to this list in the event that it does, along with the names of any
+	// pgreplica's.
+	instances := []string{clusterName}
+	for _, replica := range replicas.Items {
+		instances = append(instances, replica.GetName())
+	}
+
+	// find all current PVCs for the cluster
+	clusterPVCList, err := clientset.CoreV1().PersistentVolumeClaims(namespace).
+		List(metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, clusterName),
+		})
+	if err != nil {
+		return nil, err
+	}
+
+	var databasePVCList []string
+	for _, instance := range instances {
+		for _, clusterPVC := range clusterPVCList.Items {
+			pvcName := clusterPVC.GetName()
+			if pvcName == instance || pvcName == fmt.Sprintf(walPVCPattern, instance) ||
+				strings.HasPrefix(pvcName, fmt.Sprintf(tablespacePVCSuffixPattern, instance)) {
+				databasePVCList = append(databasePVCList, pvcName)
+			}
+		}
+	}
+
+	return databasePVCList, nil
 }
