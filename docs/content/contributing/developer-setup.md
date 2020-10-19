@@ -62,16 +62,12 @@ Code generation is leveraged to generate the clients and informers utilized to i
 various [Custom Resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
 (e.g. `pgclusters`) comprising the PostgreSQL Operator declarative API.  Code generation is provided
 by the [Kubernetes code-generator project](https://github.com/kubernetes/code-generator),
-and the following two `Make` targets are included within the PostgreSQL Operator project to both
-determine if any generated code within the project requires an update, and then update that code
+and the following Make target is included within the PostgreSQL Operator project to update that code
 as needed:
 
 ```bash
-# Check to see if an update to generated code is needed:
-make verify-codegen
-
 # Update any generated code:
-make update-codegen
+make generate
 ```
 
 Therefore, in the event that a Custom Resource defined within the PostgreSQL Operator API
