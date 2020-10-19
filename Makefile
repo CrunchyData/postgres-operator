@@ -245,8 +245,7 @@ release:  linuxpgo macpgo winpgo
 	cp $(PGOROOT)/examples/pgo-bash-completion $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
 
-update-codegen:
-	$(PGOROOT)/hack/update-codegen.sh
+generate: generate-client
 
-verify-codegen:
-	$(PGOROOT)/hack/verify-codegen.sh
+generate-client:
+	./hack/generate-clientset.sh
