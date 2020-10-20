@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -55,6 +56,7 @@ var (
 )
 
 func CreateRMDataTask(clusterName, replicaName, taskName string, deleteBackups, deleteData, isReplica, isBackup bool, ns, clusterPGHAScope string) error {
+	ctx := context.TODO()
 	var err error
 
 	//create pgtask CRD
@@ -82,7 +84,7 @@ func CreateRMDataTask(clusterName, replicaName, taskName string, deleteBackups, 
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[config.LABEL_RMDATA] = "true"
 
-	_, err = Clientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
+	_, err = Clientset.CrunchydataV1().Pgtasks(ns).Create(ctx, newInstance, metav1.CreateOptions{})
 	if err != nil {
 		log.Error(err)
 		return err
@@ -98,7 +100,9 @@ func GetBackrestStorageTypes() []string {
 
 // IsValidPVC determines if a PVC with the name provided exits
 func IsValidPVC(pvcName, ns string) bool {
-	pvc, err := Clientset.CoreV1().PersistentVolumeClaims(ns).Get(pvcName, metav1.GetOptions{})
+	ctx := context.TODO()
+
+	pvc, err := Clientset.CoreV1().PersistentVolumeClaims(ns).Get(ctx, pvcName, metav1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 		return false
 	}

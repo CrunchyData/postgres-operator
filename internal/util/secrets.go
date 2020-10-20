@@ -16,6 +16,7 @@ package util
 */
 
 import (
+	"context"
 	"crypto/rand"
 	"fmt"
 	"math/big"
@@ -54,9 +55,7 @@ var passwordCharSelector = big.NewInt(passwordCharUpper - passwordCharLower)
 
 // CreateSecret create the secret, user, and primary secrets
 func CreateSecret(clientset kubernetes.Interface, db, secretName, username, password, namespace string) error {
-
-	var enUsername = username
-
+	ctx := context.TODO()
 	secret := v1.Secret{}
 
 	secret.Name = secretName
@@ -64,10 +63,10 @@ func CreateSecret(clientset kubernetes.Interface, db, secretName, username, pass
 	secret.ObjectMeta.Labels["pg-cluster"] = db
 	secret.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
 	secret.Data = make(map[string][]byte)
-	secret.Data["username"] = []byte(enUsername)
+	secret.Data["username"] = []byte(username)
 	secret.Data["password"] = []byte(password)
 
-	_, err := clientset.CoreV1().Secrets(namespace).Create(&secret)
+	_, err := clientset.CoreV1().Secrets(namespace).Create(ctx, &secret, metav1.CreateOptions{})
 
 	return err
 
@@ -112,7 +111,8 @@ func GeneratedPasswordLength(configuredPasswordLength string) int {
 
 // GetPasswordFromSecret will fetch the password from a user secret
 func GetPasswordFromSecret(clientset kubernetes.Interface, namespace, secretName string) (string, error) {
-	secret, err := clientset.CoreV1().Secrets(namespace).Get(secretName, metav1.GetOptions{})
+	ctx := context.TODO()
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 
 	if err != nil {
 		return "", err
@@ -149,10 +149,11 @@ func CreateUserSecret(clientset kubernetes.Interface, clustername, username, pas
 // 1. If the Secret exists, it updates the value of the Secret
 // 2. If the Secret does not exist, it creates the secret
 func UpdateUserSecret(clientset kubernetes.Interface, clustername, username, password, namespace string) error {
+	ctx := context.TODO()
 	secretName := fmt.Sprintf(UserSecretFormat, clustername, username)
 
 	// see if the secret already exists
-	secret, err := clientset.CoreV1().Secrets(namespace).Get(secretName, metav1.GetOptions{})
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 
 	// if this returns an error and it's not the "not found" error, return
 	// However, if it is the "not found" error, treat this as creating the user
@@ -168,6 +169,6 @@ func UpdateUserSecret(clientset kubernetes.Interface, clustername, username, pas
 	// update the value of "password"
 	secret.Data["password"] = []byte(password)
 
-	_, err = clientset.CoreV1().Secrets(secret.Namespace).Update(secret)
+	_, err = clientset.CoreV1().Secrets(secret.Namespace).Update(ctx, secret, metav1.UpdateOptions{})
 	return err
 }

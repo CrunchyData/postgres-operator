@@ -18,6 +18,7 @@ limitations under the License.
 package v1
 
 import (
+	"context"
 	time "time"
 
 	crunchydatacomv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
@@ -60,13 +61,13 @@ func NewFilteredPgtaskInformer(client versioned.Interface, namespace string, res
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CrunchydataV1().Pgtasks(namespace).List(options)
+				return client.CrunchydataV1().Pgtasks(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.CrunchydataV1().Pgtasks(namespace).Watch(options)
+				return client.CrunchydataV1().Pgtasks(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&crunchydatacomv1.Pgtask{},

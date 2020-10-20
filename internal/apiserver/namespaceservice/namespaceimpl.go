@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
@@ -27,6 +28,8 @@ import (
 )
 
 func ShowNamespace(clientset kubernetes.Interface, username string, request *msgs.ShowNamespaceRequest) msgs.ShowNamespaceResponse {
+	ctx := context.TODO()
+
 	log.Debug("ShowNamespace called")
 	resp := msgs.ShowNamespaceResponse{}
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
@@ -38,7 +41,7 @@ func ShowNamespace(clientset kubernetes.Interface, username string, request *msg
 	nsList := make([]string, 0)
 
 	if request.AllFlag {
-		namespaceList, err := clientset.CoreV1().Namespaces().List(metav1.ListOptions{})
+		namespaceList, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -55,7 +58,7 @@ func ShowNamespace(clientset kubernetes.Interface, username string, request *msg
 		}
 
 		for i := 0; i < len(request.Args); i++ {
-			_, err := clientset.CoreV1().Namespaces().Get(request.Args[i], metav1.GetOptions{})
+			_, err := clientset.CoreV1().Namespaces().Get(ctx, request.Args[i], metav1.GetOptions{})
 			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = "namespace " + request.Args[i] + " not found"

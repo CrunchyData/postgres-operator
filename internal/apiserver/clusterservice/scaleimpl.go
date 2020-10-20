@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -34,6 +35,7 @@ import (
 // ScaleCluster ...
 func ScaleCluster(name, replicaCount, storageConfig, nodeLabel,
 	ccpImageTag, serviceType, ns, pgouser string) msgs.ClusterScaleResponse {
+	ctx := context.TODO()
 	var err error
 
 	response := msgs.ClusterScaleResponse{}
@@ -45,7 +47,7 @@ func ScaleCluster(name, replicaCount, storageConfig, nodeLabel,
 		return response
 	}
 
-	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(name, metav1.GetOptions{})
+	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(ctx, name, metav1.GetOptions{})
 
 	if kerrors.IsNotFound(err) {
 		log.Error("no clusters found")
@@ -150,7 +152,7 @@ func ScaleCluster(name, replicaCount, storageConfig, nodeLabel,
 			},
 		}
 
-		_, err = apiserver.Clientset.CrunchydataV1().Pgreplicas(ns).Create(newInstance)
+		_, err = apiserver.Clientset.CrunchydataV1().Pgreplicas(ns).Create(ctx, newInstance, metav1.CreateOptions{})
 		if err != nil {
 			log.Error(" in creating Pgreplica instance" + err.Error())
 		}
@@ -165,6 +167,7 @@ func ScaleCluster(name, replicaCount, storageConfig, nodeLabel,
 // with information that is helpful in determining which one to fail over to,
 // such as the lag behind the replica as well as the timeline
 func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
+	ctx := context.TODO()
 	var err error
 
 	response := msgs.ScaleQueryResponse{
@@ -172,7 +175,7 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 		Status:  msgs.Status{Code: msgs.Ok, Msg: ""},
 	}
 
-	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(name, metav1.GetOptions{})
+	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(ctx, name, metav1.GetOptions{})
 
 	// If no clusters are found, return a specific error message,
 	// otherwise, pass forward the generic error message that Kubernetes sends
@@ -239,14 +242,14 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 
 // ScaleDown ...
 func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleDownResponse {
-
+	ctx := context.TODO()
 	var err error
 
 	response := msgs.ScaleDownResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]string, 0)
 
-	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
+	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(ctx, clusterName, metav1.GetOptions{})
 
 	if kerrors.IsNotFound(err) {
 		log.Error("no clusters found")
@@ -274,7 +277,7 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 	// which will grab all the replicas
 	selector := fmt.Sprintf("%s=%s,%s,%s!=%s", config.LABEL_PG_CLUSTER, clusterName,
 		config.LABEL_PG_DATABASE, config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
-	replicaList, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
+	replicaList, err := apiserver.Clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()

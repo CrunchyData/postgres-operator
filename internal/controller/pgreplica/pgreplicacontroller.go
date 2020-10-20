@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 
@@ -61,6 +62,8 @@ func (c *Controller) waitForShutdown(stopCh <-chan struct{}) {
 }
 
 func (c *Controller) processNextItem() bool {
+	ctx := context.TODO()
+
 	// Wait until there is a new item in the working queue
 	key, quit := c.Queue.Get()
 	if quit {
@@ -84,7 +87,7 @@ func (c *Controller) processNextItem() bool {
 	// backup job
 	_, err := c.Clientset.
 		AppsV1().Deployments(keyNamespace).
-		Get(keyResourceName, metav1.GetOptions{})
+		Get(ctx, keyResourceName, metav1.GetOptions{})
 
 	depRunning := err == nil
 
@@ -95,7 +98,7 @@ func (c *Controller) processNextItem() bool {
 
 		//handle the case of when a pgreplica is added which is
 		//scaling up a cluster
-		replica, err := c.Clientset.CrunchydataV1().Pgreplicas(keyNamespace).Get(keyResourceName, metav1.GetOptions{})
+		replica, err := c.Clientset.CrunchydataV1().Pgreplicas(keyNamespace).Get(ctx, keyResourceName, metav1.GetOptions{})
 		if err != nil {
 			log.Error(err)
 			c.Queue.Forget(key) // NB(cbandy): This should probably be a retry.
@@ -103,7 +106,7 @@ func (c *Controller) processNextItem() bool {
 		}
 
 		// get the pgcluster resource for the cluster the replica is a part of
-		cluster, err := c.Clientset.CrunchydataV1().Pgclusters(keyNamespace).Get(replica.Spec.ClusterName, metav1.GetOptions{})
+		cluster, err := c.Clientset.CrunchydataV1().Pgclusters(keyNamespace).Get(ctx, replica.Spec.ClusterName, metav1.GetOptions{})
 		if err != nil {
 			log.Error(err)
 			c.Queue.Forget(key) // NB(cbandy): This should probably be a retry.
@@ -121,7 +124,8 @@ func (c *Controller) processNextItem() bool {
 				},
 			})
 			if err == nil {
-				_, err = c.Clientset.CrunchydataV1().Pgreplicas(replica.Namespace).Patch(replica.Name, types.MergePatchType, patch)
+				_, err = c.Clientset.CrunchydataV1().Pgreplicas(replica.Namespace).
+					Patch(ctx, replica.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 			}
 			if err != nil {
 				log.Errorf("ERROR updating pgreplica status: %s", err.Error())
@@ -134,7 +138,8 @@ func (c *Controller) processNextItem() bool {
 				},
 			})
 			if err == nil {
-				_, err = c.Clientset.CrunchydataV1().Pgreplicas(replica.Namespace).Patch(replica.Name, types.MergePatchType, patch)
+				_, err = c.Clientset.CrunchydataV1().Pgreplicas(replica.Namespace).
+					Patch(ctx, replica.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 			}
 			if err != nil {
 				log.Errorf("ERROR updating pgreplica status: %s", err.Error())
@@ -167,6 +172,7 @@ func (c *Controller) onAdd(obj interface{}) {
 
 // onUpdate is called when a pgreplica is updated
 func (c *Controller) onUpdate(oldObj, newObj interface{}) {
+	ctx := context.TODO()
 
 	newPgreplica := newObj.(*crv1.Pgreplica)
 
@@ -176,7 +182,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// get the pgcluster resource for the cluster the replica is a part of
 	cluster, err := c.Clientset.
 		CrunchydataV1().Pgclusters(newPgreplica.Namespace).
-		Get(newPgreplica.Spec.ClusterName, metav1.GetOptions{})
+		Get(ctx, newPgreplica.Spec.ClusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		return
@@ -194,7 +200,8 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 			},
 		})
 		if err == nil {
-			_, err = c.Clientset.CrunchydataV1().Pgreplicas(newPgreplica.Namespace).Patch(newPgreplica.Name, types.MergePatchType, patch)
+			_, err = c.Clientset.CrunchydataV1().Pgreplicas(newPgreplica.Namespace).
+				Patch(ctx, newPgreplica.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 		}
 		if err != nil {
 			log.Errorf("ERROR updating pgreplica status: %s", err.Error())
@@ -204,6 +211,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 // onDelete is called when a pgreplica is deleted
 func (c *Controller) onDelete(obj interface{}) {
+	ctx := context.TODO()
 	replica := obj.(*crv1.Pgreplica)
 	log.Debugf("[pgreplica Controller] OnDelete ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
 
@@ -211,7 +219,7 @@ func (c *Controller) onDelete(obj interface{}) {
 	//that is now the primary after a failover
 	dep, err := c.Clientset.
 		AppsV1().Deployments(replica.ObjectMeta.Namespace).
-		Get(replica.Spec.Name, metav1.GetOptions{})
+		Get(ctx, replica.Spec.Name, metav1.GetOptions{})
 	if err == nil {
 		if dep.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == dep.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] {
 			//the replica was made a primary at some point

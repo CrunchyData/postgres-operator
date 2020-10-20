@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -49,6 +50,7 @@ const (
 
 // DeleteCluster ...
 func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pgouser string) msgs.DeleteClusterResponse {
+	ctx := context.TODO()
 	var err error
 
 	response := msgs.DeleteClusterResponse{}
@@ -65,7 +67,7 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pg
 	log.Debugf("delete-backups is [%t]", deleteBackups)
 
 	//get the clusters list
-	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: selector})
+	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -97,7 +99,7 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pg
 		clusterPGHAScope := cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE]
 
 		// first delete any existing rmdata pgtask with the same name
-		err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Delete(taskName, &metav1.DeleteOptions{})
+		err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Delete(ctx, taskName, metav1.DeleteOptions{})
 		if err != nil && !kerrors.IsNotFound(err) {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -122,6 +124,7 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pg
 
 // ShowCluster ...
 func ShowCluster(name, selector, ccpimagetag, ns string, allflag bool) msgs.ShowClusterResponse {
+	ctx := context.TODO()
 	var err error
 
 	response := msgs.ShowClusterResponse{}
@@ -139,7 +142,7 @@ func ShowCluster(name, selector, ccpimagetag, ns string, allflag bool) msgs.Show
 	log.Debugf("selector on showCluster is %s", selector)
 
 	//get a list of all clusters
-	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: selector})
+	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -191,12 +194,13 @@ func ShowCluster(name, selector, ccpimagetag, ns string, allflag bool) msgs.Show
 }
 
 func getDeployments(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterDeployment, error) {
+	ctx := context.TODO()
 	output := make([]msgs.ShowClusterDeployment, 0)
 
 	selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 	deployments, err := apiserver.Clientset.
 		AppsV1().Deployments(ns).
-		List(metav1.ListOptions{LabelSelector: selector})
+		List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}
@@ -219,13 +223,14 @@ func getDeployments(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterDeplo
 }
 
 func GetPods(clientset kubernetes.Interface, cluster *crv1.Pgcluster) ([]msgs.ShowClusterPod, error) {
+	ctx := context.TODO()
 	output := []msgs.ShowClusterPod{}
 
 	//get pods, but exclude backup pods and backrest repo
 	selector := fmt.Sprintf("%s=%s,%s", config.LABEL_PG_CLUSTER, cluster.GetName(), config.LABEL_PG_DATABASE)
 	log.Debugf("selector for GetPods is %s", selector)
 
-	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(metav1.ListOptions{LabelSelector: selector})
+	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}
@@ -254,7 +259,7 @@ func GetPods(clientset kubernetes.Interface, cluster *crv1.Pgcluster) ([]msgs.Sh
 
 			pvcName := v.VolumeSource.PersistentVolumeClaim.ClaimName
 			// query the PVC to get the storage capacity
-			pvc, err := clientset.CoreV1().PersistentVolumeClaims(cluster.Namespace).Get(pvcName, metav1.GetOptions{})
+			pvc, err := clientset.CoreV1().PersistentVolumeClaims(cluster.Namespace).Get(ctx, pvcName, metav1.GetOptions{})
 
 			// if there is an error, ignore it, and move on to the next one
 			if err != nil {
@@ -286,11 +291,11 @@ func GetPods(clientset kubernetes.Interface, cluster *crv1.Pgcluster) ([]msgs.Sh
 }
 
 func getServices(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterService, error) {
-
+	ctx := context.TODO()
 	output := make([]msgs.ShowClusterService, 0)
 	selector := config.LABEL_PGO_BACKREST_REPO + "!=true," + config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
-	services, err := apiserver.Clientset.CoreV1().Services(ns).List(metav1.ListOptions{LabelSelector: selector})
+	services, err := apiserver.Clientset.CoreV1().Services(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}
@@ -330,6 +335,7 @@ func getServices(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterService,
 //	PostgreSQL instances are able to route connections from the "outside" into
 //	the instances
 func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterTestResponse {
+	ctx := context.TODO()
 	var err error
 
 	log.Debugf("TestCluster(%s,%s,%s,%s,%v): Called",
@@ -356,7 +362,7 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 	}
 
 	// Find a list of a clusters that match the given selector
-	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: selector})
+	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 
 	// If the response errors, return here, as we won't be able to return any
 	// useful information in the test
@@ -524,6 +530,8 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 // CreateCluster ...
 // pgo create cluster mycluster
 func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.CreateClusterResponse {
+	ctx := context.TODO()
+
 	var id string
 	resp := msgs.CreateClusterResponse{
 		Result: msgs.CreateClusterDetail{},
@@ -557,7 +565,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	log.Debugf("create cluster called for %s", clusterName)
 
 	// error if it already exists
-	_, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
+	_, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(ctx, clusterName, metav1.GetOptions{})
 	if err == nil {
 		log.Debugf("pgcluster %s was found so we will not create it", clusterName)
 		resp.Status.Code = msgs.Error
@@ -741,7 +749,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 
 	// check that the specified ConfigMap exists
 	if request.BackrestConfig != "" {
-		_, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Get(request.BackrestConfig, metav1.GetOptions{})
+		_, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Get(ctx, request.BackrestConfig, metav1.GetOptions{})
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -968,14 +976,14 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 
 	if _, err := apiserver.Clientset.
 		CoreV1().Secrets(request.Namespace).
-		Get(secretName, metav1.GetOptions{}); kubeapi.IsNotFound(err) {
+		Get(ctx, secretName, metav1.GetOptions{}); kubeapi.IsNotFound(err) {
 		// determine if a custom CA secret should be used
 		backrestS3CACert := []byte{}
 
 		if request.BackrestS3CASecretName != "" {
 			backrestSecret, err := apiserver.Clientset.
 				CoreV1().Secrets(request.Namespace).
-				Get(request.BackrestS3CASecretName, metav1.GetOptions{})
+				Get(ctx, request.BackrestS3CASecretName, metav1.GetOptions{})
 
 			if err != nil {
 				log.Error(err)
@@ -1027,7 +1035,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	resp.Result.Database = newInstance.Spec.Database
 
 	//create CRD for new cluster
-	_, err = apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Create(newInstance)
+	_, err = apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Create(ctx, newInstance, metav1.CreateOptions{})
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -1042,6 +1050,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 }
 
 func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
+	ctx := context.TODO()
 	var err error
 	var configPolicies string
 
@@ -1061,7 +1070,7 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 
 	for _, v := range policies {
 		// error if it already exists
-		_, err := apiserver.Clientset.CrunchydataV1().Pgpolicies(ns).Get(v, metav1.GetOptions{})
+		_, err := apiserver.Clientset.CrunchydataV1().Pgpolicies(ns).Get(ctx, v, metav1.GetOptions{})
 		if err != nil {
 			log.Error("error getting pgpolicy " + v + err.Error())
 			return err
@@ -1090,7 +1099,7 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 		Spec: spec,
 	}
 
-	_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
+	_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(ctx, newInstance, metav1.CreateOptions{})
 
 	return err
 }
@@ -1515,11 +1524,13 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 }
 
 func validateSecretFrom(secretname, user, ns string) error {
+	ctx := context.TODO()
+
 	var err error
 	selector := config.LABEL_PG_CLUSTER + "=" + secretname
 	secrets, err := apiserver.Clientset.
 		CoreV1().Secrets(ns).
-		List(metav1.ListOptions{LabelSelector: selector})
+		List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return err
 	}
@@ -1569,6 +1580,7 @@ func getReadyStatus(pod *v1.Pod) (string, bool) {
 }
 
 func createWorkflowTask(clusterName, ns, pgouser string) (string, error) {
+	ctx := context.TODO()
 
 	//create pgtask CRD
 	spec := crv1.PgtaskSpec{}
@@ -1598,7 +1610,7 @@ func createWorkflowTask(clusterName, ns, pgouser string) (string, error) {
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
 
-	_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
+	_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(ctx, newInstance, metav1.CreateOptions{})
 	if err != nil {
 		log.Error(err)
 		return "", err
@@ -1623,22 +1635,25 @@ func getType(pod *v1.Pod, clusterName string) string {
 }
 
 func validateCustomConfig(configmapname, ns string) (bool, error) {
-	_, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Get(configmapname, metav1.GetOptions{})
+	ctx := context.TODO()
+	_, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Get(ctx, configmapname, metav1.GetOptions{})
 	return err == nil, err
 }
 
 func existsGlobalConfig(ns string) bool {
-	_, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Get(config.GLOBAL_CUSTOM_CONFIGMAP, metav1.GetOptions{})
+	ctx := context.TODO()
+	_, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Get(ctx, config.GLOBAL_CUSTOM_CONFIGMAP, metav1.GetOptions{})
 	return err == nil
 }
 
 func getReplicas(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterReplica, error) {
+	ctx := context.TODO()
 
 	output := make([]msgs.ShowClusterReplica, 0)
 
 	selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name
 
-	replicaList, err := apiserver.Clientset.CrunchydataV1().Pgreplicas(ns).List(metav1.ListOptions{LabelSelector: selector})
+	replicaList, err := apiserver.Clientset.CrunchydataV1().Pgreplicas(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}
@@ -1674,6 +1689,8 @@ func getReplicas(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterReplica,
 //
 // returns the secertname, password as well as any errors
 func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluster, secretNameSuffix, username, password string) (string, string, error) {
+	ctx := context.TODO()
+
 	// the secretName is just the combination cluster name and the secretNameSuffix
 	secretName := fmt.Sprintf("%s%s", cluster.Spec.Name, secretNameSuffix)
 
@@ -1681,7 +1698,7 @@ func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluste
 	// if there is an error, we'll ignore it
 	if secret, err := apiserver.Clientset.
 		CoreV1().Secrets(cluster.Spec.Namespace).
-		Get(secretName, metav1.GetOptions{}); err == nil {
+		Get(ctx, secretName, metav1.GetOptions{}); err == nil {
 		log.Infof("secret exists: [%s] - skipping", secretName)
 
 		return secretName, string(secret.Data["password"][:]), nil
@@ -1739,6 +1756,7 @@ func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluste
 
 // UpdateCluster ...
 func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterResponse {
+	ctx := context.TODO()
 
 	response := msgs.UpdateClusterResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
@@ -1829,7 +1847,7 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 
 	//get the clusters list
 	if request.AllFlag {
-		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).List(metav1.ListOptions{})
+		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -1837,7 +1855,7 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		}
 		clusterList = *cl
 	} else if request.Selector != "" {
-		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).List(metav1.ListOptions{
+		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).List(ctx, metav1.ListOptions{
 			LabelSelector: request.Selector,
 		})
 		if err != nil {
@@ -1848,7 +1866,7 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		clusterList = *cl
 	} else {
 		for _, v := range request.Clustername {
-			cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Get(v, metav1.GetOptions{})
+			cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Get(ctx, v, metav1.GetOptions{})
 			if err != nil {
 				response.Status.Code = msgs.Error
 				response.Status.Msg = err.Error()
@@ -2018,7 +2036,7 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 			cluster.Spec.TablespaceMounts[tablespace.Name] = storageSpec
 		}
 
-		if _, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Update(&cluster); err != nil {
+		if _, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Update(ctx, &cluster, metav1.UpdateOptions{}); err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
@@ -2031,13 +2049,13 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 }
 
 func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterPod, error) {
-
+	ctx := context.TODO()
 	output := make([]msgs.ShowClusterPod, 0)
 
 	selector := config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "," + config.LABEL_DEPLOYMENT_NAME
 	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
 
-	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
+	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}
@@ -2059,7 +2077,7 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 	selector = config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "-replica" + "," + config.LABEL_DEPLOYMENT_NAME
 	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
 
-	pods, err = apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
+	pods, err = apiserver.Clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return output, err
 	}
@@ -2117,6 +2135,8 @@ func validateBackrestStorageTypeOnCreate(request *msgs.CreateClusterRequest) err
 // validateClusterTLS validates the parameters that allow a user to enable TLS
 // connections to a PostgreSQL cluster
 func validateClusterTLS(request *msgs.CreateClusterRequest) error {
+	ctx := context.TODO()
+
 	// if ReplicationTLSSecret is set, but neither TLSSecret nor CASecret is not
 	// set, then return
 	if request.ReplicationTLSSecret != "" && (request.TLSSecret == "" || request.CASecret == "") {
@@ -2141,14 +2161,14 @@ func validateClusterTLS(request *msgs.CreateClusterRequest) error {
 	// First the TLS secret
 	if _, err := apiserver.Clientset.
 		CoreV1().Secrets(request.Namespace).
-		Get(request.TLSSecret, metav1.GetOptions{}); err != nil {
+		Get(ctx, request.TLSSecret, metav1.GetOptions{}); err != nil {
 		return err
 	}
 
 	// then, the CA secret
 	if _, err := apiserver.Clientset.
 		CoreV1().Secrets(request.Namespace).
-		Get(request.CASecret, metav1.GetOptions{}); err != nil {
+		Get(ctx, request.CASecret, metav1.GetOptions{}); err != nil {
 		return err
 	}
 
@@ -2156,7 +2176,7 @@ func validateClusterTLS(request *msgs.CreateClusterRequest) error {
 	if request.ReplicationTLSSecret != "" {
 		if _, err := apiserver.Clientset.
 			CoreV1().Secrets(request.Namespace).
-			Get(request.ReplicationTLSSecret, metav1.GetOptions{}); err != nil {
+			Get(ctx, request.ReplicationTLSSecret, metav1.GetOptions{}); err != nil {
 			return err
 		}
 	}
@@ -2221,7 +2241,7 @@ func isMissingExistingDataSourceS3Config(backrestRepoSecret *v1.Secret) bool {
 // validateDataSourceParms performs validation of any data source parameters included in a request
 // to create a new cluster
 func validateDataSourceParms(request *msgs.CreateClusterRequest) error {
-
+	ctx := context.TODO()
 	namespace := request.Namespace
 	restoreClusterName := request.PGDataSource.RestoreFrom
 	restoreOpts := request.PGDataSource.RestoreOpts
@@ -2238,7 +2258,7 @@ func validateDataSourceParms(request *msgs.CreateClusterRequest) error {
 	}
 
 	// next verify whether or not a PVC exists for the cluster we are restoring from
-	if _, err := apiserver.Clientset.CoreV1().PersistentVolumeClaims(namespace).Get(
+	if _, err := apiserver.Clientset.CoreV1().PersistentVolumeClaims(namespace).Get(ctx,
 		fmt.Sprintf(util.BackrestRepoPVCName, restoreClusterName),
 		metav1.GetOptions{}); err != nil {
 		return fmt.Errorf("Unable to find PVC %s for cluster %s, cannot to restore from the "+
@@ -2247,7 +2267,7 @@ func validateDataSourceParms(request *msgs.CreateClusterRequest) error {
 	}
 
 	// now verify that a pgBackRest repo secret exists for the cluster we are restoring from
-	backrestRepoSecret, err := apiserver.Clientset.CoreV1().Secrets(namespace).Get(
+	backrestRepoSecret, err := apiserver.Clientset.CoreV1().Secrets(namespace).Get(ctx,
 		fmt.Sprintf(util.BackrestRepoSecretName, restoreClusterName), metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("Unable to find secret %s for cluster %s, cannot restore from the "+
@@ -2270,7 +2290,7 @@ func validateDataSourceParms(request *msgs.CreateClusterRequest) error {
 
 	// finally, verify that the cluster being restored from is in the proper status, and that no
 	// other clusters currently being bootstrapping from the same cluster
-	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).List(metav1.ListOptions{})
+	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("%s: %w", ErrInvalidDataSource, err)
 	}

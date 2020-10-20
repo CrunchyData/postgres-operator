@@ -16,6 +16,8 @@ package task
 */
 
 import (
+	"context"
+
 	"github.com/crunchydata/postgres-operator/internal/config"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
@@ -25,6 +27,7 @@ import (
 
 // RemoveBackups ...
 func RemoveBackups(namespace string, clientset kubernetes.Interface, task *crv1.Pgtask) {
+	ctx := context.TODO()
 
 	//delete any backup jobs for this cluster
 	//kubectl delete job --selector=pg-cluster=clustername
@@ -33,7 +36,7 @@ func RemoveBackups(namespace string, clientset kubernetes.Interface, task *crv1.
 	deletePropagation := metav1.DeletePropagationForeground
 	clientset.
 		BatchV1().Jobs(namespace).
-		DeleteCollection(
-			&metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
+		DeleteCollection(ctx,
+			metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
 			metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + task.Spec.Parameters[config.LABEL_PG_CLUSTER]})
 }

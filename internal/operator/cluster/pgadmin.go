@@ -17,6 +17,7 @@ package cluster
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -81,6 +82,7 @@ func AddPgAdmin(
 	restconfig *rest.Config,
 	cluster *crv1.Pgcluster,
 	storageClass *crv1.PgStorageSpec) error {
+	ctx := context.TODO()
 	log.Debugf("adding pgAdmin")
 
 	// first, ensure that the Cluster CR is updated to know that there is now
@@ -93,7 +95,7 @@ func AddPgAdmin(
 
 	ns := cluster.Namespace
 
-	if _, err := clientset.CrunchydataV1().Pgclusters(ns).Update(cluster); err != nil {
+	if _, err := clientset.CrunchydataV1().Pgclusters(ns).Update(ctx, cluster, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 
@@ -126,6 +128,7 @@ func AddPgAdmin(
 // AddPgAdminFromPgTask is a method that helps to bring up
 // the pgAdmin deployment that sits alongside a PostgreSQL cluster
 func AddPgAdminFromPgTask(clientset kubeapi.Interface, restconfig *rest.Config, task *crv1.Pgtask) {
+	ctx := context.TODO()
 	clusterName := task.Spec.Parameters[config.LABEL_PGADMIN_TASK_CLUSTER]
 	namespace := task.Spec.Namespace
 	storage := task.Spec.StorageSpec
@@ -134,7 +137,7 @@ func AddPgAdminFromPgTask(clientset kubeapi.Interface, restconfig *rest.Config, 
 		clusterName, namespace)
 
 	// first, check to ensure that the cluster still exosts
-	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		return
@@ -151,7 +154,7 @@ func AddPgAdminFromPgTask(clientset kubeapi.Interface, restconfig *rest.Config, 
 
 	// at this point, the pgtask is successful, so we can safely rvemove it
 	// we can fallthrough in the event of an error, because we're returning anyway
-	if err := clientset.CrunchydataV1().Pgtasks(namespace).Delete(task.Name, &metav1.DeleteOptions{}); err != nil {
+	if err := clientset.CrunchydataV1().Pgtasks(namespace).Delete(ctx, task.Name, metav1.DeleteOptions{}); err != nil {
 		log.Error(err)
 	}
 
@@ -170,6 +173,7 @@ func BootstrapPgAdminUsers(
 	clientset kubernetes.Interface,
 	restconfig *rest.Config,
 	cluster *crv1.Pgcluster) error {
+	ctx := context.TODO()
 
 	qr, err := pgadmin.GetPgAdminQueryRunner(clientset, restconfig, cluster)
 	if err != nil {
@@ -187,7 +191,7 @@ func BootstrapPgAdminUsers(
 	}
 
 	// Get service details and prep connection metadata
-	service, err := clientset.CoreV1().Services(cluster.Namespace).Get(cluster.Name, metav1.GetOptions{})
+	service, err := clientset.CoreV1().Services(cluster.Namespace).Get(ctx, cluster.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -203,7 +207,7 @@ func BootstrapPgAdminUsers(
 	sel := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, cluster.Name)
 	secretList, err := clientset.
 		CoreV1().Secrets(cluster.Namespace).
-		List(metav1.ListOptions{LabelSelector: sel})
+		List(ctx, metav1.ListOptions{LabelSelector: sel})
 	if err != nil {
 		return err
 	}
@@ -253,6 +257,7 @@ func BootstrapPgAdminUsers(
 // Any errors that are returned should be logged in the calling function, though
 // some logging occurs in this function as well
 func DeletePgAdmin(clientset kubeapi.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
+	ctx := context.TODO()
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
 
@@ -263,7 +268,8 @@ func DeletePgAdmin(clientset kubeapi.Interface, restconfig *rest.Config, cluster
 	// if we cannot update this we abort
 	cluster.Labels[config.LABEL_PGADMIN] = "false"
 
-	if _, err := clientset.CrunchydataV1().Pgclusters(namespace).Update(cluster); err != nil {
+	if _, err := clientset.CrunchydataV1().Pgclusters(namespace).
+		Update(ctx, cluster, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 
@@ -275,17 +281,17 @@ func DeletePgAdmin(clientset kubeapi.Interface, restconfig *rest.Config, cluster
 	pgAdminDeploymentName := fmt.Sprintf(pgAdminDeploymentFormat, clusterName)
 
 	deletePropagation := metav1.DeletePropagationForeground
-	if err := clientset.CoreV1().PersistentVolumeClaims(namespace).Delete(pgAdminDeploymentName, &metav1.DeleteOptions{
+	if err := clientset.CoreV1().PersistentVolumeClaims(namespace).Delete(ctx, pgAdminDeploymentName, metav1.DeleteOptions{
 		PropagationPolicy: &deletePropagation,
 	}); err != nil {
 		log.Warn(err)
 	}
 
-	if err := clientset.CoreV1().Services(namespace).Delete(pgAdminDeploymentName, &metav1.DeleteOptions{}); err != nil {
+	if err := clientset.CoreV1().Services(namespace).Delete(ctx, pgAdminDeploymentName, metav1.DeleteOptions{}); err != nil {
 		log.Warn(err)
 	}
 
-	if err := clientset.AppsV1().Deployments(namespace).Delete(pgAdminDeploymentName, &metav1.DeleteOptions{
+	if err := clientset.AppsV1().Deployments(namespace).Delete(ctx, pgAdminDeploymentName, metav1.DeleteOptions{
 		PropagationPolicy: &deletePropagation,
 	}); err != nil {
 		log.Warn(err)
@@ -297,6 +303,7 @@ func DeletePgAdmin(clientset kubeapi.Interface, restconfig *rest.Config, cluster
 // DeletePgAdminFromPgTask is effectively a legacy method that helps to delete
 // the pgAdmin deployment that sits alongside a PostgreSQL cluster
 func DeletePgAdminFromPgTask(clientset kubeapi.Interface, restconfig *rest.Config, task *crv1.Pgtask) {
+	ctx := context.TODO()
 	clusterName := task.Spec.Parameters[config.LABEL_PGADMIN_TASK_CLUSTER]
 	namespace := task.Spec.Namespace
 
@@ -304,7 +311,7 @@ func DeletePgAdminFromPgTask(clientset kubeapi.Interface, restconfig *rest.Confi
 		clusterName, namespace)
 
 	// find the pgcluster that is associated with this task
-	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		return
@@ -320,13 +327,14 @@ func DeletePgAdminFromPgTask(clientset kubeapi.Interface, restconfig *rest.Confi
 	publishPgAdminEvent(events.EventDeletePgAdmin, task)
 
 	// lastly, remove the task
-	if err := clientset.CrunchydataV1().Pgtasks(namespace).Delete(task.Name, &metav1.DeleteOptions{}); err != nil {
+	if err := clientset.CrunchydataV1().Pgtasks(namespace).Delete(ctx, task.Name, metav1.DeleteOptions{}); err != nil {
 		log.Warn(err)
 	}
 }
 
 // createPgAdminDeployment creates the Kubernetes Deployment for pgAdmin
 func createPgAdminDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluster, pvcName string) error {
+	ctx := context.TODO()
 	log.Debugf("creating pgAdmin deployment: %s", cluster.Name)
 
 	// derive the name of the Deployment...which is also used as the name of the
@@ -378,7 +386,8 @@ func createPgAdminDeployment(clientset kubernetes.Interface, cluster *crv1.Pgclu
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGADMIN,
 		&deployment.Spec.Template.Spec.Containers[0])
 
-	if _, err := clientset.AppsV1().Deployments(cluster.Namespace).Create(&deployment); err != nil {
+	if _, err := clientset.AppsV1().Deployments(cluster.Namespace).
+		Create(ctx, &deployment, metav1.CreateOptions{}); err != nil {
 		return err
 	}
 
@@ -387,6 +396,7 @@ func createPgAdminDeployment(clientset kubernetes.Interface, cluster *crv1.Pgclu
 
 // createPgAdminService creates the Kubernetes Service for pgAdmin
 func createPgAdminService(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
+	ctx := context.TODO()
 	// pgAdminServiceName is the name of the Service of the pgAdmin, which
 	// matches that for the Deploymnt
 	pgAdminSvcName := fmt.Sprintf(pgAdminDeploymentFormat, cluster.Name)
@@ -417,7 +427,8 @@ func createPgAdminService(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 		return err
 	}
 
-	if _, err := clientset.CoreV1().Services(cluster.Namespace).Create(&service); err != nil {
+	if _, err := clientset.CoreV1().Services(cluster.Namespace).
+		Create(ctx, &service, metav1.CreateOptions{}); err != nil {
 		return err
 	}
 
@@ -462,6 +473,7 @@ func publishPgAdminEvent(eventType string, task *crv1.Pgtask) {
 
 // waitFotDeploymentReady waits for a deployment to be ready, or times out
 func waitForDeploymentReady(clientset kubernetes.Interface, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) error {
+	ctx := context.TODO()
 	timeout := time.After(timeoutSecs * time.Second)
 	tick := time.NewTicker(periodSecs * time.Second)
 	defer tick.Stop()
@@ -472,7 +484,7 @@ func waitForDeploymentReady(clientset kubernetes.Interface, namespace, deploymen
 		case <-timeout:
 			return errors.New(fmt.Sprintf("Timed out waiting for deployment to become ready: [%s]", deploymentName))
 		case <-tick.C:
-			if deployment, err := clientset.AppsV1().Deployments(namespace).Get(deploymentName, metav1.GetOptions{}); err != nil {
+			if deployment, err := clientset.AppsV1().Deployments(namespace).Get(ctx, deploymentName, metav1.GetOptions{}); err != nil {
 				// if there is an error, log it but continue through the loop
 				log.Error(err)
 			} else {

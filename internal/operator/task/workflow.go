@@ -16,6 +16,7 @@ package task
 */
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
@@ -45,8 +46,8 @@ func CompleteBackupWorkflow(clusterName string, clientset pgo.Interface, ns stri
 }
 
 func completeWorkflow(clientset pgo.Interface, taskNamespace, taskName string) {
-
-	task, err := clientset.CrunchydataV1().Pgtasks(taskNamespace).Get(taskName, metav1.GetOptions{})
+	ctx := context.TODO()
+	task, err := clientset.CrunchydataV1().Pgtasks(taskNamespace).Get(ctx, taskName, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("Error completing  workflow %s", taskName)
 		log.Error(err)
@@ -65,7 +66,8 @@ func completeWorkflow(clientset pgo.Interface, taskNamespace, taskName string) {
 		},
 	})
 	if err == nil {
-		_, err = clientset.CrunchydataV1().Pgtasks(task.Namespace).Patch(task.Name, types.MergePatchType, patch)
+		_, err = clientset.CrunchydataV1().Pgtasks(task.Namespace).
+			Patch(ctx, task.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Error(err)

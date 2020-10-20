@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
@@ -33,6 +34,7 @@ import (
 // pgo restart mycluster
 // pgo restart mycluster --target=mycluster-abcd
 func Restart(request *msgs.RestartRequest, pgouser string) msgs.RestartResponse {
+	ctx := context.TODO()
 
 	log.Debugf("restart called for %s", request.ClusterName)
 
@@ -45,8 +47,8 @@ func Restart(request *msgs.RestartRequest, pgouser string) msgs.RestartResponse 
 	clusterName := request.ClusterName
 	namespace := request.Namespace
 
-	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName,
-		metav1.GetOptions{})
+	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).
+		Get(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -96,6 +98,7 @@ func Restart(request *msgs.RestartRequest, pgouser string) msgs.RestartResponse 
 // QueryRestart queries a cluster for instances available to use as as targets for a PostgreSQL restart.
 // pgo restart mycluster --query
 func QueryRestart(clusterName, namespace string) msgs.QueryRestartResponse {
+	ctx := context.TODO()
 
 	log.Debugf("query restart called for %s", clusterName)
 
@@ -105,8 +108,8 @@ func QueryRestart(clusterName, namespace string) msgs.QueryRestartResponse {
 		},
 	}
 
-	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName,
-		metav1.GetOptions{})
+	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).
+		Get(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()

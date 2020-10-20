@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -44,10 +45,11 @@ func Status(ns string) msgs.StatusResponse {
 }
 
 func getNumClaims(ns string) int {
+	ctx := context.TODO()
 	//count number of PVCs with pgremove=true
 	pvcs, err := apiserver.Clientset.
 		CoreV1().PersistentVolumeClaims(ns).
-		List(metav1.ListOptions{LabelSelector: config.LABEL_PGREMOVE})
+		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PGREMOVE})
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -56,10 +58,11 @@ func getNumClaims(ns string) int {
 }
 
 func getNumDatabases(ns string) int {
+	ctx := context.TODO()
 	//count number of Deployments with pg-cluster
 	deps, err := apiserver.Clientset.
 		AppsV1().Deployments(ns).
-		List(metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER})
+		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER})
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -68,10 +71,11 @@ func getNumDatabases(ns string) int {
 }
 
 func getVolumeCap(ns string) string {
+	ctx := context.TODO()
 	//sum all PVCs storage capacity
 	pvcs, err := apiserver.Clientset.
 		CoreV1().PersistentVolumeClaims(ns).
-		List(metav1.ListOptions{LabelSelector: config.LABEL_PGREMOVE})
+		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PGREMOVE})
 	if err != nil {
 		log.Error(err)
 		return "error"
@@ -88,9 +92,10 @@ func getVolumeCap(ns string) string {
 }
 
 func getDBTags(ns string) map[string]int {
+	ctx := context.TODO()
 	results := make(map[string]int)
 	//count all pods with pg-cluster, sum by image tag value
-	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER})
+	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER})
 	if err != nil {
 		log.Error(err)
 		return results
@@ -105,9 +110,10 @@ func getDBTags(ns string) map[string]int {
 }
 
 func getNotReady(ns string) []string {
+	ctx := context.TODO()
 	//show all database pods for each pgcluster that are not yet running
 	agg := make([]string, 0)
-	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{})
+	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		clusterList = &crv1.PgclusterList{}
 	}
@@ -115,7 +121,7 @@ func getNotReady(ns string) []string {
 	for _, cluster := range clusterList.Items {
 
 		selector := fmt.Sprintf("%s=crunchydata,name=%s", config.LABEL_VENDOR, cluster.Spec.ClusterName)
-		pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
+		pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			log.Error(err)
 			return agg
@@ -150,11 +156,12 @@ func getClaimCapacity(pvc *v1.PersistentVolumeClaim) int64 {
 }
 
 func getLabels(ns string) []msgs.KeyValue {
+	ctx := context.TODO()
 	var ss []msgs.KeyValue
 	results := make(map[string]int)
 	deps, err := apiserver.Clientset.
 		AppsV1().Deployments(ns).
-		List(metav1.ListOptions{})
+		List(ctx, metav1.ListOptions{})
 	if err != nil {
 		log.Error(err)
 		return ss

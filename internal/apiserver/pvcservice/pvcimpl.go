@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
@@ -27,6 +28,7 @@ import (
 
 // ShowPVC ...
 func ShowPVC(allflag bool, clusterName, ns string) ([]msgs.ShowPVCResponseResult, error) {
+	ctx := context.TODO()
 	pvcList := []msgs.ShowPVCResponseResult{}
 	// note to a future editor...all of our managed PVCs have a label called
 	// called "pgremove"
@@ -40,7 +42,7 @@ func ShowPVC(allflag bool, clusterName, ns string) ([]msgs.ShowPVCResponseResult
 
 	pvcs, err := apiserver.Clientset.
 		CoreV1().PersistentVolumeClaims(ns).
-		List(metav1.ListOptions{LabelSelector: selector})
+		List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return pvcList, err
 	}

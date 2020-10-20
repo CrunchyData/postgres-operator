@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
@@ -23,6 +24,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
@@ -38,6 +40,7 @@ type Controller struct {
 
 // onAdd is called when a pgpolicy is added
 func (c *Controller) onAdd(obj interface{}) {
+	ctx := context.TODO()
 	policy := obj.(*crv1.Pgpolicy)
 	log.Debugf("[pgpolicy Controller] onAdd ns=%s %s", policy.ObjectMeta.Namespace, policy.ObjectMeta.SelfLink)
 
@@ -55,7 +58,8 @@ func (c *Controller) onAdd(obj interface{}) {
 		},
 	})
 	if err == nil {
-		_, err = c.Clientset.CrunchydataV1().Pgpolicies(policy.Namespace).Patch(policy.Name, types.MergePatchType, patch)
+		_, err = c.Clientset.CrunchydataV1().Pgpolicies(policy.Namespace).
+			Patch(ctx, policy.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Errorf("ERROR updating pgpolicy status: %s", err.Error())

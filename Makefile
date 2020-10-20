@@ -220,6 +220,7 @@ clean: clean-deprecated
 	rm -f bin/pgo-backrest/pgo-backrest
 	rm -f bin/pgo-rmdata/pgo-rmdata
 	rm -f bin/pgo-scheduler/pgo-scheduler
+	[ -z "$$(ls hack/tools)" ] || rm hack/tools/*
 
 clean-deprecated:
 	@# packages used to be downloaded into the vendor directory
@@ -250,7 +251,5 @@ release:  linuxpgo macpgo winpgo
 	cp $(PGOROOT)/examples/pgo-bash-completion $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
 
-generate: generate-client
-
-generate-client:
-	./hack/generate-clientset.sh
+generate:
+	GOBIN='$(CURDIR)/hack/tools' ./hack/update-codegen.sh

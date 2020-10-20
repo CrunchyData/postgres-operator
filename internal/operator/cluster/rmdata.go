@@ -20,6 +20,7 @@ package cluster
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"os"
 	"strconv"
@@ -30,6 +31,7 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -46,6 +48,7 @@ type RmdataJob struct {
 }
 
 func CreateRmdataJob(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string, removeData, removeBackup, isReplica, isBackup bool) error {
+	ctx := context.TODO()
 	var err error
 
 	jobName := cl.Spec.Name + "-rmdata-" + util.RandStringBytesRmndr(4)
@@ -83,6 +86,7 @@ func CreateRmdataJob(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespa
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_RMDATA,
 		&newjob.Spec.Template.Spec.Containers[0])
 
-	_, err = clientset.BatchV1().Jobs(namespace).Create(&newjob)
+	_, err = clientset.BatchV1().Jobs(namespace).
+		Create(ctx, &newjob, metav1.CreateOptions{})
 	return err
 }

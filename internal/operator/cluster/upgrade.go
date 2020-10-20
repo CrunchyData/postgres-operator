@@ -16,6 +16,7 @@ package cluster
 */
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -58,7 +59,7 @@ const (
 // 7) Update the existing pgcluster CRD instance to match the current version
 // 8) Submit the pgcluster CRD for recreation
 func AddUpgrade(clientset kubeapi.Interface, upgrade *crv1.Pgtask, namespace string) {
-
+	ctx := context.TODO()
 	upgradeTargetClusterName := upgrade.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
 
 	log.Debugf("started upgrade of cluster: %s", upgradeTargetClusterName)
@@ -66,7 +67,7 @@ func AddUpgrade(clientset kubeapi.Interface, upgrade *crv1.Pgtask, namespace str
 	// publish our upgrade event
 	PublishUpgradeEvent(events.EventUpgradeCluster, namespace, upgrade, "")
 
-	pgcluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(upgradeTargetClusterName, metav1.GetOptions{})
+	pgcluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, upgradeTargetClusterName, metav1.GetOptions{})
 	if err != nil {
 		errormessage := "cound not find pgcluster for pgcluster upgrade"
 		log.Errorf("%s Error: %s", errormessage, err)
@@ -119,7 +120,7 @@ func AddUpgrade(clientset kubeapi.Interface, upgrade *crv1.Pgtask, namespace str
 	// update pgcluster CRD workflow ID
 	pgcluster.Spec.UserLabels[config.LABEL_WORKFLOW_ID] = workflowid
 
-	_, err = clientset.CrunchydataV1().Pgclusters(namespace).Create(pgcluster)
+	_, err = clientset.CrunchydataV1().Pgclusters(namespace).Create(ctx, pgcluster, metav1.CreateOptions{})
 	if err != nil {
 		log.Errorf("error submitting upgraded pgcluster CRD for cluster recreation of cluster %s, Error: %v", pgcluster.Name, err)
 	} else {
@@ -138,6 +139,7 @@ func AddUpgrade(clientset kubeapi.Interface, upgrade *crv1.Pgtask, namespace str
 // added. If this label does not exist or is otherwise not set as expected, return an empty
 // string value and call an alternate function to determine the current primary pod.
 func getPrimaryPodDeploymentName(clientset kubernetes.Interface, cluster *crv1.Pgcluster) string {
+	ctx := context.TODO()
 	// first look for a 'primary' role label on the current primary deployment
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, cluster.Name,
 		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
@@ -148,7 +150,7 @@ func getPrimaryPodDeploymentName(clientset kubernetes.Interface, cluster *crv1.P
 	}
 
 	// only consider pods that are running
-	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(options)
+	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(ctx, options)
 
 	if err != nil {
 		log.Errorf("no pod with the primary role label was found for cluster %s. Error: %s", cluster.Name, err.Error())
@@ -206,10 +208,11 @@ func getCurrentPrimary(clusterName, podPrimary, crPrimary, labelPrimary string) 
 // unassociated because of a failover or the backrest-shared-repo PVC. The total number of current replicas
 // will also be captured during this process so that the correct number of replicas can be recreated.
 func handleReplicas(clientset kubeapi.Interface, clusterName, currentPrimaryPVC, namespace string) string {
+	ctx := context.TODO()
 	log.Debugf("deleting pgreplicas and noting the number found for cluster %s", clusterName)
 	// Save the number of found replicas for this cluster
 	numReps := 0
-	replicaList, err := clientset.CrunchydataV1().Pgreplicas(namespace).List(metav1.ListOptions{})
+	replicaList, err := clientset.CrunchydataV1().Pgreplicas(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		log.Errorf("unable to get pgreplicas. Error: %s", err)
 	}
@@ -220,7 +223,7 @@ func handleReplicas(clientset kubeapi.Interface, clusterName, currentPrimaryPVC,
 			log.Debugf("scaling down pgreplica: %s", replicaList.Items[index].Name)
 			ScaleDownBase(clientset, &replicaList.Items[index], namespace)
 			log.Debugf("deleting pgreplica CRD: %s", replicaList.Items[index].Name)
-			clientset.CrunchydataV1().Pgreplicas(namespace).Delete(replicaList.Items[index].Name, &metav1.DeleteOptions{})
+			clientset.CrunchydataV1().Pgreplicas(namespace).Delete(ctx, replicaList.Items[index].Name, metav1.DeleteOptions{})
 			// if the existing replica PVC is not being used as the primary PVC, delete
 			// note this will not remove any leftover PVCs from previous failovers,
 			// those will require manual deletion so as to avoid any accidental
@@ -229,7 +232,7 @@ func handleReplicas(clientset kubeapi.Interface, clusterName, currentPrimaryPVC,
 				deletePropagation := metav1.DeletePropagationForeground
 				clientset.
 					CoreV1().PersistentVolumeClaims(namespace).
-					Delete(replicaList.Items[index].Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+					Delete(ctx, replicaList.Items[index].Name, metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 				log.Debugf("deleting replica pvc: %s", replicaList.Items[index].Name)
 			}
 
@@ -256,11 +259,12 @@ func SetReplicaNumber(pgcluster *crv1.Pgcluster, numReplicas string) {
 // to upgrade the pgcluster deployment. This preserves existing secrets, non-standard configmaps and service definitions
 // for use in the newly upgraded cluster.
 func deleteBeforeUpgrade(clientset kubeapi.Interface, clusterName, currentPrimary, namespace string, isStandby bool) {
+	ctx := context.TODO()
 
 	// first, get all deployments for the pgcluster in question
 	deployments, err := clientset.
 		AppsV1().Deployments(namespace).
-		List(metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + clusterName})
+		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + clusterName})
 	if err != nil {
 		log.Errorf("unable to get deployments. Error: %s", err)
 	}
@@ -270,7 +274,7 @@ func deleteBeforeUpgrade(clientset kubeapi.Interface, clusterName, currentPrimar
 		deletePropagation := metav1.DeletePropagationForeground
 		_ = clientset.
 			AppsV1().Deployments(namespace).
-			Delete(deployments.Items[index].Name, &metav1.DeleteOptions{
+			Delete(ctx, deployments.Items[index].Name, metav1.DeleteOptions{
 				PropagationPolicy: &deletePropagation,
 			})
 	}
@@ -283,14 +287,14 @@ func deleteBeforeUpgrade(clientset kubeapi.Interface, clusterName, currentPrimar
 	log.Debug(waitStatus)
 
 	// delete the pgcluster
-	clientset.CrunchydataV1().Pgclusters(namespace).Delete(clusterName, &metav1.DeleteOptions{})
+	clientset.CrunchydataV1().Pgclusters(namespace).Delete(ctx, clusterName, metav1.DeleteOptions{})
 
 	// delete all existing job references
 	deletePropagation := metav1.DeletePropagationForeground
 	clientset.
 		BatchV1().Jobs(namespace).
-		DeleteCollection(
-			&metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
+		DeleteCollection(ctx,
+			metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
 			metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + clusterName})
 
 	// delete all existing pgtask references except for the upgrade task
@@ -303,16 +307,17 @@ func deleteBeforeUpgrade(clientset kubeapi.Interface, clusterName, currentPrimar
 	// delete the leader configmap used by the Postgres Operator since this information may change after
 	// the upgrade is complete
 	// Note: deletion is required for cluster recreation
-	clientset.CoreV1().ConfigMaps(namespace).Delete(clusterName+"-leader", &metav1.DeleteOptions{})
+	clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, clusterName+"-leader", metav1.DeleteOptions{})
 
 	// delete the '<cluster-name>-pgha-default-config' configmap, if it exists so the config syncer
 	// will not try to use it instead of '<cluster-name>-pgha-config'
-	clientset.CoreV1().ConfigMaps(namespace).Delete(clusterName+"-pgha-default-config", &metav1.DeleteOptions{})
+	clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, clusterName+"-pgha-default-config", metav1.DeleteOptions{})
 }
 
 // deploymentWait is modified from cluster.waitForDeploymentDelete. It simply waits for the current primary deployment
 // deletion to complete before proceeding with the rest of the pgcluster upgrade.
 func deploymentWait(clientset kubernetes.Interface, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) string {
+	ctx := context.TODO()
 	timeout := time.After(timeoutSecs * time.Second)
 	tick := time.NewTicker(periodSecs * time.Second)
 	defer tick.Stop()
@@ -322,7 +327,7 @@ func deploymentWait(clientset kubernetes.Interface, namespace, deploymentName st
 		case <-timeout:
 			return fmt.Sprintf("Timed out waiting for deployment to be deleted: [%s]", deploymentName)
 		case <-tick.C:
-			_, err := clientset.AppsV1().Deployments(namespace).Get(deploymentName, metav1.GetOptions{})
+			_, err := clientset.AppsV1().Deployments(namespace).Get(ctx, deploymentName, metav1.GetOptions{})
 			if err != nil {
 				return fmt.Sprintf("Deployment %s has been deleted.", deploymentName)
 			}
@@ -333,7 +338,8 @@ func deploymentWait(clientset kubernetes.Interface, namespace, deploymentName st
 // deleteNonupgradePgtasks deletes all existing pgtasks by selector with the exception of the
 // upgrade task itself
 func deleteNonupgradePgtasks(clientset pgo.Interface, selector, namespace string) error {
-	taskList, err := clientset.CrunchydataV1().Pgtasks(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	ctx := context.TODO()
+	taskList, err := clientset.CrunchydataV1().Pgtasks(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return err
 	}
@@ -342,7 +348,7 @@ func deleteNonupgradePgtasks(clientset pgo.Interface, selector, namespace string
 	for _, v := range taskList.Items {
 		// if the pgtask is not for the upgrade, delete it
 		if v.ObjectMeta.Name != v.Name+"-"+config.LABEL_UPGRADE {
-			err = clientset.CrunchydataV1().Pgtasks(namespace).Delete(v.Name, &metav1.DeleteOptions{})
+			err = clientset.CrunchydataV1().Pgtasks(namespace).Delete(ctx, v.Name, metav1.DeleteOptions{})
 			if err != nil {
 				return err
 			}
@@ -358,6 +364,7 @@ func deleteNonupgradePgtasks(clientset pgo.Interface, selector, namespace string
 // needed for the proper reinitialziation of Patroni.
 func createUpgradePGHAConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
 	namespace string) error {
+	ctx := context.TODO()
 
 	labels := make(map[string]string)
 	labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
@@ -368,7 +375,7 @@ func createUpgradePGHAConfigMap(clientset kubernetes.Interface, cluster *crv1.Pg
 
 	// if the "pgha-default-config" config map exists, this cluster is being upgraded
 	// and should use the initialization value from this existing configmap
-	defaultConfigmap, err := clientset.CoreV1().ConfigMaps(namespace).Get(cluster.Name+"-pgha-default-config", metav1.GetOptions{})
+	defaultConfigmap, err := clientset.CoreV1().ConfigMaps(namespace).Get(ctx, cluster.Name+"-pgha-default-config", metav1.GetOptions{})
 	if err == nil {
 		data[operator.PGHAConfigInitSetting] = defaultConfigmap.Data[operator.PGHAConfigInitSetting]
 	} else {
@@ -390,7 +397,7 @@ func createUpgradePGHAConfigMap(clientset kubernetes.Interface, cluster *crv1.Pg
 		Data: data,
 	}
 
-	if _, err := clientset.CoreV1().ConfigMaps(namespace).Create(configmap); err != nil {
+	if _, err := clientset.CoreV1().ConfigMaps(namespace).Create(ctx, configmap, metav1.CreateOptions{}); err != nil {
 		return err
 	}
 
@@ -400,6 +407,7 @@ func createUpgradePGHAConfigMap(clientset kubernetes.Interface, cluster *crv1.Pg
 // recreateBackrestRepoSecret overwrites the secret for the pgBackRest repo. This is needed
 // because the key encryption algorithm has been updated from RSA to EdDSA
 func recreateBackrestRepoSecret(clientset kubernetes.Interface, clustername, namespace, operatorNamespace string) {
+	ctx := context.TODO()
 	config := util.BackrestRepoConfig{
 		ClusterName:       clustername,
 		ClusterNamespace:  namespace,
@@ -407,7 +415,7 @@ func recreateBackrestRepoSecret(clientset kubernetes.Interface, clustername, nam
 	}
 
 	secretName := clustername + "-backrest-repo-config"
-	secret, err := clientset.CoreV1().Secrets(namespace).Get(secretName, metav1.GetOptions{})
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 
 	// 4.1, 4.2
 	if err == nil {
@@ -571,6 +579,8 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 // createClusterRecreateWorkflowTask creates a cluster creation task for the upgraded cluster's recreation
 // to maintain the expected workflow and tasking
 func createClusterRecreateWorkflowTask(clientset pgo.Interface, clusterName, ns, pgouser string) (string, error) {
+	ctx := context.TODO()
+
 	// create pgtask CRD
 	spec := crv1.PgtaskSpec{}
 	spec.Namespace = ns
@@ -599,7 +609,7 @@ func createClusterRecreateWorkflowTask(clientset pgo.Interface, clusterName, ns,
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
 
-	_, err = clientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
+	_, err = clientset.CrunchydataV1().Pgtasks(ns).Create(ctx, newInstance, metav1.CreateOptions{})
 	if err != nil {
 		log.Error(err)
 		return "", err
@@ -610,12 +620,13 @@ func createClusterRecreateWorkflowTask(clientset pgo.Interface, clusterName, ns,
 // updateUpgradeWorkflow updates a Workflow with the current state of the pgcluster upgrade task
 // modified from the cluster.UpdateCloneWorkflow function
 func updateUpgradeWorkflow(clientset pgo.Interface, namespace, workflowID, status string) error {
+	ctx := context.TODO()
 	log.Debugf("pgcluster upgrade workflow: update workflow [%s]", workflowID)
 
 	// we have to look up the name of the workflow bt the workflow ID, which
 	// involves using a selector
 	selector := fmt.Sprintf("%s=%s", crv1.PgtaskWorkflowID, workflowID)
-	taskList, err := clientset.CrunchydataV1().Pgtasks(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	taskList, err := clientset.CrunchydataV1().Pgtasks(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Errorf("pgcluster upgrade workflow: could not get workflow [%s]", workflowID)
 		return err
@@ -633,7 +644,7 @@ func updateUpgradeWorkflow(clientset pgo.Interface, namespace, workflowID, statu
 	task := taskList.Items[0]
 	task.Spec.Parameters[status] = time.Now().Format(time.RFC3339)
 
-	if _, err := clientset.CrunchydataV1().Pgtasks(namespace).Update(&task); err != nil {
+	if _, err := clientset.CrunchydataV1().Pgtasks(namespace).Update(ctx, &task, metav1.UpdateOptions{}); err != nil {
 		log.Errorf("pgcluster upgrade workflow: could not update workflow [%s] to status [%s]", workflowID, status)
 		return err
 	}

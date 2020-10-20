@@ -17,6 +17,7 @@ package pgdump
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -52,6 +53,7 @@ type restorejobTemplateFields struct {
 
 // Restore ...
 func Restore(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
+	ctx := context.TODO()
 
 	log.Infof(" PgDump Restore not implemented %s, %s", namespace, task.Name)
 
@@ -64,7 +66,7 @@ func Restore(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 		return
 	}
 
-	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("pgrestore: could not find a pgcluster in Restore Workflow for %s", clusterName)
 		return
@@ -116,7 +118,7 @@ func Restore(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGRESTORE,
 		&newjob.Spec.Template.Spec.Containers[0])
 
-	j, err := clientset.BatchV1().Jobs(namespace).Create(&newjob)
+	j, err := clientset.BatchV1().Jobs(namespace).Create(ctx, &newjob, metav1.CreateOptions{})
 	if err != nil {
 		log.Error(err)
 		log.Error("restore workflow: error in creating restore job")

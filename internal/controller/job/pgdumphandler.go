@@ -16,16 +16,20 @@ limitations under the License.
 */
 
 import (
+	"context"
+
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
 
 // handlePGDumpUpdate is responsible for handling updates to pg_dump jobs
 func (c *Controller) handlePGDumpUpdate(job *apiv1.Job) error {
+	ctx := context.TODO()
 
 	labels := job.GetObjectMeta().GetLabels()
 
@@ -46,7 +50,8 @@ func (c *Controller) handlePGDumpUpdate(job *apiv1.Job) error {
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(status).Bytes()
 	if err == nil {
 		log.Debugf("patching task %s: %s", dumpTask, patch)
-		_, err = c.Client.CrunchydataV1().Pgtasks(job.Namespace).Patch(dumpTask, types.JSONPatchType, patch)
+		_, err = c.Client.CrunchydataV1().Pgtasks(job.Namespace).
+			Patch(ctx, dumpTask, types.JSONPatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())
@@ -58,6 +63,7 @@ func (c *Controller) handlePGDumpUpdate(job *apiv1.Job) error {
 
 // handlePGDumpUpdate is responsible for handling updates to pg_restore jobs
 func (c *Controller) handlePGRestoreUpdate(job *apiv1.Job) error {
+	ctx := context.TODO()
 
 	labels := job.GetObjectMeta().GetLabels()
 
@@ -80,7 +86,8 @@ func (c *Controller) handlePGRestoreUpdate(job *apiv1.Job) error {
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(status).Bytes()
 	if err == nil {
 		log.Debugf("patching task %s: %s", restoreTask, patch)
-		_, err = c.Client.CrunchydataV1().Pgtasks(job.Namespace).Patch(restoreTask, types.JSONPatchType, patch)
+		_, err = c.Client.CrunchydataV1().Pgtasks(job.Namespace).
+			Patch(ctx, restoreTask, types.JSONPatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Error("error in patching pgtask " + job.ObjectMeta.SelfLink + err.Error())

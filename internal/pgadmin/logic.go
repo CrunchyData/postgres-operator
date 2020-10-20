@@ -16,6 +16,7 @@ package pgadmin
 */
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -154,13 +155,15 @@ func GetUsernames(qr *queryRunner) ([]string, error) {
 //
 // The pointer will be nil if there is no pgAdmin deployed for the cluster
 func GetPgAdminQueryRunner(clientset kubernetes.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster) (*queryRunner, error) {
+	ctx := context.TODO()
+
 	if active, ok := cluster.Labels[config.LABEL_PGADMIN]; !ok || active != "true" {
 		return nil, nil
 	}
 
 	selector := fmt.Sprintf("%s=true,%s=%s", config.LABEL_PGADMIN, config.LABEL_PG_CLUSTER, cluster.Name)
 
-	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(metav1.ListOptions{LabelSelector: selector})
+	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Errorf("failed to find pgadmin pod [%v]", err)
 		return nil, err

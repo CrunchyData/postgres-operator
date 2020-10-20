@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -36,6 +37,7 @@ import (
 // pgo reload all
 // pgo reload --selector=name=mycluster
 func Reload(request *msgs.ReloadRequest, ns, username string) msgs.ReloadResponse {
+	ctx := context.TODO()
 
 	log.Debugf("Reload %v", request)
 
@@ -49,7 +51,7 @@ func Reload(request *msgs.ReloadRequest, ns, username string) msgs.ReloadRespons
 	}
 
 	if request.Selector != "" {
-		clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{})
+		clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -70,8 +72,8 @@ func Reload(request *msgs.ReloadRequest, ns, username string) msgs.ReloadRespons
 
 		log.Debugf("reload requested for cluster %s", clusterName)
 
-		cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(clusterName,
-			metav1.GetOptions{})
+		cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).
+			Get(ctx, clusterName, metav1.GetOptions{})
 		// maintain same "is not found" error message for backwards compatibility
 		if kerrors.IsNotFound(err) {
 			errorMsgs = append(errorMsgs, fmt.Sprintf("%s was not found, verify cluster name", clusterName))

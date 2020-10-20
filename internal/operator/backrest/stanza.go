@@ -16,6 +16,7 @@ package backrest
 */
 
 import (
+	"context"
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -32,18 +33,19 @@ import (
 // restore when an existing stanza-create pgtask or Job might still be present from initial
 // creation of the cluster.
 func CleanStanzaCreateResources(namespace, clusterName string, clientset kubeapi.Interface) error {
+	ctx := context.TODO()
 
 	resourceName := clusterName + "-" + crv1.PgtaskBackrestStanzaCreate
 
-	if err := clientset.CrunchydataV1().Pgtasks(namespace).Delete(resourceName,
-		&metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
+	if err := clientset.CrunchydataV1().Pgtasks(namespace).
+		Delete(ctx, resourceName, metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
 		return err
 	}
 
 	// job name is the same as the task name
 	deletePropagation := metav1.DeletePropagationBackground
-	if err := clientset.BatchV1().Jobs(namespace).Delete(resourceName,
-		&metav1.DeleteOptions{
+	if err := clientset.BatchV1().Jobs(namespace).Delete(ctx, resourceName,
+		metav1.DeleteOptions{
 			PropagationPolicy: &deletePropagation,
 		}); err != nil && !kerrors.IsNotFound(err) {
 		return err
@@ -53,12 +55,12 @@ func CleanStanzaCreateResources(namespace, clusterName string, clientset kubeapi
 }
 
 func StanzaCreate(namespace, clusterName string, clientset kubeapi.Interface) {
-
+	ctx := context.TODO()
 	taskName := clusterName + "-" + crv1.PgtaskBackrestStanzaCreate
 
 	//look up the backrest-repo pod name
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGO_BACKREST_REPO + "=true"
-	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if len(pods.Items) != 1 {
 		log.Errorf("pods len != 1 for cluster %s", clusterName)
 		return
@@ -71,7 +73,7 @@ func StanzaCreate(namespace, clusterName string, clientset kubeapi.Interface) {
 	podName := pods.Items[0].Name
 
 	// get the cluster to determine the proper storage type
-	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
 		return
 	}
@@ -127,7 +129,7 @@ func StanzaCreate(namespace, clusterName string, clientset kubeapi.Interface) {
 	newInstance.ObjectMeta.Labels = make(map[string]string)
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
 
-	_, err = clientset.CrunchydataV1().Pgtasks(namespace).Create(newInstance)
+	_, err = clientset.CrunchydataV1().Pgtasks(namespace).Create(ctx, newInstance, metav1.CreateOptions{})
 	if err != nil {
 		log.Error(err)
 	}

@@ -16,6 +16,7 @@ package operatorupgrade
 */
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -35,8 +36,10 @@ const (
 // if the Operator version listed does not match the current Operator version, create an annotation indicating
 // it has not been upgraded
 func CheckVersion(clientset pgo.Interface, ns string) error {
+	ctx := context.TODO()
+
 	// get all pgclusters
-	clusterList, err := clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{})
+	clusterList, err := clientset.CrunchydataV1().Pgclusters(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("%s: %w", ErrUnsuccessfulVersionCheck, err)
 	}
@@ -51,7 +54,7 @@ func CheckVersion(clientset pgo.Interface, ns string) error {
 				cluster.Annotations = map[string]string{}
 			}
 			cluster.Annotations[config.ANNOTATION_IS_UPGRADED] = config.ANNOTATIONS_FALSE
-			_, err = clientset.CrunchydataV1().Pgclusters(ns).Update(&cluster)
+			_, err = clientset.CrunchydataV1().Pgclusters(ns).Update(ctx, &cluster, metav1.UpdateOptions{})
 			if err != nil {
 				return fmt.Errorf("%s: %w", ErrUnsuccessfulVersionCheck, err)
 			}
@@ -59,7 +62,7 @@ func CheckVersion(clientset pgo.Interface, ns string) error {
 	}
 
 	// update pgreplica CRD userlabels["pgo-version"] to current version
-	replicaList, err := clientset.CrunchydataV1().Pgreplicas(ns).List(metav1.ListOptions{})
+	replicaList, err := clientset.CrunchydataV1().Pgreplicas(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		log.Error(err)
 		return fmt.Errorf("%s: %w", ErrUnsuccessfulVersionCheck, err)
@@ -75,7 +78,7 @@ func CheckVersion(clientset pgo.Interface, ns string) error {
 				replica.Annotations = map[string]string{}
 			}
 			replica.Annotations[config.ANNOTATION_IS_UPGRADED] = config.ANNOTATIONS_FALSE
-			_, err = clientset.CrunchydataV1().Pgreplicas(ns).Update(&replica)
+			_, err = clientset.CrunchydataV1().Pgreplicas(ns).Update(ctx, &replica, metav1.UpdateOptions{})
 			if err != nil {
 				return fmt.Errorf("%s: %w", ErrUnsuccessfulVersionCheck, err)
 			}

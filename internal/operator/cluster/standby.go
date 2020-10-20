@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -63,15 +64,15 @@ const (
 
 // DisableStandby disables standby mode for the cluster
 func DisableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error {
-
+	ctx := context.TODO()
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
 
 	log.Debugf("Disable standby: disabling standby for cluster %s", clusterName)
 
 	configMapName := fmt.Sprintf("%s-pgha-config", cluster.Labels[config.LABEL_PGHA_SCOPE])
-	configMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(configMapName,
-		metav1.GetOptions{})
+	configMap, err := clientset.CoreV1().ConfigMaps(namespace).
+		Get(ctx, configMapName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -94,8 +95,8 @@ func DisableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) erro
 	}
 
 	log.Debugf("patching configmap %s: %s", pghaConfigMapName, jsonOpBytes)
-	if _, err := clientset.CoreV1().ConfigMaps(namespace).Patch(pghaConfigMapName,
-		types.JSONPatchType, jsonOpBytes); err != nil {
+	if _, err := clientset.CoreV1().ConfigMaps(namespace).
+		Patch(ctx, pghaConfigMapName, types.JSONPatchType, jsonOpBytes, metav1.PatchOptions{}); err != nil {
 		return err
 	}
 
@@ -110,7 +111,7 @@ func DisableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) erro
 
 // EnableStandby enables standby mode for the cluster
 func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error {
-
+	ctx := context.TODO()
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
 
@@ -128,7 +129,7 @@ func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error
 	remainingPVCSelector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, clusterName)
 	remainingPVC, err := clientset.
 		CoreV1().PersistentVolumeClaims(namespace).
-		List(metav1.ListOptions{LabelSelector: remainingPVCSelector})
+		List(ctx, metav1.ListOptions{LabelSelector: remainingPVCSelector})
 	if err != nil {
 		log.Error(err)
 		return fmt.Errorf("Unable to get remaining PVCs while enabling standby mode: %w", err)
@@ -140,10 +141,10 @@ func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error
 		deletePropagation := metav1.DeletePropagationForeground
 		err := clientset.
 			CoreV1().PersistentVolumeClaims(namespace).
-			Delete(currPVC.Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+			Delete(ctx, currPVC.Name, metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 		if err == nil {
 			err = wait.Poll(time.Second/2, time.Minute, func() (bool, error) {
-				_, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(currPVC.Name, metav1.GetOptions{})
+				_, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, currPVC.Name, metav1.GetOptions{})
 				return false, err
 			})
 		}
@@ -174,7 +175,7 @@ func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error
 
 	// find the "config" configMap created by Patroni
 	dcsConfigMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-config"
-	dcsConfigMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(dcsConfigMapName, metav1.GetOptions{})
+	dcsConfigMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(ctx, dcsConfigMapName, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("Unable to find configMap %s when attempting to enable standby",
 			dcsConfigMapName)
@@ -203,14 +204,14 @@ func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error
 		return err
 	}
 	dcsConfigMap.ObjectMeta.Annotations["config"] = string(configJSONFinalStr)
-	_, err = clientset.CoreV1().ConfigMaps(namespace).Update(dcsConfigMap)
+	_, err = clientset.CoreV1().ConfigMaps(namespace).Update(ctx, dcsConfigMap, metav1.UpdateOptions{})
 	if err != nil {
 		return err
 	}
 
 	leaderConfigMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-leader"
 	// Delete the "leader" configMap
-	if err = clientset.CoreV1().ConfigMaps(namespace).Delete(leaderConfigMapName, &metav1.DeleteOptions{}); err != nil &&
+	if err = clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, leaderConfigMapName, metav1.DeleteOptions{}); err != nil &&
 		!kerrors.IsNotFound(err) {
 		log.Error("Unable to delete configMap %s while enabling standby mode for cluster "+
 			"%s: %v", leaderConfigMapName, clusterName, err)
@@ -219,7 +220,7 @@ func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error
 
 	// override to the repo type to ensure s3 is utilized for standby creation
 	pghaConfigMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-pgha-config"
-	pghaConfigMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(pghaConfigMapName, metav1.GetOptions{})
+	pghaConfigMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(ctx, pghaConfigMapName, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("Unable to find configMap %s when attempting to enable standby",
 			pghaConfigMapName)
@@ -229,7 +230,7 @@ func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error
 	// delete the DCS config so that it will refresh with the included standby settings
 	delete(pghaConfigMap.Data, fmt.Sprintf(cfg.PGHADCSConfigName, clusterName))
 
-	if _, err := clientset.CoreV1().ConfigMaps(namespace).Update(pghaConfigMap); err != nil {
+	if _, err := clientset.CoreV1().ConfigMaps(namespace).Update(ctx, pghaConfigMap, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 

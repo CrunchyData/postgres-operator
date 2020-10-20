@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -36,6 +37,7 @@ import (
 const pvcContainerName = "database"
 
 func DfCluster(request msgs.DfRequest) msgs.DfResponse {
+	ctx := context.TODO()
 	response := msgs.DfResponse{}
 	// set the namespace
 	namespace := request.Namespace
@@ -52,7 +54,7 @@ func DfCluster(request msgs.DfRequest) msgs.DfResponse {
 	// get all of the clusters that match the selector
 	clusterList, err := apiserver.Clientset.
 		CrunchydataV1().Pgclusters(namespace).
-		List(metav1.ListOptions{LabelSelector: selector})
+		List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return CreateErrorResponse(err.Error())
 	}
@@ -118,9 +120,10 @@ loop:
 // getClaimCapacity makes a call to the PVC API to get the total capacity
 // available on the PVC
 func getClaimCapacity(clientset kubernetes.Interface, pvcName, ns string) (string, error) {
+	ctx := context.TODO()
 	log.Debugf("in df pvc name found to be %s", pvcName)
 
-	pvc, err := clientset.CoreV1().PersistentVolumeClaims(ns).Get(pvcName, metav1.GetOptions{})
+	pvc, err := clientset.CoreV1().PersistentVolumeClaims(ns).Get(ctx, pvcName, metav1.GetOptions{})
 
 	if err != nil {
 		log.Error(err)
@@ -141,11 +144,12 @@ func getClaimCapacity(clientset kubernetes.Interface, pvcName, ns string) (strin
 // we use pointers to keep the argument size down and because we are not
 // modifying any of the content
 func getClusterDf(cluster *crv1.Pgcluster, clusterResultsChannel chan msgs.DfDetail, clusterProgressChannel chan bool, errorChannel chan error) {
+	ctx := context.TODO()
 	log.Debugf("pod df: %s", cluster.Spec.Name)
 
 	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, cluster.Spec.Name)
 
-	pods, err := apiserver.Clientset.CoreV1().Pods(cluster.Spec.Namespace).List(metav1.ListOptions{LabelSelector: selector})
+	pods, err := apiserver.Clientset.CoreV1().Pods(cluster.Spec.Namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 
 	// if there is an error attempting to get the pods, just return
 	if err != nil {

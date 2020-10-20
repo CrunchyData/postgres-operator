@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -660,9 +661,10 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 // For the purposes of this module, we don't care if this fails. We'll log the
 // error in here, but do nothing with it
 func deleteUserSecret(cluster crv1.Pgcluster, username string) {
+	ctx := context.TODO()
 	secretName := fmt.Sprintf(util.UserSecretFormat, cluster.Spec.ClusterName, username)
-
-	err := apiserver.Clientset.CoreV1().Secrets(cluster.Spec.Namespace).Delete(secretName, nil)
+	err := apiserver.Clientset.CoreV1().Secrets(cluster.Spec.Namespace).
+		Delete(ctx, secretName, metav1.DeleteOptions{})
 
 	if err != nil {
 		log.Error(err)
@@ -796,6 +798,7 @@ func generateValidUntilDateString(validUntilDays int) string {
 // getClusterList tries to return a list of clusters based on either having an
 // argument list of cluster names, a Kubernetes selector, or set to "all"
 func getClusterList(namespace string, clusterNames []string, selector string, all bool) (crv1.PgclusterList, error) {
+	ctx := context.TODO()
 	clusterList := crv1.PgclusterList{}
 
 	// see if there are any in one of the three parametes used to return everything
@@ -807,7 +810,7 @@ func getClusterList(namespace string, clusterNames []string, selector string, al
 	// if the all flag is set, let's return all the clusters here and return
 	if all {
 		// return the value of cluster list or that of the error here
-		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).List(metav1.ListOptions{})
+		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).List(ctx, metav1.ListOptions{})
 		if err == nil {
 			clusterList = *cl
 		}
@@ -817,7 +820,7 @@ func getClusterList(namespace string, clusterNames []string, selector string, al
 	// try to build the cluster list based on either the selector or the list
 	// of arguments...or both. First, start with the selector
 	if selector != "" {
-		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).List(metav1.ListOptions{LabelSelector: selector})
+		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 
 		// if there is an error, return here with an empty cluster list
 		if err != nil {
@@ -828,7 +831,7 @@ func getClusterList(namespace string, clusterNames []string, selector string, al
 
 	// now try to get clusters based specific cluster names
 	for _, clusterName := range clusterNames {
-		cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+		cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
 
 		// if there is an error, capture it here and return here with an empty list
 		if err != nil {
@@ -1000,6 +1003,8 @@ func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgclu
 // of a user should there be a pgadmin deploymen associated with this PostgreSQL
 // cluster. Returns an error if anything goes wrong
 func updatePgAdmin(cluster *crv1.Pgcluster, username, password string) error {
+	ctx := context.TODO()
+
 	// Sync user to pgAdmin, if enabled
 	qr, err := pgadmin.GetPgAdminQueryRunner(apiserver.Clientset, apiserver.RESTConfig, cluster)
 
@@ -1015,7 +1020,7 @@ func updatePgAdmin(cluster *crv1.Pgcluster, username, password string) error {
 
 	// proceed onward
 	// Get service details and prep connection metadata
-	service, err := apiserver.Clientset.CoreV1().Services(cluster.Namespace).Get(cluster.Name, metav1.GetOptions{})
+	service, err := apiserver.Clientset.CoreV1().Services(cluster.Namespace).Get(ctx, cluster.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -1049,6 +1054,7 @@ func updatePgAdmin(cluster *crv1.Pgcluster, username, password string) error {
 // of the bulk updates that can occur with updating a user (e.g. resetting
 // expired passwords), which is why it's broken out into its own function
 func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.UserResponseDetail {
+	ctx := context.TODO()
 	result := msgs.UserResponseDetail{
 		ClusterName: cluster.Spec.ClusterName,
 		Username:    request.Username,
@@ -1177,7 +1183,7 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 		secretName := fmt.Sprintf(util.UserSecretFormat, cluster.Spec.ClusterName, result.Username)
 
 		// only call update user secret if the secret exists
-		if _, err := apiserver.Clientset.CoreV1().Secrets(cluster.Namespace).Get(secretName, metav1.GetOptions{}); err == nil {
+		if _, err := apiserver.Clientset.CoreV1().Secrets(cluster.Namespace).Get(ctx, secretName, metav1.GetOptions{}); err == nil {
 			// if we cannot update the user secret, only warn that we cannot do so
 			if err := util.UpdateUserSecret(apiserver.Clientset, cluster.Spec.ClusterName,
 				result.Username, result.Password, cluster.Namespace); err != nil {

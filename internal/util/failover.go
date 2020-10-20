@@ -16,6 +16,7 @@ package util
 */
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -98,14 +99,14 @@ var (
 
 // GetPod determines the best target to fail to
 func GetPod(clientset kubernetes.Interface, deploymentName, namespace string) (*v1.Pod, error) {
+	ctx := context.TODO()
 
 	var err error
-
 	var pod *v1.Pod
 	var pods *v1.PodList
 
 	selector := config.LABEL_DEPLOYMENT_NAME + "=" + deploymentName + "," + config.LABEL_PGHA_ROLE + "=replica"
-	pods, err = clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	pods, err = clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return pod, err
 	}
@@ -150,6 +151,7 @@ func GetPod(clientset kubernetes.Interface, deploymentName, namespace string) (*
 // in a happy phase. That Pod may be lacking a "role" label. From there, we zero
 // out the statistics and apply an error
 func ReplicationStatus(request ReplicationStatusRequest, includePrimary, includeBusted bool) (ReplicationStatusResponse, error) {
+	ctx := context.TODO()
 	response := ReplicationStatusResponse{
 		Instances: make([]InstanceReplicationInfo, 0),
 	}
@@ -175,7 +177,7 @@ func ReplicationStatus(request ReplicationStatusRequest, includePrimary, include
 	}
 
 	log.Debugf(`searching for pods with "%s"`, selector)
-	pods, err := request.Clientset.CoreV1().Pods(request.Namespace).List(metav1.ListOptions{LabelSelector: selector})
+	pods, err := request.Clientset.CoreV1().Pods(request.Namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 
 	// If there is an error trying to get the pods, return here. Allow the caller
 	// to handle the error
@@ -300,12 +302,13 @@ func ReplicationStatus(request ReplicationStatusRequest, includePrimary, include
 // Patroni to stop responding to failures or other database activities, e.g. it will not attempt to start the
 // database when stopped to perform maintenance
 func ToggleAutoFailover(clientset kubernetes.Interface, enable bool, pghaScope, namespace string) error {
+	ctx := context.TODO()
 
 	// find the "config" configMap created by Patroni
 	configMapName := pghaScope + "-config"
 	log.Debugf("setting autofailover to %t for cluster with pgha scope %s", enable, pghaScope)
 
-	configMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(configMapName, metav1.GetOptions{})
+	configMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(ctx, configMapName, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		return err
@@ -362,6 +365,7 @@ func createInstanceInfoMap(pods *v1.PodList) map[string]instanceInfo {
 // "pause" it sets it to "true")
 func enableFailover(clientset kubernetes.Interface, configMap *v1.ConfigMap, configJSON map[string]interface{},
 	namespace string) error {
+	ctx := context.TODO()
 	if _, ok := configJSON["pause"]; ok && configJSON["pause"] == true {
 		log.Debugf("updating pause key in configMap %s to enable autofailover", configMap.Name)
 		//  disabled autofail by removing "pause" from the config
@@ -371,7 +375,7 @@ func enableFailover(clientset kubernetes.Interface, configMap *v1.ConfigMap, con
 			return err
 		}
 		configMap.ObjectMeta.Annotations["config"] = string(configJSONFinalStr)
-		_, err = clientset.CoreV1().ConfigMaps(namespace).Update(configMap)
+		_, err = clientset.CoreV1().ConfigMaps(namespace).Update(ctx, configMap, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}
@@ -387,6 +391,7 @@ func enableFailover(clientset kubernetes.Interface, configMap *v1.ConfigMap, con
 // "false" or "null"), then it also needs to be disabled by setting "pause" to true.
 func disableFailover(clientset kubernetes.Interface, configMap *v1.ConfigMap, configJSON map[string]interface{},
 	namespace string) error {
+	ctx := context.TODO()
 	if _, ok := configJSON["pause"]; !ok || configJSON["pause"] != true {
 		log.Debugf("updating pause key in configMap %s to disable autofailover", configMap.Name)
 		// disable autofail by setting "pause" to true
@@ -396,7 +401,7 @@ func disableFailover(clientset kubernetes.Interface, configMap *v1.ConfigMap, co
 			return err
 		}
 		configMap.ObjectMeta.Annotations["config"] = string(configJSONFinalStr)
-		_, err = clientset.CoreV1().ConfigMaps(namespace).Update(configMap)
+		_, err = clientset.CoreV1().ConfigMaps(namespace).Update(ctx, configMap, metav1.UpdateOptions{})
 		if err != nil {
 			return err
 		}

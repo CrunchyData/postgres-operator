@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 
@@ -65,6 +66,8 @@ func (c *Controller) waitForShutdown(stopCh <-chan struct{}) {
 }
 
 func (c *Controller) processNextItem() bool {
+	ctx := context.TODO()
+
 	// Wait until there is a new item in the working queue
 	key, quit := c.Queue.Get()
 	if quit {
@@ -83,7 +86,7 @@ func (c *Controller) processNextItem() bool {
 	// parallel.
 	defer c.Queue.Done(key)
 
-	tmpTask, err := c.Client.CrunchydataV1().Pgtasks(keyNamespace).Get(keyResourceName, metav1.GetOptions{})
+	tmpTask, err := c.Client.CrunchydataV1().Pgtasks(keyNamespace).Get(ctx, keyResourceName, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("ERROR onAdd getting pgtask : %s", err.Error())
 		c.Queue.Forget(key) // NB(cbandy): This should probably be a retry.
@@ -98,7 +101,8 @@ func (c *Controller) processNextItem() bool {
 		},
 	})
 	if err == nil {
-		_, err = c.Client.CrunchydataV1().Pgtasks(keyNamespace).Patch(tmpTask.Name, types.MergePatchType, patch)
+		_, err = c.Client.CrunchydataV1().Pgtasks(keyNamespace).
+			Patch(ctx, tmpTask.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Errorf("ERROR onAdd updating pgtask status: %s", err.Error())
@@ -208,7 +212,8 @@ func (c *Controller) AddPGTaskEventHandler() {
 //parameter is set, it means a failover has already been
 //started on this
 func dupeFailover(clientset pgo.Interface, task *crv1.Pgtask, ns string) bool {
-	tmp, err := clientset.CrunchydataV1().Pgtasks(ns).Get(task.Spec.Name, metav1.GetOptions{})
+	ctx := context.TODO()
+	tmp, err := clientset.CrunchydataV1().Pgtasks(ns).Get(ctx, task.Spec.Name, metav1.GetOptions{})
 	if err != nil {
 		//a big time error if this occurs
 		return false
@@ -225,7 +230,8 @@ func dupeFailover(clientset pgo.Interface, task *crv1.Pgtask, ns string) bool {
 //parameter is set, it means a delete data job has already been
 //started on this
 func dupeDeleteData(clientset pgo.Interface, task *crv1.Pgtask, ns string) bool {
-	tmp, err := clientset.CrunchydataV1().Pgtasks(ns).Get(task.Spec.Name, metav1.GetOptions{})
+	ctx := context.TODO()
+	tmp, err := clientset.CrunchydataV1().Pgtasks(ns).Get(ctx, task.Spec.Name, metav1.GetOptions{})
 	if err != nil {
 		//a big time error if this occurs
 		return false

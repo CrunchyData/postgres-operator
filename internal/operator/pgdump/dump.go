@@ -17,6 +17,7 @@ package pgdump
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"os"
 
@@ -56,6 +57,7 @@ type pgDumpJobTemplateFields struct {
 
 // Dump ...
 func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
+	ctx := context.TODO()
 
 	var err error
 	//create the Job to run the pgdump command
@@ -89,7 +91,7 @@ func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	}
 
 	// get the pgcluster CRD for cases where a CCPImagePrefix is specified
-	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		return
@@ -140,7 +142,7 @@ func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGDUMP,
 		&newjob.Spec.Template.Spec.Containers[0])
 
-	_, err = clientset.BatchV1().Jobs(namespace).Create(&newjob)
+	_, err = clientset.BatchV1().Jobs(namespace).Create(ctx, &newjob, metav1.CreateOptions{})
 
 	if err != nil {
 		return
@@ -150,7 +152,8 @@ func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(crv1.PgBackupJobSubmitted).Bytes()
 	if err == nil {
 		log.Debugf("patching task %s: %s", task.Spec.Name, patch)
-		_, err = clientset.CrunchydataV1().Pgtasks(namespace).Patch(task.Spec.Name, types.JSONPatchType, patch)
+		_, err = clientset.CrunchydataV1().Pgtasks(namespace).
+			Patch(ctx, task.Spec.Name, types.JSONPatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Error(err.Error())

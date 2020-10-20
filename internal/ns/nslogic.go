@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -156,6 +157,7 @@ func CreateFakeNamespaceClient(installationName string) (kubernetes.Interface, e
 // CreateNamespace creates a new namespace that is owned by the Operator.
 func CreateNamespace(clientset kubernetes.Interface, installationName, pgoNamespace,
 	createdBy, newNs string) error {
+	ctx := context.TODO()
 
 	log.Debugf("CreateNamespace %s %s %s", pgoNamespace, createdBy, newNs)
 
@@ -168,7 +170,7 @@ func CreateNamespace(clientset kubernetes.Interface, installationName, pgoNamesp
 
 	n.Name = newNs
 
-	if _, err := clientset.CoreV1().Namespaces().Create(&n); err != nil {
+	if _, err := clientset.CoreV1().Namespaces().Create(ctx, &n, metav1.CreateOptions{}); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -195,8 +197,8 @@ func CreateNamespace(clientset kubernetes.Interface, installationName, pgoNamesp
 
 // DeleteNamespace deletes the namespace specified.
 func DeleteNamespace(clientset kubernetes.Interface, installationName, pgoNamespace, deletedBy, ns string) error {
-
-	err := clientset.CoreV1().Namespaces().Delete(ns, &metav1.DeleteOptions{})
+	ctx := context.TODO()
+	err := clientset.CoreV1().Namespaces().Delete(ctx, ns, metav1.DeleteOptions{})
 	if err != nil {
 		log.Error(err)
 		return err
@@ -224,7 +226,8 @@ func DeleteNamespace(clientset kubernetes.Interface, installationName, pgoNamesp
 
 // CopySecret copies a secret from the Operator namespace to target namespace
 func CopySecret(clientset kubernetes.Interface, secretName, operatorNamespace, targetNamespace string) error {
-	secret, err := clientset.CoreV1().Secrets(operatorNamespace).Get(secretName, metav1.GetOptions{})
+	ctx := context.TODO()
+	secret, err := clientset.CoreV1().Secrets(operatorNamespace).Get(ctx, secretName, metav1.GetOptions{})
 
 	if err == nil {
 		secret.ObjectMeta = metav1.ObjectMeta{
@@ -233,8 +236,9 @@ func CopySecret(clientset kubernetes.Interface, secretName, operatorNamespace, t
 			Name:        secret.ObjectMeta.Name,
 		}
 
-		if _, err = clientset.CoreV1().Secrets(targetNamespace).Create(secret); kerrors.IsAlreadyExists(err) {
-			_, err = clientset.CoreV1().Secrets(targetNamespace).Update(secret)
+		_, err = clientset.CoreV1().Secrets(targetNamespace).Create(ctx, secret, metav1.CreateOptions{})
+		if kerrors.IsAlreadyExists(err) {
+			_, err = clientset.CoreV1().Secrets(targetNamespace).Update(ctx, secret, metav1.UpdateOptions{})
 		}
 	}
 
@@ -248,11 +252,11 @@ func CopySecret(clientset kubernetes.Interface, secretName, operatorNamespace, t
 // ReconcileRole reconciles a Role required by the operator in a target namespace
 func ReconcileRole(clientset kubernetes.Interface, role, targetNamespace string,
 	roleTemplate *template.Template) error {
+	ctx := context.TODO()
 
 	var createRole bool
 
-	currRole, err := clientset.RbacV1().Roles(targetNamespace).Get(
-		role, metav1.GetOptions{})
+	currRole, err := clientset.RbacV1().Roles(targetNamespace).Get(ctx, role, metav1.GetOptions{})
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			log.Debugf("Role %s in namespace %s does not exist and will be created",
@@ -275,11 +279,9 @@ func ReconcileRole(clientset kubernetes.Interface, role, targetNamespace string,
 	}
 
 	if createRole {
-		if _, err := clientset.RbacV1().Roles(targetNamespace).Create(
-			&templatedRole); err != nil {
-			return err
-		}
-		return nil
+		_, err := clientset.RbacV1().Roles(targetNamespace).
+			Create(ctx, &templatedRole, metav1.CreateOptions{})
+		return err
 	}
 
 	if !reflect.DeepEqual(currRole.Rules, templatedRole.Rules) {
@@ -289,8 +291,8 @@ func ReconcileRole(clientset kubernetes.Interface, role, targetNamespace string,
 
 		currRole.Rules = templatedRole.Rules
 
-		if _, err := clientset.RbacV1().Roles(targetNamespace).Update(
-			currRole); err != nil {
+		if _, err := clientset.RbacV1().Roles(targetNamespace).
+			Update(ctx, currRole, metav1.UpdateOptions{}); err != nil {
 			return err
 		}
 	}
@@ -301,11 +303,12 @@ func ReconcileRole(clientset kubernetes.Interface, role, targetNamespace string,
 // ReconcileRoleBinding reconciles a RoleBinding required by the operator in a target namespace
 func ReconcileRoleBinding(clientset kubernetes.Interface, pgoNamespace,
 	roleBinding, targetNamespace string, roleBindingTemplate *template.Template) error {
+	ctx := context.TODO()
 
 	var createRoleBinding bool
 
-	currRoleBinding, err := clientset.RbacV1().RoleBindings(targetNamespace).Get(
-		roleBinding, metav1.GetOptions{})
+	currRoleBinding, err := clientset.RbacV1().RoleBindings(targetNamespace).
+		Get(ctx, roleBinding, metav1.GetOptions{})
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			log.Debugf("RoleBinding %s in namespace %s does not exist and will be created",
@@ -331,11 +334,9 @@ func ReconcileRoleBinding(clientset kubernetes.Interface, pgoNamespace,
 	}
 
 	if createRoleBinding {
-		if _, err := clientset.RbacV1().RoleBindings(targetNamespace).Create(
-			&templatedRoleBinding); err != nil {
-			return err
-		}
-		return nil
+		_, err := clientset.RbacV1().RoleBindings(targetNamespace).
+			Create(ctx, &templatedRoleBinding, metav1.CreateOptions{})
+		return err
 	}
 
 	if !reflect.DeepEqual(currRoleBinding.Subjects,
@@ -349,8 +350,8 @@ func ReconcileRoleBinding(clientset kubernetes.Interface, pgoNamespace,
 		currRoleBinding.Subjects = templatedRoleBinding.Subjects
 		currRoleBinding.RoleRef = templatedRoleBinding.RoleRef
 
-		if _, err := clientset.RbacV1().RoleBindings(targetNamespace).Update(
-			currRoleBinding); err != nil {
+		if _, err := clientset.RbacV1().RoleBindings(targetNamespace).
+			Update(ctx, currRoleBinding, metav1.UpdateOptions{}); err != nil {
 			return err
 		}
 	}
@@ -363,11 +364,12 @@ func ReconcileRoleBinding(clientset kubernetes.Interface, pgoNamespace,
 func ReconcileServiceAccount(clientset kubernetes.Interface,
 	serviceAccount, targetNamespace string, serviceAccountTemplate *template.Template,
 	imagePullSecrets []v1.LocalObjectReference) (bool, error) {
+	ctx := context.TODO()
 
 	var createServiceAccount, createdOrUpdated bool
 
-	currServiceAccount, err := clientset.CoreV1().ServiceAccounts(
-		targetNamespace).Get(serviceAccount, metav1.GetOptions{})
+	currServiceAccount, err := clientset.CoreV1().ServiceAccounts(targetNamespace).
+		Get(ctx, serviceAccount, metav1.GetOptions{})
 	if err != nil {
 		if kerrors.IsNotFound(err) {
 			log.Debugf("ServiceAccount %s in namespace %s does not exist and will be created",
@@ -391,8 +393,8 @@ func ReconcileServiceAccount(clientset kubernetes.Interface,
 
 	if createServiceAccount {
 		templatedServiceAccount.ImagePullSecrets = imagePullSecrets
-		if _, err := clientset.CoreV1().ServiceAccounts(targetNamespace).Create(
-			&templatedServiceAccount); err != nil {
+		if _, err := clientset.CoreV1().ServiceAccounts(targetNamespace).
+			Create(ctx, &templatedServiceAccount, metav1.CreateOptions{}); err != nil {
 			return createdOrUpdated, err
 		}
 		createdOrUpdated = true
@@ -406,8 +408,8 @@ func ReconcileServiceAccount(clientset kubernetes.Interface,
 
 		currServiceAccount.ImagePullSecrets = imagePullSecrets
 
-		if _, err := clientset.CoreV1().ServiceAccounts(targetNamespace).Update(
-			currServiceAccount); err != nil {
+		if _, err := clientset.CoreV1().ServiceAccounts(targetNamespace).
+			Update(ctx, currServiceAccount, metav1.UpdateOptions{}); err != nil {
 			return createdOrUpdated, err
 		}
 		createdOrUpdated = true
@@ -419,10 +421,11 @@ func ReconcileServiceAccount(clientset kubernetes.Interface,
 // UpdateNamespace updates a new namespace to be owned by the Operator.
 func UpdateNamespace(clientset kubernetes.Interface, installationName, pgoNamespace,
 	updatedBy, ns string) error {
+	ctx := context.TODO()
 
 	log.Debugf("UpdateNamespace %s %s %s %s", installationName, pgoNamespace, updatedBy, ns)
 
-	theNs, err := clientset.CoreV1().Namespaces().Get(ns, metav1.GetOptions{})
+	theNs, err := clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -433,7 +436,7 @@ func UpdateNamespace(clientset kubernetes.Interface, installationName, pgoNamesp
 	theNs.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
 	theNs.ObjectMeta.Labels[config.LABEL_PGO_INSTALLATION_NAME] = installationName
 
-	if _, err := clientset.CoreV1().Namespaces().Update(theNs); err != nil {
+	if _, err := clientset.CoreV1().Namespaces().Update(ctx, theNs, metav1.UpdateOptions{}); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -461,6 +464,7 @@ func UpdateNamespace(clientset kubernetes.Interface, installationName, pgoNamesp
 // be utilized by the Operator to deploy PG clusters.
 func ConfigureInstallNamespaces(clientset kubernetes.Interface, installationName, pgoNamespace string,
 	namespaceNames []string, namespaceOperatingMode NamespaceOperatingMode) error {
+	ctx := context.TODO()
 
 	// now loop through all namespaces and either create or update them
 	for _, namespaceName := range namespaceNames {
@@ -469,8 +473,8 @@ func ConfigureInstallNamespaces(clientset kubernetes.Interface, installationName
 		// if we can get namespaces, make sure this one isn't part of another install
 		if namespaceOperatingMode != NamespaceOperatingModeDisabled {
 
-			namespace, err := clientset.CoreV1().Namespaces().Get(namespaceName,
-				metav1.GetOptions{})
+			namespace, err := clientset.CoreV1().Namespaces().
+				Get(ctx, namespaceName, metav1.GetOptions{})
 			if err != nil {
 				if kerrors.IsNotFound(err) {
 					nameSpaceExists = false
@@ -526,6 +530,7 @@ func ConfigureInstallNamespaces(clientset kubernetes.Interface, installationName
 // that NAMESPACE is empty).
 func GetCurrentNamespaceList(clientset kubernetes.Interface,
 	installationName string, namespaceOperatingMode NamespaceOperatingMode) ([]string, error) {
+	ctx := context.TODO()
 
 	if namespaceOperatingMode == NamespaceOperatingModeDisabled {
 		return getNamespacesFromEnv(), nil
@@ -533,7 +538,7 @@ func GetCurrentNamespaceList(clientset kubernetes.Interface,
 
 	ns := make([]string, 0)
 
-	nsList, err := clientset.CoreV1().Namespaces().List(metav1.ListOptions{})
+	nsList, err := clientset.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		log.Error(err.Error())
 		return nil, err
@@ -668,12 +673,13 @@ func GetNamespaceOperatingMode(clientset kubernetes.Interface) (NamespaceOperati
 // account, then "false" is returned (along with the error in the event an error is encountered).
 func CheckAccessPrivs(clientset kubernetes.Interface,
 	privs map[string][]string, apiGroup, namespace string) (bool, error) {
+	ctx := context.TODO()
 
 	for resource, verbs := range privs {
 		for _, verb := range verbs {
 			sar, err := clientset.
 				AuthorizationV1().SelfSubjectAccessReviews().
-				Create(&authv1.SelfSubjectAccessReview{
+				Create(ctx, &authv1.SelfSubjectAccessReview{
 					Spec: authv1.SelfSubjectAccessReviewSpec{
 						ResourceAttributes: &authv1.ResourceAttributes{
 							Namespace: namespace,
@@ -682,7 +688,7 @@ func CheckAccessPrivs(clientset kubernetes.Interface,
 							Verb:      verb,
 						},
 					},
-				})
+				}, metav1.CreateOptions{})
 			if err != nil {
 				return false, err
 			}

@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -38,6 +39,7 @@ const pgBouncerServiceSuffix = "-pgbouncer"
 // pgo create pgbouncer mycluster
 // pgo create pgbouncer --selector=name=mycluster
 func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) msgs.CreatePgbouncerResponse {
+	ctx := context.TODO()
 	var err error
 	resp := msgs.CreatePgbouncerResponse{}
 	resp.Status.Code = msgs.Ok
@@ -132,7 +134,8 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 		cluster.Spec.PgBouncer.Resources = resources
 
 		// update the cluster CRD with these udpates. If there is an error
-		if _, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Update(&cluster); err != nil {
+		if _, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).
+			Update(ctx, &cluster, metav1.UpdateOptions{}); err != nil {
 			log.Error(err)
 			resp.Results = append(resp.Results, err.Error())
 			continue
@@ -148,6 +151,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 // pgo delete pgbouncer mycluster
 // pgo delete pgbouncer --selector=name=mycluster
 func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.DeletePgbouncerResponse {
+	ctx := context.TODO()
 	var err error
 	resp := msgs.DeletePgbouncerResponse{}
 	resp.Status.Code = msgs.Ok
@@ -201,7 +205,8 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 		cluster.Spec.PgBouncer.Limits = v1.ResourceList{}
 
 		// update the cluster CRD with these udpates. If there is an error
-		if _, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Update(&cluster); err != nil {
+		if _, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).
+			Update(ctx, &cluster, metav1.UpdateOptions{}); err != nil {
 			log.Error(err)
 			resp.Status.Code = msgs.Error
 			resp.Results = append(resp.Results, err.Error())
@@ -281,6 +286,7 @@ func ShowPgBouncer(request *msgs.ShowPgBouncerRequest, namespace string) msgs.Sh
 // - password rotation
 // - updating CPU/memory resources
 func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser string) msgs.UpdatePgBouncerResponse {
+	ctx := context.TODO()
 	// set up a dummy response
 	response := msgs.UpdatePgBouncerResponse{
 		// Results: []msgs.ShowPgBouncerDetail{},
@@ -403,7 +409,8 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 			cluster.Spec.PgBouncer.Replicas = request.Replicas
 		}
 
-		if _, err := apiserver.Clientset.CrunchydataV1().Pgclusters(cluster.Namespace).Update(&cluster); err != nil {
+		if _, err := apiserver.Clientset.CrunchydataV1().Pgclusters(cluster.Namespace).
+			Update(ctx, &cluster, metav1.UpdateOptions{}); err != nil {
 			log.Error(err)
 			result.Error = true
 			result.ErrorMessage = err.Error()
@@ -421,6 +428,7 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 // getClusterList tries to return a list of clusters based on either having an
 // argument list of cluster names, or a Kubernetes selector
 func getClusterList(namespace string, clusterNames []string, selector string) (crv1.PgclusterList, error) {
+	ctx := context.TODO()
 	clusterList := crv1.PgclusterList{}
 
 	// see if there are any values in the cluster name list or in the selector
@@ -433,7 +441,7 @@ func getClusterList(namespace string, clusterNames []string, selector string) (c
 	// try to build the cluster list based on either the selector or the list
 	// of arguments...or both. First, start with the selector
 	if selector != "" {
-		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).List(metav1.ListOptions{LabelSelector: selector})
+		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 
 		// if there is an error, return here with an empty cluster list
 		if err != nil {
@@ -444,7 +452,7 @@ func getClusterList(namespace string, clusterNames []string, selector string) (c
 
 	// now try to get clusters based specific cluster names
 	for _, clusterName := range clusterNames {
-		cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+		cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
 
 		// if there is an error, capture it here and return here with an empty list
 		if err != nil {
@@ -487,13 +495,14 @@ func setPgBouncerPasswordDetail(cluster crv1.Pgcluster, result *msgs.ShowPgBounc
 // setPgBouncerServiceDetail applies the information about the pgBouncer service
 // to the result for the pgBouncer show
 func setPgBouncerServiceDetail(cluster crv1.Pgcluster, result *msgs.ShowPgBouncerDetail) {
+	ctx := context.TODO()
 	// get the service information about the pgBouncer deployment
 	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, cluster.Spec.Name)
 
 	// have to go through a bunch of services because "current design"
 	services, err := apiserver.Clientset.
 		CoreV1().Services(cluster.Spec.Namespace).
-		List(metav1.ListOptions{LabelSelector: selector})
+		List(ctx, metav1.ListOptions{LabelSelector: selector})
 
 	// if there is an error, return without making any adjustments
 	if err != nil {

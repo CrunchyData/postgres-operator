@@ -20,6 +20,7 @@ package cluster
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -90,6 +91,7 @@ func addClusterCreateMissingService(clientset kubernetes.Interface, cl *crv1.Pgc
 func addClusterBootstrapJob(clientset kubeapi.Interface,
 	cl *crv1.Pgcluster, namespace string, dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult) error {
+	ctx := context.TODO()
 
 	bootstrapFields, err := getBootstrapJobFields(clientset, cl, dataVolume, walVolume,
 		tablespaceVolumes)
@@ -121,7 +123,7 @@ func addClusterBootstrapJob(clientset kubeapi.Interface,
 	// determine if any of the container images need to be overridden
 	operator.OverrideClusterContainerImages(job.Spec.Template.Spec.Containers)
 
-	if _, err := clientset.BatchV1().Jobs(namespace).Create(job); err != nil {
+	if _, err := clientset.BatchV1().Jobs(namespace).Create(ctx, job, metav1.CreateOptions{}); err != nil {
 		return err
 	}
 
@@ -132,6 +134,7 @@ func addClusterBootstrapJob(clientset kubeapi.Interface,
 func addClusterDeployments(clientset kubeapi.Interface,
 	cl *crv1.Pgcluster, namespace string, dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult) error {
+	ctx := context.TODO()
 
 	if err := backrest.CreateRepoDeployment(clientset, cl, true, false, 0); err != nil {
 		return err
@@ -164,8 +167,8 @@ func addClusterDeployments(clientset kubeapi.Interface,
 	// determine if any of the container images need to be overridden
 	operator.OverrideClusterContainerImages(deployment.Spec.Template.Spec.Containers)
 
-	if _, err := clientset.AppsV1().Deployments(namespace).Create(deployment); err != nil &&
-		!kerrors.IsAlreadyExists(err) {
+	if _, err := clientset.AppsV1().Deployments(namespace).
+		Create(ctx, deployment, metav1.CreateOptions{}); err != nil && !kerrors.IsAlreadyExists(err) {
 		return err
 	}
 
@@ -176,6 +179,7 @@ func addClusterDeployments(clientset kubeapi.Interface,
 func getBootstrapJobFields(clientset kubeapi.Interface,
 	cluster *crv1.Pgcluster, dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult) (operator.BootstrapJobTemplateFields, error) {
+	ctx := context.TODO()
 
 	restoreClusterName := cluster.Spec.PGDataSource.RestoreFrom
 	restoreOpts := strconv.Quote(cluster.Spec.PGDataSource.RestoreOpts)
@@ -204,14 +208,15 @@ func getBootstrapJobFields(clientset kubeapi.Interface,
 	// Grab the pgBackRest secret from the "restore from" cluster to obtain the annotations
 	// containing the additional configuration details needed to bootstrap from the clusters
 	// pgBackRest repository
-	restoreFromSecret, err := clientset.CoreV1().Secrets(cluster.GetNamespace()).Get(
+	restoreFromSecret, err := clientset.CoreV1().Secrets(cluster.GetNamespace()).Get(ctx,
 		fmt.Sprintf(util.BackrestRepoSecretName, restoreClusterName), metav1.GetOptions{})
 	if err != nil {
 		return bootstrapFields, err
 	}
 
 	// Grab the cluster to restore from to see if it still exists
-	restoreCluster, err := clientset.CrunchydataV1().Pgclusters(cluster.GetNamespace()).Get(restoreClusterName, metav1.GetOptions{})
+	restoreCluster, err := clientset.CrunchydataV1().Pgclusters(cluster.GetNamespace()).
+		Get(ctx, restoreClusterName, metav1.GetOptions{})
 	found := true
 	if err != nil {
 		if !kerrors.IsNotFound(err) {
@@ -399,6 +404,8 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 	dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult,
 ) error {
+	ctx := context.TODO()
+
 	var err error
 	log.Debugf("Scale called for %s in %s", replica.Name, namespace)
 
@@ -523,12 +530,14 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 	replicaDeployment.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_PGHA_SCOPE]
 	replicaDeployment.Spec.Template.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_PGHA_SCOPE]
 
-	_, err = clientset.AppsV1().Deployments(namespace).Create(&replicaDeployment)
+	_, err = clientset.AppsV1().Deployments(namespace).
+		Create(ctx, &replicaDeployment, metav1.CreateOptions{})
 	return err
 }
 
 // DeleteReplica ...
 func DeleteReplica(clientset kubernetes.Interface, cl *crv1.Pgreplica, namespace string) error {
+	ctx := context.TODO()
 
 	var err error
 	log.Info("deleting Pgreplica object" + " in namespace " + namespace)
@@ -536,7 +545,7 @@ func DeleteReplica(clientset kubernetes.Interface, cl *crv1.Pgreplica, namespace
 	deletePropagation := metav1.DeletePropagationForeground
 	err = clientset.
 		AppsV1().Deployments(namespace).
-		Delete(cl.Spec.Name, &metav1.DeleteOptions{
+		Delete(ctx, cl.Spec.Name, metav1.DeleteOptions{
 			PropagationPolicy: &deletePropagation,
 		})
 
@@ -601,6 +610,7 @@ type ScaleClusterInfo struct {
 // includes changing the replica count for all clusters to 0, and then updating the pgcluster
 // with a shutdown status.
 func ShutdownCluster(clientset kubeapi.Interface, cluster crv1.Pgcluster) error {
+	ctx := context.TODO()
 
 	// first ensure the current primary deployment is properly recorded in the pg
 	// cluster. Only consider primaries that are running, as there could be
@@ -614,7 +624,7 @@ func ShutdownCluster(clientset kubeapi.Interface, cluster crv1.Pgcluster) error 
 	}
 
 	// only consider pods that are running
-	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(options)
+	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(ctx, options)
 
 	if err != nil {
 		return err
@@ -632,7 +642,8 @@ func ShutdownCluster(clientset kubeapi.Interface, cluster crv1.Pgcluster) error 
 	cluster.Annotations[config.ANNOTATION_PRIMARY_DEPLOYMENT] =
 		primaryPod.Labels[config.LABEL_DEPLOYMENT_NAME]
 
-	if _, err := clientset.CrunchydataV1().Pgclusters(cluster.Namespace).Update(&cluster); err != nil {
+	if _, err := clientset.CrunchydataV1().Pgclusters(cluster.Namespace).
+		Update(ctx, &cluster, metav1.UpdateOptions{}); err != nil {
 		return fmt.Errorf("Cluster Operator: Unable to update the current primary deployment "+
 			"in the pgcluster when shutting down cluster %s", cluster.Name)
 	}
@@ -659,14 +670,16 @@ func ShutdownCluster(clientset kubeapi.Interface, cluster crv1.Pgcluster) error 
 	})
 	if err == nil {
 		log.Debugf("patching cluster %s: %s", cluster.Name, patch)
-		_, err = clientset.CrunchydataV1().Pgclusters(cluster.Namespace).Patch(cluster.Name, types.MergePatchType, patch)
+		_, err = clientset.CrunchydataV1().Pgclusters(cluster.Namespace).
+			Patch(ctx, cluster.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		return err
 	}
 
-	if err := clientset.CoreV1().ConfigMaps(cluster.Namespace).Delete(fmt.Sprintf("%s-leader",
-		cluster.Labels[config.LABEL_PGHA_SCOPE]), &metav1.DeleteOptions{}); err != nil {
+	if err := clientset.CoreV1().ConfigMaps(cluster.Namespace).
+		Delete(ctx, fmt.Sprintf("%s-leader", cluster.Labels[config.LABEL_PGHA_SCOPE]),
+			metav1.DeleteOptions{}); err != nil {
 		return err
 	}
 
@@ -713,6 +726,7 @@ func StartupCluster(clientset kubernetes.Interface, cluster crv1.Pgcluster) erro
 func ScaleClusterDeployments(clientset kubernetes.Interface, cluster crv1.Pgcluster, replicas int,
 	scalePrimary, scaleReplicas, scaleBackRestRepo,
 	scalePGBouncer bool) (clusterInfo ScaleClusterInfo, err error) {
+	ctx := context.TODO()
 
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
@@ -722,7 +736,7 @@ func ScaleClusterDeployments(clientset kubernetes.Interface, cluster crv1.Pgclus
 	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, clusterName)
 	deploymentList, err = clientset.
 		AppsV1().Deployments(namespace).
-		List(metav1.ListOptions{LabelSelector: selector})
+		List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return
 	}
@@ -772,7 +786,8 @@ func ScaleClusterDeployments(clientset kubernetes.Interface, cluster crv1.Pgclus
 		patch, err := kubeapi.NewMergePatch().Add("spec", "replicas")(replicas).Bytes()
 		if err == nil {
 			log.Debugf("patching deployment %s: %s", deployment.GetName(), patch)
-			_, err = clientset.AppsV1().Deployments(namespace).Patch(deployment.GetName(), types.MergePatchType, patch)
+			_, err = clientset.AppsV1().Deployments(namespace).
+				Patch(ctx, deployment.GetName(), types.MergePatchType, patch, metav1.PatchOptions{})
 		}
 		if err != nil {
 			log.Errorf("Error scaling deployment %s to %d: %v", deployment.Name, replicas, err)

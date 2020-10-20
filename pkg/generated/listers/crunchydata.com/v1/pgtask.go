@@ -25,8 +25,10 @@ import (
 )
 
 // PgtaskLister helps list Pgtasks.
+// All objects returned here must be treated as read-only.
 type PgtaskLister interface {
 	// List lists all Pgtasks in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Pgtask, err error)
 	// Pgtasks returns an object that can list and get Pgtasks.
 	Pgtasks(namespace string) PgtaskNamespaceLister
@@ -57,10 +59,13 @@ func (s *pgtaskLister) Pgtasks(namespace string) PgtaskNamespaceLister {
 }
 
 // PgtaskNamespaceLister helps list and get Pgtasks.
+// All objects returned here must be treated as read-only.
 type PgtaskNamespaceLister interface {
 	// List lists all Pgtasks in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Pgtask, err error)
 	// Get retrieves the Pgtask from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.Pgtask, error)
 	PgtaskNamespaceListerExpansion
 }

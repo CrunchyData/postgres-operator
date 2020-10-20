@@ -19,6 +19,7 @@ package cluster
 */
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -58,6 +59,7 @@ type ServiceTemplateFields struct {
 const ReplicaSuffix = "-replica"
 
 func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace string) {
+	ctx := context.TODO()
 	var err error
 
 	dataVolume, walVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
@@ -112,7 +114,8 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(crv1.CompletedStatus).Bytes()
 	if err == nil {
 		log.Debugf("patching cluster %s: %s", cl.Spec.Name, patch)
-		_, err = clientset.CrunchydataV1().Pgclusters(namespace).Patch(cl.Spec.Name, types.JSONPatchType, patch)
+		_, err = clientset.CrunchydataV1().Pgclusters(namespace).
+			Patch(ctx, cl.Spec.Name, types.JSONPatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Error("error in status patch " + err.Error())
@@ -130,7 +133,8 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 	patch, err = kubeapi.NewJSONPatch().Add("spec", "PrimaryStorage", "name")(dataVolume.PersistentVolumeClaimName).Bytes()
 	if err == nil {
 		log.Debugf("patching cluster %s: %s", cl.Spec.Name, patch)
-		_, err = clientset.CrunchydataV1().Pgclusters(namespace).Patch(cl.Spec.Name, types.JSONPatchType, patch)
+		_, err = clientset.CrunchydataV1().Pgclusters(namespace).
+			Patch(ctx, cl.Spec.Name, types.JSONPatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Error("error in pvcname patch " + err.Error())
@@ -201,7 +205,8 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 				},
 			}
 
-			_, err = clientset.CrunchydataV1().Pgreplicas(namespace).Create(newInstance)
+			_, err = clientset.CrunchydataV1().Pgreplicas(namespace).
+				Create(ctx, newInstance, metav1.CreateOptions{})
 			if err != nil {
 				log.Error(" in creating Pgreplica instance" + err.Error())
 				publishClusterCreateFailure(cl, err.Error())
@@ -215,7 +220,7 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 // data source.  Specifically, this function creates the bootstrap job that will be run to
 // bootstrap the cluster, along with supporting resources (e.g. ConfigMaps and volumes).
 func AddClusterBootstrap(clientset kubeapi.Interface, cluster *crv1.Pgcluster) error {
-
+	ctx := context.TODO()
 	namespace := cluster.GetNamespace()
 
 	if err := operator.CreatePGHAConfigMap(clientset, cluster, namespace); err != nil &&
@@ -246,7 +251,8 @@ func AddClusterBootstrap(clientset kubeapi.Interface, cluster *crv1.Pgcluster) e
 	})
 	if err == nil {
 		log.Debugf("patching cluster %s: %s", cluster.Name, patch)
-		_, err = clientset.CrunchydataV1().Pgclusters(namespace).Patch(cluster.Name, types.MergePatchType, patch)
+		_, err = clientset.CrunchydataV1().Pgclusters(namespace).
+			Patch(ctx, cluster.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		return err
@@ -263,13 +269,13 @@ func AddClusterBootstrap(clientset kubeapi.Interface, cluster *crv1.Pgcluster) e
 // in the event an error is encountered, the function also returns a 'repoCreated' bool that
 // specifies whether or not a repo was actually created.
 func AddBootstrapRepo(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (repoCreated bool, err error) {
-
+	ctx := context.TODO()
 	restoreClusterName := cluster.Spec.PGDataSource.RestoreFrom
 	repoName := fmt.Sprintf(util.BackrestRepoServiceName, restoreClusterName)
 
 	found := true
-	repoDeployment, err := clientset.AppsV1().Deployments(cluster.GetNamespace()).Get(
-		repoName, metav1.GetOptions{})
+	repoDeployment, err := clientset.AppsV1().Deployments(cluster.GetNamespace()).
+		Get(ctx, repoName, metav1.GetOptions{})
 	if err != nil {
 		if !kerrors.IsNotFound(err) {
 			return
@@ -326,6 +332,7 @@ func DeleteClusterBase(clientset kubernetes.Interface, cl *crv1.Pgcluster, names
 
 // ScaleBase ...
 func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace string) {
+	ctx := context.TODO()
 
 	if replica.Spec.Status == crv1.CompletedStatus {
 		log.Warn("crv1 pgreplica " + replica.Spec.Name + " is already marked complete, will not recreate")
@@ -333,7 +340,8 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 	}
 
 	//get the pgcluster CRD to base the replica off of
-	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(replica.Spec.ClusterName, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).
+		Get(ctx, replica.Spec.ClusterName, metav1.GetOptions{})
 	if err != nil {
 		return
 	}
@@ -350,7 +358,8 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "replicastorage", "name")(dataVolume.PersistentVolumeClaimName).Bytes()
 	if err == nil {
 		log.Debugf("patching replica %s: %s", replica.Spec.Name, patch)
-		_, err = clientset.CrunchydataV1().Pgreplicas(namespace).Patch(replica.Spec.Name, types.JSONPatchType, patch)
+		_, err = clientset.CrunchydataV1().Pgreplicas(namespace).
+			Patch(ctx, replica.Spec.Name, types.JSONPatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Error("error in pvcname patch " + err.Error())
@@ -373,7 +382,8 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 	patch, err = kubeapi.NewJSONPatch().Add("spec", "status")(crv1.CompletedStatus).Bytes()
 	if err == nil {
 		log.Debugf("patching replica %s: %s", replica.Spec.Name, patch)
-		_, err = clientset.CrunchydataV1().Pgreplicas(namespace).Patch(replica.Spec.Name, types.JSONPatchType, patch)
+		_, err = clientset.CrunchydataV1().Pgreplicas(namespace).
+			Patch(ctx, replica.Spec.Name, types.JSONPatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Error("error in status patch " + err.Error())
@@ -402,9 +412,11 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 
 // ScaleDownBase ...
 func ScaleDownBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace string) {
+	ctx := context.TODO()
 
 	//get the pgcluster CRD for this replica
-	_, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(replica.Spec.ClusterName, metav1.GetOptions{})
+	_, err := clientset.CrunchydataV1().Pgclusters(namespace).
+		Get(ctx, replica.Spec.ClusterName, metav1.GetOptions{})
 	if err != nil {
 		return
 	}
@@ -438,6 +450,7 @@ func ScaleDownBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespa
 // PostgreSQL deployment
 func UpdateAnnotations(clientset kubernetes.Interface, restConfig *rest.Config,
 	cluster *crv1.Pgcluster, annotations map[string]string) error {
+	ctx := context.TODO()
 	var updateError error
 
 	// first, get a list of all of the instance deployments for the cluster
@@ -465,7 +478,8 @@ func UpdateAnnotations(clientset kubernetes.Interface, restConfig *rest.Config,
 
 		// finally, update the Deployment. If something errors, we'll log that there
 		// was an error, but continue with processing the other deployments
-		if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(&deployment); err != nil {
+		if _, err := clientset.AppsV1().Deployments(deployment.Namespace).
+			Update(ctx, &deployment, metav1.UpdateOptions{}); err != nil {
 			log.Error(err)
 			updateError = err
 		}
@@ -477,6 +491,8 @@ func UpdateAnnotations(clientset kubernetes.Interface, restConfig *rest.Config,
 // UpdateResources updates the PostgreSQL instance Deployments to reflect the
 // update resources (i.e. CPU, memory)
 func UpdateResources(clientset kubernetes.Interface, restConfig *rest.Config, cluster *crv1.Pgcluster) error {
+	ctx := context.TODO()
+
 	// get a list of all of the instance deployments for the cluster
 	deployments, err := operator.GetInstanceDeployments(clientset, cluster)
 
@@ -533,7 +549,8 @@ func UpdateResources(clientset kubernetes.Interface, restConfig *rest.Config, cl
 			log.Warn(err)
 		}
 		// update the deployment with the new values
-		if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(&deployment); err != nil {
+		if _, err := clientset.AppsV1().Deployments(deployment.Namespace).
+			Update(ctx, &deployment, metav1.UpdateOptions{}); err != nil {
 			return err
 		}
 	}
@@ -551,6 +568,8 @@ func UpdateResources(clientset kubernetes.Interface, restConfig *rest.Config, cl
 // new cluster.
 func UpdateTablespaces(clientset kubernetes.Interface, restConfig *rest.Config,
 	cluster *crv1.Pgcluster, newTablespaces map[string]crv1.PgStorageSpec) error {
+	ctx := context.TODO()
+
 	// first, get a list of all of the instance deployments for the cluster
 	deployments, err := operator.GetInstanceDeployments(clientset, cluster)
 
@@ -649,7 +668,8 @@ func UpdateTablespaces(clientset kubernetes.Interface, restConfig *rest.Config,
 
 		// finally, update the Deployment. Potential to put things into an
 		// inconsistent state if any of these updates fail
-		if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(&deployment); err != nil {
+		if _, err := clientset.AppsV1().Deployments(deployment.Namespace).
+			Update(ctx, &deployment, metav1.UpdateOptions{}); err != nil {
 			return err
 		}
 	}
@@ -661,7 +681,7 @@ func UpdateTablespaces(clientset kubernetes.Interface, restConfig *rest.Config,
 // configuration as needed to support bootstrapping from the repository after the cluster
 // has been deleted
 func annotateBackrestSecret(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
-
+	ctx := context.TODO()
 	clusterName := cluster.GetName()
 	namespace := cluster.GetNamespace()
 
@@ -690,20 +710,22 @@ func annotateBackrestSecret(clientset kubernetes.Interface, cluster *crv1.Pgclus
 
 	if err == nil {
 		log.Debugf("patching secret %s: %s", secretName, patch)
-		_, err = clientset.CoreV1().Secrets(namespace).Patch(secretName, types.MergePatchType, patch)
+		_, err = clientset.CoreV1().Secrets(namespace).
+			Patch(ctx, secretName, types.MergePatchType, patch, metav1.PatchOptions{})
 	}
 	return err
 }
 
 func deleteConfigMaps(clientset kubernetes.Interface, clusterName, ns string) error {
+	ctx := context.TODO()
 	label := fmt.Sprintf("pg-cluster=%s", clusterName)
-	list, err := clientset.CoreV1().ConfigMaps(ns).List(metav1.ListOptions{LabelSelector: label})
+	list, err := clientset.CoreV1().ConfigMaps(ns).List(ctx, metav1.ListOptions{LabelSelector: label})
 	if err != nil {
 		return fmt.Errorf("No configMaps found for selector: %s", label)
 	}
 
 	for _, configmap := range list.Items {
-		err := clientset.CoreV1().ConfigMaps(ns).Delete(configmap.Name, &metav1.DeleteOptions{})
+		err := clientset.CoreV1().ConfigMaps(ns).Delete(ctx, configmap.Name, metav1.DeleteOptions{})
 		if err != nil {
 			return err
 		}
@@ -767,10 +789,12 @@ func publishClusterShutdown(cluster crv1.Pgcluster) error {
 // PostgreSQL instance shut down. This helps to ensure that a PostgreSQL
 // instance will launch and not be in crash recovery mode
 func stopPostgreSQLInstance(clientset kubernetes.Interface, restConfig *rest.Config, deployment apps_v1.Deployment) error {
+	ctx := context.TODO()
+
 	// First, attempt to get the PostgreSQL instance Pod attachd to this
 	// particular deployment
 	selector := fmt.Sprintf("%s=%s", config.LABEL_DEPLOYMENT_NAME, deployment.Name)
-	pods, err := clientset.CoreV1().Pods(deployment.Namespace).List(metav1.ListOptions{LabelSelector: selector})
+	pods, err := clientset.CoreV1().Pods(deployment.Namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 
 	// if there is a bona fide error, return.
 	// However, if no Pods are found, issue a warning, but do not return an error

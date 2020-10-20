@@ -25,8 +25,10 @@ import (
 )
 
 // PgpolicyLister helps list Pgpolicies.
+// All objects returned here must be treated as read-only.
 type PgpolicyLister interface {
 	// List lists all Pgpolicies in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Pgpolicy, err error)
 	// Pgpolicies returns an object that can list and get Pgpolicies.
 	Pgpolicies(namespace string) PgpolicyNamespaceLister
@@ -57,10 +59,13 @@ func (s *pgpolicyLister) Pgpolicies(namespace string) PgpolicyNamespaceLister {
 }
 
 // PgpolicyNamespaceLister helps list and get Pgpolicies.
+// All objects returned here must be treated as read-only.
 type PgpolicyNamespaceLister interface {
 	// List lists all Pgpolicies in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Pgpolicy, err error)
 	// Get retrieves the Pgpolicy from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.Pgpolicy, error)
 	PgpolicyNamespaceListerExpansion
 }

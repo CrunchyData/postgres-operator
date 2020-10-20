@@ -16,6 +16,7 @@ package scheduler
 */
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -53,6 +54,7 @@ func (s *ScheduleTemplate) NewBackRestSchedule() BackRestBackupJob {
 }
 
 func (b BackRestBackupJob) Run() {
+	ctx := context.TODO()
 	contextLogger := log.WithFields(log.Fields{
 		"namespace":   b.namespace,
 		"deployment":  b.deployment,
@@ -64,7 +66,7 @@ func (b BackRestBackupJob) Run() {
 
 	contextLogger.Info("Running pgBackRest backup")
 
-	cluster, err := clientset.CrunchydataV1().Pgclusters(b.namespace).Get(b.cluster, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(b.namespace).Get(ctx, b.cluster, metav1.GetOptions{})
 	if err != nil {
 		contextLogger.WithFields(log.Fields{
 			"error": err,
@@ -86,15 +88,15 @@ func (b BackRestBackupJob) Run() {
 		return
 	}
 
-	err = clientset.CrunchydataV1().Pgtasks(b.namespace).Delete(taskName, &metav1.DeleteOptions{})
+	err = clientset.CrunchydataV1().Pgtasks(b.namespace).Delete(ctx, taskName, metav1.DeleteOptions{})
 	if err == nil {
 		deletePropagation := metav1.DeletePropagationForeground
 		err = clientset.
 			BatchV1().Jobs(b.namespace).
-			Delete(taskName, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+			Delete(ctx, taskName, metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 		if err == nil {
 			err = wait.Poll(time.Second/2, time.Minute, func() (bool, error) {
-				_, err := clientset.BatchV1().Jobs(b.namespace).Get(taskName, metav1.GetOptions{})
+				_, err := clientset.BatchV1().Jobs(b.namespace).Get(ctx, taskName, metav1.GetOptions{})
 				return false, err
 			})
 		}
@@ -114,7 +116,7 @@ func (b BackRestBackupJob) Run() {
 	}
 
 	selector := fmt.Sprintf("%s=%s,pgo-backrest-repo=true", config.LABEL_PG_CLUSTER, b.cluster)
-	pods, err := clientset.CoreV1().Pods(b.namespace).List(metav1.ListOptions{LabelSelector: selector})
+	pods, err := clientset.CoreV1().Pods(b.namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		contextLogger.WithFields(log.Fields{
 			"selector": selector,
@@ -143,7 +145,8 @@ func (b BackRestBackupJob) Run() {
 		imagePrefix:   cluster.Spec.PGOImagePrefix,
 	}
 
-	_, err = clientset.CrunchydataV1().Pgtasks(b.namespace).Create(backrest.NewBackRestTask())
+	_, err = clientset.CrunchydataV1().Pgtasks(b.namespace).
+		Create(ctx, backrest.NewBackRestTask(), metav1.CreateOptions{})
 	if err != nil {
 		contextLogger.WithFields(log.Fields{
 			"error": err,

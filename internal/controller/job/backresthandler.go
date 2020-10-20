@@ -16,6 +16,8 @@ limitations under the License.
 */
 
 import (
+	"context"
+
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,6 +62,7 @@ func (c *Controller) handleBackrestUpdate(job *apiv1.Job) error {
 
 // handleBackrestRestoreUpdate is responsible for handling updates to backrest backup jobs
 func (c *Controller) handleBackrestBackupUpdate(job *apiv1.Job) error {
+	ctx := context.TODO()
 
 	labels := job.GetObjectMeta().GetLabels()
 
@@ -70,7 +73,8 @@ func (c *Controller) handleBackrestBackupUpdate(job *apiv1.Job) error {
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(crv1.JobCompletedStatus).Bytes()
 	if err == nil {
 		log.Debugf("patching task %s: %s", job.Name, patch)
-		_, err = c.Client.CrunchydataV1().Pgtasks(job.Namespace).Patch(job.Name, types.JSONPatchType, patch)
+		_, err = c.Client.CrunchydataV1().Pgtasks(job.Namespace).
+			Patch(ctx, job.Name, types.JSONPatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Errorf("error in patching pgtask %s: %s", job.ObjectMeta.SelfLink, err.Error())
@@ -103,6 +107,7 @@ func (c *Controller) handleBackrestBackupUpdate(job *apiv1.Job) error {
 
 // handleBackrestRestoreUpdate is responsible for handling updates to backrest stanza create jobs
 func (c *Controller) handleBackrestStanzaCreateUpdate(job *apiv1.Job) error {
+	ctx := context.TODO()
 
 	labels := job.GetObjectMeta().GetLabels()
 	log.Debugf("jobController onUpdate backrest stanza-create job case")
@@ -127,7 +132,7 @@ func (c *Controller) handleBackrestStanzaCreateUpdate(job *apiv1.Job) error {
 			}
 		}
 
-		cluster, err := c.Client.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+		cluster, err := c.Client.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
 		if err != nil {
 			return err
 		}

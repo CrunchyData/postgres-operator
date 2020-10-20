@@ -16,6 +16,7 @@ package config
 */
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -217,13 +218,13 @@ func (d *DCS) apply() error {
 // Specifically, it obtains the configuration stored in the "config" annotation of the
 // "<clustername>-config" configMap.
 func (d *DCS) getClusterDCSConfig() (*DCSConfig, map[string]json.RawMessage, error) {
-
+	ctx := context.TODO()
 	clusterDCS := &DCSConfig{}
 
 	namespace := d.configMap.GetObjectMeta().GetNamespace()
 
 	dcsCM, err := d.kubeclientset.CoreV1().ConfigMaps(namespace).
-		Get(fmt.Sprintf(dcsConfigMapName, d.clusterScope), metav1.GetOptions{})
+		Get(ctx, fmt.Sprintf(dcsConfigMapName, d.clusterScope), metav1.GetOptions{})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -272,7 +273,7 @@ func (d *DCS) GetDCSConfig() (*DCSConfig, map[string]json.RawMessage, error) {
 // patchDCSAnnotation patches the "config" annotation within the DCS configMap with the
 // content provided.
 func (d *DCS) patchDCSAnnotation(content string) error {
-
+	ctx := context.TODO()
 	jsonOpBytes, err := kubeapi.NewJSONPatch().Replace("metadata", "annotations", dcsConfigAnnotation)(content).Bytes()
 	if err != nil {
 		return err
@@ -280,13 +281,10 @@ func (d *DCS) patchDCSAnnotation(content string) error {
 
 	name := fmt.Sprintf(dcsConfigMapName, d.clusterScope)
 	log.Debugf("patching configmap %s: %s", name, jsonOpBytes)
-	if _, err := d.kubeclientset.CoreV1().ConfigMaps(d.configMap.GetNamespace()).Patch(
-		name, types.JSONPatchType,
-		jsonOpBytes); err != nil {
-		return err
-	}
+	_, err = d.kubeclientset.CoreV1().ConfigMaps(d.configMap.GetNamespace()).
+		Patch(ctx, name, types.JSONPatchType, jsonOpBytes, metav1.PatchOptions{})
 
-	return nil
+	return err
 }
 
 // refresh updates the DCS configuration stored in the "<clustername>-pgha-config"

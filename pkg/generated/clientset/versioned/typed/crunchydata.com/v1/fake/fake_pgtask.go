@@ -18,6 +18,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	crunchydatacomv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -38,7 +40,7 @@ var pgtasksResource = schema.GroupVersionResource{Group: "crunchydata.com", Vers
 var pgtasksKind = schema.GroupVersionKind{Group: "crunchydata.com", Version: "v1", Kind: "Pgtask"}
 
 // Get takes name of the pgtask, and returns the corresponding pgtask object, and an error if there is any.
-func (c *FakePgtasks) Get(name string, options v1.GetOptions) (result *crunchydatacomv1.Pgtask, err error) {
+func (c *FakePgtasks) Get(ctx context.Context, name string, options v1.GetOptions) (result *crunchydatacomv1.Pgtask, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(pgtasksResource, c.ns, name), &crunchydatacomv1.Pgtask{})
 
@@ -49,7 +51,7 @@ func (c *FakePgtasks) Get(name string, options v1.GetOptions) (result *crunchyda
 }
 
 // List takes label and field selectors, and returns the list of Pgtasks that match those selectors.
-func (c *FakePgtasks) List(opts v1.ListOptions) (result *crunchydatacomv1.PgtaskList, err error) {
+func (c *FakePgtasks) List(ctx context.Context, opts v1.ListOptions) (result *crunchydatacomv1.PgtaskList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(pgtasksResource, pgtasksKind, c.ns, opts), &crunchydatacomv1.PgtaskList{})
 
@@ -71,14 +73,14 @@ func (c *FakePgtasks) List(opts v1.ListOptions) (result *crunchydatacomv1.Pgtask
 }
 
 // Watch returns a watch.Interface that watches the requested pgtasks.
-func (c *FakePgtasks) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakePgtasks) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(pgtasksResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a pgtask and creates it.  Returns the server's representation of the pgtask, and an error, if there is any.
-func (c *FakePgtasks) Create(pgtask *crunchydatacomv1.Pgtask) (result *crunchydatacomv1.Pgtask, err error) {
+func (c *FakePgtasks) Create(ctx context.Context, pgtask *crunchydatacomv1.Pgtask, opts v1.CreateOptions) (result *crunchydatacomv1.Pgtask, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(pgtasksResource, c.ns, pgtask), &crunchydatacomv1.Pgtask{})
 
@@ -89,7 +91,7 @@ func (c *FakePgtasks) Create(pgtask *crunchydatacomv1.Pgtask) (result *crunchyda
 }
 
 // Update takes the representation of a pgtask and updates it. Returns the server's representation of the pgtask, and an error, if there is any.
-func (c *FakePgtasks) Update(pgtask *crunchydatacomv1.Pgtask) (result *crunchydatacomv1.Pgtask, err error) {
+func (c *FakePgtasks) Update(ctx context.Context, pgtask *crunchydatacomv1.Pgtask, opts v1.UpdateOptions) (result *crunchydatacomv1.Pgtask, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(pgtasksResource, c.ns, pgtask), &crunchydatacomv1.Pgtask{})
 
@@ -101,7 +103,7 @@ func (c *FakePgtasks) Update(pgtask *crunchydatacomv1.Pgtask) (result *crunchyda
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakePgtasks) UpdateStatus(pgtask *crunchydatacomv1.Pgtask) (*crunchydatacomv1.Pgtask, error) {
+func (c *FakePgtasks) UpdateStatus(ctx context.Context, pgtask *crunchydatacomv1.Pgtask, opts v1.UpdateOptions) (*crunchydatacomv1.Pgtask, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(pgtasksResource, "status", c.ns, pgtask), &crunchydatacomv1.Pgtask{})
 
@@ -112,7 +114,7 @@ func (c *FakePgtasks) UpdateStatus(pgtask *crunchydatacomv1.Pgtask) (*crunchydat
 }
 
 // Delete takes name of the pgtask and deletes it. Returns an error if one occurs.
-func (c *FakePgtasks) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakePgtasks) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(pgtasksResource, c.ns, name), &crunchydatacomv1.Pgtask{})
 
@@ -120,15 +122,15 @@ func (c *FakePgtasks) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakePgtasks) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(pgtasksResource, c.ns, listOptions)
+func (c *FakePgtasks) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(pgtasksResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &crunchydatacomv1.PgtaskList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched pgtask.
-func (c *FakePgtasks) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *crunchydatacomv1.Pgtask, err error) {
+func (c *FakePgtasks) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *crunchydatacomv1.Pgtask, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(pgtasksResource, c.ns, name, pt, data, subresources...), &crunchydatacomv1.Pgtask{})
 

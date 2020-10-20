@@ -16,6 +16,7 @@ package util
 */
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -76,6 +77,7 @@ func CurrentPrimaryUpdate(clientset pgo.Interface, cluster *crv1.Pgcluster, curr
 // primary annotation value. As this uses a JSON merge patch, it will only updates those
 // values that are different between the old and new CRD values.
 func PatchClusterCRD(clientset pgo.Interface, labelMap map[string]string, oldCrd *crv1.Pgcluster, currentPrimary, namespace string) error {
+	ctx := context.TODO()
 	patch := kubeapi.NewMergePatch()
 
 	// update our pgcluster annotation with the correct current primary value
@@ -101,7 +103,8 @@ func PatchClusterCRD(clientset pgo.Interface, labelMap map[string]string, oldCrd
 
 	log.Debugf("patching cluster %s: %s", oldCrd.Spec.Name, patchBytes)
 
-	_, err6 := clientset.CrunchydataV1().Pgclusters(namespace).Patch(oldCrd.Spec.Name, types.MergePatchType, patchBytes)
+	_, err6 := clientset.CrunchydataV1().Pgclusters(namespace).
+		Patch(ctx, oldCrd.Spec.Name, types.MergePatchType, patchBytes, metav1.PatchOptions{})
 
 	return err6
 
@@ -118,13 +121,13 @@ func GetValueOrDefault(value, defaultValue string) string {
 
 // GetSecretPassword ...
 func GetSecretPassword(clientset kubernetes.Interface, db, suffix, Namespace string) (string, error) {
-
+	ctx := context.TODO()
 	var err error
 
 	selector := "pg-cluster=" + db
 	secrets, err := clientset.
 		CoreV1().Secrets(Namespace).
-		List(metav1.ListOptions{LabelSelector: selector})
+		List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return "", err
 	}

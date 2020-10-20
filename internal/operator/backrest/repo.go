@@ -17,6 +17,7 @@ package backrest
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -76,6 +77,7 @@ type RepoServiceTemplateFields struct {
 // while also creating the associated Service and PersistentVolumeClaim.
 func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
 	createPVC, bootstrapRepo bool, replicas int) error {
+	ctx := context.TODO()
 
 	namespace := cluster.GetNamespace()
 	restoreClusterName := cluster.Spec.PGDataSource.RestoreFrom
@@ -111,7 +113,7 @@ func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 	// if createPVC is set to true, attempt to create the PVC
 	if createPVC {
 		// create backrest repo PVC with same name as repoName
-		_, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(repoName, metav1.GetOptions{})
+		_, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, repoName, metav1.GetOptions{})
 		if err == nil {
 			log.Debugf("pvc [%s] already present, will not recreate", repoName)
 		} else if kerrors.IsNotFound(err) {
@@ -149,7 +151,7 @@ func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_REPO,
 		&deployment.Spec.Template.Spec.Containers[0])
 
-	if _, err := clientset.AppsV1().Deployments(namespace).Create(&deployment); err != nil &&
+	if _, err := clientset.AppsV1().Deployments(namespace).Create(ctx, &deployment, metav1.CreateOptions{}); err != nil &&
 		!kerrors.IsAlreadyExists(err) {
 		return err
 	}
@@ -162,6 +164,7 @@ func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 // existing data source.
 func setBootstrapRepoOverrides(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
 	repoFields *RepoDeploymentTemplateFields) error {
+	ctx := context.TODO()
 
 	restoreClusterName := cluster.Spec.PGDataSource.RestoreFrom
 	namespace := cluster.GetNamespace()
@@ -174,7 +177,7 @@ func setBootstrapRepoOverrides(clientset kubernetes.Interface, cluster *crv1.Pgc
 	// set the proper PVC name for the "restore from" cluster
 	repoFields.BackrestRepoClaimName = fmt.Sprintf(util.BackrestRepoPVCName, restoreClusterName)
 
-	restoreFromSecret, err := clientset.CoreV1().Secrets(namespace).Get(
+	restoreFromSecret, err := clientset.CoreV1().Secrets(namespace).Get(ctx,
 		fmt.Sprintf("%s-%s", restoreClusterName, config.LABEL_BACKREST_REPO_SECRET),
 		metav1.GetOptions{})
 	if err != nil {
@@ -245,6 +248,8 @@ func getRepoDeploymentFields(clientset kubernetes.Interface, cluster *crv1.Pgclu
 // pgBackRest deployment
 func UpdateAnnotations(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
 	annotations map[string]string) error {
+	ctx := context.TODO()
+
 	// get a list of all of the instance deployments for the cluster
 	deployment, err := operator.GetBackrestDeployment(clientset, cluster)
 
@@ -260,16 +265,17 @@ func UpdateAnnotations(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
 
 	// finally, update the Deployment. If something errors, we'll log that there
 	// was an error, but continue with processing the other deployments
-	if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(deployment); err != nil {
-		return err
-	}
+	_, err = clientset.AppsV1().Deployments(deployment.Namespace).
+		Update(ctx, deployment, metav1.UpdateOptions{})
 
-	return nil
+	return err
 }
 
 // UpdateResources updates the pgBackRest repository Deployment to reflect any
 // resource updates
 func UpdateResources(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
+	ctx := context.TODO()
+
 	// get a list of all of the instance deployments for the cluster
 	deployment, err := operator.GetBackrestDeployment(clientset, cluster)
 
@@ -291,19 +297,20 @@ func UpdateResources(clientset kubernetes.Interface, cluster *crv1.Pgcluster) er
 	}
 
 	// update the deployment with the new values
-	if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(deployment); err != nil {
-		return err
-	}
+	_, err = clientset.AppsV1().Deployments(deployment.Namespace).
+		Update(ctx, deployment, metav1.UpdateOptions{})
 
-	return nil
+	return err
 }
 
 func createService(clientset kubernetes.Interface, fields *RepoServiceTemplateFields, namespace string) error {
+	ctx := context.TODO()
+
 	var err error
 
 	var b bytes.Buffer
 
-	_, err = clientset.CoreV1().Services(namespace).Get(fields.Name, metav1.GetOptions{})
+	_, err = clientset.CoreV1().Services(namespace).Get(ctx, fields.Name, metav1.GetOptions{})
 	if err != nil {
 
 		err = config.PgoBackrestRepoServiceTemplate.Execute(&b, fields)
@@ -323,7 +330,7 @@ func createService(clientset kubernetes.Interface, fields *RepoServiceTemplateFi
 			return err
 		}
 
-		_, err = clientset.CoreV1().Services(namespace).Create(&s)
+		_, err = clientset.CoreV1().Services(namespace).Create(ctx, &s, metav1.CreateOptions{})
 	}
 
 	return err
