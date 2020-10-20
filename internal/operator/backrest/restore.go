@@ -16,6 +16,7 @@ package backrest
 */
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"regexp"
@@ -103,6 +104,7 @@ func UpdatePGClusterSpecForRestore(clientset kubeapi.Interface, cluster *crv1.Pg
 // resources (pgreplicas) as needed to perform a restore.
 func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgcluster,
 	task *crv1.Pgtask) (*crv1.Pgcluster, error) {
+	ctx := context.TODO()
 
 	var err error
 	var patchedCluster *crv1.Pgcluster
@@ -127,8 +129,8 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 		Bytes()
 	if err == nil {
 		log.Debugf("patching cluster %s: %s", clusterName, patch)
-		patchedCluster, err = clientset.CrunchydataV1().
-			Pgclusters(namespace).Patch(clusterName, types.MergePatchType, patch)
+		patchedCluster, err = clientset.CrunchydataV1().Pgclusters(namespace).
+			Patch(ctx, clusterName, types.MergePatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Errorf("pgtask Controller: " + err.Error())
@@ -137,7 +139,7 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	log.Debugf("restore workflow: patched pgcluster %s for restore", clusterName)
 
 	// find all pgreplica CR's
-	replicas, err := clientset.CrunchydataV1().Pgreplicas(namespace).List(metav1.ListOptions{
+	replicas, err := clientset.CrunchydataV1().Pgreplicas(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, clusterName),
 	})
 	if err != nil {
@@ -158,8 +160,8 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	}
 	for _, r := range replicas.Items {
 		log.Debugf("patching replica %s: %s", r.GetName(), patch)
-		_, err := clientset.CrunchydataV1().
-			Pgreplicas(namespace).Patch(r.GetName(), types.MergePatchType, patch)
+		_, err := clientset.CrunchydataV1().Pgreplicas(namespace).
+			Patch(ctx, r.GetName(), types.MergePatchType, patch, metav1.PatchOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -167,7 +169,7 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	log.Debugf("restore workflow: patched replicas in cluster %s for restore", clusterName)
 
 	// find all current pg deployments
-	pgInstances, err := clientset.AppsV1().Deployments(namespace).List(metav1.ListOptions{
+	pgInstances, err := clientset.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: fmt.Sprintf("%s=%s,%s", config.LABEL_PG_CLUSTER, clusterName,
 			config.LABEL_PG_DATABASE),
 	})
@@ -176,7 +178,7 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	}
 
 	// delete all the primary and replica deployments
-	if err := clientset.AppsV1().Deployments(namespace).DeleteCollection(&metav1.DeleteOptions{},
+	if err := clientset.AppsV1().Deployments(namespace).DeleteCollection(ctx, metav1.DeleteOptions{},
 		metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("%s=%s,%s", config.LABEL_PG_CLUSTER, clusterName,
 				config.LABEL_PG_DATABASE),
@@ -187,8 +189,8 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 
 	// delete all existing jobs
 	deletePropagation := metav1.DeletePropagationBackground
-	if err := clientset.BatchV1().Jobs(namespace).DeleteCollection(
-		&metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
+	if err := clientset.BatchV1().Jobs(namespace).DeleteCollection(ctx,
+		metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
 		metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, clusterName),
 		}); err != nil {
@@ -207,7 +209,7 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	// delete all PostgreSQL PVCs (the primary and all replica PVCs)
 	for _, pvcName := range databasePVCList {
 		err := clientset.CoreV1().PersistentVolumeClaims(namespace).
-			Delete(pvcName, &metav1.DeleteOptions{})
+			Delete(ctx, pvcName, metav1.DeleteOptions{})
 		if err != nil {
 			return nil, err
 		}
@@ -220,7 +222,7 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 		notFound := true
 		for _, pvcName := range databasePVCList {
 			if _, err := clientset.CoreV1().PersistentVolumeClaims(namespace).
-				Get(pvcName, metav1.GetOptions{}); err == nil {
+				Get(ctx, pvcName, metav1.GetOptions{}); err == nil {
 				notFound = false
 			}
 		}
@@ -235,8 +237,8 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	configMaps := []string{fmt.Sprintf("%s-config", clusterName),
 		fmt.Sprintf("%s-leader", clusterName)}
 	for _, c := range configMaps {
-		if err := clientset.CoreV1().ConfigMaps(namespace).Delete(c,
-			&metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
+		if err := clientset.CoreV1().ConfigMaps(namespace).
+			Delete(ctx, c, metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
 			return nil, err
 		}
 	}
@@ -247,8 +249,8 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	if err == nil {
 		name := fmt.Sprintf("%s-pgha-config", clusterName)
 		log.Debugf("patching configmap %s: %s", name, patch)
-		_, err = clientset.CoreV1().
-			ConfigMaps(namespace).Patch(name, types.MergePatchType, patch)
+		_, err = clientset.CoreV1().ConfigMaps(namespace).
+			Patch(ctx, name, types.MergePatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		return nil, err
@@ -261,10 +263,12 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 
 // UpdateWorkflow is responsible for updating the workflow for a restore
 func UpdateWorkflow(clientset pgo.Interface, workflowID, namespace, status string) error {
+	ctx := context.TODO()
+
 	//update workflow
 	log.Debugf("restore workflow: update workflow %s", workflowID)
 	selector := crv1.PgtaskWorkflowID + "=" + workflowID
-	taskList, err := clientset.CrunchydataV1().Pgtasks(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	taskList, err := clientset.CrunchydataV1().Pgtasks(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Errorf("restore workflow error: could not get workflow %s", workflowID)
 		return err
@@ -276,7 +280,7 @@ func UpdateWorkflow(clientset pgo.Interface, workflowID, namespace, status strin
 
 	task := taskList.Items[0]
 	task.Spec.Parameters[status] = time.Now().Format(time.RFC3339)
-	_, err = clientset.CrunchydataV1().Pgtasks(namespace).Update(&task)
+	_, err = clientset.CrunchydataV1().Pgtasks(namespace).Update(ctx, &task, metav1.UpdateOptions{})
 	if err != nil {
 		log.Errorf("restore workflow error: could not update workflow %s to status %s", workflowID, status)
 		return err
@@ -313,6 +317,7 @@ func PublishRestore(id, clusterName, username, namespace string) {
 // instances, e.g. PVCs for external WAL and/or tablespace volumes.
 func getPGDatabasePVCNames(clientset kubeapi.Interface, replicas *crv1.PgreplicaList,
 	clusterName, namespace string) ([]string, error) {
+	ctx := context.TODO()
 
 	// create a slice with the names of all database instances in the cluster.  Even though the
 	// original primary database (with a name matching the cluster name) might no longer exist,
@@ -325,7 +330,7 @@ func getPGDatabasePVCNames(clientset kubeapi.Interface, replicas *crv1.Pgreplica
 
 	// find all current PVCs for the cluster
 	clusterPVCList, err := clientset.CoreV1().PersistentVolumeClaims(namespace).
-		List(metav1.ListOptions{
+		List(ctx, metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, clusterName),
 		})
 	if err != nil {

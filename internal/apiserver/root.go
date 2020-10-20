@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"crypto/rsa"
 	"crypto/x509"
 	"errors"
@@ -184,6 +185,7 @@ func initConfig() {
 }
 
 func BasicAuthCheck(username, password string) bool {
+	ctx := context.TODO()
 
 	if BasicAuth == false {
 		return true
@@ -191,7 +193,7 @@ func BasicAuthCheck(username, password string) bool {
 
 	//see if there is a pgouser Secret for this username
 	secretName := "pgouser-" + username
-	secret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(secretName, metav1.GetOptions{})
+	secret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(ctx, secretName, metav1.GetOptions{})
 
 	if err != nil {
 		log.Errorf("could not get pgouser secret %s: %s", username, err.Error())
@@ -202,9 +204,9 @@ func BasicAuthCheck(username, password string) bool {
 }
 
 func BasicAuthzCheck(username, perm string) bool {
-
+	ctx := context.TODO()
 	secretName := "pgouser-" + username
-	secret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(secretName, metav1.GetOptions{})
+	secret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(ctx, secretName, metav1.GetOptions{})
 
 	if err != nil {
 		log.Errorf("could not get pgouser secret %s: %s", username, err.Error())
@@ -224,7 +226,7 @@ func BasicAuthzCheck(username, perm string) bool {
 
 		//get the pgorole
 		roleSecretName := "pgorole-" + r
-		rolesecret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(roleSecretName, metav1.GetOptions{})
+		rolesecret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(ctx, roleSecretName, metav1.GetOptions{})
 
 		if err != nil {
 			log.Errorf("could not get pgorole secret %s: %s", r, err.Error())
@@ -353,7 +355,7 @@ func ValidateNodeLabel(nodeLabel string) error {
 // Installation access means a namespace belongs to this Operator installation.
 // User access means this user has access to a namespace.
 func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool, error) {
-
+	ctx := context.TODO()
 	var iAccess, uAccess bool
 
 	if err := ns.ValidateNamespacesWatched(Clientset, NamespaceOperatingMode(), InstallationName,
@@ -368,7 +370,7 @@ func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool, error
 	if iAccess {
 		//get the pgouser Secret for this username
 		userSecretName := "pgouser-" + username
-		userSecret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(userSecretName, metav1.GetOptions{})
+		userSecret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(ctx, userSecretName, metav1.GetOptions{})
 		if err != nil {
 			log.Errorf("could not get pgouser secret %s: %s", username, err.Error())
 			return false, false, err
@@ -397,7 +399,8 @@ func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool, error
 // files from the PGOSecretName secret or generates a new key (writing to both
 // the secret and the expected files
 func WriteTLSCert(certPath, keyPath string) error {
-	pgoSecret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(PGOSecretName, metav1.GetOptions{})
+	ctx := context.TODO()
+	pgoSecret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(ctx, PGOSecretName, metav1.GetOptions{})
 
 	// if the TLS certificate secret is not found, attempt to generate one
 	if err != nil {
@@ -431,6 +434,7 @@ func WriteTLSCert(certPath, keyPath string) error {
 // generateTLSCert generates a self signed cert and stores it in both
 // the PGOSecretName Secret and certPath, keyPath files
 func generateTLSCert(certPath, keyPath string) error {
+	ctx := context.TODO()
 	var err error
 
 	//generate private key
@@ -464,7 +468,7 @@ func generateTLSCert(certPath, keyPath string) error {
 	newSecret.Data[corev1.TLSPrivateKeyKey] = privateKeyBytes
 	newSecret.Type = corev1.SecretTypeTLS
 
-	_, err = Clientset.CoreV1().Secrets(PgoNamespace).Create(&newSecret)
+	_, err = Clientset.CoreV1().Secrets(PgoNamespace).Create(ctx, &newSecret, metav1.CreateOptions{})
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(2)

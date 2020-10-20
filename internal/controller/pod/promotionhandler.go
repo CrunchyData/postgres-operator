@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -168,11 +169,12 @@ func waitForStandbyPromotion(restConfig *rest.Config, clientset kubernetes.Inter
 // cleanAndCreatePostFailoverBackup cleans up any existing backup resources and then creates
 // a pgtask to trigger the creation of a post-failover backup
 func cleanAndCreatePostFailoverBackup(clientset kubeapi.Interface, clusterName, namespace string) error {
+	ctx := context.TODO()
 
 	//look up the backrest-repo pod name
 	selector := fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER,
 		clusterName, config.LABEL_PGO_BACKREST_REPO)
-	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if len(pods.Items) != 1 {
 		return fmt.Errorf("pods len != 1 for cluster %s", clusterName)
 	} else if err != nil {

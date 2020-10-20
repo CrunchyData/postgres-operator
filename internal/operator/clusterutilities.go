@@ -17,6 +17,7 @@ package operator
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -321,9 +322,10 @@ func GetPgbackrestBootstrapEnvVars(restoreClusterName, depName string,
 // GetBackrestDeployment finds the pgBackRest repository Deployments for a
 // PostgreQL cluster
 func GetBackrestDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (*apps_v1.Deployment, error) {
+	ctx := context.TODO()
 	// find the pgBackRest repository Deployment, which follows a known pattern
 	deploymentName := fmt.Sprintf(util.BackrestRepoDeploymentName, cluster.Name)
-	deployment, err := clientset.AppsV1().Deployments(cluster.Namespace).Get(deploymentName, metav1.GetOptions{})
+	deployment, err := clientset.AppsV1().Deployments(cluster.Namespace).Get(ctx, deploymentName, metav1.GetOptions{})
 
 	return deployment, err
 }
@@ -399,11 +401,12 @@ func GetExporterAddon(clientset kubernetes.Interface, namespace string, spec *cr
 
 //consolidate with cluster.GetConfVolume
 func GetConfVolume(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string) string {
+	ctx := context.TODO()
 	var configMapStr string
 
 	//check for user provided configmap
 	if cl.Spec.CustomConfig != "" {
-		_, err := clientset.CoreV1().ConfigMaps(namespace).Get(cl.Spec.CustomConfig, metav1.GetOptions{})
+		_, err := clientset.CoreV1().ConfigMaps(namespace).Get(ctx, cl.Spec.CustomConfig, metav1.GetOptions{})
 		if err != nil {
 			//you should NOT get this error because of apiserver validation of this value!
 			log.Errorf("%s was not found, error, skipping user provided configMap", cl.Spec.CustomConfig)
@@ -414,7 +417,7 @@ func GetConfVolume(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace
 	}
 
 	//check for global custom configmap "pgo-custom-pg-config"
-	_, err := clientset.CoreV1().ConfigMaps(namespace).Get(config.GLOBAL_CUSTOM_CONFIGMAP, metav1.GetOptions{})
+	_, err := clientset.CoreV1().ConfigMaps(namespace).Get(ctx, config.GLOBAL_CUSTOM_CONFIGMAP, metav1.GetOptions{})
 	if err == nil {
 		return `"pgo-custom-pg-config"`
 	}
@@ -433,6 +436,7 @@ func GetConfVolume(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace
 // associated containers.
 func CreatePGHAConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
 	namespace string) error {
+	ctx := context.TODO()
 
 	labels := make(map[string]string)
 	labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
@@ -457,7 +461,7 @@ func CreatePGHAConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcluster
 		Data: data,
 	}
 
-	if _, err := clientset.CoreV1().ConfigMaps(namespace).Create(configmap); err != nil {
+	if _, err := clientset.CoreV1().ConfigMaps(namespace).Create(ctx, configmap, metav1.CreateOptions{}); err != nil {
 		return err
 	}
 
@@ -480,6 +484,8 @@ func GetTablespaceNamePVCMap(clusterName string, tablespaceStorageTypeMap map[st
 // GetInstanceDeployments finds the Deployments that represent PostgreSQL
 // instances
 func GetInstanceDeployments(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (*apps_v1.DeploymentList, error) {
+	ctx := context.TODO()
+
 	// first, get a list of all of the available deployments so we can properly
 	// mount the tablespace PVCs after we create them
 	// NOTE: this will also get the pgBackRest deployments, but we will filter
@@ -490,7 +496,7 @@ func GetInstanceDeployments(clientset kubernetes.Interface, cluster *crv1.Pgclus
 	// get the deployments for this specific PostgreSQL luster
 	clusterDeployments, err := clientset.
 		AppsV1().Deployments(cluster.Namespace).
-		List(metav1.ListOptions{LabelSelector: selector})
+		List(ctx, metav1.ListOptions{LabelSelector: selector})
 
 	if err != nil {
 		return nil, err
@@ -926,11 +932,12 @@ func GetPgbackrestBootstrapS3EnvVars(pgDataSourceRestoreFrom string,
 // restarted.
 func UpdatePGHAConfigInitFlag(clientset kubernetes.Interface, initVal bool, clusterName,
 	namespace string) error {
+	ctx := context.TODO()
 
 	log.Debugf("updating init value to %t in the pgha configMap for cluster %s", initVal, clusterName)
 
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGHA_CONFIGMAP + "=true"
-	configMapList, err := clientset.CoreV1().ConfigMaps(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	configMapList, err := clientset.CoreV1().ConfigMaps(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	switch {
 	case err != nil:
 		return fmt.Errorf("unable to find the default pgha configMap found for cluster %s using selector %s, unable to set "+
@@ -943,7 +950,7 @@ func UpdatePGHAConfigInitFlag(clientset kubernetes.Interface, initVal bool, clus
 	configMap := &configMapList.Items[0]
 	configMap.Data[PGHAConfigInitSetting] = strconv.FormatBool(initVal)
 
-	if _, err := clientset.CoreV1().ConfigMaps(namespace).Update(configMap); err != nil {
+	if _, err := clientset.CoreV1().ConfigMaps(namespace).Update(ctx, configMap, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 

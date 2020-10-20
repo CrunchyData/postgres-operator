@@ -16,14 +16,16 @@ package config
 */
 
 import (
+	"context"
 	"errors"
 
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
-	"k8s.io/apimachinery/pkg/types"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 )
 
 const (
@@ -55,6 +57,7 @@ type Syncer interface {
 // provided content
 func patchConfigMapData(kubeclientset kubernetes.Interface, configMap *corev1.ConfigMap,
 	configName string, content []byte) error {
+	ctx := context.TODO()
 
 	jsonOpBytes, err := kubeapi.NewJSONPatch().Replace("data", configName)(string(content)).Bytes()
 	if err != nil {
@@ -62,10 +65,8 @@ func patchConfigMapData(kubeclientset kubernetes.Interface, configMap *corev1.Co
 	}
 
 	log.Debugf("patching configmap %s: %s", configMap.GetName(), jsonOpBytes)
-	if _, err := kubeclientset.CoreV1().ConfigMaps(configMap.GetNamespace()).Patch(configMap.GetName(),
-		types.JSONPatchType, jsonOpBytes); err != nil {
-		return err
-	}
+	_, err = kubeclientset.CoreV1().ConfigMaps(configMap.GetNamespace()).
+		Patch(ctx, configMap.GetName(), types.JSONPatchType, jsonOpBytes, metav1.PatchOptions{})
 
-	return nil
+	return err
 }

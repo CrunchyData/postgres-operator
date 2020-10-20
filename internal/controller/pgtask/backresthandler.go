@@ -16,6 +16,8 @@ limitations under the License.
 */
 
 import (
+	"context"
+
 	"github.com/crunchydata/postgres-operator/internal/config"
 	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
@@ -27,12 +29,12 @@ import (
 
 // handleBackrestRestore handles pgBackRest restores request via a pgtask
 func (c *Controller) handleBackrestRestore(task *crv1.Pgtask) {
-
+	ctx := context.TODO()
 	namespace := task.GetNamespace()
 	clusterName := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER]
 
-	cluster, err := c.Client.CrunchydataV1().Pgclusters(namespace).Get(clusterName,
-		metav1.GetOptions{})
+	cluster, err := c.Client.CrunchydataV1().Pgclusters(namespace).
+		Get(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("pgtask Controller: %s", err.Error())
 		return

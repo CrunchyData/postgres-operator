@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"time"
@@ -98,6 +99,7 @@ func CreatePgouser(clientset kubernetes.Interface, createdBy string, request *ms
 
 // ShowPgouser ...
 func ShowPgouser(clientset kubernetes.Interface, request *msgs.ShowPgouserRequest) msgs.ShowPgouserResponse {
+	ctx := context.TODO()
 	resp := msgs.ShowPgouserResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -106,7 +108,7 @@ func ShowPgouser(clientset kubernetes.Interface, request *msgs.ShowPgouserReques
 	if request.AllFlag {
 		secrets, err := clientset.
 			CoreV1().Secrets(apiserver.PgoNamespace).
-			List(metav1.ListOptions{LabelSelector: selector})
+			List(ctx, metav1.ListOptions{LabelSelector: selector})
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -131,7 +133,7 @@ func ShowPgouser(clientset kubernetes.Interface, request *msgs.ShowPgouserReques
 			info.Role = make([]string, 0)
 			info.Namespace = make([]string, 0)
 
-			s, err := clientset.CoreV1().Secrets(apiserver.PgoNamespace).Get(secretName, metav1.GetOptions{})
+			s, err := clientset.CoreV1().Secrets(apiserver.PgoNamespace).Get(ctx, secretName, metav1.GetOptions{})
 
 			if err != nil {
 				info.Username = v + " was not found"
@@ -150,6 +152,7 @@ func ShowPgouser(clientset kubernetes.Interface, request *msgs.ShowPgouserReques
 
 // DeletePgouser ...
 func DeletePgouser(clientset kubernetes.Interface, deletedBy string, request *msgs.DeletePgouserRequest) msgs.DeletePgouserResponse {
+	ctx := context.TODO()
 	resp := msgs.DeletePgouserResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -159,10 +162,10 @@ func DeletePgouser(clientset kubernetes.Interface, deletedBy string, request *ms
 		secretName := "pgouser-" + v
 		log.Debugf("DeletePgouser %s deleted by %s", secretName, deletedBy)
 
-		if _, err := clientset.CoreV1().Secrets(apiserver.PgoNamespace).Get(secretName, metav1.GetOptions{}); err != nil {
+		if _, err := clientset.CoreV1().Secrets(apiserver.PgoNamespace).Get(ctx, secretName, metav1.GetOptions{}); err != nil {
 			resp.Results = append(resp.Results, secretName+" not found")
 		} else {
-			err = clientset.CoreV1().Secrets(apiserver.PgoNamespace).Delete(secretName, &metav1.DeleteOptions{})
+			err = clientset.CoreV1().Secrets(apiserver.PgoNamespace).Delete(ctx, secretName, metav1.DeleteOptions{})
 			if err != nil {
 				resp.Results = append(resp.Results, "error deleting secret "+secretName)
 			} else {
@@ -200,14 +203,14 @@ func DeletePgouser(clientset kubernetes.Interface, deletedBy string, request *ms
 
 // UpdatePgouser - update the pgouser secret
 func UpdatePgouser(clientset kubernetes.Interface, updatedBy string, request *msgs.UpdatePgouserRequest) msgs.UpdatePgouserResponse {
-
+	ctx := context.TODO()
 	resp := msgs.UpdatePgouserResponse{}
 	resp.Status.Msg = ""
 	resp.Status.Code = msgs.Ok
 
 	secretName := "pgouser-" + request.PgouserName
 
-	secret, err := clientset.CoreV1().Secrets(apiserver.PgoNamespace).Get(secretName, metav1.GetOptions{})
+	secret, err := clientset.CoreV1().Secrets(apiserver.PgoNamespace).Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -242,7 +245,7 @@ func UpdatePgouser(clientset kubernetes.Interface, updatedBy string, request *ms
 	}
 
 	log.Info("Updating secret for: ", request.PgouserName)
-	_, err = clientset.CoreV1().Secrets(apiserver.PgoNamespace).Update(secret)
+	_, err = clientset.CoreV1().Secrets(apiserver.PgoNamespace).Update(ctx, secret, metav1.UpdateOptions{})
 	if err != nil {
 		log.Debug("Error updating pgouser secret: ", err.Error())
 		resp.Status.Code = msgs.Error
@@ -276,11 +279,11 @@ func UpdatePgouser(clientset kubernetes.Interface, updatedBy string, request *ms
 }
 
 func createSecret(clientset kubernetes.Interface, createdBy string, request *msgs.CreatePgouserRequest) error {
-
+	ctx := context.TODO()
 	secretName := "pgouser-" + request.PgouserName
 
 	// if this secret is found (no errors returned), returned here
-	if _, err := clientset.CoreV1().Secrets(apiserver.PgoNamespace).Get(secretName, metav1.GetOptions{}); err == nil {
+	if _, err := clientset.CoreV1().Secrets(apiserver.PgoNamespace).Get(ctx, secretName, metav1.GetOptions{}); err == nil {
 		return nil
 	}
 
@@ -297,18 +300,20 @@ func createSecret(clientset kubernetes.Interface, createdBy string, request *msg
 	secret.Data[MAP_KEY_NAMESPACES] = []byte(request.PgouserNamespaces)
 	secret.Data[MAP_KEY_PASSWORD] = []byte(request.PgouserPassword)
 
-	_, err := clientset.CoreV1().Secrets(apiserver.PgoNamespace).Create(&secret)
+	_, err := clientset.CoreV1().Secrets(apiserver.PgoNamespace).Create(ctx, &secret, metav1.CreateOptions{})
 	return err
 }
 
 func validRoles(clientset kubernetes.Interface, roles string) error {
+	ctx := context.TODO()
+
 	var err error
 	fields := strings.Split(roles, ",")
 	for _, v := range fields {
 		r := strings.TrimSpace(v)
 		secretName := "pgorole-" + r
 
-		if _, err := clientset.CoreV1().Secrets(apiserver.PgoNamespace).Get(secretName, metav1.GetOptions{}); err != nil {
+		if _, err := clientset.CoreV1().Secrets(apiserver.PgoNamespace).Get(ctx, secretName, metav1.GetOptions{}); err != nil {
 			return errors.New(v + " pgorole was not found")
 		}
 

@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 
@@ -54,9 +55,9 @@ type Manager interface {
 // soon as the primary PG pod reports ready and the cluster is marked as initialized.
 func InitializeReplicaCreation(clientset pgo.Interface, clusterName,
 	namespace string) error {
-
+	ctx := context.TODO()
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
-	pgreplicaList, err := clientset.CrunchydataV1().Pgreplicas(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	pgreplicaList, err := clientset.CrunchydataV1().Pgreplicas(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		return err
@@ -69,7 +70,7 @@ func InitializeReplicaCreation(clientset pgo.Interface, clusterName,
 
 		pgreplica.Annotations[config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA] = "true"
 
-		if _, err = clientset.CrunchydataV1().Pgreplicas(namespace).Update(&pgreplica); err != nil {
+		if _, err = clientset.CrunchydataV1().Pgreplicas(namespace).Update(ctx, &pgreplica, metav1.UpdateOptions{}); err != nil {
 			log.Error(err)
 			return err
 		}
@@ -82,7 +83,7 @@ func InitializeReplicaCreation(clientset pgo.Interface, clusterName,
 // proper initialization status.
 func SetClusterInitializedStatus(clientset pgo.Interface, clusterName,
 	namespace string) error {
-
+	ctx := context.TODO()
 	patch, err := json.Marshal(map[string]interface{}{
 		"status": crv1.PgclusterStatus{
 			State:   crv1.PgclusterStateInitialized,
@@ -90,7 +91,8 @@ func SetClusterInitializedStatus(clientset pgo.Interface, clusterName,
 		},
 	})
 	if err == nil {
-		_, err = clientset.CrunchydataV1().Pgclusters(namespace).Patch(clusterName, types.MergePatchType, patch)
+		_, err = clientset.CrunchydataV1().Pgclusters(namespace).
+			Patch(ctx, clusterName, types.MergePatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Error(err)

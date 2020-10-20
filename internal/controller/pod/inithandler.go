@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
@@ -124,7 +125,7 @@ func (c *Controller) handleCommonInit(cluster *crv1.Pgcluster) error {
 // stanza creation) when a the database container within the primary PG Pod for a new PG cluster
 // enters a ready status
 func (c *Controller) handleBootstrapInit(newPod *apiv1.Pod, cluster *crv1.Pgcluster) error {
-
+	ctx := context.TODO()
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
 
@@ -134,8 +135,8 @@ func (c *Controller) handleBootstrapInit(newPod *apiv1.Pod, cluster *crv1.Pgclus
 			Remove("metadata", "annotations", config.LABEL_BACKREST_RESTORE).Bytes()
 		if err == nil {
 			log.Debugf("patching cluster %s: %s", cluster.GetName(), patch)
-			_, err = c.Client.CrunchydataV1().
-				Pgclusters(namespace).Patch(cluster.GetName(), types.JSONPatchType, patch)
+			_, err = c.Client.CrunchydataV1().Pgclusters(namespace).
+				Patch(ctx, cluster.GetName(), types.JSONPatchType, patch, metav1.PatchOptions{})
 		}
 		if err != nil {
 			log.Errorf("Pod Controller unable to remove backrest restore annotation from "+
@@ -178,7 +179,7 @@ func (c *Controller) handleBootstrapInit(newPod *apiv1.Pod, cluster *crv1.Pgclus
 // handleStandbyInit is resposible for handling standby cluster initilization when the database
 // container within the primary PG Pod for a new standby cluster enters a ready status
 func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
-
+	ctx := context.TODO()
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
 
@@ -197,15 +198,16 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	// to "s3" for S3 storage only, set the cluster to an initialized status.
 	if cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE] != "s3" {
 		// first try to delete any existing stanza create task and/or job
-		if err := c.Client.CrunchydataV1().Pgtasks(namespace).Delete(fmt.Sprintf("%s-%s", clusterName,
-			crv1.PgtaskBackrestStanzaCreate), &metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
+		if err := c.Client.CrunchydataV1().Pgtasks(namespace).
+			Delete(ctx, fmt.Sprintf("%s-%s", clusterName, crv1.PgtaskBackrestStanzaCreate),
+				metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
 			return err
 		}
 		deletePropagation := metav1.DeletePropagationForeground
 		if err := c.Client.
 			BatchV1().Jobs(namespace).
-			Delete(fmt.Sprintf("%s-%s", clusterName, crv1.PgtaskBackrestStanzaCreate),
-				&metav1.DeleteOptions{PropagationPolicy: &deletePropagation}); err != nil && !kerrors.IsNotFound(err) {
+			Delete(ctx, fmt.Sprintf("%s-%s", clusterName, crv1.PgtaskBackrestStanzaCreate),
+				metav1.DeleteOptions{PropagationPolicy: &deletePropagation}); err != nil && !kerrors.IsNotFound(err) {
 			return err
 		}
 		backrestoperator.StanzaCreate(namespace, clusterName, c.Client)
@@ -237,15 +239,15 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 // update service-name label on the pod for each case
 // to match the correct Service selector for the PG cluster
 func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
-
+	ctx := context.TODO()
 	depName := newpod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
 	ns := newpod.Namespace
 
-	_, err := c.Client.CrunchydataV1().Pgreplicas(ns).Get(depName, metav1.GetOptions{})
+	_, err := c.Client.CrunchydataV1().Pgreplicas(ns).Get(ctx, depName, metav1.GetOptions{})
 	replica := err == nil
 	log.Debugf("checkPostgresPods --- dep %s replica %t", depName, replica)
 
-	dep, err := c.Client.AppsV1().Deployments(ns).Get(depName, metav1.GetOptions{})
+	dep, err := c.Client.AppsV1().Deployments(ns).Get(ctx, depName, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("could not get Deployment on pod Add %s", newpod.Name)
 		return
@@ -271,7 +273,7 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 	patch, err := kubeapi.NewMergePatch().Add("metadata", "labels", config.LABEL_SERVICE_NAME)(serviceName).Bytes()
 	if err == nil {
 		log.Debugf("patching pod %s: %s", newpod.Name, patch)
-		_, err = c.Client.CoreV1().Pods(ns).Patch(newpod.Name, types.MergePatchType, patch)
+		_, err = c.Client.CoreV1().Pods(ns).Patch(ctx, newpod.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Error(err)
@@ -281,7 +283,7 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 
 	//add the service name label to the Deployment
 	log.Debugf("patching deployment %s: %s", dep.Name, patch)
-	_, err = c.Client.AppsV1().Deployments(ns).Patch(dep.Name, types.MergePatchType, patch)
+	_, err = c.Client.AppsV1().Deployments(ns).Patch(ctx, dep.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 	if err != nil {
 		log.Error("could not add label to deployment on pod add")
 		return

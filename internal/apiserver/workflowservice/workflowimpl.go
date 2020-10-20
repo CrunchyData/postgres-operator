@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"errors"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
@@ -28,6 +29,7 @@ import (
 
 // ShowWorkflow ...
 func ShowWorkflow(id, ns string) (msgs.ShowWorkflowDetail, error) {
+	ctx := context.TODO()
 
 	log.Debugf("ShowWorkflow called with id %s", id)
 	detail := msgs.ShowWorkflowDetail{}
@@ -36,7 +38,7 @@ func ShowWorkflow(id, ns string) (msgs.ShowWorkflowDetail, error) {
 
 	selector := crv1.PgtaskWorkflowID + "=" + id
 
-	taskList, err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).List(metav1.ListOptions{LabelSelector: selector})
+	taskList, err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return detail, err
 	}

@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -33,6 +34,7 @@ const (
 
 // handleRMDataUpdate is responsible for handling updates to rmdata jobs
 func (c *Controller) handleRMDataUpdate(job *apiv1.Job) error {
+	ctx := context.TODO()
 
 	labels := job.GetObjectMeta().GetLabels()
 
@@ -55,7 +57,7 @@ func (c *Controller) handleRMDataUpdate(job *apiv1.Job) error {
 	deletePropagation := metav1.DeletePropagationForeground
 	err := c.Client.
 		BatchV1().Jobs(job.Namespace).
-		Delete(job.Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+		Delete(ctx, job.Name, metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	if err != nil {
 		log.Error(err)
 	}
@@ -64,7 +66,7 @@ func (c *Controller) handleRMDataUpdate(job *apiv1.Job) error {
 	for i := 0; i < deleteRMDataJobMaxTries; i++ {
 		log.Debugf("sleeping while job %s is removed cleanly", job.Name)
 		time.Sleep(time.Second * time.Duration(deleteRMDataJobDuration))
-		_, err := c.Client.BatchV1().Jobs(job.Namespace).Get(job.Name, metav1.GetOptions{})
+		_, err := c.Client.BatchV1().Jobs(job.Namespace).Get(ctx, job.Name, metav1.GetOptions{})
 		if err != nil {
 			removed = true
 			break
@@ -86,7 +88,7 @@ func (c *Controller) handleRMDataUpdate(job *apiv1.Job) error {
 	//delete any completed jobs for this cluster as a cleanup
 	jobList, err := c.Client.
 		BatchV1().Jobs(job.Namespace).
-		List(metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + clusterName})
+		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + clusterName})
 	if err != nil {
 		log.Error(err)
 		return err
@@ -97,7 +99,7 @@ func (c *Controller) handleRMDataUpdate(job *apiv1.Job) error {
 			log.Debugf("removing Job %s since it was completed", job.Name)
 			err := c.Client.
 				BatchV1().Jobs(job.Namespace).
-				Delete(j.Name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+				Delete(ctx, j.Name, metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 			if err != nil {
 				log.Error(err)
 				return err

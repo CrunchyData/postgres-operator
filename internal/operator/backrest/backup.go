@@ -17,6 +17,7 @@ package backrest
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -65,6 +66,7 @@ var backrestPgPathRegex = regexp.MustCompile("--db-path|--pg1-path")
 
 // Backrest ...
 func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtask) {
+	ctx := context.TODO()
 
 	//create the Job to run the backrest command
 
@@ -125,7 +127,7 @@ func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtas
 	if backupType != "" {
 		newjob.ObjectMeta.Labels[config.LABEL_PGHA_BACKUP_TYPE] = backupType
 	}
-	clientset.BatchV1().Jobs(namespace).Create(&newjob)
+	clientset.BatchV1().Jobs(namespace).Create(ctx, &newjob, metav1.CreateOptions{})
 
 	//publish backrest backup event
 	if cmd == "backup" {
@@ -173,10 +175,11 @@ func CreatePostFailoverBackup(clientset pgo.Interface, namespace, clusterName, p
 // CreateBackup creates a Pgtask in order to initiate a pgBackRest backup
 func CreateBackup(clientset pgo.Interface, namespace, clusterName, podName string, params map[string]string,
 	backupOpts string) (*crv1.Pgtask, error) {
+	ctx := context.TODO()
 
 	log.Debug("pgBackRest operator CreateBackup called")
 
-	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -219,7 +222,7 @@ func CreateBackup(clientset pgo.Interface, namespace, clusterName, podName strin
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = cluster.ObjectMeta.Labels[config.LABEL_PGOUSER]
 
-	_, err = clientset.CrunchydataV1().Pgtasks(cluster.Namespace).Create(newInstance)
+	_, err = clientset.CrunchydataV1().Pgtasks(cluster.Namespace).Create(ctx, newInstance, metav1.CreateOptions{})
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -232,9 +235,10 @@ func CreateBackup(clientset pgo.Interface, namespace, clusterName, podName strin
 // pgBackRest backup.  Specifically, this function deletes the pgptask and job associate with a
 // previous pgBackRest backup for the cluster.
 func CleanBackupResources(clientset kubeapi.Interface, namespace, clusterName string) error {
+	ctx := context.TODO()
 
 	taskName := "backrest-backup-" + clusterName
-	err := clientset.CrunchydataV1().Pgtasks(namespace).Delete(taskName, &metav1.DeleteOptions{})
+	err := clientset.CrunchydataV1().Pgtasks(namespace).Delete(ctx, taskName, metav1.DeleteOptions{})
 	if err != nil && !kubeapi.IsNotFound(err) {
 		log.Error(err)
 		return err
@@ -246,8 +250,8 @@ func CleanBackupResources(clientset kubeapi.Interface, namespace, clusterName st
 	deletePropagation := metav1.DeletePropagationForeground
 	err = clientset.
 		BatchV1().Jobs(namespace).
-		DeleteCollection(
-			&metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
+		DeleteCollection(ctx,
+			metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
 			metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
@@ -264,7 +268,7 @@ func CleanBackupResources(clientset kubeapi.Interface, namespace, clusterName st
 		case <-tick.C:
 			jobList, err := clientset.
 				BatchV1().Jobs(namespace).
-				List(metav1.ListOptions{LabelSelector: selector})
+				List(ctx, metav1.ListOptions{LabelSelector: selector})
 			if err != nil {
 				log.Error(err)
 				return err
@@ -285,6 +289,7 @@ func CleanBackupResources(clientset kubeapi.Interface, namespace, clusterName st
 // and add the PGDATA dir of the pod as the value for the "--db-path" parameter
 func getCommandOptsFromPod(clientset kubernetes.Interface, task *crv1.Pgtask,
 	namespace string) (commandOpts string, err error) {
+	ctx := context.TODO()
 
 	// lookup the primary pod in order to determine the IP of the primary and the PGDATA directory for
 	// the current primaty
@@ -298,7 +303,7 @@ func getCommandOptsFromPod(clientset kubernetes.Interface, task *crv1.Pgtask,
 	}
 
 	// only consider pods that are running
-	pods, err := clientset.CoreV1().Pods(namespace).List(options)
+	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, options)
 
 	if err != nil {
 		return

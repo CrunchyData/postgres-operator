@@ -16,6 +16,7 @@ package util
 */
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -35,6 +36,8 @@ import (
 
 // ExecPolicy execute a sql policy against a cluster
 func ExecPolicy(clientset kubeapi.Interface, restconfig *rest.Config, namespace, policyName, serviceName, port string) error {
+	ctx := context.TODO()
+
 	//fetch the policy sql
 	sql, err := GetPolicySQL(clientset, namespace, policyName)
 
@@ -54,7 +57,7 @@ func ExecPolicy(clientset kubeapi.Interface, restconfig *rest.Config, namespace,
 		config.LABEL_SERVICE_NAME, serviceName,
 		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
 
-	podList, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	podList, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 
 	if err != nil {
 		return err
@@ -102,7 +105,8 @@ func ExecPolicy(clientset kubeapi.Interface, restconfig *rest.Config, namespace,
 
 // GetPolicySQL returns the SQL string from a policy
 func GetPolicySQL(clientset pgo.Interface, namespace, policyName string) (string, error) {
-	p, err := clientset.CrunchydataV1().Pgpolicies(namespace).Get(policyName, metav1.GetOptions{})
+	ctx := context.TODO()
+	p, err := clientset.CrunchydataV1().Pgpolicies(namespace).Get(ctx, policyName, metav1.GetOptions{})
 	if err == nil {
 		if p.Spec.URL != "" {
 			return readSQLFromURL(p.Spec.URL)
@@ -137,7 +141,8 @@ func readSQLFromURL(urlstring string) (string, error) {
 
 // ValidatePolicy tests to see if a policy exists
 func ValidatePolicy(clientset pgo.Interface, namespace string, policyName string) error {
-	_, err := clientset.CrunchydataV1().Pgpolicies(namespace).Get(policyName, metav1.GetOptions{})
+	ctx := context.TODO()
+	_, err := clientset.CrunchydataV1().Pgpolicies(namespace).Get(ctx, policyName, metav1.GetOptions{})
 	if err == nil {
 		log.Debugf("pgpolicy %s was validated", policyName)
 	} else if kerrors.IsNotFound(err) {

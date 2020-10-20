@@ -16,9 +16,11 @@ package kubeapi
 */
 
 import (
+	"context"
+
 	log "github.com/sirupsen/logrus"
-	"k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -44,11 +46,12 @@ type GetEndpointResponse struct {
 // endpoint object if it can be IsNotFound
 // If no endpoint can be found, then an error is returned
 func GetEndpoint(request *GetEndpointRequest) (*GetEndpointResponse, error) {
+	ctx := context.TODO()
 	log.Debugf("GetEndpointResponse Called: (%s,%s,%s)", request.Clientset, request.Name, request.Namespace)
 	// set the endpoints interfaces that will be used to make the query
 	endpointsInterface := request.Clientset.CoreV1().Endpoints(request.Namespace)
 	// make the query to Kubernetes to see if the specific endpoint exists
-	endpoint, err := endpointsInterface.Get(request.Name, meta_v1.GetOptions{})
+	endpoint, err := endpointsInterface.Get(ctx, request.Name, metav1.GetOptions{})
 	// return at this point if there is an error
 	if err != nil {
 		log.Errorf("GetEndpointResponse(%s,%s): Endpoint Not Found: %s",

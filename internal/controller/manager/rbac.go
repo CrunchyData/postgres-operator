@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"text/template"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -37,12 +38,13 @@ const (
 // reconcileRBAC is responsible for reconciling the RBAC resources (ServiceAccounts, Roles and
 // RoleBindings) required by the PostgreSQL Operator in a target namespace
 func (c *ControllerManager) reconcileRBAC(targetNamespace string) {
+	ctx := context.TODO()
 
 	log.Debugf("Controller Manager: Now reconciling RBAC in namespace %s", targetNamespace)
 
 	// Use the image pull secrets of the operator service account in the new namespace.
 	operator, err := c.controllers[targetNamespace].clientset.CoreV1().
-		ServiceAccounts(c.pgoNamespace).Get(ns.OPERATOR_SERVICE_ACCOUNT, metav1.GetOptions{})
+		ServiceAccounts(c.pgoNamespace).Get(ctx, ns.OPERATOR_SERVICE_ACCOUNT, metav1.GetOptions{})
 	if err != nil {
 		// just log an error and continue so that we can attempt to reconcile other RBAC resources
 		// that are not dependent on the Operator ServiceAccount, e.g. Roles and RoleBindings
@@ -61,8 +63,7 @@ func (c *ControllerManager) reconcileRBAC(targetNamespace string) {
 		var doesNotExist bool
 
 		if _, err := c.controllers[targetNamespace].clientset.CoreV1().
-			Secrets(targetNamespace).Get(
-			reference.Name, metav1.GetOptions{}); err != nil {
+			Secrets(targetNamespace).Get(ctx, reference.Name, metav1.GetOptions{}); err != nil {
 			if kerrors.IsNotFound(err) {
 				doesNotExist = true
 			} else {

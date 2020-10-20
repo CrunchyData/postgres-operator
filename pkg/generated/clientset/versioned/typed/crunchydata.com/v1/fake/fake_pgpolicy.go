@@ -18,6 +18,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	crunchydatacomv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -38,7 +40,7 @@ var pgpoliciesResource = schema.GroupVersionResource{Group: "crunchydata.com", V
 var pgpoliciesKind = schema.GroupVersionKind{Group: "crunchydata.com", Version: "v1", Kind: "Pgpolicy"}
 
 // Get takes name of the pgpolicy, and returns the corresponding pgpolicy object, and an error if there is any.
-func (c *FakePgpolicies) Get(name string, options v1.GetOptions) (result *crunchydatacomv1.Pgpolicy, err error) {
+func (c *FakePgpolicies) Get(ctx context.Context, name string, options v1.GetOptions) (result *crunchydatacomv1.Pgpolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(pgpoliciesResource, c.ns, name), &crunchydatacomv1.Pgpolicy{})
 
@@ -49,7 +51,7 @@ func (c *FakePgpolicies) Get(name string, options v1.GetOptions) (result *crunch
 }
 
 // List takes label and field selectors, and returns the list of Pgpolicies that match those selectors.
-func (c *FakePgpolicies) List(opts v1.ListOptions) (result *crunchydatacomv1.PgpolicyList, err error) {
+func (c *FakePgpolicies) List(ctx context.Context, opts v1.ListOptions) (result *crunchydatacomv1.PgpolicyList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(pgpoliciesResource, pgpoliciesKind, c.ns, opts), &crunchydatacomv1.PgpolicyList{})
 
@@ -71,14 +73,14 @@ func (c *FakePgpolicies) List(opts v1.ListOptions) (result *crunchydatacomv1.Pgp
 }
 
 // Watch returns a watch.Interface that watches the requested pgpolicies.
-func (c *FakePgpolicies) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakePgpolicies) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(pgpoliciesResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a pgpolicy and creates it.  Returns the server's representation of the pgpolicy, and an error, if there is any.
-func (c *FakePgpolicies) Create(pgpolicy *crunchydatacomv1.Pgpolicy) (result *crunchydatacomv1.Pgpolicy, err error) {
+func (c *FakePgpolicies) Create(ctx context.Context, pgpolicy *crunchydatacomv1.Pgpolicy, opts v1.CreateOptions) (result *crunchydatacomv1.Pgpolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(pgpoliciesResource, c.ns, pgpolicy), &crunchydatacomv1.Pgpolicy{})
 
@@ -89,7 +91,7 @@ func (c *FakePgpolicies) Create(pgpolicy *crunchydatacomv1.Pgpolicy) (result *cr
 }
 
 // Update takes the representation of a pgpolicy and updates it. Returns the server's representation of the pgpolicy, and an error, if there is any.
-func (c *FakePgpolicies) Update(pgpolicy *crunchydatacomv1.Pgpolicy) (result *crunchydatacomv1.Pgpolicy, err error) {
+func (c *FakePgpolicies) Update(ctx context.Context, pgpolicy *crunchydatacomv1.Pgpolicy, opts v1.UpdateOptions) (result *crunchydatacomv1.Pgpolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(pgpoliciesResource, c.ns, pgpolicy), &crunchydatacomv1.Pgpolicy{})
 
@@ -101,7 +103,7 @@ func (c *FakePgpolicies) Update(pgpolicy *crunchydatacomv1.Pgpolicy) (result *cr
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakePgpolicies) UpdateStatus(pgpolicy *crunchydatacomv1.Pgpolicy) (*crunchydatacomv1.Pgpolicy, error) {
+func (c *FakePgpolicies) UpdateStatus(ctx context.Context, pgpolicy *crunchydatacomv1.Pgpolicy, opts v1.UpdateOptions) (*crunchydatacomv1.Pgpolicy, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(pgpoliciesResource, "status", c.ns, pgpolicy), &crunchydatacomv1.Pgpolicy{})
 
@@ -112,7 +114,7 @@ func (c *FakePgpolicies) UpdateStatus(pgpolicy *crunchydatacomv1.Pgpolicy) (*cru
 }
 
 // Delete takes name of the pgpolicy and deletes it. Returns an error if one occurs.
-func (c *FakePgpolicies) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakePgpolicies) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(pgpoliciesResource, c.ns, name), &crunchydatacomv1.Pgpolicy{})
 
@@ -120,15 +122,15 @@ func (c *FakePgpolicies) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakePgpolicies) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(pgpoliciesResource, c.ns, listOptions)
+func (c *FakePgpolicies) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(pgpoliciesResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &crunchydatacomv1.PgpolicyList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched pgpolicy.
-func (c *FakePgpolicies) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *crunchydatacomv1.Pgpolicy, err error) {
+func (c *FakePgpolicies) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *crunchydatacomv1.Pgpolicy, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(pgpoliciesResource, c.ns, name, pt, data, subresources...), &crunchydatacomv1.Pgpolicy{})
 

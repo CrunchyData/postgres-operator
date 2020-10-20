@@ -20,6 +20,7 @@ package cluster
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"os"
 
@@ -33,10 +34,11 @@ import (
 
 // CreateService ...
 func CreateService(clientset kubernetes.Interface, fields *ServiceTemplateFields, namespace string) error {
+	ctx := context.TODO()
 	var serviceDoc bytes.Buffer
 
 	//create the service if it doesn't exist
-	_, err := clientset.CoreV1().Services(namespace).Get(fields.Name, metav1.GetOptions{})
+	_, err := clientset.CoreV1().Services(namespace).Get(ctx, fields.Name, metav1.GetOptions{})
 	if err != nil {
 
 		err = config.ServiceTemplate.Execute(&serviceDoc, fields)
@@ -56,7 +58,7 @@ func CreateService(clientset kubernetes.Interface, fields *ServiceTemplateFields
 			return err
 		}
 
-		_, err = clientset.CoreV1().Services(namespace).Create(&service)
+		_, err = clientset.CoreV1().Services(namespace).Create(ctx, &service, metav1.CreateOptions{})
 	}
 
 	return err

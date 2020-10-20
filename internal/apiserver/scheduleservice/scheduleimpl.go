@@ -16,6 +16,7 @@ package scheduleservice
 */
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -101,6 +102,8 @@ func (s scheduleRequest) createPolicySchedule(cluster *crv1.Pgcluster, ns string
 
 //  CreateSchedule
 func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateScheduleResponse {
+	ctx := context.TODO()
+
 	log.Debugf("Create schedule called: %s", request.ClusterName)
 	sr := &scheduleRequest{
 		Request: request,
@@ -121,7 +124,7 @@ func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateS
 		selector = sr.Request.Selector
 	}
 
-	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(metav1.ListOptions{LabelSelector: selector})
+	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		sr.Response.Status.Code = msgs.Error
 		sr.Response.Status.Msg = fmt.Sprintf("Could not get cluster via selector: %s", err)
@@ -177,7 +180,7 @@ func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateS
 		}
 
 		log.Debug("Getting configmap..")
-		_, err = apiserver.Clientset.CoreV1().ConfigMaps(schedule.Namespace).Get(schedule.Name, metav1.GetOptions{})
+		_, err = apiserver.Clientset.CoreV1().ConfigMaps(schedule.Namespace).Get(ctx, schedule.Name, metav1.GetOptions{})
 		if err == nil {
 			sr.Response.Status.Code = msgs.Error
 			sr.Response.Status.Msg = fmt.Sprintf("Schedule %s already exists", schedule.Name)
@@ -200,7 +203,7 @@ func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateS
 		}
 
 		log.Debug("Creating configmap..")
-		_, err = apiserver.Clientset.CoreV1().ConfigMaps(schedule.Namespace).Create(configmap)
+		_, err = apiserver.Clientset.CoreV1().ConfigMaps(schedule.Namespace).Create(ctx, configmap, metav1.CreateOptions{})
 		if err != nil {
 			sr.Response.Status.Code = msgs.Error
 			sr.Response.Status.Msg = err.Error()
@@ -215,6 +218,8 @@ func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateS
 
 //  DeleteSchedule ...
 func DeleteSchedule(request *msgs.DeleteScheduleRequest, ns string) msgs.DeleteScheduleResponse {
+	ctx := context.TODO()
+
 	log.Debug("Deleted schedule called")
 
 	sr := &msgs.DeleteScheduleResponse{
@@ -246,7 +251,7 @@ func DeleteSchedule(request *msgs.DeleteScheduleRequest, ns string) msgs.DeleteS
 
 	log.Debug("Deleting configMaps")
 	for _, schedule := range schedules {
-		err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Delete(schedule, &metav1.DeleteOptions{})
+		err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Delete(ctx, schedule, metav1.DeleteOptions{})
 		if err != nil {
 			sr.Status.Code = msgs.Error
 			sr.Status.Msg = fmt.Sprintf("Could not delete ConfigMap %s: %s", schedule, err)
@@ -261,6 +266,8 @@ func DeleteSchedule(request *msgs.DeleteScheduleRequest, ns string) msgs.DeleteS
 
 //  ShowSchedule ...
 func ShowSchedule(request *msgs.ShowScheduleRequest, ns string) msgs.ShowScheduleResponse {
+	ctx := context.TODO()
+
 	log.Debug("Show schedule called")
 
 	sr := &msgs.ShowScheduleResponse{
@@ -292,7 +299,7 @@ func ShowSchedule(request *msgs.ShowScheduleRequest, ns string) msgs.ShowSchedul
 
 	log.Debug("Parsing configMaps")
 	for _, schedule := range schedules {
-		cm, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Get(schedule, metav1.GetOptions{})
+		cm, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Get(ctx, schedule, metav1.GetOptions{})
 		if err != nil {
 			sr.Status.Code = msgs.Error
 			sr.Status.Msg = fmt.Sprintf("Could not delete ConfigMap %s: %s", schedule, err)
@@ -317,6 +324,7 @@ func ShowSchedule(request *msgs.ShowScheduleRequest, ns string) msgs.ShowSchedul
 }
 
 func getSchedules(clusterName, selector, ns string) ([]string, error) {
+	ctx := context.TODO()
 	schedules := []string{}
 	label := "crunchy-scheduler=true"
 	if clusterName == "all" {
@@ -329,7 +337,7 @@ func getSchedules(clusterName, selector, ns string) ([]string, error) {
 	}
 
 	log.Debugf("Finding configMaps with selector: %s", label)
-	list, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).List(metav1.ListOptions{LabelSelector: label})
+	list, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).List(ctx, metav1.ListOptions{LabelSelector: label})
 	if err != nil {
 		return nil, fmt.Errorf("No schedules found for selector: %s", label)
 	}

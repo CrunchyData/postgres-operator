@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
@@ -34,6 +35,7 @@ const pgAdminServiceSuffix = "-pgadmin"
 // pgo create pgadmin mycluster
 // pgo create pgadmin --selector=name=mycluster
 func CreatePgAdmin(request *msgs.CreatePgAdminRequest, ns, pgouser string) msgs.CreatePgAdminResponse {
+	ctx := context.TODO()
 	var err error
 	resp := msgs.CreatePgAdminResponse{
 		Status:  msgs.Status{Code: msgs.Ok},
@@ -84,7 +86,7 @@ func CreatePgAdmin(request *msgs.CreatePgAdminRequest, ns, pgouser string) msgs.
 			Spec: spec,
 		}
 
-		if _, err := apiserver.Clientset.CrunchydataV1().Pgtasks(cluster.Namespace).Create(task); err != nil {
+		if _, err := apiserver.Clientset.CrunchydataV1().Pgtasks(cluster.Namespace).Create(ctx, task, metav1.CreateOptions{}); err != nil {
 			log.Error(err)
 			resp.SetError("error creating tasks for one or more clusters")
 			resp.Results = append(resp.Results, fmt.Sprintf("%s: error - %s", cluster.Name, err.Error()))
@@ -101,6 +103,7 @@ func CreatePgAdmin(request *msgs.CreatePgAdminRequest, ns, pgouser string) msgs.
 // pgo delete pgadmin mycluster
 // pgo delete pgadmin --selector=name=mycluster
 func DeletePgAdmin(request *msgs.DeletePgAdminRequest, ns string) msgs.DeletePgAdminResponse {
+	ctx := context.TODO()
 	var err error
 	resp := msgs.DeletePgAdminResponse{
 		Status:  msgs.Status{Code: msgs.Ok},
@@ -149,7 +152,7 @@ func DeletePgAdmin(request *msgs.DeletePgAdminRequest, ns string) msgs.DeletePgA
 			Spec: spec,
 		}
 
-		if _, err := apiserver.Clientset.CrunchydataV1().Pgtasks(cluster.Namespace).Create(task); err != nil {
+		if _, err := apiserver.Clientset.CrunchydataV1().Pgtasks(cluster.Namespace).Create(ctx, task, metav1.CreateOptions{}); err != nil {
 			log.Error(err)
 			resp.SetError("error creating tasks for one or more clusters")
 			resp.Results = append(resp.Results, fmt.Sprintf("%s: error - %s", cluster.Name, err.Error()))
@@ -169,6 +172,7 @@ func DeletePgAdmin(request *msgs.DeletePgAdminRequest, ns string) msgs.DeletePgA
 // pgo show pgadmin
 // pgo show pgadmin --selector
 func ShowPgAdmin(request *msgs.ShowPgAdminRequest, namespace string) msgs.ShowPgAdminResponse {
+	ctx := context.TODO()
 	log.Debugf("show pgAdmin called, cluster [%v], selector [%s]", request.ClusterNames, request.Selector)
 
 	response := msgs.ShowPgAdminResponse{
@@ -207,7 +211,7 @@ func ShowPgAdmin(request *msgs.ShowPgAdminRequest, namespace string) msgs.ShowPg
 		// sharing a name that is clustername + pgAdminServiceSuffix
 		service, err := apiserver.Clientset.
 			CoreV1().Services(cluster.Namespace).
-			Get(cluster.Name+pgAdminServiceSuffix, metav1.GetOptions{})
+			Get(ctx, cluster.Name+pgAdminServiceSuffix, metav1.GetOptions{})
 		if err != nil {
 			response.SetError(err.Error())
 			return response
@@ -247,6 +251,7 @@ func ShowPgAdmin(request *msgs.ShowPgAdminRequest, namespace string) msgs.ShowPg
 // getClusterList tries to return a list of clusters based on either having an
 // argument list of cluster names, or a Kubernetes selector
 func getClusterList(namespace string, clusterNames []string, selector string) (crv1.PgclusterList, error) {
+	ctx := context.TODO()
 	clusterList := crv1.PgclusterList{}
 
 	// see if there are any values in the cluster name list or in the selector
@@ -261,7 +266,7 @@ func getClusterList(namespace string, clusterNames []string, selector string) (c
 	if selector != "" {
 		cl, err := apiserver.Clientset.
 			CrunchydataV1().Pgclusters(namespace).
-			List(metav1.ListOptions{LabelSelector: selector})
+			List(ctx, metav1.ListOptions{LabelSelector: selector})
 
 		// if there is an error, return here with an empty cluster list
 		if err != nil {
@@ -272,7 +277,7 @@ func getClusterList(namespace string, clusterNames []string, selector string) (c
 
 	// now try to get clusters based specific cluster names
 	for _, clusterName := range clusterNames {
-		cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+		cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
 
 		// if there is an error, capture it here and return here with an empty list
 		if err != nil {

@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"regexp"
@@ -43,6 +44,7 @@ const (
 // organizes the needed upgrade information before creating the required pgtask
 // Command format: pgo upgrade mycluster
 func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.CreateUpgradeResponse {
+	ctx := context.TODO()
 	response := msgs.CreateUpgradeResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 	response.Results = make([]string, 0)
@@ -65,7 +67,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 
 		clusterList, err := apiserver.Clientset.
 			CrunchydataV1().Pgclusters(ns).
-			List(metav1.ListOptions{LabelSelector: request.Selector})
+			List(ctx, metav1.ListOptions{LabelSelector: request.Selector})
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
@@ -135,7 +137,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 		}
 
 		// remove any existing pgtask for this upgrade
-		task, err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Get(spec.Name, metav1.GetOptions{})
+		task, err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Get(ctx, spec.Name, metav1.GetOptions{})
 
 		if err == nil && task.Spec.Status != crv1.CompletedStatus {
 			response.Status.Code = msgs.Error
@@ -144,7 +146,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 		}
 
 		// validate the cluster name and ensure autofail is turned off for each cluster.
-		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
+		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(ctx, clusterName, metav1.GetOptions{})
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = clusterName + " is not a valid pgcluster"
@@ -173,7 +175,7 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 		}
 
 		// Create an instance of our CRD
-		_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(newInstance)
+		_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(ctx, newInstance, metav1.CreateOptions{})
 		if err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()

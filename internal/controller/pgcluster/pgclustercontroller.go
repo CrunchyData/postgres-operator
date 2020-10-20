@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"reflect"
@@ -76,6 +77,8 @@ func (c *Controller) waitForShutdown(stopCh <-chan struct{}) {
 }
 
 func (c *Controller) processNextItem() bool {
+	ctx := context.TODO()
+
 	// Wait until there is a new item in the working queue
 	key, quit := c.Queue.Get()
 	if quit {
@@ -95,7 +98,7 @@ func (c *Controller) processNextItem() bool {
 	defer c.Queue.Done(key)
 
 	//get the pgcluster
-	cluster, err := c.Client.CrunchydataV1().Pgclusters(keyNamespace).Get(keyResourceName, metav1.GetOptions{})
+	cluster, err := c.Client.CrunchydataV1().Pgclusters(keyNamespace).Get(ctx, keyResourceName, metav1.GetOptions{})
 	if err != nil {
 		log.Debugf("cluster add - pgcluster not found, this is invalid")
 		c.Queue.Forget(key) // NB(cbandy): This should probably be a retry.
@@ -144,7 +147,8 @@ func (c *Controller) processNextItem() bool {
 		},
 	})
 	if err == nil {
-		_, err = c.Client.CrunchydataV1().Pgclusters(keyNamespace).Patch(cluster.Name, types.MergePatchType, patch)
+		_, err = c.Client.CrunchydataV1().Pgclusters(keyNamespace).
+			Patch(ctx, cluster.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Errorf("ERROR updating pgcluster status on add: %s", err.Error())

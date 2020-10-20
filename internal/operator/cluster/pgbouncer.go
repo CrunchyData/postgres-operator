@@ -18,6 +18,7 @@ package cluster
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -201,6 +202,7 @@ func AddPgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, clust
 // Any errors that are returned should be logged in the calling function, though
 // some logging occurs in this function as well
 func DeletePgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
+	ctx := context.TODO()
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
 
@@ -221,12 +223,12 @@ func DeletePgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, cl
 	// First, delete the Service and Deployment, which share the same naem
 	pgbouncerDeploymentName := fmt.Sprintf(pgBouncerDeploymentFormat, clusterName)
 
-	if err := clientset.CoreV1().Services(namespace).Delete(pgbouncerDeploymentName, &metav1.DeleteOptions{}); err != nil {
+	if err := clientset.CoreV1().Services(namespace).Delete(ctx, pgbouncerDeploymentName, metav1.DeleteOptions{}); err != nil {
 		log.Warn(err)
 	}
 
 	deletePropagation := metav1.DeletePropagationForeground
-	if err := clientset.AppsV1().Deployments(namespace).Delete(pgbouncerDeploymentName, &metav1.DeleteOptions{
+	if err := clientset.AppsV1().Deployments(namespace).Delete(ctx, pgbouncerDeploymentName, metav1.DeleteOptions{
 		PropagationPolicy: &deletePropagation,
 	}); err != nil {
 		log.Warn(err)
@@ -236,7 +238,7 @@ func DeletePgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, cl
 	// through
 	configMapName := util.GeneratePgBouncerConfigMapName(clusterName)
 
-	if err := clientset.CoreV1().ConfigMaps(namespace).Delete(configMapName, &metav1.DeleteOptions{}); err != nil {
+	if err := clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, configMapName, metav1.DeleteOptions{}); err != nil {
 		log.Warn(err)
 	}
 
@@ -244,7 +246,7 @@ func DeletePgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, cl
 	// through
 	secretName := util.GeneratePgBouncerSecretName(clusterName)
 
-	if err := clientset.CoreV1().Secrets(namespace).Delete(secretName, &metav1.DeleteOptions{}); err != nil {
+	if err := clientset.CoreV1().Secrets(namespace).Delete(ctx, secretName, metav1.DeleteOptions{}); err != nil {
 		log.Warn(err)
 	}
 
@@ -258,6 +260,8 @@ func DeletePgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, cl
 // which involves updating the password in the PostgreSQL cluster as well as
 // the users secret that is available in the pgbouncer Pod
 func RotatePgBouncerPassword(clientset kubernetes.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
+	ctx := context.TODO()
+
 	// determine if we are able to access the primary Pod
 	primaryPod, err := util.GetPrimaryPod(clientset, cluster)
 
@@ -268,7 +272,7 @@ func RotatePgBouncerPassword(clientset kubernetes.Interface, restconfig *rest.Co
 	// let's also go ahead and get the secret that contains the pgBouncer
 	// information. If we can't find the secret, we're basically done here
 	secretName := util.GeneratePgBouncerSecretName(cluster.Name)
-	secret, err := clientset.CoreV1().Secrets(cluster.Namespace).Get(secretName, metav1.GetOptions{})
+	secret, err := clientset.CoreV1().Secrets(cluster.Namespace).Get(ctx, secretName, metav1.GetOptions{})
 
 	if err != nil {
 		return err
@@ -306,7 +310,8 @@ func RotatePgBouncerPassword(clientset kubernetes.Interface, restconfig *rest.Co
 		makePostgresPassword(pgpassword.MD5, password))
 
 	// update the secret
-	if _, err := clientset.CoreV1().Secrets(cluster.Namespace).Update(secret); err != nil {
+	if _, err := clientset.CoreV1().Secrets(cluster.Namespace).
+		Update(ctx, secret, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 
@@ -316,13 +321,13 @@ func RotatePgBouncerPassword(clientset kubernetes.Interface, restconfig *rest.Co
 		config.LABEL_PGBOUNCER)
 
 	// query the pods
-	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(metav1.ListOptions{LabelSelector: selector})
+	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		return err
 	}
 
 	for _, pod := range pods.Items {
-		if err := clientset.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{}); err != nil {
+		if err := clientset.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{}); err != nil {
 			log.Warn(err)
 		}
 	}
@@ -425,6 +430,8 @@ func UpdatePgbouncer(clientset kubernetes.Interface, oldCluster, newCluster *crv
 // of a pgBouncer deployment
 func UpdatePgBouncerAnnotations(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
 	annotations map[string]string) error {
+	ctx := context.TODO()
+
 	// get a list of all of the instance deployments for the cluster
 	deployment, err := getPgBouncerDeployment(clientset, cluster)
 
@@ -440,7 +447,8 @@ func UpdatePgBouncerAnnotations(clientset kubernetes.Interface, cluster *crv1.Pg
 
 	// finally, update the Deployment. If something errors, we'll log that there
 	// was an error, but continue with processing the other deployments
-	if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(deployment); err != nil {
+	if _, err := clientset.AppsV1().Deployments(deployment.Namespace).
+		Update(ctx, deployment, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 
@@ -480,11 +488,13 @@ func checkPgBouncerInstall(clientset kubernetes.Interface, restconfig *rest.Conf
 // createPgbouncerConfigMap create a config map used by pgbouncer, specifically
 // containing the pgbouncer.ini configuration file. returns an error if it fails
 func createPgbouncerConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
+	ctx := context.TODO()
+
 	// get the name of the configmap
 	configMapName := util.GeneratePgBouncerConfigMapName(cluster.Name)
 
 	// see if this config map already exists...if it does, then take an early exit
-	if _, err := clientset.CoreV1().ConfigMaps(cluster.Namespace).Get(configMapName, metav1.GetOptions{}); err == nil {
+	if _, err := clientset.CoreV1().ConfigMaps(cluster.Namespace).Get(ctx, configMapName, metav1.GetOptions{}); err == nil {
 		log.Infof("pgbouncer configmap %q already present, will reuse", configMapName)
 		return nil
 	}
@@ -521,7 +531,8 @@ func createPgbouncerConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcl
 		},
 	}
 
-	if _, err := clientset.CoreV1().ConfigMaps(cluster.Namespace).Create(&cm); err != nil {
+	if _, err := clientset.CoreV1().ConfigMaps(cluster.Namespace).
+		Create(ctx, &cm, metav1.CreateOptions{}); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -531,6 +542,7 @@ func createPgbouncerConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcl
 
 // createPgBouncerDeployment creates the Kubernetes Deployment for pgBouncer
 func createPgBouncerDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
+	ctx := context.TODO()
 	log.Debugf("creating pgbouncer deployment: %s", cluster.Name)
 
 	// derive the name of the Deployment...which is also used as the name of the
@@ -580,7 +592,8 @@ func createPgBouncerDeployment(clientset kubernetes.Interface, cluster *crv1.Pgc
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGBOUNCER,
 		&deployment.Spec.Template.Spec.Containers[0])
 
-	if _, err := clientset.AppsV1().Deployments(cluster.Namespace).Create(&deployment); err != nil {
+	if _, err := clientset.AppsV1().Deployments(cluster.Namespace).
+		Create(ctx, &deployment, metav1.CreateOptions{}); err != nil {
 		return err
 	}
 
@@ -590,6 +603,7 @@ func createPgBouncerDeployment(clientset kubernetes.Interface, cluster *crv1.Pgc
 // createPgbouncerSecret create a secret used by pgbouncer. Returns the
 // plaintext password and/or an error
 func createPgbouncerSecret(clientset kubernetes.Interface, cluster *crv1.Pgcluster, password string) error {
+	ctx := context.TODO()
 	secretName := util.GeneratePgBouncerSecretName(cluster.Name)
 
 	// see if this secret already exists...if it does, then take an early exit
@@ -621,7 +635,8 @@ func createPgbouncerSecret(clientset kubernetes.Interface, cluster *crv1.Pgclust
 		},
 	}
 
-	if _, err := clientset.CoreV1().Secrets(cluster.Namespace).Create(&secret); err != nil {
+	if _, err := clientset.CoreV1().Secrets(cluster.Namespace).
+		Create(ctx, &secret, metav1.CreateOptions{}); err != nil {
 		log.Error(err)
 		return err
 	}
@@ -790,13 +805,14 @@ func getPgBouncerDatabases(clientset kubernetes.Interface, restconfig *rest.Conf
 // getPgBouncerDeployment finds the pgBouncer deployment for a PostgreSQL
 // cluster
 func getPgBouncerDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (*appsv1.Deployment, error) {
+	ctx := context.TODO()
 	log.Debugf("find pgbouncer for: %s", cluster.Name)
 
 	// derive the name of the Deployment...which is also used as the name of the
 	// service
 	pgbouncerDeploymentName := fmt.Sprintf(pgBouncerDeploymentFormat, cluster.Name)
 
-	deployment, err := clientset.AppsV1().Deployments(cluster.Namespace).Get(pgbouncerDeploymentName, metav1.GetOptions{})
+	deployment, err := clientset.AppsV1().Deployments(cluster.Namespace).Get(ctx, pgbouncerDeploymentName, metav1.GetOptions{})
 
 	if err != nil {
 		return nil, err
@@ -904,6 +920,7 @@ func setPostgreSQLPassword(clientset kubernetes.Interface, restconfig *rest.Conf
 // as pgBouncer is "semi-stateful" we may want to improve upon this in the
 // future
 func updatePgBouncerReplicas(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
+	ctx := context.TODO()
 	log.Debugf("scale pgbouncer replicas to [%d]", cluster.Spec.PgBouncer.Replicas)
 
 	// get the pgBouncer deployment so the resources can be updated
@@ -918,7 +935,8 @@ func updatePgBouncerReplicas(clientset kubernetes.Interface, cluster *crv1.Pgclu
 
 	// and update the deployment
 	// update the deployment with the new values
-	if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(deployment); err != nil {
+	if _, err := clientset.AppsV1().Deployments(deployment.Namespace).
+		Update(ctx, deployment, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 
@@ -928,6 +946,7 @@ func updatePgBouncerReplicas(clientset kubernetes.Interface, cluster *crv1.Pgclu
 // updatePgBouncerResources updates the pgBouncer Deployment with the container
 // resource request values that are desired
 func updatePgBouncerResources(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
+	ctx := context.TODO()
 	log.Debugf("update pgbouncer resources to [%+v]", cluster.Spec.PgBouncer.Resources)
 
 	// get the pgBouncer deployment so the resources can be updated
@@ -944,7 +963,8 @@ func updatePgBouncerResources(clientset kubernetes.Interface, cluster *crv1.Pgcl
 
 	// and update the deployment
 	// update the deployment with the new values
-	if _, err := clientset.AppsV1().Deployments(deployment.Namespace).Update(deployment); err != nil {
+	if _, err := clientset.AppsV1().Deployments(deployment.Namespace).
+		Update(ctx, deployment, metav1.UpdateOptions{}); err != nil {
 		return err
 	}
 

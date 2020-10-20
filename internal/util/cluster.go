@@ -16,6 +16,7 @@ package util
 */
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -114,6 +115,7 @@ var (
 // pgBackRest repo container
 func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 	backrestRepoConfig BackrestRepoConfig) error {
+	ctx := context.TODO()
 
 	keys, err := NewPrivatePublicKeyPair()
 	if err != nil {
@@ -123,7 +125,7 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 	// Retrieve the S3/SSHD configuration files from secret
 	configs, err := clientset.
 		CoreV1().Secrets(backrestRepoConfig.OperatorNamespace).
-		Get("pgo-backrest-repo-config", metav1.GetOptions{})
+		Get(ctx, "pgo-backrest-repo-config", metav1.GetOptions{})
 
 	if err != nil {
 		log.Error(err)
@@ -175,9 +177,11 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 		},
 	}
 
-	_, err = clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).Create(&secret)
+	_, err = clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).
+		Create(ctx, &secret, metav1.CreateOptions{})
 	if kubeapi.IsAlreadyExists(err) {
-		_, err = clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).Update(&secret)
+		_, err = clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).
+			Update(ctx, &secret, metav1.UpdateOptions{})
 	}
 	return err
 }
@@ -215,13 +219,15 @@ func GeneratedPasswordValidUntilDays(configuredValidUntilDays string) int {
 // GetPrimaryPod gets the Pod of the primary PostgreSQL instance. If somehow
 // the query gets multiple pods, then the first one in the list is returned
 func GetPrimaryPod(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (*v1.Pod, error) {
+	ctx := context.TODO()
+
 	// set up the selector for the primary pod
 	selector := fmt.Sprintf("%s=%s,%s=%s",
 		config.LABEL_PG_CLUSTER, cluster.Spec.Name, config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
 	namespace := cluster.Spec.Namespace
 
 	// query the pods
-	pods, err := clientset.CoreV1().Pods(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 
 	// if there is an error, log it and abort
 	if err != nil {
@@ -242,10 +248,11 @@ func GetPrimaryPod(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (*v1
 // GetS3CredsFromBackrestRepoSecret retrieves the AWS S3 credentials, i.e. the key and key
 // secret, from a specific cluster's backrest repo secret
 func GetS3CredsFromBackrestRepoSecret(clientset kubernetes.Interface, namespace, clusterName string) (AWSS3Secret, error) {
+	ctx := context.TODO()
 	secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
 	s3Secret := AWSS3Secret{}
 
-	secret, err := clientset.CoreV1().Secrets(namespace).Get(secretName, metav1.GetOptions{})
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
 
 	if err != nil {
 		log.Error(err)

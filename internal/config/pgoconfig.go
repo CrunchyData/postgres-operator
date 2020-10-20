@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -728,8 +729,8 @@ func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) 
 }
 
 func getRootPath(clientset kubernetes.Interface, namespace string) (*v1.ConfigMap, string) {
-
-	cMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(CustomConfigMapName, metav1.GetOptions{})
+	ctx := context.TODO()
+	cMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(ctx, CustomConfigMapName, metav1.GetOptions{})
 	if err == nil {
 		log.Infof("Config: %s ConfigMap found, using config files from the configmap", CustomConfigMapName)
 		return cMap, ""

@@ -19,6 +19,7 @@ package cluster
 */
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
@@ -36,6 +37,7 @@ import (
 // FailoverBase ...
 // gets called first on a failover
 func FailoverBase(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask, restconfig *rest.Config) {
+	ctx := context.TODO()
 	var err error
 
 	//look up the pgcluster for this task
@@ -46,7 +48,7 @@ func FailoverBase(namespace string, clientset kubeapi.Interface, task *crv1.Pgta
 		clusterName = k
 	}
 
-	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
 		return
 	}
@@ -60,7 +62,7 @@ func FailoverBase(namespace string, clientset kubeapi.Interface, task *crv1.Pgta
 
 	//get initial count of replicas --selector=pg-cluster=clusterName
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
-	replicaList, err := clientset.CrunchydataV1().Pgreplicas(namespace).List(metav1.ListOptions{LabelSelector: selector})
+	replicaList, err := clientset.CrunchydataV1().Pgreplicas(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
 		return
@@ -116,6 +118,7 @@ func FailoverBase(namespace string, clientset kubeapi.Interface, task *crv1.Pgta
 }
 
 func PatchpgtaskFailoverStatus(clientset pgo.Interface, oldCrd *crv1.Pgtask, namespace string) error {
+	ctx := context.TODO()
 
 	//change it
 	oldCrd.Spec.Parameters[config.LABEL_FAILOVER_STARTED] = time.Now().Format(time.RFC3339)
@@ -131,7 +134,8 @@ func PatchpgtaskFailoverStatus(clientset pgo.Interface, oldCrd *crv1.Pgtask, nam
 	}
 
 	//apply patch
-	_, err6 := clientset.CrunchydataV1().Pgtasks(namespace).Patch(oldCrd.Name, types.MergePatchType, patchBytes)
+	_, err6 := clientset.CrunchydataV1().Pgtasks(namespace).
+		Patch(ctx, oldCrd.Name, types.MergePatchType, patchBytes, metav1.PatchOptions{})
 
 	return err6
 

@@ -19,6 +19,7 @@ package cluster
 */
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -38,6 +39,7 @@ import (
 )
 
 func Failover(identifier string, clientset kubeapi.Interface, clusterName string, task *crv1.Pgtask, namespace string, restconfig *rest.Config) error {
+	ctx := context.TODO()
 
 	var pod *v1.Pod
 	var err error
@@ -65,7 +67,7 @@ func Failover(identifier string, clientset kubeapi.Interface, clusterName string
 
 	//relabel the deployment with primary labels
 	//by setting service-name=clustername
-	upod, err := clientset.CoreV1().Pods(namespace).Get(pod.Name, metav1.GetOptions{})
+	upod, err := clientset.CoreV1().Pods(namespace).Get(ctx, pod.Name, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		log.Error("error in getting pod during failover relabel")
@@ -79,7 +81,8 @@ func Failover(identifier string, clientset kubeapi.Interface, clusterName string
 	patch, err := kubeapi.NewMergePatch().Add("metadata", "labels", config.LABEL_SERVICE_NAME)(clusterName).Bytes()
 	if err == nil {
 		log.Debugf("patching pod %s: %s", upod.Name, patch)
-		_, err = clientset.CoreV1().Pods(namespace).Patch(upod.Name, types.MergePatchType, patch)
+		_, err = clientset.CoreV1().Pods(namespace).
+			Patch(ctx, upod.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Error(err)
@@ -89,7 +92,8 @@ func Failover(identifier string, clientset kubeapi.Interface, clusterName string
 
 	targetDepName := upod.ObjectMeta.Labels[config.LABEL_DEPLOYMENT_NAME]
 	log.Debugf("patching deployment %s: %s", targetDepName, patch)
-	_, err = clientset.AppsV1().Deployments(namespace).Patch(targetDepName, types.MergePatchType, patch)
+	_, err = clientset.AppsV1().Deployments(namespace).
+		Patch(ctx, targetDepName, types.MergePatchType, patch, metav1.PatchOptions{})
 	if err != nil {
 		log.Error(err)
 		log.Error("error in updating deployment during failover relabel")
@@ -99,7 +103,7 @@ func Failover(identifier string, clientset kubeapi.Interface, clusterName string
 	updateFailoverStatus(clientset, task, namespace, clusterName, "updating label deployment...pod "+pod.Name+"was the failover target...failover completed")
 
 	//update the pgcluster current-primary to new deployment name
-	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("could not find pgcluster %s with labels", clusterName)
 		return err
@@ -117,11 +121,12 @@ func Failover(identifier string, clientset kubeapi.Interface, clusterName string
 }
 
 func updateFailoverStatus(clientset pgo.Interface, task *crv1.Pgtask, namespace, clusterName, message string) {
+	ctx := context.TODO()
 
 	log.Debugf("updateFailoverStatus namespace=[%s] taskName=[%s] message=[%s]", namespace, task.Name, message)
 
 	//update the task
-	t, err := clientset.CrunchydataV1().Pgtasks(task.Namespace).Get(task.Name, metav1.GetOptions{})
+	t, err := clientset.CrunchydataV1().Pgtasks(task.Namespace).Get(ctx, task.Name, metav1.GetOptions{})
 	if err != nil {
 		return
 	}
@@ -129,7 +134,7 @@ func updateFailoverStatus(clientset pgo.Interface, task *crv1.Pgtask, namespace,
 
 	task.Status.Message = message
 
-	t, err = clientset.CrunchydataV1().Pgtasks(task.Namespace).Update(task)
+	t, err = clientset.CrunchydataV1().Pgtasks(task.Namespace).Update(ctx, task, metav1.UpdateOptions{})
 	if err != nil {
 		return
 	}
@@ -189,6 +194,7 @@ func publishPromoteEvent(identifier, namespace, username, clusterName, target st
 // the 'primary_on_role_change' tag) in the DCS.
 func RemovePrimaryOnRoleChangeTag(clientset kubernetes.Interface, restconfig *rest.Config,
 	clusterName, namespace string) error {
+	ctx := context.TODO()
 
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName +
 		"," + config.LABEL_PGHA_ROLE + "=" + config.LABEL_PGHA_ROLE_PRIMARY
@@ -199,7 +205,7 @@ func RemovePrimaryOnRoleChangeTag(clientset kubernetes.Interface, restconfig *re
 		LabelSelector: selector,
 	}
 
-	pods, err := clientset.CoreV1().Pods(namespace).List(options)
+	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, options)
 
 	if err != nil {
 		log.Error(err)

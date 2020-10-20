@@ -25,8 +25,10 @@ import (
 )
 
 // PgclusterLister helps list Pgclusters.
+// All objects returned here must be treated as read-only.
 type PgclusterLister interface {
 	// List lists all Pgclusters in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Pgcluster, err error)
 	// Pgclusters returns an object that can list and get Pgclusters.
 	Pgclusters(namespace string) PgclusterNamespaceLister
@@ -57,10 +59,13 @@ func (s *pgclusterLister) Pgclusters(namespace string) PgclusterNamespaceLister 
 }
 
 // PgclusterNamespaceLister helps list and get Pgclusters.
+// All objects returned here must be treated as read-only.
 type PgclusterNamespaceLister interface {
 	// List lists all Pgclusters in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Pgcluster, err error)
 	// Get retrieves the Pgcluster from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.Pgcluster, error)
 	PgclusterNamespaceListerExpansion
 }

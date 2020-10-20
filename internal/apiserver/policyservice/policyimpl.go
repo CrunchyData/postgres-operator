@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -37,6 +38,7 @@ import (
 
 // CreatePolicy ...
 func CreatePolicy(client pgo.Interface, policyName, policyURL, policyFile, ns, pgouser string) (bool, error) {
+	ctx := context.TODO()
 
 	log.Debugf("create policy called for %s", policyName)
 
@@ -58,7 +60,7 @@ func CreatePolicy(client pgo.Interface, policyName, policyURL, policyFile, ns, p
 		Spec: spec,
 	}
 
-	_, err := client.CrunchydataV1().Pgpolicies(ns).Create(newInstance)
+	_, err := client.CrunchydataV1().Pgpolicies(ns).Create(ctx, newInstance, metav1.CreateOptions{})
 
 	if kerrors.IsAlreadyExists(err) {
 		log.Debugf("pgpolicy %s was found so we will not create it", policyName)
@@ -71,16 +73,17 @@ func CreatePolicy(client pgo.Interface, policyName, policyURL, policyFile, ns, p
 
 // ShowPolicy ...
 func ShowPolicy(client pgo.Interface, name string, allflags bool, ns string) crv1.PgpolicyList {
+	ctx := context.TODO()
 	policyList := crv1.PgpolicyList{}
 
 	if allflags {
 		//get a list of all policies
-		list, err := client.CrunchydataV1().Pgpolicies(ns).List(metav1.ListOptions{})
+		list, err := client.CrunchydataV1().Pgpolicies(ns).List(ctx, metav1.ListOptions{})
 		if list != nil && err == nil {
 			policyList = *list
 		}
 	} else {
-		policy, err := client.CrunchydataV1().Pgpolicies(ns).Get(name, metav1.GetOptions{})
+		policy, err := client.CrunchydataV1().Pgpolicies(ns).Get(ctx, name, metav1.GetOptions{})
 		if policy != nil && err == nil {
 			policyList.Items = []crv1.Pgpolicy{*policy}
 		}
@@ -92,12 +95,13 @@ func ShowPolicy(client pgo.Interface, name string, allflags bool, ns string) crv
 
 // DeletePolicy ...
 func DeletePolicy(client pgo.Interface, policyName, ns, pgouser string) msgs.DeletePolicyResponse {
+	ctx := context.TODO()
 	resp := msgs.DeletePolicyResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	policyList, err := client.CrunchydataV1().Pgpolicies(ns).List(metav1.ListOptions{})
+	policyList, err := client.CrunchydataV1().Pgpolicies(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -112,14 +116,14 @@ func DeletePolicy(client pgo.Interface, policyName, ns, pgouser string) msgs.Del
 			//we can create an event holding the pgouser
 			//that deleted the policy
 			policy.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
-			_, err = client.CrunchydataV1().Pgpolicies(ns).Update(&policy)
+			_, err = client.CrunchydataV1().Pgpolicies(ns).Update(ctx, &policy, metav1.UpdateOptions{})
 			if err != nil {
 				log.Error(err)
 			}
 
 			//ok, now delete the pgpolicy
 			policyFound = true
-			err = client.CrunchydataV1().Pgpolicies(ns).Delete(policy.Spec.Name, &metav1.DeleteOptions{})
+			err = client.CrunchydataV1().Pgpolicies(ns).Delete(ctx, policy.Spec.Name, metav1.DeleteOptions{})
 			if err == nil {
 				msg := "deleted policy " + policy.Spec.Name
 				log.Debug(msg)
@@ -147,6 +151,7 @@ func DeletePolicy(client pgo.Interface, policyName, ns, pgouser string) msgs.Del
 // ApplyPolicy ...
 // pgo apply mypolicy --selector=name=mycluster
 func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.ApplyPolicyResponse {
+	ctx := context.TODO()
 	var err error
 
 	resp := msgs.ApplyPolicyResponse{}
@@ -169,7 +174,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 	//get a list of all clusters
 	clusterList, err := apiserver.Clientset.
 		CrunchydataV1().Pgclusters(ns).
-		List(metav1.ListOptions{LabelSelector: selector})
+		List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -192,7 +197,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 		depSelector := config.LABEL_SERVICE_NAME + "=" + c.Name
 		deployments, err := apiserver.Clientset.
 			AppsV1().Deployments(ns).
-			List(metav1.ListOptions{LabelSelector: depSelector})
+			List(ctx, metav1.ListOptions{LabelSelector: depSelector})
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -234,7 +239,7 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 
 		cl, err := apiserver.Clientset.
 			CrunchydataV1().Pgclusters(ns).
-			Get(d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME], metav1.GetOptions{})
+			Get(ctx, d.ObjectMeta.Labels[config.LABEL_SERVICE_NAME], metav1.GetOptions{})
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -250,14 +255,16 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 		}
 
 		log.Debugf("patching deployment %s: %s", d.ObjectMeta.Name, patch)
-		_, err = apiserver.Clientset.AppsV1().Deployments(ns).Patch(d.ObjectMeta.Name, types.MergePatchType, patch)
+		_, err = apiserver.Clientset.AppsV1().Deployments(ns).
+			Patch(ctx, d.ObjectMeta.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 		if err != nil {
 			log.Error(err)
 		}
 
 		//update the pgcluster crd labels with the new policy
 		log.Debugf("patching cluster %s: %s", cl.Name, patch)
-		_, err = apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Patch(cl.Name, types.MergePatchType, patch)
+		_, err = apiserver.Clientset.CrunchydataV1().Pgclusters(ns).
+			Patch(ctx, cl.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 		if err != nil {
 			log.Error(err)
 		}

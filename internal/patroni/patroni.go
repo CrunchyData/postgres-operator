@@ -16,6 +16,7 @@ package patroni
 */
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -87,11 +88,12 @@ func NewPatroniClient(restConfig *rest.Config, kubeclientset kubernetes.Interfac
 
 // getClusterInstances returns a map primary
 func (p *patroniClient) getClusterInstances() (map[string]corev1.Pod, error) {
+	ctx := context.TODO()
 
 	// selector in the format "pg-cluster=<cluster-name>,any role"
 	selector := fmt.Sprintf("%s=%s,%s", config.LABEL_PG_CLUSTER, p.clusterName,
 		config.LABEL_PG_DATABASE)
-	instances, err := p.kubeclientset.CoreV1().Pods(p.namespace).List(metav1.ListOptions{
+	instances, err := p.kubeclientset.CoreV1().Pods(p.namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {

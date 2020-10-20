@@ -17,6 +17,7 @@ package pvc
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"os"
@@ -132,6 +133,8 @@ func CreatePVC(clientset kubernetes.Interface, storageSpec *crv1.PgStorageSpec, 
 
 // Create a pvc
 func Create(clientset kubernetes.Interface, name, clusterName string, storageSpec *crv1.PgStorageSpec, namespace string) error {
+	ctx := context.TODO()
+
 	log.Debug("in createPVC")
 	var doc2 bytes.Buffer
 	var err error
@@ -180,13 +183,14 @@ func Create(clientset kubernetes.Interface, name, clusterName string, storageSpe
 		return err
 	}
 
-	_, err = clientset.CoreV1().PersistentVolumeClaims(namespace).Create(&newpvc)
+	_, err = clientset.CoreV1().PersistentVolumeClaims(namespace).Create(ctx, &newpvc, metav1.CreateOptions{})
 	return err
 }
 
 // Delete a pvc
 func DeleteIfExists(clientset kubernetes.Interface, name string, namespace string) error {
-	pvc, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
+	ctx := context.TODO()
+	pvc, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, name, metav1.GetOptions{})
 	if kerrors.IsNotFound(err) {
 		return nil
 	} else if err != nil {
@@ -200,14 +204,15 @@ func DeleteIfExists(clientset kubernetes.Interface, name string, namespace strin
 		deletePropagation := metav1.DeletePropagationForeground
 		err = clientset.
 			CoreV1().PersistentVolumeClaims(namespace).
-			Delete(name, &metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
+			Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	}
 	return err
 }
 
 // Exists test to see if pvc exists
 func Exists(clientset kubernetes.Interface, name string, namespace string) bool {
-	_, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(name, metav1.GetOptions{})
+	ctx := context.TODO()
+	_, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, name, metav1.GetOptions{})
 	return err == nil
 }
 

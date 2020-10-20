@@ -17,6 +17,7 @@ package task
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"os"
 	"time"
@@ -50,6 +51,7 @@ type rmdatajobTemplateFields struct {
 
 // RemoveData ...
 func RemoveData(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
+	ctx := context.TODO()
 
 	//create marker (clustername, namespace)
 	patch, err := kubeapi.NewJSONPatch().
@@ -57,7 +59,8 @@ func RemoveData(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask
 		Bytes()
 	if err == nil {
 		log.Debugf("patching task %s: %s", task.Spec.Name, patch)
-		_, err = clientset.CrunchydataV1().Pgtasks(namespace).Patch(task.Spec.Name, types.JSONPatchType, patch)
+		_, err = clientset.CrunchydataV1().Pgtasks(namespace).
+			Patch(ctx, task.Spec.Name, types.JSONPatchType, patch, metav1.PatchOptions{})
 	}
 	if err != nil {
 		log.Errorf("could not set delete data started marker for task %s cluster %s", task.Spec.Name, task.Spec.Parameters[config.LABEL_PG_CLUSTER])
@@ -81,7 +84,7 @@ func RemoveData(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask
 	}
 
 	// if the clustername is not empty, get the pgcluster
-	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
 		return
@@ -127,7 +130,7 @@ func RemoveData(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_RMDATA,
 		&newjob.Spec.Template.Spec.Containers[0])
 
-	j, err := clientset.BatchV1().Jobs(namespace).Create(&newjob)
+	j, err := clientset.BatchV1().Jobs(namespace).Create(ctx, &newjob, metav1.CreateOptions{})
 	if err != nil {
 		log.Errorf("got error when creating rmdata job %s", newjob.Name)
 		return

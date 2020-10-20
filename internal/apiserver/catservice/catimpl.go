@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"errors"
 	"strings"
 
@@ -30,6 +31,7 @@ import (
 
 // pgo cat mycluster /pgdata/mycluster/postgresql.conf
 func Cat(request *msgs.CatRequest, ns string) msgs.CatResponse {
+	ctx := context.TODO()
 	resp := msgs.CatResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -44,7 +46,7 @@ func Cat(request *msgs.CatRequest, ns string) msgs.CatResponse {
 	}
 
 	clusterName := request.Args[0]
-	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(clusterName, metav1.GetOptions{})
+	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = clusterName + " was not found, verify cluster name"
@@ -68,7 +70,7 @@ func Cat(request *msgs.CatRequest, ns string) msgs.CatResponse {
 
 	var podList *v1.PodList
 	selector := config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
-	podList, err = apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
+	podList, err = apiserver.Clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()

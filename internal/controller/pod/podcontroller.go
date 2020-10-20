@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import (
+	"context"
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -58,7 +59,7 @@ func (c *Controller) onAdd(obj interface{}) {
 
 // onUpdate is called when a pod is updated
 func (c *Controller) onUpdate(oldObj, newObj interface{}) {
-
+	ctx := context.TODO()
 	oldPod := oldObj.(*apiv1.Pod)
 	newPod := newObj.(*apiv1.Pod)
 
@@ -90,7 +91,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		clusterName = newPodLabels[config.LABEL_PG_CLUSTER]
 	}
 	namespace := newPod.ObjectMeta.Namespace
-	cluster, err := c.Client.CrunchydataV1().Pgclusters(namespace).Get(clusterName, metav1.GetOptions{})
+	cluster, err := c.Client.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err.Error())
 		return

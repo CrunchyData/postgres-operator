@@ -25,8 +25,10 @@ import (
 )
 
 // PgreplicaLister helps list Pgreplicas.
+// All objects returned here must be treated as read-only.
 type PgreplicaLister interface {
 	// List lists all Pgreplicas in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Pgreplica, err error)
 	// Pgreplicas returns an object that can list and get Pgreplicas.
 	Pgreplicas(namespace string) PgreplicaNamespaceLister
@@ -57,10 +59,13 @@ func (s *pgreplicaLister) Pgreplicas(namespace string) PgreplicaNamespaceLister 
 }
 
 // PgreplicaNamespaceLister helps list and get Pgreplicas.
+// All objects returned here must be treated as read-only.
 type PgreplicaNamespaceLister interface {
 	// List lists all Pgreplicas in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Pgreplica, err error)
 	// Get retrieves the Pgreplica from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.Pgreplica, error)
 	PgreplicaNamespaceListerExpansion
 }

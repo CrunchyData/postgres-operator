@@ -16,6 +16,7 @@ package config
 */
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -221,7 +222,7 @@ func (l *LocalDB) Update(configName string, localDBConfig LocalDBConfig) error {
 // configuration with the configuration for that cluster stored in the LocalDB's configMap, and
 // then issuing a Patroni "reload" for that specific server.
 func (l *LocalDB) apply(configName string) error {
-
+	ctx := context.TODO()
 	clusterName := l.configMap.GetObjectMeta().GetLabels()[config.LABEL_PG_CLUSTER]
 	namespace := l.configMap.GetObjectMeta().GetNamespace()
 
@@ -236,7 +237,7 @@ func (l *LocalDB) apply(configName string) error {
 	// selector in the format "pg-cluster=<cluster-name>,deployment-name=<server-name>"
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, clusterName,
 		config.LABEL_DEPLOYMENT_NAME, strings.TrimSuffix(configName, pghLocalConfigSuffix))
-	dbPodList, err := l.kubeclientset.CoreV1().Pods(namespace).List(metav1.ListOptions{
+	dbPodList, err := l.kubeclientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
@@ -269,7 +270,7 @@ func (l *LocalDB) apply(configName string) error {
 // clean removes any local database server configurations from the configMap included in the
 // LocalDB if the database server they are associated with no longer exists
 func (l *LocalDB) clean() error {
-
+	ctx := context.TODO()
 	var patch = kubeapi.NewJSONPatch()
 	var cmlocalConfigs []string
 
@@ -300,25 +301,23 @@ func (l *LocalDB) clean() error {
 	}
 
 	log.Debugf("patching configmap %s: %s", l.configMap.GetName(), jsonOpBytes)
-	if _, err := l.kubeclientset.CoreV1().ConfigMaps(l.configMap.GetNamespace()).Patch(
-		l.configMap.GetName(), types.JSONPatchType, jsonOpBytes); err != nil {
-		return err
-	}
+	_, err = l.kubeclientset.CoreV1().ConfigMaps(l.configMap.GetNamespace()).
+		Patch(ctx, l.configMap.GetName(), types.JSONPatchType, jsonOpBytes, metav1.PatchOptions{})
 
-	return nil
+	return err
 }
 
 // getLocalConfigFromCluster obtains the local configuration for a specific database server in the
 // cluster.  It also returns the Pod that is currently running that specific server.
 func (l *LocalDB) getLocalConfigFromCluster(configName string) (*LocalDBConfig, error) {
-
+	ctx := context.TODO()
 	clusterName := l.configMap.GetObjectMeta().GetLabels()[config.LABEL_PG_CLUSTER]
 	namespace := l.configMap.GetObjectMeta().GetNamespace()
 
 	// selector in the format "pg-cluster=<cluster-name>,deployment-name=<server-name>"
 	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, clusterName,
 		config.LABEL_DEPLOYMENT_NAME, strings.TrimSuffix(configName, pghLocalConfigSuffix))
-	dbPodList, err := l.kubeclientset.CoreV1().Pods(namespace).List(metav1.ListOptions{
+	dbPodList, err := l.kubeclientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: selector,
 	})
 
@@ -412,12 +411,13 @@ func (l *LocalDB) refresh(configName string) error {
 // the cluster as stored in the <clusterName>-pgha-config configMap per naming conventions.
 func GetLocalDBConfigNames(kubeclientset kubernetes.Interface, clusterName,
 	namespace string) ([]string, error) {
+	ctx := context.TODO()
 
 	// selector in the format "pg-cluster=<cluster-name>,pgo-pg-database"
 	// to get all db Deployments
 	selector := fmt.Sprintf("%s=%s,%s", config.LABEL_PG_CLUSTER, clusterName,
 		config.LABEL_PG_DATABASE)
-	dbDeploymentList, err := kubeclientset.AppsV1().Deployments(namespace).List(metav1.ListOptions{
+	dbDeploymentList, err := kubeclientset.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {
