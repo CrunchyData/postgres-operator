@@ -337,7 +337,7 @@ func GetBadgerAddon(clientset kubernetes.Interface, namespace string, cluster *c
 	if cluster.Labels[config.LABEL_BADGER] == "true" {
 		log.Debug("crunchy_badger was found as a label on cluster create")
 		badgerTemplateFields := badgerTemplateFields{}
-		badgerTemplateFields.CCPImageTag = spec.CCPImageTag
+		badgerTemplateFields.CCPImageTag = util.GetStandardImageTag(spec.CCPImage, spec.CCPImageTag)
 		badgerTemplateFields.BadgerTarget = pgbadger_target
 		badgerTemplateFields.PGBadgerPort = spec.PGBadgerPort
 		badgerTemplateFields.CCPImagePrefix = util.GetValueOrDefault(spec.CCPImagePrefix, Pgo.Cluster.CCPImagePrefix)
