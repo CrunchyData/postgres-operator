@@ -39,7 +39,7 @@ cd postgres-operator/installers/helm
 helm uninstall postgres-operator -n pgo
 ```
 
-## Configuraiton 
+## Configuration 
 
 The following shows the configurable parameters that are relevant to the Helm
 Chart. A full list of all Crunchy PostgreSQL Operator configuration options can
