@@ -48,22 +48,11 @@ type Controller struct {
 
 // onAdd is called when a pgcluster is added
 func (c *Controller) onAdd(obj interface{}) {
-	cluster := obj.(*crv1.Pgcluster)
-	log.Debugf("[pgcluster Controller] ns %s onAdd %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
-
-	//handle the case when the operator restarts and don't
-	//process already processed pgclusters
-	if cluster.Status.State == crv1.PgclusterStateProcessed {
-		log.Debug("pgcluster " + cluster.ObjectMeta.Name + " already processed")
-		return
-	}
-
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err == nil {
 		log.Debugf("cluster putting key in queue %s", key)
 		c.Queue.Add(key)
 	}
-
 }
 
 // RunWorker is a long-running function that will continually call the
@@ -106,23 +95,21 @@ func (c *Controller) processNextItem() bool {
 	// parallel.
 	defer c.Queue.Done(key)
 
-	// Invoke the method containing the business logic
-	// in this case, the de-dupe logic is to test whether a cluster
-	// deployment exists , if so, then we don't create another
-	_, found, err := kubeapi.GetDeployment(c.PgclusterClientset, keyResourceName, keyNamespace)
-
-	if found {
-		log.Debugf("cluster add - dep already found, not creating again")
-		c.Queue.Forget(key)
-		return true
-	}
-
 	//get the pgcluster
 	cluster := crv1.Pgcluster{}
-	found, err = kubeapi.Getpgcluster(c.PgclusterClient, &cluster, keyResourceName, keyNamespace)
+	found, err := kubeapi.Getpgcluster(c.PgclusterClient, &cluster, keyResourceName, keyNamespace)
 	if !found {
 		log.Debugf("cluster add - pgcluster not found, this is invalid")
 		c.Queue.Forget(key) // NB(cbandy): This should probably be a retry.
+		return true
+	}
+	log.Debugf("[pgcluster Controller] ns %s onAdd %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
+
+	if cluster.Spec.Status == crv1.CompletedStatus ||
+		cluster.Status.State == crv1.PgclusterStateInitialized {
+		log.Debugf("pgcluster Contoller: onAdd event received for cluster %s but "+
+			"will not process because it either has a 'completed' status or is currently in an "+
+			"'initialized' state", cluster.GetName())
 		return true
 	}
 

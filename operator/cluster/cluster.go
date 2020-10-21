@@ -63,13 +63,6 @@ const (
 func AddClusterBase(clientset *kubernetes.Clientset, client *rest.RESTClient, cl *crv1.Pgcluster, namespace string) {
 	var err error
 
-	if cl.Spec.Status == crv1.CompletedStatus {
-		errorMsg := "crv1 pgcluster " + cl.Spec.ClusterName + " is already marked complete, will not recreate"
-		log.Warn(errorMsg)
-		publishClusterCreateFailure(cl, errorMsg)
-		return
-	}
-
 	dataVolume, walVolume, tablespaceVolumes, err := pvc.CreateMissingPostgreSQLVolumes(
 		clientset, cl, namespace, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], cl.Spec.PrimaryStorage)
 	if err != nil {
