@@ -1,0 +1,2 @@
+{{range $key, $value := .}}"{{.Username}}" "{{.Password}}"
+{{end}}

@@ -1,0 +1,5 @@
+Host *
+	StrictHostKeyChecking no
+	IdentityFile /tmp/id_ed25519
+	Port 2022
+	User pgbackrest

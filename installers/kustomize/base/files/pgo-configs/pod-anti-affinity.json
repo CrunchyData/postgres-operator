@@ -1,0 +1,44 @@
+                "podAntiAffinity": {
+                    "{{.AffinityType}}": [
+                        {
+                            {{if eq .AffinityType "preferredDuringSchedulingIgnoredDuringExecution"}}
+                            "weight": 1,
+                            "podAffinityTerm": {
+                            {{end}}
+                                "labelSelector": {
+                                    "matchExpressions": [
+                                        {
+                                            "key": "{{.VendorLabelKey}}",
+                                            "operator": "In",
+                                            "values": [
+                                                "{{.VendorLabelValue}}"
+                                            ]
+                                        },
+                                        {
+                                            "key": "{{.PodAntiAffinityLabelKey}}",
+                                            {{if eq .AffinityType "requiredDuringSchedulingIgnoredDuringExecution"}}
+                                            "operator": "In",
+                                            "values": [
+                                                "required",
+                                                "require"
+                                            ]
+                                            {{else}}
+                                            "operator": "Exists"
+                                            {{end}}
+                                        },
+                                        {
+                                            "key": "pg-cluster",
+                                            "operator": "In",
+                                            "values": [
+                                                "{{.ClusterName}}"
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "topologyKey": "kubernetes.io/hostname"
+                            {{if eq .AffinityType "preferredDuringSchedulingIgnoredDuringExecution"}}
+                            }
+                            {{end}}
+                        }
+                    ]
+                }

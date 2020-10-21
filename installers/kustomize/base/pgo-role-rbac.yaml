@@ -1,0 +1,36 @@
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: pgo-role
+rules:
+  - apiGroups:
+      - ''
+    resources:
+      - serviceaccounts
+    verbs:
+      - get
+  - apiGroups:
+      - ''
+    resources:
+      - configmaps
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: pgo-role
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: pgo-role
+subjects:
+- kind: ServiceAccount
+  name: postgres-operator

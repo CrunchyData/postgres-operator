@@ -1,0 +1,11 @@
+{
+   "apiVersion":"v1",
+   "kind":"ServiceAccount",
+   "metadata":{
+      "name":"pgo-pg",
+      "namespace":"{{.TargetNamespace}}",
+      "labels":{
+         "vendor":"crunchydata"
+      }
+   }
+}

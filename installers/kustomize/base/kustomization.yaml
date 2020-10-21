@@ -1,0 +1,77 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - pgclusters-crd.yaml
+  - pgpolicies-crd.yaml
+  - pgreplicas-crd.yaml
+  - pgtasks-crd.yaml
+  - pgo-service-account.yaml
+  - pgo-role-rbac.yaml
+  - service.yaml
+  - deployment.yaml
+secretGenerator:
+  - name: pgo-backrest-repo-config
+    options:
+      disableNameSuffixHash: true
+    files:
+      - files/pgo-backrest-repo/config
+      - files/pgo-backrest-repo/sshd_config
+      - files/pgo-backrest-repo/aws-s3-ca.crt
+configMapGenerator:
+  - name: pgo-config
+    options:
+      disableNameSuffixHash: true
+    files:
+      - files/pgo.yaml
+      - files/pgo-configs/affinity.json
+      - files/pgo-configs/backrest-job.json
+      - files/pgo-configs/backrest-restore-job.json
+      - files/pgo-configs/cluster-bootstrap-job.json
+      - files/pgo-configs/cluster-deployment.json
+      - files/pgo-configs/cluster-service.json
+      - files/pgo-configs/container-resources.json
+      - files/pgo-configs/exporter.json
+      - files/pgo-configs/pgadmin-service-template.json
+      - files/pgo-configs/pgadmin-template.json
+      - files/pgo-configs/pgbackrest-env-vars.json
+      - files/pgo-configs/pgbackrest-s3-env-vars.json
+      - files/pgo-configs/pgbadger.json
+      - files/pgo-configs/pgbouncer_hba.conf
+      - files/pgo-configs/pgbouncer.ini
+      - files/pgo-configs/pgbouncer-template.json
+      - files/pgo-configs/pgdump-job.json
+      - files/pgo-configs/pgmonitor-env-vars.json
+      - files/pgo-configs/pgo-backrest-repo-service-template.json
+      - files/pgo-configs/pgo-backrest-repo-template.json
+      - files/pgo-configs/pgo-backrest-role-binding.json
+      - files/pgo-configs/pgo-backrest-role.json
+      - files/pgo-configs/pgo-backrest-sa.json
+      - files/pgo-configs/pgo-client.json
+      - files/pgo-configs/pgo-default-sa.json
+      - files/pgo-configs/pgo-pg-role-binding.json
+      - files/pgo-configs/pgo-pg-role.json
+      - files/pgo-configs/pgo-pg-sa.json
+      - files/pgo-configs/pgo.sqlrunner-template.json
+      - files/pgo-configs/pgo-target-role-binding.json
+      - files/pgo-configs/pgo-target-role.json
+      - files/pgo-configs/pgo-target-sa.json
+      - files/pgo-configs/pgrestore-job.json
+      - files/pgo-configs/pod-anti-affinity.json
+      - files/pgo-configs/pvc.json
+      - files/pgo-configs/pvc-matchlabels.json
+      - files/pgo-configs/pvc-storageclass.json
+      - files/pgo-configs/rmdata-job.json
+      - files/pgo-configs/users.txt
+images:
+  - name: pgo-apiserver
+    newName: registry.developers.crunchydata.com/crunchydata/pgo-apiserver
+    newTag: centos7-4.5.0
+  - name: postgres-operator
+    newName: registry.developers.crunchydata.com/crunchydata/postgres-operator
+    newTag: centos7-4.5.0
+  - name: pgo-scheduler
+    newName: registry.developers.crunchydata.com/crunchydata/pgo-scheduler
+    newTag: centos7-4.5.0
+  - name: pgo-event
+    newName: registry.developers.crunchydata.com/crunchydata/pgo-event
+    newTag: centos7-4.5.0

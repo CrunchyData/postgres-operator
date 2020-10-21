@@ -1,0 +1,88 @@
+Cluster:
+  CCPImagePrefix: registry.developers.crunchydata.com/crunchydata
+  CCPImageTag: centos7-12.4-4.5.0
+  DisableAutofail: false
+  BackrestPort: 2022
+  # BackrestS3Bucket:
+  # BackrestS3Endpoint:
+  # BackrestS3Region:
+  # BackrestS3URIStyle:
+  # BackrestS3VerifyTLS:
+  Metrics: false
+  Badger: false
+  Port: 5432
+  PGBadgerPort: 10000
+  ExporterPort: 9187
+  User: testuser
+  # Database:
+  PasswordAgeDays: 0
+  PasswordLength: 24
+  Replicas: 0
+  ArchiveMode: true
+  ServiceType: ClusterIP
+  EnableCrunchyadm: false
+  DisableReplicaStartFailReinit: false
+  PodAntiAffinity: preferred
+  # PodAntiAffinityPgBackRest:
+  # PodAntiAffinityPgBouncer:
+  SyncReplication: false
+  DefaultInstanceMemory: 128Mi
+  DefaultBackrestMemory: 48Mi
+  DefaultPgBouncerMemory: 24Mi
+  DefaultExporterMemory: 24Mi
+  DisableFSGroup: false
+PrimaryStorage: default
+# WALStorage:
+BackupStorage: default
+ReplicaStorage: default
+BackrestStorage: default
+Storage:
+  default:
+    AccessMode: ReadWriteOnce
+    Size: 1G
+    StorageType: dynamic
+  hostpathstorage:
+    AccessMode: ReadWriteMany
+    Size: 1G
+    StorageType: create
+  nfsstorage:
+    AccessMode: ReadWriteMany
+    Size: 1G
+    StorageType: create
+    SupplementalGroups: 65534
+  nfsstoragered:
+    AccessMode: ReadWriteMany
+    Size: 1G
+    MatchLabels: crunchyzone=red
+    StorageType: create
+    SupplementalGroups: 65534
+  storageos:
+    AccessMode: ReadWriteOnce
+    Size: 5Gi
+    StorageType: dynamic
+    StorageClass: fast
+  primarysite:
+    AccessMode: ReadWriteOnce
+    Size: 4G
+    StorageType: dynamic
+    StorageClass: primarysite
+  alternatesite:
+    AccessMode: ReadWriteOnce
+    Size: 4G
+    StorageType: dynamic
+    StorageClass: alternatesite
+  gce:
+    AccessMode: ReadWriteOnce
+    Size: 300M
+    StorageType: dynamic
+    StorageClass: standard
+  rook:
+    AccessMode: ReadWriteOnce
+    Size: 1Gi
+    StorageType: dynamic
+    StorageClass: rook-ceph-block
+Pgo:
+  Audit:  false
+  DisableReconcileRBAC: true
+  PGOImagePrefix: registry.developers.crunchydata.com/crunchydata
+  PGOImageTag: centos7-4.5.0

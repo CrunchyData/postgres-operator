@@ -1,0 +1,103 @@
+{
+    "kind": "Deployment",
+    "apiVersion": "apps/v1",
+    "metadata": {
+        "name": "{{.Name}}",
+        "labels": {
+            "name": "{{.Name}}",
+            "crunchy-pgbouncer": "true",
+            "pg-cluster": "{{.ClusterName}}",
+            "service-name": "{{.Name}}",
+            "vendor": "crunchydata"
+        }
+    },
+    "spec": {
+        "replicas": {{.Replicas}},
+        "selector": {
+            "matchLabels": {
+                "name": "{{.Name}}",
+                "crunchy-pgbouncer": "true",
+                "pg-cluster": "{{.ClusterName}}",
+                "service-name": "{{.Name}}",
+                "{{.PodAntiAffinityLabelName}}": "{{.PodAntiAffinityLabelValue}}",
+                "vendor": "crunchydata"
+            }
+        },
+        "template": {
+            "metadata": {
+                {{ if .PodAnnotations }}
+                "annotations": {{ .PodAnnotations }},
+                {{ end }}
+                "labels": {
+                    "name": "{{.Name}}",
+                    "crunchy-pgbouncer": "true",
+                    "pg-cluster": "{{.ClusterName}}",
+                    "service-name": "{{.Name}}",
+                    "{{.PodAntiAffinityLabelName}}": "{{.PodAntiAffinityLabelValue}}",
+                    "vendor": "crunchydata"
+                }
+            },
+            "spec": {
+                "serviceAccountName": "pgo-default",
+                "containers": [{
+                    "name": "pgbouncer",
+                    "image": "{{.CCPImagePrefix}}/crunchy-pgbouncer:{{.CCPImageTag}}",
+                    "ports": [{
+                        "containerPort": {{.Port}},
+                        "protocol": "TCP"
+                    }],
+                    {{.ContainerResources }}
+                    "env": [{
+                        "name": "PG_PASSWORD",
+                        "valueFrom": {
+                            "secretKeyRef": {
+                                "name": "{{.PGBouncerSecret}}",
+                                "key": "password"
+                            }
+                        }
+                    }, {
+                        "name": "PG_PRIMARY_SERVICE_NAME",
+                        "value": "{{.PrimaryServiceName}}"
+                    }],
+                    "volumeMounts": [{
+                        "name": "pgbouncer-conf",
+                        "mountPath": "/pgconf/",
+                        "readOnly": false
+                    }]
+                }],
+                "volumes": [
+                  {
+                    "name": "pgbouncer-conf",
+                    "projected": {
+                      "sources": [
+                        {
+                          "configMap": {
+                            "name": "{{.PGBouncerConfigMap}}"
+                          }
+                        },
+                        {
+                          "secret": {
+                            "name": "{{.PGBouncerSecret}}",
+                            "defaultMode": 511
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "affinity": {
+                  {{.PodAntiAffinity}}
+                },
+                "restartPolicy": "Always",
+                "dnsPolicy": "ClusterFirst"
+            }
+        },
+        "strategy": {
+            "type": "RollingUpdate",
+            "rollingUpdate": {
+                "maxUnavailable": 1,
+                "maxSurge": 1
+            }
+        }
+    }
+}

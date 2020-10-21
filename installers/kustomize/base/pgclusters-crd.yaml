@@ -1,0 +1,36 @@
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: pgclusters.crunchydata.com
+spec:
+  group: crunchydata.com
+  names:
+    kind: Pgcluster
+    listKind: PgclusterList
+    plural: pgclusters
+    singular: pgcluster
+  scope: Namespaced
+  version: v1
+  validation:
+    openAPIV3Schema:
+      properties:
+        spec:
+          properties:
+            clustername: { type: string }
+            ccpimage: { type: string }
+            ccpimagetag: { type: string }
+            database: { type: string }
+            exporterport: { type: string }
+            name: { type: string }
+            pgbadgerport: { type: string }
+            primarysecretname: { type: string }
+            PrimaryStorage: { type: object }
+            port: { type: string }
+            rootsecretname: { type: string }
+            userlabels: { type: object }
+            usersecretname: { type: string }
+        status:
+          properties:
+            state: { type: string }
+            message: { type: string }

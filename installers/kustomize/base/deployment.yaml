@@ -1,0 +1,124 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-operator
+  labels:
+    vendor: crunchydata
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: postgres-operator
+      vendor: crunchydata
+  template:
+    metadata:
+      labels:
+        name: postgres-operator
+        vendor: crunchydata
+    spec:
+      serviceAccountName: postgres-operator
+      containers:
+        - name: apiserver
+          image: pgo-apiserver
+          ports:
+            - containerPort: 8443
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8443
+              scheme: HTTPS
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8443
+              scheme: HTTPS
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          env:
+            - name: CRUNCHY_DEBUG
+              value: 'false'
+            - name: PORT
+              value: '8443'
+            - name: PGO_INSTALLATION_NAME
+              value: 'default'
+            - name: PGO_OPERATOR_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: TLS_CA_TRUST
+              value: ''
+            - name: TLS_NO_VERIFY
+              value: 'false'
+            - name: DISABLE_TLS
+              value: 'false'
+            - name: NOAUTH_ROUTES
+              value: ''
+            - name: ADD_OS_TRUSTSTORE
+              value: 'false'
+            - name: DISABLE_EVENTING
+              value: 'false'
+            - name: EVENT_ADDR
+              value: localhost:4150
+        - name: operator
+          image: postgres-operator
+          readinessProbe:
+            exec:
+              command:
+                - ls
+                - /tmp
+            initialDelaySeconds: 4
+            periodSeconds: 5
+          env:
+            - name: CRUNCHY_DEBUG
+              value: 'false'
+            - name: PGO_INSTALLATION_NAME
+              value: 'default'
+            - name: PGO_OPERATOR_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: DISABLE_EVENTING
+              value: 'false'
+            - name: EVENT_ADDR
+              value: localhost:4150
+        - name: scheduler
+          image: pgo-scheduler
+          livenessProbe:
+            exec:
+              command:
+                - bash
+                - -c
+                - test -n "$(find /tmp/scheduler.hb -newermt '61 sec ago')"
+            failureThreshold: 2
+            initialDelaySeconds: 60
+            periodSeconds: 60
+          env:
+            - name: CRUNCHY_DEBUG
+              value: 'false'
+            - name: PGO_OPERATOR_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: PGO_INSTALLATION_NAME
+              value: 'default'
+            - name: TIMEOUT
+              value: '3600'
+            - name: EVENT_ADDR
+              value: localhost:4150
+        - name: event
+          image: pgo-event
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 4151
+            initialDelaySeconds: 15
+            periodSeconds: 5
+          env:
+            - name: TIMEOUT
+              value: '3600'
