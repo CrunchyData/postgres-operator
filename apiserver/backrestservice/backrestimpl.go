@@ -191,11 +191,19 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 
 		}
 
-		//get pod name from cluster
+		// get pod name from cluster
 		var podname string
-		podname, err = getPrimaryPodName(&cluster, ns)
+		podname, err = getBackrestRepoPodName(&cluster, ns)
 
 		if err != nil {
+			log.Error(err)
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+
+		// check if primary is ready
+		if err := isPrimaryReady(&cluster, ns); err != nil {
 			log.Error(err)
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -253,28 +261,9 @@ func getBackupParams(identifier, clusterName, taskName, action, podName, contain
 	return newInstance
 }
 
-func getDeployName(cluster *crv1.Pgcluster, ns string) (string, error) {
-	var depName string
-
-	selector := config.LABEL_PG_CLUSTER + "=" + cluster.Spec.Name + "," + config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
-
-	deps, err := kubeapi.GetDeployments(apiserver.Clientset, selector, ns)
-	if err != nil {
-		return depName, err
-	}
-
-	if len(deps.Items) != 1 {
-		return depName, errors.New("error:  deployment count is wrong for backrest backup " + cluster.Spec.Name)
-	}
-	for _, d := range deps.Items {
-		return d.Name, err
-	}
-
-	return depName, errors.New("unknown error in backrest backup")
-}
-
-func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
-
+// getBackrestRepoPodName goes through the pod list to identify the
+// pgBackRest repo pod and then returns the pod name.
+func getBackrestRepoPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 	//look up the backrest-repo pod name
 	selector := "pg-cluster=" + cluster.Spec.Name + ",pgo-backrest-repo=true"
 	repopods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
@@ -288,25 +277,6 @@ func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 	}
 
 	repopodName := repopods.Items[0].Name
-
-	primaryReady := false
-
-	//make sure the primary pod is in the ready state
-	selector = config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
-
-	pods, err := kubeapi.GetPods(apiserver.Clientset, selector, ns)
-	if err != nil {
-		return "", err
-	}
-	for _, p := range pods.Items {
-		if isPrimary(&p, cluster.Spec.Name) && isReady(&p) {
-			primaryReady = true
-		}
-	}
-
-	if primaryReady == false {
-		return "", errors.New("primary pod is not in Ready state")
-	}
 
 	return repopodName, err
 }
@@ -333,6 +303,32 @@ func isReady(pod *v1.Pod) bool {
 	}
 	return true
 
+}
+
+// isPrimaryReady goes through the pod list to first identify the
+// Primary pod and, once identified, determine if it is in a
+// ready state. If not, it returns an error, otherwise it returns
+// a nil value
+func isPrimaryReady(cluster *crv1.Pgcluster, ns string) error {
+	primaryReady := false
+
+	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, cluster.Name,
+		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
+
+	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(meta_v1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		return err
+	}
+	for _, p := range pods.Items {
+		if isPrimary(&p, cluster.Spec.Name) && isReady(&p) {
+			primaryReady = true
+		}
+	}
+
+	if primaryReady == false {
+		return errors.New("primary pod is not in Ready state")
+	}
+	return nil
 }
 
 // ShowBackrest ...
@@ -364,7 +360,7 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
 
 	for _, c := range clusterList.Items {
-		podname, err := getPrimaryPodName(&c, ns)
+		podname, err := getBackrestRepoPodName(&c, ns)
 
 		if err != nil {
 			log.Error(err)
