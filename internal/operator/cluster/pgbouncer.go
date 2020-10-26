@@ -154,15 +154,30 @@ func AddPgbouncer(clientset kubernetes.Interface, restclient *rest.RESTClient, r
 		}
 	}
 
-	// set the password that will be used for the "pgbouncer" PostgreSQL account
-	pgBouncerPassword, err := generatePassword()
-
-	if err != nil {
-		return err
-	}
-
 	// only attempt to set the password if the cluster is not in standby mode
+	// and the secret does not already exist. If GetPasswordFromSecret returns
+	// no errors, then we can assume that the Secret does not exist
 	if !cluster.Spec.Standby {
+		secretName := util.GeneratePgBouncerSecretName(cluster.Name)
+		pgBouncerPassword, err := util.GetPasswordFromSecret(clientset, cluster.Namespace, secretName)
+
+		if err != nil {
+			// set the password that will be used for the "pgbouncer" PostgreSQL account
+			newPassword, err := generatePassword()
+
+			if err != nil {
+				return err
+			}
+
+			pgBouncerPassword = newPassword
+
+			// create the secret that pgbouncer will include the pgBouncer
+			// credentials
+			if err := createPgbouncerSecret(clientset, cluster, pgBouncerPassword); err != nil {
+				return err
+			}
+		}
+
 		// attempt to update the password in PostgreSQL, as this is how pgBouncer
 		// will properly interface with PostgreSQL
 		if err := setPostgreSQLPassword(clientset, restconfig, pod, cluster.Spec.Port, pgBouncerPassword); err != nil {
@@ -218,7 +233,8 @@ func DeletePgbouncer(clientset kubernetes.Interface, restclient *rest.RESTClient
 	}
 
 	// next, delete the various Kubernetes objects associated with the pgbouncer
-	// these include the Service, Deployment, and the pgBouncer secret
+	// these include the Service, Deployment, Secret and ConfigMap associated with
+	// pgbouncer
 	// If these fail, we'll just pass through
 	//
 	// First, delete the Service and Deployment, which share the same naem
