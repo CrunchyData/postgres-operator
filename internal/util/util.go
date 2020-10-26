@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"regexp"
 	"strings"
 	"time"
 
@@ -36,6 +37,10 @@ import (
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyz"
+
+// gisImageTagRegex is a regular expression designed to match the standard image tag for
+// the crunchy-postgres-gis-ha container
+var gisImageTagRegex = regexp.MustCompile(`(.+-[\d|\.]+)-[\d|\.]+?(-[\d|\.]+.*)`)
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -145,6 +150,20 @@ func GetSecretPassword(clientset kubernetes.Interface, db, suffix, Namespace str
 	log.Error("primary secret not found for " + db)
 	return "", errors.New("primary secret not found for " + db)
 
+}
+
+// GetStandardImageTag takes the current image name and the image tag value
+// stored in the pgcluster CRD and, if the image being used is the
+// crunchy-postgres-gis-ha container with the corresponding tag, it returns
+// the tag without the addition of the GIS version. This tag value can then
+// be used when provisioning containers using the standard containers tag.
+func GetStandardImageTag(imageName, imageTag string) string {
+
+	if imageName == "crunchy-postgres-gis-ha" && strings.Count(imageTag, "-") > 2 {
+		return gisImageTagRegex.ReplaceAllString(imageTag, "$1$2")
+	}
+
+	return imageTag
 }
 
 // RandStringBytesRmndr ...
