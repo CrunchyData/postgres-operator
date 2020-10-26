@@ -348,7 +348,7 @@ func createPgAdminDeployment(clientset kubernetes.Interface, cluster *crv1.Pgclu
 		Name:           pgAdminDeploymentName,
 		ClusterName:    cluster.Name,
 		CCPImagePrefix: operator.Pgo.Cluster.CCPImagePrefix,
-		CCPImageTag:    cluster.Spec.CCPImageTag,
+		CCPImageTag:    util.GetStandardImageTag(cluster.Spec.CCPImage, cluster.Spec.CCPImageTag),
 		DisableFSGroup: operator.Pgo.Cluster.DisableFSGroup,
 		Port:           defPgAdminPort,
 		InitUser:       defSetupUsername,
