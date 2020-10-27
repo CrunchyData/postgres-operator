@@ -994,17 +994,25 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			backrestS3CACert = backrestSecret.Data[util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert]
 		}
 
-		err := util.CreateBackrestRepoSecrets(apiserver.Clientset,
-			util.BackrestRepoConfig{
-				BackrestS3CA:        backrestS3CACert,
-				BackrestS3Key:       request.BackrestS3Key,
-				BackrestS3KeySecret: request.BackrestS3KeySecret,
-				ClusterName:         clusterName,
-				ClusterNamespace:    request.Namespace,
-				OperatorNamespace:   apiserver.PgoNamespace,
-			})
+		// set up the secret for the cluster that contains the pgBackRest
+		// information
+		secret := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: secretName,
+				Labels: map[string]string{
+					config.LABEL_VENDOR:            config.LABEL_CRUNCHY,
+					config.LABEL_PG_CLUSTER:        clusterName,
+					config.LABEL_PGO_BACKREST_REPO: "true",
+				},
+			},
+			Data: map[string][]byte{
+				util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert:    backrestS3CACert,
+				util.BackRestRepoSecretKeyAWSS3KeyAWSS3Key:       []byte(request.BackrestS3Key),
+				util.BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret: []byte(request.BackrestS3KeySecret),
+			},
+		}
 
-		if err != nil {
+		if _, err := apiserver.Clientset.CoreV1().Secrets(ns).Create(ctx, secret, metav1.CreateOptions{}); err != nil && !kubeapi.IsAlreadyExists(err) {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = fmt.Sprintf("could not create backrest repo secret: %s", err)
 			return resp

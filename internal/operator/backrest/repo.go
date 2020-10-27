@@ -157,6 +157,19 @@ func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 	return nil
 }
 
+// CreateRepoSecret allows for the creation of the Secret used to populate
+// some (mostly) sensitive fields for managing the pgBackRest repository.
+//
+// If the Secret already exists, then missing fields will be overwritten.
+func CreateRepoSecret(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
+	return util.CreateBackrestRepoSecrets(clientset,
+		util.BackrestRepoConfig{
+			ClusterName:       cluster.Name,
+			ClusterNamespace:  cluster.Namespace,
+			OperatorNamespace: operator.PgoNamespace,
+		})
+}
+
 // setBootstrapRepoOverrides overrides certain fields used to populate the pgBackRest repository template
 // as needed to support the creation of a bootstrap repository need to bootstrap a new cluster from an
 // existing data source.

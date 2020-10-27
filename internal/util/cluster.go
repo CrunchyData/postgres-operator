@@ -27,6 +27,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -115,70 +116,112 @@ var (
 func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 	backrestRepoConfig BackrestRepoConfig) error {
 
-	keys, err := NewPrivatePublicKeyPair()
-	if err != nil {
-		return err
+	// first: determine if a Secret already exists. If it does, we are going to
+	// work on modifying that Secret.
+	secretName := fmt.Sprintf("%s-%s", backrestRepoConfig.ClusterName,
+		config.LABEL_BACKREST_REPO_SECRET)
+	secret, secretErr := clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).Get(
+		secretName, metav1.GetOptions{})
+
+	// only return an error if this is a **not** a not found error
+	if secretErr != nil && !kerrors.IsNotFound(secretErr) {
+		log.Error(secretErr)
+		return secretErr
 	}
 
-	// Retrieve the S3/SSHD configuration files from secret
-	configs, err := clientset.
+	// determine if we need to create a new secret, i.e. this is a not found error
+	newSecret := secretErr != nil
+	if newSecret {
+		// set up the secret for the cluster that contains the pgBackRest information
+		secret = &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: secretName,
+				Labels: map[string]string{
+					config.LABEL_VENDOR:            config.LABEL_CRUNCHY,
+					config.LABEL_PG_CLUSTER:        backrestRepoConfig.ClusterName,
+					config.LABEL_PGO_BACKREST_REPO: "true",
+				},
+			},
+			Data: map[string][]byte{},
+		}
+	}
+
+	// next, load the Operator level pgBackRest secret templates, which contain
+	// SSHD(...?) and possible S3 credentials
+	configs, configErr := clientset.
 		CoreV1().Secrets(backrestRepoConfig.OperatorNamespace).
 		Get("pgo-backrest-repo-config", metav1.GetOptions{})
 
-	if err != nil {
-		log.Error(err)
+	if configErr != nil {
+		log.Error(configErr)
+		return configErr
+	}
+
+	// set the SSH/SSHD configuration, if it is not presently set
+	for _, key := range []string{backRestRepoSecretKeySSHConfig, backRestRepoSecretKeySSHDConfig} {
+		if len(secret.Data[key]) == 0 {
+			secret.Data[key] = configs.Data[key]
+		}
+	}
+
+	// set the SSH keys if any appear to be unset
+	if len(secret.Data[backRestRepoSecretKeyAuthorizedKeys]) == 0 ||
+		len(secret.Data[backRestRepoSecretKeySSHPrivateKey]) == 0 ||
+		len(secret.Data[backRestRepoSecretKeySSHHostPrivateKey]) == 0 {
+		// generate the keypair and then assign it to the values in the Secret
+		keys, keyErr := NewPrivatePublicKeyPair()
+
+		if keyErr != nil {
+			log.Error(keyErr)
+			return keyErr
+		}
+
+		secret.Data[backRestRepoSecretKeyAuthorizedKeys] = keys.Public
+		secret.Data[backRestRepoSecretKeySSHPrivateKey] = keys.Private
+		secret.Data[backRestRepoSecretKeySSHHostPrivateKey] = keys.Private
+	}
+
+	// Set the S3 credentials
+	// If explicit S3 credentials are passed in, use those.
+	// If the Secret already has S3 credentials, use those.
+	// Otherwise, try to load in the default credentials from the Operator Secret.
+	if len(backrestRepoConfig.BackrestS3CA) != 0 {
+		secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3CACert] = backrestRepoConfig.BackrestS3CA
+	}
+
+	if len(secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3CACert]) == 0 &&
+		len(configs.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3CACert]) != 0 {
+		secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3CACert] = configs.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3CACert]
+	}
+
+	if backrestRepoConfig.BackrestS3Key != "" {
+		secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3Key] = []byte(backrestRepoConfig.BackrestS3Key)
+	}
+
+	if len(secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3Key]) == 0 &&
+		len(configs.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3Key]) != 0 {
+		secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3Key] = configs.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3Key]
+	}
+
+	if backrestRepoConfig.BackrestS3KeySecret != "" {
+		secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret] = []byte(backrestRepoConfig.BackrestS3KeySecret)
+	}
+
+	if len(secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret]) == 0 &&
+		len(configs.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret]) != 0 {
+		secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret] = configs.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret]
+	}
+
+	// time to create or update the secret!
+	if newSecret {
+		_, err := clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).Create(
+			secret)
 		return err
 	}
 
-	// if an S3 key has been provided via the request, then use key and key secret
-	// included in the request instead of the default credentials that are
-	// available in the Operator pgBackRest secret
-	backrestS3Key := []byte(backrestRepoConfig.BackrestS3Key)
+	_, err := clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).Update(
+		secret)
 
-	if backrestRepoConfig.BackrestS3Key == "" {
-		backrestS3Key = configs.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3Key]
-	}
-
-	backrestS3KeySecret := []byte(backrestRepoConfig.BackrestS3KeySecret)
-
-	if backrestRepoConfig.BackrestS3KeySecret == "" {
-		backrestS3KeySecret = configs.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret]
-	}
-
-	// determine if there is a CA override provided, and if not, use the default
-	// from the configuration
-	caCert := backrestRepoConfig.BackrestS3CA
-	if len(caCert) == 0 {
-		caCert = configs.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3CACert]
-	}
-
-	// set up the secret for the cluster that contains the pgBackRest information
-	secret := v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: fmt.Sprintf("%s-%s", backrestRepoConfig.ClusterName,
-				config.LABEL_BACKREST_REPO_SECRET),
-			Labels: map[string]string{
-				config.LABEL_VENDOR:            config.LABEL_CRUNCHY,
-				config.LABEL_PG_CLUSTER:        backrestRepoConfig.ClusterName,
-				config.LABEL_PGO_BACKREST_REPO: "true",
-			},
-		},
-		Data: map[string][]byte{
-			BackRestRepoSecretKeyAWSS3KeyAWSS3CACert:    caCert,
-			BackRestRepoSecretKeyAWSS3KeyAWSS3Key:       backrestS3Key,
-			BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret: backrestS3KeySecret,
-			backRestRepoSecretKeyAuthorizedKeys:         keys.Public,
-			backRestRepoSecretKeySSHConfig:              configs.Data[backRestRepoSecretKeySSHConfig],
-			backRestRepoSecretKeySSHDConfig:             configs.Data[backRestRepoSecretKeySSHDConfig],
-			backRestRepoSecretKeySSHPrivateKey:          keys.Private,
-			backRestRepoSecretKeySSHHostPrivateKey:      keys.Private,
-		},
-	}
-
-	_, err = clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).Create(&secret)
-	if kubeapi.IsAlreadyExists(err) {
-		_, err = clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).Update(&secret)
-	}
 	return err
 }
 
