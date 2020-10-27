@@ -18,15 +18,17 @@ limitations under the License.
 package v1
 
 import (
-	v1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
+	v1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 )
 
 // PgtaskLister helps list Pgtasks.
+// All objects returned here must be treated as read-only.
 type PgtaskLister interface {
 	// List lists all Pgtasks in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Pgtask, err error)
 	// Pgtasks returns an object that can list and get Pgtasks.
 	Pgtasks(namespace string) PgtaskNamespaceLister
@@ -57,10 +59,13 @@ func (s *pgtaskLister) Pgtasks(namespace string) PgtaskNamespaceLister {
 }
 
 // PgtaskNamespaceLister helps list and get Pgtasks.
+// All objects returned here must be treated as read-only.
 type PgtaskNamespaceLister interface {
 	// List lists all Pgtasks in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Pgtask, err error)
 	// Get retrieves the Pgtask from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.Pgtask, error)
 	PgtaskNamespaceListerExpansion
 }

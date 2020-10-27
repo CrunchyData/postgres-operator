@@ -18,15 +18,17 @@ limitations under the License.
 package v1
 
 import (
-	v1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
+	v1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 )
 
 // PgpolicyLister helps list Pgpolicies.
+// All objects returned here must be treated as read-only.
 type PgpolicyLister interface {
 	// List lists all Pgpolicies in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Pgpolicy, err error)
 	// Pgpolicies returns an object that can list and get Pgpolicies.
 	Pgpolicies(namespace string) PgpolicyNamespaceLister
@@ -57,10 +59,13 @@ func (s *pgpolicyLister) Pgpolicies(namespace string) PgpolicyNamespaceLister {
 }
 
 // PgpolicyNamespaceLister helps list and get Pgpolicies.
+// All objects returned here must be treated as read-only.
 type PgpolicyNamespaceLister interface {
 	// List lists all Pgpolicies in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1.Pgpolicy, err error)
 	// Get retrieves the Pgpolicy from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1.Pgpolicy, error)
 	PgpolicyNamespaceListerExpansion
 }

@@ -4,6 +4,9 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
+            {{if .BootstrapCluster}}
+            "pgha-bootstrap": "{{.BootstrapCluster}}",
+            {{ end }}
             "name": "{{.Name}}",
             "pg-cluster": "{{.ClusterName}}",
             "service-name": "{{.Name}}",
@@ -12,7 +15,7 @@
         }
     },
     "spec": {
-        "replicas": 1,
+        "replicas": {{.Replicas}},
         "selector": {
             "matchLabels": {
                     "name": "{{.Name}}",
@@ -25,7 +28,13 @@
         },
         "template": {
             "metadata": {
+                {{ if .PodAnnotations }}
+                "annotations": {{ .PodAnnotations }},
+                {{ end }}
                 "labels": {
+                    {{if .BootstrapCluster}}
+                    "pgha-bootstrap": "{{.BootstrapCluster}}",
+                    {{ end }}
                     "name": "{{.Name}}",
                     "pg-cluster": "{{.ClusterName}}",
                     "service-name": "{{.Name}}",
@@ -93,7 +102,7 @@
                 "volumes": [{
                     "name": "sshd",
                     "secret": {
-                        "secretName": "{{.ClusterName}}-backrest-repo-config",
+                        "secretName": "{{.SshdSecretsName}}",
                         "defaultMode": 511
                     }
                 }, {

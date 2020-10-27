@@ -43,7 +43,7 @@ If the user tries to access a namespace that they are not configured for within 
     Error: user [pgouser1] is not allowed access to namespace [pgouser2]
 
 
-If you wish to add all avaiable permissions to a *pgorole*, you can specify it by using a single `*` in your configuration. Note that if you are editing your YAML file directly, you will need to ensure to write it as `"*"` to ensure it is recognized as a string.
+If you wish to add all available permissions to a *pgorole*, you can specify it by using a single `*` in your configuration. Note that if you are editing your YAML file directly, you will need to ensure to write it as `"*"` to ensure it is recognized as a string.
 
 The following list shows the current complete list of possible pgo permissions that you can specify within the *pgorole* file when creating roles:
 
@@ -51,11 +51,11 @@ The following list shows the current complete list of possible pgo permissions t
 |---|---|
 |ApplyPolicy | allow *pgo apply*|
 |Cat | allow *pgo cat*|
-|Clone | allow *pgo clone*|
 |CreateBackup | allow *pgo backup*|
 |CreateCluster | allow *pgo create cluster*|
 |CreateDump | allow *pgo create pgdump*|
 |CreateFailover | allow *pgo failover*|
+|CreatePgAdmin | allow *pgo create pgadmin*|
 |CreatePgbouncer | allow *pgo create pgbouncer*|
 |CreatePolicy | allow *pgo create policy*|
 |CreateSchedule | allow *pgo create schedule*|
@@ -63,6 +63,7 @@ The following list shows the current complete list of possible pgo permissions t
 |CreateUser | allow *pgo create user*|
 |DeleteBackup | allow *pgo delete backup*|
 |DeleteCluster | allow *pgo delete cluster*|
+|DeletePgAdmin | allow *pgo delete pgadmin*|
 |DeletePgbouncer | allow *pgo delete pgbouncer*|
 |DeletePolicy | allow *pgo delete policy*|
 |DeleteSchedule | allow *pgo delete schedule*|
@@ -70,13 +71,13 @@ The following list shows the current complete list of possible pgo permissions t
 |DeleteUser | allow *pgo delete user*|
 |DfCluster | allow *pgo df*|
 |Label | allow *pgo label*|
-|Load | allow *pgo load*|
 |Reload | allow *pgo reload*|
 |Restore | allow *pgo restore*|
 |RestoreDump | allow *pgo restore* for pgdumps|
 |ShowBackup | allow *pgo show backup*|
 |ShowCluster | allow *pgo show cluster*|
 |ShowConfig | allow *pgo show config*|
+|ShowPgAdmin | allow *pgo show pgadmin*|
 |ShowPgBouncer | allow *pgo show pgbouncer*|
 |ShowPolicy | allow *pgo show policy*|
 |ShowPVC | allow *pgo show pvc*|

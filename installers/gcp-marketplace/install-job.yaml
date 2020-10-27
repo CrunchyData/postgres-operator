@@ -18,6 +18,6 @@ spec:
             - { name: NAMESPACE, value: '${OPERATOR_NAMESPACE}' }
             - { name: NAME,      value: '${OPERATOR_NAME}' }
           volumeMounts:
-            - { mountPath: /etc/ansible/hosts, name: configuration, subPath: inventory }
+            - { mountPath: /etc/ansible, name: configuration }
       volumes:
         - { name: configuration, secret: { secretName: install-postgres-operator } }

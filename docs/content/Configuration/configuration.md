@@ -1,7 +1,5 @@
-
 ---
 title: "Configuration Resources"
-Latest Release: 4.3.0 {docdate}
 draft: false
 weight: 2
 ---
@@ -12,7 +10,7 @@ The operator is template-driven; this makes it simple to configure both the clie
 
 The Operator is configured with a collection of files found in the *conf* directory.  These configuration files are deployed to your Kubernetes cluster when the Operator is deployed.  Changes made to any of these configuration files currently require a redeployment of the Operator on the Kubernetes cluster.
 
-The server components of the Operator include Role Based Access Control resources which need to be created a single time by a Kubernetes cluster-admin user.  See the Installation section for details on installing a Postgres Operator server.
+The server components of the Operator include Role Based Access Control resources which need to be created a single time by a privileged Kubernetes user.  See the Installation section for details on installing a Postgres Operator server.
 
 The configuration files used by the Operator are found in 2 places:
  * the pgo-config ConfigMap in the namespace the Operator is running in
@@ -30,9 +28,9 @@ The *pgo.yaml* file is deployed along with the other Operator configuration file
 
     make deployoperator
 
-## conf/postgres-operator Directory
+## Config Directory
 
-Files within the *conf/postgres-operator* directory contain various templates that are used by the Operator when creating Kubernetes resources.  In an advanced Operator deployment, administrators can modify these templates to add their own custom meta-data or make other changes to influence the Resources that get created on your Kubernetes cluster by the Operator.
+Files within the [*PGO_CONF_DIR*](/developer-setup/) directory contain various templates that are used by the Operator when creating Kubernetes resources.  In an advanced Operator deployment, administrators can modify these templates to add their own custom meta-data or make other changes to influence the Resources that get created on your Kubernetes cluster by the Operator.
 
 Files within this directory are used specifically when creating PostgreSQL Cluster resources. Sidecar components such as pgBouncer templates are also located within this directory.
 

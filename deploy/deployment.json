@@ -36,7 +36,7 @@
                             "httpGet": {
                                 "path": "/healthz",
                                 "port": $PGO_APISERVER_PORT,
-                                "scheme": "HTTPS"
+                                "scheme": "${PGO_APISERVER_SCHEME}"
                             },
                             "initialDelaySeconds": 15,
                             "periodSeconds": 5
@@ -45,7 +45,7 @@
                             "httpGet": {
                                 "path": "/healthz",
                                 "port": $PGO_APISERVER_PORT,
-                                "scheme": "HTTPS"
+                                "scheme": "${PGO_APISERVER_SCHEME}"
                             },
                             "initialDelaySeconds": 15,
                             "periodSeconds": 5
@@ -81,11 +81,11 @@
                             },
                             {
                                 "name": "TLS_NO_VERIFY",
-                                "value": "$TLS_NO_VERIFY"
+                                "value": "${TLS_NO_VERIFY}"
                             },
                             {
                                 "name": "DISABLE_TLS",
-                                "value": "$DISABLE_TLS"
+                                "value": "${DISABLE_TLS}"
                             },
                             {
                                 "name": "NOAUTH_ROUTES",
@@ -204,7 +204,6 @@
                             }
                         ],
                         "volumeMounts": [],
-                        "resources": {},
                         "imagePullPolicy": "IfNotPresent"
                     },
                     {
@@ -225,7 +224,6 @@
                             }
                         ],
                         "volumeMounts": [],
-                        "resources": {},
                         "imagePullPolicy": "IfNotPresent"
                     }
                 ],

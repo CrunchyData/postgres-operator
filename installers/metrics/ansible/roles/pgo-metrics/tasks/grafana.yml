@@ -1,0 +1,128 @@
+---
+- name: Deploy Grafana
+  tags:
+    - install-metrics
+    - update-metrics
+  block:
+    - name: Set Grafana Output Directory Fact
+      set_fact:
+        grafana_output_dir: "{{ metrics_dir }}/output/grafana"
+
+    - name: Ensure Output Directory Exists
+      file: 
+        path: "{{ grafana_output_dir }}"
+        state: "directory"
+        mode: "0700"
+
+    - name: Template Grafana RBAC
+      template:
+        src: "{{ item }}"
+        dest: "{{ grafana_output_dir }}/{{ item | replace('.j2', '') }}"
+        mode: "0600"
+      loop:
+        - grafana-rbac.json.j2
+      when: create_rbac | bool
+
+    - name: Create Grafana RBAC
+      command: "{{ kubectl_or_oc }} create -f {{ grafana_output_dir }}/{{ item }} -n {{ metrics_namespace }}"
+      loop:
+        - grafana-rbac.json
+      register: create_grafana_rbac_result
+      failed_when:
+        - create_grafana_rbac_result.rc != 0
+        - "'AlreadyExists' not in create_grafana_rbac_result.stderr"
+      when: create_rbac | bool
+
+    - name: Template Grafana Secret
+      template:
+        src: "grafana-secret.json.j2"
+        dest: "{{ grafana_output_dir }}/grafana-secret.json"
+        mode: "0600"
+
+    - name: Create Grafana Secret
+      command: "{{ kubectl_or_oc }} create -f {{ grafana_output_dir }}/grafana-secret.json -n {{ metrics_namespace }}"
+      register: create_grafana_secret_result
+      failed_when:
+        - create_grafana_secret_result.rc != 0
+        - "'AlreadyExists' not in create_grafana_secret_result.stderr"
+
+    - name: Set pgmonitor Grafana Directory Fact
+      set_fact:
+        pgmonitor_grafana_dir: "{{ metrics_dir }}/pgmonitor-{{ pgmonitor_version | replace('v','') }}/grafana"
+
+    - name: Copy Grafana Config to Output Directory
+      command: "cp {{ pgmonitor_grafana_dir }}/{{ item }} {{ grafana_output_dir }}"
+      loop:
+        - crunchy_grafana_datasource.yml
+        - crunchy_grafana_dashboards.yml
+
+    - name: Add Grafana Dashboard Configuration
+      lineinfile:
+        path: "{{ grafana_output_dir }}/crunchy_grafana_dashboards.yml"
+        regexp: "^[ ]{4,}path:"
+        line: "    path: $GF_PATHS_PROVISIONING/dashboards"
+
+    - name: Add Grafana Datasource Configuration
+      lineinfile:
+        path: "{{ grafana_output_dir }}/crunchy_grafana_datasource.yml"
+        regexp: "^[ ]{2,}url:"
+        line: "  url: http://$PROM_HOST:$PROM_PORT"
+
+    - name: Create Grafana Datasource ConfigMap
+      shell: |
+        {{ kubectl_or_oc }} create configmap {{ grafana_datasources_configmap }} --dry-run --output=yaml \
+          --from-file={{ grafana_output_dir }}/crunchy_grafana_datasource.yml \
+        | {{ kubectl_or_oc }} label --filename=- --local --dry-run --output=yaml \
+          app.kubernetes.io/name={{ app_name }} \
+        | {{ kubectl_or_oc }} create --filename=- -n {{ metrics_namespace }}
+      when: grafana_datasources_custom_config == ""
+      register: create_grafana_datasources_result
+      failed_when:
+        - create_grafana_datasources_result.rc != 0
+        - "'AlreadyExists' not in create_grafana_datasources_result.stderr"
+
+    - name: Create Grafana Dashboard ConfigMap
+      shell: |
+        {{ kubectl_or_oc }} create configmap {{ grafana_dashboards_configmap }} --dry-run --output=yaml \
+          --from-file={{ grafana_output_dir }}/crunchy_grafana_dashboards.yml \
+          --from-file={{ pgmonitor_grafana_dir }}/containers/ \
+        | sed -e 's,${DS_PROMETHEUS},PROMETHEUS,' \
+        | {{ kubectl_or_oc }} label --filename=- --local --dry-run --output=yaml \
+          app.kubernetes.io/name={{ app_name }} \
+        | {{ kubectl_or_oc }} create --filename=- -n {{ metrics_namespace }}
+      when: grafana_dashboards_custom_config == ""
+      register: create_grafana_dashboards_result
+      failed_when:
+        - create_grafana_dashboards_result.rc != 0
+        - "'AlreadyExists' not in create_grafana_dashboards_result.stderr"
+
+    - name: Set Grafana Datasource ConfigMap Name
+      set_fact:
+        grafana_datasources_configmap: "{{ grafana_datasources_custom_config }}"
+      when: grafana_datasources_custom_config != ""
+
+    - name: Set Grafana Dashboard ConfigMap Name
+      set_fact:
+        grafana_dashboards_configmap: "{{ grafana_dashboards_custom_config }}"
+      when: grafana_dashboards_custom_config != ""
+
+    - name: Template Grafana PVC, Service & Deployment
+      template:
+        src: "{{ item }}"
+        dest: "{{ grafana_output_dir }}/{{ item | replace('.j2', '') }}"
+        mode: "0600"
+      loop: 
+        - grafana-pvc.json.j2
+        - grafana-service.json.j2
+        - grafana-deployment.json.j2
+
+    - name: Create Grafana PVC, Service & Deployment
+      command: "{{ kubectl_or_oc }} create -f {{ grafana_output_dir }}/{{ item }} -n {{ metrics_namespace }}"
+      loop:
+        - grafana-pvc.json
+        - grafana-service.json
+        - grafana-deployment.json
+      register: create_grafana_deployment_result
+      failed_when:
+        - create_grafana_deployment_result.rc != 0
+        - "'AlreadyExists' not in create_grafana_deployment_result.stderr"

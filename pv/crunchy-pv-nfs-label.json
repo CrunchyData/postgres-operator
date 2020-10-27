@@ -11,7 +11,7 @@
     "capacity": {
         "storage": "1Gi"
     },
-    "accessModes": [ "ReadWriteMany" ],
+    "accessModes": [ "ReadWriteOnce", "ReadWriteMany", "ReadOnlyMany" ],
     "nfs": {
         "path": "/nfsfileshare",
         "server": "$PGO_NFS_IP"

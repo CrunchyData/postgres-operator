@@ -1,0 +1,62 @@
+---
+- name: Cleanup Metrics Resources
+  tags:
+    - update-metrics
+    - uninstall-metrics
+  block:
+    - name: Delete Deployments
+      command: "{{ kubectl_or_oc }} delete deployment {{ item }} -n {{ metrics_namespace }}"
+      ignore_errors: yes
+      loop:
+        - crunchy-alertmanager
+        - crunchy-prometheus
+        - crunchy-grafana
+
+    - name: Delete Services
+      command: "{{ kubectl_or_oc }} delete service {{ item }} -n {{ metrics_namespace }}"
+      ignore_errors: yes
+      loop:
+        - "{{ alertmanager_service_name }}"
+        - "{{ prometheus_service_name }}"
+        - "{{ grafana_service_name }}"
+
+    - name: Delete Prometheus Cluster Roles & Cluster Role Bindings
+      command: |
+        {{ kubectl_or_oc }} delete clusterrole,clusterrolebinding \
+          {{ metrics_namespace }}-prometheus-sa -n {{ metrics_namespace }}
+      ignore_errors: yes
+      when: create_rbac|bool
+
+    - name: Delete Service Accounts
+      command: "{{ kubectl_or_oc }} delete serviceaccount {{ item }} -n {{ metrics_namespace }}"
+      ignore_errors: yes
+      when: create_rbac | bool
+      loop:
+        - alertmanager
+        - grafana
+        - prometheus-sa
+
+    - name: Delete Grafana Secret
+      command: "{{ kubectl_or_oc }} delete secret grafana-secret -n {{ metrics_namespace }}"
+      ignore_errors: yes
+
+    - name: Delete ConfigMaps
+      command: "{{ kubectl_or_oc }} delete configmap {{ item }} -n {{ metrics_namespace }}"
+      ignore_errors: yes
+      loop:
+        - "{{ alertmanager_configmap }}"
+        - "{{ alertmanager_rules_configmap }}"
+        - "{{ grafana_dashboards_configmap }}"
+        - "{{ grafana_datasources_configmap }}"
+        - "{{ prometheus_configmap }}"
+
+- name: Cleanup Metrics Volumes
+  tags: uninstall-metrics
+  block:
+    - name: Delete PVCs
+      command: "{{ kubectl_or_oc }} delete pvc {{ item }} -n {{ metrics_namespace }}"
+      ignore_errors: yes
+      loop:
+        - alertmanagerdata
+        - grafanadata
+        - prometheusdata

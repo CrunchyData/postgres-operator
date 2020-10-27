@@ -45,19 +45,36 @@ IFS=', ' read -r -a array <<< "$NAMESPACE"
 if [ ${#array[@]} -eq 0 ]
 then
     echo "NAMESPACE is empty, updating Operator namespace ${PGO_OPERATOR_NAMESPACE}"
-    $PGOROOT/deploy/add-targeted-namespace.sh ${PGO_OPERATOR_NAMESPACE} > /dev/null
+    array=("${PGO_OPERATOR_NAMESPACE}")
 fi
 
-for ns in "${array[@]}"
-do
-	$PGO_CMD get namespace $ns > /dev/null 2> /dev/null
+# determine which "add namespace" script to run based on namespace mode and whether or not RBAC
+# reconciliation is enabled (when using a 'dynamic' namespace mode with RBAC reconciliation
+# enabled, no script is run since the PostgreSQL Operator is assigned the permissions to reconcile
+# RBAC in any namespace a ClusterRole, and will also handle namespace creation itself).
+if [[ "${PGO_RECONCILE_RBAC:-true}" == "true" ]] && 
+	[[ "${PGO_NAMESPACE_MODE:-dynamic}" != "dynamic" ]]
+then
+	add_ns_script=add-targeted-namespace-reconcile-rbac.sh
+elif [[ "${PGO_RECONCILE_RBAC}" == "false" ]]
+then
+	add_ns_script=add-targeted-namespace.sh
+fi
 
-	if [ $? -eq 0 ]
-	then
-		echo namespace $ns already exists, updating...
-		$PGOROOT/deploy/add-targeted-namespace.sh $ns > /dev/null
-	else
-		echo namespace $ns creating...
-		$PGOROOT/deploy/add-targeted-namespace.sh $ns > /dev/null
-	fi
-done
+# now run the proper "add namespace" script for any namespaces if needed
+if [[ "${add_ns_script}" != "" ]]
+then
+	for ns in "${array[@]}"
+	do
+		$PGO_CMD get namespace $ns > /dev/null 2> /dev/null
+
+		if [ $? -eq 0 ]
+		then
+			echo namespace $ns already exists, updating...
+			$PGOROOT/deploy/$add_ns_script $ns > /dev/null
+		else
+			echo namespace $ns creating...
+			$PGOROOT/deploy/$add_ns_script $ns > /dev/null
+		fi
+	done
+fi

@@ -1,30 +1,41 @@
 .DEFAULT_GOAL := help
+.SUFFIXES:
 
-CCP_IMAGE_PREFIX ?= crunchydata
-CCP_IMAGE_TAG ?= $(PGO_BASEOS)-$(CCP_PG_FULLVERSION)-$(PGO_VERSION)
-CCP_PG_FULLVERSION ?= 12.2
+CCP_IMAGE_PREFIX ?= registry.developers.crunchydata.com/crunchydata
+CCP_PG_FULLVERSION ?= 12.4
+CCP_POSTGIS_VERSION ?= 3.0
+CONTAINER ?= docker
 KUBECONFIG ?= $(HOME)/.kube/config
-OLM_TOOLS ?= registry.localhost:5000/postgres-operator-olm-tools:$(OLM_VERSION)
-OLM_VERSION ?= 0.13.0
+OLM_SDK_VERSION ?= 0.15.1
+OLM_TOOLS ?= registry.localhost:5000/postgres-operator-olm-tools:$(OLM_SDK_VERSION)
+OLM_VERSION ?= 0.15.1
 PGO_BASEOS ?= centos7
-PGO_IMAGE_PREFIX ?= crunchydata
+PGO_IMAGE_PREFIX ?= registry.developers.crunchydata.com/crunchydata
+PGO_VERSION ?= 4.5.0
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
-PGO_VERSION ?= 4.3.0
+CCP_IMAGE_TAG ?= $(PGO_BASEOS)-$(CCP_PG_FULLVERSION)-$(PGO_VERSION)
+CCP_POSTGIS_IMAGE_TAG ?= $(PGO_BASEOS)-$(CCP_PG_FULLVERSION)-$(CCP_POSTGIS_VERSION)-$(PGO_VERSION)
 
-OLM_TOOLS_BASH = docker run --net=host --rm --tty $(DOCKER_ARGS) \
-		 --mount 'type=bind,source=$(KUBECONFIG),target=/root/.kube/config,readonly' \
+OLM_TOOLS_BASH = $(CONTAINER) run --net=host --rm --tty $(CONTAINER_ARGS) \
+		 --mount 'type=bind,source=$(KUBECONFIG),target=/root/.kube/config,ro' \
 		 --mount 'type=bind,source=$(CURDIR)/..,target=/mnt/installers' \
 		 --workdir '/mnt/installers/$(basename $(notdir $(CURDIR)))' \
 		 '$(OLM_TOOLS)'
 
-export CCP_IMAGE_PREFIX CCP_IMAGE_TAG
+export CCP_IMAGE_PREFIX CCP_IMAGE_TAG CCP_POSTGIS_IMAGE_TAG
 export KUBECONFIG
-export OLM_VERSION
+export OLM_SDK_VERSION
 export PGO_IMAGE_PREFIX PGO_IMAGE_TAG PGO_VERSION
 
 .PHONY: clean
 clean:
 	rm -rf ./package
+
+.PHONY: catalog-source
+catalog-source: ## Upload package and version bundle to a Kubernetes namespace
+	@test -n '$(NAMESPACE)' || { >&2 echo Must choose a NAMESPACE; exit 1; }
+	./install.sh registry '$(NAMESPACE)' olm-registry
+	./install.sh catalog_source '$(NAMESPACE)' olm-catalog-source '$(NAMESPACE)' olm-registry
 
 .PHONY: courier-verify
 courier-verify:
@@ -37,7 +48,7 @@ docker-package: ## Build package and version bundle from inside a container
 
 .PHONY: docker-shell
 docker-shell: image-tools
-docker-shell: DOCKER_ARGS = --interactive
+docker-shell: CONTAINER_ARGS = --interactive
 docker-shell: ## Start a shell inside a container with all the tools needed to build and test
 	$(OLM_TOOLS_BASH)
 
@@ -52,7 +63,7 @@ help: ## Print this message
 
 .PHONY: image-tools
 image-tools:
-	docker build --file Dockerfile --tag '$(OLM_TOOLS)' --build-arg OLM_VERSION='$(OLM_VERSION)' .
+	$(CONTAINER) build --file Dockerfile --tag '$(OLM_TOOLS)' --build-arg OLM_SDK_VERSION='$(OLM_SDK_VERSION)' .
 
 .PHONY: install
 install: ## Install the package in a Kubernetes namespace

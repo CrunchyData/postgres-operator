@@ -1,0 +1,26 @@
+{
+    "kind": "Service",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "{{ alertmanager_service_name }}",
+        "labels": {
+            "name": "{{ alertmanager_service_name }}",
+            "app.kubernetes.io/name": "{{ app_name }}"
+        }
+    },
+    "spec": {
+        "ports": [
+            {
+                "name": "alertmanager",
+                "protocol": "TCP",
+                "port": {{ alertmanager_port }},
+                "targetPort": {{ alertmanager_port }}
+            }
+        ],
+        "selector": {
+            "name": "{{ alertmanager_service_name }}"
+        },
+        "type": "{{ alertmanager_service_type }}",
+        "sessionAffinity": "None"
+    }
+}

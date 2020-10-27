@@ -1,0 +1,28 @@
+{{- define "deployerJob.spec" }}
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      name: pgo-metrics-deploy
+      labels:
+{{ include "postgres-operator.labels" . | indent 8 }} 
+    spec:
+      serviceAccountName: {{ include "postgres-operator.serviceAccountName" . }}
+      restartPolicy: Never
+      containers:
+      - name: pgo-metrics-deploy
+        image: {{ .Values.pgo_image_prefix }}/pgo-deployer:{{ .Values.pgo_image_tag }}
+        imagePullPolicy: IfNotPresent
+        env:
+          - name: DEPLOY_ACTION
+            value: "{{ .deployAction }}"
+          - name: PLAYBOOK
+            value: metrics
+        volumeMounts:
+          - name: deployer-conf
+            mountPath: "/conf"
+      volumes:
+        - name: deployer-conf
+          configMap:
+            name: {{ template "postgres-operator.fullname" . }}-cm
+{{- end }}

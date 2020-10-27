@@ -18,17 +18,15 @@ GCR_IMAGE_PREFIX=gcr.io/crunchy-dev-test
 IMAGES=(
 pgo-event
 pgo-backrest-repo
-pgo-backrest-repo-sync
-pgo-backrest-restore
 pgo-scheduler
 pgo-sqlrunner
 postgres-operator
 pgo-apiserver
 pgo-rmdata
 pgo-backrest
-pgo-load
 pgo-client
 pgo-deployer
+crunchy-postgres-exporter
 )
 
 for image in "${IMAGES[@]}"

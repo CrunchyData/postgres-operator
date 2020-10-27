@@ -68,7 +68,7 @@ all of the replicas. Additionally, if the connection pooler pgBouncer is
 deployed with this cluster, it will also have a service as well.
 
 An optional monitoring sidecar can be deployed as well. The sidecar, called
-`collect`, uses the `crunchy-collect` container that is a part of pgMonitor and
+`exporter`, uses the `crunchy-postgres-exporter` container that is a part of pgMonitor and
 scrapes key health metrics into a Prometheus instance. See Monitoring for more
 information on how this works.
 
@@ -100,7 +100,7 @@ backup before performing scaling up.)
 time. This allows it to catch up to the current primary.
 - Once the replica has recovered, it joins the primary as a streaming replica!
 
-If pgMonitor is enabled, a `collect` sidecar is also added to the replica
+If pgMonitor is enabled, an `exporter` sidecar is also added to the replica
 Deployment.
 
 Scaling down works in the opposite way:
@@ -111,6 +111,69 @@ specified. Once the data is removed, the PersistentVolumeClaim (PVC) is also
 deleted
 - The Kubernetes Deployment associated with the replica is removed, as well as
 any other Kubernetes objects that are specifically associated with this replcia
+
+## [Custom Configuration]({{< relref "/advanced/custom-configuration.md" >}})
+
+PostgreSQL workloads often need tuning and additional configuration in production
+environments, and the PostgreSQL Operator allows for this via its ability to
+manage [custom PostgreSQL configuration]({{< relref "/advanced/custom-configuration.md" >}}).
+
+The custom configuration can be edit from a [ConfigMap](https://kubernetes.io/docs/concepts/configuration/configmap/)
+that follows the pattern of `<clusterName>-pgha-config`, where `<clusterName>`
+would be `hippo` in `pgo create cluster hippo`. When the ConfigMap is edited,
+the changes are automatically pushed out to all of the PostgreSQL instances
+within a cluster.
+
+For more information on how this works and what configuration settings are
+editable, please visit the "[Custom PostgreSQL configuration]({{< relref "/advanced/custom-configuration.md" >}})"
+section of the documentation.
+
+## Provisioning Using a Backup from an Another PostgreSQL Cluster
+
+When provisioning a new PostgreSQL cluster, it is possible to bootstrap the cluster using an
+existing backup from either another PostgreSQL cluster that is currently running, or from a
+PostgreSQL cluster that no longer exists (specifically a cluster that was deleted using the
+ `keep-backups` option, as discussed in section [Deprovisioning](#deprovisioning) below).  This
+is specifically accomplished by performing a `pgbackrest restore`  during cluster initialization
+in order to populate the initial `PGDATA` directory for the new cluster using the contents of a
+backup from another cluster.
+
+To leverage this capability, the name of the cluster containing the backup that should be utilzed
+when restoring simply needs to be specified using the `restore-from`  option when creating a new
+cluster:
+
+```shell
+pgo create cluster mycluster2 --restore-from=mycluster1
+```
+
+By default, pgBackRest will restore the latest backup available in the repository, and will replay
+all available WAL archives.  However, additional pgBackRest options can be specified using the 
+`restore-opts` option, which allows the restore command to be further tailored and customized.  For
+instance, the following demonstrates how a point-in-time restore can be utilized when creating a
+new cluster:
+
+```shell
+pgo create cluster mycluster2 \
+  --restore-from=mycluster1 \
+  --restore-opts="--type=time --target='2020-07-02 20:19:36.13557+00'"
+```
+
+Additionally, if bootstrapping from a cluster the utilizes AWS S3 storage with pgBackRest (or a
+cluster that utilized AWS S3 storage in the case of a former cluster), you can also also specify
+`s3` as the repository type in order to restore from a backup stored in an S3 storage bucket:
+
+```shell
+pgo create cluster mycluster2 \
+  --restore-from=mycluster1 \
+  --restore-opts="--repo-type=s3"
+```
+
+When restoring from a cluster that is currently running, the new cluster will simply connect to
+the existing pgBackRest repository host for that cluster in order to perform the pgBackRest
+restore.  If restoring from a former cluster that has since been deleted, a new pgBackRest
+repository host will be deployed for the sole purpose of bootstrapping the new cluster, and will
+then be destroyed once the restore is complete.  Also, please note that it is only possible for
+one cluster to bootstrap from another cluster (whether running or not) at any given time.
 
 ## Deprovisioning
 

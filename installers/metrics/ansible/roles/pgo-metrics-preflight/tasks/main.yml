@@ -1,0 +1,78 @@
+---
+- include_tasks: vars.yml
+  tags: always
+
+- fail:
+    msg: "Please specify the a tag: install-metrics, uninstall-metrics or update-metrics"
+  when: ansible_run_tags[0] == "all"
+  tags: always
+
+- assert:
+    msg: Alertmanager, Grafana, and Prometheus installs are disabled, nothing to install, update or uninstall
+    that: grafana_install | bool or prometheus_install | bool or alertmanager_install | bool
+  tags:
+    - install-metrics
+    - update-metrics
+
+- assert:
+    msg: Alertmanager can only be installed alongside of Prometheus, please enable prometheus_install
+    that: prometheus_install | bool
+  when: alertmanager_install | bool
+  tags:
+    - install-metrics
+    - update-metrics
+
+- assert:
+    msg: Please specify either OpenShift or Kubernetes variables in inventory
+    that:
+      - openshift_host | default('') != '' or
+        kubernetes_context | default('') != '' or
+        kubernetes_in_cluster | default(False) | bool
+  tags: always
+
+- assert:
+    msg: Only set one of kubernetes_context, kubernetes_in_cluster, or openshift_host
+    that:
+      - kubernetes_context | default('') == ''
+      - not (kubernetes_in_cluster | default(False) | bool)
+  when: openshift_host | default('') != ''
+  tags: always
+
+- assert:
+    msg: Only set one of kubernetes_context, kubernetes_in_cluster, or openshift_host
+    that:
+      - openshift_host | default('') == ''
+      - not (kubernetes_in_cluster | default(False) | bool)
+  when: kubernetes_context | default('') != ''
+  tags: always
+
+- assert:
+    msg: Only set one of kubernetes_context, kubernetes_in_cluster, or openshift_host
+    that:
+      - openshift_host | default('') == ''
+      - kubernetes_context | default('') == ''
+  when: kubernetes_in_cluster | default(False) | bool
+  tags: always
+
+- include_tasks: check_openshift.yml
+  when: openshift_host | default('') != ''
+  tags: always
+
+- include_tasks: check_kubernetes.yml
+  when: kubernetes_context | default('') != '' or kubernetes_in_cluster | default(False) | bool
+  tags: always
+
+- include_tasks: check_vars.yml
+  tags: always
+
+- include_tasks: "preflight-grafana.yml"
+  when: grafana_install | bool
+  tags: always
+
+- include_tasks: "preflight-prometheus.yml"
+  when: prometheus_install | bool
+  tags: always
+
+- include_tasks: "preflight-alertmanager.yml"
+  when: alertmanager_install | bool
+  tags: always

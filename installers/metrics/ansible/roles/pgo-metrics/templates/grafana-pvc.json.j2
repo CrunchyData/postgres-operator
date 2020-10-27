@@ -1,0 +1,23 @@
+{
+    "kind": "PersistentVolumeClaim",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "grafanadata",
+        "labels": {
+            "app.kubernetes.io/name": "{{ app_name }}"
+        }
+    },
+    "spec": {
+        "accessModes": [
+            "{{ grafana_storage_access_mode }}"
+        ],
+{% if grafana_storage_class_name is defined and grafana_storage_class_name != '' %}
+        "storageClassName": "{{ grafana_storage_class_name }}",
+{% endif %}
+        "resources": {
+            "requests": {
+                "storage": "{{ grafana_volume_size }}"
+            }
+        }
+    }
+}

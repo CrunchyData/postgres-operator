@@ -25,6 +25,9 @@
         },
         "template": {
             "metadata": {
+                {{ if .PodAnnotations }}
+                "annotations": {{ .PodAnnotations }},
+                {{ end }}
                 "labels": {
                     "name": "{{.Name}}",
                     "crunchy-pgbouncer": "true",
@@ -62,13 +65,26 @@
                         "readOnly": false
                     }]
                 }],
-                "volumes": [{
-                "name": "pgbouncer-conf",
-                "secret": {
-                    "secretName": "{{.PGBouncerSecret}}",
-                    "defaultMode": 511
+                "volumes": [
+                  {
+                    "name": "pgbouncer-conf",
+                    "projected": {
+                      "sources": [
+                        {
+                          "configMap": {
+                            "name": "{{.PGBouncerConfigMap}}"
+                          }
+                        },
+                        {
+                          "secret": {
+                            "name": "{{.PGBouncerSecret}}",
+                            "defaultMode": 511
+                          }
+                        }
+                      ]
                     }
-                }],
+                  }
+                ],
                 "affinity": {
                   {{.PodAntiAffinity}}
                 },

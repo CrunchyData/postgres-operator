@@ -1,0 +1,23 @@
+{
+    "kind": "PersistentVolumeClaim",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "prometheusdata",
+        "labels": {
+            "app.kubernetes.io/name": "{{ app_name }}"
+        }
+    },
+    "spec": {
+        "accessModes": [
+            "{{ prometheus_storage_access_mode }}"
+        ],
+{% if prometheus_storage_class_name is defined and prometheus_storage_class_name != '' %}
+        "storageClassName": "{{ prometheus_storage_class_name }}",
+{% endif %}
+        "resources": {
+            "requests": {
+                "storage": "{{ prometheus_volume_size }}"
+            }
+        }
+    }
+}

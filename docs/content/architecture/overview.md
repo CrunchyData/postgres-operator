@@ -34,8 +34,8 @@ how to maintain a high-availability cluster, etc.
 replicas within a PostgreSQL cluster. This includes things like the number of
 replicas, what storage and resource classes to use, special affinity rules, etc.
 - `pgtasks.crunchydata.com`: A general purpose CRD that accepts a type of task
-that is needed to run against a cluster (e.g. create a cluster, take a backup,
-  perform a clone) and tracks the state of said task through its workflow.
+that is needed to run against a cluster (e.g. take a backup) and tracks the
+state of said task through its workflow.
 - `pgpolicies.crunchydata.com`: Stores a reference to a SQL file that can be
 executed against a PostgreSQL cluster. In the past, this was used to manage RLS
 policies on PostgreSQL clusters.
@@ -63,7 +63,7 @@ user to schedule repeatable tasks, such as backups (because it is important to
 - `event` (image: pgo-event, optional) - A container that provides an interface
 to the `nsq` message queue and transmits information about lifecycle events that
 occur within the PostgreSQL Operator (e.g. a cluster is created, a backup is
-  taken, a clone fails to create)
+taken, etc.)
 
 The main purpose of the PostgreSQL Operator is to create and update information
 around the structure of a PostgreSQL Cluster, and to relay information about the

@@ -20,17 +20,15 @@ VERSION=$PGO_IMAGE_TAG
 IMAGES=(
     pgo-event
     pgo-backrest-repo
-    pgo-backrest-repo-sync
-    pgo-backrest-restore
     pgo-scheduler
     pgo-sqlrunner
     postgres-operator
     pgo-apiserver
     pgo-rmdata
     pgo-backrest
-    pgo-load
     pgo-client
     pgo-deployer
+    crunchy-postgres-exporter
 )
 
 function echo_green() {

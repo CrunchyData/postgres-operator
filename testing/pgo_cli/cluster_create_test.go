@@ -17,7 +17,6 @@ package pgo_cli_test
 
 import (
 	"regexp"
-	"strings"
 	"testing"
 	"time"
 
@@ -31,15 +30,14 @@ func TestClusterCreate(t *testing.T) {
 	withNamespace(t, func(namespace func() string) {
 		t.Run("create cluster", func(t *testing.T) {
 			t.Run("creates a workflow", func(t *testing.T) {
+				workflow := regexp.MustCompile(`(?m:^workflow id.*?(\S+)$)`)
+
 				output, err := pgo("create", "cluster", "mycluster", "-n", namespace()).Exec(t)
 				defer teardownCluster(t, namespace(), "mycluster", time.Now())
 				require.NoError(t, err)
-				require.Contains(t, output, "workflow id")
+				require.Regexp(t, workflow, output, "expected pgo to show the workflow")
 
-				workflow := regexp.MustCompile(`\S+$`).FindString(strings.TrimSpace(output))
-				require.NotEmpty(t, workflow)
-
-				_, err = pgo("show", "workflow", workflow, "-n", namespace()).Exec(t)
+				_, err = pgo("show", "workflow", workflow.FindStringSubmatch(output)[1], "-n", namespace()).Exec(t)
 				require.NoError(t, err)
 			})
 		})

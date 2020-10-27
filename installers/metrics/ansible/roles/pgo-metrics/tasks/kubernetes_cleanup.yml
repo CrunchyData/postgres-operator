@@ -1,0 +1,6 @@
+---
+- name: Delete Metrics Namespace (Kubernetes)
+  command: "kubectl delete namespace {{ metrics_namespace }}"
+  when: delete_metrics_namespace | bool
+  ignore_errors: yes
+  tags: uninstall-metrics

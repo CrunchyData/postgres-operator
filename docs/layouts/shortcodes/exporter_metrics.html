@@ -1,0 +1,17 @@
+{{ range $metricsfile, $value0 := .Site.Data.pgmonitor.general }}
+<h2>{{ $metricsfile }}</h2>
+
+{{ range $query, $value1 := $value0 }}
+<h3>{{ $query }}</h3>
+<h4>SQL Query:</h4>
+{{ $value1.query }}
+
+<h4>Metrics:</h4>
+{{ range $key2, $value2 := $value1.metrics }}
+{{ range $metric, $value3 := $value2 }}
+<h5>{{ $metric }}</h5>
+{{ $value3.description }}
+{{end}}
+{{end}}
+{{end}}
+{{end}}

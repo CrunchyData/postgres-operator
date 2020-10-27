@@ -18,7 +18,9 @@ limitations under the License.
 package fake
 
 import (
-	crunchydatacomv1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
+	"context"
+
+	crunchydatacomv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -38,7 +40,7 @@ var pgclustersResource = schema.GroupVersionResource{Group: "crunchydata.com", V
 var pgclustersKind = schema.GroupVersionKind{Group: "crunchydata.com", Version: "v1", Kind: "Pgcluster"}
 
 // Get takes name of the pgcluster, and returns the corresponding pgcluster object, and an error if there is any.
-func (c *FakePgclusters) Get(name string, options v1.GetOptions) (result *crunchydatacomv1.Pgcluster, err error) {
+func (c *FakePgclusters) Get(ctx context.Context, name string, options v1.GetOptions) (result *crunchydatacomv1.Pgcluster, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(pgclustersResource, c.ns, name), &crunchydatacomv1.Pgcluster{})
 
@@ -49,7 +51,7 @@ func (c *FakePgclusters) Get(name string, options v1.GetOptions) (result *crunch
 }
 
 // List takes label and field selectors, and returns the list of Pgclusters that match those selectors.
-func (c *FakePgclusters) List(opts v1.ListOptions) (result *crunchydatacomv1.PgclusterList, err error) {
+func (c *FakePgclusters) List(ctx context.Context, opts v1.ListOptions) (result *crunchydatacomv1.PgclusterList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(pgclustersResource, pgclustersKind, c.ns, opts), &crunchydatacomv1.PgclusterList{})
 
@@ -71,14 +73,14 @@ func (c *FakePgclusters) List(opts v1.ListOptions) (result *crunchydatacomv1.Pgc
 }
 
 // Watch returns a watch.Interface that watches the requested pgclusters.
-func (c *FakePgclusters) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakePgclusters) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(pgclustersResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a pgcluster and creates it.  Returns the server's representation of the pgcluster, and an error, if there is any.
-func (c *FakePgclusters) Create(pgcluster *crunchydatacomv1.Pgcluster) (result *crunchydatacomv1.Pgcluster, err error) {
+func (c *FakePgclusters) Create(ctx context.Context, pgcluster *crunchydatacomv1.Pgcluster, opts v1.CreateOptions) (result *crunchydatacomv1.Pgcluster, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(pgclustersResource, c.ns, pgcluster), &crunchydatacomv1.Pgcluster{})
 
@@ -89,7 +91,7 @@ func (c *FakePgclusters) Create(pgcluster *crunchydatacomv1.Pgcluster) (result *
 }
 
 // Update takes the representation of a pgcluster and updates it. Returns the server's representation of the pgcluster, and an error, if there is any.
-func (c *FakePgclusters) Update(pgcluster *crunchydatacomv1.Pgcluster) (result *crunchydatacomv1.Pgcluster, err error) {
+func (c *FakePgclusters) Update(ctx context.Context, pgcluster *crunchydatacomv1.Pgcluster, opts v1.UpdateOptions) (result *crunchydatacomv1.Pgcluster, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(pgclustersResource, c.ns, pgcluster), &crunchydatacomv1.Pgcluster{})
 
@@ -101,7 +103,7 @@ func (c *FakePgclusters) Update(pgcluster *crunchydatacomv1.Pgcluster) (result *
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakePgclusters) UpdateStatus(pgcluster *crunchydatacomv1.Pgcluster) (*crunchydatacomv1.Pgcluster, error) {
+func (c *FakePgclusters) UpdateStatus(ctx context.Context, pgcluster *crunchydatacomv1.Pgcluster, opts v1.UpdateOptions) (*crunchydatacomv1.Pgcluster, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(pgclustersResource, "status", c.ns, pgcluster), &crunchydatacomv1.Pgcluster{})
 
@@ -112,7 +114,7 @@ func (c *FakePgclusters) UpdateStatus(pgcluster *crunchydatacomv1.Pgcluster) (*c
 }
 
 // Delete takes name of the pgcluster and deletes it. Returns an error if one occurs.
-func (c *FakePgclusters) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakePgclusters) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(pgclustersResource, c.ns, name), &crunchydatacomv1.Pgcluster{})
 
@@ -120,15 +122,15 @@ func (c *FakePgclusters) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakePgclusters) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(pgclustersResource, c.ns, listOptions)
+func (c *FakePgclusters) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(pgclustersResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &crunchydatacomv1.PgclusterList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched pgcluster.
-func (c *FakePgclusters) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *crunchydatacomv1.Pgcluster, err error) {
+func (c *FakePgclusters) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *crunchydatacomv1.Pgcluster, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(pgclustersResource, c.ns, name, pt, data, subresources...), &crunchydatacomv1.Pgcluster{})
 

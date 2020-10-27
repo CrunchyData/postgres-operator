@@ -1,10 +1,10 @@
 # Crunchy Data PostgreSQL Operator Playbook
 
 <p align="center">
-  <img src="crunchy_logo.png?raw=false" alt="Mr. Crunchy" width="150"/>
+  <img width="150" src="../../crunchy_logo.png" alt="Crunchy Data"/>
 </p>
 
-Latest Release: 4.3.0
+Latest Release: 4.5.0
 
 ## General
 

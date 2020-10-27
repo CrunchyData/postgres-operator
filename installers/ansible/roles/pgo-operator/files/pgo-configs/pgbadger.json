@@ -20,6 +20,12 @@
                     "name": "PGBADGER_SERVICE_PORT",
                     "value": "{{.PGBadgerPort}}"
                 } ],
+                "resources": {
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "64Mi"
+                  }
+                },
                 "volumeMounts": [
                     {
                         "mountPath": "/pgdata",

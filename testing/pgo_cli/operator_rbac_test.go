@@ -46,7 +46,7 @@ func TestOperatorRBAC(t *testing.T) {
 						"--pgouser-roles=pgoadmin",
 					).Exec(t)
 					require.Error(t, err)
-					require.Contains(t, output, "watched namespace")
+					require.Contains(t, output, "not watched by")
 
 					_, err = pgo("create", "pgouser", "pua",
 						"--all-namespaces",

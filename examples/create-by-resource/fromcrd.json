@@ -2,18 +2,21 @@
   "apiVersion": "crunchydata.com/v1",
   "kind": "Pgcluster",
   "metadata": {
+    "annotations": {
+      "current-primary": "fromcrd"
+    },
     "labels": {
       "autofail": "true",
       "crunchy-pgbadger": "false",
       "crunchy-pgha-scope": "fromcrd",
-      "crunchy_collect": "false",
+      "crunchy-postgres-exporter": "false",
       "current-primary": "fromcrd",
       "deployment-name": "fromcrd",
       "name": "fromcrd",
       "pg-cluster": "fromcrd",
       "pg-pod-anti-affinity": "",
       "pgo-backrest": "true",
-      "pgo-version": "4.3.0",
+      "pgo-version": "4.5.0",
       "pgouser": "pgoadmin",
       "primary": "true"
     },
@@ -59,7 +62,7 @@
     },
     "backrestResources": {},
     "ccpimage": "crunchy-postgres-ha",
-    "ccpimagetag": "centos7-12.2-4.3.0",
+    "ccpimagetag": "centos7-12.4-4.5.0",
     "clustername": "fromcrd",
     "customconfig": "",
     "database": "userdb",
@@ -78,7 +81,6 @@
     },
     "policies": "",
     "port": "5432",
-    "primaryhost": "fromcrd",
     "primarysecretname": "fromcrd-primaryuser-secret",
     "replicas": "0",
     "rootsecretname": "fromcrd-postgres-secret",
@@ -91,9 +93,9 @@
     "tls": {},
     "user": "testuser",
     "userlabels": {
-      "crunchy_collect": "false",
+      "crunchy-postgres-exporter": "false",
       "pg-pod-anti-affinity": "",
-      "pgo-version": "4.3.0",
+      "pgo-version": "4.5.0",
       "pgouser": "pgoadmin",
       "pgo-backrest": "true"
     },

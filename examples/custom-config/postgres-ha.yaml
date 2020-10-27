@@ -9,6 +9,9 @@ bootstrap:
         log_statement: none
         max_wal_senders: 6
         shared_preload_libraries: pgaudit.so
+        shared_buffers: 256MB
+        temp_buffers: 10MB
+        work_mem: 5MB
 postgresql:  
   pg_hba:
     - local all postgres peer

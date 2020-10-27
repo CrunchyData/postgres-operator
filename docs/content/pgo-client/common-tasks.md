@@ -22,25 +22,25 @@ PostgreSQL deployxments across many Kubernetes namespaces, this can become
 onerous for the intents of this guide.
 
 If you install the PostgreSQL Operator using the [quickstart](/quickstart/)
-guide, you will have two namespaces installed: `pgouser1` and `pgouser2`. We
+guide, you will install the PostgreSQL Operator to a namespace called `pgo`. We
 can choose to always use one of these namespaces by setting the `PGO_NAMESPACE`
 environmental variable, which is detailed in the global [`pgo` Client](/pgo-client/)
 reference,
 
-For convenience, we will use the `pgouser1` namespace in the examples below.
-For even more convenience, we recommend setting `pgouser1` to be the value of
+For convenience, we will use the `pgo` namespace in the examples below.
+For even more convenience, we recommend setting `pgo` to be the value of
 the `PGO_NAMESPACE` variable. In the shell that you will be executing the `pgo`
 commands in, run the following command:
 
 ```shell
-export PGO_NAMESPACE=pgouser1
+export PGO_NAMESPACE=pgo
 ```
 
 If you do not wish to set this environmental variable, or are in an environment
 where you are unable to use environmental variables, you will have to use the
 `--namespace` (or `-n`) flag for most commands, e.g.
 
-`pgo version -n pgouser1`
+`pgo version -n pgo`
 
 ### JSON Output
 
@@ -84,8 +84,8 @@ pgo version
 which, if working, will yield results similar to:
 
 ```
-pgo client version 4.3.0
-pgo-apiserver version 4.3.0
+pgo client version {{< param operatorVersion >}}
+pgo-apiserver version {{< param operatorVersion >}}
 ```
 
 ### Inspecting the PostgreSQL Operator Configuration
@@ -107,9 +107,7 @@ which yields output similar to:
 BasicAuth: ""
 Cluster:
   CCPImagePrefix: crunchydata
-  CCPImageTag: centos7-12.2-4.3.0
-  PrimaryNodeLabel: ""
-  ReplicaNodeLabel: ""
+  CCPImageTag: {{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}
   Policies: ""
   Metrics: false
   Badger: false
@@ -127,6 +125,8 @@ Cluster:
   BackrestS3Bucket: ""
   BackrestS3Endpoint: ""
   BackrestS3Region: ""
+  BackrestS3URIStyle: ""
+  BackrestS3VerifyTLS: true
   DisableAutofail: false
   PgmonitorPassword: ""
   EnableCrunchyadm: false
@@ -136,7 +136,7 @@ Cluster:
 Pgo:
   Audit: false
   PGOImagePrefix: crunchydata
-  PGOImageTag: centos7-4.3.0
+  PGOImageTag: {{< param centosBase >}}-{{< param operatorVersion >}}
 PrimaryStorage: nfsstorage
 BackupStorage: nfsstorage
 ReplicaStorage: nfsstorage
@@ -149,52 +149,6 @@ Storage:
     StorageClass: ""
     SupplementalGroups: "65534"
     MatchLabels: ""
-```
-
-### Viewing PostgreSQL Operator Key Metrics
-
-The [`pgo status`](/pgo-client/reference/pgo_status/) command provides a
-generalized statistical view of the overall resource consumption of the
-PostgreSQL Operator. These stats include:
-
-- The total number of PostgreSQL instances
-- The total number of Persistent Volume Claims (PVC) that are allocated, along with the total amount of disk the claims specify
-- The types of container images that are deployed, along with how many are deployed
-- The nodes that are used by the PostgreSQL Operator
-
-and more
-
-You can use the `pgo status` command by running:
-
-```shell
-pgo status
-```
-
-which yields output similar to:
-
-```
-Operator Start:          2019-12-26 17:53:45 +0000 UTC
-Databases:               8
-Claims:                  8
-Total Volume Size:       8Gi       
-
-Database Images:
-                         4	crunchydata/crunchy-postgres-ha:centos7-12.2-4.3.0
-                         4	crunchydata/pgo-backrest-repo:centos7-4.3.0
-                         8	crunchydata/pgo-backrest:centos7-4.3.0
-
-Databases Not Ready:
-
-Labels (count > 1): [count] [label]
-	[8]	[vendor=crunchydata]
-	[4]	[pgo-backrest-repo=true]
-	[4]	[pgouser=pgoadmin]
-	[4]	[pgo-pg-database=true]
-	[4]	[crunchy_collect=false]
-	[4]	[pg-pod-anti-affinity=]
-	[4]	[pgo-version=4.3.0]
-	[4]	[archive-timeout=60]
-	[2]	[pg-cluster=hacluster]
 ```
 
 ### Viewing PostgreSQL Operator Managed Namespaces
@@ -216,7 +170,7 @@ pgo show namespace --all
 which yields output similar to:
 
 ```
-pgo username: pgoadmin
+pgo username: admin
 namespace                useraccess          installaccess       
 default                  accessible          no access           
 kube-node-lease          accessible          no access           
@@ -293,10 +247,13 @@ pgo create cluster hacluster --cpu=4 --memory=16Gi
 #### Create a PostgreSQL Cluster with PostGIS
 
 To create a PostgreSQL cluster that uses the geospatial extension PostGIS, you
-can execute the following command:
+can execute the following command, updated with your desired image tag. In the
+example below, the cluster will use PostgreSQL {{< param postgresVersion >}} and PostGIS {{< param postgisVersion >}}:
 
 ```shell
-pgo create cluster hagiscluster --ccp-image=crunchy-postgres-gis-ha
+pgo create cluster hagiscluster \
+  --ccp-image=crunchy-postgres-gis-ha \
+  --ccp-image-tag={{< param centosBase >}}-{{< param postgresVersion >}}-{{< param postgisVersion >}}-{{< param operatorVersion >}}
 ```
 
 #### Create a PostgreSQL Cluster with a Tablespace
@@ -349,6 +306,30 @@ pgo create cluster hactsluster \
     --tablespace=name=ts2:storageconfig=gce:pvcsize=20Gi
 ```
 
+#### Create a PostgreSQL Cluster Using a Backup from Another PostgreSQL Cluster
+
+It is also possible to create a new PostgreSQL Cluster using a backup from another
+PostgreSQL cluster.  To do so, simply specify the cluster containing the backup
+that you would like to utilize using the `restore-from` option:
+
+
+```shell
+pgo create cluster hacluster2 --restore-from=hacluster1
+```
+
+When using this approach, a `pgbackrest restore` will be performed using the pgBackRest
+repository for the `restore-from` cluster specified in order to populate the initial
+`PGDATA` directory for the new PostgreSQL cluster.  By default, pgBackRest will restore
+to the latest backup available and replay all WAL.  However, a `restore-opts` option
+is also available that allows the `restore` command to be further customized, e.g. to
+perform a point-in-time restore and/or restore from an S3 storage bucket:
+
+```shell
+pgo create cluster hacluster2 \
+  --restore-from=hacluster1 \
+  --restore-opts="--repo-type=s3 --type=time --target='2020-07-02 20:19:36.13557+00'"
+```
+
 #### Tracking a Newly Provisioned Cluster
 
 A new PostgreSQL cluster can take a few moments to provision. You may have
@@ -397,7 +378,7 @@ pgo show cluster hacluster
 which will yield output similar to:
 
 ```
-cluster : hacluster (crunchy-postgres-ha:centos7-12.2-4.3.0)
+cluster : hacluster (crunchy-postgres-ha:{{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}})
 	pod : hacluster-6dc6cfcfb9-f9knq (Running) on node01 (1/1) (primary)
 	pvc : hacluster
 	resources : CPU Limit= Memory Limit=, CPU Request= Memory Request=
@@ -405,7 +386,7 @@ cluster : hacluster (crunchy-postgres-ha:centos7-12.2-4.3.0)
 	deployment : hacluster
 	deployment : hacluster-backrest-shared-repo
 	service : hacluster - ClusterIP (10.102.20.42)
-	labels : pg-pod-anti-affinity= archive-timeout=60 crunchy-pgbadger=false crunchy_collect=false deployment-name=hacluster pg-cluster=hacluster crunchy-pgha-scope=hacluster autofail=true pgo-backrest=true pgo-version=4.3.0 current-primary=hacluster name=hacluster pgouser=pgoadmin workflowid=ae714d12-f5d0-4fa9-910f-21944b41dec8
+	labels : pg-pod-anti-affinity= archive-timeout=60 crunchy-pgbadger=false crunchy-postgres-exporter=false deployment-name=hacluster pg-cluster=hacluster crunchy-pgha-scope=hacluster autofail=true pgo-backrest=true pgo-version={{< param operatorVersion >}} current-primary=hacluster name=hacluster pgouser=admin workflowid=ae714d12-f5d0-4fa9-910f-21944b41dec8
 ```
 
 ### Deleting a Cluster
@@ -612,42 +593,96 @@ pgo create schedule hacluster --schedule="0 0 * * *" \
 ### Restore a Cluster
 
 The PostgreSQL Operator supports the ability to perform a full restore on a
-PostgreSQL cluster as well as a point-in-time-recovery using the `pgo restore`
-command. Note that both of these options are **destructive** to the existing
-PostgreSQL cluster; to "restore" the PostgreSQL cluster to a new deployment,
-please see the [clone](#clone-a-postgresql-cluster) section.
+PostgreSQL cluster (i.e. a "clone" or "copy") as well as a
+point-in-time-recovery. There are two types of ways to restore a cluster:
 
-After a restore, there are some cleanup steps you will need to perform. Please
-review the [Post Restore Cleanup](#post-restore-cleanup) section.
+- Restore to a new cluster using the `--restore-from` flag in the
+[`pgo create cluster`]({{< relref "/pgo-client/reference/pgo_create_cluster.md" >}})
+command. This is effectively a [clone](#clone-a-postgresql-cluster) or a copy.
+- Restore in-place using the [`pgo restore`]({{< relref "/pgo-client/reference/pgo_restore.md" >}})
+command. Note that this is **destructive**.
 
-#### Full Restore
+It is typically better to perform a restore to a new cluster, particularly when
+performing a point-in-time-recovery, as it can allow you to more effectively
+manage your downtime and avoid making undesired changes to your production data.
 
-To perform a full restore of a PostgreSQL cluster, you can execute the following
-command:
+Additionally, the "restore to a new cluster" technique works so long as you have
+a pgBackRest repository available: the pgBackRest repository does not need to be
+attached to an active cluster! For example, if a cluster named `hippo` was
+deleted as such:
 
-```shell
-pgo restore hacluster
+```
+pgo delete cluster hippo --keep-backups
 ```
 
-If you want your PostgreSQL cluster to be restored to a specific node, you can
+you can create a new cluster from the backups like so:
+
+```
+pgo create cluster datalake --restore-from=hippo
+```
+
+Below provides guidance on how to perform a restore to a new PostgreSQL cluster
+both as a full copy and to a specific point in time. Additionally, it also
+shows how to restore in place to a specific point in time.
+
+#### Restore to a New Cluster (aka "copy" or "clone")
+
+Restoring to a new PostgreSQL cluster allows one to take a backup and create a
+new PostgreSQL cluster that can run alongside an existing PostgreSQL cluster.
+There are several scenarios where using this technique is helpful:
+
+- Creating a copy of a PostgreSQL cluster that can be used for other purposes.
+Another way of putting this is "creating a clone."
+- Restore to a point-in-time and inspect the state of the data without affecting
+the current cluster
+
+and more.
+
+##### Full Restore
+
+To create a new PostgreSQL cluster from a backup and restore it fully, you can
 execute the following command:
 
-```shell
-pgo restore hacluster --node-label=failure-domain.beta.kubernetes.io/zone=us-central1-a
+```
+pgo create cluster newcluster --restore-from=oldcluster
 ```
 
-There are very few reasons why you will want to execute a full restore. If you
-want to make a copy of your PostgreSQL cluster, please use
-[`pgo clone`](/pgo-client/reference/pgo_clone).
+##### Point-in-time-Recovery (PITR)
 
-#### Point-in-time-Recovery (PITR)
+To create a new PostgreSQL cluster and restore it to specific point-in-time
+(e.g. before a key table was dropped), you can use the following command,
+substituting the time that you wish to restore to:
+
+```
+pgo create cluster newcluster \
+  --restore-from oldcluster \
+  --restore-opts "--type=time --target='2019-12-31 11:59:59.999999+00'"
+```
+
+When the restore is complete, the cluster is immediately available for reads and
+writes. To inspect the data before allowing connections, add pgBackRest's
+`--target-action=pause` option to the `--restore-opts` parameter.
+
+The PostgreSQL Operator supports the full set of pgBackRest restore options,
+which can be passed into the `--backup-opts` parameter. For more information,
+please review the [pgBackRest restore options](https://pgbackrest.org/command.html#command-restore)
+
+#### Restore in-place
+
+Restoring a PostgreSQL cluster in-place is a **destructive** action that will
+perform a recovery on your existing data directory. This is accomplished using
+the [`pgo restore`]({{< relref "/pgo-client/reference/pgo_restore.md" >}})
+command. The most common scenario is to restore the database to a specific point
+in time.
+
+##### Point-in-time-Recovery (PITR)
 
 The more likely scenario when performing a PostgreSQL cluster restore is to
 recover to a particular point-in-time (e.g. before a key table was dropped). For
-example, to restore a cluster to December 23, 2019 at 8:00am:
+example, to restore a cluster to December 31, 2019 at 11:59pm:
 
-```shell
-pgo restore hacluster --pitr-target="2019-12-23 08:00:00.000000+00" \
+```
+pgo restore hacluster --pitr-target="2019-12-31 11:59:59.999999+00" \
   --backup-opts="--type=time"
 ```
 
@@ -659,13 +694,11 @@ The PostgreSQL Operator supports the full set of pgBackRest restore options,
 which can be passed into the `--backup-opts` parameter. For more information,
 please review the [pgBackRest restore options](https://pgbackrest.org/command.html#command-restore)
 
-#### Post Restore Cleanup
+Using this technique, after a restore is complete, you will need to re-enable
+high availability on the PostgreSQL cluster manually. You can re-enable high
+availability by executing the following command:
 
-After a restore is complete, you will need to re-enable high-availability on a
-PostgreSQL cluster manually. You can re-enable high-availability by executing
-the following command:
-
-```shell
+```
 pgo update cluster hacluster --autofail=true
 ```
 
@@ -679,11 +712,18 @@ provide only a subset of a database, such as a table.
 
 #### Create a Logical Backup
 
-To create a logical backup of a full database, you can run the following
+To create a logical backup of the 'postgres' database, you can run the following
 command:
 
 ```shell
 pgo backup hacluster --backup-type=pgdump
+```
+
+To create a logical backup of a specific database, you can use the `--database` flag,
+as in the following command:
+
+```shell
+pgo backup hacluster --backup-type=pgdump --database=mydb
 ```
 
 You can pass in specific options to `--backup-opts`, which can accept most of
@@ -725,6 +765,14 @@ You can restore a logical backup using the following command:
 ```shell
 pgo restore hacluster --backup-type=pgdump --backup-pvc=hacluster-pgdump-pvc \
   --pitr-target="2019-01-15-00-03-25" -n pgouser1
+```
+
+To restore to a specific database, add the `--pgdump-database` flag to the
+command from above:
+
+```shell
+pgo restore hacluster --backup-type=pgdump --backup-pvc=hacluster-pgdump-pvc \
+  --pgdump-database=mydb --pitr-target="2019-01-15-00-03-25" -n pgouser1
 ```
 
 ## High-Availability: Scaling Up & Down
@@ -808,6 +856,35 @@ pgo scaledown hacluster --target=hacluster-abcd
 where `hacluster-abcd` is the name of the PostgreSQL replica that you want to
 destroy.
 
+## Monitoring
+
+### PostgreSQL Metrics via pgMonitor
+
+You can view metrics about your PostgreSQL cluster using [PostgreSQL Operator Monitoring]({{< relref "/installation/metrics" >}}),
+which uses open source [pgMonitor](https://github.com/CrunchyData/pgmonitor).
+First, you need to install the [PostgreSQL Operator Monitoring]({{< relref "/installation/metrics" >}})
+stack for your PostgreSQL Operator environment.
+
+After that, you need to ensure that you deploy the `crunchy-postgres-exporter`
+with each PostgreSQL cluster that you deploy:
+
+```
+pgo create cluster hippo --metrics
+```
+
+For more information on how monitoring with the PostgreSQL Operator works,
+please see the [Monitoring]({{< relref "/architecture/monitoring.md" >}})
+section of the documentation.
+
+### View Disk Utilization
+
+You can see a comparison of Postgres data size versus the Persistent
+volume claim size by entering the following:
+
+```shell
+pgo df hacluster -n pgouser1
+```
+
 ## Cluster Maintenance & Resource Management
 
 There are several operations that you can perform to modify a PostgreSQL cluster
@@ -876,12 +953,26 @@ section of the documentation.
 ## Clone a PostgreSQL Cluster
 
 You can create a copy of an existing PostgreSQL cluster in a new PostgreSQL
-cluster by using the [`pgo clone`](/pgo-client/reference/pgo_clone/) command. To
-create a new copy of a PostgreSQL cluster, you can execute the following
-command:
+cluster by using the [`pgo create cluster`]({{< relref "/pgo-client/reference/pgo_create_cluster.md" >}})
+command with the `--restore-from` flag (and, if needed, `--restore-opts`).
+The command copies the pgBackRest repository from either an active PostgreSQL
+cluster, or a pgBackRest repository that exists from a former cluster that was
+deleted using `pgo delete cluster --keep-backups`.
 
-```shell
-pgo clone hacluster newhacluster
+You can clone a PostgreSQL cluster by running the following command:
+
+```
+pgo create cluster newcluster --restore-from=oldcluster
+```
+
+By leveraging `pgo create cluster`, you are able to copy the data from a
+PostgreSQL cluster while creating the topology of a new cluster the way you want
+to. For instance, if you want to copy data from an existing cluster that does
+not have metrics to a new cluster that does, you can accomplish that with the
+following command:
+
+```
+pgo create cluster newcluster --restore-from=oldcluster --metrics
 ```
 
 ### Clone a PostgreSQL Cluster to Different PVC Size
@@ -892,7 +983,7 @@ clone a PostgreSQL cluster to a 256GiB PVC, you can execute the following
 command:
 
 ```shell
-pgo clone hacluster newhacluster --pvc-size=256Gi
+pgo create cluster bighippo --restore-from=hippo  --pvc-size=256Gi
 ```
 
 You can also have the cloned PostgreSQL cluster use a larger pgBackRest
@@ -901,7 +992,7 @@ PostgreSQL cluster use a 1TiB pgBackRest repository, you can execute the
 following command:
 
 ```shell
-pgo clone hacluster newhacluster --pgbackrest-pvc-size=1Ti
+pgo create cluster bighippo --restore-from=hippo --pgbackrest-pvc-size=1Ti
 ```
 
 ## Enable TLS
@@ -986,8 +1077,8 @@ accept both TLS and non-TLS connections, execute the following command:
 
 ```shell
 pgo create cluster hacluster-tls \
-  --server-ca-secret=hacluster-tls-keypair \
-  --server-tls-secret=postgresql-ca
+  --server-ca-secret=postgresql-ca \
+  --server-tls-secret=hacluster-tls-keypair
 ```
 
 Including the `--server-ca-secret` and `--server-tls-secret` flags automatically
@@ -1015,7 +1106,7 @@ executing the following command:
 ```shell
 pgo create cluster hacluster-tls-only \
   --tls-only \
-  --server-ca-secret=hacluster-tls-keypair --server-tls-secret=postgresql-ca
+  --server-ca-secret=postgresql-ca --server-tls-secret=hacluster-tls-keypair
 ```
 
 If deployed successfully, when you connect to the PostgreSQL cluster, assuming
@@ -1030,15 +1121,218 @@ If you try to connect to a PostgreSQL cluster that is deployed using the
 `--tls-only` with TLS disabled (i.e. `PGSSLMODE=disable`), you will receive an
 error that connections without TLS are unsupported.
 
-## Monitoring
+### TLS Authentication for PostgreSQL Replication
 
-### View Disk Utilization
+PostgreSQL supports [certificate-based authentication](https://www.postgresql.org/docs/current/auth-cert.html),
+which allows for PostgreSQL to authenticate users based on the common name (CN)
+in a certificate. Using this feature, the PostgreSQL Operator allows you to
+configure PostgreSQL replicas in a cluster to authenticate using a certificate
+instead of a password.
 
-You can see a comparison of Postgres data size versus the Persistent
-volume claim size by entering the following:
+To use this feature, first you will need to set up a Kubernetes TLS Secret that
+has a CN of `primaryuser`. If you do not wish to have this as your CN, you will
+need to map the CN of this certificate to the value of `primaryuser` using a
+[pg_ident](https://www.postgresql.org/docs/current/auth-username-maps.html)
+username map, which you can configure as part of a
+[custom PostgreSQL configuration]({{< relref "/advanced/custom-configuration.md" >}}).
+
+You also need to ensure that the certificate is verifiable by the certificate
+authority (CA) chain that you have provided for your PostgreSQL cluster. The CA
+is provided as part of the `--server-ca-secret` flag in the
+[`pgo create cluster`]({{< relref "/pgo-client/reference/pgo_create_cluster.md" >}})
+command.
+
+To create a PostgreSQL cluster that uses TLS authentication for replication,
+first create Kubernetes Secrets for the server and the CA. For the purposes of
+this example, we will use the ones that were created earlier: `postgresql-ca`
+and `hacluster-tls-keypair`. After generating a certificate that has a CN of
+`primaryuser`, create a Kubernetes Secret that references this TLS keypair
+called `hacluster-tls-replication-keypair`:
+
+```
+kubectl create secret tls hacluster-tls-replication-keypair \
+  --cert=/path/to/replication.crt \
+  --key=/path/to/replication.key
+```
+
+We can now create a PostgreSQL cluster and allow for it to use TLS
+authentication for its replicas! Let's create a PostgreSQL cluster with two
+replicas that also requires TLS for any connection:
+
+```
+pgo create cluster hippo \
+  --tls-only \
+  --server-ca-secret=postgresql-ca \
+  --server-tls-secret=hacluster-tls-keypair \
+  --replication-tls-secret=hacluster-tls-replication-keypair \
+  --replica-count=2
+```
+
+By default, the PostgreSQL Operator has each replica connect to PostgreSQL using
+a [PostgreSQL TLS mode](https://www.postgresql.org/docs/current/libpq-ssl.html#LIBPQ-SSL-SSLMODE-STATEMENTS)
+of `verify-ca`. If you wish to perform TLS mutual authentication between
+PostgreSQL instances (i.e. certificate-based authentication with SSL mode of
+`verify-full`), you will need to create a
+[PostgreSQL custom configuration]({{< relref "/advanced/custom-configuration.md" >}}).
+
+## [Custom PostgreSQL Configuration]({{< relref "/advanced/custom-configuration.md" >}})
+
+Customizing PostgreSQL configuration is currently not subject to the `pgo`
+client, but given it is a common question, we thought it may be helpful to link
+to how to do it from here. To find out more about how to
+[customize your PostgreSQL configuration]({{< relref "/advanced/custom-configuration.md" >}}),
+please refer to the [Custom PostgreSQL Configuration]({{< relref "/advanced/custom-configuration.md" >}})
+section of the documentation.
+
+## pgAdmin 4: PostgreSQL Administration
+
+[pgAdmin 4](https://www.pgadmin.org/) is a popular graphical user interface that
+lets you work with PostgreSQL databases from both a desktop or web-based client.
+In the case of the PostgreSQL Operator, the pgAdmin 4 web client can be deployed
+and synchronized with PostgreSQL clusters so that users can administrate their
+databases with their PostgreSQL username and password.
+
+For example, let's work with a PostgreSQL cluster called `hippo` that has a user named `hippo` with password `datalake`, e.g.:
+
+```
+pgo create cluster hippo --username=hippo --password=datalake
+```
+
+Once the `hippo` PostgreSQL cluster is ready, create the pgAdmin 4 deployment
+with the [`pgo create pgadmin`]({{< relref "/pgo-client/reference/pgo_create_pgadmin.md" >}})
+command:
+
+```
+pgo create pgadmin hippo
+```
+
+This creates a pgAdmin 4 deployment unique to this PostgreSQL cluster and
+synchronizes the PostgreSQL user information into it. To access pgAdmin 4, you
+can set up a port-forward to the Service, which follows the
+pattern `<clusterName>-pgadmin`, to port `5050`:
+
+```
+kubectl port-forward svc/hippo-pgadmin 5050:5050
+```
+
+Point your browser at `http://localhost:5050` and use your database username
+(e.g. `hippo`) and password (e.g. `datalake`) to log in.
+
+![pgAdmin 4 Login Page](/images/pgadmin4-login.png)
+
+(Note: if your password does not appear to work, you can retry setting up the
+user with the [`pgo update user`]({{< relref "/pgo-client/reference/pgo_update_user.md" >}})
+command: `pgo update user hippo --password=datalake`)
+
+The `pgo create user`, `pgo update user`, and `pgo delete user` commands are
+synchronized with the pgAdmin 4 deployment. Any user with credentials to this
+PostgreSQL cluster will be able to log in and use pgAdmin 4:
+
+![pgAdmin 4 Query](/images/pgadmin4-query.png)
+
+You can remove the pgAdmin 4 deployment with the [`pgo delete pgadmin`]({{< relref "/pgo-client/reference/pgo_delete_pgadmin.md" >}})
+command.
+
+For more information, please read the [pgAdmin 4 Architecture]({{< relref "/architecture/pgadmin4.md" >}})
+section of the documentation.
+
+## Standby Clusters: Multi-Cluster Kubernetes Deployments
+
+A [standby PostgreSQL cluster]({{< relref "/architecture/high-availability/multi-cluster-kubernetes.md" >}})
+can be used to create an advanced high-availability set with a PostgreSQL
+cluster running in a different Kubernetes cluster, or used for other operations
+such as migrating from one PostgreSQL cluster to another. Note: this is not
+[high availability]({{< relref "/architecture/high-availability/_index.md" >}})
+per se: a high-availability PostgreSQL cluster will automatically fail over upon
+a downtime event, whereas a standby PostgreSQL cluster must be explicitly
+promoted.
+
+With that said, you can run multiple PostgreSQL Operators in different
+Kubernetes clusters, and the below functionality will work!
+
+Below are some commands for setting up and using standby PostgreSQL clusters.
+For more details on how standby clusters work, please review the section on
+[Kubernetes Multi-Cluster Deployments]({{< relref "/architecture/high-availability/multi-cluster-kubernetes.md" >}}).
+
+### Creating a Standby Cluster
+
+Before creating a standby cluster, you will need to ensure that your primary
+cluster is created properly. Standby clusters require the use of S3 or
+equivalent S3-compatible storage system that is accessible to both the primary
+and standby clusters. For example, to create a primary cluster to these
+specifications:
 
 ```shell
-pgo df hacluster -n pgouser1
+pgo create cluster hippo --pgbouncer --replica-count=2 \
+  --pgbackrest-storage-type=local,s3 \
+  --pgbackrest-s3-key=<redacted> \
+  --pgbackrest-s3-key-secret=<redacted> \
+  --pgbackrest-s3-bucket=watering-hole \
+  --pgbackrest-s3-endpoint=s3.amazonaws.com \
+  --pgbackrest-s3-region=us-east-1 \
+  --pgbackrest-s3-uri-style=host \
+  --pgbackrest-s3-verify-tls=true \
+  --password-superuser=supersecrethippo \
+  --password-replication=somewhatsecrethippo \
+  --password=opensourcehippo
+  ```
+
+Before setting up the standby PostgreSQL cluster, you will need to wait a few
+moments for the primary PostgreSQL cluster to be ready. Once your primary
+PostgreSQL cluster is available, you can create a standby cluster by using the
+following command:
+
+```shell
+pgo create cluster hippo-standby --standby --replica-count=2 \
+  --pgbackrest-storage-type=s3 \
+  --pgbackrest-s3-key=<redacted> \
+  --pgbackrest-s3-key-secret=<redacted> \
+  --pgbackrest-s3-bucket=watering-hole \
+  --pgbackrest-s3-endpoint=s3.amazonaws.com \
+  --pgbackrest-s3-region=us-east-1 \
+  --pgbackrest-s3-uri-style=host \
+  --pgbackrest-s3-verify-tls=true \
+  --pgbackrest-repo-path=/backrestrepo/hippo-backrest-shared-repo \
+  --password-superuser=supersecrethippo \
+  --password-replication=somewhatsecrethippo \
+  --password=opensourcehippo
+```
+
+The standby cluster will take a few moments to bootstrap, but it is now set up!
+
+### Promoting a Standby Cluster
+
+Before promoting a standby cluster, it is first necessary to shut down the
+primary cluster, otherwise you can run into a potential "[split-brain](https://en.wikipedia.org/wiki/Split-brain_(computing))"
+scenario (if your primary Kubernetes cluster is down, it may not be possible to
+do this).
+
+To shutdown, run the following command:
+
+```
+pgo update cluster hippo --shutdown
+```
+
+Once it is shut down, you can promote the standby cluster:
+
+```
+pgo update cluster hippo-standby --promote-standby
+```
+
+The standby is now an active PostgreSQL cluster and can start to accept writes.
+
+To convert the previous active cluster into a standby cluster, you can run the
+following command:
+
+```
+pgo update cluster hippo --enable-standby
+```
+
+This will take a few moments to make this PostgreSQL cluster into a standby
+cluster. When it is ready, you can start it up with the following command:
+
+```
+pgo update cluster hippo --startup
 ```
 
 ## Labels
@@ -1071,6 +1365,91 @@ key/value pair of `app=payment`, you could execute the following command:
 ```shell
 pgo label --selector=app=payment --label=env=production
 ```
+
+## Custom Annotations
+
+There are a variety of reasons why one may want to add additional
+[Annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
+to the Deployments, and by extension Pods, managed by the PostgreSQL Operator:
+
+- External applications that extend functionality via details in an annotation
+- Tracking purposes for an internal application
+
+etc.
+
+As such the `pgo` client allows you to manage your own custom annotations on the
+Operator. There are four different ways to add annotations:
+
+- On PostgreSQL instances
+- On pgBackRest instances
+- On pgBouncer instances
+- On all of the above
+
+The custom annotation feature follows the same syntax as Kubernetes for adding
+and removing annotations, e.g.:
+
+`--annotation=name=value`
+
+would add an annotation called `name` with a value of `value`, and:
+
+`--annotation=name-`
+
+would remove an annotation called `name`
+
+### Adding an Annotation
+
+There are two ways to add an Annotation during the lifecycle of a PostgreSQL
+cluster:
+
+- Cluster creation: ([`pgo create cluster`]({{< relref "/pgo-client/reference/pgo_create_cluster.md" >}}))
+- Updating a cluster: ([`pgo update cluster`]({{< relref "/pgo-client/reference/pgo_update_cluster.md" >}}))
+
+There are several flags available for managing Annotations, i.e.:
+
+- `--annotation`: adds an Annotation to all managed Deployments (PostgreSQL, pgBackRest, pgBouncer)
+- `--annotation-postgres`: adds an Annotation only to PostgreSQL Deployments
+- `--annotation-pgbackrest`: adds an Annotation only to pgBackrest Deployments
+- `--annotation-pgbouncer`: adds an Annotation only to pgBouncer Deployments
+
+To add an Annotation with key `hippo` and value `awesome` to all of the managed
+Deployments when creating a cluster, you would run the following command:
+
+`pgo create cluster hippo --annotation=hippo=awesome`
+
+To add an Annotation with key `elephant` and value `cool` to only the PostgreSQL
+Deployments when creating a cluster, you would run the following command:
+
+`pgo create cluster hippo --annotation-postgres=elephant=cool`
+
+To add an Annotation to all the managed Deployments in an existing cluster, you
+can use the `pgo update cluster` command:
+
+`pgo update cluster hippo --annotation=zebra=nice`
+
+### Adding Multiple Annotations
+
+There are two syntaxes you could use to add multiple Annotations to a cluster:
+
+`pgo create cluster hippo --annotation=hippo=awesome,elephant=cool`
+
+or
+
+`pgo create cluster hippo --annotation=hippo=awesome --annotation=elephant=cool`
+
+### Updating Annotations
+
+To update an Annotation, you can use the [`pgo update cluster`]({{< relref "/pgo-client/reference/pgo_update_cluster.md" >}})
+command and reference the original Annotation key. For intance, if I wanted to
+update the `hippo` annotation to be `rad`:
+
+`pgo update cluster hippo --annotation=hippo=rad`
+
+### Removing Annotations
+
+To remove an Annotation, you need to add a `-` to the end of the Annotation
+name. For example, to remove the `hippo` annotation:
+
+`pgo update cluster hippo --annotation=hippo-`
 
 ## Policy Management
 
@@ -1115,20 +1494,12 @@ You can remove a pgbouncer from a cluster as follows:
 
     pgo delete pgbouncer hacluster -n pgouser1
 
+### Query Analysis via pgBadger
+
 You can create a pgbadger sidecar container in your Postgres cluster
 pod as follows:
 
     pgo create cluster hacluster --pgbadger -n pgouser1
-
-Likewise, you can add the Crunchy Collect Metrics sidecar container
-into your Postgres cluster pod as follows:
-
-    pgo create cluster hacluster --metrics -n pgouser1
-
-Note: backend metric storage such as Prometheus and front end
-visualization software such as Grafana are not created automatically
-by the PostgreSQL Operator.  For instructions on installing Grafana and
-Prometheus in your environment, see the [Crunchy Container Suite documentation](https://access.crunchydata.com/documentation/crunchy-containers/4.3.0/examples/metrics/metrics/).
 
 ### Create a Cluster using Specific Storage
 

@@ -38,7 +38,7 @@ func TestOperatorCommands(t *testing.T) {
 			t.Run("shows something", func(t *testing.T) {
 				output, err := pgo("status", "-n", namespace()).Exec(t)
 				require.NoError(t, err)
-				require.Contains(t, output, "Operator Start")
+				require.Contains(t, output, "Total Volume Size")
 			})
 		})
 

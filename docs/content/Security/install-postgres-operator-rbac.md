@@ -7,7 +7,9 @@ weight: 7
 
 ## Installation of PostgreSQL Operator RBAC
 
-Please note, installation of the PostgreSQL Operator RBAC requires Kubernetes Cluster-Admin.
+For a list of the RBAC required to install the PostgreSQL Operator, please view the [`postgres-operator.yml`](https://raw.githubusercontent.com/CrunchyData/postgres-operator/v{{< param operatorVersion >}}/installers/kubectl/postgres-operator.yml) file:
+
+[https://raw.githubusercontent.com/CrunchyData/postgres-operator/v{{< param operatorVersion >}}/installers/kubectl/postgres-operator.yml](https://raw.githubusercontent.com/CrunchyData/postgres-operator/v{{< param operatorVersion >}}/installers/kubectl/postgres-operator.yml)
 
 The first step is to install the PostgreSQL Operator RBAC configuration.  This can be accomplished  by running:
 
@@ -17,7 +19,7 @@ This script will install the PostreSQL Operator Custom Resource Definitions, CRD
 
 | Setting |Definition  |
 |---|---|
-| Custom Resource Definitions (crd.yaml) | pgclusters|
+| Custom Resource Definitions | pgclusters|
 |  | pgpolicies|
 |  | pgreplicas|
 |  | pgtasks|

@@ -1,14 +1,13 @@
 Cluster:
-  PrimaryNodeLabel:
-  ReplicaNodeLabel:
   CCPImagePrefix:  {{ ccp_image_prefix }}
   CCPImageTag:  {{ ccp_image_tag }}
   DisableAutofail:  {{ disable_auto_failover }}
-  Backrest:  {{ backrest }}
   BackrestPort:  {{ backrest_port }}
   BackrestS3Bucket: {{ backrest_aws_s3_bucket }}
   BackrestS3Endpoint: {{ backrest_aws_s3_endpoint }}
   BackrestS3Region: {{ backrest_aws_s3_region }}
+  BackrestS3URIStyle: {{ backrest_aws_s3_uri_style }}
+  BackrestS3VerifyTLS: "{{ backrest_aws_s3_verify_tls }}"
   Metrics:  {{ metrics }}
   Badger:  {{ badger }}
   Port:  {{ db_port }}
@@ -30,7 +29,10 @@ Cluster:
   DefaultInstanceMemory: {{ default_instance_memory }}
   DefaultBackrestMemory: {{ default_pgbackrest_memory }}
   DefaultPgBouncerMemory: {{ default_pgbouncer_memory }}
+  DefaultExporterMemory: {{ default_exporter_memory }}
+  DisableFSGroup: {{ disable_fsgroup }}
 PrimaryStorage: {{ primary_storage }}
+WALStorage: {{ wal_storage }}
 BackupStorage: {{ backup_storage }}
 ReplicaStorage: {{ replica_storage }}
 BackrestStorage: {{ backrest_storage }}
@@ -54,6 +56,6 @@ Storage:
 {% endfor %}
 Pgo:
   Audit:  false
-  LoadTemplate:  /pgo-config/pgo.load-template.json
+  DisableReconcileRBAC: {{ not reconcile_rbac | bool }}
   PGOImagePrefix:  {{ pgo_image_prefix }}
   PGOImageTag:  {{ pgo_image_tag }}

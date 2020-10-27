@@ -5,10 +5,15 @@
   displayName: Postgres Primary Cluster Member
   description: Represents a Postgres primary cluster member
   resources:
+    - { kind: Pgcluster, version: v1 }
+    - { kind: ConfigMap, version: v1 }
     - { kind: Deployment, version: v1 }
-    - { kind: ReplicaSet, version: v1 }
+    - { kind: Job, version: v1 }
     - { kind: Pod, version: v1 }
+    - { kind: ReplicaSet, version: v1 }
+    - { kind: Secret, version: v1 }
     - { kind: Service, version: v1 }
+    - { kind: PersistentVolumeClaim, version: v1 }
   specDescriptors:
     - path: ccpimage
       displayName: PostgreSQL Image
@@ -129,16 +134,32 @@
   displayName: Postgres Replica Cluster Member
   description: Represents a Postgres replica cluster member
   resources:
+    - { kind: Pgreplica, version: v1 }
+    - { kind: ConfigMap, version: v1 }
     - { kind: Deployment, version: v1 }
-    - { kind: ReplicaSet, version: v1 }
+    - { kind: Job, version: v1 }
     - { kind: Pod, version: v1 }
+    - { kind: ReplicaSet, version: v1 }
+    - { kind: Secret, version: v1 }
     - { kind: Service, version: v1 }
+    - { kind: PersistentVolumeClaim, version: v1 }
   specDescriptors:
     - path: size
       displayName: Size
       description: The desired number of member Pods for the deployment.
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:podCount'
+  statusDescriptors:
+    - path: message
+      displayName: Message
+      description: Message
+      x-descriptors:
+        - 'urn:alm:descriptor:text'
+    - path: state
+      displayName: State
+      description: State
+      x-descriptors:
+        - 'urn:alm:descriptor:text'
 
 - name: pgpolicies.crunchydata.com
   kind: Pgpolicy
@@ -158,6 +179,17 @@
       description: The pgpolicy sql.
       x-descriptors:
         - 'urn:alm:descriptor:com.tectonic.ui:text'
+  statusDescriptors:
+    - path: message
+      displayName: Message
+      description: Message
+      x-descriptors:
+        - 'urn:alm:descriptor:text'
+    - path: state
+      displayName: State
+      description: State
+      x-descriptors:
+        - 'urn:alm:descriptor:text'
 
 - name: pgtasks.crunchydata.com
   kind: Pgtask

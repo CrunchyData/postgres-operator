@@ -29,25 +29,25 @@ PostgreSQL deployments across many Kubernetes namespaces, this can become
 onerous for the intents of this guide.
 
 If you install the PostgreSQL Operator using the [quickstart](/quickstart/)
-guide, you will have two namespaces installed: `pgouser1` and `pgouser2`. We
+guide, you will install the PostgreSQL Operator to a namespace called `pgo`. We
 can choose to always use one of these namespaces by setting the `PGO_NAMESPACE`
 environmental variable, which is detailed in the global [`pgo` Client](/pgo-client/)
 reference,
 
-For convenience, we will use the `pgouser1` namespace in the examples below.
-For even more convenience, we recommend setting `pgouser1` to be the value of
+For convenience, we will use the `pgo` namespace in the examples below.
+For even more convenience, we recommend setting `pgo` to be the value of
 the `PGO_NAMESPACE` variable. In the shell that you will be executing the `pgo`
 commands in, run the following command:
 
 ```shell
-export PGO_NAMESPACE=pgouser1
+export PGO_NAMESPACE=pgo
 ```
 
 If you do not wish to set this environmental variable, or are in an environment
 where you are unable to use environmental variables, you will have to use the
 `--namespace` (or `-n`) flag for most commands, e.g.
 
-`pgo version -n pgouser1`
+`pgo version -n pgo`
 
 ## Syntax
 
@@ -107,14 +107,12 @@ provides:
 | apply       | `pgo apply mypolicy --selector=name=mycluster`               | Apply a SQL policy on a Postgres cluster(s) that have a label matching `service-name=mycluster` |
 | backup      | `pgo backup mycluster`                                       | Perform a backup on a Postgres cluster(s)                                                       |
 | cat         | `pgo cat mycluster filepath`                                 | Perform a Linux `cat` command on the cluster.                                                   |
-| clone      | `pgo clone oldcluster newcluster`                             | Copies the primary database of an existing cluster to a new cluster                         |
 | create      | `pgo create cluster mycluster`                               | Create an Operator resource type (e.g. cluster, policy, schedule, user, namespace, pgouser, pgorole)                         |
 | delete      | `pgo delete cluster mycluster`                               | Delete an Operator resource type (e.g. cluster, policy, user, schedule, namespace, pgouser, pgorole)                         |
 | df          | `pgo df mycluster`                                           | Display the disk status/capacity of a Postgres cluster.                                         |
 | failover    | `pgo failover mycluster`                                     | Perform a manual failover of a Postgres cluster.                                                |
 | help        | `pgo help`                                                   | Display general `pgo` help information.                                                         |
 | label       | `pgo label mycluster --label=environment=prod`               | Create a metadata label for a Postgres cluster(s).                                              |
-| load        | `pgo load --load-config=load.json --selector=name=mycluster` | Perform a data load into a Postgres cluster(s).                                                 |
 | reload      | `pgo reload mycluster`                                       | Perform a `pg_ctl` reload command on a Postgres cluster(s).                                     |
 | restore     | `pgo restore mycluster`                                      | Perform a `pgbackrest` or `pgdump` restore on a Postgres cluster.                               |
 | scale       | `pgo scale mycluster`                                        | Create a Postgres replica(s) for a given Postgres cluster.                                      |
@@ -135,7 +133,7 @@ There are several global flags available to the `pgo` client.
 
 | Flag                 | Description |
 | :--                  | :-- |
-| `--apiserver-url`    | The URL for the PostgreSQL Operator apiserver that will process the request from the pgo client. |
+| `--apiserver-url`    | The URL for the PostgreSQL Operator apiserver that will process the request from the pgo client. Note that the URL should **not** end in a `/`. |
 | `--debug`            | Enable additional output for debugging. |
 | `--disable-tls`      | Disable TLS authentication to the Postgres Operator. |
 | `--exclude-os-trust` | Exclude CA certs from OS default trust store. |
@@ -157,7 +155,7 @@ client.
 | :--                 | :--                                                          |
 | `EXCLUDE_OS_TRUST`  | Exclude CA certs from OS default trust store.                |
 | `GENERATE_BASH_COMPLETION` | If set, will allow `pgo` to leverage "bash completion" to help complete commands as they are typed. |
-| `PGO_APISERVER_URL` | The URL for the PostgreSQL Operator apiserver that will process the request from the pgo client. |
+| `PGO_APISERVER_URL` | The URL for the PostgreSQL Operator apiserver that will process the request from the pgo client. Note that the URL should **not** end in a `/`. |
 | `PGO_CA_CERT`       | The CA certificate file path for authenticating to the PostgreSQL Operator apiserver. |
 | `PGO_CLIENT_CERT`   | The client certificate file path for authenticating to the PostgreSQL Operator apiserver. |
 | `PGO_CLIENT_KEY`    | The client key file path for authenticating to the PostgreSQL Operator apiserver. |

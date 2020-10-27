@@ -30,18 +30,8 @@ import (
 func TestClusterBackup(t *testing.T) {
 	t.Parallel()
 
-	requireStanzaExists := func(t *testing.T, namespace, cluster string, timeout time.Duration) {
-		t.Helper()
-
-		ready := func() bool {
-			output, err := pgo("show", "backup", cluster, "-n", namespace).Exec(t)
-			return err == nil && strings.Contains(output, "status: ok")
-		}
-
-		if !ready() {
-			requireWaitFor(t, ready, timeout, time.Second,
-				"timeout waiting for stanza of %q in %q", cluster, namespace)
-		}
+	teardownSchedule := func(t *testing.T, namespace, schedule string) {
+		pgo("delete", "schedule", "-n", namespace, "--no-prompt", "--schedule-name="+schedule).Exec(t)
 	}
 
 	withNamespace(t, func(namespace func() string) {
@@ -105,11 +95,10 @@ func TestClusterBackup(t *testing.T) {
 
 			t.Run("create schedule", func(t *testing.T) {
 				t.Run("creates a backup", func(t *testing.T) {
-					t.Skip("BUG: scheduler does not handle namespaces updated after creation")
-
 					output, err := pgo("create", "schedule", "--selector=name="+cluster(), "-n", namespace(),
 						"--schedule-type=pgbackrest", "--schedule=* * * * *", "--pgbackrest-backup-type=full",
 					).Exec(t)
+					defer teardownSchedule(t, namespace(), cluster()+"-pgbackrest-full")
 					require.NoError(t, err)
 					require.Contains(t, output, "created")
 
@@ -188,23 +177,37 @@ func TestClusterBackup(t *testing.T) {
 					before := clusterPVCs(t, namespace(), cluster())
 					require.NotEmpty(t, before, "expected volumes to exist")
 
+					// find the creation timestamp for the primary PVC, which wll have the same
+					// name as the cluster
+					var primaryPVCCreationTimestamp time.Time
+					for _, pvc := range before {
+						if pvc.GetName() == cluster() {
+							primaryPVCCreationTimestamp = pvc.GetCreationTimestamp().Time
+						}
+					}
+
 					output, err := pgo("restore", cluster(), "--no-prompt", "-n", namespace()).Exec(t)
 					require.NoError(t, err)
-					require.Contains(t, output, "performed")
+					require.Contains(t, output, "restore request")
 
+					// wait for primary PVC to be recreated
 					more := func() bool {
 						after := clusterPVCs(t, namespace(), cluster())
 						for _, pvc := range after {
-							if !kubeapi.IsPVCBound(pvc) {
-								return false
+							// check to see if the PVC for the primary is bound, and has a timestamp
+							// after the original timestamp for the primary PVC timestamp captured above,
+							// indicating that it been re-created
+							if pvc.GetName() == cluster() && kubeapi.IsPVCBound(pvc) &&
+								pvc.GetCreationTimestamp().Time.After(primaryPVCCreationTimestamp) {
+								return true
 							}
 						}
-						return len(after) > len(before)
+						return false
 					}
-					requireWaitFor(t, more, 2*time.Minute, time.Second,
-						"timeout waiting for restore of %q in %q", cluster(), namespace())
+					requireWaitFor(t, more, time.Minute, time.Second,
+						"timeout waiting for restore to begin on %q in %q", cluster(), namespace())
 
-					requireClusterReady(t, namespace(), cluster(), time.Minute)
+					requireClusterReady(t, namespace(), cluster(), 2*time.Minute)
 				})
 			})
 
@@ -265,7 +268,7 @@ func TestClusterBackup(t *testing.T) {
 							strings.Contains(stdout, "(1 row)")
 					}
 					requireWaitFor(t, restored, 2*time.Minute, time.Second,
-						"timeout waiting for restore of %q in %q", cluster(), namespace())
+						"timeout waiting for restore to finish on %q in %q", cluster(), namespace())
 
 					requireClusterReady(t, namespace(), cluster(), time.Minute)
 				})

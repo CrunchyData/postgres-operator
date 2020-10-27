@@ -37,7 +37,7 @@ That atomic command runs the Docker command set in this label:
 
 `Name=`
 
-The registry location and name of the image. For example, Name="crunchydata/postgres-operator".
+The registry location and name of the image. For example, Name="registry.developers.crunchydata.com/crunchydata/postgres-operator".
 
 `Version=`
 
@@ -45,4 +45,4 @@ The Red Hat Enterprise Linux version from which the container was built. For exa
 
 `Release=`
 
-The specific release number of the container. For example, Release="4.3.0"
+The specific release number of the container. For example, Release="4.5.0"

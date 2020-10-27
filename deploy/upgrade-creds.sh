@@ -15,10 +15,6 @@
 
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-PGO_CONF="$PGOROOT/conf/postgres-operator"
-
-ROLE_INPUT="$PGO_CONF/pgorole"
-USER_INPUT="$PGO_CONF/pgouser"
 
 if [ $# -eq 2 ] && [ -f $1 ] && [ -f $2 ]; then
     ROLE_INPUT=${1}
@@ -59,7 +55,7 @@ do
         $PGO_CMD delete secret pgorole-$PGO_ROLENAME -n $PGO_OPERATOR_NAMESPACE
     fi
 
-    expenv -f $DIR/pgorole.yaml | $PGO_CMD create -f -
+    cat $DIR/pgorole.yaml | envsubst | $PGO_CMD create -f -
 done < "$ROLE_INPUT"
 
 
@@ -80,5 +76,5 @@ do
     if [ $? -eq 0 ]; then
         $PGO_CMD delete secret pgouser-$PGO_USERNAME -n $PGO_OPERATOR_NAMESPACE
     fi
-    expenv -f $DIR/pgouser.yaml | $PGO_CMD create -f -
+    cat $DIR/pgouser.yaml | envsubst | $PGO_CMD create -f -
 done < "$USER_INPUT"

@@ -1,4 +1,9 @@
 {
   "name": "PGMONITOR_PASSWORD",
-  "value": "{{.PgmonitorPassword}}"
+  "valueFrom": {
+    "secretKeyRef": {
+        "name": "{{.ExporterSecret}}",
+        "key": "password"
+    }
+  }
 },

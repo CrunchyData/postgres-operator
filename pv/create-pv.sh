@@ -21,5 +21,5 @@ do
    	echo "creating PV crunchy-pv$i"
 	export COUNTER=$i
 	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete pv crunchy-pv$i
-	expenv -f $DIR/crunchy-pv.json | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
+	cat $DIR/crunchy-pv.json | envsubst | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
 done

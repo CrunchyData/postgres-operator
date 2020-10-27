@@ -1,0 +1,108 @@
+{{ if .Values.serviceAccount.create }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "postgres-operator.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "postgres-operator.labels" . | indent 4 }}
+{{ include "postgres-operator.imagePullSecret" . }}
+{{ end }}
+{{ if and .Values.rbac.create (not .Values.rbac.useClusterAdmin) }}
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ template "postgres-operator.fullname" . }}-cr
+  labels:
+{{ include "postgres-operator.labels" . | indent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade,pre-delete
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: "-10"
+rules:
+  - apiGroups:
+      - ''
+    resources:
+      - namespaces
+    verbs:
+      - get
+      - list
+      - create
+      - patch
+      - delete
+  - apiGroups:
+      - ''
+    resources:
+      - secrets
+    verbs:
+      - list
+      - get
+      - create
+      - delete
+  - apiGroups:
+      - ''
+    resources:
+      - configmaps
+      - services
+      - persistentvolumeclaims
+    verbs:
+      - get
+      - create
+      - delete
+      - list
+  - apiGroups:
+      - ''
+    resources:
+      - serviceaccounts
+    verbs:
+      - get
+      - create
+      - delete
+      - patch
+      - list
+  - apiGroups:
+      - apps
+      - extensions
+    resources:
+      - deployments
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - clusterroles
+      - clusterrolebindings
+    verbs:
+      - get
+      - create
+      - delete
+      - bind
+      - escalate
+{{ end }}
+{{ if .Values.rbac.create }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "postgres-operator.fullname" . }}-crb
+  labels:
+{{ include "postgres-operator.labels" . | indent 4 }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade,pre-delete
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+    helm.sh/hook-weight: "-10"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "postgres-operator.clusterroleName" . }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "postgres-operator.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+{{ end }}

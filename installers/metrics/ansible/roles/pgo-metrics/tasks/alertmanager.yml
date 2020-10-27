@@ -1,0 +1,101 @@
+---
+- name: Deploy Alertmanager
+  tags:
+    - install-metrics
+    - update-metrics
+  block:
+    - name: Set Alertmanager Output Directory Fact
+      set_fact:
+        alertmanager_output_dir: "{{ metrics_dir }}/output/alertmanager"
+
+    - name: Ensure Output Directory Exists
+      file:
+        path: "{{ alertmanager_output_dir }}"
+        state: "directory"
+        mode: "0700"
+
+    - name: Set pgmonitor Prometheus Directory Fact
+      set_fact:
+        pgmonitor_prometheus_dir: "{{ metrics_dir }}/pgmonitor-{{ pgmonitor_version | replace('v','') }}/prometheus"
+
+    - name: Copy Alertmanger Config to Output Directory
+      command: "cp {{ pgmonitor_prometheus_dir }}/{{ item.src }} {{ alertmanager_output_dir }}/{{ item.dst }}"
+      loop:
+        - { src: 'crunchy-alertmanager.yml', dst: 'alertmanager.yml'}
+        - { src: 'alert-rules.d/crunchy-alert-rules-pg.yml.containers.example', dst: 'crunchy-alert-rules-pg.yml'}
+
+    - name: Create Alertmanager Config ConfigMap
+      shell: |
+        {{ kubectl_or_oc }} create configmap {{ alertmanager_configmap }} --dry-run --output=yaml \ \
+          --from-file={{ alertmanager_output_dir }}/alertmanager.yml \
+        | {{ kubectl_or_oc }} label --filename=- --local --dry-run --output=yaml \
+          app.kubernetes.io/name={{ app_name }} \
+        | {{ kubectl_or_oc }} create --filename=- -n {{ metrics_namespace }}
+      when: alertmanager_custom_config == ""
+      register: create_alertmanager_result
+      failed_when:
+        - create_alertmanager_result.rc != 0
+        - "'AlreadyExists' not in create_alertmanager_result.stderr"
+
+    - name: Set Alertmanager ConfigMap Name
+      set_fact:
+        alertmanager_configmap: "{{ alertmanager_custom_config }}"
+      when: alertmanager_custom_config != ""
+
+    - name: Create Alertmanager Rules ConfigMap
+      shell: |
+        {{ kubectl_or_oc }} create configmap {{ alertmanager_rules_configmap }} --dry-run --output=yaml \
+          --from-file={{ alertmanager_output_dir }}/crunchy-alert-rules-pg.yml \
+        | {{ kubectl_or_oc }} label --filename=- --local --dry-run --output=yaml \
+          app.kubernetes.io/name={{ app_name }} \
+        | {{ kubectl_or_oc }} create --filename=- -n {{ metrics_namespace }}
+      when: alertmanager_custom_rules_config == ""
+      register: create_alertmanager_result
+      failed_when:
+        - create_alertmanager_result.rc != 0
+        - "'AlreadyExists' not in create_alertmanager_result.stderr"
+
+    - name: Set Alertmanager Rules ConfigMap Name
+      set_fact:
+        alertmanager_rules_configmap: "{{ alertmanager_custom_rules_config }}"
+      when: alertmanager_custom_rules_config != ""
+
+    - name: Template Alertmanager RBAC
+      template:
+        src: "{{ item }}"
+        dest: "{{ alertmanager_output_dir }}/{{ item | replace('.j2', '') }}"
+        mode: "0600"
+      loop:
+        - alertmanager-rbac.json.j2
+      when: create_rbac | bool
+
+    - name: Create Alertmanager RBAC
+      command: "{{ kubectl_or_oc }} create -f {{ alertmanager_output_dir }}/{{ item }} -n {{ metrics_namespace }}"
+      loop:
+        - alertmanager-rbac.json
+      register: create_alertmanager_rbac_result
+      failed_when:
+        - create_alertmanager_rbac_result.rc != 0
+        - "'AlreadyExists' not in create_alertmanager_rbac_result.stderr"
+      when: create_rbac | bool
+
+    - name: Template Alertmanager PVC, Service & Deployment
+      template:
+        src: "{{ item }}"
+        dest: "{{ alertmanager_output_dir }}/{{ item | replace('.j2', '') }}"
+        mode: "0600"
+      loop:
+        - alertmanager-pvc.json.j2
+        - alertmanager-service.json.j2
+        - alertmanager-deployment.json.j2
+
+    - name: Create Alertmanager PVC, Service & Deployment
+      command: "{{ kubectl_or_oc }} create -f {{ alertmanager_output_dir }}/{{ item }} -n {{ metrics_namespace }}"
+      loop:
+        - alertmanager-pvc.json
+        - alertmanager-service.json
+        - alertmanager-deployment.json
+      register: create_alertmanager_deployment_result
+      failed_when:
+        - create_alertmanager_deployment_result.rc != 0
+        - "'AlreadyExists' not in create_alertmanager_deployment_result.stderr"

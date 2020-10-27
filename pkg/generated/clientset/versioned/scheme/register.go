@@ -18,7 +18,7 @@ limitations under the License.
 package scheme
 
 import (
-	crunchydatav1 "github.com/crunchydata/postgres-operator/apis/crunchydata.com/v1"
+	crunchydatav1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

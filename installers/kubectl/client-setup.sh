@@ -12,41 +12,75 @@
 #  limitations under the License.
 
 # This script should be run after the operator has been deployed
-export PGO_OPERATOR_NAMESPACE=${PGO_OPERATOR_NAMESPACE:-pgo}
+PGO_OPERATOR_NAMESPACE="${PGO_OPERATOR_NAMESPACE:-pgo}"
+PGO_USER_ADMIN="${PGO_USER_ADMIN:-pgouser-admin}"
+PGO_CLIENT_VERSION="${PGO_CLIENT_VERSION:-v4.5.0}"
+PGO_CLIENT_URL="https://github.com/CrunchyData/postgres-operator/releases/download/${PGO_CLIENT_VERSION}"
+
+PGO_CMD="${PGO_CMD-kubectl}"
+
+# Checks operating system and determines which binary to download
+UNAME_RESULT=$(uname)
+if [[ "${UNAME_RESULT}" == "Linux" ]]
+then
+    BIN_NAME="pgo"
+elif [[ "${UNAME_RESULT}" == "Darwin" ]]
+then
+    BIN_NAME="pgo-mac"
+else
+    echo "${UNAME_RESULT} is not supported, valid operating systems are: Linux, Darwin"
+    echo "Exiting..."
+    exit 1
+fi
+
+# Creates the output directory for files
+OUTPUT_DIR="${HOME}/.pgo/${PGO_OPERATOR_NAMESPACE}"
+install -d -m a-rwx,u+rwx "${OUTPUT_DIR}"
+
+if [ -f "${OUTPUT_DIR}/pgo" ]
+then
+	echo "pgo Client Binary detected at: ${OUTPUT_DIR}"
+	echo "Updating Binary..."
+fi
+
+echo "Operating System found is ${UNAME_RESULT}..."
+echo "Downloading ${BIN_NAME} version: ${PGO_CLIENT_VERSION}..."
+curl -Lo "${OUTPUT_DIR}/pgo" "${PGO_CLIENT_URL}/${BIN_NAME}"
+chmod +x "${OUTPUT_DIR}/pgo"
+
 
 # Check that the pgouser-admin secret exists
-if [ -z "$(kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgouser-admin)" ]
+if [ -z "$($PGO_CMD get secret -n ${PGO_OPERATOR_NAMESPACE} ${PGO_USER_ADMIN})" ]
 then
-    echo "pgouser-admin Secret not found in namespace: $PGO_OPERATOR_NAMESPACE"
+    echo "${PGO_USER_ADMIN} Secret not found in namespace: ${PGO_OPERATOR_NAMESPACE}"
     echo "Please ensure that the PostgreSQL Operator has been installed."
     echo "Exiting..."
     exit 1
 fi
 
 # Check that the pgo.tls secret exists
-if [ -z "$(kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgo.tls)" ]
+if [ -z "$($PGO_CMD get secret -n ${PGO_OPERATOR_NAMESPACE} pgo.tls)" ]
 then
-    echo "pgo.tls Secret not found in namespace: $PGO_OPERATOR_NAMESPACE"
+    echo "pgo.tls Secret not found in namespace: ${PGO_OPERATOR_NAMESPACE}"
     echo "Please ensure that the PostgreSQL Operator has been installed."
     echo "Exiting..."
     exit 1
 fi
 
-
-# Creates the output directory for files
-OUTPUT_DIR=$HOME/.pgo/$PGO_OPERATOR_NAMESPACE
-mkdir -p $OUTPUT_DIR
+# Restrict access to the target file before writing
+kubectl_get_private() { touch "$1" && chmod a-rwx,u+rw "$1" && $PGO_CMD get > "$1" "${@:2}"; }
 
 # Use the pgouser-admin secret to generate pgouser file
-kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgouser-admin -o 'go-template={{.data.username | base64decode }}:{{.data.password | base64decode}}' > $OUTPUT_DIR/pgouser
+kubectl_get_private "${OUTPUT_DIR}/pgouser" secret -n "${PGO_OPERATOR_NAMESPACE}" "${PGO_USER_ADMIN}" \
+	-o 'go-template={{ .data.username | base64decode }}:{{ .data.password | base64decode }}'
 
 # Use the pgo.tls secret to generate the client cert files
-kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgo.tls -o 'go-template={{ index .data "tls.crt" | base64decode }}' > $OUTPUT_DIR/client.crt
-kubectl get secret -n $PGO_OPERATOR_NAMESPACE pgo.tls -o 'go-template={{ index .data "tls.key" | base64decode }}' > $OUTPUT_DIR/client.key
-
+kubectl_get_private "${OUTPUT_DIR}/client.crt" secret -n "${PGO_OPERATOR_NAMESPACE}" pgo.tls -o 'go-template={{ index .data "tls.crt" | base64decode }}'
+kubectl_get_private "${OUTPUT_DIR}/client.key" secret -n "${PGO_OPERATOR_NAMESPACE}" pgo.tls -o 'go-template={{ index .data "tls.key" | base64decode }}'
 
 echo "pgo client files have been generated, please add the following to your bashrc"
-echo "export PGOUSER=$OUTPUT_DIR/pgouser"
-echo "export PGO_CA_CERT=$OUTPUT_DIR/client.crt"
-echo "export PGO_CLIENT_CERT=$OUTPUT_DIR/client.crt"
-echo "export PGO_CLIENT_KEY=$OUTPUT_DIR/client.key"
+echo "export PATH=${OUTPUT_DIR}:\$PATH"
+echo "export PGOUSER=${OUTPUT_DIR}/pgouser"
+echo "export PGO_CA_CERT=${OUTPUT_DIR}/client.crt"
+echo "export PGO_CLIENT_CERT=${OUTPUT_DIR}/client.crt"
+echo "export PGO_CLIENT_KEY=${OUTPUT_DIR}/client.key"

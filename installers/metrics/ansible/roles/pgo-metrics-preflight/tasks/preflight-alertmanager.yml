@@ -1,0 +1,18 @@
+---
+- name: Check if inventory file variables are defined for Alertmanager
+  tags: always
+  fail:
+    msg: "Please specify the value of {{item}} in your inventory file"
+  when: lookup('vars', item, default='') == ''
+  loop:
+    - alertmanager_configmap
+    - alertmanager_rules_configmap
+    - alertmanager_image_name
+    - alertmanager_image_prefix
+    - alertmanager_image_tag
+    - alertmanager_log_level
+    - alertmanager_port
+    - alertmanager_service_name
+    - alertmanager_service_type
+    - alertmanager_storage_access_mode
+    - alertmanager_volume_size

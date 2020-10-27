@@ -26,4 +26,3 @@ $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete crd \
 	pgtasks.crunchydata.com
 
 $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete jobs --selector=pgrmdata=true
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE delete jobs --selector=pgo-load=true

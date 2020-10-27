@@ -36,3 +36,10 @@
   "name": "PGBACKREST_REPO1_HOST_CMD",
   "value": "/usr/local/bin/archive-push-s3.sh"
 },
+{
+  "name": "PGBACKREST_REPO1_S3_URI_STYLE",
+  "value": "{{.PgbackrestS3URIStyle}}"
+},{
+  "name": "PGHA_PGBACKREST_S3_VERIFY_TLS",
+  "value": "{{.PgbackrestS3VerifyTLS}}"
+},

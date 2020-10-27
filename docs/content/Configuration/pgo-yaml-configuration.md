@@ -1,7 +1,7 @@
 
 ---
 title: "PGO YAML"
-Latest Release: 4.3.0 {docdate}
+
 draft: false
 weight: 3
 ---
@@ -15,10 +15,8 @@ The *pgo.yaml* file is broken into major sections as described below:
 | Setting |Definition  |
 |---|---|
 |BasicAuth        | If set to `"true"` will enable Basic Authentication. If set to `"false"`, will allow a valid Operator user to successfully authenticate regardless of the value of the password provided for Basic Authentication. Defaults to `"true".`
-|PrimaryNodeLabel        |newly created primary deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
-|ReplicaNodeLabel        |newly created replica deployments will specify this node label if specified, unless you override it using the --node-label command line flag, if not set, no node label is specifed
 |CCPImagePrefix        |newly created containers will be based on this image prefix (e.g. crunchydata), update this if you require a custom image prefix
-|CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-12.2-4.3.0), unless you override it using the --ccp-image-tag command line flag
+|CCPImageTag        |newly created containers will be based on this image version (e.g. {{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}), unless you override it using the --ccp-image-tag command line flag
 |Port        | the PostgreSQL port to use for new containers (e.g. 5432)
 |PGBadgerPort | the port used to connect to pgbadger (e.g. 10000)
 |ExporterPort | the port used to connect to postgres exporter (e.g. 9187)
@@ -26,7 +24,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 |Database        | the PostgreSQL normal user database
 |Replicas        | the number of cluster replicas to create for newly created clusters, typically users will scale up replicas on the pgo CLI command line but this global value can be set as well
 |PgmonitorPassword        | the password to use for pgmonitor metrics collection if you specify --metrics when creating a PG cluster
-|Metrics        | boolean, if set to true will cause each new cluster to include crunchy-collect as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics
+|Metrics        | boolean, if set to true will cause each new cluster to include crunchy-postgres-exporter as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics
 |Badger        | boolean, if set to true will cause each new cluster to include crunchy-pgbadger as a sidecar container for static log analysis, if set to false (default), users can still add pgbadger on a cluster-by-cluster basis using the pgo create cluster command flag --pgbadger
 |Policies        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog
 |PasswordAgeDays        | optional, if set, will set the VALID UNTIL date on passwords to this many days in the future when creating users or setting passwords, defaults to 60 days
@@ -41,6 +39,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 |DefaultInstanceMemory | string, matches a Kubernetes resource value. If set, it is used as the default value of the memory request for each instance in a PostgreSQL cluster. The example configuration uses `128Mi` which is very low for a PostgreSQL cluster, as the default amount of shared memory PostgreSQL requests is `128Mi`. However, for test clusters, this value is acceptable as the shared memory buffers won't be stressed, but you should absolutely consider raising this in production. If the value is unset, it defaults to `512Mi`, which is a much more appropriate minimum.
 |DefaultBackrestMemory | string, matches a Kubernetes resource value. If set, it is used as the default value of the memory request for the pgBackRest repository (default `48Mi`)
 |DefaultPgBouncerMemory | string, matches a Kubernetes resource value. If set, it is used as the default value of the memory request for pgBouncer instances (default `24Mi`)
+|DisableFSGroup | If set to `true`, this will disable the use of the fsGroup for the containers related to PostgreSQL, which is normally set to 26. This is geared towards deployments that use Security Context Constraints in the mode of restricted (default `false`) |
 
 ## Storage
 | Setting|Definition  |
@@ -48,9 +47,9 @@ The *pgo.yaml* file is broken into major sections as described below:
 |PrimaryStorage    |required, the value of the storage configuration to use for the primary PostgreSQL deployment
 |BackupStorage    |required, the value of the storage configuration to use for backups, including the storage for pgbackrest repo volumes
 |ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
-|ReplicaStorage    |required, the value of the storage configuration to use for the replica PostgreSQL deployments
 |BackrestStorage    |required, the value of the storage configuration to use for the pgbackrest shared repository deployment created when a user specifies pgbackrest to be enabled on a cluster
-|StorageClass        |for a dynamic storage type, you can specify the storage class used for storage provisioning(e.g. standard, gold, fast)
+|WALStorage        | optional, the value of the storage configuration to use for PostgreSQL Write Ahead Log
+|StorageClass        | optional, for a dynamic storage type, you can specify the storage class used for storage provisioning (e.g. standard, gold, fast)
 |AccessMode        |the access mode for new PVCs (e.g. ReadWriteMany, ReadWriteOnce, ReadOnlyMany). See below for descriptions of these.
 |Size        |the size to use when creating new PVCs (e.g. 100M, 1Gi)
 |Storage.storage1.StorageType        |supported values are either *dynamic*,  *create*,  if not supplied, *create* is used
@@ -115,7 +114,9 @@ for other access modes it might support.
 |Audit                 |boolean, if set to true will cause each apiserver call to be logged with an *audit* marking
 |ConfigMapWorkerCount  | The number of workers created for the worker queue within the ConfigMap controller (defaults to 2)
 |ControllerGroupRefreshInterval  | The refresh interval for any per-namespace controller with a refresh interval (defaults to 60 seconds)
+|DisableReconcileRBAC  | Whether or not to disable RBAC reconciliation in targeted namespaces (defaults to `false`)
 |NamespaceRefreshInterval        | The refresh interval for the namespace controller (defaults to 60 seconds)
+|NamespaceWorkerCount  | The number of workers created for the worker queue within the Namespace controller (defaults to 2)
 |PgclusterWorkerCount  | The number of workers created for the worker queue within the PGCluster controller (defaults to 1)
 |PGOImagePrefix        | image tag prefix to use for the Operator containers
 |PGOImageTag           |image tag to use for the Operator containers

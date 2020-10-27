@@ -65,96 +65,113 @@
       tags:
         - install
 
-    - name: Template PGO Admin Credentials
-      template:
-        src: pgouser-admin.yaml.j2
-        dest: "{{ output_dir }}/pgouser-admin.yaml"
-        mode: '0600'
+    - name: PGO Admin Credentials
       tags:
         - install
         - update
+      block:
+        - name: Template PGO Admin Credentials
+          template:
+            src: pgouser-admin.yaml.j2
+            dest: "{{ output_dir }}/pgouser-admin.yaml"
+            mode: '0600'
 
-    - name: Create PGO Admin Credentials
-      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgouser-admin.yaml"
-      tags:
-        - install
-        - update
+        - name: Check PGO Admin Credentials
+          shell: "{{ kubectl_or_oc }} get -f {{ output_dir }}/pgouser-admin.yaml"
+          register: pgoadmin_cerds_result
+          failed_when: false
 
-    - name: Template PGO Admin Role & Permissions
-      template:
-        src: pgorole-pgoadmin.yaml.j2
-        dest: "{{ output_dir }}/pgorole-pgoadmin.yaml"
-        mode: '0600'
-      tags:
-        - install
-        - update
+        - name: Create PGO Admin Credentials
+          command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgouser-admin.yaml"
+          when: pgoadmin_cerds_result.rc == 1
 
-    - name: Create PGO Admin Role & Permissions
-      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgorole-pgoadmin.yaml"
+    - name: PGO Admin Role & Permissions
       tags:
         - install
         - update
+      block:
+      - name: Template PGO Admin Role & Permissions
+        template:
+          src: pgorole-pgoadmin.yaml.j2
+          dest: "{{ output_dir }}/pgorole-pgoadmin.yaml"
+          mode: '0600'
 
-    - name: Template PGO Service Account
-      template:
-        src: pgo-service-account.yaml.j2
-        dest: "{{ output_dir }}/pgo-service-account.yaml"
-        mode: '0600'
-      tags:
-        - install
-        - update
+      - name: Check PGO Admin Role & Permissions
+        shell: "{{ kubectl_or_oc }} get -f {{ output_dir }}/pgorole-pgoadmin.yaml"
+        register: pgorole_pgoadmin_result
+        failed_when: false
+
+      - name: Create PGO Admin Role & Permissions
+        command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgorole-pgoadmin.yaml"
+        when: pgorole_pgoadmin_result.rc == 1
+
+    - name: PGO Service Account
       when: 
         - create_rbac|bool
-
-    - name: Create PGO Service Account
-      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgo-service-account.yaml"
       tags:
         - install
         - update
-      when: 
-        - create_rbac|bool
+      block:
+      - name: Template PGO Service Account
+        template:
+          src: pgo-service-account.yaml.j2
+          dest: "{{ output_dir }}/pgo-service-account.yaml"
+          mode: '0600'
 
-    - name: Template Cluster RBAC (namespace_mode 'dynamic')
-      template:
-        src: cluster-rbac.yaml.j2
-        dest: "{{ output_dir }}/cluster-rbac.yaml"
-        mode: '0600'
-      tags:
-        - install
-        - update
-      when: 
-        - create_rbac|bool
-        - namespace_mode == "dynamic"
+      - name: Check PGO Service Account
+        shell: "{{ kubectl_or_oc }} get -f {{ output_dir }}/pgo-service-account.yaml"
+        register: pgo_service_account_result
+        failed_when: false
 
-    - name: Create Cluster RBAC (namespace_mode 'dynamic')
-      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/cluster-rbac.yaml"
-      tags:
-        - install
-        - update
+      - name: Create PGO Service Account
+        command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgo-service-account.yaml"
+        when: pgo_service_account_result.rc == 1
+
+    - name: Cluster RBAC (namespace_mode 'dynamic')
       when: 
         - create_rbac|bool
         - namespace_mode == "dynamic"
-
-    - name: Template Cluster RBAC (namespace_mode 'readonly')
-      template:
-        src: cluster-rbac-readonly.yaml.j2
-        dest: "{{ output_dir }}/cluster-rbac-readonly.yaml"
-        mode: '0600'
       tags:
         - install
         - update
+      block:
+      - name: Template Cluster RBAC (namespace_mode 'dynamic')
+        template:
+          src: cluster-rbac.yaml.j2
+          dest: "{{ output_dir }}/cluster-rbac.yaml"
+          mode: '0600'
+
+      - name: Check Cluster RBAC (namespace_mode 'dynamic')
+        shell: "{{ kubectl_or_oc }} get -f {{ output_dir }}/cluster-rbac.yaml"
+        register: cluster_rbac_result
+        failed_when: false
+
+      - name: Create Cluster RBAC (namespace_mode 'dynamic')
+        command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/cluster-rbac.yaml"
+        when: cluster_rbac_result.rc == 1
+
+    - name: Cluster RBAC (namespace_mode 'readonly')
       when: 
         - create_rbac|bool
         - namespace_mode == "readonly"
-
-    - name: Create Cluster RBAC (namespace_mode 'readonly')
-      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/cluster-rbac-readonly.yaml"
       tags:
         - install
         - update
-      when: 
-        - create_rbac|bool
-        - namespace_mode == "readonly"
+      block:
+      - name: Template Cluster RBAC (namespace_mode 'readonly')
+        template:
+          src: cluster-rbac-readonly.yaml.j2
+          dest: "{{ output_dir }}/cluster-rbac-readonly.yaml"
+          mode: '0600'
+
+      - name: Check Cluster RBAC (namespace_mode 'readonly')
+        shell: "{{ kubectl_or_oc }} get -f {{ output_dir }}/cluster-rbac-readonly.yaml"
+        register: cluster_rbac_readonly_result
+        failed_when: false
+
+      - name: Create Cluster RBAC (namespace_mode 'readonly')
+        command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/cluster-rbac-readonly.yaml"
+        when: cluster_rbac_readonly_result.rc == 1
 
     - name: Cluster Roles Disabled (namespace_mode 'disabled')
       debug:
@@ -171,7 +188,7 @@
         {{ kubectl_or_oc }} -n {{ pgo_operator_namespace }} get secret/{{ ccp_image_pull_secret }} -o jsonpath='{""}' 2> /dev/null ||
         {{ kubectl_or_oc }} -n {{ pgo_operator_namespace }} create -f {{ ccp_image_pull_secret_manifest }}
       tags:
-        - install-metrics
+        - install
       when:
         - create_rbac | bool
         - ccp_image_pull_secret_manifest != ''
@@ -187,32 +204,45 @@
         - create_rbac | bool
         - pgo_image_pull_secret_manifest != ''
 
-    - name: Create cluster-admin Cluster Role Binding for PGO Service Account
-      command: |
-        {{ kubectl_or_oc }} create clusterrolebinding pgo-cluster-admin \
-          --clusterrole cluster-admin \
-          --user system:serviceaccount:{{ pgo_operator_namespace }}:postgres-operator
+    - name: ClusterRolebinding for PGO Service Account
+      tags:
+        - install
+        - update
       when: create_rbac|bool and pgo_cluster_admin|bool
-      tags:
-        - install
-        - update
+      block:
+        - name: Check cluster-admin Cluster Role Binding for PGO Service Account
+          shell: "{{ kubectl_or_oc }} get clusterrolebinding pgo-cluster-admin"
+          register: pgo_cluster_admin_result
+          failed_when: false
 
-    - name: Template PGO RBAC
-      template:
-        src: pgo-role-rbac.yaml.j2
-        dest: "{{ output_dir }}/pgo-role-rbac.yaml"
-        mode: '0600'
+        - name: Create cluster-admin Cluster Role Binding for PGO Service Account
+          command: |
+            {{ kubectl_or_oc }} create clusterrolebinding pgo-cluster-admin \
+              --clusterrole cluster-admin \
+              --serviceaccount "{{ pgo_operator_namespace }}:postgres-operator"
+          when: pgo_cluster_admin_result.rc == 1
+
+
+    - name: PGO RBAC
       tags:
         - install
         - update
       when: create_rbac|bool
+      block:
+      - name: Template PGO RBAC
+        template:
+          src: pgo-role-rbac.yaml.j2
+          dest: "{{ output_dir }}/pgo-role-rbac.yaml"
+          mode: '0600'
 
-    - name: Create PGO RBAC
-      command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgo-role-rbac.yaml  -n {{ pgo_operator_namespace }}"
-      tags:
-        - install
-        - update
-      when: create_rbac|bool
+      - name: Check PGO RBAC
+        shell: "{{ kubectl_or_oc }} get -f {{ output_dir }}/pgo-role-rbac.yaml"
+        register: pgo_role_rbac_result
+        failed_when: false
+
+      - name: Create PGO RBAC
+        command: "{{ kubectl_or_oc }} create -f {{ output_dir }}/pgo-role-rbac.yaml"
+        when: pgo_role_rbac_result.rc == 1
 
     - name: Template Local PGO User
       template:
@@ -223,79 +253,121 @@
         - install
         - update
 
-    - name: Template PGO Configuration
-      template:
-        src: pgo.yaml.j2
-        dest: "{{ output_dir }}/pgo.yaml"
-        mode: '0600'
+    - name: PGO BackRest Repo Secret
       tags:
         - install
         - update
+      block:
+        - name: Check PGO BackRest Repo Secret
+          shell: "{{ kubectl_or_oc }} get secret pgo-backrest-repo-config -n {{ pgo_operator_namespace }}"
+          register: pgo_backrest_repo_config_result
+          failed_when: false
 
-    - name: Template PGO Service Configuration
-      template:
-        src: service.json.j2
-        dest: "{{ output_dir }}/service.json"
-        mode: '0600'
+        - name: Create PGO BackRest Repo Secret
+          command: |
+            {{ kubectl_or_oc }} create secret generic pgo-backrest-repo-config \
+              --from-file=config='{{ role_path }}/files/pgo-backrest-repo/config' \
+              --from-file=sshd_config='{{ role_path }}/files/pgo-backrest-repo/sshd_config' \
+              --from-file=aws-s3-ca.crt='{{ role_path }}/files/pgo-backrest-repo/aws-s3-ca.crt' \
+              --from-literal=aws-s3-key='{{ backrest_aws_s3_key }}' \
+              --from-literal=aws-s3-key-secret='{{ backrest_aws_s3_secret }}' \
+              -n {{ pgo_operator_namespace }}
+          when: pgo_backrest_repo_config_result.rc == 1
+
+    - name: PGO API Secret
       tags:
         - install
         - update
+      block:
+        - name: Check PGO API Secret
+          shell: "{{ kubectl_or_oc }} get secret pgo.tls -n {{ pgo_operator_namespace }}"
+          register: pgo_tls_result
+          failed_when: false
 
-    - name: Create PGO BackRest Repo Secret
-      command: |
-        {{ kubectl_or_oc }} create secret generic pgo-backrest-repo-config \
-          --from-file=config='{{ role_path }}/files/pgo-backrest-repo/config' \
-          --from-file=sshd_config='{{ role_path }}/files/pgo-backrest-repo/sshd_config' \
-          --from-file=aws-s3-ca.crt='{{ role_path }}/files/pgo-backrest-repo/aws-s3-ca.crt' \
-          --from-literal=aws-s3-key='{{ backrest_aws_s3_key }}' \
-          --from-literal=aws-s3-key-secret='{{ backrest_aws_s3_secret }}' \
-          -n {{ pgo_operator_namespace }}
+        - name: Create PGO API Secret
+          command: |
+            {{ kubectl_or_oc }} create secret tls pgo.tls \
+              --cert='{{ output_dir }}/server.crt' \
+              --key='{{ output_dir }}/server.key' \
+              -n {{ pgo_operator_namespace }}
+          when: pgo_tls_result.rc == 1
+
+    - name: PGO ConfigMap
       tags:
         - install
         - update
+      block:
+        - name: Template PGO Configuration
+          template:
+            src: pgo.yaml.j2
+            dest: "{{ output_dir }}/pgo.yaml"
+            mode: '0600'
 
-    - name: Create PGO API Secret
-      command: |
-        {{ kubectl_or_oc }} create secret tls pgo.tls \
-          --cert='{{ output_dir }}/server.crt' \
-          --key='{{ output_dir }}/server.pem' \
-          -n {{ pgo_operator_namespace }}
-      tags:
-        - install
+        - name: Check PGO ConfigMap
+          shell: "{{ kubectl_or_oc }} get configmap pgo-config -n {{ pgo_operator_namespace }}"
+          register: pgo_config_result
+          failed_when: false
+          
+        - name: Create PGO ConfigMap
+          command: |
+            {{ kubectl_or_oc }} create configmap pgo-config \
+              --from-file=pgo.yaml='{{ output_dir }}/pgo.yaml' \
+              --from-file='{{ role_path }}/files/pgo-configs' \
+              -n {{ pgo_operator_namespace }}
+          when: pgo_config_result.rc == 1
 
-    - name: Create PGO ConfigMap
-      command: |
-        {{ kubectl_or_oc }} create configmap pgo-config \
-          --from-file=pgo.yaml='{{ output_dir }}/pgo.yaml' \
-          --from-file='{{ role_path }}/files/pgo-configs' \
-          -n {{ pgo_operator_namespace }}
-      tags:
-        - install
-        - update
-
-    - name: Create PGO Service
-      command: |
-        {{ kubectl_or_oc }} create --filename='{{ output_dir }}/service.json' -n {{ pgo_operator_namespace }}
-      tags:
-        - install
-        - update
-
-    - name: Template PGO Deployment
-      template:
-        src: deployment.json.j2
-        dest: "{{ output_dir }}/deployment.json"
-        mode: '0600'
+    - name: PGO Service
       tags:
         - install
         - update
+      block:
+        - name: Template PGO Service Configuration
+          template:
+            src: service.json.j2
+            dest: "{{ output_dir }}/service.json"
+            mode: '0600'
 
-    - name: Deploy PGO
-      command: |
-        {{ kubectl_or_oc }} create --filename='{{ output_dir }}/deployment.json' -n {{ pgo_operator_namespace }}
+        - name: Check PGO Service Configuration
+          shell: "{{ kubectl_or_oc }} get -f {{ output_dir }}/service.json -n {{ pgo_operator_namespace }}"
+          register: service_result
+          failed_when: false
+
+        - name: Create PGO Service
+          command: |
+            {{ kubectl_or_oc }} create --filename='{{ output_dir }}/service.json' -n {{ pgo_operator_namespace }}
+          when: service_result.rc == 1
+
+    - name: PGO Deployment
       tags:
         - install
         - update
+      block:
+        - name: Template PGO Deployment
+          template:
+            src: deployment.json.j2
+            dest: "{{ output_dir }}/deployment.json"
+            mode: '0600'
 
+        - name: Check PGO Deployment
+          shell: "{{ kubectl_or_oc }} get -f {{ output_dir }}/deployment.json -n {{ pgo_operator_namespace }}"
+          register: deployment_json_result
+          failed_when: false
+
+        - name: Deploy PGO
+          command: |
+            {{ kubectl_or_oc }} create --filename='{{ output_dir }}/deployment.json' -n {{ pgo_operator_namespace }}
+          when: deployment_json_result.rc == 1
+
+        - name: Wait for PGO to finish deploying
+          command: "{{ kubectl_or_oc }} rollout status deployment/postgres-operator -n {{ pgo_operator_namespace }}"
+          async: 600
+
+- name: PGO Client
+  tags:
+    - install
+    - update
+  when: pgo_client_install == "true" and kubernetes_in_cluster == "false"
+  block:
     - name: Download PGO Linux Client
       become: yes
       become_method: sudo
@@ -304,33 +376,16 @@
         dest: "/usr/local/bin/pgo"
         mode: 0755
         force: yes
-      when: uname_result.stdout == "Linux" and
-            pgo_client_install == "true" and
-            kubernetes_in_cluster == "false"
-      tags:
-        - install
-        - update
+      when: uname_result.stdout == "Linux"
 
-    - name: Download PGO MacOS Client
+    - name: Download PGO macOS Client
       become: yes
       become_method: sudo
       get_url:
         url: "{{ pgo_client_url }}/pgo-mac"
         dest: "/usr/local/bin/pgo"
         mode: 0755
-      when: uname_result.stdout == "Darwin" and
-            pgo_client_install == "true" and
-            kubernetes_in_cluster == "false"
-      tags:
-        - install
-        - update
-
-    - name: Wait for PGO to finish deploying
-      command: "{{ kubectl_or_oc }} rollout status deployment/postgres-operator -n {{ pgo_operator_namespace }}"
-      async: 600
-      tags:
-        - install
-        - update
+      when: uname_result.stdout == "Darwin"
 
 - name: Deploy PGO-Client Container
   tags:
@@ -343,13 +398,13 @@
         src: pgo-client.json.j2
         dest: "{{ output_dir }}/pgo-client.json"
         mode: '0600'
-      tags:
-        - install
-        - update
 
+    - name: Check PGO-Client Deployment
+      shell: "{{ kubectl_or_oc }} get -f {{ output_dir }}/pgo-client.json"
+      register: pgo_client_json_result
+      failed_when: false
+      
     - name: Create PGO-Client deployment
       command: |
-        {{ kubectl_or_oc }} create --filename='{{ output_dir }}/pgo-client.json' -n {{ pgo_operator_namespace }}
-      tags:
-        - install
-        - update
+        {{ kubectl_or_oc }} create --filename='{{ output_dir }}/pgo-client.json'
+      when: pgo_client_json_result.rc == 1

@@ -38,7 +38,7 @@
                             "httpGet": {
                                 "path": "/healthz",
                                 "port": {{ pgo_apiserver_port }},
-                                "scheme": "HTTPS"
+                                "scheme": {% if pgo_disable_tls == "true" %}"HTTP"{%- else %}"HTTPS"{%- endif %}
                             },
                             "initialDelaySeconds": 15,
                             "periodSeconds": 5
@@ -47,7 +47,7 @@
                             "httpGet": {
                                 "path": "/healthz",
                                 "port": {{ pgo_apiserver_port }},
-                                "scheme": "HTTPS"
+                                "scheme": {% if pgo_disable_tls == "true" %}"HTTP"{%- else %}"HTTPS"{%- endif %}
                             },
                             "initialDelaySeconds": 15,
                             "periodSeconds": 5
@@ -210,7 +210,6 @@
                             }
                         ],
                         "volumeMounts": [],
-                        "resources": {},
                         "imagePullPolicy": "IfNotPresent"
                     }, {
                         "name": "event",
@@ -232,7 +231,6 @@
                             }
                         ],
                         "volumeMounts": [],
-                        "resources": {},
                         "imagePullPolicy": "IfNotPresent"
                     }
                 ],

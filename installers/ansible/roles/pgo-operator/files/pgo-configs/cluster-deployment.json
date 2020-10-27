@@ -19,6 +19,9 @@
         },
         "template": {
             "metadata": {
+                {{ if .PodAnnotations }}
+                "annotations": {{ .PodAnnotations }},
+                {{ end }}
                 "labels": {
                     "name": "{{.Name}}",
                     "vendor": "crunchydata",
@@ -138,9 +141,6 @@
                             "name": "pgdata",
                             "readOnly": false
                         }, {
-                            "mountPath": "/backrestrepo",
-                            "name": "backrestrepo"
-                        }, {
                             "mountPath": "/pgconf/pguser",
                             "name": "user-volume"
                         }, {
@@ -155,11 +155,14 @@
                           "mountPath": "/pgconf/tls",
                           "name": "tls-server"
                         },
+                          {{if .ReplicationTLSSecret}}
+                          {
+                            "mountPath": "/pgconf/tls-replication",
+                            "name": "tls-replication"
+                          },
+                          {{ end }}
                         {{ end }}
                         {
-                            "mountPath": "/pgwal",
-                            "name": "pgwal-volume"
-                        }, {
                             "mountPath": "/sshd",
                             "name": "sshd",
                             "readOnly": true
@@ -175,8 +178,16 @@
                             "name": "dshm"
                         },
                         {
+                            "mountPath": "/etc/pgbackrest/conf.d",
+                            "name": "pgbackrest-config"
+                        },
+                        {
                             "mountPath": "/crunchyadm",
                             "name": "crunchyadm"
+                        },
+                        {
+                            "mountPath": "/etc/podinfo",
+                            "name": "podinfo"
                         }
                         {{.TablespaceVolumeMounts}}
                     ],
@@ -188,7 +199,6 @@
                         "containerPort": 8009,
                         "protocol": "TCP"
                     }],
-                    "resources": {},
                     "imagePullPolicy": "IfNotPresent"
                 }{{if .EnableCrunchyadm}},
                 {
@@ -221,7 +231,7 @@
                     "imagePullPolicy": "IfNotPresent"
                 }{{ end }}
 
-                {{.CollectAddon }}
+                {{.ExporterAddon }}
 
                 {{.BadgerAddon }}
 
@@ -239,9 +249,6 @@
                         "secret": {
                             "secretName": "{{.PrimarySecretName}}"
                         }
-                    }, {
-                        "name": "collect-volume",
-                        {{.CollectVolume}}
                     }, {
                         "name": "sshd",
                         "secret": {
@@ -265,6 +272,23 @@
                                 "name": "{{.TLSSecret}}"
                             }
                           },
+                          {{if .ReplicationTLSSecret}}
+                          {
+                            "secret": {
+                                "name": "{{.ReplicationTLSSecret}}",
+                                "items": [
+                                  {
+                                    "key": "tls.key",
+                                    "path": "tls-replication.key"
+                                  },
+                                  {
+                                    "key": "tls.crt",
+                                    "path": "tls-replication.crt"
+                                  }
+                                ]
+                            }
+                          },
+                          {{ end }}
                           {
                             "secret": {
                                 "name": "{{.CASecret}}"
@@ -273,18 +297,21 @@
                         ]
                       }
                     },
+                      {{if .ReplicationTLSSecret}}
+                      {
+                        "name": "tls-replication",
+                        "emptyDir": {
+                          "medium": "Memory",
+                          "sizeLimit": "2Mi"
+                        }
+                      },
+                      {{ end }}
                     {{ end }}
                     {
-                        "name": "pgwal-volume",
-                        "emptyDir": { "medium": "Memory" }
-                    }, {
                         "name": "recover-volume",
                         "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "report",
-                        "emptyDir": { "medium": "Memory" }
-                    }, {
-                        "name": "backrestrepo",
                         "emptyDir": { "medium": "Memory" }
                     }, {
                         "name": "crunchyadm",
@@ -295,6 +322,10 @@
                       "emptyDir": {
                         "medium": "Memory"
                       }
+                    },
+                    {
+                      "name": "pgbackrest-config",
+                      "projected": { "sources": [] }
                     },
                     {
                         "name": "pgconf-volume",
@@ -312,6 +343,58 @@
                                         "name": "{{.ClusterName}}-pgha-config",
                                         "optional": true
                                     }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "podinfo",
+                        "downwardAPI": {
+                            "defaultMode": 420,
+                            "items": [
+                                {
+                                    "path": "cpu_limit",
+                                    "resourceFieldRef": {
+                                        "containerName": "database",
+                                        "divisor": "1m",
+                                        "resource": "limits.cpu"
+                                    }
+                                },
+                                {
+                                    "path": "cpu_request",
+                                    "resourceFieldRef": {
+                                        "containerName": "database",
+                                        "divisor": "1m",
+                                        "resource": "requests.cpu"
+                                    }
+                                },
+                                {
+                                    "path": "mem_limit",
+                                    "resourceFieldRef": {
+                                        "containerName": "database",
+                                        "resource": "limits.memory"
+                                    }
+                                },
+                                {
+                                    "path": "mem_request",
+                                    "resourceFieldRef": {
+                                        "containerName": "database",
+                                        "resource": "requests.memory"
+                                    }
+                                },
+                                {
+                                    "fieldRef": {
+                                        "apiVersion": "v1",
+                                        "fieldPath": "metadata.labels"
+                                    },
+                                    "path": "labels"
+                                },
+                                {
+                                    "fieldRef": {
+                                        "apiVersion": "v1",
+                                        "fieldPath": "metadata.annotations"
+                                    },
+                                    "path": "annotations"
                                 }
                             ]
                         }

@@ -1,0 +1,19 @@
+---
+- name: Check if inventory file variables are defined for Grafana
+  tags: always
+  fail:
+    msg: "Please specify the value of {{item}} in your inventory file"
+  when: lookup('vars', item, default='') == ''
+  loop:
+    - grafana_admin_username
+    - grafana_admin_password
+    - grafana_dashboards_configmap
+    - grafana_datasources_configmap
+    - grafana_image_name
+    - grafana_image_prefix
+    - grafana_image_tag
+    - grafana_port
+    - grafana_service_name
+    - grafana_service_type
+    - grafana_storage_access_mode
+    - grafana_volume_size

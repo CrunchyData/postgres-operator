@@ -13,27 +13,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+set -eu
 
 # fill out these variables if you want to change the
 # default pgo bootstrap user and role
-export PGOADMIN_USERNAME=pgoadmin
-export PGOADMIN_PASSWORD=examplepassword
-export PGOADMIN_ROLENAME=pgoadmin
-export PGOADMIN_PERMS="*"
+PGOADMIN_USERNAME=admin
+PGOADMIN_PASSWORD=examplepassword
+PGOADMIN_ROLENAME=pgoadmin
+PGOADMIN_PERMS="*"
 
-# see if the bootstrap pgorole Secret exists or not, deleting it if found
-$PGO_CMD get secret pgorole-$PGOADMIN_ROLENAME -n $PGO_OPERATOR_NAMESPACE 2> /dev/null > /dev/null
-if [ $? -eq 0 ]; then
-	$PGO_CMD delete secret pgorole-$PGOADMIN_ROLENAME -n $PGO_OPERATOR_NAMESPACE
-fi
 
-expenv -f $DIR/pgorole-pgoadmin.yaml | $PGO_CMD create -f -
+$PGO_CMD -n "$PGO_OPERATOR_NAMESPACE" delete secret "pgorole-$PGOADMIN_ROLENAME" --ignore-not-found
+$PGO_CMD -n "$PGO_OPERATOR_NAMESPACE" create secret generic "pgorole-$PGOADMIN_ROLENAME" \
+	--from-literal="rolename=$PGOADMIN_ROLENAME" \
+	--from-literal="permissions=$PGOADMIN_PERMS"
+$PGO_CMD -n "$PGO_OPERATOR_NAMESPACE" label secret "pgorole-$PGOADMIN_ROLENAME" \
+	'vendor=crunchydata' 'pgo-pgorole=true' "rolename=$PGOADMIN_ROLENAME"
 
-# see if the bootstrap pgouser Secret exists or not, deleting it if found
-$PGO_CMD get secret pgouser-$PGOADMIN_USERNAME -n $PGO_OPERATOR_NAMESPACE  2> /dev/null > /dev/null
-if [ $? -eq 0 ]; then
-	$PGO_CMD delete secret pgouser-$PGOADMIN_USERNAME -n $PGO_OPERATOR_NAMESPACE
-fi
-expenv -f $DIR/pgouser-admin.yaml | $PGO_CMD create -f -
+$PGO_CMD -n "$PGO_OPERATOR_NAMESPACE" delete secret "pgouser-$PGOADMIN_USERNAME" --ignore-not-found
+$PGO_CMD -n "$PGO_OPERATOR_NAMESPACE" create secret generic "pgouser-$PGOADMIN_USERNAME" \
+	--from-literal="username=$PGOADMIN_USERNAME" \
+	--from-literal="password=$PGOADMIN_PASSWORD" \
+	--from-literal="roles=$PGOADMIN_ROLENAME"
+$PGO_CMD -n "$PGO_OPERATOR_NAMESPACE" label secret "pgouser-$PGOADMIN_USERNAME" \
+	'vendor=crunchydata' 'pgo-pgouser=true' "username=$PGOADMIN_USERNAME"

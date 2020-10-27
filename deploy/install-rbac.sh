@@ -17,23 +17,23 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 $DIR/cleanup-rbac.sh
-
-if [[ $(oc version) =~ "openshift" ]]; then
-	# create PGO SCC used with pgclusters (must use 'oc' not 'kubectl')
-	oc create -f $DIR/pgo-scc.yaml
-fi
+test="${PGO_CONF_DIR:?Need to set PGO_CONF_DIR env variable}"
 
 # see if CRDs need to be created
 $PGO_CMD get crd pgclusters.crunchydata.com > /dev/null
 if [ $? -eq 1 ]; then
-	$PGO_CMD create -f $DIR/crd.yaml
+	$PGO_CMD create \
+		-f ${PGO_CONF_DIR}/crds/pgclusters-crd.yaml \
+		-f ${PGO_CONF_DIR}/crds/pgpolicies-crd.yaml \
+		-f ${PGO_CONF_DIR}/crds/pgreplicas-crd.yaml \
+		-f ${PGO_CONF_DIR}/crds/pgtasks-crd.yaml
 fi
 
 # create the initial pgo admin credential
 $DIR/install-bootstrap-creds.sh
 
 # create the Operator service accounts
-expenv -f $DIR/service-accounts.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
+envsubst < $DIR/service-accounts.yaml | $PGO_CMD create -f -
 
 if [ -r "$PGO_IMAGE_PULL_SECRET_MANIFEST" ]; then
 	$PGO_CMD -n $PGO_OPERATOR_NAMESPACE create -f "$PGO_IMAGE_PULL_SECRET_MANIFEST"
@@ -51,43 +51,48 @@ fi
 # providing the various describe across the various modes below:
 #
 # A value of "dynamic" enables full dynamic namespace capabilities, in which the Operator can
-# create, delete and update any namespaces within the Kubernetes cluster, while then also having 
-# the ability to create the roles, role bindings and service accounts within those namespaces as
-# required for the Operator to create PG clusters.  Additionally, while in this mode the Operator
-# can listen for namespace events (e.g. namespace additions, updates and deletions), and then create
-# or remove controllers for various namespaces as those namespaces are added or removed from the
-# Kubernetes cluster and/or Operator install.
+# create, delete and update any namespaces within the Kubernetes cluster.  Additionally, while in 
+# this mode the Operator can listen for namespace events (e.g. namespace additions, updates and 
+# deletions), and then create or remove controllers for various namespaces as those namespaces are
+# added or removed from the Kubernetes cluster and/or Operator install.
 # 
 # If a value of "readonly" is provided, the Operator is still able to listen for namespace events
 # within the  Kubernetetes cluster, and then create and run and/or remove controllers as namespaces
-# are added and deleted.  However, while in this mode the Operator is unable to create, delete or
-# update namespaces, nor can it create the RBAC it requires in any of those namespaces to create PG
-# clusters.  Therefore,  while in a "readonly" mode namespaces must be pre-configured with the proper
-# RBAC, since the Operator cannot create the RBAC itself.
+# are added and deleted.  However, the Operator is unable to create, delete and/or update 
+# namespaces.
 #
 # And finally, if "disabled" is selected, then namespace capabilities will be disabled altogether
 # In this mode the Operator will simply attempt to work with the target namespaces specified during 
 # installation.  If no target namespaces are specified, then it will be configured to work within the
 # namespace in which it is deployed.
 if [[ "${PGO_NAMESPACE_MODE:-dynamic}" == "dynamic" ]]; then
-	# create the full cluster roles for the Operator
-	expenv -f $DIR/cluster-roles.yaml | $PGO_CMD create -f -
+	
+	if [[ "${PGO_RECONCILE_RBAC:-true}" == "true" ]]
+	then
+		# create the full ClusterRole with namespace and RBAC permissions if RBAC reconciliation 
+		# is enabled
+		$PGO_CMD create -f $DIR/cluster-roles.yaml 
+	else
+		# create a ClusterRole with only namespace permissions if RBAC reconciliation is disabled
+		sed '/- delete/q' $DIR/cluster-roles.yaml | $PGO_CMD create -f -
+	fi
+
 	# create the cluster role binding for the Operator Service Account
-	expenv -f $DIR/cluster-role-bindings.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
+	envsubst < $DIR/cluster-role-bindings.yaml | $PGO_CMD create -f -
 	echo "Cluster roles installed to enable dynamic namespace capabilities"
 elif [[ "${PGO_NAMESPACE_MODE}" == "readonly" ]]; then
 	# create the read-only cluster roles for the Operator
-	expenv -f $DIR/cluster-roles-readonly.yaml | $PGO_CMD create -f -
+	envsubst < $DIR/cluster-roles-readonly.yaml | $PGO_CMD create -f -
 	# create the cluster role binding for the Operator Service Account
-	expenv -f $DIR/cluster-role-bindings.yaml | $PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create -f -
+	envsubst < $DIR/cluster-role-bindings.yaml | $PGO_CMD create -f -
 	echo "Cluster roles installed to enable read-only namespace capabilities"
 elif [[ "${PGO_NAMESPACE_MODE}" == "disabled" ]]; then
 	echo "Cluster roles not installed, namespace capabilites will be disabled"
 fi
 
-# Create the roles the Operator requires within it's own namespace
-expenv -f $DIR/roles.yaml | $PGO_CMD -n $PGO_OPERATOR_NAMESPACE create -f -
-expenv -f $DIR/role-bindings.yaml | $PGO_CMD -n $PGO_OPERATOR_NAMESPACE create -f -
+# Create the roles the Operator requires within its own namespace
+envsubst < $DIR/roles.yaml | $PGO_CMD create -f -
+envsubst < $DIR/role-bindings.yaml | $PGO_CMD create -f -
 
 # create the keys used for pgo API
 source $DIR/gen-api-keys.sh

@@ -86,18 +86,86 @@ pgo backup hacluster --backup-opts="--type=full --repo1-retention-full=7"
 ## Restores
 
 The PostgreSQL Operator supports the ability to perform a full restore on a
-PostgreSQL cluster as well as a point-in-time-recovery using the `pgo restore`
-command. Note that both of these options are **destructive** to the existing
-PostgreSQL cluster; to "restore" the PostgreSQL cluster to a new deployment,
-please see the [Clone](/pgo-client/common-tasks/#clone-a-postgresql-cluster) section.
+PostgreSQL cluster as well as a point-in-time-recovery. There are two types of
+ways to restore a cluster:
 
-The `pgo restore` command lets you specify the point at which you want to
-restore your database using the `--pitr-target` flag with the `pgo restore`
+- Restore to a new cluster using the `--restore-from` flag in the
+[`pgo create cluster`]({{< relref "/pgo-client/reference/pgo_create_cluster.md" >}})
 command.
+- Restore in-place using the [`pgo restore`]({{< relref "/pgo-client/reference/pgo_restore.md" >}})
+command. Note that this is **destructive**.
 
 **NOTE**: Ensure you are backing up your PostgreSQL cluster regularly, as this
 will help expedite your restore times. The next section will cover scheduling
 regular backups.
+
+The following explains how to perform restores based on the restoration method
+you chose.
+
+### Restore to a New Cluster
+
+Restoring to a new PostgreSQL cluster allows one to take a backup and create a
+new PostgreSQL cluster that can run alongside an existing PostgreSQL cluster.
+There are several scenarios where using this technique is helpful:
+
+- Creating a copy of a PostgreSQL cluster that can be used for other purposes.
+Another way of putting this is "creating a clone."
+- Restore to a point-in-time and inspect the state of the data without affecting
+the current cluster
+
+and more.
+
+Restoring to a new cluster can be accomplished using the [`pgo create cluster`]({{< relref "/pgo-client/reference/pgo_create_cluster.md" >}})
+command with several flags:
+
+- `--restore-from`: specifies the name of a PostgreSQL cluster (either one that
+is active, or a former cluster whose pgBackRest repository still exists) to
+restore from.
+- `--restore-opts`: used to specify additional options, similar to the ones that
+are passed into [`pgbackrest restore`](https://pgbackrest.org/command.html#command-restore).
+
+One can copy an entire PostgreSQL cluster into a new cluster with a command as
+simple as the one below:
+
+```
+pgo create cluster newcluster --restore-from oldcluster
+```
+
+To perform a point-in-time-recovery, you have to pass in the pgBackRest `--type`
+and `--target` options, where `--type` indicates the type of recovery to
+perform, and `--target` indicates the point in time to recover to:
+
+```
+pgo create cluster newcluster \
+  --restore-from oldcluster \
+  --restore-opts "--type=time --target='2019-12-31 11:59:59.999999+00'"
+```
+
+Note that when using this method, the PostgreSQL Operator can only restore one
+cluster from each pgBackRest repository at a time. Using the above example, one
+can only perform one restore from `oldcluster` at a given time.
+
+When using the restore to a new cluster method, the PostgreSQL Operator takes
+the following actions:
+
+- After running the normal cluster creation tasks, the PostgreSQL Operator
+creates a "bootstrap" job that performs a pgBackRest restore to the newly
+created PVC.
+- The PostgreSQL Operator kicks off the new PostgreSQL cluster, which enters
+into recovery mode until it has recovered to a specified point-in-time or
+finishes replaying all available write-ahead logs.
+- When this is done, the PostgreSQL cluster performs its regular operations when
+starting up.
+
+### Restore in-place
+
+Restoring a PostgreSQL cluster in-place is a **destructive** action that will
+perform a recovery on your existing data directory. This is accomplished using
+the [`pgo restore`]({{< relref "/pgo-client/reference/pgo_restore.md" >}})
+command.
+
+`pgo restore` lets you specify the point at which you want to restore your
+database using the `--pitr-target` flag.
 
 When the PostgreSQL Operator issues a restore, the following actions are taken
 on the cluster:
@@ -109,8 +177,7 @@ will occur during the restore.
 provided for the primary instance. This may have been set with the
 `--storage-class` flag when the cluster was originally created
 - A Kubernetes Job is created that will perform a pgBackRest restore operation
-to the newly allocated PVC. This is facilitated by the `pgo-backrest-restore`
-container image.
+to the newly allocated PVC.
 
 ![PostgreSQL Operator Restore Step 1](/images/postgresql-cluster-restore-step-1.png)
 
@@ -210,6 +277,8 @@ Cluster:
   BackrestS3Bucket: my-postgresql-backups-example
   BackrestS3Endpoint: s3.amazonaws.com
   BackrestS3Region: us-east-1
+  BackrestS3URIStyle: host
+  BackrestS3VerifyTLS: true
 ```
 
 These values can also be set on a per-cluster basis with the
@@ -222,6 +291,9 @@ These values can also be set on a per-cluster basis with the
 - `--pgbackrest-s3-key-secret`- specifies the AWS S3 key secret that should be
 utilized
 - `--pgbackrest-s3-region` - specifies the AWS S3 region that should be utilized
+- `--pgbackrest-s3-uri-style` -  specifies whether "host" or "path" style URIs should be utilized
+- `--pgbackrest-s3-verify-tls` - set this value to "true" to enable TLS verification
+
 
 Sensitive information, such as the values of the AWS S3 keys and secrets, are
 stored in Kubernetes Secrets and are securely mounted to the PostgreSQL

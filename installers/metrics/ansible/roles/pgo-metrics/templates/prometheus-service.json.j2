@@ -1,0 +1,26 @@
+{
+    "kind": "Service",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "{{ prometheus_service_name }}",
+        "labels": {
+            "name": "{{ prometheus_service_name }}",
+            "app.kubernetes.io/name": "{{ app_name }}"
+        }
+    },
+    "spec": {
+        "ports": [
+            {
+                "name": "prometheus",
+                "protocol": "TCP",
+                "port": {{ prometheus_port }},
+                "targetPort": {{ prometheus_port }}
+            }
+        ],
+        "selector": {
+            "name": "{{ prometheus_service_name }}"
+        },
+        "type": "{{ prometheus_service_type }}",
+        "sessionAffinity": "None"
+    }
+}

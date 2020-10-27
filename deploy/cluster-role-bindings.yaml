@@ -8,6 +8,6 @@ roleRef:
   kind: ClusterRole
   name: pgo-cluster-role
 subjects:
-- apiGroup: rbac.authorization.k8s.io
-  kind: User
-  name: system:serviceaccount:$PGO_OPERATOR_NAMESPACE:postgres-operator
+- kind: ServiceAccount
+  name: postgres-operator
+  namespace: "$PGO_OPERATOR_NAMESPACE"

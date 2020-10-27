@@ -1,6 +1,3 @@
-export GOPATH=$HOME/odev
-export GOBIN=$GOPATH/bin
-export PATH=$PATH:$GOBIN
 # NAMESPACE is the list of namespaces the Operator will watch
 export NAMESPACE=pgouser1,pgouser2
 
@@ -15,12 +12,15 @@ export PGO_OPERATOR_NAMESPACE=pgo
 export PGO_CMD=kubectl
 
 # the directory location of the Operator scripts
-export PGOROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
+export PGOROOT=$HOME/postgres-operator
+
+# the directory location of the Json Config Templates
+export PGO_CONF_DIR=$PGOROOT/installers/ansible/roles/pgo-operator/files
 
 # the version of the Operator you run is set by these vars
-export PGO_IMAGE_PREFIX=crunchydata
+export PGO_IMAGE_PREFIX=registry.developers.crunchydata.com/crunchydata
 export PGO_BASEOS=centos7
-export PGO_VERSION=4.3.0
+export PGO_VERSION=4.5.0
 export PGO_IMAGE_TAG=$PGO_BASEOS-$PGO_VERSION
 
 # for setting the pgo apiserver port, disabling TLS or not verifying TLS
@@ -42,6 +42,14 @@ export DISABLE_EVENTING=false
 export PGO_CA_CERT=$PGOROOT/conf/postgres-operator/server.crt
 export PGO_CLIENT_CERT=$PGOROOT/conf/postgres-operator/server.crt
 export PGO_CLIENT_KEY=$PGOROOT/conf/postgres-operator/server.key
+
+# During a Bash install determines which namespace permissions are assigned to the PostgreSQL
+# Operator using a ClusterRole.  Options: `dynamic`, `readonly`, and `disabled`
+export PGO_NAMESPACE_MODE=dynamic
+
+# During a Bash install determines whether or not the PostgreSQL Operator will granted the 
+# permissions needed to reconcile RBAC within targeted namespaces.
+export PGO_RECONCILE_RBAC=true
 
 # common bash functions for working with the Operator
 setip()

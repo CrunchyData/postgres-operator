@@ -1,0 +1,15 @@
+---
+- name: Include values.yml
+  tags: always
+  block:
+    - name: Check for "{{ config_path }}"
+      stat:
+          path: "{{ config_path }}"
+      register: conf_path_result
+
+    - fail:
+        msg: "Please provide a valid path to your values.yaml file. Expected path: {{ config_path }}"
+      when:
+        - not conf_path_result.stat.exists
+
+    - include_vars: "{{ config_path }}"

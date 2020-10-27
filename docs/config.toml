@@ -23,8 +23,18 @@ disableHomeIcon = true # default is false
 disableSearch = false # default is false
 disableNavChevron = false # set true to hide next/prev chevron, default is false
 highlightClientSide = false # set true to use highlight.pack.js instead of the default hugo chroma highlighter
-menushortcutsnewtab = false # set true to open shortcuts links to a new tab/window
+menushortcutsnewtab = true # set true to open shortcuts links to a new tab/window
 enableGitInfo = true
+operatorVersion = "4.5.0"
+postgresVersion = "12.4"
+postgresVersion13 = "13.0"
+postgresVersion12 = "12.4"
+postgresVersion11 = "11.9"
+postgresVersion10 = "10.14"
+postgresVersion96 = "9.6.19"
+postgresVersion95 = "9.5.23"
+postgisVersion = "3.0"
+centosBase = "centos7"
 
 [outputs]
 home = [ "HTML", "RSS", "JSON"]

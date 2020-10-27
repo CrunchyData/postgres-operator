@@ -1152,40 +1152,6 @@ _pgo_label()
     noun_aliases=()
 }
 
-_pgo_load()
-{
-    last_command="pgo_load"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--load-config=")
-    local_nonpersistent_flags+=("--load-config=")
-    flags+=("--policies=")
-    local_nonpersistent_flags+=("--policies=")
-    flags+=("--selector=")
-    two_word_flags+=("-s")
-    local_nonpersistent_flags+=("--selector=")
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-    flags+=("--namespace=")
-    two_word_flags+=("-n")
-    flags+=("--pgo-ca-cert=")
-    flags+=("--pgo-client-cert=")
-    flags+=("--pgo-client-key=")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _pgo_ls()
 {
     last_command="pgo_ls"

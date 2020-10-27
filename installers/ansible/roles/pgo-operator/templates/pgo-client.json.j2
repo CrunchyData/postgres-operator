@@ -3,6 +3,7 @@
     "kind": "Deployment",
     "metadata": {
         "name": "pgo-client",
+        "namespace": "{{ pgo_operator_namespace }}",
         "labels": {
             "vendor": "crunchydata"
         }
@@ -23,6 +24,11 @@
                 }
             },
             "spec": {
+                {% if pgo_image_pull_secret %}
+                "imagePullSecrets": [
+                    { "name": "{{ pgo_image_pull_secret }}" }
+                ],
+                {% endif %}
                 "containers": [
                     {
                         "name": "pgo",
@@ -63,7 +69,7 @@
                             },
                             {
                                 "name": "PGO_CLIENT_KEY",
-                                "value": "pgo-tls/client.pem"
+                                "value": "pgo-tls/client.key"
                             }
                         ],
                         "volumeMounts": [
@@ -86,7 +92,7 @@
                                 },
                                 {
                                     "key": "tls.key",
-                                    "path": "client.pem"
+                                    "path": "client.key"
                                 }
                             ]
                         }

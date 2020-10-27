@@ -69,7 +69,7 @@ different lifecycle events that occur on a PostgreSQL cluster, including:
 and is available after a downtime event
 - Disaster Recovery: Tablespaces are backed up and are properly restored during
 a recovery
-- Clone: Tablespaces are created in any cloned cluster
+- Clone: Tablespaces are created in any cloned or restored cluster
 - Deprovisioining: Tablespaces are deleted when a PostgreSQL instance or cluster
 is deleted
 
@@ -126,6 +126,58 @@ PVC to a Kubernetes Deployment causes the Pods in the deployment to restart.
 
 When the operation completes, the tablespace will be set up and accessible to
 use within the PostgreSQL cluster.
+
+## Removing Tablespaces
+
+Removing a tablespace is a nontrivial operation. PostgreSQL does not provide a
+`DROP TABLESPACE .. CASCADE` command that would drop any associated objects with
+a tablespace. Additionally, the PostgreSQL documentation covering the
+[`DROP TABLESPACE`](https://www.postgresql.org/docs/current/sql-droptablespace.html)
+command goes on to note:
+
+> A tablespace can only be dropped by its owner or a superuser. The tablespace
+> must be empty of all database objects before it can be dropped. It is possible
+> that objects in other databases might still reside in the tablespace even if
+> no objects in the current database are using the tablespace. Also, if the
+> tablespace is listed in the temp_tablespaces setting of any active session,
+> the DROP might fail due to temporary files residing in the tablespace.
+
+Because of this, and to avoid a situation where a PostgreSQL cluster is left in
+an inconsistent state due to trying to remove a tablespace, the PostgreSQL
+Operator does not provide any means to remove tablespaces automatically. If you
+do need to remove a tablespace from a PostgreSQL deployment, we recommend
+following this procedure:
+
+1. As a database administrator:
+  1. Log into the primary instance of your cluster.
+  1. Drop any objects that reside within the tablespace you wish to delete.
+  These can be tables, indexes, and even databases themselves
+  1. When you believe you have deleted all objects that depend on the tablespace
+  you wish to remove, you can delete this tablespace from the PostgreSQL cluster
+  using the `DROP TABLESPACE` command.
+1. As a Kubernetes user who can modify Deployments and edit an entry in the
+  pgclusters.crunchydata.com CRD in the Namespace that the PostgreSQL cluster is
+  in:
+  1. For each Deployment that represents a PostgreSQL instance in the cluster
+  (i.e. `kubectl -n <TARGET_NAMESPACE> get deployments --selector=pgo-pg-database=true,pg-cluster=<CLUSTER_NAME>`),
+  edit the Deployment and remove the Volume and VolumeMount entry for the
+  tablespace. If the tablespace is called `hippo-ts`, the Volume entry will look
+  like:
+  ```yaml
+  - name: tablespace-hippo-ts
+    persistentVolumeClaim:
+      claimName: <INSTANCE_NAME>-tablespace-hippo-ts
+  ```
+  and the VolumeMount entry will look like:
+  ```yaml
+  - mountPath: /tablespaces/hippo-ts
+    name: tablespace-hippo-ts
+  ```
+  2. Modify the CR entry for the PostgreSQL cluster and remove the
+  `tablespaceMounts` entry. If your PostgreSQL cluster is called `hippo`, then
+  the name of the CR entry is also called `hippo`. If your tablespace is called
+  `hippo-ts`, then you would remove the YAML stanza called `hippo-ts` from the
+  `tablespaceMounts` entry.
 
 ## More Information
 

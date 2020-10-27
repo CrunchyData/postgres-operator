@@ -9,23 +9,23 @@ FROM gcr.io/cloud-marketplace-tools/k8s/deployer_envsubst:${MARKETPLACE_VERSION}
 
 RUN install -D /bin/create_manifests.sh /opt/postgres-operator/cloud-marketplace-tools/bin/create_manifests.sh
 
-# https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#latest-releases-via-apt-debian
+# https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#installing-ansible-on-debian
 RUN if [ -f /etc/os-release ] && [ debian = "$(. /etc/os-release; echo $ID)" ] && [ 10 -ge "$(. /etc/os-release; echo $VERSION_ID)" ]; then \
       apt-get update && apt-get install -y --no-install-recommends gnupg && rm -rf /var/lib/apt/lists/* && \
       wget -qO- 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x93C4A3FD7BB9C367' | apt-key add && \
-      echo > /etc/apt/sources.list.d/ansible.list deb http://ppa.launchpad.net/ansible/ansible-2.8/ubuntu trusty main ; \
+      echo > /etc/apt/sources.list.d/ansible.list deb http://ppa.launchpad.net/ansible/ansible-2.9/ubuntu trusty main ; \
     fi
 
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ansible=2.8.* openssh-client \
+ && apt-get install -y --no-install-recommends ansible=2.9.* openssh-client \
  && rm -rf /var/lib/apt/lists/*
 
-COPY ansible/* \
+COPY installers/ansible/* \
      /opt/postgres-operator/ansible/
 COPY installers/favicon.png \
      installers/gcp-marketplace/install-job.yaml \
      installers/gcp-marketplace/install.sh \
-     installers/gcp-marketplace/inventory.ini \
+     installers/gcp-marketplace/values.yaml \
      /opt/postgres-operator/
 
 COPY installers/gcp-marketplace/install-hook.sh \

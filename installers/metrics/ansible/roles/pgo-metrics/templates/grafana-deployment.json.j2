@@ -1,0 +1,133 @@
+{
+    "apiVersion": "apps/v1",
+    "kind": "Deployment",
+    "metadata": {
+        "name": "crunchy-grafana",
+        "labels": {
+            "app.kubernetes.io/name": "{{ app_name }}"
+        }
+    },
+    "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "name": "{{ grafana_service_name }}",
+            "app.kubernetes.io/name": "{{ app_name }}"
+          }
+        },
+        "template": {
+            "metadata": {
+                "labels": {
+                    "name": "{{ grafana_service_name }}",
+                    "app.kubernetes.io/name": "{{ app_name }}"
+                }
+            },
+            "spec": {
+                "securityContext": {
+{% if (grafana_supplemental_groups | default('')) != '' %}
+                    "supplementalGroups": [{{ grafana_supplemental_groups }}]
+{% endif %}
+{% if not (disable_fsgroup | default(false) | bool) %}
+                    {% if (grafana_supplemental_groups | default('')) != '' %},{% endif -%}
+                    "fsGroup": 26,
+                    "runAsUser": 2
+{% endif %}
+                },
+                "serviceAccountName": "grafana",
+                "containers": [
+                    {
+                        "name": "grafana",
+                        "image": "{{ grafana_image_prefix }}/{{ grafana_image_name }}:{{ grafana_image_tag }}",
+                        "ports": [
+                            {
+                                "containerPort": {{ grafana_port }},
+                                "protocol": "TCP"
+                            }
+                        ],
+                        "readinessProbe": {
+                            "httpGet": {
+                                "path": "/api/health",
+                                "port": {{ grafana_port }}
+                            },
+                            "periodSeconds": 10
+                        },
+                        "livenessProbe": {
+                            "httpGet": {
+                                "path": "/api/health",
+                                "port": {{ grafana_port }}
+                            },
+                            "initialDelaySeconds": 25,
+                            "periodSeconds": 20
+                        },
+                        "env": [
+                            {
+                                "name": "GF_PATHS_DATA",
+                                "value": "/data/grafana/data"
+                            },
+                            {
+                                "name": "GF_SECURITY_ADMIN_USER__FILE",
+                                "value": "/conf/admin/username"
+                            },
+                            {
+                                "name": "GF_SECURITY_ADMIN_PASSWORD__FILE",
+                                "value": "/conf/admin/password"
+                            },
+                            {
+                                "name": "PROM_HOST",
+                                "value": "{{ prometheus_service_name }}"
+                            },
+                            {
+                                "name": "PROM_PORT",
+                                "value": "{{ prometheus_port }}"
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/data",
+                                "name": "grafanadata"
+                            },
+                            {
+                                "mountPath": "/conf/admin",
+                                "name": "grafana-secret"
+                            },
+                            {
+                                "mountPath": "/etc/grafana/provisioning/datasources",
+                                "name": "grafana-datasources"
+                            },
+                            {
+                                "mountPath": "/etc/grafana/provisioning/dashboards",
+                                "name": "grafana-dashboards"
+                            }
+                        ]
+                    }
+                ],
+                "volumes": [
+                    {
+                        "name": "grafanadata",
+                        "persistentVolumeClaim": {
+                            "claimName": "grafanadata"
+                        }
+                    },
+                    {
+                        "name": "grafana-secret",
+                        "secret": {
+                            "secretName": "grafana-secret"
+                        }
+                    },
+                    {
+                        "name": "grafana-datasources",
+                        "configMap": {
+                            "name": "{{ grafana_datasources_configmap }}"
+                        }
+                    },
+                    {
+                        "name": "grafana-dashboards",
+                        "configMap": {
+                            "name": "{{ grafana_dashboards_configmap }}"
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

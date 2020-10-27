@@ -1,0 +1,30 @@
+---
+    all:
+        hosts:
+            localhost:
+        vars:
+            ansible_connection: local
+            config_path: "{{ playbook_dir }}/values.yaml"
+            # ==================
+            # Installation Methods
+            # One of the following blocks must be updated:
+            # - Deploy into Kubernetes
+            # - Deploy into Openshift
+
+            # Deploy into Kubernetes
+            # ==================
+            # Note: Context name can be found using:
+            #   kubectl config current-context
+            # ==================
+            # kubernetes_context: ''
+
+            # Deploy into Openshift
+            # ==================
+            # Note: openshift_host can use the format https://URL:PORT
+            # Note: openshift_token can be used for token authentication
+            # ==================
+            # openshift_host: ''
+            # openshift_skip_tls_verify: true
+            # openshift_user: ''
+            # openshift_password: ''
+            # openshift_token: ''

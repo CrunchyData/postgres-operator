@@ -1,0 +1,13 @@
+---
+- name: Check if the kubectl command is installed
+  shell: which kubectl
+  register: kubectl_result
+  ignore_errors: yes
+  tags: always
+
+- name: Ensure kubectl is installed
+  assert:
+    that:
+      - kubectl_result.rc == 0
+    msg: "Install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/"
+  tags: always

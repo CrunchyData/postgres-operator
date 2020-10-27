@@ -49,6 +49,6 @@
     - install
 
 - name: Copy keys to {{ pgo_keys_dir }}
-  command: "cp {{ output_dir }}/server.pem {{ pgo_keys_dir }}/client.pem"
+  command: "cp {{ output_dir }}/server.key {{ pgo_keys_dir }}/client.key"
   tags:
     - install

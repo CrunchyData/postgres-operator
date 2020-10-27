@@ -1,0 +1,23 @@
+{
+    "kind": "PersistentVolumeClaim",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "alertmanagerdata",
+        "labels": {
+            "app.kubernetes.io/name": "{{ app_name }}"
+        }
+    },
+    "spec": {
+        "accessModes": [
+            "{{ alertmanager_storage_access_mode }}"
+        ],
+{% if alertmanager_storage_class_name is defined and alertmanager_storage_class_name != '' %}
+        "storageClassName": "{{ alertmanager_storage_class_name }}",
+{% endif %}
+        "resources": {
+            "requests": {
+                "storage": "{{ alertmanager_volume_size }}"
+            }
+        }
+    }
+}

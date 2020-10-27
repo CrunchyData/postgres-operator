@@ -104,7 +104,6 @@ X11Forwarding yes
 #PrintLastLog yes
 #TCPKeepAlive yes
 #UseLogin no
-UsePrivilegeSeparation no
 #PermitUserEnvironment no
 #Compression delayed
 #ClientAliveInterval 0

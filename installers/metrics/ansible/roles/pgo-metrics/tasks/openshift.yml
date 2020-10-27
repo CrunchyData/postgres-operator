@@ -1,0 +1,9 @@
+---
+- name: Create Project {{ metrics_namespace }}
+  command: "{{ openshift_oc_bin}} new-project {{ metrics_namespace }}"
+  register: create_metrics_project_result
+  failed_when:
+    - create_metrics_project_result.rc != 0
+    - "'AlreadyExists' not in create_metrics_project_result.stderr" 
+  tags: install-metrics
+

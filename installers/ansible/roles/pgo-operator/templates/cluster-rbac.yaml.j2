@@ -15,32 +15,90 @@ rules:
       - create
       - update
       - delete
+{% if reconcile_rbac | bool %}
   - apiGroups:
       - ''
     resources:
       - serviceaccounts
     verbs:
-    - get
-    - create
-    - delete
+      - get
+      - create
+      - update
+      - delete
   - apiGroups:
       - rbac.authorization.k8s.io
     resources:
       - roles
-    verbs:
-      - get
-      - create
-      - delete
-      - bind
-      - escalate
-  - apiGroups:
-      - rbac.authorization.k8s.io
-    resources:
       - rolebindings
     verbs:
       - get
       - create
+      - update
       - delete
+  - apiGroups:
+      - ''
+    resources:
+      - configmaps
+      - endpoints
+      - pods
+      - pods/exec
+      - pods/log
+      - replicasets
+      - secrets
+      - services
+      - persistentvolumeclaims
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - patch
+      - update
+      - delete
+      - deletecollection
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - patch
+      - update
+      - delete
+      - deletecollection
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - patch
+      - update
+      - delete
+      - deletecollection
+  - apiGroups:
+      - crunchydata.com
+    resources:
+      - pgclusters
+      - pgpolicies
+      - pgreplicas
+      - pgtasks
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - patch
+      - update
+      - delete
+      - deletecollection
+{% endif %}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -51,6 +109,6 @@ roleRef:
   kind: ClusterRole
   name: pgo-cluster-role
 subjects:
-- apiGroup: rbac.authorization.k8s.io
-  kind: User
-  name: system:serviceaccount:{{ pgo_operator_namespace }}:postgres-operator
+- kind: ServiceAccount
+  name: postgres-operator
+  namespace: {{ pgo_operator_namespace }}

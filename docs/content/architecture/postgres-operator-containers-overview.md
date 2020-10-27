@@ -17,7 +17,7 @@ The PostgreSQL Operator orchestrates a series of PostgreSQL and PostgreSQL relat
 
 ### Backup and Restore
 
-* **pgBackRest** (crunchy-backrest-restore). pgBackRest is a high performance backup and restore utility for PostgreSQL.  The crunchy-backrest-restore container executes the pgBackRest utility, allowing FULL and DELTA restore capability.
+* **pgBackRest** (crunchy-postgres-ha). pgBackRest is a high performance backup and restore utility for PostgreSQL.  The crunchy-postgres-ha container executes the pgBackRest utility, allowing FULL and DELTA restore capability.
 
 * **pgdump** (crunchy-pgdump). The crunchy-pgdump container executes either a pg_dump or pg_dumpall database backup against another PostgreSQL database.
 
@@ -36,11 +36,13 @@ The PostgreSQL Operator orchestrates a series of PostgreSQL and PostgreSQL relat
 
 ### Metrics and Monitoring
 
-* **Metrics Collection** (crunchy-collect). The crunchy-collect container provides real time metrics about the PostgreSQL database via an API. These metrics are scraped and stored by a Prometheus time-series database and are then graphed and visualized through the open source data visualizer Grafana.  
+* **Metrics Collection** (crunchy-postgres-exporter). The crunchy-postgres-exporter container provides real time metrics about the PostgreSQL database via an API. These metrics are scraped and stored by a Prometheus time-series database and are then graphed and visualized through the open source data visualizer Grafana.  
 
-* **Grafana** (crunchy-grafana).  Visual dashboards are created from the collected and stored data that crunchy-collect and crunchy-prometheus provide for the crunchy-grafana container, which hosts an open source web-based graphing dashboard called Grafana.
+* **Grafana** (grafana).  Hosts an open source web-based graphing dashboard called Grafana.  Provides visual dashboards for monitoring PostgreSQL clusters, specifically using Crunchy PostgreSQL Exporter data stored within Prometheus.
 
-* **Prometheus** (crunchy-prometheus).  Prometheus is a multi-dimensional time series data model with an elastic query language. It is used in collaboration with Crunchy Collect and Grafana to provide metrics.
+* **Prometheus** (prometheus).  Prometheus is a multi-dimensional time series data model with an elastic query language. It is used in collaboration with the Crunchy PostgreSQL Exporter and Grafana to provide and store metrics.
+
+* **Alertmanager** (alertmanager). Handles alerts sent by Prometheus by deduplicating, grouping, and routing them to reciever integrations.
 
 ### Connection Pooling
 

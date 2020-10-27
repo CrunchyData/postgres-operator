@@ -1,4 +1,4 @@
-# See https://godoc.org/github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1#ClusterServiceVersion
+# See https://godoc.org/github.com/operator-framework/api/pkg/operators/v1alpha1#ClusterServiceVersion
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
@@ -19,6 +19,8 @@ metadata:
     containerImage: '${PGO_IMAGE_PREFIX}/postgres-operator:${PGO_IMAGE_TAG}'
     repository: https://github.com/CrunchyData/postgres-operator
 
+    alm-examples: |- # postgresoperator.crd.examples.yaml
+
 spec:
   # The following affect how the package is indexed at OperatorHub.io:
   # https://operatorhub.io/
@@ -34,7 +36,7 @@ spec:
 
   # The following appear on the details page at OperatorHub.io:
   # https://operatorhub.io/operator/postgresql
-  description: '' # postgresoperator.csv.description.md
+  description: |- # description.*.md
   version: '${PGO_VERSION}'
   links:
     - name: Crunchy Data
@@ -52,7 +54,7 @@ spec:
     alm-status-descriptors: 'postgres-operator.v${PGO_VERSION}'
 
   customresourcedefinitions:
-    owned: {} # postgresoperator.crd.descriptions.yaml
+    owned: # postgresoperator.crd.descriptions.yaml
 
   installModes:
     - { type: OwnNamespace,    supported: true  }
@@ -66,68 +68,122 @@ spec:
       clusterPermissions:
         - serviceAccountName: postgres-operator
           rules:
-            - verbs:
-                - '*'
-              apiGroups:
-                - '*'
+            # dynamic namespace mode
+            - apiGroups:
+                - ''
               resources:
                 - namespaces
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - update
+                - delete
+            # reconcile rbac
+            - apiGroups:
+                - ''
+              resources:
                 - serviceaccounts
+              verbs:
+                - get
+                - create
+                - update
+                - delete
+            - apiGroups:
+                - rbac.authorization.k8s.io
+              resources:
                 - roles
                 - rolebindings
-            - verbs:
-                - 'list'
-                - 'get'
-              apiGroups:
-                - '*'
+              verbs:
+                - get
+                - create
+                - update
+                - delete
+            - apiGroups:
+                - ''
               resources:
-                - storageclasses
+                - configmaps
+                - endpoints
+                - pods
+                - pods/exec
+                - pods/log
+                - replicasets
+                - secrets
+                - services
+                - persistentvolumeclaims
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - patch
+                - update
+                - delete
+                - deletecollection
+            - apiGroups:
+                - apps
+              resources:
+                - deployments
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - patch
+                - update
+                - delete
+                - deletecollection
+            - apiGroups:
+                - batch
+              resources:
+                - jobs
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - patch
+                - update
+                - delete
+                - deletecollection
+            - apiGroups:
+                - crunchydata.com
+              resources:
+                - pgclusters
+                - pgpolicies
+                - pgreplicas
+                - pgtasks
+              verbs:
+                - get
+                - list
+                - watch
+                - create
+                - patch
+                - update
+                - delete
+                - deletecollection
 
       permissions:
         - serviceAccountName: postgres-operator
           rules:
-            - verbs:
-                - '*'
-              apiGroups:
-                - 'crunchydata.com'
-              resources:
-                - pgclusters
-                - pgpolicies
-                - pgtasks
-                - pgreplicas
-            - verbs:
-                - '*'
-              apiGroups:
-                - 'apps'
-              resources:
-                - deployments
-            - verbs:
-                - '*'
-              apiGroups:
+            - apiGroups:
                 - ''
               resources:
-                - secrets
-                - pods
                 - configmaps
-                - pods/exec
-                - pods/log
-                - services
-                - replicasets
-                - endpoints
-                - persistentvolumeclaims
-            - verbs:
+                - secrets
+              verbs:
                 - get
                 - list
-              apiGroups:
+                - create
+                - update
+                - delete
+            - apiGroups:
                 - ''
               resources:
-                - storageclasses
-            - verbs:
-                - '*'
-              apiGroups:
-                - 'batch'
-              resources:
-                - jobs
+                - serviceaccounts
+              verbs:
+                - get
 
       deployments:
         - name: postgres-operator
@@ -169,7 +225,7 @@ spec:
                       - { name: PGO_INSTALLATION_NAME, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
                       - { name: PGO_OPERATOR_NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
 
-                      - { name: CRUNCHY_DEBUG, value: 'true' }
+                      - { name: CRUNCHY_DEBUG, value: 'false' }
                       - { name: EVENT_ADDR, value: 'localhost:4150' }
                       - { name: PORT, value: '8443' }
 
@@ -181,7 +237,7 @@ spec:
                       - { name: PGO_INSTALLATION_NAME, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
                       - { name: PGO_OPERATOR_NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
 
-                      - { name: CRUNCHY_DEBUG, value: 'true' }
+                      - { name: CRUNCHY_DEBUG, value: 'false' }
                       - { name: EVENT_ADDR, value: 'localhost:4150' }
 
                   - name: scheduler
@@ -198,10 +254,11 @@ spec:
                         initialDelaySeconds: 60
                         periodSeconds: 60
                     env:
+                      - { name: NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.annotations['olm.targetNamespaces']" } } }
                       - { name: PGO_INSTALLATION_NAME, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
                       - { name: PGO_OPERATOR_NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
 
-                      - { name: CRUNCHY_DEBUG, value: 'true' }
+                      - { name: CRUNCHY_DEBUG, value: 'false' }
                       - { name: EVENT_ADDR, value: 'localhost:4150' }
                       - { name: TIMEOUT, value: '3600' }
 

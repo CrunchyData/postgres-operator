@@ -1,10 +1,8 @@
 Cluster:
-  PrimaryNodeLabel:
-  ReplicaNodeLabel:
-  CCPImagePrefix:  crunchydata
+  CCPImagePrefix:  registry.developers.crunchydata.com/crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-12.2-4.3.0
+  CCPImageTag:  centos7-12.4-4.5.0
   Port:  5432
   PGBadgerPort: 10000
   ExporterPort: 9187
@@ -15,11 +13,12 @@ Cluster:
   Replicas:  0
   ArchiveMode:  false
   ServiceType:  ClusterIP
-  Backrest:  true
   BackrestPort:  2022
   BackrestS3Bucket:
   BackrestS3Endpoint:
   BackrestS3Region:
+  BackrestS3URIStyle: ""
+  BackrestS3VerifyTLS: true
   DisableAutofail:  false
   PodAntiAffinity: preferred
   PodAntiAffinityPgBackRest: ""
@@ -28,18 +27,21 @@ Cluster:
   DefaultInstanceMemory: "128Mi"
   DefaultBackrestMemory:
   DefaultPgBouncerMemory:
-PrimaryStorage: storageos
-BackupStorage: storageos
-ReplicaStorage: storageos
-BackrestStorage: storageos
+  DefaultExporterMemory:
+  DisableFSGroup: false
+PrimaryStorage: default
+WALStorage:
+BackupStorage: default
+ReplicaStorage: default
+BackrestStorage: default
 Storage:
+  default:
+    AccessMode:  ReadWriteOnce
+    Size:  1G
+    StorageType:  dynamic
   hostpathstorage:
     AccessMode:  ReadWriteMany
     Size:  1G
-    StorageType:  create
-  replicastorage:
-    AccessMode:  ReadWriteMany
-    Size:  700M
     StorageType:  create
   nfsstorage:
     AccessMode:  ReadWriteMany
@@ -79,5 +81,5 @@ Storage:
     StorageClass:  rook-ceph-block
 Pgo:
   Audit:  false
-  PGOImagePrefix:  crunchydata
-  PGOImageTag:  centos7-4.3.0
+  PGOImagePrefix:  registry.developers.crunchydata.com/crunchydata
+  PGOImageTag:  centos7-4.5.0
