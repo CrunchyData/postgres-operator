@@ -89,6 +89,14 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 		return
 	}
 
+	// ensure the the pgBackRest Secret is created. If this fails, we have to
+	// abort
+	if err := backrest.CreateRepoSecret(clientset, cl); err != nil {
+		log.Error(err)
+		publishClusterCreateFailure(cl, err.Error())
+		return
+	}
+
 	if err := annotateBackrestSecret(clientset, cl); err != nil {
 		log.Error(err)
 		publishClusterCreateFailure(cl, err.Error())
