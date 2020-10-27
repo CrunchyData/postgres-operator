@@ -212,6 +212,198 @@ EOF
 kubectl apply -f "${pgo_cluster_name}-pgcluster.yaml"
 ```
 
+### Create a PostgreSQL Cluster With Backups in S3
+
+A frequent use case is to create a PostgreSQL cluster with S3 or a S3-like
+storage system for storing backups. This requires adding a Secret that contains
+the S3 key and key secret for your account, and adding some additional
+information into the custom resource.
+
+#### Step 1: Create the pgBackRest S3 Secrets
+
+As mentioned above, it is necessary to create a Secret containing the S3 key and
+key secret that will allow a user to create backups in S3.
+
+The below code will help you set up this Secret.
+
+```
+# this variable is the name of the cluster being created
+pgo_cluster_name=hippo
+# this variable is the namespace the cluster is being deployed into
+cluster_namespace=pgo
+# the following variables are your S3 key and key secret
+backrest_s3_key=yours3key
+backrest_s3_key_secret=yours3keysecret
+
+kubectl -n "${cluster_namespace}" create secret generic "${pgo_cluster_name}-backrest-repo-config" \
+  --from-literal="aws-s3-key=${backrest_s3_key}" \
+  --from-literal="aws-s3-key-secret=${backrest_s3_key_secret}"
+
+unset backrest_s3_key
+unset backrest_s3_key_secret
+```
+
+#### Step 2: Creating the PostgreSQL User Secrets
+
+Similar to the basic create cluster example, there are a minimum of three
+PostgreSQL user accounts that you must create in order to bootstrap a PostgreSQL
+cluster. These are:
+
+- A PostgreSQL superuser
+- A replication user
+- A standard PostgreSQL user
+
+The below code will help you set up these Secrets.
+
+```
+# this variable is the name of the cluster being created
+pgo_cluster_name=hippo
+# this variable is the namespace the cluster is being deployed into
+cluster_namespace=pgo
+
+# this is the superuser secret
+kubectl create secret generic -n "${cluster_namespace}" "${pgo_cluster_name}-postgres-secret" \
+  --from-literal=username=postgres \
+  --from-literal=password=Supersecurepassword*
+
+# this is the replication user secret
+kubectl create secret generic -n "${cluster_namespace}" "${pgo_cluster_name}-primaryuser-secret" \
+  --from-literal=username=primaryuser \
+  --from-literal=password=Anothersecurepassword*
+
+# this is the standard user secret
+kubectl create secret generic -n "${cluster_namespace}" "${pgo_cluster_name}-hippo-secret" \
+  --from-literal=username=hippo \
+  --from-literal=password=Moresecurepassword*
+
+
+kubectl label secrets -n "${cluster_namespace}" "${pgo_cluster_name}-postgres-secret" "pg-cluster=${pgo_cluster_name}"
+kubectl label secrets -n "${cluster_namespace}" "${pgo_cluster_name}-primaryuser-secret" "pg-cluster=${pgo_cluster_name}"
+kubectl label secrets -n "${cluster_namespace}" "${pgo_cluster_name}-hippo-secret" "pg-cluster=${pgo_cluster_name}"
+```
+
+#### Step 3: Create the PostgreSQL Cluster
+
+With the Secrets in place. It is now time to create the PostgreSQL cluster.
+
+The below manifest references the Secrets created in the previous step to add a
+custom resource to the `pgclusters.crunchydata.com` custom resource definition.
+There are some additions in this example specifically for storing backups in S3.
+
+```
+# this variable is the name of the cluster being created
+export pgo_cluster_name=hippo
+# this variable is the namespace the cluster is being deployed into
+export cluster_namespace=pgo
+# the following variables store the information for your S3 cluster. You may
+# need to adjust them for your actual settings
+export backrest_s3_bucket=your-bucket
+export backrest_s3_endpoint=s3.region-name.amazonaws.com
+export backrest_s3_region=region-name
+
+cat <<-EOF > "${pgo_cluster_name}-pgcluster.yaml"
+apiVersion: crunchydata.com/v1
+kind: Pgcluster
+metadata:
+  annotations:
+    current-primary: ${pgo_cluster_name}
+  labels:
+    autofail: "true"
+    backrest-storage-type: "s3"
+    crunchy-pgbadger: "false"
+    crunchy-pgha-scope: ${pgo_cluster_name}
+    crunchy-postgres-exporter: "false"
+    deployment-name: ${pgo_cluster_name}
+    name: ${pgo_cluster_name}
+    pg-cluster: ${pgo_cluster_name}
+    pg-pod-anti-affinity: ""
+    pgo-backrest: "true"
+    pgo-version: {{< param operatorVersion >}}
+    pgouser: admin
+  name: ${pgo_cluster_name}
+  namespace: ${cluster_namespace}
+spec:
+  BackrestStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ""
+    size: 1G
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  PrimaryStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ${pgo_cluster_name}
+    size: 1G
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  ReplicaStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ""
+    size: 1G
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  annotations:
+  backrestLimits: {}
+  backrestRepoPath: ""
+  backrestResources:
+    memory: 48Mi
+  backrestS3Bucket: ${backrest_s3_bucket}
+  backrestS3Endpoint: ${backrest_s3_endpoint}
+  backrestS3Region: ${backrest_s3_region}
+  backrestS3URIStyle: ""
+  backrestS3VerifyTLS: ""
+  ccpimage: crunchy-postgres-ha
+  ccpimageprefix: registry.developers.crunchydata.com/crunchydata
+  ccpimagetag: {{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}
+  clustername: ${pgo_cluster_name}
+  customconfig: ""
+  database: ${pgo_cluster_name}
+  exporterport: "9187"
+  limits: {}
+  name: ${pgo_cluster_name}
+  namespace: ${cluster_namespace}
+  pgBouncer:
+    limits: {}
+    replicas: 0
+  pgDataSource:
+    restoreFrom: ""
+    restoreOpts: ""
+  pgbadgerport: "10000"
+  pgoimageprefix: registry.developers.crunchydata.com/crunchydata
+  podAntiAffinity:
+    default: preferred
+    pgBackRest: preferred
+    pgBouncer: preferred
+  policies: ""
+  port: "5432"
+  primarysecretname: ${pgo_cluster_name}-primaryuser-secret
+  replicas: "0"
+  rootsecretname: ${pgo_cluster_name}-postgres-secret
+  shutdown: false
+  standby: false
+  tablespaceMounts: {}
+  tls:
+    caSecret: ""
+    replicationTLSSecret: ""
+    tlsSecret: ""
+  tlsOnly: false
+  user: hippo
+  userlabels:
+    backrest-storage-type: "s3"
+    crunchy-postgres-exporter: "false"
+    pg-pod-anti-affinity: ""
+    pgo-version: {{< param operatorVersion >}}
+  usersecretname: ${pgo_cluster_name}-hippo-secret
+EOF
+
+kubectl apply -f "${pgo_cluster_name}-pgcluster.yaml"
+```
+
 ### Modify a Cluster
 
 There following modification operations are supported on the
