@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"text/template"
@@ -29,6 +30,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
@@ -37,8 +39,7 @@ import (
 )
 
 const CustomConfigMapName = "pgo-config"
-const DefaultConfigsPath = "/default-pgo-config/"
-const CustomConfigsPath = "/pgo-config/"
+const defaultConfigPath = "/default-pgo-config/"
 
 var PgoDefaultServiceAccountTemplate *template.Template
 
@@ -513,29 +514,17 @@ func (c *PgoConfig) GetStorageSpec(name string) (crv1.PgStorageSpec, error) {
 
 func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) error {
 
-	cMap, rootPath := getRootPath(clientset, namespace)
-
-	var yamlFile []byte
-	var err error
+	cMap, err := initialize(clientset, namespace)
 
 	//get the pgo.yaml config file
-	if cMap != nil {
-		str := cMap.Data[CONFIG_PATH]
-		if str == "" {
-			errMsg := fmt.Sprintf("could not get %s from ConfigMap", CONFIG_PATH)
-			return errors.New(errMsg)
-		}
-		yamlFile = []byte(str)
-	} else {
-		yamlFile, err = ioutil.ReadFile(rootPath + CONFIG_PATH)
-		if err != nil {
-			log.Errorf("yamlFile.Get err   #%v ", err)
-			return err
-		}
+	str := cMap.Data[CONFIG_PATH]
+	if str == "" {
+		return fmt.Errorf("could not get %s from ConfigMap", CONFIG_PATH)
 	}
 
-	err = yaml.Unmarshal(yamlFile, c)
-	if err != nil {
+	yamlFile := []byte(str)
+
+	if err := yaml.Unmarshal(yamlFile, c); err != nil {
 		log.Errorf("Unmarshal: %v", err)
 		return err
 	}
@@ -549,178 +538,178 @@ func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) 
 	c.CheckEnv()
 
 	//load up all the templates
-	PgoDefaultServiceAccountTemplate, err = c.LoadTemplate(cMap, rootPath, PGODefaultServiceAccountPath)
+	PgoDefaultServiceAccountTemplate, err = c.LoadTemplate(cMap, PGODefaultServiceAccountPath)
 	if err != nil {
 		return err
 	}
-	PgoBackrestServiceAccountTemplate, err = c.LoadTemplate(cMap, rootPath, PGOBackrestServiceAccountPath)
+	PgoBackrestServiceAccountTemplate, err = c.LoadTemplate(cMap, PGOBackrestServiceAccountPath)
 	if err != nil {
 		return err
 	}
-	PgoTargetServiceAccountTemplate, err = c.LoadTemplate(cMap, rootPath, PGOTargetServiceAccountPath)
+	PgoTargetServiceAccountTemplate, err = c.LoadTemplate(cMap, PGOTargetServiceAccountPath)
 	if err != nil {
 		return err
 	}
-	PgoTargetRoleBindingTemplate, err = c.LoadTemplate(cMap, rootPath, PGOTargetRoleBindingPath)
+	PgoTargetRoleBindingTemplate, err = c.LoadTemplate(cMap, PGOTargetRoleBindingPath)
 	if err != nil {
 		return err
 	}
-	PgoBackrestRoleTemplate, err = c.LoadTemplate(cMap, rootPath, PGOBackrestRolePath)
+	PgoBackrestRoleTemplate, err = c.LoadTemplate(cMap, PGOBackrestRolePath)
 	if err != nil {
 		return err
 	}
-	PgoBackrestRoleBindingTemplate, err = c.LoadTemplate(cMap, rootPath, PGOBackrestRoleBindingPath)
+	PgoBackrestRoleBindingTemplate, err = c.LoadTemplate(cMap, PGOBackrestRoleBindingPath)
 	if err != nil {
 		return err
 	}
-	PgoTargetRoleTemplate, err = c.LoadTemplate(cMap, rootPath, PGOTargetRolePath)
+	PgoTargetRoleTemplate, err = c.LoadTemplate(cMap, PGOTargetRolePath)
 	if err != nil {
 		return err
 	}
-	PgoPgServiceAccountTemplate, err = c.LoadTemplate(cMap, rootPath, PGOPgServiceAccountPath)
+	PgoPgServiceAccountTemplate, err = c.LoadTemplate(cMap, PGOPgServiceAccountPath)
 	if err != nil {
 		return err
 	}
-	PgoPgRoleTemplate, err = c.LoadTemplate(cMap, rootPath, PGOPgRolePath)
+	PgoPgRoleTemplate, err = c.LoadTemplate(cMap, PGOPgRolePath)
 	if err != nil {
 		return err
 	}
-	PgoPgRoleBindingTemplate, err = c.LoadTemplate(cMap, rootPath, PGOPgRoleBindingPath)
-	if err != nil {
-		return err
-	}
-
-	PVCTemplate, err = c.LoadTemplate(cMap, rootPath, pvcPath)
+	PgoPgRoleBindingTemplate, err = c.LoadTemplate(cMap, PGOPgRoleBindingPath)
 	if err != nil {
 		return err
 	}
 
-	PolicyJobTemplate, err = c.LoadTemplate(cMap, rootPath, policyJobTemplatePath)
+	PVCTemplate, err = c.LoadTemplate(cMap, pvcPath)
 	if err != nil {
 		return err
 	}
 
-	ContainerResourcesTemplate, err = c.LoadTemplate(cMap, rootPath, containerResourcesTemplatePath)
+	PolicyJobTemplate, err = c.LoadTemplate(cMap, policyJobTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgoBackrestRepoServiceTemplate, err = c.LoadTemplate(cMap, rootPath, pgoBackrestRepoServiceTemplatePath)
+	ContainerResourcesTemplate, err = c.LoadTemplate(cMap, containerResourcesTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgoBackrestRepoTemplate, err = c.LoadTemplate(cMap, rootPath, pgoBackrestRepoTemplatePath)
+	PgoBackrestRepoServiceTemplate, err = c.LoadTemplate(cMap, pgoBackrestRepoServiceTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgmonitorEnvVarsTemplate, err = c.LoadTemplate(cMap, rootPath, pgmonitorEnvVarsPath)
+	PgoBackrestRepoTemplate, err = c.LoadTemplate(cMap, pgoBackrestRepoTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgbackrestEnvVarsTemplate, err = c.LoadTemplate(cMap, rootPath, pgbackrestEnvVarsPath)
+	PgmonitorEnvVarsTemplate, err = c.LoadTemplate(cMap, pgmonitorEnvVarsPath)
 	if err != nil {
 		return err
 	}
 
-	PgbackrestS3EnvVarsTemplate, err = c.LoadTemplate(cMap, rootPath, pgbackrestS3EnvVarsPath)
+	PgbackrestEnvVarsTemplate, err = c.LoadTemplate(cMap, pgbackrestEnvVarsPath)
 	if err != nil {
 		return err
 	}
 
-	PgAdminTemplate, err = c.LoadTemplate(cMap, rootPath, pgAdminTemplatePath)
+	PgbackrestS3EnvVarsTemplate, err = c.LoadTemplate(cMap, pgbackrestS3EnvVarsPath)
 	if err != nil {
 		return err
 	}
 
-	PgAdminServiceTemplate, err = c.LoadTemplate(cMap, rootPath, pgAdminServiceTemplatePath)
+	PgAdminTemplate, err = c.LoadTemplate(cMap, pgAdminTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgbouncerTemplate, err = c.LoadTemplate(cMap, rootPath, pgbouncerTemplatePath)
+	PgAdminServiceTemplate, err = c.LoadTemplate(cMap, pgAdminServiceTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgbouncerConfTemplate, err = c.LoadTemplate(cMap, rootPath, pgbouncerConfTemplatePath)
+	PgbouncerTemplate, err = c.LoadTemplate(cMap, pgbouncerTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgbouncerUsersTemplate, err = c.LoadTemplate(cMap, rootPath, pgbouncerUsersTemplatePath)
+	PgbouncerConfTemplate, err = c.LoadTemplate(cMap, pgbouncerConfTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	PgbouncerHBATemplate, err = c.LoadTemplate(cMap, rootPath, pgbouncerHBATemplatePath)
+	PgbouncerUsersTemplate, err = c.LoadTemplate(cMap, pgbouncerUsersTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	ServiceTemplate, err = c.LoadTemplate(cMap, rootPath, serviceTemplatePath)
+	PgbouncerHBATemplate, err = c.LoadTemplate(cMap, pgbouncerHBATemplatePath)
 	if err != nil {
 		return err
 	}
 
-	RmdatajobTemplate, err = c.LoadTemplate(cMap, rootPath, rmdatajobPath)
+	ServiceTemplate, err = c.LoadTemplate(cMap, serviceTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	BackrestjobTemplate, err = c.LoadTemplate(cMap, rootPath, backrestjobPath)
+	RmdatajobTemplate, err = c.LoadTemplate(cMap, rmdatajobPath)
 	if err != nil {
 		return err
 	}
 
-	PgDumpBackupJobTemplate, err = c.LoadTemplate(cMap, rootPath, pgDumpBackupJobPath)
+	BackrestjobTemplate, err = c.LoadTemplate(cMap, backrestjobPath)
 	if err != nil {
 		return err
 	}
 
-	PgRestoreJobTemplate, err = c.LoadTemplate(cMap, rootPath, pgRestoreJobPath)
+	PgDumpBackupJobTemplate, err = c.LoadTemplate(cMap, pgDumpBackupJobPath)
 	if err != nil {
 		return err
 	}
 
-	PVCMatchLabelsTemplate, err = c.LoadTemplate(cMap, rootPath, pvcMatchLabelsPath)
+	PgRestoreJobTemplate, err = c.LoadTemplate(cMap, pgRestoreJobPath)
 	if err != nil {
 		return err
 	}
 
-	PVCStorageClassTemplate, err = c.LoadTemplate(cMap, rootPath, pvcSCPath)
+	PVCMatchLabelsTemplate, err = c.LoadTemplate(cMap, pvcMatchLabelsPath)
 	if err != nil {
 		return err
 	}
 
-	AffinityTemplate, err = c.LoadTemplate(cMap, rootPath, affinityTemplatePath)
+	PVCStorageClassTemplate, err = c.LoadTemplate(cMap, pvcSCPath)
 	if err != nil {
 		return err
 	}
 
-	PodAntiAffinityTemplate, err = c.LoadTemplate(cMap, rootPath, podAntiAffinityTemplatePath)
+	AffinityTemplate, err = c.LoadTemplate(cMap, affinityTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	ExporterTemplate, err = c.LoadTemplate(cMap, rootPath, exporterTemplatePath)
+	PodAntiAffinityTemplate, err = c.LoadTemplate(cMap, podAntiAffinityTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	BadgerTemplate, err = c.LoadTemplate(cMap, rootPath, badgerTemplatePath)
+	ExporterTemplate, err = c.LoadTemplate(cMap, exporterTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	DeploymentTemplate, err = c.LoadTemplate(cMap, rootPath, deploymentTemplatePath)
+	BadgerTemplate, err = c.LoadTemplate(cMap, badgerTemplatePath)
 	if err != nil {
 		return err
 	}
 
-	BootstrapTemplate, err = c.LoadTemplate(cMap, rootPath, bootstrapTemplatePath)
+	DeploymentTemplate, err = c.LoadTemplate(cMap, deploymentTemplatePath)
+	if err != nil {
+		return err
+	}
+
+	BootstrapTemplate, err = c.LoadTemplate(cMap, bootstrapTemplatePath)
 	if err != nil {
 		return err
 	}
@@ -728,20 +717,75 @@ func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) 
 	return nil
 }
 
-func getRootPath(clientset kubernetes.Interface, namespace string) (*v1.ConfigMap, string) {
+// getOperatorConfigMap returns the config map that contains all of the
+// configuration for the Operator
+func getOperatorConfigMap(clientset kubernetes.Interface, namespace string) (*v1.ConfigMap, error) {
 	ctx := context.TODO()
-	cMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(ctx, CustomConfigMapName, metav1.GetOptions{})
-	if err == nil {
-		log.Infof("Config: %s ConfigMap found, using config files from the configmap", CustomConfigMapName)
-		return cMap, ""
-	}
-	log.Infof("Config: %s ConfigMap NOT found, using default baked-in config files from %s", CustomConfigMapName, DefaultConfigsPath)
 
-	return nil, DefaultConfigsPath
+	return clientset.CoreV1().ConfigMaps(namespace).Get(ctx, CustomConfigMapName, metav1.GetOptions{})
+}
+
+// initialize attemps to get the configuration ConfigMap based on a name.
+// If the ConfigMap does not exist, a ConfigMap is created from the default
+// configuration path
+func initialize(clientset kubernetes.Interface, namespace string) (*v1.ConfigMap, error) {
+	ctx := context.TODO()
+
+	// if the ConfigMap exists, exit
+	if cm, err := getOperatorConfigMap(clientset, namespace); err == nil {
+		log.Infof("Config: %q ConfigMap found, using config files from the configmap", CustomConfigMapName)
+		return cm, nil
+	}
+
+	// otherwise, create a ConfigMap
+	log.Infof("Config: %q ConfigMap NOT found, creating ConfigMap from files from %q", CustomConfigMapName, defaultConfigPath)
+
+	cm := &v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: CustomConfigMapName,
+		},
+		Data: map[string]string{},
+	}
+
+	// get all of the file names that are in the default configuration directory
+	if err := filepath.Walk(defaultConfigPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// skip if a directory
+		if info.IsDir() {
+			return nil
+		}
+
+		// get all of the contents of a default configuration and load it into
+		// a ConfigMap
+		if contents, err := ioutil.ReadFile(path); err != nil {
+			return err
+		} else {
+			cm.Data[info.Name()] = string(contents)
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	// create the ConfigMap. If the error is that the ConfigMap was already
+	// created, then grab the new ConfigMap
+	if _, err := clientset.CoreV1().ConfigMaps(namespace).Create(ctx, cm, metav1.CreateOptions{}); err != nil {
+		if kerrors.IsAlreadyExists(err) {
+			return getOperatorConfigMap(clientset, namespace)
+		}
+
+		return nil, err
+	}
+
+	return cm, nil
 }
 
 // LoadTemplate will load a JSON template from a path
-func (c *PgoConfig) LoadTemplate(cMap *v1.ConfigMap, rootPath, path string) (*template.Template, error) {
+func (c *PgoConfig) LoadTemplate(cMap *v1.ConfigMap, path string) (*template.Template, error) {
 	var value string
 	var err error
 
@@ -771,7 +815,7 @@ func (c *PgoConfig) LoadTemplate(cMap *v1.ConfigMap, rootPath, path string) (*te
 func (c *PgoConfig) DefaultTemplate(path string) (string, error) {
 	// set the lookup value for the file path based on the default configuration
 	// path and the template file requested to be loaded
-	fullPath := DefaultConfigsPath + path
+	fullPath := defaultConfigPath + path
 
 	log.Debugf("No entry in cmap loading default path [%s]", fullPath)
 
