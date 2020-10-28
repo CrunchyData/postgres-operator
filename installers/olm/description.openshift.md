@@ -63,20 +63,6 @@ edit `conf/postgres-operator/pgo.yaml` and set `DisableFSGroup` to `true`.
 
 [Security Context Constraint]: https://docs.openshift.com/container-platform/latest/authentication/managing-security-context-constraints.html
 
-### PostgreSQL Operator Configuration
-
-Edit `conf/postgres-operator/pgo.yaml` to configure the deployment. Look over all of the options and make any
-changes necessary for your environment. A [full description of each option][pgo-yaml-reference] is available in the documentation.
-
-[pgo-yaml-reference]: https://access.crunchydata.com/documentation/postgres-operator/${PGO_VERSION}/configuration/pgo-yaml-configuration/
-
-When the file is ready, upload the entire directory to the `pgo-config` ConfigMap.
-
-```
-oc -n "$PGO_OPERATOR_NAMESPACE" create configmap pgo-config \
-  --from-file=./conf/postgres-operator
-```
-
 ### Secrets
 
 Configure pgBackRest for your environment. If you do not plan to use AWS S3 to store backups, you can omit
