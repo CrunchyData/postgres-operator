@@ -43,19 +43,6 @@ git clone -b v{{< param operatorVersion >}} https://github.com/CrunchyData/postg
 cd postgres-operator
 ```
 
-### PostgreSQL Operator Configuration
-
-Edit `conf/postgres-operator/pgo.yaml` to configure the deployment. Look over all of the options and make any
-changes necessary for your environment. A full description of each option is available in the
-[`pgo.yaml` configuration guide]({{< relref "configuration/pgo-yaml-configuration.md" >}}).
-
-When the file is ready, upload the entire directory to the `pgo-config` ConfigMap.
-
-```
-kubectl -n "$PGO_OPERATOR_NAMESPACE" create configmap pgo-config \
-  --from-file=./conf/postgres-operator
-```
-
 ### Secrets
 
 Configure pgBackRest for your environment. If you do not plan to use AWS S3 to store backups, you can omit
@@ -152,4 +139,3 @@ pgo version
 # pgo client version {{< param operatorVersion >}}
 # pgo-apiserver version {{< param operatorVersion >}}
 ```
-

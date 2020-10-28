@@ -16,9 +16,9 @@ The configuration files used by the Operator are found in 2 places:
  * the pgo-config ConfigMap in the namespace the Operator is running in
  * or, a copy of the configuration files are also included by default into the Operator container images themselves to support a very simplistic deployment of the Operator
 
-If the pgo-config ConfigMap is not found by the Operator, it will use
-the configuration files that are included in the Operator container
-images.
+If the `pgo-config` ConfigMap is not found by the Operator, it will create a
+`pgo-config` ConfigMap using the configuration files that are included in the
+Operator container.
 
 ## conf/postgres-operator/pgo.yaml
 The *pgo.yaml* file sets many different Operator configuration settings and is described in the [pgo.yaml configuration]({{< ref "pgo-yaml-configuration.md" >}}) documentation section.
