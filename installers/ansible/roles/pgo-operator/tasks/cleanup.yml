@@ -6,6 +6,20 @@
   - uninstall
   - update
 
+- name: Get number of Operator instances in this cluster
+  shell: |
+    {{ kubectl_or_oc }} get deployment --field-selector=metadata.name=postgres-operator --selector=vendor=crunchydata --all-namespaces -o name | wc -l
+  register: num_operators
+  tags:
+  - uninstall
+  - update
+
+- name: Set boolean for multi-operator environment
+  set_fact: multi_operator_env="{{ 'true' if num_operators.stdout | int > 1 else 'false' }}"    
+  tags:
+  - uninstall
+  - update
+
 - name: Find watched namespaces
   shell: |
     {{ kubectl_or_oc }} get namespaces -o json --selector=vendor=crunchydata,pgo-installation-name={{ pgo_installation_name }}
@@ -152,7 +166,8 @@
   tags:
   - uninstall
   - update
-  when: create_rbac|bool
+  when: not multi_operator_env|bool and
+        create_rbac|bool
 
 - name: Delete cluster-admin Cluster Role Binding for PGO Service Account
   command: "{{ kubectl_or_oc }} delete clusterrolebinding pgo-cluster-admin"
@@ -161,7 +176,8 @@
   tags:
   - uninstall
   - update
-  when: create_rbac|bool
+  when: not multi_operator_env|bool and
+        create_rbac|bool
 
 - name: Delete existing Cluster Roles
   shell: |
@@ -173,7 +189,8 @@
   tags:
   - uninstall
   - update
-  when: create_rbac|bool
+  when: not multi_operator_env|bool and
+        create_rbac|bool
 
 - name: Delete existing PGO Role Bindings (Watched Namespaces)
   shell: |
@@ -233,6 +250,7 @@
         pgpolicies.crunchydata.com pgreplicas.crunchydata.com pgtasks.crunchydata.com
   ignore_errors: yes
   no_log: false
+  when: not multi_operator_env|bool
   tags: uninstall
 
 - name: Remove Labels from Watched Namespaces
@@ -276,7 +294,8 @@
   file:
     state: absent
     path: "/usr/local/bin/pgo"
-  when: pgo_client_install == "true"
+  when: pgo_client_install == "true" and
+        not multi_operator_env|bool
   ignore_errors: yes
   no_log: false
   tags: uninstall
