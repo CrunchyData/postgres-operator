@@ -8,7 +8,6 @@
     - pgo_operator_namespace
     - pgo_installation_name
     - pgo_admin_username
-    - pgo_admin_password
     - pgo_admin_role_name
     - pgo_admin_perms
     - ccp_image_prefix
