@@ -31,9 +31,11 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/ns"
 	"github.com/crunchydata/postgres-operator/internal/tlsutil"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -133,6 +135,11 @@ func Initialize() {
 
 	initConfig()
 
+	// look through all the pgouser secrets in the Operator's
+	// namespace and set a generated password for any that currently
+	// have an empty password set
+	setRandomPgouserPasswords()
+
 	if err := setNamespaceOperatingMode(); err != nil {
 		log.Error(err)
 		os.Exit(2)
@@ -160,7 +167,6 @@ func connectToKube() {
 }
 
 func initConfig() {
-
 	AuditFlag = Pgo.Pgo.Audit
 	if AuditFlag {
 		log.Info("audit flag is set to true")
@@ -305,6 +311,7 @@ func Authn(perm string, w http.ResponseWriter, r *http.Request) (string, error) 
 	// this function currently encapsulates authorization as well, and this is
 	// the call where we get the username to check the RBAC settings
 	username, password, authOK := r.BasicAuth()
+
 	if AuditFlag {
 		log.Infof("[audit] %s username=[%s] method=[%s] ip=[%s] ok=[%t] ", perm, username, r.Method, r.RemoteAddr, authOK)
 	}
@@ -498,6 +505,56 @@ func setNamespaceOperatingMode() error {
 	namespaceOperatingMode = nsOpMode
 
 	return nil
+}
+
+// setRandomPgouserPasswords looks through the pgouser secrets in the Operator's
+// namespace. If any have an empty password, it generates a random password,
+// Base64 encodes it, then stores it in the relevant PGO user's secret
+func setRandomPgouserPasswords() {
+	ctx := context.TODO()
+
+	selector := "pgo-pgouser=true,vendor=crunchydata"
+	secrets, err := Clientset.CoreV1().Secrets(PgoNamespace).
+		List(ctx, metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		log.Warnf("Could not get pgouser secrets in namespace: %s", PgoNamespace)
+		return
+	}
+
+	for _, secret := range secrets.Items {
+		// check if password is set. if it is, continue.
+		if len(secret.Data["password"]) > 0 {
+			continue
+		}
+
+		log.Infof("Password in pgouser secret %s for operator installation %s in namespace %s is empty. "+
+			"Setting a generated password.", secret.Name, InstallationName, PgoNamespace)
+
+		// generate the password using the default password length
+		generatedPassword, err := util.GeneratePassword(util.DefaultGeneratedPasswordLength)
+
+		if err != nil {
+			log.Errorf("Could not generate password for pgouser secret %s for operator installation %s in "+
+				"namespace %s", secret.Name, InstallationName, PgoNamespace)
+			continue
+		}
+
+		// create the password patch
+		patch, err := kubeapi.NewMergePatch().Add("stringData", "password")(generatedPassword).Bytes()
+
+		if err != nil {
+			log.Errorf("Could not generate password patch for pgouser secret %s for operator installation "+
+				"%s in namespace %s", secret.Name, InstallationName, PgoNamespace)
+			continue
+		}
+
+		// patch the pgouser secret with the new password
+		if _, err := Clientset.CoreV1().Secrets(PgoNamespace).Patch(ctx, secret.Name, types.MergePatchType,
+			patch, metav1.PatchOptions{}); err != nil {
+			log.Errorf("Could not patch pgouser secret %s with generated password for operator installation "+
+				"%s in namespace %s", secret.Name, InstallationName, PgoNamespace)
+		}
+	}
 }
 
 // NamespaceOperatingMode returns the namespace operating mode for the current Operator

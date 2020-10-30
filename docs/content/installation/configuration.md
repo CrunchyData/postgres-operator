@@ -53,7 +53,7 @@ Operator.
 | `namespace_mode` | dynamic |  | Determines which namespace permissions are assigned to the PostgreSQL Operator using a ClusterRole. Options: `dynamic`, `readonly`, and `disabled` |
 | `pgbadgerport` | 10000 | **Required** | Set to configure the default port used to connect to pgbadger. |
 | `pgo_add_os_ca_store` | false | **Required** | When true, includes system default certificate authorities. |
-| `pgo_admin_password` | examplepassword | **Required** | Configures the pgo administrator password. |
+| `pgo_admin_password` | examplepassword |  | Configures the pgo administrator password. When blank, a random password is generated. |
 | `pgo_admin_perms` | * | **Required** | Sets the access control rules provided by the PostgreSQL Operator RBAC resources for the PostgreSQL Operator administrative account that is created by this installer. Defaults to allowing all of the permissions, which is represented with the * |
 | `pgo_admin_role_name` | pgoadmin | **Required** | Sets the name of the PostgreSQL Operator role that is utilized for administrative operations performed by the PostgreSQL Operator. |
 | `pgo_admin_username` | admin | **Required** | Configures the pgo administrator username. |

@@ -10,6 +10,6 @@ metadata:
   namespace: {{ pgo_operator_namespace }}
 type: Opaque
 data:
-  password: {{ pgo_admin_password | b64encode }}
-  username: {{ pgo_admin_username | b64encode }}
-  roles: {{ pgo_admin_role_name | b64encode }}
+  password: '{{ pgo_admin_password | b64encode }}'
+  username: '{{ pgo_admin_username | b64encode }}'
+  roles: '{{ pgo_admin_role_name | b64encode }}'
