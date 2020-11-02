@@ -243,6 +243,7 @@ type ShowClusterService struct {
 	Name         string
 	Data         string
 	ClusterIP    string
+	ClusterPorts []string
 	ExternalIP   string
 	ClusterName  string
 	Pgbouncer    bool
