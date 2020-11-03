@@ -61,6 +61,8 @@ type ControllerManager struct {
 	pgoConfig              config.PgoConfig
 	pgoNamespace           string
 	sem                    *semaphore.Weighted
+
+	NewKubernetesClient func() (*kubeapi.Client, error)
 }
 
 // controllerGroup is a struct for managing the various controllers created to handle events
@@ -90,6 +92,8 @@ func NewControllerManager(namespaces []string,
 		pgoConfig:              pgoConfig,
 		pgoNamespace:           pgoNamespace,
 		sem:                    semaphore.NewWeighted(1),
+
+		NewKubernetesClient: kubeapi.NewClient,
 	}
 
 	// create controller groups for each namespace provided
@@ -229,7 +233,7 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 	}
 
 	// create a client for kube resources
-	client, err := kubeapi.NewClient()
+	client, err := c.NewKubernetesClient()
 	if err != nil {
 		log.Error(err)
 		return err

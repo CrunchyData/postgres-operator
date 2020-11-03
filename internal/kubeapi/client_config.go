@@ -55,7 +55,9 @@ var _ Interface = &Client{}
 // CrunchydataV1 retrieves the CrunchydataV1Client
 func (c *Client) CrunchydataV1() crunchydatav1.CrunchydataV1Interface { return c.crunchydataV1 }
 
-func loadClientConfig() (*rest.Config, error) {
+// LoadClientConfig prepares a configuration from the environment or home directory,
+// falling back to in-cluster when applicable.
+func LoadClientConfig() (*rest.Config, error) {
 	// The default loading rules try to read from the files specified in the
 	// environment or from the home directory.
 	loader := clientcmd.NewDefaultClientConfigLoadingRules()
@@ -69,10 +71,17 @@ func loadClientConfig() (*rest.Config, error) {
 
 // NewClient returns a kubernetes.Clientset and its underlying configuration.
 func NewClient() (*Client, error) {
-	config, err := loadClientConfig()
+	config, err := LoadClientConfig()
 	if err != nil {
 		return nil, err
 	}
+
+	return NewClientForConfig(config)
+}
+
+// NewClientForConfig returns a kubernetes.Clientset using config.
+func NewClientForConfig(config *rest.Config) (*Client, error) {
+	var err error
 
 	// Match the settings applied by sigs.k8s.io/controller-runtime@v0.6.0;
 	// see https://github.com/kubernetes-sigs/controller-runtime/issues/365.
