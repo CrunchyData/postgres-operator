@@ -251,5 +251,16 @@ release:  linuxpgo macpgo winpgo
 	cp $(PGOROOT)/examples/pgo-bash-completion $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
 
-generate:
+generate: generate-crd generate-deepcopy
 	GOBIN='$(CURDIR)/hack/tools' ./hack/update-codegen.sh
+
+generate-crd:
+	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
+		crd:crdVersions='v1',preserveUnknownFields='false' \
+		paths='./pkg/apis/postgres-operator.crunchydata.com/...' \
+		output:dir='config/crd/bases' # config/crd/bases/{group}_{plural}.yaml
+
+generate-deepcopy:
+	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
+		object:headerFile='hack/boilerplate.go.txt' \
+		paths='./pkg/apis/postgres-operator.crunchydata.com/...'
