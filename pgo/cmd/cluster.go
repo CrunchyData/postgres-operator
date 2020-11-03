@@ -220,9 +220,11 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 
 	for _, service := range detail.Services {
 		if service.ExternalIP == "" {
-			fmt.Println(TreeBranch + "service : " + service.Name + " - ClusterIP (" + service.ClusterIP + ")")
+			fmt.Println(TreeBranch + "service : " + service.Name + " - ClusterIP (" + service.ClusterIP + ")" + " - Ports (" +
+				strings.Trim(strings.Join(strings.Fields(fmt.Sprint(service.ClusterPorts)), ", "), "[]") + ")")
 		} else {
-			fmt.Println(TreeBranch + "service : " + service.Name + " - ClusterIP (" + service.ClusterIP + ") ExternalIP (" + service.ExternalIP + ")")
+			fmt.Println(TreeBranch + "service : " + service.Name + " - ClusterIP (" + service.ClusterIP + ") ExternalIP (" + service.ExternalIP +
+				")" + " - Ports (" + strings.Trim(strings.Join(strings.Fields(fmt.Sprint(service.ClusterPorts)), ", "), "[]") + ")")
 		}
 	}
 

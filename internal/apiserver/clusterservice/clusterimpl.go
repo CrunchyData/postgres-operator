@@ -308,6 +308,9 @@ func getServices(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterService,
 			d.ClusterName = cluster.Name
 		}
 		d.ClusterIP = p.Spec.ClusterIP
+		for _, port := range p.Spec.Ports {
+			d.ClusterPorts = append(d.ClusterPorts, strconv.Itoa(int(port.Port))+"/"+string(port.Protocol))
+		}
 		if len(p.Spec.ExternalIPs) > 0 {
 			d.ExternalIP = p.Spec.ExternalIPs[0]
 		}
