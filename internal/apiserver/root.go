@@ -35,7 +35,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -511,17 +510,15 @@ func setNamespaceOperatingMode() error {
 // namespace. If any have an empty password, it generates a random password,
 // Base64 encodes it, then stores it in the relevant PGO user's secret
 func setRandomPgouserPasswords() {
-	ctx := context.TODO()
-
 	selector := "pgo-pgouser=true,vendor=crunchydata"
 	secrets, err := Clientset.CoreV1().Secrets(PgoNamespace).
-		List(ctx, metav1.ListOptions{LabelSelector: selector})
+		List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Warnf("Could not get pgouser secrets in namespace: %s", PgoNamespace)
 		return
 	}
 
-	for _, secret := range secrets.Items {
+	for i, secret := range secrets.Items {
 		// check if password is set. if it is, continue.
 		if len(secret.Data["password"]) > 0 {
 			continue
@@ -539,18 +536,11 @@ func setRandomPgouserPasswords() {
 			continue
 		}
 
-		// create the password patch
-		patch, err := kubeapi.NewMergePatch().Add("stringData", "password")(generatedPassword).Bytes()
-
-		if err != nil {
-			log.Errorf("Could not generate password patch for pgouser secret %s for operator installation "+
-				"%s in namespace %s", secret.Name, InstallationName, PgoNamespace)
-			continue
-		}
+		// add the password to the secret
+		secrets.Items[i].Data["password"] = []byte(generatedPassword)
 
 		// patch the pgouser secret with the new password
-		if _, err := Clientset.CoreV1().Secrets(PgoNamespace).Patch(ctx, secret.Name, types.MergePatchType,
-			patch, metav1.PatchOptions{}); err != nil {
+		if _, err := Clientset.CoreV1().Secrets(PgoNamespace).Update(&secrets.Items[i]); err != nil {
 			log.Errorf("Could not patch pgouser secret %s with generated password for operator installation "+
 				"%s in namespace %s", secret.Name, InstallationName, PgoNamespace)
 		}

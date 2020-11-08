@@ -1012,7 +1012,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			},
 		}
 
-		if _, err := apiserver.Clientset.CoreV1().Secrets(ns).Create(ctx, secret, metav1.CreateOptions{}); err != nil && !kubeapi.IsAlreadyExists(err) {
+		if _, err := apiserver.Clientset.CoreV1().Secrets(ns).Create(secret); err != nil && !kubeapi.IsAlreadyExists(err) {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = fmt.Sprintf("could not create backrest repo secret: %s", err)
 			return resp
