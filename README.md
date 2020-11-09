@@ -189,6 +189,7 @@ There is also a `pgo-client` container if you wish to deploy the client directly
 - [PostgreSQL](https://www.postgresql.org)
   - [PostgreSQL Contrib Modules](https://www.postgresql.org/docs/current/contrib.html)
   - [PL/Python + PL/Python 3](https://www.postgresql.org/docs/current/plpython.html)
+  - [PL/Perl](https://www.postgresql.org/docs/current/plperl.html)
   - [pgAudit](https://www.pgaudit.org/)
   - [pgAudit Analyze](https://github.com/pgaudit/pgaudit_analyze)
   - [pgnodemx](https://github.com/CrunchyData/pgnodemx)
