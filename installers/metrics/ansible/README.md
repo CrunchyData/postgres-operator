@@ -4,7 +4,7 @@
   <img width="150" src="../../../crunchy_logo.png" alt="Crunchy Data"/>
 </p>
 
-Latest Release: 4.5.0
+Latest Release: 4.5.1
 
 ## General
 

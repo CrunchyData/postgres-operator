@@ -4,11 +4,11 @@
 # The values is for the namespace and the postgresql cluster name
 ccpimage: crunchy-postgres-ha
 ccpimageprefix: registry.developers.crunchydata.com/crunchydata
-ccpimagetag: centos7-12.4-4.5.0
+ccpimagetag: centos7-12.5-4.5.1
 namespace: pgo
 pgclustername: hippo
 pgoimageprefix: registry.developers.crunchydata.com/crunchydata
-pgoversion: 4.5.0
+pgoversion: 4.5.1
 hipposecretuser: "hippo"
 hipposecretpassword: "Supersecurepassword*"
 postgressecretuser: "postgres"
