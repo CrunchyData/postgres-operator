@@ -120,6 +120,29 @@ Also ensure that you have enough persistent volumes available: your Kubernetes a
 
 The most common occurrence of this is due to the Kubernetes network blocking SSH connections between Pods. Ensure that your Kubernetes networking layer allows for SSH connections over port 2022 in the Namespace that you are deploying your PostgreSQL clusters into.
 
+### PostgreSQL Pod reports "Authentication Failed for `ccp_monitoring`"
+
+This is a temporary error that occurs when a new PostgreSQL cluster is first
+initialized with the `--metrics` flag. The `crunchy-postgres-exporter` container
+within the PostgreSQL Pod may be ready before the container with PostgreSQL is
+ready. If a message in your logs further down displays a timestamp, e.g.:
+
+```
+             now              
+-------------------------------
+2020-11-10 08:23:15.968196-05
+```
+
+Then the `ccp_monitoring` user is properly reconciled with the PostgreSQL
+cluster.
+
+If the error message does not go away, this could indicate a few things:
+
+- The PostgreSQL instance has not initialized. Check to ensure that PostgreSQL
+has successfully started.
+- The password for the `ccp_monitoring` user has changed. In this case you will
+need to update the Secret with the monitoring credentials.
+
 ## Next Steps
 
 Once your cluster is created, the next step is to [connect to your PostgreSQL cluster]({{< relref "tutorial/connect-cluster.md" >}}). You can also [learn how to customize your PostgreSQL cluster]({{< relref "tutorial/customize-cluster.md" >}})!

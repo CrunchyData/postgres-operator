@@ -184,6 +184,29 @@ There are many reasons why a PostgreSQL Pod may not be scheduled:
 - **Node affinity rules cannot be satisfied**. If you assigned a node label, ensure that the Nodes with that label are available for scheduling. If they are, ensure that there are enough resources available.
 - **Pod anti-affinity rules cannot be satisfied**. This most likely happens when [pod anti-affinity]({{< relref "architecture/high-availability/_index.md" >}}#how-the-crunchy-postgresql-operator-uses-pod-anti-affinity) is set to `required` and there are not enough Nodes available for scheduling. Consider adding more Nodes or relaxing your anti-affinity rules.
 
+### PostgreSQL Pod reports "Authentication Failed for `ccp_monitoring`"
+
+This is a temporary error that occurs when a new PostgreSQL cluster is first
+initialized with the `--metrics` flag. The `crunchy-postgres-exporter` container
+within the PostgreSQL Pod may be ready before the container with PostgreSQL is
+ready. If a message in your logs further down displays a timestamp, e.g.:
+
+```
+             now              
+-------------------------------
+2020-11-10 08:23:15.968196-05
+```
+
+Then the `ccp_monitoring` user is properly reconciled with the PostgreSQL
+cluster.
+
+If the error message does not go away, this could indicate a few things:
+
+- The PostgreSQL instance has not initialized. Check to ensure that PostgreSQL
+has successfully started.
+- The password for the `ccp_monitoring` user has changed. In this case you will
+need to update the Secret with the monitoring credentials.
+
 ## Next Steps
 
 As mentioned at the beginning, there are a lot more customizations that you can make to your PostgreSQL cluster, and we will cover those as the tutorial progresses! This section was to get you familiar with some of the most common customizations, and to explore how many options `pgo create cluster` has!
