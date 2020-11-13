@@ -43,8 +43,7 @@ import (
 
 func main() {
 	if flush, err := initOpenTelemetry(); err != nil {
-		log.Error(err)
-		os.Exit(2)
+		log.Fatal(err)
 	} else {
 		defer flush()
 	}
@@ -160,8 +159,7 @@ func enablePGClusterControllers(stopCh <-chan struct{}) *manager.ControllerManag
 
 	client, err := newKubernetesClient()
 	if err != nil {
-		log.Error(err)
-		os.Exit(2)
+		log.Fatal(err)
 	}
 
 	operator.Initialize(client)
@@ -171,8 +169,7 @@ func enablePGClusterControllers(stopCh <-chan struct{}) *manager.ControllerManag
 	// list of target namespaces for the operator install
 	namespaceList, err := operator.SetupNamespaces(client)
 	if err != nil {
-		log.Errorf("Error configuring operator namespaces: %v", err)
-		os.Exit(2)
+		log.Fatalf("Error configuring operator namespaces: %v", err)
 	}
 
 	// create a new controller manager with controllers for all current namespaces and then run
@@ -180,8 +177,7 @@ func enablePGClusterControllers(stopCh <-chan struct{}) *manager.ControllerManag
 	controllerManager, err := manager.NewControllerManager(namespaceList, operator.Pgo,
 		operator.PgoNamespace, operator.InstallationName, operator.NamespaceOperatingMode())
 	if err != nil {
-		log.Error(err)
-		os.Exit(2)
+		log.Fatal(err)
 	}
 	log.Debug("controller manager created")
 
