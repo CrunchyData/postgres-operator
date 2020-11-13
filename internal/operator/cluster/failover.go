@@ -26,7 +26,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -69,52 +68,7 @@ func FailoverBase(namespace string, clientset kubeapi.Interface, task *crv1.Pgta
 	}
 	log.Debugf("replica count before failover is %d", len(replicaList.Items))
 
-	//publish event for failover
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventFailoverClusterFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventFailoverCluster,
-		},
-		Clustername: clusterName,
-		Target:      task.ObjectMeta.Labels[config.LABEL_TARGET],
-	}
-
-	err = events.Publish(f)
-	if err != nil {
-		log.Error(err)
-	}
-
 	Failover(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clientset, clusterName, task, namespace, restconfig)
-
-	//publish event for failover completed
-	topics = make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	g := events.EventFailoverClusterCompletedFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventFailoverClusterCompleted,
-		},
-		Clustername: clusterName,
-		Target:      task.ObjectMeta.Labels[config.LABEL_TARGET],
-	}
-
-	err = events.Publish(g)
-	if err != nil {
-		log.Error(err)
-	}
-
-	//remove marker
-
 }
 
 func PatchpgtaskFailoverStatus(clientset pgo.Interface, oldCrd *crv1.Pgtask, namespace string) error {

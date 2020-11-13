@@ -79,7 +79,6 @@ func (c *Controller) handleBackrestBackupUpdate(job *apiv1.Job) error {
 	if err != nil {
 		log.Errorf("error in patching pgtask %s: %s", job.ObjectMeta.SelfLink, err.Error())
 	}
-	publishBackupComplete(labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], job.ObjectMeta.Labels[config.LABEL_PGOUSER], "pgbackrest", job.ObjectMeta.Namespace, "")
 
 	// If the completed backup was a cluster bootstrap backup, then mark the cluster as initialized
 	// and initiate the creation of any replicas.  Otherwise if the completed backup was taken as

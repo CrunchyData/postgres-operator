@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -27,7 +26,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/apps/v1"
@@ -270,28 +268,6 @@ func ApplyPolicy(request *msgs.ApplyPolicyRequest, ns, pgouser string) msgs.Appl
 		}
 
 		resp.Name = append(resp.Name, d.ObjectMeta.Name)
-
-		//publish event
-		topics := make([]string, 1)
-		topics[0] = events.EventTopicPolicy
-
-		f := events.EventApplyPolicyFormat{
-			EventHeader: events.EventHeader{
-				Namespace: ns,
-				Username:  pgouser,
-				Topic:     topics,
-				Timestamp: time.Now(),
-				EventType: events.EventApplyPolicy,
-			},
-			Clustername: d.ObjectMeta.Labels[config.LABEL_PG_CLUSTER],
-			Policyname:  request.Name,
-		}
-
-		err = events.Publish(f)
-		if err != nil {
-			log.Error(err.Error())
-		}
-
 	}
 	return resp
 

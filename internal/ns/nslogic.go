@@ -25,11 +25,9 @@ import (
 	"reflect"
 	"strings"
 	"text/template"
-	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 
 	log "github.com/sirupsen/logrus"
 	authv1 "k8s.io/api/authorization/v1"
@@ -177,22 +175,7 @@ func CreateNamespace(clientset kubernetes.Interface, installationName, pgoNamesp
 
 	log.Debugf("CreateNamespace %s created by %s", newNs, createdBy)
 
-	//publish event
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicPGO
-
-	f := events.EventPGOCreateNamespaceFormat{
-		EventHeader: events.EventHeader{
-			Namespace: pgoNamespace,
-			Username:  createdBy,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventPGOCreateNamespace,
-		},
-		CreatedNamespace: newNs,
-	}
-
-	return events.Publish(f)
+	return nil
 }
 
 // DeleteNamespace deletes the namespace specified.
@@ -206,22 +189,7 @@ func DeleteNamespace(clientset kubernetes.Interface, installationName, pgoNamesp
 
 	log.Debugf("DeleteNamespace %s deleted by %s", ns, deletedBy)
 
-	//publish the namespace delete event
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicPGO
-
-	f := events.EventPGODeleteNamespaceFormat{
-		EventHeader: events.EventHeader{
-			Namespace: pgoNamespace,
-			Username:  deletedBy,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventPGODeleteNamespace,
-		},
-		DeletedNamespace: ns,
-	}
-
-	return events.Publish(f)
+	return nil
 }
 
 // CopySecret copies a secret from the Operator namespace to target namespace
@@ -441,22 +409,7 @@ func UpdateNamespace(clientset kubernetes.Interface, installationName, pgoNamesp
 		return err
 	}
 
-	//publish event
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicPGO
-
-	f := events.EventPGOCreateNamespaceFormat{
-		EventHeader: events.EventHeader{
-			Namespace: pgoNamespace,
-			Username:  updatedBy,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventPGOCreateNamespace,
-		},
-		CreatedNamespace: ns,
-	}
-
-	return events.Publish(f)
+	return nil
 }
 
 // ConfigureInstallNamespaces is responsible for properly configuring up any namespaces provided for

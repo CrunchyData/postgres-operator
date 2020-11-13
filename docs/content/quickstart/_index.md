@@ -225,7 +225,7 @@ kubectl -n pgo get svc
 NAME                         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
 hippo                        ClusterIP   10.96.218.63    <none>        2022/TCP,5432/TCP            59m
 hippo-backrest-shared-repo   ClusterIP   10.96.75.175    <none>        2022/TCP                     59m
-postgres-operator            ClusterIP   10.96.121.246   <none>        8443/TCP,4171/TCP,4150/TCP   71m
+postgres-operator            ClusterIP   10.96.121.246   <none>        8443/TCP                     71m
 ```
 
 Let's connect the `hippo` cluster. First, in a different console window, set up a port forward to the `hippo` service:
@@ -268,7 +268,7 @@ NAME                         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)  
 hippo                        ClusterIP   10.96.218.63    <none>        2022/TCP,5432/TCP            59m
 hippo-backrest-shared-repo   ClusterIP   10.96.75.175    <none>        2022/TCP                     59m
 hippo-pgadmin                ClusterIP   10.96.165.27    <none>        5050/TCP                     5m1s
-postgres-operator            ClusterIP   10.96.121.246   <none>        8443/TCP,4171/TCP,4150/TCP   71m
+postgres-operator            ClusterIP   10.96.121.246   <none>        8443/TCP                     71m
 ```
 
 Let's connect to our `hippo` cluster via pgAdmin 4! In a different terminal, set up a port forward to pgAdmin 4:

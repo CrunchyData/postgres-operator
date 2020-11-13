@@ -1,6 +1,5 @@
 ---
 pgo_image: '${OPERATOR_IMAGE}'
-pgo_event_image: '${OPERATOR_IMAGE_EVENT}'
 pgo_apiserver_image: '${OPERATOR_IMAGE_API}'
 pgo_scheduler_image: '${OPERATOR_IMAGE_SCHEDULER}'
 

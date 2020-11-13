@@ -116,8 +116,6 @@ func init() {
 
 func main() {
 	log.Info("Starting Crunchy Scheduler")
-	//give time for pgo-event to start up
-	time.Sleep(time.Duration(5) * time.Second)
 
 	scheduler := sched.New(schedulerLabel, pgoNamespace, clientset)
 	scheduler.CronClient.Start()

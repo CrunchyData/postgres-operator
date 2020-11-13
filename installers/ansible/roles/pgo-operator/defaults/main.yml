@@ -30,7 +30,6 @@ pgo_client_container_install: "false"
 pgo_cluster_admin: "false"
 pgo_disable_tls: "false"
 pgo_tls_no_verify: "false"
-pgo_disable_eventing: "false"
 pgo_apiserver_port: 8443
 pgo_tls_ca_store: ""
 pgo_add_os_ca_store: "false"

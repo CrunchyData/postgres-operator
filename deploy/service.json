@@ -14,18 +14,6 @@
                 "protocol": "TCP",
                 "port": $PGO_APISERVER_PORT,
                 "targetPort": $PGO_APISERVER_PORT
-            },
-            {
-                "name": "nsqadmin",
-                "protocol": "TCP",
-                "port": 4171,
-                "targetPort": 4171
-            },
-            {
-                "name": "nsqd",
-                "protocol": "TCP",
-                "port": 4150,
-                "targetPort": 4150
             }
         ],
         "selector": {

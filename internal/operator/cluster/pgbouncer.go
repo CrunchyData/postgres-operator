@@ -25,7 +25,6 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
@@ -33,7 +32,6 @@ import (
 	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
@@ -194,9 +192,6 @@ func AddPgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, clust
 
 	log.Debugf("added pgbouncer to cluster [%s]", cluster.Name)
 
-	// publish an event
-	publishPgBouncerEvent(events.EventCreatePgbouncer, cluster)
-
 	return nil
 }
 
@@ -259,9 +254,6 @@ func DeletePgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, cl
 	if err := clientset.CoreV1().Secrets(namespace).Delete(ctx, secretName, metav1.DeleteOptions{}); err != nil {
 		log.Warn(err)
 	}
-
-	// publish an event
-	publishPgBouncerEvent(events.EventDeletePgbouncer, cluster)
 
 	return nil
 }
@@ -428,9 +420,6 @@ func UpdatePgbouncer(clientset kubernetes.Interface, oldCluster, newCluster *crv
 			return err
 		}
 	}
-
-	// publish an event
-	publishPgBouncerEvent(events.EventUpdatePgbouncer, newCluster)
 
 	// and that's it!
 	return nil
@@ -863,46 +852,6 @@ func makePostgresPassword(passwordType pgpassword.PasswordType, password string)
 	hashedPassword, _ := postgresPassword.Build()
 
 	return hashedPassword
-}
-
-// publishPgBouncerEvent publishes one of the events on the event stream
-func publishPgBouncerEvent(eventType string, cluster *crv1.Pgcluster) {
-	var event events.EventInterface
-
-	// prepare the topics to publish to
-	topics := []string{events.EventTopicPgbouncer}
-	// set up the event header
-	eventHeader := events.EventHeader{
-		Namespace: cluster.Namespace,
-		Topic:     topics,
-		Timestamp: time.Now(),
-		EventType: eventType,
-	}
-	clusterName := cluster.Name
-
-	// now determine which event format to use!
-	switch eventType {
-	case events.EventCreatePgbouncer:
-		event = events.EventCreatePgbouncerFormat{
-			EventHeader: eventHeader,
-			Clustername: clusterName,
-		}
-	case events.EventUpdatePgbouncer:
-		event = events.EventUpdatePgbouncerFormat{
-			EventHeader: eventHeader,
-			Clustername: clusterName,
-		}
-	case events.EventDeletePgbouncer:
-		event = events.EventDeletePgbouncerFormat{
-			EventHeader: eventHeader,
-			Clustername: clusterName,
-		}
-	}
-
-	// publish the event; if there is an error, log it, but we don't care
-	if err := events.Publish(event); err != nil {
-		log.Error(err.Error())
-	}
 }
 
 // setPostgreSQLPassword updates the pgBouncer password in the PostgreSQL

@@ -35,9 +35,6 @@ export NOAUTH_ROUTES=""
 # Disable default inclusion of OS trust in PGO clients
 export EXCLUDE_OS_TRUST=false
 
-# for disabling the Operator eventing
-export DISABLE_EVENTING=false
-
 # for the pgo CLI to authenticate with using TLS
 export PGO_CA_CERT=$PGOROOT/conf/postgres-operator/server.crt
 export PGO_CLIENT_CERT=$PGOROOT/conf/postgres-operator/server.crt
@@ -47,7 +44,7 @@ export PGO_CLIENT_KEY=$PGOROOT/conf/postgres-operator/server.key
 # Operator using a ClusterRole.  Options: `dynamic`, `readonly`, and `disabled`
 export PGO_NAMESPACE_MODE=dynamic
 
-# During a Bash install determines whether or not the PostgreSQL Operator will granted the 
+# During a Bash install determines whether or not the PostgreSQL Operator will granted the
 # permissions needed to reconcile RBAC within targeted namespaces.
 export PGO_RECONCILE_RBAC=true
 
@@ -67,8 +64,4 @@ $PGO_CMD  -n "$PGO_OPERATOR_NAMESPACE" logs `$PGO_CMD  -n "$PGO_OPERATOR_NAMESPA
 
 slog () {
 $PGO_CMD  -n "$PGO_OPERATOR_NAMESPACE" logs `$PGO_CMD  -n "$PGO_OPERATOR_NAMESPACE" get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c scheduler
-}
-
-elog () {
-$PGO_CMD  -n "$PGO_OPERATOR_NAMESPACE" logs `$PGO_CMD  -n "$PGO_OPERATOR_NAMESPACE" get pod --selector=name=postgres-operator -o jsonpath="{.items[0].metadata.name}"` -c event
 }

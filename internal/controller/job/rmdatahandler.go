@@ -47,11 +47,6 @@ func (c *Controller) handleRMDataUpdate(job *apiv1.Job) error {
 
 	log.Debugf("jobController onUpdate rmdata job succeeded")
 
-	publishDeleteClusterComplete(labels[config.LABEL_PG_CLUSTER],
-		job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
-		job.ObjectMeta.Labels[config.LABEL_PGOUSER],
-		job.ObjectMeta.Namespace)
-
 	clusterName := labels[config.LABEL_PG_CLUSTER]
 
 	deletePropagation := metav1.DeletePropagationForeground

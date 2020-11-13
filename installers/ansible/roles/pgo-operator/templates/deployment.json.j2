@@ -96,14 +96,6 @@
                             {
                                 "name": "ADD_OS_TRUSTSTORE",
                                 "value": "{{ pgo_add_os_ca_store }}"
-                            },
-                            {
-                                "name": "DISABLE_EVENTING",
-                                "value": "{{ pgo_disable_eventing }}"
-                            },
-                            {
-                                "name": "EVENT_ADDR",
-                                "value": "localhost:4150"
                             }
                         ],
                         "volumeMounts": []
@@ -151,14 +143,6 @@
                                         "fieldPath": "metadata.name"
                                     }
                                 }
-                            },
-                            {
-                                "name": "DISABLE_EVENTING",
-                                "value": "{{ pgo_disable_eventing }}"
-                            },
-                            {
-                                "name": "EVENT_ADDR",
-                                "value": "localhost:4150"
                             }
                         ],
                         "volumeMounts": []
@@ -203,31 +187,6 @@
                             {
                                 "name": "TIMEOUT",
                                 "value": "{{ scheduler_timeout }}"
-                            },
-                            {
-                                "name": "EVENT_ADDR",
-                                "value": "localhost:4150"
-                            }
-                        ],
-                        "volumeMounts": [],
-                        "imagePullPolicy": "IfNotPresent"
-                    }, {
-                        "name": "event",
-                        "image": "{% if pgo_event_image | default('') != '' %}{{ pgo_event_image }}
-                                {%- else %}{{ pgo_image_prefix }}/pgo-event:{{ pgo_image_tag }}
-                                {%- endif %}",
-                        "livenessProbe": {
-                            "httpGet": {
-                                "path": "/ping",
-                                "port": 4151
-                            },
-                            "initialDelaySeconds": 15,
-                            "periodSeconds": 5
-                        },
-                        "env": [
-                            {
-                                "name": "TIMEOUT",
-                                "value": "3600"
                             }
                         ],
                         "volumeMounts": [],

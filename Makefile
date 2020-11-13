@@ -81,7 +81,6 @@ endif
 images = pgo-apiserver \
 	pgo-backrest \
 	pgo-backrest-repo \
-	pgo-event \
 	pgo-rmdata \
 	pgo-scheduler \
 	pgo-sqlrunner \

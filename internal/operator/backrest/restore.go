@@ -27,7 +27,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 
 	log "github.com/sirupsen/logrus"
@@ -286,29 +285,6 @@ func UpdateWorkflow(clientset pgo.Interface, workflowID, namespace, status strin
 		return err
 	}
 	return err
-}
-
-// PublishRestore is responsible for publishing the 'RestoreCluster' event for a restore
-func PublishRestore(id, clusterName, username, namespace string) {
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventRestoreClusterFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  username,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventRestoreCluster,
-		},
-		Clustername: clusterName,
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		log.Error(err.Error())
-	}
-
 }
 
 // getPGDatabasePVCNames returns the names of all PostgreSQL database PVCs for a specific

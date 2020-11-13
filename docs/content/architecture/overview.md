@@ -60,10 +60,6 @@ as part of a `pgorole`.
 - `scheduler` (image: pgo-scheduler) - A container that runs `cron` and allows a
 user to schedule repeatable tasks, such as backups (because it is important to
   schedule backups in a production environment!)
-- `event` (image: pgo-event, optional) - A container that provides an interface
-to the `nsq` message queue and transmits information about lifecycle events that
-occur within the PostgreSQL Operator (e.g. a cluster is created, a backup is
-taken, etc.)
 
 The main purpose of the PostgreSQL Operator is to create and update information
 around the structure of a PostgreSQL Cluster, and to relay information about the

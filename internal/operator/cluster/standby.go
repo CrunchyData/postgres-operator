@@ -30,7 +30,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
 	"github.com/crunchydata/postgres-operator/internal/util"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -98,10 +97,6 @@ func DisableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) erro
 	if _, err := clientset.CoreV1().ConfigMaps(namespace).
 		Patch(ctx, pghaConfigMapName, types.JSONPatchType, jsonOpBytes, metav1.PatchOptions{}); err != nil {
 		return err
-	}
-
-	if err := publishStandbyEnabled(&cluster); err != nil {
-		log.Error(err)
 	}
 
 	log.Debugf("Disable standby: finished disabling standby mode for cluster %s", clusterName)
@@ -234,38 +229,7 @@ func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error
 		return err
 	}
 
-	if err := publishStandbyEnabled(&cluster); err != nil {
-		log.Error(err)
-	}
-
 	log.Debugf("Enable standby: finished enabling standby mode for cluster %s", clusterName)
-
-	return nil
-}
-
-func publishStandbyEnabled(cluster *crv1.Pgcluster) error {
-
-	clusterName := cluster.Name
-
-	//capture the cluster creation event
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventStandbyEnabledFormat{
-		EventHeader: events.EventHeader{
-			Namespace: cluster.Namespace,
-			Username:  cluster.Spec.UserLabels[config.LABEL_PGOUSER],
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventStandbyEnabled,
-		},
-		Clustername: clusterName,
-	}
-
-	if err := events.Publish(f); err != nil {
-		log.Error(err.Error())
-		return err
-	}
 
 	return nil
 }

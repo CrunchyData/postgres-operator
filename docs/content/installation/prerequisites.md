@@ -49,14 +49,11 @@ Kubernetes or OpenShift cluster that you are working with.
 
 There are several application ports to note when using the PostgreSQL Operator.
 These ports allow for the [`pgo` client]({{< relref "/pgo-client/_index.md" >}})
-to interface with the PostgreSQL Operator API as well as for users of the event
-stream to connect to `nsqd` and `nsqdadmin`:
+to interface with the PostgreSQL Operator API:
 
 | Container | Port |
 | --- | --- |
 | API Server | 8443 |
-| nsqadmin | 4151 |
-| nsqd | 4150 |
 
 If you are using these services, ensure your cluster administrator has given you
 access to these ports.

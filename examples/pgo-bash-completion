@@ -2037,36 +2037,6 @@ _pgo_version()
     noun_aliases=()
 }
 
-_pgo_watch()
-{
-    last_command="pgo_watch"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--pgo-event-address=")
-    two_word_flags+=("-a")
-    local_nonpersistent_flags+=("--pgo-event-address=")
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-    flags+=("--namespace=")
-    two_word_flags+=("-n")
-    flags+=("--pgo-ca-cert=")
-    flags+=("--pgo-client-cert=")
-    flags+=("--pgo-client-key=")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _pgo_root_command()
 {
     last_command="pgo"
@@ -2094,7 +2064,6 @@ _pgo_root_command()
     commands+=("update")
     commands+=("upgrade")
     commands+=("version")
-    commands+=("watch")
 
     flags=()
     two_word_flags=()

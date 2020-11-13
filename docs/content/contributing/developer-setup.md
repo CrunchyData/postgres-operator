@@ -53,7 +53,6 @@ Configuring build dependencies is automated via the `setup` target in the projec
 The setup target ensures the presence of:
 
 * [`go`](https://golang.org/) compiler version 1.13+
-* NSQ messaging binaries
 * `buildah` OCI image building tool version 1.14.9+
 
 ## Code Generation

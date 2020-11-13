@@ -149,10 +149,6 @@ func (c *Controller) handleBootstrapInit(newPod *apiv1.Pod, cluster *crv1.Pgclus
 
 	taskoperator.CompleteCreateClusterWorkflow(clusterName, c.Client, namespace)
 
-	//publish event for cluster complete
-	publishClusterComplete(clusterName, namespace, cluster)
-	//
-
 	// first clean any stanza create resources from a previous stanza-create, e.g. during a
 	// restore when these resources may already exist from initial creation of the cluster
 	if err := backrestoperator.CleanStanzaCreateResources(namespace, clusterName,
@@ -184,10 +180,6 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	namespace := cluster.Namespace
 
 	taskoperator.CompleteCreateClusterWorkflow(clusterName, c.Client, namespace)
-
-	//publish event for cluster complete
-	publishClusterComplete(clusterName, namespace, cluster)
-	//
 
 	// now scale any replicas deployments to 1
 	clusteroperator.ScaleClusterDeployments(c.Client, *cluster, 1, false, true, false, false)

@@ -26,7 +26,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
@@ -34,7 +33,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -356,13 +354,9 @@ func DeleteCluster(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace
 	err = CreateRmdataJob(clientset, cl, namespace, removeData, removeBackup, isReplica, isBackup)
 	if err != nil {
 		log.Error(err)
-		return err
-	} else {
-		publishDeleteCluster(namespace, cl.ObjectMeta.Labels[config.LABEL_PGOUSER], cl.Spec.Name, cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER])
 	}
 
 	return err
-
 }
 
 // scaleReplicaCreateMissingService creates a service for cluster replicas if
@@ -553,49 +547,6 @@ func DeleteReplica(clientset kubernetes.Interface, cl *crv1.Pgreplica, namespace
 
 }
 
-func publishScaleError(namespace string, username string, cluster *crv1.Pgcluster) {
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventScaleClusterFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  username,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventScaleCluster,
-		},
-		Clustername: cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
-		Replicaname: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		log.Error(err.Error())
-	}
-}
-
-func publishDeleteCluster(namespace, username, clusterName, identifier string) {
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventDeleteClusterFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  username,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventDeleteCluster,
-		},
-		Clustername: clusterName,
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		log.Error(err.Error())
-	}
-}
-
 // ScaleClusterInfo contains information about a cluster obtained when scaling the various
 // deployments for a cluster.  This includes the name of the primary deployment, all replica
 // deployments, along with the names of the services enabled for the cluster.
@@ -682,8 +633,6 @@ func ShutdownCluster(clientset kubeapi.Interface, cluster crv1.Pgcluster) error 
 			metav1.DeleteOptions{}); err != nil {
 		return err
 	}
-
-	publishClusterShutdown(cluster)
 
 	return nil
 }

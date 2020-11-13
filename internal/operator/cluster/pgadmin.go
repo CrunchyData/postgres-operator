@@ -33,7 +33,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pgadmin"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
@@ -148,9 +147,6 @@ func AddPgAdminFromPgTask(clientset kubeapi.Interface, restconfig *rest.Config, 
 		log.Error(err)
 		return
 	}
-
-	// publish an event
-	publishPgAdminEvent(events.EventCreatePgAdmin, task)
 
 	// at this point, the pgtask is successful, so we can safely rvemove it
 	// we can fallthrough in the event of an error, because we're returning anyway
@@ -323,9 +319,6 @@ func DeletePgAdminFromPgTask(clientset kubeapi.Interface, restconfig *rest.Confi
 		return
 	}
 
-	// publish an event
-	publishPgAdminEvent(events.EventDeletePgAdmin, task)
-
 	// lastly, remove the task
 	if err := clientset.CrunchydataV1().Pgtasks(namespace).Delete(ctx, task.Name, metav1.DeleteOptions{}); err != nil {
 		log.Warn(err)
@@ -433,42 +426,6 @@ func createPgAdminService(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 	}
 
 	return nil
-}
-
-// publishPgAdminEvent publishes one of the events on the event stream
-func publishPgAdminEvent(eventType string, task *crv1.Pgtask) {
-	var event events.EventInterface
-
-	// prepare the topics to publish to
-	topics := []string{events.EventTopicPgAdmin}
-	// set up the event header
-	eventHeader := events.EventHeader{
-		Namespace: task.Spec.Namespace,
-		Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
-		Topic:     topics,
-		Timestamp: time.Now(),
-		EventType: eventType,
-	}
-	clusterName := task.Spec.Parameters[config.LABEL_PGADMIN_TASK_CLUSTER]
-
-	// now determine which event format to use!
-	switch eventType {
-	case events.EventCreatePgAdmin:
-		event = events.EventCreatePgAdminFormat{
-			EventHeader: eventHeader,
-			Clustername: clusterName,
-		}
-	case events.EventDeletePgAdmin:
-		event = events.EventDeletePgAdminFormat{
-			EventHeader: eventHeader,
-			Clustername: clusterName,
-		}
-	}
-
-	// publish the event; if there is an error, log it, but we don't care
-	if err := events.Publish(event); err != nil {
-		log.Error(err.Error())
-	}
 }
 
 // waitFotDeploymentReady waits for a deployment to be ready, or times out

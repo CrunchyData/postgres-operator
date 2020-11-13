@@ -25,7 +25,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -133,27 +132,6 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 			if err != nil {
 				log.Error(err.Error())
 			}
-
-			//publish event for create label
-			topics := make([]string, 1)
-			topics[0] = events.EventTopicCluster
-
-			f := events.EventCreateLabelFormat{
-				EventHeader: events.EventHeader{
-					Namespace: ns,
-					Username:  pgouser,
-					Topic:     topics,
-					EventType: events.EventCreateLabel,
-				},
-				Clustername: items[i].Spec.Name,
-				Label:       LabelCmdLabel,
-			}
-
-			err = events.Publish(f)
-			if err != nil {
-				log.Error(err.Error())
-			}
-
 		}
 	}
 

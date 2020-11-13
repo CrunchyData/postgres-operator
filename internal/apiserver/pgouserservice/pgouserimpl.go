@@ -19,13 +19,11 @@ import (
 	"context"
 	"errors"
 	"strings"
-	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/ns"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,30 +69,7 @@ func CreatePgouser(clientset kubernetes.Interface, createdBy string, request *ms
 		return resp
 	}
 
-	//publish event
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicPGOUser
-
-	f := events.EventPGOCreateUserFormat{
-		EventHeader: events.EventHeader{
-			Namespace: apiserver.PgoNamespace,
-			Username:  createdBy,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventPGOCreateUser,
-		},
-		CreatedUsername: request.PgouserName,
-	}
-
-	err = events.Publish(f)
-	if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
-	}
-
 	return resp
-
 }
 
 // ShowPgouser ...
@@ -170,30 +145,7 @@ func DeletePgouser(clientset kubernetes.Interface, deletedBy string, request *ms
 				resp.Results = append(resp.Results, "error deleting secret "+secretName)
 			} else {
 				resp.Results = append(resp.Results, "deleted pgouser "+v)
-				//publish event
-				topics := make([]string, 1)
-				topics[0] = events.EventTopicPGOUser
-
-				f := events.EventPGODeleteUserFormat{
-					EventHeader: events.EventHeader{
-						Namespace: apiserver.PgoNamespace,
-						Username:  deletedBy,
-						Topic:     topics,
-						Timestamp: time.Now(),
-						EventType: events.EventPGODeleteUser,
-					},
-					DeletedUsername: v,
-				}
-
-				err = events.Publish(f)
-				if err != nil {
-					resp.Status.Code = msgs.Error
-					resp.Status.Msg = err.Error()
-					return resp
-				}
-
 			}
-
 		}
 	}
 
@@ -253,29 +205,7 @@ func UpdatePgouser(clientset kubernetes.Interface, updatedBy string, request *ms
 		return resp
 	}
 
-	//publish event
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicPGOUser
-
-	f := events.EventPGOUpdateUserFormat{
-		EventHeader: events.EventHeader{
-			Namespace: apiserver.PgoNamespace,
-			Username:  updatedBy,
-			Topic:     topics,
-			EventType: events.EventPGOUpdateUser,
-		},
-		UpdatedUsername: request.PgouserName,
-	}
-
-	err = events.Publish(f)
-	if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
-	}
-
 	return resp
-
 }
 
 func createSecret(clientset kubernetes.Interface, createdBy string, request *msgs.CreatePgouserRequest) error {

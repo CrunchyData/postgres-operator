@@ -30,7 +30,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
@@ -128,30 +127,6 @@ func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtas
 		newjob.ObjectMeta.Labels[config.LABEL_PGHA_BACKUP_TYPE] = backupType
 	}
 	clientset.BatchV1().Jobs(namespace).Create(ctx, &newjob, metav1.CreateOptions{})
-
-	//publish backrest backup event
-	if cmd == "backup" {
-		topics := make([]string, 1)
-		topics[0] = events.EventTopicBackup
-
-		f := events.EventCreateBackupFormat{
-			EventHeader: events.EventHeader{
-				Namespace: namespace,
-				Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
-				Topic:     topics,
-				Timestamp: time.Now(),
-				EventType: events.EventCreateBackup,
-			},
-			Clustername: jobFields.ClusterName,
-			BackupType:  "pgbackrest",
-		}
-
-		err := events.Publish(f)
-		if err != nil {
-			log.Error(err.Error())
-		}
-	}
-
 }
 
 // CreateInitialBackup creates a Pgtask in order to initiate the initial pgBackRest backup for a cluster

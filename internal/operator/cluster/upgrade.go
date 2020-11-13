@@ -28,7 +28,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 
 	log "github.com/sirupsen/logrus"
@@ -64,14 +63,10 @@ func AddUpgrade(clientset kubeapi.Interface, upgrade *crv1.Pgtask, namespace str
 
 	log.Debugf("started upgrade of cluster: %s", upgradeTargetClusterName)
 
-	// publish our upgrade event
-	PublishUpgradeEvent(events.EventUpgradeCluster, namespace, upgrade, "")
-
 	pgcluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, upgradeTargetClusterName, metav1.GetOptions{})
 	if err != nil {
 		errormessage := "cound not find pgcluster for pgcluster upgrade"
 		log.Errorf("%s Error: %s", errormessage, err)
-		PublishUpgradeEvent(events.EventUpgradeClusterFailure, namespace, upgrade, errormessage)
 		return
 	}
 
@@ -126,9 +121,6 @@ func AddUpgrade(clientset kubeapi.Interface, upgrade *crv1.Pgtask, namespace str
 	} else {
 		log.Debugf("upgraded cluster %s submitted for recreation", pgcluster.Name)
 	}
-
-	// submit an event now that the new pgcluster has been submitted to the cluster creation process
-	PublishUpgradeEvent(events.EventUpgradeClusterCreateSubmitted, namespace, upgrade, "")
 
 	log.Debugf("finished main upgrade workflow for cluster: %s", upgradeTargetClusterName)
 
@@ -652,77 +644,8 @@ func updateUpgradeWorkflow(clientset pgo.Interface, namespace, workflowID, statu
 	return nil
 }
 
-// PublishUpgradeEvent lets one publish an event related to the upgrade process
-func PublishUpgradeEvent(eventType string, namespace string, task *crv1.Pgtask, errorMessage string) {
-	// get the boilerplate identifiers
-	clusterName, workflowID := getUpgradeTaskIdentifiers(task)
-	// set up the event header
-	eventHeader := events.EventHeader{
-		Namespace: namespace,
-		Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
-		Topic:     []string{events.EventTopicCluster, events.EventTopicUpgrade},
-		Timestamp: time.Now(),
-		EventType: eventType,
-	}
-	// get the event format itself and publish it based on the event type
-	switch eventType {
-	case events.EventUpgradeCluster:
-		publishUpgradeClusterEvent(eventHeader, clusterName, workflowID)
-	case events.EventUpgradeClusterCreateSubmitted:
-		publishUpgradeClusterCreateEvent(eventHeader, clusterName, workflowID)
-	case events.EventUpgradeClusterFailure:
-		publishUpgradeClusterFailureEvent(eventHeader, clusterName, workflowID, errorMessage)
-	}
-}
-
 // getUpgradeTaskIdentifiers returns the cluster name and the workflow ID
 func getUpgradeTaskIdentifiers(task *crv1.Pgtask) (string, string) {
 	return task.Spec.Parameters[config.LABEL_PG_CLUSTER],
 		task.Spec.Parameters[crv1.PgtaskWorkflowID]
-}
-
-// publishUpgradeClusterEvent publishes the event when the cluster Upgrade process
-// has started
-func publishUpgradeClusterEvent(eventHeader events.EventHeader, clustername, workflowID string) {
-	// set up the event
-	event := events.EventUpgradeClusterFormat{
-		EventHeader: eventHeader,
-		Clustername: clustername,
-		WorkflowID:  workflowID,
-	}
-	// attempt to publish the event; if it fails, log the error, but keep moving on
-	if err := events.Publish(event); err != nil {
-		log.Errorf("error publishing event. Error: %s", err.Error())
-	}
-}
-
-// publishUpgradeClusterCreateEvent publishes the event when the cluster Upgrade process
-// has reached the point where the upgrade pgcluster CRD is submitted for cluster recreation
-func publishUpgradeClusterCreateEvent(eventHeader events.EventHeader, clustername, workflowID string) {
-	// set up the event
-	event := events.EventUpgradeClusterCreateFormat{
-		EventHeader: eventHeader,
-		Clustername: clustername,
-		WorkflowID:  workflowID,
-	}
-	// attempt to publish the event; if it fails, log the error, but keep moving on
-	if err := events.Publish(event); err != nil {
-		log.Errorf("error publishing event. Error: %s", err.Error())
-	}
-}
-
-// publishUpgradeClusterFailureEvent publishes the event when the cluster upgrade process
-// has failed, including the error message
-func publishUpgradeClusterFailureEvent(eventHeader events.EventHeader, clustername, workflowID, errorMessage string) {
-	// set up the event
-	event := events.EventUpgradeClusterFailureFormat{
-		EventHeader:  eventHeader,
-		ErrorMessage: errorMessage,
-		Clustername:  clustername,
-		WorkflowID:   workflowID,
-	}
-	// attempt to publish the event; if it fails, log the error, but keep moving on
-	if err := events.Publish(event); err != nil {
-		log.Errorf("error publishing event. Error: %s", err.Error())
-	}
 }

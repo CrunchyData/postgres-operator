@@ -18,9 +18,7 @@ limitations under the License.
 import (
 	"context"
 	"encoding/json"
-	"time"
 
-	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
@@ -29,7 +27,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 )
 
 // Controller holds connections for the controller
@@ -64,27 +61,6 @@ func (c *Controller) onAdd(obj interface{}) {
 	if err != nil {
 		log.Errorf("ERROR updating pgpolicy status: %s", err.Error())
 	}
-
-	//publish event
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicPolicy
-
-	f := events.EventCreatePolicyFormat{
-		EventHeader: events.EventHeader{
-			Namespace: policy.ObjectMeta.Namespace,
-			Username:  policy.ObjectMeta.Labels[config.LABEL_PGOUSER],
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventCreatePolicy,
-		},
-		Policyname: policy.ObjectMeta.Name,
-	}
-
-	err = events.Publish(f)
-	if err != nil {
-		log.Error(err.Error())
-	}
-
 }
 
 // onUpdate is called when a pgpolicy is updated
@@ -97,27 +73,6 @@ func (c *Controller) onDelete(obj interface{}) {
 	log.Debugf("[pgpolicy Controller] onDelete ns=%s %s", policy.ObjectMeta.Namespace, policy.ObjectMeta.SelfLink)
 
 	log.Debugf("DELETED pgpolicy %s", policy.ObjectMeta.Name)
-
-	//publish event
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicPolicy
-
-	f := events.EventDeletePolicyFormat{
-		EventHeader: events.EventHeader{
-			Namespace: policy.ObjectMeta.Namespace,
-			Username:  policy.ObjectMeta.Labels[config.LABEL_PGOUSER],
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventDeletePolicy,
-		},
-		Policyname: policy.ObjectMeta.Name,
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		log.Error(err.Error())
-	}
-
 }
 
 // AddPGPolicyEventHandler adds the pgpolicy event handler to the pgpolicy informer

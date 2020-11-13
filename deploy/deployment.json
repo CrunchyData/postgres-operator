@@ -94,14 +94,6 @@
                             {
                                 "name": "ADD_OS_TRUSTSTORE",
                                 "value": "$ADD_OS_TRUSTSTORE"
-                            },
-                            {
-                                "name": "DISABLE_EVENTING",
-                                "value": "$DISABLE_EVENTING"
-                            },
-                            {
-                                "name": "EVENT_ADDR",
-                                "value": "localhost:4150"
                             }
                         ],
                         "volumeMounts": []
@@ -147,14 +139,6 @@
                                         "fieldPath": "metadata.name"
                                     }
                                 }
-                            },
-                            {
-                                "name": "DISABLE_EVENTING",
-                                "value": "$DISABLE_EVENTING"
-                            },
-                            {
-                                "name": "EVENT_ADDR",
-                                "value": "localhost:4150"
                             }
                         ],
                         "volumeMounts": []
@@ -194,30 +178,6 @@
                                 "name": "PGO_INSTALLATION_NAME",
                                 "value": "$PGO_INSTALLATION_NAME"
                             },
-                            {
-                                "name": "TIMEOUT",
-                                "value": "3600"
-                            },
-                            {
-                                "name": "EVENT_ADDR",
-                                "value": "localhost:4150"
-                            }
-                        ],
-                        "volumeMounts": [],
-                        "imagePullPolicy": "IfNotPresent"
-                    },
-                    {
-                        "name": "event",
-                        "image": "$PGO_IMAGE_PREFIX/pgo-event:$PGO_IMAGE_TAG",
-                        "livenessProbe": {
-                            "httpGet": {
-                                "path": "/ping",
-                                "port": 4151
-                            },
-                            "initialDelaySeconds": 15,
-                            "periodSeconds": 5
-                        },
-                        "env": [
                             {
                                 "name": "TIMEOUT",
                                 "value": "3600"

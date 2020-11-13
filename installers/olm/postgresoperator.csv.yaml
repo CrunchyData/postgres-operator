@@ -226,7 +226,6 @@ spec:
                       - { name: PGO_OPERATOR_NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
 
                       - { name: CRUNCHY_DEBUG, value: 'false' }
-                      - { name: EVENT_ADDR, value: 'localhost:4150' }
                       - { name: PORT, value: '8443' }
 
                   - name: operator
@@ -238,7 +237,6 @@ spec:
                       - { name: PGO_OPERATOR_NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
 
                       - { name: CRUNCHY_DEBUG, value: 'false' }
-                      - { name: EVENT_ADDR, value: 'localhost:4150' }
 
                   - name: scheduler
                     image: '${PGO_IMAGE_PREFIX}/pgo-scheduler:${PGO_IMAGE_TAG}'
@@ -259,17 +257,4 @@ spec:
                       - { name: PGO_OPERATOR_NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
 
                       - { name: CRUNCHY_DEBUG, value: 'false' }
-                      - { name: EVENT_ADDR, value: 'localhost:4150' }
-                      - { name: TIMEOUT, value: '3600' }
-
-                  - name: event
-                    image: '${PGO_IMAGE_PREFIX}/pgo-event:${PGO_IMAGE_TAG}'
-                    imagePullPolicy: IfNotPresent
-                    livenessProbe:
-                      httpGet:
-                        path: /ping
-                        port: 4151
-                      initialDelaySeconds: 15
-                      periodSeconds: 5
-                    env:
                       - { name: TIMEOUT, value: '3600' }

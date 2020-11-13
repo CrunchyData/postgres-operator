@@ -21,13 +21,11 @@ package cluster
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -60,8 +58,6 @@ func Failover(identifier string, clientset kubeapi.Interface, clusterName string
 	if err := promote(pod, clientset, namespace, restconfig); err != nil {
 		log.Warn(err)
 	}
-
-	publishPromoteEvent(identifier, namespace, task.ObjectMeta.Labels[config.LABEL_PGOUSER], clusterName, target)
 
 	updateFailoverStatus(clientset, task, namespace, clusterName, "promoting pod "+pod.Name+" target "+target)
 
@@ -163,29 +159,6 @@ func promote(
 	}
 
 	return err
-}
-
-func publishPromoteEvent(identifier, namespace, username, clusterName, target string) {
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventFailoverClusterFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  username,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventFailoverCluster,
-		},
-		Clustername: clusterName,
-		Target:      target,
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		log.Error(err.Error())
-	}
-
 }
 
 // RemovePrimaryOnRoleChangeTag sets the 'primary_on_role_change' tag to null in the

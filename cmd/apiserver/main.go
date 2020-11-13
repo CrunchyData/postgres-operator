@@ -22,7 +22,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/routing"
@@ -102,9 +101,6 @@ func main() {
 
 	// init crunchy-formatted logger
 	crunchylog.CrunchyLogger(crunchylog.SetParameters())
-
-	// give time for pgo-event to start up
-	time.Sleep(time.Duration(5) * time.Second)
 
 	log.Infoln("postgres-operator apiserver starts")
 	apiserver.Initialize()

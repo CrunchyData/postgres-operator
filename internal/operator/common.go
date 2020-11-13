@@ -40,7 +40,6 @@ var NAMESPACE string
 
 var InstallationName string
 var PgoNamespace string
-var EventTCPAddress = "localhost:4150"
 
 var Pgo config.PgoConfig
 
@@ -128,12 +127,6 @@ func Initialize(clientset kubernetes.Interface) {
 	// initialize any container image overrides that are set by the "RELATED_*"
 	// variables
 	initializeContainerImageOverrides()
-
-	tmp = os.Getenv("EVENT_TCP_ADDRESS")
-	if tmp != "" {
-		EventTCPAddress = tmp
-	}
-	log.Info("EventTCPAddress set to " + EventTCPAddress)
 
 	// set controller refresh intervals and worker counts
 	initializeControllerRefreshIntervals()

@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
@@ -32,7 +31,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 
 	log "github.com/sirupsen/logrus"
 	apps_v1 "k8s.io/api/apps/v1"
@@ -66,13 +64,11 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 		clientset, cl, namespace, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], cl.Spec.PrimaryStorage)
 	if err != nil {
 		log.Error(err)
-		publishClusterCreateFailure(cl, err.Error())
 		return
 	}
 
 	if err = addClusterCreateMissingService(clientset, cl, namespace); err != nil {
 		log.Error("error in creating primary service " + err.Error())
-		publishClusterCreateFailure(cl, err.Error())
 		return
 	}
 
@@ -85,19 +81,16 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 	if err = operator.CreatePGHAConfigMap(clientset, cl, namespace); err != nil &&
 		!kerrors.IsAlreadyExists(err) {
 		log.Error(err)
-		publishClusterCreateFailure(cl, err.Error())
 		return
 	}
 
 	if err := annotateBackrestSecret(clientset, cl); err != nil {
 		log.Error(err)
-		publishClusterCreateFailure(cl, err.Error())
 	}
 
 	if err := addClusterDeployments(clientset, cl, namespace,
 		dataVolume, walVolume, tablespaceVolumes); err != nil {
 		log.Error(err)
-		publishClusterCreateFailure(cl, err.Error())
 		return
 	}
 
@@ -106,7 +99,6 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 	clusterInfo, err := ScaleClusterDeployments(clientset, *cl, 1, false, false, true, false)
 	if err != nil {
 		log.Error(err)
-		publishClusterCreateFailure(cl, err.Error())
 	}
 	log.Debugf("Scaled pgBackRest repo deployment %s to 1 to proceed with initializing "+
 		"cluster %s", clusterInfo.PrimaryDeployment, cl.GetName())
@@ -126,7 +118,6 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 	// Note: in previous operator versions, this was stored in a user label
 	if err := util.PatchClusterCRD(clientset, cl.Spec.UserLabels, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], namespace); err != nil {
 		log.Error("could not patch primary crv1 with labels")
-		publishClusterCreateFailure(cl, err.Error())
 		return
 	}
 
@@ -140,29 +131,6 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 		log.Error("error in pvcname patch " + err.Error())
 	}
 
-	//publish create cluster event
-	//capture the cluster creation event
-	pgouser := cl.ObjectMeta.Labels[config.LABEL_PGOUSER]
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventCreateClusterFormat{
-		EventHeader: events.EventHeader{
-			Namespace: cl.ObjectMeta.Namespace,
-			Username:  pgouser,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventCreateCluster,
-		},
-		Clustername: cl.ObjectMeta.Name,
-		WorkflowID:  cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
-	}
-
-	err = events.Publish(f)
-	if err != nil {
-		log.Error(err.Error())
-	}
-
 	// determine if a restore
 	_, restore := cl.GetAnnotations()[config.ANNOTATION_BACKREST_RESTORE]
 
@@ -171,7 +139,6 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 		replicaCount, err := strconv.Atoi(cl.Spec.Replicas)
 		if err != nil {
 			log.Error("error in replicas value " + err.Error())
-			publishClusterCreateFailure(cl, err.Error())
 			return
 		}
 		//create a CRD for each replica
@@ -209,7 +176,6 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 				Create(ctx, newInstance, metav1.CreateOptions{})
 			if err != nil {
 				log.Error(" in creating Pgreplica instance" + err.Error())
-				publishClusterCreateFailure(cl, err.Error())
 			}
 
 		}
@@ -225,7 +191,6 @@ func AddClusterBootstrap(clientset kubeapi.Interface, cluster *crv1.Pgcluster) e
 
 	if err := operator.CreatePGHAConfigMap(clientset, cluster, namespace); err != nil &&
 		!kerrors.IsAlreadyExists(err) {
-		publishClusterCreateFailure(cluster, err.Error())
 		return err
 	}
 
@@ -233,13 +198,11 @@ func AddClusterBootstrap(clientset kubeapi.Interface, cluster *crv1.Pgcluster) e
 		clientset, cluster, namespace,
 		cluster.Annotations[config.ANNOTATION_CURRENT_PRIMARY], cluster.Spec.PrimaryStorage)
 	if err != nil {
-		publishClusterCreateFailure(cluster, err.Error())
 		return err
 	}
 
 	if err := addClusterBootstrapJob(clientset, cluster, namespace, dataVolume,
 		walVolume, tablespaceVolumes); err != nil && !kerrors.IsAlreadyExists(err) {
-		publishClusterCreateFailure(cluster, err.Error())
 		return err
 	}
 
@@ -309,25 +272,6 @@ func DeleteClusterBase(clientset kubernetes.Interface, cl *crv1.Pgcluster, names
 	}
 
 	//delete any existing pgtasks ???
-
-	//publish delete cluster event
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventDeleteClusterFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  cl.ObjectMeta.Labels[config.LABEL_PGOUSER],
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventDeleteCluster,
-		},
-		Clustername: cl.Spec.Name,
-	}
-
-	if err := events.Publish(f); err != nil {
-		log.Error(err)
-	}
 }
 
 // ScaleBase ...
@@ -350,7 +294,6 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 		clientset, cluster, namespace, replica.Spec.Name, replica.Spec.ReplicaStorage)
 	if err != nil {
 		log.Error(err)
-		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
 		return
 	}
 
@@ -368,13 +311,11 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 	//create the replica service if it doesnt exist
 	if err = scaleReplicaCreateMissingService(clientset, replica, cluster, namespace); err != nil {
 		log.Error(err)
-		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
 		return
 	}
 
 	//instantiate the replica
 	if err = scaleReplicaCreateDeployment(clientset, replica, cluster, namespace, dataVolume, walVolume, tablespaceVolumes); err != nil {
-		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
 		return
 	}
 
@@ -387,26 +328,6 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 	}
 	if err != nil {
 		log.Error("error in status patch " + err.Error())
-	}
-
-	//publish event for replica creation
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventScaleClusterFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  replica.ObjectMeta.Labels[config.LABEL_PGOUSER],
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventScaleCluster,
-		},
-		Clustername: cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
-		Replicaname: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
-	}
-
-	if err = events.Publish(f); err != nil {
-		log.Error(err.Error())
 	}
 }
 
@@ -422,28 +343,6 @@ func ScaleDownBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespa
 	}
 
 	DeleteReplica(clientset, replica, namespace)
-
-	//publish event for scale down
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventScaleDownClusterFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  replica.ObjectMeta.Labels[config.LABEL_PGOUSER],
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventScaleDownCluster,
-		},
-		Clustername: replica.Spec.ClusterName,
-	}
-
-	err = events.Publish(f)
-	if err != nil {
-		log.Error(err.Error())
-		return
-	}
-
 }
 
 // UpdateAnnotations updates the annotations in the "template" portion of a
@@ -730,57 +629,6 @@ func deleteConfigMaps(clientset kubernetes.Interface, clusterName, ns string) er
 			return err
 		}
 	}
-	return nil
-}
-
-func publishClusterCreateFailure(cl *crv1.Pgcluster, errorMsg string) {
-	pgouser := cl.ObjectMeta.Labels[config.LABEL_PGOUSER]
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventCreateClusterFailureFormat{
-		EventHeader: events.EventHeader{
-			Namespace: cl.ObjectMeta.Namespace,
-			Username:  pgouser,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventCreateClusterFailure,
-		},
-		Clustername:  cl.ObjectMeta.Name,
-		ErrorMessage: errorMsg,
-		WorkflowID:   cl.ObjectMeta.Labels[config.LABEL_WORKFLOW_ID],
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		log.Error(err.Error())
-	}
-}
-
-func publishClusterShutdown(cluster crv1.Pgcluster) error {
-
-	clusterName := cluster.Name
-
-	//capture the cluster creation event
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventShutdownClusterFormat{
-		EventHeader: events.EventHeader{
-			Namespace: cluster.Namespace,
-			Username:  cluster.Spec.UserLabels[config.LABEL_PGOUSER],
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventShutdownCluster,
-		},
-		Clustername: clusterName,
-	}
-
-	if err := events.Publish(f); err != nil {
-		log.Error(err.Error())
-		return err
-	}
-
 	return nil
 }
 

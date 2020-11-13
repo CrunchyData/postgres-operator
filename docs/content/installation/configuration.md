@@ -64,7 +64,6 @@ Operator.
 | `pgo_client_install` | true |  | Enable to download the `pgo` client binary as part of the Ansible install |
 | `pgo_client_version` | {{< param operatorVersion >}} | **Required** |  |
 | `pgo_cluster_admin` | false | **Required** | Determines whether or not the cluster-admin role is assigned to the PGO service account. Must be true to enable PGO namespace & role creation when installing in OpenShift. |
-| `pgo_disable_eventing` | false |  | Set to configure whether or not eventing should be enabled for the Crunchy PostgreSQL Operator installation. |
 | `pgo_disable_tls` | false |  | Set to configure whether or not TLS should be enabled for the Crunchy PostgreSQL Operator apiserver. |
 | `pgo_image_prefix` | registry.developers.crunchydata.com/crunchydata | **Required** | Configures the image prefix used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc). |
 | `pgo_image_pull_secret` |  |  | Name of a Secret containing credentials for container image registries. |

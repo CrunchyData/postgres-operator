@@ -19,13 +19,11 @@ import (
 	"context"
 	"errors"
 	"strings"
-	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/pgouserservice"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,30 +52,7 @@ func CreatePgorole(clientset kubernetes.Interface, createdBy string, request *ms
 		return resp
 	}
 
-	//publish event
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicPGOUser
-
-	f := events.EventPGOCreateRoleFormat{
-		EventHeader: events.EventHeader{
-			Namespace: apiserver.PgoNamespace,
-			Username:  createdBy,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventPGOCreateRole,
-		},
-		CreatedRolename: request.PgoroleName,
-	}
-
-	err = events.Publish(f)
-	if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
-	}
-
 	return resp
-
 }
 
 // ShowPgorole ...
@@ -200,30 +175,7 @@ func UpdatePgorole(clientset kubernetes.Interface, updatedBy string, request *ms
 		return resp
 	}
 
-	//publish event
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicPGOUser
-
-	f := events.EventPGOUpdateRoleFormat{
-		EventHeader: events.EventHeader{
-			Namespace: apiserver.PgoNamespace,
-			Username:  updatedBy,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventPGOUpdateRole,
-		},
-		UpdatedRolename: request.PgoroleName,
-	}
-
-	err = events.Publish(f)
-	if err != nil {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = err.Error()
-		return resp
-	}
-
 	return resp
-
 }
 
 func createSecret(clientset kubernetes.Interface, createdBy, pgorolename, permissions string) error {
