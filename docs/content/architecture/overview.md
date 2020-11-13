@@ -57,9 +57,6 @@ Operator User (`pgouser`) can interface with via the `pgo` command-line
 interface (CLI) or directly via HTTP requests. The API server can also control
 what resources a user can access via a series of RBAC rules that can be defined
 as part of a `pgorole`.
-- `scheduler` (image: pgo-scheduler) - A container that runs `cron` and allows a
-user to schedule repeatable tasks, such as backups (because it is important to
-  schedule backups in a production environment!)
 
 The main purpose of the PostgreSQL Operator is to create and update information
 around the structure of a PostgreSQL Cluster, and to relay information about the

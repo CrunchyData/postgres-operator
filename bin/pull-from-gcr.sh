@@ -19,7 +19,6 @@ REGISTRY='us.gcr.io/container-suite'
 VERSION=$PGO_IMAGE_TAG
 IMAGES=(
     pgo-backrest-repo
-    pgo-scheduler
     pgo-sqlrunner
     postgres-operator
     pgo-apiserver

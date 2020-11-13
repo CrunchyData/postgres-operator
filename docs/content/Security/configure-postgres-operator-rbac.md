@@ -58,7 +58,6 @@ The following list shows the current complete list of possible pgo permissions t
 |CreatePgAdmin | allow *pgo create pgadmin*|
 |CreatePgbouncer | allow *pgo create pgbouncer*|
 |CreatePolicy | allow *pgo create policy*|
-|CreateSchedule | allow *pgo create schedule*|
 |CreateUpgrade | allow *pgo upgrade*|
 |CreateUser | allow *pgo create user*|
 |DeleteBackup | allow *pgo delete backup*|
@@ -66,7 +65,6 @@ The following list shows the current complete list of possible pgo permissions t
 |DeletePgAdmin | allow *pgo delete pgadmin*|
 |DeletePgbouncer | allow *pgo delete pgbouncer*|
 |DeletePolicy | allow *pgo delete policy*|
-|DeleteSchedule | allow *pgo delete schedule*|
 |DeleteUpgrade | allow *pgo delete upgrade*|
 |DeleteUser | allow *pgo delete user*|
 |DfCluster | allow *pgo df*|
@@ -81,7 +79,6 @@ The following list shows the current complete list of possible pgo permissions t
 |ShowPgBouncer | allow *pgo show pgbouncer*|
 |ShowPolicy | allow *pgo show policy*|
 |ShowPVC | allow *pgo show pvc*|
-|ShowSchedule | allow *pgo show schedule*|
 |ShowNamespace | allow *pgo show namespace*|
 |ShowSystemAccounts | allows commands with the `--show-system-accounts` flag to return system account information (e.g. the `postgres` superuser)|
 |ShowUpgrade | allow *pgo show upgrade*|

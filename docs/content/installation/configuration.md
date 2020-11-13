@@ -65,17 +65,16 @@ Operator.
 | `pgo_client_version` | {{< param operatorVersion >}} | **Required** |  |
 | `pgo_cluster_admin` | false | **Required** | Determines whether or not the cluster-admin role is assigned to the PGO service account. Must be true to enable PGO namespace & role creation when installing in OpenShift. |
 | `pgo_disable_tls` | false |  | Set to configure whether or not TLS should be enabled for the Crunchy PostgreSQL Operator apiserver. |
-| `pgo_image_prefix` | registry.developers.crunchydata.com/crunchydata | **Required** | Configures the image prefix used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc). |
+| `pgo_image_prefix` | registry.developers.crunchydata.com/crunchydata | **Required** | Configures the image prefix used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, etc...). |
 | `pgo_image_pull_secret` |  |  | Name of a Secret containing credentials for container image registries. |
 | `pgo_image_pull_secret_manifest` |  |  | Provide a path to the Secret manifest to be installed in each namespace. (optional) |
-| `pgo_image_tag` | {{< param centosBase >}}-{{< param operatorVersion >}} | **Required** | Configures the image tag used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator, scheduler..etc) |
+| `pgo_image_tag` | {{< param centosBase >}}-{{< param operatorVersion >}} | **Required** | Configures the image tag used when creating containers for the Crunchy PostgreSQL Operator (apiserver, operator..etc) |
 | `pgo_installation_name` | devtest | **Required** | The name of the PGO installation. |
 | `pgo_noauth_routes` |  |  | Configures URL routes with mTLS and HTTP BasicAuth disabled. |
 | `pgo_operator_namespace` | pgo | **Required** | Set to configure the namespace where Operator will be deployed. |
 | `pgo_tls_ca_store` |  |  | Set to add additional Certificate Authorities for Operator to trust (PEM-encoded file). |
 | `pgo_tls_no_verify` | false |  | Set to configure Operator to verify TLS certificates. |
 | `reconcile_rbac` | true |  | Determines whether or not the PostgreSQL Operator will granted the permissions needed to reconcile RBAC within targeted namespaces. |
-| `scheduler_timeout` | 3600 | **Required** | Set to a value in seconds to configure the `pgo-scheduler` timeout threshold when waiting for schedules to complete. |
 | `service_type` | ClusterIP |  | Set to configure the type of Kubernetes service provisioned on all newly created clusters. |
 | `sync_replication` | false |  | If set to `true` will automatically enable synchronous replication in new PostgreSQL clusters. |
 

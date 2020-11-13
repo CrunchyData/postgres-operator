@@ -32,7 +32,6 @@ var Labelselector string
 var DebugFlag bool
 var Selector string
 var DryRun bool
-var ScheduleName string
 var NodeLabel string
 
 var BackupType string

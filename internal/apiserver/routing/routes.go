@@ -33,7 +33,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/apiserver/pvcservice"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/reloadservice"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/restartservice"
-	"github.com/crunchydata/postgres-operator/internal/apiserver/scheduleservice"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/statusservice"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/upgradeservice"
 	"github.com/crunchydata/postgres-operator/internal/apiserver/userservice"
@@ -63,7 +62,6 @@ func RegisterAllRoutes(r *mux.Router) {
 	RegisterPVCSvcRoutes(r)
 	RegisterReloadSvcRoutes(r)
 	RegisterRestartSvcRoutes(r)
-	RegisterScheduleSvcRoutes(r)
 	RegisterStatusSvcRoutes(r)
 	RegisterUpgradeSvcRoutes(r)
 	RegisterUserSvcRoutes(r)
@@ -186,13 +184,6 @@ func RegisterReloadSvcRoutes(r *mux.Router) {
 func RegisterRestartSvcRoutes(r *mux.Router) {
 	r.HandleFunc("/restart", restartservice.RestartHandler).Methods("POST")
 	r.HandleFunc("/restart/{name}", restartservice.QueryRestartHandler).Methods("GET")
-}
-
-// RegisterScheduleSvcRoutes registers all routes from the Schedule Service
-func RegisterScheduleSvcRoutes(r *mux.Router) {
-	r.HandleFunc("/schedule", scheduleservice.CreateScheduleHandler).Methods("POST")
-	r.HandleFunc("/scheduledelete", scheduleservice.DeleteScheduleHandler).Methods("POST")
-	r.HandleFunc("/scheduleshow", scheduleservice.ShowScheduleHandler).Methods("POST")
 }
 
 // RegisterStatusSvcRoutes registers all routes from the Status Service

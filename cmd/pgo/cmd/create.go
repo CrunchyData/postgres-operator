@@ -41,12 +41,6 @@ var PoliciesFlag, PolicyFile, PolicyURL string
 var UserLabels string
 var Tablespaces []string
 var ServiceType string
-var Schedule string
-var ScheduleOptions string
-var ScheduleType string
-var SchedulePolicy string
-var ScheduleDatabase string
-var ScheduleSecret string
 var PGBackRestType string
 var Secret string
 var PgouserPassword, PgouserRoles, PgouserNamespaces string
@@ -282,27 +276,6 @@ var createPgbouncerCmd = &cobra.Command{
 	},
 }
 
-// createScheduleCmd ...
-var createScheduleCmd = &cobra.Command{
-	Use:   "schedule",
-	Short: "Create a cron-like scheduled task",
-	Long: `Schedule creates a cron-like scheduled task.  For example:
-
-    pgo create schedule --schedule="* * * * *" --schedule-type=pgbackrest --pgbackrest-backup-type=full mycluster`,
-	Run: func(cmd *cobra.Command, args []string) {
-
-		if Namespace == "" {
-			Namespace = PGONamespace
-		}
-		log.Debug("create schedule called ")
-		if len(args) == 0 && Selector == "" {
-			fmt.Println("Error: The --selector flag or a cluster name is required to create a schedule.")
-			return
-		}
-		createSchedule(args, Namespace)
-	},
-}
-
 // createUserCmd ...
 var createUserCmd = &cobra.Command{
 	Use:   "user",
@@ -336,7 +309,6 @@ func init() {
 	CreateCmd.AddCommand(createPgbouncerCmd)
 	CreateCmd.AddCommand(createPgouserCmd)
 	CreateCmd.AddCommand(createPgoroleCmd)
-	CreateCmd.AddCommand(createScheduleCmd)
 	CreateCmd.AddCommand(createUserCmd)
 	CreateCmd.AddCommand(createNamespaceCmd)
 
@@ -515,18 +487,6 @@ func init() {
 	// "pgo create policy" flags
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy.")
 	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy.")
-
-	// "pgo create schedule" flags
-	createScheduleCmd.Flags().StringVarP(&ScheduleDatabase, "database", "", "", "The database to run the SQL policy against.")
-	createScheduleCmd.Flags().StringVarP(&PGBackRestType, "pgbackrest-backup-type", "", "", "The type of pgBackRest backup to schedule (full, diff or incr).")
-	createScheduleCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use when scheduling pgBackRest backups. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
-	createScheduleCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
-	createScheduleCmd.Flags().StringVarP(&SchedulePolicy, "policy", "", "", "The policy to use for SQL schedules.")
-	createScheduleCmd.Flags().StringVarP(&Schedule, "schedule", "", "", "The schedule assigned to the cron task.")
-	createScheduleCmd.Flags().StringVarP(&ScheduleOptions, "schedule-opts", "", "", "The custom options passed to the create schedule API.")
-	createScheduleCmd.Flags().StringVarP(&ScheduleType, "schedule-type", "", "", "The type of schedule to be created (pgbackrest or policy).")
-	createScheduleCmd.Flags().StringVarP(&ScheduleSecret, "secret", "", "", "The secret name for the username and password of the PostgreSQL role for SQL schedules.")
-	createScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 
 	// "pgo create user" flags
 	createUserCmd.Flags().BoolVar(&AllFlag, "all", false, "Create a user on every cluster.")

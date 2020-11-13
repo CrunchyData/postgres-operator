@@ -1,7 +1,6 @@
 ---
 pgo_image: '${OPERATOR_IMAGE}'
 pgo_apiserver_image: '${OPERATOR_IMAGE_API}'
-pgo_scheduler_image: '${OPERATOR_IMAGE_SCHEDULER}'
 
 archive_mode: "true"
 archive_timeout: "60"
@@ -36,7 +35,6 @@ pgo_image_prefix: "registry.developers.crunchydata.com/crunchydata"
 pgo_image_tag: "centos7-4.5.0"
 pgo_installation_name: '${OPERATOR_NAME}'
 pgo_operator_namespace: '${OPERATOR_NAMESPACE}'
-scheduler_timeout: "3600"
 service_type: '${POSTGRES_SERVICE_TYPE}'
 sync_replication: "false"
 

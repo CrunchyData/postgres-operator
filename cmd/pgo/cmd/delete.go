@@ -48,9 +48,6 @@ var deleteCmd = &cobra.Command{
 	pgo delete pgorole somerole
 	pgo delete policy mypolicy
 	pgo delete namespace mynamespace
-	pgo delete schedule --schedule-name=mycluster-pgbackrest-full
-	pgo delete schedule --selector=name=mycluster
-	pgo delete schedule mycluster
 	pgo delete user --username=testuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
 
@@ -77,7 +74,6 @@ var deleteCmd = &cobra.Command{
 				"pgorole",
 				"policy",
 				"namespace",
-				"schedule",
 				"user":
 				break
 			default:
@@ -242,25 +238,6 @@ func init() {
 	// a SQL policy
 	deletePolicyCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation before delete.")
 
-	// "pgo delete schedule"
-	// delete a scheduled job for a cluster (e.g. a daily backup)
-	deleteCmd.AddCommand(deleteScheduleCmd)
-	// "pgo delete schedule --no-prompt"
-	// does not display the warning prompt to ensure the user wishes to delete
-	// a scheduled job for a cluster
-	deleteScheduleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false,
-		"No command line confirmation before delete.")
-	// "pgo delete schedule --schedule-name"
-	// the name of the scheduled job to delete
-	deleteScheduleCmd.Flags().StringVar(&ScheduleName, "schedule-name", "",
-		"The name of the schedule to delete.")
-	// "pgo delete schedule --selector"
-	// "pgo delete schedule -s"
-	// the selector flag that filters which scheduled jobs should be deleted
-	// from which clusters
-	deleteScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "",
-		"The selector to use for cluster filtering.")
-
 	// "pgo delete user"
 	// Delete a user from a PostgreSQL cluster
 	deleteCmd.AddCommand(deleteUserCmd)
@@ -278,13 +255,10 @@ func init() {
 	// will render the text based one
 	deleteUserCmd.Flags().StringVarP(&OutputFormat, "output", "o", "",
 		`The output format. Supported types are: "json"`)
-	// "pgo delete schedule --selector"
-	// "pgo delete schedule -s"
 	// the selector flag that filters which PostgreSQL users should be deleted
 	// from which clusters
 	deleteUserCmd.Flags().StringVarP(&Selector, "selector", "s", "",
 		"The selector to use for cluster filtering.")
-	// "pgo delete schedule --username"
 	// the username of the PostgreSQL user to delete
 	deleteUserCmd.Flags().StringVar(&Username, "username", "",
 		"The username to delete.")
@@ -504,32 +478,6 @@ var deletePolicyCmd = &cobra.Command{
 			} else {
 				fmt.Println("Aborting...")
 			}
-		}
-	},
-}
-
-// deleteScheduleCmd ...
-var deleteScheduleCmd = &cobra.Command{
-	Use:   "schedule",
-	Short: "Delete a schedule",
-	Long: `Delete a cron-like schedule. For example:
-
-    pgo delete schedule mycluster
-    pgo delete schedule --selector=env=test
-    pgo delete schedule --schedule-name=mycluster-pgbackrest-full`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if Namespace == "" {
-			Namespace = PGONamespace
-		}
-		if len(args) == 0 && Selector == "" && ScheduleName == "" {
-			fmt.Println("Error: cluster name, schedule name or selector is required to delete a schedule.")
-			return
-		}
-
-		if util.AskForConfirmation(NoPrompt, "") {
-			deleteSchedule(args, Namespace)
-		} else {
-			fmt.Println("Aborting...")
 		}
 	},
 }

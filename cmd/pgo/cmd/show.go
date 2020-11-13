@@ -61,7 +61,7 @@ Valid resource types include:
 		} else {
 			switch args[0] {
 			case "backup", "cluster", "config", "pgadmin", "pgbouncer",
-				"pgouser", "policy", "pvc", "schedule", "namespace",
+				"pgouser", "policy", "pvc", "namespace",
 				"workflow", "user":
 				break
 			default:
@@ -99,7 +99,6 @@ func init() {
 	ShowCmd.AddCommand(ShowPolicyCmd)
 	ShowCmd.AddCommand(ShowPVCCmd)
 	ShowCmd.AddCommand(ShowWorkflowCmd)
-	ShowCmd.AddCommand(ShowScheduleCmd)
 	ShowCmd.AddCommand(ShowUserCmd)
 
 	ShowBackupCmd.Flags().StringVarP(&showBackupType, "backup-type", "", "pgbackrest", "The backup type output to list. Valid choices are pgbackrest or pgdump.")
@@ -114,9 +113,6 @@ func init() {
 	ShowPgBouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	ShowPgBouncerCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
 	ShowPVCCmd.Flags().BoolVar(&AllFlag, "all", false, "show all resources.")
-	ShowScheduleCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	ShowScheduleCmd.Flags().StringVarP(&ScheduleName, "schedule-name", "", "", "The name of the schedule to show.")
-	ShowScheduleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	ShowUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	ShowUserCmd.Flags().BoolVar(&AllFlag, "all", false, "show all clusters.")
 	ShowUserCmd.Flags().IntVarP(&Expired, "expired", "", 0, "Shows passwords that will expire in X days.")
@@ -332,26 +328,5 @@ var ShowUserCmd = &cobra.Command{
 		} else {
 			showUser(args, Namespace)
 		}
-	},
-}
-
-// ShowScheduleCmd represents the show schedule command
-var ShowScheduleCmd = &cobra.Command{
-	Use:   "schedule",
-	Short: "Show schedule information",
-	Long: `Show cron-like schedules.  For example:
-
-	pgo show schedule mycluster
-	pgo show schedule --selector=pg-cluster=mycluster
-	pgo show schedule --schedule-name=mycluster-pgbackrest-full`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if Namespace == "" {
-			Namespace = PGONamespace
-		}
-		if len(args) == 0 && Selector == "" && ScheduleName == "" {
-			fmt.Println("Error: cluster name, schedule name or selector is required to show a schedule.")
-			return
-		}
-		showSchedule(args, Namespace)
 	},
 }

@@ -40,11 +40,6 @@ properties:
     default: gcr.io/crunchydata-public/postgres-operator/pgo-apiserver:${PGO_VERSION}
     x-google-marketplace: { type: IMAGE }
 
-  OPERATOR_IMAGE_SCHEDULER:
-    type: string
-    default: gcr.io/crunchydata-public/postgres-operator/pgo-scheduler:${PGO_VERSION}
-    x-google-marketplace: { type: IMAGE }
-
   OPERATOR_NAME:      { type: string, x-google-marketplace: { type: NAME } }
   OPERATOR_NAMESPACE: { type: string, x-google-marketplace: { type: NAMESPACE } }
 
@@ -96,7 +91,6 @@ required:
   - OPERATOR_ADMIN_PASSWORD
   - OPERATOR_IMAGE
   - OPERATOR_IMAGE_API
-  - OPERATOR_IMAGE_SCHEDULER
   - OPERATOR_NAME
   - OPERATOR_NAMESPACE
 

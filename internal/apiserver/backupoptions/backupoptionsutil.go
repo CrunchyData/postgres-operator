@@ -138,7 +138,7 @@ func parseBackupOpts(backupOpts string) []string {
 
 func createBackupOptionsStruct(backupOpts string, request interface{}) (backupOptions, string, error) {
 
-	switch request := request.(type) {
+	switch request.(type) {
 	case *msgs.CreateBackrestBackupRequest:
 		return &pgBackRestBackupOptions{}, "pgBackRest", nil
 	case *msgs.RestoreRequest, *msgs.CreateClusterRequest:
@@ -151,10 +151,6 @@ func createBackupOptionsStruct(backupOpts string, request interface{}) (backupOp
 		}
 	case *msgs.PgRestoreRequest:
 		return &pgRestoreOptions{}, "pg_restore", nil
-	case *msgs.CreateScheduleRequest:
-		if request.ScheduleType == "pgbackrest" {
-			return &pgBackRestBackupOptions{}, "pgBackRest", nil
-		}
 	}
 	return nil, "", errors.New("Request type not recognized. Unable to create struct for backup opts")
 }

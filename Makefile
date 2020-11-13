@@ -82,7 +82,6 @@ images = pgo-apiserver \
 	pgo-backrest \
 	pgo-backrest-repo \
 	pgo-rmdata \
-	pgo-scheduler \
 	pgo-sqlrunner \
 	pgo-client \
 	pgo-deployer \
@@ -122,9 +121,6 @@ build-pgo-backrest:
 
 build-pgo-rmdata:
 	$(GO_BUILD) -o bin/pgo-rmdata/pgo-rmdata ./cmd/pgo-rmdata
-
-build-pgo-scheduler:
-	$(GO_BUILD) -o bin/pgo-scheduler/pgo-scheduler ./cmd/pgo-scheduler
 
 build-postgres-operator:
 	$(GO_BUILD) -o bin/postgres-operator ./cmd/postgres-operator
@@ -218,7 +214,6 @@ clean: clean-deprecated
 	rm -f bin/pgo bin/pgo-mac bin/pgo.exe
 	rm -f bin/pgo-backrest/pgo-backrest
 	rm -f bin/pgo-rmdata/pgo-rmdata
-	rm -f bin/pgo-scheduler/pgo-scheduler
 	[ -z "$$(ls hack/tools)" ] || rm hack/tools/*
 
 clean-deprecated:

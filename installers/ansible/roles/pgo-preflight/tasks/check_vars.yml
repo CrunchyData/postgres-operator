@@ -31,6 +31,5 @@
     - pgo_client_version
     - pgbadgerport
     - exporterport
-    - scheduler_timeout
     - namespace_mode
     - reconcile_rbac

@@ -63,7 +63,6 @@ Google Cloud Marketplace.
       export INSTALLER_IMAGE=${IMAGE_REPOSITORY}/deployer:${PGO_VERSION}
       export OPERATOR_IMAGE=${IMAGE_REPOSITORY}:${PGO_VERSION}
       export OPERATOR_IMAGE_API=${IMAGE_REPOSITORY}/pgo-apiserver:${PGO_VERSION}
-      export OPERATOR_IMAGE_SCHEDULER=${IMAGE_REPOSITORY}/pgo-scheduler:${PGO_VERSION}
       ```
 
    2. Choose a namespace and name for the application.

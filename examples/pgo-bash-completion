@@ -569,57 +569,6 @@ _pgo_create_policy()
     noun_aliases=()
 }
 
-_pgo_create_schedule()
-{
-    last_command="pgo_create_schedule"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--ccp-image-tag=")
-    two_word_flags+=("-c")
-    local_nonpersistent_flags+=("--ccp-image-tag=")
-    flags+=("--database=")
-    local_nonpersistent_flags+=("--database=")
-    flags+=("--pgbackrest-backup-type=")
-    local_nonpersistent_flags+=("--pgbackrest-backup-type=")
-    flags+=("--pgbackrest-storage-type=")
-    local_nonpersistent_flags+=("--pgbackrest-storage-type=")
-    flags+=("--policy=")
-    local_nonpersistent_flags+=("--policy=")
-    flags+=("--pvc-name=")
-    local_nonpersistent_flags+=("--pvc-name=")
-    flags+=("--schedule=")
-    local_nonpersistent_flags+=("--schedule=")
-    flags+=("--schedule-opts=")
-    local_nonpersistent_flags+=("--schedule-opts=")
-    flags+=("--schedule-type=")
-    local_nonpersistent_flags+=("--schedule-type=")
-    flags+=("--secret=")
-    local_nonpersistent_flags+=("--secret=")
-    flags+=("--selector=")
-    two_word_flags+=("-s")
-    local_nonpersistent_flags+=("--selector=")
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-    flags+=("--namespace=")
-    two_word_flags+=("-n")
-    flags+=("--pgo-ca-cert=")
-    flags+=("--pgo-client-cert=")
-    flags+=("--pgo-client-key=")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _pgo_create_user()
 {
     last_command="pgo_create_user"
@@ -673,7 +622,6 @@ _pgo_create()
     commands+=("pgorole")
     commands+=("pgouser")
     commands+=("policy")
-    commands+=("schedule")
     commands+=("user")
 
     flags=()
@@ -946,40 +894,6 @@ _pgo_delete_policy()
     noun_aliases=()
 }
 
-_pgo_delete_schedule()
-{
-    last_command="pgo_delete_schedule"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--no-prompt")
-    local_nonpersistent_flags+=("--no-prompt")
-    flags+=("--schedule-name=")
-    local_nonpersistent_flags+=("--schedule-name=")
-    flags+=("--selector=")
-    two_word_flags+=("-s")
-    local_nonpersistent_flags+=("--selector=")
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-    flags+=("--namespace=")
-    two_word_flags+=("-n")
-    flags+=("--pgo-ca-cert=")
-    flags+=("--pgo-client-cert=")
-    flags+=("--pgo-client-key=")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _pgo_delete_user()
 {
     last_command="pgo_delete_user"
@@ -1031,7 +945,6 @@ _pgo_delete()
     commands+=("pgorole")
     commands+=("pgouser")
     commands+=("policy")
-    commands+=("schedule")
     commands+=("user")
 
     flags=()
@@ -1573,40 +1486,6 @@ _pgo_show_pvc()
     noun_aliases=()
 }
 
-_pgo_show_schedule()
-{
-    last_command="pgo_show_schedule"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--no-prompt")
-    local_nonpersistent_flags+=("--no-prompt")
-    flags+=("--schedule-name=")
-    local_nonpersistent_flags+=("--schedule-name=")
-    flags+=("--selector=")
-    two_word_flags+=("-s")
-    local_nonpersistent_flags+=("--selector=")
-    flags+=("--apiserver-url=")
-    flags+=("--debug")
-    flags+=("--namespace=")
-    two_word_flags+=("-n")
-    flags+=("--pgo-ca-cert=")
-    flags+=("--pgo-client-cert=")
-    flags+=("--pgo-client-key=")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _pgo_show_user()
 {
     last_command="pgo_show_user"
@@ -1683,7 +1562,6 @@ _pgo_show()
     commands+=("pgouser")
     commands+=("policy")
     commands+=("pvc")
-    commands+=("schedule")
     commands+=("user")
     commands+=("workflow")
 

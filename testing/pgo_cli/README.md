@@ -84,7 +84,7 @@ go test -run '/failover'
 
 **cluster_df_test.go** executed the pgo df command and verifies the capacity of a cluster is returned.
 
-**cluster_policy_test.go** executes the policy functionality utilizing the commands pgo create policy, pgo apply policy, pgo schedule policy and pgo delete policy as well as various flags and will verify the appropriate values are returned and created, updated, applied or deleted.
+**cluster_policy_test.go** executes the policy functionality utilizing the commands pgo create policy, pgo apply policy, and pgo delete policy as well as various flags and will verify the appropriate values are returned and created, updated, applied or deleted.
 
 **cluster_scale_test.go** executes pgo scale which will scale the cluster with an additional replica.  This test will verify the cluster has successfully scaled the cluster up and verify the replica is available and ready.
 

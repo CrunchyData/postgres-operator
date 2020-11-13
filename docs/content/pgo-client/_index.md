@@ -107,8 +107,8 @@ provides:
 | apply       | `pgo apply mypolicy --selector=name=mycluster`               | Apply a SQL policy on a Postgres cluster(s) that have a label matching `service-name=mycluster` |
 | backup      | `pgo backup mycluster`                                       | Perform a backup on a Postgres cluster(s)                                                       |
 | cat         | `pgo cat mycluster filepath`                                 | Perform a Linux `cat` command on the cluster.                                                   |
-| create      | `pgo create cluster mycluster`                               | Create an Operator resource type (e.g. cluster, policy, schedule, user, namespace, pgouser, pgorole)                         |
-| delete      | `pgo delete cluster mycluster`                               | Delete an Operator resource type (e.g. cluster, policy, user, schedule, namespace, pgouser, pgorole)                         |
+| create      | `pgo create cluster mycluster`                               | Create an Operator resource type (e.g. cluster, policy, user, namespace, pgouser, pgorole)                         |
+| delete      | `pgo delete cluster mycluster`                               | Delete an Operator resource type (e.g. cluster, policy, user, namespace, pgouser, pgorole)                         |
 | df          | `pgo df mycluster`                                           | Display the disk status/capacity of a Postgres cluster.                                         |
 | failover    | `pgo failover mycluster`                                     | Perform a manual failover of a Postgres cluster.                                                |
 | help        | `pgo help`                                                   | Display general `pgo` help information.                                                         |
@@ -117,7 +117,7 @@ provides:
 | restore     | `pgo restore mycluster`                                      | Perform a `pgbackrest` or `pgdump` restore on a Postgres cluster.                               |
 | scale       | `pgo scale mycluster`                                        | Create a Postgres replica(s) for a given Postgres cluster.                                      |
 | scaledown   | `pgo scaledown mycluster --query`                            | Delete a replica from a Postgres cluster.                                                       |
-| show        | `pgo show cluster mycluster`                                 | Display Operator resource information (e.g. cluster, user, policy, schedule, namespace, pgouser, pgorole).                   |
+| show        | `pgo show cluster mycluster`                                 | Display Operator resource information (e.g. cluster, user, policy, namespace, pgouser, pgorole).                   |
 | status      | `pgo status`                                                 | Display Operator status.                                                                        |
 | test        | `pgo test mycluster`                                         | Perform a SQL test on a Postgres cluster(s).                                                    |
 | update      | `pgo update cluster mycluster --disable-autofail`            | Update a Postgres cluster(s), pgouser, pgorole, user, or namespace.                             |

@@ -30,10 +30,6 @@ import (
 func TestClusterBackup(t *testing.T) {
 	t.Parallel()
 
-	teardownSchedule := func(t *testing.T, namespace, schedule string) {
-		pgo("delete", "schedule", "-n", namespace, "--no-prompt", "--schedule-name="+schedule).Exec(t)
-	}
-
 	withNamespace(t, func(namespace func() string) {
 		withCluster(t, namespace, func(cluster func() string) {
 			t.Run("show backup", func(t *testing.T) {
@@ -90,79 +86,6 @@ func TestClusterBackup(t *testing.T) {
 					}
 					requireWaitFor(t, exists, time.Minute, time.Second,
 						"timeout waiting for backup of %q in %q", cluster(), namespace())
-				})
-			})
-
-			t.Run("create schedule", func(t *testing.T) {
-				t.Run("creates a backup", func(t *testing.T) {
-					output, err := pgo("create", "schedule", "--selector=name="+cluster(), "-n", namespace(),
-						"--schedule-type=pgbackrest", "--schedule=* * * * *", "--pgbackrest-backup-type=full",
-					).Exec(t)
-					defer teardownSchedule(t, namespace(), cluster()+"-pgbackrest-full")
-					require.NoError(t, err)
-					require.Contains(t, output, "created")
-
-					output, err = pgo("show", "schedule", cluster(), "-n", namespace()).Exec(t)
-					require.NoError(t, err)
-					require.Contains(t, output, "pgbackrest-full")
-
-					requireClusterReady(t, namespace(), cluster(), time.Minute)
-					requireStanzaExists(t, namespace(), cluster(), 2*time.Minute)
-
-					output, err = pgo("show", "backup", cluster(), "-n", namespace()).Exec(t)
-					require.NoError(t, err)
-					before := strings.Count(output, "full backup")
-
-					more := func() bool {
-						output, err := pgo("show", "backup", cluster(), "-n", namespace()).Exec(t)
-						require.NoError(t, err)
-						return strings.Count(output, "full backup") > before
-					}
-					requireWaitFor(t, more, 75*time.Second, time.Second,
-						"timeout waiting for backup to execute on %q in %q", cluster(), namespace())
-				})
-			})
-
-			t.Run("delete schedule", func(t *testing.T) {
-				requireSchedule := func(t *testing.T, kind string) {
-					_, err := pgo("create", "schedule", "--selector=name="+cluster(), "-n", namespace(),
-						"--schedule-type=pgbackrest", "--schedule=* * * * *", "--pgbackrest-backup-type="+kind,
-					).Exec(t)
-					require.NoError(t, err)
-				}
-
-				t.Run("removes all schedules", func(t *testing.T) {
-					requireSchedule(t, "diff")
-					requireSchedule(t, "full")
-
-					output, err := pgo("delete", "schedule", cluster(), "--no-prompt", "-n", namespace()).Exec(t)
-					require.NoError(t, err)
-					require.Contains(t, output, "deleted")
-					require.Contains(t, output, "pgbackrest-diff")
-					require.Contains(t, output, "pgbackrest-full")
-
-					output, err = pgo("show", "schedule", cluster(), "-n", namespace()).Exec(t)
-					require.NoError(t, err)
-					require.NotContains(t, output, "pgbackrest-diff")
-					require.NotContains(t, output, "pgbackrest-full")
-				})
-
-				t.Run("accepts schedule name", func(t *testing.T) {
-					requireSchedule(t, "diff")
-					requireSchedule(t, "full")
-
-					output, err := pgo("delete", "schedule", "-n", namespace(),
-						"--schedule-name="+cluster()+"-pgbackrest-diff", "--no-prompt",
-					).Exec(t)
-					require.NoError(t, err)
-					require.Contains(t, output, "deleted")
-					require.Contains(t, output, "pgbackrest-diff")
-					require.NotContains(t, output, "pgbackrest-full")
-
-					output, err = pgo("show", "schedule", cluster(), "-n", namespace()).Exec(t)
-					require.NoError(t, err)
-					require.NotContains(t, output, "pgbackrest-diff")
-					require.Contains(t, output, "pgbackrest-full")
 				})
 			})
 		})

@@ -146,51 +146,6 @@
                             }
                         ],
                         "volumeMounts": []
-                    }, {
-                        "name": "scheduler",
-                        "image": "{% if pgo_scheduler_image | default('') != '' %}{{ pgo_scheduler_image }}
-                                {%- else %}{{ pgo_image_prefix }}/pgo-scheduler:{{ pgo_image_tag }}
-                                {%- endif %}",
-                        "livenessProbe": {
-                            "exec": {
-                                "command": [
-                                   "bash",
-                                    "-c",
-                                    "test -n \"$(find /tmp/scheduler.hb -newermt '61 sec ago')\""
-                                ]
-                            },
-                            "failureThreshold": 2,
-                            "initialDelaySeconds": 60,
-                            "periodSeconds": 60
-                        },
-                        "env": [
-                            {
-                                "name": "CRUNCHY_DEBUG",
-                                "value": "{{ crunchy_debug }}"
-                            },
-                            {
-                                "name": "PGO_OPERATOR_NAMESPACE",
-                                "valueFrom": {
-                                    "fieldRef": {
-                                        "fieldPath": "metadata.namespace"
-                                    }
-                                }
-                            },
-                            {
-                                "name": "NAMESPACE",
-                                "value": "{{ namespace }}"
-                            },
-                            {
-                                "name": "PGO_INSTALLATION_NAME",
-                                "value": "{{ pgo_installation_name }}"
-                            },
-                            {
-                                "name": "TIMEOUT",
-                                "value": "{{ scheduler_timeout }}"
-                            }
-                        ],
-                        "volumeMounts": [],
-                        "imagePullPolicy": "IfNotPresent"
                     }
                 ],
                 "volumes": []

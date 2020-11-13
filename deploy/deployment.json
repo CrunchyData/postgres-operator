@@ -142,49 +142,6 @@
                             }
                         ],
                         "volumeMounts": []
-                    }, {
-                        "name": "scheduler",
-                        "image": "$PGO_IMAGE_PREFIX/pgo-scheduler:$PGO_IMAGE_TAG",
-                        "livenessProbe": {
-                            "exec": {
-                                "command": [
-                                   "bash",
-                                    "-c",
-                                    "test -n \"$(find /tmp/scheduler.hb -newermt '61 sec ago')\""
-                                ]
-                            },
-                            "failureThreshold": 2,
-                            "initialDelaySeconds": 60,
-                            "periodSeconds": 60
-                        },
-                        "env": [
-                            {
-                                "name": "CRUNCHY_DEBUG",
-                                "value": "true"
-                            },
-                            {
-                                "name": "PGO_OPERATOR_NAMESPACE",
-                                "valueFrom": {
-                                    "fieldRef": {
-                                        "fieldPath": "metadata.namespace"
-                                    }
-                                }
-                            },
-                            {
-                                "name": "NAMESPACE",
-                                "value": "$NAMESPACE"
-                            },
-                            {
-                                "name": "PGO_INSTALLATION_NAME",
-                                "value": "$PGO_INSTALLATION_NAME"
-                            },
-                            {
-                                "name": "TIMEOUT",
-                                "value": "3600"
-                            }
-                        ],
-                        "volumeMounts": [],
-                        "imagePullPolicy": "IfNotPresent"
                     }
                 ],
                 "volumes": []

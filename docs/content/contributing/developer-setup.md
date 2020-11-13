@@ -123,8 +123,6 @@ You can view the Operator REST API logs with the `alog` bash function.
 
 You can view the Operator core logic logs with the `olog` bash function.
 
-You can view the Scheduler logs with the `slog` bash function.
-
 These logs contain the following details:
 
 	Timestamp

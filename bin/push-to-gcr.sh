@@ -17,7 +17,6 @@ GCR_IMAGE_PREFIX=gcr.io/crunchy-dev-test
 
 IMAGES=(
 pgo-backrest-repo
-pgo-scheduler
 pgo-sqlrunner
 postgres-operator
 pgo-apiserver

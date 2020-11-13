@@ -56,7 +56,6 @@ pgo show [flags]
 * [pgo show pgouser](/pgo-client/reference/pgo_show_pgouser/)	 - Show pgouser information
 * [pgo show policy](/pgo-client/reference/pgo_show_policy/)	 - Show policy information
 * [pgo show pvc](/pgo-client/reference/pgo_show_pvc/)	 - Show PVC information for a cluster
-* [pgo show schedule](/pgo-client/reference/pgo_show_schedule/)	 - Show schedule information
 * [pgo show user](/pgo-client/reference/pgo_show_user/)	 - Show user information
 * [pgo show workflow](/pgo-client/reference/pgo_show_workflow/)	 - Show workflow information
 

@@ -47,7 +47,6 @@ const (
 	CREATE_PGOUSER_PERM   = "CreatePgouser"
 	CREATE_PGOROLE_PERM   = "CreatePgorole"
 	CREATE_POLICY_PERM    = "CreatePolicy"
-	CREATE_SCHEDULE_PERM  = "CreateSchedule"
 	CREATE_UPGRADE_PERM   = "CreateUpgrade"
 	CREATE_USER_PERM      = "CreateUser"
 
@@ -64,7 +63,6 @@ const (
 	DELETE_PGOROLE_PERM   = "DeletePgorole"
 	DELETE_PGOUSER_PERM   = "DeletePgouser"
 	DELETE_POLICY_PERM    = "DeletePolicy"
-	DELETE_SCHEDULE_PERM  = "DeleteSchedule"
 	DELETE_USER_PERM      = "DeleteUser"
 
 	// SHOW
@@ -79,7 +77,6 @@ const (
 	SHOW_PGOUSER_PERM         = "ShowPgouser"
 	SHOW_POLICY_PERM          = "ShowPolicy"
 	SHOW_PVC_PERM             = "ShowPVC"
-	SHOW_SCHEDULE_PERM        = "ShowSchedule"
 	SHOW_SECRETS_PERM         = "ShowSecrets"
 	SHOW_SYSTEM_ACCOUNTS_PERM = "ShowSystemAccounts"
 	SHOW_USER_PERM            = "ShowUser"
@@ -129,7 +126,6 @@ func initializePerms() {
 		CREATE_PGOROLE_PERM:   "yes",
 		CREATE_PGOUSER_PERM:   "yes",
 		CREATE_POLICY_PERM:    "yes",
-		CREATE_SCHEDULE_PERM:  "yes",
 		CREATE_UPGRADE_PERM:   "yes",
 		CREATE_USER_PERM:      "yes",
 
@@ -146,7 +142,6 @@ func initializePerms() {
 		DELETE_PGOROLE_PERM:   "yes",
 		DELETE_PGOUSER_PERM:   "yes",
 		DELETE_POLICY_PERM:    "yes",
-		DELETE_SCHEDULE_PERM:  "yes",
 		DELETE_USER_PERM:      "yes",
 
 		// SHOW
@@ -161,7 +156,6 @@ func initializePerms() {
 		SHOW_PGOUSER_PERM:         "yes",
 		SHOW_POLICY_PERM:          "yes",
 		SHOW_PVC_PERM:             "yes",
-		SHOW_SCHEDULE_PERM:        "yes",
 		SHOW_SECRETS_PERM:         "yes",
 		SHOW_SYSTEM_ACCOUNTS_PERM: "yes",
 		SHOW_USER_PERM:            "yes",
