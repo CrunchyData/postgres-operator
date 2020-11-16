@@ -49,13 +49,6 @@ export PGO_OPERATOR_NAMESPACE=pgo
 oc create namespace "$PGO_OPERATOR_NAMESPACE"
 ```
 
-Next, clone the PostgreSQL Operator repository locally.
-
-```
-git clone -b v${PGO_VERSION} https://github.com/CrunchyData/postgres-operator.git
-cd postgres-operator
-```
-
 ### Security
 
 For the PostgreSQL Operator and PostgreSQL clusters to run in the recommended `restricted` [Security Context Constraint][],
@@ -69,19 +62,23 @@ Configure pgBackRest for your environment. If you do not plan to use AWS S3 to s
 the `aws-s3` keys below.
 
 ```
+curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v${PGO_VERSION}/installers/ansible/roles/pgo-operator/files/pgo-backrest-repo/config > config
+curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v${PGO_VERSION}/installers/ansible/roles/pgo-operator/files/pgo-backrest-repo/sshd_config > sshd_config
+curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v${PGO_VERSION}/installers/ansible/roles/pgo-operator/files/pgo-backrest-repo/aws-s3-ca.crt > aws-s3-ca.crt
+
 oc -n "$PGO_OPERATOR_NAMESPACE" create secret generic pgo-backrest-repo-config \
-  --from-file=./installers/ansible/roles/pgo-operator/files/pgo-backrest-repo/config \
-  --from-file=./installers/ansible/roles/pgo-operator/files/pgo-backrest-repo/sshd_config \
-  --from-file=./installers/ansible/roles/pgo-operator/files/pgo-backrest-repo/aws-s3-ca.crt \
+  --from-file=./config \
+  --from-file=./sshd_config \
+  --from-file=./aws-s3-ca.crt \
   --from-literal=aws-s3-key="<your-aws-s3-key>" \
   --from-literal=aws-s3-key-secret="<your-aws-s3-key-secret>"
 ```
 
 ### Certificates (optional)
 
-The PostgreSQL Operator has an API that uses TLS to communicate securely with clients. If you have
-a certificate bundle validated by your organization, you can install it now.  If not, the API will
-automatically generate and use a self-signed certificate.
+The PostgreSQL Operator has an API that uses TLS to communicate securely with clients. If one is not provided, the API will automatically generated one for you.
+
+If you have a certificate bundle validated by your organization, you can install it now.
 
 ```
 oc -n "$PGO_OPERATOR_NAMESPACE" create secret tls pgo.tls \
@@ -102,8 +99,13 @@ to use the [PostgreSQL Operator Client][pgo-client].
 Install the first set of client credentials and download the `pgo` binary and client certificates.
 
 ```
-PGO_CMD=oc ./deploy/install-bootstrap-creds.sh
-PGO_CMD=oc ./installers/kubectl/client-setup.sh
+curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v${PGO_VERSION}/deploy/install-bootstrap-creds.sh > install-bootstrap-creds.sh
+curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v${PGO_VERSION}/installers/kubectl/client-setup.sh > client-setup.sh
+
+chmod +x install-bootstrap-creds.sh client-setup.sh
+
+PGO_CMD=oc ./install-bootstrap-creds.sh
+PGO_CMD=oc ./client-setup.sh
 ```
 
 The client needs to be able to reach the PostgreSQL Operator API from outside the OpenShift cluster.
