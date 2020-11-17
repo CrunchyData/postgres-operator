@@ -1,0 +1,4 @@
+namespace: postgres-operator
+
+resources:
+- postgrescluster.yaml

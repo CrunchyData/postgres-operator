@@ -9,6 +9,7 @@ PGO_VERSION ?= 4.5.0
 PGO_PG_VERSION ?= 12
 PGO_PG_FULLVERSION ?= 12.4
 PGO_BACKREST_VERSION ?= 2.29
+PGO_KUBE_CLIENT ?= kubectl
 PACKAGER ?= yum
 
 RELTMPDIR=/tmp/release.$(PGO_VERSION)
@@ -89,7 +90,7 @@ images = pgo-apiserver \
 	postgres-operator
 
 .PHONY: all installrbac setup setupnamespaces cleannamespaces \
-	deployoperator cli-docs clean push pull release
+	deployoperator cli-docs clean push pull release deploy
 
 
 #======= Main functions =======
@@ -110,6 +111,33 @@ cleannamespaces:
 
 deployoperator:
 	PGOROOT='$(PGOROOT)' ./deploy/deploy.sh
+
+
+#=== postgrescluster CRD ===
+
+# Create operator and target namespaces
+createnamespaces:
+	$(PGO_KUBE_CLIENT) apply -k ./config/namespace
+
+# Delete operator and target namespaces
+deletenamespaces:
+	$(PGO_KUBE_CLIENT) delete -k ./config/namespace
+
+# Install the postgrescluster CRD
+install:
+	$(PGO_KUBE_CLIENT) apply -k ./config/crd
+
+# Delete the postgrescluster CRD
+uninstall:
+	$(PGO_KUBE_CLIENT) delete -k ./config/crd
+
+# Deploy the PostgreSQL Operator (enables the postgrescluster controller)
+deploy:
+	$(PGO_KUBE_CLIENT) apply -k ./config/default
+
+# Undeploy the PostgreSQL Operator
+undeploy:
+	$(PGO_KUBE_CLIENT) delete -k ./config/default
 
 
 #======= Binary builds =======
