@@ -1,0 +1,7 @@
+apiVersion: postgres-operator.crunchydata.com/v1alpha1
+kind: PostgresCluster
+metadata:
+  name: mycluster
+spec:
+  instances:
+    - name: instance1

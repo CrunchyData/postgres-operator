@@ -1,0 +1,4 @@
+resources:
+- pgo-sa.yaml
+- pgo-cluster-role.yaml
+- pgo-cluster-role-binding.yaml

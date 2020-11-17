@@ -76,6 +76,10 @@
                                 }
                             },
                             {
+                                "name": "PGO_DISABLE_POSTGRESCLUSTER",
+                                "value": "true"
+                            },
+                            {
                                 "name": "TLS_CA_TRUST",
                                 "value": "$TLS_CA_TRUST"
                             },

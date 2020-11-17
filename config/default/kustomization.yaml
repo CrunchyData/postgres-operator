@@ -1,0 +1,14 @@
+namespace: postgres-operator
+
+commonLabels:
+  postgres-operator.crunchydata.com/control-plane: postgres-operator
+
+bases:
+- ../crd
+- ../rbac
+- ../manager
+
+images:
+- name: postgres-operator
+  newName: gcr.io/crunchy-dev-test/postgres-operator
+  newTag: centos8-v1alpha1
