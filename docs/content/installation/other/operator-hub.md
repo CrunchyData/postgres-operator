@@ -15,44 +15,14 @@ that is available in OperatorHub.io.
 
 ## Before You Begin
 
-There are a few manual steps that the cluster administrator must perform prior to installing PGO.
-At the very least, it must be provided with an initial configuration.
+There are some optional Secrets you can add before installing the PostgreSQL Operator into your cluster.
 
-First, make sure OLM and the OperatorHub.io catalog are installed by running
-`kubectl get CatalogSources --all-namespaces`.  You should see something similar to the following:
+### Secrets (optional)
 
-```
-NAMESPACE   NAME                    DISPLAY               TYPE   PUBLISHER
-olm         operatorhubio-catalog   Community Operators   grpc   OperatorHub.io
-```
-
-Take note of the name and namespace above, you will need them later on.
-
-Next, select a namespace in which to install the PostgreSQL Operator. PostgreSQL clusters will also be deployed here.
-If it does not exist, create it now.
-
-```
-export PGO_OPERATOR_NAMESPACE=pgo
-kubectl create namespace "$PGO_OPERATOR_NAMESPACE"
-```
-
-Next, clone the PostgreSQL Operator repository locally.
-
-```
-git clone -b v{{< param operatorVersion >}} https://github.com/CrunchyData/postgres-operator.git
-cd postgres-operator
-```
-
-### Secrets
-
-Configure pgBackRest for your environment. If you do not plan to use AWS S3 to store backups, you can omit
-the `aws-s3` keys below.
+If you plan to use AWS S3 to store backups and would like to have the keys available for every backup, you can create a Secret as described below:
 
 ```
 kubectl -n "$PGO_OPERATOR_NAMESPACE" create secret generic pgo-backrest-repo-config \
-  --from-file=./installers/ansible/roles/pgo-operator/files/pgo-backrest-repo/config \
-  --from-file=./installers/ansible/roles/pgo-operator/files/pgo-backrest-repo/sshd_config \
-  --from-file=./installers/ansible/roles/pgo-operator/files/pgo-backrest-repo/aws-s3-ca.crt \
   --from-literal=aws-s3-key="<your-aws-s3-key>" \
   --from-literal=aws-s3-key-secret="<your-aws-s3-key-secret>"
 kubectl -n "$PGO_OPERATOR_NAMESPACE" label secret pgo-backrest-repo-config \
@@ -70,9 +40,6 @@ kubectl -n "$PGO_OPERATOR_NAMESPACE" create secret tls pgo.tls \
   --cert=/path/to/server.crt \
   --key=/path/to/server.key
 ```
-
-Once these resources are in place, the PostgreSQL Operator can be installed into the cluster.
-
 
 ## Installation
 

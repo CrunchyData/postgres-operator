@@ -102,7 +102,7 @@
         when: pgorole_pgoadmin_result.rc == 1
 
     - name: PGO Service Account
-      when: 
+      when:
         - create_rbac|bool
       tags:
         - install
@@ -124,7 +124,7 @@
         when: pgo_service_account_result.rc == 1
 
     - name: Cluster RBAC (namespace_mode 'dynamic')
-      when: 
+      when:
         - create_rbac|bool
         - namespace_mode == "dynamic"
       tags:
@@ -147,7 +147,7 @@
         when: cluster_rbac_result.rc == 1
 
     - name: Cluster RBAC (namespace_mode 'readonly')
-      when: 
+      when:
         - create_rbac|bool
         - namespace_mode == "readonly"
       tags:
@@ -175,7 +175,7 @@
       tags:
         - install
         - update
-      when: 
+      when:
         - create_rbac|bool
         - namespace_mode == "disabled"
 
@@ -263,13 +263,13 @@
         - name: Create PGO BackRest Repo Secret
           command: |
             {{ kubectl_or_oc }} create secret generic pgo-backrest-repo-config \
-              --from-file=config='{{ role_path }}/files/pgo-backrest-repo/config' \
-              --from-file=sshd_config='{{ role_path }}/files/pgo-backrest-repo/sshd_config' \
-              --from-file=aws-s3-ca.crt='{{ role_path }}/files/pgo-backrest-repo/aws-s3-ca.crt' \
               --from-literal=aws-s3-key='{{ backrest_aws_s3_key }}' \
               --from-literal=aws-s3-key-secret='{{ backrest_aws_s3_secret }}' \
               -n {{ pgo_operator_namespace }}
-          when: pgo_backrest_repo_config_result.rc == 1
+          when:
+            - pgo_backrest_repo_config_result.rc == 1
+            - (backrest_aws_s3_key | default('') != '') or
+              (backrest_aws_s3_secret | default('') != '')
 
     - name: PGO ConfigMap
       tags:
@@ -286,7 +286,7 @@
           shell: "{{ kubectl_or_oc }} get configmap pgo-config -n {{ pgo_operator_namespace }}"
           register: pgo_config_result
           failed_when: false
-          
+
         - name: Create PGO ConfigMap
           command: |
             {{ kubectl_or_oc }} create configmap pgo-config \
@@ -382,7 +382,7 @@
       shell: "{{ kubectl_or_oc }} get -f {{ output_dir }}/pgo-client.json"
       register: pgo_client_json_result
       failed_when: false
-      
+
     - name: Create PGO-Client deployment
       command: |
         {{ kubectl_or_oc }} create --filename='{{ output_dir }}/pgo-client.json'
