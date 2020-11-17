@@ -152,7 +152,7 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 	// SSHD(...?) and possible S3 credentials
 	configs, configErr := clientset.
 		CoreV1().Secrets(backrestRepoConfig.OperatorNamespace).
-		Get(ctx, "pgo-backrest-repo-config", metav1.GetOptions{})
+		Get(ctx, config.SecretOperatorBackrestRepoConfig, metav1.GetOptions{})
 
 	if configErr != nil {
 		log.Error(configErr)

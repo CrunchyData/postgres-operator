@@ -49,20 +49,12 @@ export PGO_OPERATOR_NAMESPACE=pgo
 kubectl create namespace "$PGO_OPERATOR_NAMESPACE"
 ```
 
-### Secrets
+### Secrets (optional)
 
-Configure pgBackRest for your environment. If you do not plan to use AWS S3 to store backups, you can omit
-the `aws-s3` keys below.
+If you plan to use AWS S3 to store backups, you can configure your environment to automatically provide your AWS S3 credentials to all newly created PostgreSQL clusters:
 
 ```
-curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v${PGO_VERSION}/installers/ansible/roles/pgo-operator/files/pgo-backrest-repo/config > config
-curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v${PGO_VERSION}/installers/ansible/roles/pgo-operator/files/pgo-backrest-repo/sshd_config > sshd_config
-curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v${PGO_VERSION}/installers/ansible/roles/pgo-operator/files/pgo-backrest-repo/aws-s3-ca.crt > aws-s3-ca.crt
-
 kubectl -n "$PGO_OPERATOR_NAMESPACE" create secret generic pgo-backrest-repo-config \
-  --from-file=./config \
-  --from-file=./sshd_config \
-  --from-file=./aws-s3-ca.crt \
   --from-literal=aws-s3-key="<your-aws-s3-key>" \
   --from-literal=aws-s3-key-secret="<your-aws-s3-key-secret>"
 ```

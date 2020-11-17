@@ -46,12 +46,12 @@ fi
 pgbackrest_aws_s3_key=$(awsKeySecret "aws-s3-key")
 pgbackrest_aws_s3_key_secret=$(awsKeySecret "aws-s3-key-secret")
 
-$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create secret generic pgo-backrest-repo-config \
-	--from-file=config=${PGO_CONF_DIR}/pgo-backrest-repo/config \
-	--from-file=sshd_config=${PGO_CONF_DIR}/pgo-backrest-repo/sshd_config \
-	--from-file=aws-s3-ca.crt=${PGO_CONF_DIR}/pgo-backrest-repo/aws-s3-ca.crt \
-	--from-literal=aws-s3-key="${pgbackrest_aws_s3_key}" \
-	--from-literal=aws-s3-key-secret="${pgbackrest_aws_s3_key_secret}"
+if [[ ! -z $pgbackrest_aws_s3_key ]] || [[ ! -z $pgbackrest_aws_s3_key_secret ]]
+then
+	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create secret generic pgo-backrest-repo-config \
+		--from-literal=aws-s3-key="${pgbackrest_aws_s3_key}" \
+		--from-literal=aws-s3-key-secret="${pgbackrest_aws_s3_key_secret}"
+fi
 
 #
 # credentials for pgo-apiserver TLS REST API

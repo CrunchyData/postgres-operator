@@ -28,6 +28,7 @@ RUN if [ "$DFSET" = "rhel" ] ; then \
 fi
 
 ADD bin/postgres-operator /usr/local/bin
+ADD installers/ansible/roles/pgo-operator/files/pgo-backrest-repo /default-pgo-backrest-repo
 ADD installers/ansible/roles/pgo-operator/files/pgo-configs /default-pgo-config
 ADD conf/postgres-operator/pgo.yaml /default-pgo-config/pgo.yaml
 
