@@ -1298,6 +1298,14 @@ pgo create cluster hippo-standby --standby --replica-count=2 \
   --password=opensourcehippo
 ```
 
+If you are unsure of your user credentials form the original `hippo` cluster,
+you can retrieve them using the [`pgo show user`]({{< relref "/pgo-client/reference/pgo_show_user.md" >}})
+command with the `--show-system-accounts` flag:
+
+```
+pgo show user hippo --show-system-accounts
+```
+
 The standby cluster will take a few moments to bootstrap, but it is now set up!
 
 ### Promoting a Standby Cluster
