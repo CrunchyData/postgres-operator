@@ -2,6 +2,7 @@ on:
   pull_request:
     branches:
       - master
+      - savannah
 
 jobs:
   golangci-lint:
