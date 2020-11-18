@@ -79,8 +79,6 @@ endif
 
 # To build a specific image, run 'make <name>-image' (e.g. 'make pgo-apiserver-image')
 images = pgo-apiserver \
-	pgo-backrest \
-	pgo-backrest-repo \
 	pgo-event \
 	pgo-rmdata \
 	pgo-scheduler \
@@ -117,9 +115,6 @@ deployoperator:
 #======= Binary builds =======
 build-pgo-apiserver:
 	$(GO_BUILD) -o bin/apiserver ./cmd/apiserver
-
-build-pgo-backrest:
-	$(GO_BUILD) -o bin/pgo-backrest/pgo-backrest ./cmd/pgo-backrest
 
 build-pgo-rmdata:
 	$(GO_BUILD) -o bin/pgo-rmdata/pgo-rmdata ./cmd/pgo-rmdata
@@ -217,7 +212,6 @@ clean: clean-deprecated
 	rm -f bin/apiserver
 	rm -f bin/postgres-operator
 	rm -f bin/pgo bin/pgo-mac bin/pgo.exe
-	rm -f bin/pgo-backrest/pgo-backrest
 	rm -f bin/pgo-rmdata/pgo-rmdata
 	rm -f bin/pgo-scheduler/pgo-scheduler
 	[ -z "$$(ls hack/tools)" ] || rm hack/tools/*

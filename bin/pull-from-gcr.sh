@@ -19,13 +19,11 @@ REGISTRY='us.gcr.io/container-suite'
 VERSION=$PGO_IMAGE_TAG
 IMAGES=(
     pgo-event
-    pgo-backrest-repo
     pgo-scheduler
     pgo-sqlrunner
     postgres-operator
     pgo-apiserver
     pgo-rmdata
-    pgo-backrest
     pgo-client
     pgo-deployer
     crunchy-postgres-exporter

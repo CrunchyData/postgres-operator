@@ -17,8 +17,8 @@ package config
 
 // a list of container images that are available
 const (
-	CONTAINER_IMAGE_PGO_BACKREST              = "pgo-backrest"
-	CONTAINER_IMAGE_PGO_BACKREST_REPO         = "pgo-backrest-repo"
+	CONTAINER_IMAGE_PGO_BACKREST              = "crunchy-pgbackrest"
+	CONTAINER_IMAGE_PGO_BACKREST_REPO         = "crunchy-pgbackrest-repo"
 	CONTAINER_IMAGE_PGO_CLIENT                = "pgo-client"
 	CONTAINER_IMAGE_PGO_RMDATA                = "pgo-rmdata"
 	CONTAINER_IMAGE_PGO_SQL_RUNNER            = "pgo-sqlrunner"

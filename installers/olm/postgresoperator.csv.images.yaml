@@ -4,8 +4,8 @@
 - { name: PGO_IMAGE_PREFIX, value: '${PGO_IMAGE_PREFIX}' }
 - { name: PGO_IMAGE_TAG,    value: '${PGO_IMAGE_TAG}' }
 
-- { name: RELATED_IMAGE_PGO_BACKREST,                value: '${PGO_IMAGE_PREFIX}/pgo-backrest:${PGO_IMAGE_TAG}' }
-- { name: RELATED_IMAGE_PGO_BACKREST_REPO,           value: '${PGO_IMAGE_PREFIX}/pgo-backrest-repo:${PGO_IMAGE_TAG}' }
+- { name: RELATED_IMAGE_PGO_BACKREST,                value: '${CCP_IMAGE_PREFIX}/crunchy-pgbackrest:${CCP_IMAGE_TAG}' }
+- { name: RELATED_IMAGE_PGO_BACKREST_REPO,           value: '${CCP_IMAGE_PREFIX}/crunchy-pgbackrest-repo:${CCP_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_PGO_CLIENT,                  value: '${PGO_IMAGE_PREFIX}/pgo-client:${PGO_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_PGO_RMDATA,                  value: '${PGO_IMAGE_PREFIX}/pgo-rmdata:${PGO_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_PGO_SQL_RUNNER,              value: '${PGO_IMAGE_PREFIX}/pgo-sqlrunner:${PGO_IMAGE_TAG}' }
