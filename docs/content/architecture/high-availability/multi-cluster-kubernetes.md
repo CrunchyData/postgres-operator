@@ -93,6 +93,14 @@ that matches that of the active cluster it is replicating.
 - `--pgbackrest-s3-endpoint`: The S3 endpoint to use
 - `--pgbackrest-s3-region`: The S3 region to use
 
+If you do not want to set the user credentials, you can retrieve them at a later
+time by using the [`pgo show user`]({{< relref "/pgo-client/reference/pgo_show_user.md" >}})
+command with the `--show-system-accounts` flag, e.g.
+
+```
+pgo show user --show-system-accounts hippo
+```
+
 With respect to the credentials, it should be noted that when the standby
 cluster is being created within the same Kubernetes cluster AND it has access to
 the Kubernetes Secret created for the active cluster, one can use the
@@ -181,6 +189,9 @@ pgo create cluster hippo-standby --standby --pgbouncer --replica-count=2 \
   --password-replication=somewhatsecrethippo \
   --password=opensourcehippo
 ```
+
+(If you are unsure of your credentials, you can use
+`pgo show user hippo --show-system-accounts` to retrieve them).
 
 Note the use of the `--pgbackrest-repo-path` flag as it points to the name of
 the pgBackRest repository that is used for the original `hippo` cluster.
