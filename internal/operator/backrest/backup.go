@@ -48,8 +48,8 @@ type backrestJobTemplateFields struct {
 	CommandOpts                   string
 	PITRTarget                    string
 	PodName                       string
-	PGOImagePrefix                string
-	PGOImageTag                   string
+	CCPImagePrefix                string
+	CCPImageTag                   string
 	SecurityContext               string
 	PgbackrestStanza              string
 	PgbackrestDBPath              string
@@ -80,8 +80,8 @@ func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtas
 		Command:                       cmd,
 		CommandOpts:                   task.Spec.Parameters[config.LABEL_BACKREST_OPTS],
 		PITRTarget:                    "",
-		PGOImagePrefix:                util.GetValueOrDefault(task.Spec.Parameters[config.LABEL_IMAGE_PREFIX], operator.Pgo.Pgo.PGOImagePrefix),
-		PGOImageTag:                   operator.Pgo.Pgo.PGOImageTag,
+		CCPImagePrefix:                util.GetValueOrDefault(task.Spec.Parameters[config.LABEL_IMAGE_PREFIX], operator.Pgo.Cluster.CCPImagePrefix),
+		CCPImageTag:                   operator.Pgo.Cluster.CCPImageTag,
 		PgbackrestStanza:              task.Spec.Parameters[config.LABEL_PGBACKREST_STANZA],
 		PgbackrestDBPath:              task.Spec.Parameters[config.LABEL_PGBACKREST_DB_PATH],
 		PgbackrestRepoPath:            task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH],
@@ -200,7 +200,7 @@ func CreateBackup(clientset pgo.Interface, namespace, clusterName, podName strin
 	spec.Parameters[config.LABEL_CONTAINER_NAME] = "database"
 	// pass along the appropriate image prefix for the backup task
 	// this will be used by the associated backrest job
-	spec.Parameters[config.LABEL_IMAGE_PREFIX] = util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, operator.Pgo.Pgo.PGOImagePrefix)
+	spec.Parameters[config.LABEL_IMAGE_PREFIX] = util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix)
 	spec.Parameters[config.LABEL_BACKREST_COMMAND] = crv1.PgtaskBackrestBackup
 	spec.Parameters[config.LABEL_BACKREST_OPTS] = backupOpts
 	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]
