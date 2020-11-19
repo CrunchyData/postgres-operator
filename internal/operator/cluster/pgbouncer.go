@@ -185,11 +185,6 @@ func AddPgbouncer(clientset kubernetes.Interface, restclient *rest.RESTClient, r
 		}
 	}
 
-	// next, create the secret that pgbouncer will use to be properly configure
-	if err := createPgbouncerSecret(clientset, cluster, pgBouncerPassword); err != nil {
-		return err
-	}
-
 	// next, create the pgBouncer deployment
 	if err := createPgBouncerDeployment(clientset, cluster); err != nil {
 		return err
