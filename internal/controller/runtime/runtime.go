@@ -20,6 +20,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -38,20 +39,15 @@ var refreshInterval = 60 * time.Minute
 // controllers that will be responsible for managing PostgreSQL clusters using the
 // 'postgrescluster' custom resource.  Additionally, the manager will only watch for resources in
 // the namespace specified, with an empty string resulting in the manager watching all namespaces.
-func CreateRuntimeManager(namespace string) (manager.Manager, error) {
+func CreateRuntimeManager(namespace string, config *rest.Config) (manager.Manager, error) {
 
 	pgoScheme, err := createPostgresOperatorScheme()
 	if err != nil {
 		return nil, err
 	}
 
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
 	// create controller runtime manager
-	mgr, err := manager.New(cfg, manager.Options{
+	mgr, err := manager.New(config, manager.Options{
 		Namespace:  namespace, // if empty then watching all namespaces
 		SyncPeriod: &refreshInterval,
 		Scheme:     pgoScheme,
@@ -67,6 +63,9 @@ func CreateRuntimeManager(namespace string) (manager.Manager, error) {
 
 	return mgr, nil
 }
+
+// GetConfig creates a *rest.Config for talking to a Kubernetes API server.
+func GetConfig() (*rest.Config, error) { return config.GetConfig() }
 
 // addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
 // runtime manager.

@@ -215,8 +215,14 @@ func enablePGClusterControllers(stopCh <-chan struct{}) *manager.ControllerManag
 // enablePostgresClusterControllers enables all controllers needed to manage PostgreSQL clusters using
 // the 'postgrescluster' custom resource
 func enablePostgresClusterControllers(ctx context.Context) {
+	cfg, err := runtime.GetConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	mgr, err := runtime.CreateRuntimeManager(os.Getenv("PGO_TARGET_NAMESPACE"))
+	cfg.Wrap(otelTransportWrapper())
+
+	mgr, err := runtime.CreateRuntimeManager(os.Getenv("PGO_TARGET_NAMESPACE"), cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
