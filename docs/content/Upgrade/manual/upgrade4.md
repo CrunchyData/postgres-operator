@@ -1,23 +1,23 @@
 ---
 title: "Manual Upgrade - Operator 4"
-Latest Release: 4.3.3 {docdate}
+Latest Release: 4.3.4 {docdate}
 draft: false
 weight: 8
 ---
 
 ## Manual PostgreSQL Operator 4 Upgrade Procedure
 
-Below are the procedures for upgrading to version 4.3.3 of the Crunchy PostgreSQL Operator using the Bash or Ansible installation methods. This version of the PostgreSQL Operator has several fundamental changes to the existing PGCluster structure and deployment model. Most notably for those upgrading from 4.1 and below, all PGClusters use the new Crunchy PostgreSQL HA container in place of the previous Crunchy PostgreSQL containers. The use of this new container is a breaking change from previous versions of the Operator did not use the HA containers.
+Below are the procedures for upgrading to version 4.3.4 of the Crunchy PostgreSQL Operator using the Bash or Ansible installation methods. This version of the PostgreSQL Operator has several fundamental changes to the existing PGCluster structure and deployment model. Most notably for those upgrading from 4.1 and below, all PGClusters use the new Crunchy PostgreSQL HA container in place of the previous Crunchy PostgreSQL containers. The use of this new container is a breaking change from previous versions of the Operator did not use the HA containers.
 
 NOTE: If you are upgrading from Crunchy PostgreSQL Operator version 4.1.0 or later, the [Automated Upgrade Procedure](/upgrade/automatedupgrade) is recommended. If you are upgrading PostgreSQL 12 clusters, you MUST use the [Automated Upgrade Procedure](/upgrade/automatedupgrade). 
 
 #### Crunchy PostgreSQL High Availability Containers
 
-Using the PostgreSQL Operator 4.3.3 requires replacing your `crunchy-postgres` and `crunchy-postgres-gis` containers with the `crunchy-postgres-ha` and `crunchy-postgres-gis-ha` containers respectively. The underlying PostgreSQL installations in the container remain the same but are now optimized for Kubernetes environments to provide the new high-availability functionality.
+Using the PostgreSQL Operator 4.3.4 requires replacing your `crunchy-postgres` and `crunchy-postgres-gis` containers with the `crunchy-postgres-ha` and `crunchy-postgres-gis-ha` containers respectively. The underlying PostgreSQL installations in the container remain the same but are now optimized for Kubernetes environments to provide the new high-availability functionality.
 
 A major change to this container is that the PostgreSQL process is now managed by Patroni. This allows a PostgreSQL cluster that is deployed by the PostgreSQL Operator to manage its own uptime and availability, to elect a new leader in the event of a downtime scenario, and to automatically heal after a failover event.
 
-When creating your new clusters using version 4.3.3 of the PostgreSQL Operator, the `pgo create cluster` command will automatically use the new `crunchy-postgres-ha` image if the image is unspecified. If you are creating a PostGIS enabled cluster, please be sure to use the updated image name, as with the command:
+When creating your new clusters using version 4.3.4 of the PostgreSQL Operator, the `pgo create cluster` command will automatically use the new `crunchy-postgres-ha` image if the image is unspecified. If you are creating a PostGIS enabled cluster, please be sure to use the updated image name, as with the command:
 
 ```
 pgo create cluster mygiscluster --ccp-image=crunchy-postgres-gis-ha
@@ -35,7 +35,7 @@ Below are the procedures for upgrading the PostgreSQL Operator and PostgreSQL cl
 
 You will need the following items to complete the upgrade:
 
-* The latest 4.3.3 code for the Postgres Operator available
+* The latest 4.3.4 code for the Postgres Operator available
 
 These instructions assume you are executing in a terminal window and that your user has admin privileges in your Kubernetes or Openshift environment.
 
@@ -116,7 +116,7 @@ NOTE: Please note the name of each cluster, the namespace used, and be sure not 
 
 ##### Step 4
 
-Save a copy of your current inventory file with a new name (such as `inventory.backup)` and checkout the latest 4.3.3 tag of the Postgres Operator.
+Save a copy of your current inventory file with a new name (such as `inventory.backup)` and checkout the latest 4.3.4 tag of the Postgres Operator.
 
 
 ##### Step 5
@@ -147,7 +147,7 @@ We strongly recommend that you create a test cluster before proceeding to the ne
 
 ##### Step 8
 
-Once the Operator is installed and functional, create a new 4.3.3 cluster matching the cluster details recorded in Step 1. Be sure to use the primary PVC name (also noted in Step 1) and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs. 
+Once the Operator is installed and functional, create a new 4.3.4 cluster matching the cluster details recorded in Step 1. Be sure to use the primary PVC name (also noted in Step 1) and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs. 
 
 NOTE: If you have existing pgBackRest backups stored that you would like to have available in the upgraded cluster, you will need to follow the [PVC Renaming Procedure]( {{< relref "Upgrade/manual/upgrade4#pgbackrest-repo-pvc-renaming" >}}).
 
@@ -284,7 +284,7 @@ $PGOROOT/deploy/cleanup-rbac.sh
 For versions 4.0, 4.1 and 4.2, update environment variables in the bashrc:
 
 ```
-export PGO_VERSION=4.3.3
+export PGO_VERSION=4.3.4
 ```
 
 NOTE: This will be the only update to the bashrc file for 4.2.
@@ -341,9 +341,9 @@ source ~/.bashrc
 
 ##### Step 8
 
-Ensure you have checked out the latest 4.3.3 version of the source code and update the pgo.yaml file in `$PGOROOT/conf/postgres-operator/pgo.yaml`
+Ensure you have checked out the latest 4.3.4 version of the source code and update the pgo.yaml file in `$PGOROOT/conf/postgres-operator/pgo.yaml`
 
-You will want to use the 4.3.3 pgo.yaml file and update custom settings such as image locations, storage, and resource configs.
+You will want to use the 4.3.4 pgo.yaml file and update custom settings such as image locations, storage, and resource configs.
 
 ##### Step 9
 
@@ -359,7 +359,7 @@ You will need to update the `$HOME/.pgouser`file to match the values you set in 
 
 ##### Step 10
 
-Install the 4.3.3 Operator:
+Install the 4.3.4 Operator:
 
 Setup the configured namespaces:
 
@@ -387,7 +387,7 @@ kubectl get pod -n <operator namespace>
 
 ##### Step 11
 
-Next, update the PGO client binary to 4.3.3 by replacing the existing 4.X binary with the latest 4.3.3 binary available.
+Next, update the PGO client binary to 4.3.4 by replacing the existing 4.X binary with the latest 4.3.4 binary available.
 
 You can run:
 
@@ -416,7 +416,7 @@ make deployoperator
 
 ##### Step 13
 
-The Operator is now upgraded to 4.3.3 and all users and roles have been recreated.
+The Operator is now upgraded to 4.3.4 and all users and roles have been recreated.
 Verify this by running:
 
 ```
@@ -427,7 +427,7 @@ We strongly recommend that you create a test cluster before proceeding to the ne
 
 ##### Step 14
 
-Once the Operator is installed and functional, create a new 4.3.3 cluster matching the cluster details recorded in Step 1. Be sure to use the same name and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs. A simple example is given below, but more information on cluster creation can be found [here](/pgo-client/common-tasks#creating-a-postgresql-cluster)
+Once the Operator is installed and functional, create a new 4.3.4 cluster matching the cluster details recorded in Step 1. Be sure to use the same name and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs. A simple example is given below, but more information on cluster creation can be found [here](/pgo-client/common-tasks#creating-a-postgresql-cluster)
 
 NOTE: If you have existing pgBackRest backups stored that you would like to have available in the upgraded cluster, you will need to follow the [PVC Renaming Procedure]( {{< relref "Upgrade/manual/upgrade4#pgbackrest-repo-pvc-renaming" >}}).
 

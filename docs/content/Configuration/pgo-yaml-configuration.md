@@ -1,7 +1,7 @@
 
 ---
 title: "PGO YAML"
-Latest Release: 4.3.3 {docdate}
+Latest Release: 4.3.4 {docdate}
 draft: false
 weight: 3
 ---
@@ -16,7 +16,7 @@ The *pgo.yaml* file is broken into major sections as described below:
 |---|---|
 |BasicAuth        | If set to `"true"` will enable Basic Authentication. If set to `"false"`, will allow a valid Operator user to successfully authenticate regardless of the value of the password provided for Basic Authentication. Defaults to `"true".`
 |CCPImagePrefix        |newly created containers will be based on this image prefix (e.g. crunchydata), update this if you require a custom image prefix
-|CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-12.4-4.3.3), unless you override it using the --ccp-image-tag command line flag
+|CCPImageTag        |newly created containers will be based on this image version (e.g. centos7-12.5-4.3.4), unless you override it using the --ccp-image-tag command line flag
 |Port        | the PostgreSQL port to use for new containers (e.g. 5432)
 |PGBadgerPort | the port used to connect to pgbadger (e.g. 10000)
 |ExporterPort | the port used to connect to postgres exporter (e.g. 9187)

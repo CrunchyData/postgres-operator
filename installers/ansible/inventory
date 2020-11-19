@@ -109,7 +109,7 @@ namespace='pgouser1,pgouser2'
 # CentOS7 images can be found in dockerhub: https://hub.docker.com/u/crunchydata
 # RHEL7 images are available to Crunchy customers: https://access.crunchydata.com/login/
 ccp_image_prefix='registry.developers.crunchydata.com/crunchydata'
-ccp_image_tag='centos7-12.4-4.3.3'
+ccp_image_tag='centos7-12.5-4.3.4'
 
 # Name of a Secret containing credentials for container image registries.
 # Provide a path to the Secret manifest to be installed in each namespace. (optional)
@@ -118,7 +118,7 @@ ccp_image_pull_secret_manifest=''
 
 # Crunchy PostgreSQL Operator images to use.  The tags centos7 and rhel7 are acceptable.
 pgo_image_prefix='registry.developers.crunchydata.com/crunchydata'
-pgo_image_tag='centos7-4.3.3'
+pgo_image_tag='centos7-4.3.4'
 
 # Name of a Secret containing credentials for container image registries.
 # Provide a path to the Secret manifest to be installed in each namespace. (optional)
@@ -127,7 +127,7 @@ pgo_image_tag='centos7-4.3.3'
 
 # PGO Client Install
 pgo_client_install='true'
-pgo_client_version='v4.3.3'
+pgo_client_version='v4.3.4'
 
 # PGO Apiserver TLS Settings
 #pgo_tls_no_verify='false'

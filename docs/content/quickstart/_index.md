@@ -27,7 +27,7 @@ If your environment is set up to use hostpath storage (found in things like [min
 
 ```
 kubectl create namespace pgo
-kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.3/installers/kubectl/postgres-operator.yml
+kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.4/installers/kubectl/postgres-operator.yml
 ```
 
 If not, please read onward: you can still get up and running fairly quickly with just a little bit of configuration.
@@ -39,13 +39,13 @@ If not, please read onward: you can still get up and running fairly quickly with
 You will need to download the PostgreSQL Operator Installer manifest to your environment, which you can do with the following command:
 
 ```
-curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.3/installers/kubectl/postgres-operator.yml > postgres-operator.yml
+curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.4/installers/kubectl/postgres-operator.yml > postgres-operator.yml
 ```
 
 If you wish to download a specific version of the installer, you can substitute `master` with the version of the tag, i.e.
 
 ```
-curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.3/installers/kubectl/postgres-operator.yml > postgres-operator.yml
+curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.4/installers/kubectl/postgres-operator.yml > postgres-operator.yml
 ```
 
 ### Configure the PostgreSQL Operator Installer
@@ -85,7 +85,7 @@ This will launch the `pgo-deployer` container that will run the various setup an
 While the installation is occurring, download the `pgo` client set up script. This will help set up your local environment for using the PostgreSQL Operator:
 
 ```
-curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.3/installers/kubectl/client-setup.sh > client-setup.sh
+curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.4/installers/kubectl/client-setup.sh > client-setup.sh
 chmod +x client-setup.sh
 ```
 
@@ -171,8 +171,8 @@ pgo version
 If successful, you should see output similar to this:
 
 ```
-pgo client version 4.3.3
-pgo-apiserver version 4.3.3
+pgo client version 4.3.4
+pgo-apiserver version 4.3.4
 ```
 
 ## Step 4: Have Some Fun - Create a PostgreSQL Cluster
@@ -322,7 +322,7 @@ The [`pgo` client](/pgo-client/) provides a helpful command-line interface to pe
 
 The `pgo` client can be downloaded from GitHub [Releases](https://github.com/crunchydata/postgres-operator/releases) (subscribers can download it from the [Crunchy Data Customer Portal](https://access.crunchydata.com)).
 
-Note that the `pgo` client's version must match the version of the PostgreSQL Operator that you have deployed. For example, if you have deployed version 4.3.3 of the PostgreSQL Operator, you must use the `pgo` for 4.3.3.
+Note that the `pgo` client's version must match the version of the PostgreSQL Operator that you have deployed. For example, if you have deployed version 4.3.4 of the PostgreSQL Operator, you must use the `pgo` for 4.3.4.
 
 Once you have download the `pgo` client, change the permissions on the file to be executable if need be as shown below:
 
@@ -349,8 +349,8 @@ pgo version
 If successful, you should see output similar to this:
 
 ```
-pgo client version 4.3.3
-pgo-apiserver version 4.3.3
+pgo client version 4.3.4
+pgo-apiserver version 4.3.4
 ```
 
 ### Step 7: Create a Namespace

@@ -27,7 +27,7 @@ You can create a cluster by sending a POST request to `$PGO_APISERVER_URL/cluste
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT \
 -u admin:examplepassword -H "Content-Type:application/json" --insecure \
 -X POST --data \
-  '{"ClientVersion":"4.3.3",
+  '{"ClientVersion":"4.3.4",
   "Namespace":"pgouser1",
   "Name":"mycluster",
   "Series":1}' \
@@ -41,7 +41,7 @@ The last two examples show you how to `show` and `delete` a cluster. Notice how 
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT \
 -u admin:examplepassword -H "Content-Type:application/json" --insecure \
 -X POST --data \
-  '{"ClientVersion":"4.3.3",
+  '{"ClientVersion":"4.3.4",
   "Namespace":"pgouser1",
   "Clustername":"mycluster"}' \
 $PGO_APISERVER_URL/showclusters
@@ -52,7 +52,7 @@ $PGO_APISERVER_URL/showclusters
 curl --cacert $PGO_CA_CERT --key $PGO_CLIENT_KEY --cert $PGO_CA_CERT \
 -u admin:examplepassword -H "Content-Type:application/json" --insecure \
 -X POST --data \
-  '{"ClientVersion":"4.3.3",
+  '{"ClientVersion":"4.3.4",
   "Namespace":"pgouser1",
   "Clustername":"mycluster"}' \
 $PGO_APISERVER_URL/clustersdelete

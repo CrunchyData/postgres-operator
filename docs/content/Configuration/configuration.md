@@ -1,7 +1,7 @@
 
 ---
 title: "Configuration Resources"
-Latest Release: 4.3.3 {docdate}
+Latest Release: 4.3.4 {docdate}
 draft: false
 weight: 2
 ---

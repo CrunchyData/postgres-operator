@@ -1,21 +1,21 @@
 ---
 title: "Manual Upgrade - Operator 3.5"
-Latest Release: 4.3.3 {docdate}
+Latest Release: 4.3.4 {docdate}
 draft: false
 weight: 8
 ---
 
-## Upgrading the Crunchy PostgreSQL Operator from Version 3.5 to 4.3.3
+## Upgrading the Crunchy PostgreSQL Operator from Version 3.5 to 4.3.4
 
-This section will outline the procedure to upgrade a given cluster created using PostgreSQL Operator 3.5.x to PostgreSQL Operator version 4.3.3. This version of the PostgreSQL Operator has several fundamental changes to the existing PGCluster structure and deployment model. Most notably, all PGClusters use the new Crunchy PostgreSQL HA container in place of the previous Crunchy PostgreSQL containers. The use of this new container is a breaking change from previous versions of the Operator.
+This section will outline the procedure to upgrade a given cluster created using PostgreSQL Operator 3.5.x to PostgreSQL Operator version 4.3.4. This version of the PostgreSQL Operator has several fundamental changes to the existing PGCluster structure and deployment model. Most notably, all PGClusters use the new Crunchy PostgreSQL HA container in place of the previous Crunchy PostgreSQL containers. The use of this new container is a breaking change from previous versions of the Operator.
 
 #### Crunchy PostgreSQL High Availability Containers
 
-Using the PostgreSQL Operator 4.3.3 requires replacing your `crunchy-postgres` and `crunchy-postgres-gis` containers with the `crunchy-postgres-ha` and `crunchy-postgres-gis-ha` containers respectively. The underlying PostgreSQL installations in the container remain the same but are now optimized for Kubernetes environments to provide the new high-availability functionality.
+Using the PostgreSQL Operator 4.3.4 requires replacing your `crunchy-postgres` and `crunchy-postgres-gis` containers with the `crunchy-postgres-ha` and `crunchy-postgres-gis-ha` containers respectively. The underlying PostgreSQL installations in the container remain the same but are now optimized for Kubernetes environments to provide the new high-availability functionality.
 
 A major change to this container is that the PostgreSQL process is now managed by Patroni. This allows a PostgreSQL cluster that is deployed by the PostgreSQL Operator to manage its own uptime and availability, to elect a new leader in the event of a downtime scenario, and to automatically heal after a failover event.
 
-When creating your new clusters using version 4.3.3 of the PostgreSQL Operator, the `pgo create cluster` command will automatically use the new `crunchy-postgres-ha` image if the image is unspecified. If you are creating a PostGIS enabled cluster, please be sure to use the updated image name, as with the command:
+When creating your new clusters using version 4.3.4 of the PostgreSQL Operator, the `pgo create cluster` command will automatically use the new `crunchy-postgres-ha` image if the image is unspecified. If you are creating a PostGIS enabled cluster, please be sure to use the updated image name, as with the command:
 
 ```
 pgo create cluster mygiscluster --ccp-image=crunchy-postgres-gis-ha
@@ -31,7 +31,7 @@ You will need the following items to complete the upgrade:
 
 ##### Step 1
 
-Create a new Linux user with the same permissions as the existing user used to install the Crunchy PostgreSQL Operator. This is necessary to avoid any issues with environment variable differences between 3.5 and 4.3.3.
+Create a new Linux user with the same permissions as the existing user used to install the Crunchy PostgreSQL Operator. This is necessary to avoid any issues with environment variable differences between 3.5 and 4.3.4.
 
 ##### Step 2
 
@@ -101,7 +101,7 @@ $COROOT/deploy/remove-crd.sh
 
 ##### Step 6
 
-Log in as your new Linux user and install the 4.3.3 PostgreSQL Operator as described in the [Bash Installation Procedure]( {{< relref "installation/other/bash.md" >}}).
+Log in as your new Linux user and install the 4.3.4 PostgreSQL Operator as described in the [Bash Installation Procedure]( {{< relref "installation/other/bash.md" >}}).
 
 Be sure to add the existing namespace to the Operator's list of watched namespaces (see the [Namespace]( {{< relref "architecture/namespace.md" >}}) section of this document for more information) and make sure to avoid overwriting any existing data storage.
 
@@ -110,7 +110,7 @@ We strongly recommend that you create a test cluster before proceeding to the ne
 
 ##### Step 7
 
-Once the Operator is installed and functional, create a new 4.3.3 cluster matching the cluster details recorded in Step 1. Be sure to use the primary PVC name (also noted in Step 1) and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs.
+Once the Operator is installed and functional, create a new 4.3.4 cluster matching the cluster details recorded in Step 1. Be sure to use the primary PVC name (also noted in Step 1) and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs.
 
 NOTE: If you have existing pgBackRest backups stored that you would like to have available in the upgraded cluster, you will need to follow the [PVC Renaming Procedure]( {{< relref "Upgrade/manual/upgrade35#pgbackrest-repo-pvc-renaming" >}}).
 
@@ -122,7 +122,7 @@ pgo create cluster <clustername> -n <namespace>
 
 ##### Step 8
 
-Manually update the old leftover Secrets to use the new label as defined in 4.3.3:
+Manually update the old leftover Secrets to use the new label as defined in 4.3.4:
 
 ```
 kubectl -n <namespace> label secret/<clustername>-postgres-secret pg-cluster=<clustername> -n <namespace>

@@ -13,7 +13,7 @@ options.
 
 This section lists the options that you can configure to deploy the PostgreSQL
 Operator in your environment. The following list of environmental variables can
-be used in the [`postgres-operator.yml`](https://github.com/CrunchyData/postgres-operator/blob/v4.3.3/installers/kubectl/postgres-operator.yml)
+be used in the [`postgres-operator.yml`](https://github.com/CrunchyData/postgres-operator/blob/v4.3.4/installers/kubectl/postgres-operator.yml)
 manifest.
 
 ## General Configuration

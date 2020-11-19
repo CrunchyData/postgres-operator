@@ -187,7 +187,7 @@ be sure you do the following:
 
 - If testing against a release, ensure your tests are performed against the
 latest minor version (the last number in the release denotes the minor version,
-e.g. the "3" in the 4.3.3)
+e.g. the "3" in the 4.3.4)
 - If testing against a pre-release (alpha, beta, RC), ensure your tests are
 performed against latest version
 - If testing against a development (`master`) or release (`REL_X_Y`) branch,

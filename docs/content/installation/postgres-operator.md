@@ -15,7 +15,7 @@ repository:
 
 ```
 kubectl create namespace pgo
-kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.3/installers/kubectl/postgres-operator.yml
+kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.4/installers/kubectl/postgres-operator.yml
 ```
 
 However, we still advise that you read onward to see how to properly configure
@@ -35,7 +35,7 @@ After configuring the Job template, the installer can be run using
 and takes care of setting up all of the objects required to run the PostgreSQL
 Operator.
 
-The installation manifest, called [`postgres-operator.yaml`](https://github.com/CrunchyData/postgres-operator/blob/v4.3.3/installers/kubectl/postgres-operator.yml), is available in the [`installers/kubectl/postgres-operator.yml`](https://github.com/CrunchyData/postgres-operator/blob/v4.3.3/installers/kubectl/postgres-operator.yml)
+The installation manifest, called [`postgres-operator.yaml`](https://github.com/CrunchyData/postgres-operator/blob/v4.3.4/installers/kubectl/postgres-operator.yml), is available in the [`installers/kubectl/postgres-operator.yml`](https://github.com/CrunchyData/postgres-operator/blob/v4.3.4/installers/kubectl/postgres-operator.yml)
 path in the PostgreSQL Operator repository.
 
 
@@ -55,9 +55,9 @@ permissions. This is required to create the [Custom Resource Definitions](https:
 that power the PostgreSQL Operator. While the PostgreSQL Operator itself can be
 scoped to a specific namespace, you will need to have `cluster-admin` for the
 initial deployment, or privileges that allow you to install Custom Resource
-Definitions. The required list of privileges are available in the [postgres-operator.yml](https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.3/installers/kubectl/postgres-operator.yml) file:
+Definitions. The required list of privileges are available in the [postgres-operator.yml](https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.4/installers/kubectl/postgres-operator.yml) file:
 
-[https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.3/installers/kubectl/postgres-operator.yml](https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.3/installers/kubectl/postgres-operator.yml)
+[https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.4/installers/kubectl/postgres-operator.yml](https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.3.4/installers/kubectl/postgres-operator.yml)
 
 If you have already configured the ServiceAccount and ClusterRoleBinding for the
 installation process (e.g. from a previous installation), then you can remove
@@ -113,7 +113,7 @@ PostgreSQL Operator cannot create the RBAC itself.
 ## Configuration - `postgres-operator.yml`
 
 The `postgres-operator.yml` file contains all of the configuration parameters
-for deploying the PostgreSQL Operator. The [example file](https://github.com/CrunchyData/postgres-operator/blob/v4.3.3/installers/kubectl/postgres-operator.yml)
+for deploying the PostgreSQL Operator. The [example file](https://github.com/CrunchyData/postgres-operator/blob/v4.3.4/installers/kubectl/postgres-operator.yml)
 contains defaults that should work in most Kubernetes environments, but it may
 require some customization.
 
@@ -262,8 +262,8 @@ pgo version
 If successful, you should see output similar to this:
 
 ```
-pgo client version 4.3.3
-pgo-apiserver version 4.3.3
+pgo client version 4.3.4
+pgo-apiserver version 4.3.4
 ```
 
 ## Post-Installation

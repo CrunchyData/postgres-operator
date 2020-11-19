@@ -1,6 +1,6 @@
 ---
 title: "Automated PostgreSQL Operator Upgrade - Operator 4.1+"
-Latest Release: 4.3.3 {docdate}
+Latest Release: 4.3.4 {docdate}
 draft: false
 weight: 80
 ---
@@ -73,7 +73,7 @@ export EXCLUDE_OS_TRUST=false
 
 Then, for either 4.1.X or 4.2.X, 
 
-Update the `PGO_VERSION` variable to `4.3.3`
+Update the `PGO_VERSION` variable to `4.3.4`
 
 Finally, source this file with 
 ```

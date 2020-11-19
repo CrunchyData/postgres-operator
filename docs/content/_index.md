@@ -10,7 +10,7 @@ draft: false
 
 ## Run your own production-grade PostgreSQL-as-a-Service on Kubernetes!
 
-Latest Release: 4.3.3
+Latest Release: 4.3.4
 
 The [Crunchy PostgreSQL Operator](https://www.crunchydata.com/developers/download-postgres/containers/postgres-operator) automates and simplifies deploying and managing open source PostgreSQL clusters on Kubernetes and other Kubernetes-enabled Platforms by providing the essential features you need to keep your PostgreSQL clusters up and running, including:
 
