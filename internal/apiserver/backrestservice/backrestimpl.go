@@ -181,13 +181,9 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 
 			//a hack sort of due to slow propagation
 			for i := 0; i < 3; i++ {
-				jobList, err := apiserver.Clientset.BatchV1().Jobs(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
+				_, err := apiserver.Clientset.BatchV1().Jobs(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 				if err != nil {
 					log.Error(err)
-				}
-				if len(jobList.Items) > 0 {
-					log.Debug("sleeping a bit for delete job propagation")
-					time.Sleep(time.Second * 2)
 				}
 			}
 

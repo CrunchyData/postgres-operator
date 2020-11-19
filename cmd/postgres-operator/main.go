@@ -141,10 +141,6 @@ func createAndStartNamespaceController(kubeClientset kubernetes.Interface,
 // enablePGClusterControllers enables all controllers needed to manage PostgreSQL clusters using
 // the 'pgcluster' custom resource
 func enablePGClusterControllers(stopCh <-chan struct{}) *manager.ControllerManager {
-
-	//give time for pgo-event to start up
-	time.Sleep(time.Duration(5) * time.Second)
-
 	client, err := kubeapi.NewClient()
 	if err != nil {
 		log.Error(err)
