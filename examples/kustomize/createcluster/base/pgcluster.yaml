@@ -1,0 +1,95 @@
+apiVersion: crunchydata.com/v1
+kind: Pgcluster
+metadata:
+  annotations:
+    current-primary: hippo
+  labels:
+    autofail: "true"
+    crunchy-pgbadger: "false"
+    crunchy-pgha-scope: hippo
+    crunchy-postgres-exporter: "false"
+    deployment-name: hippo
+    name: hippo
+    pg-cluster: hippo
+    pg-pod-anti-affinity: ""
+    pgo-backrest: "true"
+    pgo-version: 4.5.1
+    pgouser: admin
+  name: hippo
+  namespace: pgo
+spec:
+  BackrestStorage:
+    accessmode: ReadWriteOnce
+    matchLabels: ""
+    name: ""
+    size: 1G
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  PrimaryStorage:
+    accessmode: ReadWriteOnce
+    matchLabels: ""
+    name: hippo
+    size: 1G
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  ReplicaStorage:
+    accessmode: ReadWriteOnce
+    matchLabels: ""
+    name: ""
+    size: 1G
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  annotations:
+  backrestLimits: {}
+  backrestRepoPath: ""
+  backrestResources:
+    memory: 48Mi
+  backrestS3Bucket: ""
+  backrestS3Endpoint: ""
+  backrestS3Region: ""
+  backrestS3URIStyle: ""
+  backrestS3VerifyTLS: ""
+  ccpimage: crunchy-postgres-ha
+  ccpimageprefix: registry.developers.crunchydata.com/crunchydata
+  ccpimagetag: centos7-12.5-4.5.1
+  clustername: hippo
+  customconfig: ""
+  database: hippo
+  exporterport: "9187"
+  limits: {}
+  name: hippo
+  namespace: pgo
+  pgBouncer:
+    limits: {}
+    replicas: 0
+  pgDataSource:
+    restoreFrom: ""
+    restoreOpts: ""
+  pgbadgerport: "10000"
+  pgoimageprefix: registry.developers.crunchydata.com/crunchydata
+  podAntiAffinity:
+    default: preferred
+    pgBackRest: preferred
+    pgBouncer: preferred
+  policies: ""
+  port: "5432"
+  primarysecretname: hippo-primaryuser-secret
+  replicas: "0"
+  rootsecretname: hippo-postgres-secret
+  shutdown: false
+  standby: false
+  tablespaceMounts: {}
+  tls:
+    caSecret: ""
+    replicationTLSSecret: ""
+    tlsSecret: ""
+  tlsOnly: false
+  user: hippo
+  userlabels:
+    crunchy-postgres-exporter: "false"
+    pg-pod-anti-affinity: ""
+    pgo-version: 4.5.1
+  usersecretname: hippo-hippo-secret

@@ -1,0 +1,6 @@
+resources:
+- ../../base
+namePrefix: dev-
+namespace: pgo
+commonLabels:
+  environment: development
