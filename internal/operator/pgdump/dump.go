@@ -139,7 +139,7 @@ func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	}
 
 	// set the container image to an override value, if one exists
-	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGDUMP,
+	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_HA,
 		&newjob.Spec.Template.Spec.Containers[0])
 
 	_, err = clientset.BatchV1().Jobs(namespace).Create(ctx, &newjob, metav1.CreateOptions{})

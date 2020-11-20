@@ -88,10 +88,10 @@ const pgPort = "5432"
 
 const (
 	// the path to the pgbouncer uninstallation script script
-	pgBouncerUninstallScript = "/opt/cpm/bin/sql/pgbouncer/pgbouncer-uninstall.sql"
+	pgBouncerUninstallScript = "/opt/crunchy/bin/postgres-ha/sql/pgbouncer/pgbouncer-uninstall.sql"
 
 	// the path to the pgbouncer installation script
-	pgBouncerInstallScript = "/opt/cpm/bin/sql/pgbouncer/pgbouncer-install.sql"
+	pgBouncerInstallScript = "/opt/crunchy/bin/postgres-ha/sql/pgbouncer/pgbouncer-install.sql"
 )
 
 const (

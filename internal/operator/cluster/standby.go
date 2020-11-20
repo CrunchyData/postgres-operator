@@ -58,7 +58,7 @@ const (
     "create_replica_methods": [
 	    "pgbackrest_standby"
     ],
-	"restore_command": "source /opt/cpm/bin/pgbackrest/pgbackrest-set-env.sh && pgbackrest archive-get %f \"%p\""
+	"restore_command": "source /opt/crunchy/bin/postgres-ha/pgbackrest/pgbackrest-set-env.sh && pgbackrest archive-get %f \"%p\""
 }`
 )
 

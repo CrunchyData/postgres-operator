@@ -115,7 +115,7 @@ func Restore(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	}
 
 	// set the container image to an override value, if one exists
-	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_PGRESTORE,
+	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_HA,
 		&newjob.Spec.Template.Spec.Containers[0])
 
 	j, err := clientset.BatchV1().Jobs(namespace).Create(ctx, &newjob, metav1.CreateOptions{})

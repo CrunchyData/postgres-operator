@@ -34,7 +34,9 @@
                 "containers": [
                     {
                         "name": "pgrestore",
-                        "image": "{{.CCPImagePrefix}}/crunchy-pgrestore:{{.CCPImageTag}}",
+                        "image": "{{.CCPImagePrefix}}/crunchy-postgres-ha:{{.CCPImageTag}}",
+                        "command": ["/opt/crunchy/bin/uid_postgres.sh"],
+                        "args": ["/opt/crunchy/bin/start.sh"],
                         "volumeMounts": [
                             {
                                 "mountPath": "/pgdata",
@@ -43,6 +45,10 @@
                             }
                         ],
                         "env": [
+                            {
+                                "name": "MODE",
+                                "value": "pgrestore"
+                            },
                             {
                                 "name": "PGRESTORE_USER",
                                 "valueFrom": {
