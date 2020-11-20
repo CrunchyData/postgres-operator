@@ -93,8 +93,8 @@ func (s scheduleRequest) createPolicySchedule(cluster *crv1.Pgcluster, ns string
 			Name:        s.Request.PolicyName,
 			Database:    s.Request.Database,
 			Secret:      s.Request.Secret,
-			ImagePrefix: util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, apiserver.Pgo.Pgo.PGOImagePrefix),
-			ImageTag:    apiserver.Pgo.Pgo.PGOImageTag,
+			ImagePrefix: util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, apiserver.Pgo.Cluster.CCPImagePrefix),
+			ImageTag:    apiserver.Pgo.Cluster.CCPImageTag,
 		},
 	}
 	return schedule
