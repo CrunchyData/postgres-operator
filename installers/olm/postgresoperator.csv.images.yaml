@@ -15,7 +15,5 @@
 - { name: RELATED_IMAGE_CRUNCHY_PGADMIN,          value: '${CCP_IMAGE_PREFIX}/crunchy-pgadmin4:${CCP_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_CRUNCHY_PGBADGER,         value: '${CCP_IMAGE_PREFIX}/crunchy-pgbadger:${CCP_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_CRUNCHY_PGBOUNCER,        value: '${CCP_IMAGE_PREFIX}/crunchy-pgbouncer:${CCP_IMAGE_TAG}' }
-- { name: RELATED_IMAGE_CRUNCHY_PGDUMP,           value: '${CCP_IMAGE_PREFIX}/crunchy-pgdump:${CCP_IMAGE_TAG}' }
-- { name: RELATED_IMAGE_CRUNCHY_PGRESTORE,        value: '${CCP_IMAGE_PREFIX}/crunchy-pgrestore:${CCP_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_CRUNCHY_POSTGRES_HA,      value: '${CCP_IMAGE_PREFIX}/crunchy-postgres-ha:${CCP_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_CRUNCHY_POSTGRES_GIS_HA,  value: '${CCP_IMAGE_PREFIX}/crunchy-postgres-gis-ha:${CCP_POSTGIS_IMAGE_TAG}' }

@@ -39,7 +39,7 @@
                     "readinessProbe": {
                         "exec": {
                             "command": [
-                                "/opt/cpm/bin/health/pgha-readiness.sh"
+                                "/opt/crunchy/bin/postgres-ha/health/pgha-readiness.sh"
                             ]
                         },
                         "initialDelaySeconds": 15
@@ -47,7 +47,7 @@
                     "livenessProbe": {
                         "exec": {
                             "command": [
-                                "/opt/cpm/bin/health/pgha-liveness.sh"
+                                "/opt/crunchy/bin/postgres-ha/health/pgha-liveness.sh"
                             ]
                         },
                         "initialDelaySeconds": 30,
@@ -56,6 +56,10 @@
                     },
                     {{.ContainerResources }}
                     "env": [{
+                        "name": "MODE",
+                        "value": "postgres"
+                    },
+                    {
                         "name": "PGHA_PG_PORT",
                         "value": "{{.Port}}"
                     }, {

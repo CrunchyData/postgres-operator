@@ -39,13 +39,13 @@ var (
 	// readConfigCMD is the command used to read local cluster configuration in a database
 	// container
 	readConfigCMD []string = []string{"bash", "-c",
-		"/opt/cpm/bin/yq r /tmp/postgres-ha-bootstrap.yaml postgresql | " +
-			"/opt/cpm/bin/yq p - postgresql",
+		"/opt/crunchy/bin/yq r /tmp/postgres-ha-bootstrap.yaml postgresql | " +
+			"/opt/crunchy/bin/yq p - postgresql",
 	}
 	// applyAndReloadConfigCMD is the command for calling the script to apply and reload the local
 	// configuration for a database container.  The required arguments are appended to this command
 	// when the script is called.
-	applyAndReloadConfigCMD []string = []string{"/opt/cpm/bin/common/pgha-reload-local.sh"}
+	applyAndReloadConfigCMD []string = []string{"/opt/crunchy/bin/postgres-ha/common/pgha-reload-local.sh"}
 
 	// pghaLocalConfigName represents the name of the local configuration stored for each database
 	// server in the "<clustername>-pgha-config" configMap, which is "<clusterName>-local-config"
