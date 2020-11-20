@@ -18,6 +18,8 @@
 #########
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# PGO_CMD should either be "kubectl" or "oc" -- defaulting to kubectl
+PGO_CMD=${PGO_CMD:-kubectl}
 
 # A namespace that exists in NAMESPACE env var - see examples/envs.sh
 export NS=pgouser1
