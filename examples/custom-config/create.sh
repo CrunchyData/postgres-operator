@@ -28,11 +28,8 @@ function echo_info() {
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-#Error if PGO_CMD not set
-if [[ -z ${PGO_CMD} ]]
-then
-	echo_err "PGO_CMD is not set."
-fi
+# PGO_CMD should either be "kubectl" or "oc" -- defaulting to kubectl
+PGO_CMD=${PGO_CMD:-kubectl}
 
 #Error is PGO_NAMESPACE not set
 if [[ -z ${PGO_NAMESPACE} ]]
