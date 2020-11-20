@@ -84,7 +84,6 @@ images = pgo-apiserver \
 	pgo-event \
 	pgo-rmdata \
 	pgo-scheduler \
-	pgo-sqlrunner \
 	pgo-client \
 	pgo-deployer \
 	crunchy-postgres-exporter \

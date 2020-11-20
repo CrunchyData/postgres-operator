@@ -8,7 +8,6 @@
 - { name: RELATED_IMAGE_PGO_BACKREST_REPO,           value: '${PGO_IMAGE_PREFIX}/pgo-backrest-repo:${PGO_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_PGO_CLIENT,                  value: '${PGO_IMAGE_PREFIX}/pgo-client:${PGO_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_PGO_RMDATA,                  value: '${PGO_IMAGE_PREFIX}/pgo-rmdata:${PGO_IMAGE_TAG}' }
-- { name: RELATED_IMAGE_PGO_SQL_RUNNER,              value: '${PGO_IMAGE_PREFIX}/pgo-sqlrunner:${PGO_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_CRUNCHY_POSTGRES_EXPORTER,   value: '${PGO_IMAGE_PREFIX}/crunchy-postgres-exporter:${PGO_IMAGE_TAG}' }
 
 - { name: RELATED_IMAGE_CRUNCHY_ADMIN,            value: '${CCP_IMAGE_PREFIX}/crunchy-admin:${CCP_IMAGE_TAG}' }
