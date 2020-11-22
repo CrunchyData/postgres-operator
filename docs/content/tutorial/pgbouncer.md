@@ -130,6 +130,77 @@ SHOW stats;
 
 Success, you have connected to pgBouncer!
 
+## Setup pgBouncer with TLS
+
+Similarly to how you can [setup TLS for PostgreSQL]({{< relref "tutorial/tls.md" >}}), you can set up TLS connections for pgBouncer. To do this, the PostgreSQL Operator takes the following steps:
+
+- Ensuring TLS communication between a client (e.g. `psql`, your application, etc.) and pgBouncer
+- Ensuring TLS communication between pgBouncer and PostgreSQL
+
+When TLS is enabled, the PostgreSQL Operator configures pgBouncer to require each client to use TLS to communicate with pgBouncer. Additionally, the PostgreSQL Operator requires that pgBouncer and the PostgreSQL cluster share the same certificate authority (CA) bundle, which allows for pgBouncer to communicate with the PostgreSQL cluster using PostgreSQL's [`verify-ca` SSL mode](https://www.postgresql.org/docs/current/libpq-ssl.html#LIBPQ-SSL-PROTECTION).
+
+The below guide will show you how set up TLS for pgBouncer.
+
+### Prerequisites
+
+In order to set up TLS connections for pgBouncer, you must first [enable TLS on your PostgreSQL cluster]({{< relref "tutorial/tls.md" >}}).
+
+For the purposes of this exercise, we will re-use the Secret TLS keypair `hippo-tls-keypair` that was created for the PostgreSQL server. This is only being done for convenience: you can substitute `hippo-tls-keypair` with a different TLS key pair as long as it can be verified by the certificate authority (CA) that you selected for your PostgreSQL cluster. Recall that the certificate authority (CA) bundle is stored in a Secret named `postgresql-ca`.
+
+### Create pgBouncer with TLS
+
+Knowing that our TLS key pair is stored in a Secret called `hippo-tls-keypair`, you can setup pgBouncer with TLS using the following command:
+
+```
+pgo create pgbouncer hippo --tls-secret=hippo-tls-keypair
+```
+
+And that's it! So long as the prerequisites are satisfied, this will create a pgBouncer instance that is TLS enabled.
+
+Don't believe it? Try logging in. First, ensure you have a port-forward from pgBouncer to your host machine:
+
+```
+kubectl -n pgo port-forward svc/hippo-pgbouncer 5432:5432
+```
+
+Then, connect to the pgBouncer instances:
+
+```
+PGPASSWORD=securerandomlygeneratedpassword psql -h localhost -p 5432 -U testuser hippo
+```
+
+You should see something similar to this:
+
+```
+psql (12.5)
+SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
+Type "help" for help.
+
+hippo=>
+```
+
+Still don't believe it? You can verify your connection using the PostgreSQL `get_backend_pid()` function and the [`pg_stat_ssl`](https://www.postgresql.org/docs/current/monitoring-stats.html#MONITORING-PG-STAT-SSL-VIEW) monitoring view:
+
+```
+hippo=> SELECT * FROM pg_stat_ssl WHERE pid = pg_backend_pid();
+  pid  | ssl | version |         cipher         | bits | compression | client_dn | client_serial | issuer_dn
+-------+-----+---------+------------------------+------+-------------+-----------+---------------+-----------
+ 15653 | t   | TLSv1.3 | TLS_AES_256_GCM_SHA384 |  256 | f           |           |               |
+(1 row)
+```
+
+### Create a PostgreSQL cluster with pgBouncer and TLS
+
+Want to create a PostgreSQL cluster with pgBouncer with TLS enabled? You can with the [`pgo create cluster`]({{< relref "pgo-client/reference/pgo_create_cluster.md" >}}) command and using the `--pgbouncer-tls-secret` flag. Using the same Secrets that were created in the [creating a PostgreSQL cluster with TLS]({{ relref "tutorial/tls.md" }}) tutorial, you can create a PostgreSQL cluster with pgBouncer and TLS with the following command:
+
+```
+pgo create cluster hippo \
+  --server-ca-secret=postgresql-ca \
+  --server-tls-secret=hippo-tls-keypair \
+  --pgbouncer \
+  --pgbouncer-tls-secret=hippo-tls-keypair
+```
+
 ## Customize CPU / Memory for pgBouncer
 
 ### Provisioning

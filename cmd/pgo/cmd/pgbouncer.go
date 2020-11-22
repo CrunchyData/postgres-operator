@@ -68,6 +68,7 @@ func createPgbouncer(args []string, ns string) {
 		Namespace:     ns,
 		Replicas:      PgBouncerReplicas,
 		Selector:      Selector,
+		TLSSecret:     PgBouncerTLSSecret,
 	}
 
 	if err := util.ValidateQuantity(request.CPURequest, "cpu"); err != nil {

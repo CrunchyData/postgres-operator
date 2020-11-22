@@ -122,6 +122,9 @@ var PasswordReplication string
 
 // variables used for setting up TLS-enabled PostgreSQL clusters
 var (
+	// PgBouncerTLSSecret is the name of the secret that contains the
+	// TLS information for enabling TLS for pgBouncer
+	PgBouncerTLSSecret string
 	// TLSOnly indicates that only TLS connections will be accepted for a
 	// PostgreSQL cluster
 	TLSOnly bool
@@ -435,6 +438,9 @@ func init() {
 	createClusterCmd.Flags().StringVar(&PgBouncerMemoryLimit, "pgbouncer-memory-limit", "", "Set the amount of memory to limit for "+
 		"pgBouncer.")
 	createClusterCmd.Flags().Int32Var(&PgBouncerReplicas, "pgbouncer-replicas", 0, "Set the total number of pgBouncer instances to deploy. If not set, defaults to 1.")
+	createClusterCmd.Flags().StringVar(&PgBouncerTLSSecret, "pgbouncer-tls-secret", "", "The name of the secret "+
+		"that contains the TLS keypair to use for enabling pgBouncer to accept TLS connections. "+
+		"Must also set server-tls-secret and server-ca-secret.")
 	createClusterCmd.Flags().StringVarP(&ReplicaStorageConfig, "replica-storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster replica storage.")
 	createClusterCmd.Flags().StringVarP(&PodAntiAffinity, "pod-anti-affinity", "", "",
 		"Specifies the type of anti-affinity that should be utilized when applying  "+
@@ -504,6 +510,9 @@ func init() {
 		"pgBouncer.")
 	createPgbouncerCmd.Flags().Int32Var(&PgBouncerReplicas, "replicas", 0, "Set the total number of pgBouncer instances to deploy. If not set, defaults to 1.")
 	createPgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	createPgbouncerCmd.Flags().StringVar(&PgBouncerTLSSecret, "tls-secret", "", "The name of the secret "+
+		"that contains the TLS keypair to use for enabling pgBouncer to accept TLS connections. "+
+		"The PostgreSQL cluster must have TLS enabled.")
 
 	// "pgo create pgouser" flags
 	createPgouserCmd.Flags().BoolVarP(&AllNamespaces, "all-namespaces", "", false, "specifies this user will have access to all namespaces.")

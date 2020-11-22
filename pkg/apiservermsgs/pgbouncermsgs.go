@@ -40,6 +40,9 @@ type CreatePgbouncerRequest struct {
 	// automatically be set to 1
 	Replicas int32
 	Selector string
+	// TLSSecret is the name of the secret that contains the keypair required to
+	// deploy TLS-enabled pgBouncer
+	TLSSecret string
 }
 
 // CreatePgbouncerResponse ...
