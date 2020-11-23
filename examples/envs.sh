@@ -20,7 +20,7 @@ export PGOROOT=$GOPATH/src/github.com/crunchydata/postgres-operator
 # the version of the Operator you run is set by these vars
 export PGO_IMAGE_PREFIX=registry.developers.crunchydata.com/crunchydata
 export PGO_BASEOS=centos7
-export PGO_VERSION=4.4.1
+export PGO_VERSION=4.4.2
 export PGO_IMAGE_TAG=$PGO_BASEOS-$PGO_VERSION
 
 # for setting the pgo apiserver port, disabling TLS or not verifying TLS
