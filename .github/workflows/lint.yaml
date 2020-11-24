@@ -3,6 +3,9 @@ on:
     branches:
       - master
       - savannah
+  push:
+    branches:
+      - savannah
 
 jobs:
   golangci-lint:
@@ -14,3 +17,12 @@ jobs:
           version: v1.32
           args: --timeout=5m
           only-new-issues: true
+
+  go-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-go@v2
+        with:
+          go-version: 1.x
+      - run: PGOROOT=$(pwd) go test ./...
