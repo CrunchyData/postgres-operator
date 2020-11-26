@@ -18,7 +18,6 @@ limitations under the License.
 import (
 	"context"
 
-	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -28,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
@@ -40,29 +40,25 @@ type Reconciler struct {
 }
 
 // Reconcile reconciles a ConfigMap in a namespace managed by the PostgreSQL Operator
-func (r *Reconciler) Reconcile(ctx context.Context,
-	request reconcile.Request) (reconcile.Result, error) {
+func (r *Reconciler) Reconcile(
+	ctx context.Context, request reconcile.Request) (reconcile.Result, error,
+) {
+	log := logging.FromContext(ctx).WithValues("postgrescluster", request.NamespacedName)
 
-	clusterName := request.Name
-	namespace := request.Namespace
-	namespacedName := request.NamespacedName
-
-	// get the postgrescluster frmo the cache
+	// get the postgrescluster from the cache
 	postgresCluster := &v1alpha1.PostgresCluster{}
-	if err := r.Client.Get(ctx, client.ObjectKey{
-		Namespace: namespace,
-		Name:      clusterName,
-	}, postgresCluster); err != nil {
-		log.Error(err)
+	if err := r.Client.Get(ctx, request.NamespacedName, postgresCluster); err != nil {
+		log.Error(err, "cannot retrieve postgrescluster")
+
 		// returning an error will cause the work to be requeued
 		return reconcile.Result{}, err
 	}
 
-	log.Debugf("reconciling postgrescluster %s", namespacedName)
+	log.V(1).Info("reconciling")
 
 	// an example of creating an event
-	r.Recorder.Eventf(postgresCluster, v1.EventTypeNormal, "Initializing", "Initializing postgrescluster %s",
-		namespacedName)
+	r.Recorder.Eventf(postgresCluster, v1.EventTypeNormal, "Initializing",
+		"Initializing postgrescluster %s", request.NamespacedName)
 
 	// call business logic to reconcile the postgrescluster
 

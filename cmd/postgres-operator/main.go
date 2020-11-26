@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -27,8 +28,8 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/controller/manager"
 	nscontroller "github.com/crunchydata/postgres-operator/internal/controller/namespace"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
-	crunchylog "github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/ns"
+	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,8 +39,25 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 )
+
+func initLogging() {
+	// Configure a singleton that treats logr.Logger.V(1) as logrus.DebugLevel.
+	var verbosity int
+	if strings.EqualFold(os.Getenv("CRUNCHY_DEBUG"), "true") {
+		verbosity = 1
+	}
+	logging.SetLogFunc(verbosity, logging.Logrus(os.Stdout, msgs.PGO_VERSION, 1))
+
+	// Configure the deprecated logrus singleton.
+	logging.CrunchyLogger(logging.SetParameters())
+	if verbosity > 0 {
+		log.SetLevel(log.DebugLevel)
+	}
+	log.Debug("debug flag set to true")
+}
 
 func main() {
 	if flush, err := initOpenTelemetry(); err != nil {
@@ -48,17 +66,9 @@ func main() {
 		defer flush()
 	}
 
-	var err error
+	initLogging()
 
-	debugFlag := os.Getenv("CRUNCHY_DEBUG")
-	//add logging configuration
-	crunchylog.CrunchyLogger(crunchylog.SetParameters())
-	if debugFlag == "true" {
-		log.SetLevel(log.DebugLevel)
-		log.Debug("debug flag set to true")
-	} else {
-		log.Info("debug flag set to false")
-	}
+	var err error
 
 	// create a context that will be used to stop all controllers on a SIGTERM or SIGINT
 	ctx := signals.SetupSignalHandler()
@@ -211,21 +221,26 @@ func enablePGClusterControllers(stopCh <-chan struct{}) *manager.ControllerManag
 // enablePostgresClusterControllers enables all controllers needed to manage PostgreSQL clusters using
 // the 'postgrescluster' custom resource
 func enablePostgresClusterControllers(ctx context.Context) {
+	log := logging.FromContext(ctx)
+
 	cfg, err := runtime.GetConfig()
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err, "runtime configuration")
+		os.Exit(1)
 	}
 
 	cfg.Wrap(otelTransportWrapper())
 
 	mgr, err := runtime.CreateRuntimeManager(os.Getenv("PGO_TARGET_NAMESPACE"), cfg)
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err, "runtime manager")
+		os.Exit(1)
 	}
 
-	log.Debug("starting controller runtime manager and will wait for signal to exit")
+	log.Info("starting controller runtime manager and will wait for signal to exit")
 	if err := mgr.Start(ctx); err != nil {
-		log.Fatal(err)
+		log.Error(err, "manager exited")
+		os.Exit(1)
 	}
-	log.Debug("signal recieved, exiting")
+	log.Info("signal received, exiting")
 }
