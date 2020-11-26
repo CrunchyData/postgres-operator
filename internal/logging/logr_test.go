@@ -22,6 +22,7 @@ import (
 	"github.com/go-logr/logr"
 	logrtest "github.com/go-logr/logr/testing"
 	"github.com/wojas/genericr"
+	"go.opentelemetry.io/otel/oteltest"
 	"gotest.tools/v3/assert"
 )
 
@@ -37,6 +38,29 @@ func TestFromContext(t *testing.T) {
 	double := struct{ logr.Logger }{logrtest.NullLogger{}}
 	log = FromContext(NewContext(context.Background(), double))
 	assert.Equal(t, log, double)
+}
+
+func TestFromContextTraceContext(t *testing.T) {
+	var calls []map[string]interface{}
+
+	SetLogFunc(0, func(input genericr.Entry) {
+		calls = append(calls, input.FieldsMap())
+	})
+
+	ctx := context.Background()
+
+	// Nothing when there's no trace.
+	FromContext(ctx).Info("")
+	assert.Equal(t, calls[0]["spanid"], nil)
+	assert.Equal(t, calls[0]["traceid"], nil)
+
+	ctx, span := oteltest.DefaultTracer().Start(ctx, "test-span")
+	defer span.End()
+
+	// OpenTelemetry trace context when there is.
+	FromContext(ctx).Info("")
+	assert.Equal(t, calls[1]["spanid"], span.SpanContext().SpanID)
+	assert.Equal(t, calls[1]["traceid"], span.SpanContext().TraceID)
 }
 
 func TestSetLogFunc(t *testing.T) {

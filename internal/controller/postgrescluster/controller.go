@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/trace"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -37,18 +38,22 @@ const workerCount = 2
 type Reconciler struct {
 	Client   client.Client
 	Recorder record.EventRecorder
+	Tracer   trace.Tracer
 }
 
 // Reconcile reconciles a ConfigMap in a namespace managed by the PostgreSQL Operator
 func (r *Reconciler) Reconcile(
 	ctx context.Context, request reconcile.Request) (reconcile.Result, error,
 ) {
+	ctx, span := r.Tracer.Start(ctx, "Reconcile")
 	log := logging.FromContext(ctx).WithValues("postgrescluster", request.NamespacedName)
+	defer span.End()
 
 	// get the postgrescluster from the cache
 	postgresCluster := &v1alpha1.PostgresCluster{}
 	if err := r.Client.Get(ctx, request.NamespacedName, postgresCluster); err != nil {
 		log.Error(err, "cannot retrieve postgrescluster")
+		span.RecordError(err)
 
 		// returning an error will cause the work to be requeued
 		return reconcile.Result{}, err

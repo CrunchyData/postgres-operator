@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"time"
 
+	"go.opentelemetry.io/otel"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -72,7 +73,9 @@ func GetConfig() (*rest.Config, error) { return config.GetConfig() }
 func addControllersToManager(mgr manager.Manager) error {
 	r := &postgrescluster.Reconciler{
 		Client:   mgr.GetClient(),
-		Recorder: mgr.GetEventRecorderFor(recorderName)}
+		Recorder: mgr.GetEventRecorderFor(recorderName),
+		Tracer:   otel.Tracer(recorderName),
+	}
 	if err := r.SetupWithManager(mgr); err != nil {
 		return err
 	}

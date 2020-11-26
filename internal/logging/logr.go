@@ -20,6 +20,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/wojas/genericr"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var global = logr.Discard()
@@ -44,6 +45,13 @@ func FromContext(ctx context.Context) logr.Logger {
 
 	if log = logr.FromContext(ctx); log == nil {
 		log = global
+	}
+
+	// Add trace context, if any, according to OpenTelemetry recommendations.
+	// Omit trace flags for now because they don't seem relevant.
+	// - https://github.com/open-telemetry/opentelemetry-specification/blob/v0.7.0/specification/logs/overview.md
+	if sc := trace.SpanFromContext(ctx).SpanContext(); sc.IsValid() {
+		log = log.WithValues("spanid", sc.SpanID, "traceid", sc.TraceID)
 	}
 
 	return log
