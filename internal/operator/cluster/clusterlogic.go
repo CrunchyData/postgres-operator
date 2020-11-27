@@ -620,7 +620,10 @@ func ShutdownCluster(clientset kubeapi.Interface, cluster crv1.Pgcluster) error 
 		return err
 	}
 
-	if len(pods.Items) > 1 {
+	if len(pods.Items) == 0 {
+		return fmt.Errorf("Cluster Operator: Could not find primary pod for shutdown of "+
+			"cluster %s", cluster.Name)
+	} else if len(pods.Items) > 1 {
 		return fmt.Errorf("Cluster Operator: Invalid number of primary pods (%d) found when "+
 			"shutting down cluster %s", len(pods.Items), cluster.Name)
 	}
