@@ -276,3 +276,58 @@ The Node Affinity only uses the `preferred` scheduling strategy (similar to what
 is described in the Pod Anti-Affinity section above), so if a Pod cannot be
 scheduled to a particular Node matching the label, it will be scheduled to a
 different Node.
+
+## Rolling Updates
+
+During the lifecycle of a PostgreSQL cluster, there are certain events that may
+require a planned restart, such as an update to a "restart required" PostgreSQL
+configuration setting (e.g. [`shared_buffers`](https://www.postgresql.org/docs/current/runtime-config-resource.html#GUC-SHARED-BUFFERS))
+or a change to a Kubernetes Deployment template (e.g. [changing the memory request]({{< relref "tutorial/customize-cluster.md">}}#customize-cpu-memory)). Restarts can be disruptive in a high availability deployment, which is
+why many setups employ a ["rolling update" strategy](https://kubernetes.io/docs/tutorials/kubernetes-basics/update/update-intro/)
+(aka a "rolling restart") to minimize or eliminate downtime during a planned
+restart.
+
+Because PostgreSQL is a stateful application, a simple rolling restart strategy
+will not work: PostgreSQL needs to ensure that there is a primary available that
+can accept reads and writes. This requires following a method that will minimize
+the amount of downtime when the primary is taken offline for a restart.
+
+The PostgreSQL Operator provides a mechanism for rolling updates implicitly on
+certain operations that change the Deployment templates (e.g. memory updates,
+CPU updates, adding tablespaces, modifiny annotations) and explicitly through
+the [`pgo restart`]({{< relref "pgo-client/reference/pgo_restart.md">}})
+command with the `--rolling` flag. The PostgreSQL Operator uses the following
+algorithm to perform the rolling restart to minimize any potential
+interruptions:
+
+1. Each replica is updated in sequential order. This follows the following
+process:
+
+  1. The replica is explicitly shut down to ensure any outstanding changes are
+  flushed to disk.
+
+  2. If requested, the PostgreSQL Operator will apply any changes to the
+  Deployment.
+
+  3. The replica is brought back online. The PostgreSQL Operator waits for the
+  replica to become available before it proceeds to the next replica.
+
+2. The above steps are repeated until all of the replicas are restarted.
+
+3. A controlled switchover is performed. The PostgreSQL Operator determines
+which replica is the best candidate to become the new primary. It then demotes
+the primary to become a replica and promotes the best candidate to become the
+new primary.
+
+4. The former primary follows a process similar to what is described in step 1.
+
+The downtime is thus constrained to the amount of time the switchover takes.
+
+A rolling update strategy will be used if any of the following changes are made
+to a PostgreSQL cluster, either through the `pgo update` command or from a
+modification to the custom resource:
+
+- Memory resource adjustments
+- CPU resource adjustments
+- Custom annotation changes
+- Tablespace additions

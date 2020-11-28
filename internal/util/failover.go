@@ -40,6 +40,7 @@ type InstanceReplicationInfo struct {
 	Status         string
 	Timeline       int
 	PendingRestart bool
+	PodName        string
 	Role           string
 }
 
@@ -80,10 +81,10 @@ const (
 	// instanceReplicationInfoTypePrimaryStandby is the label used by Patroni to indicate that an
 	// instance is indeed a primary PostgreSQL instance, specifically within a standby cluster
 	instanceReplicationInfoTypePrimaryStandby = "Standby Leader"
-	// instanceRolePrimary indicates that an instance is a primary
-	instanceRolePrimary = "primary"
-	// instanceRoleReplica indicates that an instance is a replica
-	instanceRoleReplica = "replica"
+	// InstanceRolePrimary indicates that an instance is a primary
+	InstanceRolePrimary = "primary"
+	// InstanceRoleReplica indicates that an instance is a replica
+	InstanceRoleReplica = "replica"
 	// instanceRoleUnknown indicates that an instance is of an unknown typ
 	instanceRoleUnknown = "unknown"
 	// instanceStatusUnavailable indicates an instance is unavailable
@@ -266,9 +267,9 @@ func ReplicationStatus(request ReplicationStatusRequest, includePrimary, include
 		// determine the role of the instnace
 		switch rawInstance.Type {
 		default:
-			role = instanceRoleReplica
+			role = InstanceRoleReplica
 		case instanceReplicationInfoTypePrimary, instanceReplicationInfoTypePrimaryStandby:
-			role = instanceRolePrimary
+			role = InstanceRolePrimary
 		}
 
 		// set up the instance that will be returned
@@ -280,6 +281,7 @@ func ReplicationStatus(request ReplicationStatusRequest, includePrimary, include
 			Name:           instanceInfoMap[rawInstance.PodName].name,
 			Node:           instanceInfoMap[rawInstance.PodName].node,
 			PendingRestart: rawInstance.PendingRestart == "*",
+			PodName:        rawInstance.PodName,
 		}
 
 		// update the instance info if the instance is busted
