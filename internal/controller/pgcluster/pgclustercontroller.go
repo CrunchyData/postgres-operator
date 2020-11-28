@@ -236,7 +236,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		!reflect.DeepEqual(oldcluster.Spec.Limits, newcluster.Spec.Limits) ||
 		!reflect.DeepEqual(oldcluster.Spec.ExporterResources, newcluster.Spec.ExporterResources) ||
 		!reflect.DeepEqual(oldcluster.Spec.ExporterLimits, newcluster.Spec.ExporterLimits) {
-		if err := clusteroperator.UpdateResources(c.Client, c.Client.Config, newcluster); err != nil {
+		if err := clusteroperator.RollingUpdate(c.Client, c.Client.Config, newcluster, clusteroperator.UpdateResources); err != nil {
 			log.Error(err)
 			return
 		}
