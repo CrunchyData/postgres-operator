@@ -798,3 +798,28 @@ func ScaleClusterDeployments(clientset kubernetes.Interface, cluster crv1.Pgclus
 	}
 	return
 }
+
+// waitFotDeploymentReady waits for a deployment to be ready, or times out
+func waitForDeploymentReady(clientset kubernetes.Interface, namespace, deploymentName string, periodSecs, timeoutSecs time.Duration) error {
+	ctx := context.TODO()
+
+	// set up the timer and timeout
+	// first, ensure that there is an available Pod
+	timeout := time.After(timeoutSecs)
+	tick := time.NewTicker(periodSecs)
+	defer tick.Stop()
+
+	for {
+		select {
+		case <-timeout:
+			return fmt.Errorf("readiness timeout reached for deployment %q", deploymentName)
+		case <-tick.C:
+			// check to see if the deployment is ready
+			if d, err := clientset.AppsV1().Deployments(namespace).Get(ctx, deploymentName, metav1.GetOptions{}); err != nil {
+				log.Warn(err)
+			} else if d.Status.Replicas == d.Status.ReadyReplicas {
+				return nil
+			}
+		}
+	}
+}
