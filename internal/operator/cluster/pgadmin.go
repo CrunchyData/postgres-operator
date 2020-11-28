@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	weakrand "math/rand"
 	"os"
@@ -69,8 +68,8 @@ const pgAdminDeploymentFormat = "%s-pgadmin"
 const initPassLen = 20
 
 const (
-	deployTimeout = 60
-	pollInterval  = 3
+	deployTimeout = 60 * time.Second
+	pollInterval  = 3 * time.Second
 )
 
 // AddPgAdmin contains the various functions that are used to add a pgAdmin
@@ -159,7 +158,7 @@ func AddPgAdminFromPgTask(clientset kubeapi.Interface, restconfig *rest.Config, 
 	}
 
 	deployName := fmt.Sprintf(pgAdminDeploymentFormat, clusterName)
-	if err := waitForDeploymentReady(clientset, namespace, deployName, deployTimeout, pollInterval); err != nil {
+	if err := waitForDeploymentReady(clientset, namespace, deployName, pollInterval, deployTimeout); err != nil {
 		log.Error(err)
 	}
 
@@ -468,32 +467,5 @@ func publishPgAdminEvent(eventType string, task *crv1.Pgtask) {
 	// publish the event; if there is an error, log it, but we don't care
 	if err := events.Publish(event); err != nil {
 		log.Error(err.Error())
-	}
-}
-
-// waitFotDeploymentReady waits for a deployment to be ready, or times out
-func waitForDeploymentReady(clientset kubernetes.Interface, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) error {
-	ctx := context.TODO()
-	timeout := time.After(timeoutSecs * time.Second)
-	tick := time.NewTicker(periodSecs * time.Second)
-	defer tick.Stop()
-
-	// loop until the timeout is met, or that all the replicas are ready
-	for {
-		select {
-		case <-timeout:
-			return errors.New(fmt.Sprintf("Timed out waiting for deployment to become ready: [%s]", deploymentName))
-		case <-tick.C:
-			if deployment, err := clientset.AppsV1().Deployments(namespace).Get(ctx, deploymentName, metav1.GetOptions{}); err != nil {
-				// if there is an error, log it but continue through the loop
-				log.Error(err)
-			} else {
-				// check to see if the deployment status has succeed...if so, break out
-				// of the loop
-				if deployment.Status.ReadyReplicas == *deployment.Spec.Replicas {
-					return nil
-				}
-			}
-		}
 	}
 }
