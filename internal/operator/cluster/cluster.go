@@ -456,44 +456,26 @@ func ScaleDownBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespa
 
 // UpdateAnnotations updates the annotations in the "template" portion of a
 // PostgreSQL deployment
-func UpdateAnnotations(clientset kubernetes.Interface, restConfig *rest.Config,
-	cluster *crv1.Pgcluster, annotations map[string]string) error {
-	ctx := context.TODO()
-	var updateError error
+func UpdateAnnotations(cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) error {
+	log.Debugf("update annotations on [%s]", deployment.Name)
+	annotations := map[string]string{}
 
-	// first, get a list of all of the instance deployments for the cluster
-	deployments, err := operator.GetInstanceDeployments(clientset, cluster)
-
-	if err != nil {
-		return err
+	// store the global annotations first
+	for k, v := range cluster.Spec.Annotations.Global {
+		annotations[k] = v
 	}
 
-	// now update each deployment with the new annotations
-	for _, deployment := range deployments.Items {
-		log.Debugf("update annotations on [%s]", deployment.Name)
-		log.Debugf("new annotations: %v", annotations)
-
-		deployment.Spec.Template.ObjectMeta.SetAnnotations(annotations)
-
-		// Before applying the update, we want to explicitly stop PostgreSQL on each
-		// instance. This prevents PostgreSQL from having to boot up in crash
-		// recovery mode.
-		//
-		// If an error is returned, we only issue a warning
-		if err := stopPostgreSQLInstance(clientset, restConfig, deployment); err != nil {
-			log.Warn(err)
-		}
-
-		// finally, update the Deployment. If something errors, we'll log that there
-		// was an error, but continue with processing the other deployments
-		if _, err := clientset.AppsV1().Deployments(deployment.Namespace).
-			Update(ctx, &deployment, metav1.UpdateOptions{}); err != nil {
-			log.Error(err)
-			updateError = err
-		}
+	// then store the postgres specific annotations
+	for k, v := range cluster.Spec.Annotations.Postgres {
+		annotations[k] = v
 	}
 
-	return updateError
+	log.Debugf("new annotations: %v", annotations)
+
+	// set the annotations on the deployment object
+	deployment.Spec.Template.ObjectMeta.SetAnnotations(annotations)
+
+	return nil
 }
 
 // UpdateResources updates the PostgreSQL instance Deployments to reflect the

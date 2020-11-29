@@ -371,12 +371,6 @@ func updateAnnotations(c *Controller, oldCluster *crv1.Pgcluster, newCluster *cr
 
 	// so if there are changes, we can apply them to the various deployments,
 	// but only do so if we have to
-	if len(annotationsPostgres) != 0 {
-		if err := clusteroperator.UpdateAnnotations(c.Client, c.Client.Config, newCluster, annotationsPostgres); err != nil {
-			return err
-		}
-	}
-
 	if len(annotationsBackrest) != 0 {
 		if err := backrestoperator.UpdateAnnotations(c.Client, newCluster, annotationsBackrest); err != nil {
 			return err
@@ -385,6 +379,12 @@ func updateAnnotations(c *Controller, oldCluster *crv1.Pgcluster, newCluster *cr
 
 	if len(annotationsPgBouncer) != 0 {
 		if err := clusteroperator.UpdatePgBouncerAnnotations(c.Client, newCluster, annotationsPgBouncer); err != nil {
+			return err
+		}
+	}
+
+	if len(annotationsPostgres) != 0 {
+		if err := clusteroperator.RollingUpdate(c.Client, c.Client.Config, newCluster, clusteroperator.UpdateAnnotations); err != nil {
 			return err
 		}
 	}
