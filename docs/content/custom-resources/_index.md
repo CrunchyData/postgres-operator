@@ -845,6 +845,7 @@ a PostgreSQL cluster to help with failover scenarios too.
 | Limits | `create`, `update` | Specify the container resource limits that the pgBouncer Pods should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | Replicas | `create`, `update` | The number of pgBouncer instances to deploy. Must be set to at least `1` to deploy pgBouncer. Setting to `0` removes an existing pgBouncer deployment for the PostgreSQL cluster. |
 | Resources | `create`, `update` | Specify the container resource requests that the pgBouncer Pods should use. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
+| TLSSecret | `create` | A reference to the name of a Kubernetes TLS Secret that contains a keypair that is used for the pgBouncer instance to identify itself and perform TLS communications with PostgreSQL clients. Must be used with the parent Spec `TLSSecret` and `CASecret`. |
 
 ##### Annotations Specification
 

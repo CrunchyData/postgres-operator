@@ -49,13 +49,20 @@ type PgbouncerPasswdFields struct {
 type PgbouncerConfFields struct {
 	PG_PRIMARY_SERVICE_NAME string
 	PG_PORT                 string
+	TLSEnabled              bool
+}
+
+type pgBouncerHBATemplateFields struct {
+	TLSEnabled bool
 }
 
 type pgBouncerTemplateFields struct {
 	Name                      string
+	CASecret                  string
 	ClusterName               string
 	CCPImagePrefix            string
 	CCPImageTag               string
+	DisableFSGroup            bool
 	Port                      string
 	PrimaryServiceName        string
 	ContainerResources        string
@@ -66,6 +73,8 @@ type pgBouncerTemplateFields struct {
 	PodAntiAffinityLabelName  string
 	PodAntiAffinityLabelValue string
 	Replicas                  int32 `json:",string"`
+	TLSEnabled                bool
+	TLSSecret                 string
 }
 
 // pgBouncerDeploymentFormat is the name of the Kubernetes Deployment that
@@ -507,7 +516,7 @@ func createPgbouncerConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcl
 	}
 
 	// generate the pgbouncer HBA file
-	pgbouncerHBA, err := generatePgBouncerHBA()
+	pgbouncerHBA, err := generatePgBouncerHBA(cluster)
 
 	if err != nil {
 		log.Error(err)
@@ -554,6 +563,7 @@ func createPgBouncerDeployment(clientset kubernetes.Interface, cluster *crv1.Pgc
 		ClusterName:        cluster.Name,
 		CCPImagePrefix:     util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
 		CCPImageTag:        util.GetStandardImageTag(cluster.Spec.CCPImage, cluster.Spec.CCPImageTag),
+		DisableFSGroup:     operator.Pgo.Cluster.DisableFSGroup,
 		Port:               cluster.Spec.Port,
 		PGBouncerConfigMap: util.GeneratePgBouncerConfigMapName(cluster.Name),
 		PGBouncerSecret:    util.GeneratePgBouncerSecretName(cluster.Name),
@@ -566,6 +576,13 @@ func createPgBouncerDeployment(clientset kubernetes.Interface, cluster *crv1.Pgc
 		PodAntiAffinityLabelValue: string(operator.GetPodAntiAffinityType(cluster,
 			crv1.PodAntiAffinityDeploymentPgBouncer, cluster.Spec.PodAntiAffinity.PgBouncer)),
 		Replicas: cluster.Spec.PgBouncer.Replicas,
+	}
+
+	// set appropriate fields if TLS is enabled
+	if isPgBouncerTLSEnabled(cluster) {
+		fields.CASecret = cluster.Spec.TLS.CASecret
+		fields.TLSEnabled = true
+		fields.TLSSecret = cluster.Spec.PgBouncer.TLSSecret
 	}
 
 	// For debugging purposes, put the template substitution in stdout
@@ -739,6 +756,7 @@ func generatePgBouncerConf(cluster *crv1.Pgcluster) (string, error) {
 	fields := PgbouncerConfFields{
 		PG_PRIMARY_SERVICE_NAME: cluster.Name,
 		PG_PORT:                 port,
+		TLSEnabled:              isPgBouncerTLSEnabled(cluster),
 	}
 
 	// perform the substitution
@@ -759,12 +777,15 @@ func generatePgBouncerConf(cluster *crv1.Pgcluster) (string, error) {
 
 // generatePgBouncerHBA generates the pgBouncer host-based authentication file
 // using the template that is vailable
-func generatePgBouncerHBA() (string, error) {
-	// ...apparently this is overkill, but this is here from the legacy method
-	// and it seems like it's "ok" to leave it like this for now...
+func generatePgBouncerHBA(cluster *crv1.Pgcluster) (string, error) {
+	// we may have some substitutions if this is a TLS enabled cluster
+	fields := pgBouncerHBATemplateFields{
+		TLSEnabled: isPgBouncerTLSEnabled(cluster),
+	}
+
 	doc := bytes.Buffer{}
 
-	if err := config.PgbouncerHBATemplate.Execute(&doc, struct{}{}); err != nil {
+	if err := config.PgbouncerHBATemplate.Execute(&doc, fields); err != nil {
 		log.Error(err)
 
 		return "", err
@@ -839,6 +860,12 @@ func installPgBouncer(clientset kubernetes.Interface, restconfig *rest.Config, p
 	}
 
 	return nil
+}
+
+// isPgBouncerTLSEnabled returns true if TLS is enabled for pgBouncer, which
+// means that TLS is enabled for the PostgreSQL cluster itself
+func isPgBouncerTLSEnabled(cluster *crv1.Pgcluster) bool {
+	return cluster.Spec.PgBouncer.TLSSecret != "" && cluster.Spec.TLS.IsTLSEnabled()
 }
 
 // makePostgresPassword creates the expected hash for a password type for a
