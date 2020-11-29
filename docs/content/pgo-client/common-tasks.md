@@ -1485,22 +1485,7 @@ You can view policies as following:
 
 ### Connection Pooling via pgBouncer
 
-To add a pgbouncer Deployment to your Postgres cluster, enter:
-
-    pgo create cluster hacluster --pgbouncer -n pgouser1
-
-You can add pgbouncer after a Postgres cluster is created as follows:
-
-    pgo create pgbouncer hacluster
-    pgo create pgbouncer --selector=name=hacluster
-
-You can also specify a pgbouncer password as follows:
-
-    pgo create cluster hacluster --pgbouncer --pgbouncer-pass=somepass -n pgouser1
-
-You can remove a pgbouncer from a cluster as follows:
-
-    pgo delete pgbouncer hacluster -n pgouser1
+Please see the [tutorial on pgBouncer]({{< relref "tutorial/pgbouncer.md" >}}).
 
 ### Query Analysis via pgBadger
 

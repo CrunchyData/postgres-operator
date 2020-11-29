@@ -80,12 +80,18 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 	}
 
 	for _, cluster := range clusterList.Items {
-
 		// check if the current cluster is not upgraded to the deployed
 		// Operator version. If not, do not allow the command to complete
 		if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = cluster.Name + msgs.UpgradeError
+			return resp
+		}
+
+		// validate the TLS settings
+		if err := validateTLS(cluster, request); err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
 			return resp
 		}
 
@@ -132,6 +138,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 		}
 
 		cluster.Spec.PgBouncer.Resources = resources
+		cluster.Spec.PgBouncer.TLSSecret = request.TLSSecret
 
 		// update the cluster CRD with these udpates. If there is an error
 		if _, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).
@@ -533,4 +540,41 @@ func setPgBouncerServiceDetail(cluster crv1.Pgcluster, result *msgs.ShowPgBounce
 			result.ServiceExternalIP = service.Status.LoadBalancer.Ingress[0].IP
 		}
 	}
+}
+
+// validateTLS validates the parameters that allow a user to enable TLS
+// connections to a pgBouncer cluster. In essence, it requires both the
+// TLSSecret to be set for pgBouncer as well as a CASecret/TLSSecret for the
+// cluster itself
+func validateTLS(cluster crv1.Pgcluster, request *msgs.CreatePgbouncerRequest) error {
+	ctx := context.TODO()
+
+	// if TLSSecret is not set, well, this is valid
+	if request.TLSSecret == "" {
+		return nil
+	}
+
+	// if ReplicationTLSSecret is set, but neither TLSSecret nor CASecret is not
+	// set, then return
+	if request.TLSSecret != "" && (cluster.Spec.TLS.TLSSecret == "" || cluster.Spec.TLS.CASecret == "") {
+		return fmt.Errorf("%s: both TLS secret and CA secret must be set on the cluster in order to enable TLS for pgBouncer", cluster.Name)
+	}
+
+	// ensure the TLSSecret and CASecret for the cluster are actually present
+	// now check for the existence of the two secrets
+	// First the TLS secret
+	if _, err := apiserver.Clientset.
+		CoreV1().Secrets(cluster.Namespace).
+		Get(ctx, cluster.Spec.TLS.TLSSecret, metav1.GetOptions{}); err != nil {
+		return fmt.Errorf("%s: cannot find TLS secret for cluster: %w", cluster.Name, err)
+	}
+
+	if _, err := apiserver.Clientset.
+		CoreV1().Secrets(cluster.Namespace).
+		Get(ctx, cluster.Spec.TLS.CASecret, metav1.GetOptions{}); err != nil {
+		return fmt.Errorf("%s: cannot find CA secret for cluster: %w", cluster.Name, err)
+	}
+
+	// after this, we are validated!
+	return nil
 }

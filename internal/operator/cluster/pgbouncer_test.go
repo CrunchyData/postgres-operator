@@ -19,7 +19,59 @@ import (
 	"testing"
 
 	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
+	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 )
+
+func TestIsPgBouncerTLSEnabled(t *testing.T) {
+	cluster := &crv1.Pgcluster{
+		Spec: crv1.PgclusterSpec{
+			PgBouncer: crv1.PgBouncerSpec{},
+			TLS:       crv1.TLSSpec{},
+		},
+	}
+
+	t.Run("true", func(t *testing.T) {
+		cluster.Spec.PgBouncer.TLSSecret = "pgbouncer-tls"
+		cluster.Spec.TLS.CASecret = "ca"
+		cluster.Spec.TLS.TLSSecret = "postgres-tls"
+
+		if !isPgBouncerTLSEnabled(cluster) {
+			t.Errorf("expected true")
+		}
+	})
+
+	t.Run("false", func(t *testing.T) {
+		t.Run("neither enabled", func(t *testing.T) {
+			cluster.Spec.PgBouncer.TLSSecret = ""
+			cluster.Spec.TLS.CASecret = ""
+			cluster.Spec.TLS.TLSSecret = ""
+
+			if isPgBouncerTLSEnabled(cluster) {
+				t.Errorf("expected false")
+			}
+		})
+
+		t.Run("postgres TLS enabled only", func(t *testing.T) {
+			cluster.Spec.PgBouncer.TLSSecret = ""
+			cluster.Spec.TLS.CASecret = "ca"
+			cluster.Spec.TLS.TLSSecret = "postgres-tls"
+
+			if isPgBouncerTLSEnabled(cluster) {
+				t.Errorf("expected false")
+			}
+		})
+
+		t.Run("pgbouncer TLS enabled only", func(t *testing.T) {
+			cluster.Spec.PgBouncer.TLSSecret = "pgbouncer-tls"
+			cluster.Spec.TLS.CASecret = ""
+			cluster.Spec.TLS.TLSSecret = ""
+
+			if isPgBouncerTLSEnabled(cluster) {
+				t.Errorf("expected false")
+			}
+		})
+	})
+}
 
 func TestMakePostgresPassword(t *testing.T) {
 

@@ -87,7 +87,11 @@ type CreateClusterRequest struct {
 	// PgBouncerReplicas represents the total number of pgBouncer pods to deploy with a
 	// PostgreSQL cluster. Only works if PgbouncerFlag is set, and if so, it must
 	// be at least 1. If 0 is passed in, it will automatically be set to 1
-	PgBouncerReplicas    int32
+	PgBouncerReplicas int32
+	// PgBouncerTLSSecret is the name of the Secret containing the TLS keypair
+	// for enabling TLS with pgBouncer. This also requires for TLSSecret and
+	// CASecret to be set
+	PgBouncerTLSSecret   string
 	CustomConfig         string
 	StorageConfig        string
 	WALStorageConfig     string
