@@ -11,10 +11,10 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/xdg/stringprep v1.0.0
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.13.0
-	go.opentelemetry.io/otel v0.13.0
-	go.opentelemetry.io/otel/exporters/stdout v0.13.0
-	go.opentelemetry.io/otel/exporters/trace/jaeger v0.13.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.14.0
+	go.opentelemetry.io/otel v0.14.0
+	go.opentelemetry.io/otel/exporters/stdout v0.14.0
+	go.opentelemetry.io/otel/exporters/trace/jaeger v0.14.0
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	k8s.io/api v0.19.2

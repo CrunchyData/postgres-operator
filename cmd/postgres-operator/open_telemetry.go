@@ -22,7 +22,7 @@ import (
 	"os"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/stdout"
 	"go.opentelemetry.io/otel/exporters/trace/jaeger"
 )
@@ -53,7 +53,7 @@ func initOpenTelemetry() (func(), error) {
 			return nil, fmt.Errorf("unable to initialize Jaeger exporter: %w", err)
 		}
 
-		global.SetTracerProvider(provider)
+		otel.SetTracerProvider(provider)
 		return flush, nil
 
 	case "json":
@@ -81,7 +81,7 @@ func initOpenTelemetry() (func(), error) {
 			}
 		}
 
-		global.SetTracerProvider(provider)
+		otel.SetTracerProvider(provider)
 		return flush, nil
 	}
 
