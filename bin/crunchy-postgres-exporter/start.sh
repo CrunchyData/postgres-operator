@@ -144,6 +144,12 @@ else
         else
             echo_err "Custom Query file queries_pg95.yml does not exist (it should).."
         fi
+        if [[ -f ${CONFIG_DIR?}/queries_pg_stat_statements_pg95.yml ]]
+        then
+          cat ${CONFIG_DIR?}/queries_pg_stat_statements_pg95.yml >> /tmp/queries.yml
+        else
+          echo_warn "Custom Query file queries_pg_stat_statements_pg95.yml not loaded."
+        fi
     elif (( ${VERSION?} >= 90600 )) && (( ${VERSION?} < 100000 ))
     then
         if [[ -f ${CONFIG_DIR?}/queries_pg96.yml ]]
@@ -151,6 +157,12 @@ else
             cat ${CONFIG_DIR?}/queries_pg96.yml >> /tmp/queries.yml
         else
             echo_err "Custom Query file queries_pg96.yml does not exist (it should).."
+        fi
+        if [[ -f ${CONFIG_DIR?}/queries_pg_stat_statements_pg96.yml ]]
+        then
+          cat ${CONFIG_DIR?}/queries_pg_stat_statements_pg96.yml >> /tmp/queries.yml
+        else
+          echo_warn "Custom Query file queries_pg_stat_statements_pg96.yml not loaded."
         fi
     elif (( ${VERSION?} >= 100000 )) && (( ${VERSION?} < 110000 ))
     then
@@ -160,6 +172,12 @@ else
         else
             echo_err "Custom Query file queries_pg10.yml does not exist (it should).."
         fi
+        if [[ -f ${CONFIG_DIR?}/queries_pg_stat_statements_pg10.yml ]]
+        then
+          cat ${CONFIG_DIR?}/queries_pg_stat_statements_pg10.yml >> /tmp/queries.yml
+        else
+          echo_warn "Custom Query file queries_pg_stat_statements_pg10.yml not loaded."
+        fi
     elif (( ${VERSION?} >= 110000 )) && (( ${VERSION?} < 120000 ))
     then
         if [[ -f ${CONFIG_DIR?}/queries_pg11.yml ]]
@@ -167,6 +185,12 @@ else
             cat ${CONFIG_DIR?}/queries_pg11.yml >> /tmp/queries.yml
         else
             echo_err "Custom Query file queries_pg11.yml does not exist (it should).."
+        fi
+        if [[ -f ${CONFIG_DIR?}/queries_pg_stat_statements_pg11.yml ]]
+        then
+          cat ${CONFIG_DIR?}/queries_pg_stat_statements_pg11.yml >> /tmp/queries.yml
+        else
+          echo_warn "Custom Query file queries_pg_stat_statements_pg11.yml not loaded."
         fi
     elif (( ${VERSION?} >= 120000 )) && (( ${VERSION?} < 130000 ))
     then
@@ -176,13 +200,25 @@ else
         else
             echo_err "Custom Query file queries_pg12.yml does not exist (it should).."
         fi
+        if [[ -f ${CONFIG_DIR?}/queries_pg_stat_statements_pg12.yml ]]
+        then
+          cat ${CONFIG_DIR?}/queries_pg_stat_statements_pg12.yml >> /tmp/queries.yml
+        else
+          echo_warn "Custom Query file queries_pg_stat_statements_pg12.yml not loaded."
+        fi
         elif (( ${VERSION?} >= 130000 ))
     then
         if [[ -f ${CONFIG_DIR?}/queries_pg13.yml ]]
         then
             cat ${CONFIG_DIR?}/queries_pg13.yml >> /tmp/queries.yml
         else
-            echo_err "Custom Query file queries_pg12.yml does not exist (it should).."
+            echo_err "Custom Query file queries_pg13.yml does not exist (it should).."
+        fi
+        if [[ -f ${CONFIG_DIR?}/queries_pg_stat_statements_pg13.yml ]]
+        then
+          cat ${CONFIG_DIR?}/queries_pg_stat_statements_pg13.yml >> /tmp/queries.yml
+        else
+          echo_warn "Custom Query file queries_pg_stat_statements_pg13.yml not loaded."
         fi
     else
         echo_err "Unknown or unsupported version of PostgreSQL.  Exiting.."
