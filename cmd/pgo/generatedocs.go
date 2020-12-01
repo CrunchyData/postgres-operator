@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra/doc"
 
 	"github.com/crunchydata/postgres-operator/cmd/pgo/cmd"
@@ -54,6 +53,6 @@ func main() {
 
 	err := doc.GenMarkdownTreeCustom(cmd.RootCmd, "./", filePrepender, linkHandler)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 }

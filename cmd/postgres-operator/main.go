@@ -43,6 +43,13 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/operator"
 )
 
+// assertNoError panics when err is not nil.
+func assertNoError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func initLogging() {
 	// Configure a singleton that treats logr.Logger.V(1) as logrus.DebugLevel.
 	var verbosity int
@@ -60,15 +67,11 @@ func initLogging() {
 }
 
 func main() {
-	if flush, err := initOpenTelemetry(); err != nil {
-		log.Fatal(err)
-	} else {
-		defer flush()
-	}
+	otelFlush, err := initOpenTelemetry()
+	assertNoError(err)
+	defer otelFlush()
 
 	initLogging()
-
-	var err error
 
 	// create a context that will be used to stop all controllers on a SIGTERM or SIGINT
 	ctx := signals.SetupSignalHandler()
@@ -78,9 +81,7 @@ func main() {
 	disablePGClusterVal := os.Getenv("PGO_DISABLE_PGCLUSTER")
 	if disablePGClusterVal != "" {
 		disablePGCluster, err = strconv.ParseBool(disablePGClusterVal)
-		if err != nil {
-			log.Fatal(err)
-		}
+		assertNoError(err)
 	}
 	log.Debugf("disablePGClusterVal is %t", disablePGCluster)
 
@@ -90,15 +91,13 @@ func main() {
 	disablePostgresClusterVal := os.Getenv("PGO_DISABLE_POSTGRESCLUSTER")
 	if disablePostgresClusterVal != "" {
 		disablePostgresCluster, err = strconv.ParseBool(disablePostgresClusterVal)
-		if err != nil {
-			log.Fatal(err)
-		}
+		assertNoError(err)
 	}
 	log.Debugf("disablePostgresCluster is %t", disablePostgresCluster)
 
 	// exit with an error if neither the pgcluster nor postgrescluster controllers are enabled
 	if disablePGCluster && disablePostgresCluster {
-		log.Fatal("either the pgcluster or postgrescluster controller must be enabled")
+		panic("either the pgcluster or postgrescluster controller must be enabled")
 	}
 
 	var controllerManager *manager.ControllerManager
@@ -168,9 +167,7 @@ func enablePGClusterControllers(stopCh <-chan struct{}) *manager.ControllerManag
 	}
 
 	client, err := newKubernetesClient()
-	if err != nil {
-		log.Fatal(err)
-	}
+	assertNoError(err)
 
 	operator.Initialize(client)
 
@@ -178,18 +175,13 @@ func enablePGClusterControllers(stopCh <-chan struct{}) *manager.ControllerManag
 	// operating mode, creating/updating namespaces (if permitted), and obtaining a valid
 	// list of target namespaces for the operator install
 	namespaceList, err := operator.SetupNamespaces(client)
-	if err != nil {
-		log.Fatalf("Error configuring operator namespaces: %v", err)
-	}
+	assertNoError(err)
 
 	// create a new controller manager with controllers for all current namespaces and then run
 	// all of those controllers
 	controllerManager, err := manager.NewControllerManager(namespaceList, operator.Pgo,
 		operator.PgoNamespace, operator.InstallationName, operator.NamespaceOperatingMode())
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Debug("controller manager created")
+	assertNoError(err)
 
 	controllerManager.NewKubernetesClient = newKubernetesClient
 
@@ -200,19 +192,11 @@ func enablePGClusterControllers(stopCh <-chan struct{}) *manager.ControllerManag
 	// controller.  This allows for namespace and RBAC reconciliation logic to be run in a
 	// consistent manner regardless of the namespace operating mode being utilized.
 	if operator.NamespaceOperatingMode() != ns.NamespaceOperatingModeDisabled {
-		if err := createAndStartNamespaceController(client, controllerManager,
-			stopCh); err != nil {
-			log.Fatal(err)
-		}
+		assertNoError(createAndStartNamespaceController(client, controllerManager, stopCh))
 	} else {
 		fakeClient, err := ns.CreateFakeNamespaceClient(operator.InstallationName)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err := createAndStartNamespaceController(fakeClient, controllerManager,
-			stopCh); err != nil {
-			log.Fatal(err)
-		}
+		assertNoError(err)
+		assertNoError(createAndStartNamespaceController(fakeClient, controllerManager, stopCh))
 	}
 
 	return controllerManager
@@ -224,23 +208,14 @@ func enablePostgresClusterControllers(ctx context.Context) {
 	log := logging.FromContext(ctx)
 
 	cfg, err := runtime.GetConfig()
-	if err != nil {
-		log.Error(err, "runtime configuration")
-		os.Exit(1)
-	}
+	assertNoError(err)
 
 	cfg.Wrap(otelTransportWrapper())
 
 	mgr, err := runtime.CreateRuntimeManager(os.Getenv("PGO_TARGET_NAMESPACE"), cfg)
-	if err != nil {
-		log.Error(err, "runtime manager")
-		os.Exit(1)
-	}
+	assertNoError(err)
 
 	log.Info("starting controller runtime manager and will wait for signal to exit")
-	if err := mgr.Start(ctx); err != nil {
-		log.Error(err, "manager exited")
-		os.Exit(1)
-	}
+	assertNoError(mgr.Start(ctx))
 	log.Info("signal received, exiting")
 }

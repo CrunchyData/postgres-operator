@@ -56,7 +56,7 @@ func main() {
 
 	client, err := kubeapi.NewClient()
 	if err != nil {
-		log.Fatalln(err.Error())
+		panic(err)
 	}
 
 	request.Clientset = client

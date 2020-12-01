@@ -18,6 +18,7 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -122,23 +123,23 @@ func main() {
 			// Since disabling authentication would break functionality
 			// dependent on the user identity, only certain routes may be
 			// configured in NOAUTH_ROUTES.
-			log.Fatalf("NOAUTH_ROUTES configured incorrectly: %s", err)
+			panic(fmt.Errorf("NOAUTH_ROUTES configured incorrectly: %w", err))
 		}
 		r.Use(certEnforcer.Enforce)
 
 		// Cert files are used for http.ListenAndServeTLS
 		err = apiserver.WriteTLSCert(serverCertPath, serverKeyPath)
 		if err != nil {
-			log.Fatalf("unable to open server cert at %s - %v", serverKeyPath, err)
+			panic(fmt.Errorf("unable to open server cert at %s - %w", serverKeyPath, err))
 		}
 
 		// Add server cert to trust root, necessarily includes server
 		// certificate issuer chain (intermediate and root CAs)
 		if svrCertFile, err := os.Open(serverCertPath); err != nil {
-			log.Fatalf("unable to open %s for reading - %v", serverCertPath, err)
+			panic(fmt.Errorf("unable to open %s for reading - %w", serverCertPath, err))
 		} else {
 			if err = tlsutil.ExtendTrust(tlsTrustedCAs, svrCertFile); err != nil {
-				log.Fatalf("error reading server cert at %s - %v", serverCertPath, err)
+				panic(fmt.Errorf("error reading server cert at %s - %w", serverCertPath, err))
 			}
 			svrCertFile.Close()
 		}
@@ -158,13 +159,17 @@ func main() {
 			TLSConfig: cfg,
 		}
 		log.Info("listening on port " + srvPort)
-		log.Fatal(srv.ListenAndServeTLS(serverCertPath, serverKeyPath))
+		if err := srv.ListenAndServeTLS(serverCertPath, serverKeyPath); err != nil {
+			panic(err)
+		}
 	} else {
 		srv = &http.Server{
 			Addr:    ":" + srvPort,
 			Handler: r,
 		}
 		log.Info("listening on port " + srvPort)
-		log.Fatal(srv.ListenAndServe())
+		if err := srv.ListenAndServe(); err != nil {
+			panic(err)
+		}
 	}
 }
