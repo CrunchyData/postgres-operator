@@ -52,15 +52,6 @@ const (
 func Delete(request Request) {
 	log.Infof("rmdata.Process %v", request)
 
-	// if, check to see if this is a full cluster removal...i.e. "IsReplica"
-	// and "IsBackup" is set to false
-	//
-	// if this is a full cluster removal, first disable autofailover
-	if !(request.IsReplica || request.IsBackup) {
-		log.Debug("disabling autofailover for cluster removal")
-		util.ToggleAutoFailover(request.Clientset, false, request.ClusterPGHAScope, request.Namespace)
-	}
-
 	//the case of 'pgo scaledown'
 	if request.IsReplica {
 		log.Info("rmdata.Process scaledown replica use case")
