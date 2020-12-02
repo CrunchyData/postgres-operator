@@ -722,9 +722,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 
 	//set the metrics flag with the global setting first
 	userLabelsMap[config.LABEL_EXPORTER] = strconv.FormatBool(apiserver.MetricsFlag)
-	if err != nil {
-		log.Error(err)
-	}
 
 	//if metrics is chosen on the pgo command, stick it into the user labels
 	if request.MetricsFlag {
