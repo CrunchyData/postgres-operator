@@ -1,0 +1,6 @@
+[
+    { "op": "add", "path": "/spec/annotations/global/favorite", "value": "hippo"},
+    { "op": "add", "path": "/spec/annotations/backrest/chair", "value": "comfy"},
+    { "op": "add", "path": "/spec/annotations/pgBouncer/pool", "value": "swimming"},
+    { "op": "add", "path": "/spec/annotations/postgres/elephant", "value": "cool"}
+]

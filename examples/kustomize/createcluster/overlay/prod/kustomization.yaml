@@ -1,0 +1,15 @@
+resources:
+- ../../base
+namePrefix: prod-
+namespace: pgo
+commonLabels:
+  environment: production
+
+patchesJson6902:
+  - target:
+      group: crunchydata.com
+      version: v1
+      namespace: pgo
+      kind: Pgcluster
+      name: prod-hippo
+    path: prodhippo.json
