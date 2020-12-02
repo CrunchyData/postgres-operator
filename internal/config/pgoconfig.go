@@ -516,6 +516,11 @@ func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) 
 
 	cMap, err := initialize(clientset, namespace)
 
+	if err != nil {
+		log.Errorf("could not get ConfigMap: %s", err.Error())
+		return err
+	}
+
 	//get the pgo.yaml config file
 	str := cMap.Data[CONFIG_PATH]
 	if str == "" {

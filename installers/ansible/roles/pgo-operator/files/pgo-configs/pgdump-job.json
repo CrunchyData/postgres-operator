@@ -33,7 +33,9 @@
                 "serviceAccountName": "pgo-default",
                 "containers": [{
                         "name": "pgdump",
-                        "image": "{{.CCPImagePrefix}}/crunchy-pgdump:{{.CCPImageTag}}",
+                        "image": "{{.CCPImagePrefix}}/crunchy-postgres-ha:{{.CCPImageTag}}",
+                        "command": ["/opt/crunchy/bin/uid_postgres.sh"],
+                        "args": ["/opt/crunchy/bin/start.sh"],
                         "volumeMounts": [
                             {
                                 "mountPath": "/pgdata",
@@ -42,6 +44,10 @@
                             }
                         ],
                         "env": [
+                            {
+                                "name": "MODE",
+                                "value": "pgdump"
+                            },
                             {
                                 "name": "PGDUMP_HOST",
                                 "value": "{{.PgDumpHost}}"

@@ -5,7 +5,7 @@
         "name": "{{.JobName}}",
         "labels": {
             "vendor": "crunchydata",
-            "pgo-sqlrunner": "true",
+            "sqlrunner": "true",
             "pg-cluster": "{{.ClusterName}}"
         }
     },
@@ -15,7 +15,7 @@
                 "name": "{{.JobName}}",
                 "labels": {
                     "vendor": "crunchydata",
-                    "pgo-sqlrunner": "true",
+                    "sqlrunner": "true",
                     "pg-cluster": "{{.ClusterName}}"
                 }
             },
@@ -24,8 +24,14 @@
                 "containers": [
                     {
                         "name": "sqlrunner",
-                        "image": "{{.PGOImagePrefix}}/pgo-sqlrunner:{{.PGOImageTag}}",
+                        "image": "{{.CCPImagePrefix}}/crunchy-postgres-ha:{{.CCPImageTag}}",
+                        "command": ["/opt/crunchy/bin/uid_postgres.sh"],
+                        "args": ["/opt/crunchy/bin/start.sh"],
                         "env": [
+                            {
+                                "name": "MODE",
+                                "value": "sqlrunner"
+                            },
                             {
                                 "name": "PG_HOST",
                                 "value": "{{.PGHost}}"

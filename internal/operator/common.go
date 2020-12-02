@@ -17,8 +17,11 @@ package operator
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"io/ioutil"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -27,10 +30,15 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	v1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
 const (
+	// defaultBackrestRepoConfigPath contains the default configuration that are used
+	// to set up a pgBackRest repository
+	defaultBackrestRepoConfigPath = "/default-pgo-backrest-repo/"
 	// defaultRegistry is the default registry to pull the container images from
 	defaultRegistry = "registry.developers.crunchydata.com/crunchydata"
 )
@@ -62,6 +70,10 @@ type containerResourcesTemplateFields struct {
 	RequestsMemory, RequestsCPU string
 }
 
+// defaultBackrestRepoConfigKeys are the default keys expected to be in the
+// pgBackRest repo config secret
+var defaultBackrestRepoConfigKeys = []string{"config", "sshd_config", "aws-s3-ca.crt"}
+
 func Initialize(clientset kubernetes.Interface) {
 
 	tmp := os.Getenv("CRUNCHY_DEBUG")
@@ -89,16 +101,15 @@ func Initialize(clientset kubernetes.Interface) {
 		os.Exit(2)
 	}
 
-	var err error
-
-	err = Pgo.GetConfig(clientset, PgoNamespace)
-	if err != nil {
+	if err := Pgo.GetConfig(clientset, PgoNamespace); err != nil {
 		log.Error(err)
-		log.Error("pgo-config files and templates did not load")
-		os.Exit(2)
+		log.Fatal("pgo-config files and templates did not load")
 	}
 
-	log.Printf("PrimaryStorage=%v\n", Pgo.Storage["storage1"])
+	// initialize the general pgBackRest secret
+	if err := initializeOperatorBackrestSecret(clientset, PgoNamespace); err != nil {
+		log.Fatal(err)
+	}
 
 	if Pgo.Cluster.CCPImagePrefix == "" {
 		log.Debugf("pgo.yaml CCPImagePrefix not set, using default %q", defaultRegistry)
@@ -358,6 +369,71 @@ func initializeControllerWorkerCounts() {
 		log.Debugf("PGTaskWorkerCount is set, using %d worker(s)",
 			*Pgo.Pgo.PGTaskWorkerCount)
 	}
+}
+
+// initializeOperatorBackrestSecret ensures the generic pgBackRest configuration
+// is available
+func initializeOperatorBackrestSecret(clientset kubernetes.Interface, namespace string) error {
+	var isNew, isModified bool
+
+	ctx := context.TODO()
+
+	// determine if the Secret already exists
+	secret, err := clientset.
+		CoreV1().Secrets(namespace).
+		Get(ctx, config.SecretOperatorBackrestRepoConfig, metav1.GetOptions{})
+
+	// if there is a true error, return. Otherwise, initialize a new Secret
+	if err != nil {
+		if !kerrors.IsNotFound(err) {
+			return err
+		}
+
+		secret = &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: config.SecretOperatorBackrestRepoConfig,
+			},
+			Data: map[string][]byte{},
+		}
+		isNew = true
+	}
+
+	// set any missing defaults
+	for _, filename := range defaultBackrestRepoConfigKeys {
+		// skip if there is already content
+		if len(secret.Data[filename]) != 0 {
+			continue
+		}
+
+		file := path.Join(defaultBackrestRepoConfigPath, filename)
+
+		// if we can't read the contents of the file for whatever reason, warn,
+		// but continue
+		// otherwise, update the entry in the Secret
+		if contents, err := ioutil.ReadFile(file); err != nil {
+			log.Warn(err)
+			continue
+		} else {
+			secret.Data[filename] = contents
+		}
+
+		isModified = true
+	}
+
+	// do not make any updates if the secret is not modified at all
+	if !isModified {
+		return nil
+	}
+
+	// make the API calls based on if we are creating or updating
+	if isNew {
+		_, err := clientset.CoreV1().Secrets(namespace).Create(ctx, secret, metav1.CreateOptions{})
+		return err
+	}
+
+	_, err = clientset.CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{})
+
+	return err
 }
 
 // SetupNamespaces is responsible for the initial namespace configuration for the Operator

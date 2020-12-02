@@ -134,8 +134,8 @@ func (p PolicyJob) Run() {
 	policyJob := PolicyTemplate{
 		JobName:        name,
 		ClusterName:    p.cluster,
-		PGOImagePrefix: util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, p.ccpImagePrefix),
-		PGOImageTag:    p.ccpImageTag,
+		CCPImagePrefix: util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, p.ccpImagePrefix),
+		CCPImageTag:    p.ccpImageTag,
 		PGHost:         p.cluster,
 		PGPort:         cluster.Spec.Port,
 		PGDatabase:     p.database,
@@ -177,7 +177,7 @@ func (p PolicyJob) Run() {
 	}
 
 	// set the container image to an override value, if one exists
-	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_SQL_RUNNER,
+	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_HA,
 		&newJob.Spec.Template.Spec.Containers[0])
 
 	_, err = clientset.BatchV1().Jobs(p.namespace).Create(ctx, newJob, metav1.CreateOptions{})

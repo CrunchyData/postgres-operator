@@ -21,7 +21,6 @@ IMAGES=(
     pgo-event
     pgo-backrest-repo
     pgo-scheduler
-    pgo-sqlrunner
     postgres-operator
     pgo-apiserver
     pgo-rmdata

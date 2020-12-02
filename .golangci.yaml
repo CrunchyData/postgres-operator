@@ -1,0 +1,16 @@
+# https://golangci-lint.run/usage/configuration/
+
+linters:
+  disable:
+    - scopelint
+  enable:
+    - gosimple
+    - misspell
+  presets:
+    - bugs
+    - format
+    - unused
+
+run:
+  skip-dirs:
+    - pkg/generated

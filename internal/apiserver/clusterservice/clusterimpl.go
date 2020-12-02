@@ -722,9 +722,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 
 	//set the metrics flag with the global setting first
 	userLabelsMap[config.LABEL_EXPORTER] = strconv.FormatBool(apiserver.MetricsFlag)
-	if err != nil {
-		log.Error(err)
-	}
 
 	//if metrics is chosen on the pgo command, stick it into the user labels
 	if request.MetricsFlag {
@@ -1262,6 +1259,11 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.PgBouncer.Resources[v1.ResourceMemory] = quantity
 	} else {
 		spec.PgBouncer.Resources[v1.ResourceMemory] = apiserver.Pgo.Cluster.DefaultPgBouncerResourceMemory
+	}
+
+	// if TLS is enabled for pgBouncer, ensure the secret is specified
+	if request.PgBouncerTLSSecret != "" {
+		spec.PgBouncer.TLSSecret = request.PgBouncerTLSSecret
 	}
 
 	spec.PrimaryStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.PrimaryStorage)
@@ -2148,10 +2150,23 @@ func validateBackrestStorageTypeOnCreate(request *msgs.CreateClusterRequest) err
 func validateClusterTLS(request *msgs.CreateClusterRequest) error {
 	ctx := context.TODO()
 
-	// if ReplicationTLSSecret is set, but neither TLSSecret nor CASecret is not
-	// set, then return
+	// if ReplicationTLSSecret is set, but neither TLSSecret nor CASecret is set
+	// then return
 	if request.ReplicationTLSSecret != "" && (request.TLSSecret == "" || request.CASecret == "") {
 		return fmt.Errorf("Both TLS secret and CA secret must be set in order to enable certificate-based authentication for replication")
+	}
+
+	// if PgBouncerTLSSecret is set, return if:
+	// a) pgBouncer is not enabled OR
+	// b) neither TLSSecret nor CASecret is set
+	if request.PgBouncerTLSSecret != "" {
+		if !request.PgbouncerFlag {
+			return fmt.Errorf("pgBouncer must be enabled in order to enable TLS for pgBouncer")
+		}
+
+		if request.TLSSecret == "" || request.CASecret == "" {
+			return fmt.Errorf("Both TLS secret and CA secret must be set in order to enable TLS for pgBouncer")
+		}
 	}
 
 	// if TLSOnly is not set and  neither TLSSecret no CASecret are set, just return
@@ -2188,6 +2203,15 @@ func validateClusterTLS(request *msgs.CreateClusterRequest) error {
 		if _, err := apiserver.Clientset.
 			CoreV1().Secrets(request.Namespace).
 			Get(ctx, request.ReplicationTLSSecret, metav1.GetOptions{}); err != nil {
+			return err
+		}
+	}
+
+	// then, if set, the pgBouncer TLS secret
+	if request.PgBouncerTLSSecret != "" {
+		if _, err := apiserver.Clientset.
+			CoreV1().Secrets(request.Namespace).
+			Get(ctx, request.PgBouncerTLSSecret, metav1.GetOptions{}); err != nil {
 			return err
 		}
 	}

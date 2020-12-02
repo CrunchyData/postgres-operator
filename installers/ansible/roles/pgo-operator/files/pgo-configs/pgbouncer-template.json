@@ -39,6 +39,11 @@
             },
             "spec": {
                 "serviceAccountName": "pgo-default",
+                {{ if not .DisableFSGroup }}
+                "securityContext": {
+                  "fsGroup": 2
+                },
+                {{ end }}
                 "containers": [{
                     "name": "pgbouncer",
                     "image": "{{.CCPImagePrefix}}/crunchy-pgbouncer:{{.CCPImageTag}}",
@@ -59,13 +64,41 @@
                         "name": "PG_PRIMARY_SERVICE_NAME",
                         "value": "{{.PrimaryServiceName}}"
                     }],
-                    "volumeMounts": [{
+                    "volumeMounts": [
+                      {{if .TLSEnabled}}
+                      {
+                        "mountPath": "/pgconf/tls/pgbouncer",
+                        "name": "tls-pgbouncer"
+                      },
+                      {{ end }}
+                      {
                         "name": "pgbouncer-conf",
                         "mountPath": "/pgconf/",
                         "readOnly": false
-                    }]
+                      }
+                    ]
                 }],
                 "volumes": [
+                  {{if .TLSEnabled}}
+                  {
+                    "name": "tls-pgbouncer",
+                    "defaultMode": 288,
+                    "projected": {
+                      "sources": [
+                        {
+                          "secret": {
+                              "name": "{{.TLSSecret}}"
+                          }
+                        },
+                        {
+                          "secret": {
+                              "name": "{{.CASecret}}"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {{ end }}
                   {
                     "name": "pgbouncer-conf",
                     "projected": {
@@ -78,7 +111,7 @@
                         {
                           "secret": {
                             "name": "{{.PGBouncerSecret}}",
-                            "defaultMode": 511
+                            "defaultMode": 288
                           }
                         }
                       ]
