@@ -70,7 +70,7 @@ ifeq ("$(PGO_BASEOS)", "centos8")
 endif
 
 DEBUG_BUILD ?= false
-GO_BUILD = $(GO_CMD) build
+GO_BUILD = $(GO_CMD) build -trimpath
 GO_CMD = $(GO_ENV) go
 
 # Disable optimizations if creating a debug build

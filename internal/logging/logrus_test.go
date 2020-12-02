@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package logging_test
+package logging
 
 import (
 	"bytes"
@@ -25,8 +25,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/wojas/genericr"
-
-	"github.com/crunchydata/postgres-operator/internal/logging"
 )
 
 func assertLogrusContains(t testing.TB, actual, expected string) {
@@ -41,7 +39,7 @@ func TestLogrus(t *testing.T) {
 	t.Parallel()
 
 	out := new(bytes.Buffer)
-	logrus := logging.Logrus(out, "v1", 1)
+	logrus := Logrus(out, "v1", 1)
 
 	// Default level is INFO.
 	// Version field is always present.
@@ -89,19 +87,19 @@ func TestLogrusCaller(t *testing.T) {
 	t.Parallel()
 
 	out := new(bytes.Buffer)
-	log := genericr.New(logging.Logrus(out, "v2", 2)).WithCaller(true)
+	log := genericr.New(Logrus(out, "v2", 2)).WithCaller(true)
 
 	// Details come from the line of the logr.Logger call.
 	_, _, baseline, _ := runtime.Caller(0)
 	log.Info("")
 	assertLogrusContains(t, out.String(), fmt.Sprintf(`file="internal/logging/logrus_test.go:%d"`, baseline+1))
-	assertLogrusContains(t, out.String(), `func=logging_test.TestLogrusCaller`)
+	assertLogrusContains(t, out.String(), `func=logging.TestLogrusCaller`)
 
 	// Fields don't overwrite builtins.
 	out.Reset()
 	_, _, baseline, _ = runtime.Caller(0)
 	log.Info("", "file", "not-file", "func", "not-func")
 	assertLogrusContains(t, out.String(), fmt.Sprintf(`file="internal/logging/logrus_test.go:%d"`, baseline+1))
-	assertLogrusContains(t, out.String(), `func=logging_test.TestLogrusCaller`)
+	assertLogrusContains(t, out.String(), `func=logging.TestLogrusCaller`)
 	assertLogrusContains(t, out.String(), `fields.file=not-file fields.func=not-func`)
 }
