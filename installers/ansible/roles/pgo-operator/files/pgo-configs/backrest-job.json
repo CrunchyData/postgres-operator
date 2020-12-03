@@ -42,9 +42,6 @@
                         "name": "MODE",
                         "value": "pgbackrest"
                     },{
-                        "name": "CRUNCHY_DEBUG",
-                        "value": "true"
-                    },{
                         "name": "COMMAND_OPTS",
                         "value": "{{.CommandOpts}}"
                     }, {

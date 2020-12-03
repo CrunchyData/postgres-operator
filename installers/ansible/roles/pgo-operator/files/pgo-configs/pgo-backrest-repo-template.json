@@ -59,17 +59,10 @@
                       {
                         "name": "MODE",
                         "value": "pgbackrest-repo"
-                      },{
-                        "name": "CRUNCHY_DEBUG",
-                        "value": "true"
                       },
                       {
                         "name": "PGBACKREST_STANZA",
                         "value": "{{.PgbackrestStanza}}"
-                      },
-                      {
-                        "name": "SSHD_PORT",
-                        "value": "{{.SshdPort}}"
                       },
                       {
                         "name": "PGBACKREST_DB_PATH",

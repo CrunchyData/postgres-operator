@@ -48,7 +48,7 @@ const (
 	// ANNOTATION_S3_VERIFY_TLS is for storing the setting that determines whether or not TLS should
 	// be used to access a pgBackRest repository
 	ANNOTATION_S3_VERIFY_TLS = "s3-verify-tls"
-	// ANNOTATION_S3_BUCKET is for storing the SSHD port used by the pgBackRest repository
+	// ANNOTATION_SSHD_PORT is for storing the SSHD port used by the pgBackRest repository
 	// service in a cluster
 	ANNOTATION_SSHD_PORT = "sshd-port"
 	// ANNOTATION_SUPPLEMENTAL_GROUPS is for storing the supplemental groups used with a cluster
