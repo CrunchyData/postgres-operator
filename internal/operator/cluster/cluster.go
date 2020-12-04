@@ -520,118 +520,77 @@ func UpdateResources(cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) er
 
 // UpdateTablespaces updates the PostgreSQL instance Deployments to update
 // what tablespaces are mounted.
-// Though any new tablespaces are present in the CRD, to attempt to do less work
-// this function takes a map of the new tablespaces that are being added, so we
-// only have to check and create the PVCs that are being mounted at this time
-//
-// To do this, iterate through the tablespace mount map that is present in the
-// new cluster.
-func UpdateTablespaces(clientset kubernetes.Interface, restConfig *rest.Config,
-	cluster *crv1.Pgcluster, newTablespaces map[string]crv1.PgStorageSpec) error {
-	ctx := context.TODO()
+func UpdateTablespaces(cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) error {
+	// update the volume portion of the Deployment spec to reflect all of the
+	// available tablespaces
+	for tablespaceName, storageSpec := range cluster.Spec.TablespaceMounts {
+		// go through the volume list and see if there is already a volume for this
+		// if there is, skip
+		found := false
+		volumeName := operator.GetTablespaceVolumeName(tablespaceName)
 
-	// first, get a list of all of the instance deployments for the cluster
-	deployments, err := operator.GetInstanceDeployments(clientset, cluster)
+		for _, volume := range deployment.Spec.Template.Spec.Volumes {
+			if volume.Name == volumeName {
+				found = true
+				break
+			}
+		}
 
-	if err != nil {
-		return err
+		if found {
+			continue
+		}
+
+		// create the volume definition for the tablespace
+		storageResult := operator.StorageResult{
+			PersistentVolumeClaimName: operator.GetTablespacePVCName(deployment.Name, tablespaceName),
+			SupplementalGroups:        storageSpec.GetSupplementalGroups(),
+		}
+
+		volume := v1.Volume{
+			Name:         volumeName,
+			VolumeSource: storageResult.VolumeSource(),
+		}
+
+		// add the volume to the list of volumes
+		deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, volume)
+
+		// now add the volume mount point to that of the database container
+		volumeMount := v1.VolumeMount{
+			MountPath: fmt.Sprintf("%s%s", config.VOLUME_TABLESPACE_PATH_PREFIX, tablespaceName),
+			Name:      volumeName,
+		}
+
+		// we can do this as we always know that the "database" container is the
+		// first container in the list
+		deployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(
+			deployment.Spec.Template.Spec.Containers[0].VolumeMounts, volumeMount)
+
+		// add any supplemental groups specified in storage configuration.
+		// SecurityContext is always initialized because we use fsGroup.
+		deployment.Spec.Template.Spec.SecurityContext.SupplementalGroups = append(
+			deployment.Spec.Template.Spec.SecurityContext.SupplementalGroups,
+			storageResult.SupplementalGroups...)
 	}
 
-	tablespaceVolumes := make([]map[string]operator.StorageResult, len(deployments.Items))
-
-	// now we can start creating the new tablespaces! First, create the new
-	// PVCs. The PVCs are created for each **instance** in the cluster, as every
-	// instance needs to have a distinct PVC for each tablespace
-	for i, deployment := range deployments.Items {
-		tablespaceVolumes[i] = make(map[string]operator.StorageResult)
-
-		for tablespaceName, storageSpec := range newTablespaces {
-			// get the name of the tablespace PVC for that instance
-			tablespacePVCName := operator.GetTablespacePVCName(deployment.Name, tablespaceName)
-
-			log.Debugf("creating tablespace PVC [%s] for [%s]", tablespacePVCName, deployment.Name)
-
-			// and now create it! If it errors, we just need to return, which
-			// potentially leaves things in an inconsistent state, but at this point
-			// only PVC objects have been created
-			tablespaceVolumes[i][tablespaceName], err = pvc.CreateIfNotExists(clientset,
-				storageSpec, tablespacePVCName, cluster.Name, cluster.Namespace)
-			if err != nil {
-				return err
-			}
+	// find the "PGHA_TABLESPACES" value and update it with the new tablespace
+	// name list
+	ok := false
+	for i, envVar := range deployment.Spec.Template.Spec.Containers[0].Env {
+		// yup, it's an old fashioned linear time lookup
+		if envVar.Name == "PGHA_TABLESPACES" {
+			deployment.Spec.Template.Spec.Containers[0].Env[i].Value = operator.GetTablespaceNames(
+				cluster.Spec.TablespaceMounts)
+			ok = true
 		}
 	}
 
-	// now the fun step: update each deployment with the new volumes
-	for i, deployment := range deployments.Items {
-		log.Debugf("attach tablespace volumes to [%s]", deployment.Name)
-
-		// iterate through each table space and prepare the Volume and
-		// VolumeMount clause for each instance
-		for tablespaceName := range newTablespaces {
-			// this is the volume to be added for the tablespace
-			volume := v1.Volume{
-				Name:         operator.GetTablespaceVolumeName(tablespaceName),
-				VolumeSource: tablespaceVolumes[i][tablespaceName].VolumeSource(),
-			}
-
-			// add the volume to the list of volumes
-			deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, volume)
-
-			// now add the volume mount point to that of the database container
-			volumeMount := v1.VolumeMount{
-				MountPath: fmt.Sprintf("%s%s", config.VOLUME_TABLESPACE_PATH_PREFIX, tablespaceName),
-				Name:      operator.GetTablespaceVolumeName(tablespaceName),
-			}
-
-			// we can do this as we always know that the "database" container is the
-			// first container in the list
-			deployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(
-				deployment.Spec.Template.Spec.Containers[0].VolumeMounts, volumeMount)
-
-			// add any supplemental groups specified in storage configuration.
-			// SecurityContext is always initialized because we use fsGroup.
-			deployment.Spec.Template.Spec.SecurityContext.SupplementalGroups = append(
-				deployment.Spec.Template.Spec.SecurityContext.SupplementalGroups,
-				tablespaceVolumes[i][tablespaceName].SupplementalGroups...)
+	// if its not found, we need to add it to the env
+	if !ok {
+		envVar := v1.EnvVar{
+			Name:  "PGHA_TABLESPACES",
+			Value: operator.GetTablespaceNames(cluster.Spec.TablespaceMounts),
 		}
-
-		// find the "PGHA_TABLESPACES" value and update it with the new tablespace
-		// name list
-		ok := false
-		for i, envVar := range deployment.Spec.Template.Spec.Containers[0].Env {
-			// yup, it's an old fashioned linear time lookup
-			if envVar.Name == "PGHA_TABLESPACES" {
-				deployment.Spec.Template.Spec.Containers[0].Env[i].Value = operator.GetTablespaceNames(
-					cluster.Spec.TablespaceMounts)
-				ok = true
-			}
-		}
-
-		// if its not found, we need to add it to the env
-		if !ok {
-			envVar := v1.EnvVar{
-				Name:  "PGHA_TABLESPACES",
-				Value: operator.GetTablespaceNames(cluster.Spec.TablespaceMounts),
-			}
-			deployment.Spec.Template.Spec.Containers[0].Env = append(deployment.Spec.Template.Spec.Containers[0].Env, envVar)
-		}
-
-		// Before applying the update, we want to explicitly stop PostgreSQL on each
-		// instance. This prevents PostgreSQL from having to boot up in crash
-		// recovery mode.
-		//
-		// If an error is returned, we only issue a warning
-		if err := stopPostgreSQLInstance(clientset, restConfig, deployment); err != nil {
-			log.Warn(err)
-		}
-
-		// finally, update the Deployment. Potential to put things into an
-		// inconsistent state if any of these updates fail
-		if _, err := clientset.AppsV1().Deployments(deployment.Namespace).
-			Update(ctx, &deployment, metav1.UpdateOptions{}); err != nil {
-			return err
-		}
+		deployment.Spec.Template.Spec.Containers[0].Env = append(deployment.Spec.Template.Spec.Containers[0].Env, envVar)
 	}
 
 	return nil

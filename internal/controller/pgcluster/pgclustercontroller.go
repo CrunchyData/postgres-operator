@@ -25,8 +25,10 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/operator"
 	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
+	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
@@ -420,31 +422,46 @@ func updatePgBouncer(c *Controller, oldCluster *crv1.Pgcluster, newCluster *crv1
 // updateTablespaces updates the PostgreSQL instance Deployments to reflect the
 // new PostgreSQL tablespaces that should be added
 func updateTablespaces(c *Controller, oldCluster *crv1.Pgcluster, newCluster *crv1.Pgcluster) error {
-	// to help the Operator function do less work, we will get a list of new
-	// tablespaces. Though these are already present in the CRD, this will isolate
-	// exactly which PVCs need to be created
-	//
-	// To do this, iterate through the the tablespace mount map that is present in
-	// the new cluster.
-	newTablespaces := map[string]crv1.PgStorageSpec{}
+	// first, get a list of all of the instance deployments for the cluster
+	deployments, err := operator.GetInstanceDeployments(c.Client, newCluster)
 
+	if err != nil {
+		return err
+	}
+
+	// iterate through the the tablespace mount map that is present in and create
+	// any new PVCs
 	for tablespaceName, storageSpec := range newCluster.Spec.TablespaceMounts {
 		// if the tablespace does not exist in the old version of the cluster,
 		// then add it in!
-		if _, ok := oldCluster.Spec.TablespaceMounts[tablespaceName]; !ok {
-			log.Debugf("new tablespace found: [%s]", tablespaceName)
+		if _, ok := oldCluster.Spec.TablespaceMounts[tablespaceName]; ok {
+			continue
+		}
 
-			newTablespaces[tablespaceName] = storageSpec
+		log.Debugf("new tablespace found: [%s]", tablespaceName)
+
+		// This is a new tablespace, great. Create the new PVCs.
+		// The PVCs are created for each **instance** in the cluster, as every
+		// instance needs to have a distinct PVC for each tablespace
+		// get the name of the tablespace PVC for that instance.
+		for _, deployment := range deployments.Items {
+			tablespacePVCName := operator.GetTablespacePVCName(deployment.Name, tablespaceName)
+
+			log.Debugf("creating tablespace PVC [%s] for [%s]", tablespacePVCName, deployment.Name)
+
+			// Now create it! If it errors, we just need to return, which
+			// potentially leaves things in an inconsistent state, but at this point
+			// only PVC objects have been created
+			if _, err := pvc.CreateIfNotExists(c.Client, storageSpec, tablespacePVCName,
+				newCluster.Name, newCluster.Namespace); err != nil {
+				return err
+			}
 		}
 	}
 
 	// alright, update the tablespace entries for this cluster!
 	// if it returns an error, pass the error back up to the caller
-	if err := clusteroperator.UpdateTablespaces(c.Client, c.Client.Config, newCluster, newTablespaces); err != nil {
-		return err
-	}
-
-	return nil
+	return clusteroperator.RollingUpdate(c.Client, c.Client.Config, newCluster, clusteroperator.UpdateTablespaces)
 }
 
 // WorkerCount returns the worker count for the controller
