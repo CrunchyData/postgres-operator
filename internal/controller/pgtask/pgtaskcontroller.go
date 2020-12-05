@@ -29,7 +29,9 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
+
 	log "github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
@@ -127,6 +129,20 @@ func (c *Controller) processNextItem() bool {
 			clusteroperator.FailoverBase(keyNamespace, c.Client, tmpTask, c.Client.Config)
 		} else {
 			log.Debugf("skipping duplicate onAdd failover task %s/%s", keyNamespace, keyResourceName)
+		}
+	case crv1.PgtaskRollingUpdate:
+		log.Debug("rolling update task added")
+		// first, attempt to get the pgcluster object
+		clusterName := tmpTask.Spec.Parameters[config.LABEL_PG_CLUSTER]
+
+		if cluster, err := c.Client.CrunchydataV1().Pgclusters(tmpTask.Namespace).
+			Get(ctx, clusterName, metav1.GetOptions{}); err == nil {
+			if err := clusteroperator.RollingUpdate(c.Client, c.Client.Config, cluster,
+				func(*crv1.Pgcluster, *appsv1.Deployment) error { return nil }); err != nil {
+				log.Errorf("rolling update failed: %q", err.Error())
+			}
+		} else {
+			log.Debugf("rolling update failed: could not find cluster %q", clusterName)
 		}
 
 	case crv1.PgtaskDeleteData:

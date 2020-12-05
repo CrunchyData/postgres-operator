@@ -27,6 +27,7 @@ const LABEL_PGTASK = "pg-task"
 
 const LABEL_AUTOFAIL = "autofail"
 const LABEL_FAILOVER = "failover"
+const LABEL_RESTART = "restart"
 
 const LABEL_TARGET = "target"
 const LABEL_RMDATA = "pgrmdata"

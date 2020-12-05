@@ -28,6 +28,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var RollingUpdate bool
+
 var restartCmd = &cobra.Command{
 	Use:   "restart",
 	Short: "Restarts the PostgrSQL database within a PostgreSQL cluster",
@@ -35,6 +37,9 @@ var restartCmd = &cobra.Command{
 
 	For example, to restart the primary and all replicas:
 	pgo restart mycluster
+
+	To restart the primary and all replicas using a rolling update strategy:
+	pgo restart mycluster --rolling
 
 	Or target a specific instance within the cluster:
 	pgo restart mycluster --target=mycluster-abcd
@@ -78,6 +83,7 @@ func init() {
 	restartCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	restartCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
 	restartCmd.Flags().BoolVarP(&Query, "query", "", false, "Prints the list of instances that can be restarted.")
+	restartCmd.Flags().BoolVar(&RollingUpdate, "rolling", false, "Performs a rolling restart. Cannot be used with other flags.")
 	restartCmd.Flags().StringArrayVarP(&Targets, "target", "", []string{}, "The instance that will be restarted.")
 }
 
@@ -91,6 +97,12 @@ func restart(clusterName, namespace string) {
 	request.ClusterName = clusterName
 	request.Targets = Targets
 	request.ClientVersion = msgs.PGO_VERSION
+	request.RollingUpdate = RollingUpdate
+
+	if request.RollingUpdate && len(request.Targets) > 0 {
+		fmt.Println("Error: cannot use --rolling with other flags")
+		os.Exit(1)
+	}
 
 	response, err := api.Restart(httpclient, &SessionCredentials, request)
 	if err != nil {
