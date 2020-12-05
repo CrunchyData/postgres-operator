@@ -116,7 +116,6 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	patch, err := kubeapi.NewMergePatch().
 		Add("metadata", "annotations")(map[string]string{
 		config.ANNOTATION_BACKREST_RESTORE: "",
-		config.ANNOTATION_CURRENT_PRIMARY:  clusterName,
 	}).
 		Add("metadata", "labels")(map[string]string{
 		config.LABEL_DEPLOYMENT_NAME: clusterName,
@@ -200,7 +199,7 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 
 	// find all database PVCs for the entire PostgreSQL cluster.  Includes the PVCs for all PGDATA
 	// volumes, as well as the PVCs for any WAL and/or tablespace volumes
-	databasePVCList, err := getPGDatabasePVCNames(clientset, replicas, clusterName, namespace)
+	databasePVCList, err := getPGDatabasePVCNames(clientset, replicas, cluster)
 	if err != nil {
 		return nil, err
 	}
@@ -316,8 +315,11 @@ func PublishRestore(id, clusterName, username, namespace string) {
 // instances comprising the cluster, in addition to any additional volumes used by those
 // instances, e.g. PVCs for external WAL and/or tablespace volumes.
 func getPGDatabasePVCNames(clientset kubeapi.Interface, replicas *crv1.PgreplicaList,
-	clusterName, namespace string) ([]string, error) {
+	cluster *crv1.Pgcluster) ([]string, error) {
 	ctx := context.TODO()
+
+	namespace := cluster.Namespace
+	clusterName := cluster.Name
 
 	// create a slice with the names of all database instances in the cluster.  Even though the
 	// original primary database (with a name matching the cluster name) might no longer exist,
@@ -338,9 +340,20 @@ func getPGDatabasePVCNames(clientset kubeapi.Interface, replicas *crv1.Pgreplica
 	}
 
 	var databasePVCList []string
+	primary := cluster.Annotations[config.ANNOTATION_CURRENT_PRIMARY]
+
 	for _, instance := range instances {
 		for _, clusterPVC := range clusterPVCList.Items {
+
 			pvcName := clusterPVC.GetName()
+
+			// Keep the current primary PVC's in order to attempt a pgBackRest delta restore.
+			// Includes the PGDATA PVC, as well as any WAL and/or tablespace PVC's if present.
+			if pvcName == primary || pvcName == fmt.Sprintf(walPVCPattern, primary) ||
+				strings.HasPrefix(pvcName, fmt.Sprintf(tablespacePVCSuffixPattern, primary)) {
+				continue
+			}
+
 			if pvcName == instance || pvcName == fmt.Sprintf(walPVCPattern, instance) ||
 				strings.HasPrefix(pvcName, fmt.Sprintf(tablespacePVCSuffixPattern, instance)) {
 				databasePVCList = append(databasePVCList, pvcName)
