@@ -23,8 +23,10 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/internal/util"
+	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -60,6 +62,46 @@ func Restart(request *msgs.RestartRequest, pgouser string) msgs.RestartResponse 
 	if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = fmt.Sprintf("%s %s", cluster.Name, msgs.UpgradeError)
+		return resp
+	}
+
+	// if a rolling update is requested, this takes a detour to create a pgtask
+	// to accomplish this
+	if request.RollingUpdate {
+		// since a rolling update takes time, this needs to be performed as a
+		// separate task
+		// Create a pgtask
+		task := &crv1.Pgtask{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      fmt.Sprintf("%s-%s", cluster.Name, config.LABEL_RESTART),
+				Namespace: cluster.Namespace,
+				Labels: map[string]string{
+					config.LABEL_PG_CLUSTER: cluster.Name,
+					config.LABEL_PGOUSER:    pgouser,
+				},
+			},
+			Spec: crv1.PgtaskSpec{
+				TaskType: crv1.PgtaskRollingUpdate,
+				Parameters: map[string]string{
+					config.LABEL_PG_CLUSTER: cluster.Name,
+				},
+			},
+		}
+
+		// remove any previous rolling restart, then add a new one
+		if err := apiserver.Clientset.CrunchydataV1().Pgtasks(task.Namespace).Delete(ctx, task.Name,
+			metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+			return resp
+		}
+
+		if _, err := apiserver.Clientset.CrunchydataV1().Pgtasks(cluster.Namespace).Create(ctx, task,
+			metav1.CreateOptions{}); err != nil {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = err.Error()
+		}
+
 		return resp
 	}
 

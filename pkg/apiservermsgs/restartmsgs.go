@@ -47,6 +47,7 @@ type InstanceDetail struct {
 type RestartRequest struct {
 	Namespace     string
 	ClusterName   string
+	RollingUpdate bool
 	Targets       []string
 	ClientVersion string
 }
