@@ -115,7 +115,7 @@ func (b BackRestBackupJob) Run() {
 		return
 	}
 
-	selector := fmt.Sprintf("%s=%s,pgo-backrest-repo=true", config.LABEL_PG_CLUSTER, b.cluster)
+	selector := fmt.Sprintf("%s=%s,crunchy-pgbackrest-repo=true", config.LABEL_PG_CLUSTER, b.cluster)
 	pods, err := clientset.CoreV1().Pods(b.namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		contextLogger.WithFields(log.Fields{
@@ -142,7 +142,7 @@ func (b BackRestBackupJob) Run() {
 		backupOptions: fmt.Sprintf("--type=%s %s", b.backupType, b.options),
 		stanza:        b.stanza,
 		storageType:   b.storageType,
-		imagePrefix:   cluster.Spec.PGOImagePrefix,
+		imagePrefix:   cluster.Spec.CCPImagePrefix,
 	}
 
 	_, err = clientset.CrunchydataV1().Pgtasks(b.namespace).

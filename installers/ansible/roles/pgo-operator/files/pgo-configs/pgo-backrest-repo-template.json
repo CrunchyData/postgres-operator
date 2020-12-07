@@ -48,7 +48,7 @@
                 "serviceAccountName": "pgo-default",
                 "containers": [{
                     "name": "database",
-                    "image": "{{.PGOImagePrefix}}/pgo-backrest-repo:{{.PGOImageTag}}",
+                    "image": "{{.CCPImagePrefix}}/crunchy-pgbackrest-repo:{{.CCPImageTag}}",
                     "ports": [{
                         "containerPort": {{.SshdPort}},
                         "protocol": "TCP"
@@ -57,12 +57,12 @@
                     "env": [
                       {{.PgbackrestS3EnvVars}}
                       {
-                        "name": "PGBACKREST_STANZA",
-                        "value": "{{.PgbackrestStanza}}"
+                        "name": "MODE",
+                        "value": "pgbackrest-repo"
                       },
                       {
-                        "name": "SSHD_PORT",
-                        "value": "{{.SshdPort}}"
+                        "name": "PGBACKREST_STANZA",
+                        "value": "{{.PgbackrestStanza}}"
                       },
                       {
                         "name": "PGBACKREST_DB_PATH",

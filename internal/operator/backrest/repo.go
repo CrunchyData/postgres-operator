@@ -44,8 +44,8 @@ var s3RepoTypeRegex = regexp.MustCompile(`--repo-type=["']?s3["']?`)
 
 type RepoDeploymentTemplateFields struct {
 	SecurityContext           string
-	PGOImagePrefix            string
-	PGOImageTag               string
+	CCPImagePrefix            string
+	CCPImageTag               string
 	ContainerResources        string
 	BackrestRepoClaimName     string
 	SshdSecretsName           string
@@ -229,8 +229,8 @@ func getRepoDeploymentFields(clientset kubernetes.Interface, cluster *crv1.Pgclu
 	namespace := cluster.GetNamespace()
 
 	repoFields := RepoDeploymentTemplateFields{
-		PGOImagePrefix:        util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, operator.Pgo.Pgo.PGOImagePrefix),
-		PGOImageTag:           operator.Pgo.Pgo.PGOImageTag,
+		CCPImagePrefix:        util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
+		CCPImageTag:           operator.Pgo.Cluster.CCPImageTag,
 		ContainerResources:    operator.GetResourcesJSON(cluster.Spec.BackrestResources, cluster.Spec.BackrestLimits),
 		BackrestRepoClaimName: fmt.Sprintf(util.BackrestRepoPVCName, cluster.Name),
 		SshdSecretsName:       fmt.Sprintf(util.BackrestRepoSecretName, cluster.Name),

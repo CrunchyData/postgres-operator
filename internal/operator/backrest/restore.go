@@ -54,8 +54,8 @@ type BackrestRestoreJobTemplateFields struct {
 	WorkflowID             string
 	ToClusterPVCName       string
 	SecurityContext        string
-	PGOImagePrefix         string
-	PGOImageTag            string
+	CCPImagePrefix         string
+	CCPImageTag            string
 	CommandOpts            string
 	PITRTarget             string
 	PgbackrestStanza       string

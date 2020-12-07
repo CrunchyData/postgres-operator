@@ -219,7 +219,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 			getBackupParams(
 				cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 				clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database",
-				util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, apiserver.Pgo.Pgo.PGOImagePrefix),
+				util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, apiserver.Pgo.Cluster.CCPImagePrefix),
 				request.BackupOpts, request.BackrestStorageType, operator.GetS3VerifyTLSSetting(cluster), jobName, ns, pgouser),
 			metav1.CreateOptions{},
 		)

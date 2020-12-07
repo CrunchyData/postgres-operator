@@ -31,7 +31,7 @@
                 "serviceAccountName": "pgo-backrest",
                 "containers": [{
                     "name": "backrest",
-                    "image": "{{.PGOImagePrefix}}/pgo-backrest:{{.PGOImageTag}}",
+                    "image": "{{.CCPImagePrefix}}/crunchy-pgbackrest:{{.CCPImageTag}}",
                     "volumeMounts": [
                         {{.PgbackrestRestoreVolumeMounts}}
                     ],
@@ -39,6 +39,9 @@
                         "name": "COMMAND",
                         "value": "{{.Command}}"
                     }, {
+                        "name": "MODE",
+                        "value": "pgbackrest"
+                    },{
                         "name": "COMMAND_OPTS",
                         "value": "{{.CommandOpts}}"
                     }, {
