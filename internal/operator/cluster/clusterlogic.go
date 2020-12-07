@@ -235,7 +235,7 @@ func getBootstrapJobFields(clientset kubeapi.Interface,
 
 	// Now override any backrest env vars for the bootstrap job
 	bootstrapBackrestVars, err := operator.GetPgbackrestBootstrapEnvVars(restoreClusterName,
-		cluster.GetName(), restoreFromSecret)
+		cluster.GetAnnotations()[config.ANNOTATION_CURRENT_PRIMARY], restoreFromSecret)
 	if err != nil {
 		return bootstrapFields, err
 	}
