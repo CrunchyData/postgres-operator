@@ -5,7 +5,7 @@
         "name": "{{.JobName}}",
         "labels": {
             "vendor": "crunchydata",
-            "sqlrunner": "true",
+            "pgo-sqlrunner": "true",
             "pg-cluster": "{{.ClusterName}}"
         }
     },
@@ -15,7 +15,7 @@
                 "name": "{{.JobName}}",
                 "labels": {
                     "vendor": "crunchydata",
-                    "sqlrunner": "true",
+                    "pgo-sqlrunner": "true",
                     "pg-cluster": "{{.ClusterName}}"
                 }
             },
