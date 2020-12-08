@@ -62,7 +62,8 @@ func (c *Controller) handlePostgresPodPromotion(newPod *apiv1.Pod, cluster crv1.
 		}
 	}
 
-	if cluster.Status.State == crv1.PgclusterStateInitialized {
+	// create a post-failover backup if not a standby cluster
+	if !cluster.Spec.Standby && cluster.Status.State == crv1.PgclusterStateInitialized {
 		if err := cleanAndCreatePostFailoverBackup(c.PodClient, c.PodClientset,
 			cluster.Name, newPod.Namespace); err != nil {
 			log.Error(err)
