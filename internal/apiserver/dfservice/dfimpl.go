@@ -133,7 +133,8 @@ func getClaimCapacity(clientset kubernetes.Interface, pvcName, ns string) (strin
 func getClusterDf(cluster *crv1.Pgcluster, clusterResultsChannel chan msgs.DfDetail, clusterProgressChannel chan bool, errorChannel chan error) {
 	log.Debugf("pod df: %s", cluster.Spec.Name)
 
-	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, cluster.Spec.Name)
+	selector := fmt.Sprintf("%s=%s,!%s",
+		config.LABEL_PG_CLUSTER, cluster.Spec.Name, config.LABEL_PGHA_BOOTSTRAP)
 
 	pods, err := apiserver.Clientset.CoreV1().Pods(cluster.Spec.Namespace).List(metav1.ListOptions{LabelSelector: selector})
 
