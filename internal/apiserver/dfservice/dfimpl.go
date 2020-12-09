@@ -147,7 +147,8 @@ func getClusterDf(cluster *crv1.Pgcluster, clusterResultsChannel chan msgs.DfDet
 	ctx := context.TODO()
 	log.Debugf("pod df: %s", cluster.Spec.Name)
 
-	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, cluster.Spec.Name)
+	selector := fmt.Sprintf("%s=%s,!%s",
+		config.LABEL_PG_CLUSTER, cluster.Spec.Name, config.LABEL_PGHA_BOOTSTRAP)
 
 	pods, err := apiserver.Clientset.CoreV1().Pods(cluster.Spec.Namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 
