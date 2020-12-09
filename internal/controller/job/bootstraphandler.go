@@ -80,7 +80,7 @@ func (c *Controller) handleBootstrapUpdate(job *apiv1.Job) error {
 
 	// If the job was successful we updated the state of the pgcluster to a "bootstrapped" status.
 	// This will then trigger full initialization of the cluster.  We also cleanup any resources
-	// from the bootstrap job.
+	// from the bootstrap job and delete the job itself
 	if cluster.Status.State == crv1.PgclusterStateBootstrapping {
 
 		if err := c.cleanupBootstrapResources(job, cluster, restore); err != nil {
@@ -100,6 +100,11 @@ func (c *Controller) handleBootstrapUpdate(job *apiv1.Job) error {
 			log.Error(err)
 			return err
 		}
+
+		// as it is no longer needed, delete the job
+		deletePropagation := metav1.DeletePropagationBackground
+		return c.Client.BatchV1().Jobs(namespace).Delete(job.Name,
+			&metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 	}
 
 	if restore {
