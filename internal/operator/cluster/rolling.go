@@ -31,6 +31,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -306,26 +307,21 @@ func waitForPostgresInstance(clientset kubernetes.Interface, restConfig *rest.Co
 	pod := pods.Items[0]
 	cmd := generatePostgresReadyCommand(cluster.Spec.Port)
 
-	// set up the timer and timeout
-	// first, ensure that there is an available Pod
-	timeout := time.After(timeoutSecs)
-	tick := time.NewTicker(periodSecs)
-	defer tick.Stop()
+	// start polling to test if the Postgres instance is available to accept
+	// connections
+	if err := wait.Poll(periodSecs, timeoutSecs, func() (bool, error) {
+		// check to see if PostgreSQL is ready to accept connections
+		s, _, _ := kubeapi.ExecToPodThroughAPI(restConfig, clientset,
+			cmd, "database", pod.Name, pod.Namespace, nil)
 
-	for {
-		select {
-		case <-timeout:
-			return fmt.Errorf("readiness timeout reached for start up of cluster %q instance %q", cluster.Name, deployment.Name)
-		case <-tick.C:
-			// check to see if PostgreSQL is ready to accept connections
-			s, _, _ := kubeapi.ExecToPodThroughAPI(restConfig, clientset,
-				cmd, "database", pod.Name, pod.Namespace, nil)
-
-			// really we should find a way to get the exit code in the future, but
-			// in the interim...
-			if strings.Contains(s, "accepting connections") {
-				return nil
-			}
-		}
+		// really we should find a way to get the exit code in the future, but
+		// in the interim, we know that we can accept connections if the below
+		// string is present
+		return strings.Contains(s, "accepting connections"), nil
+	}); err != nil {
+		return fmt.Errorf("readiness timeout reached for start up of cluster %q instance %q",
+			cluster.Name, deployment.Name)
 	}
+
+	return nil
 }

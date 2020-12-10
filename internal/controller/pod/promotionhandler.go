@@ -31,6 +31,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -132,39 +133,36 @@ func waitForStandbyPromotion(restConfig *rest.Config, clientset kubernetes.Inter
 
 	// wait for the server to accept writes to ensure standby has truly been disabled before
 	// proceeding
-	duration := time.After(isStandbyDisabledTimeout)
-	tick := time.NewTicker(isStandbyDisabledTick)
-	defer tick.Stop()
-	for {
-		select {
-		case <-duration:
-			return fmt.Errorf("timed out waiting for cluster %s to accept writes after disabling "+
-				"standby mode", cluster.Name)
-		case <-tick.C:
-			if !recoveryDisabled {
-				cmd := isInRecoveryCMD
-				cmd = append(cmd, cluster.Spec.Port)
+	if err := wait.Poll(isStandbyDisabledTick, isStandbyDisabledTimeout, func() (bool, error) {
+		if !recoveryDisabled {
+			cmd := isInRecoveryCMD
+			cmd = append(cmd, cluster.Spec.Port)
 
-				isInRecoveryStr, _, _ := kubeapi.ExecToPodThroughAPI(restConfig, clientset,
-					cmd, newPod.Spec.Containers[0].Name, newPod.Name,
-					newPod.Namespace, nil)
-				if strings.Contains(isInRecoveryStr, "f") {
-					recoveryDisabled = true
-				}
-			}
-			if recoveryDisabled {
-				primaryJSONStr, _, _ := kubeapi.ExecToPodThroughAPI(restConfig, clientset,
-					leaderStatusCMD, newPod.Spec.Containers[0].Name, newPod.Name,
-					newPod.Namespace, nil)
-				var primaryJSON map[string]interface{}
-				json.Unmarshal([]byte(primaryJSONStr), &primaryJSON)
-				if primaryJSON["state"] == "running" && (primaryJSON["pending_restart"] == nil ||
-					!primaryJSON["pending_restart"].(bool)) {
-					return nil
-				}
+			isInRecoveryStr, _, _ := kubeapi.ExecToPodThroughAPI(restConfig, clientset,
+				cmd, "database", newPod.Name, newPod.Namespace, nil)
+
+			recoveryDisabled = strings.Contains(isInRecoveryStr, "f")
+
+			if !recoveryDisabled {
+				return false, nil
 			}
 		}
+
+		primaryJSONStr, _, _ := kubeapi.ExecToPodThroughAPI(restConfig, clientset,
+			leaderStatusCMD, newPod.Spec.Containers[0].Name, newPod.Name,
+			newPod.Namespace, nil)
+
+		primaryJSON := map[string]interface{}{}
+		_ = json.Unmarshal([]byte(primaryJSONStr), &primaryJSON)
+
+		return (primaryJSON["state"] == "running" && (primaryJSON["pending_restart"] == nil ||
+			!primaryJSON["pending_restart"].(bool))), nil
+	}); err != nil {
+		return fmt.Errorf("timed out waiting for cluster %s to accept writes after disabling "+
+			"standby mode", cluster.Name)
 	}
+
+	return nil
 }
 
 // cleanAndCreatePostFailoverBackup cleans up any existing backup resources and then creates

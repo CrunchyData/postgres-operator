@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -37,6 +38,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -61,14 +63,16 @@ type backrestJobTemplateFields struct {
 	PgbackrestRestoreVolumeMounts string
 }
 
-var backrestPgHostRegex = regexp.MustCompile("--db-host|--pg1-host")
-var backrestPgPathRegex = regexp.MustCompile("--db-path|--pg1-path")
+var (
+	backrestPgHostRegex = regexp.MustCompile("--db-host|--pg1-host")
+	backrestPgPathRegex = regexp.MustCompile("--db-path|--pg1-path")
+)
 
 // Backrest ...
 func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtask) {
 	ctx := context.TODO()
 
-	//create the Job to run the backrest command
+	// create the Job to run the backrest command
 
 	cmd := task.Spec.Parameters[config.LABEL_BACKREST_COMMAND]
 
@@ -129,7 +133,7 @@ func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtas
 	}
 	clientset.BatchV1().Jobs(namespace).Create(ctx, &newjob, metav1.CreateOptions{})
 
-	//publish backrest backup event
+	// publish backrest backup event
 	if cmd == "backup" {
 		topics := make([]string, 1)
 		topics[0] = events.EventTopicBackup
@@ -151,7 +155,6 @@ func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtas
 			log.Error(err.Error())
 		}
 	}
-
 }
 
 // CreateInitialBackup creates a Pgtask in order to initiate the initial pgBackRest backup for a cluster
@@ -244,7 +247,7 @@ func CleanBackupResources(clientset kubeapi.Interface, namespace, clusterName st
 		return err
 	}
 
-	//remove previous backup job
+	// remove previous backup job
 	selector := config.LABEL_BACKREST_COMMAND + "=" + crv1.PgtaskBackrestBackup + "," +
 		config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_BACKREST + "=true"
 	deletePropagation := metav1.DeletePropagationForeground
@@ -257,27 +260,26 @@ func CleanBackupResources(clientset kubeapi.Interface, namespace, clusterName st
 		log.Error(err)
 	}
 
-	timeout := time.After(30 * time.Second)
-	tick := time.NewTicker(1 * time.Second)
-	defer tick.Stop()
-	for {
-		select {
-		case <-timeout:
+	if err := wait.Poll(1*time.Second, 30*time.Second, func() (bool, error) {
+		jobList, err := clientset.
+			BatchV1().Jobs(namespace).
+			List(ctx, metav1.ListOptions{LabelSelector: selector})
+		if err != nil {
+			log.Error(err)
+			return false, err
+		}
+
+		return len(jobList.Items) == 0, nil
+	}); err != nil {
+		if errors.Is(err, wait.ErrWaitTimeout) {
 			return fmt.Errorf("Timed out waiting for deletion of pgBackRest backup job for "+
 				"cluster %s", clusterName)
-		case <-tick.C:
-			jobList, err := clientset.
-				BatchV1().Jobs(namespace).
-				List(ctx, metav1.ListOptions{LabelSelector: selector})
-			if err != nil {
-				log.Error(err)
-				return err
-			}
-			if len(jobList.Items) == 0 {
-				return nil
-			}
 		}
+
+		return err
 	}
+
+	return nil
 }
 
 // getCommandOptsFromPod adds command line options from the primary pod to a backrest job.
