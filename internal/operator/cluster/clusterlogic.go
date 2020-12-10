@@ -43,6 +43,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -259,7 +260,6 @@ func getBootstrapJobFields(clientset kubeapi.Interface,
 func getClusterDeploymentFields(clientset kubernetes.Interface,
 	cl *crv1.Pgcluster, dataVolume, walVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult) operator.DeploymentTemplateFields {
-
 	namespace := cl.GetNamespace()
 
 	log.Infof("creating Pgcluster %s in namespace %s", cl.Name, namespace)
@@ -293,7 +293,7 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 		supplementalGroups = append(supplementalGroups, v.SupplementalGroups...)
 	}
 
-	//create the primary deployment
+	// create the primary deployment
 	deploymentFields := operator.DeploymentTemplateFields{
 		Name:               cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY],
 		IsInit:             true,
@@ -343,12 +343,11 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 
 // DeleteCluster ...
 func DeleteCluster(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string) error {
-
 	var err error
 	log.Info("deleting Pgcluster object" + " in namespace " + namespace)
 	log.Info("deleting with Name=" + cl.Spec.Name + " in namespace " + namespace)
 
-	//create rmdata job
+	// create rmdata job
 	isReplica := false
 	isBackup := false
 	removeData := true
@@ -362,7 +361,6 @@ func DeleteCluster(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace
 	}
 
 	return err
-
 }
 
 // scaleReplicaCreateMissingService creates a service for cluster replicas if
@@ -412,7 +410,7 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 	var replicaDoc bytes.Buffer
 
 	serviceName := replica.Spec.ClusterName + "-replica"
-	//replicaFlag := true
+	// replicaFlag := true
 
 	//	replicaLabels := operator.GetPrimaryLabels(serviceName, replica.Spec.ClusterName, replicaFlag, cluster.Spec.UserLabels)
 	cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME] = replica.Spec.Name
@@ -424,13 +422,13 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 		archiveMode = "on"
 	}
 	if cluster.Labels[config.LABEL_BACKREST] == "true" {
-		//backrest requires archive mode be set to on
+		// backrest requires archive mode be set to on
 		archiveMode = "on"
 	}
 
 	image := cluster.Spec.CCPImage
 
-	//check for --ccp-image-tag at the command line
+	// check for --ccp-image-tag at the command line
 	imageTag := cluster.Spec.CCPImageTag
 	if replica.Spec.UserLabels[config.LABEL_CCP_IMAGE_TAG_KEY] != "" {
 		imageTag = replica.Spec.UserLabels[config.LABEL_CCP_IMAGE_TAG_KEY]
@@ -448,7 +446,7 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 		supplementalGroups = append(supplementalGroups, v.SupplementalGroups...)
 	}
 
-	//create the replica deployment
+	// create the replica deployment
 	replicaDeploymentFields := operator.DeploymentTemplateFields{
 		Name:               replica.Spec.Name,
 		ClusterName:        replica.Spec.ClusterName,
@@ -550,7 +548,6 @@ func DeleteReplica(clientset kubernetes.Interface, cl *crv1.Pgreplica, namespace
 		})
 
 	return err
-
 }
 
 func publishScaleError(namespace string, username string, cluster *crv1.Pgcluster) {
@@ -625,7 +622,6 @@ func ShutdownCluster(clientset kubeapi.Interface, cluster crv1.Pgcluster) error 
 
 	// only consider pods that are running
 	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(ctx, options)
-
 	if err != nil {
 		return err
 	}
@@ -695,7 +691,6 @@ func ShutdownCluster(clientset kubeapi.Interface, cluster crv1.Pgcluster) error 
 // includes changing the replica count for all clusters to 1, and then updating the pgcluster
 // with a shutdown status.
 func StartupCluster(clientset kubernetes.Interface, cluster crv1.Pgcluster) error {
-
 	log.Debugf("Cluster Operator: starting cluster %s", cluster.Name)
 
 	// ensure autofailover is enabled to ensure proper startup of the cluster
@@ -804,22 +799,17 @@ func waitForDeploymentReady(clientset kubernetes.Interface, namespace, deploymen
 	ctx := context.TODO()
 
 	// set up the timer and timeout
-	// first, ensure that there is an available Pod
-	timeout := time.After(timeoutSecs)
-	tick := time.NewTicker(periodSecs)
-	defer tick.Stop()
-
-	for {
-		select {
-		case <-timeout:
-			return fmt.Errorf("readiness timeout reached for deployment %q", deploymentName)
-		case <-tick.C:
-			// check to see if the deployment is ready
-			if d, err := clientset.AppsV1().Deployments(namespace).Get(ctx, deploymentName, metav1.GetOptions{}); err != nil {
-				log.Warn(err)
-			} else if d.Status.Replicas == d.Status.ReadyReplicas {
-				return nil
-			}
+	if err := wait.Poll(periodSecs, timeoutSecs, func() (bool, error) {
+		// check to see if the deployment is ready
+		d, err := clientset.AppsV1().Deployments(namespace).Get(ctx, deploymentName, metav1.GetOptions{})
+		if err != nil {
+			log.Warn(err)
 		}
+
+		return err == nil && d.Status.Replicas == d.Status.ReadyReplicas, nil
+	}); err != nil {
+		return fmt.Errorf("readiness timeout reached for deployment %q", deploymentName)
 	}
+
+	return nil
 }

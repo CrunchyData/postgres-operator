@@ -36,6 +36,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
 )
@@ -131,7 +132,6 @@ func AddUpgrade(clientset kubeapi.Interface, upgrade *crv1.Pgtask, namespace str
 	PublishUpgradeEvent(events.EventUpgradeClusterCreateSubmitted, namespace, upgrade, "")
 
 	log.Debugf("finished main upgrade workflow for cluster: %s", upgradeTargetClusterName)
-
 }
 
 // getPrimaryPodDeploymentName searches through the pods associated with this pgcluster for the 'primary' pod,
@@ -151,7 +151,6 @@ func getPrimaryPodDeploymentName(clientset kubernetes.Interface, cluster *crv1.P
 
 	// only consider pods that are running
 	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(ctx, options)
-
 	if err != nil {
 		log.Errorf("no pod with the primary role label was found for cluster %s. Error: %s", cluster.Name, err.Error())
 		return ""
@@ -251,7 +250,6 @@ func handleReplicas(clientset kubeapi.Interface, clusterName, currentPrimaryPVC,
 // (e.g. pgo create cluster hippo --replica-count=2) but will not included any replicas
 // created using the 'pgo scale' command
 func SetReplicaNumber(pgcluster *crv1.Pgcluster, numReplicas string) {
-
 	pgcluster.Spec.Replicas = numReplicas
 }
 
@@ -280,10 +278,12 @@ func deleteBeforeUpgrade(clientset kubeapi.Interface, clusterName, currentPrimar
 	}
 
 	// wait until the backrest shared repo pod deployment has been deleted before continuing
-	waitStatus := deploymentWait(clientset, namespace, clusterName+"-backrest-shared-repo", 180, 10)
+	waitStatus := deploymentWait(clientset, namespace, clusterName+"-backrest-shared-repo",
+		180*time.Second, 10*time.Second)
 	log.Debug(waitStatus)
 	// wait until the primary pod deployment has been deleted before continuing
-	waitStatus = deploymentWait(clientset, namespace, currentPrimary, 180, 10)
+	waitStatus = deploymentWait(clientset, namespace, currentPrimary,
+		180*time.Second, 10*time.Second)
 	log.Debug(waitStatus)
 
 	// delete the pgcluster
@@ -318,21 +318,15 @@ func deleteBeforeUpgrade(clientset kubeapi.Interface, clusterName, currentPrimar
 // deletion to complete before proceeding with the rest of the pgcluster upgrade.
 func deploymentWait(clientset kubernetes.Interface, namespace, deploymentName string, timeoutSecs, periodSecs time.Duration) string {
 	ctx := context.TODO()
-	timeout := time.After(timeoutSecs * time.Second)
-	tick := time.NewTicker(periodSecs * time.Second)
-	defer tick.Stop()
 
-	for {
-		select {
-		case <-timeout:
-			return fmt.Sprintf("Timed out waiting for deployment to be deleted: [%s]", deploymentName)
-		case <-tick.C:
-			_, err := clientset.AppsV1().Deployments(namespace).Get(ctx, deploymentName, metav1.GetOptions{})
-			if err != nil {
-				return fmt.Sprintf("Deployment %s has been deleted.", deploymentName)
-			}
-		}
+	if err := wait.Poll(periodSecs, timeoutSecs, func() (bool, error) {
+		_, err := clientset.AppsV1().Deployments(namespace).Get(ctx, deploymentName, metav1.GetOptions{})
+		return err != nil, nil
+	}); err != nil {
+		return fmt.Sprintf("Timed out waiting for deployment to be deleted: [%s]", deploymentName)
 	}
+
+	return fmt.Sprintf("Deployment %s has been deleted.", deploymentName)
 }
 
 // deleteNonupgradePgtasks deletes all existing pgtasks by selector with the exception of the
@@ -459,7 +453,6 @@ func recreateBackrestRepoSecret(clientset kubernetes.Interface, clustername, nam
 // for the current Postgres Operator version, updating or deleting values where appropriate, and sets
 // an expected status so that the CRD object can be recreated.
 func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string]string, oldpgoversion, currentPrimary string) {
-
 	// first, update the PGO version references to the current Postgres Operator version
 	pgcluster.ObjectMeta.Labels[config.LABEL_PGO_VERSION] = parameters[config.LABEL_PGO_VERSION]
 	pgcluster.Spec.UserLabels[config.LABEL_PGO_VERSION] = parameters[config.LABEL_PGO_VERSION]
