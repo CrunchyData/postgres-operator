@@ -38,6 +38,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 )
@@ -2055,10 +2056,15 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 
 	output := make([]msgs.ShowClusterPod, 0)
 
+	// find all of the Pods that represent Postgres primary and replicas.
+	// only consider running Pods
 	selector := config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "," + config.LABEL_DEPLOYMENT_NAME
-	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
+	options := metav1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
+		LabelSelector: selector,
+	}
 
-	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
+	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(options)
 	if err != nil {
 		return output, err
 	}
@@ -2078,9 +2084,12 @@ func GetPrimaryAndReplicaPods(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowCl
 
 	}
 	selector = config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name + "-replica" + "," + config.LABEL_DEPLOYMENT_NAME
-	log.Debugf("selector for GetPrimaryAndReplicaPods is %s", selector)
+	options = metav1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
+		LabelSelector: selector,
+	}
 
-	pods, err = apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
+	pods, err = apiserver.Clientset.CoreV1().Pods(ns).List(options)
 	if err != nil {
 		return output, err
 	}
