@@ -11,7 +11,6 @@
 - { name: RELATED_IMAGE_CRUNCHY_POSTGRES_EXPORTER,   value: '${PGO_IMAGE_PREFIX}/crunchy-postgres-exporter:${PGO_IMAGE_TAG}' }
 
 - { name: RELATED_IMAGE_CRUNCHY_ADMIN,            value: '${CCP_IMAGE_PREFIX}/crunchy-admin:${CCP_IMAGE_TAG}' }
-- { name: RELATED_IMAGE_CRUNCHY_BACKREST_RESTORE, value: '${CCP_IMAGE_PREFIX}/crunchy-backrest-restore:${CCP_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_CRUNCHY_PGADMIN,          value: '${CCP_IMAGE_PREFIX}/crunchy-pgadmin4:${CCP_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_CRUNCHY_PGBADGER,         value: '${CCP_IMAGE_PREFIX}/crunchy-pgbadger:${CCP_IMAGE_TAG}' }
 - { name: RELATED_IMAGE_CRUNCHY_PGBOUNCER,        value: '${CCP_IMAGE_PREFIX}/crunchy-pgbouncer:${CCP_IMAGE_TAG}' }
