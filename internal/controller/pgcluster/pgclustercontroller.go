@@ -34,6 +34,7 @@ import (
 	informers "github.com/crunchydata/postgres-operator/pkg/generated/informers/externalversions/crunchydata.com/v1"
 
 	log "github.com/sirupsen/logrus"
+	appsv1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -176,6 +177,9 @@ func (c *Controller) processNextItem() bool {
 func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	oldcluster := oldObj.(*crv1.Pgcluster)
 	newcluster := newObj.(*crv1.Pgcluster)
+	// initialize a slice that may contain functions that need to be executed
+	// as part of a rolling update
+	rollingUpdateFuncs := [](func(*crv1.Pgcluster, *appsv1.Deployment) error){}
 
 	log.Debugf("pgcluster onUpdate for cluster %s (namespace %s)", newcluster.ObjectMeta.Namespace,
 		newcluster.ObjectMeta.Name)
@@ -239,10 +243,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		!reflect.DeepEqual(oldcluster.Spec.Limits, newcluster.Spec.Limits) ||
 		!reflect.DeepEqual(oldcluster.Spec.ExporterResources, newcluster.Spec.ExporterResources) ||
 		!reflect.DeepEqual(oldcluster.Spec.ExporterLimits, newcluster.Spec.ExporterLimits) {
-		if err := clusteroperator.RollingUpdate(c.Client, c.Client.Config, newcluster, clusteroperator.UpdateResources); err != nil {
-			log.Error(err)
-			return
-		}
+		rollingUpdateFuncs = append(rollingUpdateFuncs, clusteroperator.UpdateResources)
 	}
 
 	// see if any of the pgBackRest repository resource values have changed, and
@@ -271,15 +272,39 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 			log.Error(err)
 			return
 		}
+		rollingUpdateFuncs = append(rollingUpdateFuncs, clusteroperator.UpdateTablespaces)
 	}
 
 	// check to see if any of the annotations have been modified, in particular,
 	// the non-system annotations
 	if !reflect.DeepEqual(oldcluster.Spec.Annotations, newcluster.Spec.Annotations) {
-		if err := updateAnnotations(c, oldcluster, newcluster); err != nil {
+		if changed, err := updateAnnotations(c, oldcluster, newcluster); err != nil {
 			log.Error(err)
 			return
+		} else if changed {
+			// append the PostgreSQL specific functions as part of a rolling update
+			rollingUpdateFuncs = append(rollingUpdateFuncs, clusteroperator.UpdateAnnotations)
 		}
+	}
+
+	// if there is no need to perform a rolling update, exit here
+	if len(rollingUpdateFuncs) == 0 {
+		return
+	}
+
+	// otherwise, create an anonymous function that executes each of the rolling
+	// update functions as part of the rolling update
+	if err := clusteroperator.RollingUpdate(c.Client, c.Client.Config, newcluster,
+		func(cluster *crv1.Pgcluster, deployment *appsv1.Deployment) error {
+			for _, fn := range rollingUpdateFuncs {
+				if err := fn(cluster, deployment); err != nil {
+					return err
+				}
+			}
+			return nil
+		}); err != nil {
+		log.Error(err)
+		return
 	}
 }
 
@@ -317,10 +342,13 @@ func addIdentifier(clusterCopy *crv1.Pgcluster) {
 // deployments, which includes:
 //
 // - globally applied annotations
-// - postgres instance specific annotations
 // - pgBackRest instance specific annotations
 // - pgBouncer instance specific annotations
-func updateAnnotations(c *Controller, oldCluster *crv1.Pgcluster, newCluster *crv1.Pgcluster) error {
+//
+// The Postgres specific annotations need to be handled by the caller function,
+// due to the fact they need to be applied in a rolling update manner that can
+// be controlled. We indicate this to the calling function by returning "true"
+func updateAnnotations(c *Controller, oldCluster *crv1.Pgcluster, newCluster *crv1.Pgcluster) (bool, error) {
 	// so we have a two-tier problem we need to solve:
 	// 1. Which of the deployment types are being modified (or in the case of
 	//    global, all of them)?
@@ -376,23 +404,17 @@ func updateAnnotations(c *Controller, oldCluster *crv1.Pgcluster, newCluster *cr
 	// but only do so if we have to
 	if len(annotationsBackrest) != 0 {
 		if err := backrestoperator.UpdateAnnotations(c.Client, newCluster, annotationsBackrest); err != nil {
-			return err
+			return false, err
 		}
 	}
 
 	if len(annotationsPgBouncer) != 0 {
 		if err := clusteroperator.UpdatePgBouncerAnnotations(c.Client, newCluster, annotationsPgBouncer); err != nil && !kerrors.IsNotFound(err) {
-			return err
+			return false, err
 		}
 	}
 
-	if len(annotationsPostgres) != 0 {
-		if err := clusteroperator.RollingUpdate(c.Client, c.Client.Config, newCluster, clusteroperator.UpdateAnnotations); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return len(annotationsPostgres) != 0, nil
 }
 
 // updatePgBouncer updates the pgBouncer Deployment to reflect any changes that
@@ -460,9 +482,7 @@ func updateTablespaces(c *Controller, oldCluster *crv1.Pgcluster, newCluster *cr
 		}
 	}
 
-	// alright, update the tablespace entries for this cluster!
-	// if it returns an error, pass the error back up to the caller
-	return clusteroperator.RollingUpdate(c.Client, c.Client.Config, newCluster, clusteroperator.UpdateTablespaces)
+	return nil
 }
 
 // WorkerCount returns the worker count for the controller
