@@ -50,7 +50,9 @@ type PgclusterSpec struct {
 	PGOImagePrefix string `json:"pgoimageprefix"`
 	Port           string `json:"port"`
 	PGBadgerPort   string `json:"pgbadgerport"`
-	ExporterPort   string `json:"exporterport"`
+	// Exporter, if set to true, enables the exporter sidecar
+	Exporter     bool   `json:"exporter"`
+	ExporterPort string `json:"exporterport"`
 
 	PrimaryStorage  PgStorageSpec
 	WALStorage      PgStorageSpec

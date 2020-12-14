@@ -359,11 +359,11 @@ func GetBadgerAddon(clientset kubernetes.Interface, namespace string, cluster *c
 
 func GetExporterAddon(clientset kubernetes.Interface, namespace string, spec *crv1.PgclusterSpec) string {
 
-	if spec.UserLabels[config.LABEL_EXPORTER] == "true" {
+	if spec.Exporter {
 		log.Debug("crunchy-postgres-exporter was found as a label on cluster create")
 
 		log.Debugf("creating exporter secret for cluster %s", spec.Name)
-		err := util.CreateSecret(clientset, spec.Name, spec.CollectSecretName, config.LABEL_EXPORTER_PG_USER,
+		err := util.CreateSecret(clientset, spec.Name, spec.CollectSecretName, crv1.PGUserMonitor,
 			Pgo.Cluster.PgmonitorPassword, namespace)
 		if err != nil {
 			log.Error(err)
@@ -769,21 +769,23 @@ func GetPodAntiAffinityType(cluster *crv1.Pgcluster, deploymentType crv1.PodAnti
 
 // GetPgmonitorEnvVars populates the pgmonitor env var template, which contains any
 // pgmonitor env vars that need to be included in the Deployment spec for a PG cluster.
-func GetPgmonitorEnvVars(metricsEnabled, exporterSecret string) string {
-	if metricsEnabled == "true" {
-		fields := PgmonitorEnvVarsTemplateFields{
-			ExporterSecret: exporterSecret,
-		}
-
-		var doc bytes.Buffer
-		err := config.PgmonitorEnvVarsTemplate.Execute(&doc, fields)
-		if err != nil {
-			log.Error(err.Error())
-			return ""
-		}
-		return doc.String()
+func GetPgmonitorEnvVars(cluster *crv1.Pgcluster) string {
+	if !cluster.Spec.Exporter {
+		return ""
 	}
-	return ""
+
+	fields := PgmonitorEnvVarsTemplateFields{
+		ExporterSecret: cluster.Spec.CollectSecretName,
+	}
+
+	doc := bytes.Buffer{}
+
+	if err := config.PgmonitorEnvVarsTemplate.Execute(&doc, fields); err != nil {
+		log.Error(err)
+		return ""
+	}
+
+	return doc.String()
 }
 
 // GetPgbackrestS3EnvVars retrieves the values for the various configuration settings require to

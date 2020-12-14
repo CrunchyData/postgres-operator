@@ -459,6 +459,8 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 
 	// next, capture the existing Crunchy Postgres Exporter configuration settings (previous to version
 	// 4.5.0 referred to as Crunchy Collect), if they exist, and store them in the current labels
+	// 4.6.0 added this value to the spec as "Exporter", so the next step ensure
+	// that the value is migrated over
 	if value, ok := pgcluster.ObjectMeta.Labels["crunchy_collect"]; ok {
 		pgcluster.ObjectMeta.Labels[config.LABEL_EXPORTER] = value
 		delete(pgcluster.ObjectMeta.Labels, "crunchy_collect")
@@ -467,6 +469,18 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 	if value, ok := pgcluster.Spec.UserLabels["crunchy_collect"]; ok {
 		pgcluster.Spec.UserLabels[config.LABEL_EXPORTER] = value
 		delete(pgcluster.Spec.UserLabels, "crunchy_collect")
+	}
+
+	// convert the metrics label over to using a proper definition. Give the user
+	// label precedence.
+	if value, ok := pgcluster.ObjectMeta.Labels[config.LABEL_EXPORTER]; ok {
+		pgcluster.Spec.Exporter, _ = strconv.ParseBool(value)
+		delete(pgcluster.ObjectMeta.Labels, config.LABEL_EXPORTER)
+	}
+
+	if value, ok := pgcluster.Spec.UserLabels[config.LABEL_EXPORTER]; ok {
+		pgcluster.Spec.Exporter, _ = strconv.ParseBool(value)
+		delete(pgcluster.Spec.UserLabels, config.LABEL_EXPORTER)
 	}
 
 	// since the current primary label is not used in this version of the Postgres Operator,
