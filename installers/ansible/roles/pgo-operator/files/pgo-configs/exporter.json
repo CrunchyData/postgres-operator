@@ -1,4 +1,4 @@
-,{
+{
     "name": "exporter",
     "image": "{{.PGOImagePrefix}}/crunchy-postgres-exporter:{{.PGOImageTag}}",
     "ports": [{
