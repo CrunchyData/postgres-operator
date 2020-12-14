@@ -12,10 +12,12 @@
     "spec": {
         "replicas": {{.Replicas}},
         "selector": {
-        "matchLabels": {
+          "matchLabels": {
             "vendor": "crunchydata",
-            {{.DeploymentLabels }}
-        }
+            "pg-cluster": "{{.ClusterName}}",
+            "pgo-pg-database": "true",
+            "deployment-name": "{{.Name}}"
+          }
         },
         "template": {
             "metadata": {
