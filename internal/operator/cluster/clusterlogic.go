@@ -71,17 +71,9 @@ func addClusterCreateMissingService(clientset kubernetes.Interface, cl *crv1.Pgc
 		serviceFields.PGBadgerPort = cl.Spec.PGBadgerPort
 	}
 
-	// ...due to legacy reasons, the exporter label may not be available yet in the
-	// main labels. so we will check here first, and then check the user labels
-	if val, ok := clusterLabels[config.LABEL_EXPORTER]; ok && val == config.LABEL_TRUE {
+	// set the exporter port if exporter is enabled
+	if cl.Spec.Exporter {
 		serviceFields.ExporterPort = cl.Spec.ExporterPort
-	}
-
-	// ...this condition should be targeted for removal in the future
-	if cl.Spec.UserLabels != nil {
-		if val, ok := cl.Spec.UserLabels[config.LABEL_EXPORTER]; ok && val == config.LABEL_TRUE {
-			serviceFields.ExporterPort = cl.Spec.ExporterPort
-		}
 	}
 
 	return CreateService(clientset, &serviceFields, namespace)
@@ -283,6 +275,11 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 	// 'crunchy-pgha-scope' label on the pgcluster
 	cl.Spec.UserLabels[config.LABEL_PGHA_SCOPE] = cl.Spec.Name
 
+	// Set the exporter labels, if applicable
+	if cl.Spec.Exporter {
+		cl.Spec.UserLabels[config.LABEL_EXPORTER] = config.LABEL_TRUE
+	}
+
 	// set up a map of the names of the tablespaces as well as the storage classes
 	tablespaceStorageTypeMap := operator.GetTablespaceStorageTypeMap(cl.Spec.TablespaceMounts)
 
@@ -319,7 +316,7 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 		ConfVolume:         operator.GetConfVolume(clientset, cl, namespace),
 		ExporterAddon:      operator.GetExporterAddon(clientset, namespace, &cl.Spec),
 		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY]),
-		PgmonitorEnvVars:   operator.GetPgmonitorEnvVars(cl.Spec.UserLabels[config.LABEL_EXPORTER], cl.Spec.CollectSecretName),
+		PgmonitorEnvVars:   operator.GetPgmonitorEnvVars(cl),
 		ScopeLabel:         config.LABEL_PGHA_SCOPE,
 		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cl, cl.Labels[config.LABEL_BACKREST], cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY],
 			cl.Spec.Port, cl.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
@@ -435,6 +432,11 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 	}
 
 	cluster.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = replica.Spec.Name
+
+	// Set the exporter labels, if applicable
+	if cluster.Spec.Exporter {
+		cluster.Spec.UserLabels[config.LABEL_EXPORTER] = config.LABEL_TRUE
+	}
 
 	// set up a map of the names of the tablespaces as well as the storage classes
 	tablespaceStorageTypeMap := operator.GetTablespaceStorageTypeMap(cluster.Spec.TablespaceMounts)

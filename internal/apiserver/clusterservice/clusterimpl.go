@@ -721,13 +721,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		userLabelsMap[config.LABEL_CUSTOM_CONFIG] = request.CustomConfig
 	}
 
-	//set the metrics flag with the global setting first
-	userLabelsMap[config.LABEL_EXPORTER] = strconv.FormatBool(apiserver.MetricsFlag)
-
-	//if metrics is chosen on the pgo command, stick it into the user labels
-	if request.MetricsFlag {
-		userLabelsMap[config.LABEL_EXPORTER] = "true"
-	}
 	if request.ServiceType != "" {
 		if request.ServiceType != config.DEFAULT_SERVICE_TYPE && request.ServiceType != config.LOAD_BALANCER_SERVICE_TYPE && request.ServiceType != config.NODEPORT_SERVICE_TYPE {
 			resp.Status.Code = msgs.Error
@@ -1137,6 +1130,11 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	if userLabelsMap[config.LABEL_CUSTOM_CONFIG] != "" {
 		spec.CustomConfig = userLabelsMap[config.LABEL_CUSTOM_CONFIG]
 	}
+
+	// enable the exporter sidecar based on the what the user based in or what
+	// the default value is. the user value takes precedence, unless it's false,
+	// as the legacy check only looked for enablement
+	spec.Exporter = request.MetricsFlag || apiserver.MetricsFlag
 
 	// if the request has overriding CPU/Memory requests/limits parameters,
 	// these will take precedence over the defaults
