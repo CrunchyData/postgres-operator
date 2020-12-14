@@ -76,19 +76,7 @@ set_default_pg_exporter_env() {
 trap 'trap_sigterm' SIGINT SIGTERM
 
 set_default_postgres_exporter_env
-
-if [[ ! -v DATA_SOURCE_NAME ]]
-then
-    set_default_pg_exporter_env
-    if [[ ! -z "${EXPORTER_PG_PARAMS}" ]]
-    then
-        EXPORTER_PG_PARAMS="?${EXPORTER_PG_PARAMS}"
-    fi
-    export DATA_SOURCE_NAME="postgresql://${EXPORTER_PG_USER}:${EXPORTER_PG_PASSWORD}\
-@${EXPORTER_PG_HOST}:${EXPORTER_PG_PORT}/${EXPORTER_PG_DATABASE}${EXPORTER_PG_PARAMS}"
-fi
-
-
+set_default_pg_exporter_env
 
 if [[ ! ${#default_exporter_env_vars[@]} -eq 0 ]]
 then
@@ -99,16 +87,16 @@ fi
 # Check that postgres is accepting connections.
 echo_info "Waiting for PostgreSQL to be ready.."
 while true; do
-    ${PG_DIR?}/bin/pg_isready -d ${DATA_SOURCE_NAME}
+    ${PG_DIR?}/bin/pg_isready -q -h "${EXPORTER_PG_HOST}" -p "${EXPORTER_PG_PORT}"
     if [ $? -eq 0 ]; then
         break
     fi
     sleep 2
 done
 
-echo_info "Checking if PostgreSQL is accepting queries.."
+echo_info "Checking if "${EXPORTER_PG_USER}" is is created.."
 while true; do
-    ${PG_DIR?}/bin/psql "${DATA_SOURCE_NAME}" -c "SELECT now();"
+    PGPASSWORD="${EXPORTER_PG_PASSWORD}" ${PG_DIR?}/bin/psql -q -h "${EXPORTER_PG_HOST}" -p "${EXPORTER_PG_PORT}" -U "${EXPORTER_PG_USER}" -c "SELECT 1;" "${EXPORTER_PG_DATABASE}"
     if [ $? -eq 0 ]; then
         break
     fi
@@ -135,7 +123,7 @@ else
         fi
     done
 
-    VERSION=$(${PG_DIR?}/bin/psql "${DATA_SOURCE_NAME}" -qtAX -c "SELECT current_setting('server_version_num')")
+    VERSION=$(PGPASSWORD="${EXPORTER_PG_PASSWORD}" ${PG_DIR?}/bin/psql -h "${EXPORTER_PG_HOST}" -p "${EXPORTER_PG_PORT}" -U "${EXPORTER_PG_USER}" -qtAX -c "SELECT current_setting('server_version_num')" "${EXPORTER_PG_DATABASE}")
     if (( ${VERSION?} >= 90500 )) && (( ${VERSION?} < 90600 ))
     then
         if [[ -f ${CONFIG_DIR?}/queries_pg95.yml ]]
@@ -231,7 +219,7 @@ sed -i "s/#PGBACKREST_INFO_THROTTLE_MINUTES#/${PGBACKREST_INFO_THROTTLE_MINUTES:
 PG_OPTIONS="--extend.query-path=${QUERY_DIR?}/queries.yml  --web.listen-address=:${POSTGRES_EXPORTER_PORT}"
 
 echo_info "Starting postgres-exporter.."
-${PG_EXP_HOME?}/postgres_exporter ${PG_OPTIONS?} >>/dev/stdout 2>&1 &
+DATA_SOURCE_URI="${EXPORTER_PG_HOST}:${EXPORTER_PG_PORT}/${EXPORTER_PG_DATABASE}?${EXPORTER_PG_PARAMS}" DATA_SOURCE_USER="${EXPORTER_PG_USER}" DATA_SOURCE_PASS="${EXPORTER_PG_PASSWORD}" ${PG_EXP_HOME?}/postgres_exporter ${PG_OPTIONS?} >>/dev/stdout 2>&1 &
 echo $! > $POSTGRES_EXPORTER_PIDFILE
 
 wait

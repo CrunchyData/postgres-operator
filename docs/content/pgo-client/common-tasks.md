@@ -128,7 +128,6 @@ Cluster:
   BackrestS3URIStyle: ""
   BackrestS3VerifyTLS: true
   DisableAutofail: false
-  PgmonitorPassword: ""
   EnableCrunchyadm: false
   DisableReplicaStartFailReinit: false
   PodAntiAffinity: preferred

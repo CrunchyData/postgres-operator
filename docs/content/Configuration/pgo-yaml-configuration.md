@@ -23,7 +23,6 @@ The *pgo.yaml* file is broken into major sections as described below:
 |User        | the PostgreSQL normal user name
 |Database        | the PostgreSQL normal user database
 |Replicas        | the number of cluster replicas to create for newly created clusters, typically users will scale up replicas on the pgo CLI command line but this global value can be set as well
-|PgmonitorPassword        | the password to use for pgmonitor metrics collection if you specify --metrics when creating a PG cluster
 |Metrics        | boolean, if set to true will cause each new cluster to include crunchy-postgres-exporter as a sidecar container for metrics collection, if set to false (default), users can still add metrics on a cluster-by-cluster basis using the pgo command flag --metrics
 |Badger        | boolean, if set to true will cause each new cluster to include crunchy-pgbadger as a sidecar container for static log analysis, if set to false (default), users can still add pgbadger on a cluster-by-cluster basis using the pgo create cluster command flag --pgbadger
 |Policies        | optional, list of policies to apply to a newly created cluster, comma separated, must be valid policies in the catalog

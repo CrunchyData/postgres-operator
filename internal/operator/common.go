@@ -124,11 +124,6 @@ func Initialize(clientset kubernetes.Interface) {
 		log.Debugf("PGOImagePrefix set, using %s", Pgo.Pgo.PGOImagePrefix)
 	}
 
-	if Pgo.Cluster.PgmonitorPassword == "" {
-		log.Debug("pgo.yaml PgmonitorPassword not set, using default")
-		Pgo.Cluster.PgmonitorPassword = "password"
-	}
-
 	// In a RELATED_IMAGE_* world, this does not _need_ to be set, but our
 	// installer does set it up so we could be ok...
 	if Pgo.Pgo.PGOImageTag == "" {

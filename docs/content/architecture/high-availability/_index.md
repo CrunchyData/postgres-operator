@@ -330,4 +330,5 @@ modification to the custom resource:
 - Memory resource adjustments
 - CPU resource adjustments
 - Custom annotation changes
+- Enabling/disabling the monitoring sidecar on a PostgreSQL cluster (`--metrics`)
 - Tablespace additions

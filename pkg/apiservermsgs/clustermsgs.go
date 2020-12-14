@@ -356,6 +356,16 @@ const (
 	UpdateClusterAutofailDisable
 )
 
+// UpdateClusterMetrics determines whether or not to enable/disable the metrics
+// collection sidecar in a cluster
+type UpdateClusterMetrics int
+
+const (
+	UpdateClusterMetricsDoNothing UpdateClusterMetrics = iota
+	UpdateClusterMetricsEnable
+	UpdateClusterMetricsDisable
+)
+
 // UpdateClusterStandbyStatus defines the types for updating the Standby status
 type UpdateClusterStandbyStatus int
 
@@ -426,10 +436,13 @@ type UpdateClusterRequest struct {
 	// MemoryRequest is the value of how much RAM should be requested for
 	// deploying the PostgreSQL cluster
 	MemoryRequest string
-	Standby       UpdateClusterStandbyStatus
-	Startup       bool
-	Shutdown      bool
-	Tablespaces   []ClusterTablespaceDetail
+	// Metrics allows for the enabling/disabling of the metrics sidecar. This can
+	// cause downtime and triggers a rolling update
+	Metrics     UpdateClusterMetrics
+	Standby     UpdateClusterStandbyStatus
+	Startup     bool
+	Shutdown    bool
+	Tablespaces []ClusterTablespaceDetail
 }
 
 // UpdateClusterResponse ...

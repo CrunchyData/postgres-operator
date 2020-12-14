@@ -58,6 +58,9 @@ type ServiceTemplateFields struct {
 // ReplicaSuffix ...
 const ReplicaSuffix = "-replica"
 
+// exporterContainerName is the name of the exporter container
+const exporterContainerName = "exporter"
+
 func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace string) {
 	ctx := context.TODO()
 	var err error

@@ -29,9 +29,13 @@ var (
 	// DisableLogin allows a user to disable the ability for a PostgreSQL uesr to
 	// log in
 	DisableLogin bool
+	// DisableMetrics allows a user to disable metrics collection
+	DisableMetrics bool
 	// EnableLogin allows a user to enable the ability for a PostgreSQL uesr to
 	// log in
 	EnableLogin bool
+	// EnableMetrics allows a user to enbale metrics collection
+	EnableMetrics bool
 	// ExpireUser sets a user to having their password expired
 	ExpireUser bool
 	// PgoroleChangePermissions does something with the pgouser access controls,
@@ -83,6 +87,8 @@ func init() {
 	UpdateClusterCmd.Flags().StringVar(&CPULimit, "cpu-limit", "", "Set the number of millicores to limit for the CPU, e.g. "+
 		"\"100m\" or \"0.1\".")
 	UpdateClusterCmd.Flags().BoolVar(&DisableAutofailFlag, "disable-autofail", false, "Disables autofail capabitilies in the cluster.")
+	UpdateClusterCmd.Flags().BoolVar(&DisableMetrics, "disable-metrics", false,
+		"Disable the metrics collection sidecar. May cause brief downtime.")
 	UpdateClusterCmd.Flags().BoolVar(&EnableAutofailFlag, "enable-autofail", false, "Enables autofail capabitilies in the cluster.")
 	UpdateClusterCmd.Flags().StringVar(&MemoryRequest, "memory", "", "Set the amount of RAM to request, e.g. "+
 		"1GiB.")
@@ -107,7 +113,8 @@ func init() {
 		"the Crunchy Postgres Exporter sidecar container.")
 	UpdateClusterCmd.Flags().StringVar(&ExporterMemoryLimit, "exporter-memory-limit", "", "Set the amount of memory to limit for "+
 		"the Crunchy Postgres Exporter sidecar container.")
-
+	UpdateClusterCmd.Flags().BoolVar(&EnableMetrics, "enable-metrics", false,
+		"Enable the metrics collection sidecar. May cause brief downtime.")
 	UpdateClusterCmd.Flags().BoolVarP(&EnableStandby, "enable-standby", "", false,
 		"Enables standby mode in the cluster(s) specified.")
 	UpdateClusterCmd.Flags().BoolVar(&Startup, "startup", false, "Restart the database cluster if it "+
@@ -246,6 +253,10 @@ var UpdateClusterCmd = &cobra.Command{
 			fmt.Println("Disabling standby mode will enable database writes for this " +
 				"cluster.\nPlease ensure the cluster this standby cluster is replicating " +
 				"from has been properly shutdown before proceeding!")
+		}
+
+		if EnableMetrics || DisableMetrics {
+			fmt.Println("Adding or removing a metrics collection sidecar can cause downtime.")
 		}
 
 		if len(Tablespaces) > 0 {

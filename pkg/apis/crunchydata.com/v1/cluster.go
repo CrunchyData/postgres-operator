@@ -111,7 +111,6 @@ type PgclusterSpec struct {
 	UserSecretName      string                   `json:"usersecretname"`
 	RootSecretName      string                   `json:"rootsecretname"`
 	PrimarySecretName   string                   `json:"primarysecretname"`
-	CollectSecretName   string                   `json:"collectSecretName"`
 	Status              string                   `json:"status"`
 	CustomConfig        string                   `json:"customconfig"`
 	UserLabels          map[string]string        `json:"userlabels"`

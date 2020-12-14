@@ -628,6 +628,13 @@ func updateCluster(args []string, ns string) {
 		r.Autofail = msgs.UpdateClusterAutofailDisable
 	}
 
+	// check to see if the metrics sidecar needs to be enabled or disabled
+	if EnableMetrics {
+		r.Metrics = msgs.UpdateClusterMetricsEnable
+	} else if DisableMetrics {
+		r.Metrics = msgs.UpdateClusterMetricsDisable
+	}
+
 	// if the user provided resources for CPU or Memory, validate them to ensure
 	// they are valid Kubernetes values
 	if err := util.ValidateQuantity(r.CPURequest, "cpu"); err != nil {

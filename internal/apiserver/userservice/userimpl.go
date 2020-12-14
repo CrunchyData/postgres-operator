@@ -558,7 +558,16 @@ func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
 			//
 			// We ignore any errors...if the password get set, we add it. If not, we
 			// don't
-			secretName := fmt.Sprintf(util.UserSecretFormat, result.ClusterName, result.Username)
+			secretName := ""
+
+			// handle special cases with user names + secrets lining up
+			switch result.Username {
+			default:
+				secretName = fmt.Sprintf(util.UserSecretFormat, result.ClusterName, result.Username)
+			case "ccp_monitoring":
+				secretName = util.GenerateExporterSecretName(result.ClusterName)
+			}
+
 			password, _ := util.GetPasswordFromSecret(apiserver.Clientset, pod.Namespace, secretName)
 
 			if password != "" {
