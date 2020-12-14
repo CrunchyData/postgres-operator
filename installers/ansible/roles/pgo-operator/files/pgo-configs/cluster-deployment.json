@@ -234,8 +234,9 @@
                     ],
                     "imagePullPolicy": "IfNotPresent"
                 }{{ end }}
-
-                {{.ExporterAddon }}
+                {{ if .ExporterAddon }}
+                ,{{.ExporterAddon }}
+                {{ end }}
 
                 {{.BadgerAddon }}
 
