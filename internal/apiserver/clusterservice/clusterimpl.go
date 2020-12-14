@@ -960,9 +960,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		resp.Result.Users = append(resp.Result.Users, user)
 	}
 
-	// there's a secret for the monitoring user too
-	newInstance.Spec.CollectSecretName = clusterName + crv1.ExporterSecretSuffix
-
 	// Create Backrest secret for S3/SSH Keys:
 	// We make this regardless if backrest is enabled or not because
 	// the deployment template always tries to mount /sshd volume
@@ -1131,7 +1128,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.CustomConfig = userLabelsMap[config.LABEL_CUSTOM_CONFIG]
 	}
 
-	// enable the exporter sidecar based on the what the user based in or what
+	// enable the exporter sidecar based on the what the user passed in or what
 	// the default value is. the user value takes precedence, unless it's false,
 	// as the legacy check only looked for enablement
 	spec.Exporter = request.MetricsFlag || apiserver.MetricsFlag
@@ -1903,6 +1900,15 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 			cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = "true"
 		case msgs.UpdateClusterAutofailDisable:
 			cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = "false"
+		}
+
+		// enable or disable the metrics collection sidecar
+		switch request.Metrics {
+		case msgs.UpdateClusterMetricsEnable:
+			cluster.Spec.Exporter = true
+		case msgs.UpdateClusterMetricsDisable:
+			cluster.Spec.Exporter = false
+		case msgs.UpdateClusterMetricsDoNothing: // this is never reached -- no-op
 		}
 
 		// enable or disable standby mode based on UpdateClusterStandbyStatus provided in

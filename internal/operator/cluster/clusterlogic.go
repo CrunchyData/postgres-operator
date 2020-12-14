@@ -275,9 +275,17 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 	// 'crunchy-pgha-scope' label on the pgcluster
 	cl.Spec.UserLabels[config.LABEL_PGHA_SCOPE] = cl.Spec.Name
 
-	// Set the exporter labels, if applicable
+	// If applicable, set the exporter labels, used for the scrapers, and create
+	// the secret. We don't need to take any additional actions, as the cluster
+	// creation process will handle those. Magic!
 	if cl.Spec.Exporter {
 		cl.Spec.UserLabels[config.LABEL_EXPORTER] = config.LABEL_TRUE
+
+		log.Debugf("creating exporter secret for cluster %s", cl.Spec.Name)
+
+		if _, err := CreateExporterSecret(clientset, cl); err != nil {
+			log.Error(err)
+		}
 	}
 
 	// set up a map of the names of the tablespaces as well as the storage classes
@@ -314,7 +322,7 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 		PodAntiAffinity:    operator.GetPodAntiAffinity(cl, crv1.PodAntiAffinityDeploymentDefault, cl.Spec.PodAntiAffinity.Default),
 		ContainerResources: operator.GetResourcesJSON(cl.Spec.Resources, cl.Spec.Limits),
 		ConfVolume:         operator.GetConfVolume(clientset, cl, namespace),
-		ExporterAddon:      operator.GetExporterAddon(clientset, namespace, &cl.Spec),
+		ExporterAddon:      operator.GetExporterAddon(cl.Spec),
 		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY]),
 		PgmonitorEnvVars:   operator.GetPgmonitorEnvVars(cl),
 		ScopeLabel:         config.LABEL_PGHA_SCOPE,
@@ -407,7 +415,6 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 	var replicaDoc bytes.Buffer
 
 	serviceName := replica.Spec.ClusterName + "-replica"
-	// replicaFlag := true
 
 	//	replicaLabels := operator.GetPrimaryLabels(serviceName, replica.Spec.ClusterName, replicaFlag, cluster.Spec.UserLabels)
 	cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME] = replica.Spec.Name
@@ -472,7 +479,7 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 		ContainerResources: operator.GetResourcesJSON(cluster.Spec.Resources, cluster.Spec.Limits),
 		NodeSelector:       operator.GetAffinity(replica.Spec.UserLabels["NodeLabelKey"], replica.Spec.UserLabels["NodeLabelValue"], "In"),
 		PodAntiAffinity:    operator.GetPodAntiAffinity(cluster, crv1.PodAntiAffinityDeploymentDefault, cluster.Spec.PodAntiAffinity.Default),
-		ExporterAddon:      operator.GetExporterAddon(clientset, namespace, &cluster.Spec),
+		ExporterAddon:      operator.GetExporterAddon(cluster.Spec),
 		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cluster, replica.Spec.Name),
 		ScopeLabel:         config.LABEL_PGHA_SCOPE,
 		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster, cluster.Labels[config.LABEL_BACKREST], replica.Spec.Name,

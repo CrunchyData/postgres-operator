@@ -237,6 +237,26 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
+	// see if we are adding / removing the metrics collection sidecar
+	if oldcluster.Spec.Exporter != newcluster.Spec.Exporter {
+		var err error
+
+		// determine if the sidecar is being enabled/disabled and take the precursor
+		// actions before the deployment template is modified
+		switch newcluster.Spec.Exporter {
+		case true:
+			err = clusteroperator.AddExporter(c.Client, c.Client.Config, newcluster)
+		case false:
+			err = clusteroperator.RemoveExporter(c.Client, c.Client.Config, newcluster)
+		}
+
+		if err == nil {
+			rollingUpdateFuncs = append(rollingUpdateFuncs, clusteroperator.UpdateExporterSidecar)
+		} else {
+			log.Errorf("could not update metrics collection sidecar: %q", err.Error())
+		}
+	}
+
 	// see if any of the resource values have changed for the database or exporter container,
 	// if so, update them
 	if !reflect.DeepEqual(oldcluster.Spec.Resources, newcluster.Spec.Resources) ||

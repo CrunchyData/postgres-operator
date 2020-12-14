@@ -99,20 +99,6 @@ const (
 	// PostgreSQL cluster
 	sqlCheckPgBouncerInstall = `SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'pgbouncer' LIMIT 1);`
 
-	// disable the pgbouncer user from logging in. This is safe from SQL injection
-	// as the string that is being interpolated is the util.PgBouncerUser constant
-	//
-	// This had the "PASSWORD NULL" feature, but this is only found in
-	// PostgreSQL 11+, and given we don't want to check for the PG version before
-	// running the command, we will not use it
-	sqlDisableLogin = `ALTER ROLE "%s" NOLOGIN;`
-
-	// sqlEnableLogin is the SQL to update the password
-	// NOTE: this is safe from SQL injection as we explicitly add the inerpolated
-	// string as a MD5 hash and we are using the crv1.PGUserPgBouncer constant
-	// However, the escaping is handled in the util.SetPostgreSQLPassword function
-	sqlEnableLogin = `ALTER ROLE %s PASSWORD %s LOGIN;`
-
 	// sqlGetDatabasesForPgBouncer gets all the databases where pgBouncer can be
 	// installed or uninstalled
 	sqlGetDatabasesForPgBouncer = `SELECT datname FROM pg_catalog.pg_database WHERE datname NOT IN ('template0') AND datallowconn;`
@@ -180,7 +166,7 @@ func AddPgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, clust
 
 		// attempt to update the password in PostgreSQL, as this is how pgBouncer
 		// will properly interface with PostgreSQL
-		if err := setPostgreSQLPassword(clientset, restconfig, pod, cluster.Spec.Port, pgBouncerPassword); err != nil {
+		if err := setPostgreSQLPassword(clientset, restconfig, pod, cluster.Spec.Port, crv1.PGUserPgBouncer, pgBouncerPassword); err != nil {
 			return err
 		}
 	}
@@ -317,7 +303,7 @@ func RotatePgBouncerPassword(clientset kubernetes.Interface, restconfig *rest.Co
 
 	// next, update the PostgreSQL primary with the new password. If this fails
 	// we definitely return an error
-	if err := setPostgreSQLPassword(clientset, restconfig, primaryPod, cluster.Spec.Port, password); err != nil {
+	if err := setPostgreSQLPassword(clientset, restconfig, primaryPod, cluster.Spec.Port, crv1.PGUserPgBouncer, password); err != nil {
 		return err
 	}
 
@@ -326,7 +312,7 @@ func RotatePgBouncerPassword(clientset kubernetes.Interface, restconfig *rest.Co
 	// PostgreSQL to perform its authentication
 	secret.Data["password"] = []byte(password)
 	secret.Data["users.txt"] = util.GeneratePgBouncerUsersFileBytes(
-		makePostgresPassword(pgpassword.MD5, password))
+		makePostgresPassword(pgpassword.MD5, crv1.PGUserPgBouncer, password))
 
 	// update the secret
 	if _, err := clientset.CoreV1().Secrets(cluster.Namespace).
@@ -658,7 +644,7 @@ func createPgbouncerSecret(clientset kubernetes.Interface, cluster *crv1.Pgclust
 		Data: map[string][]byte{
 			"password": []byte(password),
 			"users.txt": util.GeneratePgBouncerUsersFileBytes(
-				makePostgresPassword(pgpassword.MD5, password)),
+				makePostgresPassword(pgpassword.MD5, crv1.PGUserPgBouncer, password)),
 		},
 	}
 
@@ -698,32 +684,7 @@ func createPgBouncerService(clientset kubernetes.Interface, cluster *crv1.Pgclus
 // disable the "pgbouncer" role from being able to log in. It keeps the
 // artificats that were created during normal pgBouncer operation
 func disablePgBouncer(clientset kubernetes.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
-	log.Debugf("disable pgbouncer user on cluster [%s]", cluster.Name)
-	// disable the pgbouncer user in the PostgreSQL cluster.
-	// first, get the primary pod. If we cannot do this, let's consider it an
-	// error and abort
-	pod, err := util.GetPrimaryPod(clientset, cluster)
-
-	if err != nil {
-		return err
-	}
-
-	// This is safe from SQL injection as we are using constants and a well defined
-	// string
-	sql := strings.NewReader(fmt.Sprintf(sqlDisableLogin, crv1.PGUserPgBouncer))
-	cmd := []string{"psql"}
-
-	// exec into the pod to run the query
-	_, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
-		cmd, "database", pod.Name, pod.ObjectMeta.Namespace, sql)
-
-	// if there is an error, log the error from the stderr and return the error
-	if err != nil {
-		log.Error(stderr)
-		return err
-	}
-
-	return nil
+	return disablePostgresLogin(clientset, restconfig, cluster, crv1.PGUserPgBouncer)
 }
 
 // execPgBouncerScript runs a script pertaining to the management of pgBouncer
@@ -742,15 +703,6 @@ func execPgBouncerScript(clientset kubernetes.Interface, restconfig *rest.Config
 		log.Warnf("You can attempt to rerun the script [%s] on [%s]",
 			script, databaseName)
 	}
-}
-
-// generatePassword generates a password that is used for the "pgbouncer"
-// PostgreSQL user that provides the associated pgBouncer functionality
-func generatePassword() (string, error) {
-	// first, get the length of what the password should be
-	generatedPasswordLength := util.GeneratedPasswordLength(operator.Pgo.Cluster.PasswordLength)
-	// from there, the password can be generated!
-	return util.GeneratePassword(generatedPasswordLength)
 }
 
 // generatePgBouncerConf generates the content that is stored in the secret
@@ -879,19 +831,6 @@ func isPgBouncerTLSEnabled(cluster *crv1.Pgcluster) bool {
 	return cluster.Spec.PgBouncer.TLSSecret != "" && cluster.Spec.TLS.IsTLSEnabled()
 }
 
-// makePostgresPassword creates the expected hash for a password type for a
-// PostgreSQL password
-func makePostgresPassword(passwordType pgpassword.PasswordType, password string) string {
-	// get the PostgreSQL password generate based on the password type
-	// as all of these values are valid, this not not error
-	postgresPassword, _ := pgpassword.NewPostgresPassword(passwordType, crv1.PGUserPgBouncer, password)
-
-	// create the PostgreSQL style hashed password and return
-	hashedPassword, _ := postgresPassword.Build()
-
-	return hashedPassword
-}
-
 // publishPgBouncerEvent publishes one of the events on the event stream
 func publishPgBouncerEvent(eventType string, cluster *crv1.Pgcluster) {
 	var event events.EventInterface
@@ -930,26 +869,6 @@ func publishPgBouncerEvent(eventType string, cluster *crv1.Pgcluster) {
 	if err := events.Publish(event); err != nil {
 		log.Error(err.Error())
 	}
-}
-
-// setPostgreSQLPassword updates the pgBouncer password in the PostgreSQL
-// cluster by executing into the primary Pod and changing it
-func setPostgreSQLPassword(clientset kubernetes.Interface, restconfig *rest.Config, pod *v1.Pod, port, password string) error {
-	log.Debug("set pgbouncer password in PostgreSQL")
-
-	// we use the PostgreSQL "md5" hashing mechanism here to pre-hash the
-	// password. This is semi-hard coded but is now prepped for SCRAM as a
-	// password type can be passed in. Almost to SCRAM!
-	sqlpgBouncerPassword := makePostgresPassword(pgpassword.MD5, password)
-
-	if err := util.SetPostgreSQLPassword(clientset, restconfig, pod,
-		port, crv1.PGUserPgBouncer, sqlpgBouncerPassword, sqlEnableLogin); err != nil {
-		log.Error(err)
-		return err
-	}
-
-	// and that's all!
-	return nil
 }
 
 // updatePgBouncerReplicas updates the pgBouncer Deployment with the number

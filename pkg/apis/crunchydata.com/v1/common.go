@@ -31,9 +31,6 @@ const UserSecretSuffix = "-secret"
 // PrimarySecretSuffix ...
 const PrimarySecretSuffix = "-primaryuser-secret"
 
-// ExporterSecretSuffix ...
-const ExporterSecretSuffix = "-exporter-secret"
-
 // StorageExisting ...
 const StorageExisting = "existing"
 

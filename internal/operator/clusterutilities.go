@@ -94,7 +94,7 @@ type exporterTemplateFields struct {
 	PGOImagePrefix     string
 	PgPort             string
 	ExporterPort       string
-	CollectSecretName  string
+	ExporterSecretName string
 	ContainerResources string
 	TLSOnly            bool
 }
@@ -357,46 +357,45 @@ func GetBadgerAddon(clientset kubernetes.Interface, namespace string, cluster *c
 	return ""
 }
 
-func GetExporterAddon(clientset kubernetes.Interface, namespace string, spec *crv1.PgclusterSpec) string {
+// GetExporterAddon returns the template used to create an exporter container
+// for metrics. This is semi-legacy, but updated to match the current way of
+// handling this
+func GetExporterAddon(spec crv1.PgclusterSpec) string {
+	// do not execute if metrics are not enabled
+	if !spec.Exporter {
+		return ""
+	}
 
-	if spec.Exporter {
-		log.Debug("crunchy-postgres-exporter was found as a label on cluster create")
+	log.Debug("crunchy-postgres-exporter was found as a label on cluster create")
 
-		log.Debugf("creating exporter secret for cluster %s", spec.Name)
-		err := util.CreateSecret(clientset, spec.Name, spec.CollectSecretName, crv1.PGUserMonitor,
-			Pgo.Cluster.PgmonitorPassword, namespace)
-		if err != nil {
-			log.Error(err)
-		}
-
-		exporterTemplateFields := exporterTemplateFields{}
-		exporterTemplateFields.Name = spec.Name
-		exporterTemplateFields.JobName = spec.Name
-		exporterTemplateFields.PGOImageTag = Pgo.Pgo.PGOImageTag
-		exporterTemplateFields.ExporterPort = spec.ExporterPort
-		exporterTemplateFields.PGOImagePrefix = util.GetValueOrDefault(spec.PGOImagePrefix, Pgo.Pgo.PGOImagePrefix)
-		exporterTemplateFields.PgPort = spec.Port
-		exporterTemplateFields.CollectSecretName = spec.CollectSecretName
-		exporterTemplateFields.ContainerResources = GetResourcesJSON(spec.ExporterResources, spec.ExporterLimits)
+	exporterTemplateFields := exporterTemplateFields{
+		ContainerResources: GetResourcesJSON(spec.ExporterResources, spec.ExporterLimits),
+		ExporterPort:       spec.ExporterPort,
+		ExporterSecretName: util.GenerateExporterSecretName(spec.ClusterName),
+		JobName:            spec.Name,
+		Name:               spec.Name,
+		PGOImagePrefix:     util.GetValueOrDefault(spec.PGOImagePrefix, Pgo.Pgo.PGOImagePrefix),
+		PGOImageTag:        Pgo.Pgo.PGOImageTag,
+		PgPort:             spec.Port,
 		// see if TLS only is set. however, this also requires checking to see if
 		// TLS is enabled in this case. The reason is that even if TLS is only just
 		// enabled, because the connection is over an internal interface, we do not
 		// need to have the overhead of a TLS connection
-		exporterTemplateFields.TLSOnly = spec.TLS.IsTLSEnabled() && spec.TLSOnly
-
-		var exporterDoc bytes.Buffer
-		err = config.ExporterTemplate.Execute(&exporterDoc, exporterTemplateFields)
-		if err != nil {
-			log.Error(err.Error())
-			return ""
-		}
-
-		if CRUNCHY_DEBUG {
-			config.ExporterTemplate.Execute(os.Stdout, exporterTemplateFields)
-		}
-		return exporterDoc.String()
+		TLSOnly: (spec.TLS.IsTLSEnabled() && spec.TLSOnly),
 	}
-	return ""
+
+	if CRUNCHY_DEBUG {
+		_ = config.ExporterTemplate.Execute(os.Stdout, exporterTemplateFields)
+	}
+
+	exporterDoc := bytes.Buffer{}
+
+	if err := config.ExporterTemplate.Execute(&exporterDoc, exporterTemplateFields); err != nil {
+		log.Error(err)
+		return ""
+	}
+
+	return exporterDoc.String()
 }
 
 //consolidate with cluster.GetConfVolume
@@ -775,7 +774,7 @@ func GetPgmonitorEnvVars(cluster *crv1.Pgcluster) string {
 	}
 
 	fields := PgmonitorEnvVarsTemplateFields{
-		ExporterSecret: cluster.Spec.CollectSecretName,
+		ExporterSecret: util.GenerateExporterSecretName(cluster.Name),
 	}
 
 	doc := bytes.Buffer{}

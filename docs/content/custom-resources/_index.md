@@ -395,7 +395,6 @@ spec:
   user: hippo
   userlabels:
     backrest-storage-type: "s3"
-    crunchy-postgres-exporter: "false"
     pg-pod-anti-affinity: ""
     pgo-version: {{< param operatorVersion >}}
   usersecretname: ${pgo_cluster_name}-hippo-secret
@@ -492,7 +491,6 @@ spec:
   userlabels:
     NodeLabelKey: ""
     NodeLabelValue: ""
-    crunchy-postgres-exporter: "false"
     pg-pod-anti-affinity: ""
     pgo-version: {{< param operatorVersion >}}
 EOF
@@ -501,6 +499,13 @@ kubectl apply -f "${pgo_cluster_name}-${pgo_cluster_replica_suffix}-pgreplica.ya
 ```
 
 Add this time, removing a replica must be handled through the [`pgo` client]({{< relref "/pgo-client/common-tasks.md#high-availability-scaling-up-down">}}).
+
+### Monitoring
+
+To enable the [monitoring]({{< relref "/architecture/monitoring.md">}})
+(aka metrics) sidecar using the `crunchy-postgres-exporter` container, you need
+to set the `exporter` attribute in `pgclusters.crunchydata.com` custom resource.
+
 
 ### Add a Tablespace
 
@@ -679,12 +684,12 @@ make changes, as described below.
 | CCPImage | `create` | The name of the PostgreSQL container image to use, e.g. `crunchy-postgres-ha` or `crunchy-postgres-ha-gis`. |
 | CCPImagePrefix | `create` | If provided, the image prefix (or registry) of the PostgreSQL container image, e.g. `registry.developers.crunchydata.com/crunchydata`. The default is to use the image prefix set in the PostgreSQL Operator configuration. |
 | CCPImageTag | `create` | The tag of the PostgreSQL container image to use, e.g. `{{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}`. |
-| CollectSecretName | `create` | An optional attribute unless `crunchy-postgres-exporter` is specified in the `UserLabels`; contains the name of a Kubernetes Secret that contains the credentials for a PostgreSQL user that is used for metrics collection, and is created when the PostgreSQL cluster is first bootstrapped. For more information, please see `User Secret Specification`.|
 | ClusterName | `create` | The name of the PostgreSQL cluster, e.g. `hippo`. This is used to group PostgreSQL instances (primary, replicas) together. |
 | CustomConfig | `create` | If specified, references a custom ConfigMap to use when bootstrapping a PostgreSQL cluster. For the shape of this file, please see the section on [Custom Configuration]({{< relref "/advanced/custom-configuration.md" >}}) |
 | Database | `create` | The name of a database that the PostgreSQL user can log into after the PostgreSQL cluster is created. |
 | ExporterLimits | `create`, `update` | Specify the container resource limits that the `crunchy-postgres-exporter` sidecar uses when it is deployed with a PostgreSQL instance. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
-| ExporterPort | `create` | If the `"crunchy-postgres-exporter"` label is set in `UserLabels`, then this specifies the port that the metrics sidecar runs on (e.g. `9187`) |
+| Exporter | `create`,`update` | If `true`, deploys the `crunchy-postgres-exporter` sidecar for metrics collection |
+| ExporterPort | `create` | If `Exporter` is `true`, then this specifies the port that the metrics sidecar runs on (e.g. `9187`) |
 | ExporterResources | `create`, `update` | Specify the container resource requests that the `crunchy-postgres-exporter` sidecar uses when it is deployed with a PostgreSQL instance. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | Limits | `create`, `update` | Specify the container resource limits that the PostgreSQL cluster should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | Name | `create` | The name of the PostgreSQL instance that is the primary. On creation, this should be set to be the same as `ClusterName`. |

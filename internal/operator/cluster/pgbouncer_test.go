@@ -18,7 +18,6 @@ package cluster
 import (
 	"testing"
 
-	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 )
 
@@ -70,23 +69,5 @@ func TestIsPgBouncerTLSEnabled(t *testing.T) {
 				t.Errorf("expected false")
 			}
 		})
-	})
-}
-
-func TestMakePostgresPassword(t *testing.T) {
-
-	t.Run("md5", func(t *testing.T) {
-		t.Run("valid", func(t *testing.T) {
-			passwordType := pgpassword.MD5
-			password := "datalake"
-			expected := "md56294153764d389dc6830b6ce4f923cdb"
-
-			actual := makePostgresPassword(passwordType, password)
-
-			if actual != expected {
-				t.Errorf("expected: %q actual: %q", expected, actual)
-			}
-		})
-
 	})
 }
