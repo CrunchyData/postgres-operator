@@ -29,6 +29,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator/backrest"
+	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
@@ -1891,7 +1892,7 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		return response
 	}
 
-	for _, cluster := range clusterList.Items {
+	for i, cluster := range clusterList.Items {
 
 		//set autofail=true or false on each pgcluster CRD
 		// Make the change based on the value of Autofail vis-a-vis UpdateClusterAutofailStatus
@@ -2024,6 +2025,16 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		if request.ExporterMemoryRequest != "" {
 			quantity, _ := resource.ParseQuantity(request.ExporterMemoryRequest)
 			cluster.Spec.ExporterResources[v1.ResourceMemory] = quantity
+		}
+
+		// an odd one...if rotating the password is requested, we can perform this
+		// as an operational action and handle it here.
+		// if it fails...just put a in the logs.
+		if cluster.Spec.Exporter && request.ExporterRotatePassword {
+			if err := clusteroperator.RotateExporterPassword(apiserver.Clientset, apiserver.RESTConfig,
+				&clusterList.Items[i]); err != nil {
+				log.Error(err)
+			}
 		}
 
 		// set any user-defined annotations

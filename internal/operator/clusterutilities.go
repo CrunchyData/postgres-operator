@@ -366,8 +366,6 @@ func GetExporterAddon(spec crv1.PgclusterSpec) string {
 		return ""
 	}
 
-	log.Debug("crunchy-postgres-exporter was found as a label on cluster create")
-
 	exporterTemplateFields := exporterTemplateFields{
 		ContainerResources: GetResourcesJSON(spec.ExporterResources, spec.ExporterLimits),
 		ExporterPort:       spec.ExporterPort,

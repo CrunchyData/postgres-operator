@@ -38,6 +38,9 @@ var (
 	EnableMetrics bool
 	// ExpireUser sets a user to having their password expired
 	ExpireUser bool
+	// ExporterRotatePassword rotates the password for the designed PostgreSQL
+	// user for handling metrics scraping
+	ExporterRotatePassword bool
 	// PgoroleChangePermissions does something with the pgouser access controls,
 	// I'm not sure but I wanted this at least to be documented
 	PgoroleChangePermissions bool
@@ -115,6 +118,7 @@ func init() {
 		"the Crunchy Postgres Exporter sidecar container.")
 	UpdateClusterCmd.Flags().BoolVar(&EnableMetrics, "enable-metrics", false,
 		"Enable the metrics collection sidecar. May cause brief downtime.")
+	UpdateClusterCmd.Flags().BoolVar(&ExporterRotatePassword, "exporter-rotate-password", false, "Used to rotate the password for the metrics collection agent.")
 	UpdateClusterCmd.Flags().BoolVarP(&EnableStandby, "enable-standby", "", false,
 		"Enables standby mode in the cluster(s) specified.")
 	UpdateClusterCmd.Flags().BoolVar(&Startup, "startup", false, "Restart the database cluster if it "+

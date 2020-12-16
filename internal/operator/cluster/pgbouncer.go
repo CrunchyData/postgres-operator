@@ -104,11 +104,9 @@ const (
 	sqlGetDatabasesForPgBouncer = `SELECT datname FROM pg_catalog.pg_database WHERE datname NOT IN ('template0') AND datallowconn;`
 )
 
-var (
-	// sqlUninstallPgBouncer provides the final piece of SQL to uninstall
-	// pgbouncer, which is to remove the user
-	sqlUninstallPgBouncer = fmt.Sprintf(`DROP ROLE "%s";`, crv1.PGUserPgBouncer)
-)
+// sqlUninstallPgBouncer provides the final piece of SQL to uninstall
+// pgbouncer, which is to remove the user
+var sqlUninstallPgBouncer = fmt.Sprintf(`DROP ROLE "%s";`, crv1.PGUserPgBouncer)
 
 // AddPgbouncer contains the various functions that are used to add a pgBouncer
 // Deployment to a PostgreSQL cluster
@@ -120,7 +118,6 @@ func AddPgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, clust
 	// get the primary pod, which is needed to update the password for the
 	// pgBouncer administrative user
 	pod, err := util.GetPrimaryPod(clientset, cluster)
-
 	if err != nil {
 		return err
 	}
@@ -146,11 +143,9 @@ func AddPgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, clust
 	if !cluster.Spec.Standby {
 		secretName := util.GeneratePgBouncerSecretName(cluster.Name)
 		pgBouncerPassword, err := util.GetPasswordFromSecret(clientset, cluster.Namespace, secretName)
-
 		if err != nil {
 			// set the password that will be used for the "pgbouncer" PostgreSQL account
 			newPassword, err := generatePassword()
-
 			if err != nil {
 				return err
 			}
@@ -267,22 +262,6 @@ func DeletePgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, cl
 func RotatePgBouncerPassword(clientset kubernetes.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
 	ctx := context.TODO()
 
-	// determine if we are able to access the primary Pod
-	primaryPod, err := util.GetPrimaryPod(clientset, cluster)
-
-	if err != nil {
-		return err
-	}
-
-	// let's also go ahead and get the secret that contains the pgBouncer
-	// information. If we can't find the secret, we're basically done here
-	secretName := util.GeneratePgBouncerSecretName(cluster.Name)
-	secret, err := clientset.CoreV1().Secrets(cluster.Namespace).Get(ctx, secretName, metav1.GetOptions{})
-
-	if err != nil {
-		return err
-	}
-
 	// there are a few steps that must occur in order for the password to be
 	// successfully rotated:
 	//
@@ -294,16 +273,17 @@ func RotatePgBouncerPassword(clientset kubernetes.Interface, restconfig *rest.Co
 	// ...wouldn't it be nice if we could run this in a transaction? rolling back
 	// is hard :(
 
-	// first, generate a new password
-	password, err := generatePassword()
-
+	// let's also go ahead and get the secret that contains the pgBouncer
+	// information. If we can't find the secret, we're basically done here
+	secretName := util.GeneratePgBouncerSecretName(cluster.Name)
+	secret, err := clientset.CoreV1().Secrets(cluster.Namespace).Get(ctx, secretName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	// next, update the PostgreSQL primary with the new password. If this fails
-	// we definitely return an error
-	if err := setPostgreSQLPassword(clientset, restconfig, primaryPod, cluster.Spec.Port, crv1.PGUserPgBouncer, password); err != nil {
+	// update the password on the PostgreSQL instance
+	password, err := rotatePostgreSQLPassword(clientset, restconfig, cluster, crv1.PGUserPgBouncer)
+	if err != nil {
 		return err
 	}
 
@@ -312,7 +292,7 @@ func RotatePgBouncerPassword(clientset kubernetes.Interface, restconfig *rest.Co
 	// PostgreSQL to perform its authentication
 	secret.Data["password"] = []byte(password)
 	secret.Data["users.txt"] = util.GeneratePgBouncerUsersFileBytes(
-		makePostgresPassword(pgpassword.MD5, crv1.PGUserPgBouncer, password))
+		makePostgreSQLPassword(pgpassword.MD5, crv1.PGUserPgBouncer, password))
 
 	// update the secret
 	if _, err := clientset.CoreV1().Secrets(cluster.Namespace).
@@ -351,14 +331,12 @@ func UninstallPgBouncer(clientset kubernetes.Interface, restconfig *rest.Config,
 	// determine if we are able to access the primary Pod. If not, then the
 	// journey ends right here
 	pod, err := util.GetPrimaryPod(clientset, cluster)
-
 	if err != nil {
 		return err
 	}
 
 	// get the list of databases that we need to scan through
 	databases, err := getPgBouncerDatabases(clientset, restconfig, pod, cluster.Spec.Port)
-
 	if err != nil {
 		return err
 	}
@@ -379,7 +357,6 @@ func UninstallPgBouncer(clientset kubernetes.Interface, restconfig *rest.Config,
 	// exec into the pod to run the query
 	_, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
 		cmd, "database", pod.Name, pod.ObjectMeta.Namespace, sql)
-
 	// if there is an error executing the command, log the error message from
 	// stderr and return the error
 	if err != nil {
@@ -439,7 +416,6 @@ func UpdatePgBouncerAnnotations(clientset kubernetes.Interface, cluster *crv1.Pg
 
 	// get a list of all of the instance deployments for the cluster
 	deployment, err := getPgBouncerDeployment(clientset, cluster)
-
 	if err != nil {
 		return err
 	}
@@ -473,7 +449,6 @@ func checkPgBouncerInstall(clientset kubernetes.Interface, restconfig *rest.Conf
 	// exec into the pod to run the query
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
 		cmd, "database", pod.Name, pod.ObjectMeta.Namespace, sql)
-
 	// if there is an error executing the command, log the error message from
 	// stderr and return the error
 	if err != nil {
@@ -506,7 +481,6 @@ func createPgbouncerConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcl
 
 	// generate the pgbouncer.ini information
 	pgBouncerConf, err := generatePgBouncerConf(cluster)
-
 	if err != nil {
 		log.Error(err)
 		return err
@@ -514,7 +488,6 @@ func createPgbouncerConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcl
 
 	// generate the pgbouncer HBA file
 	pgbouncerHBA, err := generatePgBouncerHBA(cluster)
-
 	if err != nil {
 		log.Error(err)
 		return err
@@ -644,7 +617,7 @@ func createPgbouncerSecret(clientset kubernetes.Interface, cluster *crv1.Pgclust
 		Data: map[string][]byte{
 			"password": []byte(password),
 			"users.txt": util.GeneratePgBouncerUsersFileBytes(
-				makePostgresPassword(pgpassword.MD5, crv1.PGUserPgBouncer, password)),
+				makePostgreSQLPassword(pgpassword.MD5, crv1.PGUserPgBouncer, password)),
 		},
 	}
 
@@ -684,7 +657,7 @@ func createPgBouncerService(clientset kubernetes.Interface, cluster *crv1.Pgclus
 // disable the "pgbouncer" role from being able to log in. It keeps the
 // artificats that were created during normal pgBouncer operation
 func disablePgBouncer(clientset kubernetes.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
-	return disablePostgresLogin(clientset, restconfig, cluster, crv1.PGUserPgBouncer)
+	return disablePostgreSQLLogin(clientset, restconfig, cluster, crv1.PGUserPgBouncer)
 }
 
 // execPgBouncerScript runs a script pertaining to the management of pgBouncer
@@ -695,7 +668,6 @@ func execPgBouncerScript(clientset kubernetes.Interface, restconfig *rest.Config
 	// exec into the pod to run the query
 	_, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
 		cmd, "database", pod.Name, pod.ObjectMeta.Namespace, nil)
-
 	// if there is an error executing the command, log the error as a warning
 	// that it failed, and continue. It's hard to rollback from this one :\
 	if err != nil {
@@ -773,7 +745,6 @@ func getPgBouncerDatabases(clientset kubernetes.Interface, restconfig *rest.Conf
 	// exec into the pod to run the query
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset,
 		cmd, "database", pod.Name, pod.ObjectMeta.Namespace, sql)
-
 	// if there is an error executing the command, log the error message from
 	// stderr and return the error
 	if err != nil {
@@ -796,7 +767,6 @@ func getPgBouncerDeployment(clientset kubernetes.Interface, cluster *crv1.Pgclus
 	pgbouncerDeploymentName := fmt.Sprintf(pgBouncerDeploymentFormat, cluster.Name)
 
 	deployment, err := clientset.AppsV1().Deployments(cluster.Namespace).Get(ctx, pgbouncerDeploymentName, metav1.GetOptions{})
-
 	if err != nil {
 		return nil, err
 	}
@@ -809,7 +779,6 @@ func getPgBouncerDeployment(clientset kubernetes.Interface, cluster *crv1.Pgclus
 func installPgBouncer(clientset kubernetes.Interface, restconfig *rest.Config, pod *v1.Pod, port string) error {
 	// get the list of databases that we need to scan through
 	databases, err := getPgBouncerDatabases(clientset, restconfig, pod, port)
-
 	if err != nil {
 		return err
 	}
@@ -881,7 +850,6 @@ func updatePgBouncerReplicas(clientset kubernetes.Interface, cluster *crv1.Pgclu
 
 	// get the pgBouncer deployment so the resources can be updated
 	deployment, err := getPgBouncerDeployment(clientset, cluster)
-
 	if err != nil {
 		return err
 	}
@@ -907,7 +875,6 @@ func updatePgBouncerResources(clientset kubernetes.Interface, cluster *crv1.Pgcl
 
 	// get the pgBouncer deployment so the resources can be updated
 	deployment, err := getPgBouncerDeployment(clientset, cluster)
-
 	if err != nil {
 		return err
 	}

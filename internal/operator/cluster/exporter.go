@@ -99,7 +99,6 @@ func AddExporter(clientset kubernetes.Interface, restconfig *rest.Config, cluste
 		return err
 	}
 
-	// after the secret if this is a standby, exit early
 	// this can't be installed if this is a standby, so abort if that's the case
 	if cluster.Spec.Standby {
 		return ErrStandbyNotAllowed
@@ -217,7 +216,7 @@ func RemoveExporter(clientset kubernetes.Interface, restconfig *rest.Config, clu
 	// if this is a standby cluster, return as we cannot execute any SQL
 	if !cluster.Spec.Standby {
 		// if this fails, warn and continue
-		if err := disablePostgresLogin(clientset, restconfig, cluster, crv1.PGUserMonitor); err != nil {
+		if err := disablePostgreSQLLogin(clientset, restconfig, cluster, crv1.PGUserMonitor); err != nil {
 			log.Warn(err)
 		}
 	}
@@ -229,6 +228,38 @@ func RemoveExporter(clientset kubernetes.Interface, restconfig *rest.Config, clu
 		log.Warnf("could not remove exporter secret: %q", err.Error())
 	}
 
+	return nil
+}
+
+// RotateExporterPassword rotates the password for the monitoring PostgreSQL
+// user
+func RotateExporterPassword(clientset kubernetes.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
+	ctx := context.TODO()
+
+	// let's also go ahead and get the secret that contains the pgBouncer
+	// information. If we can't find the secret, we're basically done here
+	secretName := util.GenerateExporterSecretName(cluster.Name)
+	secret, err := clientset.CoreV1().Secrets(cluster.Namespace).Get(ctx, secretName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	// update the password on the PostgreSQL instance
+	password, err := rotatePostgreSQLPassword(clientset, restconfig, cluster, crv1.PGUserMonitor)
+	if err != nil {
+		return err
+	}
+
+	// next, update the password field of the secret.
+	secret.Data["password"] = []byte(password)
+
+	// update the secret
+	if _, err := clientset.CoreV1().Secrets(cluster.Namespace).
+		Update(ctx, secret, metav1.UpdateOptions{}); err != nil {
+		return err
+	}
+
+	// and that's it - the changes will be propagated to the exporter sidecars
 	return nil
 }
 

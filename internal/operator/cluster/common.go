@@ -46,8 +46,8 @@ const (
 	sqlEnableLogin = `ALTER ROLE %s PASSWORD %s LOGIN;`
 )
 
-// disablePostgresLogin disables the ability for a PostgreSQL user to log in
-func disablePostgresLogin(clientset kubernetes.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster, username string) error {
+// disablePostgreSQLLogin disables the ability for a PostgreSQL user to log in
+func disablePostgreSQLLogin(clientset kubernetes.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster, username string) error {
 	log.Debugf("disable user %q on cluster %q", username, cluster.Name)
 	// disable the pgbouncer user in the PostgreSQL cluster.
 	// first, get the primary pod. If we cannot do this, let's consider it an
@@ -81,9 +81,9 @@ func generatePassword() (string, error) {
 	return util.GeneratePassword(generatedPasswordLength)
 }
 
-// makePostgresPassword creates the expected hash for a password type for a
+// makePostgreSQLPassword creates the expected hash for a password type for a
 // PostgreSQL password
-func makePostgresPassword(passwordType pgpassword.PasswordType, username, password string) string {
+func makePostgreSQLPassword(passwordType pgpassword.PasswordType, username, password string) string {
 	// get the PostgreSQL password generate based on the password type
 	// as all of these values are valid, this not not error
 	postgresPassword, _ := pgpassword.NewPostgresPassword(passwordType, username, password)
@@ -92,6 +92,30 @@ func makePostgresPassword(passwordType pgpassword.PasswordType, username, passwo
 	hashedPassword, _ := postgresPassword.Build()
 
 	return hashedPassword
+}
+
+// rotatePostgreSQLPassword generates a new password for the specified
+// username/Secret pair and saves it both in PostgreSQL and the Secret itself
+func rotatePostgreSQLPassword(clientset kubernetes.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster,
+	username string) (string, error) {
+	// determine if we are able to access the primary Pod
+	pod, err := util.GetPrimaryPod(clientset, cluster)
+	if err != nil {
+		return "", err
+	}
+
+	// generate a new password
+	password, err := generatePassword()
+	if err != nil {
+		return "", err
+	}
+
+	// update the PostgreSQL instance with the new password.
+	if err := setPostgreSQLPassword(clientset, restconfig, pod, cluster.Spec.Port, username, password); err != nil {
+		return "", err
+	}
+
+	return password, err
 }
 
 // setPostgreSQLPassword updates the password of a user in a PostgreSQL
@@ -103,7 +127,7 @@ func setPostgreSQLPassword(clientset kubernetes.Interface, restconfig *rest.Conf
 	// we use the PostgreSQL "md5" hashing mechanism here to pre-hash the
 	// password. This is semi-hard coded but is now prepped for SCRAM as a
 	// password type can be passed in. Almost to SCRAM!
-	passwordHash := makePostgresPassword(pgpassword.MD5, username, password)
+	passwordHash := makePostgreSQLPassword(pgpassword.MD5, username, password)
 
 	if err := util.SetPostgreSQLPassword(clientset, restconfig, pod,
 		port, username, passwordHash, sqlEnableLogin); err != nil {

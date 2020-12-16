@@ -29,7 +29,7 @@ func TestMakePostgresPassword(t *testing.T) {
 			password := "datalake"
 			expected := "md56294153764d389dc6830b6ce4f923cdb"
 
-			actual := makePostgresPassword(passwordType, username, password)
+			actual := makePostgreSQLPassword(passwordType, username, password)
 
 			if actual != expected {
 				t.Errorf("expected: %q actual: %q", expected, actual)

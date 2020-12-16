@@ -243,10 +243,9 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 		// determine if the sidecar is being enabled/disabled and take the precursor
 		// actions before the deployment template is modified
-		switch newcluster.Spec.Exporter {
-		case true:
+		if newcluster.Spec.Exporter {
 			err = clusteroperator.AddExporter(c.Client, c.Client.Config, newcluster)
-		case false:
+		} else {
 			err = clusteroperator.RemoveExporter(c.Client, c.Client.Config, newcluster)
 		}
 
