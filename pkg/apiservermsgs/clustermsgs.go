@@ -423,6 +423,9 @@ type UpdateClusterRequest struct {
 	// ExporterMemoryRequest, if specified, is the value of how much RAM should
 	// be requested for the Crunchy Postgres Exporter instance.
 	ExporterMemoryRequest string
+	// ExporterRotatePassword, if specified, rotates the password of the metrics
+	// collection agent, i.e. the "ccp_monitoring" user.
+	ExporterRotatePassword bool
 	// CPULimit is the value of the max CPU utilization for a Pod that has a
 	// PostgreSQL cluster
 	CPULimit string

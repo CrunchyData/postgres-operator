@@ -597,6 +597,7 @@ func updateCluster(args []string, ns string) {
 	r.ExporterCPULimit = ExporterCPULimit
 	r.ExporterMemoryRequest = ExporterMemoryRequest
 	r.ExporterMemoryLimit = ExporterMemoryLimit
+	r.ExporterRotatePassword = ExporterRotatePassword
 	r.Clustername = args
 	r.Startup = Startup
 	r.Shutdown = Shutdown

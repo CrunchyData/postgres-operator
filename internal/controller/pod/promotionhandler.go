@@ -106,6 +106,14 @@ func (c *Controller) handleStandbyPromotion(newPod *apiv1.Pod, cluster crv1.Pgcl
 		return err
 	}
 
+	// rotate the exporter password if the metrics sidecar is enabled
+	if cluster.Spec.Exporter {
+		if err := clusteroperator.RotateExporterPassword(c.Client, c.Client.Config, &cluster); err != nil {
+			log.Error(err)
+			return err
+		}
+	}
+
 	// rotate the pgBouncer passwords if pgbouncer is enabled within the cluster
 	if cluster.Spec.PgBouncer.Enabled() {
 		if err := clusteroperator.RotatePgBouncerPassword(c.Client, c.Client.Config, &cluster); err != nil {
