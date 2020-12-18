@@ -36,9 +36,14 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+const (
+	// recoverySQL is just the SQL to figure out if Postgres is in recovery mode
+	recoverySQL = "SELECT pg_is_in_recovery();"
+)
+
 var (
 	// isInRecoveryCommand is the command run to determine if postgres is in recovery
-	isInRecoveryCMD []string = []string{"psql", "-t", "-c", "'SELECT pg_is_in_recovery();'", "-p"}
+	isInRecoveryCMD []string = []string{"psql", "-t", "-c", recoverySQL, "-p"}
 
 	// leaderStatusCMD is the command run to get the Patroni status for the primary
 	leaderStatusCMD []string = []string{"curl", fmt.Sprintf("localhost:%s/master",
