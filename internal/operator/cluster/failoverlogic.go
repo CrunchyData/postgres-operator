@@ -210,6 +210,8 @@ func RemovePrimaryOnRoleChangeTag(clientset kubernetes.Interface, restconfig *re
 	if err != nil {
 		log.Error(err)
 		return err
+	} else if len(pods.Items) == 0 {
+		return fmt.Errorf("no pods found for cluster %q", clusterName)
 	} else if len(pods.Items) > 1 {
 		log.Error("More than one primary found after completing the post-failover backup")
 	}

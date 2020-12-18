@@ -941,6 +941,9 @@ func UpdatePGHAConfigInitFlag(clientset kubernetes.Interface, initVal bool, clus
 	case err != nil:
 		return fmt.Errorf("unable to find the default pgha configMap found for cluster %s using selector %s, unable to set "+
 			"init value to false", clusterName, selector)
+	case len(configMapList.Items) == 0:
+		return fmt.Errorf("no pgha configMaps found for cluster %s using selector %s, unable to set "+
+			"init value to false", clusterName, selector)
 	case len(configMapList.Items) > 1:
 		return fmt.Errorf("more than one default pgha configMap found for cluster %s using selector %s, unable to set "+
 			"init value to false", clusterName, selector)
