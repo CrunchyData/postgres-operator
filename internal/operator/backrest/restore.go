@@ -184,7 +184,24 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 		}); err != nil {
 		return nil, err
 	}
-	log.Debugf("restore workflow: deleted primary and replicas %v", pgInstances)
+	log.Debugf("restore workflow: deleted primary and replica deployments for cluster %s",
+		clusterName)
+
+	// Wait for all primary and replica deployments to be removed.  If unable to verify that all
+	// deployments have been removed, then the restore cannot proceed and the function returns.
+	if err := wait.Poll(time.Second/2, time.Minute*3, func() (bool, error) {
+		for _, deployment := range pgInstances.Items {
+			if _, err := clientset.AppsV1().Deployments(namespace).
+				Get(ctx, deployment.GetName(), metav1.GetOptions{}); err == nil || !kerrors.IsNotFound(err) {
+				return false, nil
+			}
+		}
+		return true, nil
+	}); err != nil {
+		return nil, err
+	}
+	log.Debugf("restore workflow: finished waiting for primary and replica deployments for "+
+		"cluster %s to be removed", clusterName)
 
 	// delete all existing jobs
 	deletePropagation := metav1.DeletePropagationBackground
