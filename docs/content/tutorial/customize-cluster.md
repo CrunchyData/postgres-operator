@@ -30,6 +30,12 @@ pgo create cluster hippo --metrics
 
 Note that the `--metrics` flag just enables a sidecar that can be scraped. You will need to install the [monitoring stack]({{< relref "installation/metrics/_index.md" >}}) separately, or tie it into your existing monitoring infrastructure.
 
+If you have an exiting cluster that you would like to add metrics collection to, you can use the `--enable-metrics` flag on the [`pgo update cluster`]({{< relref "pgo-client/reference/pgo_create_cluster.md" >}}) command:
+
+```
+pgo update cluster hippo --enable-metrics
+```
+
 ## Customize PVC Size
 
 Databases come in all different sizes, and those sizes can certainly change over time. As such, it is helpful to be able to specify what size PVC you want to store your PostgreSQL data.

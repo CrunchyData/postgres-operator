@@ -35,6 +35,14 @@ command, for example:
 pgo create cluster --metrics hippo
 ```
 
+If you have already created a cluster and want to add metrics collection to it,
+you can use the `--enable-metrics` flag as part of the [`pgo update cluster`]({{< relref "pgo-client/reference/pgo_update_cluster.md" >}})
+command, for example:
+
+```
+pgo update cluster --enable-metrics hippo
+```
+
 ## Components
 
 The [PostgreSQL Operator Monitoring]({{< relref "installation/metrics/_index.md" >}})
