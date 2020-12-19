@@ -26,6 +26,6 @@ trap "rm -rf '$DIR'" EXIT
 # Find `controller-gen` on the current PATH or install it to the Go install path.
 tool="$(command -v controller-gen || true)"
 [ -n "$tool" ] || tool="$GOBIN/controller-gen"
-[ -x "$tool" ] || ( cd "$DIR" && go mod init tmp && go get 'sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.0' )
+[ -x "$tool" ] || ( cd "$DIR" && go mod init tmp && go get 'sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1' )
 
 "$tool" "$@"
