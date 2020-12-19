@@ -108,7 +108,7 @@ and tag as needed to use the RedHat certified containers:
 | `alertmanager_image_tag` | v0.21.0 | **Required** | Configures the image tag to use for the Alertmanager container. |
 | `grafana_image_prefix` | grafana | **Required** | Configures the image prefix to use for the Grafana container.|
 | `grafana_image_name` | grafana | **Required** | Configures the image name to use for the Grafana container. |
-| `grafana_image_tag` | 6.7.4 | **Required** | Configures the image tag to use for the Grafana container. |
+| `grafana_image_tag` | 6.7.5 | **Required** | Configures the image tag to use for the Grafana container. |
 | `prometheus_image_prefix` | prom | **Required** | Configures the image prefix to use for the Prometheus container. |
 | `prometheus_image_name` | promtheus | **Required** | Configures the image name to use for the Prometheus container. |
 | `prometheus_image_tag` | v2.20.0 | **Required** | Configures the image tag to use for the Prometheus container. |
@@ -124,7 +124,7 @@ PostgreSQL Operator Monitoring infrastructure:
 
 | Name | Default | Required | Description |
 |------|---------|----------|-------------|
-| `pgo_image_prefix` | registry.developers.crunchydata.com/crunchydata | **Required** | Configures the image prefix used by the `pgo-deployer` container | 
+| `pgo_image_prefix` | registry.developers.crunchydata.com/crunchydata | **Required** | Configures the image prefix used by the `pgo-deployer` container |
 | `pgo_image_tag` | {{< param centosBase >}}-{{< param operatorVersion >}} | **Required** | Configures the image tag used by the `pgo-deployer` container |
 
 [k8s-service-type]: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
