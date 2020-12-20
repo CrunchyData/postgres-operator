@@ -259,8 +259,7 @@
                     }, {
                         "name": "sshd",
                         "secret": {
-                            "secretName": "{{.ClusterName}}-backrest-repo-config",
-                            "defaultMode": 511
+                            "secretName": "{{.ClusterName}}-backrest-repo-config"
                         }
                     }, {
                         "name": "root-volume",
