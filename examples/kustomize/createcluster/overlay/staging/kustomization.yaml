@@ -1,0 +1,23 @@
+resources:
+- ../../base
+- hippo-rpl1-pgreplica.yaml
+namePrefix: staging-
+namespace: pgo
+commonLabels:
+  environment: staging
+
+patchesJson6902:
+  - target:
+      group: crunchydata.com
+      version: v1
+      namespace: pgo
+      kind: Pgcluster
+      name: staging-hippo
+    path: staginghippo.json
+  - target:
+      group: crunchydata.com
+      version: v1
+      namespace: pgo
+      kind: Pgcluster
+      name: staging-hippo
+    path: annotations.json

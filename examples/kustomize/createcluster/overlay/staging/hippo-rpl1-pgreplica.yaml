@@ -1,0 +1,27 @@
+apiVersion: crunchydata.com/v1
+kind: Pgreplica
+metadata:
+  labels:
+    name: staging-hippo-rpl1
+    pg-cluster: staging-hippo
+    pgouser: admin
+  name: hippo-rpl1
+  namespace: pgo
+spec:
+  clustername: staging-hippo
+  name: staging-hippo-rpl1
+  namespace: pgo
+  replicastorage:
+    accessmode: ReadWriteOnce
+    matchLabels: ""
+    name: staging-hippo-rpl1
+    size: 2G
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  userlabels:
+    NodeLabelKey: ""
+    NodeLabelValue: ""
+    crunchy-postgres-exporter: "false"
+    pg-pod-anti-affinity: ""
+    pgo-version: 4.5.1

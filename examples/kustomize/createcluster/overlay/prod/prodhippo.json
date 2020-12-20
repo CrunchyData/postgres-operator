@@ -1,0 +1,19 @@
+[
+    { "op": "replace", "path": "/metadata/annotations/current-primary", "value": "prod-hippo" },
+    { "op": "replace", "path": "/metadata/labels/crunchy-pgha-scope", "value": "prod-hippo" },
+    { "op": "replace", "path": "/metadata/labels/deployment-name", "value": "prod-hippo" },
+    { "op": "replace", "path": "/metadata/labels/name", "value": "prod-hippo" },
+    { "op": "replace", "path": "/metadata/labels/pg-cluster", "value": "prod-hippo" },
+    { "op": "replace", "path": "/metadata/name", "value": "prod-hippo" },
+
+    { "op": "replace", "path": "/spec/PrimaryStorage/name", "value": "prod-hippo" },
+    { "op": "replace", "path": "/spec/clustername", "value": "prod-hippo" },
+    { "op": "replace", "path": "/spec/PrimaryStorage/name", "value": "prod-hippo" },
+    { "op": "replace", "path": "/spec/clustername", "value": "prod-hippo" },
+    { "op": "replace", "path": "/spec/database", "value": "prod-hippo" },
+    { "op": "replace", "path": "/spec/name", "value": "prod-hippo" },
+    { "op": "replace", "path": "/spec/primarysecretname", "value": "prod-hippo-primaryuser-secret" },
+    { "op": "replace", "path": "/spec/replicas", "value": "1"},
+    { "op": "replace", "path": "/spec/rootsecretname", "value": "prod-hippo-postgres-secret" },
+    { "op": "replace", "path": "/spec/usersecretname", "value": "prod-hippo-hippo-secret" }
+]

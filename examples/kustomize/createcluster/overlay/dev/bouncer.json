@@ -1,0 +1,4 @@
+[
+    { "op": "add", "path": "/spec/pgBouncer/resources/memory", "value": "24Mi"},
+    { "op": "add", "path": "/spec/pgBouncer/replicas", "value": 1 }
+]
