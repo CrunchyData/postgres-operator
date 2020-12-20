@@ -41,10 +41,10 @@ var UpgradeCCPImageTag string
 var UpgradeCmd = &cobra.Command{
 	Use:   "upgrade",
 	Short: "Perform a cluster upgrade.",
-	Long: `UPGRADE allows you to perform a comprehensive PGCluster upgrade 
-	(for use after performing a Postgres Operator upgrade). 
+	Long: `UPGRADE allows you to perform a comprehensive PGCluster upgrade
+	(for use after performing a Postgres Operator upgrade).
 	For example:
-	
+
 	pgo upgrade mycluster
 	Upgrades the cluster for use with the upgraded Postgres Operator version.`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -69,8 +69,8 @@ func init() {
 	RootCmd.AddCommand(UpgradeCmd)
 
 	// flags for "pgo upgrade"
-	UpgradeCmd.Flags().BoolVarP(&IgnoreValidation, "ignore-validation", "", false, "Disables version checking against the image tags when performing an cluster upgrade.")
 	UpgradeCmd.Flags().StringVarP(&UpgradeCCPImageTag, "ccp-image-tag", "", "", "The image tag to use for cluster creation. If specified, it overrides the default configuration setting and disables tag validation checking.")
+	UpgradeCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 }
 
 func createUpgrade(args []string, ns string) {
@@ -90,7 +90,6 @@ func createUpgrade(args []string, ns string) {
 	request.UpgradeCCPImageTag = UpgradeCCPImageTag
 
 	response, err := api.CreateUpgrade(httpclient, &SessionCredentials, &request)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -104,5 +103,4 @@ func createUpgrade(args []string, ns string) {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
-
 }
