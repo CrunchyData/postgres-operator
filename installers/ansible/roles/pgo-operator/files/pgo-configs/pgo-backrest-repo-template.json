@@ -99,8 +99,7 @@
                 "volumes": [{
                     "name": "sshd",
                     "secret": {
-                        "secretName": "{{.SshdSecretsName}}",
-                        "defaultMode": 511
+                        "secretName": "{{.SshdSecretsName}}"
                     }
                 }, {
                     "name": "backrestrepo",

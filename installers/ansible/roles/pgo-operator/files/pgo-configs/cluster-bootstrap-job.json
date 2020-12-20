@@ -163,8 +163,7 @@
                 }, {
                     "name": "sshd",
                     "secret": {
-                        "secretName": "{{.RestoreFrom}}-backrest-repo-config",
-                        "defaultMode": 511
+                        "secretName": "{{.RestoreFrom}}-backrest-repo-config"
                     }
                 },
                 {{if .TLSEnabled}}
