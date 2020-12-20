@@ -75,6 +75,7 @@ func RegisterAllRoutes(r *mux.Router) {
 func RegisterBackrestSvcRoutes(r *mux.Router) {
 	r.HandleFunc("/backrestbackup", backrestservice.CreateBackupHandler).Methods("POST")
 	r.HandleFunc("/backrest/{name}", backrestservice.ShowBackrestHandler).Methods("GET")
+	r.HandleFunc("/backrest", backrestservice.DeleteBackrestHandler).Methods("DELETE")
 	r.HandleFunc("/restore", backrestservice.RestoreHandler).Methods("POST")
 }
 

@@ -32,6 +32,27 @@ type CreateBackrestBackupRequest struct {
 	BackrestStorageType string
 }
 
+// DeleteBackrestBackupRequest ...
+// swagger:model
+type DeleteBackrestBackupRequest struct {
+	// ClientVersion represents the version of the client that is making the API
+	// request
+	ClientVersion string
+	// ClusterName is the name of the pgcluster of which we want to delete the
+	// backup from
+	ClusterName string
+	// Namespace isthe namespace that the cluster is in
+	Namespace string
+	// Target is the nane of the backup to be deleted
+	Target string
+}
+
+// DeleteBackrestBackupRequest ...
+// swagger:model
+type DeleteBackrestBackupResponse struct {
+	Status
+}
+
 // PgBackRestInfo and its associated structs are available for parsing the info
 // that comes from the output of the "pgbackrest info --output json" command
 type PgBackRestInfo struct {

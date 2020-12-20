@@ -42,9 +42,15 @@ import (
 
 const containername = "database"
 
-// pgBackRestInfoCommand is the baseline command used for getting the
-// pgBackRest info
-var pgBackRestInfoCommand = []string{"pgbackrest", "info", "--output", "json"}
+var (
+	// pgBackRestExpireCommand is the baseline command used for deleting a
+	// pgBackRest backup
+	pgBackRestExpireCommand = []string{"pgbackrest", "expire", "--set"}
+
+	// pgBackRestInfoCommand is the baseline command used for getting the
+	// pgBackRest info
+	pgBackRestInfoCommand = []string{"pgbackrest", "info", "--output", "json"}
+)
 
 // repoTypeFlagS3 is used for getting the pgBackRest info for a repository that
 // is stored in S3
@@ -76,7 +82,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 	clusterList := crv1.PgclusterList{}
 	var err error
 	if request.Selector != "" {
-		//use the selector instead of an argument list to filter on
+		// use the selector instead of an argument list to filter on
 		cl, err := apiserver.Clientset.
 			CrunchydataV1().Pgclusters(ns).
 			List(ctx, metav1.ListOptions{LabelSelector: request.Selector})
@@ -165,9 +171,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 			return resp
 		} else {
 
-			//remove any previous backup job
-
-			//selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_BACKREST + "=true"
+			// remove any previous backup job
 			selector := config.LABEL_BACKREST_COMMAND + "=" + crv1.PgtaskBackrestBackup + "," + config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_BACKREST + "=true"
 			deletePropagation := metav1.DeletePropagationForeground
 			err = apiserver.Clientset.
@@ -179,7 +183,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 				log.Error(err)
 			}
 
-			//a hack sort of due to slow propagation
+			// a hack sort of due to slow propagation
 			for i := 0; i < 3; i++ {
 				jobList, err := apiserver.Clientset.BatchV1().Jobs(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 				if err != nil {
@@ -195,7 +199,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 
 		// get pod name from cluster
 		var podname string
-		podname, err = getBackrestRepoPodName(cluster, ns)
+		podname, err = getBackrestRepoPodName(cluster)
 
 		if err != nil {
 			log.Error(err)
@@ -235,6 +239,54 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 	return resp
 }
 
+// DeleteBackup deletes a specific backup from a pgBackRest repository
+func DeleteBackup(request msgs.DeleteBackrestBackupRequest) msgs.DeleteBackrestBackupResponse {
+	ctx := context.TODO()
+	response := msgs.DeleteBackrestBackupResponse{
+		Status: msgs.Status{
+			Code: msgs.Ok,
+		},
+	}
+
+	// first, make an attempt to get the cluster. if it does not exist, return
+	// an error
+	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).
+		Get(ctx, request.ClusterName, metav1.GetOptions{})
+	if err != nil {
+		log.Error(err)
+		response.Code = msgs.Error
+		response.Msg = err.Error()
+		return response
+	}
+
+	// so, either we can delete the backup, or we cant, and we can only find out
+	// by trying. so here goes...
+	log.Debugf("attempting to delete backup %q cluster %q", request.Target, cluster.Name)
+
+	// first, get the pgbackrest Pod name
+	podName, err := getBackrestRepoPodName(cluster)
+	if err != nil {
+		log.Error(err)
+		response.Code = msgs.Error
+		response.Msg = err.Error()
+		return response
+	}
+
+	// set up the command
+	cmd := pgBackRestExpireCommand
+	cmd = append(cmd, request.Target)
+
+	// and execute. if there is an error, return it, otherwise we are done
+	if _, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig,
+		apiserver.Clientset, cmd, containername, podName, cluster.Spec.Namespace, nil); err != nil {
+		log.Error(stderr)
+		response.Code = msgs.Error
+		response.Msg = stderr
+	}
+
+	return response
+}
+
 func getBackupParams(identifier, clusterName, taskName, action, podName, containerName, imagePrefix, backupOpts, backrestStorageType, s3VerifyTLS, jobName, ns, pgouser string) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 	spec := crv1.PgtaskSpec{}
@@ -270,10 +322,10 @@ func getBackupParams(identifier, clusterName, taskName, action, podName, contain
 
 // getBackrestRepoPodName goes through the pod list to identify the
 // pgBackRest repo pod and then returns the pod name.
-func getBackrestRepoPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
+func getBackrestRepoPodName(cluster *crv1.Pgcluster) (string, error) {
 	ctx := context.TODO()
 
-	//look up the backrest-repo pod name
+	// look up the backrest-repo pod name
 	selector := "pg-cluster=" + cluster.Spec.Name + ",pgo-backrest-repo=true"
 
 	options := metav1.ListOptions{
@@ -281,7 +333,7 @@ func getBackrestRepoPodName(cluster *crv1.Pgcluster, ns string) (string, error) 
 		LabelSelector: selector,
 	}
 
-	repopods, err := apiserver.Clientset.CoreV1().Pods(ns).List(ctx, options)
+	repopods, err := apiserver.Clientset.CoreV1().Pods(cluster.Namespace).List(ctx, options)
 	if len(repopods.Items) != 1 {
 		log.Errorf("pods len != 1 for cluster %s", cluster.Spec.Name)
 		return "", errors.New("backrestrepo pod not found for cluster " + cluster.Spec.Name)
@@ -301,7 +353,6 @@ func isPrimary(pod *v1.Pod, clusterName string) bool {
 		return true
 	}
 	return false
-
 }
 
 func isReady(pod *v1.Pod) bool {
@@ -317,7 +368,6 @@ func isReady(pod *v1.Pod) bool {
 		return false
 	}
 	return true
-
 }
 
 // isPrimaryReady goes through the pod list to first identify the
@@ -363,7 +413,7 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 		}
 	}
 
-	//get a list of all clusters
+	// get a list of all clusters
 	clusterList, err := apiserver.Clientset.
 		CrunchydataV1().Pgclusters(ns).
 		List(ctx, metav1.ListOptions{LabelSelector: selector})
@@ -375,9 +425,10 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 
 	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
 
-	for _, c := range clusterList.Items {
-		podname, err := getBackrestRepoPodName(&c, ns)
+	for i := range clusterList.Items {
+		c := &clusterList.Items[i]
 
+		podname, err := getBackrestRepoPodName(c)
 		if err != nil {
 			log.Error(err)
 			response.Status.Code = msgs.Error
@@ -409,11 +460,10 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 				StorageType: storageType,
 			}
 
-			verifyTLS, _ := strconv.ParseBool(operator.GetS3VerifyTLSSetting(&c))
+			verifyTLS, _ := strconv.ParseBool(operator.GetS3VerifyTLSSetting(c))
 
 			// get the pgBackRest info using this legacy function
 			info, err := getInfo(c.Name, storageType, podname, ns, verifyTLS)
-
 			// see if the function returned successfully, and if so, unmarshal the JSON
 			if err != nil {
 				log.Error(err)
@@ -454,7 +504,6 @@ func getInfo(clusterName, storageType, podname, ns string, verifyTLS bool) (stri
 	}
 
 	output, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
-
 	if err != nil {
 		log.Error(err, stderr)
 		return "", err
@@ -559,7 +608,7 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 		return resp
 	}
 
-	//create a pgtask for the restore workflow
+	// create a pgtask for the restore workflow
 	if _, err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).
 		Create(ctx, pgtask, metav1.CreateOptions{}); err != nil {
 		resp.Status.Code = msgs.Error
@@ -616,13 +665,13 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
 
-	//delete any existing pgtask with the same name
+	// delete any existing pgtask with the same name
 	if err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).
 		Delete(ctx, taskName, metav1.DeleteOptions{}); err != nil && !kubeapi.IsNotFound(err) {
 		return "", err
 	}
 
-	//create pgtask CRD
+	// create pgtask CRD
 	spec := crv1.PgtaskSpec{}
 	spec.Namespace = ns
 	spec.Name = clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType

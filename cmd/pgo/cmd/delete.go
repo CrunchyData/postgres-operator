@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/crunchydata/postgres-operator/cmd/pgo/util"
 	"github.com/spf13/cobra"
@@ -36,7 +37,7 @@ var deleteCmd = &cobra.Command{
 	Short: "Delete an Operator resource",
 	Long: `The delete command allows you to delete an Operator resource. For example:
 
-	pgo delete backup mycluster
+	pgo delete backup mycluster --target=backup-name
 	pgo delete cluster mycluster
 	pgo delete cluster mycluster --delete-data
 	pgo delete cluster mycluster --delete-data --delete-backups
@@ -53,7 +54,6 @@ var deleteCmd = &cobra.Command{
 	pgo delete schedule mycluster
 	pgo delete user --username=testuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the type of resource to delete.  Valid resource types include:
 	* backup
@@ -94,7 +94,6 @@ var deleteCmd = &cobra.Command{
 	* user`)
 			}
 		}
-
 	},
 }
 
@@ -118,6 +117,13 @@ func init() {
 	// "pgo delete backup"
 	// used to delete backups
 	deleteCmd.AddCommand(deleteBackupCmd)
+	// "pgo delete backup --no-prompt"
+	// disables the verification prompt for deleting a backup
+	deleteBackupCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	// "pgo delete backup --target"
+	// the backup target to expire
+	deleteBackupCmd.Flags().StringVar(&Target, "target", "", "The backup to expire, e.g. "+
+		"\"20201220-171801F\". Use \"pgo show backup\" to determine the target.")
 
 	// "pgo delete cluster"
 	// used to delete clusters
@@ -294,22 +300,30 @@ func init() {
 var deleteBackupCmd = &cobra.Command{
 	Use:   "backup",
 	Short: "Delete a backup",
-	Long: `Delete a backup. For example:
+	Long: `Delete a backup from pgBackRest. Requires a target backup. For example:
 
-    pgo delete backup mydatabase`,
+    pgo delete backup hippo --target=20201220-171801F`,
 	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) == 0 {
+			fmt.Println("Error: A cluster name is required for this command.")
+			os.Exit(1)
+		}
+
+		if Target == "" {
+			fmt.Println("Error: --target must be specified.")
+			os.Exit(1)
+		}
+
+		if !util.AskForConfirmation(NoPrompt, "If you delete a backup that is *not* set to expire, you may be unable to meet your retention requirements. Proceed?") {
+			fmt.Println("Aborting...")
+			return
+		}
+
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		if len(args) == 0 {
-			fmt.Println("Error: A database or cluster name is required for this command.")
-		} else {
-			if util.AskForConfirmation(NoPrompt, "") {
-				deleteBackup(args, Namespace)
-			} else {
-				fmt.Println("Aborting...")
-			}
-		}
+
+		deleteBackup(Namespace, args[0])
 	},
 }
 
@@ -453,7 +467,6 @@ var deletePgAdminCmd = &cobra.Command{
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deletePgAdmin(args, Namespace)
-
 			} else {
 				fmt.Println("Aborting...")
 			}
@@ -477,7 +490,6 @@ var deletePgbouncerCmd = &cobra.Command{
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deletePgbouncer(args, Namespace)
-
 			} else {
 				fmt.Println("Aborting...")
 			}
@@ -542,7 +554,6 @@ var deleteUserCmd = &cobra.Command{
 
     pgo delete user --username=someuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
@@ -551,7 +562,6 @@ var deleteUserCmd = &cobra.Command{
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deleteUser(args, Namespace)
-
 			} else {
 				fmt.Println("Aborting...")
 			}
