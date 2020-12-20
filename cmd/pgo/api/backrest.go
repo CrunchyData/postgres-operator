@@ -25,8 +25,50 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func ShowBackrest(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowBackrestResponse, error) {
+// DeleteBackup  makes an API requests to delete a pgBackRest backup
+func DeleteBackup(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request msgs.DeleteBackrestBackupRequest) (msgs.DeleteBackrestBackupResponse, error) {
+	var response msgs.DeleteBackrestBackupResponse
 
+	// explicitly set the client version here
+	request.ClientVersion = msgs.PGO_VERSION
+
+	log.Debugf("DeleteBackup called [%+v]", request)
+
+	jsonValue, _ := json.Marshal(request)
+	url := SessionCredentials.APIServerURL + "/backrest"
+
+	action := "DELETE"
+	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	if err != nil {
+		return response, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
+
+	resp, err := httpclient.Do(req)
+	if err != nil {
+		return response, err
+	}
+
+	defer resp.Body.Close()
+
+	log.Debugf("%+v", resp)
+
+	if err := StatusCheck(resp); err != nil {
+		return response, err
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		fmt.Print("Error: ")
+		fmt.Println(err)
+		return response, err
+	}
+
+	return response, nil
+}
+
+func ShowBackrest(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowBackrestResponse, error) {
 	var response msgs.ShowBackrestResponse
 	url := SessionCredentials.APIServerURL + "/backrest/" + arg + "?version=" + msgs.PGO_VERSION + "&selector=" + selector + "&namespace=" + ns
 
@@ -58,11 +100,9 @@ func ShowBackrest(httpclient *http.Client, arg, selector string, SessionCredenti
 	}
 
 	return response, err
-
 }
 
 func CreateBackrestBackup(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreateBackrestBackupRequest) (msgs.CreateBackrestBackupResponse, error) {
-
 	var response msgs.CreateBackrestBackupResponse
 
 	jsonValue, _ := json.Marshal(request)

@@ -18,8 +18,12 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/crunchydata/postgres-operator/cmd/pgo/api"
 	"github.com/crunchydata/postgres-operator/internal/config"
+	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -74,7 +78,6 @@ var backupCmd = &cobra.Command{
 			}
 
 		}
-
 	},
 }
 
@@ -89,10 +92,32 @@ func init() {
 	backupCmd.Flags().StringVarP(&PGDumpDB, "database", "d", "postgres", "The name of the database pgdump will backup.")
 	backupCmd.Flags().StringVar(&backupType, "backup-type", "pgbackrest", "The backup type to perform. Default is pgbackrest. Valid backup types are pgbackrest and pgdump.")
 	backupCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use when scheduling pgBackRest backups. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
-
 }
 
 // deleteBackup ....
-func deleteBackup(args []string, ns string) {
-	log.Debugf("deleteBackup called %v", args)
+func deleteBackup(namespace, clusterName string) {
+	request := msgs.DeleteBackrestBackupRequest{
+		ClusterName: clusterName,
+		Namespace:   namespace,
+		Target:      Target,
+	}
+
+	// make the request
+	response, err := api.DeleteBackup(httpclient, &SessionCredentials, request)
+
+	// if everything is OK, exit early
+	if err == nil && response.Status.Code == msgs.Ok {
+		return
+	}
+
+	// if there is an error, or the response code is not ok, print the error and
+	// exit
+	if err != nil {
+		fmt.Println("Error: " + err.Error())
+	} else if response.Status.Code == msgs.Error {
+		fmt.Println("Error: " + response.Status.Msg)
+	}
+
+	// since we can only have errors at this point, exit with error
+	os.Exit(1)
 }

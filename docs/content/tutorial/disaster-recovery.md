@@ -183,6 +183,92 @@ When the restore is complete, the cluster is immediately available for reads and
 
 The PostgreSQL Operator supports the full set of pgBackRest restore options, which can be passed into the `--backup-opts` parameter. For more information, please review the [pgBackRest restore options](https://pgbackrest.org/command.html#command-restore)
 
+## Deleting a Backup
+
+You typically do not want to delete backups. Instead, it's better to set a backup retention policy as part of [scheduling your ackups](#schedule-backups).
+
+However, there are situations where you may want to explicitly delete backups, in particular, if you need to reclaim space on your backup disk or if you accidentally created too many backups.
+
+{{% notice warning %}}
+If you delete a backup that is *not* set to expire, you may be unable to meet your retention requirements. If you are deleting backups to free space, it is recommended to delete your oldest backups first.
+{{% /notice %}}
+
+In these cases, a backup can be deleted using the [`pgo delete backup`]({{< relref "pgo-client/reference/pgo_delete_backup.md" >}})
+command. You must specify a specific backup to delete using the `--target` flag. You can get the backup names from the [`pgo show backup`]({{< relref "pgo-client/reference/pgo_show_backup.md" >}}) command.
+
+Let's say that the `hippo` cluster currently has a set of backups that look like this, obtained from running the `pgo show backup hippo` command:
+
+```
+cluster: hippo
+storage type: local
+
+stanza: db
+    status: ok
+    cipher: none
+
+    db (current)
+        wal archive min/max (12-1)
+
+        full backup: 20201220-171801F
+            timestamp start/stop: 2020-12-20 17:18:01 +0000 UTC / 2020-12-20 17:18:10 +0000 UTC
+            wal start/stop: 000000010000000000000002 / 000000010000000000000002
+            database size: 31.3MiB, backup size: 31.3MiB
+            repository size: 3.8MiB, repository backup size: 3.8MiB
+            backup reference list:
+
+        incr backup: 20201220-171801F_20201220-171939I
+            timestamp start/stop: 2020-12-20 17:19:39 +0000 UTC / 2020-12-20 17:19:41 +0000 UTC
+            wal start/stop: 000000010000000000000005 / 000000010000000000000005
+            database size: 31.3MiB, backup size: 216.3KiB
+            repository size: 3.8MiB, repository backup size: 25.9KiB
+            backup reference list: 20201220-171801F
+
+        incr backup: 20201220-171801F_20201220-172046I
+            timestamp start/stop: 2020-12-20 17:20:46 +0000 UTC / 2020-12-20 17:23:29 +0000 UTC
+            wal start/stop: 00000001000000000000000A / 00000001000000000000000A
+            database size: 65.9MiB, backup size: 37.5MiB
+            repository size: 7.7MiB, repository backup size: 4.3MiB
+            backup reference list: 20201220-171801F, 20201220-171801F_20201220-171939I
+
+        full backup: 20201220-201305F
+            timestamp start/stop: 2020-12-20 20:13:05 +0000 UTC / 2020-12-20 20:13:15 +0000 UTC
+            wal start/stop: 00000001000000000000000F / 00000001000000000000000F
+            database size: 65.9MiB, backup size: 65.9MiB
+            repository size: 7.7MiB, repository backup size: 7.7MiB
+            backup reference list:
+```
+
+Note that the backup targets can be found after the backup type, e.g. `20201220-171801F` or `20201220-171801F_20201220-172046I`.
+
+One can delete the oldest backup, in this case `20201220-171801F`, by running the following command:
+
+```
+pgo delete backup hippo --target=20201220-171801F
+```
+
+You can then verify the backup is deleted with `pgo show backup hippo`:
+
+```
+cluster: hippo
+storage type: local
+
+stanza: db
+    status: ok
+    cipher: none
+
+    db (current)
+        wal archive min/max (12-1)
+
+        full backup: 20201220-201305F
+            timestamp start/stop: 2020-12-20 20:13:05 +0000 UTC / 2020-12-20 20:13:15 +0000 UTC
+            wal start/stop: 00000001000000000000000F / 00000001000000000000000F
+            database size: 65.9MiB, backup size: 65.9MiB
+            repository size: 7.7MiB, repository backup size: 7.7MiB
+            backup reference list:
+```
+
+Note that deleting the oldest backup also had the effect of deleting all of the backups that depended on it. This is a feature of [pgBackRest](https://pgbackrest.org/)!
+
 ## Next Steps
 
 There are cases where you may want to take [logical backups]({{< relref "tutorial/pgdump.md" >}}), aka `pg_dump` / `pg_dumpall`. Let's learn how to do that with the PostgreSQL Operator!

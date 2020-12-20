@@ -17,12 +17,13 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // CreateBackupHandler ...
@@ -74,6 +75,87 @@ func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp = CreateBackup(&request, ns, username)
 	json.NewEncoder(w).Encode(resp)
+}
+
+// DeleteBackrestHandler deletes a targeted backup from a pgBackRest repository
+// pgo delete backup hippo --target=pgbackrest-backup-id
+func DeleteBackrestHandler(w http.ResponseWriter, r *http.Request) {
+	// swagger:operation DELETE /backrest backrestservice
+	/*```
+	  Delete a pgBackRest backup
+	*/
+	// ---
+	//  produces:
+	//  - application/json
+	//  parameters:
+	//  - name: "PostgreSQL Cluster Disk Utilization"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/DeleteBackrestBackupRequest"
+	//  responses:
+	//    '200':
+	//      description: Output
+	//      schema:
+	//        "$ref": "#/definitions/DeleteBackrestBackupResponse"
+	log.Debug("backrestservice.DeleteBackrestHandler called")
+
+	// first, check that the requesting user is authorized to make this request
+	username, err := apiserver.Authn(apiserver.DELETE_BACKUP_PERM, w, r)
+	if err != nil {
+		return
+	}
+
+	// decode the request paramaeters
+	var request msgs.DeleteBackrestBackupRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		response := msgs.DeleteBackrestBackupResponse{
+			Status: msgs.Status{
+				Code: msgs.Error,
+				Msg:  err.Error(),
+			},
+		}
+		_ = json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	log.Debugf("DeleteBackrestHandler parameters [%+v]", request)
+
+	// set some of the header...though we really should not be setting the HTTP
+	// Status upfront, but whatever
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	// check that the client versions match. If they don't, error out
+	if request.ClientVersion != msgs.PGO_VERSION {
+		response := msgs.DeleteBackrestBackupResponse{
+			Status: msgs.Status{
+				Code: msgs.Error,
+				Msg:  apiserver.VERSION_MISMATCH_ERROR,
+			},
+		}
+		_ = json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// ensure that the user has access to this namespace. if not, error out
+	if _, err := apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace); err != nil {
+		response := msgs.DeleteBackrestBackupResponse{
+			Status: msgs.Status{
+				Code: msgs.Error,
+				Msg:  err.Error(),
+			},
+		}
+		_ = json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	// process the request
+	response := DeleteBackup(request)
+
+	// turn the response into JSON
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 // ShowBackrestHandler ...
@@ -150,7 +232,6 @@ func ShowBackrestHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp = ShowBackrest(backupname, selector, ns)
 	json.NewEncoder(w).Encode(resp)
-
 }
 
 // RestoreHandler ...
