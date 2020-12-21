@@ -17,10 +17,11 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // ShowConfigHandler ...
@@ -68,17 +69,17 @@ func ShowConfigHandler(w http.ResponseWriter, r *http.Request) {
 
 	if clientVersion != msgs.PGO_VERSION {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	_, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = ShowConfig()
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }

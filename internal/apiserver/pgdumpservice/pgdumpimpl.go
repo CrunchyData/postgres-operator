@@ -17,7 +17,6 @@ limitations under the License.
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -28,13 +27,14 @@ import (
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const pgDumpTaskExtension = "-pgdump"
-const pgDumpJobExtension = "-pgdump-job"
+const (
+	pgDumpTaskExtension = "-pgdump"
+	pgDumpJobExtension  = "-pgdump-job"
+)
 
 //  CreateBackup ...
 // pgo backup mycluster
@@ -50,7 +50,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 
 	log.Debug("CreatePgDump storage config... " + request.StorageConfig)
 	if request.StorageConfig != "" {
-		if apiserver.IsValidStorageName(request.StorageConfig) == false {
+		if !apiserver.IsValidStorageName(request.StorageConfig) {
 			log.Debug("CreateBackup sc error is found " + request.StorageConfig)
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = request.StorageConfig + " Storage config was not found "
@@ -68,7 +68,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 	}
 
 	if request.Selector != "" {
-		//use the selector instead of an argument list to filter on
+		// use the selector instead of an argument list to filter on
 
 		clusterList, err := apiserver.Clientset.
 			CrunchydataV1().Pgclusters(ns).
@@ -117,7 +117,7 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 		}
 
 		deletePropagation := metav1.DeletePropagationForeground
-		apiserver.Clientset.
+		_ = apiserver.Clientset.
 			BatchV1().Jobs(ns).
 			Delete(ctx, clusterName+pgDumpJobExtension, metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 
@@ -132,9 +132,8 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 		} else {
 
 			log.Debugf("pgtask %s was found so we will recreate it", taskName)
-			//remove the existing pgtask
+			// remove the existing pgtask
 			err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Delete(ctx, taskName, metav1.DeleteOptions{})
-
 			if err != nil {
 				resp.Status.Code = msgs.Error
 				resp.Status.Msg = err.Error()
@@ -142,21 +141,9 @@ func CreatepgDump(request *msgs.CreatepgDumpBackupRequest, ns string) msgs.Creat
 			}
 		}
 
-		//get pod name from cluster
-		// var podname, deployName string
-		var podname string
-		podname, err = getPrimaryPodName(cluster, ns)
-
-		if err != nil {
-			log.Error(err)
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-
 		// where all the magic happens about the task.
 		// TODO: Needs error handling for invalid parameters in the request
-		theTask := buildPgTaskForDump(clusterName, taskName, crv1.PgtaskpgDump, podname, "database", request)
+		theTask := buildPgTaskForDump(clusterName, taskName, crv1.PgtaskpgDump, "database", request)
 
 		_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(ctx, theTask, metav1.CreateOptions{})
 		if err != nil {
@@ -194,7 +181,7 @@ func ShowpgDump(clusterName string, selector string, ns string) msgs.ShowBackupR
 		}
 	}
 
-	//get a list of all clusters
+	// get a list of all clusters
 	clusterList, err := apiserver.Clientset.
 		CrunchydataV1().Pgclusters(ns).
 		List(ctx, metav1.ListOptions{LabelSelector: selector})
@@ -217,7 +204,7 @@ func ShowpgDump(clusterName string, selector string, ns string) msgs.ShowBackupR
 
 		pgTaskName := "backup-" + c.Name + pgDumpTaskExtension
 
-		backupItem, error := getPgBackupForTask(c.Name, pgTaskName, ns)
+		backupItem, error := getPgBackupForTask(pgTaskName, ns)
 
 		if backupItem != nil {
 			log.Debugf("pgTask %s was found", pgTaskName)
@@ -238,13 +225,11 @@ func ShowpgDump(clusterName string, selector string, ns string) msgs.ShowBackupR
 	}
 
 	return response
-
 }
 
 // builds out a pgTask structure that can be handed to kube
-func buildPgTaskForDump(clusterName, taskName, action, podName, containerName string,
+func buildPgTaskForDump(clusterName, taskName, action, containerName string,
 	request *msgs.CreatepgDumpBackupRequest) *crv1.Pgtask {
-
 	var newInstance *crv1.Pgtask
 	var storageSpec crv1.PgStorageSpec
 	var pvcName string
@@ -298,50 +283,6 @@ func buildPgTaskForDump(clusterName, taskName, action, podName, containerName st
 	return newInstance
 }
 
-func getPrimaryPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
-	ctx := context.TODO()
-	var podname string
-
-	selector := config.LABEL_SERVICE_NAME + "=" + cluster.Spec.Name
-
-	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		return podname, err
-	}
-
-	for _, p := range pods.Items {
-		if isPrimary(&p, cluster.Spec.Name) && isReady(&p) {
-			return p.Name, err
-		}
-	}
-
-	return podname, errors.New("primary pod is not in Ready state")
-}
-
-func isPrimary(pod *v1.Pod, clusterName string) bool {
-	if pod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
-		return true
-	}
-	return false
-
-}
-
-func isReady(pod *v1.Pod) bool {
-	readyCount := 0
-	containerCount := 0
-	for _, stat := range pod.Status.ContainerStatuses {
-		containerCount++
-		if stat.Ready {
-			readyCount++
-		}
-	}
-	if readyCount != containerCount {
-		return false
-	}
-	return true
-
-}
-
 // 	dumpAllFlag, dumpOpts = parseOptionFlags(request.BackupOpt)
 func parseOptionFlags(allFlags string) (bool, string) {
 	dumpFlag := false
@@ -353,14 +294,12 @@ func parseOptionFlags(allFlags string) (bool, string) {
 	options := strings.Split(allFlags, " ")
 
 	for _, token := range options {
-
 		// handle dump flag
 		if strings.Contains(token, "--dump-all") {
 			dumpFlag = true
 		} else {
 			parsedOptions = append(parsedOptions, token)
 		}
-
 	}
 
 	optionString := strings.Join(parsedOptions, " ")
@@ -368,11 +307,10 @@ func parseOptionFlags(allFlags string) (bool, string) {
 	log.Debugf("pgdump optionFlags: %s, dumpAll: %t", optionString, dumpFlag)
 
 	return dumpFlag, optionString
-
 }
 
 // if backup && err are nil, it simply wasn't found. Otherwise found or an error
-func getPgBackupForTask(clusterName string, taskName string, ns string) (*msgs.Pgbackup, error) {
+func getPgBackupForTask(taskName, ns string) (*msgs.Pgbackup, error) {
 	ctx := context.TODO()
 	task, err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Get(ctx, taskName, metav1.GetOptions{})
 
@@ -388,7 +326,6 @@ func getPgBackupForTask(clusterName string, taskName string, ns string) (*msgs.P
 
 // converts pgTask to a pgBackup structure
 func buildPgBackupFrompgTask(dumpTask *crv1.Pgtask) *msgs.Pgbackup {
-
 	backup := msgs.Pgbackup{}
 
 	spec := dumpTask.Spec
@@ -461,7 +398,7 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 		return resp
 	}
 
-	//delete any existing pgtask with the same name
+	// delete any existing pgtask with the same name
 	err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Delete(ctx, pgtask.Name, metav1.DeleteOptions{})
 	if err != nil && !kerrors.IsNotFound(err) {
 		resp.Status.Code = msgs.Error
@@ -469,7 +406,7 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 		return resp
 	}
 
-	//create a pgtask for the restore workflow
+	// create a pgtask for the restore workflow
 	_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(ctx, pgtask, metav1.CreateOptions{})
 	if err != nil {
 		resp.Status.Code = msgs.Error
@@ -484,7 +421,6 @@ func Restore(request *msgs.PgRestoreRequest, ns string) msgs.PgRestoreResponse {
 
 // builds out a pgTask structure that can be handed to kube
 func buildPgTaskForRestore(taskName string, action string, request *msgs.PgRestoreRequest) (*crv1.Pgtask, error) {
-
 	var newInstance *crv1.Pgtask
 	var storageSpec crv1.PgStorageSpec
 

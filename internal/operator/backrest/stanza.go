@@ -58,7 +58,7 @@ func StanzaCreate(namespace, clusterName string, clientset kubeapi.Interface) {
 	ctx := context.TODO()
 	taskName := clusterName + "-" + crv1.PgtaskBackrestStanzaCreate
 
-	//look up the backrest-repo pod name
+	// look up the backrest-repo pod name
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_PGO_BACKREST_REPO + "=true"
 	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if len(pods.Items) != 1 {
@@ -78,7 +78,7 @@ func StanzaCreate(namespace, clusterName string, clientset kubeapi.Interface) {
 		return
 	}
 
-	//create the stanza-create task
+	// create the stanza-create task
 	spec := crv1.PgtaskSpec{}
 	spec.Name = taskName
 
@@ -133,5 +133,4 @@ func StanzaCreate(namespace, clusterName string, clientset kubeapi.Interface) {
 	if err != nil {
 		log.Error(err)
 	}
-
 }

@@ -69,12 +69,12 @@ func CreateBackupHandler(w http.ResponseWriter, r *http.Request) {
 	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = CreateBackup(&request, ns, username)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // DeleteBackrestHandler deletes a targeted backup from a pgBackRest repository
@@ -219,19 +219,19 @@ func ShowBackrestHandler(w http.ResponseWriter, r *http.Request) {
 
 	if clientVersion != msgs.PGO_VERSION {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = ShowBackrest(backupname, selector, ns)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // RestoreHandler ...
@@ -276,10 +276,10 @@ func RestoreHandler(w http.ResponseWriter, r *http.Request) {
 	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = Restore(&request, ns, username)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }

@@ -17,6 +17,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -34,12 +35,13 @@ const (
 func CreateSchedule(client *http.Client, SessionCredentials *msgs.BasicAuthCredentials, r *msgs.CreateScheduleRequest) (msgs.CreateScheduleResponse, error) {
 	var response msgs.CreateScheduleResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(r)
 	url := fmt.Sprintf(createScheduleURL, SessionCredentials.APIServerURL)
 
 	log.Debugf("create schedule called [%s]", url)
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
@@ -69,12 +71,13 @@ func CreateSchedule(client *http.Client, SessionCredentials *msgs.BasicAuthCrede
 func DeleteSchedule(client *http.Client, SessionCredentials *msgs.BasicAuthCredentials, r *msgs.DeleteScheduleRequest) (msgs.DeleteScheduleResponse, error) {
 	var response msgs.DeleteScheduleResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(r)
 	url := fmt.Sprintf(deleteScheduleURL, SessionCredentials.APIServerURL)
 
 	log.Debugf("delete schedule called [%s]", url)
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
@@ -105,11 +108,12 @@ func DeleteSchedule(client *http.Client, SessionCredentials *msgs.BasicAuthCrede
 func ShowSchedule(client *http.Client, SessionCredentials *msgs.BasicAuthCredentials, r *msgs.ShowScheduleRequest) (msgs.ShowScheduleResponse, error) {
 	var response msgs.ShowScheduleResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(r)
 	url := fmt.Sprintf(showScheduleURL, SessionCredentials.APIServerURL)
 	log.Debugf("show schedule called [%s]", url)
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}

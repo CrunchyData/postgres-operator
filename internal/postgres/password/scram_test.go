@@ -54,7 +54,6 @@ func TestScramGenerateSalt(t *testing.T) {
 		for _, saltLength := range saltLengths {
 			t.Run(fmt.Sprintf("salt length %d", saltLength), func(t *testing.T) {
 				salt, err := scramGenerateSalt(saltLength)
-
 				if err != nil {
 					t.Error(err)
 				}
@@ -71,7 +70,6 @@ func TestScramGenerateSalt(t *testing.T) {
 
 		for _, saltLength := range saltLengths {
 			t.Run(fmt.Sprintf("salt length %d", saltLength), func(t *testing.T) {
-
 				if _, err := scramGenerateSalt(saltLength); err == nil {
 					t.Errorf("error expected for salt length of %d", saltLength)
 				}
@@ -82,7 +80,6 @@ func TestScramGenerateSalt(t *testing.T) {
 
 func TestSCRAMBuild(t *testing.T) {
 	t.Run("scram-sha-256", func(t *testing.T) {
-
 		t.Run("valid", func(t *testing.T) {
 			// check a few different password combinations. note: the salt is kept the
 			// same so we can get a reproducible result
@@ -104,7 +101,6 @@ func TestSCRAMBuild(t *testing.T) {
 					scram.generateSalt = mockGenerateSalt
 
 					hash, err := scram.Build()
-
 					if err != nil {
 						t.Error(err)
 					}
@@ -152,7 +148,7 @@ func TestSCRAMHash(t *testing.T) {
 		expected, _ := hex.DecodeString("877cc977e7b033e10d6e0b0d666da1f463bc51b1de48869250a0347ec1b2b8b3")
 		actual := scram.hash(sha256.New, []byte("hippo"))
 
-		if bytes.Compare(expected, actual) != 0 {
+		if !bytes.Equal(expected, actual) {
 			t.Errorf("expected: %x actual %x", expected, actual)
 		}
 	})
@@ -164,7 +160,7 @@ func TestSCRAMHMAC(t *testing.T) {
 		expected, _ := hex.DecodeString("ac9872eb21043142c3bf073c9fa4caf9553940750ef7b85116905aaa456a2d07")
 		actual := scram.hmac(sha256.New, []byte("hippo"), []byte("datalake"))
 
-		if bytes.Compare(expected, actual) != 0 {
+		if !bytes.Equal(expected, actual) {
 			t.Errorf("expected: %x actual %x", expected, actual)
 		}
 	})

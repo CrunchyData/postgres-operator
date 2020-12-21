@@ -97,7 +97,7 @@ func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 		serviceName = fmt.Sprintf(util.BackrestRepoServiceName, cluster.Name)
 	}
 
-	//create backrest repo service
+	// create backrest repo service
 	serviceFields := RepoServiceTemplateFields{
 		Name:        serviceName,
 		ClusterName: cluster.Name,
@@ -135,7 +135,7 @@ func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		config.PgoBackrestRepoTemplate.Execute(os.Stdout, repoFields)
+		_ = config.PgoBackrestRepoTemplate.Execute(os.Stdout, repoFields)
 	}
 
 	deployment := appsv1.Deployment{}
@@ -225,7 +225,6 @@ func setBootstrapRepoOverrides(clientset kubernetes.Interface, cluster *crv1.Pgc
 // specific PostgreSQL cluster.
 func getRepoDeploymentFields(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
 	replicas int) *RepoDeploymentTemplateFields {
-
 	namespace := cluster.GetNamespace()
 
 	repoFields := RepoDeploymentTemplateFields{
@@ -265,7 +264,6 @@ func UpdateAnnotations(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
 
 	// get a list of all of the instance deployments for the cluster
 	deployment, err := operator.GetBackrestDeployment(clientset, cluster)
-
 	if err != nil {
 		return err
 	}
@@ -291,7 +289,6 @@ func UpdateResources(clientset kubernetes.Interface, cluster *crv1.Pgcluster) er
 
 	// get a list of all of the instance deployments for the cluster
 	deployment, err := operator.GetBackrestDeployment(clientset, cluster)
-
 	if err != nil {
 		return err
 	}
@@ -333,7 +330,7 @@ func createService(clientset kubernetes.Interface, fields *RepoServiceTemplateFi
 		}
 
 		if operator.CRUNCHY_DEBUG {
-			config.PgoBackrestRepoServiceTemplate.Execute(os.Stdout, fields)
+			_ = config.PgoBackrestRepoServiceTemplate.Execute(os.Stdout, fields)
 		}
 
 		s := v1.Service{}

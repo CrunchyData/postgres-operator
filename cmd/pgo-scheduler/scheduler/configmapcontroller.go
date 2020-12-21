@@ -62,7 +62,6 @@ func (c *Controller) onDelete(obj interface{}) {
 
 // AddConfigMapEventHandler adds the pgcluster event handler to the pgcluster informer
 func (c *Controller) AddConfigMapEventHandler() {
-
 	c.Informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.onAdd,
 		DeleteFunc: c.onDelete,

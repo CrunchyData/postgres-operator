@@ -17,14 +17,15 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/nsqio/go-nsq"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/cobra"
 	"math/rand"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/nsqio/go-nsq"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 )
 
 type TailHandler struct {
@@ -45,7 +46,7 @@ var watchCmd = &cobra.Command{
 		}
 
 		log.Debug("watch called")
-		watch(args, Namespace)
+		watch(args)
 	},
 }
 
@@ -57,7 +58,7 @@ func init() {
 	watchCmd.Flags().StringVarP(&PGOEventAddress, "pgo-event-address", "a", "localhost:14150", "The address (host:port) where the event stream is.")
 }
 
-func watch(args []string, ns string) {
+func watch(args []string) {
 	log.Debugf("watch called %v", args)
 
 	if len(args) == 0 {
@@ -66,10 +67,11 @@ func watch(args []string, ns string) {
 
 	topic := args[0]
 
-	var totalMessages = 0
+	totalMessages := 0
 
 	var channel string
 	rand.Seed(time.Now().UnixNano())
+	// #nosec: G404
 	channel = fmt.Sprintf("tail%06d#ephemeral", rand.Int()%999999)
 
 	sigChan := make(chan os.Signal, 1)
@@ -107,7 +109,6 @@ func watch(args []string, ns string) {
 	for _, consumer := range consumers {
 		<-consumer.StopChan
 	}
-
 }
 
 func (th *TailHandler) HandleMessage(m *nsq.Message) error {

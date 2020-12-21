@@ -48,7 +48,6 @@ type Controller struct {
 func NewConfigMapController(restConfig *rest.Config,
 	clientset kubernetes.Interface, coreInformer coreinformers.ConfigMapInformer,
 	pgoInformer pgoinformers.PgclusterInformer, workerCount int) (*Controller, error) {
-
 	controller := &Controller{
 		cmRESTConfig:    restConfig,
 		kubeclientset:   clientset,
@@ -77,7 +76,6 @@ func NewConfigMapController(restConfig *rest.Config,
 // function in order to read and process a message on the worker queue.  Once the worker queue
 // is instructed to shutdown, a message is written to the done channel.
 func (c *Controller) RunWorker(stopCh <-chan struct{}, doneCh chan<- struct{}) {
-
 	go c.waitForShutdown(stopCh)
 
 	for c.processNextWorkItem() {
@@ -105,7 +103,6 @@ func (c *Controller) ShutdownWorker() {
 // so, the configMap resource is converted into a namespace/name string and is then added to the
 // work queue
 func (c *Controller) enqueueConfigMap(obj interface{}) {
-
 	configMap := obj.(*apiv1.ConfigMap)
 	labels := configMap.GetObjectMeta().GetLabels()
 
@@ -128,7 +125,6 @@ func (c *Controller) enqueueConfigMap(obj interface{}) {
 // processNextWorkItem will read a single work item off the work queue and processes it via
 // the ConfigMap sync handler
 func (c *Controller) processNextWorkItem() bool {
-
 	obj, shutdown := c.workqueue.Get()
 
 	if shutdown {

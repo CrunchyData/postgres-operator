@@ -59,7 +59,7 @@ func CreateRMDataTask(clusterName, replicaName, taskName string, deleteBackups, 
 	ctx := context.TODO()
 	var err error
 
-	//create pgtask CRD
+	// create pgtask CRD
 	spec := crv1.PgtaskSpec{}
 	spec.Namespace = ns
 	spec.Name = taskName
@@ -91,7 +91,6 @@ func CreateRMDataTask(clusterName, replicaName, taskName string, deleteBackups, 
 	}
 
 	return err
-
 }
 
 func GetBackrestStorageTypes() []string {

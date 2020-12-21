@@ -16,22 +16,24 @@ package api
 */
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func ShowWorkflow(httpclient *http.Client, workflowID string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowWorkflowResponse, error) {
-
 	var response msgs.ShowWorkflowResponse
 
 	url := SessionCredentials.APIServerURL + "/workflow/" + workflowID + "?version=" + msgs.PGO_VERSION + "&namespace=" + ns
 	log.Debugf("ShowWorkflow called...[%s]", url)
 
+	ctx := context.TODO()
 	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
+	req, err := http.NewRequestWithContext(ctx, action, url, nil)
 	if err != nil {
 		return response, err
 	}
@@ -56,5 +58,4 @@ func ShowWorkflow(httpclient *http.Client, workflowID string, SessionCredentials
 	}
 
 	return response, err
-
 }

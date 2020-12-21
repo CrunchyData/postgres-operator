@@ -165,11 +165,9 @@ type pgRestoreOptions struct {
 }
 
 func (dumpOpts pgDumpOptions) validate(setFlagFieldNames []string) error {
-
 	var errstrings []string
 
 	for _, setFlag := range setFlagFieldNames {
-
 		switch setFlag {
 		case "Format":
 			if !isValidValue([]string{"p", "plain", "c", "custom", "t", "tar"}, dumpOpts.Format) {
@@ -214,11 +212,9 @@ func (dumpOpts pgDumpOptions) validate(setFlagFieldNames []string) error {
 }
 
 func (dumpAllOpts pgDumpAllOptions) validate(setFlagFieldNames []string) error {
-
 	var errstrings []string
 
 	for _, setFlag := range setFlagFieldNames {
-
 		switch setFlag {
 		case "SuperUser":
 			if !dumpAllOpts.DisableTriggers {
@@ -243,11 +239,9 @@ func (dumpAllOpts pgDumpAllOptions) validate(setFlagFieldNames []string) error {
 }
 
 func (restoreOpts pgRestoreOptions) validate(setFlagFieldNames []string) error {
-
 	var errstrings []string
 
 	for _, setFlag := range setFlagFieldNames {
-
 		switch setFlag {
 		case "Format":
 			if !isValidValue([]string{"p", "plain", "c", "custom", "t", "tar"}, restoreOpts.Format) {

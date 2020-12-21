@@ -18,13 +18,13 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func Cat(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CatRequest) (msgs.CatResponse, error) {
-
 	var response msgs.CatResponse
 
 	jsonValue, _ := json.Marshal(request)

@@ -22,8 +22,10 @@ import (
 )
 
 // volume configuration settings used by the PostgreSQL data directory and mount
-const VOLUME_POSTGRESQL_DATA = "pgdata"
-const VOLUME_POSTGRESQL_DATA_MOUNT_PATH = "/pgdata"
+const (
+	VOLUME_POSTGRESQL_DATA            = "pgdata"
+	VOLUME_POSTGRESQL_DATA_MOUNT_PATH = "/pgdata"
+)
 
 // PostgreSQLWALVolumeMount returns the VolumeMount for the PostgreSQL WAL directory.
 func PostgreSQLWALVolumeMount() core_v1.VolumeMount {
@@ -36,12 +38,16 @@ func PostgreSQLWALPath(cluster string) string {
 }
 
 // volume configuration settings used by the pgBackRest repo mount
-const VOLUME_PGBACKREST_REPO_NAME = "backrestrepo"
-const VOLUME_PGBACKREST_REPO_MOUNT_PATH = "/backrestrepo"
+const (
+	VOLUME_PGBACKREST_REPO_NAME       = "backrestrepo"
+	VOLUME_PGBACKREST_REPO_MOUNT_PATH = "/backrestrepo"
+)
 
 // volume configuration settings used by the SSHD secret
-const VOLUME_SSHD_NAME = "sshd"
-const VOLUME_SSHD_MOUNT_PATH = "/sshd"
+const (
+	VOLUME_SSHD_NAME       = "sshd"
+	VOLUME_SSHD_MOUNT_PATH = "/sshd"
+)
 
 // volume configuration settings used by tablespaces
 

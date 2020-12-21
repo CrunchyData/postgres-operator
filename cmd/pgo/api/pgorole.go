@@ -17,22 +17,24 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func ShowPgorole(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.ShowPgoroleRequest) (msgs.ShowPgoroleResponse, error) {
-
 	var response msgs.ShowPgoroleResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/pgoroleshow"
 	log.Debugf("ShowPgorole called...[%s]", url)
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		response.Status.Code = msgs.Error
 		return response, err
@@ -58,18 +60,18 @@ func ShowPgorole(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCred
 	}
 
 	return response, err
-
 }
-func CreatePgorole(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreatePgoroleRequest) (msgs.CreatePgoroleResponse, error) {
 
+func CreatePgorole(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreatePgoroleRequest) (msgs.CreatePgoroleResponse, error) {
 	var resp msgs.CreatePgoroleResponse
 	resp.Status.Code = msgs.Ok
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/pgorolecreate"
 	log.Debugf("CreatePgorole called...[%s]", url)
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		return resp, err
@@ -103,15 +105,15 @@ func CreatePgorole(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 }
 
 func DeletePgorole(httpclient *http.Client, request *msgs.DeletePgoroleRequest, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DeletePgoroleResponse, error) {
-
 	var response msgs.DeletePgoroleResponse
 
 	url := SessionCredentials.APIServerURL + "/pgoroledelete"
 
 	log.Debugf("DeletePgorole called [%s]", url)
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		response.Status.Code = msgs.Error
 		return response, err
@@ -138,18 +140,17 @@ func DeletePgorole(httpclient *http.Client, request *msgs.DeletePgoroleRequest, 
 	}
 
 	return response, err
-
 }
 
 func UpdatePgorole(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.UpdatePgoroleRequest) (msgs.UpdatePgoroleResponse, error) {
-
 	var response msgs.UpdatePgoroleResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/pgoroleupdate"
 	log.Debugf("UpdatePgorole called...[%s]", url)
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}

@@ -23,51 +23,53 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ClusterReplicaCount int
-var ManagedUser bool
-var AllNamespaces bool
-var BackrestStorageConfig, ReplicaStorageConfig, StorageConfig string
-var CustomConfig string
-var ArchiveFlag, DisableAutofailFlag, EnableAutofailFlag, PgbouncerFlag, MetricsFlag, BadgerFlag bool
-var BackrestRestoreFrom string
-var CCPImage string
-var CCPImageTag string
-var CCPImagePrefix string
-var PGOImagePrefix string
-var Database string
-var Password string
-var SecretFrom string
-var PoliciesFlag, PolicyFile, PolicyURL string
-var UserLabels string
-var Tablespaces []string
-var ServiceType string
-var Schedule string
-var ScheduleOptions string
-var ScheduleType string
-var SchedulePolicy string
-var ScheduleDatabase string
-var ScheduleSecret string
-var PGBackRestType string
-var Secret string
-var PgouserPassword, PgouserRoles, PgouserNamespaces string
-var Permissions string
-var PodAntiAffinity string
-var PodAntiAffinityPgBackRest string
-var PodAntiAffinityPgBouncer string
-var SyncReplication bool
-var BackrestConfig string
-var BackrestS3Key string
-var BackrestS3KeySecret string
-var BackrestS3Bucket string
-var BackrestS3Endpoint string
-var BackrestS3Region string
-var BackrestS3URIStyle string
-var BackrestS3VerifyTLS bool
-var PVCSize string
-var BackrestPVCSize string
-var WALStorageConfig string
-var WALPVCSize string
-var RestoreFrom string
+var (
+	ClusterReplicaCount                                                                          int
+	ManagedUser                                                                                  bool
+	AllNamespaces                                                                                bool
+	BackrestStorageConfig, ReplicaStorageConfig, StorageConfig                                   string
+	CustomConfig                                                                                 string
+	ArchiveFlag, DisableAutofailFlag, EnableAutofailFlag, PgbouncerFlag, MetricsFlag, BadgerFlag bool
+	BackrestRestoreFrom                                                                          string
+	CCPImage                                                                                     string
+	CCPImageTag                                                                                  string
+	CCPImagePrefix                                                                               string
+	PGOImagePrefix                                                                               string
+	Database                                                                                     string
+	Password                                                                                     string
+	SecretFrom                                                                                   string
+	PoliciesFlag, PolicyFile, PolicyURL                                                          string
+	UserLabels                                                                                   string
+	Tablespaces                                                                                  []string
+	ServiceType                                                                                  string
+	Schedule                                                                                     string
+	ScheduleOptions                                                                              string
+	ScheduleType                                                                                 string
+	SchedulePolicy                                                                               string
+	ScheduleDatabase                                                                             string
+	ScheduleSecret                                                                               string
+	PGBackRestType                                                                               string
+	Secret                                                                                       string
+	PgouserPassword, PgouserRoles, PgouserNamespaces                                             string
+	Permissions                                                                                  string
+	PodAntiAffinity                                                                              string
+	PodAntiAffinityPgBackRest                                                                    string
+	PodAntiAffinityPgBouncer                                                                     string
+	SyncReplication                                                                              bool
+	BackrestConfig                                                                               string
+	BackrestS3Key                                                                                string
+	BackrestS3KeySecret                                                                          string
+	BackrestS3Bucket                                                                             string
+	BackrestS3Endpoint                                                                           string
+	BackrestS3Region                                                                             string
+	BackrestS3URIStyle                                                                           string
+	BackrestS3VerifyTLS                                                                          bool
+	PVCSize                                                                                      string
+	BackrestPVCSize                                                                              string
+	WALStorageConfig                                                                             string
+	WALPVCSize                                                                                   string
+	RestoreFrom                                                                                  string
+)
 
 // group the annotation requests
 var (
@@ -243,7 +245,6 @@ var createPgAdminCmd = &cobra.Command{
 
 	pgo create pgadmin mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
@@ -265,7 +266,6 @@ var createPgbouncerCmd = &cobra.Command{
 
 	pgo create pgbouncer mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
@@ -293,7 +293,6 @@ var createScheduleCmd = &cobra.Command{
 
     pgo create schedule --schedule="* * * * *" --schedule-type=pgbackrest --pgbackrest-backup-type=full mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
@@ -317,7 +316,6 @@ var createUserCmd = &cobra.Command{
     pgo create user --username=someuser -selector=name=mycluster --managed
     pgo create user --username=user1 --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}

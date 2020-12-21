@@ -17,17 +17,19 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func ShowPVC(httpclient *http.Client, request *msgs.ShowPVCRequest, SessionCredentials *msgs.BasicAuthCredentials) (msgs.ShowPVCResponse, error) {
-
 	var response msgs.ShowPVCResponse
 
+	ctx := context.TODO()
 	url := SessionCredentials.APIServerURL + "/showpvc"
 	log.Debugf("ShowPVC called...[%s]", url)
 
@@ -35,7 +37,7 @@ func ShowPVC(httpclient *http.Client, request *msgs.ShowPVCRequest, SessionCrede
 	log.Debugf("ShowPVC called...[%s]", url)
 
 	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
@@ -61,5 +63,4 @@ func ShowPVC(httpclient *http.Client, request *msgs.ShowPVCRequest, SessionCrede
 	}
 
 	return response, err
-
 }

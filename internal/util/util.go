@@ -44,7 +44,6 @@ var gisImageTagRegex = regexp.MustCompile(`(.+-[\d|\.]+)-[\d|\.]+?(-[\d|\.]+.*)`
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
-
 }
 
 // GetLabels ...
@@ -58,19 +57,19 @@ func GetLabels(name, clustername string, replica bool) string {
 	return output
 }
 
-//CurrentPrimaryUpdate prepares the needed data structures with the correct current primary value
-//before passing them along to be patched into the current pgcluster CRD's annotations
+// CurrentPrimaryUpdate prepares the needed data structures with the correct current primary value
+// before passing them along to be patched into the current pgcluster CRD's annotations
 func CurrentPrimaryUpdate(clientset pgo.Interface, cluster *crv1.Pgcluster, currentPrimary, namespace string) error {
-	//create a new map
+	// create a new map
 	metaLabels := make(map[string]string)
-	//copy the relevant values into the new map
+	// copy the relevant values into the new map
 	for k, v := range cluster.ObjectMeta.Labels {
 		metaLabels[k] = v
 	}
-	//update this map with the new deployment label
+	// update this map with the new deployment label
 	metaLabels[config.LABEL_DEPLOYMENT_NAME] = currentPrimary
 
-	//Update CRD with the current primary name and the new deployment to point to after the failover
+	// Update CRD with the current primary name and the new deployment to point to after the failover
 	if err := PatchClusterCRD(clientset, metaLabels, cluster, currentPrimary, namespace); err != nil {
 		log.Errorf("failoverlogic: could not patch pgcluster %s with the current primary", currentPrimary)
 	}
@@ -112,7 +111,6 @@ func PatchClusterCRD(clientset pgo.Interface, labelMap map[string]string, oldCrd
 		Patch(ctx, oldCrd.Spec.Name, types.MergePatchType, patchBytes, metav1.PatchOptions{})
 
 	return err6
-
 }
 
 // GetValueOrDefault checks whether the first value given is set. If it is,
@@ -149,7 +147,6 @@ func GetSecretPassword(clientset kubernetes.Interface, db, suffix, Namespace str
 
 	log.Error("primary secret not found for " + db)
 	return "", errors.New("primary secret not found for " + db)
-
 }
 
 // GetStandardImageTag takes the current image name and the image tag value
@@ -158,7 +155,6 @@ func GetSecretPassword(clientset kubernetes.Interface, db, suffix, Namespace str
 // the tag without the addition of the GIS version. This tag value can then
 // be used when provisioning containers using the standard containers tag.
 func GetStandardImageTag(imageName, imageTag string) string {
-
 	if imageName == "crunchy-postgres-gis-ha" && strings.Count(imageTag, "-") > 2 {
 		return gisImageTagRegex.ReplaceAllString(imageTag, "$1$2")
 	}
@@ -170,6 +166,7 @@ func GetStandardImageTag(imageName, imageTag string) string {
 func RandStringBytesRmndr(n int) string {
 	b := make([]byte, n)
 	for i := range b {
+		// #nosec: G404
 		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
 	}
 	return string(b)

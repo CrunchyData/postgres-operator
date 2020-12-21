@@ -35,7 +35,6 @@ title: "%s"
 `
 
 func main() {
-
 	fmt.Println("generate CLI markdown")
 
 	filePrepender := func(filename string) string {

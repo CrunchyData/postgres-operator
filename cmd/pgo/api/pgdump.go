@@ -17,6 +17,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -26,14 +27,14 @@ import (
 )
 
 func ShowpgDump(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowBackupResponse, error) {
-
 	var response msgs.ShowBackupResponse
 	url := SessionCredentials.APIServerURL + "/pgdump/" + arg + "?version=" + msgs.PGO_VERSION + "&selector=" + selector + "&namespace=" + ns
 
 	log.Debugf("show pgdump called [%s]", url)
 
+	ctx := context.TODO()
 	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
+	req, err := http.NewRequestWithContext(ctx, action, url, nil)
 	if err != nil {
 		return response, err
 	}
@@ -58,13 +59,12 @@ func ShowpgDump(httpclient *http.Client, arg, selector string, SessionCredential
 	}
 
 	return response, err
-
 }
 
 func CreatepgDumpBackup(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreatepgDumpBackupRequest) (msgs.CreatepgDumpBackupResponse, error) {
-
 	var response msgs.CreatepgDumpBackupResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 
 	url := SessionCredentials.APIServerURL + "/pgdumpbackup"
@@ -72,7 +72,7 @@ func CreatepgDumpBackup(httpclient *http.Client, SessionCredentials *msgs.BasicA
 	log.Debugf("create pgdump backup called [%s]", url)
 
 	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}

@@ -47,7 +47,6 @@ func createPgAdmin(args []string, ns string) {
 	}
 
 	response, err := api.CreatePgAdmin(httpclient, &SessionCredentials, &request)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(1)
@@ -95,7 +94,6 @@ func deletePgAdmin(args []string, ns string) {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(1)
 	}
-
 }
 
 // makeShowPgAdminInterface returns an interface slice of the available values

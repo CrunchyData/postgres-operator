@@ -110,7 +110,7 @@ func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtas
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		config.BackrestjobTemplate.Execute(os.Stdout, jobFields)
+		_ = config.BackrestjobTemplate.Execute(os.Stdout, jobFields)
 	}
 
 	newjob := v1batch.Job{}
@@ -131,7 +131,7 @@ func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtas
 	if backupType != "" {
 		newjob.ObjectMeta.Labels[config.LABEL_PGHA_BACKUP_TYPE] = backupType
 	}
-	clientset.BatchV1().Jobs(namespace).Create(ctx, &newjob, metav1.CreateOptions{})
+	_, _ = clientset.BatchV1().Jobs(namespace).Create(ctx, &newjob, metav1.CreateOptions{})
 
 	// publish backrest backup event
 	if cmd == "backup" {
@@ -160,8 +160,7 @@ func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtas
 // CreateInitialBackup creates a Pgtask in order to initiate the initial pgBackRest backup for a cluster
 // as needed to support replica creation
 func CreateInitialBackup(clientset pgo.Interface, namespace, clusterName, podName string) (*crv1.Pgtask, error) {
-	var params map[string]string
-	params = make(map[string]string)
+	params := make(map[string]string)
 	params[config.LABEL_PGHA_BACKUP_TYPE] = crv1.BackupTypeBootstrap
 	return CreateBackup(clientset, namespace, clusterName, podName, params, "--type=full")
 }
@@ -169,8 +168,7 @@ func CreateInitialBackup(clientset pgo.Interface, namespace, clusterName, podNam
 // CreatePostFailoverBackup creates a Pgtask in order to initiate the a pgBackRest backup following a failure
 // event to ensure proper replica creation and/or reinitialization
 func CreatePostFailoverBackup(clientset pgo.Interface, namespace, clusterName, podName string) (*crv1.Pgtask, error) {
-	var params map[string]string
-	params = make(map[string]string)
+	params := make(map[string]string)
 	params[config.LABEL_PGHA_BACKUP_TYPE] = crv1.BackupTypeFailover
 	return CreateBackup(clientset, namespace, clusterName, podName, params, "")
 }

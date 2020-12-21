@@ -25,7 +25,7 @@ import (
 )
 
 func publishClusterComplete(clusterName, namespace string, cluster *crv1.Pgcluster) error {
-	//capture the cluster creation event
+	// capture the cluster creation event
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 
@@ -47,5 +47,4 @@ func publishClusterComplete(clusterName, namespace string, cluster *crv1.Pgclust
 		return err
 	}
 	return err
-
 }

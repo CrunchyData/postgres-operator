@@ -57,7 +57,6 @@ func createpgDumpBackup(args []string, ns string) {
 		fmt.Println("No clusters found.")
 		return
 	}
-
 }
 
 // pgDump ....
@@ -84,8 +83,8 @@ func showpgDump(args []string, ns string) {
 		log.Debugf("response = %v", response)
 		log.Debugf("len of items = %d", len(response.BackupList.Items))
 
-		for _, backup := range response.BackupList.Items {
-			printDumpCRD(&backup)
+		for i := range response.BackupList.Items {
+			printDumpCRD(&response.BackupList.Items[i])
 		}
 	}
 }
@@ -105,5 +104,4 @@ func printDumpCRD(result *msgs.Pgbackup) {
 	fmt.Printf("%s%s\n", TreeBranch, "Backup User Secret:\t"+result.BackupUserSecret)
 	fmt.Printf("%s%s\n", TreeTrunk, "Backup Port:\t"+result.BackupPort)
 	fmt.Printf("%s%s\n", TreeTrunk, "Backup Opts:\t"+result.BackupOpts)
-
 }

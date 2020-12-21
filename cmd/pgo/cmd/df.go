@@ -112,7 +112,6 @@ func init() {
 	dfCmd.Flags().BoolVar(&AllFlag, "all", false, "Get disk utilization for all managed clusters")
 	dfCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
 	dfCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-
 }
 
 // getPVCType returns a "human readable" form of the PVC
@@ -250,7 +249,6 @@ func showDf(namespace, selector string) {
 
 	// make the request
 	response, err := api.ShowDf(httpclient, &SessionCredentials, request)
-
 	// if there is an error, or the response code is not ok, print the error and
 	// exit
 	if err != nil {

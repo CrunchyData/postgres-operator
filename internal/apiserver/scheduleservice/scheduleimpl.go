@@ -143,8 +143,8 @@ func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateS
 
 	log.Debug("Making schedules")
 	var schedules []*PgScheduleSpec
-	for _, cluster := range clusterList.Items {
-
+	for i := range clusterList.Items {
+		cluster := &clusterList.Items[i]
 		// check if the current cluster is not upgraded to the deployed
 		// Operator version. If not, do not allow the command to complete
 		if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
@@ -154,10 +154,10 @@ func CreateSchedule(request *msgs.CreateScheduleRequest, ns string) msgs.CreateS
 		}
 		switch sr.Request.ScheduleType {
 		case "pgbackrest":
-			schedule := sr.createBackRestSchedule(&cluster, ns)
+			schedule := sr.createBackRestSchedule(cluster, ns)
 			schedules = append(schedules, schedule)
 		case "policy":
-			schedule := sr.createPolicySchedule(&cluster, ns)
+			schedule := sr.createPolicySchedule(cluster, ns)
 			schedules = append(schedules, schedule)
 		default:
 			sr.Response.Status.Code = msgs.Error
@@ -232,7 +232,7 @@ func DeleteSchedule(request *msgs.DeleteScheduleRequest, ns string) msgs.DeleteS
 
 	if request.ScheduleName == "" && request.ClusterName == "" && request.Selector == "" {
 		sr.Status.Code = msgs.Error
-		sr.Status.Msg = fmt.Sprintf("Cluster name, schedule name or selector must be provided")
+		sr.Status.Msg = "Cluster name, schedule name or selector must be provided"
 		return *sr
 	}
 
@@ -280,7 +280,7 @@ func ShowSchedule(request *msgs.ShowScheduleRequest, ns string) msgs.ShowSchedul
 
 	if request.ScheduleName == "" && request.ClusterName == "" && request.Selector == "" {
 		sr.Status.Code = msgs.Error
-		sr.Status.Msg = fmt.Sprintf("Cluster name, schedule name or selector must be provided")
+		sr.Status.Msg = "Cluster name, schedule name or selector must be provided"
 		return *sr
 	}
 

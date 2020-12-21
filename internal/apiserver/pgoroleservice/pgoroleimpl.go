@@ -34,7 +34,6 @@ import (
 
 // CreatePgorole ...
 func CreatePgorole(clientset kubernetes.Interface, createdBy string, request *msgs.CreatePgoroleRequest) msgs.CreatePgoroleResponse {
-
 	log.Debugf("CreatePgorole %v", request)
 	resp := msgs.CreatePgoroleResponse{}
 	resp.Status.Code = msgs.Ok
@@ -54,7 +53,7 @@ func CreatePgorole(clientset kubernetes.Interface, createdBy string, request *ms
 		return resp
 	}
 
-	//publish event
+	// publish event
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicPGOUser
 
@@ -77,7 +76,6 @@ func CreatePgorole(clientset kubernetes.Interface, createdBy string, request *ms
 	}
 
 	return resp
-
 }
 
 // ShowPgorole ...
@@ -122,7 +120,6 @@ func ShowPgorole(clientset kubernetes.Interface, request *msgs.ShowPgoroleReques
 	}
 
 	return resp
-
 }
 
 // DeletePgorole ...
@@ -164,7 +161,6 @@ func DeletePgorole(clientset kubernetes.Interface, deletedBy string, request *ms
 	}
 
 	return resp
-
 }
 
 func UpdatePgorole(clientset kubernetes.Interface, updatedBy string, request *msgs.UpdatePgoroleRequest) msgs.UpdatePgoroleResponse {
@@ -200,7 +196,7 @@ func UpdatePgorole(clientset kubernetes.Interface, updatedBy string, request *ms
 		return resp
 	}
 
-	//publish event
+	// publish event
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicPGOUser
 
@@ -223,13 +219,12 @@ func UpdatePgorole(clientset kubernetes.Interface, updatedBy string, request *ms
 	}
 
 	return resp
-
 }
 
 func createSecret(clientset kubernetes.Interface, createdBy, pgorolename, permissions string) error {
 	ctx := context.TODO()
 
-	var enRolename = pgorolename
+	enRolename := pgorolename
 
 	secretName := "pgorole-" + pgorolename
 
@@ -269,7 +264,7 @@ func validPermissions(perms string) error {
 func deleteRoleFromUsers(clientset kubernetes.Interface, roleName string) error {
 	ctx := context.TODO()
 
-	//get pgouser Secrets
+	// get pgouser Secrets
 
 	selector := config.LABEL_PGO_PGOUSER + "=true"
 	pgouserSecrets, err := clientset.
@@ -280,7 +275,8 @@ func deleteRoleFromUsers(clientset kubernetes.Interface, roleName string) error 
 		return err
 	}
 
-	for _, s := range pgouserSecrets.Items {
+	for i := range pgouserSecrets.Items {
+		s := &pgouserSecrets.Items[i]
 		rolesString := string(s.Data[pgouserservice.MAP_KEY_ROLES])
 		roles := strings.Split(rolesString, ",")
 		resultRoles := make([]string, 0)
@@ -294,7 +290,7 @@ func deleteRoleFromUsers(clientset kubernetes.Interface, roleName string) error 
 			}
 		}
 
-		//update the pgouser Secret removing any roles as necessary
+		// update the pgouser Secret removing any roles as necessary
 		if rolesUpdated {
 			var resultingRoleString string
 
@@ -307,8 +303,7 @@ func deleteRoleFromUsers(clientset kubernetes.Interface, roleName string) error 
 			}
 
 			s.Data[pgouserservice.MAP_KEY_ROLES] = []byte(resultingRoleString)
-			_, err = clientset.CoreV1().Secrets(apiserver.PgoNamespace).Update(ctx, &s, metav1.UpdateOptions{})
-			if err != nil {
+			if _, err := clientset.CoreV1().Secrets(apiserver.PgoNamespace).Update(ctx, s, metav1.UpdateOptions{}); err != nil {
 				return err
 			}
 

@@ -62,7 +62,6 @@ var (
 // of a failover.  Specifically, this handler is triggered when a replica has been promoted, and
 // it now has either the "promoted" or "primary" role label.
 func (c *Controller) handlePostgresPodPromotion(newPod *apiv1.Pod, cluster crv1.Pgcluster) error {
-
 	if cluster.Status.State == crv1.PgclusterStateShutdown {
 		if err := c.handleStartupInit(cluster); err != nil {
 			return err
@@ -84,7 +83,6 @@ func (c *Controller) handlePostgresPodPromotion(newPod *apiv1.Pod, cluster crv1.
 // handleStartupInit is resposible for handling cluster initilization for a cluster that has been
 // restarted (after it was previously shutdown)
 func (c *Controller) handleStartupInit(cluster crv1.Pgcluster) error {
-
 	// since the cluster is just being restarted, it can just be set to initialized once the
 	// primary is ready
 	if err := controller.SetClusterInitializedStatus(c.Client, cluster.Name,
@@ -94,7 +92,7 @@ func (c *Controller) handleStartupInit(cluster crv1.Pgcluster) error {
 	}
 
 	// now scale any replicas deployments to 1
-	clusteroperator.ScaleClusterDeployments(c.Client, cluster, 1, false, true, false, false)
+	_, _ = clusteroperator.ScaleClusterDeployments(c.Client, cluster, 1, false, true, false, false)
 
 	return nil
 }
@@ -103,7 +101,6 @@ func (c *Controller) handleStartupInit(cluster crv1.Pgcluster) error {
 // of disabling standby mode.  Specifically, this handler is triggered when a standby leader
 // is turned into a regular leader.
 func (c *Controller) handleStandbyPromotion(newPod *apiv1.Pod, cluster crv1.Pgcluster) error {
-
 	clusterName := cluster.Name
 	namespace := cluster.Namespace
 
@@ -141,7 +138,6 @@ func (c *Controller) handleStandbyPromotion(newPod *apiv1.Pod, cluster crv1.Pgcl
 // done by confirming
 func waitForStandbyPromotion(restConfig *rest.Config, clientset kubernetes.Interface, newPod apiv1.Pod,
 	cluster crv1.Pgcluster) error {
-
 	var recoveryDisabled bool
 
 	// wait for the server to accept writes to ensure standby has truly been disabled before
@@ -183,7 +179,7 @@ func waitForStandbyPromotion(restConfig *rest.Config, clientset kubernetes.Inter
 func cleanAndCreatePostFailoverBackup(clientset kubeapi.Interface, clusterName, namespace string) error {
 	ctx := context.TODO()
 
-	//look up the backrest-repo pod name
+	// look up the backrest-repo pod name
 	selector := fmt.Sprintf("%s=%s,%s=true", config.LABEL_PG_CLUSTER,
 		clusterName, config.LABEL_PGO_BACKREST_REPO)
 	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})

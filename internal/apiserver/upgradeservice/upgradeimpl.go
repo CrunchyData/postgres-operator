@@ -230,14 +230,12 @@ func supportedOperatorVersion(version string) bool {
 
 	// If none of the above is true, the upgrade can continue
 	return true
-
 }
 
 // upgradeTagValid compares and validates the PostgreSQL version values stored
 // in the image tag of the existing pgcluster CR against the values set in the
 // Postgres Operator's configuration
 func upgradeTagValid(upgradeFrom, upgradeTo string) bool {
-
 	log.Debugf("Validating upgrade from %s to %s", upgradeFrom, upgradeTo)
 
 	versionRegex := regexp.MustCompile(`-(\d+)\.(\d+)(\.\d+)?-`)
@@ -280,5 +278,4 @@ func upgradeTagValid(upgradeFrom, upgradeTo string) bool {
 	// if none of the above conditions are met, a two digit Major version upgrade is likely being
 	// attempted, or a tag value or general error occurred, so we cannot continue
 	return false
-
 }

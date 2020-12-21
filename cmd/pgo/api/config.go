@@ -16,21 +16,23 @@ package api
 */
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func ShowConfig(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowConfigResponse, error) {
-
 	var response msgs.ShowConfigResponse
 
+	ctx := context.TODO()
 	url := SessionCredentials.APIServerURL + "/config?version=" + msgs.PGO_VERSION + "&namespace=" + ns
 	log.Debug(url)
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return response, err
 	}
@@ -59,5 +61,4 @@ func ShowConfig(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCrede
 	}
 
 	return response, err
-
 }

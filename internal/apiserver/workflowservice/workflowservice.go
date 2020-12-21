@@ -17,11 +17,12 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // ShowWorkflowHandler ...
@@ -79,7 +80,7 @@ func ShowWorkflowHandler(w http.ResponseWriter, r *http.Request) {
 	if clientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -87,7 +88,7 @@ func ShowWorkflowHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -97,5 +98,5 @@ func ShowWorkflowHandler(w http.ResponseWriter, r *http.Request) {
 		resp.Status.Msg = err.Error()
 	}
 
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }

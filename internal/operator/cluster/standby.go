@@ -189,10 +189,10 @@ func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error
 	// grab the json stored in the config annotation
 	configJSONStr := dcsConfigMap.ObjectMeta.Annotations["config"]
 	var configJSON map[string]interface{}
-	json.Unmarshal([]byte(configJSONStr), &configJSON)
+	_ = json.Unmarshal([]byte(configJSONStr), &configJSON)
 
 	var standbyJSON map[string]interface{}
-	json.Unmarshal([]byte(standbyClusterConfigJSON), &standbyJSON)
+	_ = json.Unmarshal([]byte(standbyClusterConfigJSON), &standbyJSON)
 
 	// set standby_cluster to default config unless already set
 	if _, ok := configJSON["standby_cluster"]; !ok {
@@ -244,10 +244,9 @@ func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error
 }
 
 func publishStandbyEnabled(cluster *crv1.Pgcluster) error {
-
 	clusterName := cluster.Name
 
-	//capture the cluster creation event
+	// capture the cluster creation event
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 

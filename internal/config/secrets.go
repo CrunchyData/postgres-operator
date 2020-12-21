@@ -15,4 +15,5 @@ package config
  limitations under the License.
 */
 
+// #nosec: G101
 const SecretOperatorBackrestRepoConfig = "pgo-backrest-repo-config"

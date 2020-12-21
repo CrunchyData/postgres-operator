@@ -77,12 +77,12 @@ func ShowNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = ShowNamespace(apiserver.Clientset, username, &request)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 func CreateNamespaceHandler(w http.ResponseWriter, r *http.Request) {
@@ -132,12 +132,12 @@ func CreateNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = CreateNamespace(apiserver.Clientset, username, &request)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 func DeleteNamespaceHandler(w http.ResponseWriter, r *http.Request) {
@@ -187,14 +187,14 @@ func DeleteNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = DeleteNamespace(apiserver.Clientset, username, &request)
-	json.NewEncoder(w).Encode(resp)
-
+	_ = json.NewEncoder(w).Encode(resp)
 }
+
 func UpdateNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation POST /namespaceupdate namespaceservice namespaceupdate
 	/*```
@@ -242,10 +242,10 @@ func UpdateNamespaceHandler(w http.ResponseWriter, r *http.Request) {
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = UpdateNamespace(apiserver.Clientset, username, &request)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }

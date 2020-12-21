@@ -37,7 +37,7 @@ func CreateService(clientset kubernetes.Interface, fields *ServiceTemplateFields
 	ctx := context.TODO()
 	var serviceDoc bytes.Buffer
 
-	//create the service if it doesn't exist
+	// create the service if it doesn't exist
 	_, err := clientset.CoreV1().Services(namespace).Get(ctx, fields.Name, metav1.GetOptions{})
 	if err != nil {
 
@@ -48,7 +48,7 @@ func CreateService(clientset kubernetes.Interface, fields *ServiceTemplateFields
 		}
 
 		if operator.CRUNCHY_DEBUG {
-			config.ServiceTemplate.Execute(os.Stdout, fields)
+			_ = config.ServiceTemplate.Execute(os.Stdout, fields)
 		}
 
 		service := corev1.Service{}
@@ -62,5 +62,4 @@ func CreateService(clientset kubernetes.Interface, fields *ServiceTemplateFields
 	}
 
 	return err
-
 }

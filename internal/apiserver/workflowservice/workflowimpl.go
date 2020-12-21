@@ -34,7 +34,7 @@ func ShowWorkflow(id, ns string) (msgs.ShowWorkflowDetail, error) {
 	log.Debugf("ShowWorkflow called with id %s", id)
 	detail := msgs.ShowWorkflowDetail{}
 
-	//get the pgtask for this workflow
+	// get the pgtask for this workflow
 
 	selector := crv1.PgtaskWorkflowID + "=" + id
 
@@ -53,5 +53,4 @@ func ShowWorkflow(id, ns string) (msgs.ShowWorkflowDetail, error) {
 	detail.Parameters = t.Spec.Parameters
 
 	return detail, err
-
 }

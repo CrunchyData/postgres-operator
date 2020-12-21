@@ -69,7 +69,7 @@ func DfHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		response := CreateErrorResponse(err.Error())
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		return
 	}
 
@@ -84,14 +84,14 @@ func DfHandler(w http.ResponseWriter, r *http.Request) {
 	// check that the client versions match. If they don't, error out
 	if request.ClientVersion != msgs.PGO_VERSION {
 		response := CreateErrorResponse(apiserver.VERSION_MISMATCH_ERROR)
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	// ensure that the user has access to this namespace. if not, error out
 	if _, err := apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace); err != nil {
 		response := CreateErrorResponse(err.Error())
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		return
 	}
 
@@ -99,5 +99,5 @@ func DfHandler(w http.ResponseWriter, r *http.Request) {
 	response := DfCluster(request)
 
 	// turn the response into JSON
-	json.NewEncoder(w).Encode(response)
+	_ = json.NewEncoder(w).Encode(response)
 }

@@ -30,9 +30,7 @@ func TestGeneratePassword(t *testing.T) {
 	generatedPasswordLength := 32
 
 	t.Run("no changes", func(t *testing.T) {
-
 		changed, _, _, err := generatePassword(username, password, passwordType, generateNewPassword, generatedPasswordLength)
-
 		if err != nil {
 			t.Error(err)
 			return
@@ -48,7 +46,6 @@ func TestGeneratePassword(t *testing.T) {
 
 		t.Run("valid", func(t *testing.T) {
 			changed, newPassword, _, err := generatePassword(username, password, passwordType, generateNewPassword, generatedPasswordLength)
-
 			if err != nil {
 				t.Error(err)
 				return
@@ -66,7 +63,6 @@ func TestGeneratePassword(t *testing.T) {
 		t.Run("does not override custom password", func(t *testing.T) {
 			password := "custom"
 			changed, newPassword, _, err := generatePassword(username, password, passwordType, generateNewPassword, generatedPasswordLength)
-
 			if err != nil {
 				t.Error(err)
 				return
@@ -84,7 +80,6 @@ func TestGeneratePassword(t *testing.T) {
 		t.Run("password length can be adjusted", func(t *testing.T) {
 			generatedPasswordLength := 16
 			changed, newPassword, _, err := generatePassword(username, password, passwordType, generateNewPassword, generatedPasswordLength)
-
 			if err != nil {
 				t.Error(err)
 				return
@@ -102,7 +97,6 @@ func TestGeneratePassword(t *testing.T) {
 		t.Run("should be nonzero length", func(t *testing.T) {
 			generatedPasswordLength := 0
 			changed, newPassword, _, err := generatePassword(username, password, passwordType, generateNewPassword, generatedPasswordLength)
-
 			if err != nil {
 				t.Error(err)
 				return
@@ -125,7 +119,6 @@ func TestGeneratePassword(t *testing.T) {
 		t.Run("md5", func(t *testing.T) {
 			changed, _, hashedPassword, err := generatePassword(username, password,
 				passwordType, generateNewPassword, generatedPasswordLength)
-
 			if err != nil {
 				t.Error(err)
 				return
@@ -144,7 +137,6 @@ func TestGeneratePassword(t *testing.T) {
 			passwordType := pgpassword.SCRAM
 			changed, _, hashedPassword, err := generatePassword(username, password,
 				passwordType, generateNewPassword, generatedPasswordLength)
-
 			if err != nil {
 				t.Error(err)
 				return
@@ -159,5 +151,4 @@ func TestGeneratePassword(t *testing.T) {
 			}
 		})
 	})
-
 }

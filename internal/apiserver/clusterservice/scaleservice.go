@@ -117,14 +117,14 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 
 	if clientVersion != msgs.PGO_VERSION {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -132,7 +132,7 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	resp = ScaleCluster(clusterName, replicaCount, storageConfig, nodeLabel,
 		ccpImageTag, serviceType, ns, username)
 
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // ScaleQueryHandler ...
@@ -190,19 +190,19 @@ func ScaleQueryHandler(w http.ResponseWriter, r *http.Request) {
 
 	if clientVersion != msgs.PGO_VERSION {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = ScaleQuery(clusterName, ns)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // ScaleDownHandler ...
@@ -273,23 +273,23 @@ func ScaleDownHandler(w http.ResponseWriter, r *http.Request) {
 	deleteData, err := strconv.ParseBool(tmp)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	if clientVersion != msgs.PGO_VERSION {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = ScaleDown(deleteData, clusterName, replicaName, ns)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }

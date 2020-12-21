@@ -101,7 +101,6 @@ func Cat(request *msgs.CatRequest, ns string) msgs.CatResponse {
 // run cat on the postgres pod, remember we are assuming
 // first container in the pod is always the postgres container.
 func cat(pod *v1.Pod, ns string, args []string) (string, error) {
-
 	command := make([]string, 0)
 	command = append(command, "cat")
 	for i := 1; i < len(args); i++ {
@@ -120,10 +119,10 @@ func cat(pod *v1.Pod, ns string, args []string) (string, error) {
 	return stdout, err
 }
 
-//make sure the parameters to the cat command dont' container mischief
+// make sure the parameters to the cat command dont' container mischief
 func validateArgs(args []string) error {
 	var err error
-	var bad = "&|;>"
+	bad := "&|;>"
 
 	for i := 1; i < len(args); i++ {
 		if strings.ContainsAny(args[i], bad) {

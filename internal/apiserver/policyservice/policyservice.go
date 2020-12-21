@@ -65,7 +65,7 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -73,7 +73,7 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -95,7 +95,7 @@ func CreatePolicyHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // DeletePolicyHandler ...
@@ -145,7 +145,7 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	if clientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -153,14 +153,13 @@ func DeletePolicyHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = DeletePolicy(apiserver.Clientset, policyname, ns, username)
 
-	json.NewEncoder(w).Encode(resp)
-
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // ShowPolicyHandler ...
@@ -212,7 +211,7 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	if clientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -220,14 +219,13 @@ func ShowPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp.PolicyList = ShowPolicy(apiserver.Clientset, policyname, request.AllFlag, ns)
 
-	json.NewEncoder(w).Encode(resp)
-
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // ApplyPolicyHandler ...
@@ -271,10 +269,10 @@ func ApplyPolicyHandler(w http.ResponseWriter, r *http.Request) {
 	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = ApplyPolicy(&request, ns, username)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }

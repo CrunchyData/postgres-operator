@@ -25,9 +25,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var LabelCmdLabel string
-var LabelMap map[string]string
-var DeleteLabel bool
+var (
+	LabelCmdLabel string
+	LabelMap      map[string]string
+	DeleteLabel   bool
+)
 
 var labelCmd = &cobra.Command{
 	Use:   "label",
@@ -61,7 +63,6 @@ func init() {
 	labelCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	labelCmd.Flags().StringVarP(&LabelCmdLabel, "label", "", "", "The new label to apply for any selected or specified clusters.")
 	labelCmd.Flags().BoolVarP(&DryRun, "dry-run", "", false, "Shows the clusters that the label would be applied to, without labelling them.")
-
 }
 
 func labelClusters(clusters []string, ns string) {
@@ -100,7 +101,6 @@ func labelClusters(clusters []string, ns string) {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
-
 }
 
 // deleteLabel ...
@@ -127,5 +127,4 @@ func deleteLabel(args []string, ns string) {
 	} else {
 		fmt.Println("Error: " + response.Status.Msg)
 	}
-
 }

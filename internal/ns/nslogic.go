@@ -43,20 +43,28 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-const OPERATOR_SERVICE_ACCOUNT = "postgres-operator"
-const PGO_DEFAULT_SERVICE_ACCOUNT = "pgo-default"
+const (
+	OPERATOR_SERVICE_ACCOUNT    = "postgres-operator"
+	PGO_DEFAULT_SERVICE_ACCOUNT = "pgo-default"
+)
 
-const PGO_TARGET_ROLE = "pgo-target-role"
-const PGO_TARGET_ROLE_BINDING = "pgo-target-role-binding"
-const PGO_TARGET_SERVICE_ACCOUNT = "pgo-target"
+const (
+	PGO_TARGET_ROLE            = "pgo-target-role"
+	PGO_TARGET_ROLE_BINDING    = "pgo-target-role-binding"
+	PGO_TARGET_SERVICE_ACCOUNT = "pgo-target"
+)
 
-const PGO_BACKREST_ROLE = "pgo-backrest-role"
-const PGO_BACKREST_SERVICE_ACCOUNT = "pgo-backrest"
-const PGO_BACKREST_ROLE_BINDING = "pgo-backrest-role-binding"
+const (
+	PGO_BACKREST_ROLE            = "pgo-backrest-role"
+	PGO_BACKREST_SERVICE_ACCOUNT = "pgo-backrest"
+	PGO_BACKREST_ROLE_BINDING    = "pgo-backrest-role-binding"
+)
 
-const PGO_PG_ROLE = "pgo-pg-role"
-const PGO_PG_ROLE_BINDING = "pgo-pg-role-binding"
-const PGO_PG_SERVICE_ACCOUNT = "pgo-pg"
+const (
+	PGO_PG_ROLE            = "pgo-pg-role"
+	PGO_PG_ROLE_BINDING    = "pgo-pg-role-binding"
+	PGO_PG_SERVICE_ACCOUNT = "pgo-pg"
+)
 
 // PgoServiceAccount is used to populate the following ServiceAccount templates:
 // pgo-default-sa.json
@@ -135,7 +143,6 @@ var (
 // CreateFakeNamespaceClient creates a fake namespace client for use with the "disabled" namespace
 // operating mode
 func CreateFakeNamespaceClient(installationName string) (kubernetes.Interface, error) {
-
 	var namespaces []runtime.Object
 	for _, namespace := range getNamespacesFromEnv() {
 		namespaces = append(namespaces, &v1.Namespace{
@@ -161,7 +168,7 @@ func CreateNamespace(clientset kubernetes.Interface, installationName, pgoNamesp
 
 	log.Debugf("CreateNamespace %s %s %s", pgoNamespace, createdBy, newNs)
 
-	//define the new namespace
+	// define the new namespace
 	n := v1.Namespace{}
 	n.ObjectMeta.Labels = make(map[string]string)
 	n.ObjectMeta.Labels[config.LABEL_VENDOR] = config.LABEL_CRUNCHY
@@ -177,7 +184,7 @@ func CreateNamespace(clientset kubernetes.Interface, installationName, pgoNamesp
 
 	log.Debugf("CreateNamespace %s created by %s", newNs, createdBy)
 
-	//publish event
+	// publish event
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicPGO
 
@@ -206,7 +213,7 @@ func DeleteNamespace(clientset kubernetes.Interface, installationName, pgoNamesp
 
 	log.Debugf("DeleteNamespace %s deleted by %s", ns, deletedBy)
 
-	//publish the namespace delete event
+	// publish the namespace delete event
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicPGO
 
@@ -441,7 +448,7 @@ func UpdateNamespace(clientset kubernetes.Interface, installationName, pgoNamesp
 		return err
 	}
 
-	//publish event
+	// publish event
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicPGO
 
@@ -567,7 +574,6 @@ func GetCurrentNamespaceList(clientset kubernetes.Interface,
 func ValidateNamespacesWatched(clientset kubernetes.Interface,
 	namespaceOperatingMode NamespaceOperatingMode,
 	installationName string, namespaces ...string) error {
-
 	var err error
 	var currNSList []string
 	if namespaceOperatingMode != NamespaceOperatingModeDisabled {
@@ -640,7 +646,6 @@ func ValidateNamespaceNames(namespace ...string) error {
 // (please see the various NamespaceOperatingMode types for a detailed explanation of each
 // operating mode).
 func GetNamespaceOperatingMode(clientset kubernetes.Interface) (NamespaceOperatingMode, error) {
-
 	// first check to see if dynamic namespace capabilities can be enabled
 	isDynamic, err := CheckAccessPrivs(clientset, namespacePrivsCoreDynamic, "", "")
 	if err != nil {
@@ -710,7 +715,6 @@ func CheckAccessPrivs(clientset kubernetes.Interface,
 func GetInitialNamespaceList(clientset kubernetes.Interface,
 	namespaceOperatingMode NamespaceOperatingMode,
 	installationName, pgoNamespace string) ([]string, error) {
-
 	// next grab the namespaces provided using the NAMESPACE env var
 	namespaceList := getNamespacesFromEnv()
 

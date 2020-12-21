@@ -33,11 +33,9 @@ func init() {
 	RootCmd.AddCommand(statusCmd)
 
 	statusCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, json is the only supported value.")
-
 }
 
 func showStatus(args []string, ns string) {
-
 	log.Debugf("showStatus called %v", args)
 
 	if OutputFormat != "" && OutputFormat != "json" {
@@ -46,7 +44,6 @@ func showStatus(args []string, ns string) {
 	}
 
 	response, err := api.ShowStatus(httpclient, &SessionCredentials, ns)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -67,11 +64,9 @@ func showStatus(args []string, ns string) {
 	}
 
 	printSummary(&response.Result)
-
 }
 
 func printSummary(status *msgs.StatusDetail) {
-
 	WID := 25
 	fmt.Printf("%s%d\n", util.Rpad("Databases:", " ", WID), status.NumDatabases)
 	fmt.Printf("%s%d\n", util.Rpad("Claims:", " ", WID), status.NumClaims)

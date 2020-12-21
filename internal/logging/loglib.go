@@ -1,4 +1,4 @@
-//Package logging Functions to set unique configuration for use with the logrus logger
+// Package logging Functions to set unique configuration for use with the logrus logger
 package logging
 
 /*
@@ -34,7 +34,7 @@ func SetParameters() LogValues {
 	return logval
 }
 
-//LogValues holds the standard log value types
+// LogValues holds the standard log value types
 type LogValues struct {
 	version string
 }
@@ -53,9 +53,9 @@ func (f *formatter) Format(e *log.Entry) ([]byte, error) {
 	return f.lf.Format(e)
 }
 
-//CrunchyLogger adds the customized logging fields to the logrus instance context
+// CrunchyLogger adds the customized logging fields to the logrus instance context
 func CrunchyLogger(logDetails LogValues) {
-	//Sets calling method as a field
+	// Sets calling method as a field
 	log.SetReportCaller(true)
 
 	crunchyTextFormatter := &log.TextFormatter{

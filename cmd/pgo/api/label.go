@@ -18,13 +18,13 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func LabelClusters(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.LabelRequest) (msgs.LabelResponse, error) {
-
 	var response msgs.LabelResponse
 	url := SessionCredentials.APIServerURL + "/label"
 	log.Debugf("label called...[%s]", url)
@@ -61,7 +61,6 @@ func LabelClusters(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 }
 
 func DeleteLabel(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.DeleteLabelRequest) (msgs.LabelResponse, error) {
-
 	var response msgs.LabelResponse
 	url := SessionCredentials.APIServerURL + "/labeldelete"
 	log.Debugf("delete label called...[%s]", url)

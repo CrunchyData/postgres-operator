@@ -77,7 +77,7 @@ func AddUpgrade(clientset kubeapi.Interface, upgrade *crv1.Pgtask, namespace str
 	}
 
 	// update the workflow status to 'in progress' while the upgrade takes place
-	updateUpgradeWorkflow(clientset, namespace, upgrade.ObjectMeta.Labels[crv1.PgtaskWorkflowID], crv1.PgtaskUpgradeInProgress)
+	_ = updateUpgradeWorkflow(clientset, namespace, upgrade.ObjectMeta.Labels[crv1.PgtaskWorkflowID], crv1.PgtaskUpgradeInProgress)
 
 	// grab the existing pgo version
 	oldpgoversion := pgcluster.ObjectMeta.Labels[config.LABEL_PGO_VERSION]
@@ -100,10 +100,10 @@ func AddUpgrade(clientset kubeapi.Interface, upgrade *crv1.Pgtask, namespace str
 	SetReplicaNumber(pgcluster, replicas)
 
 	// create the 'pgha-config' configmap while taking the init value from any existing 'pgha-default-config' configmap
-	createUpgradePGHAConfigMap(clientset, pgcluster, namespace)
+	_ = createUpgradePGHAConfigMap(clientset, pgcluster, namespace)
 
 	// delete the existing pgcluster CRDs and other resources that will be recreated
-	deleteBeforeUpgrade(clientset, pgcluster.Name, currentPrimary, namespace, pgcluster.Spec.Standby)
+	deleteBeforeUpgrade(clientset, pgcluster.Name, currentPrimary, namespace)
 
 	// recreate new Backrest Repo secret that was just deleted
 	recreateBackrestRepoSecret(clientset, upgradeTargetClusterName, namespace, operator.PgoNamespace)
@@ -222,14 +222,14 @@ func handleReplicas(clientset kubeapi.Interface, clusterName, currentPrimaryPVC,
 			log.Debugf("scaling down pgreplica: %s", replicaList.Items[index].Name)
 			ScaleDownBase(clientset, &replicaList.Items[index], namespace)
 			log.Debugf("deleting pgreplica CRD: %s", replicaList.Items[index].Name)
-			clientset.CrunchydataV1().Pgreplicas(namespace).Delete(ctx, replicaList.Items[index].Name, metav1.DeleteOptions{})
+			_ = clientset.CrunchydataV1().Pgreplicas(namespace).Delete(ctx, replicaList.Items[index].Name, metav1.DeleteOptions{})
 			// if the existing replica PVC is not being used as the primary PVC, delete
 			// note this will not remove any leftover PVCs from previous failovers,
 			// those will require manual deletion so as to avoid any accidental
 			// deletion of valid PVCs.
 			if replicaList.Items[index].Name != currentPrimaryPVC {
 				deletePropagation := metav1.DeletePropagationForeground
-				clientset.
+				_ = clientset.
 					CoreV1().PersistentVolumeClaims(namespace).
 					Delete(ctx, replicaList.Items[index].Name, metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 				log.Debugf("deleting replica pvc: %s", replicaList.Items[index].Name)
@@ -256,7 +256,7 @@ func SetReplicaNumber(pgcluster *crv1.Pgcluster, numReplicas string) {
 // deleteBeforeUpgrade deletes the deployments, services, pgcluster, jobs, tasks and default configmaps before attempting
 // to upgrade the pgcluster deployment. This preserves existing secrets, non-standard configmaps and service definitions
 // for use in the newly upgraded cluster.
-func deleteBeforeUpgrade(clientset kubeapi.Interface, clusterName, currentPrimary, namespace string, isStandby bool) {
+func deleteBeforeUpgrade(clientset kubeapi.Interface, clusterName, currentPrimary, namespace string) {
 	ctx := context.TODO()
 
 	// first, get all deployments for the pgcluster in question
@@ -287,11 +287,11 @@ func deleteBeforeUpgrade(clientset kubeapi.Interface, clusterName, currentPrimar
 	log.Debug(waitStatus)
 
 	// delete the pgcluster
-	clientset.CrunchydataV1().Pgclusters(namespace).Delete(ctx, clusterName, metav1.DeleteOptions{})
+	_ = clientset.CrunchydataV1().Pgclusters(namespace).Delete(ctx, clusterName, metav1.DeleteOptions{})
 
 	// delete all existing job references
 	deletePropagation := metav1.DeletePropagationForeground
-	clientset.
+	_ = clientset.
 		BatchV1().Jobs(namespace).
 		DeleteCollection(ctx,
 			metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
@@ -307,11 +307,11 @@ func deleteBeforeUpgrade(clientset kubeapi.Interface, clusterName, currentPrimar
 	// delete the leader configmap used by the Postgres Operator since this information may change after
 	// the upgrade is complete
 	// Note: deletion is required for cluster recreation
-	clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, clusterName+"-leader", metav1.DeleteOptions{})
+	_ = clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, clusterName+"-leader", metav1.DeleteOptions{})
 
 	// delete the '<cluster-name>-pgha-default-config' configmap, if it exists so the config syncer
 	// will not try to use it instead of '<cluster-name>-pgha-config'
-	clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, clusterName+"-pgha-default-config", metav1.DeleteOptions{})
+	_ = clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, clusterName+"-pgha-default-config", metav1.DeleteOptions{})
 }
 
 // deploymentWait is modified from cluster.waitForDeploymentDelete. It simply waits for the current primary deployment

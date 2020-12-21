@@ -43,12 +43,16 @@ const (
 	defaultRegistry = "registry.developers.crunchydata.com/crunchydata"
 )
 
-var CRUNCHY_DEBUG bool
-var NAMESPACE string
+var (
+	CRUNCHY_DEBUG bool
+	NAMESPACE     string
+)
 
-var InstallationName string
-var PgoNamespace string
-var EventTCPAddress = "localhost:4150"
+var (
+	InstallationName string
+	PgoNamespace     string
+	EventTCPAddress  = "localhost:4150"
+)
 
 var Pgo config.PgoConfig
 
@@ -75,7 +79,6 @@ type containerResourcesTemplateFields struct {
 var defaultBackrestRepoConfigKeys = []string{"config", "sshd_config", "aws-s3-ca.crt"}
 
 func Initialize(clientset kubernetes.Interface) {
-
 	tmp := os.Getenv("CRUNCHY_DEBUG")
 	if tmp == "true" {
 		CRUNCHY_DEBUG = true
@@ -170,7 +173,6 @@ func GetPodSecurityContext(supplementalGroups []int64) string {
 
 	// ...convert to JSON. Errors are ignored
 	doc, err := json.Marshal(securityContext)
-
 	// if there happens to be an error, warn about it
 	if err != nil {
 		log.Warn(err)
@@ -223,7 +225,7 @@ func GetResourcesJSON(resources, limits v1.ResourceList) string {
 	}
 
 	if log.GetLevel() == log.DebugLevel {
-		config.ContainerResourcesTemplate.Execute(os.Stdout, fields)
+		_ = config.ContainerResourcesTemplate.Execute(os.Stdout, fields)
 	}
 
 	return doc.String()
@@ -314,7 +316,6 @@ func initializeControllerRefreshIntervals() {
 // attempting to utilize the worker counts defined in the pgo.yaml config file, and if not
 // present then falling back to a default value.
 func initializeControllerWorkerCounts() {
-
 	if Pgo.Pgo.ConfigMapWorkerCount == nil {
 		log.Debugf("ConfigMapWorkerCount not set, defaulting to %d worker(s)",
 			config.DefaultConfigMapWorkerCount)
@@ -377,8 +378,7 @@ func initializeOperatorBackrestSecret(clientset kubernetes.Interface, namespace 
 	secret, err := clientset.
 		CoreV1().Secrets(namespace).
 		Get(ctx, config.SecretOperatorBackrestRepoConfig, metav1.GetOptions{})
-
-	// if there is a true error, return. Otherwise, initialize a new Secret
+		// if there is a true error, return. Otherwise, initialize a new Secret
 	if err != nil {
 		if !kerrors.IsNotFound(err) {
 			return err
@@ -436,7 +436,6 @@ func initializeOperatorBackrestSecret(clientset kubernetes.Interface, namespace 
 // namespaces as needed (or as permitted by the current operator mode), and returning a valid list
 // of namespaces for the current Operator install.
 func SetupNamespaces(clientset kubernetes.Interface) ([]string, error) {
-
 	// First set the proper namespace operating mode for the Operator install.  The mode identified
 	// determines whether or not certain namespace capabilities are enabled.
 	if err := setNamespaceOperatingMode(clientset); err != nil {

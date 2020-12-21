@@ -57,7 +57,6 @@ func createBackrestBackup(args []string, ns string) {
 		fmt.Println("No clusters found.")
 		return
 	}
-
 }
 
 // showBackrest ....
@@ -84,8 +83,8 @@ func showBackrest(args []string, ns string) {
 		log.Debugf("response = %v", response)
 		log.Debugf("len of items = %d", len(response.Items))
 
-		for _, backup := range response.Items {
-			printBackrest(&backup)
+		for i := range response.Items {
+			printBackrest(&response.Items[i])
 		}
 	}
 }

@@ -72,7 +72,7 @@ func CreateRmdataJob(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespa
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		config.RmdatajobTemplate.Execute(os.Stdout, jobFields)
+		_ = config.RmdatajobTemplate.Execute(os.Stdout, jobFields)
 	}
 
 	newjob := v1batch.Job{}

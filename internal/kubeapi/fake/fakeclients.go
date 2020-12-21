@@ -55,7 +55,6 @@ var (
 // initialization of the Operator in various unit tests where the various resources loaded
 // during initialization (e.g. templates, config and/or global variables) are required.
 func NewFakePGOClient() (kubeapi.Interface, error) {
-
 	if pgoRoot == "" {
 		return nil, errors.New("Environment variable PGOROOT must be set to the root directory " +
 			"of the PostgreSQL Operator project repository in order to create a fake client")
@@ -84,7 +83,6 @@ func NewFakePGOClient() (kubeapi.Interface, error) {
 // utilized when testing to similate and environment containing the various PostgreSQL Operator
 // configuration files (e.g. templates) required to run the Operator.
 func createMockPGOConfigMap(pgoNamespace string) (*v1.ConfigMap, error) {
-
 	// create a configMap that will hold the default configs
 	pgoConfigMap := &v1.ConfigMap{
 		Data: make(map[string]string),

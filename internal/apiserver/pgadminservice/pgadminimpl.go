@@ -183,7 +183,6 @@ func ShowPgAdmin(request *msgs.ShowPgAdminRequest, namespace string) msgs.ShowPg
 	// try to get the list of clusters. if there is an error, put it into the
 	// status and return
 	clusterList, err := getClusterList(request.Namespace, request.ClusterNames, request.Selector)
-
 	if err != nil {
 		response.SetError(err.Error())
 		return response
@@ -191,7 +190,8 @@ func ShowPgAdmin(request *msgs.ShowPgAdminRequest, namespace string) msgs.ShowPg
 
 	// iterate through the list of clusters to get the relevant pgAdmin
 	// information about them
-	for _, cluster := range clusterList.Items {
+	for i := range clusterList.Items {
+		cluster := &clusterList.Items[i]
 		result := msgs.ShowPgAdminDetail{
 			ClusterName: cluster.Spec.Name,
 			HasPgAdmin:  true,
@@ -228,7 +228,7 @@ func ShowPgAdmin(request *msgs.ShowPgAdminRequest, namespace string) msgs.ShowPg
 
 		// In the future, construct results to contain individual error stati
 		// for now log and return empty content if encountered
-		qr, err := pgadmin.GetPgAdminQueryRunner(apiserver.Clientset, apiserver.RESTConfig, &cluster)
+		qr, err := pgadmin.GetPgAdminQueryRunner(apiserver.Clientset, apiserver.RESTConfig, cluster)
 		if err != nil {
 			log.Error(err)
 			continue
@@ -267,8 +267,7 @@ func getClusterList(namespace string, clusterNames []string, selector string) (c
 		cl, err := apiserver.Clientset.
 			CrunchydataV1().Pgclusters(namespace).
 			List(ctx, metav1.ListOptions{LabelSelector: selector})
-
-		// if there is an error, return here with an empty cluster list
+			// if there is an error, return here with an empty cluster list
 		if err != nil {
 			return crv1.PgclusterList{}, err
 		}
@@ -278,7 +277,6 @@ func getClusterList(namespace string, clusterNames []string, selector string) (c
 	// now try to get clusters based specific cluster names
 	for _, clusterName := range clusterNames {
 		cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
-
 		// if there is an error, capture it here and return here with an empty list
 		if err != nil {
 			return crv1.PgclusterList{}, err

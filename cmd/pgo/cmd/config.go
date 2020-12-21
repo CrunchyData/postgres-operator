@@ -28,11 +28,9 @@ import (
 )
 
 func showConfig(args []string, ns string) {
-
 	log.Debugf("showConfig called %v", args)
 
 	response, err := api.ShowConfig(httpclient, &SessionCredentials, ns)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -60,5 +58,4 @@ func showConfig(args []string, ns string) {
 	}
 
 	fmt.Println(string(y))
-
 }

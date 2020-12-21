@@ -54,7 +54,7 @@ func showNamespace(args []string) {
 	r.Args = nsList
 	r.AllFlag = AllFlag
 
-	if len(nsList) == 0 && AllFlag == false {
+	if len(nsList) == 0 && !AllFlag {
 		fmt.Println("Error: namespace args or --all is required")
 		os.Exit(2)
 	}
@@ -62,7 +62,6 @@ func showNamespace(args []string) {
 	log.Debugf("showNamespace called %v", nsList)
 
 	response, err := api.ShowNamespace(httpclient, &SessionCredentials, &r)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -107,7 +106,6 @@ func showNamespace(args []string) {
 		fmt.Printf("%s", accessible)
 		fmt.Printf("%s\n", iAccessible)
 	}
-
 }
 
 func createNamespace(args []string, ns string) {
@@ -167,8 +165,8 @@ func deleteNamespace(args []string, ns string) {
 	} else {
 		fmt.Println("Error: " + response.Status.Msg)
 	}
-
 }
+
 func updateNamespace(args []string) {
 	var err error
 
@@ -182,7 +180,6 @@ func updateNamespace(args []string) {
 	r.ClientVersion = msgs.PGO_VERSION
 
 	response, err := api.UpdateNamespace(httpclient, r, &SessionCredentials)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -194,5 +191,4 @@ func updateNamespace(args []string) {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
-
 }

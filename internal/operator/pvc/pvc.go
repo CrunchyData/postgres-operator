@@ -152,7 +152,7 @@ func Create(clientset kubernetes.Interface, name, clusterName string, storageSpe
 		log.Debug("using dynamic PVC template")
 		err = config.PVCStorageClassTemplate.Execute(&doc2, pvcFields)
 		if operator.CRUNCHY_DEBUG {
-			config.PVCStorageClassTemplate.Execute(os.Stdout, pvcFields)
+			_ = config.PVCStorageClassTemplate.Execute(os.Stdout, pvcFields)
 		}
 	} else {
 		log.Debugf("matchlabels from spec is [%s]", storageSpec.MatchLabels)
@@ -168,7 +168,7 @@ func Create(clientset kubernetes.Interface, name, clusterName string, storageSpe
 
 		err = config.PVCTemplate.Execute(&doc2, pvcFields)
 		if operator.CRUNCHY_DEBUG {
-			config.PVCTemplate.Execute(os.Stdout, pvcFields)
+			_ = config.PVCTemplate.Execute(os.Stdout, pvcFields)
 		}
 	}
 	if err != nil {
@@ -217,7 +217,6 @@ func Exists(clientset kubernetes.Interface, name string, namespace string) bool 
 }
 
 func getMatchLabels(key, value string) string {
-
 	matchLabelsTemplateFields := matchLabelsTemplateFields{}
 	matchLabelsTemplateFields.Key = key
 	matchLabelsTemplateFields.Value = value
@@ -230,5 +229,4 @@ func getMatchLabels(key, value string) string {
 	}
 
 	return doc.String()
-
 }

@@ -22,7 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func publishBackupComplete(clusterName, clusterIdentifier, username, backuptype, namespace, path string) {
+func publishBackupComplete(clusterName, username, backuptype, namespace, path string) {
 	topics := make([]string, 2)
 	topics[0] = events.EventTopicCluster
 	topics[1] = events.EventTopicBackup
@@ -44,10 +44,9 @@ func publishBackupComplete(clusterName, clusterIdentifier, username, backuptype,
 	if err != nil {
 		log.Error(err.Error())
 	}
-
 }
 
-func publishRestoreComplete(clusterName, identifier, username, namespace string) {
+func publishRestoreComplete(clusterName, username, namespace string) {
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 
@@ -66,10 +65,9 @@ func publishRestoreComplete(clusterName, identifier, username, namespace string)
 	if err != nil {
 		log.Error(err.Error())
 	}
-
 }
 
-func publishDeleteClusterComplete(clusterName, identifier, username, namespace string) {
+func publishDeleteClusterComplete(clusterName, username, namespace string) {
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 

@@ -40,6 +40,7 @@ const (
 )
 
 // Apply provides a new time with respect to t based on the jitter mode
+// #nosec: G404
 func (jm Jitter) Apply(t time.Duration) time.Duration {
 	switch jm {
 	case JitterNone: // being explicit in case default case changes

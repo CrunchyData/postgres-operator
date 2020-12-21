@@ -17,11 +17,12 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"net/http"
+
 	apiserver "github.com/crunchydata/postgres-operator/internal/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/validation"
-	"net/http"
 )
 
 func CreatePgoroleHandler(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +64,7 @@ func CreatePgoroleHandler(w http.ResponseWriter, r *http.Request) {
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -75,7 +76,7 @@ func CreatePgoroleHandler(w http.ResponseWriter, r *http.Request) {
 		resp = CreatePgorole(apiserver.Clientset, rolename, &request)
 	}
 
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 func DeletePgoroleHandler(w http.ResponseWriter, r *http.Request) {
@@ -117,14 +118,13 @@ func DeletePgoroleHandler(w http.ResponseWriter, r *http.Request) {
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = DeletePgorole(apiserver.Clientset, rolename, &request)
 
-	json.NewEncoder(w).Encode(resp)
-
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 func ShowPgoroleHandler(w http.ResponseWriter, r *http.Request) {
@@ -167,14 +167,13 @@ func ShowPgoroleHandler(w http.ResponseWriter, r *http.Request) {
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = ShowPgorole(apiserver.Clientset, &request)
 
-	json.NewEncoder(w).Encode(resp)
-
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 func UpdatePgoroleHandler(w http.ResponseWriter, r *http.Request) {
@@ -213,5 +212,5 @@ func UpdatePgoroleHandler(w http.ResponseWriter, r *http.Request) {
 	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
 	resp = UpdatePgorole(apiserver.Clientset, rolename, &request)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
