@@ -2,6 +2,7 @@
 
 linters:
   disable:
+    - gofumpt
     - scopelint
   enable:
     - gosimple
@@ -10,6 +11,10 @@ linters:
     - bugs
     - format
     - unused
+
+linters-settings:
+  exhaustive:
+    default-signifies-exhaustive: true
 
 run:
   skip-dirs:
