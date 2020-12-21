@@ -35,7 +35,7 @@ import (
 )
 
 // CreatePolicy ...
-func CreatePolicy(client pgo.Interface, policyName, policyURL, policyFile, ns, pgouser string) (bool, error) {
+func CreatePolicy(client pgo.Interface, policyName, policyFile, ns, pgouser string) (bool, error) {
 	ctx := context.TODO()
 
 	log.Debugf("create policy called for %s", policyName)
@@ -44,7 +44,6 @@ func CreatePolicy(client pgo.Interface, policyName, policyURL, policyFile, ns, p
 	spec := crv1.PgpolicySpec{}
 	spec.Namespace = ns
 	spec.Name = policyName
-	spec.URL = policyURL
 	spec.SQL = policyFile
 
 	myLabels := make(map[string]string)

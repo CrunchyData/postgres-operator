@@ -33,7 +33,6 @@ type ShowPolicyRequest struct {
 // swagger:model
 type CreatePolicyRequest struct {
 	Name          string
-	URL           string
 	SQL           string
 	Namespace     string
 	ClientVersion string
