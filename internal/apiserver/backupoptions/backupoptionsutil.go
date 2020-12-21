@@ -89,7 +89,8 @@ func convertBackupOptsToStruct(backupOpts string, request interface{}) (backupOp
 				commandLine.BoolVarP(fieldVal.Addr().Interface().(*bool), flag, flagShort, false, "")
 			case reflect.Slice:
 				commandLine.StringArrayVarP(fieldVal.Addr().Interface().(*[]string), flag, flagShort, nil, "")
-			default: // no-op
+			default:
+				return nil, nil, fmt.Errorf("invalid value for (%q/%q): %v", flag, flagShort, fieldVal)
 			}
 		}
 	}
