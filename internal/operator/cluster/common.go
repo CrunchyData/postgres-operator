@@ -83,6 +83,7 @@ func generatePassword() (string, error) {
 
 // makePostgreSQLPassword creates the expected hash for a password type for a
 // PostgreSQL password
+// nolint:unparam // this is set up to accept SCRAM in the not-too-distant future
 func makePostgreSQLPassword(passwordType pgpassword.PasswordType, username, password string) string {
 	// get the PostgreSQL password generate based on the password type
 	// as all of these values are valid, this not not error

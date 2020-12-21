@@ -32,8 +32,8 @@ import (
 func New(label, namespace string, client kubeapi.Interface) *Scheduler {
 	clientset = client
 	cronClient := cv3.New()
-	cronClient.AddFunc("* * * * *", phony)
-	cronClient.AddFunc("* * * * *", heartbeat)
+	_, _ = cronClient.AddFunc("* * * * *", phony)
+	_, _ = cronClient.AddFunc("* * * * *", heartbeat)
 
 	return &Scheduler{
 		namespace:  namespace,
@@ -56,17 +56,17 @@ func (s *Scheduler) AddSchedule(config *v1.ConfigMap) error {
 	var schedule ScheduleTemplate
 	for _, data := range config.Data {
 		if err := json.Unmarshal([]byte(data), &schedule); err != nil {
-			return fmt.Errorf("Failed unmarhsaling configMap: %s", err)
+			return fmt.Errorf("Failed unmarhsaling configMap: %w", err)
 		}
 	}
 
 	if err := validate(schedule); err != nil {
-		return fmt.Errorf("Failed to validate schedule: %s", err)
+		return fmt.Errorf("Failed to validate schedule: %w", err)
 	}
 
 	id, err := s.schedule(schedule)
 	if err != nil {
-		return fmt.Errorf("Failed to schedule configmap: %s", err)
+		return fmt.Errorf("Failed to schedule configmap: %w", err)
 	}
 
 	log.WithFields(log.Fields{
@@ -117,7 +117,8 @@ func phony() {
 // heartbeat modifies a sentinel file used as part of the liveness test
 // for the scheduler
 func heartbeat() {
-	err := ioutil.WriteFile("/tmp/scheduler.hb", []byte(time.Now().String()), 0644)
+	// #nosec: G303
+	err := ioutil.WriteFile("/tmp/scheduler.hb", []byte(time.Now().String()), 0o600)
 	if err != nil {
 		log.Errorln("error writing heartbeat file: ", err)
 	}

@@ -65,5 +65,4 @@ func main() {
 	log.Infof("request is %s", request.String())
 
 	Delete(request)
-
 }

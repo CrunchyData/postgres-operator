@@ -18,13 +18,13 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func RestoreDump(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.PgRestoreRequest) (msgs.RestoreResponse, error) {
-
 	var response msgs.RestoreResponse
 
 	jsonValue, _ := json.Marshal(request)

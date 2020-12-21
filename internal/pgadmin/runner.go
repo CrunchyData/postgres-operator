@@ -102,7 +102,7 @@ func (qr *queryRunner) EnsureReady() error {
 			cmd, qr.Pod.Spec.Containers[0].Name, qr.Pod.Name, qr.Namespace, nil)
 
 		if err != nil && !strings.Contains(stderr, "no such table") {
-			lastError = fmt.Errorf("%v - %v", err, stderr)
+			lastError = fmt.Errorf("%w - %v", err, stderr)
 			nextRoundIn := qr.BackoffPolicy.Duration(i)
 			log.Debugf("[InitWait attempt %02d]: %v - retry in %v", i, err, nextRoundIn)
 			time.Sleep(nextRoundIn)
@@ -121,7 +121,7 @@ func (qr *queryRunner) EnsureReady() error {
 		}
 	}
 	if lastError != nil && output == "" {
-		return fmt.Errorf("error executing query: %v", lastError)
+		return fmt.Errorf("error executing query: %w", lastError)
 	}
 
 	return nil
@@ -141,7 +141,7 @@ func (qr *queryRunner) Exec(query string) error {
 		_, stderr, err := kubeapi.ExecToPodThroughAPI(qr.apicfg, qr.clientset,
 			cmd, qr.Pod.Spec.Containers[0].Name, qr.Pod.Name, qr.Namespace, nil)
 		if err != nil {
-			lastError = fmt.Errorf("%v - %v", err, stderr)
+			lastError = fmt.Errorf("%w - %v", err, stderr)
 			nextRoundIn := qr.BackoffPolicy.Duration(i)
 			log.Debugf("[Exec attempt %02d]: %v - retry in %v", i, err, nextRoundIn)
 			time.Sleep(nextRoundIn)
@@ -151,7 +151,7 @@ func (qr *queryRunner) Exec(query string) error {
 		}
 	}
 	if lastError != nil {
-		return fmt.Errorf("error executing query: %vv", lastError)
+		return fmt.Errorf("error executing query: %w", lastError)
 	}
 
 	return nil
@@ -178,7 +178,7 @@ func (qr *queryRunner) Query(query string) (string, error) {
 		stdout, stderr, err := kubeapi.ExecToPodThroughAPI(qr.apicfg, qr.clientset,
 			cmd, qr.Pod.Spec.Containers[0].Name, qr.Pod.Name, qr.Namespace, nil)
 		if err != nil {
-			lastError = fmt.Errorf("%v - %v", err, stderr)
+			lastError = fmt.Errorf("%w - %v", err, stderr)
 			nextRoundIn := qr.BackoffPolicy.Duration(i)
 			log.Debugf("[Query attempt %02d]: %v - retry in %v", i, err, nextRoundIn)
 			time.Sleep(nextRoundIn)
@@ -189,7 +189,7 @@ func (qr *queryRunner) Query(query string) (string, error) {
 		}
 	}
 	if lastError != nil && output == "" {
-		return "", fmt.Errorf("error executing query: %v", lastError)
+		return "", fmt.Errorf("error executing query: %w", lastError)
 	}
 
 	return output, nil

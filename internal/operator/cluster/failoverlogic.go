@@ -54,19 +54,19 @@ func Failover(identifier string, clientset kubeapi.Interface, clusterName string
 	}
 	log.Debugf("pod selected to failover to is %s", pod.Name)
 
-	updateFailoverStatus(clientset, task, namespace, clusterName, "deleted primary deployment "+clusterName)
+	updateFailoverStatus(clientset, task, namespace, "deleted primary deployment "+clusterName)
 
-	//trigger the failover to the selected replica
+	// trigger the failover to the selected replica
 	if err := promote(pod, clientset, namespace, restconfig); err != nil {
 		log.Warn(err)
 	}
 
-	publishPromoteEvent(identifier, namespace, task.ObjectMeta.Labels[config.LABEL_PGOUSER], clusterName, target)
+	publishPromoteEvent(namespace, task.ObjectMeta.Labels[config.LABEL_PGOUSER], clusterName, target)
 
-	updateFailoverStatus(clientset, task, namespace, clusterName, "promoting pod "+pod.Name+" target "+target)
+	updateFailoverStatus(clientset, task, namespace, "promoting pod "+pod.Name+" target "+target)
 
-	//relabel the deployment with primary labels
-	//by setting service-name=clustername
+	// relabel the deployment with primary labels
+	// by setting service-name=clustername
 	upod, err := clientset.CoreV1().Pods(namespace).Get(ctx, pod.Name, metav1.GetOptions{})
 	if err != nil {
 		log.Error(err)
@@ -74,8 +74,8 @@ func Failover(identifier string, clientset kubeapi.Interface, clusterName string
 		return err
 	}
 
-	//set the service-name label to the cluster name to match
-	//the primary service selector
+	// set the service-name label to the cluster name to match
+	// the primary service selector
 	log.Debugf("setting label on pod %s=%s", config.LABEL_SERVICE_NAME, clusterName)
 
 	patch, err := kubeapi.NewMergePatch().Add("metadata", "labels", config.LABEL_SERVICE_NAME)(clusterName).Bytes()
@@ -100,9 +100,9 @@ func Failover(identifier string, clientset kubeapi.Interface, clusterName string
 		return err
 	}
 
-	updateFailoverStatus(clientset, task, namespace, clusterName, "updating label deployment...pod "+pod.Name+"was the failover target...failover completed")
+	updateFailoverStatus(clientset, task, namespace, "updating label deployment...pod "+pod.Name+"was the failover target...failover completed")
 
-	//update the pgcluster current-primary to new deployment name
+	// update the pgcluster current-primary to new deployment name
 	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
 	if err != nil {
 		log.Errorf("could not find pgcluster %s with labels", clusterName)
@@ -117,15 +117,14 @@ func Failover(identifier string, clientset kubeapi.Interface, clusterName string
 	}
 
 	return nil
-
 }
 
-func updateFailoverStatus(clientset pgo.Interface, task *crv1.Pgtask, namespace, clusterName, message string) {
+func updateFailoverStatus(clientset pgo.Interface, task *crv1.Pgtask, namespace, message string) {
 	ctx := context.TODO()
 
 	log.Debugf("updateFailoverStatus namespace=[%s] taskName=[%s] message=[%s]", namespace, task.Name, message)
 
-	//update the task
+	// update the task
 	t, err := clientset.CrunchydataV1().Pgtasks(task.Namespace).Get(ctx, task.Name, metav1.GetOptions{})
 	if err != nil {
 		return
@@ -139,14 +138,12 @@ func updateFailoverStatus(clientset pgo.Interface, task *crv1.Pgtask, namespace,
 		return
 	}
 	*task = *t
-
 }
 
 func promote(
 	pod *v1.Pod,
 	clientset kubernetes.Interface,
 	namespace string, restconfig *rest.Config) error {
-
 	// generate the curl command that will be run on the pod selected for the failover in order
 	// to trigger the failover and promote that specific pod to primary
 	command := make([]string, 3)
@@ -165,7 +162,7 @@ func promote(
 	return err
 }
 
-func publishPromoteEvent(identifier, namespace, username, clusterName, target string) {
+func publishPromoteEvent(namespace, username, clusterName, target string) {
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 
@@ -185,7 +182,6 @@ func publishPromoteEvent(identifier, namespace, username, clusterName, target st
 	if err != nil {
 		log.Error(err.Error())
 	}
-
 }
 
 // RemovePrimaryOnRoleChangeTag sets the 'primary_on_role_change' tag to null in the

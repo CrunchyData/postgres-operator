@@ -62,7 +62,8 @@ func InitializeReplicaCreation(clientset pgo.Interface, clusterName,
 		log.Error(err)
 		return err
 	}
-	for _, pgreplica := range pgreplicaList.Items {
+	for i := range pgreplicaList.Items {
+		pgreplica := &pgreplicaList.Items[i]
 
 		if pgreplica.Annotations == nil {
 			pgreplica.Annotations = make(map[string]string)
@@ -70,7 +71,7 @@ func InitializeReplicaCreation(clientset pgo.Interface, clusterName,
 
 		pgreplica.Annotations[config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA] = "true"
 
-		if _, err = clientset.CrunchydataV1().Pgreplicas(namespace).Update(ctx, &pgreplica, metav1.UpdateOptions{}); err != nil {
+		if _, err = clientset.CrunchydataV1().Pgreplicas(namespace).Update(ctx, pgreplica, metav1.UpdateOptions{}); err != nil {
 			log.Error(err)
 			return err
 		}

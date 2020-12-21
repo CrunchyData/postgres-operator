@@ -16,6 +16,7 @@ package api
 */
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -29,13 +30,13 @@ import (
 func ScaleDownCluster(httpclient *http.Client, clusterName, ScaleDownTarget string,
 	DeleteData bool, SessionCredentials *msgs.BasicAuthCredentials,
 	ns string) (msgs.ScaleDownResponse, error) {
-
 	var response msgs.ScaleDownResponse
 	url := fmt.Sprintf("%s/scaledown/%s", SessionCredentials.APIServerURL, clusterName)
 	log.Debug(url)
 
+	ctx := context.TODO()
 	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
+	req, err := http.NewRequestWithContext(ctx, action, url, nil)
 	if err != nil {
 		return response, err
 	}
@@ -67,19 +68,18 @@ func ScaleDownCluster(httpclient *http.Client, clusterName, ScaleDownTarget stri
 	}
 
 	return response, err
-
 }
 
 func ScaleQuery(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ScaleQueryResponse, error) {
-
 	var response msgs.ScaleQueryResponse
 
 	url := SessionCredentials.APIServerURL + "/scale/" + arg + "?version=" + msgs.PGO_VERSION + "&namespace=" + ns
 	log.Debug(url)
 
+	ctx := context.TODO()
 	action := "GET"
 
-	req, err := http.NewRequest(action, url, nil)
+	req, err := http.NewRequestWithContext(ctx, action, url, nil)
 	if err != nil {
 		return response, err
 	}
@@ -105,5 +105,4 @@ func ScaleQuery(httpclient *http.Client, arg string, SessionCredentials *msgs.Ba
 	}
 
 	return response, err
-
 }

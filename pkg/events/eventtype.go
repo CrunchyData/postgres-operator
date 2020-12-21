@@ -33,6 +33,7 @@ const (
 	EventTopicPGOUser   = "pgousertopic"
 	EventTopicUpgrade   = "upgradetopic"
 )
+
 const (
 	EventReloadCluster                 = "ReloadCluster"
 	EventPrimaryNotReady               = "PrimaryNotReady"
@@ -161,6 +162,7 @@ type EventCreateClusterCompletedFormat struct {
 func (p EventCreateClusterCompletedFormat) GetHeader() EventHeader {
 	return p.EventHeader
 }
+
 func (lvl EventCreateClusterCompletedFormat) String() string {
 	msg := fmt.Sprintf("Event %s - (create cluster completed) clustername %s workflow %s", lvl.EventHeader, lvl.Clustername, lvl.WorkflowID)
 	return msg

@@ -32,10 +32,14 @@ func TestStorageResultInlineVolumeSource(t *testing.T) {
 		expected string
 	}{
 		{StorageResult{}, `"emptyDir":{}`},
-		{StorageResult{PersistentVolumeClaimName: "<\x00"},
-			`"persistentVolumeClaim":{"claimName":"<\u0000"}`},
-		{StorageResult{PersistentVolumeClaimName: "some-name"},
-			`"persistentVolumeClaim":{"claimName":"some-name"}`},
+		{
+			StorageResult{PersistentVolumeClaimName: "<\x00"},
+			`"persistentVolumeClaim":{"claimName":"<\u0000"}`,
+		},
+		{
+			StorageResult{PersistentVolumeClaimName: "some-name"},
+			`"persistentVolumeClaim":{"claimName":"some-name"}`,
+		},
 	} {
 		if actual := tt.value.InlineVolumeSource(); actual != tt.expected {
 			t.Errorf("expected %q for %v, got %q", tt.expected, tt.value, actual)

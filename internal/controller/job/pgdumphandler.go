@@ -45,7 +45,7 @@ func (c *Controller) handlePGDumpUpdate(job *apiv1.Job) error {
 		status = crv1.JobErrorStatus + " [" + job.ObjectMeta.Name + "]"
 	}
 
-	//update the pgdump task status to submitted - updates task, not the job.
+	// update the pgdump task status to submitted - updates task, not the job.
 	dumpTask := labels[config.LABEL_PGTASK]
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(status).Bytes()
 	if err == nil {
@@ -81,7 +81,7 @@ func (c *Controller) handlePGRestoreUpdate(job *apiv1.Job) error {
 		status = crv1.JobErrorStatus + " [" + job.ObjectMeta.Name + "]"
 	}
 
-	//update the pgdump task status to submitted - updates task, not the job.
+	// update the pgdump task status to submitted - updates task, not the job.
 	restoreTask := labels[config.LABEL_PGTASK]
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(status).Bytes()
 	if err == nil {

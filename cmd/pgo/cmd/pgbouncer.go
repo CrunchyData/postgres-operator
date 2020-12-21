@@ -52,7 +52,6 @@ var PgBouncerReplicas int32
 var PgBouncerUninstall bool
 
 func createPgbouncer(args []string, ns string) {
-
 	if Selector == "" && len(args) == 0 {
 		fmt.Println("Error: The --selector flag is required.")
 		return
@@ -92,7 +91,6 @@ func createPgbouncer(args []string, ns string) {
 	}
 
 	response, err := api.CreatePgbouncer(httpclient, &SessionCredentials, &request)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(1)
@@ -115,7 +113,6 @@ func createPgbouncer(args []string, ns string) {
 }
 
 func deletePgbouncer(args []string, ns string) {
-
 	if Selector == "" && len(args) == 0 {
 		fmt.Println("Error: The --selector flag or a cluster name is required.")
 		return
@@ -144,7 +141,6 @@ func deletePgbouncer(args []string, ns string) {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
-
 }
 
 // makeShowPgBouncerInterface returns an interface slice of the available values
@@ -332,7 +328,6 @@ func showPgBouncer(namespace string, clusterNames []string) {
 
 	// and make the API request!
 	response, err := api.ShowPgBouncer(httpclient, &SessionCredentials, request)
-
 	// if there is a bona-fide error, log and exit
 	if err != nil {
 		fmt.Println("Error:", err.Error())
@@ -396,7 +391,6 @@ func updatePgBouncer(namespace string, clusterNames []string) {
 
 	// and make the API request!
 	response, err := api.UpdatePgBouncer(httpclient, &SessionCredentials, request)
-
 	// if there is a bona-fide error, log and exit
 	if err != nil {
 		fmt.Println("Error:", err.Error())

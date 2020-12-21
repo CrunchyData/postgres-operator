@@ -346,6 +346,7 @@ func createPgAdminDeployment(clientset kubernetes.Interface, cluster *crv1.Pgclu
 	// This password is throwaway so low entropy genreation method is fine
 	randBytes := make([]byte, initPassLen)
 	// weakrand Read is always nil error
+	// #nosec: G404
 	weakrand.Read(randBytes)
 	throwawayPass := base64.RawStdEncoding.EncodeToString(randBytes)
 
@@ -364,7 +365,7 @@ func createPgAdminDeployment(clientset kubernetes.Interface, cluster *crv1.Pgclu
 
 	// For debugging purposes, put the template substitution in stdout
 	if operator.CRUNCHY_DEBUG {
-		config.PgAdminTemplate.Execute(os.Stdout, fields)
+		_ = config.PgAdminTemplate.Execute(os.Stdout, fields)
 	}
 
 	// perform the actual template substitution
@@ -409,7 +410,7 @@ func createPgAdminService(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 
 	// For debugging purposes, put the template substitution in stdout
 	if operator.CRUNCHY_DEBUG {
-		config.PgAdminServiceTemplate.Execute(os.Stdout, fields)
+		_ = config.PgAdminServiceTemplate.Execute(os.Stdout, fields)
 	}
 
 	// perform the actual template substitution

@@ -17,24 +17,26 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func CreateFailover(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreateFailoverRequest) (msgs.CreateFailoverResponse, error) {
-
 	var response msgs.CreateFailoverResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/failover"
 
 	log.Debugf("create failover called [%s]", url)
 
 	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
@@ -63,15 +65,15 @@ func CreateFailover(httpclient *http.Client, SessionCredentials *msgs.BasicAuthC
 }
 
 func QueryFailover(httpclient *http.Client, arg string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.QueryFailoverResponse, error) {
-
 	var response msgs.QueryFailoverResponse
 
+	ctx := context.TODO()
 	url := SessionCredentials.APIServerURL + "/failover/" + arg + "?version=" + msgs.PGO_VERSION + "&namespace=" + ns
 	log.Debugf("query failover called [%s]", url)
 
 	action := "GET"
 
-	req, err := http.NewRequest(action, url, nil)
+	req, err := http.NewRequestWithContext(ctx, action, url, nil)
 	if err != nil {
 		return response, err
 	}
@@ -97,5 +99,4 @@ func QueryFailover(httpclient *http.Client, arg string, SessionCredentials *msgs
 	}
 
 	return response, err
-
 }

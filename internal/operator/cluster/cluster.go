@@ -156,8 +156,8 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 		log.Error("error in pvcname patch " + err.Error())
 	}
 
-	//publish create cluster event
-	//capture the cluster creation event
+	// publish create cluster event
+	// capture the cluster creation event
 	pgouser := cl.ObjectMeta.Labels[config.LABEL_PGOUSER]
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
@@ -190,15 +190,15 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 			publishClusterCreateFailure(cl, err.Error())
 			return
 		}
-		//create a CRD for each replica
+		// create a CRD for each replica
 		for i := 0; i < replicaCount; i++ {
 			spec := crv1.PgreplicaSpec{}
-			//get the storage config
+			// get the storage config
 			spec.ReplicaStorage = cl.Spec.ReplicaStorage
 
 			spec.UserLabels = cl.Spec.UserLabels
 
-			//the replica should not use the same node labels as the primary
+			// the replica should not use the same node labels as the primary
 			spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = ""
 			spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = ""
 
@@ -324,17 +324,16 @@ func AddBootstrapRepo(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (
 
 // DeleteClusterBase ...
 func DeleteClusterBase(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string) {
+	_ = DeleteCluster(clientset, cl, namespace)
 
-	DeleteCluster(clientset, cl, namespace)
-
-	//delete any existing configmaps
+	// delete any existing configmaps
 	if err := deleteConfigMaps(clientset, cl.Spec.Name, namespace); err != nil {
 		log.Error(err)
 	}
 
-	//delete any existing pgtasks ???
+	// delete any existing pgtasks ???
 
-	//publish delete cluster event
+	// publish delete cluster event
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 
@@ -363,7 +362,7 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 		return
 	}
 
-	//get the pgcluster CRD to base the replica off of
+	// get the pgcluster CRD to base the replica off of
 	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).
 		Get(ctx, replica.Spec.ClusterName, metav1.GetOptions{})
 	if err != nil {
@@ -378,7 +377,7 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 		return
 	}
 
-	//update the replica CRD pvcname
+	// update the replica CRD pvcname
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "replicastorage", "name")(dataVolume.PersistentVolumeClaimName).Bytes()
 	if err == nil {
 		log.Debugf("patching replica %s: %s", replica.Spec.Name, patch)
@@ -389,20 +388,20 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 		log.Error("error in pvcname patch " + err.Error())
 	}
 
-	//create the replica service if it doesnt exist
+	// create the replica service if it doesnt exist
 	if err = scaleReplicaCreateMissingService(clientset, replica, cluster, namespace); err != nil {
 		log.Error(err)
 		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
 		return
 	}
 
-	//instantiate the replica
+	// instantiate the replica
 	if err = scaleReplicaCreateDeployment(clientset, replica, cluster, namespace, dataVolume, walVolume, tablespaceVolumes); err != nil {
 		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
 		return
 	}
 
-	//update the replica CRD status
+	// update the replica CRD status
 	patch, err = kubeapi.NewJSONPatch().Add("spec", "status")(crv1.CompletedStatus).Bytes()
 	if err == nil {
 		log.Debugf("patching replica %s: %s", replica.Spec.Name, patch)
@@ -413,7 +412,7 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 		log.Error("error in status patch " + err.Error())
 	}
 
-	//publish event for replica creation
+	// publish event for replica creation
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 
@@ -438,16 +437,16 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 func ScaleDownBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace string) {
 	ctx := context.TODO()
 
-	//get the pgcluster CRD for this replica
+	// get the pgcluster CRD for this replica
 	_, err := clientset.CrunchydataV1().Pgclusters(namespace).
 		Get(ctx, replica.Spec.ClusterName, metav1.GetOptions{})
 	if err != nil {
 		return
 	}
 
-	DeleteReplica(clientset, replica, namespace)
+	_ = DeleteReplica(clientset, replica, namespace)
 
-	//publish event for scale down
+	// publish event for scale down
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 
@@ -467,7 +466,6 @@ func ScaleDownBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespa
 		log.Error(err.Error())
 		return
 	}
-
 }
 
 // UpdateAnnotations updates the annotations in the "template" portion of a
@@ -693,10 +691,9 @@ func publishClusterCreateFailure(cl *crv1.Pgcluster, errorMsg string) {
 }
 
 func publishClusterShutdown(cluster crv1.Pgcluster) error {
-
 	clusterName := cluster.Name
 
-	//capture the cluster creation event
+	// capture the cluster creation event
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 

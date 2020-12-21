@@ -557,7 +557,7 @@ func createPgBouncerDeployment(clientset kubernetes.Interface, cluster *crv1.Pgc
 
 	// For debugging purposes, put the template substitution in stdout
 	if operator.CRUNCHY_DEBUG {
-		config.PgbouncerTemplate.Execute(os.Stdout, fields)
+		_ = config.PgbouncerTemplate.Execute(os.Stdout, fields)
 	}
 
 	// perform the actual template substitution

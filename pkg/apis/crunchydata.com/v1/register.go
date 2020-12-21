@@ -30,7 +30,7 @@ var (
 )
 
 // GroupName is the group name used in this package.
-//const GroupName = "cr.client-go.k8s.io"
+// const GroupName = "cr.client-go.k8s.io"
 const GroupName = "crunchydata.com"
 
 // SchemeGroupVersion is the group version used to register these objects.

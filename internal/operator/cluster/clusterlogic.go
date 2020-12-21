@@ -86,7 +86,7 @@ func addClusterBootstrapJob(clientset kubeapi.Interface,
 	tablespaceVolumes map[string]operator.StorageResult) error {
 	ctx := context.TODO()
 
-	bootstrapFields, err := getBootstrapJobFields(clientset, cl, dataVolume, walVolume,
+	bootstrapFields, err := getBootstrapJobFields(clientset, cl, dataVolume,
 		tablespaceVolumes)
 	if err != nil {
 		return err
@@ -98,7 +98,7 @@ func addClusterBootstrapJob(clientset kubeapi.Interface,
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		config.DeploymentTemplate.Execute(os.Stdout, bootstrapFields)
+		_ = config.DeploymentTemplate.Execute(os.Stdout, bootstrapFields)
 	}
 
 	job := &batchv1.Job{}
@@ -134,7 +134,7 @@ func addClusterDeployments(clientset kubeapi.Interface,
 	}
 
 	deploymentFields := getClusterDeploymentFields(clientset, cl,
-		dataVolume, walVolume, tablespaceVolumes)
+		dataVolume, tablespaceVolumes)
 
 	var primaryDoc bytes.Buffer
 	if err := config.DeploymentTemplate.Execute(&primaryDoc, deploymentFields); err != nil {
@@ -142,7 +142,7 @@ func addClusterDeployments(clientset kubeapi.Interface,
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		config.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
+		_ = config.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
 	}
 
 	deployment := &appsv1.Deployment{}
@@ -170,7 +170,7 @@ func addClusterDeployments(clientset kubeapi.Interface,
 
 // getBootstrapJobFields obtains the fields needed to populate the cluster bootstrap job template
 func getBootstrapJobFields(clientset kubeapi.Interface,
-	cluster *crv1.Pgcluster, dataVolume, walVolume operator.StorageResult,
+	cluster *crv1.Pgcluster, dataVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult) (operator.BootstrapJobTemplateFields, error) {
 	ctx := context.TODO()
 
@@ -179,7 +179,7 @@ func getBootstrapJobFields(clientset kubeapi.Interface,
 
 	bootstrapFields := operator.BootstrapJobTemplateFields{
 		DeploymentTemplateFields: getClusterDeploymentFields(clientset, cluster, dataVolume,
-			walVolume, tablespaceVolumes),
+			tablespaceVolumes),
 		RestoreFrom: cluster.Spec.PGDataSource.RestoreFrom,
 		RestoreOpts: restoreOpts[1 : len(restoreOpts)-1],
 	}
@@ -250,7 +250,7 @@ func getBootstrapJobFields(clientset kubeapi.Interface,
 
 // getClusterDeploymentFields obtains the fields needed to populate the cluster deployment template
 func getClusterDeploymentFields(clientset kubernetes.Interface,
-	cl *crv1.Pgcluster, dataVolume, walVolume operator.StorageResult,
+	cl *crv1.Pgcluster, dataVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult) operator.DeploymentTemplateFields {
 	namespace := cl.GetNamespace()
 
@@ -362,7 +362,7 @@ func DeleteCluster(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace
 		log.Error(err)
 		return err
 	} else {
-		publishDeleteCluster(namespace, cl.ObjectMeta.Labels[config.LABEL_PGOUSER], cl.Spec.Name, cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER])
+		publishDeleteCluster(namespace, cl.ObjectMeta.Labels[config.LABEL_PGOUSER], cl.Spec.Name)
 	}
 
 	return err
@@ -513,7 +513,7 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		config.DeploymentTemplate.Execute(os.Stdout, replicaDeploymentFields)
+		_ = config.DeploymentTemplate.Execute(os.Stdout, replicaDeploymentFields)
 	}
 
 	replicaDeployment := appsv1.Deployment{}
@@ -581,7 +581,7 @@ func publishScaleError(namespace string, username string, cluster *crv1.Pgcluste
 	}
 }
 
-func publishDeleteCluster(namespace, username, clusterName, identifier string) {
+func publishDeleteCluster(namespace, username, clusterName string) {
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 
@@ -691,7 +691,7 @@ func ShutdownCluster(clientset kubeapi.Interface, cluster crv1.Pgcluster) error 
 		return err
 	}
 
-	publishClusterShutdown(cluster)
+	_ = publishClusterShutdown(cluster)
 
 	return nil
 }

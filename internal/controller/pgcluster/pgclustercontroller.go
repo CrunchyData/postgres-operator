@@ -63,7 +63,6 @@ func (c *Controller) onAdd(obj interface{}) {
 // processNextWorkItem function in order to read and process a message on the
 // workqueue.
 func (c *Controller) RunWorker(stopCh <-chan struct{}, doneCh chan<- struct{}) {
-
 	go c.waitForShutdown(stopCh)
 
 	for c.processNextItem() {
@@ -101,7 +100,7 @@ func (c *Controller) processNextItem() bool {
 	// parallel.
 	defer c.Queue.Done(key)
 
-	//get the pgcluster
+	// get the pgcluster
 	cluster, err := c.Client.CrunchydataV1().Pgclusters(keyNamespace).Get(ctx, keyResourceName, metav1.GetOptions{})
 	if err != nil {
 		log.Debugf("cluster add - pgcluster not found, this is invalid")
@@ -196,10 +195,10 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// shutdown or started but its current status does not properly reflect that it is, then
 	// proceed with the logic needed to either shutdown or start the cluster
 	if newcluster.Spec.Shutdown && newcluster.Status.State != crv1.PgclusterStateShutdown {
-		clusteroperator.ShutdownCluster(c.Client, *newcluster)
+		_ = clusteroperator.ShutdownCluster(c.Client, *newcluster)
 	} else if !newcluster.Spec.Shutdown &&
 		newcluster.Status.State == crv1.PgclusterStateShutdown {
-		clusteroperator.StartupCluster(c.Client, *newcluster)
+		_ = clusteroperator.StartupCluster(c.Client, *newcluster)
 	}
 
 	// check to see if the "autofail" label on the pgcluster CR has been changed from either true to false, or from
@@ -217,7 +216,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 			return
 		}
 		if autofailEnabledNew != autofailEnabledOld {
-			util.ToggleAutoFailover(c.Client, autofailEnabledNew,
+			_ = util.ToggleAutoFailover(c.Client, autofailEnabledNew,
 				newcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE],
 				newcluster.ObjectMeta.Namespace)
 		}
@@ -329,16 +328,15 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 // onDelete is called when a pgcluster is deleted
 func (c *Controller) onDelete(obj interface{}) {
-	//cluster := obj.(*crv1.Pgcluster)
+	// cluster := obj.(*crv1.Pgcluster)
 	//	log.Debugf("[Controller] ns=%s onDelete %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
 
-	//handle pgcluster cleanup
+	// handle pgcluster cleanup
 	//	clusteroperator.DeleteClusterBase(c.PgclusterClientset, c.PgclusterClient, cluster, cluster.ObjectMeta.Namespace)
 }
 
 // AddPGClusterEventHandler adds the pgcluster event handler to the pgcluster informer
 func (c *Controller) AddPGClusterEventHandler() {
-
 	c.Informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.onAdd,
 		UpdateFunc: c.onUpdate,
@@ -466,7 +464,6 @@ func updatePgBouncer(c *Controller, oldCluster *crv1.Pgcluster, newCluster *crv1
 func updateTablespaces(c *Controller, oldCluster *crv1.Pgcluster, newCluster *crv1.Pgcluster) error {
 	// first, get a list of all of the instance deployments for the cluster
 	deployments, err := operator.GetInstanceDeployments(c.Client, newCluster)
-
 	if err != nil {
 		return err
 	}

@@ -73,7 +73,6 @@ type BackrestRestoreJobTemplateFields struct {
 // perform a restore
 func UpdatePGClusterSpecForRestore(clientset kubeapi.Interface, cluster *crv1.Pgcluster,
 	task *crv1.Pgtask) {
-
 	cluster.Spec.PGDataSource.RestoreFrom = cluster.GetName()
 
 	restoreOpts := task.Spec.Parameters[config.LABEL_BACKREST_RESTORE_OPTS]
@@ -250,8 +249,10 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 		clusterName)
 
 	// Delete the DCS and leader ConfigMaps.  These will be recreated during the restore.
-	configMaps := []string{fmt.Sprintf("%s-config", clusterName),
-		fmt.Sprintf("%s-leader", clusterName)}
+	configMaps := []string{
+		fmt.Sprintf("%s-config", clusterName),
+		fmt.Sprintf("%s-leader", clusterName),
+	}
 	for _, c := range configMaps {
 		if err := clientset.CoreV1().ConfigMaps(namespace).
 			Delete(ctx, c, metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
@@ -281,7 +282,7 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 func UpdateWorkflow(clientset pgo.Interface, workflowID, namespace, status string) error {
 	ctx := context.TODO()
 
-	//update workflow
+	// update workflow
 	log.Debugf("restore workflow: update workflow %s", workflowID)
 	selector := crv1.PgtaskWorkflowID + "=" + workflowID
 	taskList, err := clientset.CrunchydataV1().Pgtasks(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
@@ -324,7 +325,6 @@ func PublishRestore(id, clusterName, username, namespace string) {
 	if err != nil {
 		log.Error(err.Error())
 	}
-
 }
 
 // getPGDatabasePVCNames returns the names of all PostgreSQL database PVCs for a specific

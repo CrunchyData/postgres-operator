@@ -17,10 +17,11 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // UserHandler provides a means to update a PostgreSQL user
@@ -52,7 +53,7 @@ func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	username, err := apiserver.Authn(apiserver.UPDATE_USER_PERM, w, r)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -62,20 +63,20 @@ func UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	_, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = UpdateUser(&request, username)
 
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // CreateUserHandler ...
@@ -117,20 +118,19 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = CreateUser(&request, username)
-	json.NewEncoder(w).Encode(resp)
-
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // DeleteUserHandler ...
@@ -163,7 +163,7 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -182,13 +182,12 @@ func DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = DeleteUser(&request, pgouser)
-	json.NewEncoder(w).Encode(resp)
-
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // ShowUserHandler allows one to display information about PostgreSQL uesrs that
@@ -237,18 +236,17 @@ func ShowUserHandler(w http.ResponseWriter, r *http.Request) {
 	resp := msgs.ShowUserResponse{}
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	_, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = ShowUser(&request)
-	json.NewEncoder(w).Encode(resp)
-
+	_ = json.NewEncoder(w).Encode(resp)
 }

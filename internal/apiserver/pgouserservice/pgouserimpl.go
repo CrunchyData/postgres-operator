@@ -32,14 +32,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const MAP_KEY_USERNAME = "username"
-const MAP_KEY_PASSWORD = "password"
-const MAP_KEY_ROLES = "roles"
-const MAP_KEY_NAMESPACES = "namespaces"
+const (
+	MAP_KEY_USERNAME   = "username"
+	MAP_KEY_PASSWORD   = "password"
+	MAP_KEY_ROLES      = "roles"
+	MAP_KEY_NAMESPACES = "namespaces"
+)
 
 // CreatePgouser ...
 func CreatePgouser(clientset kubernetes.Interface, createdBy string, request *msgs.CreatePgouserRequest) msgs.CreatePgouserResponse {
-
 	log.Debugf("CreatePgouser %v", request)
 	resp := msgs.CreatePgouserResponse{}
 	resp.Status.Code = msgs.Ok
@@ -71,7 +72,7 @@ func CreatePgouser(clientset kubernetes.Interface, createdBy string, request *ms
 		return resp
 	}
 
-	//publish event
+	// publish event
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicPGOUser
 
@@ -94,7 +95,6 @@ func CreatePgouser(clientset kubernetes.Interface, createdBy string, request *ms
 	}
 
 	return resp
-
 }
 
 // ShowPgouser ...
@@ -147,7 +147,6 @@ func ShowPgouser(clientset kubernetes.Interface, request *msgs.ShowPgouserReques
 	}
 
 	return resp
-
 }
 
 // DeletePgouser ...
@@ -170,7 +169,7 @@ func DeletePgouser(clientset kubernetes.Interface, deletedBy string, request *ms
 				resp.Results = append(resp.Results, "error deleting secret "+secretName)
 			} else {
 				resp.Results = append(resp.Results, "deleted pgouser "+v)
-				//publish event
+				// publish event
 				topics := make([]string, 1)
 				topics[0] = events.EventTopicPGOUser
 
@@ -198,7 +197,6 @@ func DeletePgouser(clientset kubernetes.Interface, deletedBy string, request *ms
 	}
 
 	return resp
-
 }
 
 // UpdatePgouser - update the pgouser secret
@@ -253,7 +251,7 @@ func UpdatePgouser(clientset kubernetes.Interface, updatedBy string, request *ms
 		return resp
 	}
 
-	//publish event
+	// publish event
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicPGOUser
 
@@ -275,7 +273,6 @@ func UpdatePgouser(clientset kubernetes.Interface, updatedBy string, request *ms
 	}
 
 	return resp
-
 }
 
 func createSecret(clientset kubernetes.Interface, createdBy string, request *msgs.CreatePgouserRequest) error {
@@ -323,7 +320,6 @@ func validRoles(clientset kubernetes.Interface, roles string) error {
 }
 
 func validNamespaces(namespaces string, allnamespaces bool) error {
-
 	if allnamespaces {
 		return nil
 	}

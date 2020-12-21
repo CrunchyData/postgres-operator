@@ -69,7 +69,6 @@ func CreateSecret(clientset kubernetes.Interface, db, secretName, username, pass
 	_, err := clientset.CoreV1().Secrets(namespace).Create(ctx, &secret, metav1.CreateOptions{})
 
 	return err
-
 }
 
 // GeneratePassword generates a password of a given length out of the acceptable
@@ -79,7 +78,6 @@ func GeneratePassword(length int) (string, error) {
 
 	for i := 0; i < length; i++ {
 		char, err := rand.Int(rand.Reader, passwordCharSelector)
-
 		// if there is an error generating the random integer, return
 		if err != nil {
 			return "", err
@@ -100,7 +98,6 @@ func GeneratedPasswordLength(configuredPasswordLength string) int {
 	// note that "configuredPasswordLength" may be an empty string, and as such
 	// the below line could fail. That's ok though! as we have a default set up
 	generatedPasswordLength, err := strconv.Atoi(configuredPasswordLength)
-
 	// if there is an error...set it to a default
 	if err != nil {
 		generatedPasswordLength = DefaultGeneratedPasswordLength
@@ -113,7 +110,6 @@ func GeneratedPasswordLength(configuredPasswordLength string) int {
 func GetPasswordFromSecret(clientset kubernetes.Interface, namespace, secretName string) (string, error) {
 	ctx := context.TODO()
 	secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
-
 	if err != nil {
 		return "", err
 	}
@@ -154,7 +150,6 @@ func UpdateUserSecret(clientset kubernetes.Interface, clustername, username, pas
 
 	// see if the secret already exists
 	secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
-
 	// if this returns an error and it's not the "not found" error, return
 	// However, if it is the "not found" error, treat this as creating the user
 	// secret

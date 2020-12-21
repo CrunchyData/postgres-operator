@@ -46,7 +46,7 @@ func main() {
 	}
 
 	debugFlag := os.Getenv("CRUNCHY_DEBUG")
-	//add logging configuration
+	// add logging configuration
 	crunchylog.CrunchyLogger(crunchylog.SetParameters())
 	if debugFlag == "true" {
 		log.SetLevel(log.DebugLevel)
@@ -55,7 +55,7 @@ func main() {
 		log.Info("debug flag set to false")
 	}
 
-	//give time for pgo-event to start up
+	// give time for pgo-event to start up
 	time.Sleep(time.Duration(5) * time.Second)
 
 	newKubernetesClient := func() (*kubeapi.Client, error) {
@@ -130,7 +130,6 @@ func main() {
 // createAndStartNamespaceController creates a namespace controller and then starts it
 func createAndStartNamespaceController(kubeClientset kubernetes.Interface,
 	controllerManager controller.Manager, stopCh <-chan struct{}) error {
-
 	nsKubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientset,
 		time.Duration(*operator.Pgo.Pgo.NamespaceRefreshInterval)*time.Second,
 		kubeinformers.WithTweakListOptions(func(options *metav1.ListOptions) {

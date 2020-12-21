@@ -62,7 +62,7 @@ func initOpenTelemetry() (func(), error) {
 		options := []stdout.Option{stdout.WithoutMetricExport()}
 
 		if filename != "" {
-			file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 			if err != nil {
 				return nil, fmt.Errorf("unable to open exporter file: %w", err)
 			}

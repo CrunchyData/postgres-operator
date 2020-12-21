@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"bytes"
+	"context"
 	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
@@ -93,8 +94,9 @@ func TestExtendedTrust(t *testing.T) {
 	defer srv.Close()
 
 	caTrust := x509.NewCertPool()
-	ExtendTrust(caTrust, bytes.NewReader(pemCert))
+	_ = ExtendTrust(caTrust, bytes.NewReader(pemCert))
 
+	// #nosec G402
 	srv.TLS = &tls.Config{
 		ServerName:         "Stom",
 		ClientAuth:         tls.RequireAndVerifyClientCert,
@@ -111,6 +113,7 @@ func TestExtendedTrust(t *testing.T) {
 	}
 
 	client := srv.Client()
+	// #nosec G402
 	client.Transport = &http.Transport{
 		TLSClientConfig: &tls.Config{
 			Certificates: []tls.Certificate{
@@ -122,7 +125,12 @@ func TestExtendedTrust(t *testing.T) {
 	}
 
 	// Confirm server response
-	res, err := client.Get(srv.URL)
+	req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, srv.URL, nil)
+	if err != nil {
+		t.Fatalf("error getting request - %s\n", err)
+	}
+
+	res, err := client.Do(req)
 	if err != nil {
 		t.Fatalf("error getting response - %s\n", err)
 	}

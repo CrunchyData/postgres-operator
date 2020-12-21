@@ -17,10 +17,11 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // LabelHandler ...
@@ -64,20 +65,20 @@ func LabelHandler(w http.ResponseWriter, r *http.Request) {
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
 		resp.Status.Code = msgs.Error
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Msg: err.Error(), Code: msgs.Error}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = Label(&request, ns, username)
 
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // DeleteLabelHandler ...
@@ -120,18 +121,18 @@ func DeleteLabelHandler(w http.ResponseWriter, r *http.Request) {
 
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status = msgs.Status{Msg: apiserver.VERSION_MISMATCH_ERROR, Code: msgs.Error}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.Status = msgs.Status{Msg: err.Error(), Code: msgs.Error}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = DeleteLabel(&request, ns)
 
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }

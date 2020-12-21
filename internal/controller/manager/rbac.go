@@ -83,7 +83,6 @@ func (c *ControllerManager) reconcileRBAC(targetNamespace string) {
 
 // reconcileRoles reconciles the Roles required by the operator in a target namespace
 func (c *ControllerManager) reconcileRoles(targetNamespace string) {
-
 	reconcileRoles := map[string]*template.Template{
 		ns.PGO_TARGET_ROLE:   config.PgoTargetRoleTemplate,
 		ns.PGO_BACKREST_ROLE: config.PgoBackrestRoleTemplate,
@@ -101,7 +100,6 @@ func (c *ControllerManager) reconcileRoles(targetNamespace string) {
 // reconcileRoleBindings reconciles the RoleBindings required by the operator in a
 // target namespace
 func (c *ControllerManager) reconcileRoleBindings(targetNamespace string) {
-
 	reconcileRoleBindings := map[string]*template.Template{
 		ns.PGO_TARGET_ROLE_BINDING:   config.PgoTargetRoleBindingTemplate,
 		ns.PGO_BACKREST_ROLE_BINDING: config.PgoBackrestRoleBindingTemplate,
@@ -120,7 +118,6 @@ func (c *ControllerManager) reconcileRoleBindings(targetNamespace string) {
 // target namespace
 func (c *ControllerManager) reconcileServiceAccounts(targetNamespace string,
 	imagePullSecrets []v1.LocalObjectReference) (saCreatedOrUpdated bool) {
-
 	reconcileServiceAccounts := map[string]*template.Template{
 		ns.PGO_DEFAULT_SERVICE_ACCOUNT:  config.PgoDefaultServiceAccountTemplate,
 		ns.PGO_TARGET_SERVICE_ACCOUNT:   config.PgoTargetServiceAccountTemplate,

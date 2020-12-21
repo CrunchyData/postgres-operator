@@ -37,8 +37,10 @@ import (
 )
 
 // consolidate with cluster.affinityTemplateFields
-const AffinityInOperator = "In"
-const AFFINITY_NOTINOperator = "NotIn"
+const (
+	AffinityInOperator     = "In"
+	AFFINITY_NOTINOperator = "NotIn"
+)
 
 // PGHAConfigMapSuffix defines the suffix for the name of the PGHA configMap created for each PG
 // cluster
@@ -99,7 +101,7 @@ type exporterTemplateFields struct {
 	TLSOnly            bool
 }
 
-//consolidate
+// consolidate
 type badgerTemplateFields struct {
 	CCPImageTag    string
 	CCPImagePrefix string
@@ -253,6 +255,7 @@ func GetAnnotations(cluster *crv1.Pgcluster, annotationType crv1.ClusterAnnotati
 		for k, v := range cluster.Spec.Annotations.Postgres {
 			annotations[k] = v
 		}
+	case crv1.ClusterAnnotationGlobal: // no-op as its handled in the loop above
 	}
 
 	// if the map is empty, return an empty string
@@ -262,7 +265,6 @@ func GetAnnotations(cluster *crv1.Pgcluster, annotationType crv1.ClusterAnnotati
 
 	// let's try to create a JSON document out of the above
 	doc, err := json.Marshal(annotations)
-
 	// if there is an error, warn in our logs and return an empty string
 	if err != nil {
 		log.Errorf("could not set custom annotations: %q", err)
@@ -272,7 +274,7 @@ func GetAnnotations(cluster *crv1.Pgcluster, annotationType crv1.ClusterAnnotati
 	return string(doc)
 }
 
-//consolidate with cluster.GetPgbackrestEnvVars
+// consolidate with cluster.GetPgbackrestEnvVars
 func GetPgbackrestEnvVars(cluster *crv1.Pgcluster, backrestEnabled, depName, port, storageType string) string {
 	if backrestEnabled == "true" {
 		fields := PgbackrestEnvVarsTemplateFields{
@@ -294,14 +296,12 @@ func GetPgbackrestEnvVars(cluster *crv1.Pgcluster, backrestEnabled, depName, por
 		return doc.String()
 	}
 	return ""
-
 }
 
 // GetPgbackrestBootstrapEnvVars returns a string containing the pgBackRest environment variables
 // for a bootstrap job
 func GetPgbackrestBootstrapEnvVars(restoreClusterName, depName string,
 	restoreFromSecret *v1.Secret) (string, error) {
-
 	fields := PgbackrestEnvVarsTemplateFields{
 		PgbackrestStanza:    "db",
 		PgbackrestDBPath:    fmt.Sprintf("/pgdata/%s", depName),
@@ -331,7 +331,6 @@ func GetBackrestDeployment(clientset kubernetes.Interface, cluster *crv1.Pgclust
 }
 
 func GetBadgerAddon(clientset kubernetes.Interface, namespace string, cluster *crv1.Pgcluster, pgbadger_target string) string {
-
 	spec := cluster.Spec
 
 	if cluster.Labels[config.LABEL_BADGER] == "true" {
@@ -350,7 +349,7 @@ func GetBadgerAddon(clientset kubernetes.Interface, namespace string, cluster *c
 		}
 
 		if CRUNCHY_DEBUG {
-			config.BadgerTemplate.Execute(os.Stdout, badgerTemplateFields)
+			_ = config.BadgerTemplate.Execute(os.Stdout, badgerTemplateFields)
 		}
 		return badgerDoc.String()
 	}
@@ -396,16 +395,16 @@ func GetExporterAddon(spec crv1.PgclusterSpec) string {
 	return exporterDoc.String()
 }
 
-//consolidate with cluster.GetConfVolume
+// consolidate with cluster.GetConfVolume
 func GetConfVolume(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string) string {
 	ctx := context.TODO()
 	var configMapStr string
 
-	//check for user provided configmap
+	// check for user provided configmap
 	if cl.Spec.CustomConfig != "" {
 		_, err := clientset.CoreV1().ConfigMaps(namespace).Get(ctx, cl.Spec.CustomConfig, metav1.GetOptions{})
 		if err != nil {
-			//you should NOT get this error because of apiserver validation of this value!
+			// you should NOT get this error because of apiserver validation of this value!
 			log.Errorf("%s was not found, error, skipping user provided configMap", cl.Spec.CustomConfig)
 		} else {
 			log.Debugf("user provided configmap %s was used for this cluster", cl.Spec.CustomConfig)
@@ -413,7 +412,7 @@ func GetConfVolume(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace
 		}
 	}
 
-	//check for global custom configmap "pgo-custom-pg-config"
+	// check for global custom configmap "pgo-custom-pg-config"
 	_, err := clientset.CoreV1().ConfigMaps(namespace).Get(ctx, config.GLOBAL_CUSTOM_CONFIGMAP, metav1.GetOptions{})
 	if err == nil {
 		return `"pgo-custom-pg-config"`
@@ -494,7 +493,6 @@ func GetInstanceDeployments(clientset kubernetes.Interface, cluster *crv1.Pgclus
 	clusterDeployments, err := clientset.
 		AppsV1().Deployments(cluster.Namespace).
 		List(ctx, metav1.ListOptions{LabelSelector: selector})
-
 	if err != nil {
 		return nil, err
 	}
@@ -653,7 +651,7 @@ func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string
 	}
 
 	if CRUNCHY_DEBUG {
-		config.AffinityTemplate.Execute(os.Stdout, affinityTemplateFields)
+		_ = config.AffinityTemplate.Execute(os.Stdout, affinityTemplateFields)
 	}
 
 	return affinityDoc.String()
@@ -662,7 +660,6 @@ func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string
 // GetPodAntiAffinity returns the populated pod anti-affinity json that should be attached to
 // the various pods comprising the pg cluster
 func GetPodAntiAffinity(cluster *crv1.Pgcluster, deploymentType crv1.PodAntiAffinityDeployment, podAntiAffinityType crv1.PodAntiAffinityType) string {
-
 	log.Debugf("GetPodAnitAffinity with clusterName=[%s]", cluster.Spec.Name)
 
 	// run through the checks on the pod anti-affinity type to see if it is not
@@ -689,6 +686,7 @@ func GetPodAntiAffinity(cluster *crv1.Pgcluster, deploymentType crv1.PodAntiAffi
 		return ""
 	case crv1.PodAntiAffinityRequired:
 		templateAffinityType = requireScheduleIgnoreExec
+	case crv1.PodAntiAffinityPreffered: // no-op as its the default value
 	}
 
 	podAntiAffinityTemplateFields := podAntiAffinityTemplateFields{
@@ -708,7 +706,7 @@ func GetPodAntiAffinity(cluster *crv1.Pgcluster, deploymentType crv1.PodAntiAffi
 	}
 
 	if CRUNCHY_DEBUG {
-		config.PodAntiAffinityTemplate.Execute(os.Stdout, podAntiAffinityTemplateFields)
+		_ = config.PodAntiAffinityTemplate.Execute(os.Stdout, podAntiAffinityTemplateFields)
 	}
 
 	return podAntiAffinityDoc.String()
@@ -751,6 +749,7 @@ func GetPodAntiAffinityType(cluster *crv1.Pgcluster, deploymentType crv1.PodAnti
 				return podAntiAffinityType
 			}
 		}
+	case crv1.PodAntiAffinityDeploymentDefault: // no-op as its the default setting
 	}
 
 	// check to see if the value for the cluster anti-affinity is set. If so, use
@@ -795,7 +794,6 @@ func GetPgmonitorEnvVars(cluster *crv1.Pgcluster) string {
 // and pgBackRest deployments.
 func GetPgbackrestS3EnvVars(cluster crv1.Pgcluster, clientset kubernetes.Interface,
 	ns string) string {
-
 	if !strings.Contains(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], "s3") {
 		return ""
 	}
@@ -865,7 +863,6 @@ func GetPgbackrestS3EnvVars(cluster crv1.Pgcluster, clientset kubernetes.Interfa
 // option is used, then returns the pgBackRest S3 configuration value to either enable
 // or disable TLS verification as the expected string value.
 func GetS3VerifyTLSSetting(cluster *crv1.Pgcluster) string {
-
 	// If the pgcluster has already been set, either by the PGO client or from the
 	// CRD definition, parse the boolean value given.
 	// If this value is not set, then parse the value stored in the default
@@ -890,7 +887,6 @@ func GetS3VerifyTLSSetting(cluster *crv1.Pgcluster) string {
 // for inclusion in the PG and pgBackRest deployments.
 func GetPgbackrestBootstrapS3EnvVars(pgDataSourceRestoreFrom string,
 	restoreFromSecret *v1.Secret) string {
-
 	s3EnvVars := PgbackrestS3EnvVarsTemplateFields{
 		PgbackrestS3Key:        util.BackRestRepoSecretKeyAWSS3KeyAWSS3Key,
 		PgbackrestS3KeySecret:  util.BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret,
@@ -1010,7 +1006,6 @@ func OverrideClusterContainerImages(containers []v1.Container) {
 // into the current buffer
 func writeTablespaceJSON(w *bytes.Buffer, jsonFields interface{}) error {
 	json, err := json.Marshal(jsonFields)
-
 	// if there is an error, log the error and continue
 	if err != nil {
 		return err

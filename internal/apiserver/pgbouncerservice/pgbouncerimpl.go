@@ -72,14 +72,14 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 	// try to get the list of clusters. if there is an error, put it into the
 	// status and return
 	clusterList, err := getClusterList(request.Namespace, request.Args, request.Selector)
-
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
 	}
 
-	for _, cluster := range clusterList.Items {
+	for i := range clusterList.Items {
+		cluster := clusterList.Items[i]
 		// check if the current cluster is not upgraded to the deployed
 		// Operator version. If not, do not allow the command to complete
 		if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
@@ -170,7 +170,6 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 	// try to get the list of clusters. if there is an error, put it into the
 	// status and return
 	clusterList, err := getClusterList(request.Namespace, request.Args, request.Selector)
-
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -191,7 +190,8 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 		return resp
 	}
 
-	for _, cluster := range clusterList.Items {
+	for i := range clusterList.Items {
+		cluster := clusterList.Items[i]
 		log.Debugf("deleting pgbouncer from cluster [%s]", cluster.Name)
 
 		// check to see if the uninstall flag was set. If it was, apply the update
@@ -226,7 +226,6 @@ func DeletePgbouncer(request *msgs.DeletePgbouncerRequest, ns string) msgs.Delet
 	}
 
 	return resp
-
 }
 
 // ShowPgBouncer gets information about a PostgreSQL cluster's pgBouncer
@@ -249,7 +248,6 @@ func ShowPgBouncer(request *msgs.ShowPgBouncerRequest, namespace string) msgs.Sh
 	// try to get the list of clusters. if there is an error, put it into the
 	// status and return
 	clusterList, err := getClusterList(request.Namespace, request.ClusterNames, request.Selector)
-
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -331,7 +329,6 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 	// try to get the list of clusters. if there is an error, put it into the
 	// status and return
 	clusterList, err := getClusterList(request.Namespace, request.ClusterNames, request.Selector)
-
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -352,7 +349,8 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 
 	// iterate through the list of clusters to get the relevant pgBouncer
 	// information about them
-	for _, cluster := range clusterList.Items {
+	for i := range clusterList.Items {
+		cluster := clusterList.Items[i]
 		result := msgs.UpdatePgBouncerDetail{
 			ClusterName:  cluster.Spec.Name,
 			HasPgBouncer: true,
@@ -449,7 +447,6 @@ func getClusterList(namespace string, clusterNames []string, selector string) (c
 	// of arguments...or both. First, start with the selector
 	if selector != "" {
 		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
-
 		// if there is an error, return here with an empty cluster list
 		if err != nil {
 			return crv1.PgclusterList{}, err
@@ -460,7 +457,6 @@ func getClusterList(namespace string, clusterNames []string, selector string) (c
 	// now try to get clusters based specific cluster names
 	for _, clusterName := range clusterNames {
 		cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
-
 		// if there is an error, capture it here and return here with an empty list
 		if err != nil {
 			return crv1.PgclusterList{}, err
@@ -490,7 +486,6 @@ func setPgBouncerPasswordDetail(cluster crv1.Pgcluster, result *msgs.ShowPgBounc
 	// attempt to get the secret, but only get the password
 	password, err := util.GetPasswordFromSecret(apiserver.Clientset,
 		cluster.Spec.Namespace, pgBouncerSecretName)
-
 	if err != nil {
 		log.Warn(err)
 	}
@@ -510,8 +505,7 @@ func setPgBouncerServiceDetail(cluster crv1.Pgcluster, result *msgs.ShowPgBounce
 	services, err := apiserver.Clientset.
 		CoreV1().Services(cluster.Spec.Namespace).
 		List(ctx, metav1.ListOptions{LabelSelector: selector})
-
-	// if there is an error, return without making any adjustments
+		// if there is an error, return without making any adjustments
 	if err != nil {
 		log.Warn(err)
 		return

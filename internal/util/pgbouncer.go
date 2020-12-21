@@ -29,6 +29,7 @@ const pgBouncerConfigMapFormat = "%s-pgbouncer-cm"
 // pgBouncerSecretFormat is the name of the Kubernetes Secret that pgBouncer
 // uses that stores configuration and pgbouncer user information, and follows
 // the format "<clusterName>-pgbouncer-secret"
+// #nosec: G101
 const pgBouncerSecretFormat = "%s-pgbouncer-secret"
 
 // pgBouncerUserFileFormat is the format of what the pgBouncer user management

@@ -19,17 +19,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	crunchylog "github.com/crunchydata/postgres-operator/internal/logging"
-	"github.com/nsqio/go-nsq"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"reflect"
 	"time"
+
+	crunchylog "github.com/crunchydata/postgres-operator/internal/logging"
+	"github.com/nsqio/go-nsq"
+	log "github.com/sirupsen/logrus"
 )
 
 // String returns the string form for a given LogLevel
 func Publish(e EventInterface) error {
-	//Add logging configuration
+	// Add logging configuration
 	crunchylog.CrunchyLogger(crunchylog.SetParameters())
 	eventAddr := os.Getenv("EVENT_ADDR")
 	if eventAddr == "" {
@@ -41,7 +42,7 @@ func Publish(e EventInterface) error {
 	}
 
 	cfg := nsq.NewConfig()
-	//cfg.UserAgent = fmt.Sprintf("to_nsq/%s go-nsq/%s", version.Binary, nsq.VERSION)
+	// cfg.UserAgent = fmt.Sprintf("to_nsq/%s go-nsq/%s", version.Binary, nsq.VERSION)
 	cfg.UserAgent = fmt.Sprintf("go-nsq/%s", nsq.VERSION)
 
 	log.Debugf("publishing %s message %s", reflect.TypeOf(e), e.String())
@@ -78,7 +79,7 @@ func Publish(e EventInterface) error {
 		}
 	}
 
-	//always publish to the All topic
+	// always publish to the All topic
 	err = producer.Publish(EventTopicAll, b)
 	if err != nil {
 		log.Errorf("Error: %s", err)

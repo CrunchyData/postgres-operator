@@ -97,8 +97,10 @@ const (
 	UPDATE_USER_PERM      = "UpdateUser"
 )
 
-var RoleMap map[string]map[string]string
-var PermMap map[string]string
+var (
+	RoleMap map[string]map[string]string
+	PermMap map[string]string
+)
 
 func initializePerms() {
 	RoleMap = make(map[string]map[string]string)
@@ -180,5 +182,4 @@ func initializePerms() {
 	}
 
 	log.Infof("loading PermMap with %d Permissions\n", len(PermMap))
-
 }

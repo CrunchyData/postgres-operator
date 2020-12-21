@@ -81,7 +81,6 @@ func createSchedule(args []string, ns string) {
 	}
 
 	response, err := api.CreateSchedule(httpclient, &SessionCredentials, r)
-
 	if err != nil {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
@@ -100,7 +99,6 @@ func createSchedule(args []string, ns string) {
 		fmt.Println("No clusters found.")
 		return
 	}
-
 }
 
 func deleteSchedule(args []string, ns string) {
@@ -124,7 +122,6 @@ func deleteSchedule(args []string, ns string) {
 	}
 
 	response, err := api.DeleteSchedule(httpclient, &SessionCredentials, r)
-
 	if err != nil {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
@@ -143,7 +140,6 @@ func deleteSchedule(args []string, ns string) {
 		fmt.Println("No schedules found.")
 		return
 	}
-
 }
 
 func showSchedule(args []string, ns string) {
@@ -169,7 +165,6 @@ func showSchedule(args []string, ns string) {
 	}
 
 	response, err := api.ShowSchedule(httpclient, &SessionCredentials, r)
-
 	if err != nil {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)

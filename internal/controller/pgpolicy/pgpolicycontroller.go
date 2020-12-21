@@ -44,8 +44,8 @@ func (c *Controller) onAdd(obj interface{}) {
 	policy := obj.(*crv1.Pgpolicy)
 	log.Debugf("[pgpolicy Controller] onAdd ns=%s %s", policy.ObjectMeta.Namespace, policy.ObjectMeta.SelfLink)
 
-	//handle the case of when a pgpolicy is already processed, which
-	//is the case when the operator restarts
+	// handle the case of when a pgpolicy is already processed, which
+	// is the case when the operator restarts
 	if policy.Status.State == crv1.PgpolicyStateProcessed {
 		log.Debug("pgpolicy " + policy.ObjectMeta.Name + " already processed")
 		return
@@ -65,7 +65,7 @@ func (c *Controller) onAdd(obj interface{}) {
 		log.Errorf("ERROR updating pgpolicy status: %s", err.Error())
 	}
 
-	//publish event
+	// publish event
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicPolicy
 
@@ -84,7 +84,6 @@ func (c *Controller) onAdd(obj interface{}) {
 	if err != nil {
 		log.Error(err.Error())
 	}
-
 }
 
 // onUpdate is called when a pgpolicy is updated
@@ -98,7 +97,7 @@ func (c *Controller) onDelete(obj interface{}) {
 
 	log.Debugf("DELETED pgpolicy %s", policy.ObjectMeta.Name)
 
-	//publish event
+	// publish event
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicPolicy
 
@@ -117,12 +116,10 @@ func (c *Controller) onDelete(obj interface{}) {
 	if err != nil {
 		log.Error(err.Error())
 	}
-
 }
 
 // AddPGPolicyEventHandler adds the pgpolicy event handler to the pgpolicy informer
 func (c *Controller) AddPGPolicyEventHandler() {
-
 	c.Informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.onAdd,
 		UpdateFunc: c.onUpdate,

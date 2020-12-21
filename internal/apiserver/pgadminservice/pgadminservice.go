@@ -63,20 +63,19 @@ func CreatePgAdminHandler(w http.ResponseWriter, r *http.Request) {
 
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.SetError(apiserver.VERSION_MISMATCH_ERROR)
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.SetError(err.Error())
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = CreatePgAdmin(&request, ns, username)
-	json.NewEncoder(w).Encode(resp)
-
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // DeletePgAdminHandler ...
@@ -117,20 +116,19 @@ func DeletePgAdminHandler(w http.ResponseWriter, r *http.Request) {
 
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.SetError(apiserver.VERSION_MISMATCH_ERROR)
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
 	if err != nil {
 		resp.SetError(err.Error())
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = DeletePgAdmin(&request, ns)
-	json.NewEncoder(w).Encode(resp)
-
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // ShowPgAdminHandler is the HTTP handler to get information about a pgBouncer
@@ -173,21 +171,19 @@ func ShowPgAdminHandler(w http.ResponseWriter, r *http.Request) {
 	// ensure the versions align...
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.SetError(apiserver.VERSION_MISMATCH_ERROR)
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	// ensure the namespace being used exists
 	namespace, err := apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
-
 	if err != nil {
 		resp.SetError(err.Error())
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	// get the information about a pgAdmin deployment(s)
 	resp = ShowPgAdmin(&request, namespace)
-	json.NewEncoder(w).Encode(resp)
-
+	_ = json.NewEncoder(w).Encode(resp)
 }

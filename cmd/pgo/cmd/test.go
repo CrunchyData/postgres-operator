@@ -57,11 +57,9 @@ func init() {
 	testCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	testCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", "The output format. Currently, json is the only supported value.")
 	testCmd.Flags().BoolVar(&AllFlag, "all", false, "test all resources.")
-
 }
 
 func showTest(args []string, ns string) {
-
 	log.Debugf("showCluster called %v", args)
 
 	log.Debugf("selector is %s", Selector)
@@ -110,7 +108,7 @@ func showTest(args []string, ns string) {
 
 		for _, result := range response.Results {
 			fmt.Println("")
-			fmt.Println(fmt.Sprintf("cluster : %s", result.ClusterName))
+			fmt.Printf("cluster : %s\n", result.ClusterName)
 
 			// first, print the test results for the endpoints, which make up
 			// the services
@@ -124,15 +122,15 @@ func showTest(args []string, ns string) {
 // prints out a set of test results
 func printTestResults(testName string, results []msgs.ClusterTestDetail) {
 	// print out the header for this group of tests
-	fmt.Println(fmt.Sprintf("%s%s", TreeBranch, testName))
+	fmt.Printf("%s%s\n", TreeBranch, testName)
 	// iterate though the results and print them!
 	for _, v := range results {
 		fmt.Printf("%s%s%s (%s): ",
 			TreeBranch, TreeBranch, v.InstanceType, v.Message)
 		if v.Available {
-			fmt.Println(fmt.Sprintf("%s", GREEN("UP")))
+			fmt.Println(GREEN("UP"))
 		} else {
-			fmt.Println(fmt.Sprintf("%s", RED("DOWN")))
+			fmt.Println(RED("DOWN"))
 		}
 	}
 }

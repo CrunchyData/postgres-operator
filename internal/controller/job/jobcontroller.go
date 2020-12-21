@@ -33,11 +33,10 @@ type Controller struct {
 // onAdd is called when a postgresql operator job is created and an associated add event is
 // generated
 func (c *Controller) onAdd(obj interface{}) {
-
 	job := obj.(*apiv1.Job)
 	labels := job.GetObjectMeta().GetLabels()
 
-	//only process jobs with with vendor=crunchydata label
+	// only process jobs with with vendor=crunchydata label
 	if labels[config.LABEL_VENDOR] != "crunchydata" {
 		return
 	}
@@ -48,12 +47,11 @@ func (c *Controller) onAdd(obj interface{}) {
 // onUpdate is called when a postgresql operator job is created and an associated update event is
 // generated
 func (c *Controller) onUpdate(oldObj, newObj interface{}) {
-
 	var err error
 	job := newObj.(*apiv1.Job)
 	labels := job.GetObjectMeta().GetLabels()
 
-	//only process jobs with with vendor=crunchydata label
+	// only process jobs with with vendor=crunchydata label
 	if labels[config.LABEL_VENDOR] != "crunchydata" {
 		return
 	}
@@ -69,7 +67,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		err = c.handleRMDataUpdate(job)
 	case labels[config.LABEL_BACKREST] == "true" ||
 		labels[config.LABEL_BACKREST_RESTORE] == "true":
-		err = c.handleBackrestUpdate(job)
+		c.handleBackrestUpdate(job)
 	case labels[config.LABEL_BACKUP_TYPE_PGDUMP] == "true":
 		err = c.handlePGDumpUpdate(job)
 	case labels[config.LABEL_RESTORE_TYPE_PGRESTORE] == "true":
@@ -85,11 +83,10 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 // onDelete is called when a postgresql operator job is deleted
 func (c *Controller) onDelete(obj interface{}) {
-
 	job := obj.(*apiv1.Job)
 	labels := job.GetObjectMeta().GetLabels()
 
-	//only process jobs with with vendor=crunchydata label
+	// only process jobs with with vendor=crunchydata label
 	if labels[config.LABEL_VENDOR] != "crunchydata" {
 		return
 	}
@@ -99,7 +96,6 @@ func (c *Controller) onDelete(obj interface{}) {
 
 // AddJobEventHandler adds the job event handler to the job informer
 func (c *Controller) AddJobEventHandler() {
-
 	c.Informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.onAdd,
 		UpdateFunc: c.onUpdate,

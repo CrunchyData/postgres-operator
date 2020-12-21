@@ -116,7 +116,6 @@ func Reload(request *msgs.ReloadRequest, ns, username string) msgs.ReloadRespons
 
 // publishReloadClusterEvent publishes an event when a cluster is reloaded
 func publishReloadClusterEvent(clusterName, username, namespace string) error {
-
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 

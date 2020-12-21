@@ -17,23 +17,25 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func ShowNamespace(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.ShowNamespaceRequest) (msgs.ShowNamespaceResponse, error) {
-
 	var resp msgs.ShowNamespaceResponse
 	resp.Status.Code = msgs.Ok
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/namespace"
 	log.Debugf("ShowNamespace called...[%s]", url)
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		return resp, err
@@ -61,19 +63,18 @@ func ShowNamespace(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 	}
 
 	return resp, err
-
 }
 
 func CreateNamespace(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreateNamespaceRequest) (msgs.CreateNamespaceResponse, error) {
-
 	var resp msgs.CreateNamespaceResponse
 	resp.Status.Code = msgs.Ok
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/namespacecreate"
 	log.Debugf("CreateNamespace called...[%s]", url)
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		return resp, err
@@ -107,15 +108,15 @@ func CreateNamespace(httpclient *http.Client, SessionCredentials *msgs.BasicAuth
 }
 
 func DeleteNamespace(httpclient *http.Client, request *msgs.DeleteNamespaceRequest, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DeleteNamespaceResponse, error) {
-
 	var response msgs.DeleteNamespaceResponse
 
 	url := SessionCredentials.APIServerURL + "/namespacedelete"
 
 	log.Debugf("DeleteNamespace called [%s]", url)
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		response.Status.Code = msgs.Error
 		return response, err
@@ -142,18 +143,18 @@ func DeleteNamespace(httpclient *http.Client, request *msgs.DeleteNamespaceReque
 	}
 
 	return response, err
-
 }
-func UpdateNamespace(httpclient *http.Client, request *msgs.UpdateNamespaceRequest, SessionCredentials *msgs.BasicAuthCredentials) (msgs.UpdateNamespaceResponse, error) {
 
+func UpdateNamespace(httpclient *http.Client, request *msgs.UpdateNamespaceRequest, SessionCredentials *msgs.BasicAuthCredentials) (msgs.UpdateNamespaceResponse, error) {
 	var response msgs.UpdateNamespaceResponse
 
 	url := SessionCredentials.APIServerURL + "/namespaceupdate"
 
 	log.Debugf("UpdateNamespace called [%s]", url)
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		response.Status.Code = msgs.Error
 		return response, err
@@ -180,5 +181,4 @@ func UpdateNamespace(httpclient *http.Client, request *msgs.UpdateNamespaceReque
 	}
 
 	return response, err
-
 }

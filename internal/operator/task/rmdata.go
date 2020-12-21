@@ -53,7 +53,7 @@ type rmdatajobTemplateFields struct {
 func RemoveData(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	ctx := context.TODO()
 
-	//create marker (clustername, namespace)
+	// create marker (clustername, namespace)
 	patch, err := kubeapi.NewJSONPatch().
 		Add("spec", "parameters", config.LABEL_DELETE_DATA_STARTED)(time.Now().Format(time.RFC3339)).
 		Bytes()
@@ -67,8 +67,8 @@ func RemoveData(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask
 		return
 	}
 
-	//create the Job to remove the data
-	//pvcName := task.Spec.Parameters[config.LABEL_PVC_NAME]
+	// create the Job to remove the data
+	// pvcName := task.Spec.Parameters[config.LABEL_PVC_NAME]
 	clusterName := task.Spec.Parameters[config.LABEL_PG_CLUSTER]
 	clusterPGHAScope := task.Spec.Parameters[config.LABEL_PGHA_SCOPE]
 	replicaName := task.Spec.Parameters[config.LABEL_REPLICA_NAME]
@@ -116,7 +116,7 @@ func RemoveData(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		config.RmdatajobTemplate.Execute(os.Stdout, jobFields)
+		_ = config.RmdatajobTemplate.Execute(os.Stdout, jobFields)
 	}
 
 	newjob := v1batch.Job{}
@@ -137,11 +137,11 @@ func RemoveData(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask
 	}
 	log.Debugf("successfully created rmdata job %s", j.Name)
 
-	publishDeleteCluster(task.Spec.Parameters[config.LABEL_PG_CLUSTER], task.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+	publishDeleteCluster(task.Spec.Parameters[config.LABEL_PG_CLUSTER],
 		task.ObjectMeta.Labels[config.LABEL_PGOUSER], namespace)
 }
 
-func publishDeleteCluster(clusterName, identifier, username, namespace string) {
+func publishDeleteCluster(clusterName, username, namespace string) {
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 

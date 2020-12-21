@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strconv"
 	"syscall"
 	"time"
 
@@ -40,16 +39,15 @@ import (
 const (
 	schedulerLabel       = "crunchy-scheduler=true"
 	pgoNamespaceEnv      = "PGO_OPERATOR_NAMESPACE"
-	timeoutEnv           = "TIMEOUT"
 	namespaceWorkerCount = 1
 )
 
-var nsRefreshInterval = 10 * time.Minute
-var installationName string
-var pgoNamespace string
-var timeout time.Duration
-var seconds int
-var clientset kubeapi.Interface
+var (
+	nsRefreshInterval = 10 * time.Minute
+	installationName  string
+	pgoNamespace      string
+	clientset         kubeapi.Interface
+)
 
 // NamespaceOperatingMode defines the namespace operating mode for the cluster,
 // e.g. "dynamic", "readonly" or "disabled".  See type NamespaceOperatingMode
@@ -61,7 +59,7 @@ func init() {
 	log.SetLevel(log.InfoLevel)
 
 	debugFlag := os.Getenv("CRUNCHY_DEBUG")
-	//add logging configuration
+	// add logging configuration
 	crunchylog.CrunchyLogger(crunchylog.SetParameters())
 	if debugFlag == "true" {
 		log.SetLevel(log.DebugLevel)
@@ -81,20 +79,6 @@ func init() {
 	if pgoNamespace == "" {
 		log.WithFields(log.Fields{}).Fatalf("Failed to get PGO_OPERATOR_NAMESPACE environment: %s", pgoNamespaceEnv)
 	}
-
-	secondsEnv := os.Getenv(timeoutEnv)
-	seconds = 300
-	if secondsEnv == "" {
-		log.WithFields(log.Fields{}).Info("No timeout set, defaulting to 300 seconds")
-	} else {
-		seconds, err = strconv.Atoi(secondsEnv)
-		if err != nil {
-			log.WithFields(log.Fields{}).Fatalf("Failed to convert timeout env to seconds: %s", err)
-		}
-	}
-
-	log.WithFields(log.Fields{}).Infof("Setting timeout to: %d", seconds)
-	timeout = time.Second * time.Duration(seconds)
 
 	clientset, err = kubeapi.NewClient()
 	if err != nil {
@@ -116,7 +100,7 @@ func init() {
 
 func main() {
 	log.Info("Starting Crunchy Scheduler")
-	//give time for pgo-event to start up
+	// give time for pgo-event to start up
 	time.Sleep(time.Duration(5) * time.Second)
 
 	scheduler := sched.New(schedulerLabel, pgoNamespace, clientset)
@@ -150,7 +134,7 @@ func main() {
 		log.WithFields(log.Fields{}).Fatalf("Failed to create controller manager: %s", err)
 		os.Exit(2)
 	}
-	controllerManager.RunAll()
+	_ = controllerManager.RunAll()
 
 	// if the namespace operating mode is not disabled, then create and start a namespace
 	// controller
@@ -211,7 +195,6 @@ func setNamespaceOperatingMode(clientset kubernetes.Interface) error {
 // createAndStartNamespaceController creates a namespace controller and then starts it
 func createAndStartNamespaceController(kubeClientset kubernetes.Interface,
 	controllerManager controller.Manager, stopCh <-chan struct{}) error {
-
 	nsKubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientset,
 		nsRefreshInterval,
 		kubeinformers.WithTweakListOptions(func(options *metav1.ListOptions) {

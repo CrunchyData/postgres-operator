@@ -45,11 +45,9 @@ func Execute() {
 		log.Debug(err.Error())
 		os.Exit(-1)
 	}
-
 }
 
 func init() {
-
 	cobra.OnInitialize(initConfig)
 	log.Debug("init called")
 	GREEN = color.New(color.FgGreen).SprintFunc()
@@ -68,7 +66,6 @@ func init() {
 	RootCmd.PersistentFlags().BoolVar(&PGO_DISABLE_TLS, "disable-tls", false, "Disable TLS authentication to the Postgres Operator.")
 	RootCmd.PersistentFlags().BoolVar(&EXCLUDE_OS_TRUST, "exclude-os-trust", defExclOSTrust, "Exclude CA certs from OS default trust store")
 	RootCmd.PersistentFlags().BoolVar(&DebugFlag, "debug", false, "Enable additional output for debugging.")
-
 }
 
 func initConfig() {
@@ -115,10 +112,11 @@ func initConfig() {
 
 func generateBashCompletion() {
 	log.Debugf("generating bash completion script")
+	// #nosec: G303
 	file, err2 := os.Create("/tmp/pgo-bash-completion.out")
 	if err2 != nil {
 		fmt.Println("Error: ", err2.Error())
 	}
 	defer file.Close()
-	RootCmd.GenBashCompletion(file)
+	_ = RootCmd.GenBashCompletion(file)
 }

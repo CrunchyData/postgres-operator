@@ -37,8 +37,10 @@ type Interface interface {
 }
 
 // Interface should satisfy both our typed Interface and the standard one.
-var _ crunchydata.Interface = Interface(nil)
-var _ kubernetes.Interface = Interface(nil)
+var (
+	_ crunchydata.Interface = Interface(nil)
+	_ kubernetes.Interface  = Interface(nil)
+)
 
 // Client provides methods for interacting with Kubernetes resources.
 // It implements both kubernetes and crunchydata clientset Interfaces.

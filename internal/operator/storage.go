@@ -33,7 +33,7 @@ func (s StorageResult) InlineVolumeSource() string {
 	b := new(bytes.Buffer)
 	e := json.NewEncoder(b)
 	e.SetEscapeHTML(false)
-	e.Encode(s.VolumeSource())
+	_ = e.Encode(s.VolumeSource())
 
 	// remove trailing newline and surrounding brackets
 	return b.String()[1 : b.Len()-2]

@@ -69,14 +69,20 @@ const (
 const (
 	// three of these are exported, as they are used to help add the information
 	// into the templates. Say the last one 10 times fast
-	BackRestRepoSecretKeyAWSS3KeyAWSS3CACert    = "aws-s3-ca.crt"
-	BackRestRepoSecretKeyAWSS3KeyAWSS3Key       = "aws-s3-key"
+	// #nosec: G101
+	BackRestRepoSecretKeyAWSS3KeyAWSS3CACert = "aws-s3-ca.crt"
+	// #nosec: G101
+	BackRestRepoSecretKeyAWSS3KeyAWSS3Key = "aws-s3-key"
+	// #nosec: G101
 	BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret = "aws-s3-key-secret"
 	// the rest are private
-	backRestRepoSecretKeyAuthorizedKeys    = "authorized_keys"
-	backRestRepoSecretKeySSHConfig         = "config"
-	backRestRepoSecretKeySSHDConfig        = "sshd_config"
-	backRestRepoSecretKeySSHPrivateKey     = "id_ed25519"
+	backRestRepoSecretKeyAuthorizedKeys = "authorized_keys"
+	backRestRepoSecretKeySSHConfig      = "config"
+	// #nosec: G101
+	backRestRepoSecretKeySSHDConfig = "sshd_config"
+	// #nosec: G101
+	backRestRepoSecretKeySSHPrivateKey = "id_ed25519"
+	// #nosec: G101
 	backRestRepoSecretKeySSHHostPrivateKey = "ssh_host_ed25519_key"
 )
 
@@ -94,23 +100,21 @@ const (
 	//
 	// The escaping for SQL injections is handled in the SetPostgreSQLPassword
 	// function
+	// #nosec: G101
 	sqlSetPasswordDefault = `ALTER ROLE %s PASSWORD %s;`
 )
 
-var (
-	// ErrMissingConfigAnnotation represents an error thrown when the 'config' annotation is found
-	// to be missing from the 'config' configMap created to store cluster-wide configuration
-	ErrMissingConfigAnnotation error = errors.New("'config' annotation missing from cluster " +
-		"configutation")
-)
+// ErrMissingConfigAnnotation represents an error thrown when the 'config' annotation is found
+// to be missing from the 'config' configMap created to store cluster-wide configuration
+var ErrMissingConfigAnnotation error = errors.New("'config' annotation missing from cluster " +
+	"configutation")
 
-var (
-	// CmdStopPostgreSQL is the command used to stop a PostgreSQL instance, which
-	// uses the "fast" shutdown mode. This needs a data directory appended to it
-	cmdStopPostgreSQL = []string{"pg_ctl", "stop",
-		"-m", "fast", "-D",
-	}
-)
+// CmdStopPostgreSQL is the command used to stop a PostgreSQL instance, which
+// uses the "fast" shutdown mode. This needs a data directory appended to it
+var cmdStopPostgreSQL = []string{
+	"pg_ctl", "stop",
+	"-m", "fast", "-D",
+}
 
 // CreateBackrestRepoSecrets creates the secrets required to manage the
 // pgBackRest repo container
@@ -229,7 +233,6 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 
 // IsAutofailEnabled - returns true if autofail label is set to true, false if not.
 func IsAutofailEnabled(cluster *crv1.Pgcluster) bool {
-
 	labels := cluster.ObjectMeta.Labels
 	failLabel := labels[config.LABEL_AUTOFAIL]
 
@@ -248,7 +251,6 @@ func GeneratedPasswordValidUntilDays(configuredValidUntilDays string) int {
 	// note that "configuredPasswordLength" may be an empty string, and as such
 	// the below line could fail. That's ok though! as we have a default set up
 	validUntilDays, err := strconv.Atoi(configuredValidUntilDays)
-
 	// if there is an error...set it to a default
 	if err != nil {
 		validUntilDays = DefaultPasswordValidUntilDays
@@ -269,7 +271,6 @@ func GetPrimaryPod(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (*v1
 
 	// query the pods
 	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
-
 	// if there is an error, log it and abort
 	if err != nil {
 		return nil, err
@@ -277,8 +278,7 @@ func GetPrimaryPod(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (*v1
 
 	// if no pods are retirn, then also raise an error
 	if len(pods.Items) == 0 {
-		err := errors.New(fmt.Sprintf("primary pod not found for selector [%s]", selector))
-		return nil, err
+		return nil, fmt.Errorf("primary pod not found for selector %q", selector)
 	}
 
 	// Grab the first pod from the list as this is presumably the primary pod
@@ -294,7 +294,6 @@ func GetS3CredsFromBackrestRepoSecret(clientset kubernetes.Interface, namespace,
 	s3Secret := AWSS3Secret{}
 
 	secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
-
 	if err != nil {
 		log.Error(err)
 		return s3Secret, err

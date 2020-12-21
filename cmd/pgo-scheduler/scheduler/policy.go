@@ -60,7 +60,8 @@ func (p PolicyJob) Run() {
 	contextLogger := log.WithFields(log.Fields{
 		"namespace": p.namespace,
 		"policy":    p.policy,
-		"cluster":   p.cluster})
+		"cluster":   p.cluster,
+	})
 
 	contextLogger.Info("Running Policy schedule")
 
@@ -98,7 +99,7 @@ func (p PolicyJob) Run() {
 	data := make(map[string]string)
 	data[filename] = string(policy.Spec.SQL)
 
-	var labels = map[string]string{
+	labels := map[string]string{
 		"pg-cluster": p.cluster,
 	}
 	labels["pg-cluster"] = p.cluster
@@ -146,7 +147,8 @@ func (p PolicyJob) Run() {
 	var doc bytes.Buffer
 	if err := config.PolicyJobTemplate.Execute(&doc, policyJob); err != nil {
 		contextLogger.WithFields(log.Fields{
-			"error": err}).Error("Failed to render job template")
+			"error": err,
+		}).Error("Failed to render job template")
 		return
 	}
 

@@ -17,6 +17,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -33,12 +34,12 @@ func ShowDf(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentia
 
 	log.Debugf("ShowDf called [%+v]", request)
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/df"
 
 	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
-
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
@@ -47,7 +48,6 @@ func ShowDf(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentia
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
-
 	if err != nil {
 		return response, err
 	}

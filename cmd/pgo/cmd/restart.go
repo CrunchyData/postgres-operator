@@ -47,7 +47,6 @@ var restartCmd = &cobra.Command{
 	And use the 'query' flag obtain a list of all instances within the cluster:
 	pgo restart mycluster --query`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if OutputFormat != "" {
 			if OutputFormat != "json" {
 				fmt.Println("Error: ", "json is the only supported --output format value")
@@ -77,7 +76,6 @@ var restartCmd = &cobra.Command{
 }
 
 func init() {
-
 	RootCmd.AddCommand(restartCmd)
 
 	restartCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
@@ -89,7 +87,6 @@ func init() {
 
 // restart sends a request to restart a PG cluster or one or more instances within it.
 func restart(clusterName, namespace string) {
-
 	log.Debugf("restart called %v", clusterName)
 
 	request := new(msgs.RestartRequest)
@@ -141,7 +138,6 @@ func restart(clusterName, namespace string) {
 // instances (the primary and all replicas) within a cluster.  This is useful when the user
 // would like to specify one or more instances for a restart using the "--target" flag.
 func queryRestart(args []string, namespace string) {
-
 	log.Debugf("queryRestart called %v", args)
 
 	for _, clusterName := range args {

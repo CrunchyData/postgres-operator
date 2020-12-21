@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-//unused but coming soon to a theatre near you
+// unused but coming soon to a theatre near you
 var ConfigMapName string
 
 var reloadCmd = &cobra.Command{
@@ -50,7 +50,6 @@ var reloadCmd = &cobra.Command{
 				fmt.Println("Aborting...")
 			}
 		}
-
 	},
 }
 
@@ -59,7 +58,6 @@ func init() {
 
 	reloadCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	reloadCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
-
 }
 
 // reload ....
@@ -71,7 +69,6 @@ func reload(args []string, ns string) {
 	request.Selector = Selector
 	request.Namespace = ns
 	response, err := api.Reload(httpclient, &SessionCredentials, request)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -95,5 +92,4 @@ func reload(args []string, ns string) {
 		fmt.Println("No clusters found.")
 		return
 	}
-
 }

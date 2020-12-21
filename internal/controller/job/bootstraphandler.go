@@ -115,7 +115,7 @@ func (c *Controller) handleBootstrapUpdate(job *apiv1.Job) error {
 			namespace, crv1.PgtaskWorkflowBackrestRestorePrimaryCreatedStatus); err != nil {
 			log.Warn(err)
 		}
-		publishRestoreComplete(labels[config.LABEL_PG_CLUSTER], labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
+		publishRestoreComplete(labels[config.LABEL_PG_CLUSTER],
 			labels[config.LABEL_PGOUSER], job.ObjectMeta.Namespace)
 	}
 

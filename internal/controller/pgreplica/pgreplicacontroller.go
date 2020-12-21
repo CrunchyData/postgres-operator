@@ -44,7 +44,6 @@ type Controller struct {
 // processNextWorkItem function in order to read and process a message on the
 // workqueue.
 func (c *Controller) RunWorker(stopCh <-chan struct{}, doneCh chan<- struct{}) {
-
 	go c.waitForShutdown(stopCh)
 
 	for c.processNextItem() {
@@ -96,8 +95,8 @@ func (c *Controller) processNextItem() bool {
 	} else {
 		log.Debugf("working...no replica found, means we process")
 
-		//handle the case of when a pgreplica is added which is
-		//scaling up a cluster
+		// handle the case of when a pgreplica is added which is
+		// scaling up a cluster
 		replica, err := c.Clientset.CrunchydataV1().Pgreplicas(keyNamespace).Get(ctx, keyResourceName, metav1.GetOptions{})
 		if err != nil {
 			log.Error(err)
@@ -155,8 +154,8 @@ func (c *Controller) processNextItem() bool {
 func (c *Controller) onAdd(obj interface{}) {
 	replica := obj.(*crv1.Pgreplica)
 
-	//handle the case of pgreplicas being processed already and
-	//when the operator restarts
+	// handle the case of pgreplicas being processed already and
+	// when the operator restarts
 	if replica.Status.State == crv1.PgreplicaStateProcessed {
 		log.Debug("pgreplica " + replica.ObjectMeta.Name + " already processed")
 		return
@@ -167,7 +166,6 @@ func (c *Controller) onAdd(obj interface{}) {
 		log.Debugf("onAdd putting key in queue %s", key)
 		c.Queue.Add(key)
 	}
-
 }
 
 // onUpdate is called when a pgreplica is updated
@@ -215,26 +213,24 @@ func (c *Controller) onDelete(obj interface{}) {
 	replica := obj.(*crv1.Pgreplica)
 	log.Debugf("[pgreplica Controller] OnDelete ns=%s %s", replica.ObjectMeta.Namespace, replica.ObjectMeta.SelfLink)
 
-	//make sure we are not removing a replica deployment
-	//that is now the primary after a failover
+	// make sure we are not removing a replica deployment
+	// that is now the primary after a failover
 	dep, err := c.Clientset.
 		AppsV1().Deployments(replica.ObjectMeta.Namespace).
 		Get(ctx, replica.Spec.Name, metav1.GetOptions{})
 	if err == nil {
 		if dep.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == dep.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] {
-			//the replica was made a primary at some point
-			//we will not scale down the deployment
+			// the replica was made a primary at some point
+			// we will not scale down the deployment
 			log.Debugf("[pgreplica Controller] OnDelete not scaling down the replica since it is acting as a primary")
 		} else {
 			clusteroperator.ScaleDownBase(c.Clientset, replica, replica.ObjectMeta.Namespace)
 		}
 	}
-
 }
 
 // AddPGReplicaEventHandler adds the pgreplica event handler to the pgreplica informer
 func (c *Controller) AddPGReplicaEventHandler() {
-
 	// Your custom resource event handlers.
 	c.Informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.onAdd,

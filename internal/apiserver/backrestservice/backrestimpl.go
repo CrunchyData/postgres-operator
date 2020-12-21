@@ -349,10 +349,7 @@ func getBackrestRepoPodName(cluster *crv1.Pgcluster) (string, error) {
 }
 
 func isPrimary(pod *v1.Pod, clusterName string) bool {
-	if pod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
-		return true
-	}
-	return false
+	return pod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName
 }
 
 func isReady(pod *v1.Pod) bool {
@@ -364,10 +361,8 @@ func isReady(pod *v1.Pod) bool {
 			readyCount++
 		}
 	}
-	if readyCount != containerCount {
-		return false
-	}
-	return true
+
+	return readyCount == containerCount
 }
 
 // isPrimaryReady goes through the pod list to first identify the
@@ -385,13 +380,14 @@ func isPrimaryReady(cluster *crv1.Pgcluster, ns string) error {
 	if err != nil {
 		return err
 	}
-	for _, p := range pods.Items {
-		if isPrimary(&p, cluster.Spec.Name) && isReady(&p) {
+	for i := range pods.Items {
+		p := &pods.Items[i]
+		if isPrimary(p, cluster.Spec.Name) && isReady(p) {
 			primaryReady = true
 		}
 	}
 
-	if primaryReady == false {
+	if !primaryReady {
 		return errors.New("primary pod is not in Ready state")
 	}
 	return nil
@@ -463,7 +459,7 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 			verifyTLS, _ := strconv.ParseBool(operator.GetS3VerifyTLSSetting(c))
 
 			// get the pgBackRest info using this legacy function
-			info, err := getInfo(c.Name, storageType, podname, ns, verifyTLS)
+			info, err := getInfo(storageType, podname, ns, verifyTLS)
 			// see if the function returned successfully, and if so, unmarshal the JSON
 			if err != nil {
 				log.Error(err)
@@ -490,7 +486,7 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 	return response
 }
 
-func getInfo(clusterName, storageType, podname, ns string, verifyTLS bool) (string, error) {
+func getInfo(storageType, podname, ns string, verifyTLS bool) (string, error) {
 	log.Debug("backrest info command requested")
 
 	cmd := pgBackRestInfoCommand
@@ -589,7 +585,7 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 		return resp
 	}
 
-	pgtask, err := getRestoreParams(request, ns, *cluster)
+	pgtask, err := getRestoreParams(request, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -624,7 +620,7 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 	return resp
 }
 
-func getRestoreParams(request *msgs.RestoreRequest, ns string, cluster crv1.Pgcluster) (*crv1.Pgtask, error) {
+func getRestoreParams(request *msgs.RestoreRequest, ns string) (*crv1.Pgtask, error) {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}

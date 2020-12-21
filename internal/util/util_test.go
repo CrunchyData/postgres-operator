@@ -3,7 +3,6 @@ package util
 import "testing"
 
 func TestGetStandardImageTag(t *testing.T) {
-
 	assertCorrectMessage := func(t testing.TB, got, want string) {
 		t.Helper()
 		if got != want {

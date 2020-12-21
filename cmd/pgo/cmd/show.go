@@ -22,8 +22,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const TreeBranch = "\t"
-const TreeTrunk = "\t"
+const (
+	TreeBranch = "\t"
+	TreeTrunk  = "\t"
+)
 
 var AllFlag bool
 
@@ -80,7 +82,6 @@ Valid resource types include:
 	* user`)
 			}
 		}
-
 	},
 }
 
@@ -327,7 +328,7 @@ var ShowUserCmd = &cobra.Command{
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		if Selector == "" && AllFlag == false && len(args) == 0 {
+		if Selector == "" && !AllFlag && len(args) == 0 {
 			fmt.Println("Error: --selector, --all, or cluster name()s required for this command")
 		} else {
 			showUser(args, Namespace)

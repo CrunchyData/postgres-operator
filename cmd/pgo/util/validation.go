@@ -31,7 +31,6 @@ var validResourceName = regexp.MustCompile(`^[a-z0-9.\-]+$`).MatchString
 //      https://kubernetes.io/docs/concepts/overview/working-with-objects/names/
 //
 func IsValidForResourceName(target string) bool {
-
 	log.Debugf("IsValidForResourceName: %s", target)
 
 	return validResourceName(target)
@@ -48,7 +47,7 @@ func IsValidForResourceName(target string) bool {
 func ValidateQuantity(quantity, flag string) error {
 	if quantity != "" {
 		if _, err := resource.ParseQuantity(quantity); err != nil {
-			return fmt.Errorf("Error: \"%s\" - %s", flag, err.Error())
+			return fmt.Errorf("Error: \"%s\" - %w", flag, err)
 		}
 	}
 

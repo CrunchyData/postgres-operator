@@ -75,7 +75,6 @@ func deleteCluster(args []string, ns string) {
 	for _, arg := range args {
 		r.Clustername = arg
 		response, err := api.DeleteCluster(httpclient, &r, &SessionCredentials)
-
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 			os.Exit(2)
@@ -90,12 +89,10 @@ func deleteCluster(args []string, ns string) {
 		}
 
 	}
-
 }
 
 // showCluster ...
 func showCluster(args []string, ns string) {
-
 	log.Debugf("showCluster called %v", args)
 
 	if OutputFormat != "" {
@@ -149,12 +146,11 @@ func showCluster(args []string, ns string) {
 			return
 		}
 
-		for _, clusterDetail := range response.Results {
-			printCluster(&clusterDetail)
+		for i := range response.Results {
+			printCluster(&response.Results[i])
 		}
 
 	}
-
 }
 
 // printCluster
@@ -173,7 +169,7 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 		podStr := fmt.Sprintf("%spod : %s (%s) on %s (%s) %s", TreeBranch, pod.Name, string(pod.Phase), pod.NodeName, pod.ReadyStatus, podType)
 		fmt.Println(podStr)
 		for _, pvc := range pod.PVC {
-			fmt.Println(fmt.Sprintf("%spvc: %s (%s)", TreeBranch+TreeBranch, pvc.Name, pvc.Capacity))
+			fmt.Printf("%spvc: %s (%s)\n", TreeBranch+TreeBranch, pvc.Name, pvc.Capacity)
 		}
 	}
 
@@ -237,7 +233,6 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 		fmt.Printf("%s=%s ", k, v)
 	}
 	fmt.Println("")
-
 }
 
 func printPolicies(d *msgs.ShowClusterDeployment) {
@@ -699,7 +694,6 @@ func updateCluster(args []string, ns string) {
 	}
 
 	response, err := api.UpdateCluster(httpclient, &r, &SessionCredentials)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -712,5 +706,4 @@ func updateCluster(args []string, ns string) {
 	} else {
 		fmt.Println("Error: " + response.Status.Msg)
 	}
-
 }

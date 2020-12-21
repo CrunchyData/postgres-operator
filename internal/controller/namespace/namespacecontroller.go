@@ -43,7 +43,6 @@ type Controller struct {
 // PostgreSQL Operator are added and deleted.
 func NewNamespaceController(controllerManager controller.Manager,
 	informer coreinformers.NamespaceInformer, workerCount int) (*Controller, error) {
-
 	controller := &Controller{
 		ControllerManager: controllerManager,
 		Informer:          informer,
@@ -72,7 +71,6 @@ func NewNamespaceController(controllerManager controller.Manager,
 // function in order to read and process a message on the worker queue.  Once the worker queue
 // is instructed to shutdown, a message is written to the done channel.
 func (c *Controller) RunWorker(stopCh <-chan struct{}) {
-
 	go c.waitForShutdown(stopCh)
 
 	for c.processNextWorkItem() {
@@ -96,7 +94,6 @@ func (c *Controller) ShutdownWorker() {
 // so, the namespace resource is converted into a namespace/name string and is then added to the
 // work queue
 func (c *Controller) enqueueNamespace(obj interface{}) {
-
 	var key string
 	var err error
 	if key, err = cache.MetaNamespaceKeyFunc(obj); err != nil {
@@ -109,7 +106,6 @@ func (c *Controller) enqueueNamespace(obj interface{}) {
 // processNextWorkItem will read a single work item off the work queue and processes it via
 // the Namespace sync handler
 func (c *Controller) processNextWorkItem() bool {
-
 	obj, shutdown := c.workqueue.Get()
 
 	if shutdown {

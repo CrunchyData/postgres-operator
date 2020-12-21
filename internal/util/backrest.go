@@ -27,7 +27,8 @@ const (
 	BackrestRepoDeploymentName = "%s-backrest-shared-repo"
 	BackrestRepoServiceName    = "%s-backrest-shared-repo"
 	BackrestRepoPVCName        = "%s-pgbr-repo"
-	BackrestRepoSecretName     = "%s-backrest-repo-config"
+	// #nosec: G101
+	BackrestRepoSecretName = "%s-backrest-repo-config"
 )
 
 // defines the default repo1-path for pgBackRest for use when a specic path is not provided
@@ -42,7 +43,6 @@ const defaultBackrestRepoPath = "/backrestrepo/%s-backrest-shared-repo"
 // validation is ocurring for a restore, the ensure only one storage type is selected.
 func ValidateBackrestStorageTypeOnBackupRestore(newBackRestStorageType,
 	currentBackRestStorageType string, restore bool) error {
-
 	if newBackRestStorageType != "" && !IsValidBackrestStorageType(newBackRestStorageType) {
 		return fmt.Errorf("Invalid value provided for pgBackRest storage type. The following "+
 			"values are allowed: %s", "\""+strings.Join(crv1.BackrestStorageTypes, "\", \"")+"\"")

@@ -46,7 +46,7 @@ func Status(ns string) msgs.StatusResponse {
 
 func getNumClaims(ns string) int {
 	ctx := context.TODO()
-	//count number of PVCs with pgremove=true
+	// count number of PVCs with pgremove=true
 	pvcs, err := apiserver.Clientset.
 		CoreV1().PersistentVolumeClaims(ns).
 		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PGREMOVE})
@@ -59,7 +59,7 @@ func getNumClaims(ns string) int {
 
 func getNumDatabases(ns string) int {
 	ctx := context.TODO()
-	//count number of Deployments with pg-cluster
+	// count number of Deployments with pg-cluster
 	deps, err := apiserver.Clientset.
 		AppsV1().Deployments(ns).
 		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER})
@@ -72,7 +72,7 @@ func getNumDatabases(ns string) int {
 
 func getVolumeCap(ns string) string {
 	ctx := context.TODO()
-	//sum all PVCs storage capacity
+	// sum all PVCs storage capacity
 	pvcs, err := apiserver.Clientset.
 		CoreV1().PersistentVolumeClaims(ns).
 		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PGREMOVE})
@@ -83,18 +83,18 @@ func getVolumeCap(ns string) string {
 
 	var capTotal int64
 	capTotal = 0
-	for _, p := range pvcs.Items {
-		capTotal = capTotal + getClaimCapacity(&p)
+	for i := range pvcs.Items {
+		capTotal = capTotal + getClaimCapacity(&pvcs.Items[i])
 	}
 	q := resource.NewQuantity(capTotal, resource.BinarySI)
-	//log.Infof("capTotal string is %s\n", q.String())
+	// log.Infof("capTotal string is %s\n", q.String())
 	return q.String()
 }
 
 func getDBTags(ns string) map[string]int {
 	ctx := context.TODO()
 	results := make(map[string]int)
-	//count all pods with pg-cluster, sum by image tag value
+	// count all pods with pg-cluster, sum by image tag value
 	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER})
 	if err != nil {
 		log.Error(err)
@@ -111,7 +111,7 @@ func getDBTags(ns string) map[string]int {
 
 func getNotReady(ns string) []string {
 	ctx := context.TODO()
-	//show all database pods for each pgcluster that are not yet running
+	// show all database pods for each pgcluster that are not yet running
 	agg := make([]string, 0)
 	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -152,7 +152,6 @@ func getClaimCapacity(pvc *v1.PersistentVolumeClaim) int64 {
 	diskSizeInt64, _ := diskSize.AsInt64()
 
 	return diskSizeInt64
-
 }
 
 func getLabels(ns string) []msgs.KeyValue {
@@ -168,7 +167,6 @@ func getLabels(ns string) []msgs.KeyValue {
 	}
 
 	for _, dep := range deps.Items {
-
 		for k, v := range dep.ObjectMeta.Labels {
 			lv := k + "=" + v
 			if results[lv] == 0 {
@@ -177,7 +175,6 @@ func getLabels(ns string) []msgs.KeyValue {
 				results[lv] = results[lv] + 1
 			}
 		}
-
 	}
 
 	for k, v := range results {
@@ -189,5 +186,4 @@ func getLabels(ns string) []msgs.KeyValue {
 	})
 
 	return ss
-
 }

@@ -18,13 +18,13 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"net/http"
+
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func Reload(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.ReloadRequest) (msgs.ReloadResponse, error) {
-
 	var response msgs.ReloadResponse
 
 	jsonValue, _ := json.Marshal(request)

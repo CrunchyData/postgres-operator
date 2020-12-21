@@ -38,8 +38,10 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-const CustomConfigMapName = "pgo-config"
-const defaultConfigPath = "/default-pgo-config/"
+const (
+	CustomConfigMapName = "pgo-config"
+	defaultConfigPath   = "/default-pgo-config/"
+)
 
 var PgoDefaultServiceAccountTemplate *template.Template
 
@@ -260,17 +262,21 @@ type PgoConfig struct {
 	Storage         map[string]StorageStruct
 }
 
-const DEFAULT_SERVICE_TYPE = "ClusterIP"
-const LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
-const NODEPORT_SERVICE_TYPE = "NodePort"
-const CONFIG_PATH = "pgo.yaml"
+const (
+	DEFAULT_SERVICE_TYPE       = "ClusterIP"
+	LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
+	NODEPORT_SERVICE_TYPE      = "NodePort"
+	CONFIG_PATH                = "pgo.yaml"
+)
 
-const DEFAULT_BACKREST_PORT = 2022
-const DEFAULT_PGADMIN_PORT = "5050"
-const DEFAULT_PGBADGER_PORT = "10000"
-const DEFAULT_EXPORTER_PORT = "9187"
-const DEFAULT_POSTGRES_PORT = "5432"
-const DEFAULT_PATRONI_PORT = "8009"
+const (
+	DEFAULT_BACKREST_PORT = 2022
+	DEFAULT_PGADMIN_PORT  = "5050"
+	DEFAULT_PGBADGER_PORT = "10000"
+	DEFAULT_EXPORTER_PORT = "9187"
+	DEFAULT_POSTGRES_PORT = "5432"
+	DEFAULT_PATRONI_PORT  = "8009"
+)
 
 func (c *PgoConfig) Validate() error {
 	var err error
@@ -508,19 +514,16 @@ func (c *PgoConfig) GetStorageSpec(name string) (crv1.PgStorageSpec, error) {
 	}
 
 	return storage, err
-
 }
 
 func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) error {
-
 	cMap, err := initialize(clientset, namespace)
-
 	if err != nil {
 		log.Errorf("could not get ConfigMap: %s", err.Error())
 		return err
 	}
 
-	//get the pgo.yaml config file
+	// get the pgo.yaml config file
 	str := cMap.Data[CONFIG_PATH]
 	if str == "" {
 		return fmt.Errorf("could not get %s from ConfigMap", CONFIG_PATH)
@@ -541,7 +544,7 @@ func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) 
 
 	c.CheckEnv()
 
-	//load up all the templates
+	// load up all the templates
 	PgoDefaultServiceAccountTemplate, err = c.LoadTemplate(cMap, PGODefaultServiceAccountPath)
 	if err != nil {
 		return err
@@ -729,7 +732,7 @@ func getOperatorConfigMap(clientset kubernetes.Interface, namespace string) (*v1
 	return clientset.CoreV1().ConfigMaps(namespace).Get(ctx, CustomConfigMapName, metav1.GetOptions{})
 }
 
-// initialize attemps to get the configuration ConfigMap based on a name.
+// initialize attempts to get the configuration ConfigMap based on a name.
 // If the ConfigMap does not exist, a ConfigMap is created from the default
 // configuration path
 func initialize(clientset kubernetes.Interface, namespace string) (*v1.ConfigMap, error) {
@@ -812,7 +815,6 @@ func (c *PgoConfig) LoadTemplate(cMap *v1.ConfigMap, path string) (*template.Tem
 
 	// if we have a value for the templated file, return
 	return template.Must(template.New(path).Parse(value)), nil
-
 }
 
 // DefaultTemplate attempts to load a default configuration template file
@@ -825,7 +827,6 @@ func (c *PgoConfig) DefaultTemplate(path string) (string, error) {
 
 	// read in the file from the default path
 	buf, err := ioutil.ReadFile(fullPath)
-
 	if err != nil {
 		log.Errorf("error: could not read %s", fullPath)
 		log.Error(err)

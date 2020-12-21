@@ -17,6 +17,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -34,11 +35,12 @@ func DeleteBackup(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCre
 
 	log.Debugf("DeleteBackup called [%+v]", request)
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/backrest"
 
 	action := "DELETE"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}

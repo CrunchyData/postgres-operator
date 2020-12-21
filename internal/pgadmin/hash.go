@@ -54,7 +54,7 @@ func HashPassword(qr *queryRunner, pass string) (string, error) {
 	// Generate a "new" password derived from the provided password
 	// Satisfies OWASP sec. 2.4.5: 'provide additional iteration of a key derivation'
 	mac := hmac.New(sha512.New, saltBytes)
-	mac.Write([]byte(pass))
+	_, _ = mac.Write([]byte(pass))
 	macBytes := mac.Sum(nil)
 	macBase64 := base64.StdEncoding.EncodeToString(macBytes)
 

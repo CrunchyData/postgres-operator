@@ -40,17 +40,16 @@ type Controller struct {
 
 // onAdd is called when a pod is added
 func (c *Controller) onAdd(obj interface{}) {
-
 	newPod := obj.(*apiv1.Pod)
 
 	newPodLabels := newPod.GetObjectMeta().GetLabels()
-	//only process pods with with vendor=crunchydata label
+	// only process pods with with vendor=crunchydata label
 	if newPodLabels[config.LABEL_VENDOR] == "crunchydata" {
 		log.Debugf("Pod Controller: onAdd processing the addition of pod %s in namespace %s",
 			newPod.Name, newPod.Namespace)
 	}
 
-	//handle the case when a pg database pod is added
+	// handle the case when a pg database pod is added
 	if isPostgresPod(newPod) {
 		c.labelPostgresPodAndDeployment(newPod)
 		return
@@ -65,7 +64,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 	newPodLabels := newPod.GetObjectMeta().GetLabels()
 
-	//only process pods with with vendor=crunchydata label
+	// only process pods with with vendor=crunchydata label
 	if newPodLabels[config.LABEL_VENDOR] != "crunchydata" {
 		return
 	}
@@ -153,7 +152,6 @@ func setCurrentPrimary(clientset pgo.Interface, newPod *apiv1.Pod, cluster *crv1
 
 // onDelete is called when a pgcluster is deleted
 func (c *Controller) onDelete(obj interface{}) {
-
 	pod := obj.(*apiv1.Pod)
 
 	labels := pod.GetObjectMeta().GetLabels()
@@ -165,7 +163,6 @@ func (c *Controller) onDelete(obj interface{}) {
 
 // AddPodEventHandler adds the pod event handler to the pod informer
 func (c *Controller) AddPodEventHandler() {
-
 	c.Informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.onAdd,
 		UpdateFunc: c.onUpdate,
@@ -190,7 +187,6 @@ func isBackRestRepoBecomingReady(oldPod, newPod *apiv1.Pod) bool {
 // assumed to be present), specifically because this label will only be included on pgBackRest
 // repository Pods.
 func isBackRestRepoPod(newpod *apiv1.Pod) bool {
-
 	_, backrestRepoLabelExists := newpod.ObjectMeta.Labels[config.LABEL_PGO_BACKREST_REPO]
 
 	return backrestRepoLabelExists
@@ -237,7 +233,6 @@ func isDBContainerBecomingReady(oldPod, newPod *apiv1.Pod) bool {
 // this label will only be included on primary and replica PostgreSQL database pods (and will be
 // present as soon as the deployment and pod is created).
 func isPostgresPod(newpod *apiv1.Pod) bool {
-
 	_, pgDatabaseLabelExists := newpod.ObjectMeta.Labels[config.LABEL_PG_DATABASE]
 
 	return pgDatabaseLabelExists

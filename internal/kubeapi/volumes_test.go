@@ -26,7 +26,7 @@ func TestFindOrAppendVolume(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
 		var volumes []v1.Volume
-		var volume = FindOrAppendVolume(&volumes, "v1")
+		volume := FindOrAppendVolume(&volumes, "v1")
 		if expected, actual := 1, len(volumes); expected != actual {
 			t.Fatalf("expected appended volume, got %v", actual)
 		}
@@ -69,7 +69,7 @@ func TestFindOrAppendVolumeMount(t *testing.T) {
 
 	t.Run("empty", func(t *testing.T) {
 		var mounts []v1.VolumeMount
-		var mount = FindOrAppendVolumeMount(&mounts, "v1")
+		mount := FindOrAppendVolumeMount(&mounts, "v1")
 		if expected, actual := 1, len(mounts); expected != actual {
 			t.Fatalf("expected appended mount, got %v", actual)
 		}

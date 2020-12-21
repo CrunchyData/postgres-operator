@@ -16,23 +16,25 @@ package api
 */
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func ShowVersion(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials) (msgs.VersionResponse, error) {
-
 	var response msgs.VersionResponse
 
 	log.Debug("ShowVersion called ")
 
+	ctx := context.TODO()
 	url := SessionCredentials.APIServerURL + "/version"
 	log.Debug(url)
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return response, err
 	}
@@ -61,5 +63,4 @@ func ShowVersion(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCred
 	}
 
 	return response, err
-
 }

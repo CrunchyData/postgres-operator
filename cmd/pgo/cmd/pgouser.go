@@ -47,7 +47,6 @@ func updatePgouser(args []string, ns string) {
 	r.ClientVersion = msgs.PGO_VERSION
 
 	response, err := api.UpdatePgouser(httpclient, &SessionCredentials, r)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -59,11 +58,9 @@ func updatePgouser(args []string, ns string) {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
-
 }
 
 func showPgouser(args []string, ns string) {
-
 	r := new(msgs.ShowPgouserRequest)
 	r.PgouserName = args
 	r.Namespace = ns
@@ -76,7 +73,6 @@ func showPgouser(args []string, ns string) {
 	}
 
 	response, err := api.ShowPgouser(httpclient, &SessionCredentials, r)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -100,11 +96,9 @@ func showPgouser(args []string, ns string) {
 		fmt.Printf("roles : %v\n", pgouser.Role)
 		fmt.Printf("namespaces : %v\n", pgouser.Namespace)
 	}
-
 }
 
 func createPgouser(args []string, ns string) {
-
 	if PgouserPassword == "" {
 		fmt.Println("Error: pgouser-password flag is required.")
 		return
@@ -128,7 +122,7 @@ func createPgouser(args []string, ns string) {
 		return
 	}
 	var err error
-	//create the request
+	// create the request
 	r := new(msgs.CreatePgouserRequest)
 	r.PgouserName = args[0]
 	r.PgouserPassword = PgouserPassword
@@ -152,11 +146,9 @@ func createPgouser(args []string, ns string) {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
-
 }
 
 func deletePgouser(args []string, ns string) {
-
 	log.Debugf("deletePgouser called %v", args)
 
 	r := msgs.DeletePgouserRequest{}
@@ -184,5 +176,4 @@ func deletePgouser(args []string, ns string) {
 	} else {
 		fmt.Println("Error: " + response.Status.Msg)
 	}
-
 }

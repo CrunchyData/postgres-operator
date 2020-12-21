@@ -17,22 +17,24 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"net/http"
+
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func CreatePgbouncer(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreatePgbouncerRequest) (msgs.CreatePgbouncerResponse, error) {
-
 	var response msgs.CreatePgbouncerResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/pgbouncer"
 	log.Debugf("createPgbouncer called...[%s]", url)
 
 	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
@@ -61,15 +63,15 @@ func CreatePgbouncer(httpclient *http.Client, SessionCredentials *msgs.BasicAuth
 }
 
 func DeletePgbouncer(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.DeletePgbouncerRequest) (msgs.DeletePgbouncerResponse, error) {
-
 	var response msgs.DeletePgbouncerResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/pgbouncer"
 	log.Debugf("deletePgbouncer called...[%s]", url)
 
 	action := "DELETE"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
@@ -108,13 +110,13 @@ func ShowPgBouncer(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 	log.Debugf("ShowPgBouncer called [%+v]", request)
 
 	// put the request into JSON format and format the URL and HTTP verb
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/pgbouncer/show"
 	action := "POST"
 
 	// prepare the request!
-	httpRequest, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
-
+	httpRequest, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	// if there is an error preparing the request, return here
 	if err != nil {
 		return msgs.ShowPgBouncerResponse{}, err
@@ -127,7 +129,6 @@ func ShowPgBouncer(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 	// make the request! if there is an error making the request, return
 
 	httpResponse, err := httpclient.Do(httpRequest)
-
 	if err != nil {
 		return msgs.ShowPgBouncerResponse{}, err
 	}
@@ -162,13 +163,13 @@ func UpdatePgBouncer(httpclient *http.Client, SessionCredentials *msgs.BasicAuth
 	log.Debugf("UpdatePgBouncer called [%+v]", request)
 
 	// put the request into JSON format and format the URL and HTTP verb
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/pgbouncer"
 	action := "PUT"
 
 	// prepare the request!
-	httpRequest, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
-
+	httpRequest, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	// if there is an error preparing the request, return here
 	if err != nil {
 		return msgs.UpdatePgBouncerResponse{}, err
@@ -181,7 +182,6 @@ func UpdatePgBouncer(httpclient *http.Client, SessionCredentials *msgs.BasicAuth
 	// make the request! if there is an error making the request, return
 
 	httpResponse, err := httpclient.Do(httpRequest)
-
 	if err != nil {
 		return msgs.UpdatePgBouncerResponse{}, err
 	}

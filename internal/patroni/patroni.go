@@ -37,12 +37,16 @@ const dbContainerName = "database"
 var (
 	// reloadCMD is the command for reloading a specific PG instance (primary or replica) within a
 	// PG cluster
-	reloadCMD = []string{"/bin/bash", "-c",
-		fmt.Sprintf("curl -X POST --silent http://127.0.0.1:%s/reload", config.DEFAULT_PATRONI_PORT)}
+	reloadCMD = []string{
+		"/bin/bash", "-c",
+		fmt.Sprintf("curl -X POST --silent http://127.0.0.1:%s/reload", config.DEFAULT_PATRONI_PORT),
+	}
 	// restartCMD is the command for restart a specific PG database (primary or replica) within a
 	// PG cluster
-	restartCMD = []string{"/bin/bash", "-c",
-		fmt.Sprintf("curl -X POST --silent http://127.0.0.1:%s/restart", config.DEFAULT_PATRONI_PORT)}
+	restartCMD = []string{
+		"/bin/bash", "-c",
+		fmt.Sprintf("curl -X POST --silent http://127.0.0.1:%s/restart", config.DEFAULT_PATRONI_PORT),
+	}
 
 	// ErrInstanceNotFound is the error thrown when a target instance cannot be found in the cluster
 	ErrInstanceNotFound = errors.New("The instance does not exist in the cluster")
@@ -77,7 +81,6 @@ type RestartResult struct {
 // NewPatroniClient creates a new Patroni client
 func NewPatroniClient(restConfig *rest.Config, kubeclientset kubernetes.Interface,
 	clusterName, namespace string) Client {
-
 	return &patroniClient{
 		restConfig:    restConfig,
 		kubeclientset: kubeclientset,
@@ -112,7 +115,6 @@ func (p *patroniClient) getClusterInstances() (map[string]corev1.Pod, error) {
 // ReloadCluster reloads the configuration for a PostgreSQL cluster.  Specififcally, a Patroni
 // reload (which includes a PG reload) is executed on the primary and each replica within the cluster.
 func (p *patroniClient) ReloadCluster() error {
-
 	instanceMap, err := p.getClusterInstances()
 	if err != nil {
 		return err
@@ -131,7 +133,6 @@ func (p *patroniClient) ReloadCluster() error {
 // Patroni restart is executed on the primary and each replica within the cluster.  A slice is also
 // returned containing the names of all instances restarted within the cluster.
 func (p *patroniClient) RestartCluster() ([]RestartResult, error) {
-
 	var restartResult []RestartResult
 
 	instanceMap, err := p.getClusterInstances()
@@ -156,7 +157,6 @@ func (p *patroniClient) RestartCluster() ([]RestartResult, error) {
 // RestartInstances restarts the PostgreSQL databases for the instances specified.  Specififcally, a
 // Patroni restart is executed on the primary and each replica within the cluster.
 func (p *patroniClient) RestartInstances(instances ...string) ([]RestartResult, error) {
-
 	var restartResult []RestartResult
 
 	instanceMap, err := p.getClusterInstances()
@@ -195,7 +195,6 @@ func (p *patroniClient) RestartInstances(instances ...string) ([]RestartResult, 
 // reload performs a Patroni reload (which includes a PG reload) on a specific instance (primary or
 // replica) within a PG cluster
 func (p *patroniClient) reload(podName string) error {
-
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(p.restConfig, p.kubeclientset, reloadCMD,
 		dbContainerName, podName, p.namespace, nil)
 	if err != nil {
@@ -212,7 +211,6 @@ func (p *patroniClient) reload(podName string) error {
 // restart performs a Patroni restart on a specific instance (primary or replica) within a PG
 // cluster.
 func (p *patroniClient) restart(podName string) error {
-
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(p.restConfig, p.kubeclientset, restartCMD,
 		dbContainerName, podName, p.namespace, nil)
 	if err != nil {

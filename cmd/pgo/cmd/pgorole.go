@@ -45,7 +45,6 @@ func updatePgorole(args []string, ns string) {
 	r.ClientVersion = msgs.PGO_VERSION
 
 	response, err := api.UpdatePgorole(httpclient, &SessionCredentials, r)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -57,11 +56,9 @@ func updatePgorole(args []string, ns string) {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
-
 }
 
 func showPgorole(args []string, ns string) {
-
 	r := new(msgs.ShowPgoroleRequest)
 	r.PgoroleName = args
 	r.Namespace = ns
@@ -74,7 +71,6 @@ func showPgorole(args []string, ns string) {
 	}
 
 	response, err := api.ShowPgorole(httpclient, &SessionCredentials, r)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -97,11 +93,9 @@ func showPgorole(args []string, ns string) {
 		fmt.Println("pgorole : " + pgorole.Name)
 		fmt.Println("permissions : " + pgorole.Permissions)
 	}
-
 }
 
 func createPgorole(args []string, ns string) {
-
 	if Permissions == "" {
 		fmt.Println("Error: permissions flag is required.")
 		return
@@ -112,7 +106,7 @@ func createPgorole(args []string, ns string) {
 		return
 	}
 	var err error
-	//create the request
+	// create the request
 	r := new(msgs.CreatePgoroleRequest)
 	r.PgoroleName = args[0]
 	r.PgorolePermissions = Permissions
@@ -133,11 +127,9 @@ func createPgorole(args []string, ns string) {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
-
 }
 
 func deletePgorole(args []string, ns string) {
-
 	log.Debugf("deletePgorole called %v", args)
 
 	r := msgs.DeletePgoroleRequest{}
@@ -165,5 +157,4 @@ func deletePgorole(args []string, ns string) {
 	} else {
 		fmt.Println("Error: " + response.Status.Msg)
 	}
-
 }

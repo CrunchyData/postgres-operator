@@ -38,7 +38,6 @@ func TestMD5Build(t *testing.T) {
 			}
 
 			hash, err := md5.Build()
-
 			if err != nil {
 				t.Error(err)
 			}

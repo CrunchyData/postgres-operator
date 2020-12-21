@@ -42,10 +42,8 @@ const (
 	pghLocalConfigSuffix = "-local-config"
 )
 
-var (
-	// ErrMissingClusterConfig is the error thrown when configuration is missing from a configMap
-	ErrMissingClusterConfig error = errors.New("Configuration is missing from configMap")
-)
+// ErrMissingClusterConfig is the error thrown when configuration is missing from a configMap
+var ErrMissingClusterConfig error = errors.New("Configuration is missing from configMap")
 
 // Syncer defines a resource that is able to sync its configuration stored configuration with a
 // service, application, etc.

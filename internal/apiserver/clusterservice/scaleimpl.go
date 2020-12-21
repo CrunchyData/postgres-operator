@@ -73,10 +73,10 @@ func ScaleCluster(name, replicaCount, storageConfig, nodeLabel,
 
 	spec := crv1.PgreplicaSpec{}
 
-	//refer to the cluster's replica storage setting by default
+	// refer to the cluster's replica storage setting by default
 	spec.ReplicaStorage = cluster.Spec.ReplicaStorage
 
-	//allow for user override
+	// allow for user override
 	if storageConfig != "" {
 		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(storageConfig)
 	}
@@ -97,7 +97,7 @@ func ScaleCluster(name, replicaCount, storageConfig, nodeLabel,
 		spec.UserLabels[config.LABEL_SERVICE_TYPE] = serviceType
 	}
 
-	//set replica node lables to blank to start with, then check for overrides
+	// set replica node lables to blank to start with, then check for overrides
 	spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = ""
 	spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = ""
 
@@ -204,7 +204,6 @@ func ScaleQuery(name, ns string) msgs.ScaleQueryResponse {
 	}
 
 	replicationStatusResponse, err := util.ReplicationStatus(replicationStatusRequest, false, true)
-
 	// if an error is return, log the message, and return the response
 	if err != nil {
 		log.Error(err.Error())
@@ -301,7 +300,7 @@ func ScaleDown(deleteData bool, clusterName, replicaName, ns string) msgs.ScaleD
 		return response
 	}
 
-	//create the rmdata task which does the cleanup
+	// create the rmdata task which does the cleanup
 
 	clusterPGHAScope := cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE]
 	deleteBackups := false

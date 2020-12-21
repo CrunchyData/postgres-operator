@@ -48,7 +48,6 @@ func (c *Controller) handleRMDataUpdate(job *apiv1.Job) error {
 	log.Debugf("jobController onUpdate rmdata job succeeded")
 
 	publishDeleteClusterComplete(labels[config.LABEL_PG_CLUSTER],
-		job.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 		job.ObjectMeta.Labels[config.LABEL_PGOUSER],
 		job.ObjectMeta.Namespace)
 
@@ -77,7 +76,7 @@ func (c *Controller) handleRMDataUpdate(job *apiv1.Job) error {
 		return fmt.Errorf("could not remove Job %s for some reason after max tries", job.Name)
 	}
 
-	//if a user has specified --archive for a cluster then
+	// if a user has specified --archive for a cluster then
 	// an xlog PVC will be present and can be removed
 	pvcName := clusterName + "-xlog"
 	if err := pvc.DeleteIfExists(c.Client.Clientset, pvcName, job.Namespace); err != nil {
@@ -85,7 +84,7 @@ func (c *Controller) handleRMDataUpdate(job *apiv1.Job) error {
 		return err
 	}
 
-	//delete any completed jobs for this cluster as a cleanup
+	// delete any completed jobs for this cluster as a cleanup
 	jobList, err := c.Client.
 		BatchV1().Jobs(job.Namespace).
 		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + clusterName})

@@ -98,12 +98,12 @@ func CreateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 			},
 			Results: make([]string, 0),
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp := CreateSchedule(&request, ns)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 func DeleteScheduleHandler(w http.ResponseWriter, r *http.Request) {
@@ -150,13 +150,13 @@ func DeleteScheduleHandler(w http.ResponseWriter, r *http.Request) {
 			},
 			Results: make([]string, 0),
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 
 	}
 
 	resp := DeleteSchedule(&request, ns)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 func ShowScheduleHandler(w http.ResponseWriter, r *http.Request) {
@@ -204,10 +204,10 @@ func ShowScheduleHandler(w http.ResponseWriter, r *http.Request) {
 			Results: make([]string, 0),
 		}
 
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp := ShowSchedule(&request, ns)
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }

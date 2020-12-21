@@ -59,8 +59,8 @@ func addBackRestConfigDirectoryVolumeAndMounts(podSpec *v1.PodSpec, volumeName s
 // Any projections are included as custom pgBackRest configuration.
 func AddBackRestConfigVolumeAndMounts(podSpec *v1.PodSpec, clusterName string, projections []v1.VolumeProjection) {
 	var combined []v1.VolumeProjection
-	var defaultConfigNames = clusterName + "-config-backrest"
-	var varTrue = true
+	defaultConfigNames := clusterName + "-config-backrest"
+	varTrue := true
 
 	// Start with custom configurations from the CRD.
 	combined = append(combined, projections...)

@@ -42,7 +42,6 @@ var catCmd = &cobra.Command{
 		} else {
 			cat(args, Namespace)
 		}
-
 	},
 }
 
@@ -58,7 +57,6 @@ func cat(args []string, ns string) {
 	request.Args = args
 	request.Namespace = ns
 	response, err := api.Cat(httpclient, &SessionCredentials, request)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -77,5 +75,4 @@ func cat(args []string, ns string) {
 		fmt.Println("No clusters found.")
 		return
 	}
-
 }

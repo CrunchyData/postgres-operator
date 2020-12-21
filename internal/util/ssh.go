@@ -91,6 +91,7 @@ func newPrivateKey(key ed25519.PrivateKey) ([]byte, error) {
 
 	// check fields should match to easily verify
 	// that a decryption was successful
+	// #nosec: G404
 	private.Check1 = rand.Uint32()
 	private.Check2 = private.Check1
 
