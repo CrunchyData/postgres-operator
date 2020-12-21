@@ -27,7 +27,6 @@ const PgpolicyResourcePlural = "pgpolicies"
 type PgpolicySpec struct {
 	Namespace string `json:"namespace"`
 	Name      string `json:"name"`
-	URL       string `json:"url"`
 	SQL       string `json:"sql"`
 	Status    string `json:"status"`
 }
