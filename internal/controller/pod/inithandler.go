@@ -115,8 +115,10 @@ func (c *Controller) handleCommonInit(cluster *crv1.Pgcluster) error {
 			cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE], cluster.Namespace)
 	}
 
-	operator.UpdatePGHAConfigInitFlag(c.Client, false, cluster.Name,
-		cluster.Namespace)
+	if err := operator.UpdatePGHAConfigInitFlag(c.Client, false, cluster.Name,
+		cluster.Namespace); err != nil {
+		log.Error(err)
+	}
 
 	return nil
 }

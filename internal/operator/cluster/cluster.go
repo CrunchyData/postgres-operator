@@ -85,8 +85,13 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 	// logic following a restart of the container.
 	// If the configmap already exists, the cluster creation will continue as this is required
 	// for certain pgcluster upgrades.
-	if err = operator.CreatePGHAConfigMap(clientset, cl, namespace); err != nil &&
-		!kerrors.IsAlreadyExists(err) {
+	if err = operator.CreatePGHAConfigMap(clientset, cl,
+		namespace); kerrors.IsAlreadyExists(err) {
+		log.Infof("found existing pgha ConfigMap for cluster %s, setting init flag to 'true'",
+			cl.GetName())
+		err = operator.UpdatePGHAConfigInitFlag(clientset, true, cl.Name, cl.Namespace)
+	}
+	if err != nil {
 		log.Error(err)
 		publishClusterCreateFailure(cl, err.Error())
 		return
@@ -234,8 +239,16 @@ func AddClusterBootstrap(clientset kubeapi.Interface, cluster *crv1.Pgcluster) e
 	ctx := context.TODO()
 	namespace := cluster.GetNamespace()
 
-	if err := operator.CreatePGHAConfigMap(clientset, cluster, namespace); err != nil &&
-		!kerrors.IsAlreadyExists(err) {
+	var err error
+
+	if err = operator.CreatePGHAConfigMap(clientset, cluster,
+		namespace); kerrors.IsAlreadyExists(err) {
+		log.Infof("found existing pgha ConfigMap for cluster %s, setting init flag to 'true'",
+			cluster.GetName())
+		err = operator.UpdatePGHAConfigInitFlag(clientset, true, cluster.Name, cluster.Namespace)
+	}
+	if err != nil {
+		log.Error(err)
 		publishClusterCreateFailure(cluster, err.Error())
 		return err
 	}
