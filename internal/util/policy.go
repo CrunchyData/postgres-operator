@@ -19,8 +19,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -106,10 +104,7 @@ func GetPolicySQL(clientset pgo.Interface, namespace, policyName string) (string
 	ctx := context.TODO()
 	p, err := clientset.CrunchydataV1().Pgpolicies(namespace).Get(ctx, policyName, metav1.GetOptions{})
 	if err == nil {
-		if p.Spec.URL != "" {
-			return readSQLFromURL(p.Spec.URL)
-		}
-		return p.Spec.SQL, err
+		return p.Spec.SQL, nil
 	}
 
 	if kerrors.IsNotFound(err) {
@@ -117,23 +112,6 @@ func GetPolicySQL(clientset pgo.Interface, namespace, policyName string) (string
 	}
 	log.Error(err)
 	return "", err
-}
-
-// readSQLFromURL returns the SQL string from a URL
-func readSQLFromURL(urlstring string) (string, error) {
-	var bodyBytes []byte
-	response, err := http.Get(urlstring)
-	if err == nil {
-		bodyBytes, err = ioutil.ReadAll(response.Body)
-		defer response.Body.Close()
-	}
-
-	if err != nil {
-		log.Error(err)
-		return "", err
-	}
-
-	return string(bodyBytes), err
 }
 
 // ValidatePolicy tests to see if a policy exists

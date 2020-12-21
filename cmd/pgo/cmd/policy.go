@@ -139,7 +139,6 @@ func showPolicy(args []string, ns string) {
 		for _, policy := range response.PolicyList.Items {
 			fmt.Println("")
 			fmt.Println("policy : " + policy.Spec.Name)
-			fmt.Println(TreeBranch + "url : " + policy.Spec.URL)
 			fmt.Println(TreeBranch + "status : " + policy.Spec.Status)
 			fmt.Println(TreeTrunk + "sql : " + policy.Spec.SQL)
 		}
@@ -158,9 +157,6 @@ func createPolicy(args []string, ns string) {
 	r.Namespace = ns
 	r.ClientVersion = msgs.PGO_VERSION
 
-	if PolicyURL != "" {
-		r.URL = PolicyURL
-	}
 	if PolicyFile != "" {
 		r.SQL, err = getPolicyString(PolicyFile)
 

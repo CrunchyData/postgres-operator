@@ -38,7 +38,7 @@ var (
 	Database                                                                                     string
 	Password                                                                                     string
 	SecretFrom                                                                                   string
-	PoliciesFlag, PolicyFile, PolicyURL                                                          string
+	PoliciesFlag, PolicyFile                                                                     string
 	UserLabels                                                                                   string
 	Tablespaces                                                                                  []string
 	ServiceType                                                                                  string
@@ -224,8 +224,8 @@ var createPolicyCmd = &cobra.Command{
 			Namespace = PGONamespace
 		}
 		log.Debug("create policy called ")
-		if PolicyFile == "" && PolicyURL == "" {
-			fmt.Println(`Error: The --in-file or --url flags are required to create a policy.`)
+		if PolicyFile == "" {
+			fmt.Println(`Error: The --in-file is required to create a policy.`)
 			return
 		}
 
@@ -521,7 +521,6 @@ func init() {
 
 	// "pgo create policy" flags
 	createPolicyCmd.Flags().StringVarP(&PolicyFile, "in-file", "i", "", "The policy file path to use for adding a policy.")
-	createPolicyCmd.Flags().StringVarP(&PolicyURL, "url", "u", "", "The url to use for adding a policy.")
 
 	// "pgo create schedule" flags
 	createScheduleCmd.Flags().StringVarP(&ScheduleDatabase, "database", "", "", "The database to run the SQL policy against.")
