@@ -33,13 +33,13 @@ func ApplyPolicies(clusterName string, clientset kubeapi.Interface, RESTConfig *
 
 	task, err := clientset.CrunchydataV1().Pgtasks(ns).Get(ctx, taskName, metav1.GetOptions{})
 	if err == nil {
-		//apply those policies
+		// apply those policies
 		for k := range task.Spec.Parameters {
 			log.Debugf("applying policy %s to %s", k, clusterName)
 			applyPolicy(clientset, RESTConfig, k, clusterName, ns)
 		}
-		//delete the pgtask to not redo this again
-		clientset.CrunchydataV1().Pgtasks(ns).Delete(ctx, taskName, metav1.DeleteOptions{})
+		// delete the pgtask to not redo this again
+		_ = clientset.CrunchydataV1().Pgtasks(ns).Delete(ctx, taskName, metav1.DeleteOptions{})
 	}
 }
 
@@ -70,11 +70,10 @@ func applyPolicy(clientset kubeapi.Interface, restconfig *rest.Config, policyNam
 		log.Error(err)
 	}
 
-	//update the pgcluster crd labels with the new policy
+	// update the pgcluster crd labels with the new policy
 	log.Debugf("patching cluster %s: %s", cl.Spec.Name, patch)
 	_, err = clientset.CrunchydataV1().Pgclusters(ns).Patch(ctx, cl.Spec.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 	if err != nil {
 		log.Error(err)
 	}
-
 }

@@ -16,6 +16,7 @@ package apiservermsgs
 */
 
 import (
+	"errors"
 	"testing"
 
 	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
@@ -33,7 +34,6 @@ func TestGetPasswordType(t *testing.T) {
 		for passwordTypeStr, expected := range tests {
 			t.Run(passwordTypeStr, func(t *testing.T) {
 				passwordType, err := GetPasswordType(passwordTypeStr)
-
 				if err != nil {
 					t.Error(err)
 					return
@@ -54,7 +54,7 @@ func TestGetPasswordType(t *testing.T) {
 
 		for passwordTypeStr, expected := range tests {
 			t.Run(passwordTypeStr, func(t *testing.T) {
-				if _, err := GetPasswordType(passwordTypeStr); err != expected {
+				if _, err := GetPasswordType(passwordTypeStr); !errors.Is(err, expected) {
 					t.Errorf("password type %q should yield error %q", passwordTypeStr, expected.Error())
 				}
 			})

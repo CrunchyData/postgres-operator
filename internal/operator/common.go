@@ -35,11 +35,15 @@ const (
 	defaultRegistry = "registry.developers.crunchydata.com/crunchydata"
 )
 
-var CRUNCHY_DEBUG bool
-var NAMESPACE string
+var (
+	CRUNCHY_DEBUG bool
+	NAMESPACE     string
+)
 
-var InstallationName string
-var PgoNamespace string
+var (
+	InstallationName string
+	PgoNamespace     string
+)
 
 var Pgo config.PgoConfig
 
@@ -62,7 +66,6 @@ type containerResourcesTemplateFields struct {
 }
 
 func Initialize(clientset kubernetes.Interface) {
-
 	tmp := os.Getenv("CRUNCHY_DEBUG")
 	if tmp == "true" {
 		CRUNCHY_DEBUG = true
@@ -88,9 +91,7 @@ func Initialize(clientset kubernetes.Interface) {
 		os.Exit(2)
 	}
 
-	var err error
-
-	err = Pgo.GetConfig(clientset, PgoNamespace)
+	err := Pgo.GetConfig(clientset, PgoNamespace)
 	if err != nil {
 		log.Error(err)
 		log.Error("pgo-config files and templates did not load")
@@ -157,7 +158,6 @@ func GetPodSecurityContext(supplementalGroups []int64) string {
 
 	// ...convert to JSON. Errors are ignored
 	doc, err := json.Marshal(securityContext)
-
 	// if there happens to be an error, warn about it
 	if err != nil {
 		log.Warn(err)
@@ -210,7 +210,7 @@ func GetResourcesJSON(resources, limits v1.ResourceList) string {
 	}
 
 	if log.GetLevel() == log.DebugLevel {
-		config.ContainerResourcesTemplate.Execute(os.Stdout, fields)
+		_ = config.ContainerResourcesTemplate.Execute(os.Stdout, fields)
 	}
 
 	return doc.String()
@@ -301,7 +301,6 @@ func initializeControllerRefreshIntervals() {
 // attempting to utilize the worker counts defined in the pgo.yaml config file, and if not
 // present then falling back to a default value.
 func initializeControllerWorkerCounts() {
-
 	if Pgo.Pgo.ConfigMapWorkerCount == nil {
 		log.Debugf("ConfigMapWorkerCount not set, defaulting to %d worker(s)",
 			config.DefaultConfigMapWorkerCount)
@@ -358,7 +357,6 @@ func initializeControllerWorkerCounts() {
 // namespaces as needed (or as permitted by the current operator mode), and returning a valid list
 // of namespaces for the current Operator install.
 func SetupNamespaces(clientset kubernetes.Interface) ([]string, error) {
-
 	// First set the proper namespace operating mode for the Operator install.  The mode identified
 	// determines whether or not certain namespace capabilities are enabled.
 	if err := setNamespaceOperatingMode(clientset); err != nil {

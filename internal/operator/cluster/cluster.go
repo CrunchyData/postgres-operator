@@ -141,15 +141,15 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 			log.Error("error in replicas value " + err.Error())
 			return
 		}
-		//create a CRD for each replica
+		// create a CRD for each replica
 		for i := 0; i < replicaCount; i++ {
 			spec := crv1.PgreplicaSpec{}
-			//get the storage config
+			// get the storage config
 			spec.ReplicaStorage = cl.Spec.ReplicaStorage
 
 			spec.UserLabels = cl.Spec.UserLabels
 
-			//the replica should not use the same node labels as the primary
+			// the replica should not use the same node labels as the primary
 			spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = ""
 			spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = ""
 
@@ -263,15 +263,14 @@ func AddBootstrapRepo(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (
 
 // DeleteClusterBase ...
 func DeleteClusterBase(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string) {
+	_ = DeleteCluster(clientset, cl, namespace)
 
-	DeleteCluster(clientset, cl, namespace)
-
-	//delete any existing configmaps
+	// delete any existing configmaps
 	if err := deleteConfigMaps(clientset, cl.Spec.Name, namespace); err != nil {
 		log.Error(err)
 	}
 
-	//delete any existing pgtasks ???
+	// delete any existing pgtasks ???
 }
 
 // ScaleBase ...
@@ -283,7 +282,7 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 		return
 	}
 
-	//get the pgcluster CRD to base the replica off of
+	// get the pgcluster CRD to base the replica off of
 	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).
 		Get(ctx, replica.Spec.ClusterName, metav1.GetOptions{})
 	if err != nil {
@@ -297,7 +296,7 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 		return
 	}
 
-	//update the replica CRD pvcname
+	// update the replica CRD pvcname
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "replicastorage", "name")(dataVolume.PersistentVolumeClaimName).Bytes()
 	if err == nil {
 		log.Debugf("patching replica %s: %s", replica.Spec.Name, patch)
@@ -308,18 +307,18 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 		log.Error("error in pvcname patch " + err.Error())
 	}
 
-	//create the replica service if it doesnt exist
+	// create the replica service if it doesnt exist
 	if err = scaleReplicaCreateMissingService(clientset, replica, cluster, namespace); err != nil {
 		log.Error(err)
 		return
 	}
 
-	//instantiate the replica
+	// instantiate the replica
 	if err = scaleReplicaCreateDeployment(clientset, replica, cluster, namespace, dataVolume, walVolume, tablespaceVolumes); err != nil {
 		return
 	}
 
-	//update the replica CRD status
+	// update the replica CRD status
 	patch, err = kubeapi.NewJSONPatch().Add("spec", "status")(crv1.CompletedStatus).Bytes()
 	if err == nil {
 		log.Debugf("patching replica %s: %s", replica.Spec.Name, patch)
@@ -335,14 +334,14 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 func ScaleDownBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace string) {
 	ctx := context.TODO()
 
-	//get the pgcluster CRD for this replica
+	// get the pgcluster CRD for this replica
 	_, err := clientset.CrunchydataV1().Pgclusters(namespace).
 		Get(ctx, replica.Spec.ClusterName, metav1.GetOptions{})
 	if err != nil {
 		return
 	}
 
-	DeleteReplica(clientset, replica, namespace)
+	_ = DeleteReplica(clientset, replica, namespace)
 }
 
 // UpdateAnnotations updates the annotations in the "template" portion of a
@@ -354,13 +353,14 @@ func UpdateAnnotations(clientset kubernetes.Interface, restConfig *rest.Config,
 
 	// first, get a list of all of the instance deployments for the cluster
 	deployments, err := operator.GetInstanceDeployments(clientset, cluster)
-
 	if err != nil {
 		return err
 	}
 
 	// now update each deployment with the new annotations
-	for _, deployment := range deployments.Items {
+	for i := range deployments.Items {
+		deployment := deployments.Items[i]
+
 		log.Debugf("update annotations on [%s]", deployment.Name)
 		log.Debugf("new annotations: %v", annotations)
 
@@ -394,7 +394,6 @@ func UpdateResources(clientset kubernetes.Interface, restConfig *rest.Config, cl
 
 	// get a list of all of the instance deployments for the cluster
 	deployments, err := operator.GetInstanceDeployments(clientset, cluster)
-
 	if err != nil {
 		return err
 	}
@@ -405,7 +404,8 @@ func UpdateResources(clientset kubernetes.Interface, restConfig *rest.Config, cl
 	// NOTE: a future version (near future) will first try to detect the primary
 	// so that all the replicas are updated first, and then the primary gets the
 	// update
-	for _, deployment := range deployments.Items {
+	for i := range deployments.Items {
+		deployment := deployments.Items[i]
 		// now, iterate through each container within that deployment
 		for index, container := range deployment.Spec.Template.Spec.Containers {
 			// first check for the database container
@@ -471,7 +471,6 @@ func UpdateTablespaces(clientset kubernetes.Interface, restConfig *rest.Config,
 
 	// first, get a list of all of the instance deployments for the cluster
 	deployments, err := operator.GetInstanceDeployments(clientset, cluster)
-
 	if err != nil {
 		return err
 	}
@@ -502,7 +501,8 @@ func UpdateTablespaces(clientset kubernetes.Interface, restConfig *rest.Config,
 	}
 
 	// now the fun step: update each deployment with the new volumes
-	for i, deployment := range deployments.Items {
+	for i := range deployments.Items {
+		deployment := deployments.Items[i]
 		log.Debugf("attach tablespace volumes to [%s]", deployment.Name)
 
 		// iterate through each table space and prepare the Volume and

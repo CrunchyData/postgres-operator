@@ -91,7 +91,7 @@ func addClusterBootstrapJob(clientset kubeapi.Interface,
 	tablespaceVolumes map[string]operator.StorageResult) error {
 	ctx := context.TODO()
 
-	bootstrapFields, err := getBootstrapJobFields(clientset, cl, dataVolume, walVolume,
+	bootstrapFields, err := getBootstrapJobFields(clientset, cl, dataVolume,
 		tablespaceVolumes)
 	if err != nil {
 		return err
@@ -103,7 +103,7 @@ func addClusterBootstrapJob(clientset kubeapi.Interface,
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		config.DeploymentTemplate.Execute(os.Stdout, bootstrapFields)
+		_ = config.DeploymentTemplate.Execute(os.Stdout, bootstrapFields)
 	}
 
 	job := &batchv1.Job{}
@@ -139,7 +139,7 @@ func addClusterDeployments(clientset kubeapi.Interface,
 	}
 
 	deploymentFields := getClusterDeploymentFields(clientset, cl,
-		dataVolume, walVolume, tablespaceVolumes)
+		dataVolume, tablespaceVolumes)
 
 	var primaryDoc bytes.Buffer
 	if err := config.DeploymentTemplate.Execute(&primaryDoc, deploymentFields); err != nil {
@@ -147,7 +147,7 @@ func addClusterDeployments(clientset kubeapi.Interface,
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		config.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
+		_ = config.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
 	}
 
 	deployment := &appsv1.Deployment{}
@@ -175,7 +175,7 @@ func addClusterDeployments(clientset kubeapi.Interface,
 
 // getBootstrapJobFields obtains the fields needed to populate the cluster bootstrap job template
 func getBootstrapJobFields(clientset kubeapi.Interface,
-	cluster *crv1.Pgcluster, dataVolume, walVolume operator.StorageResult,
+	cluster *crv1.Pgcluster, dataVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult) (operator.BootstrapJobTemplateFields, error) {
 	ctx := context.TODO()
 
@@ -184,7 +184,7 @@ func getBootstrapJobFields(clientset kubeapi.Interface,
 
 	bootstrapFields := operator.BootstrapJobTemplateFields{
 		DeploymentTemplateFields: getClusterDeploymentFields(clientset, cluster, dataVolume,
-			walVolume, tablespaceVolumes),
+			tablespaceVolumes),
 		RestoreFrom: cluster.Spec.PGDataSource.RestoreFrom,
 		RestoreOpts: restoreOpts[1 : len(restoreOpts)-1],
 	}
@@ -255,9 +255,8 @@ func getBootstrapJobFields(clientset kubeapi.Interface,
 
 // getClusterDeploymentFields obtains the fields needed to populate the cluster deployment template
 func getClusterDeploymentFields(clientset kubernetes.Interface,
-	cl *crv1.Pgcluster, dataVolume, walVolume operator.StorageResult,
+	cl *crv1.Pgcluster, dataVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult) operator.DeploymentTemplateFields {
-
 	namespace := cl.GetNamespace()
 
 	log.Infof("creating Pgcluster %s in namespace %s", cl.Name, namespace)
@@ -291,7 +290,7 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 		supplementalGroups = append(supplementalGroups, v.SupplementalGroups...)
 	}
 
-	//create the primary deployment
+	// create the primary deployment
 	deploymentFields := operator.DeploymentTemplateFields{
 		Name:               cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY],
 		IsInit:             true,
@@ -341,12 +340,11 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 
 // DeleteCluster ...
 func DeleteCluster(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string) error {
-
 	var err error
 	log.Info("deleting Pgcluster object" + " in namespace " + namespace)
 	log.Info("deleting with Name=" + cl.Spec.Name + " in namespace " + namespace)
 
-	//create rmdata job
+	// create rmdata job
 	isReplica := false
 	isBackup := false
 	removeData := true
@@ -406,7 +404,7 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 	var replicaDoc bytes.Buffer
 
 	serviceName := replica.Spec.ClusterName + "-replica"
-	//replicaFlag := true
+	// replicaFlag := true
 
 	//	replicaLabels := operator.GetPrimaryLabels(serviceName, replica.Spec.ClusterName, replicaFlag, cluster.Spec.UserLabels)
 	cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME] = replica.Spec.Name
@@ -418,13 +416,13 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 		archiveMode = "on"
 	}
 	if cluster.Labels[config.LABEL_BACKREST] == "true" {
-		//backrest requires archive mode be set to on
+		// backrest requires archive mode be set to on
 		archiveMode = "on"
 	}
 
 	image := cluster.Spec.CCPImage
 
-	//check for --ccp-image-tag at the command line
+	// check for --ccp-image-tag at the command line
 	imageTag := cluster.Spec.CCPImageTag
 	if replica.Spec.UserLabels[config.LABEL_CCP_IMAGE_TAG_KEY] != "" {
 		imageTag = replica.Spec.UserLabels[config.LABEL_CCP_IMAGE_TAG_KEY]
@@ -442,7 +440,7 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 		supplementalGroups = append(supplementalGroups, v.SupplementalGroups...)
 	}
 
-	//create the replica deployment
+	// create the replica deployment
 	replicaDeploymentFields := operator.DeploymentTemplateFields{
 		Name:               replica.Spec.Name,
 		ClusterName:        replica.Spec.ClusterName,
@@ -500,7 +498,7 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		config.DeploymentTemplate.Execute(os.Stdout, replicaDeploymentFields)
+		_ = config.DeploymentTemplate.Execute(os.Stdout, replicaDeploymentFields)
 	}
 
 	replicaDeployment := appsv1.Deployment{}
@@ -544,7 +542,6 @@ func DeleteReplica(clientset kubernetes.Interface, cl *crv1.Pgreplica, namespace
 		})
 
 	return err
-
 }
 
 // ScaleClusterInfo contains information about a cluster obtained when scaling the various
@@ -576,7 +573,6 @@ func ShutdownCluster(clientset kubeapi.Interface, cluster crv1.Pgcluster) error 
 
 	// only consider pods that are running
 	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(ctx, options)
-
 	if err != nil {
 		return err
 	}
@@ -641,7 +637,6 @@ func ShutdownCluster(clientset kubeapi.Interface, cluster crv1.Pgcluster) error 
 // includes changing the replica count for all clusters to 1, and then updating the pgcluster
 // with a shutdown status.
 func StartupCluster(clientset kubernetes.Interface, cluster crv1.Pgcluster) error {
-
 	log.Debugf("Cluster Operator: starting cluster %s", cluster.Name)
 
 	// ensure autofailover is enabled to ensure proper startup of the cluster

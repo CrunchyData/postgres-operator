@@ -84,7 +84,6 @@ type controllerGroup struct {
 func NewControllerManager(namespaces []string,
 	pgoConfig config.PgoConfig, pgoNamespace, installationName string,
 	namespaceOperatingMode ns.NamespaceOperatingMode) (*ControllerManager, error) {
-
 	controllerManager := ControllerManager{
 		controllers:            make(map[string]*controllerGroup),
 		installationName:       installationName,
@@ -123,7 +122,6 @@ func NewControllerManager(namespaces []string,
 // easily started as needed). Each controller group also receives its own clients, which can then
 // be utilized by the various controllers within that controller group.
 func (c *ControllerManager) AddGroup(namespace string) error {
-
 	c.mgrMutex.Lock()
 	defer c.mgrMutex.Unlock()
 
@@ -139,7 +137,6 @@ func (c *ControllerManager) AddGroup(namespace string) error {
 // AddAndRunGroup is a convenience function that adds a controller group for the
 // namespace specified, and then immediately runs the controllers in that group.
 func (c *ControllerManager) AddAndRunGroup(namespace string) error {
-
 	if c.controllers[namespace] != nil && !c.pgoConfig.Pgo.DisableReconcileRBAC {
 		// first reconcile RBAC in the target namespace if RBAC reconciliation is enabled
 		c.reconcileRBAC(namespace)
@@ -165,7 +162,6 @@ func (c *ControllerManager) AddAndRunGroup(namespace string) error {
 // RemoveAll removes all controller groups managed by the controller manager, first stopping all
 // controllers within each controller group managed by the controller manager.
 func (c *ControllerManager) RemoveAll() {
-
 	c.mgrMutex.Lock()
 	defer c.mgrMutex.Unlock()
 
@@ -179,7 +175,6 @@ func (c *ControllerManager) RemoveAll() {
 // RemoveGroup removes the controller group for the namespace specified, first stopping all
 // controllers within that group
 func (c *ControllerManager) RemoveGroup(namespace string) {
-
 	c.mgrMutex.Lock()
 	defer c.mgrMutex.Unlock()
 
@@ -188,7 +183,6 @@ func (c *ControllerManager) RemoveGroup(namespace string) {
 
 // RunAll runs all controllers across all controller groups managed by the controller manager.
 func (c *ControllerManager) RunAll() error {
-
 	c.mgrMutex.Lock()
 	defer c.mgrMutex.Unlock()
 
@@ -205,7 +199,6 @@ func (c *ControllerManager) RunAll() error {
 
 // RunGroup runs the controllers within the controller group for the namespace specified.
 func (c *ControllerManager) RunGroup(namespace string) error {
-
 	c.mgrMutex.Lock()
 	defer c.mgrMutex.Unlock()
 
@@ -226,7 +219,6 @@ func (c *ControllerManager) RunGroup(namespace string) error {
 
 // addControllerGroup adds a new controller group for the namespace specified
 func (c *ControllerManager) addControllerGroup(namespace string) error {
-
 	if _, ok := c.controllers[namespace]; ok {
 		log.Debugf("Controller Manager: a controller for namespace %s already exists", namespace)
 		return controller.ErrControllerGroupExists
@@ -340,7 +332,6 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 // hasListerPrivs verifies the Operator has the privileges required to start the controllers
 // for the namespace specified.
 func (c *ControllerManager) hasListerPrivs(namespace string) bool {
-
 	controllerGroup := c.controllers[namespace]
 
 	var err error
@@ -389,7 +380,6 @@ func (c *ControllerManager) hasListerPrivs(namespace string) bool {
 // runControllerGroup is responsible running the controllers for the controller group corresponding
 // to the namespace provided
 func (c *ControllerManager) runControllerGroup(namespace string) error {
-
 	controllerGroup := c.controllers[namespace]
 	hasListerPrivs := c.hasListerPrivs(namespace)
 
@@ -442,7 +432,6 @@ func (c *ControllerManager) runControllerGroup(namespace string) error {
 // queues associated with the controllers inside of the controller group are first shutdown
 // prior to removing the controller group.
 func (c *ControllerManager) removeControllerGroup(namespace string) {
-
 	if _, ok := c.controllers[namespace]; !ok {
 		log.Debugf("Controller Manager: no controller group to remove for ns %s", namespace)
 		return
@@ -458,7 +447,6 @@ func (c *ControllerManager) removeControllerGroup(namespace string) {
 // done by calling the ShutdownWorker function associated with the controller.  If the controller
 // does not have a ShutdownWorker function then no action is taken.
 func (c *ControllerManager) stopControllerGroup(namespace string) {
-
 	if _, ok := c.controllers[namespace]; !ok {
 		log.Debugf("Controller Manager: unable to stop controller group for namespace %s because "+
 			"a controller group for this namespace does not exist", namespace)

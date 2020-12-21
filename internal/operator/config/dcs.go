@@ -99,7 +99,6 @@ type SlotDCS struct {
 // include a configMap that will be used to configure the DCS for a specific cluster.
 func NewDCS(configMap *corev1.ConfigMap, kubeclientset kubernetes.Interface,
 	clusterScope string) *DCS {
-
 	clusterName := configMap.GetLabels()[config.LABEL_PG_CLUSTER]
 
 	return &DCS{
@@ -114,7 +113,6 @@ func NewDCS(configMap *corev1.ConfigMap, kubeclientset kubernetes.Interface,
 // configuration is missing from the configMap, then and attempt is made to add it by refreshing
 // the DCS configuration.
 func (d *DCS) Sync() error {
-
 	clusterName := d.configMap.GetObjectMeta().GetLabels()[config.LABEL_PG_CLUSTER]
 	namespace := d.configMap.GetObjectMeta().GetNamespace()
 
@@ -123,7 +121,6 @@ func (d *DCS) Sync() error {
 
 	if err := d.apply(); err != nil &&
 		errors.Is(err, ErrMissingClusterConfig) {
-
 		if err := d.refresh(); err != nil {
 			return err
 		}
@@ -140,7 +137,6 @@ func (d *DCS) Sync() error {
 // Update updates the contents of the DCS configuration stored within the configMap included
 // in the DCS.
 func (d *DCS) Update(dcsConfig *DCSConfig) error {
-
 	clusterName := d.configMap.GetObjectMeta().GetLabels()[config.LABEL_PG_CLUSTER]
 	namespace := d.configMap.GetObjectMeta().GetNamespace()
 
@@ -167,7 +163,6 @@ func (d *DCS) Update(dcsConfig *DCSConfig) error {
 // "<clustername>-config" configMap, with the contents of the "<clustername-dcs-config>"
 // configuration included in the DCS's configMap.
 func (d *DCS) apply() error {
-
 	clusterName := d.configMap.GetLabels()[config.LABEL_PG_CLUSTER]
 	namespace := d.configMap.GetObjectMeta().GetNamespace()
 
@@ -250,7 +245,6 @@ func (d *DCS) getClusterDCSConfig() (*DCSConfig, map[string]json.RawMessage, err
 // configMap, i.e. the contents of the "<clustername-dcs-config>" configuration unmarshalled
 // into a DCSConfig struct.
 func (d *DCS) GetDCSConfig() (*DCSConfig, map[string]json.RawMessage, error) {
-
 	dcsYAML, ok := d.configMap.Data[d.configName]
 	if !ok {
 		return nil, nil, ErrMissingClusterConfig
@@ -291,7 +285,6 @@ func (d *DCS) patchDCSAnnotation(content string) error {
 // configMap with the current DCS configuration for the cluster.  Specifically, it is updated with
 // the configuration stored in the "config" annotation of the "<clustername>-config" configMap.
 func (d *DCS) refresh() error {
-
 	clusterName := d.configMap.Labels[config.LABEL_PG_CLUSTER]
 	namespace := d.configMap.GetObjectMeta().GetNamespace()
 

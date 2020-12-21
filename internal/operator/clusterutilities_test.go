@@ -123,7 +123,6 @@ func TestGetAnnotations(t *testing.T) {
 }
 
 func TestOverrideClusterContainerImages(t *testing.T) {
-
 	containerDefaults := map[string]struct {
 		name  string
 		image string
@@ -250,7 +249,6 @@ func TestOverrideClusterContainerImages(t *testing.T) {
 }
 
 func TestGetPgbackrestBootstrapS3EnvVars(t *testing.T) {
-
 	// create a fake client that will be used to "fake" the initialization of the operator for
 	// this test
 	fakePGOClient, err := fakekubeapi.NewFakePGOClient()
@@ -283,7 +281,6 @@ func TestGetPgbackrestBootstrapS3EnvVars(t *testing.T) {
 	// test all env vars are properly set according the contents of an existing pgBackRest
 	// repo secret
 	t.Run("populate from secret", func(t *testing.T) {
-
 		backRestRepoSecret := mockBackRestRepoSecret.DeepCopy()
 		s3EnvVars := GetPgbackrestBootstrapS3EnvVars(defaultRestoreFromCluster, backRestRepoSecret)
 		// massage the results a bit so that we can parse as proper JSON to validate contents
@@ -332,7 +329,6 @@ func TestGetPgbackrestBootstrapS3EnvVars(t *testing.T) {
 	// test that the proper default S3 URI style is set for the bootstrap S3 env vars when the
 	// S3 URI style annotation is an empty string in a pgBackRest repo secret
 	t.Run("default URI style", func(t *testing.T) {
-
 		// the expected default for the pgBackRest URI style
 		defaultURIStyle := "host"
 

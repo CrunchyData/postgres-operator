@@ -17,10 +17,11 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // CatHandler ...
@@ -65,7 +66,7 @@ func CatHandler(w http.ResponseWriter, r *http.Request) {
 		resp := msgs.CatResponse{}
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -74,9 +75,9 @@ func CatHandler(w http.ResponseWriter, r *http.Request) {
 		resp := msgs.CatResponse{}
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
-	json.NewEncoder(w).Encode(catResponse)
+	_ = json.NewEncoder(w).Encode(catResponse)
 }

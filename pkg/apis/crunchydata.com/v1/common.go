@@ -114,7 +114,6 @@ func (s PgStorageSpec) GetSupplementalGroups() []int64 {
 		}
 
 		supplementalGroup, err := strconv.Atoi(result)
-
 		// if there is an error, only warn about it and continue through the loop
 		if err != nil {
 			log.Warnf("malformed storage supplemental group: %v", err)

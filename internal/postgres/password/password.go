@@ -31,10 +31,8 @@ const (
 	SCRAM
 )
 
-var (
-	// ErrPasswordType is returned when a password type does not exist
-	ErrPasswordType = errors.New("password type does not exist")
-)
+// ErrPasswordType is returned when a password type does not exist
+var ErrPasswordType = errors.New("password type does not exist")
 
 // PostgresPassword is the interface that defines the methods required to build
 // a password for PostgreSQL in a desired format (e.g. MD5)

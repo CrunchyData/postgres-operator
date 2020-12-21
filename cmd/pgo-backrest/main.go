@@ -27,12 +27,14 @@ import (
 
 const backrestCommand = "pgbackrest"
 
-const backrestBackupCommand = `backup`
-const backrestInfoCommand = `info`
-const backrestStanzaCreateCommand = `stanza-create`
-const containername = "database"
-const repoTypeFlagS3 = "--repo1-type=s3"
-const noRepoS3VerifyTLS = "--no-repo1-s3-verify-tls"
+const (
+	backrestBackupCommand       = `backup`
+	backrestInfoCommand         = `info`
+	backrestStanzaCreateCommand = `stanza-create`
+	containername               = "database"
+	repoTypeFlagS3              = "--repo1-type=s3"
+	noRepoS3VerifyTLS           = "--no-repo1-s3-verify-tls"
+)
 
 func main() {
 	log.Info("pgo-backrest starts")
@@ -150,5 +152,4 @@ func main() {
 	log.Info("stderr=[" + stderr + "]")
 
 	log.Info("pgo-backrest ends")
-
 }

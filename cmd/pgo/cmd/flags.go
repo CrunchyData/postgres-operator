@@ -15,7 +15,7 @@ package cmd
  limitations under the License.
 */
 
-//flags used by more than 1 command
+// flags used by more than 1 command
 var DeleteData bool
 
 // KeepData, If set to "true", indicates that cluster data should be stored
@@ -24,28 +24,39 @@ var KeepData bool
 
 var Query bool
 
-var Target string
-var Targets []string
+var (
+	Target  string
+	Targets []string
+)
 
-var OutputFormat string
-var Labelselector string
-var DebugFlag bool
-var Selector string
-var DryRun bool
-var NodeLabel string
+var (
+	OutputFormat  string
+	Labelselector string
+	DebugFlag     bool
+	Selector      string
+	DryRun        bool
+	ScheduleName  string
+	NodeLabel     string
+)
 
-var BackupType string
-var RestoreType string
-var BackupOpts string
-var BackrestStorageType string
+var (
+	BackupType          string
+	RestoreType         string
+	BackupOpts          string
+	BackrestStorageType string
+)
 
-var RED func(a ...interface{}) string
-var YELLOW func(a ...interface{}) string
-var GREEN func(a ...interface{}) string
+var (
+	RED    func(a ...interface{}) string
+	YELLOW func(a ...interface{}) string
+	GREEN  func(a ...interface{}) string
+)
 
-var Namespace string
-var PGONamespace string
-var APIServerURL string
-var PGO_CA_CERT, PGO_CLIENT_CERT, PGO_CLIENT_KEY string
-var PGO_DISABLE_TLS bool
-var EXCLUDE_OS_TRUST bool
+var (
+	Namespace                                    string
+	PGONamespace                                 string
+	APIServerURL                                 string
+	PGO_CA_CERT, PGO_CLIENT_CERT, PGO_CLIENT_KEY string
+	PGO_DISABLE_TLS                              bool
+	EXCLUDE_OS_TRUST                             bool
+)

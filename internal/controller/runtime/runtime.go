@@ -41,7 +41,6 @@ var refreshInterval = 60 * time.Minute
 // 'postgrescluster' custom resource.  Additionally, the manager will only watch for resources in
 // the namespace specified, with an empty string resulting in the manager watching all namespaces.
 func CreateRuntimeManager(namespace string, config *rest.Config) (manager.Manager, error) {
-
 	pgoScheme, err := createPostgresOperatorScheme()
 	if err != nil {
 		return nil, err
@@ -86,7 +85,6 @@ func addControllersToManager(mgr manager.Manager) error {
 // PostgreSQL Operator.  This includes any custom resource types specific to the PostgreSQL
 // Operator, as well as any standard Kubernetes resource types.
 func createPostgresOperatorScheme() (*runtime.Scheme, error) {
-
 	// create a new scheme specifically for this manager
 	pgoScheme := runtime.NewScheme()
 

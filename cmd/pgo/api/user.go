@@ -17,25 +17,27 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func ShowUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.ShowUserRequest) (msgs.ShowUserResponse, error) {
-
 	var response msgs.ShowUserResponse
 	response.Status.Code = msgs.Ok
 
 	request.ClientVersion = msgs.PGO_VERSION
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/usershow"
 	log.Debugf("ShowUser called...[%s]", url)
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		response.Status.Code = msgs.Error
 		return response, err
@@ -62,20 +64,20 @@ func ShowUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredent
 	}
 
 	return response, err
-
 }
-func CreateUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreateUserRequest) (msgs.CreateUserResponse, error) {
 
+func CreateUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreateUserRequest) (msgs.CreateUserResponse, error) {
 	var response msgs.CreateUserResponse
 
 	request.ClientVersion = msgs.PGO_VERSION
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/usercreate"
 	log.Debugf("createUsers called...[%s]", url)
 
 	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
@@ -104,17 +106,17 @@ func CreateUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCrede
 }
 
 func DeleteUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.DeleteUserRequest) (msgs.DeleteUserResponse, error) {
-
 	var response msgs.DeleteUserResponse
 
 	request.ClientVersion = msgs.PGO_VERSION
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/userdelete"
 	log.Debugf("deleteUser called...[%s]", url)
 
 	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
@@ -140,20 +142,19 @@ func DeleteUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCrede
 	}
 
 	return response, err
-
 }
 
 func UpdateUser(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.UpdateUserRequest) (msgs.UpdateUserResponse, error) {
-
 	var response msgs.UpdateUserResponse
 
 	request.ClientVersion = msgs.PGO_VERSION
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/userupdate"
 	log.Debugf("UpdateUser called...[%s]", url)
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}

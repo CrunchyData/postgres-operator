@@ -26,7 +26,6 @@ import (
 )
 
 func ShowBackrest(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ShowBackrestResponse, error) {
-
 	var response msgs.ShowBackrestResponse
 	url := SessionCredentials.APIServerURL + "/backrest/" + arg + "?version=" + msgs.PGO_VERSION + "&selector=" + selector + "&namespace=" + ns
 
@@ -58,11 +57,9 @@ func ShowBackrest(httpclient *http.Client, arg, selector string, SessionCredenti
 	}
 
 	return response, err
-
 }
 
 func CreateBackrestBackup(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreateBackrestBackupRequest) (msgs.CreateBackrestBackupResponse, error) {
-
 	var response msgs.CreateBackrestBackupResponse
 
 	jsonValue, _ := json.Marshal(request)

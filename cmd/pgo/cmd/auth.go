@@ -109,7 +109,7 @@ func getCredentialsFromFile() msgs.BasicAuthCredentials {
 	fullPath := dir + "/" + ".pgouser"
 	var creds msgs.BasicAuthCredentials
 
-	//look in env var for pgouser file
+	// look in env var for pgouser file
 	pgoUser := os.Getenv(pgoUserFileEnvVar)
 	if pgoUser != "" {
 		fullPath = pgoUser
@@ -125,7 +125,7 @@ func getCredentialsFromFile() msgs.BasicAuthCredentials {
 		found = true
 	}
 
-	//look in home directory for .pgouser file
+	// look in home directory for .pgouser file
 	if !found {
 		log.Debugf("looking in %s for credentials", fullPath)
 		dat, err := ioutil.ReadFile(fullPath)
@@ -140,7 +140,7 @@ func getCredentialsFromFile() msgs.BasicAuthCredentials {
 		}
 	}
 
-	//look in etc for pgouser file
+	// look in etc for pgouser file
 	if !found {
 		fullPath = "/etc/pgo/pgouser"
 		dat, err := ioutil.ReadFile(fullPath)
@@ -210,7 +210,7 @@ func GetTLSTransport() (*http.Transport, error) {
 		caCertPool = x509.NewCertPool()
 	} else {
 		if pool, err := x509.SystemCertPool(); err != nil {
-			return nil, fmt.Errorf("while loading System CA pool - %s", err)
+			return nil, fmt.Errorf("while loading System CA pool - %w", err)
 		} else {
 			caCertPool = pool
 		}
@@ -227,12 +227,12 @@ func GetTLSTransport() (*http.Transport, error) {
 
 	// Open trust file and extend trust pool
 	if trustFile, err := os.Open(caCertPath); err != nil {
-		newErr := fmt.Errorf("unable to load TLS trust from %s - [%v]", caCertPath, err)
+		newErr := fmt.Errorf("unable to load TLS trust from %s - %w", caCertPath, err)
 		return nil, newErr
 	} else {
 		err = tlsutil.ExtendTrust(caCertPool, trustFile)
 		if err != nil {
-			newErr := fmt.Errorf("error reading %s - %v", caCertPath, err)
+			newErr := fmt.Errorf("error reading %s - %w", caCertPath, err)
 			return nil, newErr
 		}
 		trustFile.Close()
@@ -258,10 +258,11 @@ func GetTLSTransport() (*http.Transport, error) {
 
 	certPair, err := tls.LoadX509KeyPair(clientCertPath, clientKeyPath)
 	if err != nil {
-		return nil, fmt.Errorf("client certificate/key loading: %s", err)
+		return nil, fmt.Errorf("client certificate/key loading: %w", err)
 	}
 
 	// create a Transport object for use by the HTTP client
+	// #nosec: G402
 	return &http.Transport{
 		TLSClientConfig: &tls.Config{
 			RootCAs:            caCertPool,

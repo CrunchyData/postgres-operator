@@ -45,7 +45,8 @@ func CheckVersion(clientset pgo.Interface, ns string) error {
 	}
 
 	// where the Operator versions do not match, label the pgclusters accordingly
-	for _, cluster := range clusterList.Items {
+	for i := range clusterList.Items {
+		cluster := &clusterList.Items[i]
 		if msgs.PGO_VERSION != cluster.Spec.UserLabels[config.LABEL_PGO_VERSION] {
 			log.Infof("operator version check - pgcluster %s version is currently %s, current version is %s", cluster.Name, cluster.Spec.UserLabels[config.LABEL_PGO_VERSION], msgs.PGO_VERSION)
 			// check if the annotations map has been created
@@ -54,8 +55,7 @@ func CheckVersion(clientset pgo.Interface, ns string) error {
 				cluster.Annotations = map[string]string{}
 			}
 			cluster.Annotations[config.ANNOTATION_IS_UPGRADED] = config.ANNOTATIONS_FALSE
-			_, err = clientset.CrunchydataV1().Pgclusters(ns).Update(ctx, &cluster, metav1.UpdateOptions{})
-			if err != nil {
+			if _, err := clientset.CrunchydataV1().Pgclusters(ns).Update(ctx, cluster, metav1.UpdateOptions{}); err != nil {
 				return fmt.Errorf("%s: %w", ErrUnsuccessfulVersionCheck, err)
 			}
 		}
@@ -69,7 +69,8 @@ func CheckVersion(clientset pgo.Interface, ns string) error {
 	}
 
 	// where the Operator versions do not match, label the replicas accordingly
-	for _, replica := range replicaList.Items {
+	for i := range replicaList.Items {
+		replica := &replicaList.Items[i]
 		if msgs.PGO_VERSION != replica.Spec.UserLabels[config.LABEL_PGO_VERSION] {
 			log.Infof("operator version check - pgcluster replica %s version is currently %s, current version is %s", replica.Name, replica.Spec.UserLabels[config.LABEL_PGO_VERSION], msgs.PGO_VERSION)
 			// check if the annotations map has been created
@@ -78,8 +79,7 @@ func CheckVersion(clientset pgo.Interface, ns string) error {
 				replica.Annotations = map[string]string{}
 			}
 			replica.Annotations[config.ANNOTATION_IS_UPGRADED] = config.ANNOTATIONS_FALSE
-			_, err = clientset.CrunchydataV1().Pgreplicas(ns).Update(ctx, &replica, metav1.UpdateOptions{})
-			if err != nil {
+			if _, err := clientset.CrunchydataV1().Pgreplicas(ns).Update(ctx, replica, metav1.UpdateOptions{}); err != nil {
 				return fmt.Errorf("%s: %w", ErrUnsuccessfulVersionCheck, err)
 			}
 		}

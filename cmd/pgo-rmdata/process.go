@@ -55,10 +55,10 @@ func Delete(request Request) {
 	// if this is a full cluster removal, first disable autofailover
 	if !(request.IsReplica || request.IsBackup) {
 		log.Debug("disabling autofailover for cluster removal")
-		util.ToggleAutoFailover(request.Clientset, false, request.ClusterPGHAScope, request.Namespace)
+		_ = util.ToggleAutoFailover(request.Clientset, false, request.ClusterPGHAScope, request.Namespace)
 	}
 
-	//the case of 'pgo scaledown'
+	// the case of 'pgo scaledown'
 	if request.IsReplica {
 		log.Info("rmdata.Process scaledown replica use case")
 		removeReplicaServices(request)
@@ -66,7 +66,7 @@ func Delete(request Request) {
 		if err != nil {
 			log.Error(err)
 		}
-		//delete the pgreplica CRD
+		// delete the pgreplica CRD
 		if err := request.Clientset.
 			CrunchydataV1().Pgreplicas(request.Namespace).
 			Delete(ctx, request.ReplicaName, metav1.DeleteOptions{}); err != nil {
@@ -92,13 +92,13 @@ func Delete(request Request) {
 			removePVCs(pvcList, request)
 		}
 
-		//scale down is its own use case so we leave when done
+		// scale down is its own use case so we leave when done
 		return
 	}
 
 	if request.IsBackup {
 		log.Info("rmdata.Process backup use case")
-		//the case of removing a backup using `pgo delete backup`, only applies to
+		// the case of removing a backup using `pgo delete backup`, only applies to
 		// "backup-type=pgdump"
 		removeBackupJobs(request)
 		removeLogicalBackupPVCs(request)
@@ -109,13 +109,13 @@ func Delete(request Request) {
 
 	log.Info("rmdata.Process cluster use case")
 
-	//the user had done something like:
-	//pgo delete cluster mycluster --delete-data
+	// the user had done something like:
+	// pgo delete cluster mycluster --delete-data
 	if request.RemoveData {
 		removeUserSecrets(request)
 	}
 
-	//handle the case of 'pgo delete cluster mycluster'
+	// handle the case of 'pgo delete cluster mycluster'
 	removeCluster(request)
 	if err := request.Clientset.
 		CrunchydataV1().Pgclusters(request.Namespace).
@@ -127,7 +127,7 @@ func Delete(request Request) {
 	removePgreplicas(request)
 	removePgtasks(request)
 	removeClusterConfigmaps(request)
-	//removeClusterJobs(request)
+	// removeClusterJobs(request)
 	if request.RemoveData {
 		if pvcList, err := getInstancePVCs(request); err != nil {
 			log.Error(err)
@@ -176,7 +176,7 @@ func removeBackrestRepo(request Request) {
 		log.Error(err)
 	}
 
-	//delete the service for the backrest repo
+	// delete the service for the backrest repo
 	err = request.Clientset.
 		CoreV1().Services(request.Namespace).
 		Delete(ctx, deploymentName, metav1.DeleteOptions{})
@@ -265,12 +265,11 @@ func removeCluster(request Request) {
 	selector := fmt.Sprintf("%s=%s,%s!=true",
 		config.LABEL_PG_CLUSTER, request.ClusterName, config.LABEL_PGO_BACKREST_REPO)
 
+	// if there is an error here, return as we cannot iterate over the deployment
+	// list
 	deployments, err := request.Clientset.
 		AppsV1().Deployments(request.Namespace).
 		List(ctx, metav1.ListOptions{LabelSelector: selector})
-
-	// if there is an error here, return as we cannot iterate over the deployment
-	// list
 	if err != nil {
 		log.Error(err)
 		return
@@ -320,7 +319,7 @@ func removeReplica(request Request) error {
 		return err
 	}
 
-	//wait for the deployment to go away fully
+	// wait for the deployment to go away fully
 	var completed bool
 	for i := 0; i < maximumTries; i++ {
 		_, err = request.Clientset.
@@ -342,7 +341,7 @@ func removeReplica(request Request) error {
 
 func removeUserSecrets(request Request) {
 	ctx := context.TODO()
-	//get all that match pg-cluster=db
+	// get all that match pg-cluster=db
 	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName
 
 	secrets, err := request.Clientset.
@@ -361,12 +360,11 @@ func removeUserSecrets(request Request) {
 			}
 		}
 	}
-
 }
 
 func removeAddons(request Request) {
 	ctx := context.TODO()
-	//remove pgbouncer
+	// remove pgbouncer
 
 	pgbouncerDepName := request.ClusterName + "-pgbouncer"
 
@@ -375,7 +373,7 @@ func removeAddons(request Request) {
 		AppsV1().Deployments(request.Namespace).
 		Delete(ctx, pgbouncerDepName, metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 
-	//delete the service name=<clustename>-pgbouncer
+	// delete the service name=<clustename>-pgbouncer
 
 	_ = request.Clientset.
 		CoreV1().Services(request.Namespace).
@@ -385,7 +383,7 @@ func removeAddons(request Request) {
 func removeServices(request Request) {
 	ctx := context.TODO()
 
-	//remove any service for this cluster
+	// remove any service for this cluster
 
 	selector := config.LABEL_PG_CLUSTER + "=" + request.ClusterName
 
@@ -405,13 +403,12 @@ func removeServices(request Request) {
 			log.Error(err)
 		}
 	}
-
 }
 
 func removePgreplicas(request Request) {
 	ctx := context.TODO()
 
-	//get a list of pgreplicas for this cluster
+	// get a list of pgreplicas for this cluster
 	replicaList, err := request.Clientset.CrunchydataV1().Pgreplicas(request.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: config.LABEL_PG_CLUSTER + "=" + request.ClusterName,
 	})
@@ -429,13 +426,12 @@ func removePgreplicas(request Request) {
 			log.Warn(err)
 		}
 	}
-
 }
 
 func removePgtasks(request Request) {
 	ctx := context.TODO()
 
-	//get a list of pgtasks for this cluster
+	// get a list of pgtasks for this cluster
 	taskList, err := request.Clientset.
 		CrunchydataV1().Pgtasks(request.Namespace).
 		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + request.ClusterName})
@@ -451,7 +447,6 @@ func removePgtasks(request Request) {
 			log.Warn(err)
 		}
 	}
-
 }
 
 // getInstancePVCs gets all the PVCs that are associated with PostgreSQL
@@ -466,11 +461,10 @@ func getInstancePVCs(request Request) ([]string, error) {
 	log.Debugf("instance pvcs overall selector: [%s]", selector)
 
 	// get all of the PVCs to analyze (see the step below)
+	// if there is an error, return here and log the error in the calling function
 	pvcs, err := request.Clientset.
 		CoreV1().PersistentVolumeClaims(request.Namespace).
 		List(ctx, metav1.ListOptions{LabelSelector: selector})
-
-	// if there is an error, return here and log the error in the calling function
 	if err != nil {
 		return pvcList, err
 	}
@@ -501,14 +495,14 @@ func getInstancePVCs(request Request) ([]string, error) {
 	return pvcList, nil
 }
 
-//get the pvc for this replica deployment
+// get the pvc for this replica deployment
 func getReplicaPVC(request Request) ([]string, error) {
 	ctx := context.TODO()
 	pvcList := make([]string, 0)
 
-	//at this point, the naming convention is useful
-	//and ClusterName is the replica deployment name
-	//when isReplica=true
+	// at this point, the naming convention is useful
+	// and ClusterName is the replica deployment name
+	// when isReplica=true
 	pvcList = append(pvcList, request.ReplicaName)
 
 	// see if there are any tablespaces or WAL volumes assigned to this replica,
@@ -520,11 +514,10 @@ func getReplicaPVC(request Request) ([]string, error) {
 	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, request.ClusterName)
 
 	// get all of the PVCs that are specific to this replica and remove them
+	// if there is an error, return here and log the error in the calling function
 	pvcs, err := request.Clientset.
 		CoreV1().PersistentVolumeClaims(request.Namespace).
 		List(ctx, metav1.ListOptions{LabelSelector: selector})
-
-	// if there is an error, return here and log the error in the calling function
 	if err != nil {
 		return pvcList, err
 	}
@@ -552,7 +545,7 @@ func getReplicaPVC(request Request) ([]string, error) {
 	return pvcList, nil
 }
 
-func removePVCs(pvcList []string, request Request) error {
+func removePVCs(pvcList []string, request Request) {
 	ctx := context.TODO()
 
 	for _, p := range pvcList {
@@ -565,9 +558,6 @@ func removePVCs(pvcList []string, request Request) error {
 			log.Error(err)
 		}
 	}
-
-	return nil
-
 }
 
 // removeBackupJobs removes any job associated with a backup. These include:
@@ -596,7 +586,6 @@ func removeBackupJobs(request Request) {
 		jobs, err := request.Clientset.
 			BatchV1().Jobs(request.Namespace).
 			List(ctx, metav1.ListOptions{LabelSelector: selector})
-
 		if err != nil {
 			log.Error(err)
 			continue

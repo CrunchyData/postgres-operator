@@ -160,7 +160,6 @@ func init() {
 	UpdateUserCmd.Flags().BoolVar(&PasswordValidAlways, "valid-always", false, "Sets a password to never expire based on expiration time. Takes precedence over --valid-days")
 	UpdateUserCmd.Flags().BoolVar(&RotatePassword, "rotate-password", false, "Rotates the user's password with an automatically generated password. The length of the password is determine by either --password-length or the value set on the server, in that order.")
 	UpdateUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-
 }
 
 // UpdateCmd represents the update command
@@ -180,7 +179,6 @@ var UpdateCmd = &cobra.Command{
 	pgo update pgorole somerole --pgorole-permission="Cat"
 	pgo update user mycluster --username=testuser --selector=name=mycluster --password=somepassword`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the type of resource to update.  Valid resource types include:
 	* cluster
@@ -203,7 +201,6 @@ var UpdateCmd = &cobra.Command{
 	* user`)
 			}
 		}
-
 	},
 }
 
@@ -300,7 +297,6 @@ pgo update user mycluster --username=foobar --disable-login
 pgo update user mycluster --username=foobar --enable-login
 		`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
@@ -364,7 +360,6 @@ var UpdatePgouserCmd = &cobra.Command{
 		pgo update pgouser myuser --pgouser-password=somepassword --pgouser-roles=somerole
 		pgo update pgouser myuser --pgouser-password=somepassword --no-prompt`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
@@ -376,13 +371,13 @@ var UpdatePgouserCmd = &cobra.Command{
 		}
 	},
 }
+
 var UpdatePgoroleCmd = &cobra.Command{
 	Use:   "pgorole",
 	Short: "Update a pgorole",
 	Long: `UPDATE allows you to update a pgo role. For example:
 		pgo update pgorole somerole  --permissions="Cat,Ls`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
@@ -401,7 +396,6 @@ var UpdateNamespaceCmd = &cobra.Command{
 	Long: `UPDATE allows you to update a Namespace. For example:
 		pgo update namespace mynamespace`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if len(args) == 0 {
 			fmt.Println("Error: You must specify the name of a Namespace.")
 		} else {

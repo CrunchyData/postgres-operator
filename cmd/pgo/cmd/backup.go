@@ -74,7 +74,6 @@ var backupCmd = &cobra.Command{
 			}
 
 		}
-
 	},
 }
 
@@ -89,10 +88,9 @@ func init() {
 	backupCmd.Flags().StringVarP(&PGDumpDB, "database", "d", "postgres", "The name of the database pgdump will backup.")
 	backupCmd.Flags().StringVar(&backupType, "backup-type", "pgbackrest", "The backup type to perform. Default is pgbackrest. Valid backup types are pgbackrest and pgdump.")
 	backupCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use when scheduling pgBackRest backups. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
-
 }
 
 // deleteBackup ....
-func deleteBackup(args []string, ns string) {
+func deleteBackup(args []string) {
 	log.Debugf("deleteBackup called %v", args)
 }

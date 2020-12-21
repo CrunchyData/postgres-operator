@@ -39,9 +39,9 @@ func FailoverBase(namespace string, clientset kubeapi.Interface, task *crv1.Pgta
 	ctx := context.TODO()
 	var err error
 
-	//look up the pgcluster for this task
-	//in the case, the clustername is passed as a key in the
-	//parameters map
+	// look up the pgcluster for this task
+	// in the case, the clustername is passed as a key in the
+	// parameters map
 	var clusterName string
 	for k := range task.Spec.Parameters {
 		clusterName = k
@@ -52,14 +52,14 @@ func FailoverBase(namespace string, clientset kubeapi.Interface, task *crv1.Pgta
 		return
 	}
 
-	//create marker (clustername, namespace)
+	// create marker (clustername, namespace)
 	err = PatchpgtaskFailoverStatus(clientset, task, namespace)
 	if err != nil {
 		log.Errorf("could not set failover started marker for task %s cluster %s", task.Spec.Name, clusterName)
 		return
 	}
 
-	//get initial count of replicas --selector=pg-cluster=clusterName
+	// get initial count of replicas --selector=pg-cluster=clusterName
 	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
 	replicaList, err := clientset.CrunchydataV1().Pgreplicas(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
@@ -68,16 +68,16 @@ func FailoverBase(namespace string, clientset kubeapi.Interface, task *crv1.Pgta
 	}
 	log.Debugf("replica count before failover is %d", len(replicaList.Items))
 
-	Failover(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clientset, clusterName, task, namespace, restconfig)
+	_ = Failover(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clientset, clusterName, task, namespace, restconfig)
 }
 
 func PatchpgtaskFailoverStatus(clientset pgo.Interface, oldCrd *crv1.Pgtask, namespace string) error {
 	ctx := context.TODO()
 
-	//change it
+	// change it
 	oldCrd.Spec.Parameters[config.LABEL_FAILOVER_STARTED] = time.Now().Format(time.RFC3339)
 
-	//create the patch
+	// create the patch
 	patchBytes, err := json.Marshal(map[string]interface{}{
 		"spec": map[string]interface{}{
 			"parameters": oldCrd.Spec.Parameters,
@@ -87,10 +87,9 @@ func PatchpgtaskFailoverStatus(clientset pgo.Interface, oldCrd *crv1.Pgtask, nam
 		return err
 	}
 
-	//apply patch
+	// apply patch
 	_, err6 := clientset.CrunchydataV1().Pgtasks(namespace).
 		Patch(ctx, oldCrd.Name, types.MergePatchType, patchBytes, metav1.PatchOptions{})
 
 	return err6
-
 }

@@ -90,12 +90,10 @@ const (
 	instanceStatusUnavailable = "unavailable"
 )
 
-var (
-	// instanceInfoCommand is the command used to get information about the status
-	// and other statistics about the instances in a PostgreSQL cluster, e.g.
-	// replication lag
-	instanceInfoCommand = []string{"patronictl", "list", "-f", "json"}
-)
+// instanceInfoCommand is the command used to get information about the status
+// and other statistics about the instances in a PostgreSQL cluster, e.g.
+// replication lag
+var instanceInfoCommand = []string{"patronictl", "list", "-f", "json"}
 
 // GetPod determines the best target to fail to
 func GetPod(clientset kubernetes.Interface, deploymentName, namespace string) (*v1.Pod, error) {
@@ -114,13 +112,13 @@ func GetPod(clientset kubernetes.Interface, deploymentName, namespace string) (*
 		return pod, errors.New("could not determine which pod to failover to")
 	}
 
-	for _, v := range pods.Items {
-		pod = &v
+	for i := range pods.Items {
+		pod = &pods.Items[i]
 	}
 
 	found := false
 
-	//make sure the pod has a database container it it
+	// make sure the pod has a database container it it
 	for _, c := range pod.Spec.Containers {
 		if c.Name == "database" {
 			found = true
@@ -178,7 +176,6 @@ func ReplicationStatus(request ReplicationStatusRequest, includePrimary, include
 
 	log.Debugf(`searching for pods with "%s"`, selector)
 	pods, err := request.Clientset.CoreV1().Pods(request.Namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
-
 	// If there is an error trying to get the pods, return here. Allow the caller
 	// to handle the error
 	if err != nil {
@@ -203,9 +200,9 @@ func ReplicationStatus(request ReplicationStatusRequest, includePrimary, include
 	// From executing and running a command in the first active pod
 	var pod *v1.Pod
 
-	for _, p := range pods.Items {
-		if p.Status.Phase == v1.PodRunning {
-			pod = &p
+	for i := range pods.Items {
+		if pods.Items[i].Status.Phase == v1.PodRunning {
+			pod = &pods.Items[i]
 			break
 		}
 	}
@@ -235,7 +232,6 @@ func ReplicationStatus(request ReplicationStatusRequest, includePrimary, include
 	commandStdOut, _, err := kubeapi.ExecToPodThroughAPI(
 		request.RESTConfig, request.Clientset, instanceInfoCommand,
 		pod.Spec.Containers[0].Name, pod.Name, request.Namespace, nil)
-
 	// if there is an error, return. We will log the error at a higher level
 	if err != nil {
 		return response, err
@@ -243,7 +239,7 @@ func ReplicationStatus(request ReplicationStatusRequest, includePrimary, include
 
 	// parse the JSON and plast it into instanceInfoList
 	var rawInstances []instanceReplicationInfoJSON
-	json.Unmarshal([]byte(commandStdOut), &rawInstances)
+	_ = json.Unmarshal([]byte(commandStdOut), &rawInstances)
 
 	log.Debugf("patroni instance info: %v", rawInstances)
 
@@ -325,14 +321,14 @@ func ToggleAutoFailover(clientset kubernetes.Interface, enable bool, pghaScope, 
 	configJSONStr := configMap.ObjectMeta.Annotations["config"]
 
 	var configJSON map[string]interface{}
-	json.Unmarshal([]byte(configJSONStr), &configJSON)
+	_ = json.Unmarshal([]byte(configJSONStr), &configJSON)
 
 	if !enable {
 		// disable autofail condition
-		disableFailover(clientset, configMap, configJSON, namespace)
+		_ = disableFailover(clientset, configMap, configJSON, namespace)
 	} else {
 		// enable autofail
-		enableFailover(clientset, configMap, configJSON, namespace)
+		_ = enableFailover(clientset, configMap, configJSON, namespace)
 	}
 
 	return nil
@@ -342,7 +338,6 @@ func ToggleAutoFailover(clientset kubernetes.Interface, enable bool, pghaScope, 
 // pods in a cluster to the a struct containing the associated instance name and the
 // Nodes that it runs on, all based upon the output from a Kubernetes API query
 func createInstanceInfoMap(pods *v1.PodList) map[string]instanceInfo {
-
 	instanceInfoMap := make(map[string]instanceInfo)
 
 	// Iterate through each pod that is returned and get the mapping between the

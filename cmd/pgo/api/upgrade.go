@@ -17,6 +17,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -25,15 +26,15 @@ import (
 )
 
 func CreateUpgrade(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreateUpgradeRequest) (msgs.CreateUpgradeResponse, error) {
-
 	var response msgs.CreateUpgradeResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/upgrades"
 	log.Debugf("CreateUpgrade called...[%s]", url)
 
 	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}

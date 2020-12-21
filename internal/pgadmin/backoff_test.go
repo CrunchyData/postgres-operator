@@ -108,7 +108,6 @@ func TestSubscripts(t *testing.T) {
 			t.Fail()
 		}
 	}
-
 }
 
 func TestUniformPolicy(t *testing.T) {

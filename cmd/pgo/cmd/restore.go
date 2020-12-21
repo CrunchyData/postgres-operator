@@ -28,8 +28,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var PITRTarget string
-var BackupPath, BackupPVC string
+var (
+	PITRTarget            string
+	BackupPath, BackupPVC string
+)
 
 var restoreCmd = &cobra.Command{
 	Use:   "restore",
@@ -54,7 +56,6 @@ var restoreCmd = &cobra.Command{
 				fmt.Println("Aborting...")
 			}
 		}
-
 	},
 }
 
@@ -123,5 +124,4 @@ func restore(args []string, ns string) {
 		fmt.Println("No clusters found.")
 		return
 	}
-
 }

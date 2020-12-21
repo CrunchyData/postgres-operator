@@ -50,7 +50,6 @@ var deleteCmd = &cobra.Command{
 	pgo delete namespace mynamespace
 	pgo delete user --username=testuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if len(args) == 0 {
 			fmt.Println(`Error: You must specify the type of resource to delete.  Valid resource types include:
 	* backup
@@ -90,7 +89,6 @@ var deleteCmd = &cobra.Command{
 	* user`)
 			}
 		}
-
 	},
 }
 
@@ -127,14 +125,14 @@ func init() {
 	// instructs that any backups associated with a cluster should be deleted
 	deleteClusterCmd.Flags().BoolVarP(&deleteBackups, "delete-backups", "b", false,
 		"Causes the backups for specified cluster to be removed permanently.")
-	deleteClusterCmd.Flags().MarkDeprecated("delete-backups",
+	_ = deleteClusterCmd.Flags().MarkDeprecated("delete-backups",
 		"Backups are deleted by default. If you would like to keep your backups, use the --keep-backups flag")
 	// "pgo delete cluster --delete-data"
 	// "pgo delete cluster -d"
 	// instructs that the PostgreSQL cluster data should be deleted
 	deleteClusterCmd.Flags().BoolVarP(&DeleteData, "delete-data", "d", false,
 		"Causes the data for specified cluster to be removed permanently.")
-	deleteClusterCmd.Flags().MarkDeprecated("delete-data",
+	_ = deleteClusterCmd.Flags().MarkDeprecated("delete-data",
 		"Data is deleted by default. You can preserve your data by keeping your backups with the --keep-backups flag")
 	// "pgo delete cluster --keep-backups"
 	// instructs that any backups associated with a cluster should be kept and not deleted
@@ -279,7 +277,7 @@ var deleteBackupCmd = &cobra.Command{
 			fmt.Println("Error: A database or cluster name is required for this command.")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
-				deleteBackup(args, Namespace)
+				deleteBackup(args)
 			} else {
 				fmt.Println("Aborting...")
 			}
@@ -427,7 +425,6 @@ var deletePgAdminCmd = &cobra.Command{
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deletePgAdmin(args, Namespace)
-
 			} else {
 				fmt.Println("Aborting...")
 			}
@@ -451,7 +448,6 @@ var deletePgbouncerCmd = &cobra.Command{
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deletePgbouncer(args, Namespace)
-
 			} else {
 				fmt.Println("Aborting...")
 			}
@@ -490,16 +486,14 @@ var deleteUserCmd = &cobra.Command{
 
     pgo delete user --username=someuser --selector=name=mycluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if Namespace == "" {
 			Namespace = PGONamespace
 		}
-		if len(args) == 0 && AllFlag == false && Selector == "" {
+		if len(args) == 0 && !AllFlag && Selector == "" {
 			fmt.Println("Error: --all, --selector, or a list of clusters is required for this command")
 		} else {
 			if util.AskForConfirmation(NoPrompt, "") {
 				deleteUser(args, Namespace)
-
 			} else {
 				fmt.Println("Aborting...")
 			}

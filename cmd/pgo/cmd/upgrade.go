@@ -90,7 +90,6 @@ func createUpgrade(args []string, ns string) {
 	request.UpgradeCCPImageTag = UpgradeCCPImageTag
 
 	response, err := api.CreateUpgrade(httpclient, &SessionCredentials, &request)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -104,5 +103,4 @@ func createUpgrade(args []string, ns string) {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
-
 }

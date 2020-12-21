@@ -30,19 +30,15 @@ import (
 // CompleteCreateClusterWorkflow ... update the pgtask for the
 // create cluster workflow for a given cluster
 func CompleteCreateClusterWorkflow(clusterName string, clientset pgo.Interface, ns string) {
-
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowCreateClusterType
 
 	completeWorkflow(clientset, ns, taskName)
-
 }
 
 func CompleteBackupWorkflow(clusterName string, clientset pgo.Interface, ns string) {
-
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackupType
 
 	completeWorkflow(clientset, ns, taskName)
-
 }
 
 func completeWorkflow(clientset pgo.Interface, taskNamespace, taskName string) {
@@ -54,7 +50,7 @@ func completeWorkflow(clientset pgo.Interface, taskNamespace, taskName string) {
 		return
 	}
 
-	//mark this workflow as completed
+	// mark this workflow as completed
 	id := task.Spec.Parameters[crv1.PgtaskWorkflowID]
 	log.Debugf("completing workflow %s  id %s", taskName, id)
 
@@ -72,5 +68,4 @@ func completeWorkflow(clientset pgo.Interface, taskNamespace, taskName string) {
 	if err != nil {
 		log.Error(err)
 	}
-
 }

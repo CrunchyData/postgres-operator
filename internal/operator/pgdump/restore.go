@@ -72,7 +72,7 @@ func Restore(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 		return
 	}
 
-	//use the storage config from the primary PostgreSQL cluster
+	// use the storage config from the primary PostgreSQL cluster
 	storage := cluster.Spec.PrimaryStorage
 
 	taskName := task.Name
@@ -104,7 +104,7 @@ func Restore(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		config.PgRestoreJobTemplate.Execute(os.Stdout, jobFields)
+		_ = config.PgRestoreJobTemplate.Execute(os.Stdout, jobFields)
 	}
 
 	newjob := v1batch.Job{}
@@ -125,5 +125,4 @@ func Restore(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 		return
 	}
 	log.Debugf("pgrestore job %s created", j.Name)
-
 }

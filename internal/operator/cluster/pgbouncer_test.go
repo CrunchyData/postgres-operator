@@ -74,7 +74,6 @@ func TestIsPgBouncerTLSEnabled(t *testing.T) {
 }
 
 func TestMakePostgresPassword(t *testing.T) {
-
 	t.Run("md5", func(t *testing.T) {
 		t.Run("valid", func(t *testing.T) {
 			passwordType := pgpassword.MD5
@@ -87,6 +86,5 @@ func TestMakePostgresPassword(t *testing.T) {
 				t.Errorf("expected: %q actual: %q", expected, actual)
 			}
 		})
-
 	})
 }

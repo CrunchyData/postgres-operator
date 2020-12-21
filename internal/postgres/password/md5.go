@@ -16,15 +16,14 @@ package password
 */
 
 import (
+	// #nosec G501
 	"crypto/md5"
 	"errors"
 	"fmt"
 )
 
-var (
-	// ErrMD5PasswordInvalid is returned when the password attributes are invalid
-	ErrMD5PasswordInvalid = errors.New(`invalid password attributes. must provide "username" and "password"`)
-)
+// ErrMD5PasswordInvalid is returned when the password attributes are invalid
+var ErrMD5PasswordInvalid = errors.New(`invalid password attributes. must provide "username" and "password"`)
 
 // MD5Password implements the PostgresPassword interface for hashing passwords
 // using the PostgreSQL MD5 method
@@ -42,6 +41,7 @@ func (m *MD5Password) Build() (string, error) {
 	plaintext := []byte(m.password + m.username)
 	// finish the transformation by getting the string value of the MD5 hash and
 	// encoding it in hexadecimal for PostgreSQL, appending "md5" to the front
+	// #nosec G401
 	return fmt.Sprintf("md5%x", md5.Sum(plaintext)), nil
 }
 

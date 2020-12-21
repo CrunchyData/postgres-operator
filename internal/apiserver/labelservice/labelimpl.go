@@ -49,7 +49,7 @@ func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 		return resp
 	}
 
-	labelsMap, err = validateLabel(request.LabelCmdLabel, ns)
+	labelsMap, err = validateLabel(request.LabelCmdLabel)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "labels not formatted correctly"
@@ -89,7 +89,7 @@ func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 		}
 		clusterList = *cl
 	} else {
-		//each arg represents a cluster name
+		// each arg represents a cluster name
 		items := make([]crv1.Pgcluster, 0)
 		for _, cluster := range request.Args {
 			result, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(ctx, cluster, metav1.GetOptions{})
@@ -108,13 +108,12 @@ func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 		resp.Results = append(resp.Results, c.Spec.Name)
 	}
 
-	addLabels(clusterList.Items, request.DryRun, request.LabelCmdLabel, labelsMap, ns, pgouser)
+	addLabels(clusterList.Items, request.DryRun, labelsMap, ns)
 
 	return resp
-
 }
 
-func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLabels map[string]string, ns, pgouser string) {
+func addLabels(items []crv1.Pgcluster, DryRun bool, newLabels map[string]string, ns string) {
 	ctx := context.TODO()
 	patchBytes, err := kubeapi.NewMergePatch().Add("metadata", "labels")(newLabels).Bytes()
 	if err != nil {
@@ -136,7 +135,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 	}
 
 	for i := 0; i < len(items); i++ {
-		//get deployments for this CRD
+		// get deployments for this CRD
 		selector := config.LABEL_PG_CLUSTER + "=" + items[i].Spec.Name
 		deployments, err := apiserver.Clientset.
 			AppsV1().Deployments(ns).
@@ -146,7 +145,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 		}
 
 		for _, d := range deployments.Items {
-			//update Deployment with the label
+			// update Deployment with the label
 			if !DryRun {
 				log.Debugf("patching deployment %s: %s", d.Name, patchBytes)
 				_, err := apiserver.Clientset.AppsV1().Deployments(ns).
@@ -160,7 +159,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 	}
 }
 
-func validateLabel(LabelCmdLabel, ns string) (map[string]string, error) {
+func validateLabel(LabelCmdLabel string) (map[string]string, error) {
 	var err error
 	labelMap := make(map[string]string)
 	userValues := strings.Split(LabelCmdLabel, ",")
@@ -203,7 +202,7 @@ func DeleteLabel(request *msgs.DeleteLabelRequest, ns string) msgs.LabelResponse
 		return resp
 	}
 
-	labelsMap, err = validateLabel(request.LabelCmdLabel, ns)
+	labelsMap, err = validateLabel(request.LabelCmdLabel)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "labels not formatted correctly"
@@ -241,7 +240,7 @@ func DeleteLabel(request *msgs.DeleteLabelRequest, ns string) msgs.LabelResponse
 		}
 		clusterList = *cl
 	} else {
-		//each arg represents a cluster name
+		// each arg represents a cluster name
 		items := make([]crv1.Pgcluster, 0)
 		for _, cluster := range request.Args {
 			result, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(ctx, cluster, metav1.GetOptions{})
@@ -260,7 +259,7 @@ func DeleteLabel(request *msgs.DeleteLabelRequest, ns string) msgs.LabelResponse
 		resp.Results = append(resp.Results, "deleting label from "+c.Spec.Name)
 	}
 
-	err = deleteLabels(clusterList.Items, request.LabelCmdLabel, labelsMap, ns)
+	err = deleteLabels(clusterList.Items, labelsMap, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -268,10 +267,9 @@ func DeleteLabel(request *msgs.DeleteLabelRequest, ns string) msgs.LabelResponse
 	}
 
 	return resp
-
 }
 
-func deleteLabels(items []crv1.Pgcluster, LabelCmdLabel string, labelsMap map[string]string, ns string) error {
+func deleteLabels(items []crv1.Pgcluster, labelsMap map[string]string, ns string) error {
 	ctx := context.TODO()
 	patch := kubeapi.NewMergePatch()
 	for key := range labelsMap {
@@ -294,7 +292,7 @@ func deleteLabels(items []crv1.Pgcluster, LabelCmdLabel string, labelsMap map[st
 	}
 
 	for i := 0; i < len(items); i++ {
-		//get deployments for this CRD
+		// get deployments for this CRD
 		selector := config.LABEL_PG_CLUSTER + "=" + items[i].Spec.Name
 		deployments, err := apiserver.Clientset.
 			AppsV1().Deployments(ns).

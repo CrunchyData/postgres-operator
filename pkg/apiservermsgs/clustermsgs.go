@@ -82,7 +82,7 @@ type CreateClusterRequest struct {
 	AutofailFlag        bool
 	ArchiveFlag         bool
 	BackrestStorageType string
-	//BackrestRestoreFrom  string
+	// BackrestRestoreFrom  string
 	PgbouncerFlag bool
 	// PgBouncerReplicas represents the total number of pgBouncer pods to deploy with a
 	// PostgreSQL cluster. Only works if PgbouncerFlag is set, and if so, it must
@@ -254,12 +254,14 @@ type ShowClusterService struct {
 	BackrestRepo bool
 }
 
-const PodTypePrimary = "primary"
-const PodTypeReplica = "replica"
-const PodTypePgbouncer = "pgbouncer"
-const PodTypePgbackrest = "pgbackrest"
-const PodTypeBackup = "backup"
-const PodTypeUnknown = "unknown"
+const (
+	PodTypePrimary    = "primary"
+	PodTypeReplica    = "replica"
+	PodTypePgbouncer  = "pgbouncer"
+	PodTypePgbackrest = "pgbackrest"
+	PodTypeBackup     = "backup"
+	PodTypeUnknown    = "unknown"
+)
 
 // ShowClusterPod
 //

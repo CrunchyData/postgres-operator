@@ -104,10 +104,8 @@ const (
 	sqlDelimiter = "|"
 )
 
-var (
-	// sqlCommand is the command that needs to be executed for running SQL
-	sqlCommand = []string{"psql", "-A", "-t"}
-)
+// sqlCommand is the command that needs to be executed for running SQL
+var sqlCommand = []string{"psql", "-A", "-t"}
 
 // CreatueUser allows one to create a PostgreSQL user in one of more PostgreSQL
 // clusters, and provides the abilit to do the following:
@@ -138,7 +136,6 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 
 	// try to get a list of clusters. if there is an error, return
 	clusterList, err := getClusterList(request.Namespace, request.Clusters, request.Selector, request.AllFlag)
-
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -159,7 +156,6 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 
 	// determine if the user passed in a valid password type
 	passwordType, err := msgs.GetPasswordType(request.PasswordType)
-
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -182,7 +178,8 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 	}
 
 	// iterate through each cluster and add the new PostgreSQL role to each pod
-	for _, cluster := range clusterList.Items {
+	for i := range clusterList.Items {
+		cluster := &clusterList.Items[i]
 		result := msgs.UserResponseDetail{
 			ClusterName: cluster.Spec.ClusterName,
 			Username:    request.Username,
@@ -192,8 +189,7 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 		log.Debugf("creating user [%s] on cluster [%s]", result.Username, cluster.Spec.ClusterName)
 
 		// first, find the primary Pod
-		pod, err := util.GetPrimaryPod(apiserver.Clientset, &cluster)
-
+		pod, err := util.GetPrimaryPod(apiserver.Clientset, cluster)
 		// if the primary Pod cannot be found, we're going to continue on for the
 		// other clusters, but provide some sort of error message in the response
 		if err != nil {
@@ -226,7 +222,6 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 		// Set the password. We want a password to be generated if the user did not
 		// set a password
 		_, password, hashedPassword, err := generatePassword(result.Username, request.Password, passwordType, true, request.PasswordLength)
-
 		// on the off-chance there is an error, record it and continue
 		if err != nil {
 			log.Error(err)
@@ -268,7 +263,7 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 		}
 
 		// if a pgAdmin deployment exists, attempt to add the user to it
-		if err := updatePgAdmin(&cluster, result.Username, result.Password); err != nil {
+		if err := updatePgAdmin(cluster, result.Username, result.Password); err != nil {
 			log.Error(err)
 			result.Error = true
 			result.ErrorMessage = err.Error()
@@ -306,7 +301,6 @@ func DeleteUser(request *msgs.DeleteUserRequest, pgouser string) msgs.DeleteUser
 
 	// try to get a list of clusters. if there is an error, return
 	clusterList, err := getClusterList(request.Namespace, request.Clusters, request.Selector, request.AllFlag)
-
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -315,7 +309,8 @@ func DeleteUser(request *msgs.DeleteUserRequest, pgouser string) msgs.DeleteUser
 
 	// iterate through each cluster and try to delete the user!
 loop:
-	for _, cluster := range clusterList.Items {
+	for i := range clusterList.Items {
+		cluster := clusterList.Items[i]
 		result := msgs.UserResponseDetail{
 			ClusterName: cluster.Spec.ClusterName,
 			Username:    request.Username,
@@ -325,7 +320,6 @@ loop:
 
 		// first, find the primary Pod
 		pod, err := util.GetPrimaryPod(apiserver.Clientset, &cluster)
-
 		// if the primary Pod cannot be found, we're going to continue on for the
 		// other clusters, but provide some sort of error message in the response
 		if err != nil {
@@ -341,7 +335,6 @@ loop:
 		// first, get a list of all the databases in the cluster. We will need to
 		// go through each database and drop any object that the user owns
 		output, err := executeSQL(pod, cluster.Spec.Port, sqlFindDatabases, []string{})
-
 		// if there is an error, record it and move on as we cannot actually deleted
 		// the user
 		if err != nil {
@@ -452,7 +445,6 @@ func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
 	// them. If if this returns an error, exit here
 	clusterList, err := getClusterList(request.Namespace,
 		request.Clusters, request.Selector, request.AllFlag)
-
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -471,10 +463,10 @@ func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
 	}
 
 	// iterate through each cluster and look up information about each user
-	for _, cluster := range clusterList.Items {
+	for i := range clusterList.Items {
+		cluster := clusterList.Items[i]
 		// first, find the primary Pod
 		pod, err := util.GetPrimaryPod(apiserver.Clientset, &cluster)
-
 		// if the primary Pod cannot be found, we're going to continue on for the
 		// other clusters, but provide some sort of error message in the response
 		if err != nil {
@@ -503,7 +495,6 @@ func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
 
 		// great, now we can perform the user lookup
 		output, err := executeSQL(pod, cluster.Spec.Port, sql, []string{})
-
 		// if there is an error, record it and move on to the next cluster
 		if err != nil {
 			log.Error(err)
@@ -618,7 +609,6 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 
 	// try to get a list of clusters. if there is an error, return
 	clusterList, err := getClusterList(request.Namespace, request.Clusters, request.Selector, request.AllFlag)
-
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -635,20 +625,21 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 		return response
 	}
 
-	for _, cluster := range clusterList.Items {
+	for i := range clusterList.Items {
 		var result msgs.UserResponseDetail
+		cluster := &clusterList.Items[i]
 
 		// determine which update user actions needs to be performed
 		switch {
 		// determine if any passwords expiring in X days should be updated
 		// it returns a slice of results, which are then append to the list
 		case request.Expired > 0:
-			results := rotateExpiredPasswords(request, &cluster)
+			results := rotateExpiredPasswords(request, cluster)
 			response.Results = append(response.Results, results...)
 		// otherwise, perform a regular "update user" request which covers all the
 		// other "regular" cases. It returns a result, which is append to the list
 		default:
-			result = updateUser(request, &cluster)
+			result = updateUser(request, cluster)
 			response.Results = append(response.Results, result)
 		}
 	}
@@ -665,7 +656,6 @@ func deleteUserSecret(cluster crv1.Pgcluster, username string) {
 	secretName := fmt.Sprintf(util.UserSecretFormat, cluster.Spec.ClusterName, username)
 	err := apiserver.Clientset.CoreV1().Secrets(cluster.Spec.Namespace).
 		Delete(ctx, secretName, metav1.DeleteOptions{})
-
 	if err != nil {
 		log.Error(err)
 	}
@@ -737,7 +727,6 @@ func generatePassword(username, password string, passwordType pgpassword.Passwor
 
 		// generate the password
 		generatedPassword, err := util.GeneratePassword(passwordLength)
-
 		// if there is an error, return
 		if err != nil {
 			return false, "", "", err
@@ -748,13 +737,11 @@ func generatePassword(username, password string, passwordType pgpassword.Passwor
 
 	// finally, hash the password
 	postgresPassword, err := pgpassword.NewPostgresPassword(passwordType, username, password)
-
 	if err != nil {
 		return false, "", "", err
 	}
 
 	hashedPassword, err := postgresPassword.Build()
-
 	if err != nil {
 		return false, "", "", err
 	}
@@ -821,7 +808,6 @@ func getClusterList(namespace string, clusterNames []string, selector string, al
 	// of arguments...or both. First, start with the selector
 	if selector != "" {
 		cl, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
-
 		// if there is an error, return here with an empty cluster list
 		if err != nil {
 			return crv1.PgclusterList{}, err
@@ -832,7 +818,6 @@ func getClusterList(namespace string, clusterNames []string, selector string, al
 	// now try to get clusters based specific cluster names
 	for _, clusterName := range clusterNames {
 		cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
-
 		// if there is an error, capture it here and return here with an empty list
 		if err != nil {
 			return crv1.PgclusterList{}, err
@@ -867,7 +852,6 @@ func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgclu
 
 	// first, find the primary Pod. If we can't do that, no rense in continuing
 	pod, err := util.GetPrimaryPod(apiserver.Clientset, cluster)
-
 	if err != nil {
 		result := msgs.UserResponseDetail{
 			ClusterName:  cluster.Spec.ClusterName,
@@ -893,7 +877,6 @@ func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgclu
 	// alright, time to find if there are any expired accounts. If this errors,
 	// then we will abort here
 	output, err := executeSQL(pod, cluster.Spec.Port, sql, []string{})
-
 	if err != nil {
 		result := msgs.UserResponseDetail{
 			ClusterName:  cluster.Spec.ClusterName,
@@ -963,7 +946,6 @@ func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgclu
 		// length of the password, or passed in a password to rotate (though that
 		// is not advised...). This forced the password to change
 		_, password, hashedPassword, err := generatePassword(result.Username, request.Password, passwordType, true, request.PasswordLength)
-
 		// on the off-chance there's an error in generating the password, record it
 		// and continue
 		if err != nil {
@@ -1007,7 +989,6 @@ func updatePgAdmin(cluster *crv1.Pgcluster, username, password string) error {
 
 	// Sync user to pgAdmin, if enabled
 	qr, err := pgadmin.GetPgAdminQueryRunner(apiserver.Clientset, apiserver.RESTConfig, cluster)
-
 	// if there is an error, return as such
 	if err != nil {
 		return err
@@ -1064,7 +1045,6 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 
 	// first, find the primary Pod
 	pod, err := util.GetPrimaryPod(apiserver.Clientset, cluster)
-
 	// if the primary Pod cannot be found, we're going to continue on for the
 	// other clusters, but provide some sort of error message in the response
 	if err != nil {
@@ -1095,7 +1075,6 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 	passwordType, _ := msgs.GetPasswordType(request.PasswordType)
 	isChanged, password, hashedPassword, err := generatePassword(result.Username,
 		request.Password, passwordType, request.RotatePassword, request.PasswordLength)
-
 	// in the off-chance there is an error generating the password, record it
 	// and return
 	if err != nil {
@@ -1162,6 +1141,7 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 		sql = fmt.Sprintf("%s %s", sql, sqlEnableLoginClause)
 	case msgs.UpdateUserLoginDisable:
 		sql = fmt.Sprintf("%s %s", sql, sqlDisableLoginClause)
+	case msgs.UpdateUserLoginDoNothing: // this is never reached -- no-op
 	}
 
 	// execute the SQL! if there is an error, return the results

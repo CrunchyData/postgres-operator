@@ -32,32 +32,29 @@ import (
 )
 
 // backrestUpdateHandler is responsible for handling updates to backrest jobs
-func (c *Controller) handleBackrestUpdate(job *apiv1.Job) error {
-
+func (c *Controller) handleBackrestUpdate(job *apiv1.Job) {
 	// return if job wasn't successful
 	if !isJobSuccessful(job) {
 		log.Debugf("jobController onUpdate job %s was unsuccessful and will be ignored",
 			job.Name)
-		return nil
+		return
 	}
 
 	// return if job is being deleted
 	if isJobInForegroundDeletion(job) {
 		log.Debugf("jobController onUpdate job %s is being deleted and will be ignored",
 			job.Name)
-		return nil
+		return
 	}
 
 	labels := job.GetObjectMeta().GetLabels()
 
 	switch {
 	case labels[config.LABEL_BACKREST_COMMAND] == "backup":
-		c.handleBackrestBackupUpdate(job)
+		_ = c.handleBackrestBackupUpdate(job)
 	case labels[config.LABEL_BACKREST_COMMAND] == crv1.PgtaskBackrestStanzaCreate:
-		c.handleBackrestStanzaCreateUpdate(job)
+		_ = c.handleBackrestStanzaCreateUpdate(job)
 	}
-
-	return nil
 }
 
 // handleBackrestRestoreUpdate is responsible for handling updates to backrest backup jobs
@@ -86,11 +83,11 @@ func (c *Controller) handleBackrestBackupUpdate(job *apiv1.Job) error {
 	if labels[config.LABEL_PGHA_BACKUP_TYPE] == crv1.BackupTypeBootstrap {
 		log.Debugf("jobController onUpdate initial backup complete")
 
-		controller.SetClusterInitializedStatus(c.Client, labels[config.LABEL_PG_CLUSTER],
+		_ = controller.SetClusterInitializedStatus(c.Client, labels[config.LABEL_PG_CLUSTER],
 			job.ObjectMeta.Namespace)
 
 		// now initialize the creation of any replica
-		controller.InitializeReplicaCreation(c.Client, labels[config.LABEL_PG_CLUSTER],
+		_ = controller.InitializeReplicaCreation(c.Client, labels[config.LABEL_PG_CLUSTER],
 			job.ObjectMeta.Namespace)
 
 	} else if labels[config.LABEL_PGHA_BACKUP_TYPE] == crv1.BackupTypeFailover {
@@ -140,7 +137,7 @@ func (c *Controller) handleBackrestStanzaCreateUpdate(job *apiv1.Job) error {
 		if cluster.Spec.Standby {
 			log.Debugf("job Controller: standby cluster %s will now be set to an initialized "+
 				"status", clusterName)
-			controller.SetClusterInitializedStatus(c.Client, clusterName, namespace)
+			_ = controller.SetClusterInitializedStatus(c.Client, clusterName, namespace)
 			return nil
 		}
 
@@ -152,7 +149,7 @@ func (c *Controller) handleBackrestStanzaCreateUpdate(job *apiv1.Job) error {
 			return err
 		}
 
-		backrest.CreateInitialBackup(c.Client, job.ObjectMeta.Namespace,
+		_, _ = backrest.CreateInitialBackup(c.Client, job.ObjectMeta.Namespace,
 			clusterName, backrestRepoPodName)
 
 	}

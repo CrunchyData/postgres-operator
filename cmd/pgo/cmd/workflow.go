@@ -34,13 +34,10 @@ func showWorkflow(args []string, ns string) {
 	}
 
 	printWorkflow(args[0], ns)
-
 }
 
 func printWorkflow(id, ns string) {
-
 	response, err := api.ShowWorkflow(httpclient, id, &SessionCredentials, ns)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -58,5 +55,4 @@ func printWorkflow(id, ns string) {
 	for k, v := range response.Results.Parameters {
 		fmt.Printf("%s%s\n", util.Rpad(k, " ", 20), v)
 	}
-
 }

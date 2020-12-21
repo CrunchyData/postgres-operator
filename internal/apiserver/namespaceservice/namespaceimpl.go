@@ -36,7 +36,7 @@ func ShowNamespace(clientset kubernetes.Interface, username string, request *msg
 	resp.Username = username
 	resp.Results = make([]msgs.NamespaceResult, 0)
 
-	//namespaceList := util.GetNamespaces()
+	// namespaceList := util.GetNamespaces()
 
 	nsList := make([]string, 0)
 
@@ -91,14 +91,13 @@ func ShowNamespace(clientset kubernetes.Interface, username string, request *msg
 
 // CreateNamespace ...
 func CreateNamespace(clientset kubernetes.Interface, createdBy string, request *msgs.CreateNamespaceRequest) msgs.CreateNamespaceResponse {
-
 	log.Debugf("CreateNamespace %v", request)
 	resp := msgs.CreateNamespaceResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	//iterate thru all the args (namespace names)
+	// iterate thru all the args (namespace names)
 	for _, namespace := range request.Args {
 
 		if err := ns.CreateNamespace(clientset, apiserver.InstallationName,
@@ -112,7 +111,6 @@ func CreateNamespace(clientset kubernetes.Interface, createdBy string, request *
 	}
 
 	return resp
-
 }
 
 // DeleteNamespace ...
@@ -125,7 +123,6 @@ func DeleteNamespace(clientset kubernetes.Interface, deletedBy string, request *
 	for _, namespace := range request.Args {
 
 		err := ns.DeleteNamespace(clientset, apiserver.InstallationName, apiserver.PgoNamespace, deletedBy, namespace)
-
 		if err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
@@ -136,19 +133,17 @@ func DeleteNamespace(clientset kubernetes.Interface, deletedBy string, request *
 	}
 
 	return resp
-
 }
 
 // UpdateNamespace ...
 func UpdateNamespace(clientset kubernetes.Interface, updatedBy string, request *msgs.UpdateNamespaceRequest) msgs.UpdateNamespaceResponse {
-
 	log.Debugf("UpdateNamespace %v", request)
 	resp := msgs.UpdateNamespaceResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
 	resp.Results = make([]string, 0)
 
-	//iterate thru all the args (namespace names)
+	// iterate thru all the args (namespace names)
 	for _, namespace := range request.Args {
 
 		if err := ns.UpdateNamespace(clientset, apiserver.InstallationName,
@@ -162,5 +157,4 @@ func UpdateNamespace(clientset kubernetes.Interface, updatedBy string, request *
 	}
 
 	return resp
-
 }

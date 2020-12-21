@@ -17,23 +17,25 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func ShowPolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.ShowPolicyRequest) (msgs.ShowPolicyResponse, error) {
-
 	var response msgs.ShowPolicyResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/showpolicies"
 	log.Debugf("showPolicy called...[%s]", url)
 
 	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		response.Status.Code = msgs.Error
 		return response, err
@@ -59,19 +61,19 @@ func ShowPolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCrede
 	}
 
 	return response, err
-
 }
-func CreatePolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreatePolicyRequest) (msgs.CreatePolicyResponse, error) {
 
+func CreatePolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreatePolicyRequest) (msgs.CreatePolicyResponse, error) {
 	var resp msgs.CreatePolicyResponse
 	resp.Status.Code = msgs.Ok
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/policies"
 	log.Debugf("createPolicy called...[%s]", url)
 
 	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		return resp, err
@@ -105,16 +107,16 @@ func CreatePolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCre
 }
 
 func DeletePolicy(httpclient *http.Client, request *msgs.DeletePolicyRequest, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DeletePolicyResponse, error) {
-
 	var response msgs.DeletePolicyResponse
 
 	url := SessionCredentials.APIServerURL + "/policiesdelete"
 
 	log.Debugf("delete policy called [%s]", url)
 
+	ctx := context.TODO()
 	action := "POST"
 	jsonValue, _ := json.Marshal(request)
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		response.Status.Code = msgs.Error
 		return response, err
@@ -141,19 +143,18 @@ func DeletePolicy(httpclient *http.Client, request *msgs.DeletePolicyRequest, Se
 	}
 
 	return response, err
-
 }
 
 func ApplyPolicy(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.ApplyPolicyRequest) (msgs.ApplyPolicyResponse, error) {
-
 	var response msgs.ApplyPolicyResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/policies/apply"
 	log.Debugf("applyPolicy called...[%s]", url)
 
 	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}

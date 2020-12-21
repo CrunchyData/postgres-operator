@@ -36,9 +36,10 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-const CustomConfigMapName = "pgo-config"
-const DefaultConfigsPath = "/default-pgo-config/"
-const CustomConfigsPath = "/pgo-config/"
+const (
+	CustomConfigMapName = "pgo-config"
+	DefaultConfigsPath  = "/default-pgo-config/"
+)
 
 var PgoDefaultServiceAccountTemplate *template.Template
 
@@ -260,17 +261,21 @@ type PgoConfig struct {
 	Storage         map[string]StorageStruct
 }
 
-const DEFAULT_SERVICE_TYPE = "ClusterIP"
-const LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
-const NODEPORT_SERVICE_TYPE = "NodePort"
-const CONFIG_PATH = "pgo.yaml"
+const (
+	DEFAULT_SERVICE_TYPE       = "ClusterIP"
+	LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
+	NODEPORT_SERVICE_TYPE      = "NodePort"
+	CONFIG_PATH                = "pgo.yaml"
+)
 
-const DEFAULT_BACKREST_PORT = 2022
-const DEFAULT_PGADMIN_PORT = "5050"
-const DEFAULT_PGBADGER_PORT = "10000"
-const DEFAULT_EXPORTER_PORT = "9187"
-const DEFAULT_POSTGRES_PORT = "5432"
-const DEFAULT_PATRONI_PORT = "8009"
+const (
+	DEFAULT_BACKREST_PORT = 2022
+	DEFAULT_PGADMIN_PORT  = "5050"
+	DEFAULT_PGBADGER_PORT = "10000"
+	DEFAULT_EXPORTER_PORT = "9187"
+	DEFAULT_POSTGRES_PORT = "5432"
+	DEFAULT_PATRONI_PORT  = "8009"
+)
 
 func (c *PgoConfig) Validate() error {
 	var err error
@@ -508,17 +513,15 @@ func (c *PgoConfig) GetStorageSpec(name string) (crv1.PgStorageSpec, error) {
 	}
 
 	return storage, err
-
 }
 
 func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) error {
-
 	cMap, rootPath := getRootPath(clientset, namespace)
 
 	var yamlFile []byte
 	var err error
 
-	//get the pgo.yaml config file
+	// get the pgo.yaml config file
 	if cMap != nil {
 		str := cMap.Data[CONFIG_PATH]
 		if str == "" {
@@ -548,8 +551,9 @@ func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) 
 
 	c.CheckEnv()
 
-	//load up all the templates
+	// load up all the templates
 	PgoDefaultServiceAccountTemplate, err = c.LoadTemplate(cMap, rootPath, PGODefaultServiceAccountPath)
+
 	if err != nil {
 		return err
 	}
@@ -764,7 +768,6 @@ func (c *PgoConfig) LoadTemplate(cMap *v1.ConfigMap, rootPath, path string) (*te
 
 	// if we have a value for the templated file, return
 	return template.Must(template.New(path).Parse(value)), nil
-
 }
 
 // DefaultTemplate attempts to load a default configuration template file
@@ -777,7 +780,6 @@ func (c *PgoConfig) DefaultTemplate(path string) (string, error) {
 
 	// read in the file from the default path
 	buf, err := ioutil.ReadFile(fullPath)
-
 	if err != nil {
 		log.Errorf("error: could not read %s", fullPath)
 		log.Error(err)

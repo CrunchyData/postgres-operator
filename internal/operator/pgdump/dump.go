@@ -60,7 +60,7 @@ func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	ctx := context.TODO()
 
 	var err error
-	//create the Job to run the pgdump command
+	// create the Job to run the pgdump command
 
 	cmd := task.Spec.Parameters[config.LABEL_PGDUMP_COMMAND]
 
@@ -128,7 +128,7 @@ func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	}
 
 	if operator.CRUNCHY_DEBUG {
-		config.PgDumpBackupJobTemplate.Execute(os.Stdout, jobFields)
+		_ = config.PgDumpBackupJobTemplate.Execute(os.Stdout, jobFields)
 	}
 
 	newjob := v1batch.Job{}
@@ -148,7 +148,7 @@ func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 		return
 	}
 
-	//update the pgdump task status to submitted - updates task, not the job.
+	// update the pgdump task status to submitted - updates task, not the job.
 	patch, err := kubeapi.NewJSONPatch().Add("spec", "status")(crv1.PgBackupJobSubmitted).Bytes()
 	if err == nil {
 		log.Debugf("patching task %s: %s", task.Spec.Name, patch)
@@ -158,5 +158,4 @@ func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	if err != nil {
 		log.Error(err.Error())
 	}
-
 }

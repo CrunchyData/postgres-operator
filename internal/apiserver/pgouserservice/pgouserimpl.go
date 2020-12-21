@@ -30,14 +30,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-const MAP_KEY_USERNAME = "username"
-const MAP_KEY_PASSWORD = "password"
-const MAP_KEY_ROLES = "roles"
-const MAP_KEY_NAMESPACES = "namespaces"
+const (
+	MAP_KEY_USERNAME   = "username"
+	MAP_KEY_PASSWORD   = "password"
+	MAP_KEY_ROLES      = "roles"
+	MAP_KEY_NAMESPACES = "namespaces"
+)
 
 // CreatePgouser ...
 func CreatePgouser(clientset kubernetes.Interface, createdBy string, request *msgs.CreatePgouserRequest) msgs.CreatePgouserResponse {
-
 	log.Debugf("CreatePgouser %v", request)
 	resp := msgs.CreatePgouserResponse{}
 	resp.Status.Code = msgs.Ok
@@ -122,7 +123,6 @@ func ShowPgouser(clientset kubernetes.Interface, request *msgs.ShowPgouserReques
 	}
 
 	return resp
-
 }
 
 // DeletePgouser ...
@@ -150,7 +150,6 @@ func DeletePgouser(clientset kubernetes.Interface, deletedBy string, request *ms
 	}
 
 	return resp
-
 }
 
 // UpdatePgouser - update the pgouser secret
@@ -253,7 +252,6 @@ func validRoles(clientset kubernetes.Interface, roles string) error {
 }
 
 func validNamespaces(namespaces string, allnamespaces bool) error {
-
 	if allnamespaces {
 		return nil
 	}

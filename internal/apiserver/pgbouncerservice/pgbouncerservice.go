@@ -17,10 +17,11 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // CreatePgbouncerHandler ...
@@ -63,7 +64,7 @@ func CreatePgbouncerHandler(w http.ResponseWriter, r *http.Request) {
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -71,13 +72,12 @@ func CreatePgbouncerHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = CreatePgbouncer(&request, ns, username)
-	json.NewEncoder(w).Encode(resp)
-
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 /* The delete pgboucner handler is setup to be used by two different routes. To keep
@@ -141,7 +141,7 @@ func DeletePgbouncerHandler(w http.ResponseWriter, r *http.Request) {
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = apiserver.VERSION_MISMATCH_ERROR
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -149,13 +149,12 @@ func DeletePgbouncerHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	resp = DeletePgbouncer(&request, ns)
-	json.NewEncoder(w).Encode(resp)
-
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // ShowPgBouncerHandler is the HTTP handler to get information about a pgBouncer
@@ -182,7 +181,6 @@ func ShowPgBouncerHandler(w http.ResponseWriter, r *http.Request) {
 
 	// first, determine if the user is authorized to access this resource
 	username, err := apiserver.Authn(apiserver.SHOW_PGBOUNCER_PERM, w, r)
-
 	if err != nil {
 		return
 	}
@@ -202,13 +200,12 @@ func ShowPgBouncerHandler(w http.ResponseWriter, r *http.Request) {
 				Msg:  apiserver.VERSION_MISMATCH_ERROR,
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	// ensure the namespace being used exists
 	namespace, err := apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
-
 	if err != nil {
 		response := msgs.ShowPgBouncerResponse{
 			Status: msgs.Status{
@@ -216,14 +213,13 @@ func ShowPgBouncerHandler(w http.ResponseWriter, r *http.Request) {
 				Msg:  err.Error(),
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	// get the information about a pgbouncer deployment(s)
 	response := ShowPgBouncer(&request, namespace)
-	json.NewEncoder(w).Encode(response)
-
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 // UpdatePgBouncerHandler is the HTTP handler to perform update tasks on a
@@ -250,7 +246,6 @@ func UpdatePgBouncerHandler(w http.ResponseWriter, r *http.Request) {
 
 	// first, determine if the user is authorized to access this resource
 	username, err := apiserver.Authn(apiserver.UPDATE_PGBOUNCER_PERM, w, r)
-
 	if err != nil {
 		return
 	}
@@ -270,13 +265,12 @@ func UpdatePgBouncerHandler(w http.ResponseWriter, r *http.Request) {
 				Msg:  apiserver.VERSION_MISMATCH_ERROR,
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	// ensure the namespace being used exists
 	namespace, err := apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace)
-
 	if err != nil {
 		response := msgs.UpdatePgBouncerResponse{
 			Status: msgs.Status{
@@ -284,11 +278,11 @@ func UpdatePgBouncerHandler(w http.ResponseWriter, r *http.Request) {
 				Msg:  err.Error(),
 			},
 		}
-		json.NewEncoder(w).Encode(response)
+		_ = json.NewEncoder(w).Encode(response)
 		return
 	}
 
 	// get the information about a pgbouncer deployment(s)
 	response := UpdatePgBouncer(&request, namespace, username)
-	json.NewEncoder(w).Encode(response)
+	_ = json.NewEncoder(w).Encode(response)
 }

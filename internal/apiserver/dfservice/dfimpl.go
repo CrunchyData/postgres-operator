@@ -124,7 +124,6 @@ func getClaimCapacity(clientset kubernetes.Interface, pvcName, ns string) (strin
 	log.Debugf("in df pvc name found to be %s", pvcName)
 
 	pvc, err := clientset.CoreV1().PersistentVolumeClaims(ns).Get(ctx, pvcName, metav1.GetOptions{})
-
 	if err != nil {
 		log.Error(err)
 		return "", err
@@ -150,7 +149,6 @@ func getClusterDf(cluster *crv1.Pgcluster, clusterResultsChannel chan msgs.DfDet
 	selector := fmt.Sprintf("%s=%s", config.LABEL_PG_CLUSTER, cluster.Spec.Name)
 
 	pods, err := apiserver.Clientset.CoreV1().Pods(cluster.Spec.Namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
-
 	// if there is an error attempting to get the pods, just return
 	if err != nil {
 		errorChannel <- err
@@ -299,7 +297,6 @@ func getPodDf(cluster *crv1.Pgcluster, pod *v1.Pod, podResultsChannel chan msgs.
 
 		stdout, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig,
 			apiserver.Clientset, cmd, pvcContainerName, pod.Name, cluster.Spec.Namespace, nil)
-
 		// if the command fails, exit here
 		if err != nil {
 			err := fmt.Errorf(stderr)
@@ -310,7 +307,7 @@ func getPodDf(cluster *crv1.Pgcluster, pod *v1.Pod, podResultsChannel chan msgs.
 
 		// have to parse the size out from the statement. Size is in bytes
 		if _, err = fmt.Sscan(stdout, &result.PVCUsed); err != nil {
-			err := fmt.Errorf("could not find the size of pvc %s: %v", result.PVCName, err)
+			err := fmt.Errorf("could not find the size of pvc %s: %w", result.PVCName, err)
 			log.Error(err)
 			errorChannel <- err
 			return

@@ -31,11 +31,9 @@ const (
 	UpdateUserLoginDisable
 )
 
-var (
-	// ErrPasswordTypeInvalid is used when a string that's not included in
-	// PasswordTypeStrings is used
-	ErrPasswordTypeInvalid = errors.New("invalid password type. choices are (md5, scram-sha-256)")
-)
+// ErrPasswordTypeInvalid is used when a string that's not included in
+// PasswordTypeStrings is used
+var ErrPasswordTypeInvalid = errors.New("invalid password type. choices are (md5, scram-sha-256)")
 
 // passwordTypeStrings is a mapping of strings of password types to their
 // corresponding value of the structured password type

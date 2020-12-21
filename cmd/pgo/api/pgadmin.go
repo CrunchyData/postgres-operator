@@ -17,6 +17,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -29,12 +30,13 @@ import (
 func CreatePgAdmin(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreatePgAdminRequest) (msgs.CreatePgAdminResponse, error) {
 	var response msgs.CreatePgAdminResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/pgadmin"
 	log.Debugf("createPgAdmin called...[%s]", url)
 
 	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
@@ -68,12 +70,13 @@ func CreatePgAdmin(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 func DeletePgAdmin(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.DeletePgAdminRequest) (msgs.DeletePgAdminResponse, error) {
 	var response msgs.DeletePgAdminResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/pgadmin"
 	log.Debugf("deletePgAdmin called...[%s]", url)
 
 	action := "DELETE"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
@@ -117,13 +120,13 @@ func ShowPgAdmin(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCred
 	log.Debugf("ShowPgAdmin called [%+v]", request)
 
 	// put the request into JSON format and format the URL and HTTP verb
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := SessionCredentials.APIServerURL + "/pgadmin/show"
 	action := "POST"
 
 	// prepare the request!
-	httpRequest, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
-
+	httpRequest, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	// if there is an error preparing the request, return here
 	if err != nil {
 		return msgs.ShowPgAdminResponse{}, err

@@ -47,7 +47,6 @@ func init() {
 }
 
 func showVersion() {
-
 	// print the client version
 	fmt.Println("pgo client version " + msgs.PGO_VERSION)
 
@@ -58,7 +57,6 @@ func showVersion() {
 
 	// otherwise, get the server version
 	response, err := api.ShowVersion(httpclient, &SessionCredentials)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)

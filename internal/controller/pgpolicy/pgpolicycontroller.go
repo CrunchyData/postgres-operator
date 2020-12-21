@@ -41,8 +41,8 @@ func (c *Controller) onAdd(obj interface{}) {
 	policy := obj.(*crv1.Pgpolicy)
 	log.Debugf("[pgpolicy Controller] onAdd ns=%s %s", policy.ObjectMeta.Namespace, policy.ObjectMeta.SelfLink)
 
-	//handle the case of when a pgpolicy is already processed, which
-	//is the case when the operator restarts
+	// handle the case of when a pgpolicy is already processed, which
+	// is the case when the operator restarts
 	if policy.Status.State == crv1.PgpolicyStateProcessed {
 		log.Debug("pgpolicy " + policy.ObjectMeta.Name + " already processed")
 		return
@@ -77,7 +77,6 @@ func (c *Controller) onDelete(obj interface{}) {
 
 // AddPGPolicyEventHandler adds the pgpolicy event handler to the pgpolicy informer
 func (c *Controller) AddPGPolicyEventHandler() {
-
 	c.Informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.onAdd,
 		UpdateFunc: c.onUpdate,

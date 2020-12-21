@@ -53,7 +53,6 @@ var failoverCmd = &cobra.Command{
 				fmt.Println("Aborting...")
 			}
 		}
-
 	},
 }
 
@@ -63,7 +62,6 @@ func init() {
 	failoverCmd.Flags().BoolVarP(&Query, "query", "", false, "Prints the list of failover candidates.")
 	failoverCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	failoverCmd.Flags().StringVarP(&Target, "target", "", "", "The replica target which the failover will occur on.")
-
 }
 
 // createFailover ....
@@ -77,7 +75,6 @@ func createFailover(args []string, ns string) {
 	request.ClientVersion = msgs.PGO_VERSION
 
 	response, err := api.CreateFailover(httpclient, &SessionCredentials, request)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -91,7 +88,6 @@ func createFailover(args []string, ns string) {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
-
 }
 
 // queryFailover is a helper function to return the user information about the

@@ -72,7 +72,6 @@ func (r *Reconciler) Reconcile(
 
 // SetupWithManager adds the PostgresCluster controller to the provided runtime manager
 func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
-
 	// create a controller for the PostgresCluster custom resource
 	return builder.ControllerManagedBy(mgr).
 		For(&v1alpha1.PostgresCluster{}).

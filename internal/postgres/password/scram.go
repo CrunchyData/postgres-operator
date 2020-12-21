@@ -96,7 +96,6 @@ type SCRAMPassword struct {
 func (s *SCRAMPassword) Build() (string, error) {
 	// get a generated salt
 	salt, err := s.generateSalt(s.SaltLength)
-
 	if err != nil {
 		return "", err
 	}

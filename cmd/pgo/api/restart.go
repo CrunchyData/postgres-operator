@@ -17,6 +17,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -29,12 +30,12 @@ import (
 // a PG cluster or one or more instances within it.
 func Restart(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials,
 	request *msgs.RestartRequest) (msgs.RestartResponse, error) {
-
 	var response msgs.RestartResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := fmt.Sprintf("%s/%s", SessionCredentials.APIServerURL, "restart")
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
@@ -69,11 +70,11 @@ func Restart(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredenti
 // cluster specified.
 func QueryRestart(httpclient *http.Client, clusterName string, SessionCredentials *msgs.BasicAuthCredentials,
 	namespace string) (msgs.QueryRestartResponse, error) {
-
 	var response msgs.QueryRestartResponse
 
+	ctx := context.TODO()
 	url := fmt.Sprintf("%s/%s/%s", SessionCredentials.APIServerURL, "restart", clusterName)
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return response, err
 	}

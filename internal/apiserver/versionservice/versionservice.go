@@ -17,9 +17,10 @@ limitations under the License.
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // VersionHandler ...
@@ -50,7 +51,7 @@ func VersionHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp := Version()
 
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // HealthHandler ...
@@ -71,7 +72,7 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp := Health()
 
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // HealthyHandler follows the health endpoint convention of HTTP/200 and
@@ -88,5 +89,5 @@ func HealthyHandler(w http.ResponseWriter, r *http.Request) {
 	//    '200':
 	//      description: "Healthy: server is responding as expected"
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("ok"))
+	_, _ = w.Write([]byte("ok"))
 }

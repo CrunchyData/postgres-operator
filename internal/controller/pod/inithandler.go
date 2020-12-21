@@ -40,7 +40,6 @@ import (
 // handleClusterInit is responsible for proceeding with initialization of the PG cluster once the
 // primary PG pod for a new or restored PG cluster reaches a ready status
 func (c *Controller) handleClusterInit(newPod *apiv1.Pod, cluster *crv1.Pgcluster) error {
-
 	clusterName := cluster.GetName()
 
 	// first check to see if the update is a repo pod.  If so, then call repo init handler and
@@ -76,7 +75,6 @@ func (c *Controller) handleClusterInit(newPod *apiv1.Pod, cluster *crv1.Pgcluste
 // handleBackRestRepoInit handles cluster initialization tasks that must be executed once
 // as a result of an update to a cluster's pgBackRest repository pod
 func (c *Controller) handleBackRestRepoInit(newPod *apiv1.Pod, cluster *crv1.Pgcluster) error {
-
 	// if the repo pod is for a cluster bootstrap, the kick of the bootstrap job and return
 	if _, ok := newPod.GetLabels()[config.LABEL_PGHA_BOOTSTRAP]; ok {
 		if err := clusteroperator.AddClusterBootstrap(c.Client, cluster); err != nil {
@@ -103,7 +101,6 @@ func (c *Controller) handleBackRestRepoInit(newPod *apiv1.Pod, cluster *crv1.Pgc
 // regardless of the specific type of cluster (e.g. regualar or standby) or the reason the
 // cluster is being initialized (initial bootstrap or restore)
 func (c *Controller) handleCommonInit(cluster *crv1.Pgcluster) error {
-
 	// Disable autofailover in the cluster that is now "Ready" if the autofail label is set
 	// to "false" on the pgcluster (i.e. label "autofail=true")
 	autofailEnabled, err := strconv.ParseBool(cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL])
@@ -111,11 +108,11 @@ func (c *Controller) handleCommonInit(cluster *crv1.Pgcluster) error {
 		log.Error(err)
 		return err
 	} else if !autofailEnabled {
-		util.ToggleAutoFailover(c.Client, false,
+		_ = util.ToggleAutoFailover(c.Client, false,
 			cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE], cluster.Namespace)
 	}
 
-	operator.UpdatePGHAConfigInitFlag(c.Client, false, cluster.Name,
+	_ = operator.UpdatePGHAConfigInitFlag(c.Client, false, cluster.Name,
 		cluster.Namespace)
 
 	return nil
@@ -182,7 +179,7 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	taskoperator.CompleteCreateClusterWorkflow(clusterName, c.Client, namespace)
 
 	// now scale any replicas deployments to 1
-	clusteroperator.ScaleClusterDeployments(c.Client, *cluster, 1, false, true, false, false)
+	_, _ = clusteroperator.ScaleClusterDeployments(c.Client, *cluster, 1, false, true, false, false)
 
 	// Proceed with stanza-creation of this is not a standby cluster, or if its
 	// a standby cluster that does not have "s3" storage only enabled.
@@ -204,7 +201,7 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 		}
 		backrestoperator.StanzaCreate(namespace, clusterName, c.Client)
 	} else {
-		controller.SetClusterInitializedStatus(c.Client, clusterName, namespace)
+		_ = controller.SetClusterInitializedStatus(c.Client, clusterName, namespace)
 	}
 
 	// If a standby cluster initialize the creation of any replicas.  Replicas
@@ -212,7 +209,7 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	// stanza-creation and/or the creation of any backups, since the replicas
 	// will be generated from the pgBackRest repository of an external PostgreSQL
 	// database (which should already exist).
-	controller.InitializeReplicaCreation(c.Client, clusterName, namespace)
+	_ = controller.InitializeReplicaCreation(c.Client, clusterName, namespace)
 
 	// if this is a pgbouncer enabled cluster, add a pgbouncer
 	// Note: we only warn if we cannot create the pgBouncer, so eecution can
@@ -252,13 +249,13 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 		log.Debug("which means its pod was restarted for some reason")
 		log.Debug("we will use the service name on the deployment")
 		serviceName = dep.ObjectMeta.Labels[config.LABEL_SERVICE_NAME]
-	} else if replica == false {
+	} else if !replica {
 		log.Debugf("primary pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER])
-		//add label onto pod "service-name=clustername"
+		// add label onto pod "service-name=clustername"
 		serviceName = newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]
-	} else if replica == true {
+	} else if replica {
 		log.Debugf("replica pod ADDED %s service-name=%s", newpod.Name, newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER]+"-replica")
-		//add label onto pod "service-name=clustername-replica"
+		// add label onto pod "service-name=clustername-replica"
 		serviceName = newpod.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] + "-replica"
 	}
 
@@ -273,12 +270,11 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 		return
 	}
 
-	//add the service name label to the Deployment
+	// add the service name label to the Deployment
 	log.Debugf("patching deployment %s: %s", dep.Name, patch)
 	_, err = c.Client.AppsV1().Deployments(ns).Patch(ctx, dep.Name, types.MergePatchType, patch, metav1.PatchOptions{})
 	if err != nil {
 		log.Error("could not add label to deployment on pod add")
 		return
 	}
-
 }

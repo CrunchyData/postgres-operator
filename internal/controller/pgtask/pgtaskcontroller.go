@@ -48,7 +48,6 @@ type Controller struct {
 // processNextWorkItem function in order to read and process a message on the
 // workqueue.
 func (c *Controller) RunWorker(stopCh <-chan struct{}, doneCh chan<- struct{}) {
-
 	go c.waitForShutdown(stopCh)
 
 	for c.processNextItem() {
@@ -93,7 +92,7 @@ func (c *Controller) processNextItem() bool {
 		return true
 	}
 
-	//update pgtask
+	// update pgtask
 	patch, err := json.Marshal(map[string]interface{}{
 		"status": crv1.PgtaskStatus{
 			State:   crv1.PgtaskStateProcessed,
@@ -110,7 +109,7 @@ func (c *Controller) processNextItem() bool {
 		return true
 	}
 
-	//process the incoming task
+	// process the incoming task
 	switch tmpTask.Spec.TaskType {
 	case crv1.PgtaskPgAdminAdd:
 		log.Debug("add pgadmin task added")
@@ -136,9 +135,6 @@ func (c *Controller) processNextItem() bool {
 		} else {
 			log.Debugf("skipping duplicate onAdd delete data task %s/%s", keyNamespace, keyResourceName)
 		}
-	case crv1.PgtaskDeleteBackups:
-		log.Debug("delete backups task added")
-		taskoperator.RemoveBackups(keyNamespace, c.Client, tmpTask)
 	case crv1.PgtaskBackrest:
 		log.Debug("backrest task added")
 		backrestoperator.Backrest(keyNamespace, c.Client, tmpTask)
@@ -164,15 +160,14 @@ func (c *Controller) processNextItem() bool {
 
 	c.Queue.Forget(key)
 	return true
-
 }
 
 // onAdd is called when a pgtask is added
 func (c *Controller) onAdd(obj interface{}) {
 	task := obj.(*crv1.Pgtask)
 
-	//handle the case of when the operator restarts, we do not want
-	//to process pgtasks already processed
+	// handle the case of when the operator restarts, we do not want
+	// to process pgtasks already processed
 	if task.Status.State == crv1.PgtaskStateProcessed {
 		log.Debug("pgtask " + task.ObjectMeta.Name + " already processed")
 		return
@@ -183,12 +178,11 @@ func (c *Controller) onAdd(obj interface{}) {
 		log.Debugf("task putting key in queue %s", key)
 		c.Queue.Add(key)
 	}
-
 }
 
 // onUpdate is called when a pgtask is updated
 func (c *Controller) onUpdate(oldObj, newObj interface{}) {
-	//task := newObj.(*crv1.Pgtask)
+	// task := newObj.(*crv1.Pgtask)
 	//	log.Debugf("[Controller] onUpdate ns=%s %s", task.ObjectMeta.Namespace, task.ObjectMeta.SelfLink)
 }
 
@@ -198,7 +192,6 @@ func (c *Controller) onDelete(obj interface{}) {
 
 // AddPGTaskEventHandler adds the pgtask event handler to the pgtask informer
 func (c *Controller) AddPGTaskEventHandler() {
-
 	c.Informer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.onAdd,
 		UpdateFunc: c.onUpdate,
@@ -208,14 +201,14 @@ func (c *Controller) AddPGTaskEventHandler() {
 	log.Debugf("pgtask Controller: added event handler to informer")
 }
 
-//de-dupe logic for a failover, if the failover started
-//parameter is set, it means a failover has already been
-//started on this
+// de-dupe logic for a failover, if the failover started
+// parameter is set, it means a failover has already been
+// started on this
 func dupeFailover(clientset pgo.Interface, task *crv1.Pgtask, ns string) bool {
 	ctx := context.TODO()
 	tmp, err := clientset.CrunchydataV1().Pgtasks(ns).Get(ctx, task.Spec.Name, metav1.GetOptions{})
 	if err != nil {
-		//a big time error if this occurs
+		// a big time error if this occurs
 		return false
 	}
 
@@ -226,14 +219,14 @@ func dupeFailover(clientset pgo.Interface, task *crv1.Pgtask, ns string) bool {
 	return true
 }
 
-//de-dupe logic for a delete data, if the delete data job started
-//parameter is set, it means a delete data job has already been
-//started on this
+// de-dupe logic for a delete data, if the delete data job started
+// parameter is set, it means a delete data job has already been
+// started on this
 func dupeDeleteData(clientset pgo.Interface, task *crv1.Pgtask, ns string) bool {
 	ctx := context.TODO()
 	tmp, err := clientset.CrunchydataV1().Pgtasks(ns).Get(ctx, task.Spec.Name, metav1.GetOptions{})
 	if err != nil {
-		//a big time error if this occurs
+		// a big time error if this occurs
 		return false
 	}
 

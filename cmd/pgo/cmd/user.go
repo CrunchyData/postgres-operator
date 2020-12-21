@@ -94,7 +94,6 @@ func createUser(args []string, ns string) {
 	}
 
 	response, err := api.CreateUser(httpclient, &SessionCredentials, &request)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(1)
@@ -113,7 +112,6 @@ func createUser(args []string, ns string) {
 
 // deleteUser ...
 func deleteUser(args []string, ns string) {
-
 	log.Debugf("deleting user %s selector=%s args=%v", Username, Selector, args)
 
 	if Username == "" {
@@ -130,7 +128,6 @@ func deleteUser(args []string, ns string) {
 	}
 
 	response, err := api.DeleteUser(httpclient, &SessionCredentials, &request)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(1)
@@ -348,7 +345,6 @@ func showUser(args []string, ns string) {
 	}
 
 	response, err := api.ShowUser(httpclient, &SessionCredentials, &request)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(1)
@@ -407,7 +403,6 @@ func updateUser(clusterNames []string, namespace string) {
 	}
 
 	response, err := api.UpdateUser(httpclient, &SessionCredentials, &request)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(1)

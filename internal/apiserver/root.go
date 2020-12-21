@@ -64,8 +64,10 @@ var DebugFlag bool
 var BasicAuth bool
 
 // Namespace comes from the apiserver config in this version
-var PgoNamespace string
-var InstallationName string
+var (
+	PgoNamespace     string
+	InstallationName string
+)
 
 var CRUNCHY_DEBUG bool
 
@@ -90,7 +92,6 @@ var Pgo config.PgoConfig
 var namespaceOperatingMode ns.NamespaceOperatingMode
 
 func Initialize() {
-
 	PgoNamespace = os.Getenv("PGO_OPERATOR_NAMESPACE")
 	if PgoNamespace == "" {
 		log.Info("PGO_OPERATOR_NAMESPACE environment variable is not set and is required, this is the namespace that the Operator is to run within.")
@@ -151,7 +152,6 @@ func Initialize() {
 }
 
 func connectToKube() {
-
 	client, err := kubeapi.NewClient()
 	if err != nil {
 		panic(err)
@@ -193,14 +193,13 @@ func initConfig() {
 func BasicAuthCheck(username, password string) bool {
 	ctx := context.TODO()
 
-	if BasicAuth == false {
+	if !BasicAuth {
 		return true
 	}
 
-	//see if there is a pgouser Secret for this username
+	// see if there is a pgouser Secret for this username
 	secretName := "pgouser-" + username
 	secret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(ctx, secretName, metav1.GetOptions{})
-
 	if err != nil {
 		log.Errorf("could not get pgouser secret %s: %s", username, err.Error())
 		return false
@@ -213,13 +212,12 @@ func BasicAuthzCheck(username, perm string) bool {
 	ctx := context.TODO()
 	secretName := "pgouser-" + username
 	secret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(ctx, secretName, metav1.GetOptions{})
-
 	if err != nil {
 		log.Errorf("could not get pgouser secret %s: %s", username, err.Error())
 		return false
 	}
 
-	//get the roles for this user
+	// get the roles for this user
 	rolesString := string(secret.Data["roles"])
 	roles := strings.Split(rolesString, ",")
 	if len(roles) == 0 {
@@ -227,13 +225,12 @@ func BasicAuthzCheck(username, perm string) bool {
 		return false
 	}
 
-	//venture thru each role this user has looking for a perm match
+	// venture thru each role this user has looking for a perm match
 	for _, r := range roles {
 
-		//get the pgorole
+		// get the pgorole
 		roleSecretName := "pgorole-" + r
 		rolesecret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(ctx, roleSecretName, metav1.GetOptions{})
-
 		if err != nil {
 			log.Errorf("could not get pgorole secret %s: %s", r, err.Error())
 			return false
@@ -262,14 +259,12 @@ func BasicAuthzCheck(username, perm string) bool {
 	}
 
 	return false
-
 }
 
-//GetNamespace determines if a user has permission for
-//a namespace they are requesting
-//a valid requested namespace is required
+// GetNamespace determines if a user has permission for
+// a namespace they are requesting
+// a valid requested namespace is required
 func GetNamespace(clientset kubernetes.Interface, username, requestedNS string) (string, error) {
-
 	log.Debugf("GetNamespace username [%s] ns [%s]", username, requestedNS)
 
 	if requestedNS == "" {
@@ -281,11 +276,11 @@ func GetNamespace(clientset kubernetes.Interface, username, requestedNS string) 
 		return requestedNS, fmt.Errorf("Error when determining whether user [%s] is allowed access to "+
 			"namespace [%s]: %s", username, requestedNS, err.Error())
 	}
-	if iAccess == false {
+	if !iAccess {
 		errMsg := fmt.Sprintf("namespace [%s] is not part of the Operator installation", requestedNS)
 		return requestedNS, errors.New(errMsg)
 	}
-	if uAccess == false {
+	if !uAccess {
 		errMsg := fmt.Sprintf("user [%s] is not allowed access to namespace [%s]", username, requestedNS)
 		return requestedNS, errors.New(errMsg)
 	}
@@ -339,7 +334,6 @@ func Authn(perm string, w http.ResponseWriter, r *http.Request) (string, error) 
 
 	log.Debug("Authentication Success")
 	return username, err
-
 }
 
 func IsValidStorageName(name string) bool {
@@ -375,7 +369,7 @@ func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool, error
 	}
 
 	if iAccess {
-		//get the pgouser Secret for this username
+		// get the pgouser Secret for this username
 		userSecretName := "pgouser-" + username
 		userSecret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(ctx, userSecretName, metav1.GetOptions{})
 		if err != nil {
@@ -408,7 +402,6 @@ func UserIsPermittedInNamespace(username, requestedNS string) (bool, bool, error
 func WriteTLSCert(certPath, keyPath string) error {
 	ctx := context.TODO()
 	pgoSecret, err := Clientset.CoreV1().Secrets(PgoNamespace).Get(ctx, PGOSecretName, metav1.GetOptions{})
-
 	// if the TLS certificate secret is not found, attempt to generate one
 	if err != nil {
 		log.Infof("%s Secret NOT found in namespace %s", PGOSecretName, PgoNamespace)
@@ -425,13 +418,13 @@ func WriteTLSCert(certPath, keyPath string) error {
 	log.Infof("%s Secret found in namespace %s", PGOSecretName, PgoNamespace)
 	log.Infof("cert key data len is %d", len(pgoSecret.Data[corev1.TLSCertKey]))
 
-	if err := ioutil.WriteFile(certPath, pgoSecret.Data[corev1.TLSCertKey], 0644); err != nil {
+	if err := ioutil.WriteFile(certPath, pgoSecret.Data[corev1.TLSCertKey], 0o600); err != nil {
 		return err
 	}
 
 	log.Infof("private key data len is %d", len(pgoSecret.Data[corev1.TLSPrivateKeyKey]))
 
-	if err := ioutil.WriteFile(keyPath, pgoSecret.Data[corev1.TLSPrivateKeyKey], 0644); err != nil {
+	if err := ioutil.WriteFile(keyPath, pgoSecret.Data[corev1.TLSPrivateKeyKey], 0o600); err != nil {
 		return err
 	}
 
@@ -444,7 +437,7 @@ func generateTLSCert(certPath, keyPath string) error {
 	ctx := context.TODO()
 	var err error
 
-	//generate private key
+	// generate private key
 	var privateKey *rsa.PrivateKey
 	privateKey, err = tlsutil.NewPrivateKey()
 	if err != nil {
@@ -481,15 +474,14 @@ func generateTLSCert(certPath, keyPath string) error {
 		os.Exit(2)
 	}
 
-	if err := ioutil.WriteFile(certPath, newSecret.Data[corev1.TLSCertKey], 0644); err != nil {
+	if err := ioutil.WriteFile(certPath, newSecret.Data[corev1.TLSCertKey], 0o600); err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(keyPath, newSecret.Data[corev1.TLSPrivateKeyKey], 0644); err != nil {
+	if err := ioutil.WriteFile(keyPath, newSecret.Data[corev1.TLSPrivateKeyKey], 0o600); err != nil {
 		return err
 	}
 
 	return err
-
 }
 
 // setNamespaceOperatingMode set the namespace operating mode for the Operator by calling the
@@ -530,7 +522,6 @@ func setRandomPgouserPasswords() {
 
 		// generate the password using the default password length
 		generatedPassword, err := util.GeneratePassword(util.DefaultGeneratedPasswordLength)
-
 		if err != nil {
 			log.Errorf("Could not generate password for pgouser secret %s for operator installation %s in "+
 				"namespace %s", secret.Name, InstallationName, PgoNamespace)
@@ -539,7 +530,6 @@ func setRandomPgouserPasswords() {
 
 		// create the password patch
 		patch, err := kubeapi.NewMergePatch().Add("stringData", "password")(generatedPassword).Bytes()
-
 		if err != nil {
 			log.Errorf("Could not generate password patch for pgouser secret %s for operator installation "+
 				"%s in namespace %s", secret.Name, InstallationName, PgoNamespace)

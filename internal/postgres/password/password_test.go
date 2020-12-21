@@ -16,6 +16,7 @@ package password
 */
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -27,7 +28,6 @@ func TestNewPostgresPassword(t *testing.T) {
 		passwordType := MD5
 
 		postgresPassword, err := NewPostgresPassword(passwordType, username, password)
-
 		if err != nil {
 			t.Error(err)
 		}
@@ -49,7 +49,6 @@ func TestNewPostgresPassword(t *testing.T) {
 		passwordType := SCRAM
 
 		postgresPassword, err := NewPostgresPassword(passwordType, username, password)
-
 		if err != nil {
 			t.Error(err)
 		}
@@ -66,7 +65,7 @@ func TestNewPostgresPassword(t *testing.T) {
 	t.Run("invalid", func(t *testing.T) {
 		passwordType := PasswordType(-1)
 
-		if _, err := NewPostgresPassword(passwordType, username, password); err != ErrPasswordType {
+		if _, err := NewPostgresPassword(passwordType, username, password); !errors.Is(err, ErrPasswordType) {
 			t.Errorf("expected error: %q", err.Error())
 		}
 	})

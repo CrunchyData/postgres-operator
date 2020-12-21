@@ -38,7 +38,8 @@ import (
 var (
 	// readConfigCMD is the command used to read local cluster configuration in a database
 	// container
-	readConfigCMD []string = []string{"bash", "-c",
+	readConfigCMD []string = []string{
+		"bash", "-c",
 		"/opt/cpm/bin/yq r /tmp/postgres-ha-bootstrap.yaml postgresql | " +
 			"/opt/cpm/bin/yq p - postgresql",
 	}
@@ -120,7 +121,6 @@ type CreateReplicaMethod struct {
 // servers.
 func NewLocalDB(configMap *corev1.ConfigMap, restConfig *rest.Config,
 	kubeclientset kubernetes.Interface) (*LocalDB, error) {
-
 	clusterName := configMap.GetLabels()[config.LABEL_PG_CLUSTER]
 	namespace := configMap.GetObjectMeta().GetNamespace()
 
@@ -142,7 +142,6 @@ func NewLocalDB(configMap *corev1.ConfigMap, restConfig *rest.Config,
 // configMap, then and attempt is made to add it by refreshing that specific configuration.  Also, any
 // configurations within the configMap associated with servers that no longer exist are removed.
 func (l *LocalDB) Sync() error {
-
 	clusterName := l.configMap.GetObjectMeta().GetLabels()[config.LABEL_PG_CLUSTER]
 	namespace := l.configMap.GetObjectMeta().GetNamespace()
 
@@ -156,7 +155,7 @@ func (l *LocalDB) Sync() error {
 	// delete any configs that are in the configMap but don't have an associated DB server in the
 	// cluster
 	go func() {
-		l.clean()
+		_ = l.clean()
 		wg.Done()
 	}()
 
@@ -166,11 +165,9 @@ func (l *LocalDB) Sync() error {
 		wg.Add(1)
 
 		go func(config string) {
-
 			// attempt to apply DCS config
 			if err := l.apply(config); err != nil &&
 				errors.Is(err, ErrMissingClusterConfig) {
-
 				if err := l.refresh(config); err != nil {
 					// log the error and move on
 					log.Error(err)
@@ -195,7 +192,6 @@ func (l *LocalDB) Sync() error {
 // Update updates the contents of the configuration for a specific database server in
 // the PG cluster, specifically within the configMap included in the LocalDB.
 func (l *LocalDB) Update(configName string, localDBConfig LocalDBConfig) error {
-
 	clusterName := l.configMap.GetObjectMeta().GetLabels()[config.LABEL_PG_CLUSTER]
 	namespace := l.configMap.GetObjectMeta().GetNamespace()
 
@@ -255,7 +251,6 @@ func (l *LocalDB) apply(configName string) error {
 
 	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(l.restConfig, l.kubeclientset, applyCommand,
 		dbPod.Spec.Containers[0].Name, dbPod.GetName(), namespace, nil)
-
 	if err != nil {
 		log.Error(stderr, stdout)
 		return err
@@ -271,7 +266,7 @@ func (l *LocalDB) apply(configName string) error {
 // LocalDB if the database server they are associated with no longer exists
 func (l *LocalDB) clean() error {
 	ctx := context.TODO()
-	var patch = kubeapi.NewJSONPatch()
+	patch := kubeapi.NewJSONPatch()
 	var cmlocalConfigs []string
 
 	// first grab all current local configs from the configMap
@@ -320,7 +315,6 @@ func (l *LocalDB) getLocalConfigFromCluster(configName string) (*LocalDBConfig, 
 	dbPodList, err := l.kubeclientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: selector,
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -353,7 +347,6 @@ func (l *LocalDB) getLocalConfigFromCluster(configName string) (*LocalDBConfig, 
 // configMap for a specific database server, i.e. the contents of the "<servername-local-config>"
 // configuration unmarshalled into a LocalConfig struct.
 func (l *LocalDB) getLocalConfig(configName string) (string, error) {
-
 	localYAML, ok := l.configMap.Data[configName]
 	if !ok {
 		return "", ErrMissingClusterConfig
@@ -379,7 +372,6 @@ func (l *LocalDB) getLocalConfig(configName string) (string, error) {
 // with the contents of the Patroni YAML configuration file stored in the container running the
 // server.
 func (l *LocalDB) refresh(configName string) error {
-
 	clusterName := l.configMap.GetObjectMeta().GetLabels()[config.LABEL_PG_CLUSTER]
 	namespace := l.configMap.GetObjectMeta().GetNamespace()
 

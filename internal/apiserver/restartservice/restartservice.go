@@ -56,14 +56,14 @@ func RestartHandler(w http.ResponseWriter, r *http.Request) {
 	var request msgs.RestartRequest
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
 	username, err := apiserver.Authn(apiserver.RESTART_PERM, w, r)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -73,17 +73,17 @@ func RestartHandler(w http.ResponseWriter, r *http.Request) {
 
 	if request.ClientVersion != msgs.PGO_VERSION {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}
 
 	if _, err := apiserver.GetNamespace(apiserver.Clientset, username,
 		request.Namespace); err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
-	json.NewEncoder(w).Encode(Restart(&request, username))
+	_ = json.NewEncoder(w).Encode(Restart(&request, username))
 }
 
 // QueryRestartHandler handles requests to query a cluster for instances available to use as
@@ -131,7 +131,7 @@ func QueryRestartHandler(w http.ResponseWriter, r *http.Request) {
 	username, err := apiserver.Authn(apiserver.RESTART_PERM, w, r)
 	if err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
@@ -141,14 +141,14 @@ func QueryRestartHandler(w http.ResponseWriter, r *http.Request) {
 
 	if clientVersion != msgs.PGO_VERSION {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}
 
 	if _, err := apiserver.GetNamespace(apiserver.Clientset, username, namespace); err != nil {
 		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 		return
 	}
 
-	json.NewEncoder(w).Encode(QueryRestart(clusterName, namespace))
+	_ = json.NewEncoder(w).Encode(QueryRestart(clusterName, namespace))
 }

@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	weakrand "math/rand"
 	"os"
@@ -340,6 +339,7 @@ func createPgAdminDeployment(clientset kubernetes.Interface, cluster *crv1.Pgclu
 	// This password is throwaway so low entropy genreation method is fine
 	randBytes := make([]byte, initPassLen)
 	// weakrand Read is always nil error
+	// #nosec: G404
 	weakrand.Read(randBytes)
 	throwawayPass := base64.RawStdEncoding.EncodeToString(randBytes)
 
@@ -358,7 +358,7 @@ func createPgAdminDeployment(clientset kubernetes.Interface, cluster *crv1.Pgclu
 
 	// For debugging purposes, put the template substitution in stdout
 	if operator.CRUNCHY_DEBUG {
-		config.PgAdminTemplate.Execute(os.Stdout, fields)
+		_ = config.PgAdminTemplate.Execute(os.Stdout, fields)
 	}
 
 	// perform the actual template substitution
@@ -403,7 +403,7 @@ func createPgAdminService(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 
 	// For debugging purposes, put the template substitution in stdout
 	if operator.CRUNCHY_DEBUG {
-		config.PgAdminServiceTemplate.Execute(os.Stdout, fields)
+		_ = config.PgAdminServiceTemplate.Execute(os.Stdout, fields)
 	}
 
 	// perform the actual template substitution
@@ -439,7 +439,7 @@ func waitForDeploymentReady(clientset kubernetes.Interface, namespace, deploymen
 	for {
 		select {
 		case <-timeout:
-			return errors.New(fmt.Sprintf("Timed out waiting for deployment to become ready: [%s]", deploymentName))
+			return fmt.Errorf("Timed out waiting for deployment to become ready: [%s]", deploymentName)
 		case <-tick.C:
 			if deployment, err := clientset.AppsV1().Deployments(namespace).Get(ctx, deploymentName, metav1.GetOptions{}); err != nil {
 				// if there is an error, log it but continue through the loop

@@ -17,6 +17,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -33,15 +34,15 @@ const (
 )
 
 func ShowCluster(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.ShowClusterRequest) (msgs.ShowClusterResponse, error) {
-
 	var response msgs.ShowClusterResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := fmt.Sprintf(showClusterURL, SessionCredentials.APIServerURL)
 	log.Debugf("showCluster called...[%s]", url)
 
 	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
@@ -68,20 +69,19 @@ func ShowCluster(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCred
 	}
 
 	return response, err
-
 }
 
 func DeleteCluster(httpclient *http.Client, request *msgs.DeleteClusterRequest, SessionCredentials *msgs.BasicAuthCredentials) (msgs.DeleteClusterResponse, error) {
-
 	var response msgs.DeleteClusterResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := fmt.Sprintf(deleteClusterURL, SessionCredentials.APIServerURL)
 
 	log.Debugf("delete cluster called %s", url)
 
 	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		response.Status.Code = msgs.Error
 		return response, err
@@ -110,19 +110,18 @@ func DeleteCluster(httpclient *http.Client, request *msgs.DeleteClusterRequest, 
 	}
 
 	return response, err
-
 }
 
 func CreateCluster(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials, request *msgs.CreateClusterRequest) (msgs.CreateClusterResponse, error) {
-
 	var response msgs.CreateClusterResponse
 
+	ctx := context.TODO()
 	jsonValue, _ := json.Marshal(request)
 	url := fmt.Sprintf(createClusterURL, SessionCredentials.APIServerURL)
 	log.Debugf("createCluster called...[%s]", url)
 
 	action := "POST"
-	req, err := http.NewRequest(action, url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, action, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
@@ -152,15 +151,14 @@ func CreateCluster(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCr
 }
 
 func UpdateCluster(httpclient *http.Client, request *msgs.UpdateClusterRequest, SessionCredentials *msgs.BasicAuthCredentials) (msgs.UpdateClusterResponse, error) {
-	//func UpdateCluster(httpclient *http.Client, arg, selector string, SessionCredentials *msgs.BasicAuthCredentials, autofailFlag, ns string) (msgs.UpdateClusterResponse, error) {
-
 	var response msgs.UpdateClusterResponse
 	jsonValue, _ := json.Marshal(request)
 
+	ctx := context.TODO()
 	url := fmt.Sprintf(updateClusterURL, SessionCredentials.APIServerURL)
 	log.Debugf("update cluster called %s", url)
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		response.Status.Code = msgs.Error
 		return response, err
@@ -189,5 +187,4 @@ func UpdateCluster(httpclient *http.Client, request *msgs.UpdateClusterRequest, 
 	}
 
 	return response, err
-
 }

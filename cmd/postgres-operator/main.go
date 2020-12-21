@@ -107,7 +107,7 @@ func main() {
 	}
 
 	// If the postgrescluster controllers are enabled, the associated controller runtime manager
-	// will block until a shutdown signal is recieved.  Otherwise wait for the shutdown signal here.
+	// will block until a shutdown signal is received.  Otherwise wait for the shutdown signal here.
 	if !disablePostgresCluster {
 		enablePostgresClusterControllers(ctx)
 	} else {
@@ -120,7 +120,6 @@ func main() {
 // createAndStartNamespaceController creates a namespace controller and then starts it
 func createAndStartNamespaceController(kubeClientset kubernetes.Interface,
 	controllerManager controller.Manager, stopCh <-chan struct{}) error {
-
 	nsKubeInformerFactory := kubeinformers.NewSharedInformerFactoryWithOptions(kubeClientset,
 		time.Duration(*operator.Pgo.Pgo.NamespaceRefreshInterval)*time.Second,
 		kubeinformers.WithTweakListOptions(func(options *metav1.ListOptions) {

@@ -16,6 +16,7 @@ package api
 */
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -28,14 +29,14 @@ import (
 func ScaleCluster(httpclient *http.Client, arg string, ReplicaCount int,
 	StorageConfig, NodeLabel, CCPImageTag, ServiceType string,
 	SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ClusterScaleResponse, error) {
-
 	var response msgs.ClusterScaleResponse
 
 	url := fmt.Sprintf("%s/clusters/scale/%s", SessionCredentials.APIServerURL, arg)
 	log.Debug(url)
 
+	ctx := context.TODO()
 	action := "GET"
-	req, err := http.NewRequest(action, url, nil)
+	req, err := http.NewRequestWithContext(ctx, action, url, nil)
 	if err != nil {
 		return response, err
 	}
@@ -71,5 +72,4 @@ func ScaleCluster(httpclient *http.Client, arg string, ReplicaCount int,
 	}
 
 	return response, err
-
 }

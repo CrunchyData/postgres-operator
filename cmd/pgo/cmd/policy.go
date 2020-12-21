@@ -58,7 +58,6 @@ func init() {
 
 	applyCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	applyCmd.Flags().BoolVarP(&DryRun, "dry-run", "", false, "Shows the clusters that the label would be applied to, without labelling them.")
-
 }
 
 func applyPolicy(args []string, ns string) {
@@ -82,7 +81,6 @@ func applyPolicy(args []string, ns string) {
 	r.ClientVersion = msgs.PGO_VERSION
 
 	response, err := api.ApplyPolicy(httpclient, &SessionCredentials, r)
-
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
 		os.Exit(2)
@@ -104,10 +102,9 @@ func applyPolicy(args []string, ns string) {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
-
 }
-func showPolicy(args []string, ns string) {
 
+func showPolicy(args []string, ns string) {
 	r := new(msgs.ShowPolicyRequest)
 	r.Selector = Selector
 	r.Namespace = ns
@@ -122,7 +119,6 @@ func showPolicy(args []string, ns string) {
 		r.Policyname = v
 
 		response, err := api.ShowPolicy(httpclient, &SessionCredentials, r)
-
 		if err != nil {
 			fmt.Println("Error: " + err.Error())
 			os.Exit(2)
@@ -148,17 +144,15 @@ func showPolicy(args []string, ns string) {
 			fmt.Println(TreeTrunk + "sql : " + policy.Spec.SQL)
 		}
 	}
-
 }
 
 func createPolicy(args []string, ns string) {
-
 	if len(args) == 0 {
 		fmt.Println("Error: A poliicy name argument is required.")
 		return
 	}
 	var err error
-	//create the request
+	// create the request
 	r := new(msgs.CreatePolicyRequest)
 	r.Name = args[0]
 	r.Namespace = ns
@@ -190,7 +184,6 @@ func createPolicy(args []string, ns string) {
 		fmt.Println("Error: " + response.Status.Msg)
 		os.Exit(2)
 	}
-
 }
 
 func getPolicyString(filename string) (string, error) {
@@ -205,7 +198,6 @@ func getPolicyString(filename string) (string, error) {
 }
 
 func deletePolicy(args []string, ns string) {
-
 	log.Debugf("deletePolicy called %v", args)
 
 	r := msgs.DeletePolicyRequest{}

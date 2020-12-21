@@ -31,7 +31,6 @@ import (
 // handleConfigMapSync is responsible for syncing a configMap resource that has obtained from
 // the ConfigMap controller's worker queue
 func (c *Controller) handleConfigMapSync(key string) error {
-
 	log.Debugf("ConfigMap Controller: handling a configmap sync for key %s", key)
 
 	namespace, configMapName, err := cache.SplitMetaNamespaceKey(key)
@@ -72,7 +71,7 @@ func (c *Controller) handleConfigMapSync(key string) error {
 		return nil
 	}
 
-	c.syncPGHAConfig(c.createPGHAConfigs(configMap, clusterName,
+	c.syncPGHAConfig(c.createPGHAConfigs(configMap,
 		cluster.GetObjectMeta().GetLabels()[config.LABEL_PGHA_SCOPE]))
 
 	return nil
@@ -80,8 +79,7 @@ func (c *Controller) handleConfigMapSync(key string) error {
 
 // createConfigurerMap creates the configs needed to sync the PGHA configMap
 func (c *Controller) createPGHAConfigs(configMap *corev1.ConfigMap,
-	clusterName, clusterScope string) []cfg.Syncer {
-
+	clusterScope string) []cfg.Syncer {
 	var configSyncers []cfg.Syncer
 
 	configSyncers = append(configSyncers, cfg.NewDCS(configMap, c.kubeclientset, clusterScope))
@@ -100,7 +98,6 @@ func (c *Controller) createPGHAConfigs(configMap *corev1.ConfigMap,
 
 // syncAllConfigs takes a map of configurers and runs their sync functions concurrently
 func (c *Controller) syncPGHAConfig(configSyncers []cfg.Syncer) {
-
 	var wg sync.WaitGroup
 
 	for _, configSyncer := range configSyncers {

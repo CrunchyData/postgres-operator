@@ -131,7 +131,6 @@ func (backRestBackupOpts pgBackRestBackupOptions) validate(setFlagFieldNames []s
 	var errstrings []string
 
 	for _, setFlag := range setFlagFieldNames {
-
 		switch setFlag {
 		case "BackupType":
 			if !isValidValue([]string{"full", "diff", "incr"}, backRestBackupOpts.BackupType) {
@@ -194,11 +193,9 @@ func (backRestBackupOpts pgBackRestBackupOptions) validate(setFlagFieldNames []s
 }
 
 func (backRestRestoreOpts pgBackRestRestoreOptions) validate(setFlagFieldNames []string) error {
-
 	var errstrings []string
 
 	for _, setFlag := range setFlagFieldNames {
-
 		switch setFlag {
 		case "TargetAction":
 			if !isValidValue([]string{"pause", "promote", "shutdown"}, backRestRestoreOpts.TargetAction) {

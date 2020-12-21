@@ -76,7 +76,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 	clusterList := crv1.PgclusterList{}
 	var err error
 	if request.Selector != "" {
-		//use the selector instead of an argument list to filter on
+		// use the selector instead of an argument list to filter on
 		cl, err := apiserver.Clientset.
 			CrunchydataV1().Pgclusters(ns).
 			List(ctx, metav1.ListOptions{LabelSelector: request.Selector})
@@ -165,9 +165,9 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 			return resp
 		} else {
 
-			//remove any previous backup job
+			// remove any previous backup job
 
-			//selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_BACKREST + "=true"
+			// selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_BACKREST + "=true"
 			selector := config.LABEL_BACKREST_COMMAND + "=" + crv1.PgtaskBackrestBackup + "," + config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_BACKREST + "=true"
 			deletePropagation := metav1.DeletePropagationForeground
 			err = apiserver.Clientset.
@@ -179,7 +179,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 				log.Error(err)
 			}
 
-			//a hack sort of due to slow propagation
+			// a hack sort of due to slow propagation
 			for i := 0; i < 3; i++ {
 				_, err := apiserver.Clientset.BatchV1().Jobs(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 				if err != nil {
@@ -269,7 +269,7 @@ func getBackupParams(identifier, clusterName, taskName, action, podName, contain
 func getBackrestRepoPodName(cluster *crv1.Pgcluster, ns string) (string, error) {
 	ctx := context.TODO()
 
-	//look up the backrest-repo pod name
+	// look up the backrest-repo pod name
 	selector := "pg-cluster=" + cluster.Spec.Name + ",pgo-backrest-repo=true"
 
 	options := metav1.ListOptions{
@@ -293,11 +293,7 @@ func getBackrestRepoPodName(cluster *crv1.Pgcluster, ns string) (string, error) 
 }
 
 func isPrimary(pod *v1.Pod, clusterName string) bool {
-	if pod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
-		return true
-	}
-	return false
-
+	return pod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName
 }
 
 func isReady(pod *v1.Pod) bool {
@@ -309,11 +305,8 @@ func isReady(pod *v1.Pod) bool {
 			readyCount++
 		}
 	}
-	if readyCount != containerCount {
-		return false
-	}
-	return true
 
+	return readyCount == containerCount
 }
 
 // isPrimaryReady goes through the pod list to first identify the
@@ -331,13 +324,14 @@ func isPrimaryReady(cluster *crv1.Pgcluster, ns string) error {
 	if err != nil {
 		return err
 	}
-	for _, p := range pods.Items {
-		if isPrimary(&p, cluster.Spec.Name) && isReady(&p) {
+	for i := range pods.Items {
+		p := &pods.Items[i]
+		if isPrimary(p, cluster.Spec.Name) && isReady(p) {
 			primaryReady = true
 		}
 	}
 
-	if primaryReady == false {
+	if !primaryReady {
 		return errors.New("primary pod is not in Ready state")
 	}
 	return nil
@@ -359,7 +353,7 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 		}
 	}
 
-	//get a list of all clusters
+	// get a list of all clusters
 	clusterList, err := apiserver.Clientset.
 		CrunchydataV1().Pgclusters(ns).
 		List(ctx, metav1.ListOptions{LabelSelector: selector})
@@ -371,9 +365,9 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 
 	log.Debugf("clusters found len is %d\n", len(clusterList.Items))
 
-	for _, c := range clusterList.Items {
-		podname, err := getBackrestRepoPodName(&c, ns)
-
+	for i := range clusterList.Items {
+		c := &clusterList.Items[i]
+		podname, err := getBackrestRepoPodName(c, ns)
 		if err != nil {
 			log.Error(err)
 			response.Status.Code = msgs.Error
@@ -405,11 +399,10 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 				StorageType: storageType,
 			}
 
-			verifyTLS, _ := strconv.ParseBool(operator.GetS3VerifyTLSSetting(&c))
+			verifyTLS, _ := strconv.ParseBool(operator.GetS3VerifyTLSSetting(c))
 
 			// get the pgBackRest info using this legacy function
-			info, err := getInfo(c.Name, storageType, podname, ns, verifyTLS)
-
+			info, err := getInfo(storageType, podname, ns, verifyTLS)
 			// see if the function returned successfully, and if so, unmarshal the JSON
 			if err != nil {
 				log.Error(err)
@@ -436,7 +429,7 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 	return response
 }
 
-func getInfo(clusterName, storageType, podname, ns string, verifyTLS bool) (string, error) {
+func getInfo(storageType, podname, ns string, verifyTLS bool) (string, error) {
 	log.Debug("backrest info command requested")
 
 	cmd := pgBackRestInfoCommand
@@ -450,7 +443,6 @@ func getInfo(clusterName, storageType, podname, ns string, verifyTLS bool) (stri
 	}
 
 	output, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)
-
 	if err != nil {
 		log.Error(err, stderr)
 		return "", err
@@ -536,7 +528,7 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 		return resp
 	}
 
-	pgtask, err := getRestoreParams(request, ns, *cluster)
+	pgtask, err := getRestoreParams(request, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -555,7 +547,7 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 		return resp
 	}
 
-	//create a pgtask for the restore workflow
+	// create a pgtask for the restore workflow
 	if _, err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).
 		Create(ctx, pgtask, metav1.CreateOptions{}); err != nil {
 		resp.Status.Code = msgs.Error
@@ -571,7 +563,7 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 	return resp
 }
 
-func getRestoreParams(request *msgs.RestoreRequest, ns string, cluster crv1.Pgcluster) (*crv1.Pgtask, error) {
+func getRestoreParams(request *msgs.RestoreRequest, ns string) (*crv1.Pgtask, error) {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
@@ -612,13 +604,13 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 
 	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
 
-	//delete any existing pgtask with the same name
+	// delete any existing pgtask with the same name
 	if err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).
 		Delete(ctx, taskName, metav1.DeleteOptions{}); err != nil && !kubeapi.IsNotFound(err) {
 		return "", err
 	}
 
-	//create pgtask CRD
+	// create pgtask CRD
 	spec := crv1.PgtaskSpec{}
 	spec.Namespace = ns
 	spec.Name = clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType

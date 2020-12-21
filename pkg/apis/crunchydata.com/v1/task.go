@@ -22,41 +22,54 @@ import (
 // PgtaskResourcePlural ...
 const PgtaskResourcePlural = "pgtasks"
 
-const PgtaskDeleteBackups = "delete-backups"
-const PgtaskDeleteData = "delete-data"
-const PgtaskFailover = "failover"
-const PgtaskAutoFailover = "autofailover"
-const PgtaskAddPolicies = "addpolicies"
+const (
+	PgtaskDeleteData   = "delete-data"
+	PgtaskFailover     = "failover"
+	PgtaskAutoFailover = "autofailover"
+	PgtaskAddPolicies  = "addpolicies"
+)
 
-const PgtaskUpgrade = "clusterupgrade"
-const PgtaskUpgradeCreated = "cluster upgrade - task created"
-const PgtaskUpgradeInProgress = "cluster upgrade - in progress"
+const (
+	PgtaskUpgrade           = "clusterupgrade"
+	PgtaskUpgradeCreated    = "cluster upgrade - task created"
+	PgtaskUpgradeInProgress = "cluster upgrade - in progress"
+)
 
-const PgtaskPgAdminAdd = "add-pgadmin"
-const PgtaskPgAdminDelete = "delete-pgadmin"
+const (
+	PgtaskPgAdminAdd    = "add-pgadmin"
+	PgtaskPgAdminDelete = "delete-pgadmin"
+)
 
-const PgtaskWorkflow = "workflow"
-const PgtaskWorkflowCreateClusterType = "createcluster"
-const PgtaskWorkflowBackrestRestoreType = "pgbackrestrestore"
-const PgtaskWorkflowBackupType = "backupworkflow"
-const PgtaskWorkflowSubmittedStatus = "task submitted"
-const PgtaskWorkflowCompletedStatus = "task completed"
-const PgtaskWorkflowID = "workflowid"
+const (
+	PgtaskWorkflow                    = "workflow"
+	PgtaskWorkflowCreateClusterType   = "createcluster"
+	PgtaskWorkflowBackrestRestoreType = "pgbackrestrestore"
+	PgtaskWorkflowBackupType          = "backupworkflow"
+	PgtaskWorkflowSubmittedStatus     = "task submitted"
+	PgtaskWorkflowCompletedStatus     = "task completed"
+	PgtaskWorkflowID                  = "workflowid"
+)
 
-const PgtaskWorkflowBackrestRestorePVCCreatedStatus = "restored PVC created"
-const PgtaskWorkflowBackrestRestorePrimaryCreatedStatus = "restored Primary created"
-const PgtaskWorkflowBackrestRestoreJobCreatedStatus = "restore job created"
+const (
+	PgtaskWorkflowBackrestRestorePVCCreatedStatus     = "restored PVC created"
+	PgtaskWorkflowBackrestRestorePrimaryCreatedStatus = "restored Primary created"
+	PgtaskWorkflowBackrestRestoreJobCreatedStatus     = "restore job created"
+)
 
-const PgtaskBackrest = "backrest"
-const PgtaskBackrestBackup = "backup"
-const PgtaskBackrestInfo = "info"
-const PgtaskBackrestRestore = "restore"
-const PgtaskBackrestStanzaCreate = "stanza-create"
+const (
+	PgtaskBackrest             = "backrest"
+	PgtaskBackrestBackup       = "backup"
+	PgtaskBackrestInfo         = "info"
+	PgtaskBackrestRestore      = "restore"
+	PgtaskBackrestStanzaCreate = "stanza-create"
+)
 
-const PgtaskpgDump = "pgdump"
-const PgtaskpgDumpBackup = "pgdumpbackup"
-const PgtaskpgDumpInfo = "pgdumpinfo"
-const PgtaskpgRestore = "pgrestore"
+const (
+	PgtaskpgDump       = "pgdump"
+	PgtaskpgDumpBackup = "pgdumpbackup"
+	PgtaskpgDumpInfo   = "pgdumpinfo"
+	PgtaskpgRestore    = "pgrestore"
+)
 
 // this is ported over from legacy backup code
 const PgBackupJobSubmitted = "Backup Job Submitted"

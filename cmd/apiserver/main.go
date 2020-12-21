@@ -34,8 +34,10 @@ import (
 )
 
 // Created as part of the apiserver.WriteTLSCert call
-const serverCertPath = "/tmp/server.crt"
-const serverKeyPath = "/tmp/server.key"
+const (
+	serverCertPath = "/tmp/server.crt"
+	serverKeyPath  = "/tmp/server.key"
+)
 
 func main() {
 	// Environment-overridden variables
@@ -144,8 +146,9 @@ func main() {
 			svrCertFile.Close()
 		}
 
+		// #nosec: G402
 		cfg := &tls.Config{
-			//specify pgo-apiserver in the CN....then, add ServerName: "pgo-apiserver",
+			// specify pgo-apiserver in the CN....then, add ServerName: "pgo-apiserver",
 			ServerName:         "pgo-apiserver",
 			ClientAuth:         tls.VerifyClientCertIfGiven,
 			InsecureSkipVerify: tlsNoVerify,

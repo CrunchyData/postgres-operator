@@ -34,22 +34,20 @@ func showPVC(args []string, ns string) {
 	r.ClientVersion = msgs.PGO_VERSION
 
 	if AllFlag {
-		//special case to just list all the PVCs
+		// special case to just list all the PVCs
 		r.ClusterName = ""
 		printPVC(&r)
 	} else {
-		//args are a list of pvc names...for this case show details
+		// args are a list of pvc names...for this case show details
 		for _, arg := range args {
 			r.ClusterName = arg
 			log.Debugf("show pvc called for %s", arg)
 			printPVC(&r)
 		}
 	}
-
 }
 
 func printPVC(r *msgs.ShowPVCRequest) {
-
 	response, err := api.ShowPVC(httpclient, r, &SessionCredentials)
 
 	log.Debugf("response = %v", response)
@@ -74,5 +72,4 @@ func printPVC(r *msgs.ShowPVCRequest) {
 	for _, v := range response.Results {
 		fmt.Printf("%-20s\t%-30s\n", v.ClusterName, v.PVCName)
 	}
-
 }

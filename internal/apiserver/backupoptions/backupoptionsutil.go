@@ -35,7 +35,6 @@ type backupOptions interface {
 // ValidateBackupOpts validates the backup/restore options that can be provided to the various backup
 // and restore utilities supported by pgo (e.g. pg_dump, pg_restore, pgBackRest, etc.)
 func ValidateBackupOpts(backupOpts string, request interface{}) error {
-
 	// some quick checks to make sure backup opts string is valid and should be processed and validated
 	if strings.TrimSpace(backupOpts) == "" {
 		return nil
@@ -52,7 +51,6 @@ func ValidateBackupOpts(backupOpts string, request interface{}) error {
 		return err
 	} else {
 		err := backupOptions.validate(setFlagFieldNames)
-
 		if err != nil {
 			return err
 		}
@@ -61,7 +59,6 @@ func ValidateBackupOpts(backupOpts string, request interface{}) error {
 }
 
 func convertBackupOptsToStruct(backupOpts string, request interface{}) (backupOptions, []string, error) {
-
 	parsedBackupOpts := parseBackupOpts(backupOpts)
 
 	optsStruct, utilityName, err := createBackupOptionsStruct(backupOpts, request)
@@ -92,6 +89,7 @@ func convertBackupOptsToStruct(backupOpts string, request interface{}) (backupOp
 				commandLine.BoolVarP(fieldVal.Addr().Interface().(*bool), flag, flagShort, false, "")
 			case reflect.Slice:
 				commandLine.StringArrayVarP(fieldVal.Addr().Interface().(*[]string), flag, flagShort, nil, "")
+			default: // no-op
 			}
 		}
 	}
@@ -109,7 +107,6 @@ func convertBackupOptsToStruct(backupOpts string, request interface{}) (backupOp
 }
 
 func parseBackupOpts(backupOpts string) []string {
-
 	newFields := []string{}
 	var newField string
 	for i, c := range backupOpts {
@@ -137,7 +134,6 @@ func parseBackupOpts(backupOpts string) []string {
 }
 
 func createBackupOptionsStruct(backupOpts string, request interface{}) (backupOptions, string, error) {
-
 	switch request.(type) {
 	case *msgs.CreateBackrestBackupRequest:
 		return &pgBackRestBackupOptions{}, "pgBackRest", nil
@@ -211,7 +207,7 @@ func handleCustomParseErrors(err error, usage *bytes.Buffer, optsStruct backupOp
 
 func obtainSetFlagFieldNames(commandLine *pflag.FlagSet, structType reflect.Type) []string {
 	var setFlagFieldNames []string
-	var visitBackupOptFlags = func(flag *pflag.Flag) {
+	visitBackupOptFlags := func(flag *pflag.Flag) {
 		for i := 0; i < structType.NumField(); i++ {
 			field := structType.Field(i)
 			flagName, _ := field.Tag.Lookup("flag")

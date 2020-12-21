@@ -19,14 +19,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
-
-	"io/ioutil"
 
 	log "github.com/sirupsen/logrus"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -38,9 +37,8 @@ import (
 func ExecPolicy(clientset kubeapi.Interface, restconfig *rest.Config, namespace, policyName, serviceName, port string) error {
 	ctx := context.TODO()
 
-	//fetch the policy sql
+	// fetch the policy sql
 	sql, err := GetPolicySQL(clientset, namespace, policyName)
-
 	if err != nil {
 		return err
 	}
@@ -136,7 +134,6 @@ func readSQLFromURL(urlstring string) (string, error) {
 	}
 
 	return string(bodyBytes), err
-
 }
 
 // ValidatePolicy tests to see if a policy exists
