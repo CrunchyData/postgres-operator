@@ -55,8 +55,8 @@ type backrestJobTemplateFields struct {
 	SecurityContext               string
 	PgbackrestStanza              string
 	PgbackrestDBPath              string
-	PgbackrestRepoPath            string
-	PgbackrestRepoType            string
+	PgbackrestRepo1Path           string
+	PgbackrestRepo1Type           string
 	BackrestLocalAndS3Storage     bool
 	PgbackrestS3VerifyTLS         string
 	PgbackrestRestoreVolumes      string
@@ -88,10 +88,10 @@ func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtas
 		CCPImageTag:                   operator.Pgo.Cluster.CCPImageTag,
 		PgbackrestStanza:              task.Spec.Parameters[config.LABEL_PGBACKREST_STANZA],
 		PgbackrestDBPath:              task.Spec.Parameters[config.LABEL_PGBACKREST_DB_PATH],
-		PgbackrestRepoPath:            task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH],
+		PgbackrestRepo1Path:           task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH],
 		PgbackrestRestoreVolumes:      "",
 		PgbackrestRestoreVolumeMounts: "",
-		PgbackrestRepoType:            operator.GetRepoType(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
+		PgbackrestRepo1Type:           operator.GetRepoType(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
 		BackrestLocalAndS3Storage:     operator.IsLocalAndS3Storage(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3VerifyTLS:         task.Spec.Parameters[config.LABEL_BACKREST_S3_VERIFY_TLS],
 	}

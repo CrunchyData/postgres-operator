@@ -57,11 +57,11 @@
                         "name": "PGBACKREST_DB_PATH",
                         "value": "{{.PgbackrestDBPath}}"
                     }, {
-                        "name": "PGBACKREST_REPO_PATH",
-                        "value": "{{.PgbackrestRepoPath}}"
+                        "name": "PGBACKREST_REPO1_PATH",
+                        "value": "{{.PgbackrestRepo1Path}}"
                     }, {
-                        "name": "PGBACKREST_REPO_TYPE",
-                        "value": "{{.PgbackrestRepoType}}"
+                        "name": "PGBACKREST_REPO1_TYPE",
+                        "value": "{{.PgbackrestRepo1Type}}"
                     },{
                         "name": "PGHA_PGBACKREST_LOCAL_S3_STORAGE",
                         "value": "{{.BackrestLocalAndS3Storage}}"
