@@ -214,7 +214,7 @@ check:
 
 .PHONY: check-envtest
 check-envtest: hack/tools/envtest
-	KUBEBUILDER_ASSETS="$(CURDIR)/$^/bin" go test -count=1 -tags=envtest ./internal/controller/...
+	KUBEBUILDER_ASSETS="$(CURDIR)/$^/bin" go test -count=1 -tags=envtest ./internal/controller/... ./internal/pgbackrest/...
 
 .PHONY: check-generate
 check-generate: generate-crd generate-deepcopy
