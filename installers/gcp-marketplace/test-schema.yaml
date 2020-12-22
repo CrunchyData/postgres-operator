@@ -1,0 +1,6 @@
+properties:
+  OPERATOR_ADMIN_PASSWORD:
+    type: string
+    default: insecure
+    x-google-marketplace:
+      type: MASKED_FIELD

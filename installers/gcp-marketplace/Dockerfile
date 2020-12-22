@@ -36,6 +36,8 @@ COPY gcp-marketplace/application.yaml \
      /data/manifest/
 COPY gcp-marketplace/test-pod.yaml \
      /data-test/manifest/
+COPY gcp-marketplace/test-schema.yaml \
+     /data-test/schema.yaml
 
 ARG PGO_VERSION
 RUN for file in \
