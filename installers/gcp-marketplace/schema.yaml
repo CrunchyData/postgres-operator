@@ -11,13 +11,13 @@ properties:
 
   INSTALLER_SERVICE_ACCOUNT: # This key appears in the ClusterRoleBinding name.
     title: Cluster Admin Service Account
-    description: >-
-      Name of a service account in the target namespace that has cluster-admin permissions.
-      This is used by the operator installer to create Custom Resource Definitions.
     type: string
     x-google-marketplace:
       type: SERVICE_ACCOUNT
       serviceAccount:
+        description: >-
+          Name of a service account in the target namespace that has cluster-admin permissions.
+          This is used by the operator installer to create Custom Resource Definitions.
         roles:
           - type: ClusterRole
             rulesType: PREDEFINED
