@@ -37,16 +37,36 @@ resources=(
 	clusterrolebinding/pgo-cluster-role
 	configmap/pgo-config
 	deployment/postgres-operator
+	role/pgo-backrest-role
+	role/pgo-pg-role
 	role/pgo-role
+	role/pgo-target-role
+	rolebinding/pgo-backrest-role-binding
+	rolebinding/pgo-pg-role-binding
 	rolebinding/pgo-role
+	rolebinding/pgo-target-role-binding
 	secret/pgo.tls
 	secret/pgo-backrest-repo-config
 	secret/pgorole-pgoadmin
 	secret/pgouser-admin
 	service/postgres-operator
+	serviceaccount/pgo-backrest
+	serviceaccount/pgo-default
+	serviceaccount/pgo-pg
+	serviceaccount/pgo-target
 	serviceaccount/postgres-operator
 )
 
 for resource in "${resources[@]}"; do
+	kind="${resource%/*}"
+	name="${resource#*/}"
+
+	for _ in $(seq 5); do
+		if [ "$( kc get "$kind" --field-selector="metadata.name=$name" --output=name )" ]
+		then break
+		else sleep 1s
+		fi
+	done
+
 	kc patch "$resource" --type=strategic --patch="$application_ownership"
 done
