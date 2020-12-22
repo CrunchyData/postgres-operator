@@ -46,7 +46,6 @@ resources=(
 	rolebinding/pgo-role
 	rolebinding/pgo-target-role-binding
 	secret/pgo.tls
-	secret/pgo-backrest-repo-config
 	secret/pgorole-pgoadmin
 	secret/pgouser-admin
 	service/postgres-operator
