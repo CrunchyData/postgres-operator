@@ -54,9 +54,9 @@ const (
 	PGHAConfigInitSetting = "init"
 	// PGHAConfigReplicaBootstrapRepoType defines an override for the type of repo (local, S3, etc.)
 	// that should be utilized when bootstrapping a replica (i.e. it override the
-	// PGBACKREST_REPO_TYPE env var in the environment).  Allows for dynamic changing of the
+	// PGBACKREST_REPO1_TYPE env var in the environment).  Allows for dynamic changing of the
 	// backrest repo type without requiring container restarts (as would be required to update
-	// PGBACKREST_REPO_TYPE).
+	// PGBACKREST_REPO1_TYPE).
 	PGHAConfigReplicaBootstrapRepoType = "replica-bootstrap-repo-type"
 )
 

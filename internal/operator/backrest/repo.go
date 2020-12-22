@@ -50,12 +50,12 @@ type RepoDeploymentTemplateFields struct {
 	BackrestRepoClaimName     string
 	SshdSecretsName           string
 	PGbackrestDBHost          string
-	PgbackrestRepoPath        string
+	PgbackrestRepo1Path       string
 	PgbackrestDBPath          string
 	PgbackrestPGPort          string
 	SshdPort                  int
 	PgbackrestStanza          string
-	PgbackrestRepoType        string
+	PgbackrestRepo1Type       string
 	PgbackrestS3EnvVars       string
 	Name                      string
 	ClusterName               string
@@ -197,7 +197,7 @@ func setBootstrapRepoOverrides(clientset kubernetes.Interface, cluster *crv1.Pgc
 		return err
 	}
 
-	repoFields.PgbackrestRepoPath = restoreFromSecret.Annotations[config.ANNOTATION_REPO_PATH]
+	repoFields.PgbackrestRepo1Path = restoreFromSecret.Annotations[config.ANNOTATION_REPO_PATH]
 	repoFields.PgbackrestPGPort = restoreFromSecret.Annotations[config.ANNOTATION_PG_PORT]
 
 	sshdPort, err := strconv.Atoi(restoreFromSecret.Annotations[config.ANNOTATION_SSHD_PORT])
@@ -234,12 +234,12 @@ func getRepoDeploymentFields(clientset kubernetes.Interface, cluster *crv1.Pgclu
 		BackrestRepoClaimName: fmt.Sprintf(util.BackrestRepoPVCName, cluster.Name),
 		SshdSecretsName:       fmt.Sprintf(util.BackrestRepoSecretName, cluster.Name),
 		PGbackrestDBHost:      cluster.Name,
-		PgbackrestRepoPath:    util.GetPGBackRestRepoPath(*cluster),
+		PgbackrestRepo1Path:   util.GetPGBackRestRepoPath(*cluster),
 		PgbackrestDBPath:      "/pgdata/" + cluster.Name,
 		PgbackrestPGPort:      cluster.Spec.Port,
 		SshdPort:              operator.Pgo.Cluster.BackrestPort,
 		PgbackrestStanza:      "db",
-		PgbackrestRepoType:    operator.GetRepoType(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
+		PgbackrestRepo1Type:   operator.GetRepoType(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars:   operator.GetPgbackrestS3EnvVars(*cluster, clientset, namespace),
 		Name:                  fmt.Sprintf(util.BackrestRepoServiceName, cluster.Name),
 		ClusterName:           cluster.Name,
