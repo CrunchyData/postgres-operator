@@ -78,19 +78,17 @@ ifeq ("$(DEBUG_BUILD)", "true")
 	GO_BUILD += -gcflags='all=-N -l'
 endif
 
-# To build a specific image, run 'make <name>-image' (e.g. 'make pgo-apiserver-image')
-images = pgo-apiserver \
-	pgo-backrest \
+# To build a specific image, run 'make <name>-image' (e.g. 'make postgres-operator-image')
+images = pgo-backrest \
 	pgo-backrest-repo \
 	pgo-rmdata \
 	pgo-sqlrunner \
-	pgo-client \
 	pgo-deployer \
 	crunchy-postgres-exporter \
 	postgres-operator
 
 .PHONY: all installrbac setup setupnamespaces cleannamespaces \
-	deployoperator cli-docs clean push pull release deploy
+	deployoperator clean push pull release deploy
 
 
 #======= Main functions =======
@@ -141,9 +139,6 @@ undeploy:
 
 
 #======= Binary builds =======
-build-pgo-apiserver:
-	$(GO_BUILD) -o bin/apiserver ./cmd/apiserver
-
 build-pgo-backrest:
 	$(GO_BUILD) -o bin/pgo-backrest/pgo-backrest ./cmd/pgo-backrest
 
@@ -153,26 +148,11 @@ build-pgo-rmdata:
 build-postgres-operator:
 	$(GO_BUILD) -o bin/postgres-operator ./cmd/postgres-operator
 
-build-pgo-client:
-	$(GO_BUILD) -o bin/pgo ./cmd/pgo
-
 build-pgo-%:
 	$(info No binary build needed for $@)
 
 build-crunchy-postgres-exporter:
 	$(info No binary build needed for $@)
-
-linuxpgo: GO_ENV += GOOS=linux GOARCH=amd64
-linuxpgo:
-	$(GO_BUILD) -o bin/pgo ./cmd/pgo
-
-macpgo: GO_ENV += GOOS=darwin GOARCH=amd64
-macpgo:
-	$(GO_BUILD) -o bin/pgo-mac ./cmd/pgo
-
-winpgo: GO_ENV += GOOS=windows GOARCH=386
-winpgo:
-	$(GO_BUILD) -o bin/pgo.exe ./cmd/pgo
 
 
 #======= Image builds =======
@@ -228,18 +208,8 @@ pgo-base-docker: pgo-base-build
 
 
 #======== Utility =======
-cli-docs:
-	rm docs/content/pgo-client/reference/*.md
-	cd docs/content/pgo-client/reference && go run ../../../../cmd/pgo/generatedocs.go
-	sed -e '1,5 s|^title:.*|title: "pgo Client Reference"|' \
-		docs/content/pgo-client/reference/pgo.md > \
-		docs/content/pgo-client/reference/_index.md
-	rm docs/content/pgo-client/reference/pgo.md
-
 clean: clean-deprecated
-	rm -f bin/apiserver
 	rm -f bin/postgres-operator
-	rm -f bin/pgo bin/pgo-mac bin/pgo.exe
 	rm -f bin/pgo-backrest/pgo-backrest
 	rm -f bin/pgo-rmdata/pgo-rmdata
 	[ -z "$$(ls hack/tools)" ] || rm hack/tools/*
@@ -267,10 +237,6 @@ release:  linuxpgo macpgo winpgo
 	cp -r $(PGOROOT)/examples $(RELTMPDIR)
 	cp -r $(PGOROOT)/deploy $(RELTMPDIR)
 	cp -r $(PGOROOT)/conf $(RELTMPDIR)
-	cp bin/pgo $(RELTMPDIR)
-	cp bin/pgo-mac $(RELTMPDIR)
-	cp bin/pgo.exe $(RELTMPDIR)
-	cp $(PGOROOT)/examples/pgo-bash-completion $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
 
 generate: generate-crd generate-deepcopy

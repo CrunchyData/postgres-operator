@@ -29,7 +29,6 @@ import (
 	nscontroller "github.com/crunchydata/postgres-operator/internal/controller/namespace"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/ns"
-	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,7 +55,8 @@ func initLogging() {
 	if strings.EqualFold(os.Getenv("CRUNCHY_DEBUG"), "true") {
 		verbosity = 1
 	}
-	logging.SetLogFunc(verbosity, logging.Logrus(os.Stdout, msgs.PGO_VERSION, 1))
+	// TODO: change "0.0.1"
+	logging.SetLogFunc(verbosity, logging.Logrus(os.Stdout, "0.0.1", 1))
 
 	// Configure the deprecated logrus singleton.
 	logging.CrunchyLogger(logging.SetParameters())

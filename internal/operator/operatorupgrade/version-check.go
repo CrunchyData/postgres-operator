@@ -20,7 +20,6 @@ import (
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +29,9 @@ const (
 	// ErrUnsuccessfulVersionCheck defines the error string that is displayed when a pgcluster
 	// version check in a target namespace is unsuccessful
 	ErrUnsuccessfulVersionCheck = "unsuccessful pgcluster version check"
+	// versionNumber is a hard coded version number that really needs to be
+	// removed
+	versionNumber = "0.0.1"
 )
 
 // CheckVersion looks at the Postgres Operator version information for existing pgclusters and replicas
@@ -47,8 +49,8 @@ func CheckVersion(clientset pgo.Interface, ns string) error {
 	// where the Operator versions do not match, label the pgclusters accordingly
 	for i := range clusterList.Items {
 		cluster := &clusterList.Items[i]
-		if msgs.PGO_VERSION != cluster.Spec.UserLabels[config.LABEL_PGO_VERSION] {
-			log.Infof("operator version check - pgcluster %s version is currently %s, current version is %s", cluster.Name, cluster.Spec.UserLabels[config.LABEL_PGO_VERSION], msgs.PGO_VERSION)
+		if versionNumber != cluster.Spec.UserLabels[config.LABEL_PGO_VERSION] {
+			log.Infof("operator version check - pgcluster %s version is currently %s, current version is %s", cluster.Name, cluster.Spec.UserLabels[config.LABEL_PGO_VERSION], versionNumber)
 			// check if the annotations map has been created
 			if cluster.Annotations == nil {
 				// if not, create the map
@@ -71,8 +73,8 @@ func CheckVersion(clientset pgo.Interface, ns string) error {
 	// where the Operator versions do not match, label the replicas accordingly
 	for i := range replicaList.Items {
 		replica := &replicaList.Items[i]
-		if msgs.PGO_VERSION != replica.Spec.UserLabels[config.LABEL_PGO_VERSION] {
-			log.Infof("operator version check - pgcluster replica %s version is currently %s, current version is %s", replica.Name, replica.Spec.UserLabels[config.LABEL_PGO_VERSION], msgs.PGO_VERSION)
+		if versionNumber != replica.Spec.UserLabels[config.LABEL_PGO_VERSION] {
+			log.Infof("operator version check - pgcluster replica %s version is currently %s, current version is %s", replica.Name, replica.Spec.UserLabels[config.LABEL_PGO_VERSION], versionNumber)
 			// check if the annotations map has been created
 			if replica.Annotations == nil {
 				// if not, create the map

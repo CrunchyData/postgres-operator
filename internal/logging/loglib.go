@@ -22,14 +22,14 @@ import (
 	"regexp"
 	"runtime"
 
-	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 )
 
 func SetParameters() LogValues {
 	var logval LogValues
 
-	logval.version = msgs.PGO_VERSION
+	// TODO: adjust
+	logval.version = "0.0.1"
 
 	return logval
 }
