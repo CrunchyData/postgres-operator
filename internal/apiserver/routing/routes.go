@@ -91,7 +91,7 @@ func RegisterClusterSvcRoutes(r *mux.Router) {
 	r.HandleFunc("/clustersdelete", clusterservice.DeleteClusterHandler).Methods("POST")
 	r.HandleFunc("/clustersupdate", clusterservice.UpdateClusterHandler).Methods("POST")
 	r.HandleFunc("/testclusters", clusterservice.TestClusterHandler).Methods("POST")
-	r.HandleFunc("/clusters/scale/{name}", clusterservice.ScaleClusterHandler)
+	r.HandleFunc("/clusters/scale/{name}", clusterservice.ScaleClusterHandler).Methods("POST")
 	r.HandleFunc("/scale/{name}", clusterservice.ScaleQueryHandler).Methods("GET")
 	r.HandleFunc("/scaledown/{name}", clusterservice.ScaleDownHandler).Methods("GET")
 }
