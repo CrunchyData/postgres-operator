@@ -18,7 +18,6 @@ limitations under the License.
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
@@ -33,21 +32,21 @@ import (
 )
 
 // ScaleCluster ...
-func ScaleCluster(name, replicaCount, storageConfig, nodeLabel,
-	ccpImageTag, serviceType, ns, pgouser string) msgs.ClusterScaleResponse {
+func ScaleCluster(request msgs.ClusterScaleRequest, pgouser string) msgs.ClusterScaleResponse {
 	ctx := context.TODO()
 	var err error
 
 	response := msgs.ClusterScaleResponse{}
 	response.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
 
-	if name == "all" {
+	if request.ReplicaCount < 1 {
+		log.Error("replica count less than 1, no replicas added")
 		response.Status.Code = msgs.Error
-		response.Status.Msg = "all is not allowed for the scale command"
+		response.Status.Msg = "replica count must be at least 1"
 		return response
 	}
 
-	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(ns).Get(ctx, name, metav1.GetOptions{})
+	cluster, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Get(ctx, request.Name, metav1.GetOptions{})
 
 	if kerrors.IsNotFound(err) {
 		log.Error("no clusters found")
@@ -77,24 +76,24 @@ func ScaleCluster(name, replicaCount, storageConfig, nodeLabel,
 	spec.ReplicaStorage = cluster.Spec.ReplicaStorage
 
 	// allow for user override
-	if storageConfig != "" {
-		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(storageConfig)
+	if request.StorageConfig != "" {
+		spec.ReplicaStorage, _ = apiserver.Pgo.GetStorageSpec(request.StorageConfig)
 	}
 
 	spec.UserLabels = cluster.Spec.UserLabels
 
-	if ccpImageTag != "" {
-		spec.UserLabels[config.LABEL_CCP_IMAGE_TAG_KEY] = ccpImageTag
+	if request.CCPImageTag != "" {
+		spec.UserLabels[config.LABEL_CCP_IMAGE_TAG_KEY] = request.CCPImageTag
 	}
-	if serviceType != "" {
-		if serviceType != config.DEFAULT_SERVICE_TYPE &&
-			serviceType != config.NODEPORT_SERVICE_TYPE &&
-			serviceType != config.LOAD_BALANCER_SERVICE_TYPE {
+	if request.ServiceType != "" {
+		if request.ServiceType != config.DEFAULT_SERVICE_TYPE &&
+			request.ServiceType != config.NODEPORT_SERVICE_TYPE &&
+			request.ServiceType != config.LOAD_BALANCER_SERVICE_TYPE {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = "error --service-type should be either ClusterIP, NodePort, or LoadBalancer "
 			return response
 		}
-		spec.UserLabels[config.LABEL_SERVICE_TYPE] = serviceType
+		spec.UserLabels[config.LABEL_SERVICE_TYPE] = request.ServiceType
 	}
 
 	// set replica node lables to blank to start with, then check for overrides
@@ -102,14 +101,14 @@ func ScaleCluster(name, replicaCount, storageConfig, nodeLabel,
 	spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = ""
 
 	// validate & parse nodeLabel if exists
-	if nodeLabel != "" {
-		if err = apiserver.ValidateNodeLabel(nodeLabel); err != nil {
+	if request.NodeLabel != "" {
+		if err = apiserver.ValidateNodeLabel(request.NodeLabel); err != nil {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
 
-		parts := strings.Split(nodeLabel, "=")
+		parts := strings.Split(request.NodeLabel, "=")
 		spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = parts[0]
 		spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = parts[1]
 
@@ -121,23 +120,13 @@ func ScaleCluster(name, replicaCount, storageConfig, nodeLabel,
 
 	spec.ClusterName = cluster.Spec.Name
 
-	var rc int
-	rc, err = strconv.Atoi(replicaCount)
-	if err != nil {
-		log.Error(err.Error())
-		response.Status.Code = msgs.Error
-		response.Status.Msg = err.Error()
-		return response
-	}
-
 	labels[config.LABEL_PGOUSER] = pgouser
 	labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 
-	for i := 0; i < rc; i++ {
-
+	for i := 0; i < request.ReplicaCount; i++ {
 		uniqueName := util.RandStringBytesRmndr(4)
 		labels[config.LABEL_NAME] = cluster.Spec.Name + "-" + uniqueName
-		spec.Namespace = ns
+		spec.Namespace = cluster.Namespace
 		spec.Name = labels[config.LABEL_NAME]
 
 		newInstance := &crv1.Pgreplica{
@@ -152,8 +141,8 @@ func ScaleCluster(name, replicaCount, storageConfig, nodeLabel,
 			},
 		}
 
-		_, err = apiserver.Clientset.CrunchydataV1().Pgreplicas(ns).Create(ctx, newInstance, metav1.CreateOptions{})
-		if err != nil {
+		if _, err := apiserver.Clientset.CrunchydataV1().Pgreplicas(cluster.Namespace).Create(ctx,
+			newInstance, metav1.CreateOptions{}); err != nil {
 			log.Error(" in creating Pgreplica instance" + err.Error())
 		}
 

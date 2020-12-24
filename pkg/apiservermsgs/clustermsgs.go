@@ -533,6 +533,34 @@ type ScaleDownResponse struct {
 	Status
 }
 
+// ClusterScaleRequest superimposes on the legacy model of handling the ability
+// to scale up the number of instances on a cluster
+// swagger:model
+type ClusterScaleRequest struct {
+	// CCPImageTag is the image tag to use for cluster creation. If this is not
+	// provided, this defaults to what the cluster is using, which is likely
+	// the preferred behavior at this point.
+	CCPImageTag string `json:"ccpImageTag"`
+	// ClientVersion is the version of the client that is being used
+	ClientVersion string `json:"clientVersion"`
+	// Name is the name of the cluster to scale. This is set by the value in the
+	// URL
+	Name string `json:"name"`
+	// Namespace is the namespace in which the queried cluster resides.
+	Namespace string `json:"namespace"`
+	// NodeLabel if provided is a node label to use.
+	NodeLabel string `json:"nodeLabel"`
+	// ReplicaCount is the number of replicas to add to the cluster. This is
+	// required and should be at least 1.
+	ReplicaCount int `json:"replicaCount"`
+	// ServiceType is the kind of Service to deploy with this instance. Defaults
+	// to the value on the cluster.
+	ServiceType string `json:"serviceType"`
+	// StorageConfig, if provided, specifies which of the storage configuration
+	// options should be used. Defaults to what the main cluster definition uses.
+	StorageConfig string `json:"storageConfig"`
+}
+
 // ClusterScaleResponse ...
 // swagger:model
 type ClusterScaleResponse struct {

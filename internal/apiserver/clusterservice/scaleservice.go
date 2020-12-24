@@ -40,99 +40,84 @@ func ScaleClusterHandler(w http.ResponseWriter, r *http.Request) {
 	//  produces:
 	//  - application/json
 	//  parameters:
-	//  - name: "name"
-	//    description: "Cluster Name"
-	//    in: "path"
-	//    type: "string"
-	//    required: true
-	//  - name: "version"
-	//    description: "Client Version"
-	//    in: "path"
-	//    type: "string"
-	//    required: true
-	//  - name: "namespace"
-	//    description: "Namespace"
-	//    in: "path"
-	//    type: "string"
-	//    required: true
-	//  - name: "replica-count"
-	//    description: "The replica count to apply to the clusters."
-	//    in: "path"
-	//    type: "int"
-	//    required: true
-	//  - name: "storage-config"
-	//    description: "The service type to use in the replica Service. If not set, the default in pgo.yaml will be used."
-	//    in: "path"
-	//    type: "string"
-	//    required: false
-	//  - name: "node-label"
-	//    description: "The node label (key) to use in placing the replica database. If not set, any node is used."
-	//    in: "path"
-	//    type: "string"
-	//    required: false
-	//  - name: "service-type"
-	//    description: "The service type to use in the replica Service. If not set, the default in pgo.yaml will be used."
-	//    in: "path"
-	//    type: "string"
-	//    required: false
-	//  - name: "ccp-image-tag"
-	//    description: "The CCPImageTag to use for cluster creation. If specified, overrides the .pgo.yaml setting."
-	//    in: "path"
-	//    type: "string"
-	//    required: false
+	//  - name: "PostgreSQL Scale Cluster"
+	//    in: "body"
+	//    schema:
+	//      "$ref": "#/definitions/ClusterScaleRequest"
 	//  responses:
 	//    '200':
 	//      description: Output
 	//      schema:
 	//        "$ref": "#/definitions/ClusterScaleResponse"
-	//SCALE_CLUSTER_PERM
-	// This is a pain to document because it doesn't use a struct...
-	var ns string
-	vars := mux.Vars(r)
+	log.Debug("clusterservice.ScaleClusterHandler called")
 
-	clusterName := vars[config.LABEL_NAME]
-	namespace := r.URL.Query().Get(config.LABEL_NAMESPACE)
-	replicaCount := r.URL.Query().Get(config.LABEL_REPLICA_COUNT)
-	storageConfig := r.URL.Query().Get(config.LABEL_STORAGE_CONFIG)
-	nodeLabel := r.URL.Query().Get(config.LABEL_NODE_LABEL)
-	serviceType := r.URL.Query().Get(config.LABEL_SERVICE_TYPE)
-	clientVersion := r.URL.Query().Get(config.LABEL_VERSION)
-	ccpImageTag := r.URL.Query().Get(config.LABEL_CCP_IMAGE_TAG_KEY)
-
-	log.Debugf("ScaleClusterHandler parameters name [%s] namespace [%s] replica-count [%s] "+
-		"storage-config [%s] node-label [%s] service-type [%s] version [%s]"+
-		"ccp-image-tag [%s]", clusterName, namespace, replicaCount,
-		storageConfig, nodeLabel, serviceType, clientVersion, ccpImageTag)
-
+	// first, check that the requesting user is authorized to make this request
 	username, err := apiserver.Authn(apiserver.SCALE_CLUSTER_PERM, w, r)
 	if err != nil {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	// decode the request parameters
+	request := msgs.ClusterScaleRequest{}
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		_ = json.NewEncoder(w).Encode(msgs.ClusterScaleResponse{
+			Status: msgs.Status{
+				Code: msgs.Error,
+				Msg:  err.Error(),
+			},
+		})
+		return
+	}
+
+	// set some of the header...though we really should not be setting the HTTP
+	// Status upfront, but whatever
+	w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 
-	resp := msgs.ClusterScaleResponse{}
-	resp.Status = msgs.Status{Code: msgs.Ok, Msg: ""}
-
-	if clientVersion != msgs.PGO_VERSION {
-		resp.Status = msgs.Status{Code: msgs.Error, Msg: apiserver.VERSION_MISMATCH_ERROR}
-		_ = json.NewEncoder(w).Encode(resp)
+	// determine if this is the correct client version
+	if request.ClientVersion != msgs.PGO_VERSION {
+		_ = json.NewEncoder(w).Encode(msgs.ClusterScaleResponse{
+			Status: msgs.Status{
+				Code: msgs.Error,
+				Msg:  apiserver.VERSION_MISMATCH_ERROR,
+			},
+		})
 		return
 	}
 
-	ns, err = apiserver.GetNamespace(apiserver.Clientset, username, namespace)
-	if err != nil {
-		resp.Status = msgs.Status{Code: msgs.Error, Msg: err.Error()}
-		_ = json.NewEncoder(w).Encode(resp)
+	// ensure that the user has access to this namespace. if not, error out
+	if _, err := apiserver.GetNamespace(apiserver.Clientset, username, request.Namespace); err != nil {
+		_ = json.NewEncoder(w).Encode(msgs.ClusterScaleResponse{
+			Status: msgs.Status{
+				Code: msgs.Error,
+				Msg:  err.Error(),
+			},
+		})
 		return
 	}
 
-	// TODO too many params need to create a struct for this
-	resp = ScaleCluster(clusterName, replicaCount, storageConfig, nodeLabel,
-		ccpImageTag, serviceType, ns, username)
+	// ensure that the cluster name is set in the URL, as the request parameters
+	// will use that as precedence
+	vars := mux.Vars(r)
+	clusterName, ok := vars[config.LABEL_NAME]
 
-	_ = json.NewEncoder(w).Encode(resp)
+	if !ok {
+		_ = json.NewEncoder(w).Encode(msgs.ClusterScaleResponse{
+			Status: msgs.Status{
+				Code: msgs.Error,
+				Msg:  "cluster name required in URL",
+			},
+		})
+		return
+	}
+
+	request.Name = clusterName
+
+	response := ScaleCluster(request, username)
+
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 // ScaleQueryHandler ...

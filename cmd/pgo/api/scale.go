@@ -16,56 +16,48 @@ package api
 */
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 )
 
-func ScaleCluster(httpclient *http.Client, arg string, ReplicaCount int,
-	StorageConfig, NodeLabel, CCPImageTag, ServiceType string,
-	SessionCredentials *msgs.BasicAuthCredentials, ns string) (msgs.ClusterScaleResponse, error) {
-	var response msgs.ClusterScaleResponse
-
-	url := fmt.Sprintf("%s/clusters/scale/%s", SessionCredentials.APIServerURL, arg)
-	log.Debug(url)
-
+func ScaleCluster(httpclient *http.Client, SessionCredentials *msgs.BasicAuthCredentials,
+	request msgs.ClusterScaleRequest) (msgs.ClusterScaleResponse, error) {
+	response := msgs.ClusterScaleResponse{}
 	ctx := context.TODO()
-	action := "GET"
-	req, err := http.NewRequestWithContext(ctx, action, url, nil)
+	request.ClientVersion = msgs.PGO_VERSION
+
+	url := fmt.Sprintf("%s/clusters/scale/%s", SessionCredentials.APIServerURL, request.Name)
+	jsonValue, _ := json.Marshal(request)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(jsonValue))
 	if err != nil {
 		return response, err
 	}
 
-	q := req.URL.Query()
-	q.Add("replica-count", strconv.Itoa(ReplicaCount))
-	q.Add("storage-config", StorageConfig)
-	q.Add("node-label", NodeLabel)
-	q.Add("version", msgs.PGO_VERSION)
-	q.Add("ccp-image-tag", CCPImageTag)
-	q.Add("service-type", ServiceType)
-	q.Add("namespace", ns)
-	req.URL.RawQuery = q.Encode()
-
+	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(SessionCredentials.Username, SessionCredentials.Password)
 
 	resp, err := httpclient.Do(req)
 	if err != nil {
 		return response, err
 	}
+
 	defer resp.Body.Close()
+
 	log.Debugf("%v", resp)
-	err = StatusCheck(resp)
-	if err != nil {
+
+	if err := StatusCheck(resp); err != nil {
 		return response, err
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		log.Printf("%v\n", resp.Body)
+		log.Debugf("%+v", resp.Body)
 		fmt.Println("Error: ", err)
 		log.Println(err)
 		return response, err
