@@ -61,9 +61,9 @@ Create new clusters from your existing clusters or backups with [`pgo create clu
 
 Use [pgBouncer][] for connection pooling
 
-#### Node Affinity
+#### Affinity and Tolerations
 
-Have your PostgreSQL clusters deployed to [Kubernetes Nodes][k8s-nodes] of your preference
+Have your PostgreSQL clusters deployed to [Kubernetes Nodes][k8s-nodes] of your preference with [node affinity][high-availability-node-affinity], or designate which nodes Kubernetes can schedule PostgreSQL instances to with Kubneretes [tolerations][high-availability-tolerations].
 
 #### Scheduled Backups
 
@@ -99,7 +99,9 @@ The Crunchy PostgreSQL Operator makes it easy to get your own PostgreSQL-as-a-Se
 [disaster-recovery-s3]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/#using-s3
 [disaster-recovery-scheduling]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/#scheduling-backups
 [high-availability]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/
+[high-availability-node-affinity]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/#node-affinity
 [high-availability-sync]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/#synchronous-replication-guarding-against-transactions-loss
+[high-availability-tolerations]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/#tolerations
 [monitoring]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/monitoring/
 [multiple-cluster]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/multi-cluster-kubernetes/
 [pgo-create-cluster]: https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/reference/pgo_create_cluster/
@@ -111,7 +113,7 @@ The Crunchy PostgreSQL Operator makes it easy to get your own PostgreSQL-as-a-Se
 [k8s-nodes]: https://kubernetes.io/docs/concepts/architecture/nodes/
 
 [pgBackRest]: https://www.pgbackrest.org
-[pgBouncer]: https://access.crunchydata.com/documentation/pgbouncer/
+[pgBouncer]: https://access.crunchydata.com/documentation/postgres-operator/latest/tutorial/pgbouncer/
 [pgMonitor]: https://github.com/CrunchyData/pgmonitor
 
 

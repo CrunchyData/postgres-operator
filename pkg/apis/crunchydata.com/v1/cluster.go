@@ -132,6 +132,10 @@ type PgclusterSpec struct {
 	// Annotations contains a set of Deployment (and by association, Pod)
 	// annotations that are propagated to all managed Deployments
 	Annotations ClusterAnnotations `json:"annotations"`
+
+	// Tolerations are an optional list of Pod toleration rules that are applied
+	// to the PostgreSQL instance.
+	Tolerations []v1.Toleration `json:"tolerations"`
 }
 
 // ClusterAnnotations provides a set of annotations that can be propagated to

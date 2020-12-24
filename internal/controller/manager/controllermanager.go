@@ -256,7 +256,7 @@ func (c *ControllerManager) addControllerGroup(namespace string) error {
 	}
 
 	pgReplicacontroller := &pgreplica.Controller{
-		Clientset:            client,
+		Client:               client,
 		Queue:                workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter()),
 		Informer:             pgoInformerFactory.Crunchydata().V1().Pgreplicas(),
 		PgreplicaWorkerCount: *c.pgoConfig.Pgo.PGReplicaWorkerCount,

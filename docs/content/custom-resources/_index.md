@@ -201,6 +201,7 @@ spec:
     replicationTLSSecret: ""
     tlsSecret: ""
   tlsOnly: false
+  tolerations: []
   user: hippo
   userlabels:
     crunchy-postgres-exporter: "false"
@@ -392,6 +393,7 @@ spec:
     replicationTLSSecret: ""
     tlsSecret: ""
   tlsOnly: false
+  tolerations: []
   user: hippo
   userlabels:
     backrest-storage-type: "s3"
@@ -713,6 +715,7 @@ make changes, as described below.
 | TablespaceMounts | `create`,`update` | Lists any tablespaces that are attached to the PostgreSQL cluster. Tablespaces can be added at a later time by updating the `TablespaceMounts` entry, but they cannot be removed. Stores a map of information, with the key being the name of the tablespace, and the value being a Storage Specification, defined below. |
 | TLS | `create` | Defines the attributes for enabling TLS for a PostgreSQL cluster. See TLS Specification below. |
 | TLSOnly | `create` | If set to true, requires client connections to use only TLS to connect to the PostgreSQL database. |
+| Tolerations | `create`,`update` | Any array of Kubernetes [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Please refer to the [Kubernetes documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) for how to set this field. |
 | Standby | `create`, `update` | If set to true, indicates that the PostgreSQL cluster is a "standby" cluster, i.e. is in read-only mode entirely. Please see [Kubernetes Multi-Cluster Deployments]({{< relref "/architecture/high-availability/multi-cluster-kubernetes.md" >}}) for more information. |
 | Shutdown | `create`, `update` | If set to true, indicates that a PostgreSQL cluster should shutdown. If set to false, indicates that a PostgreSQL cluster should be up and running. |
 
@@ -826,3 +829,4 @@ cluster. All of the attributes only affect the replica when it is created.
 | Namespace | `create` | The Kubernetes Namespace that the PostgreSQL cluster is deployed in. |
 | ReplicaStorage | `create` | A specification that gives information about the storage attributes for any replicas in the PostgreSQL cluster. For details, please see the `Storage Specification` section in the `pgclusters.crunchydata.com` description. This will likely be changed in the future based on the nature of the high-availability system, but presently it is still required that you set it. It is recommended you use similar settings to that of `PrimaryStorage`. |
 | UserLabels | `create` | A set of key-value string pairs that are used as a sort of "catch-all" for things that really should be modeled in the CRD. These values do get copied to the actually CR labels. If you want to set up metrics collection, you would specify `"crunchy-postgres-exporter": "true"` here. This also allows for node selector pinning using `NodeLabelKey` and `NodeLabelValue`. However, this structure does need to be set, so just follow whatever is in the example. |
+| Tolerations | `create`,`update` | Any array of Kubernetes [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Please refer to the [Kubernetes documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) for how to set this field. |

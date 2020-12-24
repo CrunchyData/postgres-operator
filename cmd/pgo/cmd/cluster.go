@@ -21,13 +21,14 @@ import (
 	"os"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/cmd/pgo/api"
 	"github.com/crunchydata/postgres-operator/cmd/pgo/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
-	log "github.com/sirupsen/logrus"
 )
 
 // below are the tablespace parameters and the expected values of each
@@ -333,6 +334,8 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	// set any annotations
 	r.Annotations = getClusterAnnotations(Annotations, AnnotationsPostgres, AnnotationsBackrest,
 		AnnotationsPgBouncer)
+	// set any tolerations
+	r.Tolerations = getClusterTolerations(Tolerations)
 
 	// only set SyncReplication in the request if actually provided via the CLI
 	if createClusterCmd.Flag("sync-replication").Changed {
@@ -541,6 +544,80 @@ func getTablespaces(tablespaceParams []string) []msgs.ClusterTablespaceDetail {
 
 	// return the tablespace list
 	return tablespaces
+}
+
+// getClusterTolerations determines if there are any Pod tolerations to set
+// and converts from the defined string form to the standard Toleration object
+//
+// The strings should follow the following formats:
+//
+// Operator - rule:Effect
+//
+// Exists - key:Effect
+// Equals - key=value:Effect
+func getClusterTolerations(tolerationList []string) []v1.Toleration {
+	tolerations := make([]v1.Toleration, 0)
+
+	// if no tolerations, exit early
+	if len(tolerationList) == 0 {
+		return tolerations
+	}
+
+	// begin the joys of parsing
+	for _, t := range tolerationList {
+		toleration := v1.Toleration{}
+		ruleEffect := strings.Split(t, ":")
+
+		// if we don't have exactly two items, then error
+		if len(ruleEffect) != 2 {
+			fmt.Printf("invalid format for toleration: %q\n", t)
+			os.Exit(1)
+		}
+
+		// for ease of reading
+		rule, effect := ruleEffect[0], v1.TaintEffect(ruleEffect[1])
+
+		// see if the effect is a valid effect
+		if !isValidTaintEffect(effect) {
+			fmt.Printf("invalid taint effect for toleration: %q\n", effect)
+			os.Exit(1)
+		}
+
+		toleration.Effect = effect
+
+		// determine if the rule is an Exists or Equals operation
+		keyValue := strings.Split(rule, "=")
+
+		if len(keyValue) < 1 || len(keyValue) > 2 {
+			fmt.Printf("invalid rule for toleration: %q\n", rule)
+			os.Exit(1)
+		}
+
+		// no matter what we have a key
+		toleration.Key = keyValue[0]
+
+		// the following determine the operation to use for the toleration and if
+		// we should assign a value
+		if len(keyValue) == 1 {
+			toleration.Operator = v1.TolerationOpExists
+		} else {
+			toleration.Operator = v1.TolerationOpEqual
+			toleration.Value = keyValue[1]
+		}
+
+		// and append to the list of tolerations
+		tolerations = append(tolerations, toleration)
+	}
+
+	return tolerations
+}
+
+// isValidTaintEffect returns true if the effect passed in is a valid
+// TaintEffect, otherwise false
+func isValidTaintEffect(taintEffect v1.TaintEffect) bool {
+	return (taintEffect == v1.TaintEffectNoSchedule ||
+		taintEffect == v1.TaintEffectPreferNoSchedule ||
+		taintEffect == v1.TaintEffectNoExecute)
 }
 
 // isTablespaceParam returns true if the parameter in question is acceptable for

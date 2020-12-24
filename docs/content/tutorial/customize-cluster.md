@@ -7,7 +7,7 @@ weight: 130
 The PostgreSQL Operator makes it very easy and quick to [create a cluster]({{< relref "tutorial/create-cluster.md" >}}), but there are possibly more customizations you want to make to your cluster. These include:
 
 - Resource allocations (e.g. Memory, CPU, PVC size)
-- Sidecars (e.g. [Monitoring]({{< relref "architecture/monitoring.md" >}}), pgBouncer, [pgAdmin 4]({{< relref "architecture/pgadmin4.md" >}}))
+- Sidecars (e.g. [Monitoring]({{< relref "architecture/monitoring.md" >}}), [pgBouncer]({{< relref "tutorial/pgbouncer.md" >}}), [pgAdmin 4]({{< relref "architecture/pgadmin4.md" >}}))
 - High Availability (e.g. adding replicas)
 - Specifying specific PostgreSQL images (e.g. one with PostGIS)
 - Specifying a [Pod anti-affinity and Node affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/)
@@ -136,6 +136,30 @@ pgo create cluster hippo --replica-count=1
 
 You can scale up and down your PostgreSQL cluster with the [`pgo scale`]({{< relref "pgo-client/reference/pgo_scale.md" >}}) and [`pgo scaledown`]({{< relref "pgo-client/reference/pgo_scaledown.md" >}}) commands.
 
+## Set Tolerations for a PostgreSQL Cluster
+
+[Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) help with the scheduling of Pods to appropriate nodes. There are many reasons that a Kubernetes administrator may want to use tolerations, such as restricting the types of Pods that can be assigned to particular nodes.
+
+The PostgreSQL Operator supports adding tolerations to PostgreSQL instances using the `--toleration` flag. The format for adding a toleration is as such:
+
+```
+rule:Effect
+```
+
+where a `rule` can represent existence (e.g. `key`) or equality (`key=value`) and `Effect` is one of `NoSchedule`, `PreferNoSchedule`, or `NoExecute`. For more information on how tolerations work, please refer to the [Kubernetes documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
+
+You can assign multiple tolerations to a PostgreSQL cluster.
+
+For example, to add two tolerations to a new PostgreSQL cluster, one that is an existence toleration for a key of `ssd` and the other that is an equality toleration for a key/value pair of `zone`/`east`, you can run the following command:
+
+```
+pgo create cluster hippo \
+  --toleration=ssd:NoSchedule \
+  --toleration=zone=east:NoSchedule
+```
+
+You can also add or edit tolerations directly on the `pgclusters.crunchydata.com` custom resource and the PostgreSQL Operator will roll out the changes to the appropriate instances.
+
 ## Customize PostgreSQL Configuration
 
 PostgreSQL provides a lot of different knobs that can be used to fine tune the [configuration](https://www.postgresql.org/docs/current/runtime-config.html) for your workload. While you can [customize your PostgreSQL configuration]({{< relref "advanced/custom-configuration.md" >}}) after your cluster has been deployed, you may also want to load in your custom configuration during initialization.
@@ -212,6 +236,10 @@ If the error message does not go away, this could indicate a few things:
 has successfully started.
 - The password for the `ccp_monitoring` user has changed. In this case you will
 need to update the Secret with the monitoring credentials.
+
+### PostgreSQL Pod Not Scheduled to Nodes Matching Tolerations
+
+While Kubernetes [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) allow for Pods to be scheduled to Nodes based on their taints, this does not mean that the Pod _will_ be assigned to those nodes. To provide Kubernetes scheduling guidance on where a Pod should be assigned, you must also use [Node Affinity]({{< relref "architecture/high-availability/_index.md" >}}#node-affinity).
 
 ## Next Steps
 

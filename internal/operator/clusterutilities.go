@@ -189,6 +189,9 @@ type DeploymentTemplateFields struct {
 	Tablespaces            string
 	TablespaceVolumes      string
 	TablespaceVolumeMounts string
+	// Tolerations is an optional parameter that provides Pod tolerations that
+	// have been transformed into JSON encoding from an actual Tolerations object
+	Tolerations string
 	// The following fields set the TLS requirements as well as provide
 	// information on how to configure TLS in a PostgreSQL cluster
 	// TLSEnabled enables TLS in a cluster if set to true. Only works in actuality
@@ -965,6 +968,25 @@ func GetSyncReplication(specSyncReplication *bool) bool {
 		return true
 	}
 	return false
+}
+
+// GetTolerations returns any tolerations that may be defined in a tolerations
+// in JSON format. Otherwise, it returns an empty string
+func GetTolerations(tolerations []v1.Toleration) string {
+	// if no tolerations, exit early
+	if len(tolerations) == 0 {
+		return ""
+	}
+
+	// turn into a JSON string
+	s, err := json.MarshalIndent(tolerations, "", "  ")
+
+	if err != nil {
+		log.Errorf("%s: returning empty string", err.Error())
+		return ""
+	}
+
+	return string(s)
 }
 
 // OverrideClusterContainerImages is a helper function that provides the

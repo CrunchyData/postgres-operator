@@ -16,6 +16,7 @@ package v1
 */
 
 import (
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -42,6 +43,9 @@ type PgreplicaSpec struct {
 	ReplicaStorage PgStorageSpec     `json:"replicastorage"`
 	Status         string            `json:"status"`
 	UserLabels     map[string]string `json:"userlabels"`
+	// Tolerations are an optional list of Pod toleration rules that are applied
+	// to the PostgreSQL instance.
+	Tolerations []v1.Toleration `json:"tolerations"`
 }
 
 // PgreplicaList ...

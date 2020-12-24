@@ -1490,6 +1490,9 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	setClusterAnnotationGroup(spec.Annotations.Backrest, request.Annotations.Backrest)
 	setClusterAnnotationGroup(spec.Annotations.PgBouncer, request.Annotations.PgBouncer)
 
+	// set any tolerations
+	spec.Tolerations = request.Tolerations
+
 	labels := make(map[string]string)
 	labels[config.LABEL_NAME] = name
 	if !request.AutofailFlag || apiserver.Pgo.Cluster.DisableAutofail {
