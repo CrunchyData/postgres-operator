@@ -312,7 +312,6 @@ metadata:
     backrest-storage-type: "s3"
     crunchy-pgbadger: "false"
     crunchy-pgha-scope: ${pgo_cluster_name}
-    crunchy-postgres-exporter: "false"
     deployment-name: ${pgo_cluster_name}
     name: ${pgo_cluster_name}
     pg-cluster: ${pgo_cluster_name}
@@ -363,6 +362,7 @@ spec:
   clustername: ${pgo_cluster_name}
   customconfig: ""
   database: ${pgo_cluster_name}
+  exporter: false
   exporterport: "9187"
   limits: {}
   name: ${pgo_cluster_name}
@@ -505,7 +505,6 @@ Add this time, removing a replica must be handled through the [`pgo` client]({{<
 To enable the [monitoring]({{< relref "/architecture/monitoring.md">}})
 (aka metrics) sidecar using the `crunchy-postgres-exporter` container, you need
 to set the `exporter` attribute in `pgclusters.crunchydata.com` custom resource.
-
 
 ### Add a Tablespace
 
