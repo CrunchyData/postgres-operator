@@ -17,6 +17,8 @@ limitations under the License.
 
 import (
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+
+	v1 "k8s.io/api/core/v1"
 )
 
 // ShowClusterRequest shows cluster
@@ -202,6 +204,8 @@ type CreateClusterRequest struct {
 	PGDataSource crv1.PGDataSourceSpec
 	// Annotations provide any custom annotations for a cluster
 	Annotations crv1.ClusterAnnotations `json:"annotations"`
+	// Tolerations allows for the setting of Pod tolerations on Postgres instances
+	Tolerations []v1.Toleration `json:"tolerations"`
 }
 
 // CreateClusterDetail provides details about the PostgreSQL cluster that is
@@ -559,6 +563,8 @@ type ClusterScaleRequest struct {
 	// StorageConfig, if provided, specifies which of the storage configuration
 	// options should be used. Defaults to what the main cluster definition uses.
 	StorageConfig string `json:"storageConfig"`
+	// Tolerations allows for the setting of Pod tolerations on Postgres instances
+	Tolerations []v1.Toleration `json:"tolerations"`
 }
 
 // ClusterScaleResponse ...

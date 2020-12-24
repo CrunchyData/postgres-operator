@@ -142,6 +142,17 @@ var (
 	CASecret string
 )
 
+// Tolerations is a collection of Pod tolerations that can be applied, which
+// use the following format for the different operations
+//
+// Exists - key:Effect
+// Equals - key=value:Effect
+//
+// Example:
+//
+// zone=east:NoSchedule,highspeed:NoSchedule
+var Tolerations []string
+
 var CreateCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a Postgres Operator resource",
@@ -476,6 +487,10 @@ func init() {
 		"Enables synchronous replication for the cluster.")
 	createClusterCmd.Flags().BoolVar(&TLSOnly, "tls-only", false, "If true, forces all PostgreSQL connections to be over TLS. "+
 		"Must also set \"server-tls-secret\" and \"server-ca-secret\"")
+	createClusterCmd.Flags().StringSliceVar(&Tolerations, "toleration", []string{},
+		"Set Pod tolerations for each PostgreSQL instance in a cluster.\n"+
+			"The general format is \"key=value:Effect\"\n"+
+			"For example, to add an Exists and an Equals toleration: \"--toleration=ssd:NoSchedule,zone=east:NoSchedule\"")
 	createClusterCmd.Flags().BoolVarP(&Standby, "standby", "", false, "Creates a standby cluster "+
 		"that replicates from a pgBackRest repository in AWS S3.")
 	createClusterCmd.Flags().StringSliceVar(&Tablespaces, "tablespace", []string{},

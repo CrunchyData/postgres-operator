@@ -39,6 +39,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -470,7 +471,7 @@ func ScaleDownBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespa
 
 // UpdateAnnotations updates the annotations in the "template" portion of a
 // PostgreSQL deployment
-func UpdateAnnotations(cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) error {
+func UpdateAnnotations(clientset kubeapi.Interface, cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) error {
 	log.Debugf("update annotations on [%s]", deployment.Name)
 	annotations := map[string]string{}
 
@@ -494,7 +495,7 @@ func UpdateAnnotations(cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) 
 
 // UpdateResources updates the PostgreSQL instance Deployments to reflect the
 // update resources (i.e. CPU, memory)
-func UpdateResources(cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) error {
+func UpdateResources(clientset kubeapi.Interface, cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) error {
 	// iterate through each PostgreSQL instance deployment and update the
 	// resource values for the database or exporter containers
 	for index, container := range deployment.Spec.Template.Spec.Containers {
@@ -534,7 +535,7 @@ func UpdateResources(cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) er
 
 // UpdateTablespaces updates the PostgreSQL instance Deployments to update
 // what tablespaces are mounted.
-func UpdateTablespaces(cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) error {
+func UpdateTablespaces(clientset kubeapi.Interface, cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) error {
 	// update the volume portion of the Deployment spec to reflect all of the
 	// available tablespaces
 	for tablespaceName, storageSpec := range cluster.Spec.TablespaceMounts {
@@ -606,6 +607,42 @@ func UpdateTablespaces(cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) 
 		}
 		deployment.Spec.Template.Spec.Containers[0].Env = append(deployment.Spec.Template.Spec.Containers[0].Env, envVar)
 	}
+
+	return nil
+}
+
+// UpdateTolerations updates the Toleration definition for a Deployment.
+// However, we have to check if the Deployment is based on a pgreplica Spec --
+// if it is, we need to determine if there are any instance specific tolerations
+// defined on that
+func UpdateTolerations(clientset kubeapi.Interface, cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) error {
+	ctx := context.TODO()
+
+	// determine if this instance is based on the pgcluster or a pgreplica. if
+	// it is based on the pgcluster, we can apply the tolerations and exit early
+	if deployment.Name == cluster.Name {
+		deployment.Spec.Template.Spec.Tolerations = cluster.Spec.Tolerations
+		return nil
+	}
+
+	// ok, so this is based on a pgreplica. Let's try to find it.
+	instance, err := clientset.CrunchydataV1().Pgreplicas(cluster.Namespace).Get(ctx, deployment.Name, metav1.GetOptions{})
+
+	// if we error, log it and return, as this error will interrupt a rolling update
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	// if the instance does have specific tolerations, exit here as we do not
+	// want to override them
+	if len(instance.Spec.Tolerations) != 0 {
+		return nil
+	}
+
+	// otherwise, the tolerations set on the cluster instance are available to
+	// all instances, so set the value and return
+	deployment.Spec.Template.Spec.Tolerations = cluster.Spec.Tolerations
 
 	return nil
 }
@@ -726,7 +763,10 @@ func stopPostgreSQLInstance(clientset kubernetes.Interface, restConfig *rest.Con
 	// First, attempt to get the PostgreSQL instance Pod attachd to this
 	// particular deployment
 	selector := fmt.Sprintf("%s=%s", config.LABEL_DEPLOYMENT_NAME, deployment.Name)
-	pods, err := clientset.CoreV1().Pods(deployment.Namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
+	pods, err := clientset.CoreV1().Pods(deployment.Namespace).List(ctx, metav1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
+		LabelSelector: selector,
+	})
 
 	// if there is a bona fide error, return.
 	// However, if no Pods are found, issue a warning, but do not return an error

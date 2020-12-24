@@ -137,7 +137,7 @@ func (c *Controller) processNextItem() bool {
 		if cluster, err := c.Client.CrunchydataV1().Pgclusters(tmpTask.Namespace).
 			Get(ctx, clusterName, metav1.GetOptions{}); err == nil {
 			if err := clusteroperator.RollingUpdate(c.Client, c.Client.Config, cluster,
-				func(*crv1.Pgcluster, *appsv1.Deployment) error { return nil }); err != nil {
+				func(kubeapi.Interface, *crv1.Pgcluster, *appsv1.Deployment) error { return nil }); err != nil {
 				log.Errorf("rolling update failed: %q", err.Error())
 			}
 		} else {

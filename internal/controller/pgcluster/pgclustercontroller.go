@@ -178,7 +178,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	newcluster := newObj.(*crv1.Pgcluster)
 	// initialize a slice that may contain functions that need to be executed
 	// as part of a rolling update
-	rollingUpdateFuncs := [](func(*crv1.Pgcluster, *appsv1.Deployment) error){}
+	rollingUpdateFuncs := [](func(kubeapi.Interface, *crv1.Pgcluster, *appsv1.Deployment) error){}
 
 	log.Debugf("pgcluster onUpdate for cluster %s (namespace %s)", newcluster.ObjectMeta.Namespace,
 		newcluster.ObjectMeta.Name)
@@ -305,6 +305,11 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
+	// check to see if any tolerations have been modified
+	if !reflect.DeepEqual(oldcluster.Spec.Tolerations, newcluster.Spec.Tolerations) {
+		rollingUpdateFuncs = append(rollingUpdateFuncs, clusteroperator.UpdateTolerations)
+	}
+
 	// if there is no need to perform a rolling update, exit here
 	if len(rollingUpdateFuncs) == 0 {
 		return
@@ -313,9 +318,9 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// otherwise, create an anonymous function that executes each of the rolling
 	// update functions as part of the rolling update
 	if err := clusteroperator.RollingUpdate(c.Client, c.Client.Config, newcluster,
-		func(cluster *crv1.Pgcluster, deployment *appsv1.Deployment) error {
+		func(clientset kubeapi.Interface, cluster *crv1.Pgcluster, deployment *appsv1.Deployment) error {
 			for _, fn := range rollingUpdateFuncs {
-				if err := fn(cluster, deployment); err != nil {
+				if err := fn(clientset, cluster, deployment); err != nil {
 					return err
 				}
 			}

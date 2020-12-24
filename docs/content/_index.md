@@ -56,11 +56,11 @@ Create new clusters from your existing clusters or backups with [`pgo create clu
 
 #### Connection Pooling
 
- Use [pgBouncer](https://access.crunchydata.com/documentation/pgbouncer/) for connection pooling
+ Use [pgBouncer]({{< relref "tutorial/pgbouncer.md" >}}) for connection pooling.
 
-#### Node Affinity
+#### Affinity and Tolerations
 
-Have your PostgreSQL clusters deployed to [Kubernetes Nodes](https://kubernetes.io/docs/concepts/architecture/nodes/) of your preference
+Have your PostgreSQL clusters deployed to [Kubernetes Nodes](https://kubernetes.io/docs/concepts/architecture/nodes/) of your preference with [node affinity]({{< relref "architecture/high-availability/_index.md">}}#node-affinity), or designate which nodes Kubernetes can schedule PostgreSQL instances to with [tolerations]({{< relref "architecture/high-availability/_index.md">}}#tolerations).
 
 #### Scheduled Backups
 

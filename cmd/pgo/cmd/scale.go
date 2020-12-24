@@ -62,6 +62,10 @@ func init() {
 	scaleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	scaleCmd.Flags().IntVarP(&ReplicaCount, "replica-count", "", 1, "The replica count to apply to the clusters.")
 	scaleCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the replica storage.")
+	scaleCmd.Flags().StringSliceVar(&Tolerations, "toleration", []string{},
+		"Set Pod tolerations for each PostgreSQL instance in a cluster.\n"+
+			"The general format is \"key=value:Effect\"\n"+
+			"For example, to add an Exists and an Equals toleration: \"--toleration=ssd:NoSchedule,zone=east:NoSchedule\"")
 }
 
 func scaleCluster(args []string, ns string) {
@@ -74,6 +78,7 @@ func scaleCluster(args []string, ns string) {
 			ReplicaCount:  ReplicaCount,
 			ServiceType:   ServiceType,
 			StorageConfig: StorageConfig,
+			Tolerations:   getClusterTolerations(Tolerations),
 		}
 
 		response, err := api.ScaleCluster(httpclient, &SessionCredentials, request)

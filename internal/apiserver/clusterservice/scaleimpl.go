@@ -119,6 +119,7 @@ func ScaleCluster(request msgs.ClusterScaleRequest, pgouser string) msgs.Cluster
 	labels[config.LABEL_PG_CLUSTER] = cluster.Spec.Name
 
 	spec.ClusterName = cluster.Spec.Name
+	spec.Tolerations = request.Tolerations
 
 	labels[config.LABEL_PGOUSER] = pgouser
 	labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]

@@ -265,7 +265,7 @@ func RotateExporterPassword(clientset kubernetes.Interface, restconfig *rest.Con
 
 // UpdateExporterSidecar either adds or emoves the metrics sidcar from the
 // cluster. This is meant to be used as a rolling update callback function
-func UpdateExporterSidecar(cluster *crv1.Pgcluster, deployment *appsv1.Deployment) error {
+func UpdateExporterSidecar(clientset kubeapi.Interface, cluster *crv1.Pgcluster, deployment *appsv1.Deployment) error {
 	// need to determine if we are adding or removing
 	if cluster.Spec.Exporter {
 		return addExporterSidecar(cluster, deployment)

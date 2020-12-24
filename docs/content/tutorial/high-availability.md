@@ -94,7 +94,19 @@ Please understand the tradeoffs of synchronous replication before using it.
 
 ## Pod Anti-Affinity and Node Affinity
 
-To leran how to use pod anti-affinity and node affinity, please refer to the [high availability architecture documentation]({{< relref "architecture/high-availability/_index.md" >}})
+To learn how to use pod anti-affinity and node affinity, please refer to the [high availability architecture documentation]({{< relref "architecture/high-availability/_index.md" >}}).
+
+## Tolerations
+
+If you want to have a PostgreSQL instance use specific Kubernetes [tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/), you can use the `--toleration` flag on [`pgo scale`]({{< relref "pgo-client/reference/pgo_scale.md">}}). Any tolerations added to the new PostgreSQL instance fully replace any tolerations available to the entire cluster.
+
+For example, to assign equality toleration for a key/value pair of `zone`/`west`, you can run the following command:
+
+```
+pgo scale hippo --toleration=zone=west:NoSchedule
+```
+
+For more information on the PostgreSQL Operator and tolerations, please review the [high availability architecture documentation]({{< relref "architecture/high-availability/_index.md" >}}).
 
 ## Troubleshooting
 

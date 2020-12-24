@@ -340,6 +340,7 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 		ReplicationTLSSecret:     cl.Spec.TLS.ReplicationTLSSecret,
 		CASecret:                 cl.Spec.TLS.CASecret,
 		Standby:                  cl.Spec.Standby,
+		Tolerations:              operator.GetTolerations(cl.Spec.Tolerations),
 	}
 
 	return deploymentFields
@@ -494,6 +495,11 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 		TLSSecret:                cluster.Spec.TLS.TLSSecret,
 		ReplicationTLSSecret:     cluster.Spec.TLS.ReplicationTLSSecret,
 		CASecret:                 cluster.Spec.TLS.CASecret,
+		// Give precedence to the tolerations defined on the replica spec, otherwise
+		// take any tolerations defined on the cluster spec
+		Tolerations: util.GetValueOrDefault(
+			operator.GetTolerations(replica.Spec.Tolerations),
+			operator.GetTolerations(cluster.Spec.Tolerations)),
 	}
 
 	switch replica.Spec.ReplicaStorage.StorageType {

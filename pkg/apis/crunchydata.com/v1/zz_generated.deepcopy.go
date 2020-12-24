@@ -271,6 +271,13 @@ func (in *PgclusterSpec) DeepCopyInto(out *PgclusterSpec) {
 	out.TLS = in.TLS
 	out.PGDataSource = in.PGDataSource
 	in.Annotations.DeepCopyInto(&out.Annotations)
+	if in.Tolerations != nil {
+		in, out := &in.Tolerations, &out.Tolerations
+		*out = make([]corev1.Toleration, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	return
 }
 
@@ -463,6 +470,13 @@ func (in *PgreplicaSpec) DeepCopyInto(out *PgreplicaSpec) {
 		*out = make(map[string]string, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val
+		}
+	}
+	if in.Tolerations != nil {
+		in, out := &in.Tolerations, &out.Tolerations
+		*out = make([]corev1.Toleration, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 	return

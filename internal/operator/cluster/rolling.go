@@ -26,6 +26,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -68,8 +69,8 @@ const (
 // Erroring during this process can be fun. If an error occurs within the middle
 // of a rolling update, in order to avoid placing the cluster in an
 // indeterminate state, most errors are just logged for later troubleshooting
-func RollingUpdate(clientset kubernetes.Interface, restConfig *rest.Config, cluster *crv1.Pgcluster,
-	updateFunc func(*crv1.Pgcluster, *appsv1.Deployment) error) error {
+func RollingUpdate(clientset kubeapi.Interface, restConfig *rest.Config, cluster *crv1.Pgcluster,
+	updateFunc func(kubeapi.Interface, *crv1.Pgcluster, *appsv1.Deployment) error) error {
 	log.Debugf("rolling update for cluster %q", cluster.Name)
 
 	// we need to determine which deployments are replicas and which is the
@@ -147,13 +148,13 @@ func RollingUpdate(clientset kubernetes.Interface, restConfig *rest.Config, clus
 // instance. It first ensures that the update can be applied. If it can, it will
 // safely turn of the PostgreSQL instance before modifying the Deployment
 // template.
-func applyUpdateToPostgresInstance(clientset kubernetes.Interface, restConfig *rest.Config,
+func applyUpdateToPostgresInstance(clientset kubeapi.Interface, restConfig *rest.Config,
 	cluster *crv1.Pgcluster, deployment appsv1.Deployment,
-	updateFunc func(*crv1.Pgcluster, *appsv1.Deployment) error) error {
+	updateFunc func(kubeapi.Interface, *crv1.Pgcluster, *appsv1.Deployment) error) error {
 	ctx := context.TODO()
 
 	// apply any updates, if they cannot be applied, then return an error here
-	if err := updateFunc(cluster, &deployment); err != nil {
+	if err := updateFunc(clientset, cluster, &deployment); err != nil {
 		return err
 	}
 
