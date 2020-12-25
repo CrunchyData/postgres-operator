@@ -96,6 +96,20 @@ Please understand the tradeoffs of synchronous replication before using it.
 
 To leran how to use pod anti-affinity and node affinity, please refer to the [high availability architecture documentation]({{< relref "architecture/high-availability/_index.md" >}})
 
+## Troubleshooting
+
+### No Primary Available After Both Synchronous Replication Instances Fail
+
+Though synchronous replication is available for guarding against transaction loss for [write sensitive workloads]({{< relref "architecture/high-availability/_index.md" >}}#synchronous-replication-guarding-against-transactions-loss), by default the high availability systems prefers availability over consistency and will continue to accept writes to a primary even if a replica fails. Additionally, in most scenarios, a system using synchronous replication will be able to recover and self heal should a primary or a replica go down.
+
+However, in the case that both a primary and its synchronous replica go down at the same time, a new primary may not be promoted. To guard against transaction loss, the high availability system will not promote any instances if it cannot determine if they had been one of the synchronous instances. As such, when it recovers, it will bring up all the instances as replicas.
+
+To get out of this situation, inspect the replicas using `pgo failover --query` to determine the best candidate (typically the one with the least amount of replication lag). After determining the best candidate, promote one of the replicas using `pgo failover --target` command.
+
+If you are still having issues, you may need to execute into one of the Pods and inspect the state with the `patronictl` command.
+
+A detailed breakdown of this case be found [here](https://github.com/CrunchyData/postgres-operator/issues/2132#issuecomment-748719843).
+
 ## Next Steps
 
 Backups, restores, point-in-time-recoveries: [disaster recovery]({{< relref "architecture/disaster-recovery.md" >}}) is a big topic! We'll learn about you can [perform disaster recovery]({{< relref "tutorial/disaster-recovery.md" >}}) and more in the PostgreSQL Operator.
