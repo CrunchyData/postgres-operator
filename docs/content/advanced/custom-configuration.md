@@ -150,7 +150,7 @@ postgresql:
     shared_buffers: 128MB
     shared_preload_libraries: pgaudit.so,pg_stat_statements.so
     temp_buffers: 8MB
-    unix_socket_directories: /tmp,/crunchyadm
+    unix_socket_directories: /tmp
     wal_level: logical
     work_mem: 4MB
   recovery_conf:
@@ -168,7 +168,6 @@ postgresql:
   - basebackup
   pg_hba:
   - local all postgres peer
-  - local all crunchyadm peer
   - host replication primaryuser 0.0.0.0/0 md5
   - host all primaryuser 0.0.0.0/0 reject
   - host all all 0.0.0.0/0 md5

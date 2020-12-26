@@ -178,7 +178,6 @@ type DeploymentTemplateFields struct {
 	ScopeLabel               string
 	Replicas                 string
 	IsInit                   bool
-	EnableCrunchyadm         bool
 	ReplicaReinitOnStartFail bool
 	PodAntiAffinity          string
 	SyncReplication          bool
@@ -978,15 +977,12 @@ func OverrideClusterContainerImages(containers []v1.Container) {
 		var containerImageName string
 		// there are a few images we need to check for:
 		// 1. "database" image, which is PostgreSQL or some flavor of it
-		// 2. "crunchyadm" image, which helps with administration
-		// 3. "exporter" image, which helps with monitoring
-		// 4. "pgbadger" image, which helps with...pgbadger
+		// 2. "exporter" image, which helps with monitoring
+		// 3. "pgbadger" image, which helps with...pgbadger
 		switch container.Name {
 
 		case "exporter":
 			containerImageName = config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_EXPORTER
-		case "crunchyadm":
-			containerImageName = config.CONTAINER_IMAGE_CRUNCHY_ADMIN
 		case "database":
 			containerImageName = config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_HA
 			// one more step here...determine if this is GIS enabled

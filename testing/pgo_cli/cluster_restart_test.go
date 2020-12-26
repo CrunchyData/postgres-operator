@@ -114,7 +114,7 @@ func TestRestart(t *testing.T) {
 
 					// now update a PG setting
 					updatePGConfigDCS(t, cluster(), namespace(),
-						map[string]string{"unix_socket_directories": "/tmp,/crunchyadm,/tmp/e2e"})
+						map[string]string{"unix_socket_directories": "/tmp,/tmp/e2e"})
 
 					requiresRestartPrimaryReplica := func() bool {
 						output, err := pgo(restartQueryCMD...).Exec(t)

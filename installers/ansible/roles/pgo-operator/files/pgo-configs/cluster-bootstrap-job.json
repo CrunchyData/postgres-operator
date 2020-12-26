@@ -58,9 +58,6 @@
                         "name": "PGHA_DATABASE",
                         "value": "{{.Database}}"
                     }, {
-                        "name": "PGHA_CRUNCHYADM",
-                        "value": "true"
-                    }, {
                         "name": "PGHA_REPLICA_REINIT_ON_START_FAIL",
                         "value": "{{.ReplicaReinitOnStartFail}}"
                     }, {
@@ -137,9 +134,6 @@
                     }, {
                         "mountPath": "/etc/pgbackrest/conf.d",
                         "name": "pgbackrest-config"
-                    }, {
-                        "mountPath": "/crunchyadm",
-                        "name": "crunchyadm"
                     }
                     {{.TablespaceVolumeMounts}}
                     ],
@@ -189,10 +183,6 @@
                   }
                 },
                 {{ end }}
-                {
-                    "name": "crunchyadm",
-                    "emptyDir": {}
-                },
                 {
                     "name": "dshm",
                     "emptyDir": {
