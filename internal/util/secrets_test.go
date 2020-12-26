@@ -23,7 +23,7 @@ import (
 
 func TestGeneratePassword(t *testing.T) {
 	// different lengths
-	for _, length := range []int{1, 2, 3, 5, 20} {
+	for _, length := range []int{1, 2, 3, 5, 20, 200} {
 		password, err := GeneratePassword(length)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
@@ -31,8 +31,11 @@ func TestGeneratePassword(t *testing.T) {
 		if expected, actual := length, len(password); expected != actual {
 			t.Fatalf("expected length %v, got %v", expected, actual)
 		}
-		if i := strings.IndexFunc(password, unicode.IsPrint); i > 0 {
+		if i := strings.IndexFunc(password, func(r rune) bool { return !unicode.IsPrint(r) }); i > -1 {
 			t.Fatalf("expected only printable characters, got %q in %q", password[i], password)
+		}
+		if i := strings.IndexAny(password, passwordCharExclude); i > -1 {
+			t.Fatalf("expected no exclude characters, got %q in %q", password[i], password)
 		}
 	}
 
@@ -44,8 +47,11 @@ func TestGeneratePassword(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
-		if i := strings.IndexFunc(password, unicode.IsPrint); i > 0 {
+		if i := strings.IndexFunc(password, func(r rune) bool { return !unicode.IsPrint(r) }); i > -1 {
 			t.Fatalf("expected only printable characters, got %q in %q", password[i], password)
+		}
+		if i := strings.IndexAny(password, passwordCharExclude); i > -1 {
+			t.Fatalf("expected no exclude characters, got %q in %q", password[i], password)
 		}
 
 		for i := range previous {
