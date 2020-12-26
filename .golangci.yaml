@@ -18,4 +18,5 @@ linters-settings:
 
 run:
   skip-dirs:
+    - hack
     - pkg/generated
