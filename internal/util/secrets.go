@@ -45,6 +45,10 @@ const (
 	// passwordCharUpper is the highest ASCII character to use for generating a
 	// password, which is 126
 	passwordCharUpper = 126
+	// passwordCharExclude is a map of characters that we choose to exclude from
+	// the password to simplify usage in the shell. There is still enough entropy
+	// that exclusion of these characters is OK.
+	passwordCharExclude = "`\\"
 )
 
 // passwordCharSelector is a "big int" that we need to select the random ASCII
@@ -77,16 +81,24 @@ func CreateSecret(clientset kubernetes.Interface, db, secretName, username, pass
 // ASCII characters suitable for a password
 func GeneratePassword(length int) (string, error) {
 	password := make([]byte, length)
+	i := 0
 
-	for i := 0; i < length; i++ {
-		char, err := rand.Int(rand.Reader, passwordCharSelector)
-
+	for i < length {
+		val, err := rand.Int(rand.Reader, passwordCharSelector)
 		// if there is an error generating the random integer, return
 		if err != nil {
 			return "", err
 		}
 
-		password[i] = byte(passwordCharLower + char.Int64())
+		char := byte(passwordCharLower + val.Int64())
+
+		// if the character is in the exclusion list, continue
+		if idx := strings.IndexAny(string(char), passwordCharExclude); idx > -1 {
+			continue
+		}
+
+		password[i] = char
+		i++
 	}
 
 	return string(password), nil
