@@ -45,7 +45,6 @@ rm $DIR/fromcrd-key $DIR/fromcrd-key.pub
 
 # create the required postgres credentials for the fromcrd cluster
 $PGO_CMD -n $NS create -f $DIR/postgres-secret.yaml
-$PGO_CMD -n $NS create -f $DIR/primaryuser-secret.yaml
 $PGO_CMD -n $NS create -f $DIR/testuser-secret.yaml
 
 # create the pgcluster CRD for the fromcrd cluster

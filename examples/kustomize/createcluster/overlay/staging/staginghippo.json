@@ -12,7 +12,6 @@
     { "op": "replace", "path": "/spec/clustername", "value": "staging-hippo" },
     { "op": "replace", "path": "/spec/database", "value": "staging-hippo" },
     { "op": "replace", "path": "/spec/name", "value": "staging-hippo" },
-    { "op": "replace", "path": "/spec/primarysecretname", "value": "staging-hippo-primaryuser-secret" },
     { "op": "replace", "path": "/spec/replicas", "value": "1"},
     { "op": "replace", "path": "/spec/rootsecretname", "value": "staging-hippo-postgres-secret" },
     { "op": "replace", "path": "/spec/usersecretname", "value": "staging-hippo-hippo-secret" }

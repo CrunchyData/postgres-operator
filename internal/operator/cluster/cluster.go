@@ -74,6 +74,14 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 		return
 	}
 
+	// create any missing user secrets that are required to be part of the
+	// bootstrap
+	if err := createMissingUserSecrets(clientset, cl); err != nil {
+		log.Errorf("error creating missing user secrets: %q", err.Error())
+		publishClusterCreateFailure(cl, err.Error())
+		return
+	}
+
 	if err = addClusterCreateMissingService(clientset, cl, namespace); err != nil {
 		log.Error("error in creating primary service " + err.Error())
 		publishClusterCreateFailure(cl, err.Error())
@@ -684,6 +692,64 @@ func annotateBackrestSecret(clientset kubernetes.Interface, cluster *crv1.Pgclus
 			Patch(ctx, secretName, types.MergePatchType, patch, metav1.PatchOptions{})
 	}
 	return err
+}
+
+// createMissingUserSecret is the heart of trying to determine if a user secret
+// is missing, and if it is, creating it. Requires the appropriate secretName
+// suffix for a given secret, as well as the user name
+// createUserSecret(request, newInstance, crv1.RootSecretSuffix,
+// 	crv1.PGUserSuperuser, request.PasswordSuperuser)
+func createMissingUserSecret(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
+	secretNameSuffix, username string) error {
+	ctx := context.TODO()
+
+	// the secretName is just the combination cluster name and the
+	// secretNameSuffix
+	secretName := cluster.Spec.Name + secretNameSuffix
+
+	// if the secret already exists, skip it
+	// if it returns an error other than "not found" return an error
+	if _, err := clientset.CoreV1().Secrets(cluster.Spec.Namespace).Get(
+		ctx, secretName, metav1.GetOptions{}); err == nil {
+		log.Infof("user secret %q exists for user %q for cluster %q",
+			secretName, username, cluster.Spec.Name)
+		return nil
+	} else if !kerrors.IsNotFound(err) {
+		return err
+	}
+
+	// alright, so we have to create the secret
+	// if the password fails to generate, return an error
+	passwordLength := util.GeneratedPasswordLength(operator.Pgo.Cluster.PasswordLength)
+	password, err := util.GeneratePassword(passwordLength)
+	if err != nil {
+		return err
+	}
+
+	// great, now we can create the secret! if we can't, return an error
+	return util.CreateSecret(clientset, cluster.Spec.Name, secretName,
+		username, password, cluster.Spec.Namespace)
+}
+
+// createMissingUserSecrets checks to see if there are secrets for the
+// superuser (postgres), replication user (primaryuser), and a standard postgres
+// user for the given cluster. Each of these are created if they do not
+// currently exist
+func createMissingUserSecrets(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
+	// first, determine if we need to create a user secret for the postgres
+	// superuser
+	if err := createMissingUserSecret(clientset, cluster, crv1.RootSecretSuffix, crv1.PGUserSuperuser); err != nil {
+		return err
+	}
+
+	// next, determine if we need to create a user secret for the replication user
+	if err := createMissingUserSecret(clientset, cluster, crv1.PrimarySecretSuffix, crv1.PGUserReplication); err != nil {
+		return err
+	}
+
+	// finally, determine if we need to create a user secret for the regular user
+	userSecretSuffix := fmt.Sprintf("-%s%s", cluster.Spec.User, crv1.UserSecretSuffix)
+	return createMissingUserSecret(clientset, cluster, userSecretSuffix, cluster.Spec.User)
 }
 
 func deleteConfigMaps(clientset kubernetes.Interface, clusterName, ns string) error {
