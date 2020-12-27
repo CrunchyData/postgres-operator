@@ -886,10 +886,10 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 
 	if request.SecretFrom != "" {
-		err = validateSecretFrom(request.SecretFrom, newInstance.Spec.User, ns)
+		err = validateSecretFrom(newInstance, request.SecretFrom)
 		if err != nil {
 			resp.Status.Code = msgs.Error
-			resp.Status.Msg = request.SecretFrom + " secret was not found "
+			resp.Status.Msg = err.Error()
 			return resp
 		}
 	}
@@ -898,15 +898,12 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 
 	// create the user secrets
 	// first, the superuser
-	if secretName, password, err := createUserSecret(request, newInstance, crv1.RootSecretSuffix,
-		crv1.PGUserSuperuser, request.PasswordSuperuser); err != nil {
+	if password, err := createUserSecret(request, newInstance, crv1.PGUserSuperuser, request.PasswordSuperuser); err != nil {
 		log.Error(err)
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
 	} else {
-		newInstance.Spec.RootSecretName = secretName
-
 		// if the user requests to show system accounts, append it to the list
 		if request.ShowSystemAccounts {
 			user := msgs.CreateClusterDetailUser{
@@ -919,15 +916,12 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	}
 
 	// next, the replication user
-	if secretName, password, err := createUserSecret(request, newInstance, crv1.PrimarySecretSuffix,
-		crv1.PGUserReplication, request.PasswordReplication); err != nil {
+	if password, err := createUserSecret(request, newInstance, crv1.PGUserReplication, request.PasswordReplication); err != nil {
 		log.Error(err)
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
 	} else {
-		newInstance.Spec.PrimarySecretName = secretName
-
 		// if the user requests to show system accounts, append it to the list
 		if request.ShowSystemAccounts {
 			user := msgs.CreateClusterDetailUser{
@@ -940,16 +934,12 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	}
 
 	// finally, the user from the request and/or default user
-	userSecretSuffix := fmt.Sprintf("-%s%s", newInstance.Spec.User, crv1.UserSecretSuffix)
-	if secretName, password, err := createUserSecret(request, newInstance, userSecretSuffix, newInstance.Spec.User,
-		request.Password); err != nil {
+	if password, err := createUserSecret(request, newInstance, newInstance.Spec.User, request.Password); err != nil {
 		log.Error(err)
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
 	} else {
-		newInstance.Spec.UserSecretName = secretName
-
 		user := msgs.CreateClusterDetailUser{
 			Username: newInstance.Spec.User,
 			Password: password,
@@ -1531,43 +1521,57 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	return newInstance
 }
 
-func validateSecretFrom(secretname, user, ns string) error {
+// validateSecretFrom is a legacy method that looks for all of the Secrets from
+// a cluster defined by "clusterName" and determines if there are bootstrap
+// secrets available, i.e.:
+//
+// - the Postgres superuser
+// - the replication user
+// - a user as defined vy the "user" parameter
+func validateSecretFrom(cluster *crv1.Pgcluster, secretFromClusterName string) error {
 	ctx := context.TODO()
 
-	var err error
-	selector := config.LABEL_PG_CLUSTER + "=" + secretname
-	secrets, err := apiserver.Clientset.
-		CoreV1().Secrets(ns).
-		List(ctx, metav1.ListOptions{LabelSelector: selector})
+	// grab all of the Secrets from the referenced cluster so we can determine if
+	// the Secrets that we are looking for are present
+	options := metav1.ListOptions{
+		LabelSelector: fields.OneTermEqualSelector(config.LABEL_PG_CLUSTER, secretFromClusterName).String(),
+	}
+
+	secrets, err := apiserver.Clientset.CoreV1().Secrets(cluster.Namespace).List(ctx, options)
 	if err != nil {
 		return err
 	}
 
-	log.Debugf("secrets for %s", secretname)
-	pgprimaryFound := false
-	pgrootFound := false
-	pguserFound := false
+	// if no secrets are found, take an early exit
+	if len(secrets.Items) == 0 {
+		return fmt.Errorf("no secrets found for %q", secretFromClusterName)
+	}
 
-	for _, s := range secrets.Items {
-		if s.ObjectMeta.Name == secretname+crv1.PrimarySecretSuffix {
-			pgprimaryFound = true
-		} else if s.ObjectMeta.Name == secretname+crv1.RootSecretSuffix {
-			pgrootFound = true
-		} else if s.ObjectMeta.Name == secretname+"-"+user+crv1.UserSecretSuffix {
-			pguserFound = true
+	// see if all three of the secrets exist. this borrows from the legacy method
+	// of checking
+	found := map[string]bool{
+		crv1.PGUserSuperuser:   false,
+		crv1.PGUserReplication: false,
+		cluster.Spec.User:      false,
+	}
+
+	for _, secret := range secrets.Items {
+		found[crv1.PGUserSuperuser] = found[crv1.PGUserSuperuser] ||
+			(secret.Name == crv1.UserSecretNameFromClusterName(secretFromClusterName, crv1.PGUserSuperuser))
+		found[crv1.PGUserReplication] = found[crv1.PGUserReplication] ||
+			(secret.Name == crv1.UserSecretNameFromClusterName(secretFromClusterName, crv1.PGUserReplication))
+		found[cluster.Spec.User] = found[cluster.Spec.User] ||
+			(secret.Name == crv1.UserSecretNameFromClusterName(secretFromClusterName, cluster.Spec.User))
+	}
+
+	// if not all of the Secrets were found, return an error
+	for secretName, ok := range found {
+		if !ok {
+			return fmt.Errorf("could not find secret %q in cluster %q", secretName, secretFromClusterName)
 		}
 	}
-	if !pgprimaryFound {
-		return errors.New(secretname + crv1.PrimarySecretSuffix + " not found")
-	}
-	if !pgrootFound {
-		return errors.New(secretname + crv1.RootSecretSuffix + " not found")
-	}
-	if !pguserFound {
-		return errors.New(secretname + "-" + user + crv1.UserSecretSuffix + " not found")
-	}
 
-	return err
+	return nil
 }
 
 func getReadyStatus(pod *v1.Pod) (string, bool) {
@@ -1692,11 +1696,9 @@ func getReplicas(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterReplica,
 //    password length
 //
 // returns the secertname, password as well as any errors
-func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluster, secretNameSuffix, username, password string) (string, string, error) {
+func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluster, username, password string) (string, error) {
 	ctx := context.TODO()
-
-	// the secretName is just the combination cluster name and the secretNameSuffix
-	secretName := fmt.Sprintf("%s%s", cluster.Spec.Name, secretNameSuffix)
+	secretName := crv1.UserSecretName(cluster, username)
 
 	// if the secret already exists, we can perform an early exit
 	// if there is an error, we'll ignore it
@@ -1705,7 +1707,7 @@ func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluste
 		Get(ctx, secretName, metav1.GetOptions{}); err == nil {
 		log.Infof("secret exists: [%s] - skipping", secretName)
 
-		return secretName, string(secret.Data["password"][:]), nil
+		return string(secret.Data["password"][:]), nil
 	}
 
 	// alright, go through the hierarchy and determine if we need to set the
@@ -1717,14 +1719,14 @@ func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluste
 		// if the "SecretFrom" parameter is set, then load the password from a prexisting password
 	case request.SecretFrom != "":
 		// set up the name of the secret that we are loading the secret from
-		secretFromSecretName := fmt.Sprintf("%s%s", request.SecretFrom, secretNameSuffix)
+		secretFromSecretName := fmt.Sprintf("%s-%s-secret", request.SecretFrom, username)
 
 		// now attempt to load said secret
 		oldPassword, err := util.GetPasswordFromSecret(apiserver.Clientset, cluster.Spec.Namespace, secretFromSecretName)
 		// if there is an error, abandon here, otherwise set the oldPassword as the
 		// current password
 		if err != nil {
-			return "", "", err
+			return "", err
 		}
 
 		password = oldPassword
@@ -1740,7 +1742,7 @@ func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluste
 		generatedPassword, err := util.GeneratePassword(passwordLength)
 		// if the password fails to generate, return the error
 		if err != nil {
-			return "", "", err
+			return "", err
 		}
 
 		password = generatedPassword
@@ -1749,11 +1751,11 @@ func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluste
 	// great, now we can create the secret! if we can't, return an error
 	if err := util.CreateSecret(apiserver.Clientset, cluster.Spec.Name, secretName,
 		username, password, cluster.Spec.Namespace); err != nil {
-		return "", "", err
+		return "", err
 	}
 
 	// otherwise, return the secret name, password
-	return secretName, password, nil
+	return password, nil
 }
 
 // UpdateCluster ...

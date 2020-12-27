@@ -22,15 +22,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// RootSecretSuffix ...
-const RootSecretSuffix = "-postgres-secret"
-
-// UserSecretSuffix ...
-const UserSecretSuffix = "-secret"
-
-// PrimarySecretSuffix ...
-const PrimarySecretSuffix = "-primaryuser-secret"
-
 // StorageExisting ...
 const StorageExisting = "existing"
 

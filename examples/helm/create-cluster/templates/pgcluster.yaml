@@ -76,9 +76,7 @@ spec:
     pgBouncer: preferred
   policies: ""
   port: "5432"
-  primarysecretname: {{ .Values.pgclustername }}-primaryuser-secret
   replicas: "0"
-  rootsecretname: {{ .Values.pgclustername }}-postgres-secret
   shutdown: false
   standby: false
   tablespaceMounts: {}
@@ -92,4 +90,3 @@ spec:
     crunchy-postgres-exporter: "false"
     pg-pod-anti-affinity: ""
     pgo-version: {{ .Values.pgoversion }}
-  usersecretname: {{ .Values.pgclustername }}-hippo-secret

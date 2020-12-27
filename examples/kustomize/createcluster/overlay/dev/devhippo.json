@@ -11,7 +11,5 @@
     { "op": "replace", "path": "/spec/PrimaryStorage/name", "value": "dev-hippo" },
     { "op": "replace", "path": "/spec/clustername", "value": "dev-hippo" },
     { "op": "replace", "path": "/spec/database", "value": "dev-hippo" },
-    { "op": "replace", "path": "/spec/name", "value": "dev-hippo" },
-    { "op": "replace", "path": "/spec/rootsecretname", "value": "dev-hippo-postgres-secret" },
-    { "op": "replace", "path": "/spec/usersecretname", "value": "dev-hippo-hippo-secret" }
+    { "op": "replace", "path": "/spec/name", "value": "dev-hippo" }
 ]

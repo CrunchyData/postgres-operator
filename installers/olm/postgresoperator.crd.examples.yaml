@@ -18,9 +18,6 @@ spec:
   exporterport: '9187'
   pgbadgerport: '10000'
   port: '5432'
-  primarysecretname: example-primaryuser
-  rootsecretname: example-postgresuser
-  usersecretname: example-primaryuser
   userlabels: { archive: 'false' }
 
 ---

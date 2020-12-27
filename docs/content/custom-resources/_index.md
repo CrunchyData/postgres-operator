@@ -148,9 +148,7 @@ spec:
     pgBouncer: preferred
   policies: ""
   port: "5432"
-  primarysecretname: ${pgo_cluster_name}-primaryuser-secret
   replicas: "0"
-  rootsecretname: ${pgo_cluster_name}-postgres-secret
   shutdown: false
   standby: false
   tablespaceMounts: {}
@@ -164,7 +162,6 @@ spec:
   userlabels:
     pg-pod-anti-affinity: ""
     pgo-version: {{< param operatorVersion >}}
-  usersecretname: ${pgo_cluster_name}-hippo-secret
 EOF
 
 kubectl apply -f "${pgo_cluster_name}-pgcluster.yaml"
@@ -369,9 +366,7 @@ spec:
     pgBouncer: preferred
   policies: ""
   port: "5432"
-  primarysecretname: ${pgo_cluster_name}-primaryuser-secret
   replicas: "0"
-  rootsecretname: ${pgo_cluster_name}-postgres-secret
   shutdown: false
   standby: false
   tablespaceMounts: {}
@@ -386,7 +381,6 @@ spec:
     backrest-storage-type: "s3"
     pg-pod-anti-affinity: ""
     pgo-version: {{< param operatorVersion >}}
-  usersecretname: ${pgo_cluster_name}-hippo-secret
 EOF
 
 kubectl apply -f "${pgo_cluster_name}-pgcluster.yaml"
@@ -689,16 +683,12 @@ make changes, as described below.
 | PodAntiAffinity | `create` | A required section. Sets the [pod anti-affinity rules]({{< relref "/architecture/high-availability/_index.md#how-the-crunchy-postgresql-operator-uses-pod-anti-affinity" >}}) for the PostgreSQL cluster and associated deployments. Please see the `Pod Anti-Affinity Specification` section below. |
 | Policies | `create` | If provided, a comma-separated list referring to `pgpolicies.crunchydata.com.Spec.Name` that should be run once the PostgreSQL primary is first initialized. |
 | Port | `create` | The port that PostgreSQL will run on, e.g. `5432`. |
-| PrimaryStorage | `create` | A specification that gives information about the storage attributes for the primary instance in the PostgreSQL cluster. For details, please see the `Storage Specification` section below. This is required. |
-| RootSecretName | `create` | The name of a Kubernetes Secret that contains the credentials for a PostgreSQL _replication user_ that is created when the PostgreSQL cluster is first bootstrapped. For more information, please see `User Secret Specification`.|
 | ReplicaStorage | `create` | A specification that gives information about the storage attributes for any replicas in the PostgreSQL cluster. For details, please see the `Storage Specification` section below. This will likely be changed in the future based on the nature of the high-availability system, but presently it is still required that you set it. It is recommended you use similar settings to that of `PrimaryStorage`. |
 | Replicas | `create` | The number of replicas to create after a PostgreSQL primary is first initialized. This only works on create; to scale a cluster after it is initialized, please use the [`pgo scale`]({{< relref "/pgo-client/reference/pgo_scale.md" >}}) command. |
 | Resources | `create`, `update` | Specify the container resource requests that the PostgreSQL cluster should use. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
-| RootSecretName | `create` | The name of a Kubernetes Secret that contains the credentials for a PostgreSQL superuser that is created when the PostgreSQL cluster is first bootstrapped. For more information, please see `User Secret Specification`.|
 | SyncReplication | `create` | If set to `true`, specifies the PostgreSQL cluster to use [synchronous replication]({{< relref "/architecture/high-availability/_index.md#how-the-crunchy-postgresql-operator-uses-pod-anti-affinity#synchronous-replication-guarding-against-transactions-loss" >}}).|
 | User | `create` | The name of the PostgreSQL user that is created when the PostgreSQL cluster is first created. |
 | UserLabels | `create` | A set of key-value string pairs that are used as a sort of "catch-all" for things that really should be modeled in the CRD. These values do get copied to the actually CR labels. If you want to set up metrics collection or pgBadger, you would specify `"crunchy-postgres-exporter": "true"` and `"crunchy-pgbadger": "true"` here, respectively. However, this structure does need to be set, so just follow whatever is in the example. |
-| UserSecretName | `create` | The name of a Kubernetes Secret that contains the credentials for a standard PostgreSQL user that is created when the PostgreSQL cluster is first bootstrapped. For more information, please see `User Secret Specification`.|
 | TablespaceMounts | `create`,`update` | Lists any tablespaces that are attached to the PostgreSQL cluster. Tablespaces can be added at a later time by updating the `TablespaceMounts` entry, but they cannot be removed. Stores a map of information, with the key being the name of the tablespace, and the value being a Storage Specification, defined below. |
 | TLS | `create` | Defines the attributes for enabling TLS for a PostgreSQL cluster. See TLS Specification below. |
 | TLSOnly | `create` | If set to true, requires client connections to use only TLS to connect to the PostgreSQL database. |
