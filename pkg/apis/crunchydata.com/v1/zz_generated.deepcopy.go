@@ -196,7 +196,6 @@ func (in *PgclusterSpec) DeepCopyInto(out *PgclusterSpec) {
 	*out = *in
 	out.PrimaryStorage = in.PrimaryStorage
 	out.WALStorage = in.WALStorage
-	out.ArchiveStorage = in.ArchiveStorage
 	out.ReplicaStorage = in.ReplicaStorage
 	out.BackrestStorage = in.BackrestStorage
 	if in.Resources != nil {

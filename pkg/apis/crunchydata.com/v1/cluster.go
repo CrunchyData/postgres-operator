@@ -56,7 +56,6 @@ type PgclusterSpec struct {
 
 	PrimaryStorage  PgStorageSpec
 	WALStorage      PgStorageSpec
-	ArchiveStorage  PgStorageSpec
 	ReplicaStorage  PgStorageSpec
 	BackrestStorage PgStorageSpec
 

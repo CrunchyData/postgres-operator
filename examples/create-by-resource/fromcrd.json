@@ -24,15 +24,6 @@
     "namespace": "pgouser1"
   },
   "spec": {
-    "ArchiveStorage": {
-      "accessmode": "",
-      "matchLabels": "",
-      "name": "",
-      "size": "",
-      "storageclass": "",
-      "storagetype": "",
-      "supplementalgroups": ""
-    },
     "BackrestStorage": {
       "accessmode": "ReadWriteOnce",
       "matchLabels": "",
