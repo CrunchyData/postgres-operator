@@ -10,12 +10,6 @@ secretGenerator:
     literals:
      - username=hippo
      - password=Moresecurepassword*
-  - name: hippo-primaryuser-secret
-    options:
-      disableNameSuffixHash: true
-    literals:
-     - username=primaryuser
-     - password=Anothersecurepassword*
   - name: hippo-postgres-secret
     options:
       disableNameSuffixHash: true
@@ -24,4 +18,3 @@ secretGenerator:
      - password=Supersecurepassword*
 resources:
 - pgcluster.yaml
-

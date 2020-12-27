@@ -57,48 +57,6 @@ create additional secrets.
 The following guide goes through how to create a PostgreSQL cluster called
 `hippo` by creating a new custom resource.
 
-#### Step 1: Creating the PostgreSQL User Secrets
-
-As mentioned above, there are a minimum of three PostgreSQL user accounts that
-you must create in order to bootstrap a PostgreSQL cluster. These are:
-
-- A PostgreSQL superuser
-- A replication user
-- A standard PostgreSQL user
-
-The below code will help you set up these Secrets.
-
-```
-# this variable is the name of the cluster being created
-pgo_cluster_name=hippo
-# this variable is the namespace the cluster is being deployed into
-cluster_namespace=pgo
-
-# this is the superuser secret
-kubectl create secret generic -n "${cluster_namespace}" "${pgo_cluster_name}-postgres-secret" \
-  --from-literal=username=postgres \
-  --from-literal=password=Supersecurepassword*
-
-# this is the replication user secret
-kubectl create secret generic -n "${cluster_namespace}" "${pgo_cluster_name}-primaryuser-secret" \
-  --from-literal=username=primaryuser \
-  --from-literal=password=Anothersecurepassword*
-
-# this is the standard user secret
-kubectl create secret generic -n "${cluster_namespace}" "${pgo_cluster_name}-hippo-secret" \
-  --from-literal=username=hippo \
-  --from-literal=password=Moresecurepassword*
-
-
-kubectl label secrets -n "${cluster_namespace}" "${pgo_cluster_name}-postgres-secret" "pg-cluster=${pgo_cluster_name}"
-kubectl label secrets -n "${cluster_namespace}" "${pgo_cluster_name}-primaryuser-secret" "pg-cluster=${pgo_cluster_name}"
-kubectl label secrets -n "${cluster_namespace}" "${pgo_cluster_name}-hippo-secret" "pg-cluster=${pgo_cluster_name}"
-```
-
-#### Step 2: Create the PostgreSQL Cluster
-
-With the Secrets in place. It is now time to create the PostgreSQL cluster.
-
 The below manifest references the Secrets created in the previous step to add a
 custom resource to the `pgclusters.crunchydata.com` custom resource definition.
 
@@ -121,7 +79,6 @@ metadata:
     autofail: "true"
     crunchy-pgbadger: "false"
     crunchy-pgha-scope: ${pgo_cluster_name}
-    crunchy-postgres-exporter: "false"
     deployment-name: ${pgo_cluster_name}
     name: ${pgo_cluster_name}
     pg-cluster: ${pgo_cluster_name}
@@ -172,6 +129,7 @@ spec:
   clustername: ${pgo_cluster_name}
   customconfig: ""
   database: ${pgo_cluster_name}
+  exporter: false
   exporterport: "9187"
   limits: {}
   name: ${pgo_cluster_name}
@@ -204,13 +162,81 @@ spec:
   tolerations: []
   user: hippo
   userlabels:
-    crunchy-postgres-exporter: "false"
     pg-pod-anti-affinity: ""
     pgo-version: {{< param operatorVersion >}}
   usersecretname: ${pgo_cluster_name}-hippo-secret
 EOF
 
 kubectl apply -f "${pgo_cluster_name}-pgcluster.yaml"
+```
+
+And that's all! The PostgreSQL Operator will go ahead and create the cluster.
+
+As part of this process, the PostgreSQL Operator creates several Secrets that
+contain the credentials for three user accounts that must be present in order
+to bootstrap a PostgreSQL cluster. These are:
+
+- A PostgreSQL superuser
+- A replication user
+- A standard PostgreSQL user
+
+The Secrets represent the following PostgreSQL users and can be identified using
+the below patterns:
+
+| PostgreSQL User | Type        | Secret Pattern                     | Notes |
+| --------------- | ----------- | ---------------------------------- | ----- |
+| `postgres`      | Superuser   | `<clusterName>-postgres-secret`    | This is the PostgreSQL superuser account. Using the above example, the name of the secret would be `hippo-postgres-secret`. |
+| `primaryuser`   | Replication | `<clusterName>-primaryuser-secret` | This is for the managed replication user account for maintaining high availability. This account does not need to be accessed. Using the above example, the name of the secret would be `hippo-primaryuser-secret`. |
+| User            | User        | `<clusterName>-<User>-secret`      | This is an unprivileged user that should be used for most operations. This secret is set by the `user` attribute in the custom resources. In the above example, the name of this user is `hippo`, which would make the Secret `hippo-hippo-secret` |
+
+To extract the user credentials so you can log into the database, you can use
+the following JSONPath expression:
+
+```
+# namespace that the cluster is running in
+export cluster_namespace=pgo
+# name of the cluster
+export pgo_cluster_name=hippo
+# name of the user whose password we want to get
+export pgo_cluster_username=hippo
+
+kubectl -n "${cluster_namespace}" get secrets \
+  "${pgo_cluster_name}-${pgo_cluster_username}-secret" -o "jsonpath={.data['password']}" | base64 -d
+```
+
+#### Customizing User Credentials
+
+If you wish to set the credentials for these users on your own, you have to
+create these Secrets _before_ creating a custom resource. The below example
+shows how to create the three required user accounts prior to creating a custom
+resource. Note that if you omit any of these Secrets, the Postgres Operator
+will create it on its own.
+
+```
+# this variable is the name of the cluster being created
+pgo_cluster_name=hippo
+# this variable is the namespace the cluster is being deployed into
+cluster_namespace=pgo
+
+# this is the superuser secret
+kubectl create secret generic -n "${cluster_namespace}" "${pgo_cluster_name}-postgres-secret" \
+  --from-literal=username=postgres \
+  --from-literal=password=Supersecurepassword*
+
+# this is the replication user secret
+kubectl create secret generic -n "${cluster_namespace}" "${pgo_cluster_name}-primaryuser-secret" \
+  --from-literal=username=primaryuser \
+  --from-literal=password=Anothersecurepassword*
+
+# this is the standard user secret
+kubectl create secret generic -n "${cluster_namespace}" "${pgo_cluster_name}-hippo-secret" \
+  --from-literal=username=hippo \
+  --from-literal=password=Moresecurepassword*
+
+
+kubectl label secrets -n "${cluster_namespace}" "${pgo_cluster_name}-postgres-secret" "pg-cluster=${pgo_cluster_name}"
+kubectl label secrets -n "${cluster_namespace}" "${pgo_cluster_name}-primaryuser-secret" "pg-cluster=${pgo_cluster_name}"
+kubectl label secrets -n "${cluster_namespace}" "${pgo_cluster_name}-hippo-secret" "pg-cluster=${pgo_cluster_name}"
 ```
 
 ### Create a PostgreSQL Cluster With Backups in S3
@@ -244,46 +270,7 @@ unset backrest_s3_key
 unset backrest_s3_key_secret
 ```
 
-#### Step 2: Creating the PostgreSQL User Secrets
-
-Similar to the basic create cluster example, there are a minimum of three
-PostgreSQL user accounts that you must create in order to bootstrap a PostgreSQL
-cluster. These are:
-
-- A PostgreSQL superuser
-- A replication user
-- A standard PostgreSQL user
-
-The below code will help you set up these Secrets.
-
-```
-# this variable is the name of the cluster being created
-pgo_cluster_name=hippo
-# this variable is the namespace the cluster is being deployed into
-cluster_namespace=pgo
-
-# this is the superuser secret
-kubectl create secret generic -n "${cluster_namespace}" "${pgo_cluster_name}-postgres-secret" \
-  --from-literal=username=postgres \
-  --from-literal=password=Supersecurepassword*
-
-# this is the replication user secret
-kubectl create secret generic -n "${cluster_namespace}" "${pgo_cluster_name}-primaryuser-secret" \
-  --from-literal=username=primaryuser \
-  --from-literal=password=Anothersecurepassword*
-
-# this is the standard user secret
-kubectl create secret generic -n "${cluster_namespace}" "${pgo_cluster_name}-hippo-secret" \
-  --from-literal=username=hippo \
-  --from-literal=password=Moresecurepassword*
-
-
-kubectl label secrets -n "${cluster_namespace}" "${pgo_cluster_name}-postgres-secret" "pg-cluster=${pgo_cluster_name}"
-kubectl label secrets -n "${cluster_namespace}" "${pgo_cluster_name}-primaryuser-secret" "pg-cluster=${pgo_cluster_name}"
-kubectl label secrets -n "${cluster_namespace}" "${pgo_cluster_name}-hippo-secret" "pg-cluster=${pgo_cluster_name}"
-```
-
-#### Step 3: Create the PostgreSQL Cluster
+#### Step 2: Create the PostgreSQL Cluster
 
 With the Secrets in place. It is now time to create the PostgreSQL cluster.
 
