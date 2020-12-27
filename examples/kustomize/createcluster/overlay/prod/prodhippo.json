@@ -12,7 +12,5 @@
     { "op": "replace", "path": "/spec/clustername", "value": "prod-hippo" },
     { "op": "replace", "path": "/spec/database", "value": "prod-hippo" },
     { "op": "replace", "path": "/spec/name", "value": "prod-hippo" },
-    { "op": "replace", "path": "/spec/replicas", "value": "1"},
-    { "op": "replace", "path": "/spec/rootsecretname", "value": "prod-hippo-postgres-secret" },
-    { "op": "replace", "path": "/spec/usersecretname", "value": "prod-hippo-hippo-secret" }
+    { "op": "replace", "path": "/spec/replicas", "value": "1"}
 ]

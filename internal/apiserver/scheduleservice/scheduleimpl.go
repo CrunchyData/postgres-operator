@@ -79,7 +79,7 @@ func (s scheduleRequest) createPolicySchedule(cluster *crv1.Pgcluster, ns string
 	}
 
 	if s.Request.Secret == "" {
-		s.Request.Secret = cluster.Spec.PrimarySecretName
+		s.Request.Secret = crv1.UserSecretName(cluster, crv1.PGUserReplication)
 	}
 	schedule := &PgScheduleSpec{
 		Name:      name,

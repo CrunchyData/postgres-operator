@@ -250,8 +250,7 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 		// if this user is "managed" by the Operator, add a secret. If there is an
 		// error, we can fall through as the next step is appending the results
 		if request.ManagedUser {
-			if err := util.CreateUserSecret(apiserver.Clientset, cluster.Spec.ClusterName, result.Username,
-				result.Password, cluster.Spec.Namespace); err != nil {
+			if err := util.CreateUserSecret(apiserver.Clientset, cluster, result.Username, result.Password); err != nil {
 				log.Error(err)
 
 				result.Error = true
@@ -549,16 +548,7 @@ func ShowUser(request *msgs.ShowUserRequest) msgs.ShowUserResponse {
 			//
 			// We ignore any errors...if the password get set, we add it. If not, we
 			// don't
-			secretName := ""
-
-			// handle special cases with user names + secrets lining up
-			switch result.Username {
-			default:
-				secretName = fmt.Sprintf(util.UserSecretFormat, result.ClusterName, result.Username)
-			case "ccp_monitoring":
-				secretName = util.GenerateExporterSecretName(result.ClusterName)
-			}
-
+			secretName := crv1.UserSecretName(&cluster, result.Username)
 			password, _ := util.GetPasswordFromSecret(apiserver.Clientset, pod.Namespace, secretName)
 
 			if password != "" {
@@ -662,7 +652,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 // error in here, but do nothing with it
 func deleteUserSecret(cluster crv1.Pgcluster, username string) {
 	ctx := context.TODO()
-	secretName := fmt.Sprintf(util.UserSecretFormat, cluster.Spec.ClusterName, username)
+	secretName := crv1.UserSecretName(&cluster, username)
 	err := apiserver.Clientset.CoreV1().Secrets(cluster.Spec.Namespace).
 		Delete(ctx, secretName, metav1.DeleteOptions{})
 	if err != nil {
@@ -1169,13 +1159,12 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 	// has a "managed" account (i.e. there is a secret for this user account"),
 	// we can now updated the value of that password in the secret
 	if isChanged {
-		secretName := fmt.Sprintf(util.UserSecretFormat, cluster.Spec.ClusterName, result.Username)
+		secretName := crv1.UserSecretName(cluster, result.Username)
 
 		// only call update user secret if the secret exists
 		if _, err := apiserver.Clientset.CoreV1().Secrets(cluster.Namespace).Get(ctx, secretName, metav1.GetOptions{}); err == nil {
 			// if we cannot update the user secret, only warn that we cannot do so
-			if err := util.UpdateUserSecret(apiserver.Clientset, cluster.Spec.ClusterName,
-				result.Username, result.Password, cluster.Namespace); err != nil {
+			if err := util.UpdateUserSecret(apiserver.Clientset, cluster, result.Username, result.Password); err != nil {
 				log.Warn(err)
 			}
 		}

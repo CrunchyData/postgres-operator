@@ -72,9 +72,7 @@
     },
     "policies": "",
     "port": "5432",
-    "primarysecretname": "fromcrd-primaryuser-secret",
     "replicas": "0",
-    "rootsecretname": "fromcrd-postgres-secret",
     "secretfrom": "",
     "shutdown": false,
     "standby": false,
@@ -89,7 +87,6 @@
       "pgo-version": "4.5.1",
       "pgouser": "pgoadmin",
       "pgo-backrest": "true"
-    },
-    "usersecretname": "fromcrd-testuser-secret"
+    }
   }
 }

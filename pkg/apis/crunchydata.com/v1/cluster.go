@@ -107,9 +107,6 @@ type PgclusterSpec struct {
 	User                string                   `json:"user"`
 	Database            string                   `json:"database"`
 	Replicas            string                   `json:"replicas"`
-	UserSecretName      string                   `json:"usersecretname"`
-	RootSecretName      string                   `json:"rootsecretname"`
-	PrimarySecretName   string                   `json:"primarysecretname"`
 	Status              string                   `json:"status"`
 	CustomConfig        string                   `json:"customconfig"`
 	UserLabels          map[string]string        `json:"userlabels"`
@@ -347,4 +344,24 @@ func (p PodAntiAffinityType) Validate() error {
 	}
 	return fmt.Errorf("Invalid pod anti-affinity type.  Valid values are '%s', '%s' or '%s'",
 		PodAntiAffinityRequired, PodAntiAffinityPreffered, PodAntiAffinityDisabled)
+}
+
+// UserSecretName returns the name of a Kubernetes Secret representing the user.
+// Delegates to UserSecretNameFromClusterName. This is the preferred method
+// given there is less thinking for the caller to do, but there are some (one?)
+// cases where UserSecretNameFromClusterName needs to be called as that cluster
+// object is unavailable
+func UserSecretName(cluster *Pgcluster, username string) string {
+	return UserSecretNameFromClusterName(cluster.Name, username)
+}
+
+// UserSecretNameFromClusterName  returns the name of a Kubernetes Secret
+// representing a user.
+func UserSecretNameFromClusterName(clusterName, username string) string {
+	switch username {
+	default: // standard format
+		return fmt.Sprintf("%s-%s-secret", clusterName, username)
+	case PGUserMonitor:
+		return fmt.Sprintf("%s-exporter-secret", clusterName)
+	}
 }

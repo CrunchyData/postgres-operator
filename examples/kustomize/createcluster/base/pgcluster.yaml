@@ -86,9 +86,7 @@ spec:
     pgBouncer: preferred
   policies: ""
   port: "5432"
-  primarysecretname: hippo-primaryuser-secret
   replicas: "0"
-  rootsecretname: hippo-postgres-secret
   shutdown: false
   standby: false
   tablespaceMounts: {}
@@ -102,4 +100,3 @@ spec:
     crunchy-postgres-exporter: "false"
     pg-pod-anti-affinity: ""
     pgo-version: 4.5.1
-  usersecretname: hippo-hippo-secret

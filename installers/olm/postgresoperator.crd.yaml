@@ -24,13 +24,10 @@ spec:
             exporterport: { type: string }
             name: { type: string }
             pgbadgerport: { type: string }
-            primarysecretname: { type: string }
             PrimaryStorage: { type: object }
             port: { type: string }
-            rootsecretname: { type: string }
             status: { type: string }
             userlabels: { type: object }
-            usersecretname: { type: string }
         status:
           properties:
             state: { type: string }

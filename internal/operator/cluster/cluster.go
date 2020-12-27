@@ -699,13 +699,11 @@ func annotateBackrestSecret(clientset kubernetes.Interface, cluster *crv1.Pgclus
 // suffix for a given secret, as well as the user name
 // createUserSecret(request, newInstance, crv1.RootSecretSuffix,
 // 	crv1.PGUserSuperuser, request.PasswordSuperuser)
-func createMissingUserSecret(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
-	secretNameSuffix, username string) error {
+func createMissingUserSecret(clientset kubernetes.Interface, cluster *crv1.Pgcluster, username string) error {
 	ctx := context.TODO()
 
-	// the secretName is just the combination cluster name and the
-	// secretNameSuffix
-	secretName := cluster.Spec.Name + secretNameSuffix
+	// derive the secret name
+	secretName := crv1.UserSecretName(cluster, username)
 
 	// if the secret already exists, skip it
 	// if it returns an error other than "not found" return an error
@@ -738,18 +736,17 @@ func createMissingUserSecret(clientset kubernetes.Interface, cluster *crv1.Pgclu
 func createMissingUserSecrets(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
 	// first, determine if we need to create a user secret for the postgres
 	// superuser
-	if err := createMissingUserSecret(clientset, cluster, crv1.RootSecretSuffix, crv1.PGUserSuperuser); err != nil {
+	if err := createMissingUserSecret(clientset, cluster, crv1.PGUserSuperuser); err != nil {
 		return err
 	}
 
 	// next, determine if we need to create a user secret for the replication user
-	if err := createMissingUserSecret(clientset, cluster, crv1.PrimarySecretSuffix, crv1.PGUserReplication); err != nil {
+	if err := createMissingUserSecret(clientset, cluster, crv1.PGUserReplication); err != nil {
 		return err
 	}
 
 	// finally, determine if we need to create a user secret for the regular user
-	userSecretSuffix := fmt.Sprintf("-%s%s", cluster.Spec.User, crv1.UserSecretSuffix)
-	return createMissingUserSecret(clientset, cluster, userSecretSuffix, cluster.Spec.User)
+	return createMissingUserSecret(clientset, cluster, cluster.Spec.User)
 }
 
 func deleteConfigMaps(clientset kubernetes.Interface, clusterName, ns string) error {
