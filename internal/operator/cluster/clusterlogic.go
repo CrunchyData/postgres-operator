@@ -326,7 +326,7 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY]),
 		PgmonitorEnvVars:   operator.GetPgmonitorEnvVars(cl),
 		ScopeLabel:         config.LABEL_PGHA_SCOPE,
-		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cl, cl.Labels[config.LABEL_BACKREST], cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY],
+		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY],
 			cl.Spec.Port, cl.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars:      operator.GetPgbackrestS3EnvVars(*cl, clientset, namespace),
 		ReplicaReinitOnStartFail: !operator.Pgo.Cluster.DisableReplicaStartFailReinit,
@@ -421,15 +421,6 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 	cluster.Spec.UserLabels["name"] = serviceName
 	cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER] = replica.Spec.ClusterName
 
-	archiveMode := "off"
-	if cluster.Spec.UserLabels[config.LABEL_ARCHIVE] == "true" {
-		archiveMode = "on"
-	}
-	if cluster.Labels[config.LABEL_BACKREST] == "true" {
-		// backrest requires archive mode be set to on
-		archiveMode = "on"
-	}
-
 	image := cluster.Spec.CCPImage
 
 	// check for --ccp-image-tag at the command line
@@ -466,7 +457,6 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 		PVCName:            dataVolume.InlineVolumeSource(),
 		Database:           cluster.Spec.Database,
 		DataPathOverride:   replica.Spec.Name,
-		ArchiveMode:        archiveMode,
 		Replicas:           "1",
 		ConfVolume:         operator.GetConfVolume(clientset, cluster, namespace),
 		DeploymentLabels:   operator.GetLabelsFromMap(cluster.Spec.UserLabels),
@@ -482,7 +472,7 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 		ExporterAddon:      operator.GetExporterAddon(cluster.Spec),
 		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cluster, replica.Spec.Name),
 		ScopeLabel:         config.LABEL_PGHA_SCOPE,
-		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster, cluster.Labels[config.LABEL_BACKREST], replica.Spec.Name,
+		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster, replica.Spec.Name,
 			cluster.Spec.Port, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
 		PgbackrestS3EnvVars:      operator.GetPgbackrestS3EnvVars(*cluster, clientset, namespace),
 		ReplicaReinitOnStartFail: !operator.Pgo.Cluster.DisableReplicaStartFailReinit,

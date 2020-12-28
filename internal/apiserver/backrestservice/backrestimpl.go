@@ -150,12 +150,6 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 			return resp
 		}
 
-		if cluster.Labels[config.LABEL_BACKREST] != "true" {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = clusterName + " does not have pgbackrest enabled"
-			return resp
-		}
-
 		err = util.ValidateBackrestStorageTypeOnBackupRestore(request.BackrestStorageType,
 			cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], false)
 		if err != nil {
@@ -548,13 +542,6 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 	if cluster.Annotations[config.ANNOTATION_IS_UPGRADED] == config.ANNOTATIONS_FALSE {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = fmt.Sprintf("%s %s", cluster.Name, msgs.UpgradeError)
-		return resp
-	}
-
-	// verify that the cluster we are restoring from has backrest enabled
-	if cluster.Labels[config.LABEL_BACKREST] != "true" {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "can't restore, cluster restoring from does not have backrest enabled"
 		return resp
 	}
 

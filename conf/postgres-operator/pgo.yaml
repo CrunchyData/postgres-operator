@@ -11,7 +11,6 @@ Cluster:
   PasswordAgeDays:  0
   PasswordLength:  24
   Replicas:  0
-  ArchiveMode:  false
   ServiceType:  ClusterIP
   BackrestPort:  2022
   BackrestS3Bucket:

@@ -83,7 +83,6 @@ metadata:
     name: ${pgo_cluster_name}
     pg-cluster: ${pgo_cluster_name}
     pg-pod-anti-affinity: ""
-    pgo-backrest: "true"
     pgo-version: {{< param operatorVersion >}}
     pgouser: admin
   name: ${pgo_cluster_name}
@@ -301,7 +300,6 @@ metadata:
     name: ${pgo_cluster_name}
     pg-cluster: ${pgo_cluster_name}
     pg-pod-anti-affinity: ""
-    pgo-backrest: "true"
     pgo-version: {{< param operatorVersion >}}
     pgouser: admin
   name: ${pgo_cluster_name}
