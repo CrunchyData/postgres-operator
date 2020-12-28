@@ -46,8 +46,8 @@ const StorageDynamic = "dynamic"
 // the following are standard PostgreSQL user service accounts that are created
 // as part of managed the PostgreSQL cluster environment via the Operator
 const (
-	// PGUserAdmin is a special user that can perform administrative actions
-	// without being a superuser itself
+	// PGUserAdmin is a DEPRECATED user and is only included to filter this out
+	// as a system user in older systems
 	PGUserAdmin = "crunchyadm"
 	// PGUserMonitor is the monitoring user that can access metric data
 	PGUserMonitor = "ccp_monitoring"

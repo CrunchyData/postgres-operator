@@ -96,9 +96,6 @@
                         "name": "PGHA_DATABASE",
                         "value": "{{.Database}}"
                     }, {
-                        "name": "PGHA_CRUNCHYADM",
-                        "value": "true"
-                    }, {
                         "name": "PGHA_REPLICA_REINIT_ON_START_FAIL",
                         "value": "{{.ReplicaReinitOnStartFail}}"
                     }, {
@@ -188,10 +185,6 @@
                             "name": "pgbackrest-config"
                         },
                         {
-                            "mountPath": "/crunchyadm",
-                            "name": "crunchyadm"
-                        },
-                        {
                             "mountPath": "/etc/podinfo",
                             "name": "podinfo"
                         }
@@ -206,36 +199,7 @@
                         "protocol": "TCP"
                     }],
                     "imagePullPolicy": "IfNotPresent"
-                }{{if .EnableCrunchyadm}},
-                {
-                    "name": "crunchyadm",
-                    "image": "{{.CCPImagePrefix}}/crunchy-admin:{{.CCPImageTag}}",
-                    "securityContext": {
-                        "runAsUser": 17
-                    },
-                    "readinessProbe": {
-                        "exec": {
-                            "command": [
-                                "/opt/cpm/bin/crunchyadm-readiness.sh"
-                            ]
-                        },
-                        "initialDelaySeconds": 30,
-                        "timeoutSeconds": 10
-                    },
-                    "env": [
-                        {
-                            "name": "PGHOST",
-                            "value": "/crunchyadm"
-                        }
-                    ],
-                    "volumeMounts": [
-                        {
-                            "mountPath": "/crunchyadm",
-                            "name": "crunchyadm"
-                        }
-                    ],
-                    "imagePullPolicy": "IfNotPresent"
-                }{{ end }}
+                }
                 {{ if .ExporterAddon }}
                 ,{{.ExporterAddon }}
                 {{ end }}
@@ -319,9 +283,6 @@
                     }, {
                         "name": "report",
                         "emptyDir": { "medium": "Memory" }
-                    }, {
-                        "name": "crunchyadm",
-                        "emptyDir": {}
                     },
                     {
                       "name": "dshm",

@@ -12,10 +12,9 @@ bootstrap:
         shared_buffers: 256MB
         temp_buffers: 10MB
         work_mem: 5MB
-postgresql:  
+postgresql:
   pg_hba:
     - local all postgres peer
-    - local all crunchyadm peer
     - host replication primaryuser 0.0.0.0/0 md5
     - host all primaryuser 0.0.0.0/0 reject
     - host all postgres 0.0.0.0/0 md5

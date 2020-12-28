@@ -127,11 +127,10 @@ func TestOverrideClusterContainerImages(t *testing.T) {
 		name  string
 		image string
 	}{
-		"database":   {name: "database", image: config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_HA},
-		"crunchyadm": {name: "crunchyadm", image: config.CONTAINER_IMAGE_CRUNCHY_ADMIN},
-		"exporter":   {name: "exporter", image: config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_EXPORTER},
-		"pgbadger":   {name: "pgbadger", image: config.CONTAINER_IMAGE_CRUNCHY_PGBADGER},
-		"future":     {name: "future", image: "crunchy-future"},
+		"database": {name: "database", image: config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_HA},
+		"exporter": {name: "exporter", image: config.CONTAINER_IMAGE_CRUNCHY_POSTGRES_EXPORTER},
+		"pgbadger": {name: "pgbadger", image: config.CONTAINER_IMAGE_CRUNCHY_PGBADGER},
+		"future":   {name: "future", image: "crunchy-future"},
 	}
 
 	t.Run("no override", func(t *testing.T) {

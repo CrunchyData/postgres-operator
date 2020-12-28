@@ -213,7 +213,6 @@ type ClusterStruct struct {
 	BackrestS3URIStyle             string
 	BackrestS3VerifyTLS            string
 	DisableAutofail                bool
-	EnableCrunchyadm               bool
 	DisableReplicaStartFailReinit  bool
 	PodAntiAffinity                string
 	PodAntiAffinityPgBackRest      string

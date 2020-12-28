@@ -16,7 +16,6 @@ service_type: "ClusterIP"
 cleanup: "false"
 common_name: "crunchydata"
 crunchy_debug: "false"
-enable_crunchyadm: "false"
 disable_replica_start_fail_reinit: "false"
 disable_fsgroup: "false"
 
