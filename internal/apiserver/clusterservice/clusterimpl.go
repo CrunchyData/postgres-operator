@@ -1502,10 +1502,6 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		labels[config.LABEL_BADGER] = "true"
 	}
 
-	// pgBackRest is always set to true. This is here due to a time where
-	// pgBackRest was not the only way
-	labels[config.LABEL_BACKREST] = "true"
-
 	newInstance := &crv1.Pgcluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,

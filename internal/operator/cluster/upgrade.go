@@ -540,10 +540,6 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 		pgcluster.Spec.PGBadgerPort = operator.Pgo.Cluster.PGBadgerPort
 	}
 
-	// ensure that the pgo-backrest label is set to 'true' since pgbackrest is required for normal
-	// cluster operations in this version of the Postgres Operator
-	pgcluster.ObjectMeta.Labels[config.LABEL_BACKREST] = "true"
-
 	// added in 4.2 and copied from configuration in 4.4
 	if pgcluster.Spec.BackrestS3Bucket == "" {
 		pgcluster.Spec.BackrestS3Bucket = operator.Pgo.Cluster.BackrestS3Bucket

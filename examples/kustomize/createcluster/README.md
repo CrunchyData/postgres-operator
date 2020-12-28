@@ -50,7 +50,7 @@ cluster : hippo (crunchy-postgres-ha:centos7-12.5-4.5.1)
 	deployment : hippo
 	deployment : hippo-backrest-shared-repo
 	service : hippo - ClusterIP (10.0.56.86) - Ports (2022/TCP, 5432/TCP)
-	labels : pg-pod-anti-affinity= pgo-backrest=true pgo-version=4.5.1 crunchy-postgres-exporter=false name=hippo crunchy-pgha-scope=hippo deployment-name=hippo pg-cluster=hippo pgouser=admin vendor=crunchydata autofail=true crunchy-pgbadger=false
+	labels : pg-pod-anti-affinity= pgo-version=4.5.1 crunchy-postgres-exporter=false name=hippo crunchy-pgha-scope=hippo deployment-name=hippo pg-cluster=hippo pgouser=admin vendor=crunchydata autofail=true crunchy-pgbadger=false
 ```
 Feel free to run other pgo cli commands on the hippo cluster
 
@@ -87,7 +87,7 @@ cluster : dev-hippo (crunchy-postgres-ha:centos7-12.5-4.5.1)
 	deployment : dev-hippo-pgbouncer
 	service : dev-hippo - ClusterIP (10.0.62.87) - Ports (2022/TCP, 5432/TCP)
 	service : dev-hippo-pgbouncer - ClusterIP (10.0.48.120) - Ports (5432/TCP)
-	labels : crunchy-pgha-scope=dev-hippo crunchy-postgres-exporter=false name=dev-hippo pg-cluster=dev-hippo pg-pod-anti-affinity= pgo-backrest=true vendor=crunchydata autofail=true crunchy-pgbadger=false deployment-name=dev-hippo environment=development pgo-version=4.5.1 pgouser=admin
+	labels : crunchy-pgha-scope=dev-hippo crunchy-postgres-exporter=false name=dev-hippo pg-cluster=dev-hippo pg-pod-anti-affinity= vendor=crunchydata autofail=true crunchy-pgbadger=false deployment-name=dev-hippo environment=development pgo-version=4.5.1 pgouser=admin
 ```
 #### staging
 The staging overlay will deploy a crunchy postgreSQL cluster with 2 replica's with annotations added
@@ -128,7 +128,7 @@ cluster : staging-hippo (crunchy-postgres-ha:centos7-12.5-4.5.1)
 	service : staging-hippo-replica - ClusterIP (10.0.56.57) - Ports (2022/TCP, 5432/TCP)
 	pgreplica : staging-hippo-lnxw
 	pgreplica : staging-hippo-rpl1
-	labels : deployment-name=staging-hippo environment=staging name=staging-hippo pg-pod-anti-affinity= crunchy-postgres-exporter=false crunchy-pgbadger=false crunchy-pgha-scope=staging-hippo pg-cluster=staging-hippo pgo-backrest=true pgo-version=4.5.1 pgouser=admin vendor=crunchydata autofail=true
+	labels : deployment-name=staging-hippo environment=staging name=staging-hippo pg-pod-anti-affinity= crunchy-postgres-exporter=false crunchy-pgbadger=false crunchy-pgha-scope=staging-hippo pg-cluster=staging-hippo pgo-version=4.5.1 pgouser=admin vendor=crunchydata autofail=true
 ```
 
 #### production
@@ -165,7 +165,7 @@ cluster : prod-hippo (crunchy-postgres-ha:centos7-12.5-4.5.1)
 	service : prod-hippo - ClusterIP (10.0.56.18) - Ports (2022/TCP, 5432/TCP)
 	service : prod-hippo-replica - ClusterIP (10.0.56.101) - Ports (2022/TCP, 5432/TCP)
 	pgreplica : prod-hippo-flty
-	labels : pgo-backrest=true pgo-version=4.5.1 crunchy-pgbadger=false crunchy-postgres-exporter=false deployment-name=prod-hippo environment=production pg-cluster=prod-hippo pg-pod-anti-affinity= autofail=true crunchy-pgha-scope=prod-hippo name=prod-hippo pgouser=admin vendor=crunchydata
+	labels : pgo-version=4.5.1 crunchy-pgbadger=false crunchy-postgres-exporter=false deployment-name=prod-hippo environment=production pg-cluster=prod-hippo pg-pod-anti-affinity= autofail=true crunchy-pgha-scope=prod-hippo name=prod-hippo pgouser=admin vendor=crunchydata
 ```
 ### Delete the clusters
 To delete the clusters run the following pgo cli commands

@@ -15,7 +15,6 @@
       "name": "fromcrd",
       "pg-cluster": "fromcrd",
       "pg-pod-anti-affinity": "",
-      "pgo-backrest": "true",
       "pgo-version": "4.5.1",
       "pgouser": "pgoadmin",
       "primary": "true"
@@ -85,8 +84,7 @@
       "crunchy-postgres-exporter": "false",
       "pg-pod-anti-affinity": "",
       "pgo-version": "4.5.1",
-      "pgouser": "pgoadmin",
-      "pgo-backrest": "true"
+      "pgouser": "pgoadmin"
     }
   }
 }

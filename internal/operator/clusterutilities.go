@@ -161,7 +161,6 @@ type DeploymentTemplateFields struct {
 	PodAnnotations           string
 	PodLabels                string
 	DataPathOverride         string
-	ArchiveMode              string
 	PVCName                  string
 	RootSecretName           string
 	UserSecretName           string
@@ -277,27 +276,24 @@ func GetAnnotations(cluster *crv1.Pgcluster, annotationType crv1.ClusterAnnotati
 }
 
 // consolidate with cluster.GetPgbackrestEnvVars
-func GetPgbackrestEnvVars(cluster *crv1.Pgcluster, backrestEnabled, depName, port, storageType string) string {
-	if backrestEnabled == "true" {
-		fields := PgbackrestEnvVarsTemplateFields{
-			PgbackrestStanza:            "db",
-			PgbackrestRepo1Host:         cluster.Name + "-backrest-shared-repo",
-			PgbackrestRepo1Path:         util.GetPGBackRestRepoPath(*cluster),
-			PgbackrestDBPath:            "/pgdata/" + depName,
-			PgbackrestPGPort:            port,
-			PgbackrestRepo1Type:         GetRepoType(storageType),
-			PgbackrestLocalAndS3Storage: IsLocalAndS3Storage(storageType),
-		}
-
-		var doc bytes.Buffer
-		err := config.PgbackrestEnvVarsTemplate.Execute(&doc, fields)
-		if err != nil {
-			log.Error(err.Error())
-			return ""
-		}
-		return doc.String()
+func GetPgbackrestEnvVars(cluster *crv1.Pgcluster, depName, port, storageType string) string {
+	fields := PgbackrestEnvVarsTemplateFields{
+		PgbackrestStanza:            "db",
+		PgbackrestRepo1Host:         cluster.Name + "-backrest-shared-repo",
+		PgbackrestRepo1Path:         util.GetPGBackRestRepoPath(*cluster),
+		PgbackrestDBPath:            "/pgdata/" + depName,
+		PgbackrestPGPort:            port,
+		PgbackrestRepo1Type:         GetRepoType(storageType),
+		PgbackrestLocalAndS3Storage: IsLocalAndS3Storage(storageType),
 	}
-	return ""
+
+	doc := bytes.Buffer{}
+	if err := config.PgbackrestEnvVarsTemplate.Execute(&doc, fields); err != nil {
+		log.Error(err.Error())
+		return ""
+	}
+
+	return doc.String()
 }
 
 // GetPgbackrestBootstrapEnvVars returns a string containing the pgBackRest environment variables
