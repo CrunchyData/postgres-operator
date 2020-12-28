@@ -18,7 +18,6 @@ limitations under the License.
 import (
 	"bytes"
 	"context"
-	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
@@ -43,7 +42,7 @@ func TestKeyPEMSymmetry(t *testing.T) {
 
 	t.Log(base64.StdEncoding.EncodeToString(pemKey))
 
-	if !keysEq(oldKey, newKey) {
+	if !(oldKey.Equal(newKey) && oldKey.PublicKey.Equal(newKey.Public())) {
 		t.Fatal("Decoded key did not match its input source")
 	}
 }
@@ -144,31 +143,4 @@ func TestExtendedTrust(t *testing.T) {
 	if recv := string(bytes.TrimSpace(body)); recv != expected {
 		t.Fatalf("expected [%s], got [%s] instead\n", expected, recv)
 	}
-}
-
-func keysEq(a, b *rsa.PrivateKey) bool {
-	if a.E != b.E {
-		// PublicKey exponent different
-		return false
-	}
-	if a.N.Cmp(b.N) != 0 {
-		// PublicKey modulus different
-		return false
-	}
-	if a.D.Cmp(b.D) != 0 {
-		// PrivateKey exponent different
-		return false
-	}
-	if len(a.Primes) != len(b.Primes) {
-		// Prime factor difference (Tier 1)
-		return false
-	}
-	for i, aPrime := range a.Primes {
-		if aPrime.Cmp(b.Primes[i]) != 0 {
-			// Prime factor difference (Tier 2)
-			return false
-		}
-	}
-
-	return true
 }

@@ -16,8 +16,9 @@ limitations under the License.
 */
 
 import (
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -29,20 +30,20 @@ import (
 )
 
 const (
-	rsaKeySize   = 2048
 	duration365d = time.Hour * 24 * 365
 )
 
 // newPrivateKey returns randomly generated RSA private key.
-func NewPrivateKey() (*rsa.PrivateKey, error) {
-	return rsa.GenerateKey(rand.Reader, rsaKeySize)
+func NewPrivateKey() (*ecdsa.PrivateKey, error) {
+	return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 }
 
 // encodePrivateKeyPEM encodes the given private key pem and returns bytes (base64).
-func EncodePrivateKeyPEM(key *rsa.PrivateKey) []byte {
+func EncodePrivateKeyPEM(key *ecdsa.PrivateKey) []byte {
+	raw, _ := x509.MarshalECPrivateKey(key)
 	return pem.EncodeToMemory(&pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: x509.MarshalPKCS1PrivateKey(key),
+		Type:  "EC PRIVATE KEY",
+		Bytes: raw,
 	})
 }
 
@@ -64,17 +65,17 @@ func ParsePEMEncodedCert(pemdata []byte) (*x509.Certificate, error) {
 }
 
 // parsePEMEncodedPrivateKey parses a private key from given pemdata
-func ParsePEMEncodedPrivateKey(pemdata []byte) (*rsa.PrivateKey, error) {
+func ParsePEMEncodedPrivateKey(pemdata []byte) (*ecdsa.PrivateKey, error) {
 	decoded, _ := pem.Decode(pemdata)
 	if decoded == nil {
 		return nil, errors.New("no PEM data found")
 	}
-	return x509.ParsePKCS1PrivateKey(decoded.Bytes)
+	return x509.ParseECPrivateKey(decoded.Bytes)
 }
 
 // newSelfSignedCACertificate returns a self-signed CA certificate based on given configuration and private key.
 // The certificate has one-year lease.
-func NewSelfSignedCACertificate(key *rsa.PrivateKey) (*x509.Certificate, error) {
+func NewSelfSignedCACertificate(key *ecdsa.PrivateKey) (*x509.Certificate, error) {
 	serial, err := rand.Int(rand.Reader, new(big.Int).SetInt64(math.MaxInt64))
 	if err != nil {
 		return nil, err
@@ -87,6 +88,7 @@ func NewSelfSignedCACertificate(key *rsa.PrivateKey) (*x509.Certificate, error) 
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
 		BasicConstraintsValid: true,
 		IsCA:                  true,
+		SignatureAlgorithm:    x509.ECDSAWithSHA384,
 	}
 	certDERBytes, err := x509.CreateCertificate(rand.Reader, &tmpl, &tmpl, key.Public(), key)
 	if err != nil {
