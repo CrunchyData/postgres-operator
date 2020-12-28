@@ -9,15 +9,12 @@
       "autofail": "true",
       "crunchy-pgbadger": "false",
       "crunchy-pgha-scope": "fromcrd",
-      "crunchy-postgres-exporter": "false",
-      "current-primary": "fromcrd",
       "deployment-name": "fromcrd",
       "name": "fromcrd",
       "pg-cluster": "fromcrd",
       "pg-pod-anti-affinity": "",
       "pgo-version": "4.5.1",
-      "pgouser": "pgoadmin",
-      "primary": "true"
+      "pgouser": "pgoadmin"
     },
     "name": "fromcrd",
     "namespace": "pgouser1"
@@ -50,41 +47,23 @@
       "storagetype": "dynamic",
       "supplementalgroups": ""
     },
-    "backrestResources": {},
     "ccpimage": "crunchy-postgres-ha",
     "ccpimagetag": "centos7-12.5-4.5.1",
     "clustername": "fromcrd",
-    "customconfig": "",
     "database": "userdb",
     "exporterport": "9187",
     "name": "fromcrd",
     "namespace": "pgouser1",
-    "pgBouncer": {
-      "replicas": 0,
-      "resources": {}
-    },
     "pgbadgerport": "10000",
     "podPodAntiAffinity": {
       "default": "preferred",
       "pgBackRest": "preferred",
       "pgBouncer": "preferred"
     },
-    "policies": "",
     "port": "5432",
-    "replicas": "0",
-    "secretfrom": "",
-    "shutdown": false,
-    "standby": false,
-    "status": "",
-    "syncReplication": null,
-    "tablespaceMounts": {},
-    "tls": {},
     "user": "testuser",
     "userlabels": {
-      "crunchy-postgres-exporter": "false",
-      "pg-pod-anti-affinity": "",
-      "pgo-version": "4.5.1",
-      "pgouser": "pgoadmin"
+      "pgo-version": "4.5.1"
     }
   }
 }
