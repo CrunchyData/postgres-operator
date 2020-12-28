@@ -17,7 +17,7 @@ limitations under the License.
 
 import (
 	"context"
-	"crypto/rsa"
+	"crypto/ecdsa"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -438,7 +438,7 @@ func generateTLSCert(certPath, keyPath string) error {
 	var err error
 
 	// generate private key
-	var privateKey *rsa.PrivateKey
+	var privateKey *ecdsa.PrivateKey
 	privateKey, err = tlsutil.NewPrivateKey()
 	if err != nil {
 		fmt.Println(err.Error())
