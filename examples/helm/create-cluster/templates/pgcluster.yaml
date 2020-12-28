@@ -7,7 +7,6 @@ metadata:
     autofail: "true"
     crunchy-pgbadger: "false"
     crunchy-pgha-scope: {{ .Values.pgclustername }}
-    crunchy-postgres-exporter: "false"
     deployment-name: {{ .Values.pgclustername }}
     name: {{ .Values.pgclustername }}
     pg-cluster: {{ .Values.pgclustername }}
@@ -41,29 +40,17 @@ spec:
     storageclass: ""
     storagetype: dynamic
     supplementalgroups: ""
-  annotations:
-  backrestLimits: {}
-  backrestRepoPath: ""
-  backrestResources:
-    memory: 48Mi
-  backrestS3Bucket: ""
-  backrestS3Endpoint: ""
-  backrestS3Region: ""
-  backrestS3URIStyle: ""
-  backrestS3VerifyTLS: ""
+  annotations: {}
   ccpimage: {{ .Values.ccpimage }}
   ccpimageprefix: {{ .Values.ccpimageprefix }}
   ccpimagetag: {{ .Values.ccpimagetag }}
   clustername: {{ .Values.pgclustername }}
-  customconfig: ""
   database: {{ .Values.pgclustername }}
+  exporter: false
   exporterport: "9187"
   limits: {}
   name: {{ .Values.pgclustername }}
   namespace: {{ .Values.namespace }}
-  pgBouncer:
-    limits: {}
-    replicas: 0
   pgDataSource:
     restoreFrom: ""
     restoreOpts: ""
@@ -73,19 +60,7 @@ spec:
     default: preferred
     pgBackRest: preferred
     pgBouncer: preferred
-  policies: ""
   port: "5432"
-  replicas: "0"
-  shutdown: false
-  standby: false
-  tablespaceMounts: {}
-  tls:
-    caSecret: ""
-    replicationTLSSecret: ""
-    tlsSecret: ""
-  tlsOnly: false
   user: hippo
   userlabels:
-    crunchy-postgres-exporter: "false"
-    pg-pod-anti-affinity: ""
     pgo-version: {{ .Values.pgoversion }}

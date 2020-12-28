@@ -112,30 +112,16 @@ spec:
     storageclass: ""
     storagetype: create
     supplementalgroups: ""
-  annotations:
-  backrestLimits: {}
-  backrestRepoPath: ""
-  backrestResources:
-    memory: 48Mi
-  backrestS3Bucket: ""
-  backrestS3Endpoint: ""
-  backrestS3Region: ""
-  backrestS3URIStyle: ""
-  backrestS3VerifyTLS: ""
+  annotations: {}
   ccpimage: crunchy-postgres-ha
   ccpimageprefix: registry.developers.crunchydata.com/crunchydata
   ccpimagetag: {{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}
   clustername: ${pgo_cluster_name}
-  customconfig: ""
   database: ${pgo_cluster_name}
-  exporter: false
   exporterport: "9187"
   limits: {}
   name: ${pgo_cluster_name}
   namespace: ${cluster_namespace}
-  pgBouncer:
-    limits: {}
-    replicas: 0
   pgDataSource:
     restoreFrom: ""
     restoreOpts: ""
@@ -145,21 +131,10 @@ spec:
     default: preferred
     pgBackRest: preferred
     pgBouncer: preferred
-  policies: ""
   port: "5432"
-  replicas: "0"
-  shutdown: false
-  standby: false
-  tablespaceMounts: {}
-  tls:
-    caSecret: ""
-    replicationTLSSecret: ""
-    tlsSecret: ""
-  tlsOnly: false
   tolerations: []
   user: hippo
   userlabels:
-    pg-pod-anti-affinity: ""
     pgo-version: {{< param operatorVersion >}}
 EOF
 
@@ -329,11 +304,7 @@ spec:
     storageclass: ""
     storagetype: dynamic
     supplementalgroups: ""
-  annotations:
-  backrestLimits: {}
-  backrestRepoPath: ""
-  backrestResources:
-    memory: 48Mi
+  annotations: {}
   backrestS3Bucket: ${backrest_s3_bucket}
   backrestS3Endpoint: ${backrest_s3_endpoint}
   backrestS3Region: ${backrest_s3_region}
@@ -343,16 +314,11 @@ spec:
   ccpimageprefix: registry.developers.crunchydata.com/crunchydata
   ccpimagetag: {{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}
   clustername: ${pgo_cluster_name}
-  customconfig: ""
   database: ${pgo_cluster_name}
-  exporter: false
   exporterport: "9187"
   limits: {}
   name: ${pgo_cluster_name}
   namespace: ${cluster_namespace}
-  pgBouncer:
-    limits: {}
-    replicas: 0
   pgDataSource:
     restoreFrom: ""
     restoreOpts: ""
@@ -362,22 +328,11 @@ spec:
     default: preferred
     pgBackRest: preferred
     pgBouncer: preferred
-  policies: ""
   port: "5432"
-  replicas: "0"
-  shutdown: false
-  standby: false
-  tablespaceMounts: {}
-  tls:
-    caSecret: ""
-    replicationTLSSecret: ""
-    tlsSecret: ""
-  tlsOnly: false
   tolerations: []
   user: hippo
   userlabels:
     backrest-storage-type: "s3"
-    pg-pod-anti-affinity: ""
     pgo-version: {{< param operatorVersion >}}
 EOF
 
@@ -469,6 +424,7 @@ spec:
     storageclass: ""
     storagetype: create
     supplementalgroups: ""
+  tolerations: []
   userlabels:
     NodeLabelKey: ""
     NodeLabelValue: ""
