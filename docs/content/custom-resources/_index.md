@@ -339,6 +339,132 @@ EOF
 kubectl apply -f "${pgo_cluster_name}-pgcluster.yaml"
 ```
 
+### Create a PostgreSQL Cluster with TLS
+
+There are three items that are required to enable TLS in your PostgreSQL clusters:
+
+- A CA certificate
+- A TLS private key
+- A TLS certificate
+
+It is possible [create a PostgreSQL cluster with TLS]({{< relref "tutorial/tls.md" >}}) using a custom resource workflow with the prerequisite of ensuring the above three items are created.
+
+For a detailed explanation for how TLS works with the PostgreSQL Operator, please see the [TLS tutorial]({{< relref "tutorial/tls.md" >}}).
+
+#### Step 1: Create TLS Secrets
+
+There are two Secrets that need to be created:
+
+1. A Secret containing the certificate authority (CA). You may only need to create this Secret once, as a CA certificate can be shared amongst your clusters.
+2. A Secret that contains the TLS private key & certificate.
+
+This assumes that you have already [generated your TLS certificates](https://www.postgresql.org/docs/current/ssl-tcp.html#SSL-CERTIFICATE-CREATION) where the CA is named `ca.crt` and the server key and certificate are named `server.key` and `server.crt` respectively.
+
+Substitute the correct values for your environment into the environmental variables in the example below:
+
+```
+# this variable is the name of the cluster being created
+export pgo_cluster_name=hippo
+# this variable is the namespace the cluster is being deployed into
+export cluster_namespace=pgo
+# this is the local path to where you stored the CA and server key and certificate
+export cluster_tls_asset_path=/path/to
+
+# create the CA secret. if this already exists, it's OK if it fails
+kubectl create secret generic postgresql-ca -n "${cluster_namespace}" \
+  --from-file="ca.crt=${cluster_tls_asset_path}/ca.crt"
+
+# create the server key/certificate secret
+kubectl create secret tls "${pgo_cluster_name}-tls-keypair" -n "${cluster_namespace}" \
+  --cert="${cluster_tls_asset_path}/server.crt" \
+  --key="${cluster_tls_asset_path}/server.key"
+```
+
+#### Step 2: Create the PostgreSQL Cluster
+
+The below example uses the Secrets created in the previous step and creates a TLS-enabled PostgreSQL cluster. Additionally, this example sets the `tlsOnly` attribute to `true`, which requires all TCP connections to occur over TLS:
+
+```
+# this variable is the name of the cluster being created
+export pgo_cluster_name=hippo
+# this variable is the namespace the cluster is being deployed into
+export cluster_namespace=pgo
+
+cat <<-EOF > "${pgo_cluster_name}-pgcluster.yaml"
+apiVersion: crunchydata.com/v1
+kind: Pgcluster
+metadata:
+  annotations:
+    current-primary: ${pgo_cluster_name}
+  labels:
+    autofail: "true"
+    crunchy-pgbadger: "false"
+    crunchy-pgha-scope: ${pgo_cluster_name}
+    deployment-name: ${pgo_cluster_name}
+    name: ${pgo_cluster_name}
+    pg-cluster: ${pgo_cluster_name}
+    pg-pod-anti-affinity: ""
+    pgo-version: {{< param operatorVersion >}}
+    pgouser: admin
+  name: ${pgo_cluster_name}
+  namespace: ${cluster_namespace}
+spec:
+  BackrestStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ""
+    size: 1G
+    storageclass: ""
+    storagetype: create
+    supplementalgroups: ""
+  PrimaryStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ${pgo_cluster_name}
+    size: 1G
+    storageclass: ""
+    storagetype: create
+    supplementalgroups: ""
+  ReplicaStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ""
+    size: 1G
+    storageclass: ""
+    storagetype: create
+    supplementalgroups: ""
+  annotations: {}
+  ccpimage: crunchy-postgres-ha
+  ccpimageprefix: registry.developers.crunchydata.com/crunchydata
+  ccpimagetag: {{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}
+  clustername: ${pgo_cluster_name}
+  database: ${pgo_cluster_name}
+  exporterport: "9187"
+  limits: {}
+  name: ${pgo_cluster_name}
+  namespace: ${cluster_namespace}
+  pgDataSource:
+    restoreFrom: ""
+    restoreOpts: ""
+  pgbadgerport: "10000"
+  pgoimageprefix: registry.developers.crunchydata.com/crunchydata
+  podAntiAffinity:
+    default: preferred
+    pgBackRest: preferred
+    pgBouncer: preferred
+  port: "5432"
+  tls:
+    caSecret: postgresql-ca
+    tlsSecret: ${pgo_cluster_name}-tls-keypair
+  tlsOnly: true
+  user: hippo
+  userlabels:
+    pgo-version: {{< param operatorVersion >}}
+EOF
+
+kubectl apply -f "${pgo_cluster_name}-pgcluster.yaml"
+```
+
 ### Modify a Cluster
 
 There following modification operations are supported on the
