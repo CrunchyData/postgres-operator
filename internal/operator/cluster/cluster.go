@@ -642,8 +642,10 @@ func UpdateTolerations(clientset kubeapi.Interface, cluster *crv1.Pgcluster, dep
 		return err
 	}
 
-	// if the instance does have specific tolerations, exit here as we do not
-	// want to override them
+	// "replica" instances can have toleration overrides. these get managed as
+	// part of the pgreplicas controller, not here. as such, if this "replica"
+	// instance has specific toleration overrides, we will exit here so we do not
+	// apply the cluster-wide tolerations
 	if len(instance.Spec.Tolerations) != 0 {
 		return nil
 	}
