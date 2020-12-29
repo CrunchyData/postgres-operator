@@ -330,7 +330,7 @@ func GetBackrestDeployment(clientset kubernetes.Interface, cluster *crv1.Pgclust
 
 // GetBadgerAddon is a legacy method that generates a JSONish string to be used
 // to add a pgBadger sidecar to a PostgreSQL instance
-func GetBadgerAddon(clientset kubernetes.Interface, cluster *crv1.Pgcluster, target string) string {
+func GetBadgerAddon(cluster *crv1.Pgcluster, target string) string {
 	if !cluster.Spec.PGBadger {
 		return ""
 	}

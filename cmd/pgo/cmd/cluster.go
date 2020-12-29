@@ -708,6 +708,13 @@ func updateCluster(args []string, ns string) {
 		r.Metrics = msgs.UpdateClusterMetricsDisable
 	}
 
+	// check to see if the pgBadger sidecar needs to be enabled or disabled
+	if EnablePGBadger {
+		r.PGBadger = msgs.UpdateClusterPGBadgerEnable
+	} else if DisablePGBadger {
+		r.PGBadger = msgs.UpdateClusterPGBadgerDisable
+	}
+
 	// if the user provided resources for CPU or Memory, validate them to ensure
 	// they are valid Kubernetes values
 	if err := util.ValidateQuantity(r.CPURequest, "cpu"); err != nil {
