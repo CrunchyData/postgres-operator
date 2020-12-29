@@ -963,10 +963,9 @@ func GetSyncReplication(specSyncReplication *bool) bool {
 	// alawys use the value from the CR if explicitly provided
 	if specSyncReplication != nil {
 		return *specSyncReplication
-	} else if Pgo.Cluster.SyncReplication {
-		return true
 	}
-	return false
+
+	return Pgo.Cluster.SyncReplication
 }
 
 // GetTolerations returns any tolerations that may be defined in a tolerations

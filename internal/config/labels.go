@@ -46,7 +46,6 @@ const (
 	LABEL_EXPORTER          = "crunchy-postgres-exporter"
 	LABEL_ARCHIVE           = "archive"
 	LABEL_ARCHIVE_TIMEOUT   = "archive-timeout"
-	LABEL_CUSTOM_CONFIG     = "custom-config"
 	LABEL_NODE_LABEL_KEY    = "NodeLabelKey"
 	LABEL_NODE_LABEL_VALUE  = "NodeLabelValue"
 	LABEL_REPLICA_NAME      = "replica-name"
@@ -55,7 +54,6 @@ const (
 	LABEL_IMAGE_PREFIX      = "image-prefix"
 	LABEL_SERVICE_TYPE      = "service-type"
 	LABEL_POD_ANTI_AFFINITY = "pg-pod-anti-affinity"
-	LABEL_SYNC_REPLICATION  = "sync-replication"
 )
 
 const (
