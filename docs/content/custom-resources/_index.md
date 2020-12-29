@@ -749,6 +749,7 @@ make changes, as described below.
 | ClusterName | `create` | The name of the PostgreSQL cluster, e.g. `hippo`. This is used to group PostgreSQL instances (primary, replicas) together. |
 | CustomConfig | `create` | If specified, references a custom ConfigMap to use when bootstrapping a PostgreSQL cluster. For the shape of this file, please see the section on [Custom Configuration]({{< relref "/advanced/custom-configuration.md" >}}) |
 | Database | `create` | The name of a database that the PostgreSQL user can log into after the PostgreSQL cluster is created. |
+| DisableAutofail | `create`, `update` | If set to true, disables the high availability capabilities of a PostgreSQL cluster. By default, every cluster can have high availability if there is at least one replica. |
 | ExporterLimits | `create`, `update` | Specify the container resource limits that the `crunchy-postgres-exporter` sidecar uses when it is deployed with a PostgreSQL instance. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | Exporter | `create`,`update` | If `true`, deploys the `crunchy-postgres-exporter` sidecar for metrics collection |
 | ExporterPort | `create` | If `Exporter` is `true`, then this specifies the port that the metrics sidecar runs on (e.g. `9187`) |

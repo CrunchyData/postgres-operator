@@ -1472,12 +1472,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 	labels := make(map[string]string)
 	labels[config.LABEL_NAME] = name
-	if !request.AutofailFlag || apiserver.Pgo.Cluster.DisableAutofail {
-		labels[config.LABEL_AUTOFAIL] = "false"
-	} else {
-		labels[config.LABEL_AUTOFAIL] = "true"
-	}
-
+	spec.DisableAutofail = !request.AutofailFlag || apiserver.Pgo.Cluster.DisableAutofail
 	// set whether or not the cluster will be a standby cluster
 	spec.Standby = request.Standby
 	// set the pgBackRest repository path
@@ -1869,9 +1864,9 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		// Make the change based on the value of Autofail vis-a-vis UpdateClusterAutofailStatus
 		switch request.Autofail {
 		case msgs.UpdateClusterAutofailEnable:
-			cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = "true"
+			cluster.Spec.DisableAutofail = false
 		case msgs.UpdateClusterAutofailDisable:
-			cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = "false"
+			cluster.Spec.DisableAutofail = true
 		case msgs.UpdateClusterAutofailDoNothing: // no-op
 		}
 

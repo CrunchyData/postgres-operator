@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"reflect"
-	"strconv"
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -202,26 +201,16 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		_ = clusteroperator.StartupCluster(c.Client, *newcluster)
 	}
 
-	// check to see if the "autofail" label on the pgcluster CR has been changed from either true to false, or from
-	// false to true.  If it has been changed to false, autofail will then be disabled in the pg cluster.  If has
-	// been changed to true, autofail will then be enabled in the pg cluster
-	if newcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] != "" {
-		autofailEnabledOld, err := strconv.ParseBool(oldcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL])
-		if err != nil {
+	// check to see if autofail setting has been changed. If set to "true", it
+	// will be disabled, otherwise it will be enabled. Simple.
+	if oldcluster.Spec.DisableAutofail != newcluster.Spec.DisableAutofail {
+		// take the inverse, as this func checks for autofail being enabled
+		// if we can't toggle autofailover, log the error but continue on
+		if err := util.ToggleAutoFailover(c.Client, !newcluster.Spec.DisableAutofail,
+			newcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE],
+			newcluster.ObjectMeta.Namespace); err != nil {
 			log.Error(err)
-			return
 		}
-		autofailEnabledNew, err := strconv.ParseBool(newcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL])
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		if autofailEnabledNew != autofailEnabledOld {
-			_ = util.ToggleAutoFailover(c.Client, autofailEnabledNew,
-				newcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE],
-				newcluster.ObjectMeta.Namespace)
-		}
-
 	}
 
 	// handle standby being enabled and disabled for the cluster

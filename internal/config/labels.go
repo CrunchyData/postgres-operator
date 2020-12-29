@@ -28,7 +28,6 @@ const (
 const LABEL_PGTASK = "pg-task"
 
 const (
-	LABEL_AUTOFAIL = "autofail"
 	LABEL_FAILOVER = "failover"
 	LABEL_RESTART  = "restart"
 )
