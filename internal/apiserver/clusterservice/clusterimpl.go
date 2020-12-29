@@ -715,8 +715,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			resp.Status.Msg = err.Error()
 			return resp
 		}
-		// add a label for the custom config
-		userLabelsMap[config.LABEL_CUSTOM_CONFIG] = request.CustomConfig
 	}
 
 	if request.ServiceType != "" {
@@ -773,10 +771,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 
 	log.Debug("userLabelsMap")
 	log.Debugf("%v", userLabelsMap)
-
-	if existsGlobalConfig(ns) {
-		userLabelsMap[config.LABEL_CUSTOM_CONFIG] = config.GLOBAL_CUSTOM_CONFIGMAP
-	}
 
 	if request.StorageConfig != "" && !apiserver.IsValidStorageName(request.StorageConfig) {
 		resp.Status.Code = msgs.Error
@@ -863,12 +857,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			resp.Status.Msg = err.Error()
 			return resp
 		}
-	}
-
-	// if synchronous replication has been enabled, then add to user labels
-	if request.SyncReplication != nil {
-		userLabelsMap[config.LABEL_SYNC_REPLICATION] =
-			string(strconv.FormatBool(*request.SyncReplication))
 	}
 
 	// pgBackRest URI style must be set to either 'path' or 'host'. If it is neither,
@@ -1108,10 +1096,6 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 			Limits:    v1.ResourceList{},
 			Resources: v1.ResourceList{},
 		},
-	}
-
-	if userLabelsMap[config.LABEL_CUSTOM_CONFIG] != "" {
-		spec.CustomConfig = userLabelsMap[config.LABEL_CUSTOM_CONFIG]
 	}
 
 	// enable the exporter sidecar based on the what the user passed in or what
@@ -1641,12 +1625,6 @@ func validateCustomConfig(configmapname, ns string) (bool, error) {
 	ctx := context.TODO()
 	_, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Get(ctx, configmapname, metav1.GetOptions{})
 	return err == nil, err
-}
-
-func existsGlobalConfig(ns string) bool {
-	ctx := context.TODO()
-	_, err := apiserver.Clientset.CoreV1().ConfigMaps(ns).Get(ctx, config.GLOBAL_CUSTOM_CONFIGMAP, metav1.GetOptions{})
-	return err == nil
 }
 
 func getReplicas(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterReplica, error) {
