@@ -205,7 +205,7 @@ type ClusterStruct struct {
 	PasswordAgeDays                string
 	PasswordLength                 string
 	Replicas                       string
-	ServiceType                    string
+	ServiceType                    v1.ServiceType
 	BackrestPort                   int
 	BackrestS3Bucket               string
 	BackrestS3Endpoint             string
@@ -262,10 +262,8 @@ type PgoConfig struct {
 }
 
 const (
-	DEFAULT_SERVICE_TYPE       = "ClusterIP"
-	LOAD_BALANCER_SERVICE_TYPE = "LoadBalancer"
-	NODEPORT_SERVICE_TYPE      = "NodePort"
-	CONFIG_PATH                = "pgo.yaml"
+	DefaultServiceType = v1.ServiceTypeClusterIP
+	CONFIG_PATH        = "pgo.yaml"
 )
 
 const (
@@ -345,15 +343,12 @@ func (c *PgoConfig) Validate() error {
 		return errors.New(errPrefix + "Pgo.PGOImageTag is required")
 	}
 
-	if c.Cluster.ServiceType == "" {
-		log.Warn("Cluster.ServiceType not set, using default, ClusterIP ")
-		c.Cluster.ServiceType = DEFAULT_SERVICE_TYPE
-	} else {
-		if c.Cluster.ServiceType != DEFAULT_SERVICE_TYPE &&
-			c.Cluster.ServiceType != LOAD_BALANCER_SERVICE_TYPE &&
-			c.Cluster.ServiceType != NODEPORT_SERVICE_TYPE {
-			return errors.New(errPrefix + "Cluster.ServiceType is required to be either ClusterIP, NodePort, or LoadBalancer")
-		}
+	// if ServiceType is set, ensure it is valid
+	switch c.Cluster.ServiceType {
+	default:
+		return fmt.Errorf("Cluster.ServiceType is an invalid ServiceType: %q", c.Cluster.ServiceType)
+	case v1.ServiceTypeClusterIP, v1.ServiceTypeNodePort,
+		v1.ServiceTypeLoadBalancer, v1.ServiceTypeExternalName, "": // no-op
 	}
 
 	if c.Cluster.CCPImagePrefix == "" {

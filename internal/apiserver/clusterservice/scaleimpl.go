@@ -27,6 +27,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 
 	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -85,15 +86,16 @@ func ScaleCluster(request msgs.ClusterScaleRequest, pgouser string) msgs.Cluster
 	if request.CCPImageTag != "" {
 		spec.UserLabels[config.LABEL_CCP_IMAGE_TAG_KEY] = request.CCPImageTag
 	}
-	if request.ServiceType != "" {
-		if request.ServiceType != config.DEFAULT_SERVICE_TYPE &&
-			request.ServiceType != config.NODEPORT_SERVICE_TYPE &&
-			request.ServiceType != config.LOAD_BALANCER_SERVICE_TYPE {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = "error --service-type should be either ClusterIP, NodePort, or LoadBalancer "
-			return response
-		}
-		spec.UserLabels[config.LABEL_SERVICE_TYPE] = request.ServiceType
+
+	// check the optional ServiceType paramater
+	switch request.ServiceType {
+	default:
+		response.Status.Code = msgs.Error
+		response.Status.Msg = fmt.Sprintf("invalid service type %q", request.ServiceType)
+		return response
+	case v1.ServiceTypeClusterIP, v1.ServiceTypeNodePort,
+		v1.ServiceTypeLoadBalancer, v1.ServiceTypeExternalName, "":
+		spec.ServiceType = request.ServiceType
 	}
 
 	// set replica node lables to blank to start with, then check for overrides

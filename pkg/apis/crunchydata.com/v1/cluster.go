@@ -132,6 +132,10 @@ type PgclusterSpec struct {
 	// annotations that are propagated to all managed Deployments
 	Annotations ClusterAnnotations `json:"annotations"`
 
+	// ServiceType references the type of Service that should be used when
+	// deploying PostgreSQL instances
+	ServiceType v1.ServiceType `json:"serviceType"`
+
 	// Tolerations are an optional list of Pod toleration rules that are applied
 	// to the PostgreSQL instance.
 	Tolerations []v1.Toleration `json:"tolerations"`

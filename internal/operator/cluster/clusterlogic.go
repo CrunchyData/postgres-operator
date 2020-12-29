@@ -49,29 +49,37 @@ import (
 
 // addClusterCreateMissingService creates a service for the cluster primary if
 // it does not yet exist.
-func addClusterCreateMissingService(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string) error {
-	st := operator.Pgo.Cluster.ServiceType
-	if cl.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
-		st = cl.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
+func addClusterCreateMissingService(clientset kubernetes.Interface, cluster *crv1.Pgcluster, namespace string) error {
+	// start with the default value for ServiceType
+	serviceType := config.DefaultServiceType
+
+	// then see if there is a configuration provided value
+	if operator.Pgo.Cluster.ServiceType != "" {
+		serviceType = operator.Pgo.Cluster.ServiceType
+	}
+
+	// then see if there is an override on the custom resource definition
+	if cluster.Spec.ServiceType != "" {
+		serviceType = cluster.Spec.ServiceType
 	}
 
 	// create the primary service
 	serviceFields := ServiceTemplateFields{
-		Name:        cl.Spec.Name,
-		ServiceName: cl.Spec.Name,
-		ClusterName: cl.Spec.Name,
-		Port:        cl.Spec.Port,
-		ServiceType: st,
+		Name:        cluster.Spec.Name,
+		ServiceName: cluster.Spec.Name,
+		ClusterName: cluster.Spec.Name,
+		Port:        cluster.Spec.Port,
+		ServiceType: serviceType,
 	}
 
 	// set the pgBadger port if pgBadger is enabled
-	if cl.Spec.PGBadger {
-		serviceFields.PGBadgerPort = cl.Spec.PGBadgerPort
+	if cluster.Spec.PGBadger {
+		serviceFields.PGBadgerPort = cluster.Spec.PGBadgerPort
 	}
 
 	// set the exporter port if exporter is enabled
-	if cl.Spec.Exporter {
-		serviceFields.ExporterPort = cl.Spec.ExporterPort
+	if cluster.Spec.Exporter {
+		serviceFields.ExporterPort = cluster.Spec.ExporterPort
 	}
 
 	return CreateService(clientset, &serviceFields, namespace)
@@ -369,11 +377,22 @@ func DeleteCluster(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace
 // scaleReplicaCreateMissingService creates a service for cluster replicas if
 // it does not yet exist.
 func scaleReplicaCreateMissingService(clientset kubernetes.Interface, replica *crv1.Pgreplica, cluster *crv1.Pgcluster, namespace string) error {
-	st := operator.Pgo.Cluster.ServiceType
-	if replica.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
-		st = replica.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
-	} else if cluster.Spec.UserLabels[config.LABEL_SERVICE_TYPE] != "" {
-		st = cluster.Spec.UserLabels[config.LABEL_SERVICE_TYPE]
+	// start with the default value for ServiceType
+	serviceType := config.DefaultServiceType
+
+	// then see if there is a configuration provided value
+	if operator.Pgo.Cluster.ServiceType != "" {
+		serviceType = operator.Pgo.Cluster.ServiceType
+	}
+
+	// then see if there is an override on the custom resource definition
+	if cluster.Spec.ServiceType != "" {
+		serviceType = cluster.Spec.ServiceType
+	}
+
+	// and finally, see if there is an instance specific override. Yay.
+	if replica.Spec.ServiceType != "" {
+		serviceType = replica.Spec.ServiceType
 	}
 
 	serviceName := fmt.Sprintf("%s-replica", replica.Spec.ClusterName)
@@ -382,7 +401,7 @@ func scaleReplicaCreateMissingService(clientset kubernetes.Interface, replica *c
 		ServiceName: serviceName,
 		ClusterName: replica.Spec.ClusterName,
 		Port:        cluster.Spec.Port,
-		ServiceType: st,
+		ServiceType: serviceType,
 	}
 
 	// only add references to the exporter / pgBadger ports
