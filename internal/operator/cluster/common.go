@@ -16,16 +16,20 @@ package cluster
 */
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -79,6 +83,18 @@ func generatePassword() (string, error) {
 	generatedPasswordLength := util.GeneratedPasswordLength(operator.Pgo.Cluster.PasswordLength)
 	// from there, the password can be generated!
 	return util.GeneratePassword(generatedPasswordLength)
+}
+
+// getClusterInstanceServices gets all of the services applicable to each
+// PostgreSQL instances
+func getClusterInstanceServices(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (*v1.ServiceList, error) {
+	ctx := context.TODO()
+	options := metav1.ListOptions{
+		LabelSelector: fmt.Sprintf("%s=%s,!%s",
+			config.LABEL_PG_CLUSTER, cluster.Name, config.LABEL_PGO_BACKREST_REPO),
+	}
+
+	return clientset.CoreV1().Services(cluster.Namespace).List(ctx, options)
 }
 
 // makePostgreSQLPassword creates the expected hash for a password type for a

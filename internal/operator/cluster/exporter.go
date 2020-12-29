@@ -66,37 +66,45 @@ func AddExporter(clientset kubernetes.Interface, restconfig *rest.Config, cluste
 		return err
 	}
 
-	// set up the Service, which is still needed on a standby
-	svc, err := clientset.CoreV1().Services(cluster.Namespace).Get(ctx, cluster.Name, metav1.GetOptions{})
+	// set up the Services, which are still needed on a standby
+	services, err := getClusterInstanceServices(clientset, cluster)
 	if err != nil {
 		return err
 	}
 
-	// loop over the service ports to see if exporter port is already set up. if
-	// it is, we can return from there
-	for _, svcPort := range svc.Spec.Ports {
-		if svcPort.Name == exporterServicePortName {
-			return nil
+	// loop over each service to perform the necessary modifications
+svcLoop:
+	for i := range services.Items {
+		svc := &services.Items[i]
+
+		// loop over the service ports to see if exporter port is already set up. if
+		// it is, we can continue and skip the outerloop
+		for _, svcPort := range svc.Spec.Ports {
+			if svcPort.Name == exporterServicePortName {
+				continue svcLoop
+			}
 		}
-	}
 
-	// otherwise, we need to append a service port to the list
-	port, err := strconv.ParseInt(
-		util.GetValueOrDefault(cluster.Spec.ExporterPort, operator.Pgo.Cluster.ExporterPort), 10, 32)
-	if err != nil {
-		return err
-	}
+		// otherwise, we need to append a service port to the list
+		port, err := strconv.ParseInt(
+			util.GetValueOrDefault(cluster.Spec.ExporterPort, operator.Pgo.Cluster.ExporterPort), 10, 32)
+		// if we can't parse this for whatever reason, issue a warning and continue on
+		if err != nil {
+			log.Warn(err)
+		}
 
-	svcPort := v1.ServicePort{
-		Name:     exporterServicePortName,
-		Protocol: v1.ProtocolTCP,
-		Port:     int32(port),
-	}
+		svcPort := v1.ServicePort{
+			Name:     exporterServicePortName,
+			Protocol: v1.ProtocolTCP,
+			Port:     int32(port),
+		}
 
-	svc.Spec.Ports = append(svc.Spec.Ports, svcPort)
+		svc.Spec.Ports = append(svc.Spec.Ports, svcPort)
 
-	if _, err := clientset.CoreV1().Services(svc.Namespace).Update(ctx, svc, metav1.UpdateOptions{}); err != nil {
-		return err
+		// if we fail to update the service, warn, but continue on
+		if _, err := clientset.CoreV1().Services(svc.Namespace).Update(ctx, svc, metav1.UpdateOptions{}); err != nil {
+			log.Warn(err)
+		}
 	}
 
 	// this can't be installed if this is a standby, so abort if that's the case
@@ -111,7 +119,7 @@ func AddExporter(clientset kubernetes.Interface, restconfig *rest.Config, cluste
 		return err
 	}
 
-	// add the m onitoring user and all the views associated with this
+	// add the monitoring user and all the views associated with this
 	// user. this can be done by executing a script on the container itself
 	cmd := []string{"/bin/bash", exporterInstallScript}
 
@@ -188,27 +196,32 @@ func CreateExporterSecret(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 func RemoveExporter(clientset kubernetes.Interface, restconfig *rest.Config, cluster *crv1.Pgcluster) error {
 	ctx := context.TODO()
 
-	// close the service port
-	svc, err := clientset.CoreV1().Services(cluster.Namespace).Get(ctx, cluster.Name, metav1.GetOptions{})
+	// close the exporter port on each service
+	services, err := getClusterInstanceServices(clientset, cluster)
 	if err != nil {
 		return err
 	}
 
-	svcPorts := []v1.ServicePort{}
+	for i := range services.Items {
+		svc := &services.Items[i]
+		svcPorts := []v1.ServicePort{}
 
-	for _, svcPort := range svc.Spec.Ports {
-		// if we find the service port for the exporter, skip it in the loop
-		if svcPort.Name == exporterServicePortName {
-			continue
+		for _, svcPort := range svc.Spec.Ports {
+			// if we find the service port for the exporter, skip it in the loop, but
+			// as we will not be including it in the update
+			if svcPort.Name == exporterServicePortName {
+				continue
+			}
+
+			svcPorts = append(svcPorts, svcPort)
 		}
 
-		svcPorts = append(svcPorts, svcPort)
-	}
+		svc.Spec.Ports = svcPorts
 
-	svc.Spec.Ports = svcPorts
-
-	if _, err := clientset.CoreV1().Services(svc.Namespace).Update(ctx, svc, metav1.UpdateOptions{}); err != nil {
-		return err
+		// if we fail to update the service, warn but continue
+		if _, err := clientset.CoreV1().Services(svc.Namespace).Update(ctx, svc, metav1.UpdateOptions{}); err != nil {
+			log.Warn(err)
+		}
 	}
 
 	// disable the user before clearing the Secret, so there does not end up being
