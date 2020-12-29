@@ -390,7 +390,7 @@ func scaleReplicaCreateMissingService(clientset kubernetes.Interface, replica *c
 	// only add references to the exporter / pgBadger ports
 	clusterLabels := cluster.ObjectMeta.GetLabels()
 
-	if val, ok := clusterLabels[config.LABEL_EXPORTER]; ok && val == config.LABEL_TRUE {
+	if cluster.Spec.Exporter {
 		serviceFields.ExporterPort = cluster.Spec.ExporterPort
 	}
 
