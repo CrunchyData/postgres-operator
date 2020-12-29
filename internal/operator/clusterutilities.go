@@ -328,30 +328,33 @@ func GetBackrestDeployment(clientset kubernetes.Interface, cluster *crv1.Pgclust
 	return deployment, err
 }
 
-func GetBadgerAddon(clientset kubernetes.Interface, namespace string, cluster *crv1.Pgcluster, pgbadger_target string) string {
-	spec := cluster.Spec
-
-	if cluster.Labels[config.LABEL_BADGER] == "true" {
-		log.Debug("crunchy_badger was found as a label on cluster create")
-		badgerTemplateFields := badgerTemplateFields{}
-		badgerTemplateFields.CCPImageTag = util.GetStandardImageTag(spec.CCPImage, spec.CCPImageTag)
-		badgerTemplateFields.BadgerTarget = pgbadger_target
-		badgerTemplateFields.PGBadgerPort = spec.PGBadgerPort
-		badgerTemplateFields.CCPImagePrefix = util.GetValueOrDefault(spec.CCPImagePrefix, Pgo.Cluster.CCPImagePrefix)
-
-		var badgerDoc bytes.Buffer
-		err := config.BadgerTemplate.Execute(&badgerDoc, badgerTemplateFields)
-		if err != nil {
-			log.Error(err.Error())
-			return ""
-		}
-
-		if CRUNCHY_DEBUG {
-			_ = config.BadgerTemplate.Execute(os.Stdout, badgerTemplateFields)
-		}
-		return badgerDoc.String()
+// GetBadgerAddon is a legacy method that generates a JSONish string to be used
+// to add a pgBadger sidecar to a PostgreSQL instance
+func GetBadgerAddon(clientset kubernetes.Interface, cluster *crv1.Pgcluster, target string) string {
+	if !cluster.Spec.PGBadger {
+		return ""
 	}
-	return ""
+
+	log.Debugf("pgBadger enabled for cluster %q", cluster.Name)
+
+	badgerTemplateFields := badgerTemplateFields{
+		BadgerTarget:   target,
+		CCPImagePrefix: util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, Pgo.Cluster.CCPImagePrefix),
+		CCPImageTag:    util.GetStandardImageTag(cluster.Spec.CCPImage, cluster.Spec.CCPImageTag),
+		PGBadgerPort:   cluster.Spec.PGBadgerPort,
+	}
+
+	if CRUNCHY_DEBUG {
+		_ = config.BadgerTemplate.Execute(os.Stdout, badgerTemplateFields)
+	}
+
+	doc := bytes.Buffer{}
+	if err := config.BadgerTemplate.Execute(&doc, badgerTemplateFields); err != nil {
+		log.Error(err)
+		return ""
+	}
+
+	return doc.String()
 }
 
 // GetExporterAddon returns the template used to create an exporter container

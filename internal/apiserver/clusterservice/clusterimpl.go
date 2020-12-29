@@ -1496,11 +1496,10 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	// set the pgBackRest repository path
 	spec.BackrestRepoPath = request.BackrestRepoPath
 
-	// pgbadger - set with global flag first then check for a user flag
-	labels[config.LABEL_BADGER] = strconv.FormatBool(apiserver.BadgerFlag)
-	if request.BadgerFlag {
-		labels[config.LABEL_BADGER] = "true"
-	}
+	// enable the pgBadger sidecar based on the what the user passed in or what
+	// the default value is. the user value takes precedence, unless it's false,
+	// as the legacy check only looked for enablement
+	spec.PGBadger = request.BadgerFlag || apiserver.BadgerFlag
 
 	newInstance := &crv1.Pgcluster{
 		ObjectMeta: metav1.ObjectMeta{

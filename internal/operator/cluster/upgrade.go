@@ -483,6 +483,13 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 		delete(pgcluster.Spec.UserLabels, config.LABEL_EXPORTER)
 	}
 
+	// 4.6.0 moved pgBadger to use an attribute instead of a label. If this label
+	// exists on the current CRD, move the value to the attribute.
+	if _, ok := pgcluster.ObjectMeta.GetLabels()["crunchy-pgbadger"]; ok {
+		pgcluster.Spec.PGBadger = true
+		delete(pgcluster.ObjectMeta.Labels, "crunchy-pgbadger")
+	}
+
 	// since the current primary label is not used in this version of the Postgres Operator,
 	// delete it before moving on to other upgrade tasks
 	delete(pgcluster.ObjectMeta.Labels, config.LABEL_CURRENT_PRIMARY)

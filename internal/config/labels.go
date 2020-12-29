@@ -92,8 +92,6 @@ const (
 	LABEL_BACKREST_PITR_TARGET          = "backrest-pitr-target"
 	LABEL_BACKREST_STORAGE_TYPE         = "backrest-storage-type"
 	LABEL_BACKREST_S3_VERIFY_TLS        = "backrest-s3-verify-tls"
-	LABEL_BADGER                        = "crunchy-pgbadger"
-	LABEL_BADGER_CCPIMAGE               = "crunchy-pgbadger"
 	LABEL_BACKUP_TYPE_BACKREST          = "pgbackrest"
 	LABEL_BACKUP_TYPE_PGDUMP            = "pgdump"
 )
