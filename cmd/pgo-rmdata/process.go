@@ -43,6 +43,7 @@ const (
 	configConfigMapSuffix   = "config"
 	leaderConfigMapSuffix   = "leader"
 	failoverConfigMapSuffix = "failover"
+	syncConfigMapSuffix     = "sync"
 )
 
 func Delete(request Request) {
@@ -235,6 +236,8 @@ func removeClusterConfigmaps(request Request) {
 		// next, the name of the failover configmap, which is
 		// "`clusterName`-failover"
 		fmt.Sprintf("%s-%s", request.ClusterName, failoverConfigMapSuffix),
+		// next, if there is a synchronous replication configmap, clean that up
+		fmt.Sprintf("%s-%s", request.ClusterName, syncConfigMapSuffix),
 		// finally, if there is a pgbouncer, remove the pgbouncer configmap
 		util.GeneratePgBouncerConfigMapName(request.ClusterName),
 	}
