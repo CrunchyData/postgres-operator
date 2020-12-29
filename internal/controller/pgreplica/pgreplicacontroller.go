@@ -212,6 +212,14 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
+	// if the service type changed, updated on the instance
+	// if there is an error, log but continue
+	if oldPgreplica.Spec.ServiceType != newPgreplica.Spec.ServiceType {
+		if err := clusteroperator.UpdateReplicaService(c.Client, cluster, newPgreplica); err != nil {
+			log.Error(err)
+		}
+	}
+
 	// if the tolerations array changed, updated the tolerations on the instance
 	if !reflect.DeepEqual(oldPgreplica.Spec.Tolerations, newPgreplica.Spec.Tolerations) {
 		// get the Deployment object associated with this instance

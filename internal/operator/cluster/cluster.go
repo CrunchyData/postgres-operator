@@ -56,7 +56,7 @@ type ServiceTemplateFields struct {
 	ServiceType  v1.ServiceType
 }
 
-// ReplicaSuffix ...
+// ReplicaSuffix is the suffix of the replica Service name
 const ReplicaSuffix = "-replica"
 
 const (
