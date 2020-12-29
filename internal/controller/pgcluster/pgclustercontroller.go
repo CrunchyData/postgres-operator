@@ -37,6 +37,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
@@ -234,6 +235,12 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 			log.Error(err)
 			return
 		}
+	}
+
+	// if the service type has changed, update the service type. Log an error if
+	// it fails, but continue on
+	if oldcluster.Spec.ServiceType != newcluster.Spec.ServiceType {
+		updateServices(c.Client, newcluster)
 	}
 
 	// see if we are adding / removing the metrics collection sidecar
@@ -481,6 +488,57 @@ func updatePgBouncer(c *Controller, oldCluster *crv1.Pgcluster, newCluster *crv1
 
 	// otherwise, this is an update
 	return clusteroperator.UpdatePgbouncer(c.Client, oldCluster, newCluster)
+}
+
+// updateServices handles any updates to the Service objects. Given how legacy
+// replica services are handled (really, replica service singular), the update
+// around replica services is a bit grotty, but it is what it is.
+//
+// If there are errors on the updates, this logs them but will continue on
+// unless otherwise noted.
+func updateServices(clientset kubeapi.Interface, cluster *crv1.Pgcluster) {
+	ctx := context.TODO()
+
+	// handle the primary instance
+	if err := clusteroperator.UpdateClusterService(clientset, cluster); err != nil {
+		log.Error(err)
+	}
+
+	// handle the replica instances. Ish. This is kind of "broken" due to the
+	// fact that we have a single service for all of the replicas. so, we'll
+	// loop through all of the replicas and try to see if any of them have
+	// any specialized service types. If so, we'll pluck that one out and use
+	// it to apply
+	options := metav1.ListOptions{
+		LabelSelector: fields.OneTermEqualSelector(config.LABEL_PG_CLUSTER, cluster.Name).String(),
+	}
+	replicas, err := clientset.CrunchydataV1().Pgreplicas(cluster.Namespace).List(ctx, options)
+
+	// well, if there is an error here, log it and abort
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	// if there are no replicas, also return
+	if len(replicas.Items) == 0 {
+		return
+	}
+
+	// ok, we're guaranteed at least one replica, so there should be a Service
+	var replica *crv1.Pgreplica
+	for i := range replicas.Items {
+		// store the replica no matter what, for later comparison
+		replica = &replicas.Items[i]
+		// however, if the servicetype is customized, break out. Yup.
+		if replica.Spec.ServiceType != "" {
+			break
+		}
+	}
+
+	if err := clusteroperator.UpdateReplicaService(clientset, cluster, replica); err != nil {
+		log.Error(err)
+	}
 }
 
 // updateTablespaces updates the PostgreSQL instance Deployments to reflect the
