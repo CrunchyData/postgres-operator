@@ -31,11 +31,15 @@ var (
 	DisableLogin bool
 	// DisableMetrics allows a user to disable metrics collection
 	DisableMetrics bool
+	// DisablePGBadger allows a user to disable pgBadger
+	DisablePGBadger bool
 	// EnableLogin allows a user to enable the ability for a PostgreSQL uesr to
 	// log in
 	EnableLogin bool
 	// EnableMetrics allows a user to enbale metrics collection
 	EnableMetrics bool
+	// EnablePGBadger allows a user to enbale pgBadger
+	EnablePGBadger bool
 	// ExpireUser sets a user to having their password expired
 	ExpireUser bool
 	// ExporterRotatePassword rotates the password for the designed PostgreSQL
@@ -92,6 +96,8 @@ func init() {
 	UpdateClusterCmd.Flags().BoolVar(&DisableAutofailFlag, "disable-autofail", false, "Disables autofail capabitilies in the cluster.")
 	UpdateClusterCmd.Flags().BoolVar(&DisableMetrics, "disable-metrics", false,
 		"Disable the metrics collection sidecar. May cause brief downtime.")
+	UpdateClusterCmd.Flags().BoolVar(&DisablePGBadger, "disable-pgbadger", false,
+		"Disable the pgBadger sidecar. May cause brief downtime.")
 	UpdateClusterCmd.Flags().BoolVar(&EnableAutofailFlag, "enable-autofail", false, "Enables autofail capabitilies in the cluster.")
 	UpdateClusterCmd.Flags().StringVar(&MemoryRequest, "memory", "", "Set the amount of RAM to request, e.g. "+
 		"1GiB.")
@@ -118,6 +124,8 @@ func init() {
 		"the Crunchy Postgres Exporter sidecar container.")
 	UpdateClusterCmd.Flags().BoolVar(&EnableMetrics, "enable-metrics", false,
 		"Enable the metrics collection sidecar. May cause brief downtime.")
+	UpdateClusterCmd.Flags().BoolVar(&EnablePGBadger, "enable-pgbadger", false,
+		"Enable the pgBadger sidecar. May cause brief downtime.")
 	UpdateClusterCmd.Flags().BoolVar(&ExporterRotatePassword, "exporter-rotate-password", false, "Used to rotate the password for the metrics collection agent.")
 	UpdateClusterCmd.Flags().BoolVarP(&EnableStandby, "enable-standby", "", false,
 		"Enables standby mode in the cluster(s) specified.")
@@ -258,6 +266,10 @@ var UpdateClusterCmd = &cobra.Command{
 
 		if EnableMetrics || DisableMetrics {
 			fmt.Println("Adding or removing a metrics collection sidecar can cause downtime.")
+		}
+
+		if EnablePGBadger || DisablePGBadger {
+			fmt.Println("Adding or removing a pgBadger sidecar can cause downtime.")
 		}
 
 		if len(Tablespaces) > 0 {

@@ -1903,6 +1903,15 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		case msgs.UpdateClusterMetricsDoNothing: // this is never reached -- no-op
 		}
 
+		// enable or disable the pgBadger sidecar
+		switch request.PGBadger {
+		case msgs.UpdateClusterPGBadgerEnable:
+			cluster.Spec.PGBadger = true
+		case msgs.UpdateClusterPGBadgerDisable:
+			cluster.Spec.PGBadger = false
+		case msgs.UpdateClusterPGBadgerDoNothing: // this is never reached -- no-op
+		}
+
 		// enable or disable standby mode based on UpdateClusterStandbyStatus provided in
 		// the request
 		switch request.Standby {

@@ -372,6 +372,16 @@ const (
 	UpdateClusterMetricsDisable
 )
 
+// UpdateClusterPGBadger determines whether or not to enable/disable the
+// pgBadger sidecar in a cluster
+type UpdateClusterPGBadger int
+
+const (
+	UpdateClusterPGBadgerDoNothing UpdateClusterPGBadger = iota
+	UpdateClusterPGBadgerEnable
+	UpdateClusterPGBadgerDisable
+)
+
 // UpdateClusterStandbyStatus defines the types for updating the Standby status
 type UpdateClusterStandbyStatus int
 
@@ -447,7 +457,10 @@ type UpdateClusterRequest struct {
 	MemoryRequest string
 	// Metrics allows for the enabling/disabling of the metrics sidecar. This can
 	// cause downtime and triggers a rolling update
-	Metrics     UpdateClusterMetrics
+	Metrics UpdateClusterMetrics
+	// PGBadger allows for the enabling/disabling of the pgBadger sidecar. This can
+	// cause downtime and triggers a rolling update
+	PGBadger    UpdateClusterPGBadger
 	Standby     UpdateClusterStandbyStatus
 	Startup     bool
 	Shutdown    bool

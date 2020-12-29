@@ -255,6 +255,25 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
+	// see if we are adding / removing the pgBadger sidecar
+	if oldcluster.Spec.PGBadger != newcluster.Spec.PGBadger {
+		var err error
+
+		// determine if the sidecar is being enabled/disabled and take the precursor
+		// actions before the deployment template is modified
+		if newcluster.Spec.PGBadger {
+			err = clusteroperator.AddPGBadger(c.Client, c.Client.Config, newcluster)
+		} else {
+			err = clusteroperator.RemovePGBadger(c.Client, c.Client.Config, newcluster)
+		}
+
+		if err == nil {
+			rollingUpdateFuncs = append(rollingUpdateFuncs, clusteroperator.UpdatePGBadgerSidecar)
+		} else {
+			log.Errorf("could not update pgbadger sidecar: %q", err.Error())
+		}
+	}
+
 	// see if any of the resource values have changed for the database or exporter container,
 	// if so, update them
 	if !reflect.DeepEqual(oldcluster.Spec.Resources, newcluster.Spec.Resources) ||

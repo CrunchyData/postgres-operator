@@ -206,9 +206,9 @@
                 {{ if .ExporterAddon }}
                 ,{{.ExporterAddon }}
                 {{ end }}
-
-                {{.BadgerAddon }}
-
+                {{ if .BadgerAddon }}
+                ,{{.BadgerAddon }}
+                {{ end }}
                 ],
                 "volumes": [{
                         "name": "pgdata",
