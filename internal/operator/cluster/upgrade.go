@@ -497,6 +497,13 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 		delete(pgcluster.Spec.UserLabels, "service-type")
 	}
 
+	// 4.6.0 moved the "autofail" label to the DisableAutofail attribute. Given
+	// by default we need to start in an autofailover state, we just delete the
+	// legacy attribute
+	if _, ok := pgcluster.ObjectMeta.GetLabels()["autofail"]; ok {
+		delete(pgcluster.ObjectMeta.Labels, "autofail")
+	}
+
 	// since the current primary label is not used in this version of the Postgres Operator,
 	// delete it before moving on to other upgrade tasks
 	delete(pgcluster.ObjectMeta.Labels, config.LABEL_CURRENT_PRIMARY)
@@ -533,10 +540,10 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 	// use with PostGIS enabled pgclusters
 	pgcluster.Spec.CCPImageTag = parameters[config.LABEL_CCP_IMAGE_KEY]
 
-	// set a default autofail value of "true" to enable Patroni's replication. If left to an existing
-	// value of "false," Patroni will be in a paused state and unable to sync all replicas to the
-	// current timeline
-	pgcluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL] = "true"
+	// set a default disable autofail value of "false" to enable Patroni's replication.
+	// If left to an existing value of "true," Patroni will be in a paused state
+	// and unable to sync all replicas to the current timeline
+	pgcluster.Spec.DisableAutofail = false
 
 	// Don't think we'll need to do this, but leaving the comment for now....
 	// pgcluster.ObjectMeta.Labels[config.LABEL_POD_ANTI_AFFINITY] = ""

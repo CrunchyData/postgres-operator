@@ -49,6 +49,10 @@ type PgclusterSpec struct {
 	CCPImagePrefix string `json:"ccpimageprefix"`
 	PGOImagePrefix string `json:"pgoimageprefix"`
 	Port           string `json:"port"`
+	// DisableAutofail, if set to true, disables the autofail/HA capabilities
+	// We choose this, instead of the affirmative, so that way we default to
+	// autofail being on, given we're doing some legacy CRD stuff here
+	DisableAutofail bool `json:"disableAutofail"`
 	// PGBadger, if set to true, enables the pgBadger sidecar
 	PGBadger     bool   `json:"pgBadger"`
 	PGBadgerPort string `json:"pgbadgerport"`

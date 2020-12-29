@@ -231,16 +231,6 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 	return err
 }
 
-// IsAutofailEnabled - returns true if autofail label is set to true, false if not.
-func IsAutofailEnabled(cluster *crv1.Pgcluster) bool {
-	labels := cluster.ObjectMeta.Labels
-	failLabel := labels[config.LABEL_AUTOFAIL]
-
-	log.Debugf("IsAutoFailEnabled: %s", failLabel)
-
-	return failLabel == "true"
-}
-
 // GeneratedPasswordValidUntilDays returns the value for the number of days that
 // a password is valid for, which is used as part of PostgreSQL's VALID UNTIL
 // directive on a user.  It first determines if the user provided this value via

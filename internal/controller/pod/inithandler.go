@@ -18,7 +18,6 @@ limitations under the License.
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller"
@@ -101,15 +100,14 @@ func (c *Controller) handleBackRestRepoInit(newPod *apiv1.Pod, cluster *crv1.Pgc
 // regardless of the specific type of cluster (e.g. regualar or standby) or the reason the
 // cluster is being initialized (initial bootstrap or restore)
 func (c *Controller) handleCommonInit(cluster *crv1.Pgcluster) error {
-	// Disable autofailover in the cluster that is now "Ready" if the autofail label is set
-	// to "false" on the pgcluster (i.e. label "autofail=true")
-	autofailEnabled, err := strconv.ParseBool(cluster.ObjectMeta.Labels[config.LABEL_AUTOFAIL])
-	if err != nil {
-		log.Error(err)
-		return err
-	} else if !autofailEnabled {
-		_ = util.ToggleAutoFailover(c.Client, false,
-			cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE], cluster.Namespace)
+	// Disable autofailover in the cluster that is now "Ready" if autofilover
+	// is disabled for the cluster
+	if cluster.Spec.DisableAutofail {
+		// accepts the inverse
+		if err := util.ToggleAutoFailover(c.Client, !cluster.Spec.DisableAutofail,
+			cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE], cluster.Namespace); err != nil {
+			log.Error(err)
+		}
 	}
 
 	if err := operator.UpdatePGHAConfigInitFlag(c.Client, false, cluster.Name,
