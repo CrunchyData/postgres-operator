@@ -756,7 +756,8 @@ make changes, as described below.
 | Limits | `create`, `update` | Specify the container resource limits that the PostgreSQL cluster should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | Name | `create` | The name of the PostgreSQL instance that is the primary. On creation, this should be set to be the same as `ClusterName`. |
 | Namespace | `create` | The Kubernetes Namespace that the PostgreSQL cluster is deployed in. |
-| PGBadgerPort | `create` | If the `"crunchy-pgbadger"` label is set in `UserLabels`, then this specifies the port that the pgBadger sidecar runs on (e.g. `10000`) |
+| PGBadger | `create` | If `true`, deploys the `crunchy-pgbadger` sidecar for query analysis. |
+| PGBadgerPort | `create` | If the `PGBadger` label is set, then this specifies the port that the pgBadger sidecar runs on (e.g. `10000`) |
 | PGDataSource | `create` | Used to indicate if a PostgreSQL cluster should bootstrap its data from a pgBackRest repository. This uses the PostgreSQL Data Source Specification, described below. |
 | PGOImagePrefix | `create` | If provided, the image prefix (or registry) of any PostgreSQL Operator images that are used for jobs, e.g. `registry.developers.crunchydata.com/crunchydata`. The default is to use the image prefix set in the PostgreSQL Operator configuration. |
 | PgBouncer | `create`, `update` | If specified, defines the attributes to use for the pgBouncer connection pooling deployment that can be used in conjunction with this PostgreSQL cluster. Please see the specification defined below. |

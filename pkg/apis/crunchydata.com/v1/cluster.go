@@ -49,7 +49,9 @@ type PgclusterSpec struct {
 	CCPImagePrefix string `json:"ccpimageprefix"`
 	PGOImagePrefix string `json:"pgoimageprefix"`
 	Port           string `json:"port"`
-	PGBadgerPort   string `json:"pgbadgerport"`
+	// PGBadger, if set to true, enables the pgBadger sidecar
+	PGBadger     bool   `json:"pgBadger"`
+	PGBadgerPort string `json:"pgbadgerport"`
 	// Exporter, if set to true, enables the exporter sidecar
 	Exporter     bool   `json:"exporter"`
 	ExporterPort string `json:"exporterport"`

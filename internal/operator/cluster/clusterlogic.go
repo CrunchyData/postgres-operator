@@ -64,10 +64,8 @@ func addClusterCreateMissingService(clientset kubernetes.Interface, cl *crv1.Pgc
 		ServiceType: st,
 	}
 
-	// only add references to the exporter / pgBadger ports
-	clusterLabels := cl.ObjectMeta.GetLabels()
-
-	if val, ok := clusterLabels[config.LABEL_BADGER]; ok && val == config.LABEL_TRUE {
+	// set the pgBadger port if pgBadger is enabled
+	if cl.Spec.PGBadger {
 		serviceFields.PGBadgerPort = cl.Spec.PGBadgerPort
 	}
 
@@ -323,7 +321,7 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 		ContainerResources: operator.GetResourcesJSON(cl.Spec.Resources, cl.Spec.Limits),
 		ConfVolume:         operator.GetConfVolume(clientset, cl, namespace),
 		ExporterAddon:      operator.GetExporterAddon(cl.Spec),
-		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY]),
+		BadgerAddon:        operator.GetBadgerAddon(clientset, cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY]),
 		PgmonitorEnvVars:   operator.GetPgmonitorEnvVars(cl),
 		ScopeLabel:         config.LABEL_PGHA_SCOPE,
 		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY],
@@ -388,13 +386,11 @@ func scaleReplicaCreateMissingService(clientset kubernetes.Interface, replica *c
 	}
 
 	// only add references to the exporter / pgBadger ports
-	clusterLabels := cluster.ObjectMeta.GetLabels()
-
 	if cluster.Spec.Exporter {
 		serviceFields.ExporterPort = cluster.Spec.ExporterPort
 	}
 
-	if val, ok := clusterLabels[config.LABEL_BADGER]; ok && val == config.LABEL_TRUE {
+	if cluster.Spec.PGBadger {
 		serviceFields.PGBadgerPort = cluster.Spec.PGBadgerPort
 	}
 
@@ -470,7 +466,7 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 		NodeSelector:       operator.GetAffinity(replica.Spec.UserLabels["NodeLabelKey"], replica.Spec.UserLabels["NodeLabelValue"], "In"),
 		PodAntiAffinity:    operator.GetPodAntiAffinity(cluster, crv1.PodAntiAffinityDeploymentDefault, cluster.Spec.PodAntiAffinity.Default),
 		ExporterAddon:      operator.GetExporterAddon(cluster.Spec),
-		BadgerAddon:        operator.GetBadgerAddon(clientset, namespace, cluster, replica.Spec.Name),
+		BadgerAddon:        operator.GetBadgerAddon(clientset, cluster, replica.Spec.Name),
 		ScopeLabel:         config.LABEL_PGHA_SCOPE,
 		PgbackrestEnvVars: operator.GetPgbackrestEnvVars(cluster, replica.Spec.Name,
 			cluster.Spec.Port, cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
