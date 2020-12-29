@@ -490,6 +490,13 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 		delete(pgcluster.ObjectMeta.Labels, "crunchy-pgbadger")
 	}
 
+	// 4.6.0 moved the format "service-type" label into the ServiceType CRD
+	// attribute, so we may need to do the same
+	if val, ok := pgcluster.Spec.UserLabels["service-type"]; ok {
+		pgcluster.Spec.ServiceType = v1.ServiceType(val)
+		delete(pgcluster.Spec.UserLabels, "service-type")
+	}
+
 	// since the current primary label is not used in this version of the Postgres Operator,
 	// delete it before moving on to other upgrade tasks
 	delete(pgcluster.ObjectMeta.Labels, config.LABEL_CURRENT_PRIMARY)

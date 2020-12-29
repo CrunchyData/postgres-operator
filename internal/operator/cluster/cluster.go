@@ -53,7 +53,7 @@ type ServiceTemplateFields struct {
 	Port         string
 	PGBadgerPort string
 	ExporterPort string
-	ServiceType  string
+	ServiceType  v1.ServiceType
 }
 
 // ReplicaSuffix ...

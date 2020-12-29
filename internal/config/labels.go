@@ -52,7 +52,6 @@ const (
 	LABEL_CCP_IMAGE_TAG_KEY = "ccp-image-tag"
 	LABEL_CCP_IMAGE_KEY     = "ccp-image"
 	LABEL_IMAGE_PREFIX      = "image-prefix"
-	LABEL_SERVICE_TYPE      = "service-type"
 	LABEL_POD_ANTI_AFFINITY = "pg-pod-anti-affinity"
 )
 

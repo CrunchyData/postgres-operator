@@ -717,14 +717,14 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		}
 	}
 
-	if request.ServiceType != "" {
-		if request.ServiceType != config.DEFAULT_SERVICE_TYPE && request.ServiceType != config.LOAD_BALANCER_SERVICE_TYPE && request.ServiceType != config.NODEPORT_SERVICE_TYPE {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = "error ServiceType should be either ClusterIP or LoadBalancer "
-
-			return resp
-		}
-		userLabelsMap[config.LABEL_SERVICE_TYPE] = request.ServiceType
+	// validate the optional ServiceType parameter
+	switch request.ServiceType {
+	default:
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = fmt.Sprintf("invalid service type %q", request.ServiceType)
+		return resp
+	case v1.ServiceTypeClusterIP, v1.ServiceTypeNodePort,
+		v1.ServiceTypeLoadBalancer, v1.ServiceTypeExternalName, "": // no-op
 	}
 
 	// if the request is for a standby cluster then validate it to ensure all parameters have
@@ -1359,6 +1359,9 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.Replicas = strconv.Itoa(request.ReplicaCount)
 		log.Debugf("replicas is  %s", spec.Replicas)
 	}
+
+	spec.ServiceType = request.ServiceType
+
 	spec.UserLabels = userLabelsMap
 	spec.UserLabels[config.LABEL_PGO_VERSION] = msgs.PGO_VERSION
 

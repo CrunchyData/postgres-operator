@@ -37,12 +37,15 @@ type Pgreplica struct {
 // PgreplicaSpec ...
 // swagger:ignore
 type PgreplicaSpec struct {
-	Namespace      string            `json:"namespace"`
-	Name           string            `json:"name"`
-	ClusterName    string            `json:"clustername"`
-	ReplicaStorage PgStorageSpec     `json:"replicastorage"`
-	Status         string            `json:"status"`
-	UserLabels     map[string]string `json:"userlabels"`
+	Namespace      string        `json:"namespace"`
+	Name           string        `json:"name"`
+	ClusterName    string        `json:"clustername"`
+	ReplicaStorage PgStorageSpec `json:"replicastorage"`
+	// ServiceType references the type of Service that should be used when
+	// deploying PostgreSQL instances
+	ServiceType v1.ServiceType    `json:"serviceType"`
+	Status      string            `json:"status"`
+	UserLabels  map[string]string `json:"userlabels"`
 	// Tolerations are an optional list of Pod toleration rules that are applied
 	// to the PostgreSQL instance.
 	Tolerations []v1.Toleration `json:"tolerations"`

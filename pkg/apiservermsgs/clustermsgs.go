@@ -62,7 +62,7 @@ type CreateClusterRequest struct {
 	CCPImagePrefix      string
 	PGOImagePrefix      string
 	ReplicaCount        int
-	ServiceType         string
+	ServiceType         v1.ServiceType
 	MetricsFlag         bool
 	// ExporterCPULimit, if specified, is the value of the max CPU for a
 	// Crunchy Postgres Exporter sidecar container
@@ -572,7 +572,7 @@ type ClusterScaleRequest struct {
 	ReplicaCount int `json:"replicaCount"`
 	// ServiceType is the kind of Service to deploy with this instance. Defaults
 	// to the value on the cluster.
-	ServiceType string `json:"serviceType"`
+	ServiceType v1.ServiceType `json:"serviceType"`
 	// StorageConfig, if provided, specifies which of the storage configuration
 	// options should be used. Defaults to what the main cluster definition uses.
 	StorageConfig string `json:"storageConfig"`

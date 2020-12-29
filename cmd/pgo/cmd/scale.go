@@ -24,6 +24,7 @@ import (
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	v1 "k8s.io/api/core/v1"
 )
 
 var ReplicaCount int
@@ -76,7 +77,7 @@ func scaleCluster(args []string, ns string) {
 			Namespace:     ns,
 			NodeLabel:     NodeLabel,
 			ReplicaCount:  ReplicaCount,
-			ServiceType:   ServiceType,
+			ServiceType:   v1.ServiceType(ServiceType),
 			StorageConfig: StorageConfig,
 			Tolerations:   getClusterTolerations(Tolerations),
 		}
