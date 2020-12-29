@@ -23,7 +23,6 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
 	log "github.com/sirupsen/logrus"
@@ -47,6 +46,7 @@ const (
 	configConfigMapSuffix   = "config"
 	leaderConfigMapSuffix   = "leader"
 	failoverConfigMapSuffix = "failover"
+	syncConfigMapSuffix     = "sync"
 )
 
 func Delete(request Request) {
@@ -232,6 +232,8 @@ func removeClusterConfigmaps(request Request) {
 		// next, the name of the general configuration settings configmap, which is
 		// "`clusterName`-config"
 		fmt.Sprintf("%s-%s", request.ClusterName, configConfigMapSuffix),
+		// next, if there is a synchronous replication configmap, clean that up
+		fmt.Sprintf("%s-%s", request.ClusterName, syncConfigMapSuffix),
 		// finally, the name of the failover configmap, which is
 		// "`clusterName`-failover"
 		fmt.Sprintf("%s-%s", request.ClusterName, failoverConfigMapSuffix),
