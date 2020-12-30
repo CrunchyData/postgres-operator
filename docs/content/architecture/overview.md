@@ -78,7 +78,7 @@ built-in metrics and connection pooling, similar to:
 We can accomplish that with a single command:
 
 ```shell
-pgo create cluster hacluster --replica-count=1 --metrics --pgbackrest-storage-type="local,s3" --pgbouncer --pgbadger
+pgo create cluster hacluster --replica-count=1 --metrics --pgbackrest-storage-type="posix,s3" --pgbouncer --pgbadger
 ```
 
 The PostgreSQL Operator handles setting up all of the various Deployments and

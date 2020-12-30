@@ -21,7 +21,7 @@ pgo create cluster [flags]
       --annotation strings                    Add an Annotation to all of the managed deployments (PostgreSQL, pgBackRest, pgBouncer)
                                               The format to add an annotation is "name=value"
                                               The format to remove an annotation is "name-"
-                                              
+
                                               For example, to add two annotations: "--annotation=hippo=awesome,elephant=cool"
       --annotation-pgbackrest strings         Add an Annotation specifically to pgBackRest deployments
                                               The format to add an annotation is "name=value"
@@ -59,7 +59,7 @@ pgo create cluster [flags]
       --pgbackrest-custom-config string       The name of a ConfigMap containing pgBackRest configuration files.
       --pgbackrest-memory string              Set the amount of memory to request for the pgBackRest repository. Defaults to server value (48Mi).
       --pgbackrest-memory-limit string        Set the amount of memory to limit for the pgBackRest repository.
-      --pgbackrest-pvc-size string            The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "local" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"
+      --pgbackrest-pvc-size string            The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "posix" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"
       --pgbackrest-repo-path string           The pgBackRest repository path that should be utilized instead of the default. Required for standby
                                               clusters to define the location of an existing pgBackRest repository.
       --pgbackrest-s3-bucket string           The AWS S3 bucket that should be utilized for the cluster when the "s3" storage type is enabled for pgBackRest.
@@ -71,7 +71,7 @@ pgo create cluster [flags]
       --pgbackrest-s3-uri-style string        Specifies whether "host" or "path" style URIs will be used when connecting to S3.
       --pgbackrest-s3-verify-tls              This sets if pgBackRest should verify the TLS certificate when connecting to S3. To disable, use "--pgbackrest-s3-verify-tls=false". (default true)
       --pgbackrest-storage-config string      The name of the storage config in pgo.yaml to use for the pgBackRest local repository.
-      --pgbackrest-storage-type string        The type of storage to use with pgBackRest. Either "local", "s3" or both, comma separated. (default "local")
+      --pgbackrest-storage-type string        The type of storage to use with pgBackRest. Either "posix", "s3" or both, comma separated. (default "posix")
       --pgbadger                              Adds the crunchy-pgbadger container to the database pod.
       --pgbouncer                             Adds a crunchy-pgbouncer deployment to the cluster.
       --pgbouncer-cpu string                  Set the number of millicores to request for CPU for pgBouncer. Defaults to being unset.
@@ -100,13 +100,13 @@ pgo create cluster [flags]
       --storage-config string                 The name of a Storage config in pgo.yaml to use for the cluster storage.
       --sync-replication                      Enables synchronous replication for the cluster.
       --tablespace strings                    Create a PostgreSQL tablespace on the cluster, e.g. "name=ts1:storageconfig=nfsstorage". The format is a key/value map that is delimited by "=" and separated by ":". The following parameters are available:
-                                              
+
                                               - name (required): the name of the PostgreSQL tablespace
                                               - storageconfig (required): the storage configuration to use, as specified in the list available in the "pgo-config" ConfigMap (aka "pgo.yaml")
                                               - pvcsize: the size of the PVC capacity, which overrides the value set in the specified storageconfig. Follows the Kubernetes quantity format.
-                                              
+
                                               For example, to create a tablespace with the NFS storage configuration with a PVC of size 10GiB:
-                                              
+
                                               --tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi
       --tls-only                              If true, forces all PostgreSQL connections to be over TLS. Must also set "server-tls-secret" and "server-ca-secret"
       --toleration strings                    Set Pod tolerations for each PostgreSQL instance in a cluster.

@@ -49,8 +49,8 @@ allowing them to replay old WAL logs
 backups and perform full and point-in-time restores
 
 The pgBackRest repository can be configured to use storage that resides within
-the Kubernetes cluster (the `local` option), Amazon S3 or a storage system that
-uses the S3 protocol (the `s3` option), or both (`local,s3`).
+the Kubernetes cluster (the `posix` option), Amazon S3 or a storage system that
+uses the S3 protocol (the `s3` option), or both (`posix,s3`).
 
 Once the PostgreSQL primary instance is ready, there are two follow up actions
 that the PostgreSQL Operator takes to properly leverage the pgBackRest
@@ -147,7 +147,7 @@ pgo create cluster mycluster2 --restore-from=mycluster1
 ```
 
 By default, pgBackRest will restore the latest backup available in the repository, and will replay
-all available WAL archives.  However, additional pgBackRest options can be specified using the 
+all available WAL archives.  However, additional pgBackRest options can be specified using the
 `restore-opts` option, which allows the restore command to be further tailored and customized.  For
 instance, the following demonstrates how a point-in-time restore can be utilized when creating a
 new cluster:

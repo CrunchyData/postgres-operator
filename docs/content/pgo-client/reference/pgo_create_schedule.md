@@ -22,7 +22,7 @@ pgo create schedule [flags]
       --database string                  The database to run the SQL policy against.
   -h, --help                             help for schedule
       --pgbackrest-backup-type string    The type of pgBackRest backup to schedule (full, diff or incr).
-      --pgbackrest-storage-type string   The type of storage to use when scheduling pgBackRest backups. Either "local", "s3" or both, comma separated. (default "local")
+      --pgbackrest-storage-type string   The type of storage to use when scheduling pgBackRest backups. Either "posix", "s3" or both, comma separated. (default "posix")
       --policy string                    The policy to use for SQL schedules.
       --schedule string                  The schedule assigned to the cron task.
       --schedule-opts string             The custom options passed to the create schedule API.

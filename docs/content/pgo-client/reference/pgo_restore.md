@@ -9,7 +9,7 @@ Perform a restore from previous backup
 
 RESTORE performs a restore to a new PostgreSQL cluster. This includes stopping the database and recreating a new primary with the restored data.  Valid backup types to restore from are pgbackrest and pgdump. For example:
 
-	pgo restore mycluster 
+	pgo restore mycluster
 
 ```
 pgo restore [flags]
@@ -24,7 +24,7 @@ pgo restore [flags]
   -h, --help                             help for restore
       --no-prompt                        No command line confirmation.
       --node-label string                The node label (key=value) to use when scheduling the restore job, and in the case of a pgBackRest restore, also the new (i.e. restored) primary deployment. If not set, any node is used.
-      --pgbackrest-storage-type string   The type of storage to use for a pgBackRest restore. Either "local", "s3". (default "local")
+      --pgbackrest-storage-type string   The type of storage to use for a pgBackRest restore. Either "posix", "s3". (default "posix")
   -d, --pgdump-database string           The name of the database pgdump will restore. (default "postgres")
       --pitr-target string               The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.
 ```

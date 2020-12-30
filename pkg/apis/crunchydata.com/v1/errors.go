@@ -1,12 +1,14 @@
-package util
+package v1
+
+import "errors"
 
 /*
- Copyright 2019 - 2020 Crunchy Data Solutions, Inc.
+ Copyright 2020 Crunchy Data Solutions, Inc.
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
 
-      http://www.apache.org/licenses/LICENSE-2.0
+ http://www.apache.org/licenses/LICENSE-2.0
 
  Unless required by applicable law or agreed to in writing, software
  distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,10 +17,7 @@ package util
  limitations under the License.
 */
 
-const (
-	BackrestRepoDeploymentName = "%s-backrest-shared-repo"
-	BackrestRepoServiceName    = "%s-backrest-shared-repo"
-	BackrestRepoPVCName        = "%s-pgbr-repo"
-	// #nosec: G101
-	BackrestRepoSecretName = "%s-backrest-repo-config"
+var (
+	ErrStorageTypesEmpty  = errors.New("no storage types detected")
+	ErrInvalidStorageType = errors.New("invalid storage type")
 )

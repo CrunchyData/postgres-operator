@@ -76,13 +76,10 @@ metadata:
   annotations:
     current-primary: ${pgo_cluster_name}
   labels:
-    autofail: "true"
-    crunchy-pgbadger: "false"
     crunchy-pgha-scope: ${pgo_cluster_name}
     deployment-name: ${pgo_cluster_name}
     name: ${pgo_cluster_name}
     pg-cluster: ${pgo_cluster_name}
-    pg-pod-anti-affinity: ""
     pgo-version: {{< param operatorVersion >}}
     pgouser: admin
   name: ${pgo_cluster_name}
@@ -267,14 +264,10 @@ metadata:
   annotations:
     current-primary: ${pgo_cluster_name}
   labels:
-    autofail: "true"
-    backrest-storage-type: "s3"
-    crunchy-pgbadger: "false"
     crunchy-pgha-scope: ${pgo_cluster_name}
     deployment-name: ${pgo_cluster_name}
     name: ${pgo_cluster_name}
     pg-cluster: ${pgo_cluster_name}
-    pg-pod-anti-affinity: ""
     pgo-version: {{< param operatorVersion >}}
     pgouser: admin
   name: ${pgo_cluster_name}
@@ -305,6 +298,8 @@ spec:
     storagetype: dynamic
     supplementalgroups: ""
   annotations: {}
+  backrestStorageTypes:
+  - s3
   backrestS3Bucket: ${backrest_s3_bucket}
   backrestS3Endpoint: ${backrest_s3_endpoint}
   backrestS3Region: ${backrest_s3_region}
@@ -332,7 +327,6 @@ spec:
   tolerations: []
   user: hippo
   userlabels:
-    backrest-storage-type: "s3"
     pgo-version: {{< param operatorVersion >}}
 EOF
 
@@ -397,13 +391,10 @@ metadata:
   annotations:
     current-primary: ${pgo_cluster_name}
   labels:
-    autofail: "true"
-    crunchy-pgbadger: "false"
     crunchy-pgha-scope: ${pgo_cluster_name}
     deployment-name: ${pgo_cluster_name}
     name: ${pgo_cluster_name}
     pg-cluster: ${pgo_cluster_name}
-    pg-pod-anti-affinity: ""
     pgo-version: {{< param operatorVersion >}}
     pgouser: admin
   name: ${pgo_cluster_name}
@@ -554,7 +545,6 @@ spec:
   userlabels:
     NodeLabelKey: ""
     NodeLabelValue: ""
-    pg-pod-anti-affinity: ""
     pgo-version: {{< param operatorVersion >}}
 EOF
 
@@ -740,6 +730,7 @@ make changes, as described below.
 | BackrestS3Bucket | `create` | An optional parameter that specifies a S3 bucket that pgBackRest should use. |
 | BackrestS3Endpoint | `create` | An optional parameter that specifies the S3 endpoint pgBackRest should use. |
 | BackrestS3Region | `create` | An optional parameter that specifies a cloud region that pgBackRest should use. |
+| BackrestStorageTypes | `create` | An optional parameter that takes an array of different repositories types that can be used to store pgBackRest backups. Choices are `posix` and `s3`. If nothing is specified, it defaults to `posix`. (`local`, equivalent to `posix`, is available for backwards compatibility).|
 | BackrestS3URIStyle | `create` | An optional parameter that specifies if pgBackRest should use the `path` or `host` S3 URI style. |
 | BackrestS3VerifyTLS | `create` | An optional parameter that specifies if pgBackRest should verify the TLS endpoint. |
 | BackrestStorage | `create` | A specification that gives information about the storage attributes for the pgBackRest repository, which stores backups and archives, of the PostgreSQL cluster. For details, please see the `Storage Specification` section below. This is required. |

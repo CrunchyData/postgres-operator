@@ -36,10 +36,10 @@ At PostgreSQL cluster creation time, you can specify a specific Storage Class
 for the pgBackRest repository. Additionally, you can also specify the type of
 pgBackRest repository that can be used, including:
 
-- `local`: Uses the storage that is provided by the Kubernetes cluster's Storage
+- `posix`: Uses the storage that is provided by the Kubernetes cluster's Storage
 Class that you select
 - `s3`: Use Amazon S3 or an object storage system that uses the S3 protocol
-- `local,s3`: Use both the storage that is provided by the Kubernetes cluster's
+- `posix,s3`: Use both the storage that is provided by the Kubernetes cluster's
 Storage Class that you select AND Amazon S3 (or equivalent object storage system
 that uses the S3 protocol)
 
@@ -300,7 +300,7 @@ stored in Kubernetes Secrets and are securely mounted to the PostgreSQL
 clusters.
 
 To enable a PostgreSQL cluster to use S3, the `--pgbackrest-storage-type` on the
-`pgo create cluster` command needs to be set to `s3` or `local,s3`.
+`pgo create cluster` command needs to be set to `s3` or `posix,s3`.
 
 Once configured, the `pgo backup` and `pgo restore` commands will work with S3
 similarly to the above!
@@ -325,7 +325,7 @@ example pgBackRest repository in the state shown after running the
 
 ```
 cluster: hippo
-storage type: local
+storage type: posix
 
 stanza: db
     status: ok
@@ -377,7 +377,7 @@ Verify the backup is deleted with `pgo show backup hippo`:
 
 ```
 cluster: hippo
-storage type: local
+storage type: posix
 
 stanza: db
     status: ok

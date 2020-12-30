@@ -56,7 +56,7 @@ type backrestJobTemplateFields struct {
 	PgbackrestStanza              string
 	PgbackrestDBPath              string
 	PgbackrestRepo1Path           string
-	PgbackrestRepo1Type           string
+	PgbackrestRepo1Type           crv1.BackrestStorageType
 	BackrestLocalAndS3Storage     bool
 	PgbackrestS3VerifyTLS         string
 	PgbackrestRestoreVolumes      string
@@ -69,13 +69,36 @@ var (
 )
 
 // Backrest ...
-func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtask) {
+func Backrest(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	ctx := context.TODO()
 
-	// create the Job to run the backrest command
+	// get the cluster that is requesting the backup. if we cannot get the cluster
+	// do not take the backup
+	cluster, err := clientset.CrunchydataV1().Pgclusters(task.Namespace).Get(ctx,
+		task.Spec.Parameters[config.LABEL_PG_CLUSTER], metav1.GetOptions{})
+
+	if err != nil {
+		log.Error(err)
+		return
+	}
 
 	cmd := task.Spec.Parameters[config.LABEL_BACKREST_COMMAND]
+	// determine the repo type. we need to make a special check for a standby
+	// cluster (see below)
+	repoType := operator.GetRepoType(cluster)
 
+	// If this is a standby cluster and the stanza creation task, if posix storage
+	// is specified then this ensures that the stanza is created on the local
+	// repository only.
+	//
+	//The stanza for the S3 repo will have already been created by the cluster
+	// the standby is replicating from, and therefore does not need to be
+	// attempted again.
+	if cluster.Spec.Standby && cmd == crv1.PgtaskBackrestStanzaCreate {
+		repoType = crv1.BackrestStorageTypePosix
+	}
+
+	// create the Job to run the backrest command
 	jobFields := backrestJobTemplateFields{
 		JobName:                       task.Spec.Parameters[config.LABEL_JOB_NAME],
 		ClusterName:                   task.Spec.Parameters[config.LABEL_PG_CLUSTER],
@@ -91,8 +114,8 @@ func Backrest(namespace string, clientset kubernetes.Interface, task *crv1.Pgtas
 		PgbackrestRepo1Path:           task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH],
 		PgbackrestRestoreVolumes:      "",
 		PgbackrestRestoreVolumeMounts: "",
-		PgbackrestRepo1Type:           operator.GetRepoType(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
-		BackrestLocalAndS3Storage:     operator.IsLocalAndS3Storage(task.Spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE]),
+		PgbackrestRepo1Type:           repoType,
+		BackrestLocalAndS3Storage:     operator.IsLocalAndS3Storage(cluster),
 		PgbackrestS3VerifyTLS:         task.Spec.Parameters[config.LABEL_BACKREST_S3_VERIFY_TLS],
 	}
 
@@ -204,7 +227,6 @@ func CreateBackup(clientset pgo.Interface, namespace, clusterName, podName strin
 	spec.Parameters[config.LABEL_IMAGE_PREFIX] = util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix)
 	spec.Parameters[config.LABEL_BACKREST_COMMAND] = crv1.PgtaskBackrestBackup
 	spec.Parameters[config.LABEL_BACKREST_OPTS] = backupOpts
-	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]
 	// Get 'true' or 'false' for setting the pgBackRest S3 verify TLS value
 	spec.Parameters[config.LABEL_BACKREST_S3_VERIFY_TLS] = operator.GetS3VerifyTLSSetting(cluster)
 

@@ -750,16 +750,11 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	// ensure the backrest storage type specified for the cluster is valid, and that the
 	// configuration required to use that storage type (e.g. a bucket, endpoint and region
 	// when using aws s3 storage) has been provided
-	err = validateBackrestStorageTypeOnCreate(request)
+	backrestStorageTypes, err := validateBackrestStorageTypeOnCreate(request)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
-	}
-
-	if request.BackrestStorageType != "" {
-		log.Debug("using backrest storage type provided by user")
-		userLabelsMap[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
 	}
 
 	// if a value for BackrestStorageConfig is provided, validate it here
@@ -872,6 +867,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	// Create an instance of our CRD
 	newInstance := getClusterParams(request, clusterName, userLabelsMap, ns)
 	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
+	newInstance.Spec.BackrestStorageTypes = backrestStorageTypes
 
 	if request.SecretFrom != "" {
 		err = validateSecretFrom(newInstance, request.SecretFrom)
@@ -1905,12 +1901,18 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		}
 		// return an error if attempting to enable standby for a cluster that does not have the
 		// required S3 settings
-		if cluster.Spec.Standby &&
-			!strings.Contains(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], "s3") {
-			response.Status.Code = msgs.Error
-			response.Status.Msg = "Backrest storage type 's3' must be enabled in order to enable " +
-				"standby mode"
-			return response
+		if cluster.Spec.Standby {
+			s3Enabled := false
+			for _, storageType := range cluster.Spec.BackrestStorageTypes {
+				s3Enabled = s3Enabled || (storageType == crv1.BackrestStorageTypeS3)
+			}
+
+			if !s3Enabled {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = "Backrest storage type 's3' must be enabled in order to enable " +
+					"standby mode"
+				return response
+			}
 		}
 
 		// if a startup or shutdown was requested then update the pgcluster spec accordingly
@@ -2132,19 +2134,33 @@ func setClusterAnnotationGroup(annotationGroup, annotations map[string]string) {
 // validateBackrestStorageTypeOnCreate validates the pgbackrest storage type specified when
 // a new cluster.  This includes ensuring the type provided is valid, and that the required
 // configuration settings (s3 bucket, region, etc.) are also present
-func validateBackrestStorageTypeOnCreate(request *msgs.CreateClusterRequest) error {
-	requestBackRestStorageType := request.BackrestStorageType
+func validateBackrestStorageTypeOnCreate(request *msgs.CreateClusterRequest) ([]crv1.BackrestStorageType, error) {
+	storageTypes, err := crv1.ParseBackrestStorageTypes(request.BackrestStorageType)
 
-	if requestBackRestStorageType != "" && !util.IsValidBackrestStorageType(requestBackRestStorageType) {
-		return fmt.Errorf("Invalid value provided for pgBackRest storage type. The following values are allowed: %s",
-			"\""+strings.Join(apiserver.GetBackrestStorageTypes(), "\", \"")+"\"")
-	} else if strings.Contains(requestBackRestStorageType, "s3") && isMissingS3Config(request) {
-		return errors.New("A configuration setting for AWS S3 storage is missing. Values must be " +
-			"provided for the S3 bucket, S3 endpoint and S3 region in order to use the 's3' " +
-			"storage type with pgBackRest.")
+	if err != nil {
+		// if the error is due to no storage types elected, return an empty storage
+		// type slice. otherwise return an error
+		if errors.Is(err, crv1.ErrStorageTypesEmpty) {
+			return []crv1.BackrestStorageType{}, nil
+		}
+
+		return nil, err
 	}
 
-	return nil
+	// a special check -- if S3 storage is included, check to see if all of the
+	// appropriate settings are in place
+	for _, storageType := range storageTypes {
+		if storageType == crv1.BackrestStorageTypeS3 {
+			if isMissingS3Config(request) {
+				return nil, fmt.Errorf("A configuration setting for AWS S3 storage is missing. Values must be " +
+					"provided for the S3 bucket, S3 endpoint and S3 region in order to use the 's3' " +
+					"storage type with pgBackRest.")
+			}
+			break
+		}
+	}
+
+	return storageTypes, nil
 }
 
 // validateClusterTLS validates the parameters that allow a user to enable TLS

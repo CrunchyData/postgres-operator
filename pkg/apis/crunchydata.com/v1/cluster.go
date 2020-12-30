@@ -17,6 +17,7 @@ package v1
 
 import (
 	"fmt"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -109,28 +110,33 @@ type PgclusterSpec struct {
 
 	// PgBouncer contains all of the settings to properly maintain a pgBouncer
 	// implementation
-	PgBouncer           PgBouncerSpec            `json:"pgBouncer"`
-	User                string                   `json:"user"`
-	Database            string                   `json:"database"`
-	Replicas            string                   `json:"replicas"`
-	Status              string                   `json:"status"`
-	CustomConfig        string                   `json:"customconfig"`
-	UserLabels          map[string]string        `json:"userlabels"`
-	PodAntiAffinity     PodAntiAffinitySpec      `json:"podAntiAffinity"`
-	SyncReplication     *bool                    `json:"syncReplication"`
-	BackrestConfig      []v1.VolumeProjection    `json:"backrestConfig"`
-	BackrestS3Bucket    string                   `json:"backrestS3Bucket"`
-	BackrestS3Region    string                   `json:"backrestS3Region"`
-	BackrestS3Endpoint  string                   `json:"backrestS3Endpoint"`
-	BackrestS3URIStyle  string                   `json:"backrestS3URIStyle"`
-	BackrestS3VerifyTLS string                   `json:"backrestS3VerifyTLS"`
-	BackrestRepoPath    string                   `json:"backrestRepoPath"`
-	TablespaceMounts    map[string]PgStorageSpec `json:"tablespaceMounts"`
-	TLS                 TLSSpec                  `json:"tls"`
-	TLSOnly             bool                     `json:"tlsOnly"`
-	Standby             bool                     `json:"standby"`
-	Shutdown            bool                     `json:"shutdown"`
-	PGDataSource        PGDataSourceSpec         `json:"pgDataSource"`
+	PgBouncer           PgBouncerSpec         `json:"pgBouncer"`
+	User                string                `json:"user"`
+	Database            string                `json:"database"`
+	Replicas            string                `json:"replicas"`
+	Status              string                `json:"status"`
+	CustomConfig        string                `json:"customconfig"`
+	UserLabels          map[string]string     `json:"userlabels"`
+	PodAntiAffinity     PodAntiAffinitySpec   `json:"podAntiAffinity"`
+	SyncReplication     *bool                 `json:"syncReplication"`
+	BackrestConfig      []v1.VolumeProjection `json:"backrestConfig"`
+	BackrestS3Bucket    string                `json:"backrestS3Bucket"`
+	BackrestS3Region    string                `json:"backrestS3Region"`
+	BackrestS3Endpoint  string                `json:"backrestS3Endpoint"`
+	BackrestS3URIStyle  string                `json:"backrestS3URIStyle"`
+	BackrestS3VerifyTLS string                `json:"backrestS3VerifyTLS"`
+	BackrestRepoPath    string                `json:"backrestRepoPath"`
+	// BackrestStorageTypes is a list of the different pgBackRest storage types
+	// to be used for this cluster. Presently, it can only accept up to local
+	// and S3, but is available to support different repo types in the future
+	// if the array is empty, "local" ("posix") is presumed.
+	BackrestStorageTypes []BackrestStorageType    `json:"backrestStorageTypes"`
+	TablespaceMounts     map[string]PgStorageSpec `json:"tablespaceMounts"`
+	TLS                  TLSSpec                  `json:"tls"`
+	TLSOnly              bool                     `json:"tlsOnly"`
+	Standby              bool                     `json:"standby"`
+	Shutdown             bool                     `json:"shutdown"`
+	PGDataSource         PGDataSourceSpec         `json:"pgDataSource"`
 
 	// Annotations contains a set of Deployment (and by association, Pod)
 	// annotations that are propagated to all managed Deployments
@@ -143,6 +149,28 @@ type PgclusterSpec struct {
 	// Tolerations are an optional list of Pod toleration rules that are applied
 	// to the PostgreSQL instance.
 	Tolerations []v1.Toleration `json:"tolerations"`
+}
+
+// BackrestStorageType refers to the types of storage accept by pgBackRest
+type BackrestStorageType string
+
+const (
+	// BackrestStorageTypeLocal is DEPRECATED. It is the equivalent to "posix"
+	// storage and is the default storage available (well posix is the default).
+	// Available for legacy purposes -- this really  maps to "posix"
+	BackrestStorageTypeLocal BackrestStorageType = "local"
+	// BackrestStorageTypePosix is the "posix" storage type and in the fullness
+	// of time should supercede local
+	BackrestStorageTypePosix BackrestStorageType = "posix"
+	// BackrestStorageTypeS3 if the S3 storage type for using S3 or S3-equivalent
+	// storage
+	BackrestStorageTypeS3 BackrestStorageType = "s3"
+)
+
+var BackrestStorageTypes = []BackrestStorageType{
+	BackrestStorageTypeLocal,
+	BackrestStorageTypePosix,
+	BackrestStorageTypeS3,
 }
 
 // ClusterAnnotations provides a set of annotations that can be propagated to
@@ -354,6 +382,37 @@ func (p PodAntiAffinityType) Validate() error {
 	}
 	return fmt.Errorf("Invalid pod anti-affinity type.  Valid values are '%s', '%s' or '%s'",
 		PodAntiAffinityRequired, PodAntiAffinityPreffered, PodAntiAffinityDisabled)
+}
+
+// ParseBackrestStorageTypes takes a comma-delimited string of potential
+// pgBackRest storage types and attempts to parse it into a recognizable array.
+// if an invalid type is passed in, then an error is returned
+func ParseBackrestStorageTypes(storageTypeStr string) ([]BackrestStorageType, error) {
+	storageTypes := make([]BackrestStorageType, 0)
+
+	parsed := strings.Split(storageTypeStr, ",")
+
+	// if no storage types found in the string, return
+	if len(parsed) == 1 && parsed[0] == "" {
+		return nil, ErrStorageTypesEmpty
+	}
+
+	// iterate through the list and determine if there are valid storage types
+	// map all "local" into "posix"
+	for _, s := range parsed {
+		storageType := BackrestStorageType(s)
+
+		switch storageType {
+		default:
+			return nil, fmt.Errorf("%w: %s", ErrInvalidStorageType, storageType)
+		case BackrestStorageTypePosix, BackrestStorageTypeLocal:
+			storageTypes = append(storageTypes, BackrestStorageTypePosix)
+		case BackrestStorageTypeS3:
+			storageTypes = append(storageTypes, storageType)
+		}
+	}
+
+	return storageTypes, nil
 }
 
 // UserSecretName returns the name of a Kubernetes Secret representing the user.

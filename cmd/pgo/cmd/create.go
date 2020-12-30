@@ -410,7 +410,7 @@ func init() {
 	createClusterCmd.Flags().StringVar(&BackrestMemoryLimit, "pgbackrest-memory-limit", "", "Set the amount of memory to limit for "+
 		"the pgBackRest repository.")
 	createClusterCmd.Flags().StringVarP(&BackrestPVCSize, "pgbackrest-pvc-size", "", "",
-		`The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "local" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
+		`The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "posix" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
 	createClusterCmd.Flags().StringVarP(&BackrestRepoPath, "pgbackrest-repo-path", "", "",
 		"The pgBackRest repository path that should be utilized instead of the default. Required "+
 			"for standby\nclusters to define the location of an existing pgBackRest repository.")
@@ -435,7 +435,7 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&BackrestS3URIStyle, "pgbackrest-s3-uri-style", "", "", "Specifies whether \"host\" or \"path\" style URIs will be used when connecting to S3.")
 	createClusterCmd.Flags().BoolVarP(&BackrestS3VerifyTLS, "pgbackrest-s3-verify-tls", "", true, "This sets if pgBackRest should verify the TLS certificate when connecting to S3. To disable, use \"--pgbackrest-s3-verify-tls=false\".")
 	createClusterCmd.Flags().StringVar(&BackrestStorageConfig, "pgbackrest-storage-config", "", "The name of the storage config in pgo.yaml to use for the pgBackRest local repository.")
-	createClusterCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use with pgBackRest. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
+	createClusterCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use with pgBackRest. Either \"posix\", \"s3\" or both, comma separated. (default \"posix\")")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgbouncerFlag, "pgbouncer", "", false, "Adds a crunchy-pgbouncer deployment to the cluster.")
 	createClusterCmd.Flags().StringVar(&PgBouncerCPURequest, "pgbouncer-cpu", "", "Set the number of millicores to request for CPU "+
@@ -540,7 +540,7 @@ func init() {
 	// "pgo create schedule" flags
 	createScheduleCmd.Flags().StringVarP(&ScheduleDatabase, "database", "", "", "The database to run the SQL policy against.")
 	createScheduleCmd.Flags().StringVarP(&PGBackRestType, "pgbackrest-backup-type", "", "", "The type of pgBackRest backup to schedule (full, diff or incr).")
-	createScheduleCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use when scheduling pgBackRest backups. Either \"local\", \"s3\" or both, comma separated. (default \"local\")")
+	createScheduleCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use when scheduling pgBackRest backups. Either \"posix\", \"s3\" or both, comma separated. (default \"posix\")")
 	createScheduleCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "c", "", "The CCPImageTag to use for cluster creation. If specified, overrides the pgo.yaml setting.")
 	createScheduleCmd.Flags().StringVarP(&SchedulePolicy, "policy", "", "", "The policy to use for SQL schedules.")
 	createScheduleCmd.Flags().StringVarP(&Schedule, "schedule", "", "", "The schedule assigned to the cron task.")

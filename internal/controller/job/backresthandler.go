@@ -102,7 +102,8 @@ func (c *Controller) handleBackrestBackupUpdate(job *apiv1.Job) error {
 	return nil
 }
 
-// handleBackrestRestoreUpdate is responsible for handling updates to backrest stanza create jobs
+// handleBackrestStanzaCreateUpdate is responsible for handling updates to
+// backrest stanza create jobs
 func (c *Controller) handleBackrestStanzaCreateUpdate(job *apiv1.Job) error {
 	ctx := context.TODO()
 
