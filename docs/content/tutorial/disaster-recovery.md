@@ -200,7 +200,7 @@ Let's say that the `hippo` cluster currently has a set of backups that look like
 
 ```
 cluster: hippo
-storage type: local
+storage type: posix
 
 stanza: db
     status: ok
@@ -250,7 +250,7 @@ You can then verify the backup is deleted with `pgo show backup hippo`:
 
 ```
 cluster: hippo
-storage type: local
+storage type: posix
 
 stanza: db
     status: ok

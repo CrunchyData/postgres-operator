@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -502,6 +503,49 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 	// legacy attribute
 	if _, ok := pgcluster.ObjectMeta.GetLabels()["autofail"]; ok {
 		delete(pgcluster.ObjectMeta.Labels, "autofail")
+	}
+
+	// 4.6.0 moved the "backrest-storage-type" label to a CRD attribute, well,
+	// really an array of CRD attributes, which we need to map the various
+	// attributes to. "local" will be mapped the "posix" to match the pgBackRest
+	// nomenclature
+	//
+	// If we come back with an empty array, we will default it to posix
+	if val, ok := pgcluster.Spec.UserLabels["backrest-storage-type"]; ok {
+		pgcluster.Spec.BackrestStorageTypes = make([]crv1.BackrestStorageType, 0)
+		storageTypes := strings.Split(val, ",")
+
+		// loop through each of the storage types processed and determine which of
+		// the standard storage types it matches
+		for _, s := range storageTypes {
+			for _, storageType := range crv1.BackrestStorageTypes {
+				// if this is not the storage type, continue looping
+				if crv1.BackrestStorageType(s) != storageType {
+					continue
+				}
+
+				// so this is the storage type. However, if it's "local" let's update
+				// it to be posix
+				if storageType == crv1.BackrestStorageTypeLocal {
+					pgcluster.Spec.BackrestStorageTypes = append(pgcluster.Spec.BackrestStorageTypes,
+						crv1.BackrestStorageTypePosix)
+				} else {
+					pgcluster.Spec.BackrestStorageTypes = append(pgcluster.Spec.BackrestStorageTypes, storageType)
+				}
+
+				// we can break the inner loop
+				break
+			}
+		}
+
+		// remember: if somehow this is empty, add "posix"
+		if len(pgcluster.Spec.BackrestStorageTypes) == 0 {
+			pgcluster.Spec.BackrestStorageTypes = append(pgcluster.Spec.BackrestStorageTypes,
+				crv1.BackrestStorageTypePosix)
+		}
+
+		// and delete the label
+		delete(pgcluster.Spec.UserLabels, "backrest-storage-type")
 	}
 
 	// since the current primary label is not used in this version of the Postgres Operator,

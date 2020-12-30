@@ -41,9 +41,7 @@ type scheduleRequest struct {
 func (s scheduleRequest) createBackRestSchedule(cluster *crv1.Pgcluster, ns string) *PgScheduleSpec {
 	name := fmt.Sprintf("%s-%s-%s", cluster.Name, s.Request.ScheduleType, s.Request.PGBackRestType)
 
-	err := util.ValidateBackrestStorageTypeOnBackupRestore(s.Request.BackrestStorageType,
-		cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], false)
-	if err != nil {
+	if err := apiserver.ValidateBackrestStorageTypeForCommand(cluster, s.Request.BackrestStorageType); err != nil {
 		s.Response.Status.Code = msgs.Error
 		s.Response.Status.Msg = err.Error()
 		return &PgScheduleSpec{}

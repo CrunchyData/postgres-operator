@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
@@ -41,7 +42,6 @@ const (
 )
 
 var (
-	backrestStorageTypes = []string{"local", "s3"}
 	// ErrDBContainerNotFound is an error that indicates that a "database" container
 	// could not be found in a specific pod
 	ErrDBContainerNotFound = errors.New("\"database\" container not found in pod")
@@ -93,10 +93,6 @@ func CreateRMDataTask(clusterName, replicaName, taskName string, deleteBackups, 
 	return err
 }
 
-func GetBackrestStorageTypes() []string {
-	return backrestStorageTypes
-}
-
 // IsValidPVC determines if a PVC with the name provided exits
 func IsValidPVC(pvcName, ns string) bool {
 	ctx := context.TODO()
@@ -110,6 +106,64 @@ func IsValidPVC(pvcName, ns string) bool {
 		return false
 	}
 	return pvc != nil
+}
+
+// ValidateBackrestStorageTypeForCommand determines if a submitted pgBackRest
+// storage value can be used as part of a pgBackRest operation based upon the
+// storage types used by the PostgreSQL cluster itself
+func ValidateBackrestStorageTypeForCommand(cluster *crv1.Pgcluster, storageTypeStr string) error {
+	// first, parse the submitted storage type string to see what we're up against
+	storageTypes, err := crv1.ParseBackrestStorageTypes(storageTypeStr)
+
+	// if there is an error parsing the string and it's not due to the string
+	// being empty, return the error
+	// if it is due to an empty string, then return so that the defaults will be
+	// used
+	if err != nil {
+		if errors.Is(err, crv1.ErrStorageTypesEmpty) {
+			return nil
+		}
+		return err
+	}
+
+	// there can only be one storage type used for a command (for now), so ensure
+	// this condition is sated
+	if len(storageTypes) > 1 {
+		return fmt.Errorf("you can only select one storage type")
+	}
+
+	// a special case: the list of storage types is empty. if this is not a posix
+	// (or local) storage type, then return an error. Otherwise, we can exit here.
+	if len(cluster.Spec.BackrestStorageTypes) == 0 {
+		if !(storageTypes[0] == crv1.BackrestStorageTypePosix || storageTypes[0] == crv1.BackrestStorageTypeLocal) {
+			return fmt.Errorf("%w: choices are: posix", crv1.ErrInvalidStorageType)
+		}
+		return nil
+	}
+
+	// now, see if the select storage type is available in the list of storage
+	// types on the cluster
+	ok := false
+	for _, storageType := range cluster.Spec.BackrestStorageTypes {
+		switch storageTypes[0] {
+		default:
+			ok = ok || (storageType == storageTypes[0])
+		case crv1.BackrestStorageTypePosix, crv1.BackrestStorageTypeLocal:
+			ok = ok || (storageType == crv1.BackrestStorageTypePosix || storageType == crv1.BackrestStorageTypeLocal)
+		}
+	}
+
+	if !ok {
+		choices := make([]string, len(cluster.Spec.BackrestStorageTypes))
+		for i, storageType := range cluster.Spec.BackrestStorageTypes {
+			choices[i] = string(storageType)
+		}
+
+		return fmt.Errorf("%w: choices are: %s",
+			crv1.ErrInvalidStorageType, strings.Join(choices, " "))
+	}
+
+	return nil
 }
 
 // ValidateResourceRequestLimit validates that a Kubernetes Requests/Limit pair

@@ -142,7 +142,7 @@ pgBackRest. For example:
 
 ```
 pgo create cluster hippo --pgbouncer --replica-count=2 \
-  --pgbackrest-storage-type=local,s3 \
+  --pgbackrest-storage-type=posix,s3 \
   --pgbackrest-s3-key=<redacted> \
   --pgbackrest-s3-key-secret=<redacted> \
   --pgbackrest-s3-bucket=watering-hole \

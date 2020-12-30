@@ -114,7 +114,7 @@ type PgbackrestEnvVarsTemplateFields struct {
 	PgbackrestDBPath            string
 	PgbackrestRepo1Path         string
 	PgbackrestRepo1Host         string
-	PgbackrestRepo1Type         string
+	PgbackrestRepo1Type         crv1.BackrestStorageType
 	PgbackrestLocalAndS3Storage bool
 	PgbackrestPGPort            string
 }
@@ -276,15 +276,15 @@ func GetAnnotations(cluster *crv1.Pgcluster, annotationType crv1.ClusterAnnotati
 }
 
 // consolidate with cluster.GetPgbackrestEnvVars
-func GetPgbackrestEnvVars(cluster *crv1.Pgcluster, depName, port, storageType string) string {
+func GetPgbackrestEnvVars(cluster *crv1.Pgcluster, depName, port string) string {
 	fields := PgbackrestEnvVarsTemplateFields{
 		PgbackrestStanza:            "db",
 		PgbackrestRepo1Host:         cluster.Name + "-backrest-shared-repo",
-		PgbackrestRepo1Path:         util.GetPGBackRestRepoPath(*cluster),
+		PgbackrestRepo1Path:         GetPGBackRestRepoPath(cluster),
 		PgbackrestDBPath:            "/pgdata/" + depName,
 		PgbackrestPGPort:            port,
-		PgbackrestRepo1Type:         GetRepoType(storageType),
-		PgbackrestLocalAndS3Storage: IsLocalAndS3Storage(storageType),
+		PgbackrestRepo1Type:         GetRepoType(cluster),
+		PgbackrestLocalAndS3Storage: IsLocalAndS3Storage(cluster),
 	}
 
 	doc := bytes.Buffer{}
@@ -306,7 +306,7 @@ func GetPgbackrestBootstrapEnvVars(restoreClusterName, depName string,
 		PgbackrestRepo1Path: restoreFromSecret.Annotations[config.ANNOTATION_REPO_PATH],
 		PgbackrestPGPort:    restoreFromSecret.Annotations[config.ANNOTATION_PG_PORT],
 		PgbackrestRepo1Host: fmt.Sprintf(util.BackrestRepoDeploymentName, restoreClusterName),
-		PgbackrestRepo1Type: "posix", // just set to the default, can be overridden via CLI args
+		PgbackrestRepo1Type: crv1.BackrestStorageTypePosix, // just set to the default, can be overridden via CLI args
 	}
 
 	var doc bytes.Buffer
@@ -793,9 +793,15 @@ func GetPgmonitorEnvVars(cluster *crv1.Pgcluster) string {
 // pgBackRest environment variables required to enable S3 support.  After the template has been
 // executed with the proper values, the result is then returned a string for inclusion in the PG
 // and pgBackRest deployments.
-func GetPgbackrestS3EnvVars(cluster crv1.Pgcluster, clientset kubernetes.Interface,
-	ns string) string {
-	if !strings.Contains(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], "s3") {
+func GetPgbackrestS3EnvVars(clientset kubernetes.Interface, cluster crv1.Pgcluster) string {
+	// determine if backups are enabled to be stored on S3
+	isS3 := false
+
+	for _, storageType := range cluster.Spec.BackrestStorageTypes {
+		isS3 = isS3 || (storageType == crv1.BackrestStorageTypeS3)
+	}
+
+	if !isS3 {
 		return ""
 	}
 

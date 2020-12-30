@@ -17,7 +17,6 @@ package backrest
 
 import (
 	"context"
-	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
@@ -94,30 +93,16 @@ func StanzaCreate(namespace, clusterName string, clientset kubeapi.Interface) {
 	// this will be used by the associated backrest job
 	spec.Parameters[config.LABEL_IMAGE_PREFIX] = util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix)
 	spec.Parameters[config.LABEL_BACKREST_COMMAND] = crv1.PgtaskBackrestStanzaCreate
-
-	// Handle stanza creation for a standby cluster, which requires some additional consideration.
-	// This includes setting the pgBackRest storage type and command options as needed to support
-	// stanza creation for a standby cluster.  If not a standby cluster then simply set the
-	// storage type and options as usual.
-	if cluster.Spec.Standby {
-		// Since this is a standby cluster, if local storage is specified then ensure stanza
-		// creation is for the local repo only.  The stanza for the S3 repo will have already been
-		// created by the cluster the standby is replicating from, and therefore does not need to
-		// be attempted again.
-		if strings.Contains(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], "local") {
-			spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = "local"
-		}
-		// Since the primary will not be directly accessible to the standby cluster, create the
-		// stanza in offline mode
-		spec.Parameters[config.LABEL_BACKREST_OPTS] = "--no-online"
-	} else {
-		spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] =
-			cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]
-		spec.Parameters[config.LABEL_BACKREST_OPTS] = ""
-	}
-
 	// Get 'true' or 'false' for setting the pgBackRest S3 verify TLS value
 	spec.Parameters[config.LABEL_BACKREST_S3_VERIFY_TLS] = operator.GetS3VerifyTLSSetting(cluster)
+
+	// Handle stanza creation for a standby cluster, which requires some
+	// additional consideration.
+	// Since the primary will not be directly accessible to the standby cluster,
+	// ensure the stanza created in offline mode
+	if cluster.Spec.Standby {
+		spec.Parameters[config.LABEL_BACKREST_OPTS] = "--no-online"
+	}
 
 	newInstance := &crv1.Pgtask{
 		ObjectMeta: metav1.ObjectMeta{

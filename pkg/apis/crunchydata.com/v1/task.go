@@ -84,10 +84,6 @@ const (
 	BackupTypeBootstrap string = "bootstrap"
 )
 
-// BackrestStorageTypes defines the valid types of storage that can be utilized
-// with pgBackRest
-var BackrestStorageTypes = []string{"local", "s3"}
-
 // PgtaskSpec ...
 // swagger:ignore
 type PgtaskSpec struct {

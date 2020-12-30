@@ -18,8 +18,151 @@ limitations under the License.
 import (
 	"testing"
 
+	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+
 	"k8s.io/apimachinery/pkg/api/resource"
 )
+
+func TestValidateBackrestStorageTypeForCommand(t *testing.T) {
+	cluster := &crv1.Pgcluster{
+		Spec: crv1.PgclusterSpec{},
+	}
+
+	t.Run("empty repo type", func(t *testing.T) {
+		err := ValidateBackrestStorageTypeForCommand(cluster, "")
+
+		if err != nil {
+			t.Fatalf("expected no error, actual error: %s", err.Error())
+		}
+	})
+
+	t.Run("invalid repo type", func(t *testing.T) {
+		err := ValidateBackrestStorageTypeForCommand(cluster, "bad")
+
+		if err == nil {
+			t.Fatalf("expected invalid repo type to return an error, no error returned")
+		}
+	})
+
+	t.Run("multiple repo types", func(t *testing.T) {
+		err := ValidateBackrestStorageTypeForCommand(cluster, "posix,s3")
+
+		if err == nil {
+			t.Fatalf("expected error")
+		}
+	})
+
+	t.Run("posix repo, no repo types on resource", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{}
+		err := ValidateBackrestStorageTypeForCommand(cluster, "posix")
+
+		if err != nil {
+			t.Fatalf("expected no error, actual error: %s", err.Error())
+		}
+	})
+
+	t.Run("local repo, no repo types on resource", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{}
+		err := ValidateBackrestStorageTypeForCommand(cluster, "local")
+
+		if err != nil {
+			t.Fatalf("expected no error, actual error: %s", err.Error())
+		}
+	})
+
+	t.Run("s3 repo, no repo types on resource", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{}
+		err := ValidateBackrestStorageTypeForCommand(cluster, "s3")
+
+		if err == nil {
+			t.Fatalf("expected error")
+		}
+	})
+
+	t.Run("posix repo, posix repo type available", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{crv1.BackrestStorageTypePosix}
+		err := ValidateBackrestStorageTypeForCommand(cluster, "posix")
+
+		if err != nil {
+			t.Fatalf("expected no error, actual error: %s", err.Error())
+		}
+	})
+
+	t.Run("posix repo, posix repo type unavailable", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{crv1.BackrestStorageTypeS3}
+		err := ValidateBackrestStorageTypeForCommand(cluster, "posix")
+
+		if err == nil {
+			t.Fatalf("expected error")
+		}
+	})
+
+	t.Run("posix repo, local repo type available", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{crv1.BackrestStorageTypeLocal}
+		err := ValidateBackrestStorageTypeForCommand(cluster, "posix")
+
+		if err != nil {
+			t.Fatalf("expected no error, actual error: %s", err.Error())
+		}
+	})
+
+	t.Run("posix repo, multi-repo", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{
+			crv1.BackrestStorageTypeS3,
+			crv1.BackrestStorageTypePosix,
+		}
+		err := ValidateBackrestStorageTypeForCommand(cluster, "posix")
+
+		if err != nil {
+			t.Fatalf("expected no error, actual error: %s", err.Error())
+		}
+	})
+
+	t.Run("local repo, local repo type available", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{crv1.BackrestStorageTypeLocal}
+		err := ValidateBackrestStorageTypeForCommand(cluster, "local")
+
+		if err != nil {
+			t.Fatalf("expected no error, actual error: %s", err.Error())
+		}
+	})
+
+	t.Run("local repo, local repo type unavailable", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{crv1.BackrestStorageTypeS3}
+		err := ValidateBackrestStorageTypeForCommand(cluster, "local")
+
+		if err == nil {
+			t.Fatalf("expected error")
+		}
+	})
+
+	t.Run("local repo, posix repo type available", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{crv1.BackrestStorageTypePosix}
+		err := ValidateBackrestStorageTypeForCommand(cluster, "local")
+
+		if err != nil {
+			t.Fatalf("expected no error, actual error: %s", err.Error())
+		}
+	})
+
+	t.Run("s3 repo, s3 repo type available", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{crv1.BackrestStorageTypeS3}
+		err := ValidateBackrestStorageTypeForCommand(cluster, "s3")
+
+		if err != nil {
+			t.Fatalf("expected no error, actual error: %s", err.Error())
+		}
+	})
+
+	t.Run("s3 repo, s3 repo type unavailable", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{crv1.BackrestStorageTypePosix}
+		err := ValidateBackrestStorageTypeForCommand(cluster, "s3")
+
+		if err == nil {
+			t.Fatalf("expected error")
+		}
+	})
+}
 
 func TestValidateResourceRequestLimit(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {

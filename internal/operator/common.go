@@ -19,10 +19,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
-	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/ns"
@@ -36,6 +36,11 @@ import (
 )
 
 const (
+	// defaultBackrestRepoPath defines the default repo1-path for pgBackRest for
+	// use when a specic path is not provided in the pgcluster CR.  The '%s'
+	// format verb will be replaced with the cluster name when this variable is
+	// utilized
+	defaultBackrestRepoPath = "/backrestrepo/%s-backrest-shared-repo"
 	// defaultBackrestRepoConfigPath contains the default configuration that are used
 	// to set up a pgBackRest repository
 	defaultBackrestRepoConfigPath = "/default-pgo-backrest-repo/"
@@ -231,24 +236,56 @@ func GetResourcesJSON(resources, limits v1.ResourceList) string {
 	return doc.String()
 }
 
+// GetPGBackRestRepoPath is responsible for determining the repo path setting
+// (i.e. 'repo1-path' flag) for use by pgBackRest.  If a specific repo path has
+// been defined in the pgcluster CR, then that path will be returned. Otherwise
+// a default path will be returned that is generated from the cluster name
+func GetPGBackRestRepoPath(cluster *crv1.Pgcluster) string {
+	if cluster.Spec.BackrestRepoPath != "" {
+		return cluster.Spec.BackrestRepoPath
+	}
+	return fmt.Sprintf(defaultBackrestRepoPath, cluster.Name)
+}
+
 // GetRepoType returns the proper repo type to set in container based on the
 // backrest storage type provided
-func GetRepoType(backrestStorageType string) string {
-	if backrestStorageType != "" && backrestStorageType == "s3" {
-		return "s3"
-	} else {
-		return "posix"
+//
+// If there are multiple types, the default returned is "posix". This could
+// change once there is proper multi-repo support, but with proper multi-repo
+// support, this function is likely annhilated.
+//
+// If there is nothing, the default returned is posix
+func GetRepoType(cluster *crv1.Pgcluster) crv1.BackrestStorageType {
+	// so...per the above comment...
+	if len(cluster.Spec.BackrestStorageTypes) == 0 || len(cluster.Spec.BackrestStorageTypes) > 1 {
+		return crv1.BackrestStorageTypePosix
 	}
+
+	// alright, so there is only 1. If it happens to be "local" ensure that posix
+	// is returned
+	if cluster.Spec.BackrestStorageTypes[0] == crv1.BackrestStorageTypeLocal {
+		return crv1.BackrestStorageTypePosix
+	}
+
+	return cluster.Spec.BackrestStorageTypes[0]
 }
 
 // IsLocalAndS3Storage a boolean indicating whether or not local and s3 storage should
 // be enabled for pgBackRest based on the backrestStorageType string provided
-func IsLocalAndS3Storage(backrestStorageType string) bool {
-	if backrestStorageType != "" && strings.Contains(backrestStorageType, "s3") &&
-		strings.Contains(backrestStorageType, "local") {
-		return true
+func IsLocalAndS3Storage(cluster *crv1.Pgcluster) bool {
+	// this works for the time being. if the counter is two or greater, then we
+	// have both local and S3 storage
+	i := 0
+
+	for _, storageType := range cluster.Spec.BackrestStorageTypes {
+		switch storageType {
+		default: // no -oop
+		case crv1.BackrestStorageTypeLocal, crv1.BackrestStorageTypePosix, crv1.BackrestStorageTypeS3:
+			i += 1
+		}
 	}
-	return false
+
+	return i >= 2
 }
 
 // SetContainerImageOverride determines if there is an override available for

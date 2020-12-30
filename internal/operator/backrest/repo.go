@@ -55,7 +55,7 @@ type RepoDeploymentTemplateFields struct {
 	PgbackrestPGPort          string
 	SshdPort                  int
 	PgbackrestStanza          string
-	PgbackrestRepo1Type       string
+	PgbackrestRepo1Type       crv1.BackrestStorageType
 	PgbackrestS3EnvVars       string
 	Name                      string
 	ClusterName               string
@@ -225,7 +225,6 @@ func setBootstrapRepoOverrides(clientset kubernetes.Interface, cluster *crv1.Pgc
 // specific PostgreSQL cluster.
 func getRepoDeploymentFields(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
 	replicas int) *RepoDeploymentTemplateFields {
-	namespace := cluster.GetNamespace()
 
 	repoFields := RepoDeploymentTemplateFields{
 		CCPImagePrefix:        util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
@@ -234,13 +233,13 @@ func getRepoDeploymentFields(clientset kubernetes.Interface, cluster *crv1.Pgclu
 		BackrestRepoClaimName: fmt.Sprintf(util.BackrestRepoPVCName, cluster.Name),
 		SshdSecretsName:       fmt.Sprintf(util.BackrestRepoSecretName, cluster.Name),
 		PGbackrestDBHost:      cluster.Name,
-		PgbackrestRepo1Path:   util.GetPGBackRestRepoPath(*cluster),
+		PgbackrestRepo1Path:   operator.GetPGBackRestRepoPath(cluster),
 		PgbackrestDBPath:      "/pgdata/" + cluster.Name,
 		PgbackrestPGPort:      cluster.Spec.Port,
 		SshdPort:              operator.Pgo.Cluster.BackrestPort,
 		PgbackrestStanza:      "db",
-		PgbackrestRepo1Type:   operator.GetRepoType(cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]),
-		PgbackrestS3EnvVars:   operator.GetPgbackrestS3EnvVars(*cluster, clientset, namespace),
+		PgbackrestRepo1Type:   operator.GetRepoType(cluster),
+		PgbackrestS3EnvVars:   operator.GetPgbackrestS3EnvVars(clientset, *cluster),
 		Name:                  fmt.Sprintf(util.BackrestRepoServiceName, cluster.Name),
 		ClusterName:           cluster.Name,
 		SecurityContext:       operator.GetPodSecurityContext(cluster.Spec.BackrestStorage.GetSupplementalGroups()),

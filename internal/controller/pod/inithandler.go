@@ -191,7 +191,8 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	// a standby cluster that does not have "s3" storage only enabled.
 	// If this is a standby cluster and the pgBackRest storage type is set
 	// to "s3" for S3 storage only, set the cluster to an initialized status.
-	if cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE] != "s3" {
+	if !(len(cluster.Spec.BackrestStorageTypes) == 1 &&
+		cluster.Spec.BackrestStorageTypes[0] == crv1.BackrestStorageTypeS3) {
 		// first try to delete any existing stanza create task and/or job
 		if err := c.Client.CrunchydataV1().Pgtasks(namespace).
 			Delete(ctx, fmt.Sprintf("%s-%s", clusterName, crv1.PgtaskBackrestStanzaCreate),

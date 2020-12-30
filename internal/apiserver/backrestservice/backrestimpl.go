@@ -25,15 +25,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/internal/apiserver/backupoptions"
-	"github.com/crunchydata/postgres-operator/internal/operator"
-	"github.com/crunchydata/postgres-operator/internal/util"
-
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
+	"github.com/crunchydata/postgres-operator/internal/apiserver/backupoptions"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/operator"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
+
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -150,12 +150,14 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 			return resp
 		}
 
-		err = util.ValidateBackrestStorageTypeOnBackupRestore(request.BackrestStorageType,
-			cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], false)
-		if err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
+		// if a specific pgBackRest storage type was passed in to perform the
+		// backup, validate that this cluster can support it
+		if request.BackrestStorageType != "" {
+			if err := apiserver.ValidateBackrestStorageTypeForCommand(cluster, request.BackrestStorageType); err != nil {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = err.Error()
+				return resp
+			}
 		}
 
 		err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Delete(ctx, taskName, metav1.DeleteOptions{})
@@ -428,26 +430,17 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 
 		// so we potentially add two "pieces of detail" based on whether or not we
 		// have a local repository, a s3 repository, or both
-		storageTypes := c.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE]
+		storageTypes := c.Spec.BackrestStorageTypes
+		// if this happens to be empty, then the storage type is "posix"
+		if len(storageTypes) == 0 {
+			storageTypes = append(storageTypes, crv1.BackrestStorageTypePosix)
+		}
 
-		for _, storageType := range apiserver.GetBackrestStorageTypes() {
-
-			// so the way we currently store the different repos is not ideal, and
-			// this is not being fixed right now, so we'll follow this logic:
-			//
-			// 1. If storage type is "local" and the string either contains "local" or
-			// is empty, we can add the pgBackRest info
-			// 2. if the storage type is "s3" and the string contains "s3", we can
-			// add the pgBackRest info
-			// 3. Otherwise, continue
-			if (storageTypes == "" && storageType != "local") || (storageTypes != "" && !strings.Contains(storageTypes, storageType)) {
-				continue
-			}
-
+		for _, storageType := range storageTypes {
 			// begin preparing the detailed response
 			detail := msgs.ShowBackrestDetail{
 				Name:        c.Name,
-				StorageType: storageType,
+				StorageType: string(storageType),
 			}
 
 			verifyTLS, _ := strconv.ParseBool(operator.GetS3VerifyTLSSetting(c))
@@ -480,12 +473,12 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 	return response
 }
 
-func getInfo(storageType, podname, ns string, verifyTLS bool) (string, error) {
+func getInfo(storageType crv1.BackrestStorageType, podname, ns string, verifyTLS bool) (string, error) {
 	log.Debug("backrest info command requested")
 
 	cmd := pgBackRestInfoCommand
 
-	if storageType == "s3" {
+	if storageType == crv1.BackrestStorageTypeS3 {
 		cmd = append(cmd, repoTypeFlagS3...)
 
 		if !verifyTLS {
@@ -555,24 +548,21 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 		return resp
 	}
 
-	// ensure the backrest storage type specified for the backup is valid and enabled in the
-	// cluster
-	err = util.ValidateBackrestStorageTypeOnBackupRestore(request.BackrestStorageType,
-		cluster.Spec.UserLabels[config.LABEL_BACKREST_STORAGE_TYPE], true)
-	if err != nil {
+	// ensure the backrest storage type specified for the backup is valid and
+	// enabled in the cluster
+	if err := apiserver.ValidateBackrestStorageTypeForCommand(cluster, request.BackrestStorageType); err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
 	}
 
-	var id string
-	id, err = createRestoreWorkflowTask(cluster.Name, ns)
+	id, err := createRestoreWorkflowTask(cluster)
 	if err != nil {
 		resp.Results = append(resp.Results, err.Error())
 		return resp
 	}
 
-	pgtask, err := getRestoreParams(request, ns)
+	pgtask, err := getRestoreParams(cluster, request)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -607,18 +597,24 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 	return resp
 }
 
-func getRestoreParams(request *msgs.RestoreRequest, ns string) (*crv1.Pgtask, error) {
+func getRestoreParams(cluster *crv1.Pgcluster, request *msgs.RestoreRequest) (*crv1.Pgtask, error) {
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
-	spec.Namespace = ns
-	spec.Name = "backrest-restore-" + request.FromCluster
+	spec.Namespace = cluster.Namespace
+	spec.Name = "backrest-restore-" + cluster.Name
 	spec.TaskType = crv1.PgtaskBackrestRestore
 	spec.Parameters = make(map[string]string)
-	spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER] = request.FromCluster
+	spec.Parameters[config.LABEL_BACKREST_RESTORE_FROM_CLUSTER] = cluster.Name
 	spec.Parameters[config.LABEL_BACKREST_RESTORE_OPTS] = request.RestoreOpts
 	spec.Parameters[config.LABEL_BACKREST_PITR_TARGET] = request.PITRTarget
-	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
+
+	// get the repository to restore from. if not explicitly provided, the default
+	// for the cluster is used
+	spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = string(operator.GetRepoType(cluster))
+	if request.BackrestStorageType != "" {
+		spec.Parameters[config.LABEL_BACKREST_STORAGE_TYPE] = request.BackrestStorageType
+	}
 
 	// validate & parse nodeLabel if exists
 	if request.NodeLabel != "" {
@@ -635,7 +631,7 @@ func getRestoreParams(request *msgs.RestoreRequest, ns string) (*crv1.Pgtask, er
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels: map[string]string{config.LABEL_PG_CLUSTER: request.FromCluster},
+			Labels: map[string]string{config.LABEL_PG_CLUSTER: cluster.Name},
 			Name:   spec.Name,
 		},
 		Spec: spec,
@@ -643,26 +639,26 @@ func getRestoreParams(request *msgs.RestoreRequest, ns string) (*crv1.Pgtask, er
 	return newInstance, nil
 }
 
-func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
+func createRestoreWorkflowTask(cluster *crv1.Pgcluster) (string, error) {
 	ctx := context.TODO()
 
-	taskName := clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
+	taskName := cluster.Name + "-" + crv1.PgtaskWorkflowBackrestRestoreType
 
 	// delete any existing pgtask with the same name
-	if err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).
+	if err := apiserver.Clientset.CrunchydataV1().Pgtasks(cluster.Namespace).
 		Delete(ctx, taskName, metav1.DeleteOptions{}); err != nil && !kubeapi.IsNotFound(err) {
 		return "", err
 	}
 
 	// create pgtask CRD
 	spec := crv1.PgtaskSpec{}
-	spec.Namespace = ns
-	spec.Name = clusterName + "-" + crv1.PgtaskWorkflowBackrestRestoreType
+	spec.Namespace = cluster.Namespace
+	spec.Name = cluster.Name + "-" + crv1.PgtaskWorkflowBackrestRestoreType
 	spec.TaskType = crv1.PgtaskWorkflow
 
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[crv1.PgtaskWorkflowSubmittedStatus] = time.Now().Format(time.RFC3339)
-	spec.Parameters[config.LABEL_PG_CLUSTER] = clusterName
+	spec.Parameters[config.LABEL_PG_CLUSTER] = cluster.Name
 
 	u, err := ioutil.ReadFile("/proc/sys/kernel/random/uuid")
 	if err != nil {
@@ -678,10 +674,10 @@ func createRestoreWorkflowTask(clusterName, ns string) (string, error) {
 		Spec: spec,
 	}
 	newInstance.ObjectMeta.Labels = make(map[string]string)
-	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
+	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = cluster.Name
 	newInstance.ObjectMeta.Labels[crv1.PgtaskWorkflowID] = spec.Parameters[crv1.PgtaskWorkflowID]
 
-	if _, err := apiserver.Clientset.CrunchydataV1().Pgtasks(ns).
+	if _, err := apiserver.Clientset.CrunchydataV1().Pgtasks(cluster.Namespace).
 		Create(ctx, newInstance, metav1.CreateOptions{}); err != nil {
 		log.Error(err)
 		return "", err

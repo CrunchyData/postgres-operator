@@ -683,7 +683,7 @@ func annotateBackrestSecret(clientset kubernetes.Interface, cluster *crv1.Pgclus
 	secretName := fmt.Sprintf(util.BackrestRepoSecretName, clusterName)
 	patch, err := kubeapi.NewMergePatch().Add("metadata", "annotations")(map[string]string{
 		config.ANNOTATION_PG_PORT:             cluster.Spec.Port,
-		config.ANNOTATION_REPO_PATH:           util.GetPGBackRestRepoPath(*cluster),
+		config.ANNOTATION_REPO_PATH:           operator.GetPGBackRestRepoPath(cluster),
 		config.ANNOTATION_S3_BUCKET:           cfg(cl.BackrestS3Bucket, op.BackrestS3Bucket),
 		config.ANNOTATION_S3_ENDPOINT:         cfg(cl.BackrestS3Endpoint, op.BackrestS3Endpoint),
 		config.ANNOTATION_S3_REGION:           cfg(cl.BackrestS3Region, op.BackrestS3Region),

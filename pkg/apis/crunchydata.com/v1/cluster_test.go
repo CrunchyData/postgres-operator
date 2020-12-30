@@ -16,11 +16,130 @@ package v1
 */
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+func TestParseBackrestStorageTypes(t *testing.T) {
+	t.Run("empty", func(t *testing.T) {
+		_, err := ParseBackrestStorageTypes("")
+
+		if !errors.Is(err, ErrStorageTypesEmpty) {
+			t.Fatalf("expected ErrStorageTypesEmpty actual %q", err.Error())
+		}
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		_, err := ParseBackrestStorageTypes("bad bad bad")
+
+		if !errors.Is(err, ErrInvalidStorageType) {
+			t.Fatalf("expected ErrInvalidStorageType actual %q", err.Error())
+		}
+
+		_, err = ParseBackrestStorageTypes("posix,bad")
+
+		if !errors.Is(err, ErrInvalidStorageType) {
+			t.Fatalf("expected ErrInvalidStorageType actual %q", err.Error())
+		}
+	})
+
+	t.Run("local should be posix", func(t *testing.T) {
+		storageTypes, err := ParseBackrestStorageTypes("local")
+
+		if err != nil {
+			t.Fatalf("expected no error actual %q", err.Error())
+		}
+
+		if len(storageTypes) != 1 {
+			t.Fatalf("multiple storage types returned, expected 1")
+		}
+
+		if storageTypes[0] != BackrestStorageTypePosix {
+			t.Fatalf("posix expected but not found")
+		}
+	})
+
+	t.Run("posix", func(t *testing.T) {
+		storageTypes, err := ParseBackrestStorageTypes("posix")
+
+		if err != nil {
+			t.Fatalf("expected no error actual %q", err.Error())
+		}
+
+		if len(storageTypes) != 1 {
+			t.Fatalf("multiple storage types returned, expected 1")
+		}
+
+		if storageTypes[0] != BackrestStorageTypePosix {
+			t.Fatalf("posix expected but not found")
+		}
+	})
+
+	t.Run("s3", func(t *testing.T) {
+		storageTypes, err := ParseBackrestStorageTypes("s3")
+
+		if err != nil {
+			t.Fatalf("expected no error actual %q", err.Error())
+		}
+
+		if len(storageTypes) != 1 {
+			t.Fatalf("multiple storage types returned, expected 1")
+		}
+
+		if storageTypes[0] != BackrestStorageTypeS3 {
+			t.Fatalf("s3 expected but not found")
+		}
+	})
+
+	t.Run("posix and s3", func(t *testing.T) {
+		storageTypes, err := ParseBackrestStorageTypes("posix,s3")
+
+		if err != nil {
+			t.Fatalf("expected no error actual %q", err.Error())
+		}
+
+		if len(storageTypes) != 2 {
+			t.Fatalf("expected 2 storage types, actual %d", len(storageTypes))
+		}
+
+		posix := false
+		s3 := false
+		for _, storageType := range storageTypes {
+			posix = posix || (storageType == BackrestStorageTypePosix)
+			s3 = s3 || (storageType == BackrestStorageTypeS3)
+		}
+
+		if !(posix && s3) {
+			t.Fatalf("posix and s3 expected but not found")
+		}
+	})
+
+	t.Run("local and s3", func(t *testing.T) {
+		storageTypes, err := ParseBackrestStorageTypes("local,s3")
+
+		if err != nil {
+			t.Fatalf("expected no error actual %q", err.Error())
+		}
+
+		if len(storageTypes) != 2 {
+			t.Fatalf("expected 2 storage types, actual %d", len(storageTypes))
+		}
+
+		posix := false
+		s3 := false
+		for _, storageType := range storageTypes {
+			posix = posix || (storageType == BackrestStorageTypePosix)
+			s3 = s3 || (storageType == BackrestStorageTypeS3)
+		}
+
+		if !(posix && s3) {
+			t.Fatalf("posix and s3 expected but not found")
+		}
+	})
+}
 
 func TestUserSecretName(t *testing.T) {
 	cluster := &Pgcluster{
