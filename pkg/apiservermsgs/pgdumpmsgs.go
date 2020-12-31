@@ -1,9 +1,5 @@
 package apiservermsgs
 
-import (
-	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-)
-
 /*
 Copyright 2019 - 2020 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +14,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+import (
+	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+)
 
 // CreatepgDumpBackupResponse ...
 // swagger:model
@@ -61,7 +61,10 @@ type PgRestoreRequest struct {
 	PGDumpDB    string
 	RestoreOpts string
 	PITRTarget  string
-	NodeLabel   string
+	// NodeAffinityType is only considered when "NodeLabel" is also set, and is
+	// either a value of "preferred" (default) or "required"
+	NodeAffinityType crv1.NodeAffinityType
+	NodeLabel        string
 }
 
 // NOTE: these are ported over from legacy functionality

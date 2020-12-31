@@ -20,6 +20,4 @@ spec:
     storagetype: dynamic
     supplementalgroups: ""
   userlabels:
-    NodeLabelKey: ""
-    NodeLabelValue: ""
     pgo-version: 4.5.1

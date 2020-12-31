@@ -24,13 +24,18 @@ import (
 )
 
 func TestGenerateNodeAffinity(t *testing.T) {
-	// presently this test is really strict. as we allow for more options, we will
-	// need to add more tests.
-	t.Run("valid", func(t *testing.T) {
+	// presently only one rule is allowed, so we are testing for that. future
+	// tests may need to expand upon that
+	t.Run("preferred", func(t *testing.T) {
+		affinityType := crv1.NodeAffinityTypePreferred
 		key := "foo"
 		values := []string{"bar", "baz"}
 
-		affinity := GenerateNodeAffinity(key, values)
+		affinity := GenerateNodeAffinity(affinityType, key, values)
+
+		if affinity.RequiredDuringSchedulingIgnoredDuringExecution != nil {
+			t.Fatalf("expected required node affinity to not be set")
+		}
 
 		if len(affinity.PreferredDuringSchedulingIgnoredDuringExecution) == 0 {
 			t.Fatalf("expected preferred node affinity to be set")
@@ -51,6 +56,50 @@ func TestGenerateNodeAffinity(t *testing.T) {
 		}
 
 		rule := term.Preference.MatchExpressions[0]
+
+		if rule.Operator != v1.NodeSelectorOpIn {
+			t.Fatalf("operator expected %s actual %s", v1.NodeSelectorOpIn, rule.Operator)
+		}
+
+		if rule.Key != key {
+			t.Fatalf("key expected %s actual %s", key, rule.Key)
+		}
+
+		if !reflect.DeepEqual(rule.Values, values) {
+			t.Fatalf("values expected %v actual %v", values, rule.Values)
+		}
+	})
+
+	t.Run("required", func(t *testing.T) {
+		affinityType := crv1.NodeAffinityTypeRequired
+		key := "foo"
+		values := []string{"bar", "baz"}
+
+		affinity := GenerateNodeAffinity(affinityType, key, values)
+
+		if len(affinity.PreferredDuringSchedulingIgnoredDuringExecution) != 0 {
+			t.Fatalf("expected preferred node affinity to not be set")
+		}
+
+		if affinity.RequiredDuringSchedulingIgnoredDuringExecution == nil {
+			t.Fatalf("expected required node affinity to be set")
+		}
+
+		if len(affinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms) == 0 {
+			t.Fatalf("expected required node affinity to have at least one rule.")
+		} else if len(affinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms) > 1 {
+			t.Fatalf("expected required node affinity to have only one rule.")
+		}
+
+		term := affinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0]
+
+		if len(term.MatchExpressions) == 0 {
+			t.Fatalf("expected a match expression to be set")
+		} else if len(term.MatchExpressions) > 1 {
+			t.Fatalf("expected only one match expression to be set")
+		}
+
+		rule := term.MatchExpressions[0]
 
 		if rule.Operator != v1.NodeSelectorOpIn {
 			t.Fatalf("operator expected %s actual %s", v1.NodeSelectorOpIn, rule.Operator)

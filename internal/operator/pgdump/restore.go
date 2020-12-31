@@ -81,7 +81,12 @@ func Restore(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	var nodeAffinity *v1.NodeAffinity
 
 	if task.Spec.Parameters["NodeLabelKey"] != "" && task.Spec.Parameters["NodeLabelValue"] != "" {
-		nodeAffinity = util.GenerateNodeAffinity(
+		affinityType := crv1.NodeAffinityTypePreferred
+		if task.Spec.Parameters[config.LABEL_NODE_AFFINITY_TYPE] == "required" {
+			affinityType = crv1.NodeAffinityTypeRequired
+		}
+
+		nodeAffinity = util.GenerateNodeAffinity(affinityType,
 			task.Spec.Parameters["NodeLabelKey"], []string{task.Spec.Parameters["NodeLabelValue"]})
 	}
 
