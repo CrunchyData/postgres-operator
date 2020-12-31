@@ -1240,7 +1240,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 	if request.NodeLabel != "" {
 		nodeLabel := strings.Split(request.NodeLabel, "=")
 		spec.NodeAffinity = crv1.NodeAffinitySpec{
-			Default: util.GenerateNodeAffinity(nodeLabel[0], []string{nodeLabel[1]}),
+			Default: util.GenerateNodeAffinity(request.NodeAffinityType, nodeLabel[0], []string{nodeLabel[1]}),
 		}
 
 		log.Debugf("using node label %s", request.NodeLabel)

@@ -626,6 +626,12 @@ func getRestoreParams(cluster *crv1.Pgcluster, request *msgs.RestoreRequest) (*c
 		spec.Parameters[config.LABEL_NODE_LABEL_KEY] = parts[0]
 		spec.Parameters[config.LABEL_NODE_LABEL_VALUE] = parts[1]
 
+		// determine if any special node affinity type must be set
+		spec.Parameters[config.LABEL_NODE_AFFINITY_TYPE] = "preferred"
+		if request.NodeAffinityType == crv1.NodeAffinityTypeRequired {
+			spec.Parameters[config.LABEL_NODE_AFFINITY_TYPE] = "required"
+		}
+
 		log.Debug("Restore node labels used from user entered flag")
 	}
 

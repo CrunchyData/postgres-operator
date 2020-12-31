@@ -272,10 +272,33 @@ when creating a PostgreSQL cluster;
 pgo create cluster thatcluster --node-label=region=us-east-1
 ```
 
-The Node Affinity only uses the `preferred` scheduling strategy (similar to what
-is described in the Pod Anti-Affinity section above), so if a Pod cannot be
-scheduled to a particular Node matching the label, it will be scheduled to a
-different Node.
+By default, node affinity uses the `preferred` scheduling strategy (similar to
+what is described in the [Pod Anti-Affinity]("#how-the-crunchy-postgresql-operator-uses-pod-anti-affinity")
+section above), so if a Pod cannot be scheduled to a particular Node matching
+the label, it will be scheduled to a different Node.
+
+The PostgreSQL Operator supports two different types of node affinity:
+
+- `preferred`
+- `required`
+
+which can be selected with the `--node-affinity-type` flag, e.g:
+
+```
+pgo create cluster hippo \
+  --node-label=region=us-east-1 --node-affinity-type=required
+```
+
+When creating a cluster, the node affinity rules will be applied to the primary
+and any other PostgreSQL instances that are added. If you would like to specify
+a node affinity rule for a specific instance, you can do so with the
+[`pgo scale`]({{< relref "pgo-client/reference/pgo_scale.md">}}) command and the
+`--node-label` and `--node-affinity-type` flags, i.e:
+
+```
+pgo scale cluster hippo \
+  --node-label=region=us-south-1 --node-affinity-type=required
+```
 
 ## Tolerations
 

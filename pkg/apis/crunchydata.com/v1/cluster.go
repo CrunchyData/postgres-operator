@@ -265,6 +265,16 @@ type NodeAffinitySpec struct {
 	Default *v1.NodeAffinity `json:"default"`
 }
 
+// NodeAffinityType indicates the type of node affinity that the request seeks
+// to use. Given the custom resource uses the native Kubernetes types to set
+// node affinity, this is just for convenience for the API
+type NodeAffinityType int
+
+const (
+	NodeAffinityTypePreferred NodeAffinityType = iota
+	NodeAffinityTypeRequired
+)
+
 // PodAntiAffinityDeployment distinguishes between the different types of
 // Deployments that can leverage PodAntiAffinity
 type PodAntiAffinityDeployment int

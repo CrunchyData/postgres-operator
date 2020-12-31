@@ -38,20 +38,21 @@ const (
 )
 
 const (
-	LABEL_PGPOLICY          = "pgpolicy"
-	LABEL_INGEST            = "ingest"
-	LABEL_PGREMOVE          = "pgremove"
-	LABEL_PVCNAME           = "pvcname"
-	LABEL_EXPORTER          = "crunchy-postgres-exporter"
-	LABEL_ARCHIVE           = "archive"
-	LABEL_ARCHIVE_TIMEOUT   = "archive-timeout"
-	LABEL_NODE_LABEL_KEY    = "NodeLabelKey"
-	LABEL_NODE_LABEL_VALUE  = "NodeLabelValue"
-	LABEL_REPLICA_NAME      = "replica-name"
-	LABEL_CCP_IMAGE_TAG_KEY = "ccp-image-tag"
-	LABEL_CCP_IMAGE_KEY     = "ccp-image"
-	LABEL_IMAGE_PREFIX      = "image-prefix"
-	LABEL_POD_ANTI_AFFINITY = "pg-pod-anti-affinity"
+	LABEL_PGPOLICY           = "pgpolicy"
+	LABEL_INGEST             = "ingest"
+	LABEL_PGREMOVE           = "pgremove"
+	LABEL_PVCNAME            = "pvcname"
+	LABEL_EXPORTER           = "crunchy-postgres-exporter"
+	LABEL_ARCHIVE            = "archive"
+	LABEL_ARCHIVE_TIMEOUT    = "archive-timeout"
+	LABEL_NODE_AFFINITY_TYPE = "node-affinity-type"
+	LABEL_NODE_LABEL_KEY     = "NodeLabelKey"
+	LABEL_NODE_LABEL_VALUE   = "NodeLabelValue"
+	LABEL_REPLICA_NAME       = "replica-name"
+	LABEL_CCP_IMAGE_TAG_KEY  = "ccp-image-tag"
+	LABEL_CCP_IMAGE_KEY      = "ccp-image"
+	LABEL_IMAGE_PREFIX       = "image-prefix"
+	LABEL_POD_ANTI_AFFINITY  = "pg-pod-anti-affinity"
 )
 
 const (

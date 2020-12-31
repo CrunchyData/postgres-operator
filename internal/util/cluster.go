@@ -234,7 +234,8 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 // GenerateNodeAffinity creates a Kubernetes node affinity object suitable for
 // storage on our custom resource. For now, it only supports preferred affinity,
 // though can be expanded to support more complex rules
-func GenerateNodeAffinity(key string, values []string) *v1.NodeAffinity {
+func GenerateNodeAffinity(affinityType crv1.NodeAffinityType, key string, values []string) *v1.NodeAffinity {
+	nodeAffinity := &v1.NodeAffinity{}
 	// generate the selector requirement, which at this point is just the
 	// "node label is in" requirement
 	requirement := v1.NodeSelectorRequirement{
@@ -242,18 +243,30 @@ func GenerateNodeAffinity(key string, values []string) *v1.NodeAffinity {
 		Values:   values,
 		Operator: v1.NodeSelectorOpIn,
 	}
-	// build the preferred affinity term. Right now this is the only one supported
-	term := v1.PreferredSchedulingTerm{
-		Weight: crv1.NodeAffinityDefaultWeight,
-		Preference: v1.NodeSelectorTerm{
+
+	// build out the node affinity based on whether or not this is required or
+	// preferred (the default)
+	if affinityType == crv1.NodeAffinityTypeRequired {
+		// build the required affinity term.
+		nodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution = &v1.NodeSelector{
+			NodeSelectorTerms: make([]v1.NodeSelectorTerm, 1),
+		}
+		nodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution.NodeSelectorTerms[0] = v1.NodeSelectorTerm{
 			MatchExpressions: []v1.NodeSelectorRequirement{requirement},
-		},
+		}
+	} else {
+		// build the preferred affinity term.
+		term := v1.PreferredSchedulingTerm{
+			Weight: crv1.NodeAffinityDefaultWeight,
+			Preference: v1.NodeSelectorTerm{
+				MatchExpressions: []v1.NodeSelectorRequirement{requirement},
+			},
+		}
+		nodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution = []v1.PreferredSchedulingTerm{term}
 	}
 
-	// and here is our node affinity rule
-	return &v1.NodeAffinity{
-		PreferredDuringSchedulingIgnoredDuringExecution: []v1.PreferredSchedulingTerm{term},
-	}
+	// return the node affinity rule
+	return nodeAffinity
 }
 
 // GeneratedPasswordValidUntilDays returns the value for the number of days that

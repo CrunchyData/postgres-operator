@@ -64,13 +64,15 @@ func init() {
 
 	restoreCmd.Flags().StringVarP(&BackupOpts, "backup-opts", "", "", "The restore options for pgbackrest or pgdump.")
 	restoreCmd.Flags().StringVarP(&PITRTarget, "pitr-target", "", "", "The PITR target, being a PostgreSQL timestamp such as '2018-08-13 11:25:42.582117-04'.")
+	restoreCmd.Flags().StringVar(&NodeAffinityType, "node-affinity-type", "", "Sets the type of node affinity to use. "+
+		"Can be either preferred (default) or required. Must be used with --node-label")
 	restoreCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use when scheduling "+
 		"the restore job, and in the case of a pgBackRest restore, also the new (i.e. restored) primary deployment. If not set, any node is used.")
 	restoreCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	restoreCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "", "", "The PVC containing the pgdump to restore from.")
 	restoreCmd.Flags().StringVarP(&PGDumpDB, "pgdump-database", "d", "postgres", "The name of the database pgdump will restore.")
 	restoreCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The type of backup to restore from, default is pgbackrest. Valid types are pgbackrest or pgdump.")
-	restoreCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use for a pgBackRest restore. Either \"local\", \"s3\". (default \"local\")")
+	restoreCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use for a pgBackRest restore. Either \"posix\", \"s3\". (default \"posix\")")
 }
 
 // restore ....
@@ -90,6 +92,7 @@ func restore(args []string, ns string) {
 		request.PITRTarget = PITRTarget
 		request.FromPVC = BackupPVC // use PVC specified on command line for pgrestore
 		request.PGDumpDB = PGDumpDB
+		request.NodeAffinityType = getNodeAffinityType(NodeLabel, NodeAffinityType)
 		request.NodeLabel = NodeLabel
 
 		response, err = api.RestoreDump(httpclient, &SessionCredentials, request)
@@ -101,6 +104,7 @@ func restore(args []string, ns string) {
 		request.RestoreOpts = BackupOpts
 		request.PITRTarget = PITRTarget
 		request.NodeLabel = NodeLabel
+		request.NodeAffinityType = getNodeAffinityType(NodeLabel, NodeAffinityType)
 		request.BackrestStorageType = BackrestStorageType
 
 		response, err = api.Restore(httpclient, &SessionCredentials, request)

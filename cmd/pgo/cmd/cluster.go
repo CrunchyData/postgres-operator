@@ -260,6 +260,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.Name = args[0]
 	r.Namespace = ns
 	r.ReplicaCount = ClusterReplicaCount
+	r.NodeAffinityType = getNodeAffinityType(NodeLabel, NodeAffinityType)
 	r.NodeLabel = NodeLabel
 	r.PasswordLength = PasswordLength
 	r.PasswordSuperuser = PasswordSuperuser

@@ -94,8 +94,14 @@ func UpdatePGClusterSpecForRestore(clientset kubeapi.Interface, cluster *crv1.Pg
 
 	// set the proper node affinity for the restore job
 	if task.Spec.Parameters[config.LABEL_NODE_LABEL_KEY] != "" && task.Spec.Parameters[config.LABEL_NODE_LABEL_VALUE] != "" {
+		affinityType := crv1.NodeAffinityTypePreferred
+		if task.Spec.Parameters[config.LABEL_NODE_AFFINITY_TYPE] == "required" {
+			affinityType = crv1.NodeAffinityTypeRequired
+		}
+
 		cluster.Spec.NodeAffinity = crv1.NodeAffinitySpec{
 			Default: util.GenerateNodeAffinity(
+				affinityType,
 				task.Spec.Parameters[config.LABEL_NODE_LABEL_KEY],
 				[]string{task.Spec.Parameters[config.LABEL_NODE_LABEL_VALUE]},
 			),

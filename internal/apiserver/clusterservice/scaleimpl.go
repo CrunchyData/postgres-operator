@@ -107,7 +107,7 @@ func ScaleCluster(request msgs.ClusterScaleRequest, pgouser string) msgs.Cluster
 		}
 
 		nodeLabel := strings.Split(request.NodeLabel, "=")
-		spec.NodeAffinity = util.GenerateNodeAffinity(nodeLabel[0], []string{nodeLabel[1]})
+		spec.NodeAffinity = util.GenerateNodeAffinity(request.NodeAffinityType, nodeLabel[0], []string{nodeLabel[1]})
 
 		log.Debugf("using node label %s", request.NodeLabel)
 	}

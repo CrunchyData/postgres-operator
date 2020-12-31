@@ -59,6 +59,8 @@ func init() {
 
 	scaleCmd.Flags().StringVarP(&ServiceType, "service-type", "", "", "The service type to use in the replica Service. If not set, the default in pgo.yaml will be used.")
 	scaleCmd.Flags().StringVarP(&CCPImageTag, "ccp-image-tag", "", "", "The CCPImageTag to use for cluster creation. If specified, overrides the .pgo.yaml setting.")
+	scaleCmd.Flags().StringVar(&NodeAffinityType, "node-affinity-type", "", "Sets the type of node affinity to use. "+
+		"Can be either preferred (default) or required. Must be used with --node-label")
 	scaleCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key) to use in placing the replica database. If not set, any node is used.")
 	scaleCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
 	scaleCmd.Flags().IntVarP(&ReplicaCount, "replica-count", "", 1, "The replica count to apply to the clusters.")
@@ -72,14 +74,15 @@ func init() {
 func scaleCluster(args []string, ns string) {
 	for _, arg := range args {
 		request := msgs.ClusterScaleRequest{
-			CCPImageTag:   CCPImageTag,
-			Name:          arg,
-			Namespace:     ns,
-			NodeLabel:     NodeLabel,
-			ReplicaCount:  ReplicaCount,
-			ServiceType:   v1.ServiceType(ServiceType),
-			StorageConfig: StorageConfig,
-			Tolerations:   getClusterTolerations(Tolerations),
+			CCPImageTag:      CCPImageTag,
+			Name:             arg,
+			Namespace:        ns,
+			NodeAffinityType: getNodeAffinityType(NodeLabel, NodeAffinityType),
+			NodeLabel:        NodeLabel,
+			ReplicaCount:     ReplicaCount,
+			ServiceType:      v1.ServiceType(ServiceType),
+			StorageConfig:    StorageConfig,
+			Tolerations:      getClusterTolerations(Tolerations),
 		}
 
 		response, err := api.ScaleCluster(httpclient, &SessionCredentials, request)

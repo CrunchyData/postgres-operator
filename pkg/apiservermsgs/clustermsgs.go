@@ -46,8 +46,11 @@ type ShowClusterRequest struct {
 //
 // swagger:model
 type CreateClusterRequest struct {
-	Name                string `json:"Name"`
-	Namespace           string
+	Name      string `json:"Name"`
+	Namespace string
+	// NodeAffinityType is only considered when "NodeLabel" is also set, and is
+	// either a value of "preferred" (default) or "required"
+	NodeAffinityType    crv1.NodeAffinityType
 	NodeLabel           string
 	PasswordLength      int
 	PasswordSuperuser   string
@@ -565,6 +568,9 @@ type ClusterScaleRequest struct {
 	Name string `json:"name"`
 	// Namespace is the namespace in which the queried cluster resides.
 	Namespace string `json:"namespace"`
+	// NodeAffinityType is only considered when "NodeLabel" is also set, and is
+	// either a value of "preferred" (default) or "required"
+	NodeAffinityType crv1.NodeAffinityType
 	// NodeLabel if provided is a node label to use.
 	NodeLabel string `json:"nodeLabel"`
 	// ReplicaCount is the number of replicas to add to the cluster. This is

@@ -109,6 +109,10 @@ var BackrestS3CASecretName string
 // BackrestRepoPath allows the pgBackRest repo path to be defined instead of using the default
 var BackrestRepoPath string
 
+// NodeAffinityType needs to be used with "NodeLabel" and can be one of
+// "preferred" or "required" -- gets mapped to an enumeration
+var NodeAffinityType string
+
 // Standby determines whether or not the cluster should be created as a standby cluster
 var Standby bool
 
@@ -395,6 +399,8 @@ func init() {
 		"the Crunchy Postgres Exporter sidecar container. Defaults to server value (24Mi).")
 	createClusterCmd.Flags().StringVar(&ExporterMemoryLimit, "exporter-memory-limit", "", "Set the amount of memory to limit for "+
 		"the Crunchy Postgres Exporter sidecar container.")
+	createClusterCmd.Flags().StringVar(&NodeAffinityType, "node-affinity-type", "", "Sets the type of node affinity to use. "+
+		"Can be either preferred (default) or required. Must be used with --node-label")
 	createClusterCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the primary database. If not set, any node is used.")
 	createClusterCmd.Flags().StringVarP(&Password, "password", "", "", "The password to use for standard user account created during cluster initialization.")
 	createClusterCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 0, "If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.")

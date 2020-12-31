@@ -15,6 +15,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import (
+	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+)
+
 // CreateBackrestBackupResponse ...
 // swagger:model
 type CreateBackrestBackupResponse struct {
@@ -145,10 +149,13 @@ type RestoreResponse struct {
 // RestoreRequest ...
 // swagger:model
 type RestoreRequest struct {
-	Namespace           string
-	FromCluster         string
-	RestoreOpts         string
-	PITRTarget          string
+	Namespace   string
+	FromCluster string
+	RestoreOpts string
+	PITRTarget  string
+	// NodeAffinityType is only considered when "NodeLabel" is also set, and is
+	// either a value of "preferred" (default) or "required"
+	NodeAffinityType    crv1.NodeAffinityType
 	NodeLabel           string
 	BackrestStorageType string
 }

@@ -18,7 +18,10 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"reflect"
+
+	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 )
 
 // unitType is used to group together the unit types
@@ -96,6 +99,36 @@ func getMaxLength(results []interface{}, title, fieldName string) int {
 	}
 
 	return maxLength + 1
+}
+
+// getNodeAffinityType takes a string value of "NodeAffinityType" and converts
+// it to the proper enumeration
+func getNodeAffinityType(nodeLabel, nodeAffinityType string) crv1.NodeAffinityType {
+	// if nodeAffinityType is not set, just exit with the default
+	if nodeAffinityType == "" {
+		return crv1.NodeAffinityTypePreferred
+	}
+
+	// force an exit if nodeAffinityType is set but nodeLabel is not
+	if nodeLabel == "" && nodeAffinityType != "" {
+		fmt.Println("error: --node-affinity-type set, but --node-label not set")
+		os.Exit(1)
+	}
+
+	// and away we go
+	switch nodeAffinityType {
+	default:
+		fmt.Printf("error: invalid node affinity type %q. choices are: preferred required\n", nodeAffinityType)
+		os.Exit(1)
+	case "preferred", "prefer":
+		return crv1.NodeAffinityTypePreferred
+	case "required", "require":
+		return crv1.NodeAffinityTypeRequired
+	}
+
+	// one should never get to here because of the exit, but we need to compile
+	// the program. Yes, we really shouldn't be exiting.
+	return crv1.NodeAffinityTypePreferred
 }
 
 // getSizeAndUnit determines the best size to return based on the best unit
