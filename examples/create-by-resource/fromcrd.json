@@ -6,13 +6,10 @@
       "current-primary": "fromcrd"
     },
     "labels": {
-      "autofail": "true",
-      "crunchy-pgbadger": "false",
       "crunchy-pgha-scope": "fromcrd",
       "deployment-name": "fromcrd",
       "name": "fromcrd",
       "pg-cluster": "fromcrd",
-      "pg-pod-anti-affinity": "",
       "pgo-version": "4.5.1",
       "pgouser": "pgoadmin"
     },

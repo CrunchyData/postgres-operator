@@ -589,9 +589,6 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 	// and unable to sync all replicas to the current timeline
 	pgcluster.Spec.DisableAutofail = false
 
-	// Don't think we'll need to do this, but leaving the comment for now....
-	// pgcluster.ObjectMeta.Labels[config.LABEL_POD_ANTI_AFFINITY] = ""
-
 	// set pgouser to match the default configuration currently in use after the Operator upgrade
 	pgcluster.ObjectMeta.Labels[config.LABEL_PGOUSER] = parameters[config.LABEL_PGOUSER]
 

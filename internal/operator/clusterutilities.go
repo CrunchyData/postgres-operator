@@ -158,29 +158,31 @@ type DeploymentTemplateFields struct {
 	DeploymentLabels string
 	// PodAnnotations are user-specified annotations that can be applied to a
 	// Pod, e.g. annotations specific to a PostgreSQL instance
-	PodAnnotations           string
-	PodLabels                string
-	DataPathOverride         string
-	PVCName                  string
-	RootSecretName           string
-	UserSecretName           string
-	PrimarySecretName        string
-	SecurityContext          string
-	ContainerResources       string
-	NodeSelector             string
-	ConfVolume               string
-	ExporterAddon            string
-	BadgerAddon              string
-	PgbackrestEnvVars        string
-	PgbackrestS3EnvVars      string
-	PgmonitorEnvVars         string
-	ScopeLabel               string
-	Replicas                 string
-	IsInit                   bool
-	ReplicaReinitOnStartFail bool
-	PodAntiAffinity          string
-	SyncReplication          bool
-	Standby                  bool
+	PodAnnotations            string
+	PodLabels                 string
+	DataPathOverride          string
+	PVCName                   string
+	RootSecretName            string
+	UserSecretName            string
+	PrimarySecretName         string
+	SecurityContext           string
+	ContainerResources        string
+	NodeSelector              string
+	ConfVolume                string
+	ExporterAddon             string
+	BadgerAddon               string
+	PgbackrestEnvVars         string
+	PgbackrestS3EnvVars       string
+	PgmonitorEnvVars          string
+	ScopeLabel                string
+	Replicas                  string
+	IsInit                    bool
+	ReplicaReinitOnStartFail  bool
+	PodAntiAffinity           string
+	PodAntiAffinityLabelName  string
+	PodAntiAffinityLabelValue string
+	SyncReplication           bool
+	Standby                   bool
 	// A comma-separated list of tablespace names...this could be an array, but
 	// given how this would ultimately be interpreted in a shell script somewhere
 	// down the line, it's easier for the time being to do it this way. In the

@@ -10,7 +10,6 @@ metadata:
     deployment-name: hippo
     name: hippo
     pg-cluster: hippo
-    pg-pod-anti-affinity: ""
     pgo-version: 4.5.1
     pgouser: admin
   name: hippo
