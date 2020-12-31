@@ -95,10 +95,6 @@ var ContainerResourcesTemplate *template.Template
 
 const containerResourcesTemplatePath = "container-resources.json"
 
-var AffinityTemplate *template.Template
-
-const affinityTemplatePath = "affinity.json"
-
 var PodAntiAffinityTemplate *template.Template
 
 const podAntiAffinityTemplatePath = "pod-anti-affinity.json"
@@ -681,11 +677,6 @@ func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) 
 	}
 
 	PVCStorageClassTemplate, err = c.LoadTemplate(cMap, pvcSCPath)
-	if err != nil {
-		return err
-	}
-
-	AffinityTemplate, err = c.LoadTemplate(cMap, affinityTemplatePath)
 	if err != nil {
 		return err
 	}

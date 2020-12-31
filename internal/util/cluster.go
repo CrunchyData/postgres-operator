@@ -231,6 +231,31 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 	return err
 }
 
+// GenerateNodeAffinity creates a Kubernetes node affinity object suitable for
+// storage on our custom resource. For now, it only supports preferred affinity,
+// though can be expanded to support more complex rules
+func GenerateNodeAffinity(key string, values []string) *v1.NodeAffinity {
+	// generate the selector requirement, which at this point is just the
+	// "node label is in" requirement
+	requirement := v1.NodeSelectorRequirement{
+		Key:      key,
+		Values:   values,
+		Operator: v1.NodeSelectorOpIn,
+	}
+	// build the preferred affinity term. Right now this is the only one supported
+	term := v1.PreferredSchedulingTerm{
+		Weight: crv1.NodeAffinityDefaultWeight,
+		Preference: v1.NodeSelectorTerm{
+			MatchExpressions: []v1.NodeSelectorRequirement{requirement},
+		},
+	}
+
+	// and here is our node affinity rule
+	return &v1.NodeAffinity{
+		PreferredDuringSchedulingIgnoredDuringExecution: []v1.PreferredSchedulingTerm{term},
+	}
+}
+
 // GeneratedPasswordValidUntilDays returns the value for the number of days that
 // a password is valid for, which is used as part of PostgreSQL's VALID UNTIL
 // directive on a user.  It first determines if the user provided this value via

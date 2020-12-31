@@ -26,6 +26,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
@@ -92,10 +93,14 @@ func UpdatePGClusterSpecForRestore(clientset kubeapi.Interface, cluster *crv1.Pg
 	cluster.Spec.PGDataSource.RestoreOpts = restoreOpts
 
 	// set the proper node affinity for the restore job
-	cluster.Spec.UserLabels[config.LABEL_NODE_LABEL_KEY] =
-		task.Spec.Parameters[config.LABEL_NODE_LABEL_KEY]
-	cluster.Spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] =
-		task.Spec.Parameters[config.LABEL_NODE_LABEL_VALUE]
+	if task.Spec.Parameters[config.LABEL_NODE_LABEL_KEY] != "" && task.Spec.Parameters[config.LABEL_NODE_LABEL_VALUE] != "" {
+		cluster.Spec.NodeAffinity = crv1.NodeAffinitySpec{
+			Default: util.GenerateNodeAffinity(
+				task.Spec.Parameters[config.LABEL_NODE_LABEL_KEY],
+				[]string{task.Spec.Parameters[config.LABEL_NODE_LABEL_VALUE]},
+			),
+		}
+	}
 }
 
 // PrepareClusterForRestore prepares a PostgreSQL cluster for a restore.  This includes deleting

@@ -324,7 +324,7 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 		RootSecretName:    crv1.UserSecretName(cl, crv1.PGUserSuperuser),
 		PrimarySecretName: crv1.UserSecretName(cl, crv1.PGUserReplication),
 		UserSecretName:    crv1.UserSecretName(cl, cl.Spec.User),
-		NodeSelector:      operator.GetAffinity(cl.Spec.UserLabels["NodeLabelKey"], cl.Spec.UserLabels["NodeLabelValue"], "In"),
+		NodeSelector:      operator.GetNodeAffinity(cl.Spec.NodeAffinity.Default),
 		PodAntiAffinity: operator.GetPodAntiAffinity(cl,
 			crv1.PodAntiAffinityDeploymentDefault, cl.Spec.PodAntiAffinity.Default),
 		PodAntiAffinityLabelName:  config.LABEL_POD_ANTI_AFFINITY,
@@ -463,6 +463,13 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 		supplementalGroups = append(supplementalGroups, v.SupplementalGroups...)
 	}
 
+	// check if there are any node affinity rules. rules on the replica supersede
+	// rules on the primary
+	nodeAffinity := cluster.Spec.NodeAffinity.Default
+	if replica.Spec.NodeAffinity != nil {
+		nodeAffinity = replica.Spec.NodeAffinity
+	}
+
 	// create the replica deployment
 	replicaDeploymentFields := operator.DeploymentTemplateFields{
 		Name:               replica.Spec.Name,
@@ -484,7 +491,7 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 		PrimarySecretName:  crv1.UserSecretName(cluster, crv1.PGUserReplication),
 		UserSecretName:     crv1.UserSecretName(cluster, cluster.Spec.User),
 		ContainerResources: operator.GetResourcesJSON(cluster.Spec.Resources, cluster.Spec.Limits),
-		NodeSelector:       operator.GetAffinity(replica.Spec.UserLabels["NodeLabelKey"], replica.Spec.UserLabels["NodeLabelValue"], "In"),
+		NodeSelector:       operator.GetNodeAffinity(nodeAffinity),
 		PodAntiAffinity: operator.GetPodAntiAffinity(cluster,
 			crv1.PodAntiAffinityDeploymentDefault, cluster.Spec.PodAntiAffinity.Default),
 		PodAntiAffinityLabelName:  config.LABEL_POD_ANTI_AFFINITY,

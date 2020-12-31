@@ -98,10 +98,6 @@ func ScaleCluster(request msgs.ClusterScaleRequest, pgouser string) msgs.Cluster
 		spec.ServiceType = request.ServiceType
 	}
 
-	// set replica node lables to blank to start with, then check for overrides
-	spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = ""
-	spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = ""
-
 	// validate & parse nodeLabel if exists
 	if request.NodeLabel != "" {
 		if err = apiserver.ValidateNodeLabel(request.NodeLabel); err != nil {
@@ -110,11 +106,10 @@ func ScaleCluster(request msgs.ClusterScaleRequest, pgouser string) msgs.Cluster
 			return response
 		}
 
-		parts := strings.Split(request.NodeLabel, "=")
-		spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = parts[0]
-		spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = parts[1]
+		nodeLabel := strings.Split(request.NodeLabel, "=")
+		spec.NodeAffinity = util.GenerateNodeAffinity(nodeLabel[0], []string{nodeLabel[1]})
 
-		log.Debug("using user entered node label for replica creation")
+		log.Debugf("using node label %s", request.NodeLabel)
 	}
 
 	labels := make(map[string]string)

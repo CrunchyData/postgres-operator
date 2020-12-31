@@ -373,9 +373,11 @@
                     {{.TablespaceVolumes}}
                 ],
                 "affinity": {
-        {{.NodeSelector}}
-        {{if and .NodeSelector .PodAntiAffinity}},{{end}}
-        {{.PodAntiAffinity}}
+                  {{if .NodeSelector}}
+                  "nodeAffinity": {{ .NodeSelector }}
+                  {{ end }}
+                  {{if and .NodeSelector .PodAntiAffinity}},{{end}}
+                  {{.PodAntiAffinity}}
                 },
                 "restartPolicy": "Always",
                 "dnsPolicy": "ClusterFirst"
