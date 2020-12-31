@@ -22,6 +22,4 @@ spec:
   userlabels:
     NodeLabelKey: ""
     NodeLabelValue: ""
-    crunchy-postgres-exporter: "false"
-    pg-pod-anti-affinity: ""
     pgo-version: 4.5.1

@@ -10,7 +10,6 @@ metadata:
     deployment-name: {{ .Values.pgclustername }}
     name: {{ .Values.pgclustername }}
     pg-cluster: {{ .Values.pgclustername }}
-    pg-pod-anti-affinity: ""
     pgo-version: 4.5.1
     pgouser: admin
   name: {{ .Values.pgclustername }}

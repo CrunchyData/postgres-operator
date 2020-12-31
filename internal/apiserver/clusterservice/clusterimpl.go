@@ -827,9 +827,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			resp.Status.Msg = err.Error()
 			return resp
 		}
-		userLabelsMap[config.LABEL_POD_ANTI_AFFINITY] = request.PodAntiAffinity
-	} else {
-		userLabelsMap[config.LABEL_POD_ANTI_AFFINITY] = ""
 	}
 
 	// check to see if there are any pod anti-affinity overrides, specifically for

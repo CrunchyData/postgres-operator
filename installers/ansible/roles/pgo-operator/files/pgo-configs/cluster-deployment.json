@@ -28,6 +28,7 @@
                     "name": "{{.Name}}",
                     "vendor": "crunchydata",
                     "pgo-pg-database": "true",
+                    "{{.PodAntiAffinityLabelName}}": "{{.PodAntiAffinityLabelValue}}",
                     {{.PodLabels }}
                 }
             },
