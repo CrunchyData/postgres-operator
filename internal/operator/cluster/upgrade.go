@@ -505,6 +505,37 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 		delete(pgcluster.ObjectMeta.Labels, "autofail")
 	}
 
+	// 4.6.0 moved the node labels to the custom resource objects in a more
+	// structure way. if we have a node label, then let's migrate it to that
+	// format
+	if pgcluster.Spec.UserLabels["NodeLabelKey"] != "" && pgcluster.Spec.UserLabels["NodeLabelValue"] != "" {
+		// transition to using the native NodeAffinity objects. In the previous
+		// setup, this was, by default, preferred node affinity. Designed to match
+		// a standard setup.
+		requirement := v1.NodeSelectorRequirement{
+			Key:      pgcluster.Spec.UserLabels["NodeLabelKey"],
+			Values:   []string{pgcluster.Spec.UserLabels["NodeLabelValue"]},
+			Operator: v1.NodeSelectorOpIn,
+		}
+		term := v1.PreferredSchedulingTerm{
+			Weight: crv1.NodeAffinityDefaultWeight, // taking this from the former template
+			Preference: v1.NodeSelectorTerm{
+				MatchExpressions: []v1.NodeSelectorRequirement{requirement},
+			},
+		}
+
+		// and here is our default node affinity rule
+		pgcluster.Spec.NodeAffinity = crv1.NodeAffinitySpec{
+			Default: &v1.NodeAffinity{
+				PreferredDuringSchedulingIgnoredDuringExecution: []v1.PreferredSchedulingTerm{term},
+			},
+		}
+
+		// erase all trace of this
+		delete(pgcluster.Spec.UserLabels, "NodeLabelKey")
+		delete(pgcluster.Spec.UserLabels, "NodeLabelValue")
+	}
+
 	// 4.6.0 moved the "backrest-storage-type" label to a CRD attribute, well,
 	// really an array of CRD attributes, which we need to map the various
 	// attributes to. "local" will be mapped the "posix" to match the pgBackRest

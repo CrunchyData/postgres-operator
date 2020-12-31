@@ -792,12 +792,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			resp.Status.Msg = err.Error()
 			return resp
 		}
-
-		parts := strings.Split(request.NodeLabel, "=")
-		userLabelsMap[config.LABEL_NODE_LABEL_KEY] = parts[0]
-		userLabelsMap[config.LABEL_NODE_LABEL_VALUE] = parts[1]
-
-		log.Debug("primary node labels used from user entered flag")
 	}
 
 	if request.ReplicaStorageConfig != "" {
@@ -1240,6 +1234,16 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		spec.PodAntiAffinity = crv1.PodAntiAffinitySpec{}
 	} else {
 		spec.PodAntiAffinity = podAntiAffinity
+	}
+
+	// if there is a node label, set the node affinity
+	if request.NodeLabel != "" {
+		nodeLabel := strings.Split(request.NodeLabel, "=")
+		spec.NodeAffinity = crv1.NodeAffinitySpec{
+			Default: util.GenerateNodeAffinity(nodeLabel[0], []string{nodeLabel[1]}),
+		}
+
+		log.Debugf("using node label %s", request.NodeLabel)
 	}
 
 	// if the PVCSize is overwritten, update the primary storage spec with this

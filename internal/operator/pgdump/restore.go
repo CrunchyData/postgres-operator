@@ -28,8 +28,10 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+
 	log "github.com/sirupsen/logrus"
 	v1batch "k8s.io/api/batch/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -76,6 +78,12 @@ func Restore(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	storage := cluster.Spec.PrimaryStorage
 
 	taskName := task.Name
+	var nodeAffinity *v1.NodeAffinity
+
+	if task.Spec.Parameters["NodeLabelKey"] != "" && task.Spec.Parameters["NodeLabelValue"] != "" {
+		nodeAffinity = util.GenerateNodeAffinity(
+			task.Spec.Parameters["NodeLabelKey"], []string{task.Spec.Parameters["NodeLabelValue"]})
+	}
 
 	jobFields := restorejobTemplateFields{
 		JobName: fmt.Sprintf("pgrestore-%s-%s", task.Spec.Parameters[config.LABEL_PGRESTORE_FROM_CLUSTER],
@@ -92,7 +100,7 @@ func Restore(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 		PITRTarget:          task.Spec.Parameters[config.LABEL_PGRESTORE_PITR_TARGET],
 		CCPImagePrefix:      util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
 		CCPImageTag:         operator.Pgo.Cluster.CCPImageTag,
-		NodeSelector:        operator.GetAffinity(task.Spec.Parameters["NodeLabelKey"], task.Spec.Parameters["NodeLabelValue"], "In"),
+		NodeSelector:        operator.GetNodeAffinity(nodeAffinity),
 	}
 
 	var doc2 bytes.Buffer

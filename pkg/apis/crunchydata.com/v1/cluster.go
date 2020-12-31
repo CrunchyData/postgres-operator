@@ -117,6 +117,7 @@ type PgclusterSpec struct {
 	Status              string                `json:"status"`
 	CustomConfig        string                `json:"customconfig"`
 	UserLabels          map[string]string     `json:"userlabels"`
+	NodeAffinity        NodeAffinitySpec      `json:"nodeAffinity"`
 	PodAntiAffinity     PodAntiAffinitySpec   `json:"podAntiAffinity"`
 	SyncReplication     *bool                 `json:"syncReplication"`
 	BackrestConfig      []v1.VolumeProjection `json:"backrestConfig"`
@@ -247,6 +248,22 @@ type PgclusterStatus struct {
 // PgclusterState is the crd that defines PG Cluster Stage
 // swagger:ignore
 type PgclusterState string
+
+// NodeAffinityDefaultWeight is the default weighting for the preferred node
+// affinity. This was taken from our legacy template for handling this, so there
+// may be some logic to this, or this could be an arbitrary weight. Either way,
+// the number needs to be somewhere between [1, 100].
+const NodeAffinityDefaultWeight int32 = 10
+
+// NodeAffinitySpec contains optional NodeAffinity rules for the different
+// deployment types managed by the Operator. While similar to how the Operator
+// handles pod anti-affinity, makes reference to the supported Kubernetes
+// objects to maintain more familiarity and consistency.
+//
+// All of these are optional, so one must ensure they check for nils.
+type NodeAffinitySpec struct {
+	Default *v1.NodeAffinity `json:"default"`
+}
 
 // PodAntiAffinityDeployment distinguishes between the different types of
 // Deployments that can leverage PodAntiAffinity

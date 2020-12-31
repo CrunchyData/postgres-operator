@@ -36,12 +36,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-// consolidate with cluster.affinityTemplateFields
-const (
-	AffinityInOperator     = "In"
-	AFFINITY_NOTINOperator = "NotIn"
-)
-
 // PGHAConfigMapSuffix defines the suffix for the name of the PGHA configMap created for each PG
 // cluster
 const PGHAConfigMapSuffix = "pgha-config"
@@ -73,12 +67,6 @@ const (
 	requireScheduleIgnoreExec affinityType = "requiredDuringSchedulingIgnoredDuringExecution"
 	preferScheduleIgnoreExec  affinityType = "preferredDuringSchedulingIgnoredDuringExecution"
 )
-
-type affinityTemplateFields struct {
-	NodeLabelKey   string
-	NodeLabelValue string
-	OperatorValue  string
-}
 
 type podAntiAffinityTemplateFields struct {
 	AffinityType            affinityType
@@ -467,6 +455,24 @@ func CreatePGHAConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcluster
 	return nil
 }
 
+// GetNodeAffinity returns any node affinity rules for the Operator in a JSON
+// string. If there is no data or there is an error, it will return an empty
+// string.
+func GetNodeAffinity(nodeAffinity *v1.NodeAffinity) string {
+	if nodeAffinity == nil {
+		return ""
+	}
+
+	data, err := json.MarshalIndent(nodeAffinity, "", " ")
+
+	if err != nil {
+		log.Warnf("could not generate node affinity: %s", err.Error())
+		return ""
+	}
+
+	return string(data)
+}
+
 // GetTablespaceNamePVCMap returns a map of the tablespace name to the PVC name
 func GetTablespaceNamePVCMap(clusterName string, tablespaceStorageTypeMap map[string]string) map[string]string {
 	tablespacePVCMap := map[string]string{}
@@ -631,33 +637,6 @@ func GetLabelsFromMap(labels map[string]string) string {
 	}
 	// removing the trailing comma from the final label
 	return strings.TrimSuffix(output, ",")
-}
-
-// GetAffinity ...
-func GetAffinity(nodeLabelKey, nodeLabelValue string, affoperator string) string {
-	log.Debugf("GetAffinity with nodeLabelKey=[%s] nodeLabelKey=[%s] and operator=[%s]\n", nodeLabelKey, nodeLabelValue, affoperator)
-	output := ""
-	if nodeLabelKey == "" {
-		return output
-	}
-
-	affinityTemplateFields := affinityTemplateFields{}
-	affinityTemplateFields.NodeLabelKey = nodeLabelKey
-	affinityTemplateFields.NodeLabelValue = nodeLabelValue
-	affinityTemplateFields.OperatorValue = affoperator
-
-	var affinityDoc bytes.Buffer
-	err := config.AffinityTemplate.Execute(&affinityDoc, affinityTemplateFields)
-	if err != nil {
-		log.Error(err.Error())
-		return output
-	}
-
-	if CRUNCHY_DEBUG {
-		_ = config.AffinityTemplate.Execute(os.Stdout, affinityTemplateFields)
-	}
-
-	return affinityDoc.String()
 }
 
 // GetPodAntiAffinity returns the populated pod anti-affinity json that should be attached to

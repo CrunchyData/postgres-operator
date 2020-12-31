@@ -212,9 +212,12 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 
 			spec.UserLabels = cl.Spec.UserLabels
 
-			// the replica should not use the same node labels as the primary
-			spec.UserLabels[config.LABEL_NODE_LABEL_KEY] = ""
-			spec.UserLabels[config.LABEL_NODE_LABEL_VALUE] = ""
+			// if the primary cluster has default node affinity rules set, we need
+			// to honor them in the spec. if a different affinity is desired, the
+			// replica needs to set its own rules
+			if cl.Spec.NodeAffinity.Default != nil {
+				spec.NodeAffinity = cl.Spec.NodeAffinity.Default
+			}
 
 			labels := make(map[string]string)
 			labels[config.LABEL_PG_CLUSTER] = cl.Spec.Name
