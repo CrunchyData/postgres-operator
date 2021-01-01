@@ -208,6 +208,9 @@ pgo-base-docker: pgo-base-build
 
 
 #======== Utility =======
+check:
+	PGOROOT=$(PGOROOT) go test ./...
+
 clean: clean-deprecated
 	rm -f bin/postgres-operator
 	rm -f bin/pgo-backrest/pgo-backrest
