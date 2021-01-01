@@ -18,11 +18,11 @@ require (
 	go.opentelemetry.io/otel v0.13.0
 	go.opentelemetry.io/otel/exporters/stdout v0.13.0
 	go.opentelemetry.io/otel/exporters/trace/jaeger v0.13.0
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
-	k8s.io/api v0.19.4
-	k8s.io/apimachinery v0.19.4
-	k8s.io/client-go v0.19.4
-	sigs.k8s.io/controller-runtime v0.6.3
+	k8s.io/api v0.20.1
+	k8s.io/apimachinery v0.20.1
+	k8s.io/client-go v0.20.1
+	sigs.k8s.io/controller-runtime v0.6.4
 	sigs.k8s.io/yaml v1.2.0
 )
