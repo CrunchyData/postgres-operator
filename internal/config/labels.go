@@ -27,19 +27,14 @@ const (
 
 const LABEL_PGTASK = "pg-task"
 
-const (
-	LABEL_FAILOVER = "failover"
-	LABEL_RESTART  = "restart"
-)
+const LABEL_RESTART = "restart"
 
 const (
-	LABEL_TARGET = "target"
 	LABEL_RMDATA = "pgrmdata"
 )
 
 const (
 	LABEL_PGPOLICY           = "pgpolicy"
-	LABEL_INGEST             = "ingest"
 	LABEL_PGREMOVE           = "pgremove"
 	LABEL_PVCNAME            = "pvcname"
 	LABEL_EXPORTER           = "crunchy-postgres-exporter"
@@ -178,8 +173,6 @@ const (
 	LABEL_PGO_CREATED_BY        = "pgo-created-by"
 	LABEL_PGO_UPDATED_BY        = "pgo-updated-by"
 )
-
-const LABEL_FAILOVER_STARTED = "failover-started"
 
 const GLOBAL_CUSTOM_CONFIGMAP = "pgo-custom-pg-config"
 

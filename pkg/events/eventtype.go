@@ -45,8 +45,6 @@ const (
 	EventScaleClusterFailure           = "ScaleClusterFailure"
 	EventScaleDownCluster              = "ScaleDownCluster"
 	EventShutdownCluster               = "ShutdownCluster"
-	EventFailoverCluster               = "FailoverCluster"
-	EventFailoverClusterCompleted      = "FailoverClusterCompleted"
 	EventRestoreCluster                = "RestoreCluster"
 	EventRestoreClusterCompleted       = "RestoreClusterCompleted"
 	EventUpgradeCluster                = "UpgradeCluster"
@@ -199,38 +197,6 @@ func (p EventScaleDownClusterFormat) GetHeader() EventHeader {
 
 func (lvl EventScaleDownClusterFormat) String() string {
 	msg := fmt.Sprintf("Event %s (scaledown) - clustername %s - replicaname %s", lvl.EventHeader, lvl.Clustername, lvl.Replicaname)
-	return msg
-}
-
-//----------------------------
-type EventFailoverClusterFormat struct {
-	EventHeader `json:"eventheader"`
-	Clustername string `json:"clustername"`
-	Target      string `json:"target"`
-}
-
-func (p EventFailoverClusterFormat) GetHeader() EventHeader {
-	return p.EventHeader
-}
-
-func (lvl EventFailoverClusterFormat) String() string {
-	msg := fmt.Sprintf("Event %s (failover) - clustername %s - target %s", lvl.EventHeader, lvl.Clustername, lvl.Target)
-	return msg
-}
-
-//----------------------------
-type EventFailoverClusterCompletedFormat struct {
-	EventHeader `json:"eventheader"`
-	Clustername string `json:"clustername"`
-	Target      string `json:"target"`
-}
-
-func (p EventFailoverClusterCompletedFormat) GetHeader() EventHeader {
-	return p.EventHeader
-}
-
-func (lvl EventFailoverClusterCompletedFormat) String() string {
-	msg := fmt.Sprintf("Event %s (failover completed) - clustername %s - target %s", lvl.EventHeader, lvl.Clustername, lvl.Target)
 	return msg
 }
 

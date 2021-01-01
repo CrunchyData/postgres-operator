@@ -18,7 +18,6 @@ package util
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -95,43 +94,6 @@ const (
 // and other statistics about the instances in a PostgreSQL cluster, e.g.
 // replication lag
 var instanceInfoCommand = []string{"patronictl", "list", "-f", "json"}
-
-// GetPod determines the best target to fail to
-func GetPod(clientset kubernetes.Interface, deploymentName, namespace string) (*v1.Pod, error) {
-	ctx := context.TODO()
-
-	var err error
-	var pod *v1.Pod
-	var pods *v1.PodList
-
-	selector := config.LABEL_DEPLOYMENT_NAME + "=" + deploymentName + "," + config.LABEL_PGHA_ROLE + "=replica"
-	pods, err = clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		return pod, err
-	}
-	if len(pods.Items) != 1 {
-		return pod, errors.New("could not determine which pod to failover to")
-	}
-
-	for i := range pods.Items {
-		pod = &pods.Items[i]
-	}
-
-	found := false
-
-	// make sure the pod has a database container it it
-	for _, c := range pod.Spec.Containers {
-		if c.Name == "database" {
-			found = true
-		}
-	}
-
-	if !found {
-		return pod, errors.New("could not find a database container in the pod")
-	}
-
-	return pod, err
-}
 
 // ReplicationStatus is responsible for retrieving and returning the replication
 // information about the status of the replicas in a PostgreSQL cluster. It

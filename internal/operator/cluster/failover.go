@@ -20,121 +20,63 @@ package cluster
 
 import (
 	"context"
-	"encoding/json"
-	"time"
+	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
-	"github.com/crunchydata/postgres-operator/pkg/events"
-	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
-// FailoverBase ...
-// gets called first on a failover
-func FailoverBase(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask, restconfig *rest.Config) {
-	ctx := context.TODO()
-	var err error
-
-	// look up the pgcluster for this task
-	// in the case, the clustername is passed as a key in the
-	// parameters map
-	var clusterName string
-	for k := range task.Spec.Parameters {
-		clusterName = k
-	}
-
-	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
-	if err != nil {
-		return
-	}
-
-	// create marker (clustername, namespace)
-	err = PatchpgtaskFailoverStatus(clientset, task, namespace)
-	if err != nil {
-		log.Errorf("could not set failover started marker for task %s cluster %s", task.Spec.Name, clusterName)
-		return
-	}
-
-	// get initial count of replicas --selector=pg-cluster=clusterName
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName
-	replicaList, err := clientset.CrunchydataV1().Pgreplicas(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})
-	if err != nil {
-		log.Error(err)
-		return
-	}
-	log.Debugf("replica count before failover is %d", len(replicaList.Items))
-
-	// publish event for failover
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventFailoverClusterFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventFailoverCluster,
-		},
-		Clustername: clusterName,
-		Target:      task.ObjectMeta.Labels[config.LABEL_TARGET],
-	}
-
-	err = events.Publish(f)
-	if err != nil {
-		log.Error(err)
-	}
-
-	_ = Failover(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER], clientset, clusterName, task, namespace, restconfig)
-
-	// publish event for failover completed
-	topics = make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	g := events.EventFailoverClusterCompletedFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventFailoverClusterCompleted,
-		},
-		Clustername: clusterName,
-		Target:      task.ObjectMeta.Labels[config.LABEL_TARGET],
-	}
-
-	err = events.Publish(g)
-	if err != nil {
-		log.Error(err)
-	}
-
-	// remove marker
-}
-
-func PatchpgtaskFailoverStatus(clientset pgo.Interface, oldCrd *crv1.Pgtask, namespace string) error {
+// RemovePrimaryOnRoleChangeTag sets the 'primary_on_role_change' tag to null in the
+// Patroni DCS, effectively removing the tag.  This is accomplished by exec'ing into
+// the primary PG pod, and sending a patch request to update the appropriate data (i.e.
+// the 'primary_on_role_change' tag) in the DCS.
+func RemovePrimaryOnRoleChangeTag(clientset kubernetes.Interface, restconfig *rest.Config,
+	clusterName, namespace string) error {
 	ctx := context.TODO()
 
-	// change it
-	oldCrd.Spec.Parameters[config.LABEL_FAILOVER_STARTED] = time.Now().Format(time.RFC3339)
+	selector := config.LABEL_PG_CLUSTER + "=" + clusterName +
+		"," + config.LABEL_PGHA_ROLE + "=" + config.LABEL_PGHA_ROLE_PRIMARY
 
-	// create the patch
-	patchBytes, err := json.Marshal(map[string]interface{}{
-		"spec": map[string]interface{}{
-			"parameters": oldCrd.Spec.Parameters,
-		},
-	})
+	// only consider pods that are running
+	options := metav1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
+		LabelSelector: selector,
+	}
+
+	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, options)
+
 	if err != nil {
+		log.Error(err)
+		return err
+	} else if len(pods.Items) == 0 {
+		return fmt.Errorf("no pods found for cluster %q", clusterName)
+	} else if len(pods.Items) > 1 {
+		log.Error("More than one primary found after completing the post-failover backup")
+	}
+	pod := pods.Items[0]
+
+	// generate the curl command that will be run on the pod selected for the failover in order
+	// to trigger the failover and promote that specific pod to primary
+	command := make([]string, 3)
+	command[0] = "/bin/bash"
+	command[1] = "-c"
+	command[2] = fmt.Sprintf("curl -s 127.0.0.1:%s/config -XPATCH -d "+
+		"'{\"tags\":{\"primary_on_role_change\":null}}'", config.DEFAULT_PATRONI_PORT)
+
+	log.Debugf("running Exec command '%s' with namespace=[%s] podname=[%s] container name=[%s]",
+		command, namespace, pod.Name, pod.Spec.Containers[0].Name)
+	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset, command,
+		pod.Spec.Containers[0].Name, pod.Name, namespace, nil)
+	log.Debugf("stdout=[%s] stderr=[%s]", stdout, stderr)
+	if err != nil {
+		log.Error(err)
 		return err
 	}
-
-	// apply patch
-	_, err6 := clientset.CrunchydataV1().Pgtasks(namespace).
-		Patch(ctx, oldCrd.Name, types.MergePatchType, patchBytes, metav1.PatchOptions{})
-
-	return err6
+	return nil
 }

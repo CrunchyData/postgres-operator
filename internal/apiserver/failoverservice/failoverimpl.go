@@ -18,29 +18,32 @@ limitations under the License.
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//  CreateFailover ...
+// CreateFailover is the API endpoint for triggering a manual failover of a
+// cluster. It performs this function inline, i.e. it does not trigger any
+// asynchronous methods.
+//
 // pgo failover mycluster
-// pgo failover all
-// pgo failover --selector=name=mycluster
 func CreateFailover(request *msgs.CreateFailoverRequest, ns, pgouser string) msgs.CreateFailoverResponse {
-	ctx := context.TODO()
+	log.Debugf("create failover called for %s", request.ClusterName)
 
-	var err error
-	resp := msgs.CreateFailoverResponse{}
-	resp.Status.Code = msgs.Ok
-	resp.Status.Msg = ""
-	resp.Results = make([]string, 0)
+	resp := msgs.CreateFailoverResponse{
+		Results: "",
+		Status: msgs.Status{
+			Code: msgs.Ok,
+		},
+	}
 
 	cluster, err := validateClusterName(request.ClusterName, ns)
 	if err != nil {
@@ -58,49 +61,21 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns, pgouser string) msg
 	}
 
 	if request.Target != "" {
-		_, err = isValidFailoverTarget(request.Target, request.ClusterName, ns)
-		if err != nil {
+		if err := isValidFailoverTarget(request.Target, request.ClusterName, ns); err != nil {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = err.Error()
 			return resp
 		}
 	}
 
-	log.Debugf("create failover called for %s", request.ClusterName)
-
-	// Create a pgtask
-	spec := crv1.PgtaskSpec{}
-	spec.Namespace = ns
-	spec.Name = request.ClusterName + "-" + config.LABEL_FAILOVER
-
-	// previous failovers will leave a pgtask so remove it first
-	_ = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Delete(ctx, spec.Name, metav1.DeleteOptions{})
-
-	spec.TaskType = crv1.PgtaskFailover
-	spec.Parameters = make(map[string]string)
-	spec.Parameters[request.ClusterName] = request.ClusterName
-
-	labels := make(map[string]string)
-	labels["target"] = request.Target
-	labels[config.LABEL_PG_CLUSTER] = request.ClusterName
-	labels[config.LABEL_PGOUSER] = pgouser
-
-	newInstance := &crv1.Pgtask{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   spec.Name,
-			Labels: labels,
-		},
-		Spec: spec,
-	}
-
-	_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(ctx, newInstance, metav1.CreateOptions{})
-	if err != nil {
+	// perform the switchover
+	if err := operator.Switchover(apiserver.Clientset, apiserver.RESTConfig, cluster, request.Target); err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
 	}
 
-	resp.Results = append(resp.Results, "created Pgtask (failover) for cluster "+request.ClusterName)
+	resp.Results = "failover success for cluster " + cluster.Name
 
 	return resp
 }
@@ -186,7 +161,7 @@ func validateClusterName(clusterName, ns string) (*crv1.Pgcluster, error) {
 // specified, and then ensuring the PG pod created by the deployment is not the current primary.
 // If the deployment is not found, or if the pod is the current primary, an error will be returned.
 // Otherwise the deployment is returned.
-func isValidFailoverTarget(deployName, clusterName, ns string) (*v1.Deployment, error) {
+func isValidFailoverTarget(deployName, clusterName, ns string) error {
 	ctx := context.TODO()
 
 	// Using the following label selector, ensure the deployment specified using deployName exists in the
@@ -198,11 +173,11 @@ func isValidFailoverTarget(deployName, clusterName, ns string) (*v1.Deployment, 
 		List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
 		log.Error(err)
-		return nil, err
+		return err
 	} else if len(deployments.Items) == 0 {
-		return nil, errors.New("no target found named " + deployName)
+		return fmt.Errorf("no target found named %s", deployName)
 	} else if len(deployments.Items) > 1 {
-		return nil, errors.New("more than one target found named " + deployName)
+		return fmt.Errorf("more than one target found named %s", deployName)
 	}
 
 	// Using the following label selector, determine if the target specified is the current
@@ -212,8 +187,8 @@ func isValidFailoverTarget(deployName, clusterName, ns string) (*v1.Deployment, 
 		"," + config.LABEL_PGHA_ROLE + "=" + config.LABEL_PGHA_ROLE_PRIMARY
 	pods, _ := apiserver.Clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
 	if len(pods.Items) > 0 {
-		return nil, errors.New("The primary database cannot be selected as a failover target")
+		return fmt.Errorf("The primary database cannot be selected as a failover target")
 	}
 
-	return &deployments.Items[0], nil
+	return nil
 }

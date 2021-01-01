@@ -62,7 +62,28 @@ pgo scaledown hippo --target=hippo-ojnd
 
 ## Manual Failover
 
-Each PostgreSQL cluster will manage its own availability. If you wish to manually fail over, you will need to use the [`pgo failover`]({{< relref "pgo-client/reference/pgo_failover.md">}}) command. First, determine which instance you want to fail over to:
+Each PostgreSQL cluster will manage its own availability. If you wish to manually fail over, you will need to use the [`pgo failover`]({{< relref "pgo-client/reference/pgo_failover.md">}}) command.
+
+There are two ways to issue a manual failover to your PostgreSQL cluster:
+
+1. Allow for the PostgreSQL Operator to select the best replica candidate for failover.
+2. Select your own replica candidate for failover.
+
+Both methods are detailed below.
+
+### Manual Failover - PostgreSQL Operator Candidate Selection
+
+To have the PostgreSQL Operator select the best replica candidate for failover, all you need to do is execute the following command:
+
+```
+pgo failover hippo
+```
+
+The PostgreSQL Operator will determine which is the best replica candidate to fail over to, and take into account factors such as replication lag and current timeline.
+
+### Manual Failover - Manual Selection
+
+If you wish to have your cluster manually failover, you must first query your determine which instance you want to fail over to. You can do so with the following command:
 
 ```
 pgo failover hippo --query

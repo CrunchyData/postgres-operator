@@ -32,7 +32,12 @@ var failoverCmd = &cobra.Command{
 	Short: "Performs a manual failover",
 	Long: `Performs a manual failover. For example:
 
-	pgo failover mycluster`,
+	# have the operator select the best target candidate
+	pgo failover hippo
+	# get a list of target candidates
+	pgo failover hippo --query
+	# failover to a specific target candidate
+	pgo failover hippo --target=hippo-abcd`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if Namespace == "" {
 			Namespace = PGONamespace
@@ -44,10 +49,6 @@ var failoverCmd = &cobra.Command{
 			if Query {
 				queryFailover(args, Namespace)
 			} else if util.AskForConfirmation(NoPrompt, "") {
-				if Target == "" {
-					fmt.Println(`Error: The --target flag is required for failover.`)
-					return
-				}
 				createFailover(args, Namespace)
 			} else {
 				fmt.Println("Aborting...")
@@ -80,14 +81,12 @@ func createFailover(args []string, ns string) {
 		os.Exit(2)
 	}
 
-	if response.Status.Code == msgs.Ok {
-		for k := range response.Results {
-			fmt.Println(response.Results[k])
-		}
-	} else {
+	if response.Status.Code != msgs.Ok {
 		fmt.Println("Error: " + response.Status.Msg)
-		os.Exit(2)
+		os.Exit(1)
 	}
+
+	fmt.Println(response.Results)
 }
 
 // queryFailover is a helper function to return the user information about the
