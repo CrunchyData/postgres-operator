@@ -201,6 +201,9 @@ pgo-base-docker: pgo-base-build
 
 
 #======== Utility =======
+check:
+	PGOROOT=$(PGOROOT) go test ./...
+
 cli-docs:
 	rm docs/content/pgo-client/reference/*.md
 	cd docs/content/pgo-client/reference && go run ../../../../cmd/pgo/generatedocs.go
