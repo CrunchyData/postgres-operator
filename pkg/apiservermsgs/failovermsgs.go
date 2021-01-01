@@ -37,8 +37,7 @@ type QueryFailoverResponse struct {
 // CreateFailoverResponse ...
 // swagger:model
 type CreateFailoverResponse struct {
-	Results []string
-	Targets string
+	Results string
 	Status
 }
 

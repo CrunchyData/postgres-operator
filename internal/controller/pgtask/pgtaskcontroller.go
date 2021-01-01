@@ -122,13 +122,6 @@ func (c *Controller) processNextItem() bool {
 	case crv1.PgtaskUpgrade:
 		log.Debug("upgrade task added")
 		clusteroperator.AddUpgrade(c.Client, tmpTask, keyNamespace)
-	case crv1.PgtaskFailover:
-		log.Debug("failover task added")
-		if !dupeFailover(c.Client, tmpTask, keyNamespace) {
-			clusteroperator.FailoverBase(keyNamespace, c.Client, tmpTask, c.Client.Config)
-		} else {
-			log.Debugf("skipping duplicate onAdd failover task %s/%s", keyNamespace, keyResourceName)
-		}
 	case crv1.PgtaskRollingUpdate:
 		log.Debug("rolling update task added")
 		// first, attempt to get the pgcluster object
@@ -164,9 +157,6 @@ func (c *Controller) processNextItem() bool {
 	case crv1.PgtaskpgRestore:
 		log.Debug("pgDump restore task added")
 		pgdumpoperator.Restore(keyNamespace, c.Client, tmpTask)
-
-	case crv1.PgtaskAutoFailover:
-		log.Debugf("autofailover task added %s", keyResourceName)
 	case crv1.PgtaskWorkflow:
 		log.Debugf("workflow task added [%s] ID [%s]", keyResourceName, tmpTask.Spec.Parameters[crv1.PgtaskWorkflowID])
 
@@ -215,24 +205,6 @@ func (c *Controller) AddPGTaskEventHandler() {
 	})
 
 	log.Debugf("pgtask Controller: added event handler to informer")
-}
-
-// de-dupe logic for a failover, if the failover started
-// parameter is set, it means a failover has already been
-// started on this
-func dupeFailover(clientset pgo.Interface, task *crv1.Pgtask, ns string) bool {
-	ctx := context.TODO()
-	tmp, err := clientset.CrunchydataV1().Pgtasks(ns).Get(ctx, task.Spec.Name, metav1.GetOptions{})
-	if err != nil {
-		// a big time error if this occurs
-		return false
-	}
-
-	if tmp.Spec.Parameters[config.LABEL_FAILOVER_STARTED] == "" {
-		return false
-	}
-
-	return true
 }
 
 // de-dupe logic for a delete data, if the delete data job started

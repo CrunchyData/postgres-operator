@@ -24,7 +24,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
 	log "github.com/sirupsen/logrus"
@@ -125,7 +124,7 @@ func RollingUpdate(clientset kubeapi.Interface, restConfig *rest.Config, cluster
 	// replicas that have the updated Deployment state.
 	if len(instances[deploymentTypeReplica]) > 0 && len(instances[deploymentTypePrimary]) == 1 {
 		// if the switchover fails, warn that it failed but continue on
-		if err := switchover(clientset, restConfig, cluster); err != nil {
+		if err := operator.Switchover(clientset, restConfig, cluster, ""); err != nil {
 			log.Warnf("switchover failed: %s", err.Error())
 		}
 	}
@@ -231,52 +230,6 @@ func generateDeploymentTypeMap(clientset kubernetes.Interface, cluster *crv1.Pgc
 // instance is ready
 func generatePostgresReadyCommand(port string) []string {
 	return []string{"pg_isready", "-p", port}
-}
-
-// generatePostgresSwitchoverCommand creates the command that is used to issue
-// a switchover (demote a primary, promote a replica). Takes the name of the
-// cluster; Patroni will choose the best candidate to switchover to
-func generatePostgresSwitchoverCommand(clusterName string) []string {
-	return []string{"patronictl", "switchover", "--force", clusterName}
-}
-
-// switchover performs a controlled switchover within a PostgreSQL cluster, i.e.
-// demoting a primary and promoting a replica. The method works as such:
-//
-// 1. The function looks for all available replicas as well as the current
-// primary. We look up the primary for convenience to avoid various API calls
-//
-// 2. We then search over the list to find both a primary and a suitable
-// candidate for promotion. A candidate is suitable if:
-//   - It is on the latest timeline
-//   - It has the least amount of replication lag
-//
-// This is done to limit the risk of data loss.
-//
-// If either a primary or candidate is **not** found, we do not switch over.
-//
-// 3. If all of the above works successfully, a switchover is attempted.
-func switchover(clientset kubernetes.Interface, restConfig *rest.Config, cluster *crv1.Pgcluster) error {
-	// we want to find a Pod to execute the switchover command on, i.e. the
-	// primary
-	pod, err := util.GetPrimaryPod(clientset, cluster)
-	if err != nil {
-		return err
-	}
-
-	// good to generally log which instances are being used in the switchover
-	log.Infof("controlled switchover started for cluster %q", cluster.Name)
-
-	cmd := generatePostgresSwitchoverCommand(cluster.Name)
-	if _, stderr, err := kubeapi.ExecToPodThroughAPI(restConfig, clientset,
-		cmd, "database", pod.Name, cluster.Namespace, nil); err != nil {
-		return fmt.Errorf(stderr)
-	}
-
-	log.Infof("controlled switchover completed for cluster %q", cluster.Name)
-
-	// and that's all
-	return nil
 }
 
 // waitForPostgresInstance waits for a PostgreSQL instance within a Pod is ready

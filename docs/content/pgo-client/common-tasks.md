@@ -816,13 +816,26 @@ pgo failover --query hacluster
 
 The PostgreSQL Operator is set up with an automated failover system based on
 distributed consensus, but there may be times where you wish to have your
-cluster manually failover. If you wish to have your cluster manually failover,
-first, query your cluster to determine which failover targets are available.
-The query command also provides information that may help your decision, such as
-replication lag:
+cluster manually failover. There are two ways to issue a manual failover to
+your PostgreSQL cluster:
+
+1. Allow for the PostgreSQL Operator to select the best replica candidate to
+failover to
+2. Select your own replica candidate to failover to.
+
+To have the PostgreSQL Operator select the best replica candidate for failover,
+all you need to do is execute the following command:
+
+```
+pgo failover hacluster
+```
+
+If you wish to have your cluster manually failover, you must first query your
+cluster to determine which failover targets are available. The query command
+also provides information that may help your decision, such as replication lag:
 
 ```shell
-pgo failover --query hacluster
+pgo failover hacluster --query
 ```
 
 Once you have selected the replica that is best for your to failover to, you can
@@ -833,7 +846,9 @@ pgo failover hacluster --target=hacluster-abcd
 ```
 
 where `hacluster-abcd` is the name of the PostgreSQL instance that you want to
-promote to become the new primary
+promote to become the new primary.
+
+Both methods perform the failover immediately upon execution.
 
 #### Destroying a Replica
 
