@@ -42,6 +42,7 @@ var (
 	UserLabels                                                                                   string
 	Tablespaces                                                                                  []string
 	ServiceType                                                                                  string
+	ServiceTypePgBouncer                                                                         string
 	Schedule                                                                                     string
 	ScheduleOptions                                                                              string
 	ScheduleType                                                                                 string
@@ -453,6 +454,7 @@ func init() {
 	createClusterCmd.Flags().StringVar(&PgBouncerMemoryLimit, "pgbouncer-memory-limit", "", "Set the amount of memory to limit for "+
 		"pgBouncer.")
 	createClusterCmd.Flags().Int32Var(&PgBouncerReplicas, "pgbouncer-replicas", 0, "Set the total number of pgBouncer instances to deploy. If not set, defaults to 1.")
+	createClusterCmd.Flags().StringVar(&ServiceTypePgBouncer, "pgbouncer-service-type", "", "The Service type to use for pgBouncer. Defaults to the Service type of the PostgreSQL cluster.")
 	createClusterCmd.Flags().StringVar(&PgBouncerTLSSecret, "pgbouncer-tls-secret", "", "The name of the secret "+
 		"that contains the TLS keypair to use for enabling pgBouncer to accept TLS connections. "+
 		"Must also set server-tls-secret and server-ca-secret.")
@@ -486,7 +488,7 @@ func init() {
 	createClusterCmd.Flags().StringVar(&TLSSecret, "server-tls-secret", "", "The name of the secret that contains "+
 		"the TLS keypair to use for enabling the PostgreSQL cluster to accept TLS connections. "+
 		"Must be used with \"server-ca-secret\"")
-	createClusterCmd.Flags().StringVarP(&ServiceType, "service-type", "", "", "The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.")
+	createClusterCmd.Flags().StringVar(&ServiceType, "service-type", "", "The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.")
 	createClusterCmd.Flags().BoolVar(&ShowSystemAccounts, "show-system-accounts", false, "Include the system accounts in the results.")
 	createClusterCmd.Flags().StringVarP(&StorageConfig, "storage-config", "", "", "The name of a Storage config in pgo.yaml to use for the cluster storage.")
 	createClusterCmd.Flags().BoolVarP(&SyncReplication, "sync-replication", "", false,
@@ -529,6 +531,7 @@ func init() {
 		"pgBouncer.")
 	createPgbouncerCmd.Flags().Int32Var(&PgBouncerReplicas, "replicas", 0, "Set the total number of pgBouncer instances to deploy. If not set, defaults to 1.")
 	createPgbouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	createPgbouncerCmd.Flags().StringVar(&ServiceType, "service-type", "", "The Service type to use for pgBouncer. Defaults to the Service type of the PostgreSQL cluster.")
 	createPgbouncerCmd.Flags().StringVar(&PgBouncerTLSSecret, "tls-secret", "", "The name of the secret "+
 		"that contains the TLS keypair to use for enabling pgBouncer to accept TLS connections. "+
 		"The PostgreSQL cluster must have TLS enabled.")

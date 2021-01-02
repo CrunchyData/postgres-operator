@@ -93,6 +93,10 @@ type CreateClusterRequest struct {
 	// PostgreSQL cluster. Only works if PgbouncerFlag is set, and if so, it must
 	// be at least 1. If 0 is passed in, it will automatically be set to 1
 	PgBouncerReplicas int32
+	// PgBouncerServiceType, if specified and if PgbouncerFlag is true, is the
+	// ServiceType to use for pgBouncer. If not set, the value is defaultd to that
+	// of the PostgreSQL cluster ServiceType.
+	PgBouncerServiceType v1.ServiceType
 	// PgBouncerTLSSecret is the name of the Secret containing the TLS keypair
 	// for enabling TLS with pgBouncer. This also requires for TLSSecret and
 	// CASecret to be set

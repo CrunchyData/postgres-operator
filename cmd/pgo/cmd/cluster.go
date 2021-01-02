@@ -280,6 +280,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.ExporterMemoryLimit = ExporterMemoryLimit
 	r.BadgerFlag = BadgerFlag
 	r.ServiceType = v1.ServiceType(ServiceType)
+	r.PgBouncerServiceType = v1.ServiceType(ServiceTypePgBouncer)
 	r.AutofailFlag = !DisableAutofailFlag
 	r.PgbouncerFlag = PgbouncerFlag
 	r.BackrestStorageConfig = BackrestStorageConfig

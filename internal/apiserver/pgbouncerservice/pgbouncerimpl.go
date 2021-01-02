@@ -109,6 +109,17 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 			cluster.Spec.PgBouncer.Replicas = request.Replicas
 		}
 
+		// set the optional ServiceType parameter
+		switch request.ServiceType {
+		default:
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = fmt.Sprintf("invalid service type %q", request.ServiceType)
+			return resp
+		case v1.ServiceTypeClusterIP, v1.ServiceTypeNodePort,
+			v1.ServiceTypeLoadBalancer, v1.ServiceTypeExternalName:
+			cluster.Spec.PgBouncer.ServiceType = request.ServiceType
+		}
+
 		// if the request has overriding CPU/memory parameters,
 		// these will take precedence over the defaults
 		if request.CPULimit != "" {
@@ -371,6 +382,19 @@ func UpdatePgBouncer(request *msgs.UpdatePgBouncerRequest, namespace, pgouser st
 				result.ErrorMessage = err.Error()
 				response.Results = append(response.Results, result)
 			}
+		}
+
+		// set the optional ServiceType parameter
+		switch request.ServiceType {
+		default:
+			result.Error = true
+			result.ErrorMessage = fmt.Sprintf("invalid service type %q", request.ServiceType)
+			response.Results = append(response.Results, result)
+			continue
+		case v1.ServiceTypeClusterIP, v1.ServiceTypeNodePort,
+			v1.ServiceTypeLoadBalancer, v1.ServiceTypeExternalName:
+			cluster.Spec.PgBouncer.ServiceType = request.ServiceType
+		case "": // no-op, well, no change
 		}
 
 		// ensure the Resources/Limits are non-nil
