@@ -721,53 +721,54 @@ make changes, as described below.
 
 | Attribute | Action | Description |
 |-----------|--------|-------------|
-| Annotations | `create`, `update` | Specify Kubernetes [Annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/) that can be applied to the different deployments managed by the PostgreSQL Operator (PostgreSQL, pgBackRest, pgBouncer). For more information, please see the "Annotations Specification" below. |
-| BackrestConfig | `create` | Optional references to pgBackRest configuration files
-| BackrestLimits | `create`, `update` | Specify the container resource limits that the pgBackRest repository should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
+| annotations | `create`, `update` | Specify Kubernetes [Annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/) that can be applied to the different deployments managed by the PostgreSQL Operator (PostgreSQL, pgBackRest, pgBouncer). For more information, please see the "Annotations Specification" below. |
+| backrestConfig | `create` | Optional references to pgBackRest configuration files |
+| backrestLimits | `create`, `update` | Specify the container resource limits that the pgBackRest repository should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
+| backrestRepoPath | `create` | Optional reference to the location of the pgBackRest repository. |
 | BackrestResources | `create`, `update` | Specify the container resource requests that the pgBackRest repository should use. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
-| BackrestS3Bucket | `create` | An optional parameter that specifies a S3 bucket that pgBackRest should use. |
-| BackrestS3Endpoint | `create` | An optional parameter that specifies the S3 endpoint pgBackRest should use. |
-| BackrestS3Region | `create` | An optional parameter that specifies a cloud region that pgBackRest should use. |
-| BackrestStorageTypes | `create` | An optional parameter that takes an array of different repositories types that can be used to store pgBackRest backups. Choices are `posix` and `s3`. If nothing is specified, it defaults to `posix`. (`local`, equivalent to `posix`, is available for backwards compatibility).|
-| BackrestS3URIStyle | `create` | An optional parameter that specifies if pgBackRest should use the `path` or `host` S3 URI style. |
-| BackrestS3VerifyTLS | `create` | An optional parameter that specifies if pgBackRest should verify the TLS endpoint. |
+| backrestS3Bucket | `create` | An optional parameter that specifies a S3 bucket that pgBackRest should use. |
+| backrestS3Endpoint | `create` | An optional parameter that specifies the S3 endpoint pgBackRest should use. |
+| backrestS3Region | `create` | An optional parameter that specifies a cloud region that pgBackRest should use. |
+| backrestS3URIStyle | `create` | An optional parameter that specifies if pgBackRest should use the `path` or `host` S3 URI style. |
+| backrestS3VerifyTLS | `create` | An optional parameter that specifies if pgBackRest should verify the TLS endpoint. |
 | BackrestStorage | `create` | A specification that gives information about the storage attributes for the pgBackRest repository, which stores backups and archives, of the PostgreSQL cluster. For details, please see the `Storage Specification` section below. This is required. |
-| CCPImage | `create` | The name of the PostgreSQL container image to use, e.g. `crunchy-postgres-ha` or `crunchy-postgres-ha-gis`. |
-| CCPImagePrefix | `create` | If provided, the image prefix (or registry) of the PostgreSQL container image, e.g. `registry.developers.crunchydata.com/crunchydata`. The default is to use the image prefix set in the PostgreSQL Operator configuration. |
-| CCPImageTag | `create` | The tag of the PostgreSQL container image to use, e.g. `{{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}`. |
-| ClusterName | `create` | The name of the PostgreSQL cluster, e.g. `hippo`. This is used to group PostgreSQL instances (primary, replicas) together. |
-| CustomConfig | `create` | If specified, references a custom ConfigMap to use when bootstrapping a PostgreSQL cluster. For the shape of this file, please see the section on [Custom Configuration]({{< relref "/advanced/custom-configuration.md" >}}) |
-| Database | `create` | The name of a database that the PostgreSQL user can log into after the PostgreSQL cluster is created. |
-| DisableAutofail | `create`, `update` | If set to true, disables the high availability capabilities of a PostgreSQL cluster. By default, every cluster can have high availability if there is at least one replica. |
-| ExporterLimits | `create`, `update` | Specify the container resource limits that the `crunchy-postgres-exporter` sidecar uses when it is deployed with a PostgreSQL instance. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
-| Exporter | `create`,`update` | If `true`, deploys the `crunchy-postgres-exporter` sidecar for metrics collection |
-| ExporterPort | `create` | If `Exporter` is `true`, then this specifies the port that the metrics sidecar runs on (e.g. `9187`) |
-| ExporterResources | `create`, `update` | Specify the container resource requests that the `crunchy-postgres-exporter` sidecar uses when it is deployed with a PostgreSQL instance. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
-| Limits | `create`, `update` | Specify the container resource limits that the PostgreSQL cluster should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
-| Name | `create` | The name of the PostgreSQL instance that is the primary. On creation, this should be set to be the same as `ClusterName`. |
-| Namespace | `create` | The Kubernetes Namespace that the PostgreSQL cluster is deployed in. |
-| NodeAffinity | `create` | Sets the [node affinity rules]({{< relref "/architecture/high-availability/_index.md#node-affinity" >}}) for the PostgreSQL cluster and associated PostgreSQL instances. Can be overridden on a per-instance (`pgreplicas.crunchydata.com`) basis. Please see the `Node Affinity Specification` section below. |
-| PGBadger | `create`,`update` | If `true`, deploys the `crunchy-pgbadger` sidecar for query analysis. |
-| PGBadgerPort | `create` | If the `PGBadger` label is set, then this specifies the port that the pgBadger sidecar runs on (e.g. `10000`) |
-| PGDataSource | `create` | Used to indicate if a PostgreSQL cluster should bootstrap its data from a pgBackRest repository. This uses the PostgreSQL Data Source Specification, described below. |
-| PGOImagePrefix | `create` | If provided, the image prefix (or registry) of any PostgreSQL Operator images that are used for jobs, e.g. `registry.developers.crunchydata.com/crunchydata`. The default is to use the image prefix set in the PostgreSQL Operator configuration. |
-| PgBouncer | `create`, `update` | If specified, defines the attributes to use for the pgBouncer connection pooling deployment that can be used in conjunction with this PostgreSQL cluster. Please see the specification defined below. |
-| PodAntiAffinity | `create` | A required section. Sets the [pod anti-affinity rules]({{< relref "/architecture/high-availability/_index.md#how-the-crunchy-postgresql-operator-uses-pod-anti-affinity" >}}) for the PostgreSQL cluster and associated deployments. Please see the `Pod Anti-Affinity Specification` section below. |
-| Policies | `create` | If provided, a comma-separated list referring to `pgpolicies.crunchydata.com.Spec.Name` that should be run once the PostgreSQL primary is first initialized. |
-| Port | `create` | The port that PostgreSQL will run on, e.g. `5432`. |
+| backrestStorageTypes | `create` | An optional parameter that takes an array of different repositories types that can be used to store pgBackRest backups. Choices are `posix` and `s3`. If nothing is specified, it defaults to `posix`. (`local`, equivalent to `posix`, is available for backwards compatibility).|
+| ccpimage | `create` | The name of the PostgreSQL container image to use, e.g. `crunchy-postgres-ha` or `crunchy-postgres-ha-gis`. |
+| ccpimageprefix | `create` | If provided, the image prefix (or registry) of the PostgreSQL container image, e.g. `registry.developers.crunchydata.com/crunchydata`. The default is to use the image prefix set in the PostgreSQL Operator configuration. |
+| ccpimagetag | `create` | The tag of the PostgreSQL container image to use, e.g. `{{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}`. |
+| clustername | `create` | The name of the PostgreSQL cluster, e.g. `hippo`. This is used to group PostgreSQL instances (primary, replicas) together. |
+| customconfig | `create` | If specified, references a custom ConfigMap to use when bootstrapping a PostgreSQL cluster. For the shape of this file, please see the section on [Custom Configuration]({{< relref "/advanced/custom-configuration.md" >}}) |
+| database | `create` | The name of a database that the PostgreSQL user can log into after the PostgreSQL cluster is created. |
+| disableAutofail | `create`, `update` | If set to true, disables the high availability capabilities of a PostgreSQL cluster. By default, every cluster can have high availability if there is at least one replica. |
+| exporter | `create`,`update` | If `true`, deploys the `crunchy-postgres-exporter` sidecar for metrics collection |
+| exporterLimits | `create`, `update` | Specify the container resource limits that the `crunchy-postgres-exporter` sidecar uses when it is deployed with a PostgreSQL instance. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
+| exporterport | `create` | If `Exporter` is `true`, then this specifies the port that the metrics sidecar runs on (e.g. `9187`) |
+| exporterResources | `create`, `update` | Specify the container resource requests that the `crunchy-postgres-exporter` sidecar uses when it is deployed with a PostgreSQL instance. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
+| limits | `create`, `update` | Specify the container resource limits that the PostgreSQL cluster should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
+| name | `create` | The name of the PostgreSQL instance that is the primary. On creation, this should be set to be the same as `ClusterName`. |
+| namespace | `create` | The Kubernetes Namespace that the PostgreSQL cluster is deployed in. |
+| nodeAffinity | `create` | Sets the [node affinity rules]({{< relref "/architecture/high-availability/_index.md#node-affinity" >}}) for the PostgreSQL cluster and associated PostgreSQL instances. Can be overridden on a per-instance (`pgreplicas.crunchydata.com`) basis. Please see the `Node Affinity Specification` section below. |
+| pgBadger | `create`,`update` | If `true`, deploys the `crunchy-pgbadger` sidecar for query analysis. |
+| pgbadgerport | `create` | If the `PGBadger` label is set, then this specifies the port that the pgBadger sidecar runs on (e.g. `10000`) |
+| pgBouncer | `create`, `update` | If specified, defines the attributes to use for the pgBouncer connection pooling deployment that can be used in conjunction with this PostgreSQL cluster. Please see the specification defined below. |
+| pgDataSource | `create` | Used to indicate if a PostgreSQL cluster should bootstrap its data from a pgBackRest repository. This uses the PostgreSQL Data Source Specification, described below. |
+| pgoimageprefix | `create` | If provided, the image prefix (or registry) of any PostgreSQL Operator images that are used for jobs, e.g. `registry.developers.crunchydata.com/crunchydata`. The default is to use the image prefix set in the PostgreSQL Operator configuration. |
+| podAntiAffinity | `create` | A required section. Sets the [pod anti-affinity rules]({{< relref "/architecture/high-availability/_index.md#how-the-crunchy-postgresql-operator-uses-pod-anti-affinity" >}}) for the PostgreSQL cluster and associated deployments. Please see the `Pod Anti-Affinity Specification` section below. |
+| policies | `create` | If provided, a comma-separated list referring to `pgpolicies.crunchydata.com.Spec.Name` that should be run once the PostgreSQL primary is first initialized. |
+| port | `create` | The port that PostgreSQL will run on, e.g. `5432`. |
 | ReplicaStorage | `create` | A specification that gives information about the storage attributes for any replicas in the PostgreSQL cluster. For details, please see the `Storage Specification` section below. This will likely be changed in the future based on the nature of the high-availability system, but presently it is still required that you set it. It is recommended you use similar settings to that of `PrimaryStorage`. |
-| Replicas | `create` | The number of replicas to create after a PostgreSQL primary is first initialized. This only works on create; to scale a cluster after it is initialized, please use the [`pgo scale`]({{< relref "/pgo-client/reference/pgo_scale.md" >}}) command. |
-| Resources | `create`, `update` | Specify the container resource requests that the PostgreSQL cluster should use. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
-| ServiceType | `create`, `update` | Sets the Kubernetes [Service](https://kubernetes.io/docs/concepts/services-networking/service/) type to use for the cluster. If not set, defaults to `ClusterIP`. |
-| SyncReplication | `create` | If set to `true`, specifies the PostgreSQL cluster to use [synchronous replication]({{< relref "/architecture/high-availability/_index.md#how-the-crunchy-postgresql-operator-uses-pod-anti-affinity#synchronous-replication-guarding-against-transactions-loss" >}}).|
-| User | `create` | The name of the PostgreSQL user that is created when the PostgreSQL cluster is first created. |
-| UserLabels | `create` | A set of key-value string pairs that are used as a sort of "catch-all" as well as a way to add custom labels to clusters. This will disappear at some point. |
-| TablespaceMounts | `create`,`update` | Lists any tablespaces that are attached to the PostgreSQL cluster. Tablespaces can be added at a later time by updating the `TablespaceMounts` entry, but they cannot be removed. Stores a map of information, with the key being the name of the tablespace, and the value being a Storage Specification, defined below. |
-| TLS | `create` | Defines the attributes for enabling TLS for a PostgreSQL cluster. See TLS Specification below. |
-| TLSOnly | `create` | If set to true, requires client connections to use only TLS to connect to the PostgreSQL database. |
-| Tolerations | `create`,`update` | Any array of Kubernetes [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Please refer to the [Kubernetes documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) for how to set this field. |
-| Standby | `create`, `update` | If set to true, indicates that the PostgreSQL cluster is a "standby" cluster, i.e. is in read-only mode entirely. Please see [Kubernetes Multi-Cluster Deployments]({{< relref "/architecture/high-availability/multi-cluster-kubernetes.md" >}}) for more information. |
-| Shutdown | `create`, `update` | If set to true, indicates that a PostgreSQL cluster should shutdown. If set to false, indicates that a PostgreSQL cluster should be up and running. |
+| replicas | `create` | The number of replicas to create after a PostgreSQL primary is first initialized. This only works on create; to scale a cluster after it is initialized, please use the [`pgo scale`]({{< relref "/pgo-client/reference/pgo_scale.md" >}}) command. |
+| resources | `create`, `update` | Specify the container resource requests that the PostgreSQL cluster should use. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
+| serviceType | `create`, `update` | Sets the Kubernetes [Service](https://kubernetes.io/docs/concepts/services-networking/service/) type to use for the cluster. If not set, defaults to `ClusterIP`. |
+| shutdown | `create`, `update` | If set to true, indicates that a PostgreSQL cluster should shutdown. If set to false, indicates that a PostgreSQL cluster should be up and running. |
+| standby | `create`, `update` | If set to true, indicates that the PostgreSQL cluster is a "standby" cluster, i.e. is in read-only mode entirely. Please see [Kubernetes Multi-Cluster Deployments]({{< relref "/architecture/high-availability/multi-cluster-kubernetes.md" >}}) for more information. |
+| syncReplication | `create` | If set to `true`, specifies the PostgreSQL cluster to use [synchronous replication]({{< relref "/architecture/high-availability/_index.md#how-the-crunchy-postgresql-operator-uses-pod-anti-affinity#synchronous-replication-guarding-against-transactions-loss" >}}).|
+| tablespaceMounts | `create`,`update` | Lists any tablespaces that are attached to the PostgreSQL cluster. Tablespaces can be added at a later time by updating the `TablespaceMounts` entry, but they cannot be removed. Stores a map of information, with the key being the name of the tablespace, and the value being a Storage Specification, defined below. |
+| tls | `create` | Defines the attributes for enabling TLS for a PostgreSQL cluster. See TLS Specification below. |
+| tlsOnly | `create` | If set to true, requires client connections to use only TLS to connect to the PostgreSQL database. |
+| tolerations | `create`,`update` | Any array of Kubernetes [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Please refer to the [Kubernetes documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) for how to set this field. |
+| user | `create` | The name of the PostgreSQL user that is created when the PostgreSQL cluster is first created. |
+| userlabels | `create` | A set of key-value string pairs that are used as a sort of "catch-all" as well as a way to add custom labels to clusters. This will disappear at some point. |
 
 ##### Storage Specification
 
@@ -778,13 +779,13 @@ attribute and how it works.
 
 | Attribute | Action | Description |
 |-----------|--------|-------------|
-| AccessMode| `create` | The name of the Kubernetes Persistent Volume [Access Mode](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes) to use. |
-| MatchLabels | `create` | Only used with `StorageType` of `create`, used to match a particular subset of provisioned Persistent Volumes. |
-| Name | `create` | Only needed for `PrimaryStorage` in `pgclusters.crunchydata.com`.Used to identify the name of the PostgreSQL cluster. Should match `ClusterName`. |
-| Size | `create` | The size of the [Persistent Volume Claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) (PVC). Must use a Kubernetes resource value, e.g. `20Gi`. |
-| StorageClass | `create` | The name of the Kubernetes [StorageClass](https://kubernetes.io/docs/concepts/storage/storage-classes/) to use. |
-| StorageType | `create` | Set to `create` if storage is provisioned (e.g. using `hostpath`). Set to `dynamic` if using a dynamic storage provisioner, e.g. via a `StorageClass`. |
-| SupplementalGroups | `create` | If provided, a comma-separated list of group IDs to use in case it is needed to interface with a particular storage system. Typically used with NFS or hostpath storage. |
+| accessmode | `create` | The name of the Kubernetes Persistent Volume [Access Mode](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes) to use. |
+| matchLabels | `create` | Only used with `StorageType` of `create`, used to match a particular subset of provisioned Persistent Volumes. |
+| name | `create` | Only needed for `PrimaryStorage` in `pgclusters.crunchydata.com`.Used to identify the name of the PostgreSQL cluster. Should match `ClusterName`. |
+| size | `create` | The size of the [Persistent Volume Claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) (PVC). Must use a Kubernetes resource value, e.g. `20Gi`. |
+| storageclass | `create` | The name of the Kubernetes [StorageClass](https://kubernetes.io/docs/concepts/storage/storage-classes/) to use. |
+| storagetype | `create` | Set to `create` if storage is provisioned (e.g. using `hostpath`). Set to `dynamic` if using a dynamic storage provisioner, e.g. via a `StorageClass`. |
+| supplementalgroups | `create` | If provided, a comma-separated list of group IDs to use in case it is needed to interface with a particular storage system. Typically used with NFS or hostpath storage. |
 
 ##### Node Affinity Specification
 
@@ -815,9 +816,9 @@ documentation.
 
 | Attribute | Action | Description |
 |-----------|--------|-------------|
-| Default | `create` | The default pod anti-affinity to use for all Pods managed in a given PostgreSQL cluster. |
-| PgBackRest | `create` | If set to a value that differs from `Default`, specifies the pod anti-affinity to use for just the pgBackRest repository. |
-| PgBouncer | `create` | If set to a value that differs from `Default`, specifies the pod anti-affinity to use for just the pgBouncer Pods. |
+| default | `create` | The default pod anti-affinity to use for all Pods managed in a given PostgreSQL cluster. |
+| pgBackRest | `create` | If set to a value that differs from `Default`, specifies the pod anti-affinity to use for just the pgBackRest repository. |
+| pgBouncer | `create` | If set to a value that differs from `Default`, specifies the pod anti-affinity to use for just the pgBouncer Pods. |
 
 ##### PostgreSQL Data Source Specification
 
@@ -828,8 +829,8 @@ spawning new PostgreSQL clusters.
 
 | Attribute | Action | Description |
 |-----------|--------|-------------|
-| RestoreFrom | `create` | The name of a PostgreSQL cluster, active or former, that will be used for bootstrapping the data of a new PostgreSQL cluster. |
-| RestoreOpts | `create` | Additional pgBackRest [restore options](https://pgbackrest.org/command.html#command-restore) that can be used as part of the bootstrapping operation, for example, point-in-time-recovery options. |
+| restoreFrom | `create` | The name of a PostgreSQL cluster, active or former, that will be used for bootstrapping the data of a new PostgreSQL cluster. |
+| restoreOpts | `create` | Additional pgBackRest [restore options](https://pgbackrest.org/command.html#command-restore) that can be used as part of the bootstrapping operation, for example, point-in-time-recovery options. |
 
 ##### TLS Specification
 
@@ -839,9 +840,9 @@ should be structured, please see [Enabling TLS in a PostgreSQL Cluster]({{< relr
 
 | Attribute | Action | Description |
 |-----------|--------|-------------|
-| CASecret | `create` | A reference to the name of a Kubernetes Secret that specifies a certificate authority for the PostgreSQL cluster to trust. |
-| ReplicationTLSSecret | `create` | A reference to the name of a Kubernetes TLS Secret that contains a keypair for authenticating the replication user. Must be used with `CASecret` and `TLSSecret`. |
-| TLSSecret | `create` | A reference to the name of a Kubernetes TLS Secret that contains a keypair that is used for the PostgreSQL instance to identify itself and perform TLS communications with PostgreSQL clients. Must be used with `CASecret`. |
+| caSecret | `create` | A reference to the name of a Kubernetes Secret that specifies a certificate authority for the PostgreSQL cluster to trust. |
+| replicationTLSSecret | `create` | A reference to the name of a Kubernetes TLS Secret that contains a keypair for authenticating the replication user. Must be used with `CASecret` and `TLSSecret`. |
+| tlsSecret | `create` | A reference to the name of a Kubernetes TLS Secret that contains a keypair that is used for the PostgreSQL instance to identify itself and perform TLS communications with PostgreSQL clients. Must be used with `CASecret`. |
 
 ##### pgBouncer Specification
 
@@ -852,11 +853,11 @@ a PostgreSQL cluster to help with failover scenarios too.
 
 | Attribute | Action | Description |
 |-----------|--------|-------------|
-| Limits | `create`, `update` | Specify the container resource limits that the pgBouncer Pods should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
-| Replicas | `create`, `update` | The number of pgBouncer instances to deploy. Must be set to at least `1` to deploy pgBouncer. Setting to `0` removes an existing pgBouncer deployment for the PostgreSQL cluster. |
-| Resources | `create`, `update` | Specify the container resource requests that the pgBouncer Pods should use. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
-| ServiceType | `create`, `update` | Sets the Kubernetes [Service](https://kubernetes.io/docs/concepts/services-networking/service/) type to use for the cluster. If not set, defaults to the `ServiceType` set for the PostgreSQL cluster. |
-| TLSSecret | `create` | A reference to the name of a Kubernetes TLS Secret that contains a keypair that is used for the pgBouncer instance to identify itself and perform TLS communications with PostgreSQL clients. Must be used with the parent Spec `TLSSecret` and `CASecret`. |
+| limits | `create`, `update` | Specify the container resource limits that the pgBouncer Pods should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
+| replicas | `create`, `update` | The number of pgBouncer instances to deploy. Must be set to at least `1` to deploy pgBouncer. Setting to `0` removes an existing pgBouncer deployment for the PostgreSQL cluster. |
+| resources | `create`, `update` | Specify the container resource requests that the pgBouncer Pods should use. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
+| serviceType | `create`, `update` | Sets the Kubernetes [Service](https://kubernetes.io/docs/concepts/services-networking/service/) type to use for the cluster. If not set, defaults to the `ServiceType` set for the PostgreSQL cluster. |
+| tlsSecret | `create` | A reference to the name of a Kubernetes TLS Secret that contains a keypair that is used for the pgBouncer instance to identify itself and perform TLS communications with PostgreSQL clients. Must be used with the parent Spec `TLSSecret` and `CASecret`. |
 
 ##### Annotations Specification
 
@@ -874,10 +875,10 @@ different deployment groups.
 
 | Attribute | Action | Description |
 |-----------|--------|-------------|
-| Backrest | `create`, `update` | Specify annotations that are only applied to the pgBackRest deployments |
-| Global | `create`, `update` | Specify annotations that are applied to the PostgreSQL, pgBackRest, and pgBouncer deployments |
-| PgBouncer | `create`, `update` | Specify annotations that are only applied to the pgBouncer deployments |
-| Postgres | `create`, `update` | Specify annotations that are only applied to the PostgreSQL deployments |
+| backrest | `create`, `update` | Specify annotations that are only applied to the pgBackRest deployments |
+| global | `create`, `update` | Specify annotations that are applied to the PostgreSQL, pgBackRest, and pgBouncer deployments |
+| pgBouncer | `create`, `update` | Specify annotations that are only applied to the pgBouncer deployments |
+| postgres | `create`, `update` | Specify annotations that are only applied to the PostgreSQL deployments |
 
 ### `pgreplicas.crunchydata.com`
 
@@ -889,10 +890,11 @@ cluster. All of the attributes only affect the replica when it is created.
 
 | Attribute | Action | Description |
 |-----------|--------|-------------|
-| ClusterName | `create` | The name of the PostgreSQL cluster, e.g. `hippo`. This is used to group PostgreSQL instances (primary, replicas) together. |
-| Name | `create` | The name of this PostgreSQL replica. It should be unique within a `ClusterName`. |
-| Namespace | `create` | The Kubernetes Namespace that the PostgreSQL cluster is deployed in. |
-| NodeAffinity | `create` | Sets the [node affinity rules]({{< relref "/architecture/high-availability/_index.md#node-affinity" >}}) for this PostgreSQL instance. Follows the [Kubernetes standard format for setting node affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity). |
-| ReplicaStorage | `create` | A specification that gives information about the storage attributes for any replicas in the PostgreSQL cluster. For details, please see the `Storage Specification` section in the `pgclusters.crunchydata.com` description. This will likely be changed in the future based on the nature of the high-availability system, but presently it is still required that you set it. It is recommended you use similar settings to that of `PrimaryStorage`. |
-| UserLabels | `create` | A set of key-value string pairs that are used as a sort of "catch-all" as well as a way to add custom labels to clusters. This will disappear at some point. |
-| Tolerations | `create`,`update` | Any array of Kubernetes [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Please refer to the [Kubernetes documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) for how to set this field. |
+| clustername | `create` | The name of the PostgreSQL cluster, e.g. `hippo`. This is used to group PostgreSQL instances (primary, replicas) together. |
+| name | `create` | The name of this PostgreSQL replica. It should be unique within a `ClusterName`. |
+| namespace | `create` | The Kubernetes Namespace that the PostgreSQL cluster is deployed in. |
+| nodeAffinity | `create` | Sets the [node affinity rules]({{< relref "/architecture/high-availability/_index.md#node-affinity" >}}) for this PostgreSQL instance. Follows the [Kubernetes standard format for setting node affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity). |
+| replicastorage | `create` | A specification that gives information about the storage attributes for any replicas in the PostgreSQL cluster. For details, please see the `Storage Specification` section in the `pgclusters.crunchydata.com` description. This will likely be changed in the future based on the nature of the high-availability system, but presently it is still required that you set it. It is recommended you use similar settings to that of `PrimaryStorage`. |
+| serviceType | `create`, `update` | Sets the Kubernetes [Service](https://kubernetes.io/docs/concepts/services-networking/service/) type to use for this particular instance. If not set, defaults to the value in the related `pgclusters.crunchydata.com` custom resource. |
+| userlabels | `create` | A set of key-value string pairs that are used as a sort of "catch-all" as well as a way to add custom labels to clusters. This will disappear at some point. |
+| tolerations | `create`,`update` | Any array of Kubernetes [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Please refer to the [Kubernetes documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) for how to set this field. |
