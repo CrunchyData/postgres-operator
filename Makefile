@@ -246,7 +246,6 @@ release:  linuxpgo macpgo winpgo
 	cp bin/pgo $(RELTMPDIR)
 	cp bin/pgo-mac $(RELTMPDIR)
 	cp bin/pgo.exe $(RELTMPDIR)
-	cp $(PGOROOT)/examples/pgo-bash-completion $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
 
 generate:

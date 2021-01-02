@@ -154,7 +154,6 @@ client.
 | Name                | Description                                                  |
 | :--                 | :--                                                          |
 | `EXCLUDE_OS_TRUST`  | Exclude CA certs from OS default trust store.                |
-| `GENERATE_BASH_COMPLETION` | If set, will allow `pgo` to leverage "bash completion" to help complete commands as they are typed. |
 | `PGO_APISERVER_URL` | The URL for the PostgreSQL Operator apiserver that will process the request from the pgo client. Note that the URL should **not** end in a `/`. |
 | `PGO_CA_CERT`       | The CA certificate file path for authenticating to the PostgreSQL Operator apiserver. |
 | `PGO_CLIENT_CERT`   | The client certificate file path for authenticating to the PostgreSQL Operator apiserver. |

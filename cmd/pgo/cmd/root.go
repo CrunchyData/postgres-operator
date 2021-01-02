@@ -104,19 +104,4 @@ func initConfig() {
 			httpclient = hc
 		}
 	}
-
-	if os.Getenv("GENERATE_BASH_COMPLETION") != "" {
-		generateBashCompletion()
-	}
-}
-
-func generateBashCompletion() {
-	log.Debugf("generating bash completion script")
-	// #nosec: G303
-	file, err2 := os.Create("/tmp/pgo-bash-completion.out")
-	if err2 != nil {
-		fmt.Println("Error: ", err2.Error())
-	}
-	defer file.Close()
-	_ = RootCmd.GenBashCompletion(file)
 }
