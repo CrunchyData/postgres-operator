@@ -673,6 +673,7 @@ func updateCluster(args []string, ns string) {
 	r.ExporterMemoryLimit = ExporterMemoryLimit
 	r.ExporterRotatePassword = ExporterRotatePassword
 	r.Clustername = args
+	r.ServiceType = v1.ServiceType(ServiceType)
 	r.Startup = Startup
 	r.Shutdown = Shutdown
 	// set the container resource requests
