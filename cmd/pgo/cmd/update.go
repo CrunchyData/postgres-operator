@@ -156,6 +156,7 @@ func init() {
 	UpdatePgBouncerCmd.Flags().Int32Var(&PgBouncerReplicas, "replicas", 0, "Set the total number of pgBouncer instances to deploy. If not set, defaults to 1.")
 	UpdatePgBouncerCmd.Flags().BoolVar(&RotatePassword, "rotate-password", false, "Used to rotate the pgBouncer service account password. Can cause interruption of service.")
 	UpdatePgBouncerCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	UpdatePgBouncerCmd.Flags().StringVar(&ServiceType, "service-type", "", "The Service type to use for pgBouncer.")
 	UpdatePgouserCmd.Flags().StringVarP(&PgouserNamespaces, "pgouser-namespaces", "", "", "The namespaces to use for updating the pgouser roles.")
 	UpdatePgouserCmd.Flags().BoolVar(&AllNamespaces, "all-namespaces", false, "all namespaces.")
 	UpdatePgouserCmd.Flags().StringVarP(&PgouserRoles, "pgouser-roles", "", "", "The roles to use for updating the pgouser roles.")

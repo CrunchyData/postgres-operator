@@ -803,11 +803,23 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	}
 
 	// if the pgBouncer flag is set, validate that replicas is set to a
-	// nonnegative value
-	if request.PgbouncerFlag && request.PgBouncerReplicas < 0 {
-		resp.Status.Code = msgs.Error
-		resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageReplicas+" for pgBouncer", 1)
-		return resp
+	// nonnegative value and the service type.
+	if request.PgbouncerFlag {
+		if request.PgBouncerReplicas < 0 {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessageReplicas+" for pgBouncer", 1)
+			return resp
+		}
+
+		// validate the optional ServiceType parameter
+		switch request.PgBouncerServiceType {
+		default:
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = fmt.Sprintf("invalid pgBouncer service type %q", request.PgBouncerServiceType)
+			return resp
+		case v1.ServiceTypeClusterIP, v1.ServiceTypeNodePort,
+			v1.ServiceTypeLoadBalancer, v1.ServiceTypeExternalName, "": // no-op
+		}
 	}
 
 	// if a value is provided in the request for PodAntiAffinity, then ensure is valid.  If
@@ -1184,6 +1196,9 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 		if request.PgBouncerReplicas > 0 {
 			spec.PgBouncer.Replicas = request.PgBouncerReplicas
 		}
+
+		// additionally if a specific pgBouncer Service Type is set, set that here
+		spec.PgBouncer.ServiceType = request.PgBouncerServiceType
 	}
 
 	// similarly, if there are any overriding pgBouncer container resource request

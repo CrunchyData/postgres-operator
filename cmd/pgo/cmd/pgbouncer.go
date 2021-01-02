@@ -23,6 +23,7 @@ import (
 	"github.com/crunchydata/postgres-operator/cmd/pgo/api"
 	"github.com/crunchydata/postgres-operator/cmd/pgo/util"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
+	v1 "k8s.io/api/core/v1"
 )
 
 // showPgBouncerTextPadding contains the values for what the text padding should be
@@ -67,6 +68,7 @@ func createPgbouncer(args []string, ns string) {
 		Namespace:     ns,
 		Replicas:      PgBouncerReplicas,
 		Selector:      Selector,
+		ServiceType:   v1.ServiceType(ServiceType),
 		TLSSecret:     PgBouncerTLSSecret,
 	}
 
@@ -367,6 +369,7 @@ func updatePgBouncer(namespace string, clusterNames []string) {
 		Replicas:       PgBouncerReplicas,
 		RotatePassword: RotatePassword,
 		Selector:       Selector,
+		ServiceType:    v1.ServiceType(ServiceType),
 	}
 
 	if err := util.ValidateQuantity(request.CPURequest, "cpu"); err != nil {

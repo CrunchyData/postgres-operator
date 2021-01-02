@@ -320,6 +320,10 @@ type PgBouncerSpec struct {
 	// Limits, if specified, contains the container resource limits
 	// for any pgBouncer Deployments that are part of a PostgreSQL cluster
 	Limits v1.ResourceList `json:"limits"`
+	// ServiceType references the type of Service that should be used when
+	// deploying the pgBouncer instances. If unset, it defaults to the value of
+	// the PostgreSQL cluster.
+	ServiceType v1.ServiceType `json:"serviceType"`
 	// TLSSecret contains the name of the secret to use that contains the TLS
 	// keypair for pgBouncer
 	// This follows the Kubernetes secret format ("kubernetes.io/tls") which has

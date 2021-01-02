@@ -1,5 +1,7 @@
 package apiservermsgs
 
+import v1 "k8s.io/api/core/v1"
+
 /*
 Copyright 2018 - 2020 Crunchy Data Solutions, Inc.
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,6 +42,9 @@ type CreatePgbouncerRequest struct {
 	// automatically be set to 1
 	Replicas int32
 	Selector string
+	// ServiceType is the kind of Service to deploy with this instance. If unset,
+	// it will default to the value for the PostgreSQL cluster.
+	ServiceType v1.ServiceType `json:"serviceType"`
 	// TLSSecret is the name of the secret that contains the keypair required to
 	// deploy TLS-enabled pgBouncer
 	TLSSecret string
@@ -186,6 +191,10 @@ type UpdatePgBouncerRequest struct {
 	// Selector is optional and contains a selector for pgBouncer deployments that
 	// are to be updated
 	Selector string
+
+	// ServiceType is the kind of Service to deploy with this instance. If unset,
+	// it will default to the value for the PostgreSQL cluster.
+	ServiceType v1.ServiceType `json:"serviceType"`
 }
 
 // UpdatePgBouncerResponse contains the resulting output of the update request

@@ -379,12 +379,20 @@ func UpdatePgbouncer(clientset kubernetes.Interface, oldCluster, newCluster *crv
 
 	log.Debugf("update pgbouncer from cluster [%s] in namespace [%s]", clusterName, namespace)
 
-	// we need to detect what has changed. presently, two "groups" of things could
-	// have changed
-	// 1. The # of replicas to maintain
-	// 2. The pgBouncer container resources
+	// we need to detect what has changed. This includes:
 	//
-	// As #2 is a bit more destructive, we'll do that last
+	// 1. The Service type for the pgBouncer Service
+	// 2. The # of replicas to maintain
+	// 3. The pgBouncer container resources
+	//
+	// As #3 is a bit more destructive, we'll do that last
+
+	// check the pgBouncer Service
+	if oldCluster.Spec.PgBouncer.ServiceType != newCluster.Spec.PgBouncer.ServiceType {
+		if err := UpdatePgBouncerService(clientset, newCluster); err != nil {
+			return err
+		}
+	}
 
 	// check if the replicas differ
 	if oldCluster.Spec.PgBouncer.Replicas != newCluster.Spec.PgBouncer.Replicas {
@@ -434,6 +442,25 @@ func UpdatePgBouncerAnnotations(clientset kubernetes.Interface, cluster *crv1.Pg
 	}
 
 	return nil
+}
+
+// UpdatePgBouncerService updates the information on the pgBouncer Service.
+// Specifically, it determines if it should use the information from the parent
+// PostgreSQL cluster or any specific overrides that are available in the
+// pgBouncer spec.
+func UpdatePgBouncerService(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
+	info := serviceInfo{
+		serviceName:      fmt.Sprintf(pgBouncerDeploymentFormat, cluster.Name),
+		serviceNamespace: cluster.Namespace,
+		serviceType:      cluster.Spec.ServiceType,
+	}
+
+	// if the pgBouncer ServiceType is set, use that
+	if cluster.Spec.PgBouncer.ServiceType != "" {
+		info.serviceType = cluster.Spec.PgBouncer.ServiceType
+	}
+
+	return updateService(clientset, info)
 }
 
 // checkPgBouncerInstall checks to see if pgBouncer is installed in the
@@ -643,7 +670,13 @@ func createPgBouncerService(clientset kubernetes.Interface, cluster *crv1.Pgclus
 		ClusterName: cluster.Name,
 		// TODO: I think "port" needs to be evaluated, but I think for now using
 		// the standard PostgreSQL port works
-		Port: operator.Pgo.Cluster.Port,
+		Port:        operator.Pgo.Cluster.Port,
+		ServiceType: cluster.Spec.ServiceType,
+	}
+
+	// override the service type if it is set specifically for pgBouncer
+	if cluster.Spec.PgBouncer.ServiceType != "" {
+		fields.ServiceType = cluster.Spec.PgBouncer.ServiceType
 	}
 
 	if err := CreateService(clientset, &fields, cluster.Namespace); err != nil {
