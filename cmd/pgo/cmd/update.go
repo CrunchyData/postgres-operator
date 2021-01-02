@@ -129,6 +129,7 @@ func init() {
 	UpdateClusterCmd.Flags().BoolVar(&ExporterRotatePassword, "exporter-rotate-password", false, "Used to rotate the password for the metrics collection agent.")
 	UpdateClusterCmd.Flags().BoolVarP(&EnableStandby, "enable-standby", "", false,
 		"Enables standby mode in the cluster(s) specified.")
+	UpdateClusterCmd.Flags().StringVar(&ServiceType, "service-type", "", "The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.")
 	UpdateClusterCmd.Flags().BoolVar(&Startup, "startup", false, "Restart the database cluster if it "+
 		"is currently shutdown.")
 	UpdateClusterCmd.Flags().BoolVar(&Shutdown, "shutdown", false, "Shutdown the database "+

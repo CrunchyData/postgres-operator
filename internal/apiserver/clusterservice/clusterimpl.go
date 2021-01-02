@@ -1900,6 +1900,18 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		case msgs.UpdateClusterPGBadgerDoNothing: // this is never reached -- no-op
 		}
 
+		// set the optional ServiceType parameter
+		switch request.ServiceType {
+		default:
+			response.Status.Code = msgs.Error
+			response.Status.Msg = fmt.Sprintf("invalid service type %q", request.ServiceType)
+			return response
+		case v1.ServiceTypeClusterIP, v1.ServiceTypeNodePort,
+			v1.ServiceTypeLoadBalancer, v1.ServiceTypeExternalName:
+			cluster.Spec.ServiceType = request.ServiceType
+		case "": // no-op, well, no change
+		}
+
 		// enable or disable standby mode based on UpdateClusterStandbyStatus provided in
 		// the request
 		switch request.Standby {

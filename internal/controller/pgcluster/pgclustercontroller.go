@@ -493,6 +493,14 @@ func updateServices(clientset kubeapi.Interface, cluster *crv1.Pgcluster) {
 		log.Error(err)
 	}
 
+	// if there is a pgBouncer and the pgBouncer service type value is empty,
+	// update the pgBouncer Service
+	if cluster.Spec.PgBouncer.Enabled() && cluster.Spec.PgBouncer.ServiceType == "" {
+		if err := clusteroperator.UpdatePgBouncerService(clientset, cluster); err != nil {
+			log.Error(err)
+		}
+	}
+
 	// handle the replica instances. Ish. This is kind of "broken" due to the
 	// fact that we have a single service for all of the replicas. so, we'll
 	// loop through all of the replicas and try to see if any of them have

@@ -467,7 +467,9 @@ type UpdateClusterRequest struct {
 	Metrics UpdateClusterMetrics
 	// PGBadger allows for the enabling/disabling of the pgBadger sidecar. This can
 	// cause downtime and triggers a rolling update
-	PGBadger    UpdateClusterPGBadger
+	PGBadger UpdateClusterPGBadger
+	// ServiceType, if specified, will change the service type of a cluster.
+	ServiceType v1.ServiceType
 	Standby     UpdateClusterStandbyStatus
 	Startup     bool
 	Shutdown    bool
