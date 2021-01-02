@@ -129,30 +129,28 @@ unique ID for each required storage configuration.
 
 You can specify the default storage to use for PostgreSQL, pgBackRest, and other
 elements that require storage that can outlast the lifetime of a Pod. While the
-PostgreSQL Operator defaults to using `hostpathstorage` to work with
-environments that are typically used to test, we recommend using one of the
-other storage classes in production deployments.
+PostgreSQL Operator defaults to using `default` to work with the default storage
+class available in your environment.
 
 | Name | Default | Required | Description |
 |------|---------|----------|-------------|
-| `backrest_storage` | hostpathstorage | **Required** | Set the value of the storage configuration to use for the pgbackrest shared repository deployment created when a user specifies pgbackrest to be enabled on a cluster. |
-| `backup_storage` | hostpathstorage | **Required** | Set the value of the storage configuration to use for backups, including the storage for pgbackrest repo volumes. |
-| `primary_storage` | hostpathstorage | **Required** | Set to configure which storage definition to use when creating volumes used by PostgreSQL primaries on all newly created clusters. |
-| `replica_storage` | hostpathstorage | **Required** | Set to configure which storage definition to use when creating volumes used by PostgreSQL replicas on all newly created clusters. |
+| `backrest_storage` | default | **Required** | Set the value of the storage configuration to use for the pgbackrest shared repository deployment created when a user specifies pgbackrest to be enabled on a cluster. |
+| `backup_storage` | default | **Required** | Set the value of the storage configuration to use for backups, including the storage for pgbackrest repo volumes. |
+| `primary_storage` | default | **Required** | Set to configure which storage definition to use when creating volumes used by PostgreSQL primaries on all newly created clusters. |
+| `replica_storage` | default | **Required** | Set to configure which storage definition to use when creating volumes used by PostgreSQL replicas on all newly created clusters. |
 | `wal_storage` |  |  | Set to configure which storage definition to use when creating volumes used for PostgreSQL Write-Ahead Log. |
 
 #### Example Defaults
 
 ```yaml
-backrest_storage: 'nfsstorage'
-backup_storage: 'nfsstorage'
-primary_storage: 'nfsstorage'
-replica_storage: 'nfsstorage'
+backrest_storage: default
+backup_storage: default
+primary_storage: default
+replica_storage: default
 ```
 
-With the configuration shown above, the `nfsstorage` storage configuration would
-be used by default for the various containers created for a PG cluster
-(i.e. containers for the primary DB, replica DB's, backups and/or `pgBackRest`).
+With the configuration shown above, the default storage class available in the
+deployment environment is used.
 
 ### Considerations for Multi-Zone Cloud Environments
 
