@@ -337,7 +337,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.Annotations = getClusterAnnotations(Annotations, AnnotationsPostgres, AnnotationsBackrest,
 		AnnotationsPgBouncer)
 	// set any tolerations
-	r.Tolerations = getClusterTolerations(Tolerations)
+	r.Tolerations = getClusterTolerations(Tolerations, false)
 
 	// only set SyncReplication in the request if actually provided via the CLI
 	if createClusterCmd.Flag("sync-replication").Changed {
@@ -557,7 +557,11 @@ func getTablespaces(tablespaceParams []string) []msgs.ClusterTablespaceDetail {
 //
 // Exists - key:Effect
 // Equals - key=value:Effect
-func getClusterTolerations(tolerationList []string) []v1.Toleration {
+//
+// If the remove flag is set to true, check for a trailing "-" at the end of
+// each item, as this will be a remove list. Otherwise, only consider
+// tolerations that are not being removed
+func getClusterTolerations(tolerationList []string, remove bool) []v1.Toleration {
 	tolerations := make([]v1.Toleration, 0)
 
 	// if no tolerations, exit early
@@ -577,7 +581,17 @@ func getClusterTolerations(tolerationList []string) []v1.Toleration {
 		}
 
 		// for ease of reading
-		rule, effect := ruleEffect[0], v1.TaintEffect(ruleEffect[1])
+		rule, effectStr := ruleEffect[0], ruleEffect[1]
+
+		// determine if the effect is for removal or not, as we will continue the
+		// loop based on that
+		if (remove && !strings.HasSuffix(effectStr, "-")) || (!remove && strings.HasSuffix(effectStr, "-")) {
+			continue
+		}
+
+		// no matter what we can trim any trailing "-" off of the string, and cast
+		// it as a TaintEffect
+		effect := v1.TaintEffect(strings.TrimSuffix(effectStr, "-"))
 
 		// see if the effect is a valid effect
 		if !isValidTaintEffect(effect) {
@@ -687,6 +701,8 @@ func updateCluster(args []string, ns string) {
 	// set any annotations
 	r.Annotations = getClusterAnnotations(Annotations, AnnotationsPostgres, AnnotationsBackrest,
 		AnnotationsPgBouncer)
+	r.Tolerations = getClusterTolerations(Tolerations, false)
+	r.TolerationsDelete = getClusterTolerations(Tolerations, true)
 
 	// check to see if EnableStandby or DisableStandby is set. If so,
 	// set a value for Standby

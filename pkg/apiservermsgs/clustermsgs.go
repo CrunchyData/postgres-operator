@@ -474,6 +474,12 @@ type UpdateClusterRequest struct {
 	Startup     bool
 	Shutdown    bool
 	Tablespaces []ClusterTablespaceDetail
+	// Tolerations allows for the adding of Pod tolerations on a PostgreSQL
+	// cluster.
+	Tolerations []v1.Toleration `json:"tolerations"`
+	// TolerationsDelete  allows for the removal of Pod tolerations on a
+	// PostgreSQL cluster
+	TolerationsDelete []v1.Toleration `json:"tolerationsDelete"`
 }
 
 // UpdateClusterResponse ...

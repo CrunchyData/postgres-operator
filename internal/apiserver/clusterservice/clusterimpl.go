@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -2071,6 +2072,33 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 
 			cluster.Spec.TablespaceMounts[tablespace.Name] = storageSpec
 		}
+
+		// Handle any tolerations. This is fun. So we will have to go through both
+		// the toleration addition list as well as the toleration subtraction list.
+		//
+		// First, we will remove any tolerations that are slated for removal
+		if len(request.TolerationsDelete) > 0 {
+			tolerations := make([]v1.Toleration, 0)
+
+			for _, toleration := range cluster.Spec.Tolerations {
+				delete := false
+
+				for _, tolerationDelete := range request.TolerationsDelete {
+					delete = delete || (reflect.DeepEqual(toleration, tolerationDelete))
+				}
+
+				// if delete does not match, then we can include this toleration in any
+				// updates
+				if !delete {
+					tolerations = append(tolerations, toleration)
+				}
+			}
+
+			cluster.Spec.Tolerations = tolerations
+		}
+
+		// now, add any new tolerations to the spec
+		cluster.Spec.Tolerations = append(cluster.Spec.Tolerations, request.Tolerations...)
 
 		if _, err := apiserver.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Update(ctx, &cluster, metav1.UpdateOptions{}); err != nil {
 			response.Status.Code = msgs.Error
