@@ -39,12 +39,10 @@ var (
 	// replica) within a Postgres cluster. It requires a cluster and instance name
 	// to be appended to it
 	reloadCMD = []string{"patronictl", "reload", "--force"}
-	// restartCMD is the command for restart a specific PG database (primary or replica) within a
-	// PG cluster
-	restartCMD = []string{
-		"/bin/bash", "-c",
-		fmt.Sprintf("curl -X POST --silent http://127.0.0.1:%s/restart", config.DEFAULT_PATRONI_PORT),
-	}
+	// restartCMD is the command for restart a specific PG database (primary or
+	// replica) within a Postgres cluster. It requires a cluster and instance name
+	// to be appended to it.
+	restartCMD = []string{"patronictl", "restart", "--force"}
 
 	// ErrInstanceNotFound is the error thrown when a target instance cannot be found in the cluster
 	ErrInstanceNotFound = errors.New("The instance does not exist in the cluster")
@@ -211,7 +209,10 @@ func (p *patroniClient) reload(podName string) error {
 // restart performs a Patroni restart on a specific instance (primary or replica) within a PG
 // cluster.
 func (p *patroniClient) restart(podName string) error {
-	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(p.restConfig, p.kubeclientset, restartCMD,
+	cmd := restartCMD
+	cmd = append(cmd, p.clusterName, podName)
+
+	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(p.restConfig, p.kubeclientset, cmd,
 		dbContainerName, podName, p.namespace, nil)
 	if err != nil {
 		return err
