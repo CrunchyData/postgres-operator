@@ -156,6 +156,10 @@ var (
 // Example:
 //
 // zone=east:NoSchedule,highspeed:NoSchedule
+//
+// A toleration can be removed by adding a "-" to the end, e.g.:
+//
+// zone=east:NoSchedule-
 var Tolerations []string
 
 var CreateCmd = &cobra.Command{

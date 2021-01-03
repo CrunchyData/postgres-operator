@@ -82,7 +82,7 @@ func scaleCluster(args []string, ns string) {
 			ReplicaCount:     ReplicaCount,
 			ServiceType:      v1.ServiceType(ServiceType),
 			StorageConfig:    StorageConfig,
-			Tolerations:      getClusterTolerations(Tolerations),
+			Tolerations:      getClusterTolerations(Tolerations, false),
 		}
 
 		response, err := api.ScaleCluster(httpclient, &SessionCredentials, request)

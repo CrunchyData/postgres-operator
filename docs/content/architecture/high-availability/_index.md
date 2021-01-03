@@ -345,11 +345,24 @@ following command:
 pgo scale hippo --toleration=zone=west:NoSchedule
 ```
 
-Tolerations can be updated on an existing cluster. To do so, you will need to
-modify the `pgclusters.crunchydata.com` and `pgreplicas.crunchydata.com` custom
-resources directly, e.g. via the `kubectl edit` command. Once the updates are
-applied, the PostgreSQL Operator will roll out the changes to the appropriate
-instances.
+Tolerations can be updated on an existing cluster. You can do this by either
+modifying the `pgclusters.crunchydata.com` and `pgreplicas.crunchydata.com`
+custom resources directly, e.g. via the `kubectl edit` command, or with the
+[`pgo update cluster`]({{ relref "pgo-client/reference/pgo_update_cluster.md" }})
+command. Using the `pgo update cluster` command, a toleration can be removed by
+adding a `-` at the end of the toleration effect.
+
+For example, to add a toleration of `zone=west:NoSchedule` and remove the
+toleration of `zone=east:NoSchedule`, you could run the following command:
+
+```
+pgo update cluster hippo \
+  --toleration=zone=west:NoSchedule \
+  --toleration=zone-east:NoSchedule-
+```
+
+Once the updates are applied, the PostgreSQL Operator will roll out the changes
+to the appropriate instances.
 
 ## Rolling Updates
 

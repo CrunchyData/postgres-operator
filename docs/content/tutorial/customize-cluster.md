@@ -158,6 +158,14 @@ pgo create cluster hippo \
   --toleration=zone=east:NoSchedule
 ```
 
+Tolerations can be updated on an existing cluster using the [`pgo update cluster`]({{ relref "pgo-client/reference/pgo_update_cluster.md" }}) command. For example, to add a toleration of `zone=west:NoSchedule` and remove the toleration of `zone=east:NoSchedule`, you could run the following command:
+
+```
+pgo update cluster hippo \
+  --toleration=zone=west:NoSchedule \
+  --toleration=zone-east:NoSchedule-
+```
+
 You can also add or edit tolerations directly on the `pgclusters.crunchydata.com` custom resource and the PostgreSQL Operator will roll out the changes to the appropriate instances.
 
 ## Customize PostgreSQL Configuration

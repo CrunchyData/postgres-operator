@@ -144,6 +144,12 @@ func init() {
 			"Follows the Kubernetes quantity format.\n\n"+
 			"For example, to create a tablespace with the NFS storage configuration with a PVC of size 10GiB:\n\n"+
 			"--tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi")
+	UpdateClusterCmd.Flags().StringSliceVar(&Tolerations, "toleration", []string{},
+		"Set Pod tolerations for each PostgreSQL instance in a cluster.\n"+
+			"The general format is \"key=value:Effect\"\n"+
+			"For example, to add an Exists and an Equals toleration: \"--toleration=ssd:NoSchedule,zone=east:NoSchedule\"\n"+
+			"A toleration can be removed by adding a \"-\" to the end, for example:\n"+
+			"--toleration=ssd:NoSchedule-")
 	UpdatePgBouncerCmd.Flags().StringVar(&PgBouncerCPURequest, "cpu", "", "Set the number of millicores to request for CPU "+
 		"for pgBouncer.")
 	UpdatePgBouncerCmd.Flags().StringVar(&PgBouncerCPULimit, "cpu-limit", "", "Set the number of millicores to limit for CPU "+
