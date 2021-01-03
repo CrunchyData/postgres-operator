@@ -35,12 +35,10 @@ import (
 const dbContainerName = "database"
 
 var (
-	// reloadCMD is the command for reloading a specific PG instance (primary or replica) within a
-	// PG cluster
-	reloadCMD = []string{
-		"/bin/bash", "-c",
-		fmt.Sprintf("curl -X POST --silent http://127.0.0.1:%s/reload", config.DEFAULT_PATRONI_PORT),
-	}
+	// reloadCMD is the command for reloading a specific PG instance (primary or
+	// replica) within a Postgres cluster. It requires a cluster and instance name
+	// to be appended to it
+	reloadCMD = []string{"patronictl", "reload", "--force"}
 	// restartCMD is the command for restart a specific PG database (primary or replica) within a
 	// PG cluster
 	restartCMD = []string{
@@ -195,17 +193,19 @@ func (p *patroniClient) RestartInstances(instances ...string) ([]RestartResult, 
 // reload performs a Patroni reload (which includes a PG reload) on a specific instance (primary or
 // replica) within a PG cluster
 func (p *patroniClient) reload(podName string) error {
-	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(p.restConfig, p.kubeclientset, reloadCMD,
-		dbContainerName, podName, p.namespace, nil)
+	cmd := reloadCMD
+	cmd = append(cmd, p.clusterName, podName)
+
+	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(p.restConfig, p.kubeclientset,
+		cmd, dbContainerName, podName, p.namespace, nil)
+
 	if err != nil {
-		return err
-	} else if stderr != "" {
 		return fmt.Errorf(stderr)
 	}
 
 	log.Debugf("Successfully reloaded PG on pod %s: %s", podName, stdout)
 
-	return err
+	return nil
 }
 
 // restart performs a Patroni restart on a specific instance (primary or replica) within a PG

@@ -104,21 +104,6 @@ type EventInterface interface {
 	String() string
 }
 
-//--------
-type EventReloadClusterFormat struct {
-	EventHeader `json:"eventheader"`
-	Clustername string `json:"clustername"`
-}
-
-func (p EventReloadClusterFormat) GetHeader() EventHeader {
-	return p.EventHeader
-}
-
-func (lvl EventReloadClusterFormat) String() string {
-	msg := fmt.Sprintf("Event %s - (reload) name %s", lvl.EventHeader, lvl.Clustername)
-	return msg
-}
-
 //----------------------------
 type EventCreateClusterFailureFormat struct {
 	EventHeader  `json:"eventheader"`

@@ -19,13 +19,11 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"
 
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -99,11 +97,6 @@ func Reload(request *msgs.ReloadRequest, ns, username string) msgs.ReloadRespons
 		}
 
 		resp.Results = append(resp.Results, fmt.Sprintf("reload performed on %s", clusterName))
-
-		if err := publishReloadClusterEvent(cluster.GetName(), ns, username); err != nil {
-			log.Error(err.Error())
-			errorMsgs = append(errorMsgs, err.Error())
-		}
 	}
 
 	if len(errorMsgs) > 0 {
@@ -112,27 +105,4 @@ func Reload(request *msgs.ReloadRequest, ns, username string) msgs.ReloadRespons
 	}
 
 	return resp
-}
-
-// publishReloadClusterEvent publishes an event when a cluster is reloaded
-func publishReloadClusterEvent(clusterName, username, namespace string) error {
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventReloadClusterFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  username,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventReloadCluster,
-		},
-		Clustername: clusterName,
-	}
-
-	if err := events.Publish(f); err != nil {
-		return err
-	}
-
-	return nil
 }
