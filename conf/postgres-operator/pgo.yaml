@@ -2,7 +2,7 @@ Cluster:
   CCPImagePrefix:  registry.developers.crunchydata.com/crunchydata
   Metrics:  false
   Badger:  false
-  CCPImageTag:  centos7-12.5-4.5.1
+  CCPImageTag:  centos7-13.1-4.5.1
   Port:  5432
   PGBadgerPort: 10000
   ExporterPort: 9187
