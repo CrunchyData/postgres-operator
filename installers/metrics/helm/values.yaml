@@ -20,7 +20,7 @@ serviceAccount:
 
 # the image prefix and tag to use for the 'pgo-deployer' container
 pgo_image_prefix: "registry.developers.crunchydata.com/crunchydata"
-pgo_image_tag: "centos8-4.5.1"
+pgo_image_tag: "centos8-4.6.0-beta.1"
 
 # =====================
 # Configuration Options

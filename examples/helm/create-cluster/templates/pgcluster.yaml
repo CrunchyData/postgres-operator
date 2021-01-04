@@ -10,7 +10,7 @@ metadata:
     deployment-name: {{ .Values.pgclustername }}
     name: {{ .Values.pgclustername }}
     pg-cluster: {{ .Values.pgclustername }}
-    pgo-version: 4.5.1
+    pgo-version: 4.6.0-beta.1
     pgouser: admin
   name: {{ .Values.pgclustername }}
   namespace: {{ .Values.namespace }}
