@@ -10,7 +10,7 @@
       "deployment-name": "fromcrd",
       "name": "fromcrd",
       "pg-cluster": "fromcrd",
-      "pgo-version": "4.5.1",
+      "pgo-version": "4.6.0-beta.1",
       "pgouser": "pgoadmin"
     },
     "name": "fromcrd",
@@ -45,7 +45,7 @@
       "supplementalgroups": ""
     },
     "ccpimage": "crunchy-postgres-ha",
-    "ccpimagetag": "centos8-13.1-4.5.1",
+    "ccpimagetag": "centos8-13.1-4.6.0-beta.1",
     "clustername": "fromcrd",
     "database": "userdb",
     "exporterport": "9187",
@@ -60,7 +60,7 @@
     "port": "5432",
     "user": "testuser",
     "userlabels": {
-      "pgo-version": "4.5.1"
+      "pgo-version": "4.6.0-beta.1"
     }
   }
 }

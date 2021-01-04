@@ -140,14 +140,17 @@ For more information about which versions of the PostgreSQL Operator include whi
 
 # Supported Platforms
 
-The Crunchy PostgreSQL Operator is tested on the following Platforms:
+The Crunchy PostgreSQL Operator maintains backwards compatibility to Kubernetes 1.11 and is tested is tested against the following Platforms:
 
-- Kubernetes 1.13+
-- OpenShift 3.11+
+- Kubernetes 1.17+
+- Openshift 4.4+
+- OpenShift 3.11
 - Google Kubernetes Engine (GKE), including Anthos
 - Amazon EKS
+- Microsoft AKS
 - VMware Enterprise PKS 1.3+
 
+This list only includes the platforms that the PostgreSQL Operator is specifically tested on as part of the release process: the PostgreSQL Operator works on other Kubernetes distributions as well.
 ## Storage
 
 The Crunchy PostgreSQL Operator is tested with a variety of different types of Kubernetes storage and Storage Classes, including:
