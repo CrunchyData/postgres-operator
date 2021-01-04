@@ -17,25 +17,25 @@ func TestGetStandardImageTag(t *testing.T) {
 		expected    string
 	}{
 		{
-			"image: crunchy-postgres-ha, tag: centos7-12.4-4.5.0",
+			"image: crunchy-postgres-ha, tag: centos8-12.4-4.5.0",
 			"crunchy-postgres-ha",
-			"centos7-12.4-4.5.0",
-			"centos7-12.4-4.5.0",
+			"centos8-12.4-4.5.0",
+			"centos8-12.4-4.5.0",
 		}, {
-			"image: crunchy-postgres-gis-ha, tag: centos7-12.4-3.0-4.5.0",
+			"image: crunchy-postgres-gis-ha, tag: centos8-12.4-3.0-4.5.0",
 			"crunchy-postgres-gis-ha",
-			"centos7-12.4-3.0-4.5.0",
-			"centos7-12.4-4.5.0",
+			"centos8-12.4-3.0-4.5.0",
+			"centos8-12.4-4.5.0",
 		}, {
-			"image: crunchy-postgres-ha, tag: centos7-12.4-4.5.0-beta.1",
+			"image: crunchy-postgres-ha, tag: centos8-12.4-4.5.0-beta.1",
 			"crunchy-postgres-ha",
-			"centos7-12.4-4.5.0-beta.1",
-			"centos7-12.4-4.5.0-beta.1",
+			"centos8-12.4-4.5.0-beta.1",
+			"centos8-12.4-4.5.0-beta.1",
 		}, {
-			"image: crunchy-postgres-gis-ha, tag: centos7-12.4-3.0-4.5.0-beta.2",
+			"image: crunchy-postgres-gis-ha, tag: centos8-12.4-3.0-4.5.0-beta.2",
 			"crunchy-postgres-gis-ha",
-			"centos7-12.4-3.0-4.5.0-beta.2",
-			"centos7-12.4-4.5.0-beta.2",
+			"centos8-12.4-3.0-4.5.0-beta.2",
+			"centos8-12.4-4.5.0-beta.2",
 		}, {
 			"image: crunchy-postgres-ha, tag: centos8-9.5.23-4.5.0-rc.1",
 			"crunchy-postgres-ha",

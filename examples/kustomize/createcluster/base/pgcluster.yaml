@@ -42,7 +42,7 @@ spec:
   annotations: {}
   ccpimage: crunchy-postgres-ha
   ccpimageprefix: registry.developers.crunchydata.com/crunchydata
-  ccpimagetag: centos7-13.1-4.5.1
+  ccpimagetag: centos8-13.1-4.5.1
   clustername: hippo
   customconfig: ""
   database: hippo

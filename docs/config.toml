@@ -34,7 +34,7 @@ postgresVersion10 = "10.15"
 postgresVersion96 = "9.6.20"
 postgresVersion95 = "9.5.24"
 postgisVersion = "3.0"
-centosBase = "centos7"
+centosBase = "centos8"
 
 [outputs]
 home = [ "HTML", "RSS", "JSON"]

@@ -2,7 +2,7 @@
 # Default values if not already set
 ANSIBLE_VERSION ?= 2.9.*
 PGOROOT ?= $(CURDIR)
-PGO_BASEOS ?= centos7
+PGO_BASEOS ?= centos8
 PGO_IMAGE_PREFIX ?= crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
 PGO_VERSION ?= 4.5.1
