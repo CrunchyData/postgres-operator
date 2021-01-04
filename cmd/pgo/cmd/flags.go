@@ -22,7 +22,16 @@ var DeleteData bool
 // even after a cluster is deleted. This is DEPRECATED
 var KeepData bool
 
-var Query bool
+var (
+	// Force indicates that the "force" action should be taken for that step. This
+	// is different than NoPrompt as "Force" is for indicating that the API server
+	// must try at all costs
+	Force bool
+
+	// Query indicates that the attempted request is "querying" information
+	// instead of taking some action
+	Query bool
+)
 
 var (
 	Target  string

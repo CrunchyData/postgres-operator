@@ -44,10 +44,15 @@ type CreateFailoverResponse struct {
 // CreateFailoverRequest ...
 // swagger:model
 type CreateFailoverRequest struct {
-	Namespace     string
-	ClusterName   string
-	Target        string
 	ClientVersion string
+	ClusterName   string
+	// Force determines whether or not to force the failover. A normal failover
+	// request uses a switchover, which seeks a healthy option. However, "Force"
+	// forces the issue so to speak, and will promote either the instance that is
+	// the best fit or the specified target
+	Force     bool
+	Namespace string
+	Target    string
 }
 
 // QueryFailoverRequest ...

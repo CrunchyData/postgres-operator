@@ -19,6 +19,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/crunchydata/postgres-operator/cmd/pgo/api"
 	"github.com/crunchydata/postgres-operator/cmd/pgo/util"
@@ -60,8 +61,10 @@ var failoverCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(failoverCmd)
 
-	failoverCmd.Flags().BoolVarP(&Query, "query", "", false, "Prints the list of failover candidates.")
+	failoverCmd.Flags().BoolVar(&Force, "force", false, "Force the failover to occur, regardless "+
+		"of the health of the target instance. Must be used with \"--target\".")
 	failoverCmd.Flags().BoolVar(&NoPrompt, "no-prompt", false, "No command line confirmation.")
+	failoverCmd.Flags().BoolVar(&Query, "query", false, "Prints the list of failover candidates.")
 	failoverCmd.Flags().StringVarP(&Target, "target", "", "", "The replica target which the failover will occur on.")
 }
 
@@ -69,20 +72,27 @@ func init() {
 func createFailover(args []string, ns string) {
 	log.Debugf("createFailover called %v", args)
 
-	request := new(msgs.CreateFailoverRequest)
-	request.Namespace = ns
-	request.ClusterName = args[0]
-	request.Target = Target
-	request.ClientVersion = msgs.PGO_VERSION
+	request := &msgs.CreateFailoverRequest{
+		ClientVersion: msgs.PGO_VERSION,
+		ClusterName:   args[0],
+		Force:         Force,
+		Namespace:     ns,
+		Target:        Target,
+	}
 
 	response, err := api.CreateFailover(httpclient, &SessionCredentials, request)
 	if err != nil {
 		fmt.Println("Error: " + err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	if response.Status.Code != msgs.Ok {
-		fmt.Println("Error: " + response.Status.Msg)
+		fmt.Println("Error:", strings.ReplaceAll(response.Status.Msg, "Error: ", ""))
+
+		if strings.Contains(response.Status.Msg, "no primary") {
+			fmt.Println(`Hint: Try using the "--force" flag`)
+		}
+
 		os.Exit(1)
 	}
 

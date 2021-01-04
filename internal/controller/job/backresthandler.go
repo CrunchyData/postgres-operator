@@ -26,8 +26,8 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/operator/backrest"
-	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 )
 
@@ -92,9 +92,8 @@ func (c *Controller) handleBackrestBackupUpdate(job *apiv1.Job) error {
 			job.ObjectMeta.Namespace)
 
 	} else if labels[config.LABEL_PGHA_BACKUP_TYPE] == crv1.BackupTypeFailover {
-		err := clusteroperator.RemovePrimaryOnRoleChangeTag(c.Client, c.Client.Config,
-			labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Namespace)
-		if err != nil {
+		if err := operator.RemovePrimaryOnRoleChangeTag(c.Client, c.Client.Config,
+			labels[config.LABEL_PG_CLUSTER], job.ObjectMeta.Namespace); err != nil {
 			log.Error(err)
 			return err
 		}

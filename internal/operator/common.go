@@ -32,6 +32,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -300,6 +301,49 @@ func SetContainerImageOverride(containerImageName string, container *v1.Containe
 
 		container.Image = overrideImageName
 	}
+}
+
+// getCandidatePod tries to get the candidate Pod for a switchover or failover.
+// If "candidateName" is provided, it will seek out the specific PostgreSQL
+// instance. Otherwise, it will just attempt to find a running Pod.
+//
+// If such a Pod cannot be found, we likely cannot use the instance for a
+// switchover for failover candidate as it is not running.
+func getCandidatePod(clientset kubernetes.Interface, cluster *crv1.Pgcluster, candidateName string) (*v1.Pod, error) {
+	ctx := context.TODO()
+
+	// build the label selector. we are looking for any PostgreSQL instance within
+	// this cluster, so that part is easy
+	labelSelector := fields.Set{
+		config.LABEL_PG_CLUSTER:  cluster.Name,
+		config.LABEL_PG_DATABASE: config.LABEL_TRUE,
+	}
+
+	// if a candidateName is supplied, use that as part of the label selector to
+	// find the candidate Pod
+	if candidateName != "" {
+		labelSelector[config.LABEL_DEPLOYMENT_NAME] = candidateName
+	}
+
+	// ensure the Pod is part of the cluster and is running
+	options := metav1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
+		LabelSelector: labelSelector.String(),
+	}
+
+	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(ctx, options)
+	if err != nil {
+		return nil, err
+	}
+
+	// if no Pods are found, then also return an error as we then cannot switch
+	// over to this instance
+	if len(pods.Items) == 0 {
+		return nil, fmt.Errorf("no pods found for instance %s", candidateName)
+	}
+
+	// the list returns multiple Pods, so just return the first one
+	return &pods.Items[0], nil
 }
 
 // initializeContainerImageOverrides initializes the container image overrides

@@ -1,7 +1,4 @@
-// Package cluster holds the cluster CRD logic and definitions
-// A cluster is comprised of a primary service, replica service,
-// primary deployment, and replica deployment
-package cluster
+package operator
 
 /*
  Copyright 2018 - 2021 Crunchy Data Solutions, Inc.
@@ -24,6 +21,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
+	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,6 +32,56 @@ import (
 
 var roleChangeCmd = []string{"patronictl", "edit-config", "--force",
 	"--set", "tags.primary_on_role_change=null"}
+
+// Failover performs a failover to a PostgreSQL cluster, which is effectively
+// a "forced switchover." In other words, failover will force ensure that
+// there is a primary available.
+//
+// NOTE: This is reserve as the "last resort" case. If you want a controlled
+// failover, you want "Switchover".
+//
+// A target must be specified. The target should contain the name of the target
+// instances (Deployment), is not empty then we will attempt to locate that
+// target Pod.
+//
+// The target Pod name, called the candidate is passed into the failover
+// command generation function, and then is ultimately used in the failover.
+func Failover(clientset kubernetes.Interface, restConfig *rest.Config, cluster *crv1.Pgcluster, target string) error {
+	// ensure target is not empty
+	if target == "" {
+		return fmt.Errorf("failover requires a target instance to be specified.")
+	}
+
+	// When the target is specified, we will attempt to get the Pod that
+	// represents that target.
+	//
+	// If it is not specified, then we will attempt to get any Pod.
+	//
+	// If either errors, we will return an error
+	pod, err := getCandidatePod(clientset, cluster, target)
+
+	if err != nil {
+		return err
+	}
+
+	candidate := pod.Name
+
+	// generate the command
+	cmd := generatePostgresFailoverCommand(cluster.Name, candidate)
+
+	// good to generally log which instances are being used in the failover
+	log.Infof("failover started for cluster %q", cluster.Name)
+
+	if _, stderr, err := kubeapi.ExecToPodThroughAPI(restConfig, clientset,
+		cmd, "database", pod.Name, cluster.Namespace, nil); err != nil {
+		return fmt.Errorf(stderr)
+	}
+
+	log.Infof("failover completed for cluster %q", cluster.Name)
+
+	// and that's all
+	return nil
+}
 
 // RemovePrimaryOnRoleChangeTag sets the 'primary_on_role_change' tag to null in the
 // Patroni DCS, effectively removing the tag.  This is accomplished by exec'ing into
@@ -76,4 +124,22 @@ func RemovePrimaryOnRoleChangeTag(clientset kubernetes.Interface, restconfig *re
 		return err
 	}
 	return nil
+}
+
+// generatePostgresFailoverCommand creates the command that is used to issue
+// a failover command (ensure that there is a promoted primary).
+//
+// There are two ways to run this command:
+//
+// 1. Pass in only a clusterName. Patroni will select the best candidate
+// 2. Pass in a clusterName AND a target candidate name, which has to be the
+//    name of a Pod
+func generatePostgresFailoverCommand(clusterName, candidate string) []string {
+	cmd := []string{"patronictl", "failover", "--force", clusterName}
+
+	if candidate != "" {
+		cmd = append(cmd, "--candidate", candidate)
+	}
+
+	return cmd
 }

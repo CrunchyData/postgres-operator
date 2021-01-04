@@ -16,22 +16,16 @@ package operator
 */
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
-// switchover performs a controlled switchover within a PostgreSQL cluster, i.e.
+// Switchover performs a controlled switchover within a PostgreSQL cluster, i.e.
 // demoting a primary and promoting a replica. There are two types of switchover
 // methods that can be invoked.
 //
@@ -63,30 +57,24 @@ import (
 // 2. The target Pod name, called the candidate is passed into the switchover
 // command generation function, and then is ultimately used in the switchover.
 func Switchover(clientset kubernetes.Interface, restConfig *rest.Config, cluster *crv1.Pgcluster, target string) error {
-	var (
-		candidate string
-		err       error
-		pod       *v1.Pod
-	)
-
 	// the method to get the pod is dictated by whether or not there is a target
 	// specified.
 	//
 	// If target is specified, then we will attempt to get the Pod that
 	// represents that target.
 	//
-	// If it is not specified, then we will attempt to get the primary pod
+	// If it is not specified, then we will attempt to get any Pod.
 	//
 	// If either errors, we will return an error
-	if target != "" {
-		pod, err = getCandidatePod(clientset, cluster, target)
-		candidate = pod.Name
-	} else {
-		pod, err = util.GetPrimaryPod(clientset, cluster)
-	}
+	candidate := ""
+	pod, err := getCandidatePod(clientset, cluster, target)
 
 	if err != nil {
 		return err
+	}
+
+	if target != "" {
+		candidate = pod.Name
 	}
 
 	// generate the command
@@ -122,35 +110,4 @@ func generatePostgresSwitchoverCommand(clusterName, candidate string) []string {
 	}
 
 	return cmd
-}
-
-// getCandidatePod tries to get the candidate Pod for a switchover. If such a
-// Pod cannot be found, we likely cannot use the instance as a switchover
-// candidate.
-func getCandidatePod(clientset kubernetes.Interface, cluster *crv1.Pgcluster, candidateName string) (*v1.Pod, error) {
-	ctx := context.TODO()
-	// ensure the Pod is part of the cluster and is running
-	options := metav1.ListOptions{
-		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
-		LabelSelector: fields.AndSelectors(
-			fields.OneTermEqualSelector(config.LABEL_PG_CLUSTER, cluster.Name),
-			fields.OneTermEqualSelector(config.LABEL_PG_DATABASE, config.LABEL_TRUE),
-			fields.OneTermEqualSelector(config.LABEL_DEPLOYMENT_NAME, candidateName),
-		).String(),
-	}
-
-	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(ctx, options)
-	if err != nil {
-		return nil, err
-	}
-
-	// if no Pods are found, then also return an error as we then cannot switch
-	// over to this instance
-	if len(pods.Items) == 0 {
-		return nil, fmt.Errorf("no pods found for instance %s", candidateName)
-	}
-
-	// there is an outside chance the list returns multiple Pods, so just return
-	// the first one
-	return &pods.Items[0], nil
 }
