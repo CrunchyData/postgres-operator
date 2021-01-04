@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -26,8 +27,11 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
+
 	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 )
 
 // CreateFailover is the API endpoint for triggering a manual failover of a
@@ -60,18 +64,24 @@ func CreateFailover(request *msgs.CreateFailoverRequest, ns, pgouser string) msg
 		return resp
 	}
 
-	if request.Target != "" {
-		if err := isValidFailoverTarget(request.Target, request.ClusterName, ns); err != nil {
-			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
-			return resp
-		}
-	}
-
-	// perform the switchover
-	if err := operator.Switchover(apiserver.Clientset, apiserver.RESTConfig, cluster, request.Target); err != nil {
+	if err := isValidFailoverTarget(request); err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
+		return resp
+	}
+
+	// perform the switchover or failover, depending on which flag is selected
+	// if we are forcing the failover, we need to use "Failover", otherwise we
+	// perform a controlled switchover
+	if request.Force {
+		err = operator.Failover(apiserver.Clientset, apiserver.RESTConfig, cluster, request.Target)
+	} else {
+		err = operator.Switchover(apiserver.Clientset, apiserver.RESTConfig, cluster, request.Target)
+	}
+
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = strings.ReplaceAll(err.Error(), "master", "primary")
 		return resp
 	}
 
@@ -161,31 +171,53 @@ func validateClusterName(clusterName, ns string) (*crv1.Pgcluster, error) {
 // specified, and then ensuring the PG pod created by the deployment is not the current primary.
 // If the deployment is not found, or if the pod is the current primary, an error will be returned.
 // Otherwise the deployment is returned.
-func isValidFailoverTarget(deployName, clusterName, ns string) error {
+func isValidFailoverTarget(request *msgs.CreateFailoverRequest) error {
 	ctx := context.TODO()
+
+	// if we're not forcing a failover and the target is blank, we can
+	// return here
+	// However, if we are forcing a failover and the target is blank, then we do
+	// have an error
+	if request.Target == "" {
+		if !request.Force {
+			return nil
+		}
+
+		return fmt.Errorf("target is required when forcing a failover.")
+	}
 
 	// Using the following label selector, ensure the deployment specified using deployName exists in the
 	// cluster specified using clusterName:
 	// pg-cluster=clusterName,deployment-name=deployName
-	selector := config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_DEPLOYMENT_NAME + "=" + deployName
-	deployments, err := apiserver.Clientset.
-		AppsV1().Deployments(ns).
-		List(ctx, metav1.ListOptions{LabelSelector: selector})
+	options := metav1.ListOptions{
+		LabelSelector: fields.AndSelectors(
+			fields.OneTermEqualSelector(config.LABEL_PG_CLUSTER, request.ClusterName),
+			fields.OneTermEqualSelector(config.LABEL_DEPLOYMENT_NAME, request.Target),
+		).String(),
+	}
+	deployments, err := apiserver.Clientset.AppsV1().Deployments(request.Namespace).List(ctx, options)
+
 	if err != nil {
 		log.Error(err)
 		return err
 	} else if len(deployments.Items) == 0 {
-		return fmt.Errorf("no target found named %s", deployName)
+		return fmt.Errorf("no target found named %s", request.Target)
 	} else if len(deployments.Items) > 1 {
-		return fmt.Errorf("more than one target found named %s", deployName)
+		return fmt.Errorf("more than one target found named %s", request.Target)
 	}
 
 	// Using the following label selector, determine if the target specified is the current
 	// primary for the cluster and return an error if it is:
 	// pg-cluster=clusterName,deployment-name=deployName,role=primary
-	selector = config.LABEL_PG_CLUSTER + "=" + clusterName + "," + config.LABEL_DEPLOYMENT_NAME + "=" + deployName +
-		"," + config.LABEL_PGHA_ROLE + "=" + config.LABEL_PGHA_ROLE_PRIMARY
-	pods, _ := apiserver.Clientset.CoreV1().Pods(ns).List(ctx, metav1.ListOptions{LabelSelector: selector})
+	options.FieldSelector = fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String()
+	options.LabelSelector = fields.AndSelectors(
+		fields.OneTermEqualSelector(config.LABEL_PG_CLUSTER, request.ClusterName),
+		fields.OneTermEqualSelector(config.LABEL_DEPLOYMENT_NAME, request.Target),
+		fields.OneTermEqualSelector(config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY),
+	).String()
+
+	pods, _ := apiserver.Clientset.CoreV1().Pods(request.Namespace).List(ctx, options)
+
 	if len(pods.Items) > 0 {
 		return fmt.Errorf("The primary database cannot be selected as a failover target")
 	}
