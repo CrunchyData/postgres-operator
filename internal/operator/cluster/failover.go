@@ -32,6 +32,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var roleChangeCmd = []string{"patronictl", "edit-config", "--force",
+	"--set", "tags.primary_on_role_change=null"}
+
 // RemovePrimaryOnRoleChangeTag sets the 'primary_on_role_change' tag to null in the
 // Patroni DCS, effectively removing the tag.  This is accomplished by exec'ing into
 // the primary PG pod, and sending a patch request to update the appropriate data (i.e.
@@ -61,17 +64,11 @@ func RemovePrimaryOnRoleChangeTag(clientset kubernetes.Interface, restconfig *re
 	}
 	pod := pods.Items[0]
 
-	// generate the curl command that will be run on the pod selected for the failover in order
-	// to trigger the failover and promote that specific pod to primary
-	command := make([]string, 3)
-	command[0] = "/bin/bash"
-	command[1] = "-c"
-	command[2] = fmt.Sprintf("curl -s 127.0.0.1:%s/config -XPATCH -d "+
-		"'{\"tags\":{\"primary_on_role_change\":null}}'", config.DEFAULT_PATRONI_PORT)
-
+	// execute the command that will be run on the pod selected for the failover
+	// in order to trigger the failover and promote that specific pod to primary
 	log.Debugf("running Exec command '%s' with namespace=[%s] podname=[%s] container name=[%s]",
-		command, namespace, pod.Name, pod.Spec.Containers[0].Name)
-	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset, command,
+		roleChangeCmd, namespace, pod.Name, pod.Spec.Containers[0].Name)
+	stdout, stderr, err := kubeapi.ExecToPodThroughAPI(restconfig, clientset, roleChangeCmd,
 		pod.Spec.Containers[0].Name, pod.Name, namespace, nil)
 	log.Debugf("stdout=[%s] stderr=[%s]", stdout, stderr)
 	if err != nil {
