@@ -68,7 +68,7 @@ func TestClusterFailover(t *testing.T) {
 						"--target="+before[0].Labels["deployment-name"], "--no-prompt",
 					).Exec(t)
 					require.NoError(t, err)
-					require.Contains(t, output, "created")
+					require.Contains(t, output, "success")
 
 					replaced := func() bool {
 						after := replicaPods(t, namespace(), cluster())
