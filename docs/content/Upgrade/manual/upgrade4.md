@@ -151,7 +151,7 @@ We strongly recommend that you create a test cluster before proceeding to the ne
 
 Once the Operator is installed and functional, create a new {{< param operatorVersion >}} cluster matching the cluster details recorded in Step 1. Be sure to use the primary PVC name (also noted in Step 1) and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs.
 
-NOTE: If you have existing pgBackRest backups stored that you would like to have available in the upgraded cluster, you will need to follow the [PVC Renaming Procedure]( {{< relref "Upgrade/manual/upgrade4#pgbackrest-repo-pvc-renaming" >}}).
+NOTE: If you have existing pgBackRest backups stored that you would like to have available in the upgraded cluster, you will need to follow the [PVC Renaming Procedure](#pgbackrest-repo-pvc-renaming).
 
 A simple example is given below, but more information on cluster creation can be found [here](/pgo-client/common-tasks#creating-a-postgresql-cluster)
 
@@ -431,7 +431,7 @@ We strongly recommend that you create a test cluster before proceeding to the ne
 
 Once the Operator is installed and functional, create a new {{< param operatorVersion >}} cluster matching the cluster details recorded in Step 1. Be sure to use the same name and the same major PostgreSQL version as was used previously. This will allow the new clusters to utilize the existing PVCs. A simple example is given below, but more information on cluster creation can be found [here](/pgo-client/common-tasks#creating-a-postgresql-cluster)
 
-NOTE: If you have existing pgBackRest backups stored that you would like to have available in the upgraded cluster, you will need to follow the [PVC Renaming Procedure]( {{< relref "Upgrade/manual/upgrade4#pgbackrest-repo-pvc-renaming" >}}).
+NOTE: If you have existing pgBackRest backups stored that you would like to have available in the upgraded cluster, you will need to follow the [PVC Renaming Procedure](#pgbackrest-repo-pvc-renaming).
 
 ```
 pgo create cluster <clustername> -n <namespace>
@@ -543,7 +543,7 @@ spec:
   volumeName: "crunchy-pv156"
 ```
 
-where name matches your new cluster (Remember that this will need to match the "primary PVC" name identified in [Step 2]( {{< relref "Upgrade/manual/upgrade35#step-2" >}}) of the upgrade procedure!) and namespace, storageClassName, accessModes, storage, volumeMode and volumeName match your original PVC.
+where name matches your new cluster (Remember that this will need to match the "primary PVC" name identified in [Step 2](#step-2) of the upgrade procedure!) and namespace, storageClassName, accessModes, storage, volumeMode and volumeName match your original PVC.
 
 ##### Step 6
 
