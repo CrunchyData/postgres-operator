@@ -116,7 +116,7 @@ func CreatePgbouncer(request *msgs.CreatePgbouncerRequest, ns, pgouser string) m
 			resp.Status.Msg = fmt.Sprintf("invalid service type %q", request.ServiceType)
 			return resp
 		case v1.ServiceTypeClusterIP, v1.ServiceTypeNodePort,
-			v1.ServiceTypeLoadBalancer, v1.ServiceTypeExternalName:
+			v1.ServiceTypeLoadBalancer, v1.ServiceTypeExternalName, "":
 			cluster.Spec.PgBouncer.ServiceType = request.ServiceType
 		}
 
