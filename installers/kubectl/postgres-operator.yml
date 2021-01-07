@@ -60,6 +60,7 @@ rules:
       - extensions
     resources:
       - deployments
+      - replicasets
     verbs:
       - get
       - list
