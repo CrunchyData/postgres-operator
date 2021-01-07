@@ -22,6 +22,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/wojas/genericr"
 )
@@ -46,6 +47,7 @@ func Logrus(out io.Writer, version string, debug int) genericr.LogFunc {
 
 	return func(input genericr.Entry) {
 		entry := root.WithField("version", version)
+		frame := input.Caller
 		level := logrus.InfoLevel
 
 		if input.Level >= debug {
@@ -60,17 +62,24 @@ func Logrus(out io.Writer, version string, debug int) genericr.LogFunc {
 			}
 			entry = entry.WithError(input.Error)
 			level = logrus.ErrorLevel
+
+			var t interface{ StackTrace() errors.StackTrace }
+			if errors.As(input.Error, &t) {
+				if st := t.StackTrace(); len(st) > 0 {
+					frame, _ = runtime.CallersFrames([]uintptr{uintptr(st[0])}).Next()
+				}
+			}
 		}
-		if input.Caller.File != "" {
-			filename := strings.TrimPrefix(input.Caller.File, module)
-			fileline := fmt.Sprintf("%s:%d", filename, input.Caller.Line)
+		if frame.File != "" {
+			filename := strings.TrimPrefix(frame.File, module)
+			fileline := fmt.Sprintf("%s:%d", filename, frame.Line)
 			if v, ok := entry.Data["file"]; ok {
 				entry.Data["fields.file"] = v
 			}
 			entry.Data["file"] = fileline
 		}
-		if input.Caller.Function != "" {
-			_, function := filepath.Split(input.Caller.Function)
+		if frame.Function != "" {
+			_, function := filepath.Split(frame.Function)
 			if v, ok := entry.Data["func"]; ok {
 				entry.Data["fields.func"] = v
 			}

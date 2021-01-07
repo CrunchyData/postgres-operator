@@ -17,13 +17,13 @@ package logging
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/pkg/errors"
 	"github.com/wojas/genericr"
 )
 
@@ -57,8 +57,15 @@ func TestLogrus(t *testing.T) {
 
 	// Any error becomes ERROR level.
 	out.Reset()
-	logrus(genericr.Entry{Error: errors.New("dang")})
+	logrus(genericr.Entry{Error: fmt.Errorf("%s", "dang")})
 	assertLogrusContains(t, out.String(), `level=error error=dang`)
+
+	// A wrapped error includes one frame of its stack.
+	out.Reset()
+	_, _, baseline, _ := runtime.Caller(0)
+	logrus(genericr.Entry{Error: errors.New("dang")})
+	assertLogrusContains(t, out.String(), fmt.Sprintf(`file="internal/logging/logrus_test.go:%d"`, baseline+1))
+	assertLogrusContains(t, out.String(), `func=logging.TestLogrus`)
 
 	out.Reset()
 	logrus(genericr.Entry{Fields: []interface{}{"k1", "str", "k2", 13, "k3", false}})
@@ -75,12 +82,15 @@ func TestLogrus(t *testing.T) {
 		Error:   errors.New("dang"),
 		Fields: []interface{}{
 			"error", "not-err",
+			"file", "not-file",
+			"func", "not-func",
 			"level", "not-lvl",
 			"msg", "not-msg",
 		},
 	})
 	assertLogrusContains(t, out.String(), `level=error msg=banana error=dang`)
-	assertLogrusContains(t, out.String(), `fields.error=not-err fields.level=not-lvl fields.msg=not-msg`)
+	assertLogrusContains(t, out.String(), `fields.error=not-err fields.file=not-file fields.func=not-func`)
+	assertLogrusContains(t, out.String(), `fields.level=not-lvl fields.msg=not-msg`)
 }
 
 func TestLogrusCaller(t *testing.T) {
