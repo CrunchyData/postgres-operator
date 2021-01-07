@@ -47,6 +47,16 @@ func ClusterInstances(cluster string) metav1.LabelSelector {
 	}
 }
 
+// ClusterInstanceSet selects things for set in cluster.
+func ClusterInstanceSet(cluster, set string) metav1.LabelSelector {
+	return metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			LabelCluster:     cluster,
+			LabelInstanceSet: set,
+		},
+	}
+}
+
 // ClusterReplicas selects things for PostgreSQL replicas in cluster.
 func ClusterReplicas(cluster string) metav1.LabelSelector {
 	s := ClusterInstances(cluster)

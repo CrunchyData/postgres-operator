@@ -72,6 +72,7 @@ func GetConfig() (*rest.Config, error) { return config.GetConfig() }
 func addControllersToManager(mgr manager.Manager) error {
 	r := &postgrescluster.Reconciler{
 		Client:   mgr.GetClient(),
+		Owner:    recorderName,
 		Recorder: mgr.GetEventRecorderFor(recorderName),
 		Tracer:   otel.Tracer(recorderName),
 	}

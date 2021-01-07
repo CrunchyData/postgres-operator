@@ -1,0 +1,345 @@
+// +build envtest
+
+/*
+ Copyright 2021 Crunchy Data Solutions, Inc.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
+package postgrescluster
+
+import (
+	"context"
+	"fmt"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
+	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel"
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/client-go/tools/record"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/yaml"
+
+	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+)
+
+var _ = Describe("PostgresCluster Reconciler", func() {
+	var test struct {
+		Namespace  *v1.Namespace
+		Reconciler Reconciler
+	}
+
+	BeforeEach(func() {
+		ctx := context.Background()
+
+		test.Namespace = &v1.Namespace{}
+		test.Namespace.Name = "postgres-operator-test-" + rand.String(6)
+		Expect(suite.Client.Create(ctx, test.Namespace)).To(Succeed())
+
+		test.Reconciler.Client = suite.Client
+		test.Reconciler.Owner = "asdf"
+		test.Reconciler.Recorder = new(record.FakeRecorder)
+		test.Reconciler.Tracer = otel.Tracer("asdf")
+	})
+
+	AfterEach(func() {
+		ctx := context.Background()
+
+		if test.Namespace != nil {
+			Expect(suite.Client.Delete(ctx, test.Namespace)).To(Succeed())
+		}
+	})
+
+	create := func(clusterYAML string) *v1alpha1.PostgresCluster {
+		ctx := context.Background()
+
+		var cluster v1alpha1.PostgresCluster
+		Expect(yaml.Unmarshal([]byte(clusterYAML), &cluster)).To(Succeed())
+
+		cluster.Namespace = test.Namespace.Name
+		Expect(suite.Client.Create(ctx, &cluster)).To(Succeed())
+
+		return &cluster
+	}
+
+	reconcile := func(cluster *v1alpha1.PostgresCluster) reconcile.Result {
+		ctx := context.Background()
+
+		result, err := test.Reconciler.Reconcile(ctx,
+			reconcile.Request{client.ObjectKeyFromObject(cluster)},
+		)
+		Expect(err).ToNot(HaveOccurred(), func() string {
+			var t interface{ StackTrace() errors.StackTrace }
+			if errors.As(err, &t) {
+				return fmt.Sprintf("[partial] error trace:%+v\n", t.StackTrace()[:1])
+			}
+			return ""
+		})
+
+		return result
+	}
+
+	Context("Cluster", func() {
+		var cluster *v1alpha1.PostgresCluster
+
+		BeforeEach(func() {
+			cluster = create(`{
+metadata: { name: carlos },
+spec: {
+	instances: [],
+},
+			}`)
+			Expect(reconcile(cluster)).To(BeZero())
+		})
+
+		Specify("Cluster ConfigMap", func() {
+			ccm := &v1.ConfigMap{}
+			Expect(suite.Client.Get(context.Background(), client.ObjectKey{
+				Namespace: test.Namespace.Name, Name: "carlos-config",
+			}, ccm)).To(Succeed())
+
+			Expect(ccm.Labels[naming.LabelCluster]).To(Equal("carlos"))
+			Expect(ccm.OwnerReferences).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Controller": PointTo(BeTrue()),
+					"Name":       Equal(cluster.Name),
+					"UID":        Equal(cluster.UID),
+				}),
+			))
+			Expect(ccm.ManagedFields).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Operation": Equal(metav1.ManagedFieldsOperationApply),
+				}),
+			))
+
+			Expect(ccm.Data["patroni.yaml"]).ToNot(BeZero())
+		})
+
+		Specify("Cluster Pod Service", func() {
+			cps := &v1.Service{}
+			Expect(suite.Client.Get(context.Background(), client.ObjectKey{
+				Namespace: test.Namespace.Name, Name: "carlos-pods",
+			}, cps)).To(Succeed())
+
+			Expect(cps.Labels[naming.LabelCluster]).To(Equal("carlos"))
+			Expect(cps.OwnerReferences).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Controller": PointTo(BeTrue()),
+					"Name":       Equal(cluster.Name),
+					"UID":        Equal(cluster.UID),
+				}),
+			))
+			Expect(cps.ManagedFields).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Operation": Equal(metav1.ManagedFieldsOperationApply),
+				}),
+			))
+
+			Expect(cps.Spec.ClusterIP).To(Equal("None"), "headless")
+			Expect(cps.Spec.PublishNotReadyAddresses).To(BeTrue())
+			Expect(cps.Spec.Selector).To(Equal(map[string]string{
+				naming.LabelCluster: "carlos",
+			}))
+		})
+
+		Specify("Cluster Status", func() {
+			existing := &v1alpha1.PostgresCluster{}
+			Expect(suite.Client.Get(
+				context.Background(), client.ObjectKeyFromObject(cluster), existing,
+			)).To(Succeed())
+
+			Expect(existing.Status.ObservedGeneration).To(Equal(cluster.Generation))
+
+			// The interaction between server-side apply and subresources can have
+			// unexpected results. However we manipulate Status, the controller must
+			// only ever take ownership of the "status" field or fields within it--
+			// never the "spec" field. Some known issues are:
+			// - https://issue.k8s.io/75564
+			// - https://issue.k8s.io/82046
+			//
+			// NOTE(cbandy): Kubernetes prior to v1.16.10 and v1.17.6 does not track
+			// managed fields on the status subresource: https://issue.k8s.io/88901
+			Expect(existing.ManagedFields).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Manager": Equal(string(test.Reconciler.Owner)),
+					"FieldsV1": PointTo(MatchAllFields(Fields{
+						"Raw": WithTransform(func(in []byte) (out map[string]interface{}) {
+							Expect(yaml.Unmarshal(in, &out)).To(Succeed())
+							return out
+						}, MatchAllKeys(Keys{
+							"f:status": Not(BeZero()),
+						})),
+					})),
+				}),
+			), `controller should manage only the "status" field`)
+		})
+
+		Specify("Patroni Distributed Configuration", func() {
+			de := &v1.Endpoints{}
+			Expect(suite.Client.Get(context.Background(), client.ObjectKey{
+				Namespace: test.Namespace.Name, Name: "carlos-config",
+			}, de)).To(Succeed())
+
+			Expect(de.Labels[naming.LabelCluster]).To(Equal("carlos"))
+			Expect(de.Labels[naming.LabelRole]).To(Equal("patroni"))
+			Expect(de.OwnerReferences).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Controller": PointTo(BeTrue()),
+					"Name":       Equal(cluster.Name),
+					"UID":        Equal(cluster.UID),
+				}),
+			))
+			Expect(de.ManagedFields).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Operation": Equal(metav1.ManagedFieldsOperationApply),
+				}),
+			))
+
+			ds := &v1.Service{}
+			Expect(suite.Client.Get(context.Background(), client.ObjectKey{
+				Namespace: test.Namespace.Name, Name: "carlos-config",
+			}, ds)).To(Succeed())
+
+			Expect(ds.Labels[naming.LabelCluster]).To(Equal("carlos"))
+			Expect(ds.Labels[naming.LabelRole]).To(Equal("patroni"))
+			Expect(ds.OwnerReferences).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Controller": PointTo(BeTrue()),
+					"Name":       Equal(cluster.Name),
+					"UID":        Equal(cluster.UID),
+				}),
+			))
+			Expect(ds.ManagedFields).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Operation": Equal(metav1.ManagedFieldsOperationApply),
+				}),
+			))
+
+			Expect(ds.Spec.ClusterIP).To(Equal("None"), "headless")
+			Expect(ds.Spec.Selector).To(BeNil(), "no endpoints")
+		})
+	})
+
+	Context("Instance", func() {
+		var (
+			cluster   *v1alpha1.PostgresCluster
+			instances appsv1.StatefulSetList
+			instance  appsv1.StatefulSet
+		)
+
+		BeforeEach(func() {
+			cluster = create(`{
+metadata: { name: carlos },
+spec: {
+	instances: [
+		{ name: samba },
+	],
+},
+			}`)
+			Expect(reconcile(cluster)).To(BeZero())
+
+			Expect(suite.Client.List(context.Background(), &instances,
+				client.InNamespace(test.Namespace.Name),
+				client.MatchingLabels{
+					naming.LabelCluster:     "carlos",
+					naming.LabelInstanceSet: "samba",
+				},
+			)).To(Succeed())
+			Expect(instances.Items).To(HaveLen(1))
+
+			instance = instances.Items[0]
+		})
+
+		Specify("Instance ConfigMap", func() {
+			icm := &v1.ConfigMap{}
+			Expect(suite.Client.Get(context.Background(), client.ObjectKey{
+				Namespace: test.Namespace.Name, Name: instance.Name + "-config",
+			}, icm)).To(Succeed())
+
+			Expect(icm.Labels[naming.LabelCluster]).To(Equal("carlos"))
+			Expect(icm.Labels[naming.LabelInstance]).To(Equal(instance.Name))
+			Expect(icm.OwnerReferences).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Controller": BeNil(),
+					"Name":       Equal(instance.Name),
+					"UID":        Equal(instance.UID),
+				}),
+			))
+			Expect(icm.ManagedFields).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Operation": Equal(metav1.ManagedFieldsOperationApply),
+				}),
+			))
+
+			Expect(icm.Data["patroni.yaml"]).ToNot(BeZero())
+		})
+
+		Specify("Instance StatefulSet", func() {
+			Expect(instance.Labels[naming.LabelCluster]).To(Equal("carlos"))
+			Expect(instance.Labels[naming.LabelInstanceSet]).To(Equal("samba"))
+			Expect(instance.Labels[naming.LabelInstance]).To(Equal(instance.Name))
+			Expect(instance.OwnerReferences).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Controller": PointTo(BeTrue()),
+					"Name":       Equal(cluster.Name),
+					"UID":        Equal(cluster.UID),
+				}),
+			))
+			Expect(instance.ManagedFields).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Operation": Equal(metav1.ManagedFieldsOperationApply),
+				}),
+			))
+
+			Expect(instance.Spec).To(MatchFields(IgnoreExtras, Fields{
+				"PodManagementPolicy":  Equal(appsv1.OrderedReadyPodManagement),
+				"Replicas":             PointTo(BeEquivalentTo(1)),
+				"RevisionHistoryLimit": PointTo(BeEquivalentTo(0)),
+				"ServiceName":          Equal("carlos-pods"),
+				"UpdateStrategy": Equal(appsv1.StatefulSetUpdateStrategy{
+					Type: appsv1.RollingUpdateStatefulSetStrategyType,
+					RollingUpdate: &appsv1.RollingUpdateStatefulSetStrategy{
+						Partition: new(int32),
+					},
+				}),
+			}))
+		})
+
+		It("resets Instance StatefulSet.Spec.Replicas", func() {
+			ctx := context.Background()
+			patch := client.MergeFrom(instance.DeepCopyObject())
+			*instance.Spec.Replicas = 2
+
+			Expect(suite.Client.Patch(ctx, &instance, patch)).To(Succeed())
+			Expect(instance.Spec.Replicas).To(PointTo(BeEquivalentTo(2)))
+
+			Expect(reconcile(cluster)).To(BeZero())
+			Expect(suite.Client.Get(
+				ctx, client.ObjectKeyFromObject(&instance), &instance,
+			)).To(Succeed())
+			Expect(instance.Spec.Replicas).To(PointTo(BeEquivalentTo(1)))
+		})
+	})
+})

@@ -18,12 +18,15 @@ limitations under the License.
 import (
 	"context"
 
+	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -37,9 +40,13 @@ const workerCount = 2
 // Reconciler holds resources for the PostgresCluster reconciler
 type Reconciler struct {
 	Client   client.Client
+	Owner    client.FieldOwner
 	Recorder record.EventRecorder
 	Tracer   trace.Tracer
 }
+
+// +kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=postgresclusters,verbs=get;list;watch
+// +kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=postgresclusters/status,verbs=get;patch
 
 // Reconcile reconciles a ConfigMap in a namespace managed by the PostgreSQL Operator
 func (r *Reconciler) Reconcile(
@@ -59,25 +66,95 @@ func (r *Reconciler) Reconcile(
 		return reconcile.Result{}, err
 	}
 
-	log.V(1).Info("reconciling")
-
 	// an example of creating an event
 	r.Recorder.Eventf(postgresCluster, v1.EventTypeNormal, "Initializing",
 		"Initializing postgrescluster %s", request.NamespacedName)
 
 	// call business logic to reconcile the postgrescluster
+	cluster := postgresCluster
+	cluster.Default()
 
-	return reconcile.Result{}, nil
+	// Prepare a merge patch based on cluster prior to any manipulations.
+	before := client.MergeFrom(cluster.DeepCopy())
+
+	var (
+		clusterPodService *v1.Service
+		clusterService    *v1.Service
+		clusterConfigMap  *v1.ConfigMap
+		err               error
+	)
+
+	if err == nil {
+		clusterService, err = r.reconcileClusterService(ctx, cluster)
+	}
+	if err == nil {
+		clusterConfigMap, err = r.reconcileClusterConfigMap(ctx, cluster)
+	}
+	if err == nil {
+		clusterPodService, err = r.reconcileClusterPodService(ctx, cluster)
+	}
+	if err == nil {
+		err = r.reconcilePatroniDistributedConfiguration(ctx, cluster)
+	}
+
+	for i := range cluster.Spec.InstanceSets {
+		if err == nil {
+			_, err = r.reconcileInstanceSet(
+				ctx, cluster, &cluster.Spec.InstanceSets[i],
+				clusterConfigMap, clusterPodService, clusterService)
+		}
+	}
+
+	if err == nil {
+		cluster.Status.ObservedGeneration = cluster.Generation
+
+		// NOTE(cbandy): Kubernetes prior to v1.16.10 and v1.17.6 does not track
+		// managed fields on the status subresource: https://issue.k8s.io/88901
+		err = errors.WithStack(
+			r.Client.Status().Patch(ctx, cluster, before, r.Owner))
+	}
+
+	if err == nil {
+		log.V(1).Info("reconciled cluster")
+	} else {
+		log.Error(err, "reconciling cluster")
+		span.RecordError(err)
+	}
+
+	return reconcile.Result{}, err
+}
+
+// patch sends patch to object's endpoint in the Kubernetes API and updates
+// object with any returned content. The fieldManager is set to r.Owner, but
+// can be overridden in options.
+// - https://docs.k8s.io/reference/using-api/server-side-apply/#managers
+func (r *Reconciler) patch(
+	ctx context.Context, object client.Object,
+	patch client.Patch, options ...client.PatchOption,
+) error {
+	options = append([]client.PatchOption{r.Owner}, options...)
+	return r.Client.Patch(ctx, object, patch, options...)
+}
+
+// setControllerReference sets owner as a Controller OwnerReference on controlled.
+// Only one OwnerReference can be a controller, so it returns an error if another
+// is already set.
+func (r *Reconciler) setControllerReference(
+	owner *v1alpha1.PostgresCluster, controlled client.Object,
+) error {
+	return controllerutil.SetControllerReference(owner, controlled, r.Client.Scheme())
 }
 
 // SetupWithManager adds the PostgresCluster controller to the provided runtime manager
 func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
-	// create a controller for the PostgresCluster custom resource
 	return builder.ControllerManagedBy(mgr).
 		For(&v1alpha1.PostgresCluster{}).
 		WithEventFilter(predicate.ResourceVersionChangedPredicate{}).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: workerCount,
 		}).
+		Owns(&v1.ConfigMap{}).
+		Owns(&v1.Service{}).
+		Owns(&appsv1.StatefulSet{}).
 		Complete(r)
 }

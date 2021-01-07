@@ -17,3 +17,4 @@ jobs:
           go-version: 1.x
       - run: make check
       - run: make check-generate
+      - run: make check-envtest

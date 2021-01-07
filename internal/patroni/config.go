@@ -54,7 +54,12 @@ func clusterYAML(cluster *v1alpha1.PostgresCluster) (string, error) {
 	root := map[string]interface{}{
 		// The cluster identifier. This value cannot change during the cluster's
 		// lifetime.
-		"scope": cluster.Name,
+		"scope": naming.PatroniScope(cluster),
+
+		// FIXME(cbandy): bootstrap.dcs is required to actually bootstrap.
+		"bootstrap": map[string]interface{}{
+			"dcs": map[string]interface{}{},
+		},
 
 		// Use Kubernetes Endpoints for the distributed configuration store (DCS).
 		// These values cannot change during the cluster's lifetime.
@@ -76,7 +81,10 @@ func clusterYAML(cluster *v1alpha1.PostgresCluster) (string, error) {
 		"postgresql": map[string]interface{}{
 			"authentication": map[string]interface{}{
 				// TODO(cbandy): "superuser"
-				// TODO(cbandy): "replication"
+				// FIXME(cbandy): "replication"
+				"replication": map[string]interface{}{
+					"username": "postgres",
+				},
 			},
 
 			// TODO(cbandy): "callbacks"
@@ -124,11 +132,12 @@ func instanceConfigMap(
 }
 
 // instanceEnvVars populates pod with Patroni settings for an instance.
-func instanceEnvVars(_ *v1alpha1.PostgresCluster, pod *v1.PodSpec) {
+func instanceEnvVars(cluster *v1alpha1.PostgresCluster, pod *v1.PodSpec) {
 	// TODO(cbandy): Ports will come from the spec.
 	var (
 		patroniPort  = 8008
-		postgresPort = 5432
+		postgresPort = *cluster.Spec.Port
+		podSubdomain = naming.ClusterPodService(cluster).Name
 	)
 
 	// TODO(cbandy): This must match the primary Service definition:
@@ -169,11 +178,11 @@ func instanceEnvVars(_ *v1alpha1.PostgresCluster, pod *v1.PodSpec) {
 			Value: string(ports),
 		},
 
-		// Set "postgresql.connect_address" using the IP address from above.
+		// Set "postgresql.connect_address" using the Pod's stable DNS name.
 		// PostgreSQL must be restarted when changing this value.
 		{
 			Name:  "PATRONI_POSTGRESQL_CONNECT_ADDRESS",
-			Value: fmt.Sprintf("%s:%d", "$(PATRONI_KUBERNETES_POD_IP)", postgresPort),
+			Value: fmt.Sprintf("%s.%s:%d", "$(PATRONI_NAME)", podSubdomain, postgresPort),
 		},
 
 		// Set "postgresql.listen" using the special address "*" to mean all TCP
@@ -186,11 +195,11 @@ func instanceEnvVars(_ *v1alpha1.PostgresCluster, pod *v1.PodSpec) {
 			Value: fmt.Sprintf("*:%d", postgresPort),
 		},
 
-		// Set "restapi.connect_address" using the IP address from above.
+		// Set "restapi.connect_address" using the Pod's stable DNS name.
 		// Patroni must be reloaded when changing this value.
 		{
 			Name:  "PATRONI_RESTAPI_CONNECT_ADDRESS",
-			Value: fmt.Sprintf("%s:%d", "$(PATRONI_KUBERNETES_POD_IP)", patroniPort),
+			Value: fmt.Sprintf("%s.%s:%d", "$(PATRONI_NAME)", podSubdomain, patroniPort),
 		},
 
 		// Set "restapi.listen" using the special address "*" to mean all TCP interfaces.
@@ -216,7 +225,7 @@ func instanceEnvVars(_ *v1alpha1.PostgresCluster, pod *v1.PodSpec) {
 		},
 	}
 
-	database := findOrAppendContainer(&pod.Containers, "database")
+	database := findOrAppendContainer(&pod.Containers, naming.ContainerDatabase)
 	database.Env = mergeEnvVars(database.Env, expected...)
 }
 
@@ -272,7 +281,7 @@ func instanceConfigVolumeAndMount(
 
 	pod.Volumes = mergeVolumes(pod.Volumes, volume)
 
-	database := findOrAppendContainer(&pod.Containers, "database")
+	database := findOrAppendContainer(&pod.Containers, naming.ContainerDatabase)
 	database.VolumeMounts = mergeVolumeMounts(database.VolumeMounts, mount)
 }
 
@@ -300,7 +309,8 @@ func instanceYAML(_ *v1alpha1.PostgresCluster, _ metav1.Object) (string, error) 
 			// instance Pod is created. That value should be injected using the downward
 			// API and the PATRONI_POSTGRESQL_CONNECT_ADDRESS environment variable.
 
-			// TODO(cbandy): "data_dir"
+			// FIXME(cbandy): "data_dir"
+			"data_dir": "/tmp/data_dir",
 
 			// Missing here is "listen" which is connascent with "connect_address".
 			// See the PATRONI_POSTGRESQL_LISTEN environment variable.

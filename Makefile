@@ -212,6 +212,10 @@ pgo-base-docker: pgo-base-build
 check:
 	PGOROOT=$(PGOROOT) go test ./...
 
+.PHONY: check-envtest
+check-envtest: hack/tools/envtest
+	KUBEBUILDER_ASSETS="$(CURDIR)/$^/bin" go test -count=1 -tags=envtest ./internal/controller/...
+
 .PHONY: check-generate
 check-generate: generate-crd generate-deepcopy
 	git diff --exit-code -- config/crd
@@ -221,7 +225,8 @@ clean: clean-deprecated
 	rm -f bin/postgres-operator
 	rm -f bin/pgo-backrest/pgo-backrest
 	rm -f bin/pgo-rmdata/pgo-rmdata
-	[ -z "$$(ls hack/tools)" ] || rm hack/tools/*
+	[ ! -d hack/tools/envtest ] || rm -r hack/tools/envtest
+	[ ! -n "$$(ls hack/tools)" ] || rm hack/tools/*
 
 clean-deprecated:
 	@# packages used to be downloaded into the vendor directory
@@ -261,3 +266,7 @@ generate-deepcopy:
 	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
 		object:headerFile='hack/boilerplate.go.txt' \
 		paths='./pkg/apis/postgres-operator.crunchydata.com/...'
+
+hack/tools/envtest: SHELL = bash
+hack/tools/envtest:
+	source '$(shell go list -f '{{ .Dir }}' -m 'sigs.k8s.io/controller-runtime')/hack/setup-envtest.sh' && fetch_envtest_tools $@

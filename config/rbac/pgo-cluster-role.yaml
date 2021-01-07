@@ -50,10 +50,12 @@ rules:
       - events
     verbs:
       - create
+      - patch
   - apiGroups:
       - apps
     resources:
       - deployments
+      - statefulsets
     verbs:
       - get
       - list
@@ -89,3 +91,9 @@ rules:
       - update
       - delete
       - deletecollection
+  - apiGroups:
+      - postgres-operator.crunchydata.com
+    resources:
+      - postgresclusters/status
+    verbs:
+      - patch
