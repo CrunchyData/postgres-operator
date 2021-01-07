@@ -111,7 +111,7 @@ and tag as needed to use the RedHat certified containers:
 | `grafana_image_tag` | 6.7.5 | **Required** | Configures the image tag to use for the Grafana container. |
 | `prometheus_image_prefix` | prom | **Required** | Configures the image prefix to use for the Prometheus container. |
 | `prometheus_image_name` | promtheus | **Required** | Configures the image name to use for the Prometheus container. |
-| `prometheus_image_tag` | v2.23.0 | **Required** | Configures the image tag to use for the Prometheus container. |
+| `prometheus_image_tag` | v2.24.0 | **Required** | Configures the image tag to use for the Prometheus container. |
 
 Additionally, these same settings can be utilized as needed to support custom image names,
 tags, and additional container registries.
