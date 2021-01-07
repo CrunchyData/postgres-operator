@@ -34,8 +34,8 @@ settings.
 
 Enables full dynamic namespace capabilities, in which the Operator can create, delete and update
 any namespaces within a Kubernetes cluster.  With `dynamic` mode enabled, the PostgreSQL Operator
-can respond to namespace events in a Kubernetes cluster, such as when a namespace is created, and 
-take an appropriate action, such as adding the PostgreSQL Operator controllers for the newly 
+can respond to namespace events in a Kubernetes cluster, such as when a namespace is created, and
+take an appropriate action, such as adding the PostgreSQL Operator controllers for the newly
 created namespace.
 
 The following defines the namespace permissions required for the `dynamic` mode to be enabled:
@@ -62,8 +62,8 @@ rules:
 
 ### `readonly`
 
-In `readonly` mode, the PostgreSQL Operator is still able to listen to namespace events within a 
-Kubernetes cluster, but it can no longer modify (create, update, delete) namespaces. For example, 
+In `readonly` mode, the PostgreSQL Operator is still able to listen to namespace events within a
+Kubernetes cluster, but it can no longer modify (create, update, delete) namespaces. For example,
 if a Kubernetes administrator creates a namespace, the PostgreSQL Operator can respond and create
 controllers for that namespace.
 
@@ -95,7 +95,7 @@ Operator is unable to dynamically respond to namespace events in  the cluster, i
 target namespaces are deleted or new target namespaces need to be added, the PostgreSQL Operator
 will need to be re-deployed.
 
-Please note that it is important to redeploy the PostgreSQL Operator following the deletion of a 
+Please note that it is important to redeploy the PostgreSQL Operator following the deletion of a
 target namespace to ensure it no longer attempts to listen for events in that namespace.
 
 The `disabled` mode is enabled the when the PostgreSQL Operator has not been assigned namespace
@@ -103,22 +103,22 @@ permissions.
 
 ## RBAC Reconciliation
 
-By default, the PostgreSQL Operator will attempt to reconcile RBAC resources (ServiceAccounts, 
+By default, the PostgreSQL Operator will attempt to reconcile RBAC resources (ServiceAccounts,
 Roles and RoleBindings) within each namespace configured for the PostgreSQL Operator installation.
 This allows the PostgreSQL Operator to create, update and delete the various RBAC resources it
 requires in order to properly create and manage PostgreSQL clusters within each targeted namespace
 (this includes self-healing RBAC resources as needed if removed and/or misconfigured).
 
 In order for RBAC reconciliation to function properly, the PostgreSQL Operator ServiceAccount must
-be assigned a certain set of permissions.  While the PostgreSQL Operator is not concerned with 
+be assigned a certain set of permissions.  While the PostgreSQL Operator is not concerned with
 exactly how it has been assigned the permissions required to reconcile RBAC in each target
-namespace, the various [installation methods]({{< relref "installation" >}}) supported by the 
+namespace, the various [installation methods]({{< relref "installation" >}}) supported by the
 PostgreSQL Operator install a recommended set permissions based on the specific Namespace Operating
 Mode enabled (see section [Namespace Operating Modes]({{< relref "#namespace-operating-modes" >}})
 above for more information regarding the various Namespace Operating Modes available).
 
-The following section defines the recommended set of permissions that should be assigned to the 
-PostgreSQL Operator ServiceAccount in order to ensure proper RBAC reconciliation based on the 
+The following section defines the recommended set of permissions that should be assigned to the
+PostgreSQL Operator ServiceAccount in order to ensure proper RBAC reconciliation based on the
 specific Namespace Operating Mode enabled.  Please note that each PostgreSQL Operator installation
 method handles the initial configuration and setup of the permissions shown below based on the
 Namespace Operating Mode configured during installation.
@@ -127,7 +127,7 @@ Namespace Operating Mode configured during installation.
 
 When using the `dynamic` Namespace Operating Mode, it is recommended that the PostgreSQL Operator
 ServiceAccount be granted permissions to manage RBAC inside any namespace in the Kubernetes cluster
-via a ClusterRole.  This allows for a fully-hands off approach to managing RBAC within each 
+via a ClusterRole.  This allows for a fully-hands off approach to managing RBAC within each
 targeted namespace space.  In other words, as namespaces are added and removed post-installation of
 the PostgreSQL Operator (e.g. using `pgo create namespace` or `pgo delete namespace`), the Operator
 is able to automatically reconcile RBAC in those namespaces without the need for any external
@@ -170,8 +170,6 @@ rules:
       - endpoints
       - pods
       - pods/exec
-      - pods/log
-      - replicasets
       - secrets
       - services
       - persistentvolumeclaims
@@ -185,9 +183,18 @@ rules:
       - delete
       - deletecollection
   - apiGroups:
+    - ''
+    resources:
+      - pods/log
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
       - apps
     resources:
       - deployments
+      - replicasets
     verbs:
       - get
       - list
@@ -230,7 +237,7 @@ rules:
 
 ### `readonly` & `disabled` Namespace Operating Modes
 
-When using the `readonly` or `disabled` Namespace Operating Modes, it is recommended that the 
+When using the `readonly` or `disabled` Namespace Operating Modes, it is recommended that the
 PostgreSQL Operator ServiceAccount be granted permissions to manage RBAC inside of any configured
 namespaces using local Roles within each targeted namespace.  This means that as new namespaces
 are added and removed post-installation of the PostgreSQL Operator, an administrator must manually

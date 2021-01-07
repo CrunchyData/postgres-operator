@@ -15,8 +15,6 @@
                 "endpoints",
                 "pods",
                 "pods/exec",
-                "pods/log",
-                "replicasets",
                 "secrets",
                 "services",
                 "persistentvolumeclaims"
@@ -34,10 +32,24 @@
         },
         {
             "apiGroups": [
+                ""
+            ],
+            "resources": [
+                "pods/log"
+            ],
+            "verbs":[
+                "get",
+                "list",
+                "watch"
+            ]
+        },
+        {
+            "apiGroups": [
                 "apps"
             ],
             "resources": [
-                "deployments"
+                "deployments",
+                "replicasets"
             ],
             "verbs":[
                 "get",
