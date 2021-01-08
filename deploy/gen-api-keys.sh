@@ -19,6 +19,7 @@ openssl req \
   -nodes \
   -newkey ec \
   -pkeyopt ec_paramgen_curve:prime256v1 \
+  -pkeyopt ec_param_enc:named_curve \
   -sha384 \
   -keyout $PGOROOT/conf/postgres-operator/server.key \
   -out $PGOROOT/conf/postgres-operator/server.crt \
