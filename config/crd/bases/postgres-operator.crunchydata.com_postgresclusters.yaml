@@ -521,6 +521,20 @@ spec:
                 x-kubernetes-list-map-keys:
                 - name
                 x-kubernetes-list-type: map
+              patroni:
+                properties:
+                  dynamicConfiguration:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  edc:
+                    description: DEPRECATED. A manual switch to enable dynamic configuration.
+                    type: boolean
+                  port:
+                    default: 8008
+                    description: The port on which Patroni should listen.
+                    format: int32
+                    type: integer
+                type: object
               port:
                 default: 5432
                 description: The port on which PostgreSQL should listen.

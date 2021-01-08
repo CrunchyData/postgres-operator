@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
@@ -117,6 +118,69 @@ func clusterYAML(cluster *v1alpha1.PostgresCluster) (string, error) {
 	return string(append([]byte(yamlGeneratedWarning), b...)), err
 }
 
+// DynamicConfiguration combines configuration with some PostgreSQL settings
+// and returns a value that can be marshaled to JSON.
+func DynamicConfiguration(
+	configuration map[string]interface{},
+	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
+) map[string]interface{} {
+	// Copy the entire configuration before making any changes.
+	root := make(map[string]interface{}, len(configuration))
+	for k, v := range configuration {
+		root[k] = v
+	}
+
+	// Copy the "postgresql" section before making any changes.
+	postgresql := make(map[string]interface{})
+	if section, ok := root["postgresql"].(map[string]interface{}); ok {
+		for k, v := range section {
+			postgresql[k] = v
+		}
+	}
+	root["postgresql"] = postgresql
+
+	// Copy the "postgresql.parameters" section over any defaults.
+	parameters := make(map[string]interface{})
+	if pgParameters.Default != nil {
+		for k, v := range pgParameters.Default.AsMap() {
+			parameters[k] = v
+		}
+	}
+	if section, ok := postgresql["parameters"].(map[string]interface{}); ok {
+		for k, v := range section {
+			parameters[k] = v
+		}
+	}
+	// Override the above with mandatory parameters.
+	if pgParameters.Mandatory != nil {
+		for k, v := range pgParameters.Mandatory.AsMap() {
+			parameters[k] = v
+		}
+	}
+	postgresql["parameters"] = parameters
+
+	// Copy the "postgresql.pg_hba" section after any mandatory values.
+	hba := make([]string, len(pgHBAs.Mandatory))
+	for i := range pgHBAs.Mandatory {
+		hba[i] = pgHBAs.Mandatory[i].String()
+	}
+	if section, ok := postgresql["pg_hba"].([]string); ok {
+		hba = append(hba, section...)
+	}
+	// When the section is missing or empty, include the recommended defaults.
+	if len(hba) == len(pgHBAs.Mandatory) {
+		for i := range pgHBAs.Default {
+			hba = append(hba, pgHBAs.Default[i].String())
+		}
+	}
+	postgresql["pg_hba"] = hba
+
+	// TODO(cbandy): explain this.
+	postgresql["use_pg_rewind"] = true
+
+	return root
+}
+
 // instanceConfigMap populates cm with Patroni settings for instance.
 func instanceConfigMap(
 	cluster *v1alpha1.PostgresCluster, instance metav1.Object, cm *v1.ConfigMap,
@@ -133,9 +197,8 @@ func instanceConfigMap(
 
 // instanceEnvVars populates pod with Patroni settings for an instance.
 func instanceEnvVars(cluster *v1alpha1.PostgresCluster, pod *v1.PodSpec) {
-	// TODO(cbandy): Ports will come from the spec.
 	var (
-		patroniPort  = 8008
+		patroniPort  = *cluster.Spec.Patroni.Port
 		postgresPort = *cluster.Spec.Port
 		podSubdomain = naming.ClusterPodService(cluster).Name
 	)

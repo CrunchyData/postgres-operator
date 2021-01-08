@@ -17,12 +17,16 @@ package postgrescluster
 
 import (
 	"context"
+	"io"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/patroni"
+	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
@@ -77,6 +81,75 @@ func (r *Reconciler) reconcilePatroniDistributedConfiguration(
 
 	// TODO(cbandy): Investigate "{scope}-failover" endpoints; is it DCS "failover_path"?
 	// TODO(cbandy): Investigate DCS "sync_path".
+
+	return err
+}
+
+// +kubebuilder:rbac:resources=pods,verbs=get;list
+
+func (r *Reconciler) reconcilePatroniDynamicConfiguration(
+	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+) error {
+	// TODO(cbandy): Replace this with some automated indication that things
+	// are _expected_ to be running. (Status?)
+	if cluster.Spec.Patroni.EDC == nil || !*cluster.Spec.Patroni.EDC {
+		return nil
+	}
+
+	// Deserialize the schemaless field. There will be no error because the
+	// Kubernetes API has already ensured it is a JSON object.
+	configuration := make(map[string]interface{})
+	_ = yaml.Unmarshal(
+		cluster.Spec.Patroni.DynamicConfiguration.Raw, &configuration,
+	)
+
+	// TODO(cbandy): Accumulate postgres settings. Perhaps arguments to the method?
+
+	pgHBAs := postgres.HBAs{}
+	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().Local().User("postgres").Method("peer"))
+	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TCP().Replication().Method("trust"))
+	pgHBAs.Default = append(pgHBAs.Default, *postgres.NewHBA().TCP().Method("md5"))
+
+	pgParameters := postgres.Parameters{}
+	pgParameters.Mandatory = postgres.NewParameterSet()
+	pgParameters.Mandatory.Add("wal_level", "logical")
+	pgParameters.Default = postgres.NewParameterSet()
+	pgParameters.Default.Add("jit", "off")
+
+	configuration = patroni.DynamicConfiguration(configuration, pgHBAs, pgParameters)
+
+	// TODO(cbandy): The above work should also be done at bootstrap. See Patroni
+	// "bootstrap.dcs" YAML.
+
+	pods := &v1.PodList{}
+	instances, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
+	if err == nil {
+		err = errors.WithStack(
+			r.Client.List(ctx, pods,
+				client.InNamespace(cluster.Namespace),
+				client.MatchingLabelsSelector{Selector: instances},
+			))
+	}
+
+	var pod *v1.Pod
+	if err == nil {
+		for i := range pods.Items {
+			if pods.Items[i].Status.Phase == v1.PodRunning {
+				pod = &pods.Items[i]
+				break
+			}
+		}
+		if pod == nil {
+			err = errors.New("could not find a running pod")
+		}
+	}
+	if err == nil {
+		exec := func(_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string) error {
+			return r.PodExec(pod.Namespace, pod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
+		}
+		err = errors.WithStack(
+			patroni.Executor(exec).ReplaceConfiguration(ctx, configuration))
+	}
 
 	return err
 }

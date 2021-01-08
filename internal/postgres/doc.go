@@ -1,7 +1,6 @@
-// package postgres is a collection of resources that interact with PostgreSQL
+// Package postgres is a collection of resources that interact with PostgreSQL
 // or provide functionality that makes it easier for other resources to interact
-// with PostgreSQL
-
+// with PostgreSQL.
 package postgres
 
 /*

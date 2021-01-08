@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
@@ -80,6 +81,243 @@ scope: cluster-name
 	before := cm.DeepCopy()
 	assert.NilError(t, clusterConfigMap(cluster, cm))
 	assert.DeepEqual(t, cm, before)
+}
+
+func TestDynamicConfiguration(t *testing.T) {
+	t.Parallel()
+
+	parameters := func(in map[string]string) *postgres.ParameterSet {
+		out := postgres.NewParameterSet()
+		for k, v := range in {
+			out.Add(k, v)
+		}
+		return out
+	}
+
+	for _, tt := range []struct {
+		name     string
+		input    map[string]interface{}
+		hbas     postgres.HBAs
+		params   postgres.Parameters
+		expected map[string]interface{}
+	}{
+		{
+			name: "empty is valid",
+			expected: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"parameters":    map[string]interface{}{},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+				},
+			},
+		},
+		{
+			name: "top-level passes through",
+			input: map[string]interface{}{
+				"loop_wait": 5,
+			},
+			expected: map[string]interface{}{
+				"loop_wait": 5,
+				"postgresql": map[string]interface{}{
+					"parameters":    map[string]interface{}{},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+				},
+			},
+		},
+		{
+			name: "postgresql: wrong-type is ignored",
+			input: map[string]interface{}{
+				"postgresql": true,
+			},
+			expected: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"parameters":    map[string]interface{}{},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+				},
+			},
+		},
+		{
+			name: "postgresql.parameters: wrong-type is ignored",
+			input: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"parameters": true,
+				},
+			},
+			expected: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"parameters":    map[string]interface{}{},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+				},
+			},
+		},
+		{
+			name: "postgresql.parameters: input passes through",
+			input: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{
+						"something": "str",
+						"another":   5,
+					},
+				},
+			},
+			expected: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{
+						"something": "str",
+						"another":   5,
+					},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+				},
+			},
+		},
+		{
+			name: "postgresql.parameters: input overrides default",
+			input: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{
+						"something": "str",
+						"another":   5,
+					},
+				},
+			},
+			params: postgres.Parameters{
+				Default: parameters(map[string]string{
+					"something": "overridden",
+					"unrelated": "default",
+				}),
+			},
+			expected: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{
+						"something": "str",
+						"another":   5,
+						"unrelated": "default",
+					},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+				},
+			},
+		},
+		{
+			name: "postgresql.parameters: mandatory overrides input",
+			input: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{
+						"something": "str",
+						"another":   5,
+					},
+				},
+			},
+			params: postgres.Parameters{
+				Mandatory: parameters(map[string]string{
+					"something": "overrides",
+					"unrelated": "setting",
+				}),
+			},
+			expected: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{
+						"something": "overrides",
+						"another":   5,
+						"unrelated": "setting",
+					},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+				},
+			},
+		},
+		{
+			name: "postgresql.pg_hba: wrong-type is ignored",
+			input: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"pg_hba": true,
+				},
+			},
+			expected: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"parameters":    map[string]interface{}{},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+				},
+			},
+		},
+		{
+			name: "postgresql.pg_hba: default when no input",
+			input: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"pg_hba": nil,
+				},
+			},
+			hbas: postgres.HBAs{
+				Default: []postgres.HostBasedAuthentication{
+					*postgres.NewHBA().Local().Method("peer"),
+				},
+			},
+			expected: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{},
+					"pg_hba": []string{
+						"local all all peer",
+					},
+					"use_pg_rewind": true,
+				},
+			},
+		},
+		{
+			name: "postgresql.pg_hba: no default when input",
+			input: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"pg_hba": []string{"custom"},
+				},
+			},
+			hbas: postgres.HBAs{
+				Default: []postgres.HostBasedAuthentication{
+					*postgres.NewHBA().Local().Method("peer"),
+				},
+			},
+			expected: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{},
+					"pg_hba": []string{
+						"custom",
+					},
+					"use_pg_rewind": true,
+				},
+			},
+		},
+		{
+			name: "postgresql.pg_hba: mandatory before others",
+			input: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"pg_hba": []string{"custom"},
+				},
+			},
+			hbas: postgres.HBAs{
+				Mandatory: []postgres.HostBasedAuthentication{
+					*postgres.NewHBA().Local().Method("peer"),
+				},
+			},
+			expected: map[string]interface{}{
+				"postgresql": map[string]interface{}{
+					"parameters": map[string]interface{}{},
+					"pg_hba": []string{
+						"local all all peer",
+						"custom",
+					},
+					"use_pg_rewind": true,
+				},
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			actual := DynamicConfiguration(tt.input, tt.hbas, tt.params)
+			assert.DeepEqual(t, tt.expected, actual)
+		})
+	}
 }
 
 func TestInstanceConfigMap(t *testing.T) {

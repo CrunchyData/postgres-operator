@@ -39,6 +39,9 @@ spec:
         resources: {}
       repoVolume: {}
   instances: null
+  patroni:
+    dynamicConfiguration: null
+    port: 8008
   port: 5432
 status: {}
 	`)+"\n")

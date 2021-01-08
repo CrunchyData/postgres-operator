@@ -24,7 +24,7 @@ of Patroni to be applied.
 Configuration files take precedence over DCS contents.
 Environment variables take precedence over configuration files.
 
-`patronictl` uses both the DCS and the Patroni API, so it to be configured for both.
+`patronictl` uses both the DCS and the Patroni API, so it must be configured for both.
 `patroni` takes one required argument, the path to its configuration file(s).
 
 When the configuration path is a directory, the YAML files it contains are

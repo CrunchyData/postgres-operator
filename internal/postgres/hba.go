@@ -1,0 +1,144 @@
+/*
+ Copyright 2021 Crunchy Data Solutions, Inc.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
+package postgres
+
+import (
+	"fmt"
+	"strings"
+)
+
+// HBAs is a pairing of HostBasedAuthentication records.
+type HBAs struct{ Mandatory, Default []HostBasedAuthentication }
+
+// HostBasedAuthentication represents a single record for pg_hba.conf.
+// - https://www.postgresql.org/docs/current/auth-pg-hba-conf.html
+type HostBasedAuthentication struct {
+	origin, database, user, address, method, options string
+}
+
+// NewHBA returns an HBA record that matches all databases, networks, and users.
+func NewHBA() *HostBasedAuthentication {
+	return new(HostBasedAuthentication).AllDatabases().AllNetworks().AllUsers()
+}
+
+func (HostBasedAuthentication) quote(value string) string {
+	return `"` + strings.ReplaceAll(value, `"`, `""`) + `"`
+}
+
+// AllDatabases makes hba match connections made to any database.
+func (hba *HostBasedAuthentication) AllDatabases() *HostBasedAuthentication {
+	hba.database = "all"
+	return hba
+}
+
+// AllNetworks makes hba match connection attempts made from any IP address.
+func (hba *HostBasedAuthentication) AllNetworks() *HostBasedAuthentication {
+	hba.address = "all"
+	return hba
+}
+
+// AllUsers makes hba match connections made by any user.
+func (hba *HostBasedAuthentication) AllUsers() *HostBasedAuthentication {
+	hba.user = "all"
+	return hba
+}
+
+// Database makes hba match connections made to a specific database.
+func (hba *HostBasedAuthentication) Database(name string) *HostBasedAuthentication {
+	hba.database = hba.quote(name)
+	return hba
+}
+
+// Local makes hba match connection attempts using Unix-domain sockets.
+func (hba *HostBasedAuthentication) Local() *HostBasedAuthentication {
+	hba.origin = "local"
+	return hba
+}
+
+// Method specifies the authentication method to use when a connection matches hba.
+func (hba *HostBasedAuthentication) Method(name string) *HostBasedAuthentication {
+	hba.method = name
+	return hba
+}
+
+// Network makes hba match connection attempts from a block of IP addresses in CIDR notation.
+func (hba *HostBasedAuthentication) Network(block string) *HostBasedAuthentication {
+	hba.address = hba.quote(block)
+	return hba
+}
+
+// NoSSL makes hba match connection attempts made over TCP/IP without SSL.
+func (hba *HostBasedAuthentication) NoSSL() *HostBasedAuthentication {
+	hba.origin = "hostnossl"
+	return hba
+}
+
+// Options specifies any options for the authentication method.
+func (hba *HostBasedAuthentication) Options(opts map[string]string) *HostBasedAuthentication {
+	hba.options = ""
+	for k, v := range opts {
+		hba.options = fmt.Sprintf("%s %s=%s", hba.options, k, hba.quote(v))
+	}
+	return hba
+}
+
+// Replication makes hba match physical replication connections.
+func (hba *HostBasedAuthentication) Replication() *HostBasedAuthentication {
+	hba.database = "replication"
+	return hba
+}
+
+// Role makes hba match connections by users that are members of a specific role.
+func (hba *HostBasedAuthentication) Role(name string) *HostBasedAuthentication {
+	hba.user = hba.quote("+" + name)
+	return hba
+}
+
+// SameNetwork makes hba match connection attempts from IP addresses in any
+// subnet to which the server is directly connected.
+func (hba *HostBasedAuthentication) SameNetwork() *HostBasedAuthentication {
+	hba.address = "samenet"
+	return hba
+}
+
+// SSL makes hba match connection attempts made using TCP/IP with SSL.
+func (hba *HostBasedAuthentication) SSL() *HostBasedAuthentication {
+	hba.origin = "hostssl"
+	return hba
+}
+
+// TCP makes hba match connection attempts made using TCP/IP, with or without SSL.
+func (hba *HostBasedAuthentication) TCP() *HostBasedAuthentication {
+	hba.origin = "host"
+	return hba
+}
+
+// User makes hba match connections by a specific user.
+func (hba *HostBasedAuthentication) User(name string) *HostBasedAuthentication {
+	hba.user = hba.quote(name)
+	return hba
+}
+
+// String returns hba formatted for the pg_hba.conf file without a newline.
+func (hba HostBasedAuthentication) String() string {
+	if hba.origin == "local" {
+		return strings.TrimSpace(fmt.Sprintf("local %s %s %s %s",
+			hba.database, hba.user, hba.method, hba.options))
+	}
+
+	return strings.TrimSpace(fmt.Sprintf("%s %s %s %s %s %s",
+		hba.origin, hba.database, hba.user, hba.address, hba.method, hba.options))
+}

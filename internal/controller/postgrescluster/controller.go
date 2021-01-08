@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+	"io"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -62,6 +63,11 @@ type Reconciler struct {
 	Owner    client.FieldOwner
 	Recorder record.EventRecorder
 	Tracer   trace.Tracer
+
+	PodExec func(
+		namespace, pod, container string,
+		stdin io.Reader, stdout, stderr io.Writer, command ...string,
+	) error
 }
 
 // +kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=postgresclusters,verbs=get;list;watch
@@ -134,6 +140,9 @@ func (r *Reconciler) Reconcile(
 	}
 	if err == nil {
 		err = r.reconcilePatroniDistributedConfiguration(ctx, cluster)
+	}
+	if err == nil {
+		err = r.reconcilePatroniDynamicConfiguration(ctx, cluster)
 	}
 
 	for i := range cluster.Spec.InstanceSets {
@@ -228,6 +237,14 @@ func (r *Reconciler) setControllerReference(
 
 // SetupWithManager adds the PostgresCluster controller to the provided runtime manager
 func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
+	if r.PodExec == nil {
+		var err error
+		r.PodExec, err = newPodExecutor(mgr.GetConfig())
+		if err != nil {
+			return err
+		}
+	}
+
 	return builder.ControllerManagedBy(mgr).
 		For(&v1alpha1.PostgresCluster{}).
 		WithOptions(controller.Options{

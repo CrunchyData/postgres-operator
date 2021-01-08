@@ -34,6 +34,9 @@ type PostgresClusterSpec struct {
 	// +listMapKey=name
 	InstanceSets []PostgresInstanceSetSpec `json:"instances"`
 
+	// +optional
+	Patroni *PatroniSpec `json:"patroni,omitempty"`
+
 	// The port on which PostgreSQL should listen.
 	// +optional
 	// +kubebuilder:default=5432
@@ -44,6 +47,11 @@ func (s *PostgresClusterSpec) Default() {
 	for i := range s.InstanceSets {
 		s.InstanceSets[i].Default(i)
 	}
+
+	if s.Patroni == nil {
+		s.Patroni = new(PatroniSpec)
+	}
+	s.Patroni.Default()
 
 	if s.Port == nil {
 		s.Port = new(int32)
