@@ -9,7 +9,7 @@ delete_metrics_namespace: "false"
 metrics_namespace: "pgo"
 metrics_image_pull_secret: ""
 metrics_image_pull_secret_manifest: ""
-pgmonitor_version: "v4.4-RC7"
+pgmonitor_version: "v4.4"
 
 alertmanager_configmap: "alertmanager-config"
 alertmanager_rules_configmap: "alertmanager-rules-config"
