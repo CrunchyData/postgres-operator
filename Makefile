@@ -208,8 +208,14 @@ pgo-base-docker: pgo-base-build
 
 
 #======== Utility =======
+.PHONY: check
 check:
 	PGOROOT=$(PGOROOT) go test ./...
+
+.PHONY: check-generate
+check-generate: generate-crd generate-deepcopy
+	git diff --exit-code -- config/crd
+	git diff --exit-code -- pkg/apis
 
 clean: clean-deprecated
 	rm -f bin/postgres-operator
