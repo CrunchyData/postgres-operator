@@ -12,6 +12,7 @@
     -nodes \
     -newkey ec \
     -pkeyopt ec_paramgen_curve:prime256v1 \
+    -pkeyopt ec_param_enc:named_curve \
     -sha384 \
     -days 1825 \
     -subj "/CN=*" \
