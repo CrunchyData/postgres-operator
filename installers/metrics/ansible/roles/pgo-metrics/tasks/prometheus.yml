@@ -9,7 +9,7 @@
         prom_output_dir: "{{ metrics_dir }}/output/prom"
 
     - name: Ensure Output Directory Exists
-      file: 
+      file:
         path: "{{ prom_output_dir }}"
         state: "directory"
         mode: "0700"
@@ -22,7 +22,7 @@
       loop:
         - prometheus-rbac.json.j2
       when: create_rbac | bool
-      
+
     - name: Create Prometheus RBAC
       command: "{{ kubectl_or_oc }} create -f {{ prom_output_dir }}/{{ item }} -n {{ metrics_namespace }}"
       loop:
@@ -35,7 +35,7 @@
 
     - name: Set pgmonitor Prometheus Directory Fact
       set_fact:
-        pgmonitor_prometheus_dir: "{{ metrics_dir }}/pgmonitor-{{ pgmonitor_version | replace('v','') }}/prometheus"
+        pgmonitor_prometheus_dir: "{{ metrics_dir }}/pgmonitor/prometheus"
 
     - name: Copy Prometheus Config to Output Directory
       command: "cp {{ pgmonitor_prometheus_dir }}/{{ item.src }} {{ prom_output_dir }}/{{ item.dst }}"
@@ -88,7 +88,7 @@
         src: "{{ item }}"
         dest: "{{ prom_output_dir }}/{{ item | replace('.j2', '') }}"
         mode: "0600"
-      loop: 
+      loop:
         - prometheus-pvc.json.j2
         - prometheus-service.json.j2
         - prometheus-deployment.json.j2
