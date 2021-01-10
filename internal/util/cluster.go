@@ -231,6 +231,45 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 	return err
 }
 
+// CreateRMDataTask is a legacy method that was moved into this file. This
+// spawns the "pgo-rmdata" task which cleans up assets related to removing an
+// individual instance or a cluster. I cleaned up the code slightly.
+func CreateRMDataTask(clientset kubeapi.Interface, clusterName, replicaName, taskName string, deleteBackups, deleteData, isReplica, isBackup bool, ns, clusterPGHAScope string) error {
+	ctx := context.TODO()
+
+	// create pgtask CRD
+	task := &crv1.Pgtask{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: taskName,
+			Labels: map[string]string{
+				config.LABEL_PG_CLUSTER: clusterName,
+				config.LABEL_RMDATA:     "true",
+			},
+		},
+		Spec: crv1.PgtaskSpec{
+			Name:      taskName,
+			Namespace: ns,
+			Parameters: map[string]string{
+				config.LABEL_DELETE_DATA:    strconv.FormatBool(deleteData),
+				config.LABEL_DELETE_BACKUPS: strconv.FormatBool(deleteBackups),
+				config.LABEL_IS_REPLICA:     strconv.FormatBool(isReplica),
+				config.LABEL_IS_BACKUP:      strconv.FormatBool(isBackup),
+				config.LABEL_PG_CLUSTER:     clusterName,
+				config.LABEL_REPLICA_NAME:   replicaName,
+				config.LABEL_PGHA_SCOPE:     clusterPGHAScope,
+			},
+			TaskType: crv1.PgtaskDeleteData,
+		},
+	}
+
+	if _, err := clientset.CrunchydataV1().Pgtasks(ns).Create(ctx, task, metav1.CreateOptions{}); err != nil {
+		log.Error(err)
+		return err
+	}
+
+	return nil
+}
+
 // GenerateNodeAffinity creates a Kubernetes node affinity object suitable for
 // storage on our custom resource. For now, it only supports preferred affinity,
 // though can be expanded to support more complex rules

@@ -19,10 +19,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
-	"github.com/crunchydata/postgres-operator/internal/config"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
 	log "github.com/sirupsen/logrus"
@@ -55,44 +53,6 @@ var (
 	ErrMethodNotAllowed = errors.New("This method has is not allowed in the current PostgreSQL " +
 		"Operator installation")
 )
-
-func CreateRMDataTask(clusterName, replicaName, taskName string, deleteBackups, deleteData, isReplica, isBackup bool, ns, clusterPGHAScope string) error {
-	ctx := context.TODO()
-	var err error
-
-	// create pgtask CRD
-	spec := crv1.PgtaskSpec{}
-	spec.Namespace = ns
-	spec.Name = taskName
-	spec.TaskType = crv1.PgtaskDeleteData
-
-	spec.Parameters = make(map[string]string)
-	spec.Parameters[config.LABEL_DELETE_DATA] = strconv.FormatBool(deleteData)
-	spec.Parameters[config.LABEL_DELETE_BACKUPS] = strconv.FormatBool(deleteBackups)
-	spec.Parameters[config.LABEL_IS_REPLICA] = strconv.FormatBool(isReplica)
-	spec.Parameters[config.LABEL_IS_BACKUP] = strconv.FormatBool(isBackup)
-	spec.Parameters[config.LABEL_PG_CLUSTER] = clusterName
-	spec.Parameters[config.LABEL_REPLICA_NAME] = replicaName
-	spec.Parameters[config.LABEL_PGHA_SCOPE] = clusterPGHAScope
-
-	newInstance := &crv1.Pgtask{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: taskName,
-		},
-		Spec: spec,
-	}
-	newInstance.ObjectMeta.Labels = make(map[string]string)
-	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
-	newInstance.ObjectMeta.Labels[config.LABEL_RMDATA] = "true"
-
-	_, err = Clientset.CrunchydataV1().Pgtasks(ns).Create(ctx, newInstance, metav1.CreateOptions{})
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	return err
-}
 
 // IsValidPVC determines if a PVC with the name provided exits
 func IsValidPVC(pvcName, ns string) bool {

@@ -109,8 +109,7 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pg
 			return response
 		}
 
-		err := apiserver.CreateRMDataTask(cluster.Spec.Name, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns, clusterPGHAScope)
-		if err != nil {
+		if err := util.CreateRMDataTask(apiserver.Clientset, cluster.Spec.Name, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns, clusterPGHAScope); err != nil {
 			log.Debugf("error on creating rmdata task %s", err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
