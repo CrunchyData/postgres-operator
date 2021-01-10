@@ -275,7 +275,6 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 	}
 
 	cl.Spec.UserLabels[config.LABEL_PGOUSER] = cl.ObjectMeta.Labels[config.LABEL_PGOUSER]
-	cl.Spec.UserLabels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cl.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 
 	// Set the Patroni scope to the name of the primary deployment.  Replicas will get scope using the
 	// 'crunchy-pgha-scope' label on the pgcluster
