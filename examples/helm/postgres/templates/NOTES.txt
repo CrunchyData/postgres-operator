@@ -1,5 +1,3 @@
-Thank you deploying a crunchy postgreSQL cluster v{{ .Chart.AppVersion }}!
-
                           ((((((((((((((((((((((
                     (((((((((((((%%%%%%%(((((((((((((((
                 (((((((((((%%%             %%%%((((((((((((
@@ -30,5 +28,27 @@ Thank you deploying a crunchy postgreSQL cluster v{{ .Chart.AppVersion }}!
                 ####%%%                        %%%%%  %
                       %%                         %%%%
 
+Thank you deploying a Crunchy PostgreSQL cluster v{{ .Chart.AppVersion }}!
+
+When your cluster has finished deploying, you can connect to it with the
+following credentials:
+
+    Username: {{ if .Values.username }}{{ .Values.username }}{{- else }}{{ .Values.name }}{{- end }}
+    Password: {{ .Values.password }}
+
+To connect to your PostgreSQL cluster, you can set up a port forward to your
+local machine in a separate terminal window:
+
+    kubectl -n {{ .Values.namespace }} port-forward svc/{{ .Values.name }} 5432:5432
+
+And use the following connection string to connect to your cluster:
+
+    PGPASSWORD="{{ .Values.password }}" psql -h localhost -U {{ if .Values.username }}{{ .Values.username }}{{- else }}{{ .Values.name }}{{- end }} {{ .Values.name }}
+
+If you need to log in as the PostgreSQL superuser, you can do so with the following command:
+
+    PGPASSWORD=$(kubectl -n jkatz get secrets {{ .Values.name }}-postgres-secret -o jsonpath='{.data.password}' | base64 -d) psql -h localhost -U postgres {{ .Values.name }}
+
 More information about the custom resource workflow the docs can be found here:
-https://access.crunchydata.com/documentation/postgres-operator/latest/custom-resources/
+
+    https://access.crunchydata.com/documentation/postgres-operator/latest/custom-resources/

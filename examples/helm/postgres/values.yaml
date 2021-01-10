@@ -1,0 +1,14 @@
+# The values is for the namespace and the postgresql cluster name
+name: hippo
+namespace: pgo
+password: W4tch0ut4hippo$
+
+# Optional parameters
+# cpu: 0.25
+# diskSize: 5Gi
+# monitoring: true
+# ha: true
+# imagePrefix: registry.developers.crunchydata.com/crunchydata
+# image: crunchy-postgres-ha
+# imageTag: centos8-13.1-4.6.0-beta.2
+# memory: 1Gi
