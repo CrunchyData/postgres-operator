@@ -234,35 +234,40 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 // CreateRMDataTask is a legacy method that was moved into this file. This
 // spawns the "pgo-rmdata" task which cleans up assets related to removing an
 // individual instance or a cluster. I cleaned up the code slightly.
-func CreateRMDataTask(clientset kubeapi.Interface, clusterName, replicaName, taskName string, deleteBackups, deleteData, isReplica, isBackup bool, ns, clusterPGHAScope string) error {
+func CreateRMDataTask(clientset kubeapi.Interface, cluster *crv1.Pgcluster, replicaName string, deleteBackups, deleteData, isReplica, isBackup bool) error {
 	ctx := context.TODO()
+	taskName := cluster.Name + "-rmdata"
+	if replicaName != "" {
+		taskName = replicaName + "-rmdata"
+	}
 
 	// create pgtask CRD
 	task := &crv1.Pgtask{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: taskName,
 			Labels: map[string]string{
-				config.LABEL_PG_CLUSTER: clusterName,
+				config.LABEL_PG_CLUSTER: cluster.Name,
 				config.LABEL_RMDATA:     "true",
 			},
 		},
 		Spec: crv1.PgtaskSpec{
 			Name:      taskName,
-			Namespace: ns,
+			Namespace: cluster.Namespace,
 			Parameters: map[string]string{
 				config.LABEL_DELETE_DATA:    strconv.FormatBool(deleteData),
 				config.LABEL_DELETE_BACKUPS: strconv.FormatBool(deleteBackups),
+				config.LABEL_IMAGE_PREFIX:   cluster.Spec.PGOImagePrefix,
 				config.LABEL_IS_REPLICA:     strconv.FormatBool(isReplica),
 				config.LABEL_IS_BACKUP:      strconv.FormatBool(isBackup),
-				config.LABEL_PG_CLUSTER:     clusterName,
+				config.LABEL_PG_CLUSTER:     cluster.Name,
 				config.LABEL_REPLICA_NAME:   replicaName,
-				config.LABEL_PGHA_SCOPE:     clusterPGHAScope,
+				config.LABEL_PGHA_SCOPE:     cluster.ObjectMeta.GetLabels()[config.LABEL_PGHA_SCOPE],
 			},
 			TaskType: crv1.PgtaskDeleteData,
 		},
 	}
 
-	if _, err := clientset.CrunchydataV1().Pgtasks(ns).Create(ctx, task, metav1.CreateOptions{}); err != nil {
+	if _, err := clientset.CrunchydataV1().Pgtasks(cluster.Namespace).Create(ctx, task, metav1.CreateOptions{}); err != nil {
 		log.Error(err)
 		return err
 	}

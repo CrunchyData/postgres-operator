@@ -21,6 +21,12 @@ const (
 	ANNOTATION_BACKREST_RESTORE       = "pgo-backrest-restore"
 	ANNOTATION_PGHA_BOOTSTRAP_REPLICA = "pgo-pgha-bootstrap-replica"
 	ANNOTATION_PRIMARY_DEPLOYMENT     = "primary-deployment"
+	// ANNOTATION_CLUSTER_KEEP_BACKUPS indicates that if a custom resource is
+	// deleted, ensure the backups are kept
+	ANNOTATION_CLUSTER_KEEP_BACKUPS = "keep-backups"
+	// ANNOTATION_CLUSTER_KEEP_DATA indicates that if a custom resource is
+	// deleted, ensure the data directory is kept
+	ANNOTATION_CLUSTER_KEEP_DATA = "keep-data"
 	// annotation to track the cluster's current primary
 	ANNOTATION_CURRENT_PRIMARY = "current-primary"
 	// annotation to indicate whether a cluster has been upgraded

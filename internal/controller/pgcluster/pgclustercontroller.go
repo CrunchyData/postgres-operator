@@ -348,11 +348,61 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 // onDelete is called when a pgcluster is deleted
 func (c *Controller) onDelete(obj interface{}) {
-	// cluster := obj.(*crv1.Pgcluster)
-	//	log.Debugf("[Controller] ns=%s onDelete %s", cluster.ObjectMeta.Namespace, cluster.ObjectMeta.SelfLink)
+	ctx := context.TODO()
+	cluster := obj.(*crv1.Pgcluster)
 
-	// handle pgcluster cleanup
-	//	clusteroperator.DeleteClusterBase(c.PgclusterClientset, c.PgclusterClient, cluster, cluster.ObjectMeta.Namespace)
+	log.Debugf("pgcluster onDelete for cluster %s (namespace %s)", cluster.Name, cluster.Namespace)
+
+	// a quick guard: see if the "rmdata Job" is running.
+	options := metav1.ListOptions{
+		LabelSelector: fields.AndSelectors(
+			fields.OneTermEqualSelector(config.LABEL_PG_CLUSTER, cluster.Name),
+			fields.OneTermEqualSelector(config.LABEL_RMDATA, config.LABEL_TRUE),
+		).String(),
+	}
+
+	jobs, err := c.Client.BatchV1().Jobs(cluster.Namespace).List(ctx, options)
+
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
+	// iterate through the list of Jobs and see if any are currently active or
+	// succeeded.
+	// a succeeded Job could be a remnaint of an old Job for the cluser of a
+	// same name, in which case, we can continue with deleting the cluster
+	for _, job := range jobs.Items {
+		// we will return for one of two reasons:
+		// 1. if the Job is currently active
+		// 2. if the Job is not active but never has completed and is below the
+		// backoff limit -- this could be  evidence that the Job is retrying
+		if job.Status.Active > 0 {
+			return
+		} else if job.Status.Succeeded < 1 && job.Status.Failed < *job.Spec.BackoffLimit {
+			return
+		}
+	}
+
+	// we need to create a special pgtask that will create the Job (I know). So
+	// let's attempt to do that here. First, clear out any other pgtask with this
+	// existing name. If it errors because it's not found, we're OK
+	taskName := cluster.Name + "-rmdata"
+	if err := c.Client.CrunchydataV1().Pgtasks(cluster.Namespace).Delete(
+		ctx, taskName, metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
+		log.Error(err)
+		return
+	}
+
+	// determine if the data directory or backups should be kept
+	_, keepBackups := cluster.ObjectMeta.GetAnnotations()[config.ANNOTATION_CLUSTER_KEEP_BACKUPS]
+	_, keepData := cluster.ObjectMeta.GetAnnotations()[config.ANNOTATION_CLUSTER_KEEP_DATA]
+
+	// create the deletion job. this will delete any data and backups for this
+	// cluster
+	if err := util.CreateRMDataTask(c.Client, cluster, "", !keepBackups, !keepData, false, false); err != nil {
+		log.Error(err)
+	}
 }
 
 // AddPGClusterEventHandler adds the pgcluster event handler to the pgcluster informer
