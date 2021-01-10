@@ -339,37 +339,6 @@ func AddBootstrapRepo(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (
 	return
 }
 
-// DeleteClusterBase ...
-func DeleteClusterBase(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string) {
-	_ = DeleteCluster(clientset, cl, namespace)
-
-	// delete any existing configmaps
-	if err := deleteConfigMaps(clientset, cl.Spec.Name, namespace); err != nil {
-		log.Error(err)
-	}
-
-	// delete any existing pgtasks ???
-
-	// publish delete cluster event
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventDeleteClusterFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  cl.ObjectMeta.Labels[config.LABEL_PGOUSER],
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventDeleteCluster,
-		},
-		Clustername: cl.Spec.Name,
-	}
-
-	if err := events.Publish(f); err != nil {
-		log.Error(err)
-	}
-}
-
 // ScaleBase ...
 func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace string) {
 	ctx := context.TODO()
@@ -757,23 +726,6 @@ func createMissingUserSecrets(clientset kubernetes.Interface, cluster *crv1.Pgcl
 
 	// finally, determine if we need to create a user secret for the regular user
 	return createMissingUserSecret(clientset, cluster, cluster.Spec.User)
-}
-
-func deleteConfigMaps(clientset kubernetes.Interface, clusterName, ns string) error {
-	ctx := context.TODO()
-	label := fmt.Sprintf("pg-cluster=%s", clusterName)
-	list, err := clientset.CoreV1().ConfigMaps(ns).List(ctx, metav1.ListOptions{LabelSelector: label})
-	if err != nil {
-		return fmt.Errorf("No configMaps found for selector: %s", label)
-	}
-
-	for _, configmap := range list.Items {
-		err := clientset.CoreV1().ConfigMaps(ns).Delete(ctx, configmap.Name, metav1.DeleteOptions{})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func publishClusterCreateFailure(cl *crv1.Pgcluster, errorMsg string) {

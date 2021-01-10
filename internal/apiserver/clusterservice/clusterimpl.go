@@ -83,7 +83,8 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pg
 		return response
 	}
 
-	for _, cluster := range clusterList.Items {
+	for i := range clusterList.Items {
+		cluster := &clusterList.Items[i]
 
 		// check if the current cluster is not upgraded to the deployed
 		// Operator version. If not, do not allow the command to complete
@@ -94,22 +95,16 @@ func DeleteCluster(name, selector string, deleteData, deleteBackups bool, ns, pg
 		}
 
 		log.Debugf("deleting cluster %s", cluster.Spec.Name)
-		taskName := cluster.Spec.Name + "-rmdata"
-		log.Debugf("creating taskName %s", taskName)
-		isBackup := false
-		isReplica := false
-		replicaName := ""
-		clusterPGHAScope := cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE]
 
 		// first delete any existing rmdata pgtask with the same name
-		err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Delete(ctx, taskName, metav1.DeleteOptions{})
+		err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Delete(ctx, cluster.Name+"-rmdata", metav1.DeleteOptions{})
 		if err != nil && !kerrors.IsNotFound(err) {
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()
 			return response
 		}
 
-		if err := util.CreateRMDataTask(apiserver.Clientset, cluster.Spec.Name, replicaName, taskName, deleteBackups, deleteData, isReplica, isBackup, ns, clusterPGHAScope); err != nil {
+		if err := util.CreateRMDataTask(apiserver.Clientset, cluster, "", deleteBackups, deleteData, false, false); err != nil {
 			log.Debugf("error on creating rmdata task %s", err.Error())
 			response.Status.Code = msgs.Error
 			response.Status.Msg = err.Error()

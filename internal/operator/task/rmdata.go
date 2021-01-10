@@ -83,13 +83,6 @@ func RemoveData(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask
 		return
 	}
 
-	// if the clustername is not empty, get the pgcluster
-	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
-	if err != nil {
-		log.Error(err)
-		return
-	}
-
 	jobName := clusterName + "-rmdata-" + util.RandStringBytesRmndr(4)
 
 	jobFields := rmdatajobTemplateFields{
@@ -102,40 +95,39 @@ func RemoveData(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask
 		RemoveBackup:     removeBackup,
 		IsReplica:        isReplica,
 		IsBackup:         isBackup,
-		PGOImagePrefix:   util.GetValueOrDefault(cluster.Spec.PGOImagePrefix, operator.Pgo.Pgo.PGOImagePrefix),
+		PGOImagePrefix:   util.GetValueOrDefault(task.Spec.Parameters[config.LABEL_IMAGE_PREFIX], operator.Pgo.Pgo.PGOImagePrefix),
 		PGOImageTag:      operator.Pgo.Pgo.PGOImageTag,
 		SecurityContext:  operator.GetPodSecurityContext(task.Spec.StorageSpec.GetSupplementalGroups()),
 	}
-	log.Debugf("creating rmdata job %s for cluster %s ", jobName, task.Spec.Name)
 
-	var doc2 bytes.Buffer
-	err = config.RmdatajobTemplate.Execute(&doc2, jobFields)
-	if err != nil {
-		log.Error(err.Error())
-		return
-	}
+	log.Debugf("creating rmdata job %s for cluster %s ", jobName, task.Spec.Name)
 
 	if operator.CRUNCHY_DEBUG {
 		_ = config.RmdatajobTemplate.Execute(os.Stdout, jobFields)
 	}
 
-	newjob := v1batch.Job{}
-	err = json.Unmarshal(doc2.Bytes(), &newjob)
-	if err != nil {
+	doc := bytes.Buffer{}
+	if err := config.RmdatajobTemplate.Execute(&doc, jobFields); err != nil {
+		log.Error(err)
+		return
+	}
+
+	job := v1batch.Job{}
+	if err := json.Unmarshal(doc.Bytes(), &job); err != nil {
 		log.Error("error unmarshalling json into Job " + err.Error())
 		return
 	}
 
 	// set the container image to an override value, if one exists
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_RMDATA,
-		&newjob.Spec.Template.Spec.Containers[0])
+		&job.Spec.Template.Spec.Containers[0])
 
-	j, err := clientset.BatchV1().Jobs(namespace).Create(ctx, &newjob, metav1.CreateOptions{})
-	if err != nil {
-		log.Errorf("got error when creating rmdata job %s", newjob.Name)
+	if _, err := clientset.BatchV1().Jobs(namespace).Create(ctx, &job, metav1.CreateOptions{}); err != nil {
+		log.Error(err)
 		return
 	}
-	log.Debugf("successfully created rmdata job %s", j.Name)
+
+	log.Debugf("successfully created rmdata job %s", job.Name)
 
 	publishDeleteCluster(task.Spec.Parameters[config.LABEL_PG_CLUSTER],
 		task.ObjectMeta.Labels[config.LABEL_PGOUSER], namespace)

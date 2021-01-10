@@ -101,7 +101,18 @@ func Delete(request Request) {
 
 	log.Info("rmdata.Process cluster use case")
 
-	// first, clear out any of the scheduled jobs that may occur, as this would be
+	// attempt to delete the pgcluster object if it has not already been deleted.
+	// quite possibly, we are here because one deleted the pgcluster object
+	// already, so this step is optional
+	if _, err := request.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Get(
+		ctx, request.ClusterName, metav1.GetOptions{}); err == nil {
+		if err := request.Clientset.CrunchydataV1().Pgclusters(request.Namespace).Delete(
+			ctx, request.ClusterName, metav1.DeleteOptions{}); err != nil {
+			log.Error(err)
+		}
+	}
+
+	// clear out any of the scheduled jobs that may occur, as this would be
 	// executing asynchronously against any stale data
 	removeSchedules(request)
 
@@ -111,13 +122,8 @@ func Delete(request Request) {
 		removeUserSecrets(request)
 	}
 
-	// handle the case of 'pgo delete cluster mycluster'
+	// remove the cluster Deployments
 	removeCluster(request)
-	if err := request.Clientset.
-		CrunchydataV1().Pgclusters(request.Namespace).
-		Delete(ctx, request.ClusterName, metav1.DeleteOptions{}); err != nil {
-		log.Error(err)
-	}
 	removeServices(request)
 	removeAddons(request)
 	removePgreplicas(request)

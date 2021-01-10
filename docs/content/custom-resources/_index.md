@@ -679,6 +679,15 @@ spec:
 Save your edits, and in a short period of time, you should see these annotations
 applied to the managed Deployments.
 
+### Delete a PostgreSQL Cluster
+
+A PostgreSQL cluster can be deleted by simply deleting the `pgclusters.crunchydata.com` resource.
+
+It is possible to keep both the PostgreSQL data directory as well as the pgBackRest backup repository when using this method by setting the following annotations on the `pgclusters.crunchydata.com` custom resource:
+
+- `keep-backups`: indicates to keep the pgBackRest PVC when deleting the cluster.
+- `keep-data`: indicates to keep the PostgreSQL data PVC when deleting the cluster.
+
 ## PostgreSQL Operator Custom Resource Definitions
 
 There are several PostgreSQL Operator Custom Resource Definitions (CRDs) that
