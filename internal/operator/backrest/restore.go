@@ -317,7 +317,7 @@ func UpdateWorkflow(clientset pgo.Interface, workflowID, namespace, status strin
 }
 
 // PublishRestore is responsible for publishing the 'RestoreCluster' event for a restore
-func PublishRestore(id, clusterName, username, namespace string) {
+func PublishRestore(clusterName, username, namespace string) {
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 

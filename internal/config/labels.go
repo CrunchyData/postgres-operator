@@ -17,12 +17,11 @@ package config
 
 // resource labels used by the operator
 const (
-	LABEL_NAME                  = "name"
-	LABEL_SELECTOR              = "selector"
-	LABEL_OPERATOR              = "postgres-operator"
-	LABEL_PG_CLUSTER            = "pg-cluster"
-	LABEL_PG_CLUSTER_IDENTIFIER = "pg-cluster-id"
-	LABEL_PG_DATABASE           = "pgo-pg-database"
+	LABEL_NAME        = "name"
+	LABEL_SELECTOR    = "selector"
+	LABEL_OPERATOR    = "postgres-operator"
+	LABEL_PG_CLUSTER  = "pg-cluster"
+	LABEL_PG_DATABASE = "pgo-pg-database"
 )
 
 const LABEL_PGTASK = "pg-task"

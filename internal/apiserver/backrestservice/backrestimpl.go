@@ -217,7 +217,6 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 
 		_, err = apiserver.Clientset.CrunchydataV1().Pgtasks(ns).Create(ctx,
 			getBackupParams(
-				cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
 				clusterName, taskName, crv1.PgtaskBackrestBackup, podname, "database",
 				util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, apiserver.Pgo.Cluster.CCPImagePrefix),
 				request.BackupOpts, request.BackrestStorageType, operator.GetS3VerifyTLSSetting(cluster), jobName, ns, pgouser),
@@ -283,7 +282,7 @@ func DeleteBackup(request msgs.DeleteBackrestBackupRequest) msgs.DeleteBackrestB
 	return response
 }
 
-func getBackupParams(identifier, clusterName, taskName, action, podName, containerName, imagePrefix, backupOpts, backrestStorageType, s3VerifyTLS, jobName, ns, pgouser string) *crv1.Pgtask {
+func getBackupParams(clusterName, taskName, action, podName, containerName, imagePrefix, backupOpts, backrestStorageType, s3VerifyTLS, jobName, ns, pgouser string) *crv1.Pgtask {
 	var newInstance *crv1.Pgtask
 	spec := crv1.PgtaskSpec{}
 	spec.Name = taskName
@@ -311,7 +310,6 @@ func getBackupParams(identifier, clusterName, taskName, action, podName, contain
 	}
 	newInstance.ObjectMeta.Labels = make(map[string]string)
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = clusterName
-	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = identifier
 	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 	return newInstance
 }
@@ -569,7 +567,6 @@ func Restore(request *msgs.RestoreRequest, ns, pgouser string) msgs.RestoreRespo
 		return resp
 	}
 
-	pgtask.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 	pgtask.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 	pgtask.Spec.Parameters[crv1.PgtaskWorkflowID] = id
 

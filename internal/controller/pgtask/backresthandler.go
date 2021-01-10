@@ -56,8 +56,7 @@ func (c *Controller) handleBackrestRestore(task *crv1.Pgtask) {
 	}
 	log.Debugf("pgtask Controller: added restore job for cluster %s", clusterName)
 
-	backrestoperator.PublishRestore(cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER],
-		clusterName, task.ObjectMeta.Labels[config.LABEL_PGOUSER], namespace)
+	backrestoperator.PublishRestore(clusterName, task.ObjectMeta.Labels[config.LABEL_PGOUSER], namespace)
 
 	err = backrestoperator.UpdateWorkflow(c.Client, task.Spec.Parameters[crv1.PgtaskWorkflowID],
 		namespace, crv1.PgtaskWorkflowBackrestRestoreJobCreatedStatus)

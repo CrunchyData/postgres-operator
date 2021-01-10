@@ -18,7 +18,6 @@ limitations under the License.
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
 	"reflect"
 	"strings"
 
@@ -117,8 +116,6 @@ func (c *Controller) processNextItem() bool {
 			"'initialized' or 'bootstrapping' state", cluster.GetName())
 		return true
 	}
-
-	addIdentifier(cluster)
 
 	// If bootstrapping from an existing data source then attempt to create the pgBackRest repository.
 	// If a repo already exists (e.g. because it is associated with a currently running cluster) then
@@ -414,15 +411,6 @@ func (c *Controller) AddPGClusterEventHandler() {
 	})
 
 	log.Debugf("pgcluster Controller: added event handler to informer")
-}
-
-func addIdentifier(clusterCopy *crv1.Pgcluster) {
-	u, err := ioutil.ReadFile("/proc/sys/kernel/random/uuid")
-	if err != nil {
-		log.Error(err)
-	}
-
-	clusterCopy.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = string(u[:len(u)-1])
 }
 
 // updateAnnotations updates any custom annitations that may be on the managed

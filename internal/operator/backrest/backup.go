@@ -148,7 +148,6 @@ func Backrest(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) 
 		&newjob.Spec.Template.Spec.Containers[0])
 
 	newjob.ObjectMeta.Labels[config.LABEL_PGOUSER] = task.ObjectMeta.Labels[config.LABEL_PGOUSER]
-	newjob.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = task.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 
 	backupType := task.Spec.Parameters[config.LABEL_PGHA_BACKUP_TYPE]
 	if backupType != "" {
@@ -242,7 +241,6 @@ func CreateBackup(clientset pgo.Interface, namespace, clusterName, podName strin
 	}
 	newInstance.ObjectMeta.Labels = make(map[string]string)
 	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER] = cluster.Name
-	newInstance.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = cluster.ObjectMeta.Labels[config.LABEL_PGOUSER]
 
 	_, err = clientset.CrunchydataV1().Pgtasks(cluster.Namespace).Create(ctx, newInstance, metav1.CreateOptions{})

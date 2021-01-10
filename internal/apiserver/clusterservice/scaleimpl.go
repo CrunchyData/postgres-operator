@@ -119,7 +119,6 @@ func ScaleCluster(request msgs.ClusterScaleRequest, pgouser string) msgs.Cluster
 	spec.Tolerations = request.Tolerations
 
 	labels[config.LABEL_PGOUSER] = pgouser
-	labels[config.LABEL_PG_CLUSTER_IDENTIFIER] = cluster.ObjectMeta.Labels[config.LABEL_PG_CLUSTER_IDENTIFIER]
 
 	for i := 0; i < request.ReplicaCount; i++ {
 		uniqueName := util.RandStringBytesRmndr(4)
