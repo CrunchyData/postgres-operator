@@ -176,9 +176,6 @@
                         }, {
                             "mountPath": "/pgconf",
                             "name": "pgconf-volume"
-                        }, {
-                            "mountPath": "/recover",
-                            "name": "recover-volume"
                         },
                         {
                             "mountPath": "/dev/shm",
@@ -282,11 +279,11 @@
                       {{ end }}
                     {{ end }}
                     {
-                        "name": "recover-volume",
-                        "emptyDir": { "medium": "Memory" }
-                    }, {
                         "name": "report",
-                        "emptyDir": { "medium": "Memory" }
+                        "emptyDir": {
+                          "medium": "Memory",
+                          "sizeLimit": "64Mi"
+                        }
                     },
                     {
                       "name": "dshm",
