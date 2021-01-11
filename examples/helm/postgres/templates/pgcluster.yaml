@@ -1,0 +1,62 @@
+apiVersion: crunchydata.com/v1
+kind: Pgcluster
+metadata:
+  annotations:
+    current-primary: {{ .Values.name | quote }}
+  labels:
+    crunchy-pgha-scope: {{ .Values.name | quote }}
+    deployment-name: {{ .Values.name | quote }}
+    name: {{ .Values.name | quote }}
+    pg-cluster: {{ .Values.name | quote }}
+    pgo-version: {{ .Chart.AppVersion | quote }}
+    pgouser: admin
+  name: {{ .Values.name | quote }}
+  namespace: {{ .Values.namespace | quote }}
+spec:
+  BackrestStorage:
+    accessmode: ReadWriteOnce
+    size: {{ .Values.diskSize | default "2Gi" | quote }}
+    storagetype: dynamic
+  PrimaryStorage:
+    accessmode: ReadWriteOnce
+    name: {{ .Values.name | quote }}
+    size: {{ .Values.diskSize | default "1Gi" | quote }}
+    storagetype: dynamic
+  ReplicaStorage:
+    accessmode: ReadWriteOnce
+    size: {{ .Values.diskSize | default "1Gi" | quote }}
+    storagetype: dynamic
+  ccpimage: {{ .Values.image | default "crunchy-postgres-ha" | quote }}
+  ccpimageprefix: {{ .Values.imagePrefix | default "registry.developers.crunchydata.com/crunchydata" | quote }}
+  ccpimagetag: {{ .Values.imageTag | default "centos8-13.1-4.6.0-beta.2" | quote }}
+  clustername: {{ .Values.name | quote }}
+  database: {{ .Values.name | quote }}
+  {{- if .Values.monitoring }}
+  exporter: true
+  {{- end }}
+  exporterport: "9187"
+  limits:
+    cpu: {{ .Values.cpu | default "0.25" | quote }}
+    memory: {{ .Values.memory | default "1Gi" | quote }}
+  name: {{ .Values.name | quote }}
+  namespace: {{ .Values.namespace | quote }}
+  pgDataSource:
+    restoreFrom: ""
+    restoreOpts: ""
+  pgbadgerport: "10000"
+  pgoimageprefix: {{ .Values.imagePrefix | default "registry.developers.crunchydata.com/crunchydata" | quote }}
+  podAntiAffinity:
+    default: preferred
+    pgBackRest: preferred
+    pgBouncer: preferred
+  port: "5432"
+  {{- if .Values.ha }}
+  replicas: "1"
+  {{- end }}
+  {{- if .Values.username }}
+  user: {{ .Values.username | quote }}
+  {{- else }}
+  user: {{ .Values.name | quote }}
+  {{ end }}
+  userlabels:
+    pgo-version: {{ .Chart.AppVersion | quote }}
