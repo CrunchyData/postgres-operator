@@ -9,7 +9,7 @@
         grafana_output_dir: "{{ metrics_dir }}/output/grafana"
 
     - name: Ensure Output Directory Exists
-      file: 
+      file:
         path: "{{ grafana_output_dir }}"
         state: "directory"
         mode: "0700"
@@ -48,7 +48,7 @@
 
     - name: Set pgmonitor Grafana Directory Fact
       set_fact:
-        pgmonitor_grafana_dir: "{{ metrics_dir }}/pgmonitor-{{ pgmonitor_version | replace('v','') }}/grafana"
+        pgmonitor_grafana_dir: "{{ metrics_dir }}/pgmonitor/grafana"
 
     - name: Copy Grafana Config to Output Directory
       command: "cp {{ pgmonitor_grafana_dir }}/{{ item }} {{ grafana_output_dir }}"
@@ -111,7 +111,7 @@
         src: "{{ item }}"
         dest: "{{ grafana_output_dir }}/{{ item | replace('.j2', '') }}"
         mode: "0600"
-      loop: 
+      loop:
         - grafana-pvc.json.j2
         - grafana-service.json.j2
         - grafana-deployment.json.j2

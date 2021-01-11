@@ -70,6 +70,7 @@ fi
 
 COPY installers/ansible /ansible/postgres-operator
 COPY installers/metrics/ansible /ansible/metrics
+ADD tools/pgmonitor /tmp/.pgo/metrics/pgmonitor
 COPY installers/image/bin/pgo-deploy.sh /pgo-deploy.sh
 COPY bin/uid_daemon.sh /uid_daemon.sh
 
@@ -78,6 +79,7 @@ ENV HOME="/tmp"
 
 RUN chmod g=u /etc/passwd
 RUN chmod g=u /uid_daemon.sh
+RUN chown -R 2:2 /tmp/.pgo/metrics
 
 ENTRYPOINT ["/uid_daemon.sh"]
 
