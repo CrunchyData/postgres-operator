@@ -99,13 +99,20 @@ func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace s
 	// logic following a restart of the container.
 	// If the configmap already exists, the cluster creation will continue as this is required
 	// for certain pgcluster upgrades.
-	if err = operator.CreatePGHAConfigMap(clientset, cl,
+	if err := operator.CreatePGHAConfigMap(clientset, cl,
 		namespace); kerrors.IsAlreadyExists(err) {
-		log.Infof("found existing pgha ConfigMap for cluster %s, setting init flag to 'true'",
-			cl.GetName())
-		err = operator.UpdatePGHAConfigInitFlag(clientset, true, cl.Name, cl.Namespace)
-	}
-	if err != nil {
+		if !pghaConigMapHasInitFlag(clientset, cl) {
+			log.Infof("found existing pgha ConfigMap for cluster %s without init flag set. "+
+				"setting init flag to 'true'", cl.GetName())
+
+			// if the value is not present, update the config map
+			if err := operator.UpdatePGHAConfigInitFlag(clientset, true, cl.Name, cl.Namespace); err != nil {
+				log.Error(err)
+				publishClusterCreateFailure(cl, err.Error())
+				return
+			}
+		}
+	} else if err != nil {
 		log.Error(err)
 		publishClusterCreateFailure(cl, err.Error())
 		return
@@ -726,6 +733,29 @@ func createMissingUserSecrets(clientset kubernetes.Interface, cluster *crv1.Pgcl
 
 	// finally, determine if we need to create a user secret for the regular user
 	return createMissingUserSecret(clientset, cluster, cluster.Spec.User)
+}
+
+// pghaConigMapHasInitFlag checks to see if the PostgreSQL ConfigMap has the
+// PGHA init flag. Returns true if it does have it set, false otherwise.
+// If any function calls have an error, we will log that error and return false
+func pghaConigMapHasInitFlag(clientset kubernetes.Interface, cluster *crv1.Pgcluster) bool {
+	ctx := context.TODO()
+
+	// load the PGHA config map for this cluster. This more or less assumes that
+	// it exists
+	configMapName := fmt.Sprintf("%s-%s", cluster.Name, operator.PGHAConfigMapSuffix)
+	configMap, err := clientset.CoreV1().ConfigMaps(cluster.Namespace).Get(ctx, configMapName, metav1.GetOptions{})
+
+	// if there is an error getting the ConfigMap, log the error and return
+	if err != nil {
+		log.Error(err)
+		return false
+	}
+
+	// determine if the init flag is set, regardless of it's true or false
+	_, ok := configMap.Data[operator.PGHAConfigInitSetting]
+
+	return ok
 }
 
 func publishClusterCreateFailure(cl *crv1.Pgcluster, errorMsg string) {
