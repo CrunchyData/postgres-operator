@@ -350,7 +350,13 @@ func (c *Controller) onDelete(obj interface{}) {
 
 	log.Debugf("pgcluster onDelete for cluster %s (namespace %s)", cluster.Name, cluster.Namespace)
 
-	// a quick guard: see if the "rmdata Job" is running.
+	// guard: if an upgrade is in progress, do not do any of the rest
+	if _, ok := cluster.ObjectMeta.GetAnnotations()[config.ANNOTATION_UPGRADE_IN_PROGRESS]; ok {
+		log.Debug("upgrade in progress, not proceeding with additional cleanups")
+		return
+	}
+
+	// guard: see if the "rmdata Job" is running.
 	options := metav1.ListOptions{
 		LabelSelector: fields.AndSelectors(
 			fields.OneTermEqualSelector(config.LABEL_PG_CLUSTER, cluster.Name),

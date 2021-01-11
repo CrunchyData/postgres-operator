@@ -104,7 +104,11 @@ func AddUpgrade(clientset kubeapi.Interface, upgrade *crv1.Pgtask, namespace str
 	_ = createUpgradePGHAConfigMap(clientset, pgcluster, namespace)
 
 	// delete the existing pgcluster CRDs and other resources that will be recreated
-	deleteBeforeUpgrade(clientset, pgcluster.Name, currentPrimary, namespace)
+	if err := deleteBeforeUpgrade(clientset, pgcluster, currentPrimary, namespace); err != nil {
+		log.Error("refusing to upgrade due to unsuccessful resource removal")
+		PublishUpgradeEvent(events.EventUpgradeClusterFailure, namespace, upgrade, err.Error())
+		return
+	}
 
 	// recreate new Backrest Repo secret that was just deleted
 	recreateBackrestRepoSecret(clientset, upgradeTargetClusterName, namespace, operator.PgoNamespace)
@@ -257,13 +261,25 @@ func SetReplicaNumber(pgcluster *crv1.Pgcluster, numReplicas string) {
 // deleteBeforeUpgrade deletes the deployments, services, pgcluster, jobs, tasks and default configmaps before attempting
 // to upgrade the pgcluster deployment. This preserves existing secrets, non-standard configmaps and service definitions
 // for use in the newly upgraded cluster.
-func deleteBeforeUpgrade(clientset kubeapi.Interface, clusterName, currentPrimary, namespace string) {
+func deleteBeforeUpgrade(clientset kubeapi.Interface, pgcluster *crv1.Pgcluster, currentPrimary, namespace string) error {
 	ctx := context.TODO()
 
-	// first, get all deployments for the pgcluster in question
+	// first, indicate that there is an upgrade occurring on this custom resource
+	// this will prevent the rmdata job from firing off
+	annotations := pgcluster.ObjectMeta.GetAnnotations()
+	annotations[config.ANNOTATION_UPGRADE_IN_PROGRESS] = config.LABEL_TRUE
+	pgcluster.ObjectMeta.SetAnnotations(annotations)
+
+	if _, err := clientset.CrunchydataV1().Pgclusters(namespace).Update(ctx,
+		pgcluster, metav1.UpdateOptions{}); err != nil {
+		log.Errorf("unable to set annotations to keep backups and data: %s", err)
+		return err
+	}
+
+	// next, get all deployments for the pgcluster in question
 	deployments, err := clientset.
 		AppsV1().Deployments(namespace).
-		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + clusterName})
+		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + pgcluster.Name})
 	if err != nil {
 		log.Errorf("unable to get deployments. Error: %s", err)
 	}
@@ -279,7 +295,7 @@ func deleteBeforeUpgrade(clientset kubeapi.Interface, clusterName, currentPrimar
 	}
 
 	// wait until the backrest shared repo pod deployment has been deleted before continuing
-	waitStatus := deploymentWait(clientset, namespace, clusterName+"-backrest-shared-repo",
+	waitStatus := deploymentWait(clientset, namespace, pgcluster.Name+"-backrest-shared-repo",
 		180*time.Second, 10*time.Second)
 	log.Debug(waitStatus)
 	// wait until the primary pod deployment has been deleted before continuing
@@ -288,7 +304,7 @@ func deleteBeforeUpgrade(clientset kubeapi.Interface, clusterName, currentPrimar
 	log.Debug(waitStatus)
 
 	// delete the pgcluster
-	_ = clientset.CrunchydataV1().Pgclusters(namespace).Delete(ctx, clusterName, metav1.DeleteOptions{})
+	_ = clientset.CrunchydataV1().Pgclusters(namespace).Delete(ctx, pgcluster.Name, metav1.DeleteOptions{})
 
 	// delete all existing job references
 	deletePropagation := metav1.DeletePropagationForeground
@@ -296,23 +312,25 @@ func deleteBeforeUpgrade(clientset kubeapi.Interface, clusterName, currentPrimar
 		BatchV1().Jobs(namespace).
 		DeleteCollection(ctx,
 			metav1.DeleteOptions{PropagationPolicy: &deletePropagation},
-			metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + clusterName})
+			metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + pgcluster.Name})
 
 	// delete all existing pgtask references except for the upgrade task
 	// Note: this will be deleted by the existing pgcluster creation process once the
 	// updated pgcluster created and processed by the cluster controller
-	if err = deleteNonupgradePgtasks(clientset, config.LABEL_PG_CLUSTER+"="+clusterName, namespace); err != nil {
-		log.Errorf("error while deleting pgtasks for cluster %s, Error: %v", clusterName, err)
+	if err = deleteNonupgradePgtasks(clientset, config.LABEL_PG_CLUSTER+"="+pgcluster.Name, namespace); err != nil {
+		log.Errorf("error while deleting pgtasks for cluster %s, Error: %v", pgcluster.Name, err)
 	}
 
 	// delete the leader configmap used by the Postgres Operator since this information may change after
 	// the upgrade is complete
 	// Note: deletion is required for cluster recreation
-	_ = clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, clusterName+"-leader", metav1.DeleteOptions{})
+	_ = clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, pgcluster.Name+"-leader", metav1.DeleteOptions{})
 
 	// delete the '<cluster-name>-pgha-default-config' configmap, if it exists so the config syncer
 	// will not try to use it instead of '<cluster-name>-pgha-config'
-	_ = clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, clusterName+"-pgha-default-config", metav1.DeleteOptions{})
+	_ = clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, pgcluster.Name+"-pgha-default-config", metav1.DeleteOptions{})
+
+	return nil
 }
 
 // deploymentWait is modified from cluster.waitForDeploymentDelete. It simply waits for the current primary deployment

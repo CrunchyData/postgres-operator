@@ -31,6 +31,9 @@ const (
 	ANNOTATION_CURRENT_PRIMARY = "current-primary"
 	// annotation to indicate whether a cluster has been upgraded
 	ANNOTATION_IS_UPGRADED = "is-upgraded"
+	// annotation to indicate an upgrade is in progress. this has the effect
+	// of causeing the rmdata job in pgcluster to not run
+	ANNOTATION_UPGRADE_IN_PROGRESS = "upgrade-in-progress"
 	// annotation to store the Operator versions upgraded from and to
 	ANNOTATION_UPGRADE_INFO = "upgrade-info"
 	// annotation to store the string boolean, used when checking upgrade status
