@@ -36,7 +36,6 @@ import (
 // Currently supported version information for upgrades
 const (
 	REQUIRED_MAJOR_PGO_VERSION = 4
-	MAXIMUM_MINOR_PGO_VERSION  = 5
 	MINIMUM_MINOR_PGO_VERSION  = 1
 )
 
@@ -224,12 +223,9 @@ func supportedOperatorVersion(version string) bool {
 		log.Errorf("Cannot convert Postgres Operator's minor version to an integer. Error: %v", err)
 		return false
 	}
-	if minor < MINIMUM_MINOR_PGO_VERSION || minor > MAXIMUM_MINOR_PGO_VERSION {
-		return false
-	}
 
 	// If none of the above is true, the upgrade can continue
-	return true
+	return minor >= MINIMUM_MINOR_PGO_VERSION
 }
 
 // upgradeTagValid compares and validates the PostgreSQL version values stored
