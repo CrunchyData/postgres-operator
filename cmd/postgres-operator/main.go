@@ -35,7 +35,7 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+	cruntime "sigs.k8s.io/controller-runtime"
 
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -74,7 +74,8 @@ func main() {
 	initLogging()
 
 	// create a context that will be used to stop all controllers on a SIGTERM or SIGINT
-	ctx := signals.SetupSignalHandler()
+	ctx := cruntime.SetupSignalHandler()
+	cruntime.SetLogger(logging.FromContext(ctx))
 
 	// determines whether or not controllers for the 'pgcluster' custom resource will be enabled
 	var disablePGCluster bool

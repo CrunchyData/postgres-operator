@@ -46,7 +46,7 @@ func (r *Reconciler) Reconcile(
 	ctx context.Context, request reconcile.Request) (reconcile.Result, error,
 ) {
 	ctx, span := r.Tracer.Start(ctx, "Reconcile")
-	log := logging.FromContext(ctx).WithValues("postgrescluster", request.NamespacedName)
+	log := logging.FromContext(ctx)
 	defer span.End()
 
 	// get the postgrescluster from the cache
