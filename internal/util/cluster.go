@@ -17,6 +17,7 @@ package util
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -262,6 +263,7 @@ func CreateRMDataTask(clientset kubeapi.Interface, cluster *crv1.Pgcluster, repl
 				config.LABEL_PG_CLUSTER:     cluster.Name,
 				config.LABEL_REPLICA_NAME:   replicaName,
 				config.LABEL_PGHA_SCOPE:     cluster.ObjectMeta.GetLabels()[config.LABEL_PGHA_SCOPE],
+				config.LABEL_RM_TOLERATIONS: GetTolerations(cluster.Spec.Tolerations),
 			},
 			TaskType: crv1.PgtaskDeleteData,
 		},
@@ -377,6 +379,25 @@ func GetS3CredsFromBackrestRepoSecret(clientset kubernetes.Interface, namespace,
 	s3Secret.AWSS3KeySecret = string(secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret])
 
 	return s3Secret, nil
+}
+
+// GetTolerations returns any tolerations that may be defined in a tolerations
+// in JSON format. Otherwise, it returns an empty string
+func GetTolerations(tolerations []v1.Toleration) string {
+	// if no tolerations, exit early
+	if len(tolerations) == 0 {
+		return ""
+	}
+
+	// turn into a JSON string
+	s, err := json.MarshalIndent(tolerations, "", "  ")
+
+	if err != nil {
+		log.Errorf("%s: returning empty string", err.Error())
+		return ""
+	}
+
+	return string(s)
 }
 
 // SetPostgreSQLPassword updates the password for a PostgreSQL role in the

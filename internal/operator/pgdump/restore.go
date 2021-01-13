@@ -51,6 +51,7 @@ type restorejobTemplateFields struct {
 	CCPImageTag         string
 	PgPort              string
 	NodeSelector        string
+	Tolerations         string
 }
 
 // Restore ...
@@ -106,6 +107,7 @@ func Restore(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 		CCPImagePrefix:      util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
 		CCPImageTag:         operator.Pgo.Cluster.CCPImageTag,
 		NodeSelector:        operator.GetNodeAffinity(nodeAffinity),
+		Tolerations:         util.GetTolerations(cluster.Spec.Tolerations),
 	}
 
 	var doc2 bytes.Buffer

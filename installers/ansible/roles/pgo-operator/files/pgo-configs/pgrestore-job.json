@@ -31,6 +31,9 @@
                 ],
                 "securityContext": {{.SecurityContext}},
                 "serviceAccountName": "pgo-default",
+                {{ if .Tolerations }}
+                "tolerations": {{ .Tolerations }},
+                {{ end }}
                 "containers": [
                     {
                         "name": "pgrestore",

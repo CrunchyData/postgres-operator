@@ -29,6 +29,9 @@
                 ],
                 "securityContext": {{.SecurityContext}},
                 "serviceAccountName": "pgo-backrest",
+                {{ if .Tolerations }}
+                "tolerations": {{ .Tolerations }},
+                {{ end }}
                 "containers": [{
                     "name": "backrest",
                     "image": "{{.CCPImagePrefix}}/crunchy-pgbackrest:{{.CCPImageTag}}",

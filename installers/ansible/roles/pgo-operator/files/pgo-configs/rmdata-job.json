@@ -21,6 +21,9 @@
             },
             "spec": {
                 "serviceAccountName": "pgo-target",
+                {{ if .Tolerations }}
+                "tolerations": {{ .Tolerations }},
+                {{ end }}
                 "containers": [{
                     "name": "rmdata",
                     "image": "{{.PGOImagePrefix}}/pgo-rmdata:{{.PGOImageTag}}",

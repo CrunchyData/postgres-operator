@@ -61,6 +61,7 @@ type backrestJobTemplateFields struct {
 	PgbackrestS3VerifyTLS         string
 	PgbackrestRestoreVolumes      string
 	PgbackrestRestoreVolumeMounts string
+	Tolerations                   string
 }
 
 var (
@@ -117,6 +118,7 @@ func Backrest(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) 
 		PgbackrestRepo1Type:           repoType,
 		BackrestLocalAndS3Storage:     operator.IsLocalAndS3Storage(cluster),
 		PgbackrestS3VerifyTLS:         task.Spec.Parameters[config.LABEL_BACKREST_S3_VERIFY_TLS],
+		Tolerations:                   util.GetTolerations(cluster.Spec.Tolerations),
 	}
 
 	podCommandOpts, err := getCommandOptsFromPod(clientset, task, namespace)
