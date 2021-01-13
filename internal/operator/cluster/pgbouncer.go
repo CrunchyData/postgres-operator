@@ -164,6 +164,12 @@ func AddPgbouncer(clientset kubernetes.Interface, restconfig *rest.Config, clust
 		if err := setPostgreSQLPassword(clientset, restconfig, pod, cluster.Spec.Port, crv1.PGUserPgBouncer, pgBouncerPassword); err != nil {
 			return err
 		}
+	} else {
+		// if this is a standby cluster, we still need to create a pgBouncer Secret,
+		// but no credentials are available
+		if err := createPgbouncerSecret(clientset, cluster, ""); err != nil {
+			return err
+		}
 	}
 
 	// next, create the pgBouncer config map that will allow pgBouncer to be
