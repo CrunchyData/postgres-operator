@@ -142,6 +142,7 @@ func (p PolicyJob) Run() {
 		PGDatabase:     p.database,
 		PGSQLConfigMap: name,
 		PGUserSecret:   p.secret,
+		Tolerations:    util.GetTolerations(cluster.Spec.Tolerations),
 	}
 
 	var doc bytes.Buffer

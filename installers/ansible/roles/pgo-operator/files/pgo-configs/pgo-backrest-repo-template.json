@@ -46,6 +46,9 @@
             "spec": {
                 "securityContext": {{.SecurityContext}},
                 "serviceAccountName": "pgo-default",
+                {{ if .Tolerations }}
+                "tolerations": {{ .Tolerations }},
+                {{ end }}
                 "containers": [{
                     "name": "database",
                     "image": "{{.CCPImagePrefix}}/crunchy-pgbackrest-repo:{{.CCPImageTag}}",

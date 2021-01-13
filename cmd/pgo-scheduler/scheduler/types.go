@@ -70,4 +70,5 @@ type PolicyTemplate struct {
 	PGDatabase     string
 	PGUserSecret   string
 	PGSQLConfigMap string
+	Tolerations    string
 }

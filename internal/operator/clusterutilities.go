@@ -955,25 +955,6 @@ func GetSyncReplication(specSyncReplication *bool) bool {
 	return Pgo.Cluster.SyncReplication
 }
 
-// GetTolerations returns any tolerations that may be defined in a tolerations
-// in JSON format. Otherwise, it returns an empty string
-func GetTolerations(tolerations []v1.Toleration) string {
-	// if no tolerations, exit early
-	if len(tolerations) == 0 {
-		return ""
-	}
-
-	// turn into a JSON string
-	s, err := json.MarshalIndent(tolerations, "", "  ")
-
-	if err != nil {
-		log.Errorf("%s: returning empty string", err.Error())
-		return ""
-	}
-
-	return string(s)
-}
-
 // OverrideClusterContainerImages is a helper function that provides the
 // appropriate hooks to override any of the container images that might be
 // deployed with a PostgreSQL cluster

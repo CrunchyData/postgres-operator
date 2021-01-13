@@ -65,6 +65,7 @@ type RepoDeploymentTemplateFields struct {
 	PodAntiAffinityLabelValue string
 	Replicas                  int
 	BootstrapCluster          string
+	Tolerations               string
 }
 
 type RepoServiceTemplateFields struct {
@@ -250,6 +251,7 @@ func getRepoDeploymentFields(clientset kubernetes.Interface, cluster *crv1.Pgclu
 		PodAntiAffinityLabelName: config.LABEL_POD_ANTI_AFFINITY,
 		PodAntiAffinityLabelValue: string(operator.GetPodAntiAffinityType(cluster,
 			crv1.PodAntiAffinityDeploymentPgBackRest, cluster.Spec.PodAntiAffinity.PgBackRest)),
+		Tolerations: util.GetTolerations(cluster.Spec.Tolerations),
 	}
 
 	return &repoFields

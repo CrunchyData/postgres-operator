@@ -23,6 +23,9 @@
             "spec": {
                 "securityContext": {{.SecurityContext}},
                 "serviceAccountName": "pgo-pg",
+                {{ if .Tolerations }}
+                "tolerations": {{ .Tolerations }},
+                {{ end }}
                 "containers": [{
                     "name": "database",
                     "image": "{{.CCPImagePrefix}}/{{.CCPImage}}:{{.CCPImageTag}}",

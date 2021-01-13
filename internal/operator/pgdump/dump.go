@@ -53,6 +53,7 @@ type pgDumpJobTemplateFields struct {
 	PgDumpFilename   string
 	PgDumpAll        string
 	PgDumpPVC        string
+	Tolerations      string
 }
 
 // Dump ...
@@ -118,6 +119,7 @@ func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 		PgDumpOpts:       task.Spec.Parameters[config.LABEL_PGDUMP_OPTS],
 		PgDumpAll:        task.Spec.Parameters[config.LABEL_PGDUMP_ALL],
 		PgDumpPVC:        pvcName,
+		Tolerations:      util.GetTolerations(cluster.Spec.Tolerations),
 	}
 
 	var doc2 bytes.Buffer

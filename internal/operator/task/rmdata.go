@@ -47,6 +47,7 @@ type rmdatajobTemplateFields struct {
 	RemoveBackup     string
 	IsBackup         string
 	IsReplica        string
+	Tolerations      string
 }
 
 // RemoveData ...
@@ -98,6 +99,7 @@ func RemoveData(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask
 		PGOImagePrefix:   util.GetValueOrDefault(task.Spec.Parameters[config.LABEL_IMAGE_PREFIX], operator.Pgo.Pgo.PGOImagePrefix),
 		PGOImageTag:      operator.Pgo.Pgo.PGOImageTag,
 		SecurityContext:  operator.GetPodSecurityContext(task.Spec.StorageSpec.GetSupplementalGroups()),
+		Tolerations:      task.Spec.Parameters[config.LABEL_RM_TOLERATIONS],
 	}
 
 	log.Debugf("creating rmdata job %s for cluster %s ", jobName, task.Spec.Name)

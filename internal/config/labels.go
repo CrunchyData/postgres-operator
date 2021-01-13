@@ -60,6 +60,7 @@ const (
 	LABEL_DELETE_BACKUPS      = "delete-backups"
 	LABEL_IS_REPLICA          = "is-replica"
 	LABEL_IS_BACKUP           = "is-backup"
+	LABEL_RM_TOLERATIONS      = "rmdata-tolerations"
 	LABEL_STARTUP             = "startup"
 	LABEL_SHUTDOWN            = "shutdown"
 )
