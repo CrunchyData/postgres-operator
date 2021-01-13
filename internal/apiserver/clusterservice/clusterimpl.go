@@ -489,7 +489,7 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 			switch {
 			default:
 				endpoint.InstanceType = msgs.ClusterTestInstanceTypePrimary
-			case strings.HasSuffix(service.Name, msgs.PodTypeReplica):
+			case (strings.HasSuffix(service.Name, "-"+msgs.PodTypeReplica) && strings.Count(service.Name, "-"+msgs.PodTypeReplica) == 1):
 				endpoint.InstanceType = msgs.ClusterTestInstanceTypeReplica
 			case service.Pgbouncer:
 				endpoint.InstanceType = msgs.ClusterTestInstanceTypePGBouncer
