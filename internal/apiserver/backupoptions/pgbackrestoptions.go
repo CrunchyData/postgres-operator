@@ -25,8 +25,6 @@ var pgBackRestOptsDenyList = []string{
 	"--config",
 	"--config-include-path",
 	"--config-path",
-	"--link-all",
-	"--link-map",
 	"--lock-path",
 	"--log-timestamp",
 	"--neutral-umask",
