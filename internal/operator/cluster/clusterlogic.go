@@ -353,28 +353,6 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 	return deploymentFields
 }
 
-// DeleteCluster ...
-func DeleteCluster(clientset kubernetes.Interface, cl *crv1.Pgcluster, namespace string) error {
-	var err error
-	log.Info("deleting Pgcluster object" + " in namespace " + namespace)
-	log.Info("deleting with Name=" + cl.Spec.Name + " in namespace " + namespace)
-
-	// create rmdata job
-	isReplica := false
-	isBackup := false
-	removeData := true
-	removeBackup := false
-	err = CreateRmdataJob(clientset, cl, namespace, removeData, removeBackup, isReplica, isBackup)
-	if err != nil {
-		log.Error(err)
-		return err
-	} else {
-		publishDeleteCluster(namespace, cl.ObjectMeta.Labels[config.LABEL_PGOUSER], cl.Spec.Name)
-	}
-
-	return err
-}
-
 // scaleReplicaCreateMissingService creates a service for cluster replicas if
 // it does not yet exist.
 func scaleReplicaCreateMissingService(clientset kubernetes.Interface, replica *crv1.Pgreplica, cluster *crv1.Pgcluster, namespace string) error {
@@ -592,27 +570,6 @@ func publishScaleError(namespace string, username string, cluster *crv1.Pgcluste
 		},
 		Clustername: cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
 		Replicaname: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
-	}
-
-	err := events.Publish(f)
-	if err != nil {
-		log.Error(err.Error())
-	}
-}
-
-func publishDeleteCluster(namespace, username, clusterName string) {
-	topics := make([]string, 1)
-	topics[0] = events.EventTopicCluster
-
-	f := events.EventDeleteClusterFormat{
-		EventHeader: events.EventHeader{
-			Namespace: namespace,
-			Username:  username,
-			Topic:     topics,
-			Timestamp: time.Now(),
-			EventType: events.EventDeleteCluster,
-		},
-		Clustername: clusterName,
 	}
 
 	err := events.Publish(f)
