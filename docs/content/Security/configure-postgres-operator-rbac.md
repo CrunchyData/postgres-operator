@@ -72,6 +72,7 @@ The following list shows the current complete list of possible pgo permissions t
 |DfCluster | allow *pgo df*|
 |Label | allow *pgo label*|
 |Reload | allow *pgo reload*|
+|Restart | allow *pgo restart*|
 |Restore | allow *pgo restore*|
 |RestoreDump | allow *pgo restore* for pgdumps|
 |ShowBackup | allow *pgo show backup*|
