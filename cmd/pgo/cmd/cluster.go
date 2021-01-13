@@ -555,8 +555,13 @@ func getTablespaces(tablespaceParams []string) []msgs.ClusterTablespaceDetail {
 //
 // Operator - rule:Effect
 //
-// Exists - key:Effect
-// Equals - key=value:Effect
+// Exists:
+//   - key
+//   - key:Effect
+//
+// Equals:
+//   - key=value
+//   - key=value:Effect
 //
 // If the remove flag is set to true, check for a trailing "-" at the end of
 // each item, as this will be a remove list. Otherwise, only consider
@@ -575,22 +580,32 @@ func getClusterTolerations(tolerationList []string, remove bool) []v1.Toleration
 		ruleEffect := strings.Split(t, ":")
 
 		// if we don't have exactly two items, then error
-		if len(ruleEffect) != 2 {
+		if len(ruleEffect) < 1 || len(ruleEffect) > 2 {
 			fmt.Printf("invalid format for toleration: %q\n", t)
 			os.Exit(1)
 		}
 
 		// for ease of reading
-		rule, effectStr := ruleEffect[0], ruleEffect[1]
+		rule, effectStr := ruleEffect[0], ""
+		// effect string is only set if ruleEffect is of length 2
+		if len(ruleEffect) == 2 {
+			effectStr = ruleEffect[1]
+		}
 
 		// determine if the effect is for removal or not, as we will continue the
-		// loop based on that
-		if (remove && !strings.HasSuffix(effectStr, "-")) || (!remove && strings.HasSuffix(effectStr, "-")) {
+		// loop based on that.
+		//
+		// In other words, skip processing the value if either:
+		// - This *is* removal mode AND the value *does not* have the removal suffix "-"
+		// - This *is not* removal mode AND the value *does* have the removal suffix "-"
+		if (remove && !strings.HasSuffix(effectStr, "-") && !strings.HasSuffix(rule, "-")) ||
+			(!remove && (strings.HasSuffix(effectStr, "-") || strings.HasSuffix(rule, "-"))) {
 			continue
 		}
 
 		// no matter what we can trim any trailing "-" off of the string, and cast
 		// it as a TaintEffect
+		rule = strings.TrimSuffix(rule, "-")
 		effect := v1.TaintEffect(strings.TrimSuffix(effectStr, "-"))
 
 		// see if the effect is a valid effect
@@ -633,7 +648,8 @@ func getClusterTolerations(tolerationList []string, remove bool) []v1.Toleration
 func isValidTaintEffect(taintEffect v1.TaintEffect) bool {
 	return (taintEffect == v1.TaintEffectNoSchedule ||
 		taintEffect == v1.TaintEffectPreferNoSchedule ||
-		taintEffect == v1.TaintEffectNoExecute)
+		taintEffect == v1.TaintEffectNoExecute ||
+		taintEffect == "")
 }
 
 // isTablespaceParam returns true if the parameter in question is acceptable for

@@ -146,6 +146,12 @@ The PostgreSQL Operator supports adding tolerations to PostgreSQL instances usin
 rule:Effect
 ```
 
+or
+
+```
+rule
+```
+
 where a `rule` can represent existence (e.g. `key`) or equality (`key=value`) and `Effect` is one of `NoSchedule`, `PreferNoSchedule`, or `NoExecute`. For more information on how tolerations work, please refer to the [Kubernetes documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
 
 You can assign multiple tolerations to a PostgreSQL cluster.

@@ -153,6 +153,8 @@ var (
 // Exists - key:Effect
 // Equals - key=value:Effect
 //
+// Effect can be optional.
+//
 // Example:
 //
 // zone=east:NoSchedule,highspeed:NoSchedule
