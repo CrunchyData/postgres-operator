@@ -41,7 +41,6 @@ const (
 	CREATE_CLUSTER_PERM   = "CreateCluster"
 	CREATE_DUMP_PERM      = "CreateDump"
 	CREATE_FAILOVER_PERM  = "CreateFailover"
-	CREATE_INGEST_PERM    = "CreateIngest"
 	CREATE_NAMESPACE_PERM = "CreateNamespace"
 	CREATE_PGADMIN_PERM   = "CreatePgAdmin"
 	CREATE_PGBOUNCER_PERM = "CreatePgbouncer"
@@ -58,7 +57,6 @@ const (
 	// DELETE
 	DELETE_BACKUP_PERM    = "DeleteBackup"
 	DELETE_CLUSTER_PERM   = "DeleteCluster"
-	DELETE_INGEST_PERM    = "DeleteIngest"
 	DELETE_NAMESPACE_PERM = "DeleteNamespace"
 	DELETE_PGADMIN_PERM   = "DeletePgAdmin"
 	DELETE_PGBOUNCER_PERM = "DeletePgbouncer"
@@ -72,7 +70,6 @@ const (
 	SHOW_BACKUP_PERM          = "ShowBackup"
 	SHOW_CLUSTER_PERM         = "ShowCluster"
 	SHOW_CONFIG_PERM          = "ShowConfig"
-	SHOW_INGEST_PERM          = "ShowIngest"
 	SHOW_NAMESPACE_PERM       = "ShowNamespace"
 	SHOW_PGADMIN_PERM         = "ShowPgAdmin"
 	SHOW_PGBOUNCER_PERM       = "ShowPgBouncer"
@@ -117,6 +114,7 @@ func initializePerms() {
 		DF_CLUSTER_PERM:   "yes",
 		LABEL_PERM:        "yes",
 		RELOAD_PERM:       "yes",
+		RESTART_PERM:      "yes",
 		RESTORE_PERM:      "yes",
 		STATUS_PERM:       "yes",
 		TEST_CLUSTER_PERM: "yes",
@@ -127,7 +125,6 @@ func initializePerms() {
 		CREATE_DUMP_PERM:      "yes",
 		CREATE_CLUSTER_PERM:   "yes",
 		CREATE_FAILOVER_PERM:  "yes",
-		CREATE_INGEST_PERM:    "yes",
 		CREATE_NAMESPACE_PERM: "yes",
 		CREATE_PGADMIN_PERM:   "yes",
 		CREATE_PGBOUNCER_PERM: "yes",
@@ -144,7 +141,6 @@ func initializePerms() {
 		// DELETE
 		DELETE_BACKUP_PERM:    "yes",
 		DELETE_CLUSTER_PERM:   "yes",
-		DELETE_INGEST_PERM:    "yes",
 		DELETE_NAMESPACE_PERM: "yes",
 		DELETE_PGADMIN_PERM:   "yes",
 		DELETE_PGBOUNCER_PERM: "yes",
@@ -158,7 +154,6 @@ func initializePerms() {
 		SHOW_BACKUP_PERM:          "yes",
 		SHOW_CLUSTER_PERM:         "yes",
 		SHOW_CONFIG_PERM:          "yes",
-		SHOW_INGEST_PERM:          "yes",
 		SHOW_NAMESPACE_PERM:       "yes",
 		SHOW_PGADMIN_PERM:         "yes",
 		SHOW_PGBOUNCER_PERM:       "yes",
