@@ -79,7 +79,7 @@ ENV HOME="/tmp"
 
 RUN chmod g=u /etc/passwd
 RUN chmod g=u /uid_daemon.sh
-RUN chown -R 2:2 /tmp/.pgo/metrics
+RUN chown -R 2:2 /tmp/.pgo
 
 ENTRYPOINT ["/uid_daemon.sh"]
 
