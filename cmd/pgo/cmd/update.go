@@ -187,6 +187,7 @@ func init() {
 	UpdateUserCmd.Flags().BoolVar(&PasswordValidAlways, "valid-always", false, "Sets a password to never expire based on expiration time. Takes precedence over --valid-days")
 	UpdateUserCmd.Flags().BoolVar(&RotatePassword, "rotate-password", false, "Rotates the user's password with an automatically generated password. The length of the password is determine by either --password-length or the value set on the server, in that order.")
 	UpdateUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	UpdateUserCmd.Flags().BoolVar(&ShowSystemAccounts, "set-system-account-password", false, "Allows for a system account password to be set.")
 }
 
 // UpdateCmd represents the update command
