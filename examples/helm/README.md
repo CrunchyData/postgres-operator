@@ -64,7 +64,7 @@ The following values can also be set:
 - `ha`: Whether or not to deploy a high availability PostgreSQL cluster. Can be either `true` or `false`, defaults to `false`.
 - `imagePrefix`: The prefix of the container images to use for this PostgreSQL cluster. Default to `registry.developers.crunchydata.com/crunchydata`.
 - `image`: The name of the container image to use for the PostgreSQL cluster. Defaults to `crunchy-postgres-ha`.
-- `imageTag`: The container image tag to use. Defaults to `centos8-13.1-4.6.0-beta.2`.
+- `imageTag`: The container image tag to use. Defaults to `centos8-13.1-4.6.0-beta.3`.
 - `memory`: The memory limit for the PostgreSQL cluster. Follows standard Kubernetes formatting.
 - `monitoring`: Whether or not to enable monitoring / metrics collection for this PostgreSQL instance. Can either be `true` or `false`, defaults to `false`.
 

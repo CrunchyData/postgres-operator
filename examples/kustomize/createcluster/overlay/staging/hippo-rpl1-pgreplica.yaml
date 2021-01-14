@@ -20,4 +20,4 @@ spec:
     storagetype: dynamic
     supplementalgroups: ""
   userlabels:
-    pgo-version: 4.6.0-beta.2
+    pgo-version: 4.6.0-beta.3
