@@ -55,7 +55,8 @@ var PasswordLength int
 var PasswordValidAlways bool
 
 // ShowSystemAccounts enables the display of the PostgreSQL user accounts that
-// perform system functions, such as the "postgres" user
+// perform system functions, such as the "postgres" user, and for taking action
+// on these accounts
 var ShowSystemAccounts bool
 
 func createUser(args []string, ns string) {
@@ -366,20 +367,21 @@ func showUser(args []string, ns string) {
 func updateUser(clusterNames []string, namespace string) {
 	// set up the reuqest
 	request := msgs.UpdateUserRequest{
-		AllFlag:             AllFlag,
-		Clusters:            clusterNames,
-		Expired:             Expired,
-		ExpireUser:          ExpireUser,
-		ManagedUser:         ManagedUser,
-		Namespace:           namespace,
-		Password:            Password,
-		PasswordAgeDays:     PasswordAgeDays,
-		PasswordLength:      PasswordLength,
-		PasswordValidAlways: PasswordValidAlways,
-		PasswordType:        PasswordType,
-		RotatePassword:      RotatePassword,
-		Selector:            Selector,
-		Username:            strings.TrimSpace(Username),
+		AllFlag:                  AllFlag,
+		Clusters:                 clusterNames,
+		Expired:                  Expired,
+		ExpireUser:               ExpireUser,
+		ManagedUser:              ManagedUser,
+		Namespace:                namespace,
+		Password:                 Password,
+		PasswordAgeDays:          PasswordAgeDays,
+		PasswordLength:           PasswordLength,
+		PasswordValidAlways:      PasswordValidAlways,
+		PasswordType:             PasswordType,
+		RotatePassword:           RotatePassword,
+		Selector:                 Selector,
+		SetSystemAccountPassword: ShowSystemAccounts,
+		Username:                 strings.TrimSpace(Username),
 	}
 
 	// check to see if EnableLogin or DisableLogin is set. If so, set a value
@@ -391,8 +393,9 @@ func updateUser(clusterNames []string, namespace string) {
 	}
 
 	// check to see if this is a system account if a user name is passed in
-	if request.Username != "" && utiloperator.IsPostgreSQLUserSystemAccount(request.Username) {
-		fmt.Println("Error:", request.Username, "is a system account and cannot be used")
+	if request.Username != "" && utiloperator.IsPostgreSQLUserSystemAccount(request.Username) && !request.SetSystemAccountPassword {
+		fmt.Println("Error:", request.Username, "is a system account and cannot be used. "+
+			"You can override this with the \"--set-system-account-password\" flag.")
 		os.Exit(1)
 	}
 

@@ -129,7 +129,10 @@ type UpdateUserRequest struct {
 	PasswordValidAlways bool
 	RotatePassword      bool
 	Selector            string
-	Username            string
+	// SetSystemAccountPassword allows one to override the password for a
+	// designated system account
+	SetSystemAccountPassword bool
+	Username                 string
 }
 
 // UpdateUserResponse contains the response after an update user request

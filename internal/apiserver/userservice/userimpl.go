@@ -593,9 +593,10 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 
 	// if this involes updating a specific PostgreSQL account, and it is a system
 	// account, return here
-	if request.Username != "" && util.IsPostgreSQLUserSystemAccount(request.Username) {
+	if request.Username != "" && util.IsPostgreSQLUserSystemAccount(request.Username) && !request.SetSystemAccountPassword {
 		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf(errSystemAccountFormat, request.Username)
+		response.Status.Msg = fmt.Sprintf(errSystemAccountFormat, request.Username) +
+			" You can override this with the \"--set-system-account-password\" flag."
 		return response
 	}
 
