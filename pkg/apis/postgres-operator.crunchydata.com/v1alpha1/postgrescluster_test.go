@@ -24,12 +24,13 @@ import (
 )
 
 func TestPostgresClusterDefault(t *testing.T) {
-	var cluster PostgresCluster
-	cluster.Default()
+	t.Run("no instance sets", func(t *testing.T) {
+		var cluster PostgresCluster
+		cluster.Default()
 
-	b, err := yaml.Marshal(cluster)
-	assert.NilError(t, err)
-	assert.DeepEqual(t, string(b), strings.TrimSpace(`
+		b, err := yaml.Marshal(cluster)
+		assert.NilError(t, err)
+		assert.DeepEqual(t, string(b), strings.TrimSpace(`
 metadata:
   creationTimestamp: null
 spec:
@@ -44,7 +45,36 @@ spec:
     port: 8008
   port: 5432
 status: {}
-	`)+"\n")
+		`)+"\n")
+	})
+
+	t.Run("one instance set", func(t *testing.T) {
+		var cluster PostgresCluster
+		cluster.Spec.InstanceSets = []PostgresInstanceSetSpec{{}}
+		cluster.Default()
+
+		b, err := yaml.Marshal(cluster)
+		assert.NilError(t, err)
+		assert.DeepEqual(t, string(b), strings.TrimSpace(`
+metadata:
+  creationTimestamp: null
+spec:
+  archive:
+    pgbackrest:
+      repoHost:
+        resources: {}
+      repoVolume: {}
+  instances:
+  - name: "00"
+    replicas: 1
+    resources: {}
+  patroni:
+    dynamicConfiguration: null
+    port: 8008
+  port: 5432
+status: {}
+		`)+"\n")
+	})
 }
 
 func TestPostgresInstanceSetSpecDefault(t *testing.T) {

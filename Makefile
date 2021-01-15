@@ -210,11 +210,12 @@ pgo-base-docker: pgo-base-build
 #======== Utility =======
 .PHONY: check
 check:
-	PGOROOT=$(PGOROOT) go test ./...
+	PGOROOT=$(PGOROOT) go test -cover ./...
 
+# - KUBEBUILDER_ATTACH_CONTROL_PLANE_OUTPUT=true
 .PHONY: check-envtest
 check-envtest: hack/tools/envtest
-	KUBEBUILDER_ASSETS="$(CURDIR)/$^/bin" go test -count=1 -tags=envtest ./internal/controller/... ./internal/pgbackrest/...
+	KUBEBUILDER_ASSETS="$(CURDIR)/$^/bin" go test -count=1 -cover -tags=envtest ./internal/controller/... ./internal/pgbackrest/...
 
 .PHONY: check-generate
 check-generate: generate-crd generate-deepcopy
