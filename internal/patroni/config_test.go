@@ -64,17 +64,18 @@ func TestClusterConfigMap(t *testing.T) {
 bootstrap:
   dcs: {}
 kubernetes:
-  labels: {}
+  labels:
+    postgres-operator.crunchydata.com/cluster: cluster-name
   namespace: some-namespace
   role_label: postgres-operator.crunchydata.com/role
-  scope_label: postgres-operator.crunchydata.com/cluster
+  scope_label: postgres-operator.crunchydata.com/patroni
   use_endpoints: true
 postgresql:
   authentication:
     replication:
       username: postgres
   create_replica_methods: []
-scope: cluster-name
+scope: cluster-name-ha
 	`)+"\n")
 
 	// No change when called again.
@@ -351,8 +352,31 @@ func TestInstanceEnvVars(t *testing.T) {
 
 	cluster := &v1alpha1.PostgresCluster{}
 	cluster.Default()
-	cluster.Name = "turtle"
+	leaderService := &v1.Service{}
+	leaderService.Spec.Ports = []v1.ServicePort{{Name: "postgres"}}
+	leaderService.Spec.Ports[0].TargetPort.StrVal = "postgres"
+	podService := &v1.Service{}
+	podService.Name = "pod-dns"
 	pod := &v1.PodSpec{}
+
+	t.Run("LeaderService", func(t *testing.T) {
+		// Bad leader service ports are in the error message.
+
+		leaderService := &v1.Service{}
+		assert.ErrorContains(t,
+			instanceEnvVars(cluster, podService, leaderService, pod),
+			"leader service ports: null")
+
+		leaderService.Spec.Ports = make([]v1.ServicePort, 0)
+		assert.ErrorContains(t,
+			instanceEnvVars(cluster, podService, leaderService, pod),
+			"leader service ports: []")
+
+		leaderService.Spec.Ports = make([]v1.ServicePort, 1)
+		assert.ErrorContains(t,
+			instanceEnvVars(cluster, podService, leaderService, pod),
+			"leader service ports: [{")
+	})
 
 	correct := func() cmp.Result {
 		return marshalContains(pod.Containers[0].Env, strings.TrimSpace(`
@@ -368,13 +392,15 @@ func TestInstanceEnvVars(t *testing.T) {
       fieldPath: status.podIP
 - name: PATRONI_KUBERNETES_PORTS
   value: |
-    []
+    - name: postgres
+      port: 5432
+      protocol: TCP
 - name: PATRONI_POSTGRESQL_CONNECT_ADDRESS
-  value: $(PATRONI_NAME).turtle-pods:5432
+  value: $(PATRONI_NAME).pod-dns:5432
 - name: PATRONI_POSTGRESQL_LISTEN
   value: '*:5432'
 - name: PATRONI_RESTAPI_CONNECT_ADDRESS
-  value: $(PATRONI_NAME).turtle-pods:8008
+  value: $(PATRONI_NAME).pod-dns:8008
 - name: PATRONI_RESTAPI_LISTEN
   value: '*:8008'
 - name: PATRONI_CONFIG_FILE
@@ -384,13 +410,12 @@ func TestInstanceEnvVars(t *testing.T) {
 		`)+"\n")()
 	}
 
-	instanceEnvVars(cluster, pod)
-
+	assert.NilError(t, instanceEnvVars(cluster, podService, leaderService, pod))
 	assert.Assert(t, correct)
 
 	// No change when called again.
 	before := pod.DeepCopy()
-	instanceEnvVars(cluster, pod)
+	assert.NilError(t, instanceEnvVars(cluster, podService, leaderService, pod))
 	assert.DeepEqual(t, pod, before)
 
 	t.Run("WithExisting", func(t *testing.T) {
@@ -400,7 +425,7 @@ func TestInstanceEnvVars(t *testing.T) {
 			{Name: "also", Value: "kept"},
 		}
 
-		instanceEnvVars(cluster, pod)
+		assert.NilError(t, instanceEnvVars(cluster, podService, leaderService, pod))
 
 		assert.Assert(t, correct)
 		assert.Assert(t, marshalContains(pod.Containers[0].Env, strings.TrimSpace(`
@@ -415,7 +440,7 @@ func TestInstanceEnvVars(t *testing.T) {
 
 		// No change when already correct.
 		before := pod.DeepCopy()
-		instanceEnvVars(cluster, pod)
+		assert.NilError(t, instanceEnvVars(cluster, podService, leaderService, pod))
 		assert.DeepEqual(t, pod, before)
 	})
 }

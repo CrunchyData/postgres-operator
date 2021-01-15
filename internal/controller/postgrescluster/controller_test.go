@@ -160,6 +160,63 @@ spec: {
 			}))
 		})
 
+		Specify("Cluster Primary Service", func() {
+			cps := &v1.Service{}
+			Expect(suite.Client.Get(context.Background(), client.ObjectKey{
+				Namespace: test.Namespace.Name, Name: "carlos-primary",
+			}, cps)).To(Succeed())
+
+			Expect(cps.Labels[naming.LabelCluster]).To(Equal("carlos"))
+			Expect(cps.Labels[naming.LabelRole]).To(Equal("primary"))
+			Expect(cps.OwnerReferences).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Controller": PointTo(BeTrue()),
+					"Name":       Equal(cluster.Name),
+					"UID":        Equal(cluster.UID),
+				}),
+			))
+			Expect(cps.ManagedFields).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Operation": Equal(metav1.ManagedFieldsOperationApply),
+				}),
+			))
+
+			Expect(cps.Spec.ClusterIP).To(Equal("None"), "headless")
+			Expect(cps.Spec.Selector).To(BeNil(), "we manage endpoints")
+
+			pls := &v1.Service{}
+			Expect(suite.Client.Get(context.Background(), client.ObjectKey{
+				Namespace: test.Namespace.Name, Name: "carlos-ha",
+			}, pls)).To(Succeed())
+
+			cpe := &v1.Endpoints{}
+			Expect(suite.Client.Get(context.Background(), client.ObjectKey{
+				Namespace: test.Namespace.Name, Name: "carlos-primary",
+			}, cpe)).To(Succeed())
+
+			Expect(cpe.Labels[naming.LabelCluster]).To(Equal("carlos"))
+			Expect(cpe.Labels[naming.LabelRole]).To(Equal("primary"))
+			Expect(cpe.OwnerReferences).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Controller": PointTo(BeTrue()),
+					"Name":       Equal(cluster.Name),
+					"UID":        Equal(cluster.UID),
+				}),
+			))
+			Expect(cpe.ManagedFields).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Operation": Equal(metav1.ManagedFieldsOperationApply),
+				}),
+			))
+
+			Expect(cpe.Subsets).To(Equal([]v1.EndpointSubset{{
+				Addresses: []v1.EndpointAddress{{IP: pls.Spec.ClusterIP}},
+				Ports:     []v1.EndpointPort{{Name: "postgres", Port: 5432, Protocol: "TCP"}},
+			}}))
+		})
+
 		Specify("Cluster Status", func() {
 			existing := &v1alpha1.PostgresCluster{}
 			Expect(suite.Client.Get(
@@ -193,34 +250,13 @@ spec: {
 		})
 
 		Specify("Patroni Distributed Configuration", func() {
-			de := &v1.Endpoints{}
-			Expect(suite.Client.Get(context.Background(), client.ObjectKey{
-				Namespace: test.Namespace.Name, Name: "carlos-config",
-			}, de)).To(Succeed())
-
-			Expect(de.Labels[naming.LabelCluster]).To(Equal("carlos"))
-			Expect(de.Labels[naming.LabelRole]).To(Equal("patroni"))
-			Expect(de.OwnerReferences).To(ContainElement(
-				MatchFields(IgnoreExtras, Fields{
-					"Controller": PointTo(BeTrue()),
-					"Name":       Equal(cluster.Name),
-					"UID":        Equal(cluster.UID),
-				}),
-			))
-			Expect(de.ManagedFields).To(ContainElement(
-				MatchFields(IgnoreExtras, Fields{
-					"Manager":   Equal(string(test.Reconciler.Owner)),
-					"Operation": Equal(metav1.ManagedFieldsOperationApply),
-				}),
-			))
-
 			ds := &v1.Service{}
 			Expect(suite.Client.Get(context.Background(), client.ObjectKey{
-				Namespace: test.Namespace.Name, Name: "carlos-config",
+				Namespace: test.Namespace.Name, Name: "carlos-ha-config",
 			}, ds)).To(Succeed())
 
 			Expect(ds.Labels[naming.LabelCluster]).To(Equal("carlos"))
-			Expect(ds.Labels[naming.LabelRole]).To(Equal("patroni"))
+			Expect(ds.Labels[naming.LabelPatroni]).To(Equal("carlos-ha"))
 			Expect(ds.OwnerReferences).To(ContainElement(
 				MatchFields(IgnoreExtras, Fields{
 					"Controller": PointTo(BeTrue()),
@@ -237,6 +273,32 @@ spec: {
 
 			Expect(ds.Spec.ClusterIP).To(Equal("None"), "headless")
 			Expect(ds.Spec.Selector).To(BeNil(), "no endpoints")
+		})
+
+		Specify("Patroni Leader Lease", func() {
+			ds := &v1.Service{}
+			Expect(suite.Client.Get(context.Background(), client.ObjectKey{
+				Namespace: test.Namespace.Name, Name: "carlos-ha",
+			}, ds)).To(Succeed())
+
+			Expect(ds.Labels[naming.LabelCluster]).To(Equal("carlos"))
+			Expect(ds.Labels[naming.LabelPatroni]).To(Equal("carlos-ha"))
+			Expect(ds.OwnerReferences).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Controller": PointTo(BeTrue()),
+					"Name":       Equal(cluster.Name),
+					"UID":        Equal(cluster.UID),
+				}),
+			))
+			Expect(ds.ManagedFields).To(ContainElement(
+				MatchFields(IgnoreExtras, Fields{
+					"Manager":   Equal(string(test.Reconciler.Owner)),
+					"Operation": Equal(metav1.ManagedFieldsOperationApply),
+				}),
+			))
+
+			Expect(ds.Spec.ClusterIP).ToNot(BeZero())
+			Expect(ds.Spec.Selector).To(BeNil(), "patroni manages endpoints")
 		})
 	})
 

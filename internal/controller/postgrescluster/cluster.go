@@ -20,57 +20,12 @@ import (
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
-
-// +kubebuilder:rbac:resources=services,verbs=get;create;update
-
-// reconcileClusterService writes the Service that points to the PostgreSQL
-// instance that is leader.
-// TODO(cbandy): see if it's possible to reduce the influence Patroni has here.
-func (r *Reconciler) reconcileClusterService(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
-) (*v1.Service, error) {
-	log := logging.FromContext(ctx)
-
-	// TODO(cbandy): Use server-side apply instead.
-	cs := &v1.Service{ObjectMeta: naming.ClusterService(cluster)}
-	op, err := controllerutil.CreateOrUpdate(ctx, r.Client, cs, func() (err error) {
-		if cs.Labels == nil {
-			cs.Labels = make(map[string]string)
-		}
-		cs.Labels[naming.LabelCluster] = cluster.Name
-		// TODO(cbandy): Set LabelRole to indicate this points to primary?
-
-		cs.Spec.Ports = []v1.ServicePort{{
-			Name:       naming.PortPostgreSQL,
-			Port:       *cluster.Spec.Port,
-			Protocol:   v1.ProtocolTCP,
-			TargetPort: intstr.FromString(naming.PortPostgreSQL),
-		}}
-
-		if err == nil {
-			err = errors.WithStack(r.setControllerReference(cluster, cs))
-		}
-		if err == nil {
-			err = patroni.ClusterService(ctx, cluster, cs)
-		}
-
-		return err
-	})
-	if err == nil {
-		log.V(1).Info("reconciled cluster service", "operation", op)
-	}
-
-	return cs, err
-}
 
 // +kubebuilder:rbac:resources=configmaps,verbs=patch
 
@@ -130,4 +85,86 @@ func (r *Reconciler) reconcileClusterPodService(
 	}
 
 	return clusterPodService, err
+}
+
+// +kubebuilder:rbac:resources=endpoints;services,verbs=patch
+
+// reconcileClusterPrimaryService writes the Service and Endpoints that resolve
+// to the PostgreSQL primary instance.
+func (r *Reconciler) reconcileClusterPrimaryService(
+	ctx context.Context, cluster *v1alpha1.PostgresCluster, leader *v1.Service,
+) error {
+	clusterPrimaryService := &v1.Service{ObjectMeta: naming.ClusterPrimaryService(cluster)}
+	clusterPrimaryService.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Service"))
+
+	err := errors.WithStack(r.setControllerReference(cluster, clusterPrimaryService))
+
+	clusterPrimaryService.Labels = map[string]string{
+		naming.LabelCluster: cluster.Name,
+		naming.LabelRole:    naming.RolePrimary,
+	}
+
+	if err == nil && leader == nil {
+		// TODO(cbandy): We need to build a different kind of Service here.
+		err = errors.New("Patroni DCS other than Kubernetes Endpoints is not implemented")
+	}
+
+	// We want to name and label our primary Service consistently. When Patroni is
+	// using Endpoints for its DCS, however, they and any Service that uses them
+	// must use the same name as the Patroni "scope" which has its own constraints.
+	//
+	// To stay free from those constraints, our primary Service will resolve to
+	// the ClusterIP of the Service created in the reconcilePatroniLeaderLease
+	// method when Patroni is using Endpoints.
+
+	// Allocate no IP address (headless) and manage the Endpoints ourselves.
+	// - https://docs.k8s.io/concepts/services-networking/service/#headless-services
+	// - https://docs.k8s.io/concepts/services-networking/service/#services-without-selectors
+	clusterPrimaryService.Spec.ClusterIP = v1.ClusterIPNone
+	clusterPrimaryService.Spec.Selector = nil
+
+	clusterPrimaryService.Spec.Ports = []v1.ServicePort{{
+		Name:     naming.PortPostgreSQL,
+		Port:     *cluster.Spec.Port,
+		Protocol: v1.ProtocolTCP,
+	}}
+
+	if err == nil {
+		err = errors.WithStack(
+			r.apply(ctx, clusterPrimaryService, client.ForceOwnership))
+	}
+
+	// Endpoints for a Service have the same name as the Service.
+	endpoints := &v1.Endpoints{ObjectMeta: naming.ClusterPrimaryService(cluster)}
+	endpoints.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Endpoints"))
+
+	if err == nil {
+		err = errors.WithStack(r.setControllerReference(cluster, endpoints))
+	}
+
+	endpoints.Labels = map[string]string{
+		naming.LabelCluster: cluster.Name,
+		naming.LabelRole:    naming.RolePrimary,
+	}
+
+	// Resolve to the ClusterIP for which Patroni has configured the Endpoints.
+	endpoints.Subsets = []v1.EndpointSubset{{
+		Addresses: []v1.EndpointAddress{{IP: leader.Spec.ClusterIP}},
+	}}
+
+	// Copy the EndpointPorts from the ServicePorts.
+	for _, sp := range clusterPrimaryService.Spec.Ports {
+		endpoints.Subsets[0].Ports = append(endpoints.Subsets[0].Ports,
+			v1.EndpointPort{
+				Name:     sp.Name,
+				Port:     sp.Port,
+				Protocol: sp.Protocol,
+			})
+	}
+
+	if err == nil {
+		err = errors.WithStack(r.apply(ctx, endpoints, client.ForceOwnership))
+	}
+
+	return err
 }

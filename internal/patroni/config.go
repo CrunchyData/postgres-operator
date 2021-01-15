@@ -16,8 +16,10 @@
 package patroni
 
 import (
+	"encoding/json"
 	"fmt"
 
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
@@ -70,13 +72,15 @@ func clusterYAML(cluster *v1alpha1.PostgresCluster) (string, error) {
 		"kubernetes": map[string]interface{}{
 			"namespace":     cluster.Namespace,
 			"role_label":    naming.LabelRole,
-			"scope_label":   naming.LabelCluster,
+			"scope_label":   naming.LabelPatroni,
 			"use_endpoints": true,
 
 			// In addition to "scope_label" above, Patroni will add the following to
 			// every object it creates. It will also use these as filters when doing
 			// any lookups.
-			"labels": map[string]string{},
+			"labels": map[string]string{
+				naming.LabelCluster: cluster.Name,
+			},
 		},
 
 		"postgresql": map[string]interface{}{
@@ -196,16 +200,33 @@ func instanceConfigMap(
 }
 
 // instanceEnvVars populates pod with Patroni settings for an instance.
-func instanceEnvVars(cluster *v1alpha1.PostgresCluster, pod *v1.PodSpec) {
+func instanceEnvVars(
+	cluster *v1alpha1.PostgresCluster,
+	clusterPodService *v1.Service,
+	leaderService *v1.Service,
+	pod *v1.PodSpec,
+) error {
 	var (
 		patroniPort  = *cluster.Spec.Patroni.Port
 		postgresPort = *cluster.Spec.Port
-		podSubdomain = naming.ClusterPodService(cluster).Name
+		podSubdomain = clusterPodService.Name
 	)
 
-	// TODO(cbandy): This must match the primary Service definition:
-	// ServicePort(name, targetPort, protocol) → EndpointPort(name, port, protocol)
-	ports, _ := yaml.Marshal([]v1.EndpointPort{})
+	// This must match the leader Service definition, but mapping the TargetPort
+	// to ContainerPort is a pain. Check our assumptions and use constants instead.
+	if len(leaderService.Spec.Ports) != 1 ||
+		leaderService.Spec.Ports[0].Name != naming.PortPostgreSQL ||
+		leaderService.Spec.Ports[0].TargetPort.StrVal != naming.PortPostgreSQL {
+		ports, _ := json.Marshal(leaderService.Spec.Ports)
+		return errors.Errorf("unexpected leader service ports: %s", ports)
+	}
+
+	// ServicePort(Name, TargetPort, Protocol) → EndpointPort(Name, ContainerPort, Protocol)
+	ports, _ := yaml.Marshal([]v1.EndpointPort{{
+		Name:     naming.PortPostgreSQL,
+		Port:     postgresPort,
+		Protocol: v1.ProtocolTCP,
+	}})
 
 	expected := []v1.EnvVar{
 		// Set "name" to the v1.Pod's name. Required when using Kubernetes for DCS.
@@ -228,11 +249,9 @@ func instanceEnvVars(cluster *v1alpha1.PostgresCluster, pod *v1.PodSpec) {
 			}},
 		},
 
-		// When using Endpoints for DCS, Patroni needs to replicate the ServicePort
-		// definitions exactly.
-		// The PostgreSQL port can differ between instances so long as the primary
-		// Service uses a named (not numeric) targetPort.
-		// TODO(cbandy): Combine the above statements accurately.
+		// When using Endpoints for DCS, Patroni needs to replicate the leader
+		// ServicePort definitions. Set "kubernetes.ports" to the YAML of this
+		// Pod's equivalent EndpointPort definitions.
 		//
 		// This is connascent with PATRONI_POSTGRESQL_CONNECT_ADDRESS below.
 		// Patroni must be restarted when changing this value.
@@ -290,6 +309,8 @@ func instanceEnvVars(cluster *v1alpha1.PostgresCluster, pod *v1.PodSpec) {
 
 	database := findOrAppendContainer(&pod.Containers, naming.ContainerDatabase)
 	database.Env = mergeEnvVars(database.Env, expected...)
+
+	return nil
 }
 
 // instanceConfigVolumeAndMount populates pod with a volume and mount of

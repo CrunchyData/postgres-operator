@@ -21,6 +21,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
@@ -30,26 +31,6 @@ func ClusterConfigMap(ctx context.Context,
 	outClusterConfigMap *v1.ConfigMap,
 ) error {
 	return clusterConfigMap(inCluster, outClusterConfigMap)
-}
-
-// ClusterService populates the primary Service so that it refers to the Patroni
-// leader.
-func ClusterService(ctx context.Context,
-	inCluster *v1alpha1.PostgresCluster,
-	outClusterService *v1.Service,
-) error {
-	// When using Endpoints for DCS, Patroni manages the destination addresses of
-	// the Service, and the Selector must be empty.
-	// - https://kubernetes.io/docs/concepts/services-networking/service/#services-without-selectors
-	outClusterService.Spec.Selector = nil
-
-	// TODO(cbandy): When using Endpoints for DCS its possible for Patroni to
-	// write the Endpoints *after* the Service has been GC'd. These Endpoints
-	// are orphaned and hang around even after the PostgresCluster is gone.
-	// Consider using a finalizer to ensure the Service is deleted after Patroni
-	// stops running.
-
-	return nil
 }
 
 // InstanceConfigMap populates the shared ConfigMap with fields needed to run Patroni.
@@ -65,11 +46,20 @@ func InstanceConfigMap(ctx context.Context,
 func InstancePod(ctx context.Context,
 	inCluster *v1alpha1.PostgresCluster,
 	inClusterConfigMap *v1.ConfigMap,
-	inClusterService *v1.Service,
+	inClusterPodService *v1.Service,
+	inPatroniLeaderService *v1.Service,
 	inInstanceConfigMap *v1.ConfigMap,
-	outInstancePod *v1.PodSpec,
+	outInstancePod *v1.PodTemplateSpec,
 ) error {
-	instanceEnvVars(inCluster, outInstancePod)
-	instanceConfigVolumeAndMount(inCluster, inClusterConfigMap, inInstanceConfigMap, outInstancePod)
-	return nil
+	if outInstancePod.Labels == nil {
+		outInstancePod.Labels = make(map[string]string)
+	}
+
+	// When using Kubernetes for DCS, Patroni discovers members by listing Pods
+	// that have the "scope" label. See the "kubernetes.scope_label" and
+	// "kubernetes.labels" settings.
+	outInstancePod.Labels[naming.LabelPatroni] = naming.PatroniScope(inCluster)
+
+	instanceConfigVolumeAndMount(inCluster, inClusterConfigMap, inInstanceConfigMap, &outInstancePod.Spec)
+	return instanceEnvVars(inCluster, inClusterPodService, inPatroniLeaderService, &outInstancePod.Spec)
 }

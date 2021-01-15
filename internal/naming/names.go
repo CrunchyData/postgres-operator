@@ -47,16 +47,6 @@ func ClusterConfigMap(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
 	}
 }
 
-// ClusterService returns the ObjectMeta necessary to lookup
-// cluster's primary Service.
-func ClusterService(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
-	return metav1.ObjectMeta{
-		Namespace: cluster.Namespace,
-		Name:      cluster.Name,
-		// TODO(cbandy): add a suffix to Name to not conflict with other clusters.
-	}
-}
-
 // ClusterPodService returns the ObjectMeta necessary to lookup the Service
 // that is responsible for the network identity of Pods.
 func ClusterPodService(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
@@ -67,6 +57,15 @@ func ClusterPodService(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      cluster.Name + "-pods",
+	}
+}
+
+// ClusterPrimaryService returns the ObjectMeta necessary to lookup the Service
+// that exposes the PostgreSQL primary instance.
+func ClusterPrimaryService(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Name + "-primary",
 	}
 }
 
@@ -91,7 +90,7 @@ func InstanceConfigMap(instance metav1.Object) metav1.ObjectMeta {
 
 // PatroniDistributedConfiguration returns the ObjectMeta necessary to lookup
 // the DCS created by Patroni for cluster. This same name is used for both
-// Endpoints and ConfigMaps. See Patroni DCS "config_path".
+// ConfigMap and Endpoints. See Patroni DCS "config_path".
 func PatroniDistributedConfiguration(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
@@ -99,7 +98,37 @@ func PatroniDistributedConfiguration(cluster *v1alpha1.PostgresCluster) metav1.O
 	}
 }
 
+// PatroniLeaderConfigMap returns the ObjectMeta necessary to lookup the
+// ConfigMap created by Patroni for the leader election of cluster.
+// See Patroni DCS "leader_path".
+func PatroniLeaderConfigMap(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      PatroniScope(cluster) + "-leader",
+	}
+}
+
+// PatroniLeaderEndpoints returns the ObjectMeta necessary to lookup the
+// Endpoints created by Patroni for the leader election of cluster.
+// See Patroni DCS "leader_path".
+func PatroniLeaderEndpoints(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      PatroniScope(cluster),
+	}
+}
+
 // PatroniScope returns the "scope" Patroni uses for cluster.
 func PatroniScope(cluster *v1alpha1.PostgresCluster) string {
-	return cluster.Name
+	return cluster.Name + "-ha"
+}
+
+// PatroniTrigger returns the ObjectMeta necessary to lookup the ConfigMap or
+// Endpoints Patroni creates for cluster to initiate a controlled change of the
+// leader. See Patroni DCS "failover_path".
+func PatroniTrigger(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      PatroniScope(cluster) + "-failover",
+	}
 }

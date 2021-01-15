@@ -130,7 +130,7 @@ TODO: document PostgreSQL parameters separately...
 ||
 | PATRONI_KUBERNETES_BYPASS_API_SERVICE | kubernetes.bypass_api_service | No | restart   | either   | both | Resolve the IPs behind the service periodically and use them directly.
 | PATRONI_KUBERNETES_USE_ENDPOINTS      | kubernetes.use_endpoints      | No | immutable | cluster  | both | Elect and store state using Endpoints (instead of ConfigMap).
-| PATRONI_KUBERNETES_PORTS              | kubernetes.ports              | No | restart   | either   | both | When using Endpoints, port details need to match the primary Service.
+| PATRONI_KUBERNETES_PORTS              | kubernetes.ports              | No | restart   | either   | both | When using Endpoints, port details need to match the leader Service.
 | PATRONI_KUBERNETES_LABELS             | kubernetes.labels             | No | immutable | cluster  | both | Used to find objects of the cluster. Patroni writes them on things it creates.
 | PATRONI_KUBERNETES_ROLE_LABEL         | kubernetes.role_label         | No | immutable | cluster  | both | Name of the label containing "master", "replica", etc.
 | PATRONI_KUBERNETES_SCOPE_LABEL        | kubernetes.scope_label        | No | immutable | cluster  | both | Name of the label containing cluster identifier.
@@ -155,8 +155,8 @@ Used only by `patroni`, not `patronictl`.
 | - | retry_timeout | Only | mutable | cluster | Timeout for DCS and PostgreSQL operations in seconds. (default: 10)
 ||
 |||||| https://github.com/zalando/patroni/blob/v2.0.1/docs/replication_modes.rst
-| - | maximum_lag_on_failover | Only | mutable | cluster | Bytes behind which a replica may not become primary. (default: 1MB)
-| - | check_timeline          | Only | mutable | cluster | Whether or not a replica on an older timeline may become primary. (default: false)
+| - | maximum_lag_on_failover | Only | mutable | cluster | Bytes behind which a replica may not become leader. (default: 1MB)
+| - | check_timeline          | Only | mutable | cluster | Whether or not a replica on an older timeline may become leader. (default: false)
 | - | max_timelines_history   | Only | mutable | cluster | (default: 0)
 | - | synchronous_mode        | Only | mutable | cluster | (default: false)
 | - | synchronous_mode_strict | Only | mutable | cluster | (default: false)

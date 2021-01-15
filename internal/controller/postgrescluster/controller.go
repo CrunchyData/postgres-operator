@@ -123,20 +123,23 @@ func (r *Reconciler) Reconcile(
 	before := cluster.DeepCopy()
 
 	var (
-		clusterPodService *v1.Service
-		clusterService    *v1.Service
-		clusterConfigMap  *v1.ConfigMap
-		err               error
+		clusterConfigMap     *v1.ConfigMap
+		clusterPodService    *v1.Service
+		patroniLeaderService *v1.Service
+		err                  error
 	)
 
-	if err == nil {
-		clusterService, err = r.reconcileClusterService(ctx, cluster)
-	}
 	if err == nil {
 		clusterConfigMap, err = r.reconcileClusterConfigMap(ctx, cluster)
 	}
 	if err == nil {
 		clusterPodService, err = r.reconcileClusterPodService(ctx, cluster)
+	}
+	if err == nil {
+		patroniLeaderService, err = r.reconcilePatroniLeaderLease(ctx, cluster)
+	}
+	if err == nil {
+		err = r.reconcileClusterPrimaryService(ctx, cluster, patroniLeaderService)
 	}
 	if err == nil {
 		err = r.reconcilePatroniDistributedConfiguration(ctx, cluster)
@@ -149,7 +152,7 @@ func (r *Reconciler) Reconcile(
 		if err == nil {
 			_, err = r.reconcileInstanceSet(
 				ctx, cluster, &cluster.Spec.InstanceSets[i],
-				clusterConfigMap, clusterPodService, clusterService)
+				clusterConfigMap, clusterPodService, patroniLeaderService)
 		}
 	}
 
@@ -251,6 +254,7 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 			MaxConcurrentReconciles: workerCount,
 		}).
 		Owns(&v1.ConfigMap{}).
+		Owns(&v1.Endpoints{}).
 		Owns(&v1.Service{}).
 		Owns(&appsv1.StatefulSet{}).
 		Watches(&source.Kind{Type: &appsv1.StatefulSet{}},

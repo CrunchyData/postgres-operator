@@ -43,7 +43,7 @@ func (r *Reconciler) reconcileInstanceSet(
 	set *v1alpha1.PostgresInstanceSetSpec,
 	clusterConfigMap *v1.ConfigMap,
 	clusterPodService *v1.Service,
-	clusterService *v1.Service,
+	patroniLeaderService *v1.Service,
 ) (*appsv1.StatefulSetList, error) {
 	log := logging.FromContext(ctx)
 
@@ -80,8 +80,8 @@ func (r *Reconciler) reconcileInstanceSet(
 	for i := range instances.Items {
 		if err == nil {
 			err = r.reconcileInstance(
-				ctx, cluster, set, clusterConfigMap, clusterPodService, clusterService,
-				&instances.Items[i])
+				ctx, cluster, set, clusterConfigMap, clusterPodService,
+				patroniLeaderService, &instances.Items[i])
 		}
 	}
 	if err == nil {
@@ -101,7 +101,7 @@ func (r *Reconciler) reconcileInstance(
 	spec *v1alpha1.PostgresInstanceSetSpec,
 	clusterConfigMap *v1.ConfigMap,
 	clusterPodService *v1.Service,
-	clusterService *v1.Service,
+	patroniLeaderService *v1.Service,
 	instance *appsv1.StatefulSet,
 ) error {
 	log := logging.FromContext(ctx).WithValues("instance", instance.Name)
@@ -124,13 +124,17 @@ func (r *Reconciler) reconcileInstance(
 			naming.LabelInstanceSet: spec.Name,
 			naming.LabelInstance:    instance.Name,
 		}
+		instance.Spec.Selector = &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				naming.LabelCluster:     cluster.Name,
+				naming.LabelInstanceSet: spec.Name,
+				naming.LabelInstance:    instance.Name,
+			},
+		}
 		instance.Spec.Template.Labels = map[string]string{
 			naming.LabelCluster:     cluster.Name,
 			naming.LabelInstanceSet: spec.Name,
 			naming.LabelInstance:    instance.Name,
-		}
-		instance.Spec.Selector = &metav1.LabelSelector{
-			MatchLabels: instance.Spec.Template.Labels,
 		}
 
 		// Don't clutter the namespace with extra ControllerRevisions.
@@ -169,8 +173,8 @@ func (r *Reconciler) reconcileInstance(
 
 		if err == nil {
 			return r.reconcileInstance(
-				ctx, cluster, spec, clusterConfigMap, clusterPodService, clusterService,
-				instance)
+				ctx, cluster, spec, clusterConfigMap, clusterPodService,
+				patroniLeaderService, instance)
 		}
 	}
 
@@ -188,6 +192,13 @@ func (r *Reconciler) reconcileInstance(
 				Image:     "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos7-13.1-4.5.1",
 				Command:   []string{"tail", "-f", "/dev/null"},
 				Resources: spec.Resources,
+				Ports: []v1.ContainerPort{
+					{
+						Name:          naming.PortPostgreSQL,
+						ContainerPort: *cluster.Spec.Port,
+						Protocol:      v1.ProtocolTCP,
+					},
+				},
 			},
 		}
 	}
@@ -201,8 +212,8 @@ func (r *Reconciler) reconcileInstance(
 	}
 	if err == nil {
 		err = patroni.InstancePod(
-			ctx, cluster, clusterConfigMap, clusterService, instanceConfigMap,
-			&instance.Spec.Template.Spec)
+			ctx, cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
+			instanceConfigMap, &instance.Spec.Template)
 	}
 
 	if err == nil {
