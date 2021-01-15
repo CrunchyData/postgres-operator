@@ -139,6 +139,9 @@ func (c *Controller) handleBackrestStanzaCreateUpdate(job *apiv1.Job) error {
 			log.Debugf("job Controller: standby cluster %s will now be set to an initialized "+
 				"status", clusterName)
 			_ = controller.SetClusterInitializedStatus(c.Client, clusterName, namespace)
+
+			// now initialize the creation of any replica
+			_ = controller.InitializeReplicaCreation(c.Client, clusterName, namespace)
 			return nil
 		}
 
