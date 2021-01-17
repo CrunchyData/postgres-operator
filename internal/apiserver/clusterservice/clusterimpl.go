@@ -1867,7 +1867,7 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 	for i := range clusterList.Items {
 		cluster := clusterList.Items[i]
 
-		// set autofail=true or false on each pgcluster CRD
+		// set --enable-autofail / --disable-autofail on each pgcluster CRD
 		// Make the change based on the value of Autofail vis-a-vis UpdateClusterAutofailStatus
 		switch request.Autofail {
 		case msgs.UpdateClusterAutofailEnable:

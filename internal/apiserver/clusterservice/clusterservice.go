@@ -303,8 +303,8 @@ func TestClusterHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateClusterHandler ...
-// pgo update cluster mycluster --autofail=true
-// pgo update cluster --selector=env=research --autofail=false
+// pgo update cluster mycluster --enable-autofail
+// pgo update cluster --selector=env=research --disable-autofail
 // returns a UpdateClusterResponse
 func UpdateClusterHandler(w http.ResponseWriter, r *http.Request) {
 	// swagger:operation POST /clustersupdate clusterservice clustersupdate

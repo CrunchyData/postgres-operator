@@ -195,7 +195,7 @@ to re-enable autofail if you would like your PostgreSQL cluster to be
 highly-available. You can re-enable autofail with this command:
 
 ```shell
-pgo update cluster hacluster --autofail=true
+pgo update cluster hacluster --enable-autofail
 ```
 
 ## Scheduling Backups
