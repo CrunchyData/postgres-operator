@@ -9,8 +9,8 @@ Update a pgouser, pgorole, or cluster
 
 The update command allows you to update a pgouser, pgorole, or cluster. For example:
 
-	pgo update cluster --selector=name=mycluster --autofail=false
-	pgo update cluster --all --autofail=true
+	pgo update cluster --selector=name=mycluster --disable-autofail
+	pgo update cluster --all --enable-autofail
 	pgo update namespace mynamespace
 	pgo update pgbouncer mycluster --rotate-password
 	pgo update pgorole somerole --pgorole-permission="Cat"
