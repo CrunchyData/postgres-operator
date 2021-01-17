@@ -169,8 +169,8 @@ var UpdateCmd = &cobra.Command{
 	Short: "Update a pgouser, pgorole, or cluster",
 	Long: `The update command allows you to update a pgouser, pgorole, or cluster. For example:
 
-	pgo update cluster --selector=name=mycluster --autofail=false
-	pgo update cluster --all --autofail=true
+	pgo update cluster --selector=name=mycluster --disable-autofail
+	pgo update cluster --all --enable-autofail
 	pgo update namespace mynamespace
 	pgo update pgbouncer mycluster --rotate-password
 	pgo update pgorole somerole --pgorole-permission="Cat"
@@ -215,7 +215,7 @@ var UpdateClusterCmd = &cobra.Command{
 	Short: "Update a PostgreSQL cluster",
 	Long: `Update a PostgreSQL cluster. For example:
 
-    pgo update cluster mycluster --autofail=false
+    pgo update cluster mycluster --disable-autofail
     pgo update cluster mycluster myothercluster --disable-autofail
     pgo update cluster --selector=name=mycluster --disable-autofail
     pgo update cluster --all --enable-autofail`,

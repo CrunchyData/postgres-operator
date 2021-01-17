@@ -9,7 +9,7 @@ Update a PostgreSQL cluster
 
 Update a PostgreSQL cluster. For example:
 
-    pgo update cluster mycluster --autofail=false
+    pgo update cluster mycluster --disable-autofail
     pgo update cluster mycluster myothercluster --disable-autofail
     pgo update cluster --selector=name=mycluster --disable-autofail
     pgo update cluster --all --enable-autofail

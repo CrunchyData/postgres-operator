@@ -699,7 +699,7 @@ high availability on the PostgreSQL cluster manually. You can re-enable high
 availability by executing the following command:
 
 ```
-pgo update cluster hacluster --autofail=true
+pgo update cluster hacluster --enable-autofail
 ```
 
 ### Logical Backups (`pg_dump` / `pg_dumpall`)
