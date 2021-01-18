@@ -16,8 +16,13 @@ limitations under the License.
 */
 
 import (
+<<<<<<< HEAD
 	"encoding/json"
 	"errors"
+=======
+	"context"
+	"fmt"
+>>>>>>> 5c56a341d... Update label validation to match Kubernetes rules
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
@@ -54,7 +59,7 @@ func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 	labelsMap, err = validateLabel(request.LabelCmdLabel, ns)
 	if err != nil {
 		resp.Status.Code = msgs.Error
-		resp.Status.Msg = "labels not formatted correctly"
+		resp.Status.Msg = err.Error()
 		return resp
 	}
 
@@ -250,29 +255,57 @@ func PatchPgcluster(newLabels map[string]string, oldCRD crv1.Pgcluster, ns strin
 
 }
 
-func validateLabel(LabelCmdLabel, ns string) (map[string]string, error) {
-	var err error
-	labelMap := make(map[string]string)
-	userValues := strings.Split(LabelCmdLabel, ",")
-	for _, v := range userValues {
+// validateLabel validates if the input is a valid Kubernetes label
+//
+// A label is composed of a key and value.
+//
+// The key can either be a name or have an optional prefix that i
+// terminated by a "/", e.g. "prefix/name"
+//
+// The name must be a valid DNS 1123 value
+// THe prefix must be a valid DNS 1123 subdomain
+//
+// The value can be validated by machinery provided by Kubenretes
+//
+// Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+func validateLabel(LabelCmdLabel string) (map[string]string, error) {
+	labelMap := map[string]string{}
+
+	for _, v := range strings.Split(LabelCmdLabel, ",") {
 		pair := strings.Split(v, "=")
 		if len(pair) != 2 {
-			log.Error("label format incorrect, requires name=value")
-			return labelMap, errors.New("label format incorrect, requires name=value")
+			return labelMap, fmt.Errorf("label format incorrect, requires key=value")
 		}
 
-		errs := validation.IsDNS1035Label(pair[0])
-		if len(errs) > 0 {
-			return labelMap, errors.New("label format incorrect, requires name=value " + errs[0])
+		// first handle the key
+		keyParts := strings.Split(pair[0], "/")
+
+		switch len(keyParts) {
+		default:
+			return labelMap, fmt.Errorf("invalid key for " + v)
+		case 2:
+			if errs := validation.IsDNS1123Subdomain(keyParts[0]); len(errs) > 0 {
+				return labelMap, fmt.Errorf("invalid key for %s: %s", v, strings.Join(errs, ","))
+			}
+
+			if errs := validation.IsDNS1123Label(keyParts[1]); len(errs) > 0 {
+				return labelMap, fmt.Errorf("invalid key for %s: %s", v, strings.Join(errs, ","))
+			}
+		case 1:
+			if errs := validation.IsDNS1123Label(keyParts[0]); len(errs) > 0 {
+				return labelMap, fmt.Errorf("invalid key for %s: %s", v, strings.Join(errs, ","))
+			}
 		}
-		errs = validation.IsDNS1035Label(pair[1])
-		if len(errs) > 0 {
-			return labelMap, errors.New("label format incorrect, requires name=value " + errs[0])
+
+		// handle the value
+		if errs := validation.IsValidLabelValue(pair[1]); len(errs) > 0 {
+			return labelMap, fmt.Errorf("invalid value for %s: %s", v, strings.Join(errs, ","))
 		}
 
 		labelMap[pair[0]] = pair[1]
 	}
-	return labelMap, err
+
+	return labelMap, nil
 }
 
 // DeleteLabel ...
