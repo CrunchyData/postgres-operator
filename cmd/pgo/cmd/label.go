@@ -26,9 +26,7 @@ import (
 )
 
 var (
-	LabelCmdLabel string
-	LabelMap      map[string]string
-	DeleteLabel   bool
+	DeleteLabel bool
 )
 
 var labelCmd = &cobra.Command{
@@ -47,22 +45,25 @@ var labelCmd = &cobra.Command{
 		log.Debug("label called")
 		if len(args) == 0 && Selector == "" {
 			fmt.Println("Error: A selector or list of clusters is required to label a policy.")
-			return
+			os.Exit(1)
 		}
-		if LabelCmdLabel == "" {
+
+		if len(UserLabels) == 0 {
 			fmt.Println("Error: You must specify the label to apply.")
-		} else {
-			labelClusters(args, Namespace)
+			os.Exit(1)
 		}
+
+		labelClusters(args, Namespace)
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(labelCmd)
 
+	labelCmd.Flags().BoolVar(&DryRun, "dry-run", false, "Shows the clusters that the label would be applied to, without labelling them.")
+	labelCmd.Flags().StringSliceVar(&UserLabels, "label", []string{}, "Add labels to apply to the PostgreSQL cluster, "+
+		"e.g. \"key=value\", \"prefix/key=value\". Can specify flag multiple times.")
 	labelCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
-	labelCmd.Flags().StringVarP(&LabelCmdLabel, "label", "", "", "The new label to apply for any selected or specified clusters.")
-	labelCmd.Flags().BoolVarP(&DryRun, "dry-run", "", false, "Shows the clusters that the label would be applied to, without labelling them.")
 }
 
 func labelClusters(clusters []string, ns string) {
@@ -78,7 +79,7 @@ func labelClusters(clusters []string, ns string) {
 	r.Namespace = ns
 	r.Selector = Selector
 	r.DryRun = DryRun
-	r.LabelCmdLabel = LabelCmdLabel
+	r.Labels = getLabels(UserLabels)
 	r.DeleteLabel = DeleteLabel
 	r.ClientVersion = msgs.PGO_VERSION
 
@@ -111,7 +112,7 @@ func deleteLabel(args []string, ns string) {
 	req.Selector = Selector
 	req.Namespace = ns
 	req.Args = args
-	req.LabelCmdLabel = LabelCmdLabel
+	req.Labels = getLabels(UserLabels)
 	req.ClientVersion = msgs.PGO_VERSION
 
 	response, err := api.DeleteLabel(httpclient, &SessionCredentials, &req)

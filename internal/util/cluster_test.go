@@ -16,11 +16,14 @@ limitations under the License.
 */
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 func TestGenerateNodeAffinity(t *testing.T) {
@@ -111,6 +114,47 @@ func TestGenerateNodeAffinity(t *testing.T) {
 
 		if !reflect.DeepEqual(rule.Values, values) {
 			t.Fatalf("values expected %v actual %v", values, rule.Values)
+		}
+	})
+}
+
+func TestValidateLabels(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		inputs := []map[string]string{
+			{"key": "value"},
+			{"example.com/key": "value"},
+			{"key1": "value1", "key2": "value2"},
+		}
+
+		for _, input := range inputs {
+			t.Run(labels.FormatLabels(input), func(*testing.T) {
+				err := ValidateLabels(input)
+
+				if err != nil {
+					t.Fatalf("expected no error, got: %s", err.Error())
+				}
+			})
+		}
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		inputs := []map[string]string{
+			{"key=value": "value"},
+			{"key": "value", "": ""},
+			{"b@d": "value"},
+			{"b@d-prefix/key": "value"},
+			{"really/bad/prefix/key": "value"},
+			{"key": "v\\alue"},
+		}
+
+		for _, input := range inputs {
+			t.Run(labels.FormatLabels(input), func(t *testing.T) {
+				err := ValidateLabels(input)
+
+				if !errors.Is(err, ErrLabelInvalid) {
+					t.Fatalf("expected an ErrLabelInvalid error, got %T: %v", err, err)
+				}
+			})
 		}
 	})
 }

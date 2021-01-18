@@ -39,7 +39,7 @@ var (
 	Password                                                                                     string
 	SecretFrom                                                                                   string
 	PoliciesFlag, PolicyFile                                                                     string
-	UserLabels                                                                                   string
+	UserLabels                                                                                   []string
 	Tablespaces                                                                                  []string
 	ServiceType                                                                                  string
 	ServiceTypePgBouncer                                                                         string
@@ -392,7 +392,8 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&CustomConfig, "custom-config", "", "", "The name of a configMap that holds custom PostgreSQL configuration files used to override defaults.")
 	createClusterCmd.Flags().StringVarP(&Database, "database", "d", "", "If specified, sets the name of the initial database that is created for the user. Defaults to the value set in the PostgreSQL Operator configuration, or if that is not present, the name of the cluster")
 	createClusterCmd.Flags().BoolVarP(&DisableAutofailFlag, "disable-autofail", "", false, "Disables autofail capabitilies in the cluster following cluster initialization.")
-	createClusterCmd.Flags().StringVarP(&UserLabels, "labels", "l", "", "The labels to apply to this cluster.")
+	createClusterCmd.Flags().StringSliceVar(&UserLabels, "label", []string{}, "Add labels to apply to the PostgreSQL cluster, "+
+		"e.g. \"key=value\", \"prefix/key=value\". Can specify flag multiple times.")
 	createClusterCmd.Flags().StringVar(&MemoryRequest, "memory", "", "Set the amount of RAM to request, e.g. "+
 		"1GiB. Overrides the default server value.")
 	createClusterCmd.Flags().StringVar(&MemoryLimit, "memory-limit", "", "Set the amount of RAM to limit, e.g. "+

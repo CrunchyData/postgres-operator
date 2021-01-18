@@ -57,7 +57,7 @@ type CreateClusterRequest struct {
 	PasswordReplication string
 	Password            string
 	SecretFrom          string
-	UserLabels          string
+	UserLabels          map[string]string
 	Tablespaces         []ClusterTablespaceDetail
 	Policies            string
 	CCPImage            string
