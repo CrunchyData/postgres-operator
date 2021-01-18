@@ -27,6 +27,7 @@ import (
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 const (
@@ -44,6 +45,8 @@ var (
 	// ErrDBContainerNotFound is an error that indicates that a "database" container
 	// could not be found in a specific pod
 	ErrDBContainerNotFound = errors.New("\"database\" container not found in pod")
+	// ErrLabelInvalid indicates that a label is invalid
+	ErrLabelInvalid = errors.New("invalid label")
 	// ErrStandbyNotAllowed contains the error message returned when an API call is not
 	// permitted because it involves a cluster that is in standby mode
 	ErrStandbyNotAllowed = errors.New("Action not permitted because standby mode is enabled")
@@ -125,6 +128,60 @@ func ValidateBackrestStorageTypeForCommand(cluster *crv1.Pgcluster, storageTypeS
 	}
 
 	return nil
+}
+
+// ValidateLabel is derived from a legacy method and validates if the input is a
+// valid Kubernetes label.
+//
+// A label is composed of a key and value.
+//
+// The key can either be a name or have an optional prefix that i
+// terminated by a "/", e.g. "prefix/name"
+//
+// The name must be a valid DNS 1123 value
+// THe prefix must be a valid DNS 1123 subdomain
+//
+// The value can be validated by machinery provided by Kubenretes
+//
+// Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+func ValidateLabel(labelStr string) (map[string]string, error) {
+	labelMap := map[string]string{}
+
+	for _, v := range strings.Split(labelStr, ",") {
+		pair := strings.Split(v, "=")
+		if len(pair) != 2 {
+			return labelMap, fmt.Errorf("%w: label format incorrect, requires key=value", ErrLabelInvalid)
+		}
+
+		// first handle the key
+		keyParts := strings.Split(pair[0], "/")
+
+		switch len(keyParts) {
+		default:
+			return labelMap, fmt.Errorf("%w: invalid key for "+v, ErrLabelInvalid)
+		case 2:
+			if errs := validation.IsDNS1123Subdomain(keyParts[0]); len(errs) > 0 {
+				return labelMap, fmt.Errorf("%w: invalid key for %s: %s", ErrLabelInvalid, v, strings.Join(errs, ","))
+			}
+
+			if errs := validation.IsDNS1123Label(keyParts[1]); len(errs) > 0 {
+				return labelMap, fmt.Errorf("%w: invalid key for %s: %s", ErrLabelInvalid, v, strings.Join(errs, ","))
+			}
+		case 1:
+			if errs := validation.IsDNS1123Label(keyParts[0]); len(errs) > 0 {
+				return labelMap, fmt.Errorf("%w: invalid key for %s: %s", ErrLabelInvalid, v, strings.Join(errs, ","))
+			}
+		}
+
+		// handle the value
+		if errs := validation.IsValidLabelValue(pair[1]); len(errs) > 0 {
+			return labelMap, fmt.Errorf("%w: invalid value for %s: %s", ErrLabelInvalid, v, strings.Join(errs, ","))
+		}
+
+		labelMap[pair[0]] = pair[1]
+	}
+
+	return labelMap, nil
 }
 
 // ValidateResourceRequestLimit validates that a Kubernetes Requests/Limit pair

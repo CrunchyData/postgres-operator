@@ -17,8 +17,6 @@ limitations under the License.
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
@@ -29,7 +27,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/validation"
 )
 
 // Label ... 2 forms ...
@@ -50,7 +47,7 @@ func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 		return resp
 	}
 
-	labelsMap, err = validateLabel(request.LabelCmdLabel)
+	labelsMap, err = apiserver.ValidateLabel(request.LabelCmdLabel)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
@@ -181,59 +178,6 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 	}
 }
 
-// validateLabel validates if the input is a valid Kubernetes label
-//
-// A label is composed of a key and value.
-//
-// The key can either be a name or have an optional prefix that i
-// terminated by a "/", e.g. "prefix/name"
-//
-// The name must be a valid DNS 1123 value
-// THe prefix must be a valid DNS 1123 subdomain
-//
-// The value can be validated by machinery provided by Kubenretes
-//
-// Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
-func validateLabel(LabelCmdLabel string) (map[string]string, error) {
-	labelMap := map[string]string{}
-
-	for _, v := range strings.Split(LabelCmdLabel, ",") {
-		pair := strings.Split(v, "=")
-		if len(pair) != 2 {
-			return labelMap, fmt.Errorf("label format incorrect, requires key=value")
-		}
-
-		// first handle the key
-		keyParts := strings.Split(pair[0], "/")
-
-		switch len(keyParts) {
-		default:
-			return labelMap, fmt.Errorf("invalid key for " + v)
-		case 2:
-			if errs := validation.IsDNS1123Subdomain(keyParts[0]); len(errs) > 0 {
-				return labelMap, fmt.Errorf("invalid key for %s: %s", v, strings.Join(errs, ","))
-			}
-
-			if errs := validation.IsDNS1123Label(keyParts[1]); len(errs) > 0 {
-				return labelMap, fmt.Errorf("invalid key for %s: %s", v, strings.Join(errs, ","))
-			}
-		case 1:
-			if errs := validation.IsDNS1123Label(keyParts[0]); len(errs) > 0 {
-				return labelMap, fmt.Errorf("invalid key for %s: %s", v, strings.Join(errs, ","))
-			}
-		}
-
-		// handle the value
-		if errs := validation.IsValidLabelValue(pair[1]); len(errs) > 0 {
-			return labelMap, fmt.Errorf("invalid value for %s: %s", v, strings.Join(errs, ","))
-		}
-
-		labelMap[pair[0]] = pair[1]
-	}
-
-	return labelMap, nil
-}
-
 // DeleteLabel ...
 // pgo delete label  mycluster yourcluster --label=env=prod
 // pgo delete label  --label=env=prod --selector=group=somegroup
@@ -252,7 +196,7 @@ func DeleteLabel(request *msgs.DeleteLabelRequest, ns string) msgs.LabelResponse
 		return resp
 	}
 
-	labelsMap, err = validateLabel(request.LabelCmdLabel)
+	labelsMap, err = apiserver.ValidateLabel(request.LabelCmdLabel)
 	if err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "labels not formatted correctly"
