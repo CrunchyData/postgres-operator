@@ -576,9 +576,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		return resp
 	}
 
-	userLabelsMap, err := apiserver.ValidateLabel(request.UserLabels)
-
-	if err != nil {
+	if err := util.ValidateLabels(request.UserLabels); err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
@@ -753,9 +751,6 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		return resp
 	}
 
-	log.Debug("userLabelsMap")
-	log.Debugf("%v", userLabelsMap)
-
 	if request.StorageConfig != "" && !apiserver.IsValidStorageName(request.StorageConfig) {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = fmt.Sprintf("%q storage config was not found", request.StorageConfig)
@@ -857,7 +852,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 	}
 
 	// Create an instance of our CRD
-	newInstance := getClusterParams(request, clusterName, userLabelsMap, ns)
+	newInstance := getClusterParams(request, clusterName, ns)
 	newInstance.ObjectMeta.Labels[config.LABEL_PGOUSER] = pgouser
 	newInstance.Spec.BackrestStorageTypes = backrestStorageTypes
 
@@ -1066,7 +1061,7 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 	return err
 }
 
-func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabelsMap map[string]string, ns string) *crv1.Pgcluster {
+func getClusterParams(request *msgs.CreateClusterRequest, name string, ns string) *crv1.Pgcluster {
 	spec := crv1.PgclusterSpec{
 		Annotations: crv1.ClusterAnnotations{
 			Backrest:  map[string]string{},
@@ -1363,7 +1358,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, userLabel
 
 	spec.ServiceType = request.ServiceType
 
-	spec.UserLabels = userLabelsMap
+	spec.UserLabels = request.UserLabels
 	spec.UserLabels[config.LABEL_PGO_VERSION] = msgs.PGO_VERSION
 
 	// override any values from config file

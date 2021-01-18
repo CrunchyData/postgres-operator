@@ -31,6 +31,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -105,10 +106,14 @@ const (
 	sqlSetPasswordDefault = `ALTER ROLE %s PASSWORD %s;`
 )
 
-// ErrMissingConfigAnnotation represents an error thrown when the 'config' annotation is found
-// to be missing from the 'config' configMap created to store cluster-wide configuration
-var ErrMissingConfigAnnotation error = errors.New("'config' annotation missing from cluster " +
-	"configutation")
+var (
+	// ErrLabelInvalid indicates that a label is invalid
+	ErrLabelInvalid = errors.New("invalid label")
+	// ErrMissingConfigAnnotation represents an error thrown when the 'config' annotation is found
+	// to be missing from the 'config' configMap created to store cluster-wide configuration
+	ErrMissingConfigAnnotation error = errors.New("'config' annotation missing from cluster " +
+		"configutation")
+)
 
 // CmdStopPostgreSQL is the command used to stop a PostgreSQL instance, which
 // uses the "fast" shutdown mode. This needs a data directory appended to it
@@ -457,6 +462,50 @@ func StopPostgreSQLInstance(clientset kubernetes.Interface, restconfig *rest.Con
 	// if there is error output, assume this is an error and return
 	if stderr != "" {
 		return fmt.Errorf(stderr)
+	}
+
+	return nil
+}
+
+// ValidateLabels validates if the input is a valid Kubernetes label.
+//
+// A label is composed of a key and value.
+//
+// The key can either be a name or have an optional prefix that i
+// terminated by a "/", e.g. "prefix/name"
+//
+// The name must be a valid DNS 1123 value
+// THe prefix must be a valid DNS 1123 subdomain
+//
+// The value can be validated by machinery provided by Kubenretes
+//
+// Ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+func ValidateLabels(labels map[string]string) error {
+	for k, v := range labels {
+		// first handle the key
+		keyParts := strings.Split(k, "/")
+
+		switch len(keyParts) {
+		default:
+			return fmt.Errorf("%w: invalid key for "+v, ErrLabelInvalid)
+		case 2:
+			if errs := validation.IsDNS1123Subdomain(keyParts[0]); len(errs) > 0 {
+				return fmt.Errorf("%w: invalid key %s: %s", ErrLabelInvalid, k, strings.Join(errs, ","))
+			}
+
+			if errs := validation.IsDNS1123Label(keyParts[1]); len(errs) > 0 {
+				return fmt.Errorf("%w: invalid key %s: %s", ErrLabelInvalid, k, strings.Join(errs, ","))
+			}
+		case 1:
+			if errs := validation.IsDNS1123Label(keyParts[0]); len(errs) > 0 {
+				return fmt.Errorf("%w: invalid key %s: %s", ErrLabelInvalid, k, strings.Join(errs, ","))
+			}
+		}
+
+		// handle the value
+		if errs := validation.IsValidLabelValue(v); len(errs) > 0 {
+			return fmt.Errorf("%w: invalid value %s: %s", ErrLabelInvalid, v, strings.Join(errs, ","))
+		}
 	}
 
 	return nil

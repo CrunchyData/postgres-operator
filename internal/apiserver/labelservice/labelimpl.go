@@ -21,9 +21,9 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
-	"github.com/crunchydata/postgres-operator/pkg/events"
 	log "github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -34,8 +34,7 @@ import (
 // pgo label  --label=env=prod --selector=name=mycluster
 func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 	ctx := context.TODO()
-	var err error
-	var labelsMap map[string]string
+
 	resp := msgs.LabelResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -47,8 +46,7 @@ func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 		return resp
 	}
 
-	labelsMap, err = apiserver.ValidateLabel(request.LabelCmdLabel)
-	if err != nil {
+	if err := util.ValidateLabels(request.Labels); err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp
@@ -106,12 +104,12 @@ func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 		resp.Results = append(resp.Results, c.Spec.Name)
 	}
 
-	addLabels(clusterList.Items, request.DryRun, request.LabelCmdLabel, labelsMap, ns, pgouser)
+	addLabels(clusterList.Items, request.DryRun, request.Labels, ns)
 
 	return resp
 }
 
-func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLabels map[string]string, ns, pgouser string) {
+func addLabels(items []crv1.Pgcluster, DryRun bool, newLabels map[string]string, ns string) {
 	ctx := context.TODO()
 	patchBytes, err := kubeapi.NewMergePatch().Add("metadata", "labels")(newLabels).Bytes()
 	if err != nil {
@@ -129,27 +127,6 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 			if err != nil {
 				log.Error(err.Error())
 			}
-
-			// publish event for create label
-			topics := make([]string, 1)
-			topics[0] = events.EventTopicCluster
-
-			f := events.EventCreateLabelFormat{
-				EventHeader: events.EventHeader{
-					Namespace: ns,
-					Username:  pgouser,
-					Topic:     topics,
-					EventType: events.EventCreateLabel,
-				},
-				Clustername: items[i].Spec.Name,
-				Label:       LabelCmdLabel,
-			}
-
-			err = events.Publish(f)
-			if err != nil {
-				log.Error(err.Error())
-			}
-
 		}
 	}
 
@@ -183,8 +160,7 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, LabelCmdLabel string, newLab
 // pgo delete label  --label=env=prod --selector=group=somegroup
 func DeleteLabel(request *msgs.DeleteLabelRequest, ns string) msgs.LabelResponse {
 	ctx := context.TODO()
-	var err error
-	var labelsMap map[string]string
+
 	resp := msgs.LabelResponse{}
 	resp.Status.Code = msgs.Ok
 	resp.Status.Msg = ""
@@ -196,8 +172,7 @@ func DeleteLabel(request *msgs.DeleteLabelRequest, ns string) msgs.LabelResponse
 		return resp
 	}
 
-	labelsMap, err = apiserver.ValidateLabel(request.LabelCmdLabel)
-	if err != nil {
+	if err := util.ValidateLabels(request.Labels); err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = "labels not formatted correctly"
 		return resp
@@ -253,8 +228,7 @@ func DeleteLabel(request *msgs.DeleteLabelRequest, ns string) msgs.LabelResponse
 		resp.Results = append(resp.Results, "deleting label from "+c.Spec.Name)
 	}
 
-	err = deleteLabels(clusterList.Items, labelsMap, ns)
-	if err != nil {
+	if err := deleteLabels(clusterList.Items, request.Labels, ns); err != nil {
 		resp.Status.Code = msgs.Error
 		resp.Status.Msg = err.Error()
 		return resp

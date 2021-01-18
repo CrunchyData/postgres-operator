@@ -16,9 +16,6 @@ limitations under the License.
 */
 
 import (
-	"errors"
-	"fmt"
-	"strings"
 	"testing"
 
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
@@ -163,66 +160,6 @@ func TestValidateBackrestStorageTypeForCommand(t *testing.T) {
 
 		if err == nil {
 			t.Fatalf("expected error")
-		}
-	})
-}
-
-func TestValidateLabel(t *testing.T) {
-	t.Run("valid", func(t *testing.T) {
-		inputs := []map[string]string{
-			map[string]string{"key": "value"},
-			map[string]string{"example.com/key": "value"},
-			map[string]string{"key1": "value1", "key2": "value2"},
-		}
-
-		for _, input := range inputs {
-			labelStr := ""
-
-			for k, v := range input {
-				labelStr += fmt.Sprintf("%s=%s,", k, v)
-			}
-
-			labelStr = strings.Trim(labelStr, ",")
-
-			t.Run(labelStr, func(*testing.T) {
-				labels, err := ValidateLabel(labelStr)
-
-				if err != nil {
-					t.Fatalf("expected no error, got: %s", err.Error())
-				}
-
-				for k := range labels {
-					if v, ok := input[k]; !(ok || v == labels[k]) {
-						t.Fatalf("label values do not matched (%s vs. %s)", input[k], labels[k])
-					}
-				}
-			})
-		}
-	})
-
-	t.Run("invalid", func(t *testing.T) {
-		inputs := []string{
-			"key",
-			"key=value=value",
-			"key=value,",
-			"b@d=value",
-			"b@d-prefix/key=value",
-			"really/bad/prefix/key=value",
-			"key=v\\alue",
-		}
-
-		for _, input := range inputs {
-			t.Run(input, func(t *testing.T) {
-				_, err := ValidateLabel(input)
-
-				if err == nil {
-					t.Fatalf("expected an invalid input error.")
-				}
-
-				if !errors.Is(err, ErrLabelInvalid) {
-					t.Fatalf("expected an ErrLabelInvalid error.")
-				}
-			})
 		}
 	})
 }

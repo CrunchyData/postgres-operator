@@ -170,8 +170,9 @@ func init() {
 	deleteCmd.AddCommand(deleteLabelCmd)
 	// pgo delete label --label
 	// the label to be deleted
-	deleteLabelCmd.Flags().StringVar(&LabelCmdLabel, "label", "",
-		"The label to delete for any selected or specified clusters.")
+	deleteLabelCmd.Flags().StringSliceVar(&UserLabels, "label", []string{}, "Delete "+
+		"labels to apply to the PostgreSQL cluster, "+"e.g. \"key=value\", \"prefix/key=value\". "+
+		"Can specify flag multiple times.")
 	// "pgo delete label --selector"
 	// "pgo delete label -s"
 	// the selector flag that filters which clusters to delete the cluster

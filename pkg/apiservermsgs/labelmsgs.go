@@ -21,7 +21,7 @@ type LabelRequest struct {
 	Selector      string
 	Namespace     string
 	Args          []string
-	LabelCmdLabel string
+	Labels        map[string]string
 	DryRun        bool
 	DeleteLabel   bool
 	ClientVersion string
@@ -33,7 +33,7 @@ type DeleteLabelRequest struct {
 	Selector      string
 	Namespace     string
 	Args          []string
-	LabelCmdLabel string
+	Labels        map[string]string
 	ClientVersion string
 }
 

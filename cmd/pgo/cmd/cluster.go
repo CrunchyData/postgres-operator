@@ -267,7 +267,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.PasswordReplication = PasswordReplication
 	r.Password = Password
 	r.SecretFrom = SecretFrom
-	r.UserLabels = UserLabels
+	r.UserLabels = getLabels(UserLabels)
 	r.Policies = PoliciesFlag
 	r.CCPImageTag = CCPImageTag
 	r.CCPImage = CCPImage

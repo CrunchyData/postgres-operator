@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 
+	operatorutil "github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 )
 
@@ -83,6 +85,33 @@ func getHeaderLength(value interface{}, fieldName string) int {
 	r := reflect.ValueOf(value)
 	field := reflect.Indirect(r).FieldByName(fieldName)
 	return len(field.String())
+}
+
+// getLabels determines if the provided labels are in the correct format,
+// and if so, will return them in the appropriate map.
+//
+// If not, we will abort.
+func getLabels(labels []string) map[string]string {
+	clusterLabels := map[string]string{}
+
+	for _, label := range labels {
+		parts := strings.Split(label, "=")
+
+		if len(parts) != 2 {
+			fmt.Printf("invalid label: found %q, should be \"key=value\"\n", label)
+			os.Exit(1)
+		}
+
+		clusterLabels[parts[0]] = parts[1]
+	}
+
+	// perform a validation that can save us a round trip to the server
+	if err := operatorutil.ValidateLabels(clusterLabels); err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	return clusterLabels
 }
 
 // getMaxLength returns the maxLength of the strings of a particular value in
