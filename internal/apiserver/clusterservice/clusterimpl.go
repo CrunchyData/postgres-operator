@@ -576,18 +576,12 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		return resp
 	}
 
-	userLabelsMap := make(map[string]string)
-	if request.UserLabels != "" {
-		labels := strings.Split(request.UserLabels, ",")
-		for _, v := range labels {
-			p := strings.Split(v, "=")
-			if len(p) < 2 {
-				resp.Status.Code = msgs.Error
-				resp.Status.Msg = "invalid labels format"
-				return resp
-			}
-			userLabelsMap[p[0]] = p[1]
-		}
+	userLabelsMap, err := apiserver.ValidateLabel(request.UserLabels)
+
+	if err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
 	}
 
 	// validate any parameters provided to bootstrap the cluster from an existing data source
