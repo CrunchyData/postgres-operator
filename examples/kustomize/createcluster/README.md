@@ -44,13 +44,13 @@ pgo show cluster hippo -n pgo
 ```
 You will see something like this if successful:
 ```
-cluster : hippo (crunchy-postgres-ha:centos8-13.1-4.6.0-beta.3)
+cluster : hippo (crunchy-postgres-ha:centos8-13.1-4.6.0-rc.1)
 	pod : hippo-8fb6bd96-j87wq (Running) on gke-xxxx-default-pool-38e946bd-257w (1/1) (primary)
 		pvc: hippo (1Gi)
 	deployment : hippo
 	deployment : hippo-backrest-shared-repo
 	service : hippo - ClusterIP (10.0.56.86) - Ports (2022/TCP, 5432/TCP)
-	labels : pgo-version=4.6.0-beta.3 name=hippo crunchy-pgha-scope=hippo deployment-name=hippo pg-cluster=hippo pgouser=admin vendor=crunchydata
+	labels : pgo-version=4.6.0-rc.1 name=hippo crunchy-pgha-scope=hippo deployment-name=hippo pg-cluster=hippo pgouser=admin vendor=crunchydata
 ```
 Feel free to run other pgo cli commands on the hippo cluster
 
@@ -79,7 +79,7 @@ pgo show cluster dev-hippo -n pgo
 ```
 You will see something like this if successful:
 ```
-cluster : dev-hippo (crunchy-postgres-ha:centos8-13.1-4.6.0-beta.3)
+cluster : dev-hippo (crunchy-postgres-ha:centos8-13.1-4.6.0-rc.1)
 	pod : dev-hippo-588d4cb746-bwrxb (Running) on gke-xxxx-default-pool-95cba91c-0ppp (1/1) (primary)
 		pvc: dev-hippo (1Gi)
 	deployment : dev-hippo
@@ -87,7 +87,7 @@ cluster : dev-hippo (crunchy-postgres-ha:centos8-13.1-4.6.0-beta.3)
 	deployment : dev-hippo-pgbouncer
 	service : dev-hippo - ClusterIP (10.0.62.87) - Ports (2022/TCP, 5432/TCP)
 	service : dev-hippo-pgbouncer - ClusterIP (10.0.48.120) - Ports (5432/TCP)
-	labels : crunchy-pgha-scope=dev-hippo name=dev-hippo pg-cluster=dev-hippo vendor=crunchydata deployment-name=dev-hippo environment=development pgo-version=4.6.0-beta.3 pgouser=admin
+	labels : crunchy-pgha-scope=dev-hippo name=dev-hippo pg-cluster=dev-hippo vendor=crunchydata deployment-name=dev-hippo environment=development pgo-version=4.6.0-rc.1 pgouser=admin
 ```
 #### staging
 The staging overlay will deploy a crunchy postgreSQL cluster with 2 replica's with annotations added
@@ -113,7 +113,7 @@ pgo show cluster staging-hippo -n pgo
 ```
 You will see something like this if successful, (Notice one of the replicas is a different size):
 ```
-cluster : staging-hippo (crunchy-postgres-ha:centos8-13.1-4.6.0-beta.3)
+cluster : staging-hippo (crunchy-postgres-ha:centos8-13.1-4.6.0-rc.1)
 	pod : staging-hippo-85cf6dcb65-9h748 (Running) on gke-xxxx-default-pool-95cba91c-0ppp (1/1) (primary)
 		pvc: staging-hippo (1Gi)
 	pod : staging-hippo-lnxw-cf47d8c8b-6r4wn (Running) on gke-xxxx-default-pool-21b7282d-rqkj (1/1) (replica)
@@ -128,7 +128,7 @@ cluster : staging-hippo (crunchy-postgres-ha:centos8-13.1-4.6.0-beta.3)
 	service : staging-hippo-replica - ClusterIP (10.0.56.57) - Ports (2022/TCP, 5432/TCP)
 	pgreplica : staging-hippo-lnxw
 	pgreplica : staging-hippo-rpl1
-	labels : deployment-name=staging-hippo environment=staging name=staging-hippo crunchy-pgha-scope=staging-hippo pg-cluster=staging-hippo pgo-version=4.6.0-beta.3 pgouser=admin vendor=crunchydata
+	labels : deployment-name=staging-hippo environment=staging name=staging-hippo crunchy-pgha-scope=staging-hippo pg-cluster=staging-hippo pgo-version=4.6.0-rc.1 pgouser=admin vendor=crunchydata
 ```
 
 #### production
@@ -154,7 +154,7 @@ pgo show cluster prod-hippo -n pgo
 ```
 You will see something like this if successful, (Notice one of the replicas is a different size):
 ```
-cluster : prod-hippo (crunchy-postgres-ha:centos8-13.1-4.6.0-beta.3)
+cluster : prod-hippo (crunchy-postgres-ha:centos8-13.1-4.6.0-rc.1)
 	pod : prod-hippo-5d6dd46497-rr67c (Running) on gke-xxxx-default-pool-21b7282d-rqkj (1/1) (primary)
 		pvc: prod-hippo (1Gi)
 	pod : prod-hippo-flty-84d97c8769-2pzbh (Running) on gke-xxxx-default-pool-95cba91c-0ppp (1/1) (replica)
@@ -165,7 +165,7 @@ cluster : prod-hippo (crunchy-postgres-ha:centos8-13.1-4.6.0-beta.3)
 	service : prod-hippo - ClusterIP (10.0.56.18) - Ports (2022/TCP, 5432/TCP)
 	service : prod-hippo-replica - ClusterIP (10.0.56.101) - Ports (2022/TCP, 5432/TCP)
 	pgreplica : prod-hippo-flty
-	labels : pgo-version=4.6.0-beta.3 deployment-name=prod-hippo environment=production pg-cluster=prod-hippo crunchy-pgha-scope=prod-hippo name=prod-hippo pgouser=admin vendor=crunchydata
+	labels : pgo-version=4.6.0-rc.1 deployment-name=prod-hippo environment=production pg-cluster=prod-hippo crunchy-pgha-scope=prod-hippo name=prod-hippo pgouser=admin vendor=crunchydata
 ```
 ### Delete the clusters
 To delete the clusters run the following pgo cli commands

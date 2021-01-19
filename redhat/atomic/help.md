@@ -45,4 +45,4 @@ The Red Hat Enterprise Linux version from which the container was built. For exa
 
 `Release=`
 
-The specific release number of the container. For example, Release="4.6.0-beta.3"
+The specific release number of the container. For example, Release="4.6.0-rc.1"
