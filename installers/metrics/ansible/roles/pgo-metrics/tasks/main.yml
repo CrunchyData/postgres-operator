@@ -56,21 +56,44 @@
   block:
     - name: Check for pgmonitor
       stat:
-        path: "{{ metrics_dir }}/pgmonitor"
-      register: pgmonitor_dir
+        path: "/opt/crunchy/pgmonitor"
+      register: pgmonitor_dir_embed
+
+    - name: Set pgMonitor Directory Fact
+      block:
+        - name: Embeded Path
+          set_fact:
+            pgmonitor_dir: "/opt/crunchy/pgmonitor"
+          when: pgmonitor_dir_embed.stat.exists
+
+        - name: Downloaded Path
+          set_fact:
+            pgmonitor_dir: "{{ metrics_dir }}/pgmonitor"
+          when: not pgmonitor_dir_embed.stat.exists
+
+    - name: Ensure pgMonitor Output Directory Exists
+      file:
+        path: "{{ pgmonitor_dir }}"
+        state: directory
+        mode: 0700
+      when: not pgmonitor_dir_embed.stat.exists
 
     - name: Download pgmonitor {{ pgmonitor_version }}
       get_url:
         url: https://github.com/CrunchyData/pgmonitor/archive/{{ pgmonitor_version }}.tar.gz
         dest: "{{ metrics_dir }}"
         mode: "0600"
-      when: not pgmonitor_dir.stat.exists
+      when: not pgmonitor_dir_embed.stat.exists
 
     - name: Extract pgmonitor
       unarchive:
         src: "{{ metrics_dir }}/pgmonitor-{{ pgmonitor_version | replace('v','') }}.tar.gz"
-        dest: "{{ metrics_dir }}/pgmonitor"
-      when: not pgmonitor_dir.stat.exists
+        dest: "{{ metrics_dir }}"
+      when: not pgmonitor_dir_embed.stat.exists
+
+    - name: Copy pgmonitor to correct directory
+      command: "cp -R {{ metrics_dir }}/pgmonitor-{{ pgmonitor_version | replace('v','') }}/. {{ pgmonitor_dir }}"
+      when: not pgmonitor_dir_embed.stat.exists
 
     - name: Create Metrics Image Pull Secret
       shell: >

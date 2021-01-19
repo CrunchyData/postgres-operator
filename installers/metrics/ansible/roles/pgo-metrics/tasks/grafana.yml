@@ -48,7 +48,7 @@
 
     - name: Set pgmonitor Grafana Directory Fact
       set_fact:
-        pgmonitor_grafana_dir: "{{ metrics_dir }}/pgmonitor/grafana"
+        pgmonitor_grafana_dir: "{{ pgmonitor_dir }}/grafana"
 
     - name: Copy Grafana Config to Output Directory
       command: "cp {{ pgmonitor_grafana_dir }}/{{ item }} {{ grafana_output_dir }}"
