@@ -20,6 +20,8 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
 func TestAnyCluster(t *testing.T) {
@@ -51,6 +53,22 @@ func TestClusterInstanceSet(t *testing.T) {
 	}, ","))
 
 	_, err = AsSelector(ClusterInstanceSet("--whoa/yikes", "ok"))
+	assert.ErrorContains(t, err, "invalid")
+}
+
+func TestClusterPatronis(t *testing.T) {
+	cluster := &v1alpha1.PostgresCluster{}
+	cluster.Name = "something"
+
+	s, err := AsSelector(ClusterPatronis(cluster))
+	assert.NilError(t, err)
+	assert.DeepEqual(t, s.String(), strings.Join([]string{
+		"postgres-operator.crunchydata.com/cluster=something",
+		"postgres-operator.crunchydata.com/patroni=something-ha",
+	}, ","))
+
+	cluster.Name = "--nope--"
+	_, err = AsSelector(ClusterPatronis(cluster))
 	assert.ErrorContains(t, err, "invalid")
 }
 

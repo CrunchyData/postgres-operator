@@ -110,7 +110,7 @@ func (r *Reconciler) reconcilePatroniDynamicConfiguration(
 	// "bootstrap.dcs" YAML.
 
 	pods := &v1.PodList{}
-	instances, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
+	instances, err := naming.AsSelector(naming.ClusterPatronis(cluster))
 	if err == nil {
 		err = errors.WithStack(
 			r.Client.List(ctx, pods,

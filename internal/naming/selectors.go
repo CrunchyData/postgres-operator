@@ -18,6 +18,8 @@ package naming
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
 // AsSelector is a wrapper around metav1.LabelSelectorAsSelector() which converts
@@ -53,6 +55,16 @@ func ClusterInstanceSet(cluster, set string) metav1.LabelSelector {
 		MatchLabels: map[string]string{
 			LabelCluster:     cluster,
 			LabelInstanceSet: set,
+		},
+	}
+}
+
+// ClusterPatronis selects things labeled for Patroni in cluster.
+func ClusterPatronis(cluster *v1alpha1.PostgresCluster) metav1.LabelSelector {
+	return metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			LabelCluster: cluster.Name,
+			LabelPatroni: PatroniScope(cluster),
 		},
 	}
 }
