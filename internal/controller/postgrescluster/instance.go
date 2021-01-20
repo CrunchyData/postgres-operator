@@ -165,8 +165,7 @@ func (r *Reconciler) reconcileInstance(
 	// to generate its UID then repeat. (The Replicas, Template, and UpdateStrategy
 	// fields are mutable.)
 	if err == nil && existing.ResourceVersion == "" {
-		err = errors.WithStack(
-			r.patch(ctx, instance, client.Apply, client.ForceOwnership))
+		err = errors.WithStack(r.apply(ctx, instance, client.ForceOwnership))
 
 		if err == nil {
 			return r.reconcileInstance(
@@ -207,8 +206,7 @@ func (r *Reconciler) reconcileInstance(
 	}
 
 	if err == nil {
-		err = errors.WithStack(
-			r.patch(ctx, instance, client.Apply, client.ForceOwnership))
+		err = errors.WithStack(r.apply(ctx, instance, client.ForceOwnership))
 	}
 	if err == nil {
 		log.V(1).Info("reconciled instance", "instance", instance.Name)
@@ -244,8 +242,7 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 		err = patroni.InstanceConfigMap(ctx, cluster, instance, instanceConfigMap)
 	}
 	if err == nil {
-		err = errors.WithStack(
-			r.patch(ctx, instanceConfigMap, client.Apply, client.ForceOwnership))
+		err = errors.WithStack(r.apply(ctx, instanceConfigMap, client.ForceOwnership))
 	}
 
 	return instanceConfigMap, err

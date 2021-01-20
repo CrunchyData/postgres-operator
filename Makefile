@@ -267,6 +267,8 @@ generate-deepcopy:
 		object:headerFile='hack/boilerplate.go.txt' \
 		paths='./pkg/apis/postgres-operator.crunchydata.com/...'
 
+# Available versions: curl -s 'https://storage.googleapis.com/kubebuilder-tools/' | grep -o '<Key>[^<]*</Key>'
+# - ENVTEST_K8S_VERSION=1.19.2
 hack/tools/envtest: SHELL = bash
 hack/tools/envtest:
 	source '$(shell go list -f '{{ .Dir }}' -m 'sigs.k8s.io/controller-runtime')/hack/setup-envtest.sh' && fetch_envtest_tools $@

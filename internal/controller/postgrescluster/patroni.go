@@ -46,8 +46,7 @@ func (r *Reconciler) reconcilePatroniDistributedConfiguration(
 	}
 
 	if err == nil {
-		err = errors.WithStack(
-			r.patch(ctx, dcsEndpoints, client.Apply, client.ForceOwnership))
+		err = errors.WithStack(r.apply(ctx, dcsEndpoints, client.ForceOwnership))
 	}
 
 	// When using Endpoints for DCS, Patroni needs a Service to ensure that the
@@ -73,8 +72,7 @@ func (r *Reconciler) reconcilePatroniDistributedConfiguration(
 	dcsService.Spec.Selector = nil
 
 	if err == nil {
-		err = errors.WithStack(
-			r.patch(ctx, dcsService, client.Apply, client.ForceOwnership))
+		err = errors.WithStack(r.apply(ctx, dcsService, client.ForceOwnership))
 	}
 
 	// TODO(cbandy): Investigate "{scope}-failover" endpoints; is it DCS "failover_path"?

@@ -50,7 +50,9 @@ func (r *Reconciler) reconcileClusterService(
 		// TODO(cbandy): Set LabelRole to indicate this points to primary?
 
 		cs.Spec.Ports = []v1.ServicePort{{
+			Name:       naming.PortPostgreSQL,
 			Port:       *cluster.Spec.Port,
+			Protocol:   v1.ProtocolTCP,
 			TargetPort: intstr.FromString(naming.PortPostgreSQL),
 		}}
 
@@ -90,8 +92,7 @@ func (r *Reconciler) reconcileClusterConfigMap(
 		err = patroni.ClusterConfigMap(ctx, cluster, clusterConfigMap)
 	}
 	if err == nil {
-		err = errors.WithStack(
-			r.patch(ctx, clusterConfigMap, client.Apply, client.ForceOwnership))
+		err = errors.WithStack(r.apply(ctx, clusterConfigMap, client.ForceOwnership))
 	}
 
 	return clusterConfigMap, err
@@ -125,8 +126,7 @@ func (r *Reconciler) reconcileClusterPodService(
 	}
 
 	if err == nil {
-		err = errors.WithStack(
-			r.patch(ctx, clusterPodService, client.Apply, client.ForceOwnership))
+		err = errors.WithStack(r.apply(ctx, clusterPodService, client.ForceOwnership))
 	}
 
 	return clusterPodService, err

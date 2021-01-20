@@ -17,18 +17,19 @@ limitations under the License.
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -71,11 +72,11 @@ func (r *Reconciler) Reconcile(
 		"Initializing postgrescluster %s", request.NamespacedName)
 
 	// call business logic to reconcile the postgrescluster
-	cluster := postgresCluster
+	cluster := postgresCluster.DeepCopy()
 	cluster.Default()
 
-	// Prepare a merge patch based on cluster prior to any manipulations.
-	before := client.MergeFrom(cluster.DeepCopy())
+	// Keep a copy of cluster prior to any manipulations.
+	before := cluster.DeepCopy()
 
 	var (
 		clusterPodService *v1.Service
@@ -110,8 +111,11 @@ func (r *Reconciler) Reconcile(
 
 		// NOTE(cbandy): Kubernetes prior to v1.16.10 and v1.17.6 does not track
 		// managed fields on the status subresource: https://issue.k8s.io/88901
-		err = errors.WithStack(
-			r.Client.Status().Patch(ctx, cluster, before, r.Owner))
+		if !equality.Semantic.DeepEqual(before.Status, cluster.Status) {
+			err = errors.WithStack(
+				r.Client.Status().Patch(
+					ctx, cluster, client.MergeFrom(before), r.Owner))
+		}
 	}
 
 	if err == nil {
@@ -122,6 +126,23 @@ func (r *Reconciler) Reconcile(
 	}
 
 	return reconcile.Result{}, err
+}
+
+// apply sends an apply patch to object's endpoint in the Kubernetes API and
+// updates object with any returned content. The fieldManager is set to
+// r.Owner, but can be overridden in options.
+// - https://docs.k8s.io/reference/using-api/server-side-apply/#managers
+func (r *Reconciler) apply(
+	ctx context.Context, object client.Object, options ...client.PatchOption,
+) error {
+	zero := reflect.New(reflect.TypeOf(object).Elem()).Interface()
+	data, err := client.MergeFrom(zero.(client.Object)).Data(object)
+	patch := client.RawPatch(client.Apply.Type(), data)
+
+	if err == nil {
+		err = r.patch(ctx, object, patch, options...)
+	}
+	return err
 }
 
 // patch sends patch to object's endpoint in the Kubernetes API and updates
@@ -149,7 +170,6 @@ func (r *Reconciler) setControllerReference(
 func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 	return builder.ControllerManagedBy(mgr).
 		For(&v1alpha1.PostgresCluster{}).
-		WithEventFilter(predicate.ResourceVersionChangedPredicate{}).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: workerCount,
 		}).
