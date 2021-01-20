@@ -7,7 +7,7 @@ weight: 600
 
 ## PostgreSQL Operator Containers Overview
 
-The PostgreSQL Operator orchestrates a series of PostgreSQL and PostgreSQL related containers containers that enable rapid deployment of PostgreSQL, including administration and monitoring tools in a Kubernetes environment. The PostgreSQL Operator supports PostgreSQL 9.5+ with multiple PostgreSQL cluster deployment strategies and a variety of PostgreSQL related extensions and tools enabling enterprise grade PostgreSQL-as-a-Service.   A full list of the containers supported by the PostgreSQL Operator is provided below.   
+The PostgreSQL Operator orchestrates a series of PostgreSQL and PostgreSQL related containers containers that enable rapid deployment of PostgreSQL, including administration and monitoring tools in a Kubernetes environment. The PostgreSQL Operator supports PostgreSQL 9.5+ with multiple PostgreSQL cluster deployment strategies and a variety of PostgreSQL related extensions and tools enabling enterprise grade PostgreSQL-as-a-Service.   A full list of the containers supported by the PostgreSQL Operator is provided below. You can find specific tags for the containers at [Crunchy download page](https://www.crunchydata.com/developers/download-postgres/containers).   
 
 ### PostgreSQL Server, Tools, and Extensions
 

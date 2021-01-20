@@ -744,7 +744,7 @@ make changes, as described below.
 | backrestStorageTypes | `create` | An optional parameter that takes an array of different repositories types that can be used to store pgBackRest backups. Choices are `posix` and `s3`. If nothing is specified, it defaults to `posix`. (`local`, equivalent to `posix`, is available for backwards compatibility).|
 | ccpimage | `create` | The name of the PostgreSQL container image to use, e.g. `crunchy-postgres-ha` or `crunchy-postgres-ha-gis`. |
 | ccpimageprefix | `create` | If provided, the image prefix (or registry) of the PostgreSQL container image, e.g. `registry.developers.crunchydata.com/crunchydata`. The default is to use the image prefix set in the PostgreSQL Operator configuration. |
-| ccpimagetag | `create` | The tag of the PostgreSQL container image to use, e.g. `{{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}`. |
+| ccpimagetag | `create` | The tag of the PostgreSQL container image to use, e.g. `{{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}`. You can find specific tags for the containers at [Crunchy download page](https://www.crunchydata.com/developers/download-postgres/containers). |
 | clustername | `create` | The name of the PostgreSQL cluster, e.g. `hippo`. This is used to group PostgreSQL instances (primary, replicas) together. |
 | customconfig | `create` | If specified, references a custom ConfigMap to use when bootstrapping a PostgreSQL cluster. For the shape of this file, please see the section on [Custom Configuration]({{< relref "/advanced/custom-configuration.md" >}}) |
 | database | `create` | The name of a database that the PostgreSQL user can log into after the PostgreSQL cluster is created. |
