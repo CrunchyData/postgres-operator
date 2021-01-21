@@ -75,6 +75,46 @@ files that ship with the Crunchy Postgres container, there is no
 requirement to. In this event, continue using the Operator as usual
 and avoid defining a global configMap.
 
+## Create a PostgreSQL Cluster With Custom Configuration
+
+The PostgreSQL Operator allows for a PostgreSQL cluster to be created with a customized configuration. To do this, one must create a ConfigMap with an entry called `postgres-ha.yaml` that contains the custom configuration. The custom configuration follows the [Patorni YAML format](https://access.crunchydata.com/documentation/patroni/latest/settings/). Note that parameters that are placed in the `bootstrap` section are applied once during cluster initialization. Editing these values in a working cluster require following the [Modifying PostgreSQL Cluster Configuration](#modifying-postgresql-cluster-configuration) section.
+
+For example, let's say we want to create a PostgreSQL cluster with `shared_buffers` set to `2GB`, `max_connections` set to `30` and `password_encryption` set to `scram-sha-256`. We would create a configuration file that looks similar to:
+
+```
+---
+bootstrap:
+  dcs:
+    postgresql:
+      parameters:
+        max_connections: 30
+        shared_buffers: 2GB
+        password_encryption: scram-sha-256
+```
+
+Save this configuration in a file called `postgres-ha.yaml`.
+
+Create a [`ConfigMap`](https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-configmap/) like so:
+
+```
+kubectl -n pgo create configmap hippo-custom-config --from-file=postgres-ha.yaml
+```
+
+You can then have you new PostgreSQL cluster use `hippo-custom-config` as part of its cluster initialization by using the `--custom-config` flag of `pgo create cluster`:
+
+```
+pgo create cluster hippo -n pgo --custom-config=hippo-custom-config
+```
+
+After your cluster is initialized, [connect to your cluster]({{< relref "tutorial/connect-cluster.md" >}}) and confirm that your settings have been applied:
+
+```
+SHOW shared_buffers;
+
+ shared_buffers
+----------------
+ 2GB
+```
 
 ## Modifying PostgreSQL Cluster Configuration
 
