@@ -105,7 +105,7 @@ The Crunchy PostgreSQL Operator makes it easy to get your own PostgreSQL-as-a-Se
 [monitoring]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/monitoring/
 [multiple-cluster]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/multi-cluster-kubernetes/
 [pgo-create-cluster]: https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/reference/pgo_create_cluster/
-[pgo-task-tls]: https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/common-tasks/#enable-tls
+[pgo-task-tls]: https://access.crunchydata.com/documentation/postgres-operator/latest/tutorial/tls/
 [provisioning]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/provisioning/
 
 [k8s-anti-affinity]: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity
@@ -167,7 +167,7 @@ Based on your storage settings in your Kubernetes environment, you may be able t
 
 ```shell
 kubectl create namespace pgo
-kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.5.1/installers/kubectl/postgres-operator.yml
+kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.6.0/installers/kubectl/postgres-operator.yml
 ```
 
 Otherwise, we highly recommend following the instructions from our [Quickstart](https://access.crunchydata.com/documentation/postgres-operator/latest/quickstart/).
