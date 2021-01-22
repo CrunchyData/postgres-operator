@@ -39,7 +39,11 @@ spec:
     storageclass: ""
     storagetype: dynamic
     supplementalgroups: ""
-  annotations: {}
+  annotations:
+    global: {}
+    backrest: {}
+    pgBouncer: {}
+    postgres: {}
   ccpimage: crunchy-postgres-ha
   ccpimageprefix: registry.developers.crunchydata.com/crunchydata
   ccpimagetag: centos8-13.1-4.6.0
@@ -50,6 +54,8 @@ spec:
   limits: {}
   name: hippo
   namespace: pgo
+  pgBouncer:
+    resources: {}
   pgDataSource:
     restoreFrom: ""
     restoreOpts: ""
