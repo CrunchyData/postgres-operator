@@ -21,6 +21,7 @@ import (
 	"errors"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
@@ -62,18 +63,20 @@ func InitializeReplicaCreation(clientset pgo.Interface, clusterName,
 		log.Error(err)
 		return err
 	}
-	for i := range pgreplicaList.Items {
-		pgreplica := &pgreplicaList.Items[i]
 
-		if pgreplica.Annotations == nil {
-			pgreplica.Annotations = make(map[string]string)
+	for i := range pgreplicaList.Items {
+		patch, err := kubeapi.NewMergePatch().
+			Add("metadata", "annotations")(map[string]string{
+			config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA: "true",
+		}).Bytes()
+		if err != nil {
+			log.Error(err)
 		}
 
-		pgreplica.Annotations[config.ANNOTATION_PGHA_BOOTSTRAP_REPLICA] = "true"
-
-		if _, err = clientset.CrunchydataV1().Pgreplicas(namespace).Update(ctx, pgreplica, metav1.UpdateOptions{}); err != nil {
+		if _, err := clientset.CrunchydataV1().Pgreplicas(namespace).
+			Patch(ctx, pgreplicaList.Items[i].GetName(), types.MergePatchType, patch,
+				metav1.PatchOptions{}); err != nil {
 			log.Error(err)
-			return err
 		}
 	}
 	return nil
