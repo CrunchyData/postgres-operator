@@ -144,12 +144,18 @@ func (c *Controller) handleBackrestBackupUpdate(job *apiv1.Job) error {
 	if labels[config.LABEL_PGHA_BACKUP_TYPE] == crv1.BackupTypeBootstrap {
 		log.Debugf("jobController onUpdate initial backup complete")
 
-		controller.SetClusterInitializedStatus(c.Client, labels[config.LABEL_PG_CLUSTER],
-			job.ObjectMeta.Namespace)
+		if err := controller.SetClusterInitializedStatus(c.Client, labels[config.LABEL_PG_CLUSTER],
+			job.ObjectMeta.Namespace); err != nil {
+			log.Error(err)
+			return err
+		}
 
-		// now initialize the creation of any replica
-		controller.InitializeReplicaCreation(c.Client, labels[config.LABEL_PG_CLUSTER],
-			job.ObjectMeta.Namespace)
+		// now initialize the creation of any replicas
+		if err := controller.InitializeReplicaCreation(c.Client, labels[config.LABEL_PG_CLUSTER],
+			job.ObjectMeta.Namespace); err != nil {
+			log.Error(err)
+			return err
+		}
 
 	} else if labels[config.LABEL_PGHA_BACKUP_TYPE] == crv1.BackupTypeFailover {
 		err := clusteroperator.RemovePrimaryOnRoleChangeTag(c.Client, c.Client.Config,
@@ -197,10 +203,18 @@ func (c *Controller) handleBackrestStanzaCreateUpdate(job *apiv1.Job) error {
 		if cluster.Spec.Standby {
 			log.Debugf("job Controller: standby cluster %s will now be set to an initialized "+
 				"status", clusterName)
-			controller.SetClusterInitializedStatus(c.Client, clusterName, namespace)
+			if err := controller.SetClusterInitializedStatus(c.Client, clusterName,
+				namespace); err != nil {
+				log.Error(err)
+				return err
+			}
 
 			// now initialize the creation of any replica
-			controller.InitializeReplicaCreation(c.Client, clusterName, namespace)
+			if err := controller.InitializeReplicaCreation(c.Client, clusterName,
+				namespace); err != nil {
+				log.Error(err)
+				return err
+			}
 			return nil
 		}
 

@@ -208,15 +208,21 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 		}
 		backrestoperator.StanzaCreate(namespace, clusterName, c.Client)
 	} else {
-		controller.SetClusterInitializedStatus(c.Client, clusterName, namespace)
-	}
+		if err := controller.SetClusterInitializedStatus(c.Client, clusterName,
+			namespace); err != nil {
+			log.Error(err)
+		}
 
-	// If a standby cluster initialize the creation of any replicas.  Replicas
-	// can be initialized right away, i.e. there is no dependency on
-	// stanza-creation and/or the creation of any backups, since the replicas
-	// will be generated from the pgBackRest repository of an external PostgreSQL
-	// database (which should already exist).
-	controller.InitializeReplicaCreation(c.Client, clusterName, namespace)
+		// If a standby cluster with s3 only initialize the creation of any replicas.  Replicas
+		// can be initialized right away, i.e. there is no dependency on
+		// stanza-creation and/or the creation of any backups, since the replicas
+		// will be generated from the pgBackRest repository of an external PostgreSQL
+		// database (which should already exist).
+		if err := controller.InitializeReplicaCreation(c.Client, clusterName,
+			namespace); err != nil {
+			log.Error(err)
+		}
+	}
 
 	// if this is a pgbouncer enabled cluster, add a pgbouncer
 	// Note: we only warn if we cannot create the pgBouncer, so eecution can
