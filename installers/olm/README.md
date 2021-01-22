@@ -11,3 +11,23 @@ tests. Consult the [technical requirements][hub-contrib] when making changes.
 [olm-csv]: https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/building-your-csv.md
 [OLM]: https://github.com/operator-framework/operator-lifecycle-manager
 [scorecard]: https://sdk.operatorframework.io/docs/scorecard/
+
+## Testing
+
+### Setup
+
+```
+make docker-package docker-verify
+```
+
+```
+pip3 install yq
+```
+
+### Testing
+
+```
+make install-olm # install OLM framework
+make package # build OLM package
+make verify # verify OLM package
+```

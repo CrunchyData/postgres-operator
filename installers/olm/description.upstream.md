@@ -15,6 +15,9 @@ providing the essential features you need to keep your PostgreSQL clusters up an
   Set how long you want your backups retained for. Works great with very large databases!
 - **Monitoring**: Track the health of your PostgreSQL clusters using the open source [pgMonitor][] library.
 - **Clone**: Create new clusters from your existing clusters or backups with a single [`pgo create cluster --restore-from`][pgo-create-cluster] command.
+- **TLS**: Secure communication between your applications and data servers by [enabling TLS for your PostgreSQL servers][pgo-task-tls], including the ability to enforce that all of your connections to use TLS.
+- **Connection Pooling**: Use [pgBouncer][] for connection pooling
+- **Affinity and Tolerations**: Have your PostgreSQL clusters deployed to [Kubernetes Nodes][k8s-nodes] of your preference with [node affinity][high-availability-node-affinity], or designate which nodes Kubernetes can schedule PostgreSQL instances to with Kubneretes [tolerations][high-availability-tolerations].
 - **Full Customizability**: Crunchy PostgreSQL for Kubernetes makes it easy to get your own PostgreSQL-as-a-Service up and running on
   and lets make further enhancements to customize your deployments, including:
     - Selecting different storage classes for your primary, replica, and backup storage
@@ -27,16 +30,21 @@ and much more!
 
 [disaster-recovery]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/
 [high-availability]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/
+[high-availability-node-affinity]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/#node-affinity
+[high-availability-tolerations]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/#tolerations
 [pgo-create-cluster]: https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/reference/pgo_create_cluster/
+[pgo-task-tls]: https://access.crunchydata.com/documentation/postgres-operator/latest/tutorial/tls/
 [provisioning]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/provisioning/
 
 [k8s-anti-affinity]: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#inter-pod-affinity-and-anti-affinity
+[k8s-nodes]: https://kubernetes.io/docs/concepts/architecture/nodes/
 
 [pgBackRest]: https://www.pgbackrest.org
+[pgBouncer]: https://access.crunchydata.com/documentation/postgres-operator/latest/tutorial/pgbouncer/
 [pgMonitor]: https://github.com/CrunchyData/pgmonitor
 
 
-## Before You Begin
+## Pre-Installation
 
 There are a few manual steps that the cluster administrator must perform prior to installing the PostgreSQL Operator.
 At the very least, it must be provided with an initial configuration.
@@ -73,8 +81,142 @@ kubectl -n "$PGO_OPERATOR_NAMESPACE" create secret tls pgo.tls \
 
 Once these resources are in place, the PostgreSQL Operator can be installed into the cluster.
 
+## Installation
 
-## After You Install
+You can now go ahead and install the PostgreSQL Operator from OperatorHub.
+
+## Post-Installation
+
+### Tutorial
+
+For a guide on how to perform many of the daily functions of the PostgreSQL Operator, we recommend that you read the [Postgres Operator tutorial][pgo-tutorial]
+
+[pgo-tutorial]: https://access.crunchydata.com/documentation/postgres-operator/latest/tutorial/create-cluster/
+
+However, the below guide will show you how to create a Postgres cluster from a custom resource or from using the `pgo-client`.
+
+### Create a PostgreSQL Cluster from a Custom Resource
+
+The fundamental workflow for interfacing with a PostgreSQL Operator Custom
+Resource Definition is for creating a PostgreSQL cluster. There are several
+that a PostgreSQL cluster requires to be deployed, including:
+
+- Secrets
+  - Information for setting up a pgBackRest repository
+  - PostgreSQL superuser bootstrap credentials
+  - PostgreSQL replication user bootstrap credentials
+  - PostgresQL standard user bootstrap credentials
+
+Additionally, if you want to add some of the other sidecars, you may need to
+create additional secrets.
+
+The good news is that if you do not provide these objects, the PostgreSQL
+Operator will create them for you to get your Postgres cluster up and running!
+
+The following goes through how to create a PostgreSQL cluster called
+`hippo` by creating a new custom resource.
+
+```
+# this variable is the name of the cluster being created
+export pgo_cluster_name=hippo
+# this variable is the namespace the cluster is being deployed into
+export cluster_namespace=pgo
+# this variable is set to the location of your image repository
+export cluster_image_prefix=registry.developers.crunchydata.com/crunchydata
+
+cat <<-EOF > "${pgo_cluster_name}-pgcluster.yaml"
+apiVersion: crunchydata.com/v1
+kind: Pgcluster
+metadata:
+  annotations:
+    current-primary: ${pgo_cluster_name}
+  labels:
+    crunchy-pgha-scope: ${pgo_cluster_name}
+    deployment-name: ${pgo_cluster_name}
+    name: ${pgo_cluster_name}
+    pg-cluster: ${pgo_cluster_name}
+    pgo-version: ${PGO_VERSION}
+    pgouser: admin
+  name: ${pgo_cluster_name}
+  namespace: ${cluster_namespace}
+spec:
+  BackrestStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ""
+    size: 1G
+    storageclass: ""
+    storagetype: create
+    supplementalgroups: ""
+  PrimaryStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ${pgo_cluster_name}
+    size: 1G
+    storageclass: ""
+    storagetype: create
+    supplementalgroups: ""
+  ReplicaStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ""
+    size: 1G
+    storageclass: ""
+    storagetype: create
+    supplementalgroups: ""
+  annotations: {}
+  ccpimage: crunchy-postgres-ha
+  ccpimageprefix: ${cluster_image_prefix}
+  ccpimagetag: centos8-13.1-${PGO_VERSION}
+  clustername: ${pgo_cluster_name}
+  database: ${pgo_cluster_name}
+  exporterport: "9187"
+  limits: {}
+  name: ${pgo_cluster_name}
+  namespace: ${cluster_namespace}
+  pgDataSource:
+    restoreFrom: ""
+    restoreOpts: ""
+  pgbadgerport: "10000"
+  pgoimageprefix: ${cluster_image_prefix}
+  podAntiAffinity:
+    default: preferred
+    pgBackRest: preferred
+    pgBouncer: preferred
+  port: "5432"
+  tolerations: []
+  user: hippo
+  userlabels:
+    pgo-version: ${PGO_VERSION}
+EOF
+
+kubectl apply -f "${pgo_cluster_name}-pgcluster.yaml"
+```
+
+And that's all! The PostgreSQL Operator will go ahead and create the cluster.
+
+If you have the PostgreSQL client `psql` installed on your host machine, you can
+test connection to the PostgreSQL cluster using the following command:
+
+```
+# namespace that the cluster is running in
+export PGO_OPERATOR_NAMESPACE=pgo
+# name of the cluster
+export pgo_cluster_name=hippo
+# name of the user whose password we want to get
+export pgo_cluster_username=hippo
+
+# get the password of the user and set it to a recognized psql environmental variable
+export PGPASSWORD=$(kubectl -n "${PGO_OPERATOR_NAMESPACE}" get secrets \
+  "${pgo_cluster_name}-${pgo_cluster_username}-secret" -o "jsonpath={.data['password']}" | base64 -d)
+
+# set up a port-forward either in a new terminal, or in the same terminal in the background:
+kubectl -n pgo port-forward svc/hippo 5432:5432 &
+
+psql -h localhost -U "${pgo_cluster_username}" "${pgo_cluster_name}"
+```
+
+### Create a PostgreSQL Cluster the `pgo` Client
 
 Once the PostgreSQL Operator is installed in your Kubernetes cluster, you will need to do a few things
 to use the [PostgreSQL Operator Client][pgo-client].
@@ -117,4 +259,37 @@ Verify connectivity using the `pgo` command.
 pgo version
 # pgo client version ${PGO_VERSION}
 # pgo-apiserver version ${PGO_VERSION}
+```
+
+You can then create a cluster with the `pgo` client as simply as this:
+
+```
+pgo create cluster -n pgo hippo
+```
+
+The cluster may take a few moments to provision. You can verify that the cluster is up and running by using the `pgo test` command:
+
+```
+pgo test cluster -n pgo hippo
+```
+
+If you have the PostgreSQL client `psql` installed on your host machine, you can
+test connection to the PostgreSQL cluster using the following command:
+
+```
+# namespace that the cluster is running in
+export PGO_OPERATOR_NAMESPACE=pgo
+# name of the cluster
+export pgo_cluster_name=hippo
+# name of the user whose password we want to get
+export pgo_cluster_username=hippo
+
+# get the password of the user and set it to a recognized psql environmental variable
+export PGPASSWORD=$(kubectl -n "${PGO_OPERATOR_NAMESPACE}" get secrets \
+  "${pgo_cluster_name}-${pgo_cluster_username}-secret" -o "jsonpath={.data['password']}" | base64 -d)
+
+# set up a port-forward either in a new terminal, or in the same terminal in the background:
+kubectl -n pgo port-forward svc/hippo 5432:5432 &
+
+psql -h localhost -U "${pgo_cluster_username}" "${pgo_cluster_name}"
 ```
