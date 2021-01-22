@@ -222,7 +222,7 @@ func removeBackupSecrets(request Request) {
 // <cluster-name>-pgha-config (stores a Patroni config file in YAML format)
 func removeClusterConfigmaps(request Request) {
 	// Store the derived names of the three configmaps in an array
-	clusterConfigmaps := [4]string{
+	clusterConfigmaps := []string{
 		// first, derive the name of the PG HA default configmap, which is
 		// "`clusterName`-`LABEL_PGHA_CONFIGMAP`"
 		fmt.Sprintf("%s-%s", request.ClusterName, config.LABEL_PGHA_CONFIGMAP),
