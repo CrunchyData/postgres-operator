@@ -40,10 +40,8 @@ when manipulating the PostgreSQL Operator Custom Resources directly.
 ### Create a PostgreSQL Cluster
 
 The fundamental workflow for interfacing with a PostgreSQL Operator Custom
-Resource Definition is for creating a PostgreSQL cluster. However, this is also
-one of the most complicated workflows to go through, as there are several
-Kubernetes objects that need to be created prior to using this method. These
-include:
+Resource Definition is for creating a PostgreSQL cluster. There are several
+that a PostgreSQL cluster requires to be deployed, including:
 
 - Secrets
   - Information for setting up a pgBackRest repository
@@ -54,14 +52,11 @@ include:
 Additionally, if you want to add some of the other sidecars, you may need to
 create additional secrets.
 
-The following guide goes through how to create a PostgreSQL cluster called
+The good news is that if you do not provide these objects, the PostgreSQL
+Operator will create them for you to get your Postgres cluster up and running!
+
+The following goes through how to create a PostgreSQL cluster called
 `hippo` by creating a new custom resource.
-
-The below manifest references the Secrets created in the previous step to add a
-custom resource to the `pgclusters.crunchydata.com` custom resource definition.
-
-**NOTE**: You will need to modify the storage sections to match your storage
-configuration.
 
 ```
 # this variable is the name of the cluster being created
@@ -91,7 +86,7 @@ spec:
     name: ""
     size: 1G
     storageclass: ""
-    storagetype: create
+    storagetype: dynamic
     supplementalgroups: ""
   PrimaryStorage:
     accessmode: ReadWriteMany
@@ -99,7 +94,7 @@ spec:
     name: ${pgo_cluster_name}
     size: 1G
     storageclass: ""
-    storagetype: create
+    storagetype: dynamic
     supplementalgroups: ""
   ReplicaStorage:
     accessmode: ReadWriteMany
@@ -107,7 +102,7 @@ spec:
     name: ""
     size: 1G
     storageclass: ""
-    storagetype: create
+    storagetype: dynamic
     supplementalgroups: ""
   annotations: {}
   ccpimage: crunchy-postgres-ha
@@ -406,7 +401,7 @@ spec:
     name: ""
     size: 1G
     storageclass: ""
-    storagetype: create
+    storagetype: dynamic
     supplementalgroups: ""
   PrimaryStorage:
     accessmode: ReadWriteMany
@@ -414,7 +409,7 @@ spec:
     name: ${pgo_cluster_name}
     size: 1G
     storageclass: ""
-    storagetype: create
+    storagetype: dynamic
     supplementalgroups: ""
   ReplicaStorage:
     accessmode: ReadWriteMany
@@ -422,7 +417,7 @@ spec:
     name: ""
     size: 1G
     storageclass: ""
-    storagetype: create
+    storagetype: dynamic
     supplementalgroups: ""
   annotations: {}
   ccpimage: crunchy-postgres-ha
@@ -539,7 +534,7 @@ spec:
     name: ${pgo_cluster_name}-${pgo_cluster_replica_suffix}
     size: 1G
     storageclass: ""
-    storagetype: create
+    storagetype: dynamic
     supplementalgroups: ""
   tolerations: []
   userlabels:
@@ -588,7 +583,7 @@ tablespaceMounts:
     matchLabels: ""
     size: 5Gi
     storageclass: ""
-    storagetype: create
+    storagetype: dynamic
     supplementalgroups: ""
 ```
 

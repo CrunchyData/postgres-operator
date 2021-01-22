@@ -418,5 +418,6 @@ modification to the custom resource:
 - CPU resource adjustments
 - Custom annotation changes
 - Enabling/disabling the monitoring sidecar on a PostgreSQL cluster (`--metrics`)
+- Enabling/disabling the pgBadger sidecar on a PostgreSQL cluster (`--pgbadger`)
 - Tablespace additions
 - Toleration modifications
