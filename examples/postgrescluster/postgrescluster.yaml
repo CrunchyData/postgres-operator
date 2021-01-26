@@ -5,3 +5,9 @@ metadata:
 spec:
   instances:
     - name: instance1
+  archive:
+    pgbackrest:
+      image:
+      repoHost:
+        resources: {}     # (core/v1.ResourceRequirements)
+      repoVolume: {} # (VolumeSpec)

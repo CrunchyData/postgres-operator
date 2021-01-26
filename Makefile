@@ -75,7 +75,7 @@ GO_CMD = $(GO_ENV) go
 
 # Disable optimizations if creating a debug build
 ifeq ("$(DEBUG_BUILD)", "true")
-	GO_BUILD += -gcflags='all=-N -l'
+	GO_BUILD = $(GO_CMD) build -gcflags='all=-N -l'
 endif
 
 # To build a specific image, run 'make <name>-image' (e.g. 'make postgres-operator-image')

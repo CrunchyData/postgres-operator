@@ -18,19 +18,14 @@ limitations under the License.
 import (
 	"time"
 
-	"go.opentelemetry.io/otel"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
-
-// the name of the event recorder created for the postgrescluster controller
-const recorderName = "postgrescluster-controller"
 
 // default refresh interval in minutes
 var refreshInterval = 60 * time.Minute
@@ -41,7 +36,8 @@ var refreshInterval = 60 * time.Minute
 // 'postgrescluster' custom resource.  Additionally, the manager will only watch for resources in
 // the namespace specified, with an empty string resulting in the manager watching all namespaces.
 func CreateRuntimeManager(namespace string, config *rest.Config) (manager.Manager, error) {
-	pgoScheme, err := createPostgresOperatorScheme()
+
+	pgoScheme, err := CreatePostgresOperatorScheme()
 	if err != nil {
 		return nil, err
 	}
@@ -56,36 +52,17 @@ func CreateRuntimeManager(namespace string, config *rest.Config) (manager.Manage
 		return nil, err
 	}
 
-	// add all PostgreSQL Operator controllers to the runtime manager
-	if err := addControllersToManager(mgr); err != nil {
-		return nil, err
-	}
-
 	return mgr, nil
 }
 
 // GetConfig creates a *rest.Config for talking to a Kubernetes API server.
 func GetConfig() (*rest.Config, error) { return config.GetConfig() }
 
-// addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
-// runtime manager.
-func addControllersToManager(mgr manager.Manager) error {
-	r := &postgrescluster.Reconciler{
-		Client:   mgr.GetClient(),
-		Owner:    recorderName,
-		Recorder: mgr.GetEventRecorderFor(recorderName),
-		Tracer:   otel.Tracer(recorderName),
-	}
-	if err := r.SetupWithManager(mgr); err != nil {
-		return err
-	}
-	return nil
-}
-
-// createPostgresOperatorScheme creates a scheme containing the resource types required by the
+// CreatePostgresOperatorScheme creates a scheme containing the resource types required by the
 // PostgreSQL Operator.  This includes any custom resource types specific to the PostgreSQL
 // Operator, as well as any standard Kubernetes resource types.
-func createPostgresOperatorScheme() (*runtime.Scheme, error) {
+func CreatePostgresOperatorScheme() (*runtime.Scheme, error) {
+
 	// create a new scheme specifically for this manager
 	pgoScheme := runtime.NewScheme()
 

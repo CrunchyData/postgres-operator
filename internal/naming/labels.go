@@ -22,4 +22,11 @@ const (
 	LabelInstance    = labelPrefix + "instance"
 	LabelInstanceSet = labelPrefix + "instance-set"
 	LabelRole        = labelPrefix + "role"
+
+	// LabelPGBackRest is used to indicate that a resource is for pgBackRest
+	LabelPGBackRest = labelPrefix + "pgbackrest"
+
+	// LabelPGBackRestRepo is used to indicate that a Deployment or Pod is for a pgBackRest
+	// repository
+	LabelPGBackRestRepo = labelPrefix + "pgbackrest-repo"
 )

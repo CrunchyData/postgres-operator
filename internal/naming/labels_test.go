@@ -27,4 +27,6 @@ func TestLabelsValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelInstance))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelInstanceSet))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelRole))
+	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRest))
+	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRepo))
 }

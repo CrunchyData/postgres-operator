@@ -33,6 +33,11 @@ func TestPostgresClusterDefault(t *testing.T) {
 metadata:
   creationTimestamp: null
 spec:
+  archive:
+    pgbackrest:
+      repoHost:
+        resources: {}
+      repoVolume: {}
   instances: null
   port: 5432
 status: {}

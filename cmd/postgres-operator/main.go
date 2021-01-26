@@ -25,17 +25,20 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller"
-	"github.com/crunchydata/postgres-operator/internal/controller/manager"
+	mgr "github.com/crunchydata/postgres-operator/internal/controller/manager"
 	nscontroller "github.com/crunchydata/postgres-operator/internal/controller/namespace"
+	"github.com/crunchydata/postgres-operator/internal/controller/postgrescluster"
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/ns"
 	log "github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	cruntime "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -101,7 +104,7 @@ func main() {
 		panic("either the pgcluster or postgrescluster controller must be enabled")
 	}
 
-	var controllerManager *manager.ControllerManager
+	var controllerManager *mgr.ControllerManager
 	if !disablePGCluster {
 		controllerManager = enablePGClusterControllers(ctx.Done())
 		defer controllerManager.RemoveAll()
@@ -154,7 +157,7 @@ func createAndStartNamespaceController(kubeClientset kubernetes.Interface,
 
 // enablePGClusterControllers enables all controllers needed to manage PostgreSQL clusters using
 // the 'pgcluster' custom resource
-func enablePGClusterControllers(stopCh <-chan struct{}) *manager.ControllerManager {
+func enablePGClusterControllers(stopCh <-chan struct{}) *mgr.ControllerManager {
 	newKubernetesClient := func() (*kubeapi.Client, error) {
 		config, err := kubeapi.LoadClientConfig()
 		if err != nil {
@@ -179,7 +182,7 @@ func enablePGClusterControllers(stopCh <-chan struct{}) *manager.ControllerManag
 
 	// create a new controller manager with controllers for all current namespaces and then run
 	// all of those controllers
-	controllerManager, err := manager.NewControllerManager(namespaceList, operator.Pgo,
+	controllerManager, err := mgr.NewControllerManager(namespaceList, operator.Pgo,
 		operator.PgoNamespace, operator.InstallationName, operator.NamespaceOperatingMode())
 	assertNoError(err)
 
@@ -205,6 +208,7 @@ func enablePGClusterControllers(stopCh <-chan struct{}) *manager.ControllerManag
 // enablePostgresClusterControllers enables all controllers needed to manage PostgreSQL clusters using
 // the 'postgrescluster' custom resource
 func enablePostgresClusterControllers(ctx context.Context) {
+
 	log := logging.FromContext(ctx)
 
 	cfg, err := runtime.GetConfig()
@@ -215,7 +219,23 @@ func enablePostgresClusterControllers(ctx context.Context) {
 	mgr, err := runtime.CreateRuntimeManager(os.Getenv("PGO_TARGET_NAMESPACE"), cfg)
 	assertNoError(err)
 
+	// add all PostgreSQL Operator controllers to the runtime manager
+	err = addControllersToManager(mgr)
+	assertNoError(err)
+
 	log.Info("starting controller runtime manager and will wait for signal to exit")
 	assertNoError(mgr.Start(ctx))
 	log.Info("signal received, exiting")
+}
+
+// addControllersToManager adds all PostgreSQL Operator controllers to the provided controller
+// runtime manager.
+func addControllersToManager(mgr manager.Manager) error {
+	r := &postgrescluster.Reconciler{
+		Client:   mgr.GetClient(),
+		Owner:    postgrescluster.ControllerName,
+		Recorder: mgr.GetEventRecorderFor(postgrescluster.ControllerName),
+		Tracer:   otel.Tracer(postgrescluster.ControllerName),
+	}
+	return r.SetupWithManager(mgr)
 }

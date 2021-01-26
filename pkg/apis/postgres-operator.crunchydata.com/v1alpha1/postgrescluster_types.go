@@ -18,6 +18,7 @@ package v1alpha1
 import (
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -25,7 +26,9 @@ import (
 // PostgresClusterSpec defines the desired state of PostgresCluster
 type PostgresClusterSpec struct {
 
-	// TODO
+	// PostgreSQL archive configuration
+	// +kubebuilder:validation:Required
+	Archive Archive `json:"archive"`
 
 	// +listType=map
 	// +listMapKey=name
@@ -48,8 +51,67 @@ func (s *PostgresClusterSpec) Default() {
 	}
 }
 
+// Archive defines a PostgreSQL archive configuration
+type Archive struct {
+
+	// pgBackRest archive configuration
+	// +kubebuilder:validation:Required
+	PGBackRest PGBackRestArchive `json:"pgbackrest"`
+}
+
+// PGBackRestArchive defines a pgBackRest archive configuration
+type PGBackRestArchive struct {
+
+	// Projected volumes containing custom pgBackRest configuration
+	Configuration []corev1.VolumeProjection `json:"configuration,omitempty"`
+
+	// The image name to use for the pgBackRest image
+	// +kubebuilder:validation:Required
+	Image string `json:"image,omitempty"`
+
+	// Defines a pgBackRest repository host
+	// +kubebuilder:validation:Required
+	RepoHost RepoHost `json:"repoHost"`
+
+	// A volume for use with a pgBackRest repository host
+	// +kubebuilder:validation:Required
+	RepoVolume VolumeSpec `json:"repoVolume"`
+}
+
+// PGBackRestStatus defines the status of pgBackRest within a PostgresCluster
+type PGBackRestStatus struct {
+
+	// Status information for the pgBackRest repository host
+	// +optional
+	RepoHost *RepoHostStatus `json:"repoHost,omitempty"`
+}
+
+// RepoHost represents a pgBackRest dedicated repository host
+type RepoHost struct {
+
+	// Resource requirements for a pgBackRest repository host
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+}
+
+// RepoHostStatus defines the status of pgBackRest repository host
+type RepoHostStatus struct {
+	metav1.TypeMeta `json:",inline"`
+
+	// The name of the pgBackRest repository host
+	// +optional
+	Name string `json:"name"`
+
+	// Whether or not the pgBackRest repository host is ready for use
+	// +optional
+	Ready bool `json:"ready"`
+}
+
 // PostgresClusterStatus defines the observed state of PostgresCluster
 type PostgresClusterStatus struct {
+
+	// Status information for pgBackRest
+	// +optional
+	PGBackRest *PGBackRestStatus `json:"pgbackrest,omitempty"`
 
 	// observedGeneration represents the .metadata.generation on which the status was based.
 	// +optional
@@ -114,6 +176,19 @@ type PostgresClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []PostgresCluster `json:"items"`
+}
+
+// VolumeSpec defines the volume types available for use in a PostgresCluster
+// Please note that this type could benefit from the "union/oneOf" semantics described in the
+// following proposal, being that "only one of the given fields can be set" for this type:
+// https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/1027-api-unions
+type VolumeSpec struct {
+
+	//  Defines an EmptyDir volume
+	EmptyDir *corev1.EmptyDirVolumeSource `json:"emptyDir,omitempty"`
+
+	// Defines a PersistentVolumeClaim used create and/or bind a volume
+	VolumeClaimTemplate *corev1.PersistentVolumeClaimSpec `json:"volumeClaimTemplate,omitempty"`
 }
 
 func init() {
