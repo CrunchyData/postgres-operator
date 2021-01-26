@@ -19,12 +19,18 @@ package postgrescluster
 
 import (
 	"context"
+	"errors"
+	"regexp"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"gotest.tools/v3/assert"
 	v1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
@@ -83,4 +89,60 @@ func TestServerSideApply(t *testing.T) {
 				"expected to correctly no-op")
 		})
 	}
+
+	t.Run("ControllerReference", func(t *testing.T) {
+		reconciler := Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+
+		// Setup two possible controllers.
+		controller1 := new(v1.ConfigMap)
+		controller1.Namespace, controller1.Name = ns.Name, "controller1"
+		assert.NilError(t, cc.Create(ctx, controller1))
+
+		controller2 := new(v1.ConfigMap)
+		controller2.Namespace, controller2.Name = ns.Name, "controller2"
+		assert.NilError(t, cc.Create(ctx, controller2))
+
+		// Create an object that is controlled.
+		controlled := new(v1.ConfigMap)
+		controlled.Namespace, controlled.Name = ns.Name, "controlled"
+		assert.NilError(t,
+			controllerutil.SetControllerReference(controller1, controlled, cc.Scheme()))
+		assert.NilError(t, cc.Create(ctx, controlled))
+
+		original := metav1.GetControllerOfNoCopy(controlled)
+		assert.Assert(t, original != nil)
+
+		// Try to change the controller using client.Apply.
+		applied := new(v1.ConfigMap)
+		applied.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("ConfigMap"))
+		applied.Namespace, applied.Name = controlled.Namespace, controlled.Name
+		assert.NilError(t,
+			controllerutil.SetControllerReference(controller2, applied, cc.Scheme()))
+
+		err1 := cc.Patch(ctx, applied, client.Apply, client.ForceOwnership, reconciler.Owner)
+
+		// Patch not accepted; the ownerReferences field is invalid.
+		assert.Assert(t, kerrors.IsInvalid(err1), "got %#v", err1)
+		assert.ErrorContains(t, err1, "one reference")
+
+		var status *kerrors.StatusError
+		assert.Assert(t, errors.As(err1, &status))
+		assert.Assert(t, status.ErrStatus.Details != nil)
+		assert.Assert(t, len(status.ErrStatus.Details.Causes) != 0)
+		assert.Equal(t, status.ErrStatus.Details.Causes[0].Field, "metadata.ownerReferences")
+
+		// Try to change the controller using our apply method.
+		err2 := reconciler.apply(ctx, applied, client.ForceOwnership)
+
+		// Same result; patch not accepted.
+		assert.DeepEqual(t, err1, err2,
+			// Message fields contain GoStrings of metav1.OwnerReference, 🤦
+			// so ignore pointer addresses therein.
+			cmp.FilterPath(func(p cmp.Path) bool {
+				return p.Last().String() == ".Message"
+			}, cmp.Transformer("", func(s string) string {
+				return regexp.MustCompile(`\(0x[^)]+\)`).ReplaceAllString(s, "()")
+			})),
+		)
+	})
 }
