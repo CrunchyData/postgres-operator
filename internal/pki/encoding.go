@@ -196,7 +196,8 @@ func ParseCertificate(data []byte) (*Certificate, error) {
 // ParsePrivateKey accepts binary encoded data with an optional password for
 // decryption and attempts to parse a private key
 func ParsePrivateKey(data, password []byte) (*PrivateKey, error) {
-	privateKey := &PrivateKey{Password: password}
+	privateKey := NewPrivateKey(nil)
+	privateKey.Password = password
 
 	if err := privateKey.UnmarshalText(data); err != nil {
 		return nil, err

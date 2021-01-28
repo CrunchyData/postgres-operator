@@ -125,14 +125,7 @@ func TestLeafCertificate(t *testing.T) {
 			}
 
 			// ensure private key functions are set
-			if cert.PrivateKey.encryptPEMBlock == nil {
-				t.Fatalf("expected encryptPEMBlock to be set on private key")
-			}
-
-			// ensure private key functions are set
-			if cert.PrivateKey.marshalECPrivateKey == nil {
-				t.Fatalf("expected marshalECPrivateKey to be set on private key")
-			}
+			assertConstructed(t, cert.PrivateKey)
 		})
 
 		t.Run("invalid", func(t *testing.T) {

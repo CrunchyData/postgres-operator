@@ -30,6 +30,19 @@ import (
 	"time"
 )
 
+// assertConstructed ensures that private key functions are set.
+func assertConstructed(t testing.TB, key *PrivateKey) {
+	t.Helper()
+
+	if key.encryptPEMBlock == nil {
+		t.Fatalf("expected encryptPEMBlock to be set on private key")
+	}
+
+	if key.marshalECPrivateKey == nil {
+		t.Fatalf("expected marshalECPrivateKey to be set on private key")
+	}
+}
+
 func TestCertificate(t *testing.T) {
 	// generateCertificate is a helper function that generates a random private key
 	// and ignore any errors. creates a self-signed certificate as we don't need
@@ -217,6 +230,9 @@ func TestParsePrivateKey(t *testing.T) {
 			if !reflect.DeepEqual(expected.PrivateKey, privateKey.PrivateKey) {
 				t.Fatalf("expected parsed key to match expected")
 			}
+
+			// ensure private key functions are set
+			assertConstructed(t, privateKey)
 		})
 
 		t.Run("encrypted", func(t *testing.T) {
@@ -234,6 +250,9 @@ func TestParsePrivateKey(t *testing.T) {
 			if !reflect.DeepEqual(expected.PrivateKey, privateKey.PrivateKey) {
 				t.Fatalf("expected parsed key to match expected")
 			}
+
+			// ensure private key functions are set
+			assertConstructed(t, privateKey)
 		})
 	})
 
