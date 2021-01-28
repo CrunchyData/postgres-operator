@@ -30,7 +30,15 @@ func ClusterConfigMap(ctx context.Context,
 	inCluster *v1alpha1.PostgresCluster,
 	outClusterConfigMap *v1.ConfigMap,
 ) error {
-	return clusterConfigMap(inCluster, outClusterConfigMap)
+	var err error
+
+	if outClusterConfigMap.Data == nil {
+		outClusterConfigMap.Data = make(map[string]string)
+	}
+
+	outClusterConfigMap.Data[configMapFileKey], err = clusterYAML(inCluster)
+
+	return err
 }
 
 // InstanceConfigMap populates the shared ConfigMap with fields needed to run Patroni.
@@ -39,7 +47,15 @@ func InstanceConfigMap(ctx context.Context,
 	inInstance metav1.Object,
 	outInstanceConfigMap *v1.ConfigMap,
 ) error {
-	return instanceConfigMap(inCluster, inInstance, outInstanceConfigMap)
+	var err error
+
+	if outInstanceConfigMap.Data == nil {
+		outInstanceConfigMap.Data = make(map[string]string)
+	}
+
+	outInstanceConfigMap.Data[configMapFileKey], err = instanceYAML(inCluster, inInstance)
+
+	return err
 }
 
 // InstancePod populates a PodSpec with the fields needed to run Patroni.
@@ -60,6 +76,31 @@ func InstancePod(ctx context.Context,
 	// "kubernetes.labels" settings.
 	outInstancePod.Labels[naming.LabelPatroni] = naming.PatroniScope(inCluster)
 
-	instanceConfigVolumeAndMount(inCluster, inClusterConfigMap, inInstanceConfigMap, &outInstancePod.Spec)
-	return instanceEnvVars(inCluster, inClusterPodService, inPatroniLeaderService, &outInstancePod.Spec)
+	container := findOrAppendContainer(&outInstancePod.Spec.Containers,
+		naming.ContainerDatabase)
+
+	container.Env = mergeEnvVars(container.Env,
+		instanceEnvironment(inCluster, inClusterPodService, inPatroniLeaderService,
+			outInstancePod.Spec.Containers)...)
+
+	volume := v1.Volume{Name: "patroni-config"}
+	volume.Projected = new(v1.ProjectedVolumeSource)
+
+	// Add our projections after those specified in the CR. Items later in the
+	// list take precedence over earlier items (that is, last write wins).
+	// - https://kubernetes.io/docs/concepts/storage/volumes/#projected
+	volume.Projected.Sources = append(append(
+		// TODO(cbandy): User config will come from the spec.
+		volume.Projected.Sources, []v1.VolumeProjection(nil)...),
+		instanceConfigFiles(inClusterConfigMap, inInstanceConfigMap)...)
+
+	outInstancePod.Spec.Volumes = mergeVolumes(outInstancePod.Spec.Volumes, volume)
+
+	container.VolumeMounts = mergeVolumeMounts(container.VolumeMounts, v1.VolumeMount{
+		Name:      volume.Name,
+		MountPath: configDirectory,
+		ReadOnly:  true,
+	})
+
+	return nil
 }
