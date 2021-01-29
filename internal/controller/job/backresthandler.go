@@ -229,6 +229,14 @@ func (c *Controller) handleBackrestStanzaCreateUpdate(job *apiv1.Job) error {
 		backrestoperator.CreateInitialBackup(c.Client, job.ObjectMeta.Namespace,
 			clusterName, backrestRepoPodName)
 
+		// now that the initial backup has been initiated, proceed with deleting the stanza-create
+		// pgtask and associated Job.  This will ensure any subsequent updates to the stanza-create
+		// Job do not trigger more initial backup Jobs.
+		if err := backrest.CleanStanzaCreateResources(namespace, clusterName, c.Client); err != nil {
+			log.Error(err)
+			return err
+		}
+
 	}
 	return nil
 }
