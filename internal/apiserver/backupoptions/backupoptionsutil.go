@@ -167,6 +167,13 @@ func isValidCompressLevel(compressLevel int) bool {
 	}
 }
 
+// isValidCompressType checks that the compression type passed in matches one
+// of the ones supported by pgBackRest. However, it presently does not support
+// `zst`
+func isValidCompressType(compressType string) bool {
+	return compressType == "gz" || compressType == "bz2" || compressType == "lz4" || compressType == "none"
+}
+
 // isValidRetentionRange validates that pgBackrest Full, Diff or Archive
 // retention option value is set within the allowable range.
 // allowed: 1-9999999
