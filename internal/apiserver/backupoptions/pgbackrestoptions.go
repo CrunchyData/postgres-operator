@@ -82,6 +82,7 @@ type pgBackRestBackupOptions struct {
 	NoCompress               bool   `flag:"no-compress"`
 	CompressLevel            int    `flag:"compress-level"`
 	CompressLevelNetwork     int    `flag:"compress-level-network"`
+	CompressType             string `flag:"compress-type"`
 	DBTimeout                int    `flag:"db-timeout"`
 	Delta                    bool   `flag:"no-delta"`
 	ProcessMax               int    `flag:"process-max"`
@@ -143,6 +144,11 @@ func (backRestBackupOpts pgBackRestBackupOptions) validate(setFlagFieldNames []s
 		case "CompressLevelNetwork":
 			if !isValidCompressLevel(backRestBackupOpts.CompressLevelNetwork) {
 				err := errors.New("Invalid network compress level for pgBackRest backup")
+				errstrings = append(errstrings, err.Error())
+			}
+		case "CompressType":
+			if !isValidCompressType(backRestBackupOpts.CompressType) {
+				err := errors.New("Invalid compress type for pgBackRest backup")
 				errstrings = append(errstrings, err.Error())
 			}
 		case "LogLevelConsole":
