@@ -78,10 +78,9 @@ type pgBackRestBackupOptions struct {
 	NoStopAuto               bool   `flag:"no-stop-auto"`
 	BackupType               string `flag:"type"`
 	BufferSize               string `flag:"buffer-size"`
-	Compress                 bool   `flag:"compress"`
-	NoCompress               bool   `flag:"no-compress"`
 	CompressLevel            int    `flag:"compress-level"`
 	CompressLevelNetwork     int    `flag:"compress-level-network"`
+	CompressType             string `flag:"compress-type"`
 	DBTimeout                int    `flag:"db-timeout"`
 	Delta                    bool   `flag:"no-delta"`
 	ProcessMax               int    `flag:"process-max"`
@@ -108,9 +107,6 @@ type pgBackRestRestoreOptions struct {
 	TargetTimeline       int    `flag:"target-timeline"`
 	RestoreType          string `flag:"type"`
 	BufferSize           string `flag:"buffer-size"`
-	Compress             bool   `flag:"compress"`
-	NoCompress           bool   `flag:"no-compress"`
-	CompressLevel        int    `flag:"compress-level"`
 	CompressLevelNetwork int    `flag:"compress-level-network"`
 	DBTimeout            int    `flag:"db-timeout"`
 	Delta                bool   `flag:"no-delta"`
@@ -143,6 +139,11 @@ func (backRestBackupOpts pgBackRestBackupOptions) validate(setFlagFieldNames []s
 		case "CompressLevelNetwork":
 			if !isValidCompressLevel(backRestBackupOpts.CompressLevelNetwork) {
 				err := errors.New("Invalid network compress level for pgBackRest backup")
+				errstrings = append(errstrings, err.Error())
+			}
+		case "CompressType":
+			if !isValidCompressType(backRestBackupOpts.CompressType) {
+				err := errors.New("Invalid compress type for pgBackRest backup")
 				errstrings = append(errstrings, err.Error())
 			}
 		case "LogLevelConsole":
@@ -210,11 +211,6 @@ func (backRestRestoreOpts pgBackRestRestoreOptions) validate(setFlagFieldNames [
 			validRestoreTypes := []string{"default", "immediate", "name", "xid", "time", "preserve", "none"}
 			if !isValidValue(validRestoreTypes, backRestRestoreOpts.RestoreType) {
 				err := errors.New("Invalid type provided for pgBackRest restore")
-				errstrings = append(errstrings, err.Error())
-			}
-		case "CompressLevel":
-			if !isValidCompressLevel(backRestRestoreOpts.CompressLevel) {
-				err := errors.New("Invalid compress level for pgBackRest restore")
 				errstrings = append(errstrings, err.Error())
 			}
 		case "CompressLevelNetwork":
