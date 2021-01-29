@@ -1,0 +1,256 @@
+// +build envtest
+
+/*
+ Copyright 2021 Crunchy Data Solutions, Inc.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
+package pgbackrest
+
+import (
+	"context"
+	"crypto/x509"
+	"encoding/pem"
+	"fmt"
+
+	"reflect"
+	"strings"
+	"testing"
+
+	"golang.org/x/crypto/ssh"
+	"gotest.tools/v3/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+)
+
+// TestKeys validates public/private byte slices returned by
+// getKeys() are of the expected type and use the expected curve
+func TestKeys(t *testing.T) {
+
+	testKeys, err := getKeys()
+	assert.NilError(t, err)
+
+	t.Run("test private key", func(t *testing.T) {
+		block, _ := pem.Decode(testKeys.Private)
+		assert.Assert(t, block != nil)
+
+		private, err := x509.ParseECPrivateKey(block.Bytes)
+
+		assert.NilError(t, err)
+		assert.Equal(t, fmt.Sprintf("%T", private), "*ecdsa.PrivateKey")
+		assert.Equal(t, private.Params().BitSize, 521)
+	})
+
+	t.Run("test public key", func(t *testing.T) {
+		pub, _, _, _, err := ssh.ParseAuthorizedKey(testKeys.Public)
+
+		assert.NilError(t, err)
+		assert.Equal(t, pub.Type(), "ecdsa-sha2-nistp521")
+		assert.Equal(t, fmt.Sprintf("%T", pub), "*ssh.ecdsaPublicKey")
+	})
+
+}
+
+// TestSSHDConfiguration verifies the default SSH/SSHD configurations
+// are created. These include the secret containing the public and private
+// keys, the configmap containing the SSH client config file and SSHD
+// sshd_config file, their respective contents, the project volume and
+// the volume mount
+func TestSSHDConfiguration(t *testing.T) {
+
+	// set cluster name and namespace values in postgrescluster spec
+	postgresCluster := &v1alpha1.PostgresCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      testclustername,
+			Namespace: testnamespace,
+		},
+	}
+
+	// the initially created configmap
+	var sshCMInitial v1.ConfigMap
+	// the returned configmap
+	var sshCMReturned v1.ConfigMap
+	// pod spec for testing projected volumes and volume mounts
+	pod := &v1.PodSpec{}
+	// initially created secret
+	var secretInitial v1.Secret
+	// returned secret
+	var secretReturned v1.Secret
+
+	t.Run("ssh configmap and secret checks", func(t *testing.T) {
+
+		// setup the test environment and ensure a clean teardown
+		testEnv, testClient := setupTestEnv(t)
+
+		// define the cleanup steps to run once the tests complete
+		t.Cleanup(func() {
+			teardownTestEnv(t, testEnv)
+		})
+
+		t.Run("create ssh configmap struct", func(t *testing.T) {
+			sshCMInitial = CreateSSHConfigMapStruct(postgresCluster)
+
+			// check that there is configmap data
+			assert.Assert(t, sshCMInitial.Data != nil)
+		})
+
+		t.Run("create ssh secret struct", func(t *testing.T) {
+
+			// declare this locally so ':=' operation will not result in a
+			// locally scoped 'secretInitial' variable
+			var err error
+
+			secretInitial, err = CreateSSHSecretStruct(postgresCluster)
+
+			assert.NilError(t, err)
+
+			// check that there is configmap data
+			assert.Assert(t, secretInitial.Data != nil)
+		})
+
+		t.Run("create test namespace", func(t *testing.T) {
+			// create the test namespace
+			err := testClient.Create(context.Background(), &v1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: testnamespace,
+				},
+			})
+
+			assert.NilError(t, err)
+		})
+
+		t.Run("create ssh configmap", func(t *testing.T) {
+
+			// create the configmap
+			err := testClient.Patch(context.Background(), &sshCMInitial, client.Apply, client.ForceOwnership, client.FieldOwner(testFieldOwner))
+
+			assert.NilError(t, err)
+		})
+
+		t.Run("create ssh secret", func(t *testing.T) {
+
+			// create the secret
+			err := testClient.Patch(context.Background(), &secretInitial, client.Apply, client.ForceOwnership, client.FieldOwner(testFieldOwner))
+
+			assert.NilError(t, err)
+		})
+
+		t.Run("get ssh configmap", func(t *testing.T) {
+
+			objectKey := client.ObjectKey{
+				Namespace: postgresCluster.GetNamespace(),
+				Name:      fmt.Sprintf(sshCMNameSuffix, postgresCluster.GetName()),
+			}
+
+			err := testClient.Get(context.Background(), objectKey, &sshCMReturned)
+
+			assert.NilError(t, err)
+		})
+
+		t.Run("get ssh secret", func(t *testing.T) {
+
+			objectKey := client.ObjectKey{
+				Namespace: postgresCluster.GetNamespace(),
+				Name:      fmt.Sprintf(sshSecretNameSuffix, postgresCluster.GetName()),
+			}
+
+			err := testClient.Get(context.Background(), objectKey, &secretReturned)
+
+			assert.NilError(t, err)
+		})
+
+		// finally, verify initial and returned match
+		assert.Assert(t, reflect.DeepEqual(sshCMInitial.Data, sshCMReturned.Data))
+		assert.Assert(t, reflect.DeepEqual(secretInitial.Data, secretReturned.Data))
+
+	})
+
+	t.Run("check ssh config", func(t *testing.T) {
+
+		assert.Equal(t, getCMData(sshCMReturned, sshConfig),
+			`Host *
+	StrictHostKeyChecking no
+	IdentityFile /sshd/id_ecdsa
+	Port 2022
+	User postgres
+`)
+	})
+
+	t.Run("check sshd config", func(t *testing.T) {
+
+		assert.Equal(t, getCMData(sshCMReturned, sshdConfig),
+			`Port 2022
+HostKey /sshd/id_ecdsa
+SyslogFacility AUTHPRIV
+PermitRootLogin no
+StrictModes no
+PubkeyAuthentication yes
+AuthorizedKeysFile	/sshd/authorized_keys
+PasswordAuthentication no
+ChallengeResponseAuthentication yes
+UsePAM yes
+X11Forwarding yes
+PidFile /tmp/sshd.pid
+
+# Accept locale-related environment variables
+AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+AcceptEnv XMODIFIERS
+
+# override default of no subsystems
+Subsystem	sftp	/usr/libexec/openssh/sftp-server
+`)
+	})
+
+	t.Run("check sshd volume", func(t *testing.T) {
+
+		SSHConfigVolumeAndMount(&sshCMReturned, &secretReturned, pod, "database")
+
+		assert.Assert(t, simpleMarshalContains(&pod.Volumes, strings.TrimSpace(`
+		- name: sshd
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: config
+          path: ./config
+        - key: sshd_config
+          path: ./sshd_config
+        name: `+postgresCluster.GetName()+`-ssh-config
+      secret:
+        items:
+        - key: id_ecdsa
+          path: ./id_ecdsa
+        - key: id_ecdsa.pub
+          path: ./id_ecdsa.pub
+        name: `+postgresCluster.GetName()+`-ssh-config
+`)+"\n"))
+	})
+
+	t.Run("check sshd volume mount", func(t *testing.T) {
+
+		SSHConfigVolumeAndMount(&sshCMReturned, &secretReturned, pod, "database")
+
+		container := findOrAppendContainer(&pod.Containers, "database")
+
+		assert.Assert(t, simpleMarshalContains(container.VolumeMounts, strings.TrimSpace(`
+		- mountPath: /sshd
+  name: sshd
+  readOnly: true
+		`)+"\n"))
+	})
+}

@@ -20,7 +20,6 @@ package pgbackrest
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -28,107 +27,10 @@ import (
 	"gotest.tools/v3/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/yaml"
 
-	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
-
-// Testing namespace and postgrescluster name
-const (
-	namespace      = "testnamespace"
-	clustername    = "testcluster"
-	testFieldOwner = "pgbackrestConfigTestFieldOwner"
-)
-
-// getCMData returns the 'Data' content from the specifified configmap
-func getCMData(cm v1.ConfigMap, key string) string {
-
-	return cm.Data[key]
-}
-
-// simpleMarshalContains takes in a YAML object and checks whether
-// it includes the expected string
-func simpleMarshalContains(actual interface{}, expected string) bool {
-	b, err := yaml.Marshal(actual)
-
-	if err != nil {
-		return false
-	}
-
-	if string(b) == expected {
-		return true
-	}
-	return false
-}
-
-// setupTestEnv configures and starts an EnvTest instance of etcd and the Kubernetes API server
-// for test usage, as well as creates a new client instance.
-func setupTestEnv(t *testing.T) (*envtest.Environment, *rest.Config, client.Client) {
-
-	testEnv := &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
-	}
-	cfg, err := testEnv.Start()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log("Test environment started")
-
-	pgoScheme, err := runtime.CreatePostgresOperatorScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
-	client, err := client.New(cfg, client.Options{Scheme: pgoScheme})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return testEnv, cfg, client
-}
-
-// setupManager creates new controller runtime manager and returns
-// the associated context
-func setupManager(t *testing.T, cfg *rest.Config,
-	contollerSetup func(mgr manager.Manager)) (context.Context, context.CancelFunc) {
-
-	mgr, err := runtime.CreateRuntimeManager("", cfg, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	contollerSetup(mgr)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		if err := mgr.Start(ctx); err != nil {
-			t.Error(err)
-		}
-	}()
-	t.Log("Manager started")
-
-	return ctx, cancel
-}
-
-// teardownTestEnv stops the test environment when the tests
-// have completed
-func teardownTestEnv(t *testing.T, testEnv *envtest.Environment) {
-	if err := testEnv.Stop(); err != nil {
-		t.Error(err)
-	}
-	t.Log("Test environment stopped")
-}
-
-// teardownManager stops the test environment's context
-// manager when the tests have completed
-func teardownManager(cancel context.CancelFunc, t *testing.T) {
-	cancel()
-	t.Log("Manager stopped")
-}
 
 // TestPGBackRestConfiguration goes through the various steps of the current
 // pgBackRest configuration setup and verifies the expected values are set in
@@ -138,8 +40,8 @@ func TestPGBackRestConfiguration(t *testing.T) {
 	// set cluster name and namespace values in postgrescluster spec
 	postgresCluster := &v1alpha1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      clustername,
-			Namespace: namespace,
+			Name:      testclustername,
+			Namespace: testnamespace,
 		},
 	}
 
@@ -153,18 +55,16 @@ func TestPGBackRestConfiguration(t *testing.T) {
 	t.Run("pgbackrest configmap checks", func(t *testing.T) {
 
 		// setup the test environment and ensure a clean teardown
-		testEnv, cfg, testClient := setupTestEnv(t)
-		ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {})
+		testEnv, testClient := setupTestEnv(t)
 
 		// define the cleanup steps to run once the tests complete
 		t.Cleanup(func() {
-			teardownManager(cancel, t)
 			teardownTestEnv(t, testEnv)
 		})
 
 		t.Run("create pgbackrest configmap struct", func(t *testing.T) {
 			// create an array of one host string vlaue
-			pghosts := []string{clustername}
+			pghosts := []string{testclustername}
 			// create the configmap struct
 			cmInitial = CreatePGBackRestConfigMapStruct(postgresCluster, pghosts)
 
@@ -175,16 +75,16 @@ func TestPGBackRestConfiguration(t *testing.T) {
 		t.Run("create pgbackrest configmap", func(t *testing.T) {
 
 			// create the test namespace
-			err := testClient.Create(ctx, &v1.Namespace{
+			err := testClient.Create(context.Background(), &v1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: namespace,
+					Name: testnamespace,
 				},
 			})
 
 			assert.NilError(t, err)
 
 			// create the configmap
-			err = testClient.Patch(ctx, &cmInitial, client.Apply, client.ForceOwnership, client.FieldOwner(testFieldOwner))
+			err = testClient.Patch(context.Background(), &cmInitial, client.Apply, client.ForceOwnership, client.FieldOwner(testFieldOwner))
 
 			assert.NilError(t, err)
 		})
@@ -196,7 +96,7 @@ func TestPGBackRestConfiguration(t *testing.T) {
 				Name:      fmt.Sprintf(cmNameSuffix, postgresCluster.GetName()),
 			}
 
-			err := testClient.Get(ctx, objectKey, &cmReturned)
+			err := testClient.Get(context.Background(), objectKey, &cmReturned)
 
 			assert.NilError(t, err)
 		})
