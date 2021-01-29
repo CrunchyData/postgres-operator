@@ -48,9 +48,9 @@ var (
 	// when the script is called.
 	applyAndReloadConfigCMD []string = []string{"/opt/crunchy/bin/postgres-ha/common/pgha-reload-local.sh"}
 
-	// pghaLocalConfigName represents the name of the local configuration stored for each database
+	// PGHALocalConfigName represents the name of the local configuration stored for each database
 	// server in the "<clustername>-pgha-config" configMap, which is "<clusterName>-local-config"
-	pghaLocalConfigName = "%s-local-config"
+	PGHALocalConfigName = "%s-local-config"
 	// pghaLocalConfigSuffix is the suffix for a local server configuration
 	pghaLocalConfigSuffix = "-local-config"
 )
@@ -203,7 +203,7 @@ func (l *LocalDB) Update(configName string, localDBConfig LocalDBConfig) error {
 		return err
 	}
 
-	if err := patchConfigMapData(l.kubeclientset, l.configMap, configName, content); err != nil {
+	if err := PatchConfigMapData(l.kubeclientset, l.configMap, configName, content); err != nil {
 		return err
 	}
 
@@ -388,7 +388,7 @@ func (l *LocalDB) refresh(configName string) error {
 		return err
 	}
 
-	if err := patchConfigMapData(l.kubeclientset, l.configMap, configName,
+	if err := PatchConfigMapData(l.kubeclientset, l.configMap, configName,
 		localConfigYAML); err != nil {
 		return err
 	}
@@ -418,7 +418,7 @@ func GetLocalDBConfigNames(kubeclientset kubernetes.Interface, clusterName,
 
 	localConfigNames := make([]string, len(dbDeploymentList.Items))
 	for i, deployment := range dbDeploymentList.Items {
-		localConfigNames[i] = fmt.Sprintf(pghaLocalConfigName, deployment.GetName())
+		localConfigNames[i] = fmt.Sprintf(PGHALocalConfigName, deployment.GetName())
 	}
 
 	return localConfigNames, nil

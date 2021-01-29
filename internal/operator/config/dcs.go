@@ -148,7 +148,7 @@ func (d *DCS) Update(dcsConfig *DCSConfig) error {
 		return err
 	}
 
-	if err := patchConfigMapData(d.kubeclientset, d.configMap, d.configName, content); err != nil {
+	if err := PatchConfigMapData(d.kubeclientset, d.configMap, d.configName, content); err != nil {
 		return err
 	}
 
@@ -301,7 +301,7 @@ func (d *DCS) refresh() error {
 		return err
 	}
 
-	if err := patchConfigMapData(d.kubeclientset, d.configMap, d.configName,
+	if err := PatchConfigMapData(d.kubeclientset, d.configMap, d.configName,
 		clusterDCSBytes); err != nil {
 		return err
 	}

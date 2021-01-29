@@ -51,9 +51,9 @@ type Syncer interface {
 	Sync() error
 }
 
-// patchConfigMapData replaces the configuration stored the configuration specified with the
+// PatchConfigMapData replaces the configuration stored the configuration specified with the
 // provided content
-func patchConfigMapData(kubeclientset kubernetes.Interface, configMap *corev1.ConfigMap,
+func PatchConfigMapData(kubeclientset kubernetes.Interface, configMap *corev1.ConfigMap,
 	configName string, content []byte) error {
 	ctx := context.TODO()
 
