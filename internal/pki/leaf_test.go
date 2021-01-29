@@ -294,11 +294,11 @@ func TestLeafCertificate(t *testing.T) {
 	})
 }
 
-func TestNewCertificate(t *testing.T) {
+func TestNewLeafCertificate(t *testing.T) {
 	namespace := "pgo-test"
 	commonName := "hippo." + namespace
 	dnsNames := []string{commonName}
-	cert := NewCertificate(commonName, dnsNames, []net.IP{})
+	cert := NewLeafCertificate(commonName, dnsNames, []net.IP{})
 
 	if cert.CommonName != commonName {
 		t.Fatalf("expected commonName to be %s, actual %s", commonName, cert.CommonName)

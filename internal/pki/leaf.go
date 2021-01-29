@@ -101,12 +101,12 @@ func (c *LeafCertificate) Generate(intermediateCA *IntermediateCertificateAuthor
 	return nil
 }
 
-// NewCertificate generates a new leaf certificate that can be used for the
+// NewLeafCertificate generates a new leaf certificate that can be used for the
 // identity of a particular instance
 //
 // Accepts arguments for the common name (CN), the DNS names and the IP
 // Addresses that will be represented by this certificate
-func NewCertificate(commonName string, dnsNames []string, ipAddresses []net.IP) *LeafCertificate {
+func NewLeafCertificate(commonName string, dnsNames []string, ipAddresses []net.IP) *LeafCertificate {
 	return &LeafCertificate{
 		CommonName:           commonName,
 		DNSNames:             dnsNames,

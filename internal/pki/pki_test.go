@@ -39,7 +39,7 @@ func TestPKI(t *testing.T) {
 	// generate the leaf CA
 	commonName := "hippo." + namespace
 	dnsNames := []string{commonName}
-	cert := NewCertificate(commonName, dnsNames, []net.IP{})
+	cert := NewLeafCertificate(commonName, dnsNames, []net.IP{})
 	if err := cert.Generate(intermediateCA); err != nil {
 		t.Fatalf("leaf certificate could not be generated")
 	}
