@@ -5,6 +5,7 @@ linters:
     - gofumpt
     - scopelint
   enable:
+    - gomodguard
     - gosimple
     - misspell
   presets:
@@ -15,6 +16,12 @@ linters:
 linters-settings:
   exhaustive:
     default-signifies-exhaustive: true
+  gomodguard:
+    blocked:
+      modules:
+        - gopkg.in/yaml.v2: { recommendations: [sigs.k8s.io/yaml] }
+        - gopkg.in/yaml.v3: { recommendations: [sigs.k8s.io/yaml] }
+        - gotest.tools: { recommendations: [gotest.tools/v3] }
 
 run:
   skip-dirs:
