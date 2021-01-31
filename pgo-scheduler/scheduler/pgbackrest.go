@@ -21,8 +21,10 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	log "github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -113,17 +115,20 @@ func (b BackRestBackupJob) Run() {
 		return
 	}
 
-	selector := fmt.Sprintf("%s=%s,pgo-backrest-repo=true", config.LABEL_PG_CLUSTER, b.cluster)
-	pods, err := clientset.CoreV1().Pods(b.namespace).List(metav1.ListOptions{LabelSelector: selector})
+	selector := fmt.Sprintf("%s=%s,%s", config.LABEL_PG_CLUSTER, b.cluster, config.LABEL_PGO_BACKREST_REPO)
+	options := metav1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
+		LabelSelector: selector,
+	}
+
+	pods, err := clientset.CoreV1().Pods(b.namespace).List(options)
 	if err != nil {
 		contextLogger.WithFields(log.Fields{
 			"selector": selector,
 			"error":    err,
 		}).Error("error getting pods from selector")
 		return
-	}
-
-	if len(pods.Items) != 1 {
+	} else if len(pods.Items) != 1 {
 		contextLogger.WithFields(log.Fields{
 			"selector":  selector,
 			"error":     err,
