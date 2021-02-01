@@ -98,13 +98,14 @@ func addClusterBootstrapJob(clientset kubeapi.Interface,
 		return err
 	}
 
-	var bootstrapSpec bytes.Buffer
-	if err := config.BootstrapTemplate.Execute(&bootstrapSpec, bootstrapFields); err != nil {
-		return err
+	if operator.CRUNCHY_DEBUG {
+		_ = config.BootstrapTemplate.Execute(os.Stdout, bootstrapFields)
 	}
 
-	if operator.CRUNCHY_DEBUG {
-		_ = config.DeploymentTemplate.Execute(os.Stdout, bootstrapFields)
+	var bootstrapSpec bytes.Buffer
+
+	if err := config.BootstrapTemplate.Execute(&bootstrapSpec, bootstrapFields); err != nil {
+		return err
 	}
 
 	job := &batchv1.Job{}
