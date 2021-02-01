@@ -504,7 +504,7 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 
 	// 4.6.0 moved pgBadger to use an attribute instead of a label. If this label
 	// exists on the current CRD, move the value to the attribute.
-	if _, ok := pgcluster.ObjectMeta.GetLabels()["crunchy-pgbadger"]; ok {
+	if ok, _ := strconv.ParseBool(pgcluster.ObjectMeta.GetLabels()["crunchy-pgbadger"]); ok {
 		pgcluster.Spec.PGBadger = true
 		delete(pgcluster.ObjectMeta.Labels, "crunchy-pgbadger")
 	}
