@@ -482,46 +482,46 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 	// that the value is migrated over
 	if value, ok := pgcluster.ObjectMeta.Labels["crunchy_collect"]; ok {
 		pgcluster.ObjectMeta.Labels[config.LABEL_EXPORTER] = value
-		delete(pgcluster.ObjectMeta.Labels, "crunchy_collect")
 	}
+	delete(pgcluster.ObjectMeta.Labels, "crunchy_collect")
 
+	// Note that this is the *user labels*, the above is in the metadata labels
 	if value, ok := pgcluster.Spec.UserLabels["crunchy_collect"]; ok {
 		pgcluster.Spec.UserLabels[config.LABEL_EXPORTER] = value
-		delete(pgcluster.Spec.UserLabels, "crunchy_collect")
 	}
+	delete(pgcluster.Spec.UserLabels, "crunchy_collect")
 
 	// convert the metrics label over to using a proper definition. Give the user
 	// label precedence.
 	if value, ok := pgcluster.ObjectMeta.Labels[config.LABEL_EXPORTER]; ok {
 		pgcluster.Spec.Exporter, _ = strconv.ParseBool(value)
-		delete(pgcluster.ObjectMeta.Labels, config.LABEL_EXPORTER)
 	}
+	delete(pgcluster.ObjectMeta.Labels, config.LABEL_EXPORTER)
 
+	// again, note this is *user* labels, the above are the metadata labels
 	if value, ok := pgcluster.Spec.UserLabels[config.LABEL_EXPORTER]; ok {
 		pgcluster.Spec.Exporter, _ = strconv.ParseBool(value)
-		delete(pgcluster.Spec.UserLabels, config.LABEL_EXPORTER)
 	}
+	delete(pgcluster.Spec.UserLabels, config.LABEL_EXPORTER)
 
 	// 4.6.0 moved pgBadger to use an attribute instead of a label. If this label
 	// exists on the current CRD, move the value to the attribute.
 	if ok, _ := strconv.ParseBool(pgcluster.ObjectMeta.GetLabels()["crunchy-pgbadger"]); ok {
 		pgcluster.Spec.PGBadger = true
-		delete(pgcluster.ObjectMeta.Labels, "crunchy-pgbadger")
 	}
+	delete(pgcluster.ObjectMeta.Labels, "crunchy-pgbadger")
 
 	// 4.6.0 moved the format "service-type" label into the ServiceType CRD
 	// attribute, so we may need to do the same
 	if val, ok := pgcluster.Spec.UserLabels["service-type"]; ok {
 		pgcluster.Spec.ServiceType = v1.ServiceType(val)
-		delete(pgcluster.Spec.UserLabels, "service-type")
 	}
+	delete(pgcluster.Spec.UserLabels, "service-type")
 
 	// 4.6.0 moved the "autofail" label to the DisableAutofail attribute. Given
 	// by default we need to start in an autofailover state, we just delete the
 	// legacy attribute
-	if _, ok := pgcluster.ObjectMeta.GetLabels()["autofail"]; ok {
-		delete(pgcluster.ObjectMeta.Labels, "autofail")
-	}
+	delete(pgcluster.ObjectMeta.Labels, "autofail")
 
 	// 4.6.0 moved the node labels to the custom resource objects in a more
 	// structure way. if we have a node label, then let's migrate it to that
@@ -548,11 +548,10 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 				PreferredDuringSchedulingIgnoredDuringExecution: []v1.PreferredSchedulingTerm{term},
 			},
 		}
-
-		// erase all trace of this
-		delete(pgcluster.Spec.UserLabels, "NodeLabelKey")
-		delete(pgcluster.Spec.UserLabels, "NodeLabelValue")
 	}
+	// erase all trace of this
+	delete(pgcluster.Spec.UserLabels, "NodeLabelKey")
+	delete(pgcluster.Spec.UserLabels, "NodeLabelValue")
 
 	// 4.6.0 moved the "backrest-storage-type" label to a CRD attribute, well,
 	// really an array of CRD attributes, which we need to map the various
@@ -592,10 +591,9 @@ func preparePgclusterForUpgrade(pgcluster *crv1.Pgcluster, parameters map[string
 			pgcluster.Spec.BackrestStorageTypes = append(pgcluster.Spec.BackrestStorageTypes,
 				crv1.BackrestStorageTypePosix)
 		}
-
-		// and delete the label
-		delete(pgcluster.Spec.UserLabels, "backrest-storage-type")
 	}
+	// and delete the label
+	delete(pgcluster.Spec.UserLabels, "backrest-storage-type")
 
 	// since the current primary label is not used in this version of the Postgres Operator,
 	// delete it before moving on to other upgrade tasks
