@@ -35,19 +35,25 @@ var refreshInterval = 60 * time.Minute
 // controllers that will be responsible for managing PostgreSQL clusters using the
 // 'postgrescluster' custom resource.  Additionally, the manager will only watch for resources in
 // the namespace specified, with an empty string resulting in the manager watching all namespaces.
-func CreateRuntimeManager(namespace string, config *rest.Config) (manager.Manager, error) {
+func CreateRuntimeManager(namespace string, config *rest.Config,
+	disableMetrics bool) (manager.Manager, error) {
 
 	pgoScheme, err := CreatePostgresOperatorScheme()
 	if err != nil {
 		return nil, err
 	}
 
-	// create controller runtime manager
-	mgr, err := manager.New(config, manager.Options{
+	options := manager.Options{
 		Namespace:  namespace, // if empty then watching all namespaces
 		SyncPeriod: &refreshInterval,
 		Scheme:     pgoScheme,
-	})
+	}
+	if disableMetrics {
+		options.MetricsBindAddress = "0"
+	}
+
+	// create controller runtime manager
+	mgr, err := manager.New(config, options)
 	if err != nil {
 		return nil, err
 	}

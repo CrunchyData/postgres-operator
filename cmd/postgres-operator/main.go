@@ -216,7 +216,7 @@ func enablePostgresClusterControllers(ctx context.Context) {
 
 	cfg.Wrap(otelTransportWrapper())
 
-	mgr, err := runtime.CreateRuntimeManager(os.Getenv("PGO_TARGET_NAMESPACE"), cfg)
+	mgr, err := runtime.CreateRuntimeManager(os.Getenv("PGO_TARGET_NAMESPACE"), cfg, false)
 	assertNoError(err)
 
 	// add all PostgreSQL Operator controllers to the runtime manager

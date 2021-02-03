@@ -32,7 +32,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
@@ -95,16 +94,16 @@ func setupTestEnv(t *testing.T) (*envtest.Environment, *rest.Config, client.Clie
 // setupManager creates new controller runtime manager and returns
 // the associated context
 func setupManager(t *testing.T, cfg *rest.Config,
-	contollerSetup func(mgr manager.Manager)) context.Context {
+	contollerSetup func(mgr manager.Manager)) (context.Context, context.CancelFunc) {
 
-	mgr, err := runtime.CreateRuntimeManager("", cfg)
+	mgr, err := runtime.CreateRuntimeManager("", cfg, true)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	contollerSetup(mgr)
 
-	ctx := signals.SetupSignalHandler()
+	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
 		if err := mgr.Start(ctx); err != nil {
 			t.Error(err)
@@ -112,7 +111,7 @@ func setupManager(t *testing.T, cfg *rest.Config,
 	}()
 	t.Log("Manager started")
 
-	return ctx
+	return ctx, cancel
 }
 
 // teardownTestEnv stops the test environment when the tests
@@ -126,8 +125,8 @@ func teardownTestEnv(t *testing.T, testEnv *envtest.Environment) {
 
 // teardownManager stops the test environment's context
 // manager when the tests have completed
-func teardownManager(ctx context.Context, t *testing.T) {
-	ctx.Done()
+func teardownManager(cancel context.CancelFunc, t *testing.T) {
+	cancel()
 	t.Log("Manager stopped")
 }
 
@@ -155,11 +154,11 @@ func TestPGBackRestConfiguration(t *testing.T) {
 
 		// setup the test environment and ensure a clean teardown
 		testEnv, cfg, testClient := setupTestEnv(t)
-		ctx := setupManager(t, cfg, func(mgr manager.Manager) {})
+		ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {})
 
 		// define the cleanup steps to run once the tests complete
 		t.Cleanup(func() {
-			teardownManager(ctx, t)
+			teardownManager(cancel, t)
 			teardownTestEnv(t, testEnv)
 		})
 

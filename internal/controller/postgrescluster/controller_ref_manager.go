@@ -155,6 +155,22 @@ func (r *Reconciler) getPostgresClusterForStatefulSet(ctx context.Context,
 	return true, postgresCluster, nil
 }
 
+// manageSTSControllerRefs is responsible for determining whether or not an attempt should be made
+// to adopt or release/orphan a StatefulSet.  This includes obtaining the PostgresCluster for
+// the StatefulSet and then calling the logic needed to either adopt or release it.
+func (r *Reconciler) manageSTSControllerRefs(ctx context.Context, sts *appsv1.StatefulSet) error {
+
+	found, postgresCluster, err := r.getPostgresClusterForStatefulSet(ctx, sts)
+	if err != nil {
+		return err
+	}
+	if !found {
+		return nil
+	}
+
+	return r.claimStatefulSet(ctx, postgresCluster, sts)
+}
+
 // releaseStatefulSet releases the provided stateful set from ownership by the provided
 // PostgresCluster.  This is done by removing the PostgresCluster's controller owner
 // refs from the StatefulSet.
@@ -182,30 +198,24 @@ func (r *Reconciler) statefulSetControllerRefHandlerFuncs() *handler.Funcs {
 	log := logging.FromContext(ctx)
 	errMsg := "managing StatefulSet controller refs"
 
-	manageControllerRefs := func(sts *appsv1.StatefulSet) {
-		found, postgresCluster, err := r.getPostgresClusterForStatefulSet(ctx, sts)
-		if err != nil {
-			log.Error(err, errMsg)
-			return
-		}
-		if !found {
-			return
-		}
-		if err := r.claimStatefulSet(ctx, postgresCluster, sts); err != nil {
-			log.Error(err, errMsg)
-			return
-		}
-	}
-
 	return &handler.Funcs{
 		CreateFunc: func(updateEvent event.CreateEvent, workQueue workqueue.RateLimitingInterface) {
-			manageControllerRefs(updateEvent.Object.(*appsv1.StatefulSet))
+			if err := r.manageSTSControllerRefs(ctx,
+				updateEvent.Object.(*appsv1.StatefulSet)); err != nil {
+				log.Error(err, errMsg)
+			}
 		},
 		UpdateFunc: func(updateEvent event.UpdateEvent, workQueue workqueue.RateLimitingInterface) {
-			manageControllerRefs(updateEvent.ObjectNew.(*appsv1.StatefulSet))
+			if err := r.manageSTSControllerRefs(ctx,
+				updateEvent.ObjectNew.(*appsv1.StatefulSet)); err != nil {
+				log.Error(err, errMsg)
+			}
 		},
 		DeleteFunc: func(updateEvent event.DeleteEvent, workQueue workqueue.RateLimitingInterface) {
-			manageControllerRefs(updateEvent.Object.(*appsv1.StatefulSet))
+			if err := r.manageSTSControllerRefs(ctx,
+				updateEvent.Object.(*appsv1.StatefulSet)); err != nil {
+				log.Error(err, errMsg)
+			}
 		},
 	}
 }
