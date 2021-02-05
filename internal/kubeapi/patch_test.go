@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/types"
 )
 
 func assertJSON(t testing.TB, expected interface{}, actual []byte) {
@@ -71,9 +72,17 @@ func TestEscapeJSONPointer(t *testing.T) {
 func TestJSON6902(t *testing.T) {
 	t.Parallel()
 
+	if actual := NewJSONPatch().Type(); actual != types.JSONPatchType {
+		t.Fatalf("expected %q, got %q", types.JSONPatchType, actual)
+	}
+
 	// An empty patch is valid.
 	{
-		b, err := NewJSONPatch().Bytes()
+		patch := NewJSONPatch()
+		if !patch.IsEmpty() {
+			t.Fatal("expected empty")
+		}
+		b, err := patch.Bytes()
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -144,9 +153,17 @@ func TestJSON6902(t *testing.T) {
 func TestMerge7386(t *testing.T) {
 	t.Parallel()
 
+	if actual := NewMergePatch().Type(); actual != types.MergePatchType {
+		t.Fatalf("expected %q, got %q", types.MergePatchType, actual)
+	}
+
 	// An empty patch is valid.
 	{
-		b, err := NewMergePatch().Bytes()
+		patch := NewMergePatch()
+		if !patch.IsEmpty() {
+			t.Fatal("expected empty")
+		}
+		b, err := patch.Bytes()
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}

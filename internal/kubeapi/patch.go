@@ -16,8 +16,11 @@ package kubeapi
 */
 
 import (
-	"encoding/json"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/json"
 )
 
 // escapeJSONPointer encodes '~' and '/' according to RFC 6901.
@@ -114,7 +117,16 @@ func (patch *JSON6902) Replace(path ...string) func(value interface{}) *JSON6902
 }
 
 // Bytes returns the JSON representation of patch.
-func (patch JSON6902) Bytes() ([]byte, error) { return json.Marshal(patch) }
+func (patch JSON6902) Bytes() ([]byte, error) { return patch.Data(nil) }
+
+// Data returns the JSON representation of patch.
+func (patch JSON6902) Data(runtime.Object) ([]byte, error) { return json.Marshal(patch) }
+
+// IsEmpty returns true when patch has no operations.
+func (patch JSON6902) IsEmpty() bool { return len(patch) == 0 }
+
+// Type returns k8s.io/apimachinery/pkg/types.JSONPatchType.
+func (patch JSON6902) Type() types.PatchType { return types.JSONPatchType }
 
 // Merge7386 represents a JSON Merge Patch according to RFC 7386; the same as
 // k8s.io/apimachinery/pkg/types.MergePatchType.
@@ -168,4 +180,13 @@ func (patch *Merge7386) Remove(path ...string) *Merge7386 {
 }
 
 // Bytes returns the JSON representation of patch.
-func (patch Merge7386) Bytes() ([]byte, error) { return json.Marshal(patch) }
+func (patch Merge7386) Bytes() ([]byte, error) { return patch.Data(nil) }
+
+// Data returns the JSON representation of patch.
+func (patch Merge7386) Data(runtime.Object) ([]byte, error) { return json.Marshal(patch) }
+
+// IsEmpty returns true when patch has no modifications.
+func (patch Merge7386) IsEmpty() bool { return len(patch) == 0 }
+
+// Type returns k8s.io/apimachinery/pkg/types.MergePatchType.
+func (patch Merge7386) Type() types.PatchType { return types.MergePatchType }
