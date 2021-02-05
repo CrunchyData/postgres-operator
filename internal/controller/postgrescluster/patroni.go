@@ -64,7 +64,7 @@ func (r *Reconciler) reconcilePatroniDistributedConfiguration(
 	dcsService.Spec.Selector = nil
 
 	if err == nil {
-		err = errors.WithStack(r.apply(ctx, dcsService, client.ForceOwnership))
+		err = errors.WithStack(r.apply(ctx, dcsService))
 	}
 
 	// TODO(cbandy): DCS "failover_path"; `failover` and `switchover` create "{scope}-failover" endpoints.
@@ -186,7 +186,7 @@ func (r *Reconciler) reconcilePatroniLeaderLease(
 	}}
 
 	if err == nil {
-		err = errors.WithStack(r.apply(ctx, leaderService, client.ForceOwnership))
+		err = errors.WithStack(r.apply(ctx, leaderService))
 	}
 
 	return leaderService, err

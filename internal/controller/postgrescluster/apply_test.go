@@ -21,12 +21,14 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"gotest.tools/v3/assert"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -51,44 +53,38 @@ func TestServerSideApply(t *testing.T) {
 	assert.NilError(t, cc.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
 
-	for _, tt := range []struct {
-		name        string
-		constructor func() client.Object
-	}{
-		{"ConfigMap", func() client.Object {
+	t.Run("ObjectMeta", func(t *testing.T) {
+		reconciler := Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+		constructor := func() *v1.ConfigMap {
 			var cm v1.ConfigMap
 			cm.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("ConfigMap"))
-			cm.Namespace, cm.Name = ns.Name, "cm1"
+			cm.Namespace, cm.Name = ns.Name, "object-meta"
 			cm.Data = map[string]string{"key": "value"}
 			return &cm
-		}},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			reconciler := Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+		}
 
-			// Create the object.
-			before := tt.constructor()
-			assert.NilError(t, cc.Patch(ctx, before, client.Apply, reconciler.Owner))
-			assert.Assert(t, before.GetResourceVersion() != "")
+		// Create the object.
+		before := constructor()
+		assert.NilError(t, cc.Patch(ctx, before, client.Apply, reconciler.Owner))
+		assert.Assert(t, before.GetResourceVersion() != "")
 
-			// Allow the Kubernetes API clock to advance.
-			time.Sleep(time.Second)
+		// Allow the Kubernetes API clock to advance.
+		time.Sleep(time.Second)
 
-			// client.Apply changes the ResourceVersion inadvertently.
-			after := tt.constructor()
-			assert.NilError(t, cc.Patch(ctx, after, client.Apply, reconciler.Owner))
-			assert.Assert(t, after.GetResourceVersion() != "")
-			assert.Assert(t, after.GetResourceVersion() != before.GetResourceVersion(),
-				"expected https://github.com/kubernetes-sigs/controller-runtime/issues/1356")
+		// client.Apply changes the ResourceVersion inadvertently.
+		after := constructor()
+		assert.NilError(t, cc.Patch(ctx, after, client.Apply, reconciler.Owner))
+		assert.Assert(t, after.GetResourceVersion() != "")
+		assert.Assert(t, after.GetResourceVersion() != before.GetResourceVersion(),
+			"expected https://github.com/kubernetes-sigs/controller-runtime/issues/1356")
 
-			// Our apply method generates the correct apply-patch.
-			again := tt.constructor()
-			assert.NilError(t, reconciler.apply(ctx, again))
-			assert.Assert(t, again.GetResourceVersion() != "")
-			assert.Assert(t, again.GetResourceVersion() == after.GetResourceVersion(),
-				"expected to correctly no-op")
-		})
-	}
+		// Our apply method generates the correct apply-patch.
+		again := constructor()
+		assert.NilError(t, reconciler.apply(ctx, again))
+		assert.Assert(t, again.GetResourceVersion() != "")
+		assert.Assert(t, again.GetResourceVersion() == after.GetResourceVersion(),
+			"expected to correctly no-op")
+	})
 
 	t.Run("ControllerReference", func(t *testing.T) {
 		reconciler := Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
@@ -132,7 +128,7 @@ func TestServerSideApply(t *testing.T) {
 		assert.Equal(t, status.ErrStatus.Details.Causes[0].Field, "metadata.ownerReferences")
 
 		// Try to change the controller using our apply method.
-		err2 := reconciler.apply(ctx, applied, client.ForceOwnership)
+		err2 := reconciler.apply(ctx, applied)
 
 		// Same result; patch not accepted.
 		assert.DeepEqual(t, err1, err2,
@@ -144,5 +140,123 @@ func TestServerSideApply(t *testing.T) {
 				return regexp.MustCompile(`\(0x[^)]+\)`).ReplaceAllString(s, "()")
 			})),
 		)
+	})
+
+	t.Run("ServiceSelector", func(t *testing.T) {
+		constructor := func(name string) *v1.Service {
+			var service v1.Service
+			service.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Service"))
+			service.Namespace, service.Name = ns.Name, name
+			service.Spec.Ports = []v1.ServicePort{{
+				Port: 9999, Protocol: v1.ProtocolTCP,
+			}}
+			return &service
+		}
+
+		t.Run("wrong-keys", func(t *testing.T) {
+			reconciler := Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+
+			intent := constructor("some-selector")
+			intent.Spec.Selector = map[string]string{"k1": "v1"}
+
+			// Create the Service.
+			before := intent.DeepCopy()
+			assert.NilError(t,
+				cc.Patch(ctx, before, client.Apply, client.ForceOwnership, reconciler.Owner))
+
+			// Something external mucks it up.
+			assert.NilError(t,
+				cc.Patch(ctx, before,
+					client.RawPatch(client.Merge.Type(), []byte(`{"spec":{"selector":{"bad":"v2"}}}`)),
+					client.FieldOwner("wrong")))
+
+			// client.Apply cannot correct it.
+			after := intent.DeepCopy()
+			assert.NilError(t,
+				cc.Patch(ctx, after, client.Apply, client.ForceOwnership, reconciler.Owner))
+
+			assert.Assert(t, len(after.Spec.Selector) != len(intent.Spec.Selector),
+				"expected https://issue.k8s.io/97970, got %v", after.Spec.Selector)
+
+			// Our apply method corrects it.
+			again := intent.DeepCopy()
+			assert.NilError(t, reconciler.apply(ctx, again))
+			assert.DeepEqual(t, again.Spec.Selector, intent.Spec.Selector)
+
+			var count int
+			var managed *metav1.ManagedFieldsEntry
+			for i := range again.ManagedFields {
+				if again.ManagedFields[i].Manager == t.Name() {
+					count++
+					managed = &again.ManagedFields[i]
+				}
+			}
+
+			assert.Equal(t, count, 1, "expected manager once in %v", again.ManagedFields)
+			assert.Equal(t, managed.Operation, metav1.ManagedFieldsOperationApply)
+
+			assert.Assert(t, managed.FieldsV1 != nil)
+			assert.Assert(t, strings.Contains(string(managed.FieldsV1.Raw), `"f:selector":{`),
+				"expected f:selector in %s", managed.FieldsV1.Raw)
+		})
+
+		for _, tt := range []struct {
+			name     string
+			selector map[string]string
+		}{
+			{"zero", nil},
+			{"empty", make(map[string]string)},
+		} {
+			t.Run(tt.name, func(t *testing.T) {
+				reconciler := Reconciler{Client: cc, Owner: client.FieldOwner(t.Name())}
+
+				intent := constructor(tt.name + "-selector")
+				intent.Spec.Selector = tt.selector
+
+				// Create the Service.
+				before := intent.DeepCopy()
+				assert.NilError(t,
+					cc.Patch(ctx, before, client.Apply, client.ForceOwnership, reconciler.Owner))
+
+				// Something external mucks it up.
+				assert.NilError(t,
+					cc.Patch(ctx, before,
+						client.RawPatch(client.Merge.Type(), []byte(`{"spec":{"selector":{"bad":"v2"}}}`)),
+						client.FieldOwner("wrong")))
+
+				// client.Apply cannot correct it.
+				after := intent.DeepCopy()
+				assert.NilError(t,
+					cc.Patch(ctx, after, client.Apply, client.ForceOwnership, reconciler.Owner))
+
+				assert.Assert(t, len(after.Spec.Selector) != len(intent.Spec.Selector),
+					"got %v", after.Spec.Selector)
+
+				// Our apply method corrects it.
+				again := intent.DeepCopy()
+				assert.NilError(t, reconciler.apply(ctx, again))
+				assert.Assert(t,
+					equality.Semantic.DeepEqual(again.Spec.Selector, intent.Spec.Selector),
+					"\n--- again.Spec.Selector\n+++ intent.Spec.Selector\n%v",
+					cmp.Diff(again.Spec.Selector, intent.Spec.Selector))
+
+				var count int
+				var managed *metav1.ManagedFieldsEntry
+				for i := range again.ManagedFields {
+					if again.ManagedFields[i].Manager == t.Name() {
+						count++
+						managed = &again.ManagedFields[i]
+					}
+				}
+
+				assert.Equal(t, count, 1, "expected manager once in %v", again.ManagedFields)
+				assert.Equal(t, managed.Operation, metav1.ManagedFieldsOperationApply)
+
+				// The selector field is forgotten, however.
+				assert.Assert(t, managed.FieldsV1 != nil)
+				assert.Assert(t, !strings.Contains(string(managed.FieldsV1.Raw), `"f:selector":{`),
+					"expected f:selector to be missing from %s", managed.FieldsV1.Raw)
+			})
+		}
 	})
 }

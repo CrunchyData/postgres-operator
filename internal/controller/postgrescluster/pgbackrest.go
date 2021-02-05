@@ -78,7 +78,7 @@ func (r *Reconciler) applyRepoHostIntent(ctx context.Context,
 		return nil, err
 	}
 
-	if err := r.apply(ctx, repo, client.ForceOwnership); err != nil {
+	if err := r.apply(ctx, repo); err != nil {
 		return nil, err
 	}
 

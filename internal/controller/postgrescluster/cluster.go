@@ -20,7 +20,6 @@ import (
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
@@ -47,7 +46,7 @@ func (r *Reconciler) reconcileClusterConfigMap(
 		err = patroni.ClusterConfigMap(ctx, cluster, clusterConfigMap)
 	}
 	if err == nil {
-		err = errors.WithStack(r.apply(ctx, clusterConfigMap, client.ForceOwnership))
+		err = errors.WithStack(r.apply(ctx, clusterConfigMap))
 	}
 
 	return clusterConfigMap, err
@@ -81,7 +80,7 @@ func (r *Reconciler) reconcileClusterPodService(
 	}
 
 	if err == nil {
-		err = errors.WithStack(r.apply(ctx, clusterPodService, client.ForceOwnership))
+		err = errors.WithStack(r.apply(ctx, clusterPodService))
 	}
 
 	return clusterPodService, err
@@ -130,8 +129,7 @@ func (r *Reconciler) reconcileClusterPrimaryService(
 	}}
 
 	if err == nil {
-		err = errors.WithStack(
-			r.apply(ctx, clusterPrimaryService, client.ForceOwnership))
+		err = errors.WithStack(r.apply(ctx, clusterPrimaryService))
 	}
 
 	// Endpoints for a Service have the same name as the Service.
@@ -163,7 +161,7 @@ func (r *Reconciler) reconcileClusterPrimaryService(
 	}
 
 	if err == nil {
-		err = errors.WithStack(r.apply(ctx, endpoints, client.ForceOwnership))
+		err = errors.WithStack(r.apply(ctx, endpoints))
 	}
 
 	return err

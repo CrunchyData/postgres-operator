@@ -18,7 +18,6 @@ limitations under the License.
 import (
 	"context"
 	"io"
-	"reflect"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
@@ -198,23 +197,6 @@ func (r *Reconciler) Reconcile(
 	log.V(1).Info("reconciled cluster")
 
 	return result, nil
-}
-
-// apply sends an apply patch to object's endpoint in the Kubernetes API and
-// updates object with any returned content. The fieldManager is set to
-// r.Owner, but can be overridden in options.
-// - https://docs.k8s.io/reference/using-api/server-side-apply/#managers
-func (r *Reconciler) apply(
-	ctx context.Context, object client.Object, options ...client.PatchOption,
-) error {
-	zero := reflect.New(reflect.TypeOf(object).Elem()).Interface()
-	data, err := client.MergeFrom(zero.(client.Object)).Data(object)
-	patch := client.RawPatch(client.Apply.Type(), data)
-
-	if err == nil {
-		err = r.patch(ctx, object, patch, options...)
-	}
-	return err
 }
 
 // patch sends patch to object's endpoint in the Kubernetes API and updates
