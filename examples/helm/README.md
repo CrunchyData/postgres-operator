@@ -40,7 +40,7 @@ For this example we will deploy the cluster into the `pgo` namespace where the P
 You will need to download this Helm chart. One way to do this is by cloning the Postgres Operator project into your local environment:
 
 ```
-git clone https://github.com/CrunchyData/postgres-operator.git
+git clone --depth 1 https://github.com/CrunchyData/postgres-operator.git
 ```
 
 Go into the directory that contains the Helm chart for creating a PostgreSQL cluster:
