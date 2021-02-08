@@ -103,15 +103,16 @@ func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	jobName := taskName + "-" + util.RandStringBytesRmndr(4)
 
 	jobFields := pgDumpJobTemplateFields{
-		JobName:          jobName,
-		TaskName:         taskName,
-		ClusterName:      task.Spec.Parameters[config.LABEL_PG_CLUSTER],
-		PodName:          task.Spec.Parameters[config.LABEL_POD_NAME],
-		SecurityContext:  operator.GetPodSecurityContext(task.Spec.StorageSpec.GetSupplementalGroups()),
-		Command:          cmd, //??
-		CommandOpts:      task.Spec.Parameters[config.LABEL_PGDUMP_OPTS],
-		CCPImagePrefix:   util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
-		CCPImageTag:      operator.Pgo.Cluster.CCPImageTag,
+		JobName:         jobName,
+		TaskName:        taskName,
+		ClusterName:     task.Spec.Parameters[config.LABEL_PG_CLUSTER],
+		PodName:         task.Spec.Parameters[config.LABEL_POD_NAME],
+		SecurityContext: operator.GetPodSecurityContext(task.Spec.StorageSpec.GetSupplementalGroups()),
+		Command:         cmd, //??
+		CommandOpts:     task.Spec.Parameters[config.LABEL_PGDUMP_OPTS],
+		CCPImagePrefix:  util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
+		CCPImageTag: util.GetValueOrDefault(util.GetStandardImageTag(cluster.Spec.CCPImage, cluster.Spec.CCPImageTag),
+			operator.Pgo.Cluster.CCPImageTag),
 		PgDumpHost:       task.Spec.Parameters[config.LABEL_PGDUMP_HOST],
 		PgDumpUserSecret: task.Spec.Parameters[config.LABEL_PGDUMP_USER],
 		PgDumpDB:         task.Spec.Parameters[config.LABEL_PGDUMP_DB],
