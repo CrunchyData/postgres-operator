@@ -879,16 +879,24 @@ func updateClusterConfig(clientset kubeapi.Interface, pgcluster *crv1.Pgcluster,
 		return err
 	}
 
-	// set the updated path values for both DCS and LocalDB configs
+	// set the updated path values for both DCS and LocalDB configs, if the fields and maps exist
 	// as of version 4.6, the /crunchyadm directory no longer exists (previously set as a unix socket directory)
 	// and the /opt/cpm... directories are now set under /opt/crunchy
-	dcsConf.PostgreSQL.Parameters["unix_socket_directories"] = "/tmp"
-	dcsConf.PostgreSQL.Parameters["archive_command"] = `source /opt/crunchy/bin/postgres-ha/pgbackrest/pgbackrest-set-env.sh && pgbackrest archive-push "%p"`
-	dcsConf.PostgreSQL.RecoveryConf["restore_command"] = `source /opt/crunchy/bin/postgres-ha/pgbackrest/pgbackrest-set-env.sh && pgbackrest archive-get %f "%p"`
+	if dcsConf.PostgreSQL != nil && dcsConf.PostgreSQL.Parameters != nil {
+		dcsConf.PostgreSQL.Parameters["unix_socket_directories"] = "/tmp"
+		dcsConf.PostgreSQL.Parameters["archive_command"] = `source /opt/crunchy/bin/postgres-ha/pgbackrest/pgbackrest-set-env.sh && pgbackrest archive-push "%p"`
+		dcsConf.PostgreSQL.RecoveryConf["restore_command"] = `source /opt/crunchy/bin/postgres-ha/pgbackrest/pgbackrest-set-env.sh && pgbackrest archive-get %f "%p"`
+	}
 
-	localDBConf.PostgreSQL.Callbacks.OnRoleChange = "/opt/crunchy/bin/postgres-ha/callbacks/pgha-on-role-change.sh"
-	localDBConf.PostgreSQL.PGBackRest.Command = "/opt/crunchy/bin/postgres-ha/pgbackrest/pgbackrest-create-replica.sh replica"
-	localDBConf.PostgreSQL.PGBackRestStandby.Command = "/opt/crunchy/bin/postgres-ha/pgbackrest/pgbackrest-create-replica.sh standby"
+	if localDBConf.PostgreSQL.Callbacks != nil {
+		localDBConf.PostgreSQL.Callbacks.OnRoleChange = "/opt/crunchy/bin/postgres-ha/callbacks/pgha-on-role-change.sh"
+	}
+	if localDBConf.PostgreSQL.PGBackRest != nil {
+		localDBConf.PostgreSQL.PGBackRest.Command = "/opt/crunchy/bin/postgres-ha/pgbackrest/pgbackrest-create-replica.sh replica"
+	}
+	if localDBConf.PostgreSQL.PGBackRestStandby != nil {
+		localDBConf.PostgreSQL.PGBackRestStandby.Command = "/opt/crunchy/bin/postgres-ha/pgbackrest/pgbackrest-create-replica.sh standby"
+	}
 
 	// set up content and patch DCS config
 	dcsContent, err := yaml.Marshal(dcsConf)
