@@ -168,7 +168,7 @@ func TestClusterBackup(t *testing.T) {
 		})
 
 		t.Run("restore", func(t *testing.T) {
-			t.Run("replaces the cluster", func(t *testing.T) {
+			t.Run("keeps existing pvc", func(t *testing.T) {
 				t.Parallel()
 				withCluster(t, namespace, func(cluster func() string) {
 					requireClusterReady(t, namespace(), cluster(), time.Minute)
@@ -195,10 +195,10 @@ func TestClusterBackup(t *testing.T) {
 						after := clusterPVCs(t, namespace(), cluster())
 						for _, pvc := range after {
 							// check to see if the PVC for the primary is bound, and has a timestamp
-							// after the original timestamp for the primary PVC timestamp captured above,
-							// indicating that it been re-created
+							// equal to the original timestamp for the primary PVC timestamp captured above,
+							// indicating that it has not been re-created
 							if pvc.GetName() == cluster() && kubeapi.IsPVCBound(pvc) &&
-								pvc.GetCreationTimestamp().Time.After(primaryPVCCreationTimestamp) {
+								pvc.GetCreationTimestamp().Time.Equal(primaryPVCCreationTimestamp) {
 								return true
 							}
 						}
