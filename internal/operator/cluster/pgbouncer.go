@@ -562,10 +562,11 @@ func createPgBouncerDeployment(clientset kubernetes.Interface, cluster *crv1.Pgc
 
 	// get the fields that will be substituted in the pgBouncer template
 	fields := pgBouncerTemplateFields{
-		Name:               pgbouncerDeploymentName,
-		ClusterName:        cluster.Name,
-		CCPImagePrefix:     util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
-		CCPImageTag:        util.GetStandardImageTag(cluster.Spec.CCPImage, cluster.Spec.CCPImageTag),
+		Name:           pgbouncerDeploymentName,
+		ClusterName:    cluster.Name,
+		CCPImagePrefix: util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
+		CCPImageTag: util.GetValueOrDefault(util.GetStandardImageTag(cluster.Spec.CCPImage, cluster.Spec.CCPImageTag),
+			operator.Pgo.Cluster.CCPImageTag),
 		DisableFSGroup:     operator.Pgo.Cluster.DisableFSGroup,
 		Port:               cluster.Spec.Port,
 		PGBouncerConfigMap: util.GeneratePgBouncerConfigMapName(cluster.Name),
