@@ -303,7 +303,7 @@ var deleteBackupCmd = &cobra.Command{
 	Short: "Delete a backup",
 	Long: `Delete a backup from pgBackRest. Requires a target backup. For example:
 
-    pgo delete backup hippo --target=20201220-171801F`,
+    pgo delete backup clustername --target=20201220-171801F`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			fmt.Println("Error: A cluster name is required for this command.")
