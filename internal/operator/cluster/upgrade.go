@@ -27,6 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
+	pgoconfig "github.com/crunchydata/postgres-operator/internal/operator/config"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	"github.com/crunchydata/postgres-operator/pkg/events"
@@ -108,6 +109,12 @@ func AddUpgrade(clientset kubeapi.Interface, upgrade *crv1.Pgtask, namespace str
 		log.Error("refusing to upgrade due to unsuccessful resource removal")
 		PublishUpgradeEvent(events.EventUpgradeClusterFailure, namespace, upgrade, err.Error())
 		return
+	}
+
+	// update the unix socket directories parameter so it no longer include /crunchyadm and
+	// set any path references to the /opt/crunchy... paths
+	if err = updateClusterConfig(clientset, pgcluster, namespace); err != nil {
+		log.Errorf("error updating %s-pgha-config configmap during upgrade of cluster %s, Error: %v", pgcluster.Name, pgcluster.Name, err)
 	}
 
 	// recreate new Backrest Repo secret that was just deleted
@@ -282,6 +289,7 @@ func deleteBeforeUpgrade(clientset kubeapi.Interface, pgcluster *crv1.Pgcluster,
 		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PG_CLUSTER + "=" + pgcluster.Name})
 	if err != nil {
 		log.Errorf("unable to get deployments. Error: %s", err)
+		return err
 	}
 
 	// next, delete those deployments
@@ -837,4 +845,79 @@ func publishUpgradeClusterFailureEvent(eventHeader events.EventHeader, clusterna
 	if err := events.Publish(event); err != nil {
 		log.Errorf("error publishing event. Error: %s", err.Error())
 	}
+}
+
+// updateClusterConfig updates PG configuration for cluster via its Distributed Configuration Store
+// (DCS) according to the key/value pairs defined in the pgConfig map, specifically by updating
+// the <clusterName>-pgha-config ConfigMap.  The configuration settings specified are
+// applied to the entire cluster via the DCS configuration included within this the
+// <clusterName>-pgha-config ConfigMap.
+func updateClusterConfig(clientset kubeapi.Interface, pgcluster *crv1.Pgcluster, namespace string) error {
+
+	// first, define the names for the two main sections of the <clustername>-pgha-config configmap
+
+	// <clustername>-dcs-config
+	dcsConfigName := fmt.Sprintf(pgoconfig.PGHADCSConfigName, pgcluster.Name)
+	// <clustername>-local-config
+	localConfigName := fmt.Sprintf(pgoconfig.PGHALocalConfigName, pgcluster.Name)
+
+	// next, get the <clustername>-pgha-config configmap
+	clusterConfig, err := clientset.CoreV1().ConfigMaps(namespace).Get(context.TODO(), fmt.Sprintf("%s-pgha-config", pgcluster.Name), metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	// prepare DCS config struct
+	dcsConf := &pgoconfig.DCSConfig{}
+	if err := yaml.Unmarshal([]byte(clusterConfig.Data[dcsConfigName]), dcsConf); err != nil {
+		return err
+	}
+
+	// prepare LocalDB config struct
+	localDBConf := &pgoconfig.LocalDBConfig{}
+	if err := yaml.Unmarshal([]byte(clusterConfig.Data[localConfigName]), localDBConf); err != nil {
+		return err
+	}
+
+	// set the updated path values for both DCS and LocalDB configs
+	// as of version 4.6, the /crunchyadm directory no longer exists (previously set as a unix socket directory)
+	// and the /opt/cpm... directories are now set under /opt/crunchy
+	dcsConf.PostgreSQL.Parameters["unix_socket_directories"] = "/tmp"
+	dcsConf.PostgreSQL.Parameters["archive_command"] = `source /opt/crunchy/bin/postgres-ha/pgbackrest/pgbackrest-set-env.sh && pgbackrest archive-push "%p"`
+	dcsConf.PostgreSQL.RecoveryConf["restore_command"] = `source /opt/crunchy/bin/postgres-ha/pgbackrest/pgbackrest-set-env.sh && pgbackrest archive-get %f "%p"`
+
+	localDBConf.PostgreSQL.Callbacks.OnRoleChange = "/opt/crunchy/bin/postgres-ha/callbacks/pgha-on-role-change.sh"
+	localDBConf.PostgreSQL.PGBackRest.Command = "/opt/crunchy/bin/postgres-ha/pgbackrest/pgbackrest-create-replica.sh replica"
+	localDBConf.PostgreSQL.PGBackRestStandby.Command = "/opt/crunchy/bin/postgres-ha/pgbackrest/pgbackrest-create-replica.sh standby"
+
+	// set up content and patch DCS config
+	dcsContent, err := yaml.Marshal(dcsConf)
+	if err != nil {
+		return err
+	}
+
+	// patch the configmap with the DCS config updates
+	if err := pgoconfig.PatchConfigMapData(clientset, clusterConfig, dcsConfigName, dcsContent); err != nil {
+		return err
+	}
+
+	// set up content and patch localDB config
+	localDBContent, err := yaml.Marshal(localDBConf)
+	if err != nil {
+		return err
+	}
+
+	// patch the configmap with the localDB config updates
+	if err := pgoconfig.PatchConfigMapData(clientset, clusterConfig, localConfigName, localDBContent); err != nil {
+		return err
+	}
+
+	// get the newly patched <clustername>-pgha-config configmap
+	patchedClusterConfig, err := clientset.CoreV1().ConfigMaps(namespace).Get(context.TODO(), fmt.Sprintf("%s-pgha-config", pgcluster.Name), metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	// sync the changes to the configmap to the DCS
+	return pgoconfig.NewDCS(patchedClusterConfig, clientset, pgcluster.GetObjectMeta().GetLabels()[config.LABEL_PGHA_SCOPE]).Sync()
 }
