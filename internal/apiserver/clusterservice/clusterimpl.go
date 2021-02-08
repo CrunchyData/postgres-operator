@@ -1079,6 +1079,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, ns string
 			Limits:    v1.ResourceList{},
 			Resources: v1.ResourceList{},
 		},
+		UserLabels: map[string]string{},
 	}
 
 	// enable the exporter sidecar based on the what the user passed in or what
@@ -1358,7 +1359,9 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, ns string
 
 	spec.ServiceType = request.ServiceType
 
-	spec.UserLabels = request.UserLabels
+	if request.UserLabels != nil {
+		spec.UserLabels = request.UserLabels
+	}
 	spec.UserLabels[config.LABEL_PGO_VERSION] = msgs.PGO_VERSION
 
 	// override any values from config file
