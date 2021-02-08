@@ -166,10 +166,10 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 		// image tag (first value) is compatible (i.e. is the same Major PostgreSQL version) as the
 		// existing cluster's PG value, unless the --ignore-validation flag is set or the --post-gis-image-tag
 		// flag is used
-		if !upgradeTagValid(cl.Spec.CCPImageTag, apiserver.Pgo.Cluster.CCPImageTag) && !request.IgnoreValidation && request.UpgradeCCPImageTag != "" {
-			log.Debugf("Cannot upgrade from %s to %s. Image must be the same base OS and the upgrade must be within the same major PG version.", cl.Spec.CCPImageTag, apiserver.Pgo.Cluster.CCPImageTag)
+		if !upgradeTagValid(cl.Spec.CCPImageTag, spec.Parameters[config.LABEL_CCP_IMAGE_KEY]) && !request.IgnoreValidation && spec.Parameters[config.LABEL_CCP_IMAGE_KEY] != "" {
+			log.Debugf("Cannot upgrade from %s to %s. Image must be the same base OS and the upgrade must be within the same major PG version.", cl.Spec.CCPImageTag, spec.Parameters[config.LABEL_CCP_IMAGE_KEY])
 			response.Status.Code = msgs.Error
-			response.Status.Msg = fmt.Sprintf("cannot upgrade from %s to %s, upgrade task failed.", cl.Spec.CCPImageTag, apiserver.Pgo.Cluster.CCPImageTag)
+			response.Status.Msg = fmt.Sprintf("cannot upgrade from %s to %s, upgrade task failed.", cl.Spec.CCPImageTag, spec.Parameters[config.LABEL_CCP_IMAGE_KEY])
 			return response
 		}
 

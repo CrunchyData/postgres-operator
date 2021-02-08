@@ -105,9 +105,10 @@ func Restore(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 		PGRestoreOpts:       task.Spec.Parameters[config.LABEL_PGRESTORE_OPTS],
 		PITRTarget:          task.Spec.Parameters[config.LABEL_PGRESTORE_PITR_TARGET],
 		CCPImagePrefix:      util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
-		CCPImageTag:         operator.Pgo.Cluster.CCPImageTag,
-		NodeSelector:        operator.GetNodeAffinity(nodeAffinity),
-		Tolerations:         util.GetTolerations(cluster.Spec.Tolerations),
+		CCPImageTag: util.GetValueOrDefault(util.GetStandardImageTag(cluster.Spec.CCPImage, cluster.Spec.CCPImageTag),
+			operator.Pgo.Cluster.CCPImageTag),
+		NodeSelector: operator.GetNodeAffinity(nodeAffinity),
+		Tolerations:  util.GetTolerations(cluster.Spec.Tolerations),
 	}
 
 	var doc2 bytes.Buffer

@@ -228,8 +228,9 @@ func getRepoDeploymentFields(clientset kubernetes.Interface, cluster *crv1.Pgclu
 	replicas int) *RepoDeploymentTemplateFields {
 
 	repoFields := RepoDeploymentTemplateFields{
-		CCPImagePrefix:        util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
-		CCPImageTag:           operator.Pgo.Cluster.CCPImageTag,
+		CCPImagePrefix: util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
+		CCPImageTag: util.GetValueOrDefault(util.GetStandardImageTag(cluster.Spec.CCPImage, cluster.Spec.CCPImageTag),
+			operator.Pgo.Cluster.CCPImageTag),
 		ContainerResources:    operator.GetResourcesJSON(cluster.Spec.BackrestResources, cluster.Spec.BackrestLimits),
 		BackrestRepoClaimName: fmt.Sprintf(util.BackrestRepoPVCName, cluster.Name),
 		SshdSecretsName:       fmt.Sprintf(util.BackrestRepoSecretName, cluster.Name),
