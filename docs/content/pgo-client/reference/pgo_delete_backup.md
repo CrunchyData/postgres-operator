@@ -9,7 +9,7 @@ Delete a backup
 
 Delete a backup from pgBackRest. Requires a target backup. For example:
 
-    pgo delete backup hippo --target=20201220-171801F
+    pgo delete backup clustername --target=20201220-171801F
 
 ```
 pgo delete backup [flags]
