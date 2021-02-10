@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
@@ -58,12 +59,35 @@ func InstanceConfigMap(ctx context.Context,
 	return err
 }
 
+// InstanceCertificates populates the shared Secret with certificates needed to run Patroni.
+func InstanceCertificates(ctx context.Context,
+	inRoots, inIntermediates []*pki.Certificate,
+	inDNS *pki.Certificate, inDNSKey *pki.PrivateKey,
+	outInstanceCertificates *v1.Secret,
+) error {
+	if outInstanceCertificates.Data == nil {
+		outInstanceCertificates.Data = make(map[string][]byte)
+	}
+
+	var err error
+	outInstanceCertificates.Data[certAuthorityFileKey], err =
+		certAuthorities(inRoots...)
+
+	if err == nil {
+		outInstanceCertificates.Data[certServerFileKey], err =
+			certFile(inDNSKey, inDNS, inIntermediates...)
+	}
+
+	return err
+}
+
 // InstancePod populates a PodSpec with the fields needed to run Patroni.
 func InstancePod(ctx context.Context,
 	inCluster *v1alpha1.PostgresCluster,
 	inClusterConfigMap *v1.ConfigMap,
 	inClusterPodService *v1.Service,
 	inPatroniLeaderService *v1.Service,
+	inInstanceCertificates *v1.Secret,
 	inInstanceConfigMap *v1.ConfigMap,
 	outInstancePod *v1.PodTemplateSpec,
 ) error {
@@ -89,10 +113,11 @@ func InstancePod(ctx context.Context,
 	// Add our projections after those specified in the CR. Items later in the
 	// list take precedence over earlier items (that is, last write wins).
 	// - https://kubernetes.io/docs/concepts/storage/volumes/#projected
-	volume.Projected.Sources = append(append(
+	volume.Projected.Sources = append(append(append(
 		// TODO(cbandy): User config will come from the spec.
 		volume.Projected.Sources, []v1.VolumeProjection(nil)...),
-		instanceConfigFiles(inClusterConfigMap, inInstanceConfigMap)...)
+		instanceConfigFiles(inClusterConfigMap, inInstanceConfigMap)...),
+		instanceCertificates(inInstanceCertificates)...)
 
 	outInstancePod.Spec.Volumes = mergeVolumes(outInstancePod.Spec.Volumes, volume)
 

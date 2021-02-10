@@ -39,8 +39,8 @@ an earlier one.
 Given the above, we provide to the user two ways to configure Patroni and thus
 PostgreSQL: YAML files and DCS.
 
-Configuration that applies to the whole cluster will be in a ConfigMap that we
-validate and copy into DCS. This allows us to add rules to `pg_hba` and `pg_ident`
+Configuration that applies to the whole cluster is in PostgresCluster.Spec and
+we copy it into DCS. This allows us to add rules to `pg_hba` and `pg_ident`
 for replication and other service accounts. These settings are automatically
 applied by Patroni.
 

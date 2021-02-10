@@ -17,6 +17,7 @@ package patroni
 
 import (
 	"fmt"
+	"path"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -101,7 +102,38 @@ func clusterYAML(cluster *v1alpha1.PostgresCluster) (string, error) {
 
 		// NOTE(cbandy): Every Patroni instance is a client of every other Patroni
 		// instance. TLS and/or authentication settings need to be applied consistently
-		// across the entire cluster. Those settings belong here, in the "restapi" section.
+		// across the entire cluster.
+
+		"restapi": map[string]interface{}{
+			// Use TLS to encrypt traffic and verify clients.
+			// NOTE(cbandy): The path package always uses slash separators.
+			"cafile":   path.Join(configDirectory, certAuthorityConfigPath),
+			"certfile": path.Join(configDirectory, certServerConfigPath),
+
+			// The private key is bundled into "restapi.certfile".
+			"keyfile": nil,
+
+			// Require clients to present a certificate verified by "restapi.cafile".
+			"verify_client": "required",
+
+			// TODO(cbandy): The next release of Patroni will allow more control over
+			// the TLS protocols/ciphers.
+			// Maybe "ciphers": "EECDH+AESGCM+FIPS:EDH+AESGCM+FIPS". Maybe add ":!DHE".
+			// - https://github.com/zalando/patroni/commit/ba4ab58d4069ee30
+		},
+
+		"ctl": map[string]interface{}{
+			// Use TLS to verify the server and present a client certificate.
+			// NOTE(cbandy): The path package always uses slash separators.
+			"cacert":   path.Join(configDirectory, certAuthorityConfigPath),
+			"certfile": path.Join(configDirectory, certServerConfigPath),
+
+			// The private key is bundled into "ctl.certfile".
+			"keyfile": nil,
+
+			// Always verify the server certificate against "ctl.cacert".
+			"insecure": false,
+		},
 	}
 
 	b, err := yaml.Marshal(root)

@@ -237,6 +237,7 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 		}).
 		Owns(&v1.ConfigMap{}).
 		Owns(&v1.Endpoints{}).
+		Owns(&v1.Secret{}).
 		Owns(&v1.Service{}).
 		Owns(&appsv1.StatefulSet{}).
 		Watches(&source.Kind{Type: &appsv1.StatefulSet{}},

@@ -25,11 +25,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
+	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
@@ -112,10 +112,6 @@ func (r *Reconciler) reconcileInstance(
 	instance.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("StatefulSet"))
 	instance.Namespace, instance.Name = existing.Namespace, existing.Name
 
-	// FIXME(cbandy): this should not be part of our intent/apply. It's here so
-	// that reconcileInstanceConfigMap() can make the SS the owner of the CM.
-	instance.UID = existing.UID
-
 	err := errors.WithStack(r.setControllerReference(cluster, instance))
 
 	if err == nil {
@@ -163,22 +159,7 @@ func (r *Reconciler) reconcileInstance(
 		if *instance.Spec.Replicas > 1 {
 			*instance.Spec.Replicas = 1
 		}
-	}
 
-	// When the instance does not yet exist, create it now, without a Template,
-	// to generate its UID then repeat. (The Replicas, Template, and UpdateStrategy
-	// fields are mutable.)
-	if err == nil && existing.ResourceVersion == "" {
-		err = errors.WithStack(r.apply(ctx, instance))
-
-		if err == nil {
-			return r.reconcileInstance(
-				ctx, cluster, spec, clusterConfigMap, clusterPodService,
-				patroniLeaderService, instance)
-		}
-	}
-
-	if err == nil {
 		// ShareProcessNamespace makes Kubernetes' pause process PID 1 and lets
 		// containers see each other's processes.
 		// - https://docs.k8s.io/tasks/configure-pod-container/share-process-namespace/
@@ -204,16 +185,21 @@ func (r *Reconciler) reconcileInstance(
 	}
 
 	var (
-		instanceConfigMap *v1.ConfigMap
+		instanceConfigMap    *v1.ConfigMap
+		instanceCertificates *v1.Secret
 	)
 
 	if err == nil {
 		instanceConfigMap, err = r.reconcileInstanceConfigMap(ctx, cluster, instance)
 	}
 	if err == nil {
+		instanceCertificates, err = r.reconcileInstanceCertificates(
+			ctx, cluster, instance)
+	}
+	if err == nil {
 		err = patroni.InstancePod(
 			ctx, cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
-			instanceConfigMap, &instance.Spec.Template)
+			instanceCertificates, instanceConfigMap, &instance.Spec.Template)
 	}
 
 	if err == nil {
@@ -236,13 +222,8 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 	instanceConfigMap := &v1.ConfigMap{ObjectMeta: naming.InstanceConfigMap(instance)}
 	instanceConfigMap.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("ConfigMap"))
 
-	// TODO(cbandy): The intent is to delete this CM when the SS is deleted,
-	// but it needs to be a ControllerReference to the _cluster_ for _this_
-	// controller. We'd need a SS controller to do this well. Perhaps that is
-	// a good boundary: the PostgresCluster controller creates a minimal instance
-	// then the StatefulSet controller handles the lifecycle of instance objects?
-	err := errors.WithStack(
-		controllerutil.SetOwnerReference(instance, instanceConfigMap, r.Client.Scheme()))
+	// TODO(cbandy): Instance StatefulSet as owner?
+	err := errors.WithStack(r.setControllerReference(cluster, instanceConfigMap))
 
 	instanceConfigMap.Labels = map[string]string{
 		naming.LabelCluster:  cluster.Name,
@@ -257,4 +238,63 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 	}
 
 	return instanceConfigMap, err
+}
+
+// +kubebuilder:rbac:resources=secrets,verbs=get;patch
+
+// reconcileInstanceCertificates writes the Secret that contains certificates
+// and private keys for instance of cluster.
+func (r *Reconciler) reconcileInstanceCertificates(
+	ctx context.Context, cluster *v1alpha1.PostgresCluster, instance *appsv1.StatefulSet,
+) (*v1.Secret, error) {
+	existing := &v1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
+	err := errors.WithStack(client.IgnoreNotFound(
+		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
+
+	instanceCerts := &v1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
+	instanceCerts.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+
+	// TODO(cbandy): Instance StatefulSet as owner?
+	if err == nil {
+		err = errors.WithStack(r.setControllerReference(cluster, instanceCerts))
+	}
+
+	instanceCerts.Labels = map[string]string{
+		naming.LabelCluster:  cluster.Name,
+		naming.LabelInstance: instance.Name,
+	}
+
+	// This secret is holding certificates, but the "kubernetes.io/tls" type
+	// expects an *unencrypted* private key. We're also adding other values and
+	// other formats, so indicate that with the "Opaque" type.
+	// - https://docs.k8s.io/concepts/configuration/secret/#secret-types
+	instanceCerts.Type = v1.SecretTypeOpaque
+	instanceCerts.Data = make(map[string][]byte)
+
+	var (
+		root *pki.RootCertificateAuthority
+		ca   *pki.IntermediateCertificateAuthority
+		leaf *pki.LeafCertificate
+	)
+
+	// TODO(cbandy): root and intermediate reconciliation belongs somewhere else.
+	if err == nil {
+		root, err = r.reconcileRootCertificate(ctx, cluster.Namespace)
+	}
+	if err == nil {
+		ca, err = r.reconcileNamespaceCertificate(ctx, cluster.Namespace, root)
+	}
+	if err == nil {
+		leaf, err = r.instanceCertificate(ctx, instance, existing, instanceCerts, ca)
+	}
+	if err == nil {
+		err = patroni.InstanceCertificates(ctx,
+			[]*pki.Certificate{root.Certificate}, []*pki.Certificate{ca.Certificate},
+			leaf.Certificate, leaf.PrivateKey, instanceCerts)
+	}
+	if err == nil {
+		err = errors.WithStack(r.apply(ctx, instanceCerts))
+	}
+
+	return instanceCerts, err
 }

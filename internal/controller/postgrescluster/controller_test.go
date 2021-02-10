@@ -342,9 +342,9 @@ spec: {
 			Expect(icm.Labels[naming.LabelInstance]).To(Equal(instance.Name))
 			Expect(icm.OwnerReferences).To(ContainElement(
 				MatchFields(IgnoreExtras, Fields{
-					"Controller": BeNil(),
-					"Name":       Equal(instance.Name),
-					"UID":        Equal(instance.UID),
+					"Controller": PointTo(BeTrue()),
+					"Name":       Equal(cluster.Name),
+					"UID":        Equal(cluster.UID),
 				}),
 			))
 			Expect(icm.ManagedFields).To(ContainElement(

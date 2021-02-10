@@ -42,6 +42,11 @@ func TestClusterYAML(t *testing.T) {
 # Your changes will not be saved.
 bootstrap:
   dcs: {}
+ctl:
+  cacert: /etc/patroni/~postgres-operator/patroni.ca-roots
+  certfile: /etc/patroni/~postgres-operator/patroni.crt+key
+  insecure: false
+  keyfile: null
 kubernetes:
   labels:
     postgres-operator.crunchydata.com/cluster: cluster-name
@@ -54,6 +59,11 @@ postgresql:
     replication:
       username: postgres
   create_replica_methods: []
+restapi:
+  cafile: /etc/patroni/~postgres-operator/patroni.ca-roots
+  certfile: /etc/patroni/~postgres-operator/patroni.crt+key
+  keyfile: null
+  verify_client: required
 scope: cluster-name-ha
 	`)+"\n")
 }

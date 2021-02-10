@@ -26,6 +26,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
@@ -34,7 +35,7 @@ func TestClusterConfigMap(t *testing.T) {
 
 	ctx := context.Background()
 	cluster := new(v1alpha1.PostgresCluster)
-	config := &v1.ConfigMap{}
+	config := new(v1.ConfigMap)
 	data, _ := clusterYAML(cluster)
 
 	assert.NilError(t, ClusterConfigMap(ctx, cluster, config))
@@ -45,6 +46,39 @@ func TestClusterConfigMap(t *testing.T) {
 	before := config.DeepCopy()
 	assert.NilError(t, ClusterConfigMap(ctx, cluster, config))
 	assert.DeepEqual(t, config, before)
+}
+
+func TestReconcileInstanceCertificates(t *testing.T) {
+	t.Parallel()
+
+	root := pki.NewRootCertificateAuthority()
+	assert.NilError(t, root.Generate(), "bug in test")
+
+	issuer := pki.NewIntermediateCertificateAuthority("")
+	assert.NilError(t, issuer.Generate(root), "bug in test")
+
+	leaf := pki.NewLeafCertificate("any", nil, nil)
+	assert.NilError(t, leaf.Generate(issuer), "bug in test")
+
+	ctx := context.Background()
+	secret := new(v1.Secret)
+	roots := []*pki.Certificate{root.Certificate}
+	issuers := []*pki.Certificate{issuer.Certificate}
+	cert := leaf.Certificate
+	key := leaf.PrivateKey
+
+	dataCA, _ := certAuthorities(roots...)
+	dataCert, _ := certFile(key, cert, issuers...)
+
+	assert.NilError(t, InstanceCertificates(ctx, roots, issuers, cert, key, secret))
+
+	assert.DeepEqual(t, secret.Data["patroni.ca-roots"], dataCA)
+	assert.DeepEqual(t, secret.Data["patroni.crt-combined"], dataCert)
+
+	// No change when called again.
+	before := secret.DeepCopy()
+	assert.NilError(t, InstanceCertificates(ctx, roots, issuers, cert, key, secret))
+	assert.DeepEqual(t, secret, before)
 }
 
 func TestInstanceConfigMap(t *testing.T) {
@@ -74,6 +108,7 @@ func TestInstancePod(t *testing.T) {
 	cluster.Name = "some-such"
 	clusterConfigMap := new(v1.ConfigMap)
 	clusterPodService := new(v1.Service)
+	instanceCertficates := new(v1.Secret)
 	instanceConfigMap := new(v1.ConfigMap)
 	patroniLeaderService := new(v1.Service)
 	template := new(v1.PodTemplateSpec)
@@ -81,7 +116,7 @@ func TestInstancePod(t *testing.T) {
 	call := func() error {
 		return InstancePod(context.Background(),
 			cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
-			instanceConfigMap, template)
+			instanceCertficates, instanceConfigMap, template)
 	}
 
 	assert.NilError(t, call())
@@ -136,6 +171,12 @@ volumes:
         items:
         - key: patroni.yaml
           path: ~postgres-operator_instance.yaml
+    - secret:
+        items:
+        - key: patroni.ca-roots
+          path: ~postgres-operator/patroni.ca-roots
+        - key: patroni.crt-combined
+          path: ~postgres-operator/patroni.crt+key
 	`)+"\n"))
 
 	// No change when called again.

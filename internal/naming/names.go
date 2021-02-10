@@ -88,6 +88,15 @@ func InstanceConfigMap(instance metav1.Object) metav1.ObjectMeta {
 	}
 }
 
+// InstanceCertificates returns the ObjectMeta necessary to lookup the Secret
+// containing instance's certificates.
+func InstanceCertificates(instance metav1.Object) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: instance.GetNamespace(),
+		Name:      instance.GetName() + "-certs",
+	}
+}
+
 // PatroniDistributedConfiguration returns the ObjectMeta necessary to lookup
 // the DCS created by Patroni for cluster. This same name is used for both
 // ConfigMap and Endpoints. See Patroni DCS "config_path".

@@ -85,7 +85,7 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 	})
 }
 
-func TestInstanceNamesUnique(t *testing.T) {
+func TestInstanceNamesUniqueAndValid(t *testing.T) {
 	instance := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns", Name: "some-such",
@@ -101,6 +101,21 @@ func TestInstanceNamesUnique(t *testing.T) {
 		names := sets.NewString()
 		for _, tt := range []test{
 			{"InstanceConfigMap", InstanceConfigMap(instance)},
+		} {
+			t.Run(tt.name, func(t *testing.T) {
+				assert.Equal(t, tt.value.Namespace, instance.Namespace)
+				assert.Assert(t, tt.value.Name != instance.Name, "may collide")
+				assert.Assert(t, !names.Has(tt.value.Name), "%q defined already", tt.value.Name)
+				assert.Assert(t, nil == validation.IsDNS1123Label(tt.value.Name))
+				names.Insert(tt.value.Name)
+			})
+		}
+	})
+
+	t.Run("Secrets", func(t *testing.T) {
+		names := sets.NewString()
+		for _, tt := range []test{
+			{"InstanceCertificates", InstanceCertificates(instance)},
 		} {
 			t.Run(tt.name, func(t *testing.T) {
 				assert.Equal(t, tt.value.Namespace, instance.Namespace)
