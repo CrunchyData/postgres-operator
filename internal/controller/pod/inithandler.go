@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/controller"
@@ -28,12 +29,14 @@ import (
 	taskoperator "github.com/crunchydata/postgres-operator/internal/operator/task"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
+
+	log "github.com/sirupsen/logrus"
 	apiv1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
-
-	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // handleClusterInit is responsible for proceeding with initialization of the PG cluster once the
@@ -81,6 +84,16 @@ func (c *Controller) handleBackRestRepoInit(newPod *apiv1.Pod, cluster *crv1.Pgc
 			return err
 		}
 		return nil
+	}
+
+	// first: a sanity check that there exists a primary deployment to scale. this
+	// is to attempt to avoid any silent failures in the deployment scaling
+	// function.
+	//
+	// If we do encounter an error, we will proceed in case the deployment becomes
+	// available after.
+	if err := c.waitForPrimaryDeployment(cluster); err != nil {
+		log.Warn(err)
 	}
 
 	clusterInfo, err := clusteroperator.ScaleClusterDeployments(c.Client, *cluster, 1,
@@ -290,4 +303,35 @@ func (c *Controller) labelPostgresPodAndDeployment(newpod *apiv1.Pod) {
 		log.Error("could not add label to deployment on pod add")
 		return
 	}
+}
+
+// waitForPrimaryDeployment checks to see that a primary deployment is
+// available. It does not check readiness, only that the deployment exists. This
+// used before scaling to ensure scaling does not fail silently
+func (c *Controller) waitForPrimaryDeployment(cluster *crv1.Pgcluster) error {
+	ctx := context.TODO()
+	primaryDeploymentName := cluster.Annotations[config.ANNOTATION_CURRENT_PRIMARY]
+	options := metav1.ListOptions{
+		LabelSelector: fields.AndSelectors(
+			fields.OneTermEqualSelector(config.LABEL_PG_CLUSTER, cluster.Name),
+			fields.OneTermEqualSelector(config.LABEL_PG_DATABASE, config.LABEL_TRUE),
+			fields.OneTermEqualSelector(config.LABEL_DEPLOYMENT_NAME, primaryDeploymentName),
+		).String(),
+	}
+
+	// start polling to see if the primary deployment is created
+	if err := wait.PollImmediate(5*time.Second, 60*time.Second, func() (bool, error) {
+		// check to see if the deployment exists
+		d, err := c.Client.AppsV1().Deployments(cluster.Namespace).List(ctx, options)
+
+		if err != nil {
+			log.Warnf("could not find primary deployment for scaling: %s", err)
+		}
+
+		return err == nil && len(d.Items) > 0, nil
+	}); err != nil {
+		return fmt.Errorf("primary deployment lookup timeout reached for %q", primaryDeploymentName)
+	}
+
+	return nil
 }
