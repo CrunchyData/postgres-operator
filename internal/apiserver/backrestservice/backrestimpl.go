@@ -203,10 +203,9 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 		}
 
 		// check if primary is ready
-		if err := isPrimaryReady(cluster, ns); err != nil {
-			log.Error(err)
+		if !isPrimaryReady(cluster) {
 			resp.Status.Code = msgs.Error
-			resp.Status.Msg = err.Error()
+			resp.Status.Msg = "primary pod is not in Ready state"
 			return resp
 		}
 
@@ -288,54 +287,27 @@ func getBackrestRepoPodName(cluster *crv1.Pgcluster, ns string) (string, error) 
 	return repopodName, err
 }
 
-func isPrimary(pod *v1.Pod, clusterName string) bool {
-	if pod.ObjectMeta.Labels[config.LABEL_SERVICE_NAME] == clusterName {
-		return true
-	}
-	return false
-
-}
-
-func isReady(pod *v1.Pod) bool {
-	readyCount := 0
-	containerCount := 0
-	for _, stat := range pod.Status.ContainerStatuses {
-		containerCount++
-		if stat.Ready {
-			readyCount++
-		}
-	}
-	if readyCount != containerCount {
-		return false
-	}
-	return true
-
-}
-
 // isPrimaryReady goes through the pod list to first identify the
 // Primary pod and, once identified, determine if it is in a
 // ready state. If not, it returns an error, otherwise it returns
 // a nil value
-func isPrimaryReady(cluster *crv1.Pgcluster, ns string) error {
-	primaryReady := false
+func isPrimaryReady(cluster *crv1.Pgcluster) bool {
+	options := metav1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
+		LabelSelector: fields.AndSelectors(
+			fields.OneTermEqualSelector(config.LABEL_PG_CLUSTER, cluster.Name),
+			fields.OneTermEqualSelector(config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY),
+		).String(),
+	}
 
-	selector := fmt.Sprintf("%s=%s,%s=%s", config.LABEL_PG_CLUSTER, cluster.Name,
-		config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
+	pods, err := apiserver.Clientset.CoreV1().Pods(cluster.Namespace).List(options)
 
-	pods, err := apiserver.Clientset.CoreV1().Pods(ns).List(metav1.ListOptions{LabelSelector: selector})
 	if err != nil {
-		return err
-	}
-	for _, p := range pods.Items {
-		if isPrimary(&p, cluster.Spec.Name) && isReady(&p) {
-			primaryReady = true
-		}
+		log.Error(err)
+		return false
 	}
 
-	if primaryReady == false {
-		return errors.New("primary pod is not in Ready state")
-	}
-	return nil
+	return len(pods.Items) > 0
 }
 
 // ShowBackrest ...
