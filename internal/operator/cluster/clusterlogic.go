@@ -143,13 +143,13 @@ func addClusterDeployments(clientset kubeapi.Interface,
 	deploymentFields := getClusterDeploymentFields(clientset, cl,
 		dataVolume, tablespaceVolumes)
 
+	if operator.CRUNCHY_DEBUG {
+		_ = config.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
+	}
+
 	var primaryDoc bytes.Buffer
 	if err := config.DeploymentTemplate.Execute(&primaryDoc, deploymentFields); err != nil {
 		return err
-	}
-
-	if operator.CRUNCHY_DEBUG {
-		_ = config.DeploymentTemplate.Execute(os.Stdout, deploymentFields)
 	}
 
 	deployment := &appsv1.Deployment{}
