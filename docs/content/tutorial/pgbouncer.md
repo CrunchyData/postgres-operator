@@ -116,7 +116,7 @@ PGPASSWORD=randompassword psql -h localhost -p 5432 -U pgbouncer pgbouncer
 You should see something similar to this:
 
 ```
-psql (13.1, server 1.14.0/bouncer)
+psql ({{< param postgresVersion >}}, server 1.14.0/bouncer)
 Type "help" for help.
 
 pgbouncer=#
@@ -172,7 +172,7 @@ PGPASSWORD=securerandomlygeneratedpassword psql -h localhost -p 5432 -U testuser
 You should see something similar to this:
 
 ```
-psql (13.1)
+psql ({{< param postgresVersion >}})
 SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, bits: 256, compression: off)
 Type "help" for help.
 
