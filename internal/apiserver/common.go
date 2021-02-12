@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strings"
 
+	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
 	log "github.com/sirupsen/logrus"
@@ -44,6 +45,9 @@ var (
 	// ErrDBContainerNotFound is an error that indicates that a "database" container
 	// could not be found in a specific pod
 	ErrDBContainerNotFound = errors.New("\"database\" container not found in pod")
+	// ErrPasswordTypeInvalid is used when a string that's not included in
+	// PasswordTypeStrings is used
+	ErrPasswordTypeInvalid = errors.New("invalid password type. choices are (md5, scram-sha-256)")
 	// ErrStandbyNotAllowed contains the error message returned when an API call is not
 	// permitted because it involves a cluster that is in standby mode
 	ErrStandbyNotAllowed = errors.New("Action not permitted because standby mode is enabled")
@@ -53,6 +57,27 @@ var (
 	ErrMethodNotAllowed = errors.New("This method has is not allowed in the current PostgreSQL " +
 		"Operator installation")
 )
+
+// passwordTypeStrings is a mapping of strings of password types to their
+// corresponding value of the structured password type
+var passwordTypeStrings = map[string]pgpassword.PasswordType{
+	"":              pgpassword.MD5,
+	"md5":           pgpassword.MD5,
+	"scram":         pgpassword.SCRAM,
+	"scram-sha-256": pgpassword.SCRAM,
+}
+
+// GetPasswordType returns the enumerated password type based on the string, and
+// an error if it cannot match one
+func GetPasswordType(passwordTypeStr string) (pgpassword.PasswordType, error) {
+	passwordType, ok := passwordTypeStrings[passwordTypeStr]
+
+	if !ok {
+		return passwordType, ErrPasswordTypeInvalid
+	}
+
+	return passwordType, nil
+}
 
 // IsValidPVC determines if a PVC with the name provided exits
 func IsValidPVC(pvcName, ns string) bool {
