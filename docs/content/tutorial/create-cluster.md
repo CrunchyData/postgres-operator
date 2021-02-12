@@ -65,7 +65,7 @@ So what just happened? Let's break down what occurs during the create cluster pr
   - Creating [persistent volume claims](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) (PVCs) for the PostgreSQL instance and the pgBackRest repository.
   - Creating [services](https://kubernetes.io/docs/concepts/services-networking/service/) that provide a stable network interface for connecting to the PostgreSQL instance and pgBackRest repository.
   - Creating [deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) that house each PostgreSQL instance and pgBackRest repository. Each of these is responsible for one Pod.
-  - The PostgreSQL Pod, when it is started, provisions a PostgreSQL database and performs other bootstrapping functions, such as creating `testuer`.
+  - The PostgreSQL Pod, when it is started, provisions a PostgreSQL database and performs other bootstrapping functions, such as creating `testuser`.
   - The pgBackRest Pod, when it is started, initializes a pgBackRest repository. Note that the pgBackRest repository is not yet ready to start taking backups, but will be after the next step!
 
 3. When the PostgreSQL Operator detects that the PostgreSQL and pgBackRest deployments are up and running, it creates a Kubenretes Job to create a pgBackRest stanza. This is necessary as part of intializing the pgBackRest repository to accept backups from our PostgreSQL cluster.
