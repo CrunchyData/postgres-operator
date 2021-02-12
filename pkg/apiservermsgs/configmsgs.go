@@ -15,13 +15,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import (
-	"github.com/crunchydata/postgres-operator/internal/config"
-)
-
 // ShowConfigResponse ...
 // swagger:model
 type ShowConfigResponse struct {
-	Result config.PgoConfig
+	Result interface{}
 	Status
 }
