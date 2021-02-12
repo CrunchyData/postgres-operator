@@ -28,7 +28,7 @@ spec:
     storagetype: dynamic
   ccpimage: {{ .Values.image | default "crunchy-postgres-ha" | quote }}
   ccpimageprefix: {{ .Values.imagePrefix | default "registry.developers.crunchydata.com/crunchydata" | quote }}
-  ccpimagetag: {{ .Values.imageTag | default "centos8-13.1-4.6.0" | quote }}
+  ccpimagetag: {{ .Values.imageTag | default "centos8-13.2-4.6.1" | quote }}
   clustername: {{ .Values.name | quote }}
   database: {{ .Values.name | quote }}
   {{- if .Values.monitoring }}

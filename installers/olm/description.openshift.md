@@ -187,7 +187,7 @@ spec:
   annotations: {}
   ccpimage: crunchy-postgres-ha
   ccpimageprefix: ${cluster_image_prefix}
-  ccpimagetag: centos8-13.1-${PGO_VERSION}
+  ccpimagetag: centos8-13.2-${PGO_VERSION}
   clustername: ${pgo_cluster_name}
   database: ${pgo_cluster_name}
   exporterport: "9187"
