@@ -19,18 +19,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	crunchylog "github.com/crunchydata/postgres-operator/internal/logging"
-	"github.com/nsqio/go-nsq"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"reflect"
 	"time"
+
+	"github.com/nsqio/go-nsq"
+	log "github.com/sirupsen/logrus"
 )
 
 // String returns the string form for a given LogLevel
 func Publish(e EventInterface) error {
-	//Add logging configuration
-	crunchylog.CrunchyLogger(crunchylog.SetParameters())
 	eventAddr := os.Getenv("EVENT_ADDR")
 	if eventAddr == "" {
 		return errors.New("EVENT_ADDR not set")

@@ -21,8 +21,50 @@ import (
 	"strings"
 	"testing"
 
+	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
+
 	"k8s.io/apimachinery/pkg/api/resource"
 )
+
+func TestGetPasswordType(t *testing.T) {
+	t.Run("valid", func(t *testing.T) {
+		tests := map[string]pgpassword.PasswordType{
+			"":              pgpassword.MD5,
+			"md5":           pgpassword.MD5,
+			"scram":         pgpassword.SCRAM,
+			"scram-sha-256": pgpassword.SCRAM,
+		}
+
+		for passwordTypeStr, expected := range tests {
+			t.Run(passwordTypeStr, func(t *testing.T) {
+				passwordType, err := GetPasswordType(passwordTypeStr)
+				if err != nil {
+					t.Error(err)
+					return
+				}
+
+				if passwordType != expected {
+					t.Errorf("password type %q should yield %d", passwordTypeStr, expected)
+				}
+			})
+		}
+	})
+
+	t.Run("invalid", func(t *testing.T) {
+		tests := map[string]error{
+			"magic":         ErrPasswordTypeInvalid,
+			"scram-sha-512": ErrPasswordTypeInvalid,
+		}
+
+		for passwordTypeStr, expected := range tests {
+			t.Run(passwordTypeStr, func(t *testing.T) {
+				if _, err := GetPasswordType(passwordTypeStr); !errors.Is(err, expected) {
+					t.Errorf("password type %q should yield error %q", passwordTypeStr, expected.Error())
+				}
+			})
+		}
+	})
+}
 
 func TestValidateLabel(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {

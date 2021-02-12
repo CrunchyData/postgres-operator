@@ -168,8 +168,7 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 	}
 
 	// determine if the user passed in a valid password type
-	passwordType, err := msgs.GetPasswordType(request.PasswordType)
-
+	passwordType, err := apiserver.GetPasswordType(request.PasswordType)
 	if err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
@@ -620,7 +619,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 	}
 
 	// determine if the user passed in a valid password type
-	if _, err := msgs.GetPasswordType(request.PasswordType); err != nil {
+	if _, err := apiserver.GetPasswordType(request.PasswordType); err != nil {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = err.Error()
 		return response
@@ -965,7 +964,7 @@ func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgclu
 
 		// get the password type. the error is already evaluated in a called
 		// function
-		passwordType, _ := msgs.GetPasswordType(request.PasswordType)
+		passwordType, _ := apiserver.GetPasswordType(request.PasswordType)
 
 		// generate a new password. Check to see if the user passed in a particular
 		// length of the password, or passed in a password to rotate (though that
@@ -1097,7 +1096,7 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 	// Speaking of passwords...let's first determine if the user updated their
 	// password. See generatePassword for how precedence is given for password
 	// updates
-	passwordType, _ := msgs.GetPasswordType(request.PasswordType)
+	passwordType, _ := apiserver.GetPasswordType(request.PasswordType)
 	isChanged, password, hashedPassword, err := generatePassword(result.Username,
 		request.Password, passwordType, request.RotatePassword, request.PasswordLength)
 

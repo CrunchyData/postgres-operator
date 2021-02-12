@@ -20,6 +20,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/crunchydata/postgres-operator/internal/apiserver"
 	utiloperator "github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pgo/api"
 	"github.com/crunchydata/postgres-operator/pgo/util"
@@ -88,7 +89,7 @@ func createUser(args []string, ns string) {
 	}
 
 	// determine if the user provies a valid password type
-	if _, err := msgs.GetPasswordType(PasswordType); err != nil {
+	if _, err := apiserver.GetPasswordType(PasswordType); err != nil {
 		fmt.Println("Error:", err.Error())
 		os.Exit(1)
 	}
@@ -401,7 +402,7 @@ func updateUser(clusterNames []string, namespace string) {
 	}
 
 	// determine if the user provies a valid password type
-	if _, err := msgs.GetPasswordType(PasswordType); err != nil {
+	if _, err := apiserver.GetPasswordType(PasswordType); err != nil {
 		fmt.Println("Error:", err.Error())
 		os.Exit(1)
 	}
