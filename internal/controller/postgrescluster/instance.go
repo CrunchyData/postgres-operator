@@ -171,7 +171,6 @@ func (r *Reconciler) reconcileInstance(
 			{
 				Name:      naming.ContainerDatabase,
 				Image:     "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos7-13.1-4.5.1",
-				Command:   []string{"tail", "-f", "/dev/null"},
 				Resources: spec.Resources,
 				Ports: []v1.ContainerPort{
 					{

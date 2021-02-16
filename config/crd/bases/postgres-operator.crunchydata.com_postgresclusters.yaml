@@ -526,9 +526,6 @@ spec:
                   dynamicConfiguration:
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
-                  edc:
-                    description: DEPRECATED. A manual switch to enable dynamic configuration.
-                    type: boolean
                   port:
                     default: 8008
                     description: The port on which Patroni should listen.
@@ -627,6 +624,12 @@ spec:
                 format: int64
                 minimum: 0
                 type: integer
+              patroni:
+                properties:
+                  systemIdentifier:
+                    description: The PostgreSQL system identifier reported by Patroni.
+                    type: string
+                type: object
               pgbackrest:
                 description: Status information for pgBackRest
                 properties:

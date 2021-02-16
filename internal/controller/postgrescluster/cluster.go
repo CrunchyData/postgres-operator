@@ -23,6 +23,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
+	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
@@ -32,6 +33,7 @@ import (
 // files (etc) that apply to the entire cluster.
 func (r *Reconciler) reconcileClusterConfigMap(
 	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
 ) (*v1.ConfigMap, error) {
 	clusterConfigMap := &v1.ConfigMap{ObjectMeta: naming.ClusterConfigMap(cluster)}
 	clusterConfigMap.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("ConfigMap"))
@@ -43,7 +45,7 @@ func (r *Reconciler) reconcileClusterConfigMap(
 	}
 
 	if err == nil {
-		err = patroni.ClusterConfigMap(ctx, cluster, clusterConfigMap)
+		err = patroni.ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, clusterConfigMap)
 	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, clusterConfigMap))

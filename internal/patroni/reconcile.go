@@ -20,15 +20,19 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
+	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
 // ClusterConfigMap populates the shared ConfigMap with fields needed to run Patroni.
 func ClusterConfigMap(ctx context.Context,
 	inCluster *v1alpha1.PostgresCluster,
+	inHBAs postgres.HBAs,
+	inParameters postgres.Parameters,
 	outClusterConfigMap *v1.ConfigMap,
 ) error {
 	var err error
@@ -37,7 +41,7 @@ func ClusterConfigMap(ctx context.Context,
 		outClusterConfigMap.Data = make(map[string]string)
 	}
 
-	outClusterConfigMap.Data[configMapFileKey], err = clusterYAML(inCluster)
+	outClusterConfigMap.Data[configMapFileKey], err = clusterYAML(inCluster, inHBAs, inParameters)
 
 	return err
 }
@@ -103,6 +107,8 @@ func InstancePod(ctx context.Context,
 	container := findOrAppendContainer(&outInstancePod.Spec.Containers,
 		naming.ContainerDatabase)
 
+	container.Command = []string{"patroni", configDirectory}
+
 	container.Env = mergeEnvVars(container.Env,
 		instanceEnvironment(inCluster, inClusterPodService, inPatroniLeaderService,
 			outInstancePod.Spec.Containers)...)
@@ -127,5 +133,37 @@ func InstancePod(ctx context.Context,
 		ReadOnly:  true,
 	})
 
+	instanceProbes(inCluster, container)
+
 	return nil
+}
+
+// instanceProbes adds Patroni a readiness probe to container.
+func instanceProbes(cluster *v1alpha1.PostgresCluster, container *v1.Container) {
+	// NOTE(cbandy): These values are an initial guess. Some more sophistication
+	// may be needed.
+	// - https://github.com/zalando/patroni/blob/v2.0.1/docs/rest_api.rst
+	thresholds := &v1.Probe{
+		InitialDelaySeconds: 3,
+
+		SuccessThreshold: 1,
+		TimeoutSeconds:   5,
+
+		// TODO(cbandy): Elevate "ttl" to the CRD and tune these to be close.
+		// - https://github.com/zalando/patroni/blob/v2.0.1/docs/watchdog.rst
+		PeriodSeconds:    10,
+		FailureThreshold: 3,
+	}
+
+	// Readiness is reflected in the controlling object's status (e.g. ReadyReplicas)
+	// and allows our controller to react when Patroni bootstrap completes.
+	//
+	// When using Endpoints for DCS, this probe does not affect the availability
+	// of the leader Pod in the leader Service.
+	container.ReadinessProbe = thresholds.DeepCopy()
+	container.ReadinessProbe.HTTPGet = &v1.HTTPGetAction{
+		Path:   "/readiness",
+		Port:   intstr.FromInt(int(*cluster.Spec.Patroni.Port)),
+		Scheme: v1.URISchemeHTTPS,
+	}
 }

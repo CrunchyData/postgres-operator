@@ -35,6 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
+	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
@@ -127,8 +128,24 @@ func (r *Reconciler) Reconcile(
 		err                  error
 	)
 
+	// TODO(cbandy): Accumulate postgres settings.
+
+	pgHBAs := postgres.HBAs{}
+	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().Local().User("postgres").Method("peer"))
+	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TCP().Replication().Method("trust"))
+	pgHBAs.Default = append(pgHBAs.Default, *postgres.NewHBA().TCP().Method("scram-sha-256"))
+
+	pgParameters := postgres.Parameters{}
+	pgParameters.Mandatory = postgres.NewParameterSet()
+	pgParameters.Mandatory.Add("wal_level", "logical")
+	pgParameters.Default = postgres.NewParameterSet()
+	pgParameters.Default.Add("jit", "off")
+
 	if err == nil {
-		clusterConfigMap, err = r.reconcileClusterConfigMap(ctx, cluster)
+		err = r.reconcilePatroniStatus(ctx, cluster)
+	}
+	if err == nil {
+		clusterConfigMap, err = r.reconcileClusterConfigMap(ctx, cluster, pgHBAs, pgParameters)
 	}
 	if err == nil {
 		clusterPodService, err = r.reconcileClusterPodService(ctx, cluster)
@@ -143,7 +160,7 @@ func (r *Reconciler) Reconcile(
 		err = r.reconcilePatroniDistributedConfiguration(ctx, cluster)
 	}
 	if err == nil {
-		err = r.reconcilePatroniDynamicConfiguration(ctx, cluster)
+		err = r.reconcilePatroniDynamicConfiguration(ctx, cluster, pgHBAs, pgParameters)
 	}
 
 	for i := range cluster.Spec.InstanceSets {

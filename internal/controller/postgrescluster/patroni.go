@@ -77,10 +77,11 @@ func (r *Reconciler) reconcilePatroniDistributedConfiguration(
 
 func (r *Reconciler) reconcilePatroniDynamicConfiguration(
 	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
 ) error {
-	// TODO(cbandy): Replace this with some automated indication that things
-	// are _expected_ to be running. (Status?)
-	if cluster.Spec.Patroni.EDC == nil || !*cluster.Spec.Patroni.EDC {
+	if cluster.Status.Patroni == nil || cluster.Status.Patroni.SystemIdentifier == "" {
+		// Patroni has not yet bootstrapped. Dynamic configuration happens through
+		// configuration files during bootstrap, so there's nothing to do here.
 		return nil
 	}
 
@@ -91,23 +92,7 @@ func (r *Reconciler) reconcilePatroniDynamicConfiguration(
 		cluster.Spec.Patroni.DynamicConfiguration.Raw, &configuration,
 	)
 
-	// TODO(cbandy): Accumulate postgres settings. Perhaps arguments to the method?
-
-	pgHBAs := postgres.HBAs{}
-	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().Local().User("postgres").Method("peer"))
-	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TCP().Replication().Method("trust"))
-	pgHBAs.Default = append(pgHBAs.Default, *postgres.NewHBA().TCP().Method("md5"))
-
-	pgParameters := postgres.Parameters{}
-	pgParameters.Mandatory = postgres.NewParameterSet()
-	pgParameters.Mandatory.Add("wal_level", "logical")
-	pgParameters.Default = postgres.NewParameterSet()
-	pgParameters.Default.Add("jit", "off")
-
 	configuration = patroni.DynamicConfiguration(configuration, pgHBAs, pgParameters)
-
-	// TODO(cbandy): The above work should also be done at bootstrap. See Patroni
-	// "bootstrap.dcs" YAML.
 
 	pods := &v1.PodList{}
 	instances, err := naming.AsSelector(naming.ClusterPatronis(cluster))
@@ -190,4 +175,25 @@ func (r *Reconciler) reconcilePatroniLeaderLease(
 	}
 
 	return leaderService, err
+}
+
+// +kubebuilder:rbac:resources=endpoints,verbs=get
+
+// reconcilePatroniStatus populates cluster.Status.Patroni with observations.
+func (r *Reconciler) reconcilePatroniStatus(
+	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+) error {
+	var status v1alpha1.PatroniStatus
+
+	dcs := &v1.Endpoints{ObjectMeta: naming.PatroniDistributedConfiguration(cluster)}
+	err := errors.WithStack(client.IgnoreNotFound(
+		r.Client.Get(ctx, client.ObjectKeyFromObject(dcs), dcs)))
+
+	if err == nil {
+		// After bootstrap, Patroni writes the cluster system identifier to DCS.
+		status.SystemIdentifier = dcs.Annotations["initialize"]
+	}
+
+	cluster.Status.Patroni = &status
+	return err
 }

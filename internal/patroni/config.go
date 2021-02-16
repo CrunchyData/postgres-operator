@@ -40,16 +40,14 @@ const (
 )
 
 // clusterYAML returns Patroni settings that apply to the entire cluster.
-func clusterYAML(cluster *v1alpha1.PostgresCluster) (string, error) {
+func clusterYAML(
+	cluster *v1alpha1.PostgresCluster,
+	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
+) (string, error) {
 	root := map[string]interface{}{
 		// The cluster identifier. This value cannot change during the cluster's
 		// lifetime.
 		"scope": naming.PatroniScope(cluster),
-
-		// FIXME(cbandy): bootstrap.dcs is required to actually bootstrap.
-		"bootstrap": map[string]interface{}{
-			"dcs": map[string]interface{}{},
-		},
 
 		// Use Kubernetes Endpoints for the distributed configuration store (DCS).
 		// These values cannot change during the cluster's lifetime.
@@ -113,8 +111,15 @@ func clusterYAML(cluster *v1alpha1.PostgresCluster) (string, error) {
 			// The private key is bundled into "restapi.certfile".
 			"keyfile": nil,
 
-			// Require clients to present a certificate verified by "restapi.cafile".
-			"verify_client": "required",
+			// Require clients to present a certificate verified by "restapi.cafile"
+			// when calling "unsafe" API endpoints.
+			// - https://github.com/zalando/patroni/blob/v2.0.1/docs/security.rst#protecting-the-rest-api
+			//
+			// NOTE(cbandy): We'd prefer "required" here, but Kubernetes HTTPS probes
+			// offer no way to present client certificates. Perhaps Patroni could change
+			// to relax the requirement on *just* liveness and readiness?
+			// - https://issue.k8s.io/92647
+			"verify_client": "optional",
 
 			// TODO(cbandy): The next release of Patroni will allow more control over
 			// the TLS protocols/ciphers.
@@ -134,6 +139,24 @@ func clusterYAML(cluster *v1alpha1.PostgresCluster) (string, error) {
 			// Always verify the server certificate against "ctl.cacert".
 			"insecure": false,
 		},
+	}
+
+	if cluster.Status.Patroni == nil || cluster.Status.Patroni.SystemIdentifier == "" {
+		// Patroni has not yet bootstrapped. Populate the "bootstrap.dcs" field to
+		// facilitate it. When Patroni is already bootstrapped, this field is ignored.
+
+		// Deserialize the schemaless field. There will be no error because the
+		// Kubernetes API has already ensured it is a JSON object.
+		configuration := make(map[string]interface{})
+		if cluster.Spec.Patroni != nil {
+			_ = yaml.Unmarshal(
+				cluster.Spec.Patroni.DynamicConfiguration.Raw, &configuration,
+			)
+		}
+
+		root["bootstrap"] = map[string]interface{}{
+			"dcs": DynamicConfiguration(configuration, pgHBAs, pgParameters),
+		}
 	}
 
 	b, err := yaml.Marshal(root)
@@ -297,14 +320,6 @@ func instanceEnvironment(
 		{
 			Name:  "PATRONI_RESTAPI_LISTEN",
 			Value: fmt.Sprintf("*:%d", patroniPort),
-		},
-
-		// Our image tells the Patroni daemon `patroni` to look here for its
-		// configuration file(s).
-		// TODO(cbandy): Make this true!
-		{
-			Name:  "PATRONI_CONFIG_FILE",
-			Value: configDirectory,
 		},
 
 		// The Patroni client `patronictl` looks here for its configuration file(s).

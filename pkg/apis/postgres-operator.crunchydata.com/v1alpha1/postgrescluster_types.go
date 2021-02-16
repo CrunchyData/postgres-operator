@@ -117,6 +117,9 @@ type RepoHostStatus struct {
 // PostgresClusterStatus defines the observed state of PostgresCluster
 type PostgresClusterStatus struct {
 
+	// +optional
+	Patroni *PatroniStatus `json:"patroni,omitempty"`
+
 	// Status information for pgBackRest
 	// +optional
 	PGBackRest *PGBackRestStatus `json:"pgbackrest,omitempty"`

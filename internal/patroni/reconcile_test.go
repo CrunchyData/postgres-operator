@@ -27,6 +27,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
+	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
@@ -36,15 +37,17 @@ func TestClusterConfigMap(t *testing.T) {
 	ctx := context.Background()
 	cluster := new(v1alpha1.PostgresCluster)
 	config := new(v1.ConfigMap)
-	data, _ := clusterYAML(cluster)
+	pgHBAs := postgres.HBAs{}
+	pgParameters := postgres.Parameters{}
+	data, _ := clusterYAML(cluster, pgHBAs, pgParameters)
 
-	assert.NilError(t, ClusterConfigMap(ctx, cluster, config))
+	assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, config))
 
 	assert.DeepEqual(t, config.Data["patroni.yaml"], data)
 
 	// No change when called again.
 	before := config.DeepCopy()
-	assert.NilError(t, ClusterConfigMap(ctx, cluster, config))
+	assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, config))
 	assert.DeepEqual(t, config, before)
 }
 
@@ -127,7 +130,10 @@ func TestInstancePod(t *testing.T) {
 
 	assert.Assert(t, marshalEquals(template.Spec, strings.TrimSpace(`
 containers:
-- env:
+- command:
+  - patroni
+  - /etc/patroni
+  env:
   - name: PATRONI_NAME
     valueFrom:
       fieldRef:
@@ -149,11 +155,19 @@ containers:
     value: $(PATRONI_NAME).:8008
   - name: PATRONI_RESTAPI_LISTEN
     value: '*:8008'
-  - name: PATRONI_CONFIG_FILE
-    value: /etc/patroni
   - name: PATRONICTL_CONFIG_FILE
     value: /etc/patroni
   name: database
+  readinessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /readiness
+      port: 8008
+      scheme: HTTPS
+    initialDelaySeconds: 3
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
   resources: {}
   volumeMounts:
   - mountPath: /etc/patroni

@@ -28,12 +28,6 @@ type PatroniSpec struct {
 	// +kubebuilder:validation:XPreserveUnknownFields
 	DynamicConfiguration runtime.RawExtension `json:"dynamicConfiguration,omitempty"`
 
-	// TODO(cbandy): Remove this completely.
-
-	// DEPRECATED. A manual switch to enable dynamic configuration.
-	// +optional
-	EDC *bool `json:"edc,omitempty"`
-
 	// TODO(cbandy): Describe the downtime involved with changing.
 
 	// The port on which Patroni should listen.
@@ -52,4 +46,15 @@ func (s *PatroniSpec) Default() {
 		s.Port = new(int32)
 		*s.Port = 8008
 	}
+}
+
+type PatroniStatus struct {
+
+	// - "database_system_identifier" of https://github.com/zalando/patroni/blob/v2.0.1/docs/rest_api.rst#monitoring-endpoint
+	// - "system_identifier" of https://www.postgresql.org/docs/current/functions-info.html#FUNCTIONS-PG-CONTROL-SYSTEM
+	// - "systemid" of https://www.postgresql.org/docs/current/protocol-replication.html
+
+	// The PostgreSQL system identifier reported by Patroni.
+	// +optional
+	SystemIdentifier string `json:"systemIdentifier,omitempty"`
 }
