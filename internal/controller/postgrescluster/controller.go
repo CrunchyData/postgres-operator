@@ -25,7 +25,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -35,7 +34,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
@@ -82,6 +80,12 @@ func (r *Reconciler) Reconcile(
 
 	// create the result that will be updated following a call to each reconciler
 	result := reconcile.Result{}
+	updateResult := func(next reconcile.Result, err error) error {
+		if err == nil {
+			result = updateReconcileResult(result, next)
+		}
+		return err
+	}
 
 	// get the postgrescluster from the cache
 	postgresCluster := &v1alpha1.PostgresCluster{}
@@ -108,11 +112,6 @@ func (r *Reconciler) Reconcile(
 	}
 
 	log.V(1).Info("reconciling")
-
-	// create the status resource that will be updated by each reconciler.  start with a copy
-	// of the PostgresCluster's existing status, and each reconciler will then update its own
-	// portion of the status
-	status := postgresCluster.Status.DeepCopy()
 
 	// call business logic to reconcile the postgrescluster
 	cluster := postgresCluster.DeepCopy()
@@ -155,19 +154,9 @@ func (r *Reconciler) Reconcile(
 		}
 	}
 
-	if err != nil {
-		log.Error(err, "reconciling instances")
-		span.RecordError(err)
-		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
+	if err == nil {
+		err = updateResult(r.reconcilePGBackRest(ctx, postgresCluster))
 	}
-
-	// reconcile pgBackRest
-	pgBackRestResult, err := r.reconcilePGBackRest(ctx, postgresCluster, status)
-	if err != nil {
-		log.Error(err, "reconciling pgBackRest")
-		span.RecordError(err)
-	}
-	result = updateReconcileResult(result, pgBackRestResult)
 
 	// TODO reconcile pgBouncer
 
@@ -175,28 +164,18 @@ func (r *Reconciler) Reconcile(
 
 	// at this point everything reconciled successfully, and we can update the
 	// observedGeneration
-	status.ObservedGeneration = postgresCluster.GetGeneration()
+	cluster.Status.ObservedGeneration = cluster.GetGeneration()
 
-	// ensure pgBackRest status is updated as needed before returning
-	if !equality.Semantic.DeepEqual(before.Status, status) {
-		statusResult, err := r.reconcilePostgresClusterStatus(ctx, postgresCluster, status)
-		if err != nil {
-			log.Error(err, "reconciling status")
-			span.RecordError(err)
-		}
-		result = updateReconcileResult(result, statusResult)
-	}
-
-	// if the result isn't empty then reconciliation was unsuccessful and the PostgresCluster is
-	// requeued
-	if result != (reconcile.Result{}) {
-		log.V(1).Info("unable to reconcile cluster")
-		return result, nil
+	if err == nil && !equality.Semantic.DeepEqual(before.Status, cluster.Status) {
+		// NOTE(cbandy): Kubernetes prior to v1.16.10 and v1.17.6 does not track
+		// managed fields on the status subresource: https://issue.k8s.io/88901
+		err = errors.WithStack(
+			r.Client.Status().Patch(ctx, cluster, client.MergeFrom(before), r.Owner))
 	}
 
 	log.V(1).Info("reconciled cluster")
 
-	return result, nil
+	return result, err
 }
 
 // patch sends patch to object's endpoint in the Kubernetes API and updates
@@ -243,25 +222,4 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 		Watches(&source.Kind{Type: &appsv1.StatefulSet{}},
 			r.statefulSetControllerRefHandlerFuncs()). // watch all StatefulSets
 		Complete(r)
-}
-
-// reconcilePostgresClusterStatus reconciles the status for the provided PostgresCluster by
-// patching it with the provided PostgresCluster status.
-func (r *Reconciler) reconcilePostgresClusterStatus(ctx context.Context,
-	postgresCluster *v1alpha1.PostgresCluster,
-	status *v1alpha1.PostgresClusterStatus) (reconcile.Result, error) {
-
-	statusPatch, err := kubeapi.NewMergePatch().Add("status")(status).Bytes()
-	if err != nil {
-		return reconcile.Result{Requeue: true}, errors.WithStack(err)
-	}
-
-	// NOTE(cbandy): Kubernetes prior to v1.16.10 and v1.17.6 does not track
-	// managed fields on the status subresource: https://issue.k8s.io/88901
-	if err := r.Client.Status().Patch(ctx, postgresCluster,
-		client.RawPatch(types.MergePatchType, statusPatch), r.Owner); err != nil {
-		return reconcile.Result{Requeue: true}, errors.WithStack(err)
-	}
-
-	return reconcile.Result{}, nil
 }

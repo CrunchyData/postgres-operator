@@ -145,10 +145,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 		},
 	}
 
-	// create a status to populate during the test
-	status := &v1alpha1.PostgresClusterStatus{}
-
-	result, err := r.reconcilePGBackRest(ctx, postgresCluster, status)
+	result, err := r.reconcilePGBackRest(ctx, postgresCluster)
 	if err != nil || result != (reconcile.Result{}) {
 		t.Error(fmt.Errorf("unable to reconcile pgBackRest: %v", err))
 	}
@@ -241,7 +238,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 				PGBackRestRepoContainerName)
 		}
 
-		repoHostStatus := status.PGBackRest.RepoHost
+		repoHostStatus := postgresCluster.Status.PGBackRest.RepoHost
 		if repoHostStatus != nil {
 			if repoHostStatus.APIVersion != "apps/v1" || repoHostStatus.Kind != "StatefulSet" {
 				t.Errorf("invalid version/kind for repo host status")
@@ -254,7 +251,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 		}
 
 		var foundConditionRepoHostsReady bool
-		for _, c := range status.Conditions {
+		for _, c := range postgresCluster.Status.Conditions {
 			if c.Type == "PGBackRestRepoHostsReady" {
 				foundConditionRepoHostsReady = true
 				break

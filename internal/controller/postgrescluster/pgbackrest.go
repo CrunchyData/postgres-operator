@@ -222,17 +222,17 @@ func (r *Reconciler) getReposForPostgresCluster(ctx context.Context,
 // the results of any attempts to properly reconcile these resources.
 func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	postgresCluster *v1alpha1.PostgresCluster,
-	status *v1alpha1.PostgresClusterStatus) (reconcile.Result, error) {
+) (reconcile.Result, error) {
 
 	// add some additional context about what component is being reconciled
 	log := logging.FromContext(ctx).WithValues("reconciler", "pgBackRest")
 
 	// create the pgBackRest status that will be updated when reconciling various pgBackRest
 	// resources
-	if status.PGBackRest == nil {
-		status.PGBackRest = new(v1alpha1.PGBackRestStatus)
+	if postgresCluster.Status.PGBackRest == nil {
+		postgresCluster.Status.PGBackRest = new(v1alpha1.PGBackRestStatus)
 	}
-	pgBackRestStatus := status.PGBackRest
+	pgBackRestStatus := postgresCluster.Status.PGBackRest
 
 	// reconcile the pgbackrest repository host Deployment
 	if err := r.reconcileRepoHost(ctx, postgresCluster, pgBackRestStatus); err != nil {
@@ -243,7 +243,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	}
 
 	// ensure conditions are updated before returning
-	setStatusConditions(status,
+	setStatusConditions(&postgresCluster.Status,
 		calculatePGBackRestConditions(pgBackRestStatus, postgresCluster.GetGeneration())...)
 
 	return reconcile.Result{}, nil
