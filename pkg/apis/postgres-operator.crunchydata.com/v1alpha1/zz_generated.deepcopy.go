@@ -89,8 +89,18 @@ func (in *PGBackRestStatus) DeepCopy() *PGBackRestStatus {
 func (in *PatroniSpec) DeepCopyInto(out *PatroniSpec) {
 	*out = *in
 	in.DynamicConfiguration.DeepCopyInto(&out.DynamicConfiguration)
+	if in.LeaderLeaseDurationSeconds != nil {
+		in, out := &in.LeaderLeaseDurationSeconds, &out.LeaderLeaseDurationSeconds
+		*out = new(int32)
+		**out = **in
+	}
 	if in.Port != nil {
 		in, out := &in.Port, &out.Port
+		*out = new(int32)
+		**out = **in
+	}
+	if in.SyncPeriodSeconds != nil {
+		in, out := &in.SyncPeriodSeconds, &out.SyncPeriodSeconds
 		*out = new(int32)
 		**out = **in
 	}

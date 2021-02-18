@@ -160,6 +160,10 @@ func (r *Reconciler) reconcileInstance(
 			*instance.Spec.Replicas = 1
 		}
 
+		// Restart containers any time they stop, die, are killed, etc.
+		// - https://docs.k8s.io/concepts/workloads/pods/pod-lifecycle/#restart-policy
+		instance.Spec.Template.Spec.RestartPolicy = v1.RestartPolicyAlways
+
 		// ShareProcessNamespace makes Kubernetes' pause process PID 1 and lets
 		// containers see each other's processes.
 		// - https://docs.k8s.io/tasks/configure-pod-container/share-process-namespace/

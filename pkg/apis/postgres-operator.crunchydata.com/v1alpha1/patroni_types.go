@@ -21,7 +21,7 @@ import (
 
 type PatroniSpec struct {
 	// TODO(cbandy): Find a better way to have a map[string]interface{} here.
-	// See: https://github.com/kubernetes-sigs/controller-tools/pull/528
+	// See: https://github.com/kubernetes-sigs/controller-tools/commit/557da250b8
 	// TODO(cbandy): Describe this field.
 
 	// +optional
@@ -30,10 +30,28 @@ type PatroniSpec struct {
 
 	// TODO(cbandy): Describe the downtime involved with changing.
 
+	// TTL of the cluster leader lock. "Think of it as the
+	// length of time before initiation of the automatic failover process."
+	// +optional
+	// +kubebuilder:default=30
+	// +kubebuilder:validation:Minimum=3
+	LeaderLeaseDurationSeconds *int32 `json:"leaderLeaseDurationSeconds,omitempty"`
+
+	// TODO(cbandy): Describe the downtime involved with changing.
+
 	// The port on which Patroni should listen.
 	// +optional
 	// +kubebuilder:default=8008
 	Port *int32 `json:"port,omitempty"`
+
+	// TODO(cbandy): Describe the downtime involved with changing.
+
+	// The interval for refreshing the leader lock and applying
+	// dynamicConfiguration. Must be less than leaderLeaseDurationSeconds.
+	// +optional
+	// +kubebuilder:default=10
+	// +kubebuilder:validation:Minimum=1
+	SyncPeriodSeconds *int32 `json:"syncPeriodSeconds,omitempty"`
 
 	// TODO(cbandy): Add UseConfigMaps bool, default false.
 	// TODO(cbandy): Allow other DCS: etcd, raft, etc?
@@ -42,9 +60,17 @@ type PatroniSpec struct {
 }
 
 func (s *PatroniSpec) Default() {
+	if s.LeaderLeaseDurationSeconds == nil {
+		s.LeaderLeaseDurationSeconds = new(int32)
+		*s.LeaderLeaseDurationSeconds = 30
+	}
 	if s.Port == nil {
 		s.Port = new(int32)
 		*s.Port = 8008
+	}
+	if s.SyncPeriodSeconds == nil {
+		s.SyncPeriodSeconds = new(int32)
+		*s.SyncPeriodSeconds = 10
 	}
 }
 

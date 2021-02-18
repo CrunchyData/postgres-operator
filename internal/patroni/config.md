@@ -139,7 +139,7 @@ TODO: document PostgreSQL parameters separately...
 ||
 | - | watchdog.mode          | Yes¹ | mutable | either | patroni | (default: automatic)
 | - | watchdog.device        | Yes¹ | mutable | either | patroni | Path to watchdog device. (default: /dev/watchdog)
-| - | watchdog.safety_margin | Yes¹ | mutable | either | patroni |
+| - | watchdog.safety_margin | Yes¹ | mutable | either | patroni | (default: 5)
 
 ¹ This section must be entirely in DCS or entirely in YAML.
 
@@ -153,7 +153,21 @@ Used only by `patroni`, not `patronictl`.
 | - | ttl           | Only | mutable | cluster | TTL of the leader lock in seconds. (default: 30)
 | - | loop_wait     | Only | mutable | cluster | Seconds between HA reconciliations. (default: 10)
 | - | retry_timeout | Only | mutable | cluster | Timeout for DCS and PostgreSQL operations in seconds. (default: 10)
-||
+
+There is an implicit relationship between `ttl`, `loop_wait`, and `retry_timeout`.
+According to https://github.com/zalando/patroni/issues/1579#issuecomment-641830296,
+`ttl` should be greater than the maximum time it may take for a single
+synchronization which is `loop_wait` plus two `retry_timeout`. That is,
+`ttl > loop_wait + retry_timeout + retry_timeout` because immediately after
+acquiring the leader lock, the Patroni leader:
+
+  1. Sleeps until the next scheduled sync (at most `loop_wait`)
+  2. Wakes and tries to read from DCS (at most `retry_timeout`)
+  3. Decides to release or retain the lock
+  4. Then tries to write that to DCS (at most `retry_timeout`)
+
+| Environment | YAML | DCS | Mutable | C/I | . |
+|-------------|------|-----|---------|-----|---|
 |||||| https://github.com/zalando/patroni/blob/v2.0.1/docs/replication_modes.rst
 | - | maximum_lag_on_failover | Only | mutable | cluster | Bytes behind which a replica may not become leader. (default: 1MB)
 | - | check_timeline          | Only | mutable | cluster | Whether or not a replica on an older timeline may become leader. (default: false)

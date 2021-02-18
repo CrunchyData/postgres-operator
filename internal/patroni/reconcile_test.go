@@ -36,6 +36,7 @@ func TestClusterConfigMap(t *testing.T) {
 
 	ctx := context.Background()
 	cluster := new(v1alpha1.PostgresCluster)
+	cluster.Default()
 	config := new(v1.ConfigMap)
 	pgHBAs := postgres.HBAs{}
 	pgParameters := postgres.Parameters{}
@@ -157,6 +158,16 @@ containers:
     value: '*:8008'
   - name: PATRONICTL_CONFIG_FILE
     value: /etc/patroni
+  livenessProbe:
+    failureThreshold: 3
+    httpGet:
+      path: /liveness
+      port: 8008
+      scheme: HTTPS
+    initialDelaySeconds: 3
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 5
   name: database
   readinessProbe:
     failureThreshold: 3

@@ -138,21 +138,27 @@ func InstancePod(ctx context.Context,
 	return nil
 }
 
-// instanceProbes adds Patroni a readiness probe to container.
+// instanceProbes adds Patroni liveness and readiness probes to container.
 func instanceProbes(cluster *v1alpha1.PostgresCluster, container *v1.Container) {
-	// NOTE(cbandy): These values are an initial guess. Some more sophistication
-	// may be needed.
-	// - https://github.com/zalando/patroni/blob/v2.0.1/docs/rest_api.rst
-	thresholds := &v1.Probe{
-		InitialDelaySeconds: 3,
 
-		SuccessThreshold: 1,
-		TimeoutSeconds:   5,
-
-		// TODO(cbandy): Elevate "ttl" to the CRD and tune these to be close.
-		// - https://github.com/zalando/patroni/blob/v2.0.1/docs/watchdog.rst
-		PeriodSeconds:    10,
-		FailureThreshold: 3,
+	// Patroni uses a watchdog to ensure that PostgreSQL does not accept commits
+	// after the leader lock expires, even if Patroni becomes unresponsive.
+	// - https://github.com/zalando/patroni/blob/v2.0.1/docs/watchdog.rst
+	//
+	// Similar functionality is provided by a liveness probe. When the probe
+	// finally fails, kubelet will send a SIGTERM to the Patroni process.
+	// If the process does not stop, kubelet will send a SIGKILL after the pod's
+	// TerminationGracePeriodSeconds.
+	// - https://docs.k8s.io/concepts/workloads/pods/pod-lifecycle/
+	//
+	// TODO(cbandy): Consider TerminationGracePeriodSeconds' impact here.
+	// TODO(cbandy): Consider if a PreStop hook is necessary.
+	container.LivenessProbe = probeTiming(cluster.Spec.Patroni)
+	container.LivenessProbe.InitialDelaySeconds = 3
+	container.LivenessProbe.HTTPGet = &v1.HTTPGetAction{
+		Path:   "/liveness",
+		Port:   intstr.FromInt(int(*cluster.Spec.Patroni.Port)),
+		Scheme: v1.URISchemeHTTPS,
 	}
 
 	// Readiness is reflected in the controlling object's status (e.g. ReadyReplicas)
@@ -160,7 +166,8 @@ func instanceProbes(cluster *v1alpha1.PostgresCluster, container *v1.Container) 
 	//
 	// When using Endpoints for DCS, this probe does not affect the availability
 	// of the leader Pod in the leader Service.
-	container.ReadinessProbe = thresholds.DeepCopy()
+	container.ReadinessProbe = probeTiming(cluster.Spec.Patroni)
+	container.ReadinessProbe.InitialDelaySeconds = 3
 	container.ReadinessProbe.HTTPGet = &v1.HTTPGetAction{
 		Path:   "/readiness",
 		Port:   intstr.FromInt(int(*cluster.Spec.Patroni.Port)),

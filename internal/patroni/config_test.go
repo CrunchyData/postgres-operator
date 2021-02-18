@@ -32,6 +32,7 @@ func TestClusterYAML(t *testing.T) {
 	t.Parallel()
 
 	cluster := new(v1alpha1.PostgresCluster)
+	cluster.Default()
 	cluster.Namespace = "some-namespace"
 	cluster.Name = "cluster-name"
 
@@ -42,10 +43,12 @@ func TestClusterYAML(t *testing.T) {
 # Your changes will not be saved.
 bootstrap:
   dcs:
+    loop_wait: 10
     postgresql:
       parameters: {}
       pg_hba: []
       use_pg_rewind: true
+    ttl: 30
 ctl:
   cacert: /etc/patroni/~postgres-operator/patroni.ca-roots
   certfile: /etc/patroni/~postgres-operator/patroni.crt+key
@@ -69,12 +72,15 @@ restapi:
   keyfile: null
   verify_client: optional
 scope: cluster-name-ha
+watchdog:
+  mode: "off"
 	`)+"\n")
 }
 
 func TestDynamicConfiguration(t *testing.T) {
 	t.Parallel()
 
+	newInt32 := func(i int32) *int32 { return &i }
 	parameters := func(in map[string]string) *postgres.ParameterSet {
 		out := postgres.NewParameterSet()
 		for k, v := range in {
@@ -85,6 +91,7 @@ func TestDynamicConfiguration(t *testing.T) {
 
 	for _, tt := range []struct {
 		name     string
+		cluster  *v1alpha1.PostgresCluster
 		input    map[string]interface{}
 		hbas     postgres.HBAs
 		params   postgres.Parameters
@@ -93,6 +100,8 @@ func TestDynamicConfiguration(t *testing.T) {
 		{
 			name: "empty is valid",
 			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
 				"postgresql": map[string]interface{}{
 					"parameters":    map[string]interface{}{},
 					"pg_hba":        []string{},
@@ -103,10 +112,36 @@ func TestDynamicConfiguration(t *testing.T) {
 		{
 			name: "top-level passes through",
 			input: map[string]interface{}{
-				"loop_wait": 5,
+				"retry_timeout": 5,
 			},
 			expected: map[string]interface{}{
-				"loop_wait": 5,
+				"loop_wait":     int32(10),
+				"ttl":           int32(30),
+				"retry_timeout": 5,
+				"postgresql": map[string]interface{}{
+					"parameters":    map[string]interface{}{},
+					"pg_hba":        []string{},
+					"use_pg_rewind": true,
+				},
+			},
+		},
+		{
+			name: "top-level: spec overrides input",
+			cluster: &v1alpha1.PostgresCluster{
+				Spec: v1alpha1.PostgresClusterSpec{
+					Patroni: &v1alpha1.PatroniSpec{
+						LeaderLeaseDurationSeconds: newInt32(99),
+						SyncPeriodSeconds:          newInt32(8),
+					},
+				},
+			},
+			input: map[string]interface{}{
+				"loop_wait": 3,
+				"ttl":       "nope",
+			},
+			expected: map[string]interface{}{
+				"loop_wait": int32(8),
+				"ttl":       int32(99),
 				"postgresql": map[string]interface{}{
 					"parameters":    map[string]interface{}{},
 					"pg_hba":        []string{},
@@ -120,6 +155,8 @@ func TestDynamicConfiguration(t *testing.T) {
 				"postgresql": true,
 			},
 			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
 				"postgresql": map[string]interface{}{
 					"parameters":    map[string]interface{}{},
 					"pg_hba":        []string{},
@@ -135,6 +172,8 @@ func TestDynamicConfiguration(t *testing.T) {
 				},
 			},
 			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
 				"postgresql": map[string]interface{}{
 					"parameters":    map[string]interface{}{},
 					"pg_hba":        []string{},
@@ -153,6 +192,8 @@ func TestDynamicConfiguration(t *testing.T) {
 				},
 			},
 			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
 				"postgresql": map[string]interface{}{
 					"parameters": map[string]interface{}{
 						"something": "str",
@@ -180,6 +221,8 @@ func TestDynamicConfiguration(t *testing.T) {
 				}),
 			},
 			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
 				"postgresql": map[string]interface{}{
 					"parameters": map[string]interface{}{
 						"something": "str",
@@ -208,6 +251,8 @@ func TestDynamicConfiguration(t *testing.T) {
 				}),
 			},
 			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
 				"postgresql": map[string]interface{}{
 					"parameters": map[string]interface{}{
 						"something": "overrides",
@@ -227,6 +272,8 @@ func TestDynamicConfiguration(t *testing.T) {
 				},
 			},
 			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
 				"postgresql": map[string]interface{}{
 					"parameters":    map[string]interface{}{},
 					"pg_hba":        []string{},
@@ -247,6 +294,8 @@ func TestDynamicConfiguration(t *testing.T) {
 				},
 			},
 			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
 				"postgresql": map[string]interface{}{
 					"parameters": map[string]interface{}{},
 					"pg_hba": []string{
@@ -269,6 +318,8 @@ func TestDynamicConfiguration(t *testing.T) {
 				},
 			},
 			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
 				"postgresql": map[string]interface{}{
 					"parameters": map[string]interface{}{},
 					"pg_hba": []string{
@@ -291,6 +342,8 @@ func TestDynamicConfiguration(t *testing.T) {
 				},
 			},
 			expected: map[string]interface{}{
+				"loop_wait": int32(10),
+				"ttl":       int32(30),
 				"postgresql": map[string]interface{}{
 					"parameters": map[string]interface{}{},
 					"pg_hba": []string{
@@ -303,7 +356,12 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := DynamicConfiguration(tt.input, tt.hbas, tt.params)
+			cluster := tt.cluster
+			if cluster == nil {
+				cluster = new(v1alpha1.PostgresCluster)
+				cluster.Default()
+			}
+			actual := DynamicConfiguration(cluster, tt.input, tt.hbas, tt.params)
 			assert.DeepEqual(t, tt.expected, actual)
 		})
 	}
@@ -426,4 +484,91 @@ postgresql:
 restapi: {}
 tags: {}
 	`)+"\n")
+}
+
+func TestProbeTiming(t *testing.T) {
+	t.Parallel()
+
+	defaults := new(v1alpha1.PatroniSpec)
+	defaults.Default()
+
+	// Defaults should match the suggested/documented timing.
+	// - https://github.com/zalando/patroni/blob/v2.0.1/docs/rest_api.rst
+	assert.DeepEqual(t, probeTiming(defaults), &v1.Probe{
+		TimeoutSeconds:   5,
+		PeriodSeconds:    10,
+		SuccessThreshold: 1,
+		FailureThreshold: 3,
+	})
+
+	for _, tt := range []struct {
+		lease, sync int32
+		expected    v1.Probe
+	}{
+		// The smallest possible values for "loop_wait" and "retry_timeout" are
+		// both 1 sec which makes 3 sec the smallest appropriate value for "ttl".
+		// These are the validation minimums in v1alpha1.PatroniSpec.
+		{lease: 3, sync: 1, expected: v1.Probe{
+			TimeoutSeconds:   1,
+			PeriodSeconds:    1,
+			SuccessThreshold: 1,
+			FailureThreshold: 3,
+		}},
+
+		// These are plausible values for "ttl" and "loop_wait".
+		{lease: 60, sync: 15, expected: v1.Probe{
+			TimeoutSeconds:   7,
+			PeriodSeconds:    15,
+			SuccessThreshold: 1,
+			FailureThreshold: 4,
+		}},
+		{lease: 10, sync: 5, expected: v1.Probe{
+			TimeoutSeconds:   2,
+			PeriodSeconds:    5,
+			SuccessThreshold: 1,
+			FailureThreshold: 2,
+		}},
+
+		// These are plausible values that aren't multiples of each other.
+		// Failure triggers sooner than "ttl", which seems to agree with docs:
+		// - https://github.com/zalando/patroni/blob/v2.0.1/docs/watchdog.rst
+		{lease: 19, sync: 7, expected: v1.Probe{
+			TimeoutSeconds:   3,
+			PeriodSeconds:    7,
+			SuccessThreshold: 1,
+			FailureThreshold: 2,
+		}},
+		{lease: 13, sync: 7, expected: v1.Probe{
+			TimeoutSeconds:   3,
+			PeriodSeconds:    7,
+			SuccessThreshold: 1,
+			FailureThreshold: 1,
+		}},
+
+		// These values are infeasible for Patroni but produce valid v1.Probes.
+		{lease: 60, sync: 60, expected: v1.Probe{
+			TimeoutSeconds:   30,
+			PeriodSeconds:    60,
+			SuccessThreshold: 1,
+			FailureThreshold: 1,
+		}},
+		{lease: 10, sync: 20, expected: v1.Probe{
+			TimeoutSeconds:   10,
+			PeriodSeconds:    20,
+			SuccessThreshold: 1,
+			FailureThreshold: 1,
+		}},
+	} {
+		actual := probeTiming(&v1alpha1.PatroniSpec{
+			LeaderLeaseDurationSeconds: &tt.lease,
+			SyncPeriodSeconds:          &tt.sync,
+		})
+		assert.DeepEqual(t, actual, &tt.expected)
+
+		// v1.Probe validation
+		assert.Assert(t, actual.TimeoutSeconds >= 1)   // Minimum value is 1.
+		assert.Assert(t, actual.PeriodSeconds >= 1)    // Minimum value is 1.
+		assert.Assert(t, actual.SuccessThreshold == 1) // Must be 1 for liveness and startup.
+		assert.Assert(t, actual.FailureThreshold >= 1) // Minimum value is 1.
+	}
 }

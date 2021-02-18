@@ -526,10 +526,24 @@ spec:
                   dynamicConfiguration:
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
+                  leaderLeaseDurationSeconds:
+                    default: 30
+                    description: TTL of the cluster leader lock. "Think of it as the
+                      length of time before initiation of the automatic failover process."
+                    format: int32
+                    minimum: 3
+                    type: integer
                   port:
                     default: 8008
                     description: The port on which Patroni should listen.
                     format: int32
+                    type: integer
+                  syncPeriodSeconds:
+                    default: 10
+                    description: The interval for refreshing the leader lock and applying
+                      dynamicConfiguration. Must be less than leaderLeaseDurationSeconds.
+                    format: int32
+                    minimum: 1
                     type: integer
                 type: object
               port:

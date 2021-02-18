@@ -139,6 +139,12 @@ func clusterYAML(
 			// Always verify the server certificate against "ctl.cacert".
 			"insecure": false,
 		},
+
+		"watchdog": map[string]interface{}{
+			// Disable leader watchdog device. Kubernetes' liveness probe is a less
+			// flexible approximation.
+			"mode": "off",
+		},
 	}
 
 	if cluster.Status.Patroni == nil || cluster.Status.Patroni.SystemIdentifier == "" {
@@ -155,7 +161,7 @@ func clusterYAML(
 		}
 
 		root["bootstrap"] = map[string]interface{}{
-			"dcs": DynamicConfiguration(configuration, pgHBAs, pgParameters),
+			"dcs": DynamicConfiguration(cluster, configuration, pgHBAs, pgParameters),
 		}
 	}
 
@@ -166,6 +172,7 @@ func clusterYAML(
 // DynamicConfiguration combines configuration with some PostgreSQL settings
 // and returns a value that can be marshaled to JSON.
 func DynamicConfiguration(
+	cluster *v1alpha1.PostgresCluster,
 	configuration map[string]interface{},
 	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
 ) map[string]interface{} {
@@ -174,6 +181,9 @@ func DynamicConfiguration(
 	for k, v := range configuration {
 		root[k] = v
 	}
+
+	root["ttl"] = *cluster.Spec.Patroni.LeaderLeaseDurationSeconds
+	root["loop_wait"] = *cluster.Spec.Patroni.SyncPeriodSeconds
 
 	// Copy the "postgresql" section before making any changes.
 	postgresql := make(map[string]interface{})
@@ -416,4 +426,30 @@ func instanceYAML(_ *v1alpha1.PostgresCluster, _ metav1.Object) (string, error) 
 
 	b, err := yaml.Marshal(root)
 	return string(append([]byte(yamlGeneratedWarning), b...)), err
+}
+
+// probeTiming returns a Probe with thresholds and timeouts set according to spec.
+func probeTiming(spec *v1alpha1.PatroniSpec) *v1.Probe {
+	// "Probes should be configured in such a way that they start failing about
+	// time when the leader key is expiring."
+	// - https://github.com/zalando/patroni/blob/v2.0.1/docs/rest_api.rst
+	// - https://github.com/zalando/patroni/blob/v2.0.1/docs/watchdog.rst
+
+	// TODO(cbandy): When the probe times out, failure triggers at
+	// (FailureThreshold × PeriodSeconds + TimeoutSeconds)
+	probe := v1.Probe{
+		TimeoutSeconds:   *spec.SyncPeriodSeconds / 2,
+		PeriodSeconds:    *spec.SyncPeriodSeconds,
+		SuccessThreshold: 1,
+		FailureThreshold: *spec.LeaderLeaseDurationSeconds / *spec.SyncPeriodSeconds,
+	}
+
+	if probe.TimeoutSeconds < 1 {
+		probe.TimeoutSeconds = 1
+	}
+	if probe.FailureThreshold < 1 {
+		probe.FailureThreshold = 1
+	}
+
+	return &probe
 }

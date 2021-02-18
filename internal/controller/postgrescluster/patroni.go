@@ -92,7 +92,7 @@ func (r *Reconciler) reconcilePatroniDynamicConfiguration(
 		cluster.Spec.Patroni.DynamicConfiguration.Raw, &configuration,
 	)
 
-	configuration = patroni.DynamicConfiguration(configuration, pgHBAs, pgParameters)
+	configuration = patroni.DynamicConfiguration(cluster, configuration, pgHBAs, pgParameters)
 
 	pods := &v1.PodList{}
 	instances, err := naming.AsSelector(naming.ClusterPatronis(cluster))

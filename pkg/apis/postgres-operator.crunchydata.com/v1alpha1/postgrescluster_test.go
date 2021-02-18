@@ -20,8 +20,13 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/yaml"
 )
+
+func TestPostgresClusterWebhooks(t *testing.T) {
+	var _ webhook.Defaulter = new(PostgresCluster)
+}
 
 func TestPostgresClusterDefault(t *testing.T) {
 	t.Run("no instance sets", func(t *testing.T) {
@@ -42,7 +47,9 @@ spec:
   instances: null
   patroni:
     dynamicConfiguration: null
+    leaderLeaseDurationSeconds: 30
     port: 8008
+    syncPeriodSeconds: 10
   port: 5432
 status: {}
 		`)+"\n")
@@ -70,7 +77,9 @@ spec:
     resources: {}
   patroni:
     dynamicConfiguration: null
+    leaderLeaseDurationSeconds: 30
     port: 8008
+    syncPeriodSeconds: 10
   port: 5432
 status: {}
 		`)+"\n")
