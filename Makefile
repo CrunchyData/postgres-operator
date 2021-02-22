@@ -61,7 +61,7 @@ ifeq ("$(PGO_BASEOS)", "ubi8")
         PACKAGER=dnf
 endif
 
-ifeq ("$(PGO_BASEOS)", "centos8")
+ifeq ("$(PGO_BASEOS)", "centos7")
         DFSET=centos
         DOCKERBASEREGISTRY=centos:
 endif
