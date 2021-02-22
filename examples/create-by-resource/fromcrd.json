@@ -16,7 +16,7 @@
       "pg-cluster": "fromcrd",
       "pg-pod-anti-affinity": "",
       "pgo-backrest": "true",
-      "pgo-version": "4.5.1",
+      "pgo-version": "4.5.2",
       "pgouser": "pgoadmin",
       "primary": "true"
     },
@@ -62,7 +62,7 @@
     },
     "backrestResources": {},
     "ccpimage": "crunchy-postgres-ha",
-    "ccpimagetag": "centos7-12.5-4.5.1",
+    "ccpimagetag": "centos8-12.6-4.5.2",
     "clustername": "fromcrd",
     "customconfig": "",
     "database": "userdb",
@@ -95,7 +95,7 @@
     "userlabels": {
       "crunchy-postgres-exporter": "false",
       "pg-pod-anti-affinity": "",
-      "pgo-version": "4.5.1",
+      "pgo-version": "4.5.2",
       "pgouser": "pgoadmin",
       "pgo-backrest": "true"
     },

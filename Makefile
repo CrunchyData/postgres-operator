@@ -4,14 +4,14 @@ GOBIN ?= $(GOPATH)/bin
 # Default values if not already set
 ANSIBLE_VERSION ?= 2.9.*
 PGOROOT ?= $(GOPATH)/src/github.com/crunchydata/postgres-operator
-PGO_BASEOS ?= centos7
+PGO_BASEOS ?= centos8
 PGO_CMD ?= kubectl
 PGO_IMAGE_PREFIX ?= crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
 PGO_OPERATOR_NAMESPACE ?= pgo
-PGO_VERSION ?= 4.5.1
+PGO_VERSION ?= 4.5.2
 PGO_PG_VERSION ?= 12
-PGO_PG_FULLVERSION ?= 12.5
+PGO_PG_FULLVERSION ?= 12.6
 PGO_BACKREST_VERSION ?= 2.29
 PACKAGER ?= yum
 
@@ -61,7 +61,7 @@ ifeq ("$(PGO_BASEOS)", "ubi8")
         PACKAGER=dnf
 endif
 
-ifeq ("$(PGO_BASEOS)", "centos7")
+ifeq ("$(PGO_BASEOS)", "centos8")
         DFSET=centos
         DOCKERBASEREGISTRY=centos:
 endif
