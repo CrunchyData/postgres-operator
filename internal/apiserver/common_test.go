@@ -30,12 +30,17 @@ func TestValidateLabel(t *testing.T) {
 			map[string]string{"key": "value"},
 			map[string]string{"example.com/key": "value"},
 			map[string]string{"key1": "value1", "key2": "value2"},
+			map[string]string{"": ""},
 		}
 
 		for _, input := range inputs {
 			labelStr := ""
 
 			for k, v := range input {
+				if k == "" && v == "" {
+					continue
+				}
+
 				labelStr += fmt.Sprintf("%s=%s,", k, v)
 			}
 

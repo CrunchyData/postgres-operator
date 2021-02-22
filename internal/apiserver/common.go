@@ -131,6 +131,11 @@ func IsValidPVC(pvcName, ns string) bool {
 func ValidateLabel(labelStr string) (map[string]string, error) {
 	labelMap := map[string]string{}
 
+	// if this is an empty string, return
+	if strings.TrimSpace(labelStr) == "" {
+		return labelMap, nil
+	}
+
 	for _, v := range strings.Split(labelStr, ",") {
 		pair := strings.Split(v, "=")
 		if len(pair) != 2 {
