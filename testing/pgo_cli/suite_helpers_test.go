@@ -327,12 +327,6 @@ func withCluster(t testing.TB, namespace func() string, during func(func() strin
 	var name string
 	var once sync.Once
 
-	defer func() {
-		if name != "" {
-			teardownCluster(t, namespace(), name, created)
-		}
-	}()
-
 	during(func() string {
 		once.Do(func() {
 			generated := names.SimpleNameGenerator.GenerateName("pgo-test-")
@@ -343,6 +337,10 @@ func withCluster(t testing.TB, namespace func() string, during func(func() strin
 				created = time.Now()
 				name = generated
 			}
+
+			t.Cleanup(func() {
+				teardownCluster(t, namespace(), name, created)
+			})
 		})
 		return name
 	})
@@ -364,13 +362,6 @@ func withNamespace(t testing.TB, during func(func() string)) {
 	var namespace *core_v1.Namespace
 	var once sync.Once
 
-	defer func() {
-		if namespace != nil {
-			err := TestContext.Kubernetes.DeleteNamespace(namespace.Name)
-			assert.NoErrorf(t, err, "unable to tear down namespace %q", namespace.Name)
-		}
-	}()
-
 	during(func() string {
 		once.Do(func() {
 			ns, err := TestContext.Kubernetes.GenerateNamespace(
@@ -381,6 +372,11 @@ func withNamespace(t testing.TB, during func(func() string)) {
 				_, err = pgo("update", "namespace", namespace.Name).Exec(t)
 				assert.NoErrorf(t, err, "unable to take ownership of namespace %q", namespace.Name)
 			}
+
+			t.Cleanup(func() {
+				err := TestContext.Kubernetes.DeleteNamespace(namespace.Name)
+				assert.NoErrorf(t, err, "unable to tear down namespace %q", namespace.Name)
+			})
 		})
 
 		return namespace.Name
