@@ -120,6 +120,46 @@ func ParseRootCertificateAuthority(privateKey, certificate []byte) (*RootCertifi
 	return ca, nil
 }
 
+// RootCAIsBad checks that the root CA has been generated, is not expired
+// and has been issued by the Postgres Operator
+func RootCAIsBad(root *RootCertificateAuthority) bool {
+	// if the certificate or the private key are nil, the root CA is bad
+	if root.Certificate == nil || root.PrivateKey == nil {
+		return true
+	}
+
+	var certs []*x509.Certificate
+	var err error
+	// if there is an error parsing the certificate or if the number of certificates returned
+	// is not one, the certificate is bad
+	if certs, err = x509.ParseCertificates(root.Certificate.Certificate); err != nil && len(certs) != 1 {
+		return true
+	}
+
+	// find our root cert in the returned slice
+	var rootCert *x509.Certificate
+	for _, cert := range certs {
+		if cert.Issuer.CommonName == "postgres-operator-ca" {
+			rootCert = cert
+		}
+	}
+
+	// if our root cert was not found, return so new cert can be generated
+	if rootCert == nil {
+		return true
+	}
+
+	// root cert is bad if it is not a CA
+	if !rootCert.IsCA {
+		return true
+	}
+
+	// finally, if it is outside of the certs configured valid time range or the common name
+	// does not match ours, return true
+	return time.Now().After(rootCert.NotAfter) || time.Now().Before(rootCert.NotBefore)
+
+}
+
 // generateRootCertificate creates a x509 certificate with a ECDSA signature using
 // the SHA-384 algorithm
 func generateRootCertificate(privateKey *ecdsa.PrivateKey, serialNumber *big.Int) ([]byte, error) {

@@ -34,6 +34,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
+	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
@@ -118,9 +120,11 @@ func (r *Reconciler) Reconcile(
 	}
 
 	var (
+		intermediateCA       *pki.IntermediateCertificateAuthority
 		clusterConfigMap     *v1.ConfigMap
 		clusterPodService    *v1.Service
 		patroniLeaderService *v1.Service
+		rootCA               *pki.RootCertificateAuthority
 		err                  error
 	)
 
@@ -142,6 +146,12 @@ func (r *Reconciler) Reconcile(
 	}
 	if err == nil {
 		clusterConfigMap, err = r.reconcileClusterConfigMap(ctx, cluster, pgHBAs, pgParameters)
+	}
+	if err == nil {
+		rootCA, err = r.reconcileRootCertificate(ctx, naming.PostgresOperatorNamespace)
+	}
+	if err == nil {
+		intermediateCA, err = r.reconcileNamespaceCertificate(ctx, cluster.Namespace, rootCA)
 	}
 	if err == nil {
 		clusterPodService, err = r.reconcileClusterPodService(ctx, cluster)
@@ -167,7 +177,7 @@ func (r *Reconciler) Reconcile(
 		if err == nil {
 			_, err = r.reconcileInstanceSet(
 				ctx, cluster, &cluster.Spec.InstanceSets[i],
-				clusterConfigMap, clusterPodService, patroniLeaderService)
+				clusterConfigMap, intermediateCA, rootCA, clusterPodService, patroniLeaderService)
 		}
 	}
 

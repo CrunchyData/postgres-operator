@@ -52,6 +52,9 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 		test.Namespace.Name = "postgres-operator-test-" + rand.String(6)
 		Expect(suite.Client.Create(ctx, test.Namespace)).To(Succeed())
 
+		// set the operator namespace variable
+		naming.PostgresOperatorNamespace = test.Namespace.Name
+
 		test.Reconciler.Client = suite.Client
 		test.Reconciler.Owner = "asdf"
 		test.Reconciler.Recorder = new(record.FakeRecorder)

@@ -121,6 +121,8 @@ func (r *Reconciler) reconcileInstanceSet(
 	cluster *v1alpha1.PostgresCluster,
 	set *v1alpha1.PostgresInstanceSetSpec,
 	clusterConfigMap *v1.ConfigMap,
+	intermediateCA *pki.IntermediateCertificateAuthority,
+	rootCA *pki.RootCertificateAuthority,
 	clusterPodService *v1.Service,
 	patroniLeaderService *v1.Service,
 ) (*appsv1.StatefulSetList, error) {
@@ -159,7 +161,7 @@ func (r *Reconciler) reconcileInstanceSet(
 	for i := range instances.Items {
 		if err == nil {
 			err = r.reconcileInstance(
-				ctx, cluster, set, clusterConfigMap, clusterPodService,
+				ctx, cluster, set, clusterConfigMap, intermediateCA, rootCA, clusterPodService,
 				patroniLeaderService, &instances.Items[i])
 		}
 	}
@@ -179,6 +181,8 @@ func (r *Reconciler) reconcileInstance(
 	cluster *v1alpha1.PostgresCluster,
 	spec *v1alpha1.PostgresInstanceSetSpec,
 	clusterConfigMap *v1.ConfigMap,
+	intermediateCA *pki.IntermediateCertificateAuthority,
+	rootCA *pki.RootCertificateAuthority,
 	clusterPodService *v1.Service,
 	patroniLeaderService *v1.Service,
 	instance *appsv1.StatefulSet,
@@ -276,7 +280,7 @@ func (r *Reconciler) reconcileInstance(
 	}
 	if err == nil {
 		instanceCertificates, err = r.reconcileInstanceCertificates(
-			ctx, cluster, instance)
+			ctx, cluster, instance, intermediateCA, rootCA)
 	}
 	if err == nil {
 		err = patroni.InstancePod(
@@ -328,6 +332,7 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 // and private keys for instance of cluster.
 func (r *Reconciler) reconcileInstanceCertificates(
 	ctx context.Context, cluster *v1alpha1.PostgresCluster, instance *appsv1.StatefulSet,
+	ca *pki.IntermediateCertificateAuthority, root *pki.RootCertificateAuthority,
 ) (*v1.Secret, error) {
 	existing := &v1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
 	err := errors.WithStack(client.IgnoreNotFound(
@@ -353,26 +358,15 @@ func (r *Reconciler) reconcileInstanceCertificates(
 	instanceCerts.Type = v1.SecretTypeOpaque
 	instanceCerts.Data = make(map[string][]byte)
 
-	var (
-		root *pki.RootCertificateAuthority
-		ca   *pki.IntermediateCertificateAuthority
-		leaf *pki.LeafCertificate
-	)
+	var leafCert *pki.LeafCertificate
 
-	// TODO(cbandy): root and intermediate reconciliation belongs somewhere else.
 	if err == nil {
-		root, err = r.reconcileRootCertificate(ctx, cluster.Namespace)
-	}
-	if err == nil {
-		ca, err = r.reconcileNamespaceCertificate(ctx, cluster.Namespace, root)
-	}
-	if err == nil {
-		leaf, err = r.instanceCertificate(ctx, instance, existing, instanceCerts, ca)
+		leafCert, err = r.instanceCertificate(ctx, instance, existing, instanceCerts, ca, root)
 	}
 	if err == nil {
 		err = patroni.InstanceCertificates(ctx,
 			[]*pki.Certificate{root.Certificate}, []*pki.Certificate{ca.Certificate},
-			leaf.Certificate, leaf.PrivateKey, instanceCerts)
+			leafCert.Certificate, leafCert.PrivateKey, instanceCerts)
 	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, instanceCerts))

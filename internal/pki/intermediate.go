@@ -94,6 +94,81 @@ func (ca *IntermediateCertificateAuthority) Generate(rootCA *RootCertificateAuth
 	return nil
 }
 
+// IntermediateCAIsBad checks that the intermediate CA has been generated, is not expired,
+// has been issued by the Postgres Operator and its authority key matches the
+// subject key of the current root CA
+func IntermediateCAIsBad(intermediate *IntermediateCertificateAuthority, root *RootCertificateAuthority) bool {
+	// if the certificate or the private key are nil, the intermediate CA is bad
+	if intermediate.Certificate == nil || intermediate.PrivateKey == nil {
+		return true
+	}
+
+	var intCerts []*x509.Certificate
+	var intErr error
+	// if there is an error parsing the intermediate certificate or if the number of certificates
+	// returned is not one, the certificate is bad
+	if intCerts, intErr = x509.ParseCertificates(intermediate.Certificate.Certificate); intErr != nil && len(intCerts) < 1 {
+		return true
+	}
+
+	// find our intermediate cert in the returned slice
+	var intermediateCert *x509.Certificate
+	for _, cert := range intCerts {
+		if cert.Issuer.CommonName == "postgres-operator-ca" {
+			intermediateCert = cert
+		}
+	}
+
+	// if our intermediate cert was not found, return so new cert can be generated
+	if intermediateCert == nil {
+		return true
+	}
+
+	// intermediate cert is bad if it is not a CA
+	if !intermediateCert.IsCA {
+		return true
+	}
+
+	// if it is outside of the certs configured valid time range, return true
+	if time.Now().After(intermediateCert.NotAfter) || time.Now().Before(intermediateCert.NotBefore) {
+		return true
+	}
+
+	var rootCerts []*x509.Certificate
+	var rootErr error
+	// if there is an error parsing the root certificate or if the number of certificates returned
+	// is not one, the certificate is bad
+	if rootCerts, rootErr = x509.ParseCertificates(root.Certificate.Certificate); rootErr != nil && len(rootCerts) < 1 {
+		return true
+	}
+
+	// find our root cert in the returned slice
+	var rootCert *x509.Certificate
+	for _, cert := range rootCerts {
+		if cert.Issuer.CommonName == "postgres-operator-ca" {
+			rootCert = cert
+		}
+	}
+
+	// if our root cert was not found, return so new cert can be generated
+	if rootCert == nil {
+		return true
+	}
+
+	// set up root cert pool
+	roots := x509.NewCertPool()
+	roots.AddCert(rootCert)
+
+	// verify intermediate cert
+	_, err := intermediateCert.Verify(x509.VerifyOptions{
+		Roots:     roots,
+		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageAny},
+	})
+
+	// finally, if Verify returns an error, intermediate cert is bad
+	return err != nil
+}
+
 // NewIntermediateCertificateAuthority generates a new intermdiate certificate
 // authority that can be used to issue intermediate certificate authoritities.
 //

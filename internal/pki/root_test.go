@@ -22,6 +22,8 @@ import (
 	"math/big"
 	"reflect"
 	"testing"
+
+	"gotest.tools/v3/assert"
 )
 
 func TestNewRootCertificateAuthority(t *testing.T) {
@@ -251,6 +253,159 @@ func TestRootCertificateAuthority(t *testing.T) {
 				if err := ca.Generate(); err.Error() != msg {
 					t.Fatalf("expected error: %s", msg)
 				}
+			})
+		})
+	})
+}
+
+func TestRootCAIsBad(t *testing.T) {
+	t.Run("Generate", func(t *testing.T) {
+		t.Run("valid", func(t *testing.T) {
+			ca := &RootCertificateAuthority{}
+			ca.generateCertificate = generateRootCertificate
+			ca.generateKey = generateKey
+			ca.generateSerialNumber = generateSerialNumber
+
+			// run generate to ensure it sets valid values
+			if err := ca.Generate(); err != nil {
+				t.Fatalf("expected generate to return no errors, got: %s", err.Error())
+			}
+
+			// ensure private key and certificate are set
+			if ca.PrivateKey == nil {
+				t.Fatalf("expected private key to be set")
+			}
+
+			if ca.Certificate == nil {
+				t.Fatalf("expected certificate to be set")
+			}
+
+			if ca.PrivateKey.PrivateKey == nil {
+				t.Fatalf("expected private key to be set, got nil")
+			}
+
+			if len(ca.Certificate.Certificate) == 0 {
+				t.Fatalf("expected certificate to be generated")
+			}
+
+			// see if certificate can be parsed
+			x509Certificate, err := x509.ParseCertificate(ca.Certificate.Certificate)
+
+			if err != nil {
+				t.Fatalf("expected valid x509 ceriticate, actual %s", err.Error())
+			}
+
+			if !ca.PrivateKey.PrivateKey.PublicKey.Equal(x509Certificate.PublicKey) {
+				t.Fatalf("expected public keys to match")
+			}
+
+			// check certain attributes
+			if !x509Certificate.IsCA {
+				t.Fatalf("expected certificate to be CA")
+			}
+
+			if x509Certificate.MaxPathLen != 1 {
+				t.Fatalf("expected max path len to be 1, actual %d", x509Certificate.MaxPathLen)
+			}
+
+			if x509Certificate.Subject.CommonName != rootCAName {
+				t.Fatalf("expected subject name to be %s, actual %s", defaultRootCAExpiration, x509Certificate.Subject.CommonName)
+			}
+
+			// ensure private key functions are set
+			assertConstructed(t, ca.PrivateKey)
+
+			// after completing all manual checks, ensure check functions returns false
+			assert.Assert(t, !RootCAIsBad(ca))
+
+		})
+
+		t.Run("invalid", func(t *testing.T) {
+			t.Run("generate certificate not set", func(t *testing.T) {
+				ca := &RootCertificateAuthority{}
+				ca.generateCertificate = nil
+				ca.generateKey = generateKey
+				ca.generateSerialNumber = generateSerialNumber
+
+				if err := ca.Generate(); !errors.Is(err, ErrFunctionNotImplemented) {
+					t.Fatalf("expected function not implemented error")
+				}
+
+				// after completing manual check, ensure check functions returns true
+				assert.Assert(t, RootCAIsBad(ca))
+			})
+
+			t.Run("generate key not set", func(t *testing.T) {
+				ca := &RootCertificateAuthority{}
+				ca.generateCertificate = generateRootCertificate
+				ca.generateKey = nil
+				ca.generateSerialNumber = generateSerialNumber
+
+				if err := ca.Generate(); !errors.Is(err, ErrFunctionNotImplemented) {
+					t.Fatalf("expected function not implemented error")
+				}
+
+				// after completing manual check, ensure check functions returns true
+				assert.Assert(t, RootCAIsBad(ca))
+			})
+
+			t.Run("generate serial number not set", func(t *testing.T) {
+				ca := &RootCertificateAuthority{}
+				ca.generateCertificate = generateRootCertificate
+				ca.generateKey = generateKey
+				ca.generateSerialNumber = nil
+
+				if err := ca.Generate(); !errors.Is(err, ErrFunctionNotImplemented) {
+					t.Fatalf("expected function not implemented error")
+				}
+
+				// after completing manual check, ensure check functions returns true
+				assert.Assert(t, RootCAIsBad(ca))
+			})
+
+			t.Run("cannot generate private key", func(t *testing.T) {
+				msg := "cannot generate private key"
+				ca := &RootCertificateAuthority{}
+				ca.generateCertificate = generateRootCertificate
+				ca.generateKey = func() (*ecdsa.PrivateKey, error) { return nil, errors.New(msg) }
+				ca.generateSerialNumber = generateSerialNumber
+
+				if err := ca.Generate(); err.Error() != msg {
+					t.Fatalf("expected error: %s", msg)
+				}
+
+				// after completing manual check, ensure check functions returns true
+				assert.Assert(t, RootCAIsBad(ca))
+			})
+
+			t.Run("cannot generate serial number", func(t *testing.T) {
+				msg := "cannot generate serial number"
+				ca := &RootCertificateAuthority{}
+				ca.generateCertificate = generateRootCertificate
+				ca.generateKey = generateKey
+				ca.generateSerialNumber = func() (*big.Int, error) { return nil, errors.New(msg) }
+
+				if err := ca.Generate(); err.Error() != msg {
+					t.Fatalf("expected error: %s", msg)
+				}
+
+				// after completing manual check, ensure check functions returns true
+				assert.Assert(t, RootCAIsBad(ca))
+			})
+
+			t.Run("cannot generate certificate", func(t *testing.T) {
+				msg := "cannot generate certificate"
+				ca := &RootCertificateAuthority{}
+				ca.generateCertificate = func(*ecdsa.PrivateKey, *big.Int) ([]byte, error) { return nil, errors.New(msg) }
+				ca.generateKey = generateKey
+				ca.generateSerialNumber = generateSerialNumber
+
+				if err := ca.Generate(); err.Error() != msg {
+					t.Fatalf("expected error: %s", msg)
+				}
+
+				// after completing manual check, ensure check functions returns true
+				assert.Assert(t, RootCAIsBad(ca))
 			})
 		})
 	})

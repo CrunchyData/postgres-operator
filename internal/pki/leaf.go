@@ -101,6 +101,109 @@ func (c *LeafCertificate) Generate(intermediateCA *IntermediateCertificateAuthor
 	return nil
 }
 
+// LeafCertIsBad checks that the leaf cert has been generated, is not expired,
+// has been issued by the Postgres Operator and its authority key matches the
+// subject key of the current intermediate CA
+func LeafCertIsBad(
+	leaf *LeafCertificate, intermediateCertCA *IntermediateCertificateAuthority,
+	rootCertCA *RootCertificateAuthority, namespace string,
+) bool {
+	// if the certificate or the private key are nil, the leaf cert is bad
+	if leaf.Certificate == nil || leaf.PrivateKey == nil {
+		return true
+	}
+
+	var leafCerts []*x509.Certificate
+	var leafErr error
+	// if there is an error parsing the leaf certificate or if the number of certificates
+	// returned is not one, the certificate is bad
+	if leafCerts, leafErr = x509.ParseCertificates(leaf.Certificate.Certificate); leafErr != nil && len(leafCerts) < 1 {
+		return true
+	}
+
+	// find our leaf cert in the returned slice
+	var leafCert *x509.Certificate
+	for _, cert := range leafCerts {
+		if cert.Issuer.CommonName == fmt.Sprintf("%s.%s", namespace, "postgres-operator-ca") {
+			leafCert = cert
+		}
+	}
+
+	// if our leaf cert was not found, return so new cert can be generated
+	if leafCert == nil {
+		return true
+	}
+
+	// leaf cert is bad if it is a CA
+	if leafCert.IsCA {
+		return true
+	}
+
+	// if it is outside of the certs configured valid time range, return true
+	if time.Now().After(leafCert.NotAfter) || time.Now().Before(leafCert.NotBefore) {
+		return true
+	}
+
+	var intCerts []*x509.Certificate
+	var intErr error
+	// if there is an error parsing the intermediate certificate or if the number of certificates returned
+	// is not one, the certificate is bad
+	if intCerts, intErr = x509.ParseCertificates(intermediateCertCA.Certificate.Certificate); intErr != nil && len(intCerts) < 1 {
+		return true
+	}
+
+	// find our intermediate cert in the returned slice
+	var intermediateCert *x509.Certificate
+	for _, cert := range intCerts {
+		if cert.Issuer.CommonName == "postgres-operator-ca" {
+			intermediateCert = cert
+		}
+	}
+
+	// if our intermediate cert was not found, return so new cert can be generated
+	if intermediateCert == nil {
+		return true
+	}
+
+	var rootCerts []*x509.Certificate
+	var rootErr error
+	// if there is an error parsing the root certificate or if the number of certificates returned
+	// is not one, the certificate is bad
+	if rootCerts, rootErr = x509.ParseCertificates(rootCertCA.Certificate.Certificate); rootErr != nil && len(rootCerts) < 1 {
+		return true
+	}
+
+	// find our root cert in the returned slice
+	var rootCert *x509.Certificate
+	for _, cert := range rootCerts {
+		if cert.Issuer.CommonName == "postgres-operator-ca" {
+			rootCert = cert
+		}
+	}
+
+	// if our root cert was not found, return so new cert can be generated
+	if rootCert == nil {
+		return true
+	}
+
+	// set up intermediate and root cert pools
+	intermediates := x509.NewCertPool()
+	intermediates.AddCert(intermediateCert)
+
+	roots := x509.NewCertPool()
+	roots.AddCert(rootCert)
+
+	// verify leaf cert
+	_, err := leafCert.Verify(x509.VerifyOptions{
+		DNSName:       leafCert.DNSNames[0],
+		Roots:         roots,
+		Intermediates: intermediates,
+	})
+
+	// finally, if Verify returns an error, leaf cert is bad
+	return err != nil
+}
+
 // NewLeafCertificate generates a new leaf certificate that can be used for the
 // identity of a particular instance
 //
