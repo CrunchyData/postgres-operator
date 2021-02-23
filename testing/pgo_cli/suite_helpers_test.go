@@ -44,6 +44,16 @@ type Pool struct {
 
 func (p *Pool) Close() error { p.Pool.Close(); return p.Proxy.Close() }
 
+// contains will take a string slice and check if it contains a string
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}
+
 // clusterConnection opens a PostgreSQL connection to a database pod. Any error
 // will cause t to FailNow.
 func clusterConnection(t testing.TB, namespace, cluster, dsn string) *Pool {
