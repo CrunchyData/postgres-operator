@@ -1,13 +1,14 @@
 apiVersion: postgres-operator.crunchydata.com/v1alpha1
 kind: PostgresCluster
 metadata:
-  name: mycluster
+  name: hippo
 spec:
   instances:
     - name: instance1
   archive:
     pgbackrest:
-      image:
+      # TODO: uncomment "image" once pattern is decided how to handle
+      # image:
       repoHost:
         resources: {}     # (core/v1.ResourceRequirements)
       repoVolume: {} # (VolumeSpec)
