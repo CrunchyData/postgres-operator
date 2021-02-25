@@ -18,9 +18,7 @@ package postgrescluster
 */
 
 import (
-	"context"
 	"fmt"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -31,74 +29,13 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/crunchydata/postgres-operator/internal/controller/runtime"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
-
-// TODO need to find a better place for the setup and teardown functions in this file
-func setupTestEnv(t *testing.T,
-	controllerName string) (*envtest.Environment, client.Client, *rest.Config) {
-
-	testEnv := &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
-	}
-	cfg, err := testEnv.Start()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log("Test environment started")
-
-	pgoScheme, err := runtime.CreatePostgresOperatorScheme()
-	if err != nil {
-		t.Fatal(err)
-	}
-	client, err := client.New(cfg, client.Options{Scheme: pgoScheme})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return testEnv, client, cfg
-}
-
-func setupManager(t *testing.T, cfg *rest.Config,
-	contollerSetup func(mgr manager.Manager)) (context.Context, context.CancelFunc) {
-
-	mgr, err := runtime.CreateRuntimeManager("", cfg, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	contollerSetup(mgr)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	go func() {
-		if err := mgr.Start(ctx); err != nil {
-			t.Error(err)
-		}
-	}()
-	t.Log("Manager started")
-
-	return ctx, cancel
-}
-
-func teardownTestEnv(t *testing.T, testEnv *envtest.Environment) {
-	if err := testEnv.Stop(); err != nil {
-		t.Error(err)
-	}
-	t.Log("Test environment stopped")
-}
-
-func teardownManager(cancel context.CancelFunc, t *testing.T) {
-	cancel()
-	t.Log("Manager stopped")
-}
 
 func TestReconcilePGBackRest(t *testing.T) {
 
