@@ -70,8 +70,9 @@ func ClusterPatronis(cluster *v1alpha1.PostgresCluster) metav1.LabelSelector {
 }
 
 // ClusterReplicas selects things for PostgreSQL replicas in cluster.
+// TODO(cbandy): Remove if this goes unused for much longer.
 func ClusterReplicas(cluster string) metav1.LabelSelector {
 	s := ClusterInstances(cluster)
-	s.MatchLabels[LabelRole] = "replica"
+	s.MatchLabels[LabelRole] = RoleReplica
 	return s
 }

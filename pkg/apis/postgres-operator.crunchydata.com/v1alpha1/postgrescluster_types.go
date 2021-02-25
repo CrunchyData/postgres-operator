@@ -177,6 +177,12 @@ type PostgresCluster struct {
 // a webhook can be registered for the type.
 // - https://book.kubebuilder.io/reference/webhook-overview.html
 func (c *PostgresCluster) Default() {
+	if len(c.APIVersion) == 0 {
+		c.APIVersion = GroupVersion.String()
+	}
+	if len(c.Kind) == 0 {
+		c.Kind = "PostgresCluster"
+	}
 	c.Spec.Default()
 }
 

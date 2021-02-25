@@ -24,7 +24,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
-	kerr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -89,37 +88,34 @@ func (r *Reconciler) Reconcile(
 	}
 
 	// get the postgrescluster from the cache
-	postgresCluster := &v1alpha1.PostgresCluster{}
-	if err := r.Client.Get(ctx, request.NamespacedName, postgresCluster); err != nil {
-
-		if kerr.IsNotFound(err) {
-			log.Info("the PostgresCluster has been deleted and will not be reconciled")
-			return reconcile.Result{}, nil
+	cluster := &v1alpha1.PostgresCluster{}
+	if err := r.Client.Get(ctx, request.NamespacedName, cluster); err != nil {
+		// NotFound cannot be fixed by requeuing so ignore it. During background
+		// deletion, we receive delete events from cluster's dependents after
+		// cluster is deleted.
+		if err = client.IgnoreNotFound(err); err != nil {
+			log.Error(err, "unable to fetch PostgresCluster")
+			span.RecordError(err)
 		}
-
-		log.Error(err, "cannot retrieve postgrescluster")
-		span.RecordError(err)
-
-		// returning an error will cause the work to be requeued
-		return reconcile.Result{}, err
+		return result, err
 	}
 
-	if !postgresCluster.GetDeletionTimestamp().IsZero() {
-		log.Info("the PostgresCluster is scheduled for deletion and will not reconciled")
-		// TODO run any finalizers.
-		// Running finalizers here is a pattern shown in finalizer section of the kubebuilder docs:
-		// https://book.kubebuilder.io/reference/using-finalizers.html
-		return reconcile.Result{}, nil
-	}
-
-	log.V(1).Info("reconciling")
-
-	// call business logic to reconcile the postgrescluster
-	cluster := postgresCluster.DeepCopy()
+	// Set any defaults that may not have been stored in the API. No DeepCopy
+	// is necessary because controller-runtime makes a copy before returning
+	// from its cache.
 	cluster.Default()
 
 	// Keep a copy of cluster prior to any manipulations.
 	before := cluster.DeepCopy()
+
+	// Check for and handle deletion of cluster. Return early if it is being
+	// deleted or there was an error.
+	if result, err := r.handleDelete(ctx, cluster); err != nil {
+		span.RecordError(err)
+		return reconcile.Result{}, err
+	} else if result != nil {
+		return *result, nil
+	}
 
 	var (
 		clusterConfigMap     *v1.ConfigMap
@@ -176,7 +172,7 @@ func (r *Reconciler) Reconcile(
 	}
 
 	if err == nil {
-		err = updateResult(r.reconcilePGBackRest(ctx, postgresCluster))
+		err = updateResult(r.reconcilePGBackRest(ctx, cluster))
 	}
 
 	// TODO reconcile pgBouncer

@@ -23,8 +23,10 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -32,6 +34,76 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
+
+// +kubebuilder:rbac:resources=pods,verbs=list
+// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=patch
+
+// deleteInstances gracefully stops instances of cluster to avoid failovers and
+// unclean shutdowns of PostgreSQL. It returns (nil, nil) when finished.
+func (r *Reconciler) deleteInstances(
+	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+) (*reconcile.Result, error) {
+	// Find all instance pods to determine which to shutdown and in what order.
+	pods := &v1.PodList{}
+	instances, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
+	if err == nil {
+		err = errors.WithStack(
+			r.Client.List(ctx, pods,
+				client.InNamespace(cluster.Namespace),
+				client.MatchingLabelsSelector{Selector: instances},
+			))
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// stop schedules pod for deletion by scaling its controller to zero.
+	stop := func(pod *v1.Pod) error {
+		instance := &unstructured.Unstructured{}
+		instance.SetNamespace(cluster.Namespace)
+
+		switch owner := metav1.GetControllerOfNoCopy(pod); {
+		case owner == nil:
+			return errors.Errorf("pod %q has no owner", client.ObjectKeyFromObject(pod))
+
+		case owner.Kind == "StatefulSet":
+			instance.SetAPIVersion(owner.APIVersion)
+			instance.SetKind(owner.Kind)
+			instance.SetName(owner.Name)
+
+		default:
+			return errors.Errorf("unexpected kind %q", owner.Kind)
+		}
+
+		// apps/v1.Deployment, apps/v1.ReplicaSet, and apps/v1.StatefulSet all
+		// have a "spec.replicas" field with the same meaning.
+		patch := client.RawPatch(client.Merge.Type(), []byte(`{"spec":{"replicas":0}}`))
+		return errors.WithStack(r.patch(ctx, instance, patch))
+	}
+
+	if len(pods.Items) == 0 {
+		// There are no instances, so there's nothing to do.
+		// The caller can do what they like.
+		return nil, nil
+	}
+
+	if len(pods.Items) == 1 {
+		// There's one instance; stop it.
+		// The caller should wait for further events or requeue upon error.
+		return &reconcile.Result{}, stop(&pods.Items[0])
+	}
+
+	// There are multiple instances; stop the replicas.
+	for i := range pods.Items {
+		role := pods.Items[i].Labels[naming.LabelRole]
+		if err == nil && role == naming.RolePatroniReplica {
+			err = stop(&pods.Items[i])
+		}
+	}
+
+	// The caller should wait for further events or requeue upon error.
+	return &reconcile.Result{}, err
+}
 
 // +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=list
 
@@ -170,7 +242,7 @@ func (r *Reconciler) reconcileInstance(
 		instance.Spec.Template.Spec.ShareProcessNamespace = new(bool)
 		*instance.Spec.Template.Spec.ShareProcessNamespace = true
 
-		instance.Spec.Template.Spec.ServiceAccountName = "postgres-operator" // FIXME
+		instance.Spec.Template.Spec.ServiceAccountName = "postgres-operator" // TODO
 		instance.Spec.Template.Spec.Containers = []v1.Container{
 			{
 				Name:      naming.ContainerDatabase,

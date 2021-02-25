@@ -39,19 +39,16 @@ func (r *Reconciler) reconcilePatroniDistributedConfiguration(
 	ctx context.Context, cluster *v1alpha1.PostgresCluster,
 ) error {
 	// When using Endpoints for DCS, Patroni needs a Service to ensure that the
-	// Endpoints object is not removed by Kubernetes. Patroni will create this
-	// object if it has permission to do so, but it won't set any ownership.
+	// Endpoints object is not removed by Kubernetes at startup. Patroni will
+	// create this object if it has permission to do so, but it won't set any
+	// ownership.
+	// - https://releases.k8s.io/v1.16.0/pkg/controller/endpoint/endpoints_controller.go#L547
+	// - https://releases.k8s.io/v1.20.0/pkg/controller/endpoint/endpoints_controller.go#L580
 	// - https://github.com/zalando/patroni/blob/v2.0.1/patroni/dcs/kubernetes.py#L865-L881
 	dcsService := &v1.Service{ObjectMeta: naming.PatroniDistributedConfiguration(cluster)}
 	dcsService.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Service"))
 
 	err := errors.WithStack(r.setControllerReference(cluster, dcsService))
-
-	// TODO(cbandy): When using Endpoints for DCS its possible for Patroni to
-	// write the Endpoints *after* the Service has been GC'd. These Endpoints
-	// are orphaned and hang around even after the PostgresCluster is gone.
-	// Consider using a finalizer to ensure the Service is deleted after Patroni
-	// stops running.
 
 	dcsService.Labels = map[string]string{
 		naming.LabelCluster: cluster.Name,
@@ -136,18 +133,13 @@ func (r *Reconciler) reconcilePatroniLeaderLease(
 	ctx context.Context, cluster *v1alpha1.PostgresCluster,
 ) (*v1.Service, error) {
 	// When using Endpoints for DCS, Patroni needs a Service to ensure that the
-	// Endpoints object is not removed by Kubernetes.
-	// - https://github.com/zalando/patroni/blob/v2.0.1/patroni/dcs/kubernetes.py#L865-L881
+	// Endpoints object is not removed by Kubernetes at startup.
+	// - https://releases.k8s.io/v1.16.0/pkg/controller/endpoint/endpoints_controller.go#L547
+	// - https://releases.k8s.io/v1.20.0/pkg/controller/endpoint/endpoints_controller.go#L580
 	leaderService := &v1.Service{ObjectMeta: naming.PatroniLeaderEndpoints(cluster)}
 	leaderService.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Service"))
 
 	err := errors.WithStack(r.setControllerReference(cluster, leaderService))
-
-	// TODO(cbandy): When using Endpoints for DCS its possible for Patroni to
-	// write the Endpoints *after* the Service has been GC'd. These Endpoints
-	// are orphaned and hang around even after the PostgresCluster is gone.
-	// Consider using a finalizer to ensure the Service is deleted after Patroni
-	// stops running.
 
 	leaderService.Labels = map[string]string{
 		naming.LabelCluster: cluster.Name,

@@ -16,6 +16,7 @@
 package v1alpha1
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
@@ -29,6 +30,14 @@ func TestPostgresClusterWebhooks(t *testing.T) {
 }
 
 func TestPostgresClusterDefault(t *testing.T) {
+	t.Run("TypeMeta", func(t *testing.T) {
+		var cluster PostgresCluster
+		cluster.Default()
+
+		assert.Equal(t, cluster.APIVersion, GroupVersion.String())
+		assert.Equal(t, cluster.Kind, reflect.TypeOf(cluster).Name())
+	})
+
 	t.Run("no instance sets", func(t *testing.T) {
 		var cluster PostgresCluster
 		cluster.Default()
@@ -36,6 +45,8 @@ func TestPostgresClusterDefault(t *testing.T) {
 		b, err := yaml.Marshal(cluster)
 		assert.NilError(t, err)
 		assert.DeepEqual(t, string(b), strings.TrimSpace(`
+apiVersion: postgres-operator.crunchydata.com/v1alpha1
+kind: PostgresCluster
 metadata:
   creationTimestamp: null
 spec:
@@ -63,6 +74,8 @@ status: {}
 		b, err := yaml.Marshal(cluster)
 		assert.NilError(t, err)
 		assert.DeepEqual(t, string(b), strings.TrimSpace(`
+apiVersion: postgres-operator.crunchydata.com/v1alpha1
+kind: PostgresCluster
 metadata:
   creationTimestamp: null
 spec:

@@ -36,4 +36,8 @@ const (
 	LabelUserSecret = labelPrefix + "pguser"
 
 	RolePrimary = "primary"
+	RoleReplica = "replica"
+
+	// Patroni sets this LabelRole value on Pods that are following the leader.
+	RolePatroniReplica = "replica"
 )

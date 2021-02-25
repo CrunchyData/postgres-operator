@@ -232,6 +232,9 @@ spec: {
 			// - https://issue.k8s.io/75564
 			// - https://issue.k8s.io/82046
 			//
+			// The "metadata.finalizers" field is also okay.
+			// - https://book.kubebuilder.io/reference/using-finalizers.html
+			//
 			// NOTE(cbandy): Kubernetes prior to v1.16.10 and v1.17.6 does not track
 			// managed fields on the status subresource: https://issue.k8s.io/88901
 			Expect(existing.ManagedFields).To(ContainElement(
@@ -242,6 +245,9 @@ spec: {
 							Expect(yaml.Unmarshal(in, &out)).To(Succeed())
 							return out
 						}, MatchAllKeys(Keys{
+							"f:metadata": MatchAllKeys(Keys{
+								"f:finalizers": Not(BeZero()),
+							}),
 							"f:status": Not(BeZero()),
 						})),
 					})),
