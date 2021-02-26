@@ -215,7 +215,7 @@ func CreateBackup(request *msgs.CreateBackrestBackupRequest, ns, pgouser string)
 		}
 
 		// check if primary is ready
-		if !isPrimaryReady(cluster) {
+		if !isPrimaryReady(&cluster) {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = "primary pod is not in Ready state"
 			return resp
