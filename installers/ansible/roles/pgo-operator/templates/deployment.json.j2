@@ -35,7 +35,8 @@
                                 {%- endif %}",
                         "imagePullPolicy": "IfNotPresent",
                         "securityContext": {
-                          "allowPrivilegeEscalation": false
+                          "allowPrivilegeEscalation": false,
+                          "readOnlyRootFilesystem": true
                         },
                         "ports": [
                             { "containerPort": {{ pgo_apiserver_port }} }
@@ -112,7 +113,12 @@
                                 "value": "localhost:4150"
                             }
                         ],
-                        "volumeMounts": []
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/tmp",
+                                "name": "tmp"
+                            }
+                        ]
                     }, {
                         "name": "operator",
                         "image": "{% if pgo_image | default('') != '' %}{{ pgo_image }}
@@ -120,7 +126,8 @@
                                 {%- endif %}",
                         "imagePullPolicy": "IfNotPresent",
                         "securityContext": {
-                          "allowPrivilegeEscalation": false
+                          "allowPrivilegeEscalation": false,
+                          "readOnlyRootFilesystem": true
                         },
                         "readinessProbe": {
                             "exec": {
@@ -177,7 +184,8 @@
                                 {%- else %}{{ pgo_image_prefix }}/pgo-scheduler:{{ pgo_image_tag }}
                                 {%- endif %}",
                         "securityContext": {
-                          "allowPrivilegeEscalation": false
+                          "allowPrivilegeEscalation": false,
+                          "readOnlyRootFilesystem": true
                         },
                         "livenessProbe": {
                             "exec": {
@@ -221,7 +229,12 @@
                                 "value": "localhost:4150"
                             }
                         ],
-                        "volumeMounts": [],
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/tmp",
+                                "name": "tmp"
+                            }
+                        ],
                         "imagePullPolicy": "IfNotPresent"
                     }, {
                         "name": "event",
@@ -229,7 +242,8 @@
                                 {%- else %}{{ pgo_image_prefix }}/pgo-event:{{ pgo_image_tag }}
                                 {%- endif %}",
                         "securityContext": {
-                          "allowPrivilegeEscalation": false
+                          "allowPrivilegeEscalation": false,
+                          "readOnlyRootFilesystem": true
                         },
                         "livenessProbe": {
                             "httpGet": {
@@ -245,11 +259,24 @@
                                 "value": "3600"
                             }
                         ],
-                        "volumeMounts": [],
+                        "volumeMounts": [
+                            {
+                                "mountPath": "/tmp",
+                                "name": "tmp"
+                            }
+                        ],
                         "imagePullPolicy": "IfNotPresent"
                     }
                 ],
-                "volumes": []
+                "volumes": [
+                    {
+                        "name": "tmp",
+                        "emptyDir": {
+                            "medium": "Memory",
+                            "sizeLimit": "16Mi"
+                        }
+                    }
+                ]
             }
         }
     }

@@ -53,7 +53,8 @@
                     "name": "database",
                     "image": "{{.CCPImagePrefix}}/crunchy-pgbackrest-repo:{{.CCPImageTag}}",
                     "securityContext": {
-                      "allowPrivilegeEscalation": false
+                      "allowPrivilegeEscalation": false,
+                      "readOnlyRootFilesystem": true
                     },
                     "ports": [{
                         "containerPort": {{.SshdPort}},
@@ -103,7 +104,20 @@
                         "name": "backrestrepo",
                         "mountPath": "/backrestrepo",
                         "readOnly": false
-                    }]
+                    },
+                    {
+                      "name": "tmp",
+                      "mountPath": "/tmp"
+                    },
+                    {
+                      "name": "pgbackrest-home",
+                      "mountPath": "/home/pgbackrest"
+                    },
+                    {
+                      "name": "pgbackrest-conf",
+                      "mountPath": "/etc/pgbackrest"
+                    }
+                  ]
                 }],
                 "volumes": [{
                     "name": "sshd",
@@ -115,6 +129,27 @@
                     "persistentVolumeClaim": {
                         "claimName": "{{.BackrestRepoClaimName}}"
                     }
+                },
+                {
+                  "name": "tmp",
+                  "emptyDir": {
+                    "medium": "Memory",
+                    "sizeLimit": "64Mi"
+                  }
+                },
+                {
+                  "name": "pgbackrest-home",
+                  "emptyDir": {
+                    "medium": "Memory",
+                    "sizeLimit": "128Ki"
+                  }
+                },
+                {
+                  "name": "pgbackrest-conf",
+                  "emptyDir": {
+                    "medium": "Memory",
+                    "sizeLimit": "128Ki"
+                  }
                 }],
                 "affinity": {
         {{.PodAntiAffinity}}
