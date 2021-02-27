@@ -30,7 +30,8 @@
 {% if not (disable_fsgroup | default(false) | bool) %}
                     {% if (alertmanager_supplemental_groups | default('')) != '' %},{% endif -%}
                     "fsGroup": 26,
-                    "runAsUser": 2
+                    "runAsUser": 2,
+                    "runAsNonRoot": true
 {% endif %}
                 },
                 "serviceAccountName": "alertmanager",

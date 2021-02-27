@@ -49,27 +49,6 @@ const (
 // for pgBackRest using the '--target' option
 var restoreTargetRegex = regexp.MustCompile("--target(=| +)")
 
-type BackrestRestoreJobTemplateFields struct {
-	JobName                string
-	ClusterName            string
-	WorkflowID             string
-	ToClusterPVCName       string
-	SecurityContext        string
-	CCPImagePrefix         string
-	CCPImageTag            string
-	CommandOpts            string
-	PITRTarget             string
-	PgbackrestStanza       string
-	PgbackrestDBPath       string
-	PgbackrestRepo1Path    string
-	PgbackrestRepo1Host    string
-	PgbackrestS3EnvVars    string
-	NodeSelector           string
-	Tablespaces            string
-	TablespaceVolumes      string
-	TablespaceVolumeMounts string
-}
-
 // UpdatePGClusterSpecForRestore updates the spec for pgcluster resource provided as need to
 // perform a restore
 func UpdatePGClusterSpecForRestore(clientset kubeapi.Interface, cluster *crv1.Pgcluster,
