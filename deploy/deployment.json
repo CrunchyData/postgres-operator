@@ -24,6 +24,9 @@
             },
             "spec": {
                 "serviceAccountName": "postgres-operator",
+                "securityContext": {
+                  "runAsNonRoot": true
+                },
                 "containers": [
                     {
                         "name": "apiserver",

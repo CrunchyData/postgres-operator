@@ -200,6 +200,8 @@ spec:
                   vendor: crunchydata
               spec:
                 serviceAccountName: postgres-operator
+                securityContext:
+                  runAsNonRoot: true
                 containers:
                   - name: apiserver
                     image: '${PGO_IMAGE_PREFIX}/pgo-apiserver:${PGO_IMAGE_TAG}'

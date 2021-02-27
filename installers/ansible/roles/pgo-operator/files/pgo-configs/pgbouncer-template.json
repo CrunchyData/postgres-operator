@@ -39,11 +39,12 @@
             },
             "spec": {
                 "serviceAccountName": "pgo-default",
-                {{ if not .DisableFSGroup }}
                 "securityContext": {
-                  "fsGroup": 2
+                  {{ if not .DisableFSGroup }}
+                  "fsGroup": 2,
+                  {{ end }}
+                  "runAsNonRoot": true
                 },
-                {{ end }}
                 "containers": [{
                     "name": "pgbouncer",
                     "image": "{{.CCPImagePrefix}}/crunchy-pgbouncer:{{.CCPImageTag}}",
