@@ -43,7 +43,8 @@
                     "name": "database",
                     "image": "{{.CCPImagePrefix}}/{{.CCPImage}}:{{.CCPImageTag}}",
                     "securityContext": {
-                      "allowPrivilegeEscalation": false
+                      "allowPrivilegeEscalation": false,
+                      "readOnlyRootFilesystem": true
                     },
                     "readinessProbe": {
                         "exec": {
@@ -191,6 +192,14 @@
                         {
                             "mountPath": "/etc/podinfo",
                             "name": "podinfo"
+                        },
+                        {
+                            "mountPath": "/tmp",
+                            "name": "tmp"
+                        },
+                        {
+                            "mountPath": "/var/lib/pgsql/.ssh",
+                            "name": "pgbackrest-ssh"
                         }
                         {{.TablespaceVolumeMounts}}
                     ],
@@ -292,6 +301,20 @@
                       "name": "dshm",
                       "emptyDir": {
                         "medium": "Memory"
+                      }
+                    },
+                    {
+                      "name": "tmp",
+                      "emptyDir": {
+                        "medium": "Memory",
+                        "sizeLimit": "16Mi"
+                      }
+                    },
+                    {
+                      "name": "pgbackrest-ssh",
+                      "emptyDir": {
+                        "medium": "Memory",
+                        "sizeLimit": "128Ki"
                       }
                     },
                     {

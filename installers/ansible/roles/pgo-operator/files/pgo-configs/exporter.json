@@ -2,7 +2,8 @@
     "name": "exporter",
     "image": "{{.PGOImagePrefix}}/crunchy-postgres-exporter:{{.PGOImageTag}}",
     "securityContext": {
-      "allowPrivilegeEscalation": false
+      "allowPrivilegeEscalation": false,
+      "readOnlyRootFilesystem": true
     },
     "ports": [{
         "containerPort": {{.ExporterPort}},
@@ -52,5 +53,11 @@
               }
             }
           }
+    ],
+    "volumeMounts": [
+      {
+        "mountPath": "/tmp",
+        "name": "tmp"
+      }
     ]
 }
