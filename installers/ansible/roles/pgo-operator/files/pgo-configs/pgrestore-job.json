@@ -23,6 +23,13 @@
             "spec": {
                 "volumes": [
                     {
+                        "name": "tmp",
+                        "emptyDir": {
+                          "medium": "Memory",
+                          "sizeLimit": "1Mi"
+                        }
+                    },
+                    {
                         "name": "pgdata",
                         "persistentVolumeClaim": {
                             "claimName": "{{.FromClusterPVCName}}"
@@ -39,11 +46,16 @@
                         "name": "pgrestore",
                         "image": "{{.CCPImagePrefix}}/crunchy-postgres-ha:{{.CCPImageTag}}",
                         "securityContext": {
-                          "allowPrivilegeEscalation": false
+                          "allowPrivilegeEscalation": false,
+                          "readOnlyRootFilesystem": true
                         },
                         "command": ["/opt/crunchy/bin/uid_postgres.sh"],
                         "args": ["/opt/crunchy/bin/start.sh"],
                         "volumeMounts": [
+                            {
+                                "mountPath": "/tmp",
+                                "name": "tmp"
+                            },
                             {
                                 "mountPath": "/pgdata",
                                 "name": "pgdata",

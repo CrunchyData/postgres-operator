@@ -2,7 +2,8 @@
     "name": "pgbadger",
     "image": "{{.CCPImagePrefix}}/crunchy-pgbadger:{{.CCPImageTag}}",
     "securityContext": {
-        "allowPrivilegeEscalation": false
+        "allowPrivilegeEscalation": false,
+        "readOnlyRootFilesystem": true
     },
     "ports": [ {
             "containerPort": {{.PGBadgerPort}},
@@ -30,6 +31,10 @@
       }
     },
     "volumeMounts": [
+        {
+            "mountPath": "/tmp",
+            "name": "tmp"
+        },
         {
             "mountPath": "/pgdata",
             "name": "pgdata",

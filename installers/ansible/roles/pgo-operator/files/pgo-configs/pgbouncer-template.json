@@ -49,7 +49,8 @@
                     "name": "pgbouncer",
                     "image": "{{.CCPImagePrefix}}/crunchy-pgbouncer:{{.CCPImageTag}}",
                     "securityContext": {
-                      "allowPrivilegeEscalation": false
+                      "allowPrivilegeEscalation": false,
+                      "readOnlyRootFilesystem": true
                     },
                     "ports": [{
                         "containerPort": {{.Port}},
@@ -69,6 +70,10 @@
                         "value": "{{.PrimaryServiceName}}"
                     }],
                     "volumeMounts": [
+                      {
+                          "mountPath": "/tmp",
+                          "name": "tmp"
+                      },
                       {{if .TLSEnabled}}
                       {
                         "mountPath": "/pgconf/tls/pgbouncer",
@@ -83,6 +88,13 @@
                     ]
                 }],
                 "volumes": [
+                  {
+                    "name": "tmp",
+                    "emptyDir": {
+                      "medium": "Memory",
+                      "sizeLimit": "1Mi"
+                    }
+                  },
                   {{if .TLSEnabled}}
                   {
                     "name": "tls-pgbouncer",
