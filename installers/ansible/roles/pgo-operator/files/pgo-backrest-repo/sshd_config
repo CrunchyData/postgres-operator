@@ -80,18 +80,9 @@ ChallengeResponseAuthentication yes
 #GSSAPIKeyExchange no
 #GSSAPIEnablek5users no
 
-# Set this to 'yes' to enable PAM authentication, account processing,
-# and session processing. If this is enabled, PAM authentication will
-# be allowed through the ChallengeResponseAuthentication and
-# PasswordAuthentication.  Depending on your PAM configuration,
-# PAM authentication via ChallengeResponseAuthentication may bypass
-# the setting of "PermitRootLogin without-password".
-# If you just want the PAM account and session checks to run without
-# PAM authentication, then enable this but set PasswordAuthentication
-# and ChallengeResponseAuthentication to 'no'.
-# WARNING: 'UsePAM no' is not supported in Red Hat Enterprise Linux and may cause several
-# problems.
-UsePAM yes
+# This is set explicitly to *no* as we are only using pubkey authentication and
+# because each container is isolated to only an unprivileged user.
+UsePAM No
 
 #AllowAgentForwarding yes
 #AllowTcpForwarding yes
