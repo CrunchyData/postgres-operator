@@ -46,7 +46,7 @@ Operator.
 | `delete_operator_namespace` | false |  | Set to configure whether or not the PGO operator namespace (defined using variable `pgo_operator_namespace`) is deleted when uninstalling the PGO. |
 | `delete_watched_namespaces` | false |  | Set to configure whether or not the PGO watched namespaces (defined using variable `namespace`) are deleted when uninstalling the PGO. |
 | `disable_auto_failover` | false |  | If set, will disable autofail capabilities by default in any newly created cluster |
-| `disable_fsgroup` | false |  | Set to `true` for deployments where you do not want to have the default PostgreSQL fsGroup (26) set. The typical usage is in OpenShift environments that have a `restricted` Security Context Constraints. |
+| `disable_fsgroup` |  |  | Set to `true` for deployments where you do not want to have the default PostgreSQL fsGroup (26) set. The typical usage is in OpenShift environments that have a `restricted` Security Context Constraints. If you use the `anyuid` SCC, you would want to set this to `false`. The Postgres Operator will set this value appropriately by default, except for when using the `anyuid` SCC. |
 | `exporterport` | 9187 | **Required** | Set to configure the default port used to connect to postgres exporter. |
 | `metrics` | false | **Required** | Set to true enable performance metrics on all newly created clusters. This can be disabled by the client. |
 | `namespace` | pgo |  | Set to a comma delimited string of all the namespaces Operator will manage. |
