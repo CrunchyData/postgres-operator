@@ -72,6 +72,9 @@ var ContainerImageOverrides = map[string]string{}
 // for detailed explanations of each mode available.
 var namespaceOperatingMode ns.NamespaceOperatingMode
 
+// runAsNonRoot forces the Pod to run as a non-root Pod
+var runAsNonRoot = true
+
 type containerResourcesTemplateFields struct {
 	// LimitsMemory and LimitsCPU detemrine the memory/CPU limits
 	LimitsMemory, LimitsCPU string
@@ -166,6 +169,8 @@ func Initialize(clientset kubernetes.Interface) {
 func GetPodSecurityContext(supplementalGroups []int64) string {
 	// set up the security context struct
 	securityContext := v1.PodSecurityContext{
+		// we don't want to run the pods as root, so explicitly disallow this
+		RunAsNonRoot: &runAsNonRoot,
 		// add any supplemental groups that the user passed in
 		SupplementalGroups: supplementalGroups,
 	}
