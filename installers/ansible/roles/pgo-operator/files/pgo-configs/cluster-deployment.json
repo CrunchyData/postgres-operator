@@ -42,6 +42,9 @@
             {
                     "name": "database",
                     "image": "{{.CCPImagePrefix}}/{{.CCPImage}}:{{.CCPImageTag}}",
+                    "securityContext": {
+                      "allowPrivilegeEscalation": false
+                    },
                     "readinessProbe": {
                         "exec": {
                             "command": [

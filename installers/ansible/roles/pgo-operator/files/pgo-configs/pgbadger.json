@@ -1,6 +1,9 @@
 {
     "name": "pgbadger",
     "image": "{{.CCPImagePrefix}}/crunchy-pgbadger:{{.CCPImageTag}}",
+    "securityContext": {
+        "allowPrivilegeEscalation": false
+    },
     "ports": [ {
             "containerPort": {{.PGBadgerPort}},
             "protocol": "TCP"

@@ -43,6 +43,9 @@
         "containers": [{
           "name": "pgadminweb",
           "image": "{{.CCPImagePrefix}}/crunchy-pgadmin4:{{.CCPImageTag}}",
+          "securityContext": {
+            "allowPrivilegeEscalation": false
+          },
           "ports": [{
             "containerPort": {{.Port}},
             "protocol": "TCP"

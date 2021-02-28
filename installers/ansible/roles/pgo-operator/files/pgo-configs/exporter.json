@@ -1,6 +1,9 @@
 {
     "name": "exporter",
     "image": "{{.PGOImagePrefix}}/crunchy-postgres-exporter:{{.PGOImageTag}}",
+    "securityContext": {
+      "allowPrivilegeEscalation": false
+    },
     "ports": [{
         "containerPort": {{.ExporterPort}},
         "protocol": "TCP"
