@@ -34,6 +34,9 @@
                                 {%- else %}{{ pgo_image_prefix }}/pgo-apiserver:{{ pgo_image_tag }}
                                 {%- endif %}",
                         "imagePullPolicy": "IfNotPresent",
+                        "securityContext": {
+                          "allowPrivilegeEscalation": false
+                        },
                         "ports": [
                             { "containerPort": {{ pgo_apiserver_port }} }
                         ],
@@ -116,6 +119,9 @@
                                 {%- else %}{{ pgo_image_prefix }}/postgres-operator:{{ pgo_image_tag }}
                                 {%- endif %}",
                         "imagePullPolicy": "IfNotPresent",
+                        "securityContext": {
+                          "allowPrivilegeEscalation": false
+                        },
                         "readinessProbe": {
                             "exec": {
                                 "command": [
@@ -170,6 +176,9 @@
                         "image": "{% if pgo_scheduler_image | default('') != '' %}{{ pgo_scheduler_image }}
                                 {%- else %}{{ pgo_image_prefix }}/pgo-scheduler:{{ pgo_image_tag }}
                                 {%- endif %}",
+                        "securityContext": {
+                          "allowPrivilegeEscalation": false
+                        },
                         "livenessProbe": {
                             "exec": {
                                 "command": [
@@ -219,6 +228,9 @@
                         "image": "{% if pgo_event_image | default('') != '' %}{{ pgo_event_image }}
                                 {%- else %}{{ pgo_image_prefix }}/pgo-event:{{ pgo_image_tag }}
                                 {%- endif %}",
+                        "securityContext": {
+                          "allowPrivilegeEscalation": false
+                        },
                         "livenessProbe": {
                             "httpGet": {
                                 "path": "/ping",
