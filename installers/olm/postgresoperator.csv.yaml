@@ -206,6 +206,8 @@ spec:
                   - name: apiserver
                     image: '${PGO_IMAGE_PREFIX}/pgo-apiserver:${PGO_IMAGE_TAG}'
                     imagePullPolicy: IfNotPresent
+                    securityContext:
+                      allowPrivilegeEscalation: false
                     ports:
                       - containerPort: 8443
                     readinessProbe:
@@ -234,6 +236,8 @@ spec:
                   - name: operator
                     image: '${PGO_IMAGE_PREFIX}/postgres-operator:${PGO_IMAGE_TAG}'
                     imagePullPolicy: IfNotPresent
+                    securityContext:
+                      allowPrivilegeEscalation: false
                     env:
                       - { name: NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.annotations['olm.targetNamespaces']" } } }
                       - { name: PGO_INSTALLATION_NAME, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
@@ -245,6 +249,8 @@ spec:
                   - name: scheduler
                     image: '${PGO_IMAGE_PREFIX}/pgo-scheduler:${PGO_IMAGE_TAG}'
                     imagePullPolicy: IfNotPresent
+                    securityContext:
+                      allowPrivilegeEscalation: false
                     livenessProbe:
                       exec:
                         command: [
@@ -267,6 +273,8 @@ spec:
                   - name: event
                     image: '${PGO_IMAGE_PREFIX}/pgo-event:${PGO_IMAGE_TAG}'
                     imagePullPolicy: IfNotPresent
+                    securityContext:
+                      allowPrivilegeEscalation: false
                     livenessProbe:
                       httpGet:
                         path: /ping

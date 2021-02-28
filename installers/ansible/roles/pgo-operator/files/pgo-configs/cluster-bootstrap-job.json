@@ -29,6 +29,9 @@
                 "containers": [{
                     "name": "database",
                     "image": "{{.CCPImagePrefix}}/{{.CCPImage}}:{{.CCPImageTag}}",
+                    "securityContext": {
+                      "allowPrivilegeEscalation": false
+                    },
                     {{.ContainerResources}}
                     "env": [{
                         "name": "PGHA_PG_PORT",

@@ -52,6 +52,9 @@
                 "containers": [{
                     "name": "database",
                     "image": "{{.CCPImagePrefix}}/crunchy-pgbackrest-repo:{{.CCPImageTag}}",
+                    "securityContext": {
+                      "allowPrivilegeEscalation": false
+                    },
                     "ports": [{
                         "containerPort": {{.SshdPort}},
                         "protocol": "TCP"

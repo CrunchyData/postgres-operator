@@ -32,6 +32,9 @@
                         "name": "apiserver",
                         "image": "$PGO_IMAGE_PREFIX/pgo-apiserver:$PGO_IMAGE_TAG",
                         "imagePullPolicy": "IfNotPresent",
+                        "securityContext": {
+                          "allowPrivilegeEscalation": false
+                        },
                         "ports": [
                             { "containerPort": $PGO_APISERVER_PORT }
                         ],
@@ -112,6 +115,9 @@
                         "name": "operator",
                         "image": "$PGO_IMAGE_PREFIX/postgres-operator:$PGO_IMAGE_TAG",
                         "imagePullPolicy": "IfNotPresent",
+                        "securityContext": {
+                          "allowPrivilegeEscalation": false
+                        },
                         "readinessProbe": {
                             "exec": {
                                 "command": [
@@ -164,6 +170,9 @@
                     }, {
                         "name": "scheduler",
                         "image": "$PGO_IMAGE_PREFIX/pgo-scheduler:$PGO_IMAGE_TAG",
+                        "securityContext": {
+                          "allowPrivilegeEscalation": false
+                        },
                         "livenessProbe": {
                             "exec": {
                                 "command": [
@@ -212,6 +221,9 @@
                     {
                         "name": "event",
                         "image": "$PGO_IMAGE_PREFIX/pgo-event:$PGO_IMAGE_TAG",
+                        "securityContext": {
+                          "allowPrivilegeEscalation": false
+                        },
                         "livenessProbe": {
                             "httpGet": {
                                 "path": "/ping",
