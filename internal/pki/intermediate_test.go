@@ -17,7 +17,6 @@ package pki
 
 import (
 	"crypto/ecdsa"
-	"crypto/rand"
 	"crypto/x509"
 	"errors"
 	"fmt"
@@ -300,8 +299,7 @@ func TestParseIntermediateCertificateAuthority(t *testing.T) {
 		return data
 	}
 
-	marshalPrivateKey := func(ca *IntermediateCertificateAuthority, password []byte) []byte {
-		ca.PrivateKey.Password = password
+	marshalPrivateKey := func(ca *IntermediateCertificateAuthority) []byte {
 		data, _ := ca.PrivateKey.MarshalText()
 		return data
 	}
@@ -309,33 +307,10 @@ func TestParseIntermediateCertificateAuthority(t *testing.T) {
 	ca := generateIntermediateCertificateAuthority(namespace)
 
 	t.Run("valid plaintext", func(t *testing.T) {
-		privateKey := marshalPrivateKey(ca, []byte{})
+		privateKey := marshalPrivateKey(ca)
 		certificate := marshalCertificate(ca)
 
-		intermediateCA, err := ParseIntermediateCertificateAuthority(namespace, privateKey, certificate, []byte{})
-
-		if err != nil {
-			t.Fatalf("expected no error, actual %s", err.Error())
-		}
-
-		if !reflect.DeepEqual(ca.PrivateKey.PrivateKey, intermediateCA.PrivateKey.PrivateKey) {
-			t.Fatalf("expected private keys to match")
-		}
-
-		if !reflect.DeepEqual(ca.Certificate.Certificate, intermediateCA.Certificate.Certificate) {
-			t.Fatalf("expected certificates to match")
-		}
-	})
-
-	t.Run("valid encrypted", func(t *testing.T) {
-		password := make([]byte, 16)
-		if _, err := rand.Read(password); err != nil {
-			t.Fatalf("could not generate password")
-		}
-		privateKey := marshalPrivateKey(ca, password)
-		certificate := marshalCertificate(ca)
-
-		intermediateCA, err := ParseIntermediateCertificateAuthority(namespace, privateKey, certificate, password)
+		intermediateCA, err := ParseIntermediateCertificateAuthority(namespace, privateKey, certificate)
 
 		if err != nil {
 			t.Fatalf("expected no error, actual %s", err.Error())
@@ -355,7 +330,7 @@ func TestParseIntermediateCertificateAuthority(t *testing.T) {
 			privateKey := []byte("bad")
 			certificate := marshalCertificate(ca)
 
-			intermediateCA, err := ParseIntermediateCertificateAuthority(namespace, privateKey, certificate, []byte{})
+			intermediateCA, err := ParseIntermediateCertificateAuthority(namespace, privateKey, certificate)
 
 			if err == nil {
 				t.Fatalf("expected error")
@@ -367,10 +342,10 @@ func TestParseIntermediateCertificateAuthority(t *testing.T) {
 		})
 
 		t.Run("bad certificate", func(t *testing.T) {
-			privateKey := marshalPrivateKey(ca, []byte{})
+			privateKey := marshalPrivateKey(ca)
 			certificate := []byte("bad")
 
-			intermediateCA, err := ParseIntermediateCertificateAuthority(namespace, privateKey, certificate, []byte{})
+			intermediateCA, err := ParseIntermediateCertificateAuthority(namespace, privateKey, certificate)
 
 			if err == nil {
 				t.Fatalf("expected error")

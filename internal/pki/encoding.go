@@ -17,7 +17,6 @@ package pki
 
 import (
 	"crypto/ecdsa"
-	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -70,15 +69,8 @@ func (c *Certificate) UnmarshalText(data []byte) error {
 }
 
 type PrivateKey struct {
-	// Password, if set, will encrypt the PrivateKey when converted to PEM format
-	Password []byte
-
 	// PrivateKey is the private key
 	PrivateKey *ecdsa.PrivateKey
-
-	// encryptPEMBlock allows for the encryption of a PEM Block into the
-	// appropriate format
-	encryptPEMBlock func(password []byte, der []byte) (*pem.Block, error)
 
 	// marshalECPrivateKey turns a ECDSA private key into DER format, which is an
 	// intermediate form prior to turning it into a PEM block
@@ -98,13 +90,8 @@ func (c *PrivateKey) MarshalText() ([]byte, error) {
 		return []byte{}, err
 	}
 
-	// encode the PEM block based on whether or not the password is present
-	// if the password is nonempty, then encrypt with the password
-	if len(c.Password) > 0 {
-		return c.marshalEncryptedPrivateKey(der)
-	}
-
-	// otherwise, this is a boring encoding
+	// encode the private key. in the future, once PKCS #8 encryption is supported
+	// in go, we can encrypt the private key
 	return c.marshalPrivateKey(der), nil
 }
 
@@ -122,19 +109,9 @@ func (c *PrivateKey) UnmarshalText(data []byte) error {
 		return fmt.Errorf("%w: not type %s", ErrInvalidPEM, pemPrivateKeyType)
 	}
 
-	// determine if this the PEM block is encrypted and if so, attempt to decrypt
-	// it. if not, just read the bytes directly from the PEM block.
-	var der []byte
-
-	if len(c.Password) > 0 {
-		var err error
-		der, err = x509.DecryptPEMBlock(block, c.Password)
-		if err != nil {
-			return fmt.Errorf("%w: could not decrypt private key", ErrInvalidPEM)
-		}
-	} else {
-		der = block.Bytes
-	}
+	// store the DER; in the future, this is where we would decrypt the DER once
+	// PKCS #8 encryption is supported in Go
+	der := block.Bytes
 
 	// determine if the data actually represents a ECDSA private key
 	privateKey, err := x509.ParseECPrivateKey(der)
@@ -159,25 +136,11 @@ func (c *PrivateKey) marshalPrivateKey(der []byte) []byte {
 	return pem.EncodeToMemory(block)
 }
 
-// marshalEncryptedPrivateKey encodes a private key with encryption in PEM format
-func (c *PrivateKey) marshalEncryptedPrivateKey(der []byte) ([]byte, error) {
-	if c.encryptPEMBlock == nil {
-		return []byte{}, fmt.Errorf("%w: encryptPEMBlock", ErrFunctionNotImplemented)
-	}
-
-	if block, err := c.encryptPEMBlock(c.Password, der); err != nil {
-		return []byte{}, err
-	} else {
-		return pem.EncodeToMemory(block), nil
-	}
-}
-
 // NewPrivateKey performs the setup for creating a new private key, including
 // any functions that need to be created
 func NewPrivateKey(key *ecdsa.PrivateKey) *PrivateKey {
 	return &PrivateKey{
 		PrivateKey:          key,
-		encryptPEMBlock:     encryptPEMBlock,
 		marshalECPrivateKey: marshalECPrivateKey,
 	}
 }
@@ -193,27 +156,15 @@ func ParseCertificate(data []byte) (*Certificate, error) {
 	return certificate, nil
 }
 
-// ParsePrivateKey accepts binary encoded data with an optional password for
-// decryption and attempts to parse a private key
-func ParsePrivateKey(data, password []byte) (*PrivateKey, error) {
+// ParsePrivateKey accepts binary encoded data attempts to parse a private key
+func ParsePrivateKey(data []byte) (*PrivateKey, error) {
 	privateKey := NewPrivateKey(nil)
-	privateKey.Password = password
 
 	if err := privateKey.UnmarshalText(data); err != nil {
 		return nil, err
 	}
 
 	return privateKey, nil
-}
-
-// encryptPEMBlock is a wrapper around the "x509.encryptPEMBlock" function. This
-// sets the encryption cipher to use AES-256 as this is the best-in-class at the
-// time of this writing.
-//
-// Returns an encrypted PEM block and/or an error
-func encryptPEMBlock(password, der []byte) (*pem.Block, error) {
-	return x509.EncryptPEMBlock(rand.Reader, pemPrivateKeyType,
-		der, password, x509.PEMCipherAES256)
 }
 
 // marshalECPrivateKey is a wrapper function around the

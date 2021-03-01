@@ -49,7 +49,7 @@ func (r *Reconciler) reconcileRootCertificate(
 		err = errors.WithStack(err)
 	}
 	if data, ok := existing.Data[keyPrivateKey]; err == nil && ok {
-		root.PrivateKey, err = pki.ParsePrivateKey(data, nil)
+		root.PrivateKey, err = pki.ParsePrivateKey(data)
 		err = errors.WithStack(err)
 	}
 
@@ -102,7 +102,7 @@ func (r *Reconciler) reconcileNamespaceCertificate(
 		err = errors.WithStack(err)
 	}
 	if data, ok := existing.Data[keyPrivateKey]; err == nil && ok {
-		ca.PrivateKey, err = pki.ParsePrivateKey(data, nil)
+		ca.PrivateKey, err = pki.ParsePrivateKey(data)
 		err = errors.WithStack(err)
 	}
 
@@ -158,7 +158,7 @@ func (*Reconciler) instanceCertificate(
 		err = errors.WithStack(err)
 	}
 	if data, ok := existing.Data[keyPrivateKey]; err == nil && ok {
-		leaf.PrivateKey, err = pki.ParsePrivateKey(data, nil)
+		leaf.PrivateKey, err = pki.ParsePrivateKey(data)
 		err = errors.WithStack(err)
 	}
 

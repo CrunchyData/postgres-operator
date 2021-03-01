@@ -109,14 +109,13 @@ func NewIntermediateCertificateAuthority(namespace string) *IntermediateCertific
 }
 
 // ParseIntermediateCertificateAuthority takes a PEM encoded private key and
-// certificate representation and attempts to parse it. Can take an optional
-// password for an encrypted private key
-func ParseIntermediateCertificateAuthority(namespace string, privateKey, certificate, password []byte) (*IntermediateCertificateAuthority, error) {
+// certificate representation and attempts to parse it.
+func ParseIntermediateCertificateAuthority(namespace string, privateKey, certificate []byte) (*IntermediateCertificateAuthority, error) {
 	var err error
 	ca := NewIntermediateCertificateAuthority(namespace)
 
 	// attempt to parse the private key
-	if ca.PrivateKey, err = ParsePrivateKey(privateKey, password); err != nil {
+	if ca.PrivateKey, err = ParsePrivateKey(privateKey); err != nil {
 		return nil, err
 	}
 

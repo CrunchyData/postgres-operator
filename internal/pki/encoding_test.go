@@ -34,10 +34,6 @@ import (
 func assertConstructed(t testing.TB, key *PrivateKey) {
 	t.Helper()
 
-	if key.encryptPEMBlock == nil {
-		t.Fatalf("expected encryptPEMBlock to be set on private key")
-	}
-
 	if key.marshalECPrivateKey == nil {
 		t.Fatalf("expected marshalECPrivateKey to be set on private key")
 	}
@@ -135,10 +131,6 @@ func TestNewPrivateKey(t *testing.T) {
 	if reflect.TypeOf(privateKey).String() != "*pki.PrivateKey" {
 		t.Fatalf("expected *pki.PrivateKey in return")
 	}
-
-	if reflect.DeepEqual(privateKey.encryptPEMBlock, encryptPEMBlock) {
-		t.Fatalf("expected encryptPEMBlock function to be correctly set")
-	}
 }
 
 func TestParseCertificate(t *testing.T) {
@@ -201,17 +193,8 @@ func TestParsePrivateKey(t *testing.T) {
 	generatePrivateKey := func() *PrivateKey {
 		key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		privateKey := &PrivateKey{PrivateKey: key}
-		privateKey.encryptPEMBlock = encryptPEMBlock
 		privateKey.marshalECPrivateKey = marshalECPrivateKey
 		return privateKey
-	}
-
-	// generateRandomPasswordForTest generates a random password...for testing
-	// swallows erorrs
-	generateRandomPasswordForTest := func() []byte {
-		password := make([]byte, 16)
-		_, _ = rand.Read(password)
-		return password
 	}
 
 	t.Run("valid", func(t *testing.T) {
@@ -221,27 +204,7 @@ func TestParsePrivateKey(t *testing.T) {
 			b, _ := x509.MarshalECPrivateKey(expected.PrivateKey)
 			encoded := pem.EncodeToMemory(&pem.Block{Bytes: b, Type: pemPrivateKeyType})
 
-			privateKey, err := ParsePrivateKey(encoded, []byte{})
-
-			if err != nil {
-				t.Fatalf("expected no error, actual %s", err.Error())
-			}
-
-			if !reflect.DeepEqual(expected.PrivateKey, privateKey.PrivateKey) {
-				t.Fatalf("expected parsed key to match expected")
-			}
-
-			// ensure private key functions are set
-			assertConstructed(t, privateKey)
-		})
-
-		t.Run("encrypted", func(t *testing.T) {
-			der, _ := x509.MarshalECPrivateKey(expected.PrivateKey)
-			password := generateRandomPasswordForTest()
-			block, _ := x509.EncryptPEMBlock(rand.Reader, pemPrivateKeyType, der, password, x509.PEMCipherAES256)
-			encoded := pem.EncodeToMemory(block)
-
-			privateKey, err := ParsePrivateKey(encoded, password)
+			privateKey, err := ParsePrivateKey(encoded)
 
 			if err != nil {
 				t.Fatalf("expected no error, actual %s", err.Error())
@@ -260,7 +223,7 @@ func TestParsePrivateKey(t *testing.T) {
 		t.Run("plaintext", func(t *testing.T) {
 			data := []byte("bad")
 
-			privateKey, err := ParsePrivateKey(data, []byte{})
+			privateKey, err := ParsePrivateKey(data)
 
 			if err == nil {
 				t.Fatalf("expected error")
@@ -269,26 +232,6 @@ func TestParsePrivateKey(t *testing.T) {
 			if privateKey != nil {
 				t.Fatalf("expected private key to be nil")
 			}
-		})
-
-		t.Run("encrypted", func(t *testing.T) {
-			expected := generatePrivateKey()
-			der, _ := x509.MarshalECPrivateKey(expected.PrivateKey)
-			password := generateRandomPasswordForTest()
-			block, _ := x509.EncryptPEMBlock(rand.Reader, pemPrivateKeyType, der, password, x509.PEMCipherAES256)
-			encoded := pem.EncodeToMemory(block)
-
-			t.Run("bad data", func(t *testing.T) {
-				if _, err := ParsePrivateKey([]byte("bad"), password); !errors.Is(err, ErrInvalidPEM) {
-					t.Fatalf("expected an invalid PEM error")
-				}
-			})
-
-			t.Run("bad password", func(t *testing.T) {
-				if _, err := ParsePrivateKey(encoded, []byte("bad")); !errors.Is(err, ErrInvalidPEM) {
-					t.Fatalf("expected an invalid PEM error")
-				}
-			})
 		})
 	})
 }
@@ -299,17 +242,8 @@ func TestPrivateKey(t *testing.T) {
 	generatePrivateKey := func() *PrivateKey {
 		key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 		privateKey := &PrivateKey{PrivateKey: key}
-		privateKey.encryptPEMBlock = encryptPEMBlock
 		privateKey.marshalECPrivateKey = marshalECPrivateKey
 		return privateKey
-	}
-
-	// generateRandomPasswordForTest generates a random password...for testing
-	// swallows erorrs
-	generateRandomPasswordForTest := func() []byte {
-		password := make([]byte, 16)
-		_, _ = rand.Read(password)
-		return password
 	}
 
 	t.Run("MarshalText", func(t *testing.T) {
@@ -327,11 +261,6 @@ func TestPrivateKey(t *testing.T) {
 
 				if block.Type != pemPrivateKeyType {
 					t.Fatalf("expected pem type %q, actual %q", pemPrivateKeyType, block.Type)
-				}
-
-				// ensure this is not encrypted
-				if x509.IsEncryptedPEMBlock(block) {
-					t.Fatalf("expected unencrypted pem encoded key")
 				}
 
 				decodedKey, err := x509.ParseECPrivateKey(block.Bytes)
@@ -363,98 +292,6 @@ func TestPrivateKey(t *testing.T) {
 					privateKey.marshalECPrivateKey = func(*ecdsa.PrivateKey) ([]byte, error) {
 						return []byte{}, errors.New(msg)
 					}
-
-					_, err := privateKey.MarshalText()
-
-					if err.Error() != msg {
-						t.Fatalf("expected error: %s", msg)
-					}
-				})
-			})
-		})
-
-		t.Run("encrypted", func(t *testing.T) {
-			t.Run("valid", func(t *testing.T) {
-				privateKey := generatePrivateKey()
-				privateKey.Password = generateRandomPasswordForTest()
-
-				encoded, err := privateKey.MarshalText()
-
-				if err != nil {
-					t.Fatalf("expected no error, actual: %s", err)
-				}
-
-				block, _ := pem.Decode(encoded)
-
-				if block.Type != pemPrivateKeyType {
-					t.Fatalf("expected pem type %q, actual %q", pemPrivateKeyType, block.Type)
-				}
-
-				// ensure this is encrypted
-				if !x509.IsEncryptedPEMBlock(block) {
-					t.Fatalf("expected encrypted pem encoded key")
-				}
-
-				der, err := x509.DecryptPEMBlock(block, privateKey.Password)
-
-				if err != nil {
-					t.Fatalf("expected valid ECDSA key unlocked with password, got error: %s", err.Error())
-				}
-
-				decodedKey, err := x509.ParseECPrivateKey(der)
-
-				if err != nil {
-					t.Fatalf("expected valid ECDSA key, got error: %s", err.Error())
-				}
-
-				if !privateKey.PrivateKey.Equal(decodedKey) {
-					t.Fatalf("expected private key to match pem encoded key")
-				}
-			})
-
-			t.Run("invalid", func(t *testing.T) {
-				t.Run("ec marshal function not set", func(t *testing.T) {
-					privateKey := generatePrivateKey()
-					privateKey.marshalECPrivateKey = nil
-
-					_, err := privateKey.MarshalText()
-
-					if !errors.Is(err, ErrFunctionNotImplemented) {
-						t.Fatalf("expected function not implemented error")
-					}
-				})
-
-				t.Run("cannot marshal elliptical curve key", func(t *testing.T) {
-					msg := "marshal failed"
-					privateKey := generatePrivateKey()
-					privateKey.marshalECPrivateKey = func(*ecdsa.PrivateKey) ([]byte, error) {
-						return []byte{}, errors.New(msg)
-					}
-
-					_, err := privateKey.MarshalText()
-
-					if err.Error() != msg {
-						t.Fatalf("expected error: %s", msg)
-					}
-				})
-
-				t.Run("encryption function not set", func(t *testing.T) {
-					privateKey := generatePrivateKey()
-					privateKey.Password = generateRandomPasswordForTest()
-					privateKey.encryptPEMBlock = nil
-
-					_, err := privateKey.MarshalText()
-
-					if !errors.Is(err, ErrFunctionNotImplemented) {
-						t.Fatalf("expected function not implemented error")
-					}
-				})
-
-				t.Run("cannot marshal encrypted block", func(t *testing.T) {
-					msg := "encryption failed"
-					privateKey := generatePrivateKey()
-					privateKey.Password = generateRandomPasswordForTest()
-					privateKey.encryptPEMBlock = func([]byte, []byte) (*pem.Block, error) { return nil, errors.New(msg) }
 
 					_, err := privateKey.MarshalText()
 
@@ -506,46 +343,6 @@ func TestPrivateKey(t *testing.T) {
 				t.Run("not a valid private key", func(t *testing.T) {
 					encoded := pem.EncodeToMemory(&pem.Block{Bytes: []byte("bad key"), Type: pemPrivateKeyType})
 					pk := &PrivateKey{}
-
-					if err := pk.UnmarshalText(encoded); !errors.Is(err, ErrInvalidPEM) {
-						t.Fatalf("expected invalid PEM error")
-					}
-				})
-			})
-		})
-
-		t.Run("encrypted", func(t *testing.T) {
-			password := generateRandomPasswordForTest()
-
-			t.Run("valid", func(t *testing.T) {
-				// manually marshal the private key
-				der, _ := x509.MarshalECPrivateKey(expected.PrivateKey)
-				block, _ := x509.EncryptPEMBlock(rand.Reader, pemPrivateKeyType, der, password, x509.PEMCipherAES256)
-				encoded := pem.EncodeToMemory(block)
-
-				pk := &PrivateKey{Password: password}
-
-				if err := pk.UnmarshalText(encoded); err != nil {
-					t.Fatalf("expected no error, got %s", err.Error())
-				}
-
-				if !reflect.DeepEqual(expected.PrivateKey, pk.PrivateKey) {
-					t.Fatalf("expected encoded private key to be unmarshaled in identical format")
-				}
-			})
-
-			t.Run("invalid", func(t *testing.T) {
-				t.Run("not a valid password", func(t *testing.T) {
-					der, _ := x509.MarshalECPrivateKey(expected.PrivateKey)
-					block, err := x509.EncryptPEMBlock(rand.Reader, pemPrivateKeyType, der, password, x509.PEMCipherAES256)
-					if err != nil {
-						t.Fatalf("could not encrypt PEM block")
-					}
-					encoded := pem.EncodeToMemory(block)
-
-					bad := generateRandomPasswordForTest()
-
-					pk := &PrivateKey{Password: bad}
 
 					if err := pk.UnmarshalText(encoded); !errors.Is(err, ErrInvalidPEM) {
 						t.Fatalf("expected invalid PEM error")

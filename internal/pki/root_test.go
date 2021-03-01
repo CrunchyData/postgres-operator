@@ -17,7 +17,6 @@ package pki
 
 import (
 	"crypto/ecdsa"
-	"crypto/rand"
 	"crypto/x509"
 	"errors"
 	"math/big"
@@ -67,8 +66,7 @@ func TestParseRootCertificateAuthority(t *testing.T) {
 		return data
 	}
 
-	marshalPrivateKey := func(ca *RootCertificateAuthority, password []byte) []byte {
-		ca.PrivateKey.Password = password
+	marshalPrivateKey := func(ca *RootCertificateAuthority) []byte {
 		data, _ := ca.PrivateKey.MarshalText()
 		return data
 	}
@@ -76,33 +74,10 @@ func TestParseRootCertificateAuthority(t *testing.T) {
 	ca := generateRootCertificateAuthority()
 
 	t.Run("valid plaintext", func(t *testing.T) {
-		privateKey := marshalPrivateKey(ca, []byte{})
+		privateKey := marshalPrivateKey(ca)
 		certificate := marshalCertificate(ca)
 
-		rootCA, err := ParseRootCertificateAuthority(privateKey, certificate, []byte{})
-
-		if err != nil {
-			t.Fatalf("expected no error, actual %s", err.Error())
-		}
-
-		if !reflect.DeepEqual(ca.PrivateKey.PrivateKey, rootCA.PrivateKey.PrivateKey) {
-			t.Fatalf("expected private keys to match")
-		}
-
-		if !reflect.DeepEqual(ca.Certificate.Certificate, rootCA.Certificate.Certificate) {
-			t.Fatalf("expected certificates to match")
-		}
-	})
-
-	t.Run("valid encrypted", func(t *testing.T) {
-		password := make([]byte, 16)
-		if _, err := rand.Read(password); err != nil {
-			t.Fatalf("could not generate password")
-		}
-		privateKey := marshalPrivateKey(ca, password)
-		certificate := marshalCertificate(ca)
-
-		rootCA, err := ParseRootCertificateAuthority(privateKey, certificate, password)
+		rootCA, err := ParseRootCertificateAuthority(privateKey, certificate)
 
 		if err != nil {
 			t.Fatalf("expected no error, actual %s", err.Error())
@@ -122,7 +97,7 @@ func TestParseRootCertificateAuthority(t *testing.T) {
 			privateKey := []byte("bad")
 			certificate := marshalCertificate(ca)
 
-			rootCA, err := ParseRootCertificateAuthority(privateKey, certificate, []byte{})
+			rootCA, err := ParseRootCertificateAuthority(privateKey, certificate)
 
 			if err == nil {
 				t.Fatalf("expected error")
@@ -134,10 +109,10 @@ func TestParseRootCertificateAuthority(t *testing.T) {
 		})
 
 		t.Run("bad certificate key", func(t *testing.T) {
-			privateKey := marshalPrivateKey(ca, []byte{})
+			privateKey := marshalPrivateKey(ca)
 			certificate := []byte("bad")
 
-			rootCA, err := ParseRootCertificateAuthority(privateKey, certificate, []byte{})
+			rootCA, err := ParseRootCertificateAuthority(privateKey, certificate)
 
 			if err == nil {
 				t.Fatalf("expected error")

@@ -102,14 +102,13 @@ func NewRootCertificateAuthority() *RootCertificateAuthority {
 }
 
 // ParseRootCertificateAuthority takes a PEM encoded private key and certificate
-// representation and attempts to parse it. Can take an optional password for
-// an encrypted private key
-func ParseRootCertificateAuthority(privateKey, certificate, password []byte) (*RootCertificateAuthority, error) {
+// representation and attempts to parse it.
+func ParseRootCertificateAuthority(privateKey, certificate []byte) (*RootCertificateAuthority, error) {
 	var err error
 	ca := NewRootCertificateAuthority()
 
 	// attempt to parse the private key
-	if ca.PrivateKey, err = ParsePrivateKey(privateKey, password); err != nil {
+	if ca.PrivateKey, err = ParsePrivateKey(privateKey); err != nil {
 		return nil, err
 	}
 
