@@ -141,3 +141,12 @@ func PatroniTrigger(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
 		Name:      PatroniScope(cluster) + "-failover",
 	}
 }
+
+// PostgresUserSecret returns the ObjectMeta necessary to lookup the Secret
+// containing the default Postgres User and connection information
+func PostgresUserSecret(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Name + "-pguser",
+	}
+}

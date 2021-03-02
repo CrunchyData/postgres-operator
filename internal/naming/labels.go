@@ -31,5 +31,9 @@ const (
 	// repository
 	LabelPGBackRestRepo = labelPrefix + "pgbackrest-repo"
 
+	// LabelUserSecret is used to identify the secret containing the Postgres
+	// user connection information
+	LabelUserSecret = labelPrefix + "pguser"
+
 	RolePrimary = "primary"
 )

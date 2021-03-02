@@ -17,13 +17,17 @@ package postgrescluster
 
 import (
 	"context"
+	"fmt"
+	"net/url"
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
@@ -167,4 +171,76 @@ func (r *Reconciler) reconcileClusterPrimaryService(
 	}
 
 	return err
+}
+
+// +kubebuilder:rbac:resources=secrets,verbs=patch
+
+// reconcilePGUserSecret creates the secret that contains the default
+// connection information to use with the postgrescluster
+// TODO(tjmoore4): add updated reconciliation logic
+func (r *Reconciler) reconcilePGUserSecret(
+	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+) (*v1.Secret, error) {
+	existing := &v1.Secret{ObjectMeta: naming.PostgresUserSecret(cluster)}
+	err := errors.WithStack(client.IgnoreNotFound(r.Client.Get(ctx,
+		client.ObjectKeyFromObject(existing), existing)))
+	if err != nil {
+		return nil, err
+	}
+
+	intent := &v1.Secret{ObjectMeta: naming.PostgresUserSecret(cluster)}
+	intent.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+
+	intent.Data = make(map[string][]byte)
+
+	intent.Data["user"] = []byte(cluster.Name)
+	intent.Data["dbname"] = []byte(cluster.Name)
+
+	// if the password is not set, generate a new one
+	if _, ok := existing.Data["password"]; !ok {
+		password, err := util.GeneratePassword(util.DefaultGeneratedPasswordLength)
+		if err != nil {
+			return nil, err
+		}
+		intent.Data["password"] = []byte(password)
+	} else {
+		intent.Data["password"] = existing.Data["password"]
+	}
+
+	hostname := naming.ClusterPrimaryService(cluster).Name + "." +
+		naming.ClusterPrimaryService(cluster).Namespace + ".svc"
+
+	// The stored connection string follows the PostgreSQL format.
+	// The example followed is
+	// postgresql://user:secret@localhost:port/mydb
+	// where 'user' is the username, 'secret' is the password, 'localhost'
+	// is the hostname, 'port' is the port and 'mydb' is the database name
+	// https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+	connectionString := (&url.URL{
+		Scheme: "postgresql",
+		Host:   fmt.Sprintf("%s:%d", hostname, *cluster.Spec.Port),
+		User:   url.UserPassword(string(intent.Data["user"]), string(intent.Data["password"])),
+		Path:   string(intent.Data["dbname"]),
+	}).String()
+	intent.Data["uri"] = []byte(connectionString)
+
+	// set postgrescluster label
+	intent.Labels = map[string]string{
+		naming.LabelCluster:    cluster.Name,
+		naming.LabelUserSecret: cluster.Name,
+	}
+
+	err = errors.WithStack(r.setControllerReference(cluster, intent))
+
+	if err == nil {
+		err = errors.WithStack(r.apply(ctx, intent))
+	}
+
+	// if no error, return intent
+	if err == nil {
+		return intent, err
+	}
+
+	// do not return the intent if there was an error during apply
+	return nil, err
 }

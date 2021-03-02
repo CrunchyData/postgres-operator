@@ -157,6 +157,10 @@ func (r *Reconciler) Reconcile(
 		err = r.reconcileClusterPrimaryService(ctx, cluster, patroniLeaderService)
 	}
 	if err == nil {
+		// TODO(tjmoore4): will need to do something with the returned secret
+		_, err = r.reconcilePGUserSecret(ctx, cluster)
+	}
+	if err == nil {
 		err = r.reconcilePatroniDistributedConfiguration(ctx, cluster)
 	}
 	if err == nil {
