@@ -225,6 +225,10 @@ check:
 check-envtest: hack/tools/envtest
 	KUBEBUILDER_ASSETS="$(CURDIR)/$^/bin" $(GO) test -count=1 -cover -tags=envtest ./internal/controller/... ./internal/pgbackrest/...
 
+.PHONY: check-envtest-existing
+check-envtest-existing:
+	USE_EXISTING_CLUSTER=true $(GO) test -count=1 -tags=envtest ./internal/controller/... ./internal/pgbackrest/...
+
 .PHONY: check-generate
 check-generate: generate-crd generate-deepcopy
 	git diff --exit-code -- config/crd
