@@ -33,6 +33,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	// Google Kubernetes Engine / Google Cloud Platform authentication provider
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
