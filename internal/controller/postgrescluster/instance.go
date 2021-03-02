@@ -94,15 +94,22 @@ func (r *Reconciler) deleteInstances(
 	}
 
 	// There are multiple instances; stop the replicas.
+	found := false
 	for i := range pods.Items {
 		role := pods.Items[i].Labels[naming.LabelRole]
 		if err == nil && role == naming.RolePatroniReplica {
 			err = stop(&pods.Items[i])
+			found = true
 		}
+
+		// TODO(cbandy): An instance has no role label when it is joining or
+		// re-joining the cluster. That blocks progress here but probably
+		// shouldn't. Is there a situation when no instances have the role label?
 	}
 
-	// The caller should wait for further events or requeue upon error.
-	return &reconcile.Result{}, err
+	// The caller should wait for further events or requeue if we were unable
+	// to make progress stopping replicas.
+	return &reconcile.Result{Requeue: !found}, err
 }
 
 // +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=list

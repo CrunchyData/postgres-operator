@@ -19,6 +19,7 @@ package postgrescluster
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -43,6 +44,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
@@ -111,14 +113,46 @@ func TestReconcilerHandleDelete(t *testing.T) {
 	}
 
 	for _, test := range []struct {
-		name        string
-		propagation metav1.DeletionPropagation
+		name         string
+		beforeDelete func(*testing.T, *v1alpha1.PostgresCluster)
+		propagation  metav1.DeletionPropagation
 	}{
 		{
 			name:        "Background",
 			propagation: metav1.DeletePropagationBackground,
 		},
 		// TODO(cbandy): metav1.DeletePropagationForeground
+		{
+			name:        "AfterFailover",
+			propagation: metav1.DeletePropagationBackground,
+			beforeDelete: func(t *testing.T, cluster *v1alpha1.PostgresCluster) {
+				list := v1.PodList{}
+				selector, err := labels.Parse(strings.Join([]string{
+					"postgres-operator.crunchydata.com/cluster=" + cluster.Name,
+					"postgres-operator.crunchydata.com/instance",
+				}, ","))
+				assert.NilError(t, err)
+				assert.NilError(t, cc.List(ctx, &list,
+					client.InNamespace(cluster.Namespace),
+					client.MatchingLabelsSelector{Selector: selector}))
+
+				var primary *v1.Pod
+				var replica *v1.Pod
+				for i := range list.Items {
+					if list.Items[i].Labels["postgres-operator.crunchydata.com/role"] == "replica" {
+						replica = &list.Items[i]
+					} else {
+						primary = &list.Items[i]
+					}
+				}
+				assert.Assert(t, primary != nil, "expected to find a primary in %+v", list.Items)
+				assert.Assert(t, replica != nil, "expected to find a replica in %+v", list.Items)
+
+				assert.NilError(t, patroni.Executor(func(_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string) error {
+					return reconciler.PodExec(replica.Namespace, replica.Name, "database", stdin, stdout, stderr, command...)
+				}).ChangePrimary(ctx, primary.Name, replica.Name))
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			g := gomega.NewWithT(t)
@@ -182,6 +216,10 @@ func TestReconcilerHandleDelete(t *testing.T) {
 				},
 			))
 
+			if test.beforeDelete != nil {
+				test.beforeDelete(t, cluster)
+			}
+
 			switch test.propagation {
 			case metav1.DeletePropagationBackground:
 				// Background deletion is the default for custom resources.
@@ -193,10 +231,14 @@ func TestReconcilerHandleDelete(t *testing.T) {
 			}
 
 			// Stop cluster.
-			mustReconcile(t, cluster)
+			result := mustReconcile(t, cluster)
 
 			// Replicas should stop first, leaving just the one primary.
 			g.Eventually(func() (instances []v1.Pod) {
+				if result.Requeue {
+					result = mustReconcile(t, cluster)
+				}
+
 				list := v1.PodList{}
 				selector, err := labels.Parse(strings.Join([]string{
 					"postgres-operator.crunchydata.com/cluster=" + cluster.Name,

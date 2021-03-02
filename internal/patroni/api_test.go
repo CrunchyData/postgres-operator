@@ -39,6 +39,25 @@ func ExampleExecutor_execCmd() {
 	})
 }
 
+func TestExecutorChangePrimary(t *testing.T) {
+	expected := errors.New("bang")
+	exec := func(
+		_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+	) error {
+		assert.DeepEqual(t, command, strings.Fields(
+			`patronictl switchover --scheduled=now --force --master=old --candidate=new`,
+		))
+		assert.Assert(t, stdin == nil, "expected no stderr, got %T", stdin)
+		assert.Assert(t, stderr != nil, "should capture stderr")
+		assert.Assert(t, stdout != nil, "should capture stdout")
+		return expected
+	}
+
+	actual := Executor(exec).ChangePrimary(context.Background(), "old", "new")
+
+	assert.Equal(t, expected, actual, "should call exec")
+}
+
 func TestExecutorReplaceConfiguration(t *testing.T) {
 	expected := errors.New("bang")
 	exec := func(

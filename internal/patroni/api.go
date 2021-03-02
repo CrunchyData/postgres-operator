@@ -37,6 +37,25 @@ type Executor func(
 // Executor implements API.
 var _ API = Executor(nil)
 
+// ChangePrimary demotes the current Patroni leader by calling "patronictl".
+func (exec Executor) ChangePrimary(
+	ctx context.Context, current, next string,
+) error {
+	var stdout, stderr bytes.Buffer
+
+	err := exec(ctx, nil, &stdout, &stderr,
+		"patronictl", "switchover", "--scheduled=now", "--force",
+		"--master="+current, "--candidate="+next)
+
+	log := logging.FromContext(ctx)
+	log.V(1).Info("changed primary",
+		"stdout", stdout.String(),
+		"stderr", stderr.String(),
+	)
+
+	return err
+}
+
 // ReplaceConfiguration replaces Patroni's entire dynamic configuration by
 // calling "patronictl".
 func (exec Executor) ReplaceConfiguration(

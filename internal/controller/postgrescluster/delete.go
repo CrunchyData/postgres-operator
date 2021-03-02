@@ -89,6 +89,11 @@ func (r *Reconciler) handleDelete(
 		return result, nil
 	}
 
+	// Instances are stopped, now cleanup some Patroni stuff.
+	if err := r.deletePatroniArtifacts(ctx, cluster); err != nil {
+		return nil, err
+	}
+
 	// Our finalizer logic is finished; remove our finalizer.
 	// The Finalizers field is shared by multiple controllers, but the
 	// server-side merge strategy does not work on our custom resource due to a

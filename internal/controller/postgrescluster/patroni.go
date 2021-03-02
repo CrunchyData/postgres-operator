@@ -31,6 +31,27 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
+// +kubebuilder:rbac:resources=endpoints,verbs=deletecollection
+
+func (r *Reconciler) deletePatroniArtifacts(
+	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+) error {
+	// TODO(cbandy): This could also be accomplished by adopting the Endpoints
+	// as Patroni creates them. Would their events cause too many reconciles?
+	// Foreground deletion may force us to adopt and set finalizers anyway.
+
+	selector, err := naming.AsSelector(naming.ClusterPatronis(cluster))
+	if err == nil {
+		err = errors.WithStack(
+			r.Client.DeleteAllOf(ctx, &v1.Endpoints{},
+				client.InNamespace(cluster.Namespace),
+				client.MatchingLabelsSelector{Selector: selector},
+			))
+	}
+
+	return err
+}
+
 // +kubebuilder:rbac:resources=services,verbs=patch
 
 // reconcilePatroniDistributedConfiguration sets labels and ownership on the
