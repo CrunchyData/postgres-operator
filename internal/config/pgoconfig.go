@@ -39,8 +39,9 @@ import (
 )
 
 const (
-	CustomConfigMapName = "pgo-config"
-	defaultConfigPath   = "/default-pgo-config/"
+	CustomConfigMapName     = "pgo-config"
+	defaultConfigPath       = "/default-pgo-config/"
+	openShiftAPIGroupSuffix = ".openshift.io"
 )
 
 var PgoDefaultServiceAccountTemplate *template.Template
@@ -218,7 +219,7 @@ type ClusterStruct struct {
 	DefaultBackrestResourceMemory  resource.Quantity `json:"DefaultBackrestMemory"`
 	DefaultPgBouncerResourceMemory resource.Quantity `json:"DefaultPgBouncerMemory"`
 	DefaultExporterResourceMemory  resource.Quantity `json:"DefaultExporterMemory"`
-	DisableFSGroup                 bool
+	DisableFSGroup                 *bool
 }
 
 type StorageStruct struct {
@@ -255,6 +256,7 @@ type PgoConfig struct {
 	ReplicaStorage  string
 	BackrestStorage string
 	Storage         map[string]StorageStruct
+	OpenShift       bool
 }
 
 const (
@@ -525,6 +527,9 @@ func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) 
 		log.Errorf("Unmarshal: %v", err)
 		return err
 	}
+
+	// determine if this cluster is inside openshift
+	c.OpenShift = isOpenShift(clientset)
 
 	// validate the pgo.yaml config file
 	if err := c.Validate(); err != nil {
@@ -850,4 +855,37 @@ func (c *PgoConfig) CheckEnv() {
 		c.Cluster.CCPImagePrefix = ccpImagePrefix
 		log.Infof("CheckEnv: using CCP_IMAGE_PREFIX env var: %s", ccpImagePrefix)
 	}
+}
+
+// HasDisableFSGroup returns either the value of DisableFSGroup if it is
+// explicitly set; otherwise it will determine the value from the environment
+func (c *PgoConfig) DisableFSGroup() bool {
+	if c.Cluster.DisableFSGroup != nil {
+		log.Debugf("setting disable fsgroup to %t", *c.Cluster.DisableFSGroup)
+		return *c.Cluster.DisableFSGroup
+	}
+
+	// if this is OpenShift, disable the FSGroup
+	log.Debugf("setting disable fsgroup to %t", c.OpenShift)
+	return c.OpenShift
+}
+
+// isOpenShift returns true if we've detected that we're in an OpenShift cluster
+func isOpenShift(clientset kubernetes.Interface) bool {
+	groups, _, err := clientset.Discovery().ServerGroupsAndResources()
+
+	if err != nil {
+		log.Errorf("could not get server api groups: %s", err.Error())
+		return false
+	}
+
+	// ff we detect that any API group name ends with "openshift.io", we'll return
+	// that this is an OpenShift environment
+	for _, g := range groups {
+		if strings.HasSuffix(g.Name, openShiftAPIGroupSuffix) {
+			return true
+		}
+	}
+
+	return false
 }

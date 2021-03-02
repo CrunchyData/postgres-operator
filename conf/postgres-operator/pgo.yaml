@@ -27,7 +27,6 @@ Cluster:
   DefaultBackrestMemory:
   DefaultPgBouncerMemory:
   DefaultExporterMemory:
-  DisableFSGroup: false
 PrimaryStorage: default
 WALStorage:
 BackupStorage: default
