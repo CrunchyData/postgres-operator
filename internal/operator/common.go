@@ -171,7 +171,7 @@ func GetPodSecurityContext(supplementalGroups []int64) string {
 	}
 
 	// determine if we should use the PostgreSQL FSGroup.
-	if !Pgo.Cluster.DisableFSGroup {
+	if !Pgo.DisableFSGroup() {
 		// we store the PostgreSQL FSGroup in this constant as an int64, so it's
 		// just carried over
 		securityContext.FSGroup = &crv1.PGFSGroup

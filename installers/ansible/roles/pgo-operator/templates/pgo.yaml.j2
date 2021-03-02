@@ -24,11 +24,13 @@ Cluster:
   PodAntiAffinityPgBackRest: {{ pod_anti_affinity_pgbackrest }}
   PodAntiAffinityPgBouncer: {{ pod_anti_affinity_pgbouncer }}
   SyncReplication:  {{ sync_replication }}
+{% if disable_fsgroup is defined %}
+  DisableFSGroup: {{ disable_fsgroup }}
+{% endif %}
   DefaultInstanceMemory: {{ default_instance_memory }}
   DefaultBackrestMemory: {{ default_pgbackrest_memory }}
   DefaultPgBouncerMemory: {{ default_pgbouncer_memory }}
   DefaultExporterMemory: {{ default_exporter_memory }}
-  DisableFSGroup: {{ disable_fsgroup }}
 PrimaryStorage: {{ primary_storage }}
 WALStorage: {{ wal_storage }}
 BackupStorage: {{ backup_storage }}
