@@ -134,6 +134,13 @@ uninstall:
 deploy:
 	$(PGO_KUBE_CLIENT) apply -k ./config/default
 
+# Deploy the PostgreSQL Operator locally
+deploy-dev: build-postgres-operator
+	$(PGO_KUBE_CLIENT) apply -k ./config/dev
+	hack/create-kubeconfig.sh
+	CRUNCHY_DEBUG=true PGO_DISABLE_PGCLUSTER=true KUBECONFIG=hack/.kube/postgres-operator \
+	    bin/postgres-operator
+
 # Undeploy the PostgreSQL Operator
 undeploy:
 	$(PGO_KUBE_CLIENT) delete -k ./config/default
@@ -229,6 +236,7 @@ clean: clean-deprecated
 	rm -f bin/pgo-rmdata/pgo-rmdata
 	[ ! -d hack/tools/envtest ] || rm -r hack/tools/envtest
 	[ ! -n "$$(ls hack/tools)" ] || rm hack/tools/*
+	[ ! -d hack/.kube ] || rm -r hack/.kube
 
 clean-deprecated:
 	@# packages used to be downloaded into the vendor directory
