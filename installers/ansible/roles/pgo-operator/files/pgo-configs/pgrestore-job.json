@@ -93,8 +93,12 @@
                         ]
                     }
                 ],
-        {{.NodeSelector}}
-                        "restartPolicy": "Never"
+                {{if .NodeSelector}}
+                "affinity": {
+                  "nodeAffinity": {{.NodeSelector}}
+                },
+                {{ end }}
+                "restartPolicy": "Never"
             }
         }
     }

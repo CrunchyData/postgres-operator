@@ -218,7 +218,9 @@
                 }
                 {{.TablespaceVolumes}}],
                 "affinity": {
-                    {{.NodeSelector}}
+                    {{if .NodeSelector}}
+                    "nodeAffinity": {{.NodeSelector}}
+                    {{ end }}
                     {{if and .NodeSelector .PodAntiAffinity}},{{end}}
                     {{.PodAntiAffinity}}
                 },
