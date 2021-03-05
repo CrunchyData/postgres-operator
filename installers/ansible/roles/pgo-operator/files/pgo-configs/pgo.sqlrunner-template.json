@@ -33,6 +33,7 @@
                         "image": "{{.CCPImagePrefix}}/crunchy-postgres-ha:{{.CCPImageTag}}",
                         "securityContext": {
                           "allowPrivilegeEscalation": false,
+                          "privileged": false,
                           "readOnlyRootFilesystem": true
                         },
                         "command": ["/opt/crunchy/bin/uid_postgres.sh"],
