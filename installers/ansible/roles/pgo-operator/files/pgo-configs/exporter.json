@@ -3,6 +3,7 @@
     "image": "{{.PGOImagePrefix}}/crunchy-postgres-exporter:{{.PGOImageTag}}",
     "securityContext": {
       "allowPrivilegeEscalation": false,
+      "privileged": false,
       "readOnlyRootFilesystem": true
     },
     "ports": [{

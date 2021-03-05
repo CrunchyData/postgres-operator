@@ -34,6 +34,7 @@
                         "imagePullPolicy": "IfNotPresent",
                         "securityContext": {
                           "allowPrivilegeEscalation": false,
+                          "privileged": false,
                           "readOnlyRootFilesystem": true
                         },
                         "ports": [
@@ -123,6 +124,7 @@
                         "imagePullPolicy": "IfNotPresent",
                         "securityContext": {
                           "allowPrivilegeEscalation": false,
+                          "privileged": false,
                           "readOnlyRootFilesystem": true
                         },
                         "readinessProbe": {
@@ -179,6 +181,7 @@
                         "image": "$PGO_IMAGE_PREFIX/pgo-scheduler:$PGO_IMAGE_TAG",
                         "securityContext": {
                           "allowPrivilegeEscalation": false,
+                          "privileged": false,
                           "readOnlyRootFilesystem": true
                         },
                         "livenessProbe": {
@@ -236,6 +239,7 @@
                         "image": "$PGO_IMAGE_PREFIX/pgo-event:$PGO_IMAGE_TAG",
                         "securityContext": {
                           "allowPrivilegeEscalation": false,
+                          "privileged": false,
                           "readOnlyRootFilesystem": true
                         },
                         "livenessProbe": {

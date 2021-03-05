@@ -45,6 +45,7 @@
           "image": "{{.CCPImagePrefix}}/crunchy-pgadmin4:{{.CCPImageTag}}",
           "securityContext": {
             "allowPrivilegeEscalation": false,
+            "privileged": false,
             "readOnlyRootFilesystem": true
           },
           "ports": [{
