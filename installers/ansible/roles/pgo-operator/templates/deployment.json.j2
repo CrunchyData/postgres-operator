@@ -36,6 +36,7 @@
                         "imagePullPolicy": "IfNotPresent",
                         "securityContext": {
                           "allowPrivilegeEscalation": false,
+                          "privileged": false,
                           "readOnlyRootFilesystem": true
                         },
                         "ports": [
@@ -127,6 +128,7 @@
                         "imagePullPolicy": "IfNotPresent",
                         "securityContext": {
                           "allowPrivilegeEscalation": false,
+                          "privileged": false,
                           "readOnlyRootFilesystem": true
                         },
                         "readinessProbe": {
@@ -185,6 +187,7 @@
                                 {%- endif %}",
                         "securityContext": {
                           "allowPrivilegeEscalation": false,
+                          "privileged": false,
                           "readOnlyRootFilesystem": true
                         },
                         "livenessProbe": {
@@ -243,6 +246,7 @@
                                 {%- endif %}",
                         "securityContext": {
                           "allowPrivilegeEscalation": false,
+                          "privileged": false,
                           "readOnlyRootFilesystem": true
                         },
                         "livenessProbe": {

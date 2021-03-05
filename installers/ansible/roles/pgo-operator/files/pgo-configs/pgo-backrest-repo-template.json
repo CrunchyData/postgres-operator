@@ -54,6 +54,7 @@
                     "image": "{{.CCPImagePrefix}}/crunchy-pgbackrest-repo:{{.CCPImageTag}}",
                     "securityContext": {
                       "allowPrivilegeEscalation": false,
+                      "privileged": false,
                       "readOnlyRootFilesystem": true
                     },
                     "ports": [{

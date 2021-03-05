@@ -50,6 +50,7 @@
                     "image": "{{.CCPImagePrefix}}/crunchy-pgbouncer:{{.CCPImageTag}}",
                     "securityContext": {
                       "allowPrivilegeEscalation": false,
+                      "privileged": false,
                       "readOnlyRootFilesystem": true
                     },
                     "ports": [{
