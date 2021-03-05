@@ -16,6 +16,7 @@ package pki
 */
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/x509"
 	"errors"
@@ -452,10 +453,13 @@ func TestLeafCertIsBad(t *testing.T) {
 			assertConstructed(t, cert.PrivateKey)
 
 			// after completing all manual checks, ensure check functions returns false
-			assert.Assert(t, !LeafCertIsBad(cert, intermediateCA, rootCA, namespace))
+			ctx := context.Background()
+			assert.Assert(t, !LeafCertIsBad(ctx, cert, intermediateCA, rootCA, namespace))
 		})
 
 		t.Run("invalid", func(t *testing.T) {
+			ctx := context.Background()
+
 			t.Run("generate certificate not set", func(t *testing.T) {
 				cert := &LeafCertificate{
 					CommonName: commonName,
@@ -469,7 +473,7 @@ func TestLeafCertIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, LeafCertIsBad(cert, intermediateCA, rootCA, namespace))
+				assert.Assert(t, LeafCertIsBad(ctx, cert, intermediateCA, rootCA, namespace))
 			})
 
 			t.Run("generate key not set", func(t *testing.T) {
@@ -485,7 +489,7 @@ func TestLeafCertIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, LeafCertIsBad(cert, intermediateCA, rootCA, namespace))
+				assert.Assert(t, LeafCertIsBad(ctx, cert, intermediateCA, rootCA, namespace))
 			})
 
 			t.Run("generate serial number not set", func(t *testing.T) {
@@ -501,7 +505,7 @@ func TestLeafCertIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, LeafCertIsBad(cert, intermediateCA, rootCA, namespace))
+				assert.Assert(t, LeafCertIsBad(ctx, cert, intermediateCA, rootCA, namespace))
 			})
 
 			t.Run("CommonName not set", func(t *testing.T) {
@@ -516,7 +520,7 @@ func TestLeafCertIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, LeafCertIsBad(cert, intermediateCA, rootCA, namespace))
+				assert.Assert(t, LeafCertIsBad(ctx, cert, intermediateCA, rootCA, namespace))
 			})
 
 			t.Run("intermediate certificate authority is nil", func(t *testing.T) {
@@ -532,7 +536,7 @@ func TestLeafCertIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, LeafCertIsBad(cert, intermediateCA, rootCA, namespace))
+				assert.Assert(t, LeafCertIsBad(ctx, cert, intermediateCA, rootCA, namespace))
 			})
 
 			t.Run("intermediate certificate authority has no private key", func(t *testing.T) {
@@ -553,7 +557,7 @@ func TestLeafCertIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, LeafCertIsBad(cert, intermediateCA, rootCA, namespace))
+				assert.Assert(t, LeafCertIsBad(ctx, cert, intermediateCA, rootCA, namespace))
 			})
 
 			t.Run("intermediate certificate authority has no certificate", func(t *testing.T) {
@@ -574,7 +578,7 @@ func TestLeafCertIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, LeafCertIsBad(cert, intermediateCA, rootCA, namespace))
+				assert.Assert(t, LeafCertIsBad(ctx, cert, intermediateCA, rootCA, namespace))
 			})
 
 			t.Run("intermeidate certificate authority has invalid certificate", func(t *testing.T) {
@@ -595,7 +599,7 @@ func TestLeafCertIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, LeafCertIsBad(cert, intermediateCA, rootCA, namespace))
+				assert.Assert(t, LeafCertIsBad(ctx, cert, intermediateCA, rootCA, namespace))
 			})
 
 			t.Run("cannot generate private key", func(t *testing.T) {
@@ -612,7 +616,7 @@ func TestLeafCertIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, LeafCertIsBad(cert, intermediateCA, rootCA, namespace))
+				assert.Assert(t, LeafCertIsBad(ctx, cert, intermediateCA, rootCA, namespace))
 			})
 
 			t.Run("cannot generate serial number", func(t *testing.T) {
@@ -629,7 +633,7 @@ func TestLeafCertIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, LeafCertIsBad(cert, intermediateCA, rootCA, namespace))
+				assert.Assert(t, LeafCertIsBad(ctx, cert, intermediateCA, rootCA, namespace))
 			})
 
 			t.Run("cannot generate certificate", func(t *testing.T) {
@@ -648,7 +652,7 @@ func TestLeafCertIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, LeafCertIsBad(cert, intermediateCA, rootCA, namespace))
+				assert.Assert(t, LeafCertIsBad(ctx, cert, intermediateCA, rootCA, namespace))
 			})
 		})
 	})

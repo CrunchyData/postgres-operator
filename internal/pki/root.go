@@ -120,43 +120,42 @@ func ParseRootCertificateAuthority(privateKey, certificate []byte) (*RootCertifi
 	return ca, nil
 }
 
-// RootCAIsBad checks that the root CA has been generated, is not expired
-// and has been issued by the Postgres Operator
+// RootCAIsBad checks that at least one root CA has been generated and that
+// all returned certs are CAs and not expired
+//
+// TODO(tjmoore4): Currently this will return 'true' if any of the parsed certs
+// fail a given check. For scenarios where multiple certs may be returned, such
+// as in a BYOC/BYOCA, this will need to be handled so we only generate a new
+// certificate for our cert if it is the one that fails.
 func RootCAIsBad(root *RootCertificateAuthority) bool {
 	// if the certificate or the private key are nil, the root CA is bad
 	if root.Certificate == nil || root.PrivateKey == nil {
 		return true
 	}
 
-	var certs []*x509.Certificate
-	var err error
-	// if there is an error parsing the certificate or if the number of certificates returned
-	// is not one, the certificate is bad
-	if certs, err = x509.ParseCertificates(root.Certificate.Certificate); err != nil && len(certs) != 1 {
+	// if there is an error parsing the root certificate or if there is not at least one certificate,
+	// the RootCertificateAuthority is bad
+	rootCerts, rootErr := x509.ParseCertificates(root.Certificate.Certificate)
+
+	if rootErr != nil && len(rootCerts) < 1 {
 		return true
 	}
 
 	// find our root cert in the returned slice
-	var rootCert *x509.Certificate
-	for _, cert := range certs {
-		if cert.Issuer.CommonName == "postgres-operator-ca" {
-			rootCert = cert
+	for _, cert := range rootCerts {
+		// root cert is bad if it is not a CA
+		if !cert.IsCA || !cert.BasicConstraintsValid {
+			return true
+		}
+
+		// if it is outside of the certs configured valid time range
+		if time.Now().After(cert.NotAfter) || time.Now().Before(cert.NotBefore) {
+			return true
 		}
 	}
 
-	// if our root cert was not found, return so new cert can be generated
-	if rootCert == nil {
-		return true
-	}
-
-	// root cert is bad if it is not a CA
-	if !rootCert.IsCA {
-		return true
-	}
-
-	// finally, if it is outside of the certs configured valid time range or the common name
-	// does not match ours, return true
-	return time.Now().After(rootCert.NotAfter) || time.Now().Before(rootCert.NotBefore)
+	// checks passed, cert is good
+	return false
 
 }
 

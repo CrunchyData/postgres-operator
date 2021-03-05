@@ -18,6 +18,7 @@ package pki
 */
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"crypto/x509"
@@ -25,6 +26,8 @@ import (
 	"fmt"
 	"math/big"
 	"time"
+
+	"github.com/crunchydata/postgres-operator/internal/logging"
 )
 
 const (
@@ -94,79 +97,75 @@ func (ca *IntermediateCertificateAuthority) Generate(rootCA *RootCertificateAuth
 	return nil
 }
 
-// IntermediateCAIsBad checks that the intermediate CA has been generated, is not expired,
-// has been issued by the Postgres Operator and its authority key matches the
-// subject key of the current root CA
-func IntermediateCAIsBad(intermediate *IntermediateCertificateAuthority, root *RootCertificateAuthority) bool {
+// IntermediateCAIsBad checks that at least one intermediate CA has been generated and that
+// all returned certs are CAs and verified
+//
+// TODO(tjmoore4): Currently this will return 'true' if any of the parsed certs
+// fail a given check. For scenarios where multiple certs may be returned, such
+// as in a BYOC/BYOCA, this will need to be handled so we only generate a new
+// certificate for our cert if it is the one that fails.
+func IntermediateCAIsBad(ctx context.Context, intermediate *IntermediateCertificateAuthority, root *RootCertificateAuthority) bool {
+	log := logging.FromContext(ctx)
+
 	// if the certificate or the private key are nil, the intermediate CA is bad
 	if intermediate.Certificate == nil || intermediate.PrivateKey == nil {
 		return true
 	}
 
-	var intCerts []*x509.Certificate
-	var intErr error
-	// if there is an error parsing the intermediate certificate or if the number of certificates
-	// returned is not one, the certificate is bad
-	if intCerts, intErr = x509.ParseCertificates(intermediate.Certificate.Certificate); intErr != nil && len(intCerts) < 1 {
-		return true
-	}
-
-	// find our intermediate cert in the returned slice
-	var intermediateCert *x509.Certificate
-	for _, cert := range intCerts {
-		if cert.Issuer.CommonName == "postgres-operator-ca" {
-			intermediateCert = cert
-		}
-	}
-
-	// if our intermediate cert was not found, return so new cert can be generated
-	if intermediateCert == nil {
-		return true
-	}
-
-	// intermediate cert is bad if it is not a CA
-	if !intermediateCert.IsCA {
-		return true
-	}
-
-	// if it is outside of the certs configured valid time range, return true
-	if time.Now().After(intermediateCert.NotAfter) || time.Now().Before(intermediateCert.NotBefore) {
-		return true
-	}
-
+	// set up root cert pool for intermediate cert verification
 	var rootCerts []*x509.Certificate
 	var rootErr error
-	// if there is an error parsing the root certificate or if the number of certificates returned
-	// is not one, the certificate is bad
+
+	// set up root cert pool
+	roots := x509.NewCertPool()
+
+	// if there is an error parsing the root certificate or if there is not at least one certificate,
+	// the RootCertificateAuthority is bad
 	if rootCerts, rootErr = x509.ParseCertificates(root.Certificate.Certificate); rootErr != nil && len(rootCerts) < 1 {
 		return true
 	}
 
-	// find our root cert in the returned slice
-	var rootCert *x509.Certificate
+	// add all the root certs returned to the root pool
 	for _, cert := range rootCerts {
-		if cert.Issuer.CommonName == "postgres-operator-ca" {
-			rootCert = cert
-		}
+		roots.AddCert(cert)
 	}
 
-	// if our root cert was not found, return so new cert can be generated
-	if rootCert == nil {
+	var intCerts []*x509.Certificate
+	var intErr error
+	// if there is an error parsing the intermediate certificate or if there is not at least one certificate,
+	// the IntermediateCertificateAuthority is bad
+	if intCerts, intErr = x509.ParseCertificates(intermediate.Certificate.Certificate); intErr != nil && len(intCerts) < 1 {
 		return true
 	}
 
-	// set up root cert pool
-	roots := x509.NewCertPool()
-	roots.AddCert(rootCert)
+	// go through the returned intermediate certs and check
+	// that they are CAs and Verify them
+	for _, cert := range intCerts {
+		// any cert at this point should be an intermediate
+		// if any are not CAs, something went wrong and this
+		// IntermediateCertificateAuthority is bad
+		if !cert.IsCA || !cert.BasicConstraintsValid {
+			return true
+		}
 
-	// verify intermediate cert
-	_, err := intermediateCert.Verify(x509.VerifyOptions{
-		Roots:     roots,
-		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageAny},
-	})
+		// verify intermediate cert
+		_, verifyError := cert.Verify(x509.VerifyOptions{
+			Roots: roots,
+			// x509.ExtKeyUsageAny effectively ignores the
+			// intermediateCert.ExtKeyUsage check.
+			// We don't want this default check, x509.ExtKeyUsageServerAuth,
+			// to be used against the intermediate CAs.
+			KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageAny},
+		})
+		//log verify error if not nil
+		if verifyError != nil {
+			log.Error(verifyError, "verify failed for intermediate cert")
+			return true
+		}
+	}
 
-	// finally, if Verify returns an error, intermediate cert is bad
-	return err != nil
+	// finally, if no check failed, return false
+	return false
 }
 
 // NewIntermediateCertificateAuthority generates a new intermdiate certificate

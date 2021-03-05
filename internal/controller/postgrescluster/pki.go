@@ -128,7 +128,7 @@ func (r *Reconciler) reconcileNamespaceCertificate(
 	}
 
 	// if there is an error or the intermediate CA is bad, generate a new one
-	if err != nil || pki.IntermediateCAIsBad(ca, root) {
+	if err != nil || pki.IntermediateCAIsBad(ctx, ca, root) {
 		err = errors.WithStack(ca.Generate(root))
 	}
 
@@ -198,7 +198,7 @@ func (*Reconciler) instanceCertificate(
 	}
 
 	// if there is an error or the leaf certificate is bad, generate a new one
-	if err != nil || pki.LeafCertIsBad(leaf, ca, rootCACert, instance.Namespace) {
+	if err != nil || pki.LeafCertIsBad(ctx, leaf, ca, rootCACert, instance.Namespace) {
 		err = errors.WithStack(leaf.Generate(ca))
 	}
 

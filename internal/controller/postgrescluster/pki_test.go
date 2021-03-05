@@ -24,7 +24,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -32,7 +31,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
@@ -44,24 +42,17 @@ func TestReconcileCerts(t *testing.T) {
 	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
 
 	// set up a non-cached client
-	cfg, err := tEnv.Start()
-	assert.NilError(t, err)
 	newClient, err := client.New(cfg, client.Options{})
 	assert.NilError(t, err)
-
-	r := &Reconciler{}
-	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
-		r = &Reconciler{
-			Client:   newClient,
-			Recorder: mgr.GetEventRecorderFor(ControllerName),
-			Tracer:   otel.Tracer(ControllerName),
-			Owner:    ControllerName,
-		}
-	})
 	t.Cleanup(func() {
-		teardownManager(cancel, t)
 		teardownTestEnv(t, tEnv)
 	})
+
+	ctx := context.Background()
+	r := &Reconciler{
+		Client: newClient,
+		Owner:  ControllerName,
+	}
 
 	clusterName := "hippocluster"
 	namespace := "hippo"
@@ -119,14 +110,6 @@ func TestReconcileCerts(t *testing.T) {
 
 		initialNamespaceCert, err := r.reconcileNamespaceCertificate(ctx, namespace, initialRoot)
 		assert.NilError(t, err)
-
-		t.Run("check root certificate returns correctly", func(t *testing.T) {
-			fromSecret, err := getCertFromSecret(ctx, tClient, naming.RootCertSecret, namespace, "root.crt")
-			assert.NilError(t, err)
-
-			// assert returned certificate matches the one created earlier
-			assert.Assert(t, bytes.Equal(fromSecret.Certificate, initialRoot.Certificate.Certificate))
-		})
 
 		t.Run("check namespace certificate returns correctly", func(t *testing.T) {
 

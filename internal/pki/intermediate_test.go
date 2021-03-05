@@ -16,6 +16,7 @@ package pki
 */
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/x509"
 	"errors"
@@ -433,10 +434,13 @@ func TestIntermediateCAIsBad(t *testing.T) {
 			assertConstructed(t, ca.PrivateKey)
 
 			// after completing all manual checks, ensure check functions returns false
-			assert.Assert(t, !IntermediateCAIsBad(ca, rootCA))
+			ctx := context.Background()
+			assert.Assert(t, !IntermediateCAIsBad(ctx, ca, rootCA))
 		})
 
 		t.Run("invalid", func(t *testing.T) {
+			ctx := context.Background()
+
 			t.Run("generate certificate not set", func(t *testing.T) {
 				ca := &IntermediateCertificateAuthority{}
 				ca.generateCertificate = nil
@@ -448,7 +452,7 @@ func TestIntermediateCAIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, IntermediateCAIsBad(ca, rootCA))
+				assert.Assert(t, IntermediateCAIsBad(ctx, ca, rootCA))
 			})
 
 			t.Run("generate key not set", func(t *testing.T) {
@@ -462,7 +466,7 @@ func TestIntermediateCAIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, IntermediateCAIsBad(ca, rootCA))
+				assert.Assert(t, IntermediateCAIsBad(ctx, ca, rootCA))
 			})
 
 			t.Run("generate serial number not set", func(t *testing.T) {
@@ -476,7 +480,7 @@ func TestIntermediateCAIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, IntermediateCAIsBad(ca, rootCA))
+				assert.Assert(t, IntermediateCAIsBad(ctx, ca, rootCA))
 			})
 
 			t.Run("root certificate authority is nil", func(t *testing.T) {
@@ -490,7 +494,7 @@ func TestIntermediateCAIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, IntermediateCAIsBad(ca, rootCA))
+				assert.Assert(t, IntermediateCAIsBad(ctx, ca, rootCA))
 			})
 
 			t.Run("root certificate authority has no private key", func(t *testing.T) {
@@ -511,7 +515,7 @@ func TestIntermediateCAIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, IntermediateCAIsBad(ca, rootCA))
+				assert.Assert(t, IntermediateCAIsBad(ctx, ca, rootCA))
 			})
 
 			t.Run("root certificate authority has no certificate", func(t *testing.T) {
@@ -532,7 +536,7 @@ func TestIntermediateCAIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, IntermediateCAIsBad(ca, rootCA))
+				assert.Assert(t, IntermediateCAIsBad(ctx, ca, rootCA))
 			})
 
 			t.Run("root certificate authority has invalid certificate", func(t *testing.T) {
@@ -553,7 +557,7 @@ func TestIntermediateCAIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, IntermediateCAIsBad(ca, rootCA))
+				assert.Assert(t, IntermediateCAIsBad(ctx, ca, rootCA))
 			})
 
 			t.Run("cannot generate private key", func(t *testing.T) {
@@ -570,7 +574,7 @@ func TestIntermediateCAIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, IntermediateCAIsBad(ca, rootCA))
+				assert.Assert(t, IntermediateCAIsBad(ctx, ca, rootCA))
 			})
 
 			t.Run("cannot generate serial number", func(t *testing.T) {
@@ -587,7 +591,7 @@ func TestIntermediateCAIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, IntermediateCAIsBad(ca, rootCA))
+				assert.Assert(t, IntermediateCAIsBad(ctx, ca, rootCA))
 			})
 
 			t.Run("cannot generate certificate", func(t *testing.T) {
@@ -606,7 +610,7 @@ func TestIntermediateCAIsBad(t *testing.T) {
 				}
 
 				// after completing manual check, ensure check functions returns true
-				assert.Assert(t, IntermediateCAIsBad(ca, rootCA))
+				assert.Assert(t, IntermediateCAIsBad(ctx, ca, rootCA))
 			})
 		})
 	})
