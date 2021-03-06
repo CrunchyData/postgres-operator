@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,58 +30,53 @@ const (
 	// default pod configurations
 	defaultLogPath = "/tmp"
 
-	// defaultRepo1Host stores the default pgBackRest shared repo hostname,
-	// minus the postgrescluster name. For a cluster 'mycluster', the
-	// defaultRepo1Host name would be 'mycluster-backrest-shared-repo'
-	defaultRepo1HostPostfix = "-backrest-shared-repo"
-
-	// defaultRepo1PathPrefix stores the default pgBackRest repo path
-	// before the host name value. For a cluster 'mycluster', the
-	// defaultRepo1Path name would be '/backrestrepo/mycluster-backrest-shared-repo'
-	defaultRepo1PathPrefix = "/backrestrepo/"
+	// defaultRepo1Path stores the default pgBackRest repo path
+	defaultRepo1Path = "/pgbackrest/"
 
 	// stanza pgBackRest default configurations
 	defaultStanzaName = "db"
 
 	// default Postgres path, port and socket path
-	defaultPG1PathPrefix = "/pgdata/"
+	defaultPG1Path       = "/tmp/data_dir"
 	defaultPG1Port       = "5432"
 	defaultPG1SocketPath = "/tmp"
 
 	// configmap key references
 	cmJobKey     = "pgbackrest_job.conf"
 	cmPrimaryKey = "pgbackrest_primary.conf"
-	cmRepoKey    = "pgbackrest_repo.conf"
+	// CMRepoKey is the name of the configuration file for a pgBackRest  deidicated repository host
+	CMRepoKey = "pgbackrest_repo.conf"
 
-	// pgBackRest configuration directory,
-	// configuration file path and
-	// configuration volume name
-	configDir  = "/etc/pgbackrest"
+	// ConfigDir is the pgBackRest configuration directory
+	ConfigDir = "/etc/pgbackrest/conf.d"
+	// ConfigVol is the name of the pgBackRest configuration volume
+	ConfigVol = "pgbackrest-config"
+	// configPath is the pgBackRest configuration file path
 	configPath = "/etc/pgbackrest/pgbackrest.conf"
-	configVol  = "pgbackrest-config"
 
-	// suffix used with postgrescluster name for associated configmap.
+	// CMNameSuffix is the suffix used with postgrescluster name for associated configmap.
 	// for instance, if the cluster is named 'mycluster', the
 	// configmap will be named 'mycluster-pgbackrest-config'
-	cmNameSuffix = "%s-pgbackrest-config"
+	CMNameSuffix = "%s-pgbackrest-config"
 )
 
-// CreatePGBackRestConfigMapStruct creates a configmap struct with pgBackRest pgbackrest.conf settings in the data field.
+// CreatePGBackRestConfigMapIntent creates a configmap struct with pgBackRest pgbackrest.conf settings in the data field.
 // The keys within the data field correspond to the use of that configuration.
 // pgbackrest_job.conf is used by certain jobs, such as stanza create and backup
 // pgbackrest_primary.conf is used by the primary database pod
 // pgbackrest_repo.conf is used by the pgBackRest repository pod
-func CreatePGBackRestConfigMapStruct(postgresCluster *v1alpha1.PostgresCluster, pghosts []string) v1.ConfigMap {
+func CreatePGBackRestConfigMapIntent(postgresCluster *v1alpha1.PostgresCluster,
+	repoHostName string, instanceNames []string) *v1.ConfigMap {
 
-	cm := v1.ConfigMap{
+	meta := naming.PGBackRestConfig(postgresCluster)
+	meta.Labels = naming.PGBackRestConfigLabels(postgresCluster.GetName())
+
+	cm := &v1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
 			APIVersion: "v1",
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf(cmNameSuffix, postgresCluster.GetName()),
-			Namespace: postgresCluster.GetNamespace(),
-		},
+		ObjectMeta: meta,
 	}
 
 	// create an empty map for the config data
@@ -88,19 +84,31 @@ func CreatePGBackRestConfigMapStruct(postgresCluster *v1alpha1.PostgresCluster, 
 		cm.Data = make(map[string]string)
 	}
 
-	// if the default data map is not ok, populate with the configuration string
-	if _, ok := cm.Data[cmJobKey]; !ok {
-		cm.Data[cmJobKey] = getConfigString(populatePGBackrestConfigurationMap(postgresCluster, pghosts, cmJobKey))
+	var serviceName string
+	addInstanceHosts := (postgresCluster.Spec.Archive.PGBackRest.RepoHost != nil) &&
+		(postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated == nil)
+	addDedicatedHost := (postgresCluster.Spec.Archive.PGBackRest.RepoHost != nil) &&
+		(postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated != nil)
+	if addInstanceHosts || addDedicatedHost {
+		serviceName = naming.ClusterPodService(postgresCluster).Name
 	}
 
-	// if the primary data map is not ok, populate with the configuration string
-	if _, ok := cm.Data[cmPrimaryKey]; !ok {
-		cm.Data[cmPrimaryKey] = getConfigString(populatePGBackrestConfigurationMap(postgresCluster, pghosts, cmPrimaryKey))
+	for i, name := range instanceNames {
+		otherInstances := make([]string, 0)
+		if addInstanceHosts {
+			otherInstances = make([]string, len(instanceNames))
+			copy(otherInstances, instanceNames)
+			otherInstances = append(otherInstances[:i], otherInstances[i+1:]...)
+		}
+		cm.Data[name+".conf"] = getConfigString(
+			populatePGInstanceConfigurationMap(serviceName, repoHostName, otherInstances,
+				postgresCluster.Spec.Archive.PGBackRest.Repos))
 	}
 
-	// if the repo data map is not ok, populate with the configuration string
-	if _, ok := cm.Data[cmRepoKey]; !ok {
-		cm.Data[cmRepoKey] = getConfigString(populatePGBackrestConfigurationMap(postgresCluster, pghosts, cmRepoKey))
+	if addDedicatedHost && repoHostName != "" {
+		cm.Data[CMRepoKey] = getConfigString(
+			populateRepoHostConfigurationMap(serviceName, instanceNames,
+				postgresCluster.Spec.Archive.PGBackRest.Repos))
 	}
 
 	return cm
@@ -114,7 +122,7 @@ func configVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec, co
 		pgBackRestConfig []v1.VolumeProjection
 	)
 
-	volume := v1.Volume{Name: configVol}
+	volume := v1.Volume{Name: ConfigVol}
 	volume.Projected = &v1.ProjectedVolumeSource{}
 
 	// Add our projections after those specified in the CR. Items later in the
@@ -138,7 +146,7 @@ func configVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec, co
 
 	mount := v1.VolumeMount{
 		Name:      volume.Name,
-		MountPath: configDir,
+		MountPath: ConfigDir,
 		ReadOnly:  true,
 	}
 
@@ -158,7 +166,7 @@ func PostgreSQLConfigVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.P
 // RepositoryConfigVolumeAndMount creates a volume and mount configuration from the pgBackRest configmap to be used by the
 // postgrescluster's pgBackRest repo pod
 func RepositoryConfigVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec, containerName string) {
-	configVolumeAndMount(pgBackRestConfigMap, pod, containerName, cmRepoKey)
+	configVolumeAndMount(pgBackRestConfigMap, pod, containerName, CMRepoKey)
 }
 
 // JobConfigVolumeAndMount creates a volume and mount configuration from the pgBackRest configmap to be used by the
@@ -167,29 +175,11 @@ func JobConfigVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec,
 	configVolumeAndMount(pgBackRestConfigMap, pod, containerName, cmJobKey)
 }
 
-// populatePGBackrestConfigurationMap constructs our default pgBackRest configuration map,
-// fills in any updated values passed in from elsewhere, then returns the completed configuration map
-func populatePGBackrestConfigurationMap(postgresCluster *v1alpha1.PostgresCluster, pghosts []string, configmapKey string) map[string]map[string]string {
+// populateRepoHostConfigurationMap returns a map representing the pgBackRest configuration for
+// a PostgreSQL instance
+func populatePGInstanceConfigurationMap(serviceName, repoHostName string,
+	otherPGHostNames []string, repos []v1alpha1.RepoVolume) map[string]map[string]string {
 
-	// Create a map for our pgBackRest configuration values
-	// there are three basic configuration defaults, used
-	// by the database pod, pgBackRest repo pod and 'job' pods.
-	// Below is the map structure with all possible default key
-	// values listed.
-	/*
-		"global": {
-			"log-path":          "",
-			"repo1-host":        "",
-			"repo1-path":        "",
-		},
-		"stanza": {
-			"name":            "",
-			"pg1-host":        "",
-			"pg1-path":        "",
-			"pg1-port":        "",
-			"pg1-socket-path": "",
-		},
-	*/
 	pgBackRestConfig := map[string]map[string]string{
 
 		// will hold the [global] configs
@@ -198,51 +188,70 @@ func populatePGBackrestConfigurationMap(postgresCluster *v1alpha1.PostgresCluste
 		"stanza": {},
 	}
 
-	// for any value set in BackrestConfig, update the map
-	// global config
+	// set the default stanza name
+	pgBackRestConfig["stanza"]["name"] = defaultStanzaName
 
-	// for all initial pgBackRest functions
+	// set global settings, which includes all repos
 	pgBackRestConfig["global"]["log-path"] = defaultLogPath
-
-	// for primary database pod
-	if configmapKey == "pgbackrest_primary.conf" {
-		pgBackRestConfig["global"]["repo1-host"] = postgresCluster.GetName() + defaultRepo1HostPostfix
+	for _, repoVol := range repos {
+		if repoHostName != "" && serviceName != "" {
+			pgBackRestConfig["global"][repoVol.Name+"-host"] = repoHostName + "-0." + serviceName
+			pgBackRestConfig["global"][repoVol.Name+"-host-user"] = "postgres"
+		}
+		pgBackRestConfig["global"][repoVol.Name+"-path"] = defaultRepo1Path + repoVol.Name
 	}
 
-	// for primary database pod and repo pod
-	if configmapKey == "pgbackrest_primary.conf" || configmapKey == "pgbackrest_repo.conf" {
-		pgBackRestConfig["global"]["repo1-path"] = defaultRepo1PathPrefix + postgresCluster.GetName() + defaultRepo1HostPostfix
+	i := 1
+	// Now add all PG instances to the stanza section. Make sure the local PG host is always
+	// index 1: https://github.com/pgbackrest/pgbackrest/issues/1197#issuecomment-708381800
+	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i)] = defaultPG1Path
+	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i)] = defaultPG1Port
+	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i)] = defaultPG1SocketPath
+	i++
+
+	if len(otherPGHostNames) == 0 {
+		return pgBackRestConfig
 	}
 
-	// stanza config
-
-	// for primary database pod and repo pod
-	if configmapKey == "pgbackrest_primary.conf" || configmapKey == "pgbackrest_repo.conf" {
-		pgBackRestConfig["stanza"]["name"] = defaultStanzaName
+	for _, name := range otherPGHostNames {
+		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-host", i)] = name + "-0." + serviceName
+		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i)] = defaultPG1Path
+		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i)] = defaultPG1Port
+		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i)] = defaultPG1SocketPath
+		i++
 	}
 
-	// iterate through the provided hostnames and set the configuration blocks for each
-	for i, hostname := range pghosts {
+	return pgBackRestConfig
+}
 
-		// for repo pod
-		if configmapKey == "pgbackrest_repo.conf" {
-			pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-host", i+1)] = hostname
-		}
+// populateRepoHostConfigurationMap returns a map representing the pgBackRest configuration for
+// a pgBackRest dedicated repository host
+func populateRepoHostConfigurationMap(serviceName string,
+	pgHosts []string, repos []v1alpha1.RepoVolume) map[string]map[string]string {
 
-		// for primary database pod and repo pod
-		if configmapKey == "pgbackrest_primary.conf" || configmapKey == "pgbackrest_repo.conf" {
-			pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i+1)] = defaultPG1PathPrefix + hostname
-		}
+	pgBackRestConfig := map[string]map[string]string{
 
-		// for primary database pod and repo pod
-		if configmapKey == "pgbackrest_primary.conf" || configmapKey == "pgbackrest_repo.conf" {
-			pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i+1)] = defaultPG1Port
-		}
+		// will hold the [global] configs
+		"global": {},
+		// will hold the [stanza-name] configs
+		"stanza": {},
+	}
 
-		// for primary database pod and repo pod
-		if configmapKey == "pgbackrest_primary.conf" || configmapKey == "pgbackrest_repo.conf" {
-			pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i+1)] = defaultPG1SocketPath
-		}
+	// set the default stanza name
+	pgBackRestConfig["stanza"]["name"] = defaultStanzaName
+
+	// set the config for the local repo host
+	pgBackRestConfig["global"]["log-path"] = defaultLogPath
+	for _, repoVol := range repos {
+		pgBackRestConfig["global"][repoVol.Name+"-path"] = defaultRepo1Path + repoVol.Name
+	}
+
+	// set the configs for all PG hosts
+	for i, pgHost := range pgHosts {
+		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-host", i+1)] = pgHost + "-0." + serviceName
+		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i+1)] = defaultPG1Path
+		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i+1)] = defaultPG1Port
+		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i+1)] = defaultPG1SocketPath
 	}
 
 	return pgBackRestConfig

@@ -19,7 +19,6 @@ package pgbackrest
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -29,6 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
@@ -43,14 +43,29 @@ func TestPGBackRestConfiguration(t *testing.T) {
 			Name:      testclustername,
 			Namespace: testnamespace,
 		},
+		Spec: v1alpha1.PostgresClusterSpec{
+			Archive: v1alpha1.Archive{
+				PGBackRest: v1alpha1.PGBackRestArchive{
+					Repos: []v1alpha1.RepoVolume{{
+						Name: "repo1",
+					}},
+					RepoHost: &v1alpha1.RepoHost{
+						Dedicated: &v1alpha1.DedicatedRepo{},
+					},
+				},
+			},
+		},
 	}
 
 	// the initially created configmap
-	var cmInitial v1.ConfigMap
+	var cmInitial *v1.ConfigMap
 	// the returned configmap
 	var cmReturned v1.ConfigMap
 	// pod spec for testing projected volumes and volume mounts
 	pod := &v1.PodSpec{}
+
+	testInstanceName := "test-instance-abc"
+	testRepoName := "repo-host"
 
 	t.Run("pgbackrest configmap checks", func(t *testing.T) {
 
@@ -64,9 +79,9 @@ func TestPGBackRestConfiguration(t *testing.T) {
 
 		t.Run("create pgbackrest configmap struct", func(t *testing.T) {
 			// create an array of one host string vlaue
-			pghosts := []string{testclustername}
+			pghosts := []string{testInstanceName}
 			// create the configmap struct
-			cmInitial = CreatePGBackRestConfigMapStruct(postgresCluster, pghosts)
+			cmInitial = CreatePGBackRestConfigMapIntent(postgresCluster, testRepoName, pghosts)
 
 			// check that there is configmap data
 			assert.Assert(t, cmInitial.Data != nil)
@@ -84,7 +99,7 @@ func TestPGBackRestConfiguration(t *testing.T) {
 			assert.NilError(t, err)
 
 			// create the configmap
-			err = testClient.Patch(context.Background(), &cmInitial, client.Apply, client.ForceOwnership, client.FieldOwner(testFieldOwner))
+			err = testClient.Patch(context.Background(), cmInitial, client.Apply, client.ForceOwnership, client.FieldOwner(testFieldOwner))
 
 			assert.NilError(t, err)
 		})
@@ -92,8 +107,8 @@ func TestPGBackRestConfiguration(t *testing.T) {
 		t.Run("get pgbackrest configmap", func(t *testing.T) {
 
 			objectKey := client.ObjectKey{
-				Namespace: postgresCluster.GetNamespace(),
-				Name:      fmt.Sprintf(cmNameSuffix, postgresCluster.GetName()),
+				Namespace: naming.PGBackRestConfig(postgresCluster).Namespace,
+				Name:      naming.PGBackRestConfig(postgresCluster).Name,
 			}
 
 			err := testClient.Get(context.Background(), objectKey, &cmReturned)
@@ -106,24 +121,16 @@ func TestPGBackRestConfiguration(t *testing.T) {
 
 	})
 
-	t.Run("check pgbackrest configmap default configuration", func(t *testing.T) {
-
-		assert.Equal(t, getCMData(cmReturned, cmJobKey),
-			`[global]
-log-path=/tmp
-`)
-	})
-
 	t.Run("check pgbackrest configmap repo configuration", func(t *testing.T) {
 
-		assert.Equal(t, getCMData(cmReturned, cmRepoKey),
+		assert.Equal(t, getCMData(cmReturned, CMRepoKey),
 			`[global]
 log-path=/tmp
-repo1-path=/backrestrepo/`+postgresCluster.GetName()+`-backrest-shared-repo
+repo1-path=/pgbackrest/repo1
 
 [db]
-pg1-host=`+postgresCluster.GetName()+`
-pg1-path=/pgdata/`+postgresCluster.GetName()+`
+pg1-host=`+testInstanceName+`-0.testcluster-pods
+pg1-path=/tmp/data_dir
 pg1-port=5432
 pg1-socket-path=/tmp
 `)
@@ -131,14 +138,15 @@ pg1-socket-path=/tmp
 
 	t.Run("check pgbackrest configmap primary configuration", func(t *testing.T) {
 
-		assert.Equal(t, getCMData(cmReturned, cmPrimaryKey),
+		assert.Equal(t, getCMData(cmReturned, testInstanceName+".conf"),
 			`[global]
 log-path=/tmp
-repo1-host=`+postgresCluster.GetName()+`-backrest-shared-repo
-repo1-path=/backrestrepo/`+postgresCluster.GetName()+`-backrest-shared-repo
+repo1-host=`+testRepoName+`-0.testcluster-pods
+repo1-host-user=postgres
+repo1-path=/pgbackrest/repo1
 
 [db]
-pg1-path=/pgdata/`+postgresCluster.GetName()+`
+pg1-path=/tmp/data_dir
 pg1-port=5432
 pg1-socket-path=/tmp
 `)
@@ -167,7 +175,7 @@ pg1-socket-path=/tmp
 		container := findOrAppendContainer(&pod.Containers, "database")
 
 		assert.Assert(t, simpleMarshalContains(container.VolumeMounts, strings.TrimSpace(`
-		- mountPath: /etc/pgbackrest
+		- mountPath: /etc/pgbackrest/conf.d
   name: pgbackrest-config
   readOnly: true
 		`)+"\n"))
@@ -196,7 +204,7 @@ pg1-socket-path=/tmp
 		container := findOrAppendContainer(&pod.Containers, "pgbackrest")
 
 		assert.Assert(t, simpleMarshalContains(container.VolumeMounts, strings.TrimSpace(`
-		- mountPath: /etc/pgbackrest
+		- mountPath: /etc/pgbackrest/conf.d
   name: pgbackrest-config
   readOnly: true
 		`)+"\n"))
@@ -225,7 +233,7 @@ pg1-socket-path=/tmp
 		container := findOrAppendContainer(&pod.Containers, "pgbackrest")
 
 		assert.Assert(t, simpleMarshalContains(container.VolumeMounts, strings.TrimSpace(`
-		- mountPath: /etc/pgbackrest
+		- mountPath: /etc/pgbackrest/conf.d
   name: pgbackrest-config
   readOnly: true
 		`)+"\n"))

@@ -16,6 +16,8 @@
 package naming
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,6 +39,33 @@ const (
 	RootCertSecret = "pgo-root-cacert" /* #nosec */
 	// IntermediateCertSecret is the default intermediate certificate secret name
 	IntermediateCertSecret = "pgo-intermediate-cacert"
+)
+
+const (
+	// PGBackRestRepoContainerName is the name assigned to the container used to run pgBackRest and
+	// SSH
+	PGBackRestRepoContainerName = "pgbackrest"
+
+	// PGBackRestRepoName is the name used for a pgbackrest repository
+	PGBackRestRepoName = "%s-pgbackrest-repo-%s"
+
+	// PGBackRestSSHVolume is the name the SSH volume used when configuring SSH in a pgBackRest Pod
+	PGBackRestSSHVolume = "ssh"
+
+	// suffix used with postgrescluster name for associated configmap.
+	// for instance, if the cluster is named 'mycluster', the
+	// configmap will be named 'mycluster-pgbackrest-config'
+	cmNameSuffix = "%s-pgbackrest-config"
+
+	// suffix used with postgrescluster name for associated configmap.
+	// for instance, if the cluster is named 'mycluster', the
+	// configmap will be named 'mycluster-ssh-config'
+	sshCMNameSuffix = "%s-ssh-config"
+
+	// suffix used with postgrescluster name for associated secret.
+	// for instance, if the cluster is named 'mycluster', the
+	// secret will be named 'mycluster-ssh'
+	sshSecretNameSuffix = "%s-ssh"
 )
 
 // PostgresOperatorNamespace stores the Postgres Operator's namespace
@@ -149,6 +178,39 @@ func PatroniTrigger(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      PatroniScope(cluster) + "-failover",
+	}
+}
+
+// PGBackRestConfig returns the ObjectMeta for a pgBackRest ConfigMap
+func PGBackRestConfig(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.GetNamespace(),
+		Name:      fmt.Sprintf(cmNameSuffix, cluster.GetName()),
+	}
+}
+
+// PGBackRestRepoVolume returns the ObjectMeta for a pgBackRest repository volume
+func PGBackRestRepoVolume(cluster *v1alpha1.PostgresCluster,
+	repoName string) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:      fmt.Sprintf("%s-%s", cluster.GetName(), repoName),
+		Namespace: cluster.GetNamespace(),
+	}
+}
+
+// PGBackRestSSHConfig returns the ObjectMeta for a pgBackRest SSHD ConfigMap
+func PGBackRestSSHConfig(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:      fmt.Sprintf(sshCMNameSuffix, cluster.GetName()),
+		Namespace: cluster.GetNamespace(),
+	}
+}
+
+// PGBackRestSSHSecret returns the ObjectMeta for a pgBackRest SSHD Secret
+func PGBackRestSSHSecret(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:      fmt.Sprintf(sshSecretNameSuffix, cluster.GetName()),
+		Namespace: cluster.GetNamespace(),
 	}
 }
 

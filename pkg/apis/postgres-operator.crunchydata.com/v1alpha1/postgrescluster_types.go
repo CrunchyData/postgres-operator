@@ -23,6 +23,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// DedicatedRepo defines a pgBackRest dedicated repository host
+type DedicatedRepo struct {
+
+	// Resource requirements for the dedicated repository host
+	// +optional
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+}
+
 // PostgresClusterSpec defines the desired state of PostgresCluster
 type PostgresClusterSpec struct {
 
@@ -33,6 +41,10 @@ type PostgresClusterSpec struct {
 	// +listType=map
 	// +listMapKey=name
 	InstanceSets []PostgresInstanceSetSpec `json:"instances"`
+
+	// Whether or not the PostgreSQL cluster is being deployed to an OpenShift envioronment
+	// +optional
+	OpenShift *bool `json:"openshift,omitempty"`
 
 	// +optional
 	Patroni *PatroniSpec `json:"patroni,omitempty"`
@@ -73,45 +85,87 @@ type PGBackRestArchive struct {
 	// Projected volumes containing custom pgBackRest configuration
 	Configuration []corev1.VolumeProjection `json:"configuration,omitempty"`
 
-	// The image name to use for the pgBackRest image
+	// Defines a pgBackRest repository volume
 	// +kubebuilder:validation:Required
-	Image string `json:"image,omitempty"`
+	Repos []RepoVolume `json:"repos,omitempty"`
 
-	// Defines a pgBackRest repository host
-	// +kubebuilder:validation:Required
-	RepoHost RepoHost `json:"repoHost"`
-
-	// A volume for use with a pgBackRest repository host
-	// +kubebuilder:validation:Required
-	RepoVolume VolumeSpec `json:"repoVolume"`
+	// Status information for the pgBackRest repository host
+	// +optional
+	RepoHost *RepoHost `json:"repoHost,omitempty"`
 }
 
 // PGBackRestStatus defines the status of pgBackRest within a PostgresCluster
 type PGBackRestStatus struct {
 
-	// Status information for the pgBackRest repository host
+	// Status information for the pgBackRest dedicated repository host
 	// +optional
 	RepoHost *RepoHostStatus `json:"repoHost,omitempty"`
+
+	// Status information for the pgBackRest repository host
+	// +kubebuilder:validation:Required
+	Repos []RepoVolumeStatus `json:"repos,omitempty"`
 }
 
 // RepoHost represents a pgBackRest dedicated repository host
 type RepoHost struct {
 
+	// Defines a dedicated repository host configuration
+	// +optional
+	Dedicated *DedicatedRepo `json:"dedicated,omitempty"`
+
+	// The image name to use for the pgBackRest image
+	// +kubebuilder:validation:Required
+	Image string `json:"image"`
+
 	// Resource requirements for a pgBackRest repository host
-	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+	// +optional
+	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// ConfigMap containing custom SSH configuration
+	// +optional
+	SSHConfiguration *corev1.ConfigMapProjection `json:"sshConfigMap,omitempty"`
+
+	// Secret containing custom SSH keys
+	// +optional
+	SSHSecret *corev1.SecretProjection `json:"sshSecret,omitempty"`
 }
 
-// RepoHostStatus defines the status of pgBackRest repository host
+// RepoVolume represents a volume for a pgBackRest repository
+type RepoVolume struct {
+
+	// The name of the the repository
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=^repo[1-4]
+	Name string `json:"name"`
+
+	// Defines a PersistentVolumeClaim spec used to create and/or bind a volume
+	// +kubebuilder:validation:Required
+	VolumeClaimSpec corev1.PersistentVolumeClaimSpec `json:"volumeClaimSpec"`
+}
+
+// RepoHostStatus defines the status of a pgBackRest repository host
 type RepoHostStatus struct {
 	metav1.TypeMeta `json:",inline"`
-
-	// The name of the pgBackRest repository host
-	// +optional
-	Name string `json:"name"`
 
 	// Whether or not the pgBackRest repository host is ready for use
 	// +optional
 	Ready bool `json:"ready"`
+}
+
+// RepoVolumeStatus defines the status of a pgBackRest repository volume
+type RepoVolumeStatus struct {
+
+	// The name of the pgBackRest repository associated with the repository volume
+	// +optional
+	Name string `json:"name"`
+
+	// Whether or not the pgBackRest repository PersistentVolumeClaim is bound to a volume
+	// +optional
+	Bound bool `json:"bound"`
+
+	// The name of the volume the containing the pgBackRest repository
+	// +optional
+	VolumeName string `json:"volume"`
 }
 
 // PostgresClusterStatus defines the observed state of PostgresCluster
@@ -193,19 +247,6 @@ type PostgresClusterList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []PostgresCluster `json:"items"`
-}
-
-// VolumeSpec defines the volume types available for use in a PostgresCluster
-// Please note that this type could benefit from the "union/oneOf" semantics described in the
-// following proposal, being that "only one of the given fields can be set" for this type:
-// https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/1027-api-unions
-type VolumeSpec struct {
-
-	//  Defines an EmptyDir volume
-	EmptyDir *corev1.EmptyDirVolumeSource `json:"emptyDir,omitempty"`
-
-	// Defines a PersistentVolumeClaim used create and/or bind a volume
-	VolumeClaimTemplate *corev1.PersistentVolumeClaimSpec `json:"volumeClaimTemplate,omitempty"`
 }
 
 func init() {

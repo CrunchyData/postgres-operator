@@ -31,6 +31,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
+	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
@@ -257,7 +258,7 @@ func (r *Reconciler) reconcileInstance(
 		instance.Spec.Template.Spec.Containers = []v1.Container{
 			{
 				Name:      naming.ContainerDatabase,
-				Image:     "registry.developers.crunchydata.com/crunchydata/crunchy-postgres-ha:centos7-13.1-4.5.1",
+				Image:     "gcr.io/crunchy-dev-test/crunchy-postgres-ha:centos8-12.6-multi.dev1",
 				Resources: spec.Resources,
 				Ports: []v1.ContainerPort{
 					{
@@ -267,6 +268,12 @@ func (r *Reconciler) reconcileInstance(
 					},
 				},
 			},
+		}
+
+		// set fsGroups if not OpenShift
+		if cluster.Spec.OpenShift == nil || !*cluster.Spec.OpenShift {
+			fsGroup := int64(26)
+			instance.Spec.Template.Spec.SecurityContext = &v1.PodSecurityContext{FSGroup: &fsGroup}
 		}
 	}
 
@@ -286,6 +293,33 @@ func (r *Reconciler) reconcileInstance(
 		err = patroni.InstancePod(
 			ctx, cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
 			instanceCertificates, instanceConfigMap, &instance.Spec.Template)
+	}
+
+	// Add pgBackRest configuration to the PodTemplateSpec.  This includes adding an SSH sidecar
+	// if a pgBackRest repoHost is enabled per the current PostgresCluster spec, mounting
+	// pgBackRest repo volumes if a dedicated repository is not configured, and then mounting the
+	// proper pgBackRest configuration resources (ConfigMaps and Secrets).
+	addSSH := (cluster.Spec.Archive.PGBackRest.RepoHost != nil)
+	dedicatedRepoEnabled := (addSSH && cluster.Spec.Archive.PGBackRest.RepoHost.Dedicated != nil)
+	pgBackRestConfigContainers := []string{naming.ContainerDatabase}
+	if err == nil && addSSH {
+		pgBackRestConfigContainers = append(pgBackRestConfigContainers,
+			naming.PGBackRestRepoContainerName)
+		err = pgbackrest.AddSSHToPod(cluster, &instance.Spec.Template, naming.ContainerDatabase)
+	}
+	if err == nil && !dedicatedRepoEnabled {
+		err = pgbackrest.AddRepoVolumesToPod(cluster, &instance.Spec.Template,
+			pgBackRestConfigContainers...)
+	}
+	if err == nil {
+		err = pgbackrest.AddConfigsToPod(cluster, &instance.Spec.Template, instance.Name+".conf",
+			pgBackRestConfigContainers...)
+	}
+
+	// add an emptyDir volume to the PodTemplateSpec and an associated '/tmp' volume mount to
+	// all containers included within that spec
+	if err == nil {
+		addTMPEmptyDir(&instance.Spec.Template)
 	}
 
 	if err == nil {

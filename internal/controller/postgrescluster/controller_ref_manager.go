@@ -18,7 +18,6 @@ limitations under the License.
 import (
 	"context"
 
-	appsv1 "k8s.io/api/apps/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -34,30 +33,29 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
-// adoptStatefulSet adopts the provided StatefulSet by adding controller owner refs for the
-// provided PostgresCluster.
-func (r *Reconciler) adoptStatefulSet(ctx context.Context, postgresCluster *v1alpha1.PostgresCluster,
-	statefulset *appsv1.StatefulSet) error {
+// adoptObject adopts the provided Object by adding controller owner refs for the provided
+// PostgresCluster.
+func (r *Reconciler) adoptObject(ctx context.Context, postgresCluster *v1alpha1.PostgresCluster,
+	obj client.Object) error {
 
-	sts := statefulset.DeepCopy()
-	if err := controllerutil.SetControllerReference(postgresCluster, sts,
+	if err := controllerutil.SetControllerReference(postgresCluster, obj,
 		r.Client.Scheme()); err != nil {
 		return err
 	}
 
 	patchBytes, err := kubeapi.NewMergePatch().
-		Add("metadata", "ownerReferences")(sts.ObjectMeta.OwnerReferences).Bytes()
+		Add("metadata", "ownerReferences")(obj.GetOwnerReferences()).Bytes()
 	if err != nil {
 		return err
 	}
 
-	return r.Client.Patch(ctx, statefulset, client.RawPatch(types.StrategicMergePatchType,
+	return r.Client.Patch(ctx, obj, client.RawPatch(types.StrategicMergePatchType,
 		patchBytes), &client.PatchOptions{
 		FieldManager: ControllerName,
 	})
 }
 
-// claimStatefulSet is responsible for adopting or release StatefulSets based on their current
+// claimObject is responsible for adopting or releasing Objects based on their current
 // controller ownership and whether or not they meet the provided labeling requirements.
 // This solution is modeled after the ControllerRefManager logic as found within the controller
 // package in the Kubernetes source:
@@ -66,10 +64,10 @@ func (r *Reconciler) adoptStatefulSet(ctx context.Context, postgresCluster *v1al
 // TODO do a non-cache based get of the PostgresCluster prior to adopting anything to prevent
 // race conditions with the garbage collector (see
 // https://github.com/kubernetes/kubernetes/issues/42639)
-func (r *Reconciler) claimStatefulSet(ctx context.Context, postgresCluster *v1alpha1.PostgresCluster,
-	statefulset *appsv1.StatefulSet) error {
+func (r *Reconciler) claimObject(ctx context.Context, postgresCluster *v1alpha1.PostgresCluster,
+	obj client.Object) error {
 
-	controllerRef := metav1.GetControllerOfNoCopy(statefulset)
+	controllerRef := metav1.GetControllerOfNoCopy(obj)
 	if controllerRef != nil {
 		// if not owned by this postgrescluster then ignore
 		if controllerRef.UID != postgresCluster.GetUID() {
@@ -79,7 +77,7 @@ func (r *Reconciler) claimStatefulSet(ctx context.Context, postgresCluster *v1al
 		// If owned by this PostgresCluster and the proper PostgresCluster label is present then
 		// return true.  Additional labels checks can be added here as needed to determine whether
 		// or not a StatefulSet is part of a PostgreSQL cluster and should be adopted or released.
-		if _, ok := statefulset.GetLabels()[naming.LabelCluster]; ok {
+		if _, ok := obj.GetLabels()[naming.LabelCluster]; ok {
 			return nil
 		}
 
@@ -89,8 +87,8 @@ func (r *Reconciler) claimStatefulSet(ctx context.Context, postgresCluster *v1al
 			return nil
 		}
 
-		if err := r.releaseStatefulSet(ctx, postgresCluster,
-			statefulset); client.IgnoreNotFound(err) != nil {
+		if err := r.releaseObject(ctx, postgresCluster,
+			obj); client.IgnoreNotFound(err) != nil {
 			return err
 		}
 
@@ -101,15 +99,14 @@ func (r *Reconciler) claimStatefulSet(ctx context.Context, postgresCluster *v1al
 	// At this point the resource has no controller ref and is therefore an orphan.  Ignore if
 	// either the PostgresCluster resource or the ophaned resource is being deleted, or if the selector
 	// for the orphaned resource doesn't doesn't include the proper PostgresCluster label
-	_, hasPGClusterLabel := statefulset.GetLabels()[naming.LabelCluster]
+	_, hasPGClusterLabel := obj.GetLabels()[naming.LabelCluster]
 	if postgresCluster.GetDeletionTimestamp() != nil || !hasPGClusterLabel {
 		return nil
 	}
-	if statefulset.GetDeletionTimestamp() != nil {
+	if obj.GetDeletionTimestamp() != nil {
 		return nil
 	}
-	if err := r.adoptStatefulSet(ctx, postgresCluster,
-		statefulset); err != nil {
+	if err := r.adoptObject(ctx, postgresCluster, obj); err != nil {
 		// If adopt attempt failed because the resource no longer exists, then simply
 		// ignore.  Otherwise return the error.
 		if kerr.IsNotFound(err) {
@@ -122,19 +119,19 @@ func (r *Reconciler) claimStatefulSet(ctx context.Context, postgresCluster *v1al
 	return nil
 }
 
-// getPostgresClusterForStatefulSet is responsible for obtaining the PostgresCluster associated
-// with a StatefulSet.
-func (r *Reconciler) getPostgresClusterForStatefulSet(ctx context.Context,
-	statefulSet *appsv1.StatefulSet) (bool, *v1alpha1.PostgresCluster, error) {
+// getPostgresClusterForObject is responsible for obtaining the PostgresCluster associated
+// with an Object.
+func (r *Reconciler) getPostgresClusterForObject(ctx context.Context,
+	obj client.Object) (bool, *v1alpha1.PostgresCluster, error) {
 
 	clusterName := ""
 
 	// first see if it has a PostgresCluster ownership ref or a PostgresCluster label
-	controllerRef := metav1.GetControllerOfNoCopy(statefulSet)
+	controllerRef := metav1.GetControllerOfNoCopy(obj)
 	if controllerRef != nil && controllerRef.Kind == "PostgresCluster" {
 		clusterName = controllerRef.Name
-	} else if _, ok := statefulSet.GetLabels()[naming.LabelCluster]; ok {
-		clusterName = statefulSet.GetLabels()[naming.LabelCluster]
+	} else if _, ok := obj.GetLabels()[naming.LabelCluster]; ok {
+		clusterName = obj.GetLabels()[naming.LabelCluster]
 	}
 
 	if clusterName == "" {
@@ -144,7 +141,7 @@ func (r *Reconciler) getPostgresClusterForStatefulSet(ctx context.Context,
 	postgresCluster := &v1alpha1.PostgresCluster{}
 	if err := r.Client.Get(ctx, types.NamespacedName{
 		Name:      clusterName,
-		Namespace: statefulSet.GetNamespace(),
+		Namespace: obj.GetNamespace(),
 	}, postgresCluster); err != nil {
 		if kerr.IsNotFound(err) {
 			return false, nil, nil
@@ -155,12 +152,13 @@ func (r *Reconciler) getPostgresClusterForStatefulSet(ctx context.Context,
 	return true, postgresCluster, nil
 }
 
-// manageSTSControllerRefs is responsible for determining whether or not an attempt should be made
-// to adopt or release/orphan a StatefulSet.  This includes obtaining the PostgresCluster for
-// the StatefulSet and then calling the logic needed to either adopt or release it.
-func (r *Reconciler) manageSTSControllerRefs(ctx context.Context, sts *appsv1.StatefulSet) error {
+// manageControllerRefs is responsible for determining whether or not an attempt should be made
+// to adopt or release/orphan an Object.  This includes obtaining the PostgresCluster for
+// the Object and then calling the logic needed to either adopt or release it.
+func (r *Reconciler) manageControllerRefs(ctx context.Context,
+	obj client.Object) error {
 
-	found, postgresCluster, err := r.getPostgresClusterForStatefulSet(ctx, sts)
+	found, postgresCluster, err := r.getPostgresClusterForObject(ctx, obj)
 	if err != nil {
 		return err
 	}
@@ -168,14 +166,14 @@ func (r *Reconciler) manageSTSControllerRefs(ctx context.Context, sts *appsv1.St
 		return nil
 	}
 
-	return r.claimStatefulSet(ctx, postgresCluster, sts)
+	return r.claimObject(ctx, postgresCluster, obj)
 }
 
-// releaseStatefulSet releases the provided stateful set from ownership by the provided
+// releaseObject releases the provided Object set from ownership by the provided
 // PostgresCluster.  This is done by removing the PostgresCluster's controller owner
-// refs from the StatefulSet.
-func (r *Reconciler) releaseStatefulSet(ctx context.Context,
-	postgresCluster *v1alpha1.PostgresCluster, statefulset *appsv1.StatefulSet) error {
+// refs from the Object.
+func (r *Reconciler) releaseObject(ctx context.Context,
+	postgresCluster *v1alpha1.PostgresCluster, obj client.Object) error {
 
 	// TODO create a strategic merge type in kubeapi instead of using Merge7386
 	patch, err := kubeapi.NewMergePatch().
@@ -187,33 +185,31 @@ func (r *Reconciler) releaseStatefulSet(ctx context.Context,
 		return err
 	}
 
-	return r.Client.Patch(ctx, statefulset, client.RawPatch(types.StrategicMergePatchType, patch))
+	return r.Client.Patch(ctx, obj, client.RawPatch(types.StrategicMergePatchType, patch))
 }
 
-// statefulSetControllerRefHandlerFuncs returns the handler funcs that should be utilized to watch
+// controllerRefHandlerFuncs returns the handler funcs that should be utilized to watch
 // StatefulSets within the cluster as needed to manage controller ownership refs.
-func (r *Reconciler) statefulSetControllerRefHandlerFuncs() *handler.Funcs {
+func (r *Reconciler) controllerRefHandlerFuncs() *handler.Funcs {
 
+	// var err error
 	ctx := context.Background()
 	log := logging.FromContext(ctx)
 	errMsg := "managing StatefulSet controller refs"
 
 	return &handler.Funcs{
 		CreateFunc: func(updateEvent event.CreateEvent, workQueue workqueue.RateLimitingInterface) {
-			if err := r.manageSTSControllerRefs(ctx,
-				updateEvent.Object.(*appsv1.StatefulSet)); err != nil {
+			if err := r.manageControllerRefs(ctx, updateEvent.Object); err != nil {
 				log.Error(err, errMsg)
 			}
 		},
 		UpdateFunc: func(updateEvent event.UpdateEvent, workQueue workqueue.RateLimitingInterface) {
-			if err := r.manageSTSControllerRefs(ctx,
-				updateEvent.ObjectNew.(*appsv1.StatefulSet)); err != nil {
+			if err := r.manageControllerRefs(ctx, updateEvent.ObjectNew); err != nil {
 				log.Error(err, errMsg)
 			}
 		},
 		DeleteFunc: func(updateEvent event.DeleteEvent, workQueue workqueue.RateLimitingInterface) {
-			if err := r.manageSTSControllerRefs(ctx,
-				updateEvent.Object.(*appsv1.StatefulSet)); err != nil {
+			if err := r.manageControllerRefs(ctx, updateEvent.Object); err != nil {
 				log.Error(err, errMsg)
 			}
 		},

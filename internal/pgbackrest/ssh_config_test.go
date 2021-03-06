@@ -33,6 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
@@ -101,7 +102,7 @@ func TestSSHDConfiguration(t *testing.T) {
 		})
 
 		t.Run("create ssh configmap struct", func(t *testing.T) {
-			sshCMInitial = CreateSSHConfigMapStruct(postgresCluster)
+			sshCMInitial = CreateSSHConfigMapIntent(postgresCluster)
 
 			// check that there is configmap data
 			assert.Assert(t, sshCMInitial.Data != nil)
@@ -113,7 +114,7 @@ func TestSSHDConfiguration(t *testing.T) {
 			// locally scoped 'secretInitial' variable
 			var err error
 
-			secretInitial, err = CreateSSHSecretStruct(postgresCluster)
+			secretInitial, err = CreateSSHSecretIntent(postgresCluster, nil)
 
 			assert.NilError(t, err)
 
@@ -151,8 +152,8 @@ func TestSSHDConfiguration(t *testing.T) {
 		t.Run("get ssh configmap", func(t *testing.T) {
 
 			objectKey := client.ObjectKey{
-				Namespace: postgresCluster.GetNamespace(),
-				Name:      fmt.Sprintf(sshCMNameSuffix, postgresCluster.GetName()),
+				Namespace: naming.PGBackRestSSHConfig(postgresCluster).Namespace,
+				Name:      naming.PGBackRestSSHConfig(postgresCluster).Name,
 			}
 
 			err := testClient.Get(context.Background(), objectKey, &sshCMReturned)
@@ -163,8 +164,8 @@ func TestSSHDConfiguration(t *testing.T) {
 		t.Run("get ssh secret", func(t *testing.T) {
 
 			objectKey := client.ObjectKey{
-				Namespace: postgresCluster.GetNamespace(),
-				Name:      fmt.Sprintf(sshSecretNameSuffix, postgresCluster.GetName()),
+				Namespace: naming.PGBackRestSSHSecret(postgresCluster).Namespace,
+				Name:      naming.PGBackRestSSHSecret(postgresCluster).Name,
 			}
 
 			err := testClient.Get(context.Background(), objectKey, &secretReturned)
@@ -182,37 +183,24 @@ func TestSSHDConfiguration(t *testing.T) {
 
 		assert.Equal(t, getCMData(sshCMReturned, sshConfig),
 			`Host *
-	StrictHostKeyChecking no
-	IdentityFile /sshd/id_ecdsa
-	Port 2022
-	User postgres
+StrictHostKeyChecking yes
+IdentityFile /etc/ssh/id_ecdsa
+Port 2022
+User postgres
 `)
 	})
 
 	t.Run("check sshd config", func(t *testing.T) {
 
 		assert.Equal(t, getCMData(sshCMReturned, sshdConfig),
-			`Port 2022
-HostKey /sshd/id_ecdsa
-SyslogFacility AUTHPRIV
-PermitRootLogin no
-StrictModes no
-PubkeyAuthentication yes
-AuthorizedKeysFile	/sshd/authorized_keys
+			`AuthorizedKeysFile /etc/ssh/id_ecdsa.pub
+HostKey /etc/ssh/id_ecdsa
 PasswordAuthentication no
-ChallengeResponseAuthentication yes
-UsePAM yes
-X11Forwarding yes
+PermitRootLogin no
 PidFile /tmp/sshd.pid
-
-# Accept locale-related environment variables
-AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
-AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
-AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
-AcceptEnv XMODIFIERS
-
-# override default of no subsystems
-Subsystem	sftp	/usr/libexec/openssh/sftp-server
+Port 2022
+PubkeyAuthentication yes
+StrictModes no
 `)
 	})
 
@@ -226,8 +214,8 @@ Subsystem	sftp	/usr/libexec/openssh/sftp-server
     sources:
     - configMap:
         items:
-        - key: config
-          path: ./config
+        - key: ssh_config
+          path: ./ssh_config
         - key: sshd_config
           path: ./sshd_config
         name: `+postgresCluster.GetName()+`-ssh-config
@@ -248,7 +236,7 @@ Subsystem	sftp	/usr/libexec/openssh/sftp-server
 		container := findOrAppendContainer(&pod.Containers, "database")
 
 		assert.Assert(t, simpleMarshalContains(container.VolumeMounts, strings.TrimSpace(`
-		- mountPath: /sshd
+		- mountPath: /etc/ssh
   name: sshd
   readOnly: true
 		`)+"\n"))

@@ -31,7 +31,7 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
-func TestManageSTSControllerRefs(t *testing.T) {
+func TestManageControllerRefs(t *testing.T) {
 
 	// setup the test environment and ensure a clean teardown
 	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
@@ -50,7 +50,7 @@ func TestManageSTSControllerRefs(t *testing.T) {
 	})
 
 	clusterName := "hippo"
-	namespace := "hippo"
+	namespace := "test-manage-controller-refs"
 
 	// create the test namespace
 	if err := tClient.Create(ctx,
@@ -75,7 +75,7 @@ func TestManageSTSControllerRefs(t *testing.T) {
 	}
 
 	// create a base StatefulSet that can be used by the various tests below
-	stsBase := &appsv1.StatefulSet{
+	objBase := &appsv1.StatefulSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 		},
@@ -91,26 +91,26 @@ func TestManageSTSControllerRefs(t *testing.T) {
 		},
 	}
 
-	t.Run("adopt StatefulSet", func(t *testing.T) {
+	t.Run("adopt Object", func(t *testing.T) {
 
-		sts := stsBase.DeepCopy()
-		sts.Name = "adpot"
-		sts.Labels = map[string]string{naming.LabelCluster: clusterName}
+		obj := objBase.DeepCopy()
+		obj.Name = "adpot"
+		obj.Labels = map[string]string{naming.LabelCluster: clusterName}
 
-		if err := r.Client.Create(ctx, sts); err != nil {
+		if err := r.Client.Create(ctx, obj); err != nil {
 			t.Error(err)
 		}
 
-		if err := r.manageSTSControllerRefs(ctx, sts); err != nil {
+		if err := r.manageControllerRefs(ctx, obj); err != nil {
 			t.Error(err)
 		}
 
-		if err := tClient.Get(ctx, client.ObjectKeyFromObject(sts), sts); err != nil {
+		if err := tClient.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
 			t.Error(err)
 		}
 
 		var foundControllerOwnerRef bool
-		for _, ref := range sts.GetOwnerReferences() {
+		for _, ref := range obj.GetOwnerReferences() {
 			if *ref.Controller && *ref.BlockOwnerDeletion &&
 				ref.UID == postgresCluster.GetUID() &&
 				ref.Name == clusterName && ref.Kind == "PostgresCluster" {
@@ -124,12 +124,12 @@ func TestManageSTSControllerRefs(t *testing.T) {
 		}
 	})
 
-	t.Run("release StatefulSet", func(t *testing.T) {
+	t.Run("release Object", func(t *testing.T) {
 
 		isTrue := true
-		sts := stsBase.DeepCopy()
-		sts.Name = "release"
-		sts.OwnerReferences = append(sts.OwnerReferences, metav1.OwnerReference{
+		obj := objBase.DeepCopy()
+		obj.Name = "release"
+		obj.OwnerReferences = append(obj.OwnerReferences, metav1.OwnerReference{
 			APIVersion:         "group/version",
 			Kind:               "PostgresCluster",
 			Name:               clusterName,
@@ -138,66 +138,66 @@ func TestManageSTSControllerRefs(t *testing.T) {
 			BlockOwnerDeletion: &isTrue,
 		})
 
-		if err := r.Client.Create(ctx, sts); err != nil {
+		if err := r.Client.Create(ctx, obj); err != nil {
 			t.Error(err)
 		}
 
-		if err := r.manageSTSControllerRefs(ctx, sts); err != nil {
+		if err := r.manageControllerRefs(ctx, obj); err != nil {
 			t.Error(err)
 		}
 
-		if err := tClient.Get(ctx, client.ObjectKeyFromObject(sts), sts); err != nil {
+		if err := tClient.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
 			t.Error(err)
 		}
 
-		if len(sts.GetOwnerReferences()) != 0 {
-			t.Error("expected orphaned StatefulSet but found controller ref")
+		if len(obj.GetOwnerReferences()) != 0 {
+			t.Error("expected orphaned Object but found controller ref")
 		}
 	})
 
-	t.Run("ignore StatefulSet: no matching labels or owner refs", func(t *testing.T) {
+	t.Run("ignore Object: no matching labels or owner refs", func(t *testing.T) {
 
-		sts := stsBase.DeepCopy()
-		sts.Name = "ignore-no-labels-refs"
-		sts.Labels = map[string]string{"ignore-label": "ignore-value"}
+		obj := objBase.DeepCopy()
+		obj.Name = "ignore-no-labels-refs"
+		obj.Labels = map[string]string{"ignore-label": "ignore-value"}
 
-		if err := r.Client.Create(ctx, sts); err != nil {
+		if err := r.Client.Create(ctx, obj); err != nil {
 			t.Error(err)
 		}
 
-		if err := r.manageSTSControllerRefs(ctx, sts); err != nil {
+		if err := r.manageControllerRefs(ctx, obj); err != nil {
 			t.Error(err)
 		}
 
-		if err := tClient.Get(ctx, client.ObjectKeyFromObject(sts), sts); err != nil {
+		if err := tClient.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
 			t.Error(err)
 		}
 
-		if len(sts.GetOwnerReferences()) != 0 {
-			t.Error("expected orphaned StatefulSet but found controller ref")
+		if len(obj.GetOwnerReferences()) != 0 {
+			t.Error("expected orphaned Object but found controller ref")
 		}
 	})
 
-	t.Run("ignore StatefulSet: PostgresCluster does not exist", func(t *testing.T) {
+	t.Run("ignore Object: PostgresCluster does not exist", func(t *testing.T) {
 
-		sts := stsBase.DeepCopy()
-		sts.Name = "ignore-no-postgrescluster"
-		sts.Labels = map[string]string{naming.LabelCluster: "noexist"}
+		obj := objBase.DeepCopy()
+		obj.Name = "ignore-no-postgrescluster"
+		obj.Labels = map[string]string{naming.LabelCluster: "noexist"}
 
-		if err := r.Client.Create(ctx, sts); err != nil {
+		if err := r.Client.Create(ctx, obj); err != nil {
 			t.Error(err)
 		}
 
-		if err := r.manageSTSControllerRefs(ctx, sts); err != nil {
+		if err := r.manageControllerRefs(ctx, obj); err != nil {
 			t.Error(err)
 		}
 
-		if err := tClient.Get(ctx, client.ObjectKeyFromObject(sts), sts); err != nil {
+		if err := tClient.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
 			t.Error(err)
 		}
 
-		if len(sts.GetOwnerReferences()) != 0 {
-			t.Error("expected orphaned StatefulSet but found controller ref")
+		if len(obj.GetOwnerReferences()) != 0 {
+			t.Error("expected orphaned Object but found controller ref")
 		}
 	})
 }

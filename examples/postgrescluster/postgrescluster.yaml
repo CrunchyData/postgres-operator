@@ -7,8 +7,26 @@ spec:
     - name: instance1
   archive:
     pgbackrest:
-      # TODO: uncomment "image" once pattern is decided how to handle
-      # image:
+      configuration:
       repoHost:
-        resources: {}     # (core/v1.ResourceRequirements)
-      repoVolume: {} # (VolumeSpec)
+        dedicated:
+          resources:
+        image: gcr.io/crunchy-dev-test/crunchy-pgbackrest:centos8-12.6-multi.dev1
+        sshConfigMap:
+        sshSecret:
+        resources:
+      repos:
+      - name: repo1
+        volumeClaimSpec:
+          accessModes:
+          - "ReadWriteMany"
+          resources:
+            requests:
+              storage: 1Gi
+      - name: repo2
+        volumeClaimSpec:
+          accessModes:
+          - "ReadWriteMany"
+          resources:
+            requests:
+              storage: 1Gi

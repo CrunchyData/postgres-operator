@@ -51,10 +51,7 @@ metadata:
   creationTimestamp: null
 spec:
   archive:
-    pgbackrest:
-      repoHost:
-        resources: {}
-      repoVolume: {}
+    pgbackrest: {}
   instances: null
   patroni:
     dynamicConfiguration: null
@@ -80,10 +77,7 @@ metadata:
   creationTimestamp: null
 spec:
   archive:
-    pgbackrest:
-      repoHost:
-        resources: {}
-      repoVolume: {}
+    pgbackrest: {}
   instances:
   - name: "00"
     replicas: 1

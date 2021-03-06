@@ -173,16 +173,21 @@ func (r *Reconciler) Reconcile(
 		err = r.reconcilePatroniDynamicConfiguration(ctx, cluster, pgHBAs, pgParameters)
 	}
 
+	instancesNames := []string{}
+	var instanceSet *appsv1.StatefulSetList
 	for i := range cluster.Spec.InstanceSets {
 		if err == nil {
-			_, err = r.reconcileInstanceSet(
+			instanceSet, err = r.reconcileInstanceSet(
 				ctx, cluster, &cluster.Spec.InstanceSets[i],
 				clusterConfigMap, intermediateCA, rootCA, clusterPodService, patroniLeaderService)
+			for _, instance := range instanceSet.Items {
+				instancesNames = append(instancesNames, instance.GetName())
+			}
 		}
 	}
 
 	if err == nil {
-		err = updateResult(r.reconcilePGBackRest(ctx, cluster))
+		err = updateResult(r.reconcilePGBackRest(ctx, cluster, instancesNames))
 	}
 
 	// TODO reconcile pgBouncer
@@ -247,6 +252,6 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 		Owns(&v1.Service{}).
 		Owns(&appsv1.StatefulSet{}).
 		Watches(&source.Kind{Type: &appsv1.StatefulSet{}},
-			r.statefulSetControllerRefHandlerFuncs()). // watch all StatefulSets
+			r.controllerRefHandlerFuncs()). // watch all StatefulSets
 		Complete(r)
 }

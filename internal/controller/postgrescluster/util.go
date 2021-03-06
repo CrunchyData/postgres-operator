@@ -16,12 +16,42 @@ package postgrescluster
 */
 
 import (
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
+
+var tmpDirSizeLimit = resource.MustParse("16Mi")
+
+// addTMPEmptyDir adds a "tmp" EmptyDir volume to the provided Pod template, while then also adding a
+// volume mount at /tmp for all containers defined within the Pod template
+// The '/tmp' directory is currently utilized for the following:
+//  * A temporary location for instance PGDATA volumes until real volumes are implemented
+//  * The location of the SSHD pid file
+//  * As the pgBackRest lock directory (this is the default lock location for pgBackRest)
+func addTMPEmptyDir(template *v1.PodTemplateSpec) {
+
+	template.Spec.Volumes = append(template.Spec.Volumes, v1.Volume{
+		Name: "tmp",
+		VolumeSource: v1.VolumeSource{
+			EmptyDir: &v1.EmptyDirVolumeSource{
+				SizeLimit: &tmpDirSizeLimit,
+			},
+		},
+	})
+
+	for i := range template.Spec.Containers {
+		template.Spec.Containers[i].VolumeMounts = append(template.Spec.Containers[i].VolumeMounts,
+			v1.VolumeMount{
+				Name:      "tmp",
+				MountPath: "/tmp",
+			})
+	}
+}
 
 // setStatusConditions updates the provided PostgresCluster status with the provided
 // conditions. This includes populating the PostgresCluster status with any conditions that

@@ -21,6 +21,7 @@ import (
 	"crypto/rand"
 	"fmt"
 
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 	"golang.org/x/crypto/ssh"
@@ -29,11 +30,15 @@ import (
 )
 
 const (
+
+	// knownHostsKey is the name of the 'known_hosts' file
+	knownHostsKey = "ssh_known_hosts"
+
 	// mount path for SSH configuration
-	sshConfigPath = "/sshd"
+	sshConfigPath = "/etc/ssh"
 
 	// config file for the SSH client
-	sshConfig = "config"
+	sshConfig = "ssh_config"
 	// config file for the SSHD service
 	sshdConfig = "sshd_config"
 
@@ -43,16 +48,6 @@ const (
 	publicKey = "id_ecdsa.pub"
 	// SSH configuration volume
 	sshConfigVol = "sshd"
-
-	// suffix used with postgrescluster name for associated configmap.
-	// for instance, if the cluster is named 'mycluster', the
-	// configmap will be named 'mycluster-ssh-config'
-	sshCMNameSuffix = "%s-ssh-config"
-
-	// suffix used with postgrescluster name for associated secret.
-	// for instance, if the cluster is named 'mycluster', the
-	// secret will be named 'mycluster-ssh'
-	sshSecretNameSuffix = "%s-ssh"
 )
 
 // sshKey stores byte slices that represent private and public ssh keys
@@ -62,19 +57,19 @@ type sshKey struct {
 	Public  []byte
 }
 
-// CreateSSHConfigMapStruct creates a configmap struct with SSHD service and SSH client
+// CreateSSHConfigMapIntent creates a configmap struct with SSHD service and SSH client
 // configuration settings in the data field.
-func CreateSSHConfigMapStruct(postgresCluster *v1alpha1.PostgresCluster) v1.ConfigMap {
+func CreateSSHConfigMapIntent(postgresCluster *v1alpha1.PostgresCluster) v1.ConfigMap {
+
+	meta := naming.PGBackRestSSHConfig(postgresCluster)
+	meta.Labels = naming.PGBackRestRepoHostLabels(postgresCluster.GetName())
 
 	cm := v1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "ConfigMap",
 			APIVersion: "v1",
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf(sshCMNameSuffix, postgresCluster.GetName()),
-			Namespace: postgresCluster.GetNamespace(),
-		},
+		ObjectMeta: meta,
 	}
 
 	// create an empty map for the config data
@@ -95,26 +90,41 @@ func CreateSSHConfigMapStruct(postgresCluster *v1alpha1.PostgresCluster) v1.Conf
 	return cm
 }
 
-// CreateSSHSecretStruct creates the secret containing the new public private key pair to use
+// CreateSSHSecretIntent creates the secret containing the new public private key pair to use
 // when connecting to and from the pgBackRest repo pod.
-func CreateSSHSecretStruct(postgresCluster *v1alpha1.PostgresCluster) (v1.Secret, error) {
+func CreateSSHSecretIntent(postgresCluster *v1alpha1.PostgresCluster,
+	currentSSHSecret *v1.Secret) (v1.Secret, error) {
+
+	meta := naming.PGBackRestSSHSecret(postgresCluster)
+	meta.Labels = naming.PGBackRestRepoHostLabels(postgresCluster.GetName())
 
 	secret := v1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
 			APIVersion: "v1",
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf(sshSecretNameSuffix, postgresCluster.GetName()),
-			Namespace: postgresCluster.GetNamespace(),
-		},
-		Type: "Opaque",
+		ObjectMeta: meta,
+		Type:       "Opaque",
 	}
 
-	// get the key byte slices
-	keys, err := getKeys()
-	if err != nil {
-		return secret, err
+	var privKeyExists, pubKeyExists bool
+	if currentSSHSecret != nil {
+		_, privKeyExists = currentSSHSecret.Data[privateKey]
+		_, pubKeyExists = currentSSHSecret.Data[publicKey]
+	}
+	var keys sshKey
+	var err error
+	if pubKeyExists && privKeyExists {
+		keys = sshKey{
+			Private: currentSSHSecret.Data[privateKey],
+			Public:  currentSSHSecret.Data[publicKey],
+		}
+	} else {
+		// get the key byte slices
+		keys, err = getKeys()
+		if err != nil {
+			return secret, err
+		}
 	}
 
 	// create an empty map for the key data
@@ -128,8 +138,13 @@ func CreateSSHSecretStruct(postgresCluster *v1alpha1.PostgresCluster) (v1.Secret
 
 	// if the private key data map is not ok, populate with the private key
 	if _, ok := secret.Data[privateKey]; !ok {
-		//secret.Data[privateKey] = keys.Private
 		secret.Data[privateKey] = keys.Private
+	}
+
+	// if the known_hosts is not ok, populate with the knownHosts key
+	if _, ok := secret.Data[knownHostsKey]; !ok {
+		secret.Data[knownHostsKey] = []byte(fmt.Sprintf(
+			"*.%s %s", naming.ClusterPodService(postgresCluster).Name, string(keys.Public)))
 	}
 
 	return secret, nil
@@ -198,27 +213,14 @@ func SSHConfigVolumeAndMount(sshConfigMap *v1.ConfigMap, sshSecret *v1.Secret, p
 // for the SSHD service
 func getSSHDConfigString() string {
 
-	configString := `Port 2022
-HostKey /sshd/id_ecdsa
-SyslogFacility AUTHPRIV
-PermitRootLogin no
-StrictModes no
-PubkeyAuthentication yes
-AuthorizedKeysFile	/sshd/authorized_keys
+	configString := `AuthorizedKeysFile /etc/ssh/id_ecdsa.pub
+HostKey /etc/ssh/id_ecdsa
 PasswordAuthentication no
-ChallengeResponseAuthentication yes
-UsePAM yes
-X11Forwarding yes
+PermitRootLogin no
 PidFile /tmp/sshd.pid
-
-# Accept locale-related environment variables
-AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
-AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
-AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
-AcceptEnv XMODIFIERS
-
-# override default of no subsystems
-Subsystem	sftp	/usr/libexec/openssh/sftp-server
+Port 2022
+PubkeyAuthentication yes
+StrictModes no
 `
 	return configString
 }
@@ -228,10 +230,10 @@ Subsystem	sftp	/usr/libexec/openssh/sftp-server
 func getSSHConfigString() string {
 
 	configString := `Host *
-	StrictHostKeyChecking no
-	IdentityFile /sshd/id_ecdsa
-	Port 2022
-	User postgres
+StrictHostKeyChecking yes
+IdentityFile /etc/ssh/id_ecdsa
+Port 2022
+User postgres
 `
 	return configString
 }
