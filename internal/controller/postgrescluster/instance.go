@@ -306,14 +306,17 @@ func (r *Reconciler) reconcileInstance(
 		err = addPGBackRestToInstancePodSpec(cluster, &instance.Spec.Template, instance)
 	}
 
+	postgres.AddPGDATAInitToPod(cluster, &instance.Spec.Template)
 	// Add PGDATA volume to the Pod template and then add PGDATA volume mounts for the
 	// database container, and, if a repo host is enabled, the pgBackRest container
 	PGDATAContainers := []string{naming.ContainerDatabase}
+	PGDATAInitContainers := []string{naming.ContainerDatabasePGDATAInit}
 	if pgbackrest.RepoHostEnabled(cluster) {
 		PGDATAContainers = append(PGDATAContainers, naming.PGBackRestRepoContainerName)
 	}
 	if err := postgres.AddPGDATAVolumeToPod(cluster, &instance.Spec.Template,
-		naming.InstancePGDataVolume(instance).Name, PGDATAContainers...); err != nil {
+		naming.InstancePGDataVolume(instance).Name, PGDATAContainers,
+		PGDATAInitContainers); err != nil {
 		return err
 	}
 
@@ -333,7 +336,7 @@ func (r *Reconciler) reconcileInstance(
 	return err
 }
 
-// addPGBackRestToInstancePodSpec add pgBackRest configuration to the PodTemplateSpec.  This
+// addPGBackRestToInstancePodSpec adds pgBackRest configuration to the PodTemplateSpec.  This
 // includes adding an SSH sidecar if a pgBackRest repoHost is enabled per the current
 // PostgresCluster spec, mounting pgBackRest repo volumes if a dedicated repository is not
 // configured, and then mounting the proper pgBackRest configuration resources (ConfigMaps

@@ -32,14 +32,17 @@ func TestAddPGDATAVolumeToPod(t *testing.T) {
 	testClaimName := "test-claim-name"
 
 	testsCases := []struct {
-		claimName  string
-		containers []v1.Container
+		claimName      string
+		containers     []v1.Container
+		initContainers []v1.Container
 	}{{
-		claimName:  testClaimName,
-		containers: []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
+		claimName:      testClaimName,
+		containers:     []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
+		initContainers: []v1.Container{{Name: "database-pgdata-init"}},
 	}, {
-		claimName:  testClaimName,
-		containers: []v1.Container{{Name: "database"}},
+		claimName:      testClaimName,
+		containers:     []v1.Container{{Name: "database"}},
+		initContainers: []v1.Container{{Name: "database-pgdata-init"}},
 	}, {
 		claimName:  testClaimName,
 		containers: []v1.Container{},
@@ -59,7 +62,7 @@ func TestAddPGDATAVolumeToPod(t *testing.T) {
 			}
 
 			err := AddPGDATAVolumeToPod(postgresCluster, template, tc.claimName,
-				getContainerNames(tc.containers)...)
+				getContainerNames(tc.containers), []string{})
 			if tc.claimName == "" {
 				assert.ErrorContains(t, err, "must not be empty")
 				return
@@ -78,8 +81,46 @@ func TestAddPGDATAVolumeToPod(t *testing.T) {
 			assert.Assert(t, foundPGDATAVol)
 			assert.Assert(t, pgdataVol.PersistentVolumeClaim != nil)
 			assert.Assert(t, (pgdataVol.PersistentVolumeClaim.ClaimName == tc.claimName))
+
+			for _, c := range template.Spec.Containers {
+				var foundVolumeMount bool
+				for _, vm := range c.VolumeMounts {
+					if vm.Name == naming.PGDATAVolume && vm.MountPath == naming.PGDATAVMountPath {
+						foundVolumeMount = true
+					}
+				}
+				assert.Assert(t, foundVolumeMount)
+			}
+
+			for _, c := range template.Spec.InitContainers {
+				var foundVolumeMount bool
+				for _, vm := range c.VolumeMounts {
+					if vm.Name == naming.PGDATAVolume && vm.MountPath == naming.PGDATAVMountPath {
+						foundVolumeMount = true
+					}
+				}
+				assert.Assert(t, foundVolumeMount)
+			}
 		})
 	}
+}
+
+func TestAddPGDATAInitToPod(t *testing.T) {
+
+	postgresCluster := &v1alpha1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
+	template := &v1.PodTemplateSpec{}
+
+	AddPGDATAInitToPod(postgresCluster, template)
+
+	var foundPGDATAInitContainer bool
+	for _, c := range template.Spec.InitContainers {
+		if c.Name == naming.ContainerDatabasePGDATAInit {
+			foundPGDATAInitContainer = true
+			break
+		}
+	}
+
+	assert.Assert(t, foundPGDATAInitContainer)
 }
 
 func getContainerNames(containers []v1.Container) []string {

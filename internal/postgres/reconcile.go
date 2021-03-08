@@ -25,9 +25,9 @@ import (
 )
 
 // AddPGDATAVolumeToPod adds pgBackRest repository volumes to the provided Pod template spec, while
-// also adding associated volume mounts to the containers specified.
+// also adding associated volume mounts to the containers and/or init containers specified.
 func AddPGDATAVolumeToPod(postgresCluster *v1alpha1.PostgresCluster, template *v1.PodTemplateSpec,
-	claimName string, containerNames ...string) error {
+	claimName string, containerNames, initContainerNames []string) error {
 
 	if claimName == "" {
 		return errors.WithStack(errors.New("claimName must not be empty"))
@@ -63,5 +63,40 @@ func AddPGDATAVolumeToPod(postgresCluster *v1alpha1.PostgresCluster, template *v
 			})
 	}
 
+	for _, name := range initContainerNames {
+		var initContainerFound bool
+		var initIndex int
+		for initIndex = range template.Spec.InitContainers {
+			if template.Spec.InitContainers[initIndex].Name == name {
+				initContainerFound = true
+				break
+			}
+		}
+		if !initContainerFound {
+			return fmt.Errorf("Unable to find init container %q when adding pgBackRest repo volumes",
+				name)
+		}
+		template.Spec.InitContainers[initIndex].VolumeMounts =
+			append(template.Spec.InitContainers[initIndex].VolumeMounts, v1.VolumeMount{
+				Name:      naming.PGDATAVolume,
+				MountPath: naming.PGDATAVMountPath,
+			})
+	}
+
 	return nil
+}
+
+// AddPGDATAInitToPod adds an initialization container to the Pod template that is responsible
+// for properly initializing the PGDATA directory.
+func AddPGDATAInitToPod(postgresCluster *v1alpha1.PostgresCluster,
+	template *v1.PodTemplateSpec) {
+
+	pgdata := naming.GetPGDATADirectory(postgresCluster)
+	cmd := fmt.Sprintf(`mkdir -p "%s" && chmod 0700 "%s"`, pgdata, pgdata)
+	template.Spec.InitContainers = append(template.Spec.InitContainers,
+		v1.Container{
+			Command: []string{"bash", "-c", cmd},
+			Image:   postgresCluster.Spec.Image,
+			Name:    naming.ContainerDatabasePGDATAInit,
+		})
 }

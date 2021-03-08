@@ -15,14 +15,9 @@ spec:
             storage: 1Gi
   archive:
     pgbackrest:
-      configuration:
       repoHost:
-        dedicated:
-          resources:
+        dedicated: {}
         image: gcr.io/crunchy-dev-test/crunchy-pgbackrest:centos8-12.6-multi.dev1
-        sshConfigMap:
-        sshSecret:
-        resources:
       repos:
       - name: repo1
         volumeClaimSpec:

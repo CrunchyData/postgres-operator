@@ -27,8 +27,11 @@ import (
 )
 
 const (
-	ContainerDatabase   = "database"
-	ContainerPostgreSQL = ContainerDatabase
+	ContainerDatabase = "database"
+	// ContainerDatabasePGDATAInit is the name of the initialization container that is responsible
+	// for initializing the PGDATA directory
+	ContainerDatabasePGDATAInit = ContainerDatabase + "-pgdata-init"
+	ContainerPostgreSQL         = ContainerDatabase
 )
 
 const (
