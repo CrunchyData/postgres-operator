@@ -3,8 +3,16 @@ kind: PostgresCluster
 metadata:
   name: hippo
 spec:
+  image: gcr.io/crunchy-dev-test/crunchy-postgres-ha:centos8-12.6-multi.dev1
+  postgresVersion: 12
   instances:
     - name: instance1
+      volumeClaimSpec:
+        accessModes:
+        - "ReadWriteMany"
+        resources:
+          requests:
+            storage: 1Gi
   archive:
     pgbackrest:
       configuration:

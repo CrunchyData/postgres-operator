@@ -482,7 +482,7 @@ func TestInstanceEnvironment(t *testing.T) {
 func TestInstanceYAML(t *testing.T) {
 	t.Parallel()
 
-	cluster := new(v1alpha1.PostgresCluster)
+	cluster := &v1alpha1.PostgresCluster{Spec: v1alpha1.PostgresClusterSpec{PostgresVersion: 12}}
 	instance := new(appsv1.StatefulSet)
 
 	data, err := instanceYAML(cluster, instance)
@@ -492,7 +492,7 @@ func TestInstanceYAML(t *testing.T) {
 # Your changes will not be saved.
 kubernetes: {}
 postgresql:
-  data_dir: /tmp/data_dir
+  data_dir: /pgdata/pg12
   use_unix_socket: true
 restapi: {}
 tags: {}

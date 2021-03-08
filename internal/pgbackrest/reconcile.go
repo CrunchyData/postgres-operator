@@ -49,7 +49,7 @@ func AddRepoVolumesToPod(postgresCluster *v1alpha1.PostgresCluster, template *v1
 				}
 			}
 			if !containerFound {
-				return fmt.Errorf("Unable to find container %q when adding pgBackRest repo volumes" +
+				return fmt.Errorf("Unable to find container %q when adding pgBackRest repo volumes",
 					name)
 			}
 			template.Spec.Containers[index].VolumeMounts =
@@ -100,7 +100,7 @@ func AddConfigsToPod(postgresCluster *v1alpha1.PostgresCluster, template *v1.Pod
 			}
 		}
 		if !containerFound {
-			return fmt.Errorf("Unable to find container %q when adding pgBackRest configration" +
+			return fmt.Errorf("Unable to find container %q when adding pgBackRest configration",
 				name)
 		}
 		template.Spec.Containers[index].VolumeMounts =
@@ -189,7 +189,7 @@ func AddSSHToPod(postgresCluster *v1alpha1.PostgresCluster, template *v1.PodTemp
 			}
 		}
 		if !containerFound {
-			return fmt.Errorf("Unable to find container %q when adding pgBackRest to Pod" +
+			return fmt.Errorf("Unable to find container %q when adding pgBackRest to Pod",
 				name)
 		}
 		template.Spec.Containers[index].VolumeMounts =

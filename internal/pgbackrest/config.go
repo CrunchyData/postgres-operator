@@ -36,8 +36,7 @@ const (
 	// stanza pgBackRest default configurations
 	defaultStanzaName = "db"
 
-	// default Postgres path, port and socket path
-	defaultPG1Path       = "/tmp/data_dir"
+	// default pgBackRest port and socket path
 	defaultPG1Port       = "5432"
 	defaultPG1SocketPath = "/tmp"
 
@@ -93,6 +92,7 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1alpha1.PostgresCluster,
 		serviceName = naming.ClusterPodService(postgresCluster).Name
 	}
 
+	pgdataDir := naming.GetPGDATADirectory(postgresCluster)
 	for i, name := range instanceNames {
 		otherInstances := make([]string, 0)
 		if addInstanceHosts {
@@ -101,13 +101,13 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1alpha1.PostgresCluster,
 			otherInstances = append(otherInstances[:i], otherInstances[i+1:]...)
 		}
 		cm.Data[name+".conf"] = getConfigString(
-			populatePGInstanceConfigurationMap(serviceName, repoHostName, otherInstances,
+			populatePGInstanceConfigurationMap(serviceName, repoHostName, pgdataDir, otherInstances,
 				postgresCluster.Spec.Archive.PGBackRest.Repos))
 	}
 
 	if addDedicatedHost && repoHostName != "" {
 		cm.Data[CMRepoKey] = getConfigString(
-			populateRepoHostConfigurationMap(serviceName, instanceNames,
+			populateRepoHostConfigurationMap(serviceName, pgdataDir, instanceNames,
 				postgresCluster.Spec.Archive.PGBackRest.Repos))
 	}
 
@@ -177,7 +177,7 @@ func JobConfigVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec,
 
 // populateRepoHostConfigurationMap returns a map representing the pgBackRest configuration for
 // a PostgreSQL instance
-func populatePGInstanceConfigurationMap(serviceName, repoHostName string,
+func populatePGInstanceConfigurationMap(serviceName, repoHostName, pgdataDir string,
 	otherPGHostNames []string, repos []v1alpha1.RepoVolume) map[string]map[string]string {
 
 	pgBackRestConfig := map[string]map[string]string{
@@ -204,7 +204,7 @@ func populatePGInstanceConfigurationMap(serviceName, repoHostName string,
 	i := 1
 	// Now add all PG instances to the stanza section. Make sure the local PG host is always
 	// index 1: https://github.com/pgbackrest/pgbackrest/issues/1197#issuecomment-708381800
-	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i)] = defaultPG1Path
+	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i)] = pgdataDir
 	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i)] = defaultPG1Port
 	pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i)] = defaultPG1SocketPath
 	i++
@@ -215,7 +215,7 @@ func populatePGInstanceConfigurationMap(serviceName, repoHostName string,
 
 	for _, name := range otherPGHostNames {
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-host", i)] = name + "-0." + serviceName
-		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i)] = defaultPG1Path
+		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i)] = pgdataDir
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i)] = defaultPG1Port
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i)] = defaultPG1SocketPath
 		i++
@@ -226,7 +226,7 @@ func populatePGInstanceConfigurationMap(serviceName, repoHostName string,
 
 // populateRepoHostConfigurationMap returns a map representing the pgBackRest configuration for
 // a pgBackRest dedicated repository host
-func populateRepoHostConfigurationMap(serviceName string,
+func populateRepoHostConfigurationMap(serviceName, pgdataDir string,
 	pgHosts []string, repos []v1alpha1.RepoVolume) map[string]map[string]string {
 
 	pgBackRestConfig := map[string]map[string]string{
@@ -249,7 +249,7 @@ func populateRepoHostConfigurationMap(serviceName string,
 	// set the configs for all PG hosts
 	for i, pgHost := range pgHosts {
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-host", i+1)] = pgHost + "-0." + serviceName
-		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i+1)] = defaultPG1Path
+		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-path", i+1)] = pgdataDir
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-port", i+1)] = defaultPG1Port
 		pgBackRestConfig["stanza"][fmt.Sprintf("pg%d-socket-path", i+1)] = defaultPG1SocketPath
 	}

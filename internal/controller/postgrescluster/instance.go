@@ -26,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
@@ -33,6 +34,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pki"
+	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
@@ -158,7 +160,6 @@ func (r *Reconciler) reconcileInstanceSet(
 		instanceNames.Insert(next.Name)
 		instances.Items = append(instances.Items, appsv1.StatefulSet{ObjectMeta: next})
 	}
-
 	for i := range instances.Items {
 		if err == nil {
 			err = r.reconcileInstance(
@@ -258,7 +259,7 @@ func (r *Reconciler) reconcileInstance(
 		instance.Spec.Template.Spec.Containers = []v1.Container{
 			{
 				Name:      naming.ContainerDatabase,
-				Image:     "gcr.io/crunchy-dev-test/crunchy-postgres-ha:centos8-12.6-multi.dev1",
+				Image:     cluster.Spec.Image,
 				Resources: spec.Resources,
 				Ports: []v1.ContainerPort{
 					{
@@ -270,11 +271,13 @@ func (r *Reconciler) reconcileInstance(
 			},
 		}
 
+		podSecurityContext := &v1.PodSecurityContext{SupplementalGroups: []int64{65534}}
 		// set fsGroups if not OpenShift
 		if cluster.Spec.OpenShift == nil || !*cluster.Spec.OpenShift {
 			fsGroup := int64(26)
-			instance.Spec.Template.Spec.SecurityContext = &v1.PodSecurityContext{FSGroup: &fsGroup}
+			podSecurityContext.FSGroup = &fsGroup
 		}
+		instance.Spec.Template.Spec.SecurityContext = podSecurityContext
 	}
 
 	var (
@@ -290,30 +293,28 @@ func (r *Reconciler) reconcileInstance(
 			ctx, cluster, instance, intermediateCA, rootCA)
 	}
 	if err == nil {
+		err = r.reconcilePGDATAVolume(ctx, cluster, spec, instance)
+	}
+	if err == nil {
 		err = patroni.InstancePod(
 			ctx, cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
 			instanceCertificates, instanceConfigMap, &instance.Spec.Template)
 	}
 
-	// Add pgBackRest configuration to the PodTemplateSpec.  This includes adding an SSH sidecar
-	// if a pgBackRest repoHost is enabled per the current PostgresCluster spec, mounting
-	// pgBackRest repo volumes if a dedicated repository is not configured, and then mounting the
-	// proper pgBackRest configuration resources (ConfigMaps and Secrets).
-	addSSH := (cluster.Spec.Archive.PGBackRest.RepoHost != nil)
-	dedicatedRepoEnabled := (addSSH && cluster.Spec.Archive.PGBackRest.RepoHost.Dedicated != nil)
-	pgBackRestConfigContainers := []string{naming.ContainerDatabase}
-	if err == nil && addSSH {
-		pgBackRestConfigContainers = append(pgBackRestConfigContainers,
-			naming.PGBackRestRepoContainerName)
-		err = pgbackrest.AddSSHToPod(cluster, &instance.Spec.Template, naming.ContainerDatabase)
-	}
-	if err == nil && !dedicatedRepoEnabled {
-		err = pgbackrest.AddRepoVolumesToPod(cluster, &instance.Spec.Template,
-			pgBackRestConfigContainers...)
-	}
+	// Add pgBackRest containers, volumes, etc. to the instance Pod spec
 	if err == nil {
-		err = pgbackrest.AddConfigsToPod(cluster, &instance.Spec.Template, instance.Name+".conf",
-			pgBackRestConfigContainers...)
+		err = addPGBackRestToInstancePodSpec(cluster, &instance.Spec.Template, instance)
+	}
+
+	// Add PGDATA volume to the Pod template and then add PGDATA volume mounts for the
+	// database container, and, if a repo host is enabled, the pgBackRest container
+	PGDATAContainers := []string{naming.ContainerDatabase}
+	if pgbackrest.RepoHostEnabled(cluster) {
+		PGDATAContainers = append(PGDATAContainers, naming.PGBackRestRepoContainerName)
+	}
+	if err := postgres.AddPGDATAVolumeToPod(cluster, &instance.Spec.Template,
+		naming.InstancePGDataVolume(instance).Name, PGDATAContainers...); err != nil {
+		return err
 	}
 
 	// add an emptyDir volume to the PodTemplateSpec and an associated '/tmp' volume mount to
@@ -330,6 +331,73 @@ func (r *Reconciler) reconcileInstance(
 	}
 
 	return err
+}
+
+// addPGBackRestToInstancePodSpec add pgBackRest configuration to the PodTemplateSpec.  This
+// includes adding an SSH sidecar if a pgBackRest repoHost is enabled per the current
+// PostgresCluster spec, mounting pgBackRest repo volumes if a dedicated repository is not
+// configured, and then mounting the proper pgBackRest configuration resources (ConfigMaps
+// and Secrets)
+func addPGBackRestToInstancePodSpec(cluster *v1alpha1.PostgresCluster,
+	template *v1.PodTemplateSpec, instance *appsv1.StatefulSet) error {
+
+	addSSH := pgbackrest.RepoHostEnabled(cluster)
+	dedicatedRepoEnabled := pgbackrest.DedicatedRepoHostEnabled(cluster)
+	pgBackRestConfigContainers := []string{naming.ContainerDatabase}
+	if addSSH {
+		pgBackRestConfigContainers = append(pgBackRestConfigContainers,
+			naming.PGBackRestRepoContainerName)
+		if err := pgbackrest.AddSSHToPod(cluster, template, naming.ContainerDatabase); err != nil {
+			return err
+		}
+	}
+	if !dedicatedRepoEnabled {
+		if err := pgbackrest.AddRepoVolumesToPod(cluster, template,
+			pgBackRestConfigContainers...); err != nil {
+			return err
+		}
+	}
+	if err := pgbackrest.AddConfigsToPod(cluster, template, instance.Name+".conf",
+		pgBackRestConfigContainers...); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// reconcilePGDATAVolume writes instance according to spec of cluster.
+// See Reconciler.reconcileInstanceSet.
+func (r *Reconciler) reconcilePGDATAVolume(ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	spec *v1alpha1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet) error {
+
+	// generate metadata
+	meta := naming.InstancePGDataVolume(instance)
+	meta.Labels = map[string]string{
+		naming.LabelCluster:     cluster.GetName(),
+		naming.LabelInstanceSet: spec.Name,
+		naming.LabelInstance:    instance.GetName(),
+	}
+
+	pgdataVolume := &v1.PersistentVolumeClaim{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: v1.SchemeGroupVersion.String(),
+			Kind:       "PersistentVolumeClaim",
+		},
+		ObjectMeta: meta,
+		Spec:       spec.VolumeClaimSpec,
+	}
+
+	// set ownership references
+	if err := controllerutil.SetControllerReference(cluster, pgdataVolume,
+		r.Client.Scheme()); err != nil {
+		return err
+	}
+
+	if err := r.apply(ctx, pgdataVolume); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // +kubebuilder:rbac:resources=configmaps,verbs=patch

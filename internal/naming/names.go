@@ -18,6 +18,7 @@ package naming
 import (
 	"fmt"
 
+	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -52,10 +53,23 @@ const (
 	// PGBackRestSSHVolume is the name the SSH volume used when configuring SSH in a pgBackRest Pod
 	PGBackRestSSHVolume = "ssh"
 
+	// PGDATAVolume is the name of the PGDATA volume and volume mount in a PostgreSQL instance Pod
+	PGDATAVolume = "pgdata"
+
+	// PGDATAVMountPath is the path for mounting the PGDATA volume
+	PGDATAVMountPath = "/pgdata"
+
 	// suffix used with postgrescluster name for associated configmap.
 	// for instance, if the cluster is named 'mycluster', the
 	// configmap will be named 'mycluster-pgbackrest-config'
 	cmNameSuffix = "%s-pgbackrest-config"
+
+	// PGDATADirectory defines the directory structure for the PGDATA directory that is mounted to
+	// instance and pgBackRest containers
+	pgdataDirectory = PGDATAVMountPath + "/pg%d"
+
+	// suffix used for naming the PersistentVolumeClaim (PVC) for a PGDATA volume
+	pgdataPVCNameSuffix = "%s-pgdata"
 
 	// suffix used with postgrescluster name for associated configmap.
 	// for instance, if the cluster is named 'mycluster', the
@@ -118,6 +132,11 @@ func GenerateInstance(
 	}
 }
 
+// GetPGDATADirectory returns the proper PGDATA directory structure for a specific PostgresCluster
+func GetPGDATADirectory(postgresCluster *v1alpha1.PostgresCluster) string {
+	return fmt.Sprintf(pgdataDirectory, postgresCluster.Spec.PostgresVersion)
+}
+
 // InstanceConfigMap returns the ObjectMeta necessary to lookup
 // instance's shared ConfigMap.
 func InstanceConfigMap(instance metav1.Object) metav1.ObjectMeta {
@@ -133,6 +152,15 @@ func InstanceCertificates(instance metav1.Object) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: instance.GetNamespace(),
 		Name:      instance.GetName() + "-certs",
+	}
+}
+
+// InstancePGDataVolume returns the ObjectMeta for the PGDATA PersistentVolumeClaim associated with
+// a specific instance
+func InstancePGDataVolume(instance *appsv1.StatefulSet) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:      fmt.Sprintf(pgdataPVCNameSuffix, instance.GetName()),
+		Namespace: instance.GetNamespace(),
 	}
 }
 

@@ -31,8 +31,6 @@ func TestLabelsValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRest))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestConfig))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestDedicated))
-	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestSSHConfig))
-	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestSSHSecret))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRepo))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRepoHost))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRepoVolume))

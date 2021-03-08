@@ -20,6 +20,7 @@ package pgbackrest
 import (
 	"context"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -44,6 +45,7 @@ func TestPGBackRestConfiguration(t *testing.T) {
 			Namespace: testnamespace,
 		},
 		Spec: v1alpha1.PostgresClusterSpec{
+			PostgresVersion: 12,
 			Archive: v1alpha1.Archive{
 				PGBackRest: v1alpha1.PGBackRestArchive{
 					Repos: []v1alpha1.RepoVolume{{
@@ -130,7 +132,7 @@ repo1-path=/pgbackrest/repo1
 
 [db]
 pg1-host=`+testInstanceName+`-0.testcluster-pods
-pg1-path=/tmp/data_dir
+pg1-path=/pgdata/pg`+strconv.Itoa(postgresCluster.Spec.PostgresVersion)+`
 pg1-port=5432
 pg1-socket-path=/tmp
 `)
@@ -146,7 +148,7 @@ repo1-host-user=postgres
 repo1-path=/pgbackrest/repo1
 
 [db]
-pg1-path=/tmp/data_dir
+pg1-path=/pgdata/pg`+strconv.Itoa(postgresCluster.Spec.PostgresVersion)+`
 pg1-port=5432
 pg1-socket-path=/tmp
 `)

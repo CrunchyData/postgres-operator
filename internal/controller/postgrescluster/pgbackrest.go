@@ -220,11 +220,10 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 			}
 		} else {
 			_, isRepoHost := ownedRepo.GetLabels()[naming.LabelPGBackRestRepoHost]
-			repoHostEnabled := (postgresCluster.Spec.Archive.PGBackRest.RepoHost != nil)
+			repoHostEnabled := pgbackrest.RepoHostEnabled(postgresCluster)
 			_, isDedicatedRepoHost := ownedRepo.GetLabels()[naming.LabelPGBackRestDedicated]
-			dedicatedRepoEnabled := (repoHostEnabled &&
-				postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated != nil)
-			if (isRepoHost && !isDedicatedRepoHost && repoHostEnabled) ||
+			dedicatedRepoEnabled := pgbackrest.DedicatedRepoHostEnabled(postgresCluster)
+			if (!isDedicatedRepoHost && isRepoHost && repoHostEnabled) ||
 				(isDedicatedRepoHost && dedicatedRepoEnabled) {
 				found = true
 				ownedNoDelete = append(ownedNoDelete, ownedRepo)
@@ -327,11 +326,13 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1alpha1.PostgresCl
 		},
 	}
 
+	podSecurityContext := &v1.PodSecurityContext{SupplementalGroups: []int64{65534}}
 	// set fsGroups if not OpenShift
 	if postgresCluster.Spec.OpenShift == nil || !*postgresCluster.Spec.OpenShift {
 		fsGroup := int64(26)
-		repo.Spec.Template.Spec.SecurityContext = &v1.PodSecurityContext{FSGroup: &fsGroup}
+		podSecurityContext.FSGroup = &fsGroup
 	}
+	repo.Spec.Template.Spec.SecurityContext = podSecurityContext
 
 	// add ssh pod info
 	if err := pgbackrest.AddSSHToPod(postgresCluster, &repo.Spec.Template); err != nil {

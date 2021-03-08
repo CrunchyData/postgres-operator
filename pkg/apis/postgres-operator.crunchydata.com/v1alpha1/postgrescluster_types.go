@@ -38,6 +38,10 @@ type PostgresClusterSpec struct {
 	// +kubebuilder:validation:Required
 	Archive Archive `json:"archive"`
 
+	// The image name to use for PostgreSQL containers
+	// +kubebuilder:validation:Required
+	Image string `json:"image"`
+
 	// +listType=map
 	// +listMapKey=name
 	InstanceSets []PostgresInstanceSetSpec `json:"instances"`
@@ -53,6 +57,12 @@ type PostgresClusterSpec struct {
 	// +optional
 	// +kubebuilder:default=5432
 	Port *int32 `json:"port,omitempty"`
+
+	// The major version of PostgreSQL installed in the PostgreSQL container
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Minimum=10
+	// +kubebuilder:validation:Maximum=13
+	PostgresVersion int `json:"postgresVersion"`
 }
 
 func (s *PostgresClusterSpec) Default() {
@@ -113,7 +123,7 @@ type RepoHost struct {
 	// +optional
 	Dedicated *DedicatedRepo `json:"dedicated,omitempty"`
 
-	// The image name to use for the pgBackRest image
+	// The image name to use for pgBackRest containers
 	// +kubebuilder:validation:Required
 	Image string `json:"image"`
 
@@ -203,6 +213,11 @@ type PostgresInstanceSetSpec struct {
 
 	// +optional
 	Resources v1.ResourceRequirements `json:"resources,omitempty"`
+
+	// Defines a PersistentVolumeClaim spec that is utilized to create and/or bind PGDATA volumes
+	// for each PostgreSQL instance
+	// +kubebuilder:validation:Required
+	VolumeClaimSpec corev1.PersistentVolumeClaimSpec `json:"volumeClaimSpec"`
 }
 
 func (s *PostgresInstanceSetSpec) Default(i int) {

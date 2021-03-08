@@ -65,7 +65,8 @@ func TestManageControllerRefs(t *testing.T) {
 			Namespace: namespace,
 		},
 		Spec: v1alpha1.PostgresClusterSpec{
-			InstanceSets: []v1alpha1.PostgresInstanceSetSpec{{Name: "instance1"}},
+			PostgresVersion: 12,
+			InstanceSets:    []v1alpha1.PostgresInstanceSetSpec{{Name: "instance1"}},
 		},
 	}
 

@@ -42,12 +42,6 @@ const (
 	// repository host
 	LabelPGBackRestDedicated = labelPrefix + "pgbackrest-dedicated"
 
-	// LabelPGBackRestSSHConfig is used to indicate that a ConfigMap is for SSH
-	LabelPGBackRestSSHConfig = labelPrefix + "ssh-config"
-
-	// LabelPGBackRestSSHSecret is used to indicate that a Secret is for SSH
-	LabelPGBackRestSSHSecret = labelPrefix + "ssh-secret"
-
 	// LabelPGBackRestRepo is used to indicate that a Deployment or Pod is for a pgBackRest
 	// repository
 	LabelPGBackRestRepo = labelPrefix + "pgbackrest-repo"

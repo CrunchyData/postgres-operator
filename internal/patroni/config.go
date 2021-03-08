@@ -401,7 +401,7 @@ func instanceConfigFiles(cluster, instance *v1.ConfigMap) []v1.VolumeProjection 
 }
 
 // instanceYAML returns Patroni settings that apply to instance.
-func instanceYAML(_ *v1alpha1.PostgresCluster, _ metav1.Object) (string, error) {
+func instanceYAML(postgresCluster *v1alpha1.PostgresCluster, _ metav1.Object) (string, error) {
 	root := map[string]interface{}{
 		// Missing here is "name" which cannot be known until the instance Pod is
 		// created. That value should be injected using the downward API and the
@@ -424,8 +424,7 @@ func instanceYAML(_ *v1alpha1.PostgresCluster, _ metav1.Object) (string, error) 
 			// instance Pod is created. That value should be injected using the downward
 			// API and the PATRONI_POSTGRESQL_CONNECT_ADDRESS environment variable.
 
-			// FIXME(cbandy): "data_dir"
-			"data_dir": "/tmp/data_dir",
+			"data_dir": naming.GetPGDATADirectory(postgresCluster),
 
 			// Missing here is "listen" which is connascent with "connect_address".
 			// See the PATRONI_POSTGRESQL_LISTEN environment variable.

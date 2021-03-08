@@ -52,6 +52,7 @@ metadata:
 spec:
   archive:
     pgbackrest: {}
+  image: ""
   instances: null
   patroni:
     dynamicConfiguration: null
@@ -59,6 +60,7 @@ spec:
     port: 8008
     syncPeriodSeconds: 10
   port: 5432
+  postgresVersion: 0
 status: {}
 		`)+"\n")
 	})
@@ -78,16 +80,20 @@ metadata:
 spec:
   archive:
     pgbackrest: {}
+  image: ""
   instances:
   - name: "00"
     replicas: 1
     resources: {}
+    volumeClaimSpec:
+      resources: {}
   patroni:
     dynamicConfiguration: null
     leaderLeaseDurationSeconds: 30
     port: 8008
     syncPeriodSeconds: 10
   port: 5432
+  postgresVersion: 0
 status: {}
 		`)+"\n")
 	})
@@ -103,5 +109,7 @@ func TestPostgresInstanceSetSpecDefault(t *testing.T) {
 name: "05"
 replicas: 1
 resources: {}
+volumeClaimSpec:
+  resources: {}
 	`)+"\n")
 }

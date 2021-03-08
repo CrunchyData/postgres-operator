@@ -123,6 +123,7 @@ spec: {
 			cluster = create(`{
 metadata: { name: carlos },
 spec: {
+	postgresVersion: 12,
 	instances: [],
 },
 			}`)
@@ -337,14 +338,20 @@ spec: {
 		)
 
 		BeforeEach(func() {
-			cluster = create(`{
-metadata: { name: carlos },
-spec: {
-	instances: [
-		{ name: samba },
-	],
-},
-			}`)
+			cluster = create(`
+metadata:
+  name: carlos
+spec:
+  postgresVersion: 12
+  instances:
+  - name: samba
+    volumeClaimSpec:
+      accessModes:
+      - "ReadWriteMany"
+      resources:
+        requests:
+          storage: 1Gi
+`)
 			Expect(reconcile(cluster)).To(BeZero())
 
 			Expect(suite.Client.List(context.Background(), &instances,
