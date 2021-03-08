@@ -119,11 +119,21 @@ func (r *Reconciler) Reconcile(
 		return *result, nil
 	}
 
+	// TODO(cbandy): An initial user and database are created matching cluster.Name.
+	// At this time, "postgres" is special and should not be allowed.
+	if cluster.Name == "postgres" {
+		log.Info("cluster name not allowed")
+		r.Recorder.Eventf(cluster,
+			v1.EventTypeWarning, "InvalidName", "%q is not allowed", cluster.Name)
+		return result, nil
+	}
+
 	var (
 		intermediateCA       *pki.IntermediateCertificateAuthority
 		clusterConfigMap     *v1.ConfigMap
 		clusterPodService    *v1.Service
 		patroniLeaderService *v1.Service
+		pgUser               *v1.Secret
 		rootCA               *pki.RootCertificateAuthority
 		err                  error
 	)
@@ -133,19 +143,26 @@ func (r *Reconciler) Reconcile(
 	pgHBAs := postgres.HBAs{}
 	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().Local().User("postgres").Method("peer"))
 	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TCP().Replication().Method("trust"))
-	pgHBAs.Default = append(pgHBAs.Default, *postgres.NewHBA().TCP().Method("scram-sha-256"))
+	// The "md5" authentication method automatically verifies passwords encrypted
+	// using either MD5 or SCRAM-SHA-256.
+	// - https://www.postgresql.org/docs/current/auth-password.html
+	pgHBAs.Default = append(pgHBAs.Default, *postgres.NewHBA().TCP().Method("md5"))
 
 	pgParameters := postgres.Parameters{}
 	pgParameters.Mandatory = postgres.NewParameterSet()
 	pgParameters.Mandatory.Add("wal_level", "logical")
 	pgParameters.Default = postgres.NewParameterSet()
 	pgParameters.Default.Add("jit", "off")
+	pgParameters.Default.Add("password_encryption", "scram-sha-256")
 
 	if err == nil {
 		err = r.reconcilePatroniStatus(ctx, cluster)
 	}
 	if err == nil {
-		clusterConfigMap, err = r.reconcileClusterConfigMap(ctx, cluster, pgHBAs, pgParameters)
+		pgUser, err = r.reconcilePGUserSecret(ctx, cluster)
+	}
+	if err == nil {
+		clusterConfigMap, err = r.reconcileClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser)
 	}
 	if err == nil {
 		rootCA, err = r.reconcileRootCertificate(ctx, naming.PostgresOperatorNamespace)
@@ -161,10 +178,6 @@ func (r *Reconciler) Reconcile(
 	}
 	if err == nil {
 		err = r.reconcileClusterPrimaryService(ctx, cluster, patroniLeaderService)
-	}
-	if err == nil {
-		// TODO(tjmoore4): will need to do something with the returned secret
-		_, err = r.reconcilePGUserSecret(ctx, cluster)
 	}
 	if err == nil {
 		err = r.reconcilePatroniDistributedConfiguration(ctx, cluster)

@@ -43,6 +43,7 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 	var test struct {
 		Namespace  *v1.Namespace
 		Reconciler Reconciler
+		Recorder   *record.FakeRecorder
 	}
 
 	BeforeEach(func() {
@@ -55,9 +56,12 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 		// set the operator namespace variable
 		naming.PostgresOperatorNamespace = test.Namespace.Name
 
+		test.Recorder = record.NewFakeRecorder(100)
+		test.Recorder.IncludeObject = true
+
 		test.Reconciler.Client = suite.Client
 		test.Reconciler.Owner = "asdf"
-		test.Reconciler.Recorder = new(record.FakeRecorder)
+		test.Reconciler.Recorder = test.Recorder
 		test.Reconciler.Tracer = otel.Tracer("asdf")
 	})
 
@@ -97,6 +101,20 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 
 		return result
 	}
+
+	Specify(`"postgres" cluster not allowed`, func() {
+		cluster := create(`{
+metadata: { name: postgres },
+spec: {
+	instances: [],
+},
+		}`)
+		Expect(reconcile(cluster)).To(BeZero())
+
+		Expect(test.Recorder.Events).To(Not(BeEmpty()))
+		Expect(<-test.Recorder.Events).To(Equal(`Warning InvalidName "postgres" is not allowed` +
+			` involvedObject{kind=PostgresCluster,apiVersion=postgres-operator.crunchydata.com/v1alpha1}`))
+	})
 
 	Context("Cluster", func() {
 		var cluster *v1alpha1.PostgresCluster

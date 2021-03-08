@@ -18,6 +18,7 @@ package patroni
 import (
 	"fmt"
 	"path"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,9 +40,15 @@ const (
 		"# Your changes will not be saved.\n"
 )
 
+// quoteShellWord ensures that s is interpreted by a shell as single word.
+func quoteShellWord(s string) string {
+	// https://www.gnu.org/software/bash/manual/html_node/Quoting.html
+	return `'` + strings.ReplaceAll(s, `'`, `'"'"'`) + `'`
+}
+
 // clusterYAML returns Patroni settings that apply to the entire cluster.
 func clusterYAML(
-	cluster *v1alpha1.PostgresCluster,
+	cluster *v1alpha1.PostgresCluster, pgUser *v1.Secret,
 	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
 ) (string, error) {
 	root := map[string]interface{}{
@@ -160,8 +167,30 @@ func clusterYAML(
 			)
 		}
 
+		// TODO(cbandy): This belongs somewhere else; postgres package?
+		sql := `
+CREATE ROLE :"user" LOGIN PASSWORD :'password';
+CREATE DATABASE :"dbname";
+GRANT ALL PRIVILEGES ON DATABASE :"dbname" TO :"user";
+`
+
 		root["bootstrap"] = map[string]interface{}{
 			"dcs": DynamicConfiguration(cluster, configuration, pgHBAs, pgParameters),
+
+			// Pass generated values as variables to psql and use --file to
+			// interpolate them safely in the initialization SQL.
+			// - https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-INTERPOLATION
+			"post_bootstrap": "bash -c " + quoteShellWord("psql"+
+				" --set=ON_ERROR_STOP=1"+
+				" --set=dbname="+quoteShellWord(string(pgUser.Data["dbname"]))+
+				" --set=password="+quoteShellWord(string(pgUser.Data["verifier"]))+
+				" --set=user="+quoteShellWord(string(pgUser.Data["user"]))+
+				" --file=- <<< "+quoteShellWord(sql),
+			),
+
+			// Missing here is "users" which runs *after* "post_boostrap". It is
+			// not possible to use roles created by the former in the latter.
+			// - https://github.com/zalando/patroni/issues/667
 		}
 	}
 

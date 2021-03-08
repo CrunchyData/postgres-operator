@@ -27,6 +27,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
+	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
@@ -37,7 +38,7 @@ import (
 // files (etc) that apply to the entire cluster.
 func (r *Reconciler) reconcileClusterConfigMap(
 	ctx context.Context, cluster *v1alpha1.PostgresCluster,
-	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
+	pgHBAs postgres.HBAs, pgParameters postgres.Parameters, pgUser *v1.Secret,
 ) (*v1.ConfigMap, error) {
 	clusterConfigMap := &v1.ConfigMap{ObjectMeta: naming.ClusterConfigMap(cluster)}
 	clusterConfigMap.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("ConfigMap"))
@@ -49,7 +50,7 @@ func (r *Reconciler) reconcileClusterConfigMap(
 	}
 
 	if err == nil {
-		err = patroni.ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, clusterConfigMap)
+		err = patroni.ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser, clusterConfigMap)
 	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, clusterConfigMap))
@@ -202,9 +203,19 @@ func (r *Reconciler) reconcilePGUserSecret(
 		if err != nil {
 			return nil, err
 		}
+		// Generate the SCRAM verifier now and store alongside the plaintext
+		// password so that later reconciles don't generate it repeatedly.
+		// NOTE(cbandy): We don't have a function to compare a plaintext password
+		// to a SCRAM verifier.
+		verifier, err := pgpassword.NewSCRAMPassword(password).Build()
+		if err != nil {
+			return nil, err
+		}
 		intent.Data["password"] = []byte(password)
+		intent.Data["verifier"] = []byte(verifier)
 	} else {
 		intent.Data["password"] = existing.Data["password"]
+		intent.Data["verifier"] = existing.Data["verifier"]
 	}
 
 	hostname := naming.ClusterPrimaryService(cluster).Name + "." +

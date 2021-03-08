@@ -33,6 +33,7 @@ func ClusterConfigMap(ctx context.Context,
 	inCluster *v1alpha1.PostgresCluster,
 	inHBAs postgres.HBAs,
 	inParameters postgres.Parameters,
+	inPGUser *v1.Secret,
 	outClusterConfigMap *v1.ConfigMap,
 ) error {
 	var err error
@@ -41,7 +42,7 @@ func ClusterConfigMap(ctx context.Context,
 		outClusterConfigMap.Data = make(map[string]string)
 	}
 
-	outClusterConfigMap.Data[configMapFileKey], err = clusterYAML(inCluster, inHBAs, inParameters)
+	outClusterConfigMap.Data[configMapFileKey], err = clusterYAML(inCluster, inPGUser, inHBAs, inParameters)
 
 	return err
 }

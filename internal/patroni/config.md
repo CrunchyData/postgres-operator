@@ -234,7 +234,7 @@ acquiring the leader lock, the Patroni leader:
 ||
 | - | bootstrap.dcs                       | No | immutable | cluster | Mapping to load into DCS when initializing a new cluster.
 | - | bootstrap.pg_hba                    | No | immutable | cluster | Lines of HBA to use when no `postgresql.pg_hba` nor `postgresql.parameters.hba_file`.
-| - | bootstrap.post_bootstrap            | No | immutable | cluster | Command to execute after PostgreSQL is initialized and running.
+| - | bootstrap.post_bootstrap            | No | immutable | cluster | Command to execute after PostgreSQL is initialized and running but before "users" below. (string)
 | - | bootstrap.users.{username}.options  | No | immutable | cluster | List of options for `CREATE ROLE` SQL.
 | - | bootstrap.users.{username}.password | No | immutable | cluster | Password for the role. (optional)
 ||

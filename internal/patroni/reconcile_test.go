@@ -40,15 +40,17 @@ func TestClusterConfigMap(t *testing.T) {
 	config := new(v1.ConfigMap)
 	pgHBAs := postgres.HBAs{}
 	pgParameters := postgres.Parameters{}
-	data, _ := clusterYAML(cluster, pgHBAs, pgParameters)
+	pgUser := new(v1.Secret)
 
-	assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, config))
+	assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser, config))
 
+	// The output of clusterYAML should go into config.
+	data, _ := clusterYAML(cluster, pgUser, pgHBAs, pgParameters)
 	assert.DeepEqual(t, config.Data["patroni.yaml"], data)
 
 	// No change when called again.
 	before := config.DeepCopy()
-	assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, config))
+	assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser, config))
 	assert.DeepEqual(t, config, before)
 }
 
