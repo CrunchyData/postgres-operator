@@ -63,7 +63,7 @@ Use [pgBouncer][] for connection pooling
 
 #### Affinity and Tolerations
 
-Have your PostgreSQL clusters deployed to [Kubernetes Nodes][k8s-nodes] of your preference with [node affinity][high-availability-node-affinity], or designate which nodes Kubernetes can schedule PostgreSQL instances to with Kubneretes [tolerations][high-availability-tolerations].
+Have your PostgreSQL clusters deployed to [Kubernetes Nodes][k8s-nodes] of your preference with [node affinity][high-availability-node-affinity], or designate which nodes Kubernetes can schedule PostgreSQL instances to with Kubernetes [tolerations][high-availability-tolerations].
 
 #### Scheduled Backups
 
