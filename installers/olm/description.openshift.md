@@ -17,7 +17,7 @@ providing the essential features you need to keep your PostgreSQL clusters up an
 - **Clone**: Create new clusters from your existing clusters or backups with a single [`pgo create cluster --restore-from`][pgo-create-cluster] command.
 - **TLS**: Secure communication between your applications and data servers by [enabling TLS for your PostgreSQL servers][pgo-task-tls], including the ability to enforce that all of your connections to use TLS.
 - **Connection Pooling**: Use [pgBouncer][] for connection pooling
-- **Affinity and Tolerations**: Have your PostgreSQL clusters deployed to [Kubernetes Nodes][k8s-nodes] of your preference with [node affinity][high-availability-node-affinity], or designate which nodes Kubernetes can schedule PostgreSQL instances to with Kubneretes [tolerations][high-availability-tolerations].
+- **Affinity and Tolerations**: Have your PostgreSQL clusters deployed to [Kubernetes Nodes][k8s-nodes] of your preference with [node affinity][high-availability-node-affinity], or designate which nodes Kubernetes can schedule PostgreSQL instances to with Kubernetes [tolerations][high-availability-tolerations].
 - **Full Customizability**: Crunchy PostgreSQL for OpenShift makes it easy to get your own PostgreSQL-as-a-Service up and running on
   and lets make further enhancements to customize your deployments, including:
     - Selecting different storage classes for your primary, replica, and backup storage
