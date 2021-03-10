@@ -106,6 +106,7 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 		cluster := create(`{
 metadata: { name: postgres },
 spec: {
+	postgresVersion: 12,
 	instances: [],
 },
 		}`)
