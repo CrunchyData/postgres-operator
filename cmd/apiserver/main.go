@@ -156,7 +156,22 @@ func main() {
 			ClientAuth:         tls.VerifyClientCertIfGiven,
 			InsecureSkipVerify: tlsNoVerify,
 			ClientCAs:          tlsTrustedCAs,
-			MinVersion:         tls.VersionTLS11,
+			MinVersion:         tls.VersionTLS12, // TLS versions < 1.2 are deprecated since NIST SP 800-52 Rev. 2, Aug 2019
+			// Suites based on the intersection of OpenSSL's FIPS TLSv1.2 cipher suties [1],
+			// SSL Lab's Best Practices [2] plus their additional discouragement of CBC [3],
+			// and what's available for selection within Go TLS's library [4].
+			// [1] https://wiki.openssl.org/index.php/FIPS_mode_and_TLS#TLS_1.2
+			// [2] https://github.com/ssllabs/research/wiki/SSL-and-TLS-Deployment-Best-Practices
+			// [3] https://blog.qualys.com/product-tech/2019/04/22/zombie-poodle-and-goldendoodle-vulnerabilities
+			// [4] https://golang.org/pkg/crypto/tls/#pkg-constants
+			CipherSuites: []uint16{
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+			},
 		}
 
 		srv = &http.Server{
