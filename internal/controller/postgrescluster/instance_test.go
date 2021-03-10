@@ -19,7 +19,6 @@ package postgrescluster
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -161,8 +160,6 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 			if !dedicated {
 				for _, r := range postgresCluster.Spec.Archive.PGBackRest.Repos {
 					var foundRepo bool
-					prettyJSON, _ := json.MarshalIndent(template.Spec.Volumes, "", "    ")
-					fmt.Printf("%s\n", string(prettyJSON))
 					for _, v := range template.Spec.Volumes {
 						if r.Name == v.Name {
 							foundRepo = true
