@@ -160,6 +160,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 			cluster := &v1alpha1.PostgresCluster{}
 			assert.NilError(t, yaml.Unmarshal([]byte(`{
 				spec: {
+					postgresVersion: 12,
 					instances: [
 						{ replicas: 2 },
 					],
