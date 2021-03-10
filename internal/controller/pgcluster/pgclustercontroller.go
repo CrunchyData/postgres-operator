@@ -191,11 +191,21 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// if the 'shutdown' parameter in the pgcluster update shows that the cluster should be either
 	// shutdown or started but its current status does not properly reflect that it is, then
 	// proceed with the logic needed to either shutdown or start the cluster
+	//
+	// we do need to check if the status has info in it. There have been cases
+	// where the entire status has been removed that could be external to the
+	// operator itself. In the case of checking that the state is in a shutdown
+	// phase, we also want to check if the status is completely empty. If it is,
+	// we will proceed with the shutdown.
 	if newcluster.Spec.Shutdown && newcluster.Status.State != crv1.PgclusterStateShutdown {
-		_ = clusteroperator.ShutdownCluster(c.Client, *newcluster)
+		if err := clusteroperator.ShutdownCluster(c.Client, *newcluster); err != nil {
+			log.Error(err)
+		}
 	} else if !newcluster.Spec.Shutdown &&
-		newcluster.Status.State == crv1.PgclusterStateShutdown {
-		_ = clusteroperator.StartupCluster(c.Client, *newcluster)
+		(newcluster.Status.State == crv1.PgclusterStateShutdown || newcluster.Status.State == "") {
+		if err := clusteroperator.StartupCluster(c.Client, *newcluster); err != nil {
+			log.Error(err)
+		}
 	}
 
 	// check to see if autofail setting has been changed. If set to "true", it
