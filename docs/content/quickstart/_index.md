@@ -98,20 +98,18 @@ You can create a Postgres Cluster using the example Kustomization file:
 kubectl apply -k examples/postgrescluster
 ```
 
-Get the name of the primary PostgreSQL pod
+## Connect to the Postgres cluster
 
-```
-PG_CLUSTER_PRIMARY_POD=$(kubectl get pod -n postgres-operator -o name \
-  -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/role=master)
-```
+As part of creating a Postgres cluster, the Postgres Operator creates a PostgreSQL user account. The credentials for this account are stored in a Secret that has the name `<clusterName>-pguser`.
 
-Create a user and a database:
+Within this Secret are attributes that provide information to let you log into the PostgreSQL cluster. These include:
 
-```
-kubectl exec -it -n postgres-operator "${PG_CLUSTER_PRIMARY_POD}" -- psql -c "SET password_encryption TO 'scram-sha-256'; CREATE ROLE hippo LOGIN PASSWORD 'datalake'"
-kubectl exec -it -n postgres-operator "${PG_CLUSTER_PRIMARY_POD}" -- psql -c "CREATE DATABASE hippo OWNER hippo"
-kubectl exec -it -n postgres-operator "${PG_CLUSTER_PRIMARY_POD}" -- psql hippo -c "CREATE SCHEMA hippo AUTHORIZATION hippo"
-```
+- `user`: The name of the user account.
+- `password`: The password for the user account.
+- `dbname`: The name of the database that the user has access to by default.
+- `uri`: A [PostgreSQL connection URI](https://www.postgresql.org/docs/current/libpq-connect.html#id-1.7.3.8.3.6) that provides all the information for logging into the Postgres database.
+
+### Connect via `psql` in the Terminal
 
 In a new terminal, create a port forward:
 
@@ -121,10 +119,15 @@ PG_CLUSTER_PRIMARY_POD=$(kubectl get pod -n postgres-operator -o name \
 kubectl -n postgres-operator port-forward "${PG_CLUSTER_PRIMARY_POD}" 5432:5432
 ```
 
-Connect to the Postgres cluster:
+Establish a connection to the PostgreSQL cluster.
 
 ```
-PGPASSWORD=datalake psql -h localhost -U hippo hippo
+PG_CLUSTER_USER_SECRET_NAME=hippo-pguser
+
+PGPASSWORD=$(kubectl get secrets -n postgres-operator "${PG_CLUSTER_USER_SECRET_NAME}" -o jsonpath="{.data.password}" | base64 -d) \
+PGUSER=$(kubectl get secrets -n postgres-operator "${PG_CLUSTER_USER_SECRET_NAME}" -o jsonpath="{.data.user}" | base64 -d) \
+PGDBNAME=$(kubectl get secrets -n postgres-operator "${PG_CLUSTER_USER_SECRET_NAME}" -o jsonpath="{.data.dbname}" | base64 -d) \
+psql -h localhost
 ```
 
 ## Scale a Postgres Cluster
