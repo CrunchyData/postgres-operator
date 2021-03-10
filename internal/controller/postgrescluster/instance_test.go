@@ -301,15 +301,17 @@ func TestReconcilePGDATAVolume(t *testing.T) {
 		},
 	}}
 
-	namespace := "test-reconcile-pgdata-volume"
+	ns := &corev1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	assert.NilError(t, tClient.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
+	namespace := ns.Name
+
 	clusterName := "hippo"
 	clusterUID := types.UID("hippouid")
 	postgresCluster := &v1alpha1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{Name: clusterName, Namespace: namespace, UID: clusterUID},
 	}
-
-	err := tClient.Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
-	assert.NilError(t, err)
 
 	for _, tc := range testCases {
 

@@ -61,14 +61,13 @@ func TestReconcilePGBackRest(t *testing.T) {
 
 	clusterName := "hippocluster"
 	clusterUID := types.UID("hippouid")
-	namespace := "test-reconcile-pgbackrest"
 	pgBackRestImage := "testimage"
 
-	// create the test namespace
-	if err := tClient.Create(ctx,
-		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}); err != nil {
-		t.Error(err)
-	}
+	ns := &v1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	assert.NilError(t, tClient.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
+	namespace := ns.Name
 
 	// create a PostgresCluster to test with
 	postgresCluster := &v1alpha1.PostgresCluster{

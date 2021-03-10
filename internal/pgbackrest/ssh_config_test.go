@@ -31,6 +31,7 @@ import (
 	"gotest.tools/v3/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -76,7 +77,7 @@ func TestSSHDConfiguration(t *testing.T) {
 	postgresCluster := &v1alpha1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testclustername,
-			Namespace: testnamespace,
+			Namespace: "postgres-operator-test-" + rand.String(6),
 		},
 	}
 
@@ -101,6 +102,11 @@ func TestSSHDConfiguration(t *testing.T) {
 			teardownTestEnv(t, testEnv)
 		})
 
+		ns := &v1.Namespace{}
+		ns.Name = naming.PGBackRestConfig(postgresCluster).Namespace
+		assert.NilError(t, testClient.Create(context.Background(), ns))
+		t.Cleanup(func() { assert.Check(t, testClient.Delete(context.Background(), ns)) })
+
 		t.Run("create ssh configmap struct", func(t *testing.T) {
 			sshCMInitial = CreateSSHConfigMapIntent(postgresCluster)
 
@@ -120,17 +126,6 @@ func TestSSHDConfiguration(t *testing.T) {
 
 			// check that there is configmap data
 			assert.Assert(t, secretInitial.Data != nil)
-		})
-
-		t.Run("create test namespace", func(t *testing.T) {
-			// create the test namespace
-			err := testClient.Create(context.Background(), &v1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: testnamespace,
-				},
-			})
-
-			assert.NilError(t, err)
 		})
 
 		t.Run("create ssh configmap", func(t *testing.T) {

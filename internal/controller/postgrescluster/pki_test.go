@@ -26,7 +26,6 @@ import (
 
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -55,13 +54,12 @@ func TestReconcileCerts(t *testing.T) {
 	}
 
 	clusterName := "hippocluster"
-	namespace := "hippo"
 
-	// create the test namespace
-	if err := tClient.Create(ctx,
-		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}); err != nil {
-		t.Error(err)
-	}
+	ns := &v1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	assert.NilError(t, tClient.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
+	namespace := ns.Name
 
 	t.Run("check root certificate reconciliation", func(t *testing.T) {
 

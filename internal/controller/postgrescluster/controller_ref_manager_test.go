@@ -21,9 +21,12 @@ import (
 	"testing"
 
 	"go.opentelemetry.io/otel"
+	"gotest.tools/v3/assert"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -50,13 +53,12 @@ func TestManageControllerRefs(t *testing.T) {
 	})
 
 	clusterName := "hippo"
-	namespace := "test-manage-controller-refs"
+	namespace := "postgres-operator-test-" + rand.String(6)
 
-	// create the test namespace
-	if err := tClient.Create(ctx,
-		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}); err != nil {
-		t.Error(err)
-	}
+	ns := &corev1.Namespace{}
+	ns.Name = namespace
+	assert.NilError(t, tClient.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
 
 	// create a PostgresCluster to test with
 	postgresCluster := &v1alpha1.PostgresCluster{

@@ -32,6 +32,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -70,16 +71,15 @@ func TestReconcilePGUserSecret(t *testing.T) {
 	var (
 		postgresPort             = int32(5432)
 		clusterName              = "hippocluster"
-		namespace                = "hippo"
+		namespace                = "postgres-operator-test-" + rand.String(6)
 		clusterUID               = types.UID("hippouid")
 		returnedConnectionString string
 	)
 
-	// create the test namespace
-	if err := tClient.Create(ctx,
-		&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}); err != nil {
-		t.Error(err)
-	}
+	ns := &corev1.Namespace{}
+	ns.Name = namespace
+	assert.NilError(t, tClient.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
 
 	// create a PostgresCluster to test with
 	postgresCluster := &v1alpha1.PostgresCluster{
@@ -126,7 +126,7 @@ func TestReconcilePGUserSecret(t *testing.T) {
 
 		testConnectionString := (&url.URL{
 			Scheme: "postgresql",
-			Host:   fmt.Sprintf("%s:%d", "hippocluster-primary.hippo.svc", *postgresCluster.Spec.Port),
+			Host:   fmt.Sprintf("%s.%s.svc:%d", "hippocluster-primary", namespace, *postgresCluster.Spec.Port),
 			User:   url.UserPassword(string(pgUserSecret.Data["user"]), string(pgUserSecret.Data["password"])),
 			Path:   string(pgUserSecret.Data["dbname"]),
 		}).String()

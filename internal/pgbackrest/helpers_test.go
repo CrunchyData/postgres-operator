@@ -35,7 +35,6 @@ import (
 
 // Testing namespace and postgrescluster name
 const (
-	testnamespace   = "testnamespace"
 	testclustername = "testcluster"
 	testFieldOwner  = "pgbackrestConfigTestFieldOwner"
 )

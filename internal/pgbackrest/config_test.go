@@ -27,6 +27,7 @@ import (
 	"gotest.tools/v3/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -42,7 +43,7 @@ func TestPGBackRestConfiguration(t *testing.T) {
 	postgresCluster := &v1alpha1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testclustername,
-			Namespace: testnamespace,
+			Namespace: "postgres-operator-test-" + rand.String(6),
 		},
 		Spec: v1alpha1.PostgresClusterSpec{
 			PostgresVersion: 12,
@@ -91,17 +92,13 @@ func TestPGBackRestConfiguration(t *testing.T) {
 
 		t.Run("create pgbackrest configmap", func(t *testing.T) {
 
-			// create the test namespace
-			err := testClient.Create(context.Background(), &v1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: testnamespace,
-				},
-			})
-
-			assert.NilError(t, err)
+			ns := &v1.Namespace{}
+			ns.Name = naming.PGBackRestConfig(postgresCluster).Namespace
+			assert.NilError(t, testClient.Create(context.Background(), ns))
+			t.Cleanup(func() { assert.Check(t, testClient.Delete(context.Background(), ns)) })
 
 			// create the configmap
-			err = testClient.Patch(context.Background(), cmInitial, client.Apply, client.ForceOwnership, client.FieldOwner(testFieldOwner))
+			err := testClient.Patch(context.Background(), cmInitial, client.Apply, client.ForceOwnership, client.FieldOwner(testFieldOwner))
 
 			assert.NilError(t, err)
 		})
