@@ -48,8 +48,6 @@ func TestReconcilePGUserSecret(t *testing.T) {
 	v1alpha1.AddToScheme(testScheme)
 
 	// set up a non-cached client
-	cfg, err := tEnv.Start()
-	assert.NilError(t, err)
 	newClient, err := client.New(cfg, client.Options{Scheme: testScheme})
 	assert.NilError(t, err)
 
