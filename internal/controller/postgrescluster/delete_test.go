@@ -44,6 +44,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
@@ -78,6 +79,9 @@ func TestReconcilerHandleDelete(t *testing.T) {
 	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
 	assert.NilError(t, cc.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+
+	// set the operator namespace variable
+	naming.PostgresOperatorNamespace = ns.Name
 
 	// TODO(cbandy): namespace rbac
 	assert.NilError(t, cc.Create(ctx, &v1.ServiceAccount{
