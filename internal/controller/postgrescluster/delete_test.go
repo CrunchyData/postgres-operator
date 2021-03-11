@@ -34,6 +34,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -42,7 +43,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
@@ -161,18 +161,29 @@ func TestReconcilerHandleDelete(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			g := gomega.NewWithT(t)
 
-			cluster := &v1alpha1.PostgresCluster{}
-			assert.NilError(t, yaml.Unmarshal([]byte(`{
-				spec: {
-					postgresVersion: 12,
-					instances: [
-						{ replicas: 2 },
-					],
+			replicas := int32(2)
+			cluster := &v1alpha1.PostgresCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      strings.ToLower(test.name),
+					Namespace: ns.Name,
 				},
-			}`), cluster))
+				Spec: v1alpha1.PostgresClusterSpec{
+					Image:           "gcr.io/crunchy-dev-test/crunchy-postgres-ha:centos8-12.6-multi.dev2",
+					PostgresVersion: 12,
+					InstanceSets: []v1alpha1.PostgresInstanceSetSpec{{
+						Replicas: &replicas,
+						VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
+							AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
+							Resources: v1.ResourceRequirements{
+								Requests: map[v1.ResourceName]resource.Quantity{
+									v1.ResourceStorage: resource.MustParse("1Gi"),
+								},
+							},
+						},
+					}},
+				},
+			}
 
-			cluster.Namespace = ns.Name
-			cluster.Name = strings.ToLower(test.name)
 			assert.NilError(t, cc.Create(ctx, cluster))
 
 			t.Cleanup(func() {
@@ -206,7 +217,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 					client.MatchingLabelsSelector{Selector: selector}))
 				return list.Items
 			},
-				"30s", // timeout
+				"60s", // timeout
 				"1s",  // interval
 			).Should(gstruct.MatchElements(
 				func(interface{}) string { return "each" },
@@ -255,7 +266,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 					client.MatchingLabelsSelector{Selector: selector}))
 				return list.Items
 			},
-				"30s", // timeout
+				"60s", // timeout
 				"1s",  // interval
 			).Should(gomega.ConsistOf(
 				gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
@@ -310,7 +321,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 
 				return cc.Get(ctx, client.ObjectKeyFromObject(cluster), cluster)
 			},
-				"30s", // timeout
+				"60s", // timeout
 				"1s",  // interval
 			).Should(
 				gomega.SatisfyAll(
@@ -332,7 +343,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 					client.MatchingLabelsSelector{Selector: selector}))
 				return list.Items
 			},
-				"10s", // timeout
+				"20s", // timeout
 				"1s",  // interval
 			).Should(gomega.BeEmpty(), "Patroni DCS objects should be gone")
 		})
