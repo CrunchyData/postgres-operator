@@ -16,7 +16,7 @@
 GCR_IMAGE_PREFIX=gcr.io/crunchy-dev-test
 
 CCP_IMAGE_PREFIX=crunchydata
-CCP_IMAGE_TAG=centos8-13.2-4.6.1
+CCP_IMAGE_TAG=centos8-13.2-4.6.2
 
 IMAGES=(
 crunchy-prometheus
