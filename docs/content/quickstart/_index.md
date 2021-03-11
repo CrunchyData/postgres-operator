@@ -52,32 +52,9 @@ When the PostgreSQL Operator is done installing, run the client setup script:
 ./client-setup.sh
 ```
 
-This will download the `pgo` client and provide instructions for how to easily use it in your environment. It will prompt you to add some environmental variables for you to set up in your session, which you can do with the following commands:
+This will download the `pgo` client and provide instructions for how to easily use it in your environment. It will prompt you to add some environmental variables for you to set up in your session.
 
-
-```
-export PGOUSER="${HOME?}/.pgo/pgo/pgouser"
-export PGO_CA_CERT="${HOME?}/.pgo/pgo/client.crt"
-export PGO_CLIENT_CERT="${HOME?}/.pgo/pgo/client.crt"
-export PGO_CLIENT_KEY="${HOME?}/.pgo/pgo/client.key"
-export PGO_APISERVER_URL='https://127.0.0.1:8443'
-export PGO_NAMESPACE=pgo
-```
-
-If you wish to permanently add these variables to your environment, you can run the following:
-
-```
-cat <<EOF >> ~/.bashrc
-export PGOUSER="${HOME?}/.pgo/pgo/pgouser"
-export PGO_CA_CERT="${HOME?}/.pgo/pgo/client.crt"
-export PGO_CLIENT_CERT="${HOME?}/.pgo/pgo/client.crt"
-export PGO_CLIENT_KEY="${HOME?}/.pgo/pgo/client.key"
-export PGO_APISERVER_URL='https://127.0.0.1:8443'
-export PGO_NAMESPACE=pgo
-EOF
-
-source ~/.bashrc
-```
+If you wish to permanently add these variables to your environment, you can add them to your `~/.bashrc`:
 
 **NOTE**: For macOS users, you must use `~/.bash_profile` instead of `~/.bashrc`
 
@@ -111,7 +88,16 @@ NAME                                READY   STATUS    RESTARTS   AGE
 postgres-operator-56d6ccb97-tmz7m   4/4     Running   0          2m
 ```
 
-Finally, let's see if we can connect to the PostgreSQL Operator from the `pgo` command-line client. The Ansible installer installs the `pgo` command line client into your environment, along with the username/password file that allows you to access the PostgreSQL Operator. In order to communicate with the PostgreSQL Operator API server, you will first need to set up a [port forward](https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/) to your local environment.
+Finally, let's see if we can connect to the PostgreSQL Operator from the `pgo` command-line client. The client setup script installs the `pgo` command line client into your environment, along with files that allow you to access the PostgreSQL Operator. In order to communicate with the PostgreSQL Operator API server, you need to know its URL. 
+
+You probably already expored the `PGO_APISERVER_URL` after you executed the client setup script. In that case you can run:
+```
+pgo version
+```
+
+_or_
+
+You can set up a [port forward](https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/) in your local environment.
 
 In a new console window, run the following command to set up a port forward:
 

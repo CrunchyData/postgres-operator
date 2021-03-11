@@ -79,8 +79,11 @@ kubectl_get_private "${OUTPUT_DIR}/client.crt" secret -n "${PGO_OPERATOR_NAMESPA
 kubectl_get_private "${OUTPUT_DIR}/client.key" secret -n "${PGO_OPERATOR_NAMESPACE}" pgo.tls -o 'go-template={{ index .data "tls.key" | base64decode }}'
 
 echo "pgo client files have been generated, please add the following to your bashrc"
+echo "export PGO_OPERATOR_NAMESPACE=$PGO_OPERATOR_NAMESPACE"
+echo "export PGO_NAMESPACE=$PGO_OPERATOR_NAMESPACE"
 echo "export PATH=${OUTPUT_DIR}:\$PATH"
 echo "export PGOUSER=${OUTPUT_DIR}/pgouser"
 echo "export PGO_CA_CERT=${OUTPUT_DIR}/client.crt"
 echo "export PGO_CLIENT_CERT=${OUTPUT_DIR}/client.crt"
 echo "export PGO_CLIENT_KEY=${OUTPUT_DIR}/client.key"
+echo "export PGO_APISERVER_URL=\"https://$(kubectl get svc postgres-operator -n $PGO_OPERATOR_NAMESPACE -o=jsonpath='{.spec.clusterIP}'):8443\""
