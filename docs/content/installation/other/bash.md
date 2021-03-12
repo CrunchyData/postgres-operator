@@ -94,6 +94,7 @@ Inside `conf/postgres-operator/pgo.yaml` there are various storage configuration
     WALStorage: gce
     BackupStorage: gce
     ReplicaStorage: gce
+    PGAdminStorage: gce
       gce:
         AccessMode:  ReadWriteOnce
         Size:  1G

@@ -255,6 +255,7 @@ type PgoConfig struct {
 	BackupStorage   string
 	ReplicaStorage  string
 	BackrestStorage string
+	PGAdminStorage  string
 	Storage         map[string]StorageStruct
 	OpenShift       bool
 }
@@ -322,6 +323,10 @@ func (c *PgoConfig) Validate() error {
 		}
 		if _, ok := c.Storage[c.ReplicaStorage]; !ok {
 			return storageNotDefined("ReplicaStorage", c.ReplicaStorage)
+		}
+		if _, ok := c.Storage[c.PGAdminStorage]; !ok {
+			log.Warning("PGAdminStorage setting not set, will use PrimaryStorage setting")
+			c.Storage[c.PGAdminStorage] = c.Storage[c.PrimaryStorage]
 		}
 		if _, ok := c.Storage[c.WALStorage]; c.WALStorage != "" && !ok {
 			return storageNotDefined("WALStorage", c.WALStorage)

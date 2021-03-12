@@ -35,6 +35,13 @@ command:
 pgo create pgadmin hippo
 ```
 
+This will use the configured storage configuration and default PVC size. If desired, 
+you can set a custom storage configuration (in this case `gce`) and PVC size using:
+
+```
+pgo create pgadmin hippo --storage-config=gce --pvc-size=1G
+```
+
 This creates a pgAdmin 4 deployment unique to this PostgreSQL cluster and
 synchronizes the PostgreSQL user information into it. To access pgAdmin 4, you
 can set up a port-forward to the Service, which follows the pattern `<clusterName>-pgadmin`, to port `5050`:

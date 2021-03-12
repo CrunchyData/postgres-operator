@@ -27,7 +27,7 @@ var (
 	ClusterReplicaCount                                                                          int
 	ManagedUser                                                                                  bool
 	AllNamespaces                                                                                bool
-	BackrestStorageConfig, ReplicaStorageConfig, StorageConfig                                   string
+	BackrestStorageConfig, PGAdminStorageConfig, ReplicaStorageConfig, StorageConfig             string
 	CustomConfig                                                                                 string
 	ArchiveFlag, DisableAutofailFlag, EnableAutofailFlag, PgbouncerFlag, MetricsFlag, BadgerFlag bool
 	BackrestRestoreFrom                                                                          string
@@ -67,6 +67,7 @@ var (
 	BackrestS3VerifyTLS                                                                          bool
 	PVCSize                                                                                      string
 	BackrestPVCSize                                                                              string
+	PGAdminPVCSize                                                                               string
 	WALStorageConfig                                                                             string
 	WALPVCSize                                                                                   string
 	RestoreFrom                                                                                  string
@@ -526,6 +527,9 @@ func init() {
 
 	// pgo create pgadmin
 	createPgAdminCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
+	createPgAdminCmd.Flags().StringVarP(&PGAdminStorageConfig, "storage-config", "", "", "The name of the storage config in pgo.yaml to use for pgAdmin.")
+	createPgAdminCmd.Flags().StringVarP(&PGAdminPVCSize, "pvc-size", "", "",
+		`The size of the PVC capacity for pgAdmin. Overrides the value set in the storage class. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
 
 	// pgo create pgbouncer
 	createPgbouncerCmd.Flags().StringVar(&PgBouncerCPURequest, "cpu", "", "Set the number of millicores to request for CPU "+

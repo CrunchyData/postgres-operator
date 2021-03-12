@@ -44,6 +44,8 @@ func createPgAdmin(args []string, ns string) {
 		ClientVersion: msgs.PGO_VERSION,
 		Namespace:     ns,
 		Selector:      Selector,
+		StorageConfig: PGAdminStorageConfig,
+		PVCSize:       PGAdminPVCSize,
 	}
 
 	response, err := api.CreatePgAdmin(httpclient, &SessionCredentials, &request)
