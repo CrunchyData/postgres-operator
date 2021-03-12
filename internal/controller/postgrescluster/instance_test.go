@@ -268,6 +268,7 @@ func TestReconcilePGDATAVolume(t *testing.T) {
 					v1.ResourceStorage: resource.MustParse("1Gi"),
 				},
 			},
+			StorageClassName: new(string),
 		},
 	}, {
 		Name: "instance2",
