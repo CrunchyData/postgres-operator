@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -55,7 +54,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 					Repos: []v1alpha1.RepoVolume{{
 						Name: "repo1",
 						VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-							AccessModes: []v1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+							AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
 							Resources: v1.ResourceRequirements{
 								Requests: map[v1.ResourceName]resource.Quantity{
 									v1.ResourceStorage: resource.MustParse("1Gi"),
@@ -65,7 +64,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 					}, {
 						Name: "repo2",
 						VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-							AccessModes: []v1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+							AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
 							Resources: v1.ResourceRequirements{
 								Requests: map[v1.ResourceName]resource.Quantity{
 									v1.ResourceStorage: resource.MustParse("2Gi"),
@@ -98,7 +97,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 	}, {
 		repoHost: &v1alpha1.RepoHost{
 			Dedicated: &v1alpha1.DedicatedRepo{
-				Resources: &corev1.ResourceRequirements{},
+				Resources: &v1.ResourceRequirements{},
 			},
 			Image: pgBackRestImage,
 		},
@@ -119,7 +118,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 	}, {
 		repoHost: &v1alpha1.RepoHost{
 			Dedicated: &v1alpha1.DedicatedRepo{
-				Resources: &corev1.ResourceRequirements{},
+				Resources: &v1.ResourceRequirements{},
 			},
 			Image: pgBackRestImage,
 		},
@@ -262,7 +261,7 @@ func TestReconcilePGDATAVolume(t *testing.T) {
 	testCases := []v1alpha1.PostgresInstanceSetSpec{{
 		Name: "instance1",
 		VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
 			Resources: v1.ResourceRequirements{
 				Requests: map[v1.ResourceName]resource.Quantity{
 					v1.ResourceStorage: resource.MustParse("1Gi"),
@@ -273,7 +272,7 @@ func TestReconcilePGDATAVolume(t *testing.T) {
 	}, {
 		Name: "instance2",
 		VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
 			Resources: v1.ResourceRequirements{
 				Requests: map[v1.ResourceName]resource.Quantity{
 					v1.ResourceStorage: resource.MustParse("256Mi"),
@@ -284,7 +283,7 @@ func TestReconcilePGDATAVolume(t *testing.T) {
 	}, {
 		Name: "instance3",
 		VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
 			Resources: v1.ResourceRequirements{
 				Requests: map[v1.ResourceName]resource.Quantity{
 					v1.ResourceStorage: resource.MustParse("256Mi"),
@@ -299,7 +298,7 @@ func TestReconcilePGDATAVolume(t *testing.T) {
 		},
 	}}
 
-	ns := &corev1.Namespace{}
+	ns := &v1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
