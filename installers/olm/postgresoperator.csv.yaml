@@ -209,7 +209,6 @@ spec:
                     securityContext:
                       allowPrivilegeEscalation: false
                       privileged: false
-                      readOnlyRootFilesystem: true
                     ports:
                       - containerPort: 8443
                     readinessProbe:
@@ -234,9 +233,6 @@ spec:
                       - { name: CRUNCHY_DEBUG, value: 'false' }
                       - { name: EVENT_ADDR, value: 'localhost:4150' }
                       - { name: PORT, value: '8443' }
-                    volumeMounts:
-                      - mountPath: /tmp
-                        name: tmp
 
                   - name: operator
                     image: '${PGO_IMAGE_PREFIX}/postgres-operator:${PGO_IMAGE_TAG}'
@@ -244,7 +240,6 @@ spec:
                     securityContext:
                       allowPrivilegeEscalation: false
                       privileged: false
-                      readOnlyRootFilesystem: true
                     env:
                       - { name: NAMESPACE, valueFrom: { fieldRef: { fieldPath: "metadata.annotations['olm.targetNamespaces']" } } }
                       - { name: PGO_INSTALLATION_NAME, valueFrom: { fieldRef: { fieldPath: "metadata.namespace" } } }
@@ -259,7 +254,6 @@ spec:
                     securityContext:
                       allowPrivilegeEscalation: false
                       privileged: false
-                      readOnlyRootFilesystem: true
                     livenessProbe:
                       exec:
                         command: [
@@ -278,9 +272,6 @@ spec:
                       - { name: CRUNCHY_DEBUG, value: 'false' }
                       - { name: EVENT_ADDR, value: 'localhost:4150' }
                       - { name: TIMEOUT, value: '3600' }
-                    volumeMounts:
-                      - mountPath: /tmp
-                        name: tmp
 
                   - name: event
                     image: '${PGO_IMAGE_PREFIX}/pgo-event:${PGO_IMAGE_TAG}'
@@ -288,7 +279,6 @@ spec:
                     securityContext:
                       allowPrivilegeEscalation: false
                       privileged: false
-                      readOnlyRootFilesystem: true
                     livenessProbe:
                       httpGet:
                         path: /ping
@@ -297,11 +287,3 @@ spec:
                       periodSeconds: 5
                     env:
                       - { name: TIMEOUT, value: '3600' }
-                    volumeMounts:
-                      - mountPath: /tmp
-                        name: tmp
-                volumes:
-                  - name: tmp
-                    emptyDir:
-                      medium: Memory
-                      sizeLimit: 16Mi

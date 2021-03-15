@@ -25,13 +25,6 @@
             },
             "spec": {
                 "volumes": [
-                    {
-                      "name": "tmp",
-                      "emptyDir": {
-                        "medium": "Memory",
-                        "sizeLimit": "16Mi"
-                      }
-                    }{{ if .PgbackrestRestoreVolumes }},{{ end }}
                     {{.PgbackrestRestoreVolumes}}
                 ],
                 "securityContext": {{.SecurityContext}},
@@ -44,14 +37,9 @@
                     "image": "{{.CCPImagePrefix}}/crunchy-pgbackrest:{{.CCPImageTag}}",
                     "securityContext": {
                       "allowPrivilegeEscalation": false,
-                      "privileged": false,
-                      "readOnlyRootFilesystem": true
+                      "privileged": false
                     },
                     "volumeMounts": [
-                        {
-                            "mountPath": "/tmp",
-                            "name": "tmp"
-                        }{{ if .PgbackrestRestoreVolumeMounts }},{{ end }}
                         {{.PgbackrestRestoreVolumeMounts}}
                     ],
                     "env": [{

@@ -32,8 +32,7 @@
                     "image": "{{.PGOImagePrefix}}/pgo-rmdata:{{.PGOImageTag}}",
                     "securityContext": {
                       "allowPrivilegeEscalation": false,
-                      "privileged": false,
-                      "readOnlyRootFilesystem": true
+                      "privileged": false
                     },
                     "env": [{
                         "name": "PG_CLUSTER",

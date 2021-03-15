@@ -36,8 +36,7 @@
                         "imagePullPolicy": "IfNotPresent",
                         "securityContext": {
                           "allowPrivilegeEscalation": false,
-                          "privileged": false,
-                          "readOnlyRootFilesystem": true
+                          "privileged": false
                         },
                         "ports": [
                             { "containerPort": {{ pgo_apiserver_port }} }
@@ -114,12 +113,7 @@
                                 "value": "localhost:4150"
                             }
                         ],
-                        "volumeMounts": [
-                            {
-                                "mountPath": "/tmp",
-                                "name": "tmp"
-                            }
-                        ]
+                        "volumeMounts": []
                     }, {
                         "name": "operator",
                         "image": "{% if pgo_image | default('') != '' %}{{ pgo_image }}
@@ -128,8 +122,7 @@
                         "imagePullPolicy": "IfNotPresent",
                         "securityContext": {
                           "allowPrivilegeEscalation": false,
-                          "privileged": false,
-                          "readOnlyRootFilesystem": true
+                          "privileged": false
                         },
                         "readinessProbe": {
                             "exec": {
@@ -187,8 +180,7 @@
                                 {%- endif %}",
                         "securityContext": {
                           "allowPrivilegeEscalation": false,
-                          "privileged": false,
-                          "readOnlyRootFilesystem": true
+                          "privileged": false
                         },
                         "livenessProbe": {
                             "exec": {
@@ -232,12 +224,7 @@
                                 "value": "localhost:4150"
                             }
                         ],
-                        "volumeMounts": [
-                            {
-                                "mountPath": "/tmp",
-                                "name": "tmp"
-                            }
-                        ],
+                        "volumeMounts": [],
                         "imagePullPolicy": "IfNotPresent"
                     }, {
                         "name": "event",
@@ -246,8 +233,7 @@
                                 {%- endif %}",
                         "securityContext": {
                           "allowPrivilegeEscalation": false,
-                          "privileged": false,
-                          "readOnlyRootFilesystem": true
+                          "privileged": false
                         },
                         "livenessProbe": {
                             "httpGet": {
@@ -263,24 +249,11 @@
                                 "value": "3600"
                             }
                         ],
-                        "volumeMounts": [
-                            {
-                                "mountPath": "/tmp",
-                                "name": "tmp"
-                            }
-                        ],
+                        "volumeMounts": [],
                         "imagePullPolicy": "IfNotPresent"
                     }
                 ],
-                "volumes": [
-                    {
-                        "name": "tmp",
-                        "emptyDir": {
-                            "medium": "Memory",
-                            "sizeLimit": "16Mi"
-                        }
-                    }
-                ]
+                "volumes": []
             }
         }
     }

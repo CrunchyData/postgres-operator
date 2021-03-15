@@ -31,8 +31,7 @@
                     "image": "{{.CCPImagePrefix}}/{{.CCPImage}}:{{.CCPImageTag}}",
                     "securityContext": {
                       "allowPrivilegeEscalation": false,
-                      "privileged": false,
-                      "readOnlyRootFilesystem": true
+                      "privileged": false
                     },
                     {{.ContainerResources}}
                     "env": [{
@@ -139,14 +138,6 @@
                     }, {
                         "mountPath": "/dev/shm",
                         "name": "dshm"
-                    },
-                    {
-                        "mountPath": "/tmp",
-                        "name": "tmp"
-                    },
-                    {
-                        "mountPath": "/var/lib/pgsql/.ssh",
-                        "name": "pgbackrest-ssh"
                     }, {
                         "mountPath": "/etc/pgbackrest/conf.d",
                         "name": "pgbackrest-config"
@@ -178,13 +169,6 @@
                     "secret": {
                         "secretName": "{{.RestoreFrom}}-backrest-repo-config"
                     }
-                },
-                {
-                  "name": "pgbackrest-ssh",
-                  "emptyDir": {
-                    "medium": "Memory",
-                    "sizeLimit": "128Ki"
-                  }
                 },
                 {{if .TLSEnabled}}
                 {
@@ -235,13 +219,6 @@
                             }
                         ]
                     }
-                },
-                {
-                  "name": "tmp",
-                  "emptyDir": {
-                    "medium": "Memory",
-                    "sizeLimit": "16Mi"
-                  }
                 }
                 {{.TablespaceVolumes}}],
                 "affinity": {
