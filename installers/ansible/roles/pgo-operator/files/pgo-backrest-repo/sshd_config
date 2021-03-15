@@ -82,7 +82,7 @@ ChallengeResponseAuthentication yes
 
 # This is set explicitly to *no* as we are only using pubkey authentication and
 # because each container is isolated to only an unprivileged user.
-UsePAM No
+UsePAM no
 
 #AllowAgentForwarding yes
 #AllowTcpForwarding yes
