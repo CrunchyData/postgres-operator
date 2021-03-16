@@ -36,6 +36,7 @@ WALStorage: {{ wal_storage }}
 BackupStorage: {{ backup_storage }}
 ReplicaStorage: {{ replica_storage }}
 BackrestStorage: {{ backrest_storage }}
+PGAdminStorage: {{ pgadmin_storage }}
 Storage:
 {% for i in range(1, max_storage_configs) %}
 {% if lookup('vars', 'storage' + i|string + '_name', default='')  != '' %}

@@ -61,6 +61,41 @@ func CreatePgAdmin(request *msgs.CreatePgAdminRequest, ns, pgouser string) msgs.
 			return resp
 		}
 
+		// set the default pgadmin storage value first (i.e. the primary storage value)
+		if cluster.Spec.PGAdminStorage == (crv1.PgStorageSpec{}) {
+			cluster.Spec.PGAdminStorage = cluster.Spec.PrimaryStorage
+		}
+
+		// if a value for pgAdmin storage config is provided with the request, validate it here
+		// if it is not valid, return now
+		if request.StorageConfig != "" && !apiserver.IsValidStorageName(request.StorageConfig) {
+			resp.Status.Code = msgs.Error
+			resp.Status.Msg = fmt.Sprintf("%q storage config provided invalid", request.StorageConfig)
+			return resp
+		}
+
+		// Extract parameters for the optional pgAdmin storage. server configuration and
+		// request parameters are all optional.
+		// Now, set the main configured value
+		cluster.Spec.PGAdminStorage, _ = apiserver.Pgo.GetStorageSpec(apiserver.Pgo.PGAdminStorage)
+
+		// set the requested value, if provided
+		if request.StorageConfig != "" {
+			cluster.Spec.PGAdminStorage, _ = apiserver.Pgo.GetStorageSpec(request.StorageConfig)
+		}
+
+		// if the pgAdmin PVCSize is overwritten, update the cluster spec with this value
+		if request.PVCSize != "" {
+			// if the PVCSize is set to a customized value, ensure that it is recognizable by Kubernetes
+			if err := apiserver.ValidateQuantity(request.PVCSize); err != nil {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = fmt.Sprintf(apiserver.ErrMessagePVCSize, request.PVCSize, err.Error())
+				return resp
+			}
+			log.Debugf("pgAdmin PVC Size is overwritten to be [%s]", request.PVCSize)
+			cluster.Spec.PGAdminStorage.Size = request.PVCSize
+		}
+
 		log.Debugf("adding pgAdmin to cluster [%s]", cluster.Name)
 
 		// generate the pgtask, starting with spec
@@ -68,7 +103,7 @@ func CreatePgAdmin(request *msgs.CreatePgAdminRequest, ns, pgouser string) msgs.
 			Namespace:   cluster.Namespace,
 			Name:        fmt.Sprintf("%s-%s", config.LABEL_PGADMIN_TASK_ADD, cluster.Name),
 			TaskType:    crv1.PgtaskPgAdminAdd,
-			StorageSpec: cluster.Spec.PrimaryStorage,
+			StorageSpec: cluster.Spec.PGAdminStorage,
 			Parameters: map[string]string{
 				config.LABEL_PGADMIN_TASK_CLUSTER: cluster.Name,
 			},

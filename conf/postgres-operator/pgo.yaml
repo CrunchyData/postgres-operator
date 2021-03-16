@@ -32,6 +32,7 @@ WALStorage:
 BackupStorage: default
 ReplicaStorage: default
 BackrestStorage: default
+PGAdminStorage: default
 Storage:
   default:
     AccessMode:  ReadWriteOnce

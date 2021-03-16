@@ -22,6 +22,8 @@ type CreatePgAdminRequest struct {
 	ClientVersion string
 	Namespace     string
 	Selector      string
+	StorageConfig string
+	PVCSize       string
 }
 
 // CreatePgAdminResponse ...

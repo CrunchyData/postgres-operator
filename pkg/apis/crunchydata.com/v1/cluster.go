@@ -65,6 +65,7 @@ type PgclusterSpec struct {
 	WALStorage      PgStorageSpec
 	ReplicaStorage  PgStorageSpec
 	BackrestStorage PgStorageSpec
+	PGAdminStorage  PgStorageSpec
 
 	// Resources behaves just like the "Requests" section of a Kubernetes
 	// container definition. You can set individual items such as "cpu" and
