@@ -228,7 +228,10 @@ check-envtest: hack/tools/envtest
 
 .PHONY: check-envtest-existing
 check-envtest-existing:
+	${PGO_KUBE_CLIENT} apply -f "$(CURDIR)/config/rbac/pgo-cluster-role.yaml"
 	USE_EXISTING_CLUSTER=true $(GO) test -count=1 -tags=envtest ./internal/controller/... ./internal/pgbackrest/...
+	${PGO_KUBE_CLIENT} delete -f "$(CURDIR)/config/rbac/pgo-cluster-role.yaml"
+
 
 .PHONY: check-generate
 check-generate: generate-crd generate-deepcopy

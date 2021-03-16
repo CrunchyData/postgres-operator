@@ -246,15 +246,15 @@ func TestReconcilePGDATAVolume(t *testing.T) {
 
 	// setup the test environment and ensure a clean teardown
 	tEnv, tClient, _ := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() {
+		teardownTestEnv(t, tEnv)
+	})
+
 	r := &Reconciler{
 		Client: tClient,
 		Tracer: otel.Tracer(ControllerName),
 		Owner:  ControllerName,
 	}
-
-	t.Cleanup(func() {
-		teardownTestEnv(t, tEnv)
-	})
 
 	storageClassName := "storage-class1"
 	apiGroup := "snapshot.storage.k8s.io"

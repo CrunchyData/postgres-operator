@@ -170,7 +170,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 					Namespace: ns.Name,
 				},
 				Spec: v1alpha1.PostgresClusterSpec{
-					Image:           "gcr.io/crunchy-dev-test/crunchy-postgres-ha:centos8-12.6-multi.dev2",
+					Image:           CrunchyPostgresHAImage,
 					PostgresVersion: 12,
 					InstanceSets: []v1alpha1.PostgresInstanceSetSpec{{
 						Replicas: &replicas,

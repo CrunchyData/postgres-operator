@@ -29,6 +29,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
+var (
+	CrunchyPostgresHAImage = "gcr.io/crunchy-dev-test/crunchy-postgres-ha:centos8-12.6-multi.dev2"
+)
+
 // setupTestEnv configures and starts an EnvTest instance of etcd and the Kubernetes API server
 // for test usage, as well as creates a new client instance.
 func setupTestEnv(t *testing.T,
