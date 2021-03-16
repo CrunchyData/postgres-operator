@@ -38,21 +38,16 @@ func TestLeafCertificate(t *testing.T) {
 		commonName := "hippo." + namespace
 		dnsNames := []string{commonName, "hippo." + namespace + ".svc"}
 		ipAddresses := []net.IP{net.ParseIP("127.0.0.1")}
-		// run generate on rootCA and intermediate CA to ensure it sets valid values
+		// run generate on rootCA to ensure it sets valid values
 		rootCA := NewRootCertificateAuthority()
 		if err := rootCA.Generate(); err != nil {
 			t.Fatalf("root certificate authority could not be generated")
 		}
 
-		intermediateCA := NewIntermediateCertificateAuthority(namespace)
-		if err := intermediateCA.Generate(rootCA); err != nil {
-			t.Fatalf("intermediate certificate authority could not be generated")
-		}
-
 		// see if certificate can be parsed
-		x509IntermediateCA, err := x509.ParseCertificate(intermediateCA.Certificate.Certificate)
+		x509RootCA, err := x509.ParseCertificate(rootCA.Certificate.Certificate)
 		if err != nil {
-			t.Fatalf("expected valid x509 intermediate ceriticate, actual %s", err.Error())
+			t.Fatalf("expected valid x509 root ceriticate, actual %s", err.Error())
 		}
 
 		t.Run("valid", func(t *testing.T) {
@@ -66,7 +61,7 @@ func TestLeafCertificate(t *testing.T) {
 			}
 
 			// run generate to ensure it sets valid values
-			if err := cert.Generate(intermediateCA); err != nil {
+			if err := cert.Generate(rootCA); err != nil {
 				t.Fatalf("expected generate to return no errors, got: %s", err.Error())
 			}
 
@@ -101,9 +96,9 @@ func TestLeafCertificate(t *testing.T) {
 				t.Fatalf("expected certificate to be a leaf certificate")
 			}
 
-			if x509Certificate.Issuer.CommonName != x509IntermediateCA.Subject.CommonName {
+			if x509Certificate.Issuer.CommonName != x509RootCA.Subject.CommonName {
 				t.Fatalf("expected issuer common name to be %s, actual %s",
-					x509IntermediateCA.Subject.CommonName, x509Certificate.Issuer.CommonName)
+					x509RootCA.Subject.CommonName, x509Certificate.Issuer.CommonName)
 			}
 
 			if x509Certificate.Subject.CommonName != commonName {
@@ -144,7 +139,7 @@ func TestLeafCertificate(t *testing.T) {
 				cert.generateKey = generateKey
 				cert.generateSerialNumber = generateSerialNumber
 
-				if err := cert.Generate(intermediateCA); !errors.Is(err, ErrFunctionNotImplemented) {
+				if err := cert.Generate(rootCA); !errors.Is(err, ErrFunctionNotImplemented) {
 					t.Fatalf("expected function not implemented error")
 				}
 			})
@@ -157,7 +152,7 @@ func TestLeafCertificate(t *testing.T) {
 				cert.generateKey = nil
 				cert.generateSerialNumber = generateSerialNumber
 
-				if err := cert.Generate(intermediateCA); !errors.Is(err, ErrFunctionNotImplemented) {
+				if err := cert.Generate(rootCA); !errors.Is(err, ErrFunctionNotImplemented) {
 					t.Fatalf("expected function not implemented error")
 				}
 			})
@@ -170,7 +165,7 @@ func TestLeafCertificate(t *testing.T) {
 				cert.generateKey = generateKey
 				cert.generateSerialNumber = nil
 
-				if err := cert.Generate(intermediateCA); !errors.Is(err, ErrFunctionNotImplemented) {
+				if err := cert.Generate(rootCA); !errors.Is(err, ErrFunctionNotImplemented) {
 					t.Fatalf("expected function not implemented error")
 				}
 			})
@@ -182,12 +177,12 @@ func TestLeafCertificate(t *testing.T) {
 					generateSerialNumber: generateSerialNumber,
 				}
 
-				if err := cert.Generate(intermediateCA); !errors.Is(err, ErrMissingRequired) {
+				if err := cert.Generate(rootCA); !errors.Is(err, ErrMissingRequired) {
 					t.Fatalf("expected missing required error")
 				}
 			})
 
-			t.Run("intermediate certificate authority is nil", func(t *testing.T) {
+			t.Run("root certificate authority is nil", func(t *testing.T) {
 				cert := &LeafCertificate{
 					CommonName: commonName,
 				}
@@ -200,56 +195,53 @@ func TestLeafCertificate(t *testing.T) {
 				}
 			})
 
-			t.Run("intermediate certificate authority has no private key", func(t *testing.T) {
+			t.Run("root certificate authority has no private key", func(t *testing.T) {
 				cert := &LeafCertificate{
 					CommonName:           commonName,
 					generateCertificate:  generateLeafCertificate,
 					generateKey:          generateKey,
 					generateSerialNumber: generateSerialNumber,
 				}
-				intermediateCA := NewIntermediateCertificateAuthority(namespace)
-				if err := intermediateCA.Generate(rootCA); err != nil {
-					t.Fatalf("intermediate certificate authority could not be generated")
-				}
-				intermediateCA.PrivateKey = nil
+				rootCA := NewRootCertificateAuthority()
+				rootCA.PrivateKey = nil
 
-				if err := cert.Generate(intermediateCA); !errors.Is(err, ErrInvalidCertificateAuthority) {
+				if err := cert.Generate(rootCA); !errors.Is(err, ErrInvalidCertificateAuthority) {
 					t.Fatalf("expected invalid certificate authority")
 				}
 			})
 
-			t.Run("intermediate certificate authority has no certificate", func(t *testing.T) {
+			t.Run("root certificate authority has no certificate", func(t *testing.T) {
 				cert := &LeafCertificate{
 					CommonName:           commonName,
 					generateCertificate:  generateLeafCertificate,
 					generateKey:          generateKey,
 					generateSerialNumber: generateSerialNumber,
 				}
-				intermediateCA := NewIntermediateCertificateAuthority(namespace)
-				if err := intermediateCA.Generate(rootCA); err != nil {
-					t.Fatalf("intermediate certificate authority could not be generated")
+				rootCA := NewRootCertificateAuthority()
+				if err := rootCA.Generate(); err != nil {
+					t.Fatalf("root certificate authority could not be generated")
 				}
-				intermediateCA.Certificate = nil
+				rootCA.Certificate = nil
 
-				if err := cert.Generate(intermediateCA); !errors.Is(err, ErrInvalidCertificateAuthority) {
+				if err := cert.Generate(rootCA); !errors.Is(err, ErrInvalidCertificateAuthority) {
 					t.Fatalf("expected invalid certificertte authority")
 				}
 			})
 
-			t.Run("intermediate certificate authority has invalid certificate", func(t *testing.T) {
+			t.Run("root certificate authority has invalid certificate", func(t *testing.T) {
 				cert := &LeafCertificate{
 					CommonName:           commonName,
 					generateCertificate:  generateLeafCertificate,
 					generateKey:          generateKey,
 					generateSerialNumber: generateSerialNumber,
 				}
-				intermediateCA := NewIntermediateCertificateAuthority(namespace)
-				if err := intermediateCA.Generate(rootCA); err != nil {
-					t.Fatalf("intermediate certificate authority could not be generated")
+				rootCA := NewRootCertificateAuthority()
+				if err := rootCA.Generate(); err != nil {
+					t.Fatalf("root certificate authority could not be generated")
 				}
-				intermediateCA.Certificate.Certificate = []byte{}
+				rootCA.Certificate.Certificate = []byte{}
 
-				if err := cert.Generate(intermediateCA); err == nil {
+				if err := cert.Generate(rootCA); err == nil {
 					t.Fatalf("expected certificate parsing error")
 				}
 			})
@@ -263,7 +255,7 @@ func TestLeafCertificate(t *testing.T) {
 					generateSerialNumber: generateSerialNumber,
 				}
 
-				if err := cert.Generate(intermediateCA); err.Error() != msg {
+				if err := cert.Generate(rootCA); err.Error() != msg {
 					t.Fatalf("expected error: %s", msg)
 				}
 			})
@@ -277,7 +269,7 @@ func TestLeafCertificate(t *testing.T) {
 					generateSerialNumber: func() (*big.Int, error) { return nil, errors.New(msg) },
 				}
 
-				if err := cert.Generate(intermediateCA); err.Error() != msg {
+				if err := cert.Generate(rootCA); err.Error() != msg {
 					t.Fatalf("expected error: %s", msg)
 				}
 			})
@@ -286,14 +278,14 @@ func TestLeafCertificate(t *testing.T) {
 				msg := "cannot generate certificate"
 				cert := &LeafCertificate{
 					CommonName: commonName,
-					generateCertificate: func(*ecdsa.PrivateKey, *big.Int, *IntermediateCertificateAuthority, string, []string, []net.IP) ([]byte, error) {
+					generateCertificate: func(*ecdsa.PrivateKey, *big.Int, *RootCertificateAuthority, string, []string, []net.IP) ([]byte, error) {
 						return nil, errors.New(msg)
 					},
 					generateKey:          generateKey,
 					generateSerialNumber: generateSerialNumber,
 				}
 
-				if err := cert.Generate(intermediateCA); err.Error() != msg {
+				if err := cert.Generate(rootCA); err.Error() != msg {
 					t.Fatalf("expected error: %s", msg)
 				}
 			})
@@ -327,20 +319,15 @@ func TestNewLeafCertificate(t *testing.T) {
 		t.Fatalf("expected generateSerialNumber to be set, got nil")
 	}
 
-	// run generate to ensure it sets valid values...which means generating both
-	// a root certificate and an intermediate certificate
+	// run generate to ensure it sets valid values...which means
+	// generating a root certificate
 	rootCA := NewRootCertificateAuthority()
 	if err := rootCA.Generate(); err != nil {
 		t.Fatalf("root certificate authority could not be generated")
 	}
 
-	intermediateCA := NewIntermediateCertificateAuthority(namespace)
-	if err := intermediateCA.Generate(rootCA); err != nil {
-		t.Fatalf("intermediate certificate authority could not be generated")
-	}
-
 	// ok...let's see if this works
-	if err := cert.Generate(intermediateCA); err != nil {
+	if err := cert.Generate(rootCA); err != nil {
 		t.Fatalf("expected generate to return no errors, got: %s", err.Error())
 	}
 
@@ -359,9 +346,6 @@ func TestLeafCertIsBad(t *testing.T) {
 	testRoot, err := newTestRoot()
 	assert.NilError(t, err)
 
-	testIntermediate, err := newTestIntermediate(testRoot)
-	assert.NilError(t, err)
-
 	namespace := "pgo-test"
 	commonName := "hippo." + namespace
 	dnsNames := []string{commonName, "hippo." + namespace + ".svc"}
@@ -377,18 +361,18 @@ func TestLeafCertIsBad(t *testing.T) {
 	}
 
 	// run generate to ensure it sets valid values
-	err = testLeaf.Generate(testIntermediate)
+	err = testLeaf.Generate(testRoot)
 	assert.NilError(t, err)
 
 	t.Run("leaf cert is good", func(t *testing.T) {
 
-		assert.Assert(t, !LeafCertIsBad(ctx, testLeaf, testIntermediate, testRoot, namespace))
+		assert.Assert(t, !LeafCertIsBad(ctx, testLeaf, testRoot, namespace))
 	})
 
 	t.Run("leaf cert is empty", func(t *testing.T) {
 
 		emptyLeaf := &LeafCertificate{}
-		assert.Assert(t, LeafCertIsBad(ctx, emptyLeaf, testIntermediate, testRoot, namespace))
+		assert.Assert(t, LeafCertIsBad(ctx, emptyLeaf, testRoot, namespace))
 	})
 
 	t.Run("error parsing root certificate", func(t *testing.T) {
@@ -396,19 +380,7 @@ func TestLeafCertIsBad(t *testing.T) {
 			Certificate: []byte("notacert"),
 		}
 
-		assert.Assert(t, LeafCertIsBad(ctx, testLeaf, testIntermediate, testRoot, namespace))
-	})
-
-	t.Run("error parsing intermediate certificate", func(t *testing.T) {
-
-		testRoot2, err := newTestRoot()
-		assert.NilError(t, err)
-
-		testIntermediate.Certificate = &Certificate{
-			Certificate: []byte("notacert"),
-		}
-
-		assert.Assert(t, LeafCertIsBad(ctx, testLeaf, testIntermediate, testRoot2, namespace))
+		assert.Assert(t, LeafCertIsBad(ctx, testLeaf, testRoot, namespace))
 	})
 
 	t.Run("error parsing leaf certificate", func(t *testing.T) {
@@ -416,22 +388,16 @@ func TestLeafCertIsBad(t *testing.T) {
 		testRoot2, err := newTestRoot()
 		assert.NilError(t, err)
 
-		testIntermediate2, err := newTestIntermediate(testRoot2)
-		assert.NilError(t, err)
-
 		testLeaf.Certificate = &Certificate{
 			Certificate: []byte("notacert"),
 		}
 
-		assert.Assert(t, LeafCertIsBad(ctx, testLeaf, testIntermediate2, testRoot2, namespace))
+		assert.Assert(t, LeafCertIsBad(ctx, testLeaf, testRoot2, namespace))
 	})
 
 	t.Run("leaf with invalid constraint", func(t *testing.T) {
 
 		testRoot3, err := newTestRoot()
-		assert.NilError(t, err)
-
-		testIntermediate3, err := newTestIntermediate(testRoot3)
 		assert.NilError(t, err)
 
 		badLeaf := &LeafCertificate{
@@ -444,19 +410,16 @@ func TestLeafCertIsBad(t *testing.T) {
 		}
 
 		// run generate to ensure it sets valid values
-		err = badLeaf.Generate(testIntermediate3)
+		err = badLeaf.Generate(testRoot3)
 		assert.NilError(t, err)
 
-		assert.Assert(t, LeafCertIsBad(ctx, badLeaf, testIntermediate3, testRoot3, namespace))
+		assert.Assert(t, LeafCertIsBad(ctx, badLeaf, testRoot3, namespace))
 
 	})
 
 	t.Run("leaf is a expired", func(t *testing.T) {
 
 		testRoot3, err := newTestRoot()
-		assert.NilError(t, err)
-
-		testIntermediate3, err := newTestIntermediate(testRoot3)
 		assert.NilError(t, err)
 
 		badLeaf := &LeafCertificate{
@@ -469,26 +432,26 @@ func TestLeafCertIsBad(t *testing.T) {
 		}
 
 		// run generate to ensure it sets valid values
-		err = badLeaf.Generate(testIntermediate3)
+		err = badLeaf.Generate(testRoot3)
 		assert.NilError(t, err)
 
-		assert.Assert(t, LeafCertIsBad(ctx, badLeaf, testIntermediate3, testRoot3, namespace))
+		assert.Assert(t, LeafCertIsBad(ctx, badLeaf, testRoot3, namespace))
 
 	})
 }
 
 // generateLeafCertificateInvalidConstraint creates a x509 certificate with BasicConstraintsValid set to false
 func generateLeafCertificateInvalidConstraint(privateKey *ecdsa.PrivateKey, serialNumber *big.Int,
-	intermediateCA *IntermediateCertificateAuthority, commonName string, dnsNames []string, ipAddresses []net.IP) ([]byte, error) {
-	// first, ensure that the intermediate certificate can be turned into a x509
+	rootCA *RootCertificateAuthority, commonName string, dnsNames []string, ipAddresses []net.IP) ([]byte, error) {
+	// first, ensure that the root certificate can be turned into a x509
 	// Certificate object so it can be used as the parent certificate when
 	// generating
-	if intermediateCA == nil || intermediateCA.Certificate == nil || intermediateCA.PrivateKey == nil {
-		return nil, fmt.Errorf("%w: intermediate certificate authority needs to be generated",
+	if rootCA == nil || rootCA.Certificate == nil || rootCA.PrivateKey == nil {
+		return nil, fmt.Errorf("%w: root certificate authority needs to be generated",
 			ErrInvalidCertificateAuthority)
 	}
 
-	parent, err := x509.ParseCertificate(intermediateCA.Certificate.Certificate)
+	parent, err := x509.ParseCertificate(rootCA.Certificate.Certificate)
 
 	if err != nil {
 		return nil, err
@@ -510,23 +473,23 @@ func generateLeafCertificateInvalidConstraint(privateKey *ecdsa.PrivateKey, seri
 		},
 	}
 
-	// create the leaf certificate and sign it using the intermediate CA
+	// create the leaf certificate and sign it using the root CA
 	return x509.CreateCertificate(rand.Reader, template, parent,
-		privateKey.Public(), intermediateCA.PrivateKey.PrivateKey)
+		privateKey.Public(), rootCA.PrivateKey.PrivateKey)
 }
 
 // generateLeafCertificateExpired creates a x509 certificate that is expired
 func generateLeafCertificateExpired(privateKey *ecdsa.PrivateKey, serialNumber *big.Int,
-	intermediateCA *IntermediateCertificateAuthority, commonName string, dnsNames []string, ipAddresses []net.IP) ([]byte, error) {
-	// first, ensure that the intermediate certificate can be turned into a x509
+	rootCA *RootCertificateAuthority, commonName string, dnsNames []string, ipAddresses []net.IP) ([]byte, error) {
+	// first, ensure that the root certificate can be turned into a x509
 	// Certificate object so it can be used as the parent certificate when
 	// generating
-	if intermediateCA == nil || intermediateCA.Certificate == nil || intermediateCA.PrivateKey == nil {
-		return nil, fmt.Errorf("%w: intermediate certificate authority needs to be generated",
+	if rootCA == nil || rootCA.Certificate == nil || rootCA.PrivateKey == nil {
+		return nil, fmt.Errorf("%w: root certificate authority needs to be generated",
 			ErrInvalidCertificateAuthority)
 	}
 
-	parent, err := x509.ParseCertificate(intermediateCA.Certificate.Certificate)
+	parent, err := x509.ParseCertificate(rootCA.Certificate.Certificate)
 
 	if err != nil {
 		return nil, err
@@ -548,7 +511,7 @@ func generateLeafCertificateExpired(privateKey *ecdsa.PrivateKey, serialNumber *
 		},
 	}
 
-	// create the leaf certificate and sign it using the intermediate CA
+	// create the leaf certificate and sign it using the root CA
 	return x509.CreateCertificate(rand.Reader, template, parent,
-		privateKey.Public(), intermediateCA.PrivateKey.PrivateKey)
+		privateKey.Public(), rootCA.PrivateKey.PrivateKey)
 }

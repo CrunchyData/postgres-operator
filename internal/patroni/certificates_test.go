@@ -54,16 +54,13 @@ func TestCertFile(t *testing.T) {
 	root := pki.NewRootCertificateAuthority()
 	assert.NilError(t, root.Generate())
 
-	intermediate := pki.NewIntermediateCertificateAuthority("test-ns")
-	assert.NilError(t, intermediate.Generate(root))
-
 	instance := pki.NewLeafCertificate("instance.pod-dns", nil, nil)
-	assert.NilError(t, instance.Generate(intermediate))
+	assert.NilError(t, instance.Generate(root))
 
-	data, err := certFile(instance.PrivateKey, instance.Certificate, intermediate.Certificate)
+	data, err := certFile(instance.PrivateKey, instance.Certificate, root.Certificate)
 	assert.NilError(t, err)
 
-	// PEM-encoded key followed by the certificate then the intermediate.
+	// PEM-encoded key followed by the certificate then the root.
 	// - https://docs.python.org/3/library/ssl.html#combined-key-and-certificate
 	// - https://docs.python.org/3/library/ssl.html#certificate-chains
 	assert.Assert(t,
@@ -81,8 +78,9 @@ func TestCertFile(t *testing.T) {
 			string(data),
 		))
 
-	intermediatePEM, _ := intermediate.Certificate.MarshalText()
-	assert.Assert(t, bytes.HasSuffix(data, intermediatePEM))
+	rootPEM, _ := root.Certificate.MarshalText()
+
+	assert.Assert(t, bytes.HasSuffix(data, rootPEM))
 }
 
 func TestInstanceCertificates(t *testing.T) {

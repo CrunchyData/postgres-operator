@@ -101,65 +101,9 @@ func TestReconcileCerts(t *testing.T) {
 
 	})
 
-	t.Run("check namespace certificate reconciliation", func(t *testing.T) {
-
-		initialRoot, err := r.reconcileRootCertificate(ctx, namespace)
-		assert.NilError(t, err)
-
-		initialNamespaceCert, err := r.reconcileNamespaceCertificate(ctx, namespace, initialRoot)
-		assert.NilError(t, err)
-
-		t.Run("check namespace certificate returns correctly", func(t *testing.T) {
-
-			fromSecret, err := getCertFromSecret(ctx, tClient, naming.IntermediateCertSecret, namespace, "intermediate.crt")
-			assert.NilError(t, err)
-
-			// assert returned certificate matches the one created earlier
-			assert.Assert(t, bytes.Equal(fromSecret.Certificate, initialNamespaceCert.Certificate.Certificate))
-		})
-
-		t.Run("check namespace cert updates root changes", func(t *testing.T) {
-
-			// force the generation of a new root cert
-			// create an empty secret and apply the change
-			intent := &v1.Secret{}
-			intent.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
-			intent.Namespace, intent.Name = namespace, naming.RootCertSecret
-			intent.Data = make(map[string][]byte)
-			err = errors.WithStack(r.apply(ctx, intent))
-			assert.NilError(t, err)
-
-			// reconcile the root cert secret
-			newRootCert, err := r.reconcileRootCertificate(ctx, namespace)
-			assert.NilError(t, err)
-
-			oldNSCert, err := getCertFromSecret(ctx, tClient, naming.IntermediateCertSecret, namespace, "intermediate.crt")
-
-			// check that the namespace cert from the secret matches the initial cert before reconciliation
-			assert.Assert(t, bytes.Equal(oldNSCert.Certificate, initialNamespaceCert.Certificate.Certificate))
-
-			// reconcile the namespace cert secret
-			newNamespaceCert, err := r.reconcileNamespaceCertificate(ctx, namespace, newRootCert)
-			assert.NilError(t, err)
-
-			newNSCertFromSecret, err := getCertFromSecret(ctx, tClient, naming.IntermediateCertSecret, namespace, "intermediate.crt")
-
-			// check that certs are now equal
-			assert.Assert(t, bytes.Equal(newNSCertFromSecret.Certificate, newNamespaceCert.Certificate.Certificate))
-
-			// check that the 'updated' cert is in fact different than before
-			assert.Assert(t, !bytes.Equal(oldNSCert.Certificate, newNamespaceCert.Certificate.Certificate))
-			assert.Assert(t, !bytes.Equal(newNSCertFromSecret.Certificate, initialNamespaceCert.Certificate.Certificate))
-		})
-
-	})
-
 	t.Run("check leaf certificate reconciliation", func(t *testing.T) {
 
 		initialRoot, err := r.reconcileRootCertificate(ctx, namespace)
-		assert.NilError(t, err)
-
-		initialNamespaceCert, err := r.reconcileNamespaceCertificate(ctx, namespace, initialRoot)
 		assert.NilError(t, err)
 
 		// instance with minimal required fields
@@ -177,13 +121,13 @@ func TestReconcileCerts(t *testing.T) {
 			},
 		}
 
-		intent, existing, err := createInstanceSecrets(ctx, tClient, instance, initialNamespaceCert)
+		intent, existing, err := createInstanceSecrets(ctx, tClient, instance, initialRoot)
 
 		// apply the secret changes
 		err = errors.WithStack(r.apply(ctx, existing))
 		assert.NilError(t, err)
 
-		initialLeafCert, err := r.instanceCertificate(ctx, instance, existing, intent, initialNamespaceCert, initialRoot)
+		initialLeafCert, err := r.instanceCertificate(ctx, instance, existing, intent, initialRoot)
 		assert.NilError(t, err)
 
 		t.Run("check leaf certificate in secret", func(t *testing.T) {
@@ -195,7 +139,7 @@ func TestReconcileCerts(t *testing.T) {
 			assert.Assert(t, bytes.Equal(fromSecret.Certificate, initialLeafCert.Certificate.Certificate))
 		})
 
-		t.Run("check that the leaf and namespace certs update when root changes", func(t *testing.T) {
+		t.Run("check that the leaf certs update when root changes", func(t *testing.T) {
 
 			// force the generation of a new root cert
 			// create an empty secret and apply the change
@@ -208,27 +152,6 @@ func TestReconcileCerts(t *testing.T) {
 			// reconcile the root cert secret
 			newRootCert, err := r.reconcileRootCertificate(ctx, namespace)
 			assert.NilError(t, err)
-
-			// get the existing namespace cert
-			oldNSCertFromSecret, err := getCertFromSecret(ctx, tClient, naming.IntermediateCertSecret, namespace, "intermediate.crt")
-
-			// check that the namespace cert from the secret matches the initial cert before reconciliation
-			assert.Assert(t, bytes.Equal(oldNSCertFromSecret.Certificate, initialNamespaceCert.Certificate.Certificate))
-
-			// reconcile the namespace cert secret against the newly created root certificate
-			// this should cause a new namespace cert to be generated
-			newNamespaceCert, err := r.reconcileNamespaceCertificate(ctx, namespace, newRootCert)
-			assert.NilError(t, err)
-
-			// get what should be a new namespace certificate from the secret
-			newNSCertFromSecret, err := getCertFromSecret(ctx, tClient, naming.IntermediateCertSecret, namespace, "intermediate.crt")
-
-			// check that returned namespace cert matches the namespace cert stored in the secret
-			assert.Assert(t, bytes.Equal(newNSCertFromSecret.Certificate, newNamespaceCert.Certificate.Certificate))
-
-			// verify that the 'updated' cert is in fact different than before
-			assert.Assert(t, !bytes.Equal(oldNSCertFromSecret.Certificate, newNamespaceCert.Certificate.Certificate))
-			assert.Assert(t, !bytes.Equal(newNSCertFromSecret.Certificate, initialNamespaceCert.Certificate.Certificate))
 
 			// get the existing leaf/instance secret which will receive a new certificate during reconciliation
 			existingInstanceSecret := &v1.Secret{}
@@ -248,14 +171,14 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			// reconcile the certificate
-			newLeaf, err := r.instanceCertificate(ctx, instance, existingInstanceSecret, instanceIntentSecret, newNamespaceCert, newRootCert)
+			newLeaf, err := r.instanceCertificate(ctx, instance, existingInstanceSecret, instanceIntentSecret, newRootCert)
 			assert.NilError(t, err)
 
 			// assert old leaf cert does not match the newly reconciled one
 			assert.Assert(t, !bytes.Equal(oldLeafFromSecret.Certificate, newLeaf.Certificate.Certificate))
 
 			// 'reconcile' the certificate when the secret does not change. The returned leaf certificate should not change
-			newLeaf2, err := r.instanceCertificate(ctx, instance, instanceIntentSecret, instanceIntentSecret, newNamespaceCert, newRootCert)
+			newLeaf2, err := r.instanceCertificate(ctx, instance, instanceIntentSecret, instanceIntentSecret, newRootCert)
 			assert.NilError(t, err)
 
 			// check that the leaf cert did not change after another reconciliation
@@ -297,7 +220,7 @@ func getCertFromSecret(
 // testing the leaf cert reconciliation
 func createInstanceSecrets(
 	ctx context.Context, tClient client.Client, instance *appsv1.StatefulSet,
-	intermediateCA *pki.IntermediateCertificateAuthority,
+	rootCA *pki.RootCertificateAuthority,
 ) (*v1.Secret, *v1.Secret, error) {
 	// create two secret structs for reconciliation
 	intent := &v1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
@@ -315,7 +238,7 @@ func createInstanceSecrets(
 	leafCert := pki.NewLeafCertificate("", nil, nil)
 	leafCert.DNSNames = naming.InstancePodDNSNames(ctx, instance)
 	leafCert.CommonName = leafCert.DNSNames[0] // FQDN
-	err = errors.WithStack(leafCert.Generate(intermediateCA))
+	err = errors.WithStack(leafCert.Generate(rootCA))
 	if err != nil {
 		return intent, existing, err
 	}

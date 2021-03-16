@@ -176,8 +176,8 @@ func TestRootCertificateAuthority(t *testing.T) {
 				t.Fatalf("expected certificate to be CA")
 			}
 
-			if x509Certificate.MaxPathLen != 1 {
-				t.Fatalf("expected max path len to be 1, actual %d", x509Certificate.MaxPathLen)
+			if x509Certificate.MaxPathLenZero == false {
+				t.Fatalf("expected MaxPathLenZero to be set to 'true', actual %t", x509Certificate.MaxPathLenZero)
 			}
 
 			if x509Certificate.Subject.CommonName != rootCAName {
@@ -270,7 +270,7 @@ func TestRootCAIsBad(t *testing.T) {
 		assert.Assert(t, !RootCAIsBad(rootCA))
 	})
 
-	t.Run("intermediate cert is empty", func(t *testing.T) {
+	t.Run("root cert is empty", func(t *testing.T) {
 
 		emptyRoot := &RootCertificateAuthority{}
 		assert.Assert(t, RootCAIsBad(emptyRoot))
@@ -328,11 +328,10 @@ func generateRootCertificateBadCA(privateKey *ecdsa.PrivateKey, serialNumber *bi
 		BasicConstraintsValid: true,
 		IsCA:                  false,
 		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
-		//MaxPathLen:            1, // as each namespace will have an intermediate CA
-		NotBefore:          now.Add(beforeInterval),
-		NotAfter:           now.Add(defaultRootCAExpiration),
-		SerialNumber:       serialNumber,
-		SignatureAlgorithm: certificateSignatureAlgorithm,
+		NotBefore:             now.Add(beforeInterval),
+		NotAfter:              now.Add(defaultRootCAExpiration),
+		SerialNumber:          serialNumber,
+		SignatureAlgorithm:    certificateSignatureAlgorithm,
 		Subject: pkix.Name{
 			CommonName: rootCAName,
 		},
@@ -351,7 +350,7 @@ func generateRootCertificateExpired(privateKey *ecdsa.PrivateKey, serialNumber *
 		BasicConstraintsValid: true,
 		IsCA:                  true,
 		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
-		MaxPathLen:            1, // as each namespace will have an intermediate CA
+		MaxPathLenZero:        true, // there are no intermediate certificates
 		NotBefore:             now.Add(beforeInterval),
 		NotAfter:              now.Add(beforeInterval), // not after an hour ago, i.e. expired
 		SerialNumber:          serialNumber,

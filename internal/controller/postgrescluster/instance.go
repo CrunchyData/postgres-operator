@@ -124,7 +124,6 @@ func (r *Reconciler) reconcileInstanceSet(
 	cluster *v1alpha1.PostgresCluster,
 	set *v1alpha1.PostgresInstanceSetSpec,
 	clusterConfigMap *v1.ConfigMap,
-	intermediateCA *pki.IntermediateCertificateAuthority,
 	rootCA *pki.RootCertificateAuthority,
 	clusterPodService *v1.Service,
 	patroniLeaderService *v1.Service,
@@ -163,7 +162,7 @@ func (r *Reconciler) reconcileInstanceSet(
 	for i := range instances.Items {
 		if err == nil {
 			err = r.reconcileInstance(
-				ctx, cluster, set, clusterConfigMap, intermediateCA, rootCA, clusterPodService,
+				ctx, cluster, set, clusterConfigMap, rootCA, clusterPodService,
 				patroniLeaderService, &instances.Items[i])
 		}
 	}
@@ -183,7 +182,6 @@ func (r *Reconciler) reconcileInstance(
 	cluster *v1alpha1.PostgresCluster,
 	spec *v1alpha1.PostgresInstanceSetSpec,
 	clusterConfigMap *v1.ConfigMap,
-	intermediateCA *pki.IntermediateCertificateAuthority,
 	rootCA *pki.RootCertificateAuthority,
 	clusterPodService *v1.Service,
 	patroniLeaderService *v1.Service,
@@ -291,7 +289,7 @@ func (r *Reconciler) reconcileInstance(
 	}
 	if err == nil {
 		instanceCertificates, err = r.reconcileInstanceCertificates(
-			ctx, cluster, instance, intermediateCA, rootCA)
+			ctx, cluster, instance, rootCA)
 	}
 	if err == nil {
 		err = r.reconcilePGDATAVolume(ctx, cluster, spec, instance)
@@ -437,8 +435,8 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 // reconcileInstanceCertificates writes the Secret that contains certificates
 // and private keys for instance of cluster.
 func (r *Reconciler) reconcileInstanceCertificates(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster, instance *appsv1.StatefulSet,
-	ca *pki.IntermediateCertificateAuthority, root *pki.RootCertificateAuthority,
+	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	instance *appsv1.StatefulSet, root *pki.RootCertificateAuthority,
 ) (*v1.Secret, error) {
 	existing := &v1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
 	err := errors.WithStack(client.IgnoreNotFound(
@@ -467,12 +465,12 @@ func (r *Reconciler) reconcileInstanceCertificates(
 	var leafCert *pki.LeafCertificate
 
 	if err == nil {
-		leafCert, err = r.instanceCertificate(ctx, instance, existing, instanceCerts, ca, root)
+		leafCert, err = r.instanceCertificate(ctx, instance, existing, instanceCerts, root)
 	}
 	if err == nil {
 		err = patroni.InstanceCertificates(ctx,
-			[]*pki.Certificate{root.Certificate}, []*pki.Certificate{ca.Certificate},
-			leafCert.Certificate, leafCert.PrivateKey, instanceCerts)
+			root.Certificate, leafCert.Certificate,
+			leafCert.PrivateKey, instanceCerts)
 	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, instanceCerts))

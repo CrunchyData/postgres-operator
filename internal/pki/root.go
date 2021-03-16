@@ -40,8 +40,8 @@ const (
 // private key for the root CA as well as its certificate, which is self-signed
 // (as is the nature of a root CA).
 //
-// In the context of the Operator, this is available "cluster wide" and should
-// reside in the same namespace that the Operator is deployed into.
+// In the context of the Operator, there will be one root certificate per
+// namespace that contains postgresclusters managed by the Operator.
 type RootCertificateAuthority struct {
 	// Certificate is the certificate of this certificate authority
 	Certificate *Certificate
@@ -91,8 +91,8 @@ func (ca *RootCertificateAuthority) Generate() error {
 	return nil
 }
 
-// NewRootCertificateAuthority generates a new root certificate authority that
-// can be used to issue intermediate certificate authoritities
+// NewRootCertificateAuthority generates a new root certificate authority
+// that can be used to issue leaf certificates
 func NewRootCertificateAuthority() *RootCertificateAuthority {
 	return &RootCertificateAuthority{
 		generateCertificate:  generateRootCertificate,
@@ -168,7 +168,7 @@ func generateRootCertificate(privateKey *ecdsa.PrivateKey, serialNumber *big.Int
 		BasicConstraintsValid: true,
 		IsCA:                  true,
 		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
-		MaxPathLen:            1, // as each namespace will have an intermediate CA
+		MaxPathLenZero:        true, // there are no intermediate certificates
 		NotBefore:             now.Add(beforeInterval),
 		NotAfter:              now.Add(defaultRootCAExpiration),
 		SerialNumber:          serialNumber,

@@ -37,7 +37,7 @@ const (
 
 // LeafCertificate contains the ability to generate the necessary components of
 // a leaf certificate that can be used to identify a PostgreSQL cluster, or
-// a pgBouncer instance, etc. A leaf certificate is signed by an intermediate
+// a pgBouncer instance, etc. A leaf certificate is signed by an root
 // certificate authority.
 type LeafCertificate struct {
 	// Certificate is the certificate of this certificate authority
@@ -60,7 +60,7 @@ type LeafCertificate struct {
 	generateKey func() (*ecdsa.PrivateKey, error)
 
 	// generateCertificate generates a X509 certificate return in DER format
-	generateCertificate func(*ecdsa.PrivateKey, *big.Int, *IntermediateCertificateAuthority, string, []string, []net.IP) ([]byte, error)
+	generateCertificate func(*ecdsa.PrivateKey, *big.Int, *RootCertificateAuthority, string, []string, []net.IP) ([]byte, error)
 
 	// generateSerialNumber creates a unique serial number to assign to the
 	// certificate
@@ -68,7 +68,7 @@ type LeafCertificate struct {
 }
 
 // Generate creates a new leaf certificate!
-func (c *LeafCertificate) Generate(intermediateCA *IntermediateCertificateAuthority) error {
+func (c *LeafCertificate) Generate(rootCA *RootCertificateAuthority) error {
 	// ensure functions are defined
 	if c.generateKey == nil || c.generateCertificate == nil || c.generateSerialNumber == nil {
 		return ErrFunctionNotImplemented
@@ -95,7 +95,7 @@ func (c *LeafCertificate) Generate(intermediateCA *IntermediateCertificateAuthor
 
 	// generate a certificate
 	if certificate, err := c.generateCertificate(c.PrivateKey.PrivateKey,
-		serialNumber, intermediateCA, c.CommonName, c.DNSNames, c.IPAddresses); err != nil {
+		serialNumber, rootCA, c.CommonName, c.DNSNames, c.IPAddresses); err != nil {
 		return err
 	} else {
 		c.Certificate = &Certificate{Certificate: certificate}
@@ -105,15 +105,15 @@ func (c *LeafCertificate) Generate(intermediateCA *IntermediateCertificateAuthor
 }
 
 // LeafCertIsBad checks at least one leaf cert has been generated, the basic constraints
-// are valid and it has been verified with the intermediate and root certpools
+// are valid and it has been verified with the root certpool
 //
 // TODO(tjmoore4): Currently this will return 'true' if any of the parsed certs
 // fail a given check. For scenarios where multiple certs may be returned, such
 // as in a BYOC/BYOCA, this will need to be handled so we only generate a new
 // certificate for our cert if it is the one that fails.
 func LeafCertIsBad(
-	ctx context.Context, leaf *LeafCertificate, intermediateCertCA *IntermediateCertificateAuthority,
-	rootCertCA *RootCertificateAuthority, namespace string,
+	ctx context.Context, leaf *LeafCertificate, rootCertCA *RootCertificateAuthority,
+	namespace string,
 ) bool {
 	log := logging.FromContext(ctx)
 
@@ -140,24 +140,6 @@ func LeafCertIsBad(
 		roots.AddCert(cert)
 	}
 
-	// set up intermediate cert pool for leaf cert verification
-	var intCerts []*x509.Certificate
-	var intErr error
-
-	// set up intermediate and root cert pools
-	intermediates := x509.NewCertPool()
-
-	// if there is an error parsing the intermediate certificate or if the number of certificates returned
-	// is not one, the certificate is bad
-	if intCerts, intErr = x509.ParseCertificates(intermediateCertCA.Certificate.Certificate); intErr != nil && len(intCerts) < 1 {
-		return true
-	}
-
-	// add all the intermediate certs returned to the root pool
-	for _, cert := range intCerts {
-		intermediates.AddCert(cert)
-	}
-
 	var leafCerts []*x509.Certificate
 	var leafErr error
 	// if there is an error parsing the leaf certificate or if the number of certificates
@@ -177,9 +159,8 @@ func LeafCertIsBad(
 
 		// verify leaf cert
 		_, verifyError := cert.Verify(x509.VerifyOptions{
-			DNSName:       cert.DNSNames[0],
-			Roots:         roots,
-			Intermediates: intermediates,
+			DNSName: cert.DNSNames[0],
+			Roots:   roots,
 		})
 		//log verify error if not nil
 		if verifyError != nil {
@@ -211,16 +192,16 @@ func NewLeafCertificate(commonName string, dnsNames []string, ipAddresses []net.
 // generateLeafCertificate creates a x509 certificate with a ECDSA
 // signature using the SHA-384 algorithm
 func generateLeafCertificate(privateKey *ecdsa.PrivateKey, serialNumber *big.Int,
-	intermediateCA *IntermediateCertificateAuthority, commonName string, dnsNames []string, ipAddresses []net.IP) ([]byte, error) {
-	// first, ensure that the intermediate certificate can be turned into a x509
+	rootCA *RootCertificateAuthority, commonName string, dnsNames []string, ipAddresses []net.IP) ([]byte, error) {
+	// first, ensure that the root certificate can be turned into a x509
 	// Certificate object so it can be used as the parent certificate when
 	// generating
-	if intermediateCA == nil || intermediateCA.Certificate == nil || intermediateCA.PrivateKey == nil {
-		return nil, fmt.Errorf("%w: intermediate certificate authority needs to be generated",
+	if rootCA == nil || rootCA.Certificate == nil || rootCA.PrivateKey == nil {
+		return nil, fmt.Errorf("%w: root certificate authority needs to be generated",
 			ErrInvalidCertificateAuthority)
 	}
 
-	parent, err := x509.ParseCertificate(intermediateCA.Certificate.Certificate)
+	parent, err := x509.ParseCertificate(rootCA.Certificate.Certificate)
 
 	if err != nil {
 		return nil, err
@@ -242,7 +223,7 @@ func generateLeafCertificate(privateKey *ecdsa.PrivateKey, serialNumber *big.Int
 		},
 	}
 
-	// create the leaf certificate and sign it using the intermediate CA
+	// create the leaf certificate and sign it using the root CA
 	return x509.CreateCertificate(rand.Reader, template, parent,
-		privateKey.Public(), intermediateCA.PrivateKey.PrivateKey)
+		privateKey.Public(), rootCA.PrivateKey.PrivateKey)
 }

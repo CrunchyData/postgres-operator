@@ -27,11 +27,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pki"
 )
 
-//const (
-//	rootCertSecret         = "pgo-root-cacert" /* #nosec */
-//	intermediateCertSecret = "pgo-intermediate-cacert"
-//)
-
 // +kubebuilder:rbac:resources=secrets,verbs=get;patch
 
 // reconcileRootCertificate ensures the root certificate, stored
@@ -96,86 +91,17 @@ func (r *Reconciler) reconcileRootCertificate(
 
 // +kubebuilder:rbac:resources=secrets,verbs=get;patch
 
-// reconcileNamespaceCertificate ensures the intermediate certificate,
-// stored in the relevant secret, has been created and is not 'bad'
-// due to being expired, formatted incorrectly, etc. In addition, the
-// a check is made to ensure the intermediate cert's authority key ID
-// matches the corresponding root cert's subject key ID (i.e. the root
-// cert is the 'parent' of the intermediate cert).
-// If it is bad for any reason, a new intermediate certificate is generated
-// using the current root certificate
-func (r *Reconciler) reconcileNamespaceCertificate(
-	ctx context.Context, namespace string, root *pki.RootCertificateAuthority,
-) (
-	*pki.IntermediateCertificateAuthority, error,
-) {
-	const keyCertificate, keyPrivateKey = "intermediate.crt", "intermediate.key"
-
-	existing := &v1.Secret{}
-	existing.Namespace, existing.Name = namespace, naming.IntermediateCertSecret
-	err := errors.WithStack(client.IgnoreNotFound(
-		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
-
-	ca := pki.NewIntermediateCertificateAuthority(namespace)
-
-	if data, ok := existing.Data[keyCertificate]; err == nil && ok {
-		ca.Certificate, err = pki.ParseCertificate(data)
-		err = errors.WithStack(err)
-	}
-	if data, ok := existing.Data[keyPrivateKey]; err == nil && ok {
-		ca.PrivateKey, err = pki.ParsePrivateKey(data)
-		err = errors.WithStack(err)
-	}
-
-	// if there is an error or the intermediate CA is bad, generate a new one
-	if err != nil || pki.IntermediateCAIsBad(ctx, ca, root) {
-		err = errors.WithStack(ca.Generate(root))
-	}
-
-	intent := &v1.Secret{}
-	intent.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
-	intent.Namespace, intent.Name = namespace, naming.IntermediateCertSecret
-	intent.Data = make(map[string][]byte)
-
-	// TODO(cbandy/tjmoore4): Ownership, Controller.
-	// The postgrescluster controller is likely incorrect as the owner
-	// of the intermediate secrets. While it will be in the same namespace
-	// as any postgrescluster that may take ownership, it can be shared by
-	// several clusters within that namespace and should not be owned by
-	// any particular cluster for various reasons, chief among them
-	// the potential for cleanup processes when the current owning cluster is
-	// deleted but other clusters depending on the intermediate cert remain.
-	// k8s.io/docs/concepts/workloads/controllers/garbage-collection/#owners-and-dependents
-
-	if err == nil {
-		intent.Data[keyCertificate], err = ca.Certificate.MarshalText()
-		err = errors.WithStack(err)
-	}
-	if err == nil {
-		intent.Data[keyPrivateKey], err = ca.PrivateKey.MarshalText()
-		err = errors.WithStack(err)
-	}
-	if err == nil {
-		err = errors.WithStack(r.apply(ctx, intent))
-	}
-
-	return ca, err
-}
-
-// +kubebuilder:rbac:resources=secrets,verbs=get;patch
-
 // instanceCertificate populates intent with the DNS leaf certificate and
 // returns it. It also ensures the leaf certificate, stored in the relevant
 // secret, has been created and is not 'bad' due to being expired, formatted
 // incorrectly, etc. In addition, a check is made to ensure the leaf cert's
-// authority key ID matches the corresponding intermediate cert's subject
-// key ID (i.e. the intermediate cert is the 'parent' of the leaf cert).
+// authority key ID matches the corresponding root cert's subject
+// key ID (i.e. the root cert is the 'parent' of the leaf cert).
 // If it is bad for any reason, a new leaf certificate is generated
-// using the current intermediate certificate
+// using the current root certificate
 func (*Reconciler) instanceCertificate(
 	ctx context.Context, instance *appsv1.StatefulSet,
-	existing, intent *v1.Secret, ca *pki.IntermediateCertificateAuthority,
-	rootCACert *pki.RootCertificateAuthority,
+	existing, intent *v1.Secret, rootCACert *pki.RootCertificateAuthority,
 ) (
 	*pki.LeafCertificate, error,
 ) {
@@ -198,8 +124,8 @@ func (*Reconciler) instanceCertificate(
 	}
 
 	// if there is an error or the leaf certificate is bad, generate a new one
-	if err != nil || pki.LeafCertIsBad(ctx, leaf, ca, rootCACert, instance.Namespace) {
-		err = errors.WithStack(leaf.Generate(ca))
+	if err != nil || pki.LeafCertIsBad(ctx, leaf, rootCACert, instance.Namespace) {
+		err = errors.WithStack(leaf.Generate(rootCACert))
 	}
 
 	if err == nil {

@@ -60,30 +60,25 @@ func TestReconcileInstanceCertificates(t *testing.T) {
 	root := pki.NewRootCertificateAuthority()
 	assert.NilError(t, root.Generate(), "bug in test")
 
-	issuer := pki.NewIntermediateCertificateAuthority("")
-	assert.NilError(t, issuer.Generate(root), "bug in test")
-
 	leaf := pki.NewLeafCertificate("any", nil, nil)
-	assert.NilError(t, leaf.Generate(issuer), "bug in test")
+	assert.NilError(t, leaf.Generate(root), "bug in test")
 
 	ctx := context.Background()
 	secret := new(v1.Secret)
-	roots := []*pki.Certificate{root.Certificate}
-	issuers := []*pki.Certificate{issuer.Certificate}
 	cert := leaf.Certificate
 	key := leaf.PrivateKey
 
-	dataCA, _ := certAuthorities(roots...)
-	dataCert, _ := certFile(key, cert, issuers...)
+	dataCA, _ := certAuthorities(root.Certificate)
+	dataCert, _ := certFile(key, cert, root.Certificate)
 
-	assert.NilError(t, InstanceCertificates(ctx, roots, issuers, cert, key, secret))
+	assert.NilError(t, InstanceCertificates(ctx, root.Certificate, cert, key, secret))
 
 	assert.DeepEqual(t, secret.Data["patroni.ca-roots"], dataCA)
 	assert.DeepEqual(t, secret.Data["patroni.crt-combined"], dataCert)
 
 	// No change when called again.
 	before := secret.DeepCopy()
-	assert.NilError(t, InstanceCertificates(ctx, roots, issuers, cert, key, secret))
+	assert.NilError(t, InstanceCertificates(ctx, root.Certificate, cert, key, secret))
 	assert.DeepEqual(t, secret, before)
 }
 

@@ -25,7 +25,6 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
-	"gotest.tools/v3/assert/cmp"
 )
 
 // TestPKI does a full test of generating a valid ceritificate chain
@@ -36,18 +35,12 @@ func TestPKI(t *testing.T) {
 		t.Fatalf("root certificate authority could not be generated")
 	}
 
-	// generate the intermediate CA
-	namespace := "pgo-test"
-	intermediateCA := NewIntermediateCertificateAuthority(namespace)
-	if err := intermediateCA.Generate(rootCA); err != nil {
-		t.Fatalf("intermediate certificate authority could not be generated")
-	}
-
 	// generate the leaf CA
+	namespace := "pgo-test"
 	commonName := "hippo." + namespace
 	dnsNames := []string{commonName}
 	cert := NewLeafCertificate(commonName, dnsNames, []net.IP{})
-	if err := cert.Generate(intermediateCA); err != nil {
+	if err := cert.Generate(rootCA); err != nil {
 		t.Fatalf("leaf certificate could not be generated")
 	}
 
@@ -57,23 +50,16 @@ func TestPKI(t *testing.T) {
 		t.Fatalf("could not parse root certificate: %s", err.Error())
 	}
 
-	intermediateCertificate, err := x509.ParseCertificate(intermediateCA.Certificate.Certificate)
-	if err != nil {
-		t.Fatalf("could not parse intermediate certificate: %s", err.Error())
-	}
-
 	certificate, err := x509.ParseCertificate(cert.Certificate.Certificate)
 	if err != nil {
 		t.Fatalf("could not parse leaf certificate: %s", err.Error())
 	}
 
 	opts := x509.VerifyOptions{
-		DNSName:       commonName,
-		Intermediates: x509.NewCertPool(),
-		Roots:         x509.NewCertPool(),
+		DNSName: commonName,
+		Roots:   x509.NewCertPool(),
 	}
 	opts.Roots.AddCert(rootCertificate)
-	opts.Intermediates.AddCert(intermediateCertificate)
 
 	if _, err := certificate.Verify(opts); err != nil {
 		t.Fatalf("could not verify certificate: %s", err.Error())
@@ -94,16 +80,13 @@ func TestPKIOpenSSL(t *testing.T) {
 	assert.NilError(t, rootCA.Generate())
 
 	namespace := "pgo-test"
-	intermediateCA := NewIntermediateCertificateAuthority(namespace)
-	assert.NilError(t, intermediateCA.Generate(rootCA))
-
 	commonName := "hippo." + namespace
 	dnsNames := []string{commonName}
 	leaf := NewLeafCertificate(commonName, dnsNames, []net.IP{})
-	assert.NilError(t, leaf.Generate(intermediateCA))
+	assert.NilError(t, leaf.Generate(rootCA))
 
 	basicOpenSSLVerify(t, openssl,
-		rootCA.Certificate, intermediateCA.Certificate, leaf.Certificate)
+		rootCA.Certificate, leaf.Certificate)
 
 	t.Run("strict", func(t *testing.T) {
 		output, _ := exec.Command(openssl, "verify", "-help").CombinedOutput()
@@ -111,12 +94,11 @@ func TestPKIOpenSSL(t *testing.T) {
 			t.Skip(`requires "-x509_strict" flag`)
 		}
 
-		strictOpenSSLVerify(t, openssl,
-			rootCA.Certificate, intermediateCA.Certificate, leaf.Certificate)
+		strictOpenSSLVerify(t, openssl, rootCA.Certificate, leaf.Certificate)
 	})
 }
 
-func basicOpenSSLVerify(t *testing.T, openssl string, root, intermediate, leaf *Certificate) {
+func basicOpenSSLVerify(t *testing.T, openssl string, root, leaf *Certificate) {
 	verify := func(t testing.TB, args ...string) {
 		t.Helper()
 		args = append([]string{"verify"}, args...)
@@ -135,35 +117,24 @@ func basicOpenSSLVerify(t *testing.T, openssl string, root, intermediate, leaf *
 	// The root certificate cannot be verified independently because it is self-signed.
 	// It is checked below by being the specified CA.
 
-	intermediateFile := filepath.Join(dir, "intermediate.crt")
-	intermediateBytes, err := intermediate.MarshalText()
-	assert.NilError(t, err)
-	assert.NilError(t, ioutil.WriteFile(intermediateFile, intermediateBytes, 0600))
-
-	verify(t, "-CAfile", rootFile, intermediateFile)
-
 	leafFile := filepath.Join(dir, "leaf.crt")
 	leafBytes, err := leaf.MarshalText()
 	assert.NilError(t, err)
 	assert.NilError(t, ioutil.WriteFile(leafFile, leafBytes, 0600))
 
 	// Older versions of OpenSSL have fewer options for verifying certificates.
-	// When the only flag available is "-CAfile", intermediates must be bundled
+	// When the only flag available is "-CAfile", CAs must be bundled
 	// there and are *implicitly trusted*.
 
 	bundleFile := filepath.Join(dir, "ca-chain.crt")
-	assert.NilError(t, ioutil.WriteFile(bundleFile, append(rootBytes, intermediateBytes...), 0600))
+	assert.NilError(t, ioutil.WriteFile(bundleFile, rootBytes, 0600))
 
 	verify(t, "-CAfile", bundleFile, leafFile)
 	verify(t, "-CAfile", bundleFile, "-purpose", "sslclient", leafFile)
 	verify(t, "-CAfile", bundleFile, "-purpose", "sslserver", leafFile)
-
-	output, err := exec.Command(openssl, "verify", "-CAfile", rootFile, leafFile).CombinedOutput()
-	assert.Assert(t, err != nil, "expected intermediate to be required")
-	assert.Assert(t, cmp.Contains(string(output), "issuer certificate"))
 }
 
-func strictOpenSSLVerify(t *testing.T, openssl string, root, intermediate, leaf *Certificate) {
+func strictOpenSSLVerify(t *testing.T, openssl string, root, leaf *Certificate) {
 	verify := func(t testing.TB, args ...string) {
 		t.Helper()
 		args = append([]string{"verify",
@@ -187,23 +158,12 @@ func strictOpenSSLVerify(t *testing.T, openssl string, root, intermediate, leaf 
 	// The root certificate cannot be verified independently because it is self-signed.
 	// Some checks are performed when it is a "trusted" certificate below.
 
-	intermediateFile := filepath.Join(dir, "intermediate.crt")
-	intermediateBytes, err := intermediate.MarshalText()
-	assert.NilError(t, err)
-	assert.NilError(t, ioutil.WriteFile(intermediateFile, intermediateBytes, 0600))
-
-	verify(t, "-trusted", rootFile, intermediateFile)
-
 	leafFile := filepath.Join(dir, "leaf.crt")
 	leafBytes, err := leaf.MarshalText()
 	assert.NilError(t, err)
 	assert.NilError(t, ioutil.WriteFile(leafFile, leafBytes, 0600))
 
-	verify(t, "-trusted", rootFile, "-untrusted", intermediateFile, leafFile)
-	verify(t, "-trusted", rootFile, "-untrusted", intermediateFile, "-purpose", "sslclient", leafFile)
-	verify(t, "-trusted", rootFile, "-untrusted", intermediateFile, "-purpose", "sslserver", leafFile)
-
-	output, err := exec.Command(openssl, "verify", "-trusted", rootFile, leafFile).CombinedOutput()
-	assert.Assert(t, err != nil, "expected intermediate to be required")
-	assert.Assert(t, cmp.Contains(string(output), "issuer certificate"))
+	verify(t, "-trusted", rootFile, leafFile)
+	verify(t, "-trusted", rootFile, "-purpose", "sslclient", leafFile)
+	verify(t, "-trusted", rootFile, "-purpose", "sslserver", leafFile)
 }

@@ -20,10 +20,6 @@
 // NewRootCertificateAuthority().Generate() creates a new root CA.
 // ParseRootCertificateAuthority() loads an existing root certificate and key.
 //
-// NewIntermediateCertificateAuthority().Generate() creates a new intermediate CA.
-// ParseIntermediateCertificateAuthority() loads an existing intermediate
-// certificate and key.
-//
 // NewLeafCertificate().Generate() creates a new leaf certificate.
 //
 // Certificate and PrivateKey are primitives that can be marshaled.

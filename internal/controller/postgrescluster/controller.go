@@ -129,7 +129,6 @@ func (r *Reconciler) Reconcile(
 	}
 
 	var (
-		intermediateCA       *pki.IntermediateCertificateAuthority
 		clusterConfigMap     *v1.ConfigMap
 		clusterPodService    *v1.Service
 		patroniLeaderService *v1.Service
@@ -168,9 +167,6 @@ func (r *Reconciler) Reconcile(
 		rootCA, err = r.reconcileRootCertificate(ctx, naming.PostgresOperatorNamespace)
 	}
 	if err == nil {
-		intermediateCA, err = r.reconcileNamespaceCertificate(ctx, cluster.Namespace, rootCA)
-	}
-	if err == nil {
 		clusterPodService, err = r.reconcileClusterPodService(ctx, cluster)
 	}
 	if err == nil {
@@ -192,7 +188,7 @@ func (r *Reconciler) Reconcile(
 		if err == nil {
 			instanceSet, err = r.reconcileInstanceSet(
 				ctx, cluster, &cluster.Spec.InstanceSets[i],
-				clusterConfigMap, intermediateCA, rootCA, clusterPodService, patroniLeaderService)
+				clusterConfigMap, rootCA, clusterPodService, patroniLeaderService)
 			for _, instance := range instanceSet.Items {
 				instancesNames = append(instancesNames, instance.GetName())
 			}

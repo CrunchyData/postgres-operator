@@ -41,8 +41,6 @@ const (
 const (
 	// RootCertSecret is the default root certificate secret name
 	RootCertSecret = "pgo-root-cacert" /* #nosec */
-	// IntermediateCertSecret is the default intermediate certificate secret name
-	IntermediateCertSecret = "pgo-intermediate-cacert"
 )
 
 const (
