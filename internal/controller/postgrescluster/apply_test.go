@@ -37,7 +37,9 @@ import (
 )
 
 func TestServerSideApply(t *testing.T) {
-	t.Parallel()
+	// TODO: Update tests that include envtest package to better handle
+	// running in parallel
+	// t.Parallel()
 
 	ctx := context.Background()
 	env := &envtest.Environment{}

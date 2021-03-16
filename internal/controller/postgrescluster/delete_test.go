@@ -53,7 +53,9 @@ func TestReconcilerHandleDelete(t *testing.T) {
 	if !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
 		t.Skip("requires a running garbage collection controller")
 	}
-	t.Parallel()
+	// TODO: Update tests that include envtest package to better handle
+	// running in parallel
+	// t.Parallel()
 
 	ctx := context.Background()
 	env := &envtest.Environment{
