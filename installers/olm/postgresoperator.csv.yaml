@@ -107,8 +107,6 @@ spec:
                 - endpoints
                 - pods
                 - pods/exec
-                - pods/log
-                - replicasets
                 - secrets
                 - services
                 - persistentvolumeclaims
@@ -122,9 +120,18 @@ spec:
                 - delete
                 - deletecollection
             - apiGroups:
+                - ''
+              resources:
+                - pods/log
+              verbs:
+                - get
+                - list
+                - watch
+            - apiGroups:
                 - apps
               resources:
                 - deployments
+                - replicasets
               verbs:
                 - get
                 - list
