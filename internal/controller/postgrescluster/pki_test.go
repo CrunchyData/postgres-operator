@@ -20,53 +20,182 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/pkg/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
 func TestReconcileCerts(t *testing.T) {
-
 	// setup the test environment and ensure a clean teardown
 	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-
-	// set up a non-cached client
-	newClient, err := client.New(cfg, client.Options{})
-	assert.NilError(t, err)
+	ctx := context.Background()
+	// set namespace name
+	ns := &v1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() {
+		assert.Check(t, tClient.Delete(ctx, ns))
 		teardownTestEnv(t, tEnv)
 	})
+	namespace := ns.Name
 
-	ctx := context.Background()
+	testScheme := runtime.NewScheme()
+	scheme.AddToScheme(testScheme)
+	v1alpha1.AddToScheme(testScheme)
+
+	// set up a non-cached client
+	newClient, err := client.New(cfg, client.Options{Scheme: testScheme})
+	assert.NilError(t, err)
+
 	r := &Reconciler{
 		Client: newClient,
 		Owner:  ControllerName,
 	}
 
-	clusterName := "hippocluster"
+	// set up cluster1
+	clusterName1 := "hippocluster1"
 
-	ns := &v1.Namespace{}
-	ns.GenerateName = "postgres-operator-test-"
-	assert.NilError(t, tClient.Create(ctx, ns))
-	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-	namespace := ns.Name
+	// set up test cluster1
+	cluster1 := &v1alpha1.PostgresCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      clusterName1,
+			Namespace: namespace,
+		},
+		Spec: v1alpha1.PostgresClusterSpec{
+			PostgresVersion: 12,
+			InstanceSets:    []v1alpha1.PostgresInstanceSetSpec{},
+		},
+	}
+	cluster1.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("postgrescluster"))
+	if err := tClient.Create(ctx, cluster1); err != nil {
+		t.Error(err)
+	}
+
+	// set up test cluster2
+	cluster2Name := "hippocluster2"
+
+	cluster2 := &v1alpha1.PostgresCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cluster2Name,
+			Namespace: namespace,
+		},
+		Spec: v1alpha1.PostgresClusterSpec{
+			PostgresVersion: 12,
+			InstanceSets:    []v1alpha1.PostgresInstanceSetSpec{},
+		},
+	}
+	cluster2.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("postgrescluster"))
+	if err := tClient.Create(ctx, cluster2); err != nil {
+		t.Error(err)
+	}
 
 	t.Run("check root certificate reconciliation", func(t *testing.T) {
 
-		initialRoot, err := r.reconcileRootCertificate(ctx, namespace)
+		initialRoot, err := r.reconcileRootCertificate(ctx, cluster1, namespace)
 		assert.NilError(t, err)
 
-		t.Run("check root certificate is returned correctly", func(t *testing.T) {
+		rootSecret := &v1.Secret{}
+		rootSecret.Namespace, rootSecret.Name = namespace, naming.RootCertSecret
+		rootSecret.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+
+		t.Run("check root CA secret first owner reference", func(t *testing.T) {
+
+			err := tClient.Get(ctx, client.ObjectKeyFromObject(rootSecret), rootSecret)
+			assert.NilError(t, err)
+
+			assert.Check(t, len(rootSecret.ObjectMeta.OwnerReferences) == 1, "first owner reference not set")
+
+			expectedOR := metav1.OwnerReference{
+				APIVersion: "postgres-operator.crunchydata.com/v1alpha1",
+				Kind:       "PostgresCluster",
+				Name:       "hippocluster1",
+				UID:        cluster1.UID,
+			}
+
+			if len(rootSecret.ObjectMeta.OwnerReferences) > 0 {
+				assert.Equal(t, rootSecret.ObjectMeta.OwnerReferences[0], expectedOR)
+			}
+		})
+
+		t.Run("check root CA secret second owner reference", func(t *testing.T) {
+
+			_, err := r.reconcileRootCertificate(ctx, cluster2, namespace)
+			assert.NilError(t, err)
+
+			err = tClient.Get(ctx, client.ObjectKeyFromObject(rootSecret), rootSecret)
+			assert.NilError(t, err)
+
+			clist := &v1alpha1.PostgresClusterList{}
+			tClient.List(ctx, clist)
+
+			assert.Check(t, len(rootSecret.ObjectMeta.OwnerReferences) == 2, "second owner reference not set")
+
+			expectedOR := metav1.OwnerReference{
+				APIVersion: "postgres-operator.crunchydata.com/v1alpha1",
+				Kind:       "PostgresCluster",
+				Name:       "hippocluster2",
+				UID:        cluster2.UID,
+			}
+
+			if len(rootSecret.ObjectMeta.OwnerReferences) > 1 {
+				assert.Equal(t, rootSecret.ObjectMeta.OwnerReferences[1], expectedOR)
+			}
+		})
+
+		t.Run("remove owner references after deleting first cluster", func(t *testing.T) {
+
+			if !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+				t.Skip("requires a running garbage collection controller")
+			}
+
+			err = tClient.Get(ctx, client.ObjectKeyFromObject(cluster1), cluster1)
+			assert.NilError(t, err)
+
+			err = tClient.Delete(ctx, cluster1)
+			assert.NilError(t, err)
+
+			err = wait.Poll(time.Second/2, time.Second*15, func() (bool, error) {
+				if err := tClient.Get(ctx,
+					client.ObjectKeyFromObject(rootSecret), rootSecret); len(rootSecret.ObjectMeta.OwnerReferences) == 1 {
+					return true, err
+				}
+				return false, nil
+			})
+			assert.NilError(t, err)
+
+			assert.Check(t, len(rootSecret.ObjectMeta.OwnerReferences) == 1, "owner reference not removed")
+
+			expectedOR := metav1.OwnerReference{
+				APIVersion: "postgres-operator.crunchydata.com/v1alpha1",
+				Kind:       "PostgresCluster",
+				Name:       "hippocluster2",
+				UID:        cluster2.UID,
+			}
+
+			if len(rootSecret.ObjectMeta.OwnerReferences) > 0 {
+				assert.Equal(t, rootSecret.ObjectMeta.OwnerReferences[0], expectedOR)
+			}
+		})
+
+		t.Run("root certificate is returned correctly", func(t *testing.T) {
 
 			fromSecret, err := getCertFromSecret(ctx, tClient, naming.RootCertSecret, namespace, "root.crt")
 			assert.NilError(t, err)
@@ -75,7 +204,7 @@ func TestReconcileCerts(t *testing.T) {
 			assert.Assert(t, bytes.Equal(fromSecret.Certificate, initialRoot.Certificate.Certificate))
 		})
 
-		t.Run("check root certificate changes", func(t *testing.T) {
+		t.Run("root certificate changes", func(t *testing.T) {
 			// force the generation of a new root cert
 			// create an empty secret and apply the change
 			emptyRootSecret := &v1.Secret{}
@@ -86,7 +215,7 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			// reconcile the root cert secret, creating a new root cert
-			returnedRoot, err := r.reconcileRootCertificate(ctx, namespace)
+			returnedRoot, err := r.reconcileRootCertificate(ctx, cluster1, namespace)
 			assert.NilError(t, err)
 
 			fromSecret, err := getCertFromSecret(ctx, tClient, naming.RootCertSecret, namespace, "root.crt")
@@ -99,11 +228,33 @@ func TestReconcileCerts(t *testing.T) {
 			assert.Assert(t, bytes.Equal(fromSecret.Certificate, returnedRoot.Certificate.Certificate))
 		})
 
+		t.Run("root CA secret is deleted after final cluster is deleted", func(t *testing.T) {
+
+			if !strings.EqualFold(os.Getenv("USE_EXISTING_CLUSTER"), "true") {
+				t.Skip("requires a running garbage collection controller")
+			}
+
+			err = tClient.Get(ctx, client.ObjectKeyFromObject(cluster2), cluster2)
+			assert.NilError(t, err)
+
+			err = tClient.Delete(ctx, cluster2)
+			assert.NilError(t, err)
+
+			err = wait.Poll(time.Second/2, time.Second*15, func() (bool, error) {
+				if err := tClient.Get(ctx,
+					client.ObjectKeyFromObject(rootSecret), rootSecret); apierrors.ReasonForError(err) == metav1.StatusReasonNotFound {
+					return true, err
+				}
+				return false, nil
+			})
+			assert.Assert(t, apierrors.IsNotFound(err))
+		})
+
 	})
 
 	t.Run("check leaf certificate reconciliation", func(t *testing.T) {
 
-		initialRoot, err := r.reconcileRootCertificate(ctx, namespace)
+		initialRoot, err := r.reconcileRootCertificate(ctx, cluster1, namespace)
 		assert.NilError(t, err)
 
 		// instance with minimal required fields
@@ -113,11 +264,11 @@ func TestReconcileCerts(t *testing.T) {
 				Kind:       "StatefulSet",
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      clusterName,
+				Name:      clusterName1,
 				Namespace: namespace,
 			},
 			Spec: appsv1.StatefulSetSpec{
-				ServiceName: clusterName,
+				ServiceName: clusterName1,
 			},
 		}
 
@@ -150,7 +301,7 @@ func TestReconcileCerts(t *testing.T) {
 			err = errors.WithStack(r.apply(ctx, emptyRootSecret))
 
 			// reconcile the root cert secret
-			newRootCert, err := r.reconcileRootCertificate(ctx, namespace)
+			newRootCert, err := r.reconcileRootCertificate(ctx, cluster1, namespace)
 			assert.NilError(t, err)
 
 			// get the existing leaf/instance secret which will receive a new certificate during reconciliation

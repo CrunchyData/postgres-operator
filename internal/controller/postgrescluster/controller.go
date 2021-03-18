@@ -164,7 +164,7 @@ func (r *Reconciler) Reconcile(
 		clusterConfigMap, err = r.reconcileClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser)
 	}
 	if err == nil {
-		rootCA, err = r.reconcileRootCertificate(ctx, naming.PostgresOperatorNamespace)
+		rootCA, err = r.reconcileRootCertificate(ctx, cluster, naming.PostgresOperatorNamespace)
 	}
 	if err == nil {
 		clusterPodService, err = r.reconcileClusterPodService(ctx, cluster)
@@ -238,6 +238,15 @@ func (r *Reconciler) setControllerReference(
 	owner *v1alpha1.PostgresCluster, controlled client.Object,
 ) error {
 	return controllerutil.SetControllerReference(owner, controlled, r.Client.Scheme())
+}
+
+// setOwnerReference sets an OwnerReference on the object without setting the
+// owner as a controller. This allows for multiple OwnerReferences on an object.
+// is already set.
+func (r *Reconciler) setOwnerReference(
+	owner *v1alpha1.PostgresCluster, controlled client.Object,
+) error {
+	return controllerutil.SetOwnerReference(owner, controlled, r.Client.Scheme())
 }
 
 // SetupWithManager adds the PostgresCluster controller to the provided runtime manager

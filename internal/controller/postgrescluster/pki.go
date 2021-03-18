@@ -25,6 +25,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
 // +kubebuilder:rbac:resources=secrets,verbs=get;patch
@@ -35,7 +36,7 @@ import (
 // If it is bad for some reason, a new root certificate is
 // generated for use.
 func (r *Reconciler) reconcileRootCertificate(
-	ctx context.Context, namespace string,
+	ctx context.Context, cluster *v1alpha1.PostgresCluster, namespace string,
 ) (
 	*pki.RootCertificateAuthority, error,
 ) {
@@ -66,14 +67,18 @@ func (r *Reconciler) reconcileRootCertificate(
 	intent.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
 	intent.Namespace, intent.Name = namespace, naming.RootCertSecret
 	intent.Data = make(map[string][]byte)
+	intent.ObjectMeta.OwnerReferences = existing.ObjectMeta.OwnerReferences
 
-	// TODO(cbandy/tjmoore4): Ownership, Controller.
-	// The postgrescluster controller is likely incorrect as the owner
-	// of the root secrets. Among other reasons, there is the potential
-	// that a root certificate secret is in a different namespace than
-	// the last postgrescluster to trigger its reconciliation
+	// The root secret is scoped to the namespace(s) where postgrescluster(s)
+	// are deployed. During reconciliation, the owner reference block of the
+	// root secret is updated to include the postgrescluster as an owner.
+	// However, unlike the leaf certificate, the postgrescluster will not be
+	// set as the controller. This allows for multiple owners to guide garbage
+	// collection, but avoids any errors related to setting multiple controllers.
 	// k8s.io/docs/concepts/workloads/controllers/garbage-collection/#owners-and-dependents
-
+	if err == nil {
+		err = errors.WithStack(r.setOwnerReference(cluster, intent))
+	}
 	if err == nil {
 		intent.Data[keyCertificate], err = root.Certificate.MarshalText()
 		err = errors.WithStack(err)
