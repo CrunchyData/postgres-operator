@@ -27,12 +27,16 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/iancoleman/orderedmap"
 	log "github.com/sirupsen/logrus"
-	goyaml "gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
+
+	// This yaml package is needed for a specific requirement within this package for maintaining
+	// the order of YAML keys when encoding/decoding.  Outside of this specific use-case, the
+	// 'sigs.k8s.io/yaml' should be leveraged for all other required YAML functionality.
+	goyaml "gopkg.in/yaml.v2"
 )
 
 const (
