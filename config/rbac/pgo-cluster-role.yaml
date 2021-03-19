@@ -97,3 +97,17 @@ rules:
       - postgresclusters/status
     verbs:
       - patch
+  - apiGroups:
+      - postgres-operator.crunchydata.com
+    resources:
+      - postgresclusters/finalizers
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - ''
+    resources:
+      - endpoints/restricted
+    verbs:
+      - create
