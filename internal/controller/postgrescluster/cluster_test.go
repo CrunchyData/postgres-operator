@@ -108,6 +108,14 @@ func TestReconcilePGUserSecret(t *testing.T) {
 		assert.Assert(t, ok)
 		assert.Equal(t, string(databasename), postgresCluster.Name)
 
+		host, ok := pgUserSecret.Data["host"]
+		assert.Assert(t, ok)
+		assert.Equal(t, string(host), fmt.Sprintf("%s.%s.svc", "hippocluster-primary", namespace))
+
+		port, ok := pgUserSecret.Data["port"]
+		assert.Assert(t, ok)
+		assert.Equal(t, string(port), fmt.Sprintf("%d", *postgresCluster.Spec.Port))
+
 		username, ok := pgUserSecret.Data["user"]
 		assert.Assert(t, ok)
 		assert.Equal(t, string(username), postgresCluster.Name)

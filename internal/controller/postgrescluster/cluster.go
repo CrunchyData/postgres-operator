@@ -194,8 +194,14 @@ func (r *Reconciler) reconcilePGUserSecret(
 
 	intent.Data = make(map[string][]byte)
 
+	// TODO(jkatz): user as cluster name? could there be a different default here?
 	intent.Data["user"] = []byte(cluster.Name)
 	intent.Data["dbname"] = []byte(cluster.Name)
+	intent.Data["port"] = []byte(fmt.Sprintf("%d", *cluster.Spec.Port))
+
+	hostname := naming.ClusterPrimaryService(cluster).Name + "." +
+		naming.ClusterPrimaryService(cluster).Namespace + ".svc"
+	intent.Data["host"] = []byte(hostname)
 
 	// if the password is not set, generate a new one
 	if _, ok := existing.Data["password"]; !ok {
@@ -217,9 +223,6 @@ func (r *Reconciler) reconcilePGUserSecret(
 		intent.Data["password"] = existing.Data["password"]
 		intent.Data["verifier"] = existing.Data["verifier"]
 	}
-
-	hostname := naming.ClusterPrimaryService(cluster).Name + "." +
-		naming.ClusterPrimaryService(cluster).Namespace + ".svc"
 
 	// The stored connection string follows the PostgreSQL format.
 	// The example followed is
