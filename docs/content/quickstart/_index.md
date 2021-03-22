@@ -107,9 +107,21 @@ Within this Secret are attributes that provide information to let you log into t
 - `user`: The name of the user account.
 - `password`: The password for the user account.
 - `dbname`: The name of the database that the user has access to by default.
+- `host`: The name of the host of the database. This references the [Service](https://kubernetes.io/docs/concepts/services-networking/service/) of the primary Postgres instance.
+- `port`: The port that the database is listening on.
 - `uri`: A [PostgreSQL connection URI](https://www.postgresql.org/docs/current/libpq-connect.html#id-1.7.3.8.3.6) that provides all the information for logging into the Postgres database.
 
 ### Connect via `psql` in the Terminal
+
+#### Connect Directly
+
+If you are on the same network as your PostgreSQL cluster, you can connect directly to it using the following command:
+
+```
+psql $(kubectl -n postgres-operator get secrets hippo-pguser -o jsonpath='{.data.uri}' | base64 -d)
+```
+
+#### Connect Using a Port-Forward
 
 In a new terminal, create a port forward:
 
@@ -128,6 +140,83 @@ PGPASSWORD=$(kubectl get secrets -n postgres-operator "${PG_CLUSTER_USER_SECRET_
 PGUSER=$(kubectl get secrets -n postgres-operator "${PG_CLUSTER_USER_SECRET_NAME}" -o jsonpath="{.data.user}" | base64 -d) \
 PGDBNAME=$(kubectl get secrets -n postgres-operator "${PG_CLUSTER_USER_SECRET_NAME}" -o jsonpath="{.data.dbname}" | base64 -d) \
 psql -h localhost
+```
+
+### Connect an Application
+
+The information provided in the user Secret will allow you to connect an application directly to your PostgreSQL database.
+
+For example, let's connect [Keycloak](https://www.keycloak.org/). Keycloak is a popular open source identity management tool that is backed by a PostgreSQL database. Using the `hippo` cluster we created, we can deploy the the following manifest file:
+
+```
+cat <<EOF >> keycloak.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: postgres-operator
+  labels:
+    app: keycloak
+spec:
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      containers:
+      - image: quay.io/keycloak/keycloak:latest
+        name: keycloak
+        env:
+        - name: DB_VENDOR
+          value: "postgres"
+        - name: DB_ADDR
+          valueFrom:
+            secretKeyRef:
+              name: hippo-pguser
+              key: host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: hippo-pguser
+              key: port
+        - name: DB_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: hippo-pguser
+              key: dbname
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: hippo-pguser
+              key: user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: hippo-pguser
+              key: password
+        - name: KEYCLOAK_USER
+          value: "admin"
+        - name: KEYCLOAK_PASSWORD
+          value: "admin"
+        - name: PROXY_ADDRESS_FORWARDING
+          value: "true"
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: https
+          containerPort: 8443
+        readinessProbe:
+          httpGet:
+            path: /auth/realms/master
+            port: 8080
+      restartPolicy: Always
+
+EOF
+
+kubectl apply -f keycloak.yaml
 ```
 
 ## Scale a Postgres Cluster
