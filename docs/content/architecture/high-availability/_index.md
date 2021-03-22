@@ -219,6 +219,30 @@ number of nodes are available to support this configuration, certain deployments
 will fail, since it will not be possible for Kubernetes to successfully schedule
 the pods for each deployment.
 
+It is possible to fine tune the pod anti-affinity rules further, specifically,
+set different affinity rules for the PostgreSQL, pgBackRest, and pgBouncer
+Deployments. These can be handled by the following flags on [`pgo create cluster`]({{< relref "pgo-client/reference/pgo_create_cluster.md">}}):
+
+- `--pod-anti-affinity`: Sets the pod anti-affinity rules for all the managed
+Deployments in the cluster (PostgreSQL, pgBackRest, pgBouncer)
+- `--pod-anti-affinity-pgbackrest`: Sets the pod anti-affinity rules for _only_
+the pgBackRest Deployment. This takes precedence over the value of
+`--pod-anti-affinity`.
+- `--pod-anti-affinity-pgbouncer`: Sets the pod anti-affinity rules for _only_
+the pgBouncer Deployment. This takes precedence over the value of
+`--pod-anti-affinity`.
+
+For example, to use `required` pod anti-affinity between PostgreSQL instances
+but use only `preferred` anti-affinity for pgBackRest and pgBouncer, you could
+use the following command:
+
+```
+pgo create cluster hippo --replicas=2 --pgbouncer \
+  --pod-anti-affinity=required \
+  --pod-anti-affinity=preferred \
+  --pod-anti-afinity=preferred
+```
+
 ## Synchronous Replication: Guarding Against Transactions Loss
 
 Clusters managed by the Crunchy PostgreSQL Operator can be deployed with
