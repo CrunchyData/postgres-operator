@@ -3,7 +3,7 @@ kind: PostgresCluster
 metadata:
   name: hippo
 spec:
-  image: gcr.io/crunchy-dev-test/crunchy-postgres-ha:centos8-12.6-multi.dev1
+  image: gcr.io/crunchy-dev-test/crunchy-postgres-ha:centos8-12.6-multi.dev2
   postgresVersion: 12
   instances:
     - name: instance1
@@ -17,7 +17,7 @@ spec:
     pgbackrest:
       repoHost:
         dedicated: {}
-        image: gcr.io/crunchy-dev-test/crunchy-pgbackrest:centos8-12.6-multi.dev1
+        image: gcr.io/crunchy-dev-test/crunchy-pgbackrest:centos8-12.6-multi.dev2
       repos:
       - name: repo1
         volumeClaimSpec:
