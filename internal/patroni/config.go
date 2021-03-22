@@ -366,6 +366,12 @@ func instanceEnvironment(
 			Name:  "PATRONICTL_CONFIG_FILE",
 			Value: configDirectory,
 		},
+
+		// PGHOST is set to /tmp to match the unix_socket_directories parameter for postgres
+		{
+			Name:  "PGHOST",
+			Value: "/tmp",
+		},
 	}
 
 	return variables
@@ -429,12 +435,20 @@ func instanceYAML(postgresCluster *v1alpha1.PostgresCluster, _ metav1.Object) (s
 			// Missing here is "listen" which is connascent with "connect_address".
 			// See the PATRONI_POSTGRESQL_LISTEN environment variable.
 
-			// TODO(cbandy): "pgpass"
+			// Setting "pgpass" so that Patroni has permission to create the pgpass file
+			"pgpass": "/tmp/.pgpass",
 
 			// Prefer to use UNIX domain sockets for local connections. If the PostgreSQL
 			// parameter "unix_socket_directories" is set, Patroni will connect using one
 			// of those directories. Otherwise, it will use the client (libpq) default.
 			"use_unix_socket": true,
+
+			"parameters": map[string]interface{}{
+				// Set unix_socket_directories to /tmp so that Patroni has permission to
+				// create the socket. The default (/var/run/postgresql/) will be created
+				// as user:group 26:26 instead of postgres:postgres
+				"unix_socket_directories": "/tmp",
+			},
 		},
 
 		"restapi": map[string]interface{}{

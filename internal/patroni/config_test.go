@@ -437,6 +437,8 @@ func TestInstanceEnvironment(t *testing.T) {
   value: '*:8008'
 - name: PATRONICTL_CONFIG_FILE
   value: /etc/patroni
+- name: PGHOST
+  value: /tmp
 	`)+"\n"))
 
 	t.Run("MatchingPorts", func(t *testing.T) {
@@ -475,6 +477,8 @@ func TestInstanceEnvironment(t *testing.T) {
   value: '*:8008'
 - name: PATRONICTL_CONFIG_FILE
   value: /etc/patroni
+- name: PGHOST
+  value: /tmp
 		`)+"\n"))
 	})
 }
@@ -493,6 +497,9 @@ func TestInstanceYAML(t *testing.T) {
 kubernetes: {}
 postgresql:
   data_dir: /pgdata/pg12
+  parameters:
+    unix_socket_directories: /tmp
+  pgpass: /tmp/.pgpass
   use_unix_socket: true
 restapi: {}
 tags: {}
