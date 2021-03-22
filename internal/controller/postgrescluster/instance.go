@@ -260,6 +260,7 @@ func (r *Reconciler) reconcileInstance(
 			{
 				Name:      naming.ContainerDatabase,
 				Image:     cluster.Spec.Image,
+				Command:   []string{"/opt/crunchy/bin/uid_postgres.sh"},
 				Resources: spec.Resources,
 				Ports: []v1.ContainerPort{
 					{
