@@ -1,3 +1,44 @@
+<div class="chevrons">
+  {{ partial "next-prev-page.html" . }}
+</div>
+
+</section>
+</article>
+
+<footer>
+
+<div class="footline">
+  {{if .Params.tags }}
+  <div class="tags">
+    {{ range $index, $tag := .Params.tags }}
+      <a class="label label-default" href="{{$.Site.BaseURL}}tags/{{ $tag | urlize }}">{{ $tag }}</a>
+    {{ end }}
+  </div>
+  {{end}}
+
+  {{with .Params.LastModifierDisplayName}}
+  <div class="author">
+      <i class='fa fa-user'></i> <a href="mailto:{{ $.Params.LastModifierEmail }}">{{ . }}</a>
+  </div>
+  {{end}}
+
+{{ if not .Page.Lastmod.IsZero }}
+  <div class="date">
+      <i class='fa fa-calendar'></i> {{T "last-update-on"}} {{ .Page.Lastmod.Format "02/01/2006" }}
+  </div>
+  {{end}}
+
+</div>
+
+
+<div>
+</div>
+
 <div class="text-center">
   <p><small>&copy; 2017 - 2021 Crunchy Data Solutions, Inc.</small></p>
 </div>
+
+
+</footer>
+
+{{ partial "flex/scripts.html" . }}
