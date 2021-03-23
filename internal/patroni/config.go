@@ -435,7 +435,8 @@ func instanceYAML(postgresCluster *v1alpha1.PostgresCluster, _ metav1.Object) (s
 			// Missing here is "listen" which is connascent with "connect_address".
 			// See the PATRONI_POSTGRESQL_LISTEN environment variable.
 
-			// Setting "pgpass" so that Patroni has permission to create the pgpass file
+			// During startup, Patroni checks that this path is writable whether we use passwords or not.
+			// - https://github.com/zalando/patroni/issues/1888
 			"pgpass": "/tmp/.pgpass",
 
 			// Prefer to use UNIX domain sockets for local connections. If the PostgreSQL
