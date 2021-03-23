@@ -16,7 +16,6 @@
 package patroni
 
 import (
-	"bytes"
 	"strings"
 	"testing"
 
@@ -57,10 +56,10 @@ func TestCertFile(t *testing.T) {
 	instance := pki.NewLeafCertificate("instance.pod-dns", nil, nil)
 	assert.NilError(t, instance.Generate(root))
 
-	data, err := certFile(instance.PrivateKey, instance.Certificate, root.Certificate)
+	data, err := certFile(instance.PrivateKey, instance.Certificate)
 	assert.NilError(t, err)
 
-	// PEM-encoded key followed by the certificate then the root.
+	// PEM-encoded key followed by the certificate
 	// - https://docs.python.org/3/library/ssl.html#combined-key-and-certificate
 	// - https://docs.python.org/3/library/ssl.html#certificate-chains
 	assert.Assert(t,
@@ -71,16 +70,9 @@ func TestCertFile(t *testing.T) {
 			`-----BEGIN CERTIFICATE-----\n`+
 			`([^-]+\n)+`+
 			`-----END CERTIFICATE-----\n`+
-			`-----BEGIN CERTIFICATE-----\n`+
-			`([^-]+\n)+`+
-			`-----END CERTIFICATE-----\n`+
 			`$`,
 			string(data),
 		))
-
-	rootPEM, _ := root.Certificate.MarshalText()
-
-	assert.Assert(t, bytes.HasSuffix(data, rootPEM))
 }
 
 func TestInstanceCertificates(t *testing.T) {

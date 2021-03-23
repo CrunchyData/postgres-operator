@@ -69,7 +69,7 @@ func TestReconcileInstanceCertificates(t *testing.T) {
 	key := leaf.PrivateKey
 
 	dataCA, _ := certAuthorities(root.Certificate)
-	dataCert, _ := certFile(key, cert, root.Certificate)
+	dataCert, _ := certFile(key, cert)
 
 	assert.NilError(t, InstanceCertificates(ctx, root.Certificate, cert, key, secret))
 

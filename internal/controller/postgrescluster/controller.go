@@ -34,7 +34,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
-	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
@@ -164,7 +163,7 @@ func (r *Reconciler) Reconcile(
 		clusterConfigMap, err = r.reconcileClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser)
 	}
 	if err == nil {
-		rootCA, err = r.reconcileRootCertificate(ctx, cluster, naming.PostgresOperatorNamespace)
+		rootCA, err = r.reconcileRootCertificate(ctx, cluster)
 	}
 	if err == nil {
 		clusterPodService, err = r.reconcileClusterPodService(ctx, cluster)
@@ -242,7 +241,6 @@ func (r *Reconciler) setControllerReference(
 
 // setOwnerReference sets an OwnerReference on the object without setting the
 // owner as a controller. This allows for multiple OwnerReferences on an object.
-// is already set.
 func (r *Reconciler) setOwnerReference(
 	owner *v1alpha1.PostgresCluster, controlled client.Object,
 ) error {

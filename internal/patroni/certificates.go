@@ -46,7 +46,7 @@ func certAuthorities(roots ...*pki.Certificate) ([]byte, error) {
 
 // certFile encodes cert and key as a combination suitable for
 // Patroni's TLS identification. It can be used by both the client and the server.
-func certFile(key *pki.PrivateKey, cert *pki.Certificate, root *pki.Certificate) ([]byte, error) {
+func certFile(key *pki.PrivateKey, cert *pki.Certificate) ([]byte, error) {
 	var out []byte
 
 	if b, err := key.MarshalText(); err == nil {
@@ -56,12 +56,6 @@ func certFile(key *pki.PrivateKey, cert *pki.Certificate, root *pki.Certificate)
 	}
 
 	if b, err := cert.MarshalText(); err == nil {
-		out = append(out, b...)
-	} else {
-		return nil, err
-	}
-
-	if b, err := root.MarshalText(); err == nil {
 		out = append(out, b...)
 	} else {
 		return nil, err

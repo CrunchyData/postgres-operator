@@ -125,6 +125,21 @@ func basicOpenSSLVerify(t *testing.T, openssl string, root, leaf *Certificate) {
 	// Older versions of OpenSSL have fewer options for verifying certificates.
 	// When the only flag available is "-CAfile", CAs must be bundled
 	// there and are *implicitly trusted*.
+	//
+	// This brings a few considerations to be made when it comes to proper verification
+	// of the leaf certificate. Root certificates are self-signed and must be trusted.
+	// However, trusted certificate keys must be handled carefully so that they don't
+	// sign something untrustworthy. Intermediates provide a way to automate trust without
+	// exposing the root key. To accomplish this, intermediates are bundled with leaf
+	// certificates and usually sent together as the certificate chain during TLS handshake.
+	// However, as discussed here:
+	// https://mail.python.org/pipermail/cryptography-dev/2016-August/000676.html
+	// OpenSSL will stop verifying the certificate chain as soon as a root certificate is
+	// encountered, as intended. However, OpenSSL will do the same thing when dealing with a
+	// self-signed Intermediate.pem, which it treats as a root certificate. In that case, any
+	// following root PEM files will not be considered. Because of this, it is essential to
+	// ensure that any Intermediate.pem in the chain is from a trusted source before relying
+	// on the verification method given below.
 
 	bundleFile := filepath.Join(dir, "ca-chain.crt")
 	assert.NilError(t, ioutil.WriteFile(bundleFile, rootBytes, 0600))

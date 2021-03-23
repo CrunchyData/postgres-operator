@@ -37,7 +37,7 @@ const (
 
 // LeafCertificate contains the ability to generate the necessary components of
 // a leaf certificate that can be used to identify a PostgreSQL cluster, or
-// a pgBouncer instance, etc. A leaf certificate is signed by an root
+// a pgBouncer instance, etc. A leaf certificate is signed by a root
 // certificate authority.
 type LeafCertificate struct {
 	// Certificate is the certificate of this certificate authority

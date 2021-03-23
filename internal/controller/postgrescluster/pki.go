@@ -36,14 +36,14 @@ import (
 // If it is bad for some reason, a new root certificate is
 // generated for use.
 func (r *Reconciler) reconcileRootCertificate(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster, namespace string,
+	ctx context.Context, cluster *v1alpha1.PostgresCluster,
 ) (
 	*pki.RootCertificateAuthority, error,
 ) {
 	const keyCertificate, keyPrivateKey = "root.crt", "root.key"
 
 	existing := &v1.Secret{}
-	existing.Namespace, existing.Name = namespace, naming.RootCertSecret
+	existing.Namespace, existing.Name = cluster.Namespace, naming.RootCertSecret
 	err := errors.WithStack(client.IgnoreNotFound(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
@@ -65,17 +65,19 @@ func (r *Reconciler) reconcileRootCertificate(
 
 	intent := &v1.Secret{}
 	intent.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
-	intent.Namespace, intent.Name = namespace, naming.RootCertSecret
+	intent.Namespace, intent.Name = cluster.Namespace, naming.RootCertSecret
 	intent.Data = make(map[string][]byte)
 	intent.ObjectMeta.OwnerReferences = existing.ObjectMeta.OwnerReferences
 
-	// The root secret is scoped to the namespace(s) where postgrescluster(s)
-	// are deployed. During reconciliation, the owner reference block of the
-	// root secret is updated to include the postgrescluster as an owner.
+	// A root secret is scoped to the namespace where postgrescluster(s)
+	// are deployed. For operator deployments with postgresclusters in more than
+	// one namespace, there will be one root per namespace.
+	// During reconciliation, the owner reference block of the root secret is
+	// updated to include the postgrescluster as an owner.
 	// However, unlike the leaf certificate, the postgrescluster will not be
 	// set as the controller. This allows for multiple owners to guide garbage
 	// collection, but avoids any errors related to setting multiple controllers.
-	// k8s.io/docs/concepts/workloads/controllers/garbage-collection/#owners-and-dependents
+	// https://docs.k8s.io/concepts/workloads/controllers/garbage-collection/#owners-and-dependents
 	if err == nil {
 		err = errors.WithStack(r.setOwnerReference(cluster, intent))
 	}

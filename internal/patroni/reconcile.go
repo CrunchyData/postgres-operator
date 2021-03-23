@@ -79,7 +79,7 @@ func InstanceCertificates(ctx context.Context,
 
 	if err == nil {
 		outInstanceCertificates.Data[certServerFileKey], err =
-			certFile(inDNSKey, inDNS, inRoot)
+			certFile(inDNSKey, inDNS)
 	}
 
 	return err

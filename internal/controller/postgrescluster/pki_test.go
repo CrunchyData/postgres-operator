@@ -45,7 +45,7 @@ import (
 
 func TestReconcileCerts(t *testing.T) {
 	// setup the test environment and ensure a clean teardown
-	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
+	tEnv, tClient, _ := setupTestEnv(t, ControllerName)
 	ctx := context.Background()
 	// set namespace name
 	ns := &v1.Namespace{}
@@ -61,12 +61,8 @@ func TestReconcileCerts(t *testing.T) {
 	scheme.AddToScheme(testScheme)
 	v1alpha1.AddToScheme(testScheme)
 
-	// set up a non-cached client
-	newClient, err := client.New(cfg, client.Options{Scheme: testScheme})
-	assert.NilError(t, err)
-
 	r := &Reconciler{
-		Client: newClient,
+		Client: tClient,
 		Owner:  ControllerName,
 	}
 
@@ -109,7 +105,7 @@ func TestReconcileCerts(t *testing.T) {
 
 	t.Run("check root certificate reconciliation", func(t *testing.T) {
 
-		initialRoot, err := r.reconcileRootCertificate(ctx, cluster1, namespace)
+		initialRoot, err := r.reconcileRootCertificate(ctx, cluster1)
 		assert.NilError(t, err)
 
 		rootSecret := &v1.Secret{}
@@ -137,7 +133,7 @@ func TestReconcileCerts(t *testing.T) {
 
 		t.Run("check root CA secret second owner reference", func(t *testing.T) {
 
-			_, err := r.reconcileRootCertificate(ctx, cluster2, namespace)
+			_, err := r.reconcileRootCertificate(ctx, cluster2)
 			assert.NilError(t, err)
 
 			err = tClient.Get(ctx, client.ObjectKeyFromObject(rootSecret), rootSecret)
@@ -173,11 +169,8 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			err = wait.Poll(time.Second/2, time.Second*15, func() (bool, error) {
-				if err := tClient.Get(ctx,
-					client.ObjectKeyFromObject(rootSecret), rootSecret); len(rootSecret.ObjectMeta.OwnerReferences) == 1 {
-					return true, err
-				}
-				return false, nil
+				err := tClient.Get(ctx, client.ObjectKeyFromObject(rootSecret), rootSecret)
+				return len(rootSecret.ObjectMeta.OwnerReferences) == 1, err
 			})
 			assert.NilError(t, err)
 
@@ -215,7 +208,7 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			// reconcile the root cert secret, creating a new root cert
-			returnedRoot, err := r.reconcileRootCertificate(ctx, cluster1, namespace)
+			returnedRoot, err := r.reconcileRootCertificate(ctx, cluster1)
 			assert.NilError(t, err)
 
 			fromSecret, err := getCertFromSecret(ctx, tClient, naming.RootCertSecret, namespace, "root.crt")
@@ -254,7 +247,7 @@ func TestReconcileCerts(t *testing.T) {
 
 	t.Run("check leaf certificate reconciliation", func(t *testing.T) {
 
-		initialRoot, err := r.reconcileRootCertificate(ctx, cluster1, namespace)
+		initialRoot, err := r.reconcileRootCertificate(ctx, cluster1)
 		assert.NilError(t, err)
 
 		// instance with minimal required fields
@@ -301,7 +294,7 @@ func TestReconcileCerts(t *testing.T) {
 			err = errors.WithStack(r.apply(ctx, emptyRootSecret))
 
 			// reconcile the root cert secret
-			newRootCert, err := r.reconcileRootCertificate(ctx, cluster1, namespace)
+			newRootCert, err := r.reconcileRootCertificate(ctx, cluster1)
 			assert.NilError(t, err)
 
 			// get the existing leaf/instance secret which will receive a new certificate during reconciliation
