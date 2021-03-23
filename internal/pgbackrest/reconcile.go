@@ -166,7 +166,8 @@ func AddSSHToPod(postgresCluster *v1alpha1.PostgresCluster, template *v1.PodTemp
 
 	template.Spec.Containers = append(template.Spec.Containers,
 		v1.Container{
-			Command: []string{"/usr/sbin/sshd", "-D", "-e"},
+			Command: []string{"/opt/crunchy/bin/uid_postgres.sh"},
+			Args:    []string{"/usr/sbin/sshd", "-D", "-e"},
 			Image:   postgresCluster.Spec.Archive.PGBackRest.RepoHost.Image,
 			LivenessProbe: &v1.Probe{
 				Handler: v1.Handler{
