@@ -25,7 +25,7 @@ These variables affect the general configuration of PostgreSQL Operator Monitori
 | `create_rbac` | true | **Required** | Set to true if the installer should create the RBAC resources required to run the PostgreSQL Operator Monitoring infrastructure. |
 | `db_port` | 5432 | **Required** | Set to configure the PostgreSQL port used by all PostgreSQL clusters. |
 | `delete_metrics_namespace` | false |  | Set to configure whether or not the metrics namespace (defined using variable `metrics_namespace`) is deleted when uninstalling the monitoring infrastructure. |
-| `disable_fsgroup` | false |  | Set to `true` for deployments where you do not want to have the default PostgreSQL fsGroup (26) set. The typical usage is in OpenShift environments that have a `restricted` Security Context Constraints. |
+| `disable_fsgroup` | false |  | Set to `true` for deployments where you do not want to have the default PostgreSQL fsGroup (26) set. The typical usage is in OpenShift environments that have a `restricted` Security Context Constraints. If you use the `anyuid` SCC, you would want to set this to `false`. The Postgres Operator will set this value appropriately by default, except for when using the `anyuid` SCC.  |
 | `grafana_admin_password` | admin | **Required** | Set to configure the login password for the Grafana administrator. |
 | `grafana_admin_username` | admin | **Required** | Set to configure the login username for the Grafana administrator. |
 | `grafana_install` | true | **Required** | Set to true to install Grafana to visualize metrics. |
