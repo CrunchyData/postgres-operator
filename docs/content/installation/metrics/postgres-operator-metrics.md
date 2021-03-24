@@ -18,6 +18,11 @@ kubectl create namespace pgo
 kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator/v{{< param operatorVersion >}}/installers/metrics/kubectl/postgres-operator-metrics.yml
 ```
 
+Note that in OpenShift and CodeReady Containers you will need to set the
+`disable_fsgroup` to `true` attribute to `true` if you are using the
+`restricted` Security Context Constraint (SCC). If you are using the `anyuid`
+SCC, you will need to set `disable_fsgroup` to `false`.
+
 However, we still advise that you read onward to see how to properly configure
 the PostgreSQL Operator Monitoring infrastructure.
 
@@ -53,13 +58,13 @@ environmental requirements.
 By default, the `pgo-deployer` uses a ServiceAccount called `pgo-metrics-deployer-sa`
 that has a ClusterRoleBinding (`pgo-metrics-deployer-crb`) with several ClusterRole
 permissions.  This ClusterRole is needed for the initial configuration and deployment
-of the various applications comprising the monitoring infrastructure.  This includes permissions 
+of the various applications comprising the monitoring infrastructure.  This includes permissions
 to create:
 
 * RBAC for use by Prometheus and/or Grafana
 * The metrics namespace
 
-The required list of privileges are available in the 
+The required list of privileges are available in the
 [postgres-operator-metrics.yml](https://raw.githubusercontent.com/CrunchyData/postgres-operator/v{{< param operatorVersion >}}/installers/metrics/kubectl/postgres-operator-metrics.yml)
 file:
 
@@ -95,6 +100,11 @@ for deploying PostgreSQL Operator Monitoring. The [example file](https://github.
 contains defaults that should work in most Kubernetes environments, but it may
 require some customization.
 
+Note that in OpenShift and CodeReady Containers you will need to set the
+`disable_fsgroup` to `true` attribute to `true` if you are using the
+`restricted` Security Context Constraint (SCC). If you are using the `anyuid`
+SCC, you will need to set `disable_fsgroup` to `false`.
+
 For a detailed description of each configuration parameter, please read the
 [PostgreSQL Operator Monitoring Installer Configuration Reference](<{{< relref "/installation/metrics/metrics-configuration.md">}}>)
 
@@ -103,7 +113,7 @@ For a detailed description of each configuration parameter, please read the
 The deploy job can be used to perform different deployment actions for the
 PostgreSQL Operator Monitoring infrastructure. When you run the job it will install
 the monitoring infrastructure by default but you can change the deployment action to
-uninstall or update. The `DEPLOY_ACTION` environment variable in the `postgres-operator-metrics.yml` 
+uninstall or update. The `DEPLOY_ACTION` environment variable in the `postgres-operator-metrics.yml`
 file can be set to `install-metrics`, `update-metrics`, and `uninstall-metrics`.
 
 ### Image Pull Secrets

@@ -62,7 +62,6 @@ if you are being using them for your environment. Both sets of variables cannot
 be used at the same time. The unused variables should be left commented out or removed.
 {{% /notice %}}
 
-
 | Name                              | Default     | Required |  Description                                                                                                                                                                      |
 |-----------------------------------|-------------|----------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `kubernetes_context`              |             | **Required**, if deploying to Kubernetes |When deploying to Kubernetes, set to configure the context name of the kubeconfig to be used for authentication.                                                                 |
@@ -83,10 +82,15 @@ kubectl config current-context
 ## Configuring - `values.yaml`
 
 The `values.yaml` file contains all of the configuration parameters
-for deploying the PostgreSQL Operator Monitoring infrastructure. 
+for deploying the PostgreSQL Operator Monitoring infrastructure.
 The [example file](https://github.com/CrunchyData/postgres-operator/blob/v{{< param operatorVersion >}}/installers/metrics/ansible/values.yaml)
 contains defaults that should work in most Kubernetes environments, but it may
 require some customization.
+
+Note that in OpenShift and CodeReady Containers you will need to set the
+`disable_fsgroup` to `true` attribute to `true` if you are using the
+`restricted` Security Context Constraint (SCC). If you are using the `anyuid`
+SCC, you will need to set `disable_fsgroup` to `false`.
 
 For a detailed description of each configuration parameter, please read the
 [PostgreSQL Operator Installer Metrics Configuration Reference](<{{< relref "/installation/metrics/metrics-configuration.md">}}>)
