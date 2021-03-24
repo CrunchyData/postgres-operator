@@ -57,9 +57,14 @@ file will be used to populate the configuation options in the ConfigMap.
 ### Configuration - `values.yaml`
 
 The `values.yaml` file contains all of the configuration parameters for deploying
-the PostgreSQL Operator Monitoring infrastructure. 
+the PostgreSQL Operator Monitoring infrastructure.
 The [values.yaml file](https://github.com/CrunchyData/postgres-operator/blob/master/installers/metrics/helm/values.yaml)
 contains the defaults that should work in most Kubernetes environments, but it may require some customization.
+
+Note that in OpenShift and CodeReady Containers you will need to set the
+`disable_fsgroup` to `true` attribute to `true` if you are using the
+`restricted` Security Context Constraint (SCC). If you are using the `anyuid`
+SCC, you will need to set `disable_fsgroup` to `false`.
 
 For a detailed description of each configuration parameter, please read the
 [PostgreSQL Operator Monitoring Installer Configuration Reference](<{{< relref "/installation/metrics/metrics-configuration.md">}}>)
@@ -81,11 +86,11 @@ upgrade and uninstall the PostgreSQL Operator.
 
 ## Upgrade and Uninstall
 
-Once install has be completed using Helm, it will also be used to upgrade and 
+Once install has be completed using Helm, it will also be used to upgrade and
 uninstall your PostgreSQL Operator.
 
 {{% notice tip %}}
-The `name` and `namespace` in the following sections should match the options 
+The `name` and `namespace` in the following sections should match the options
 provided at install.
 {{% /notice %}}
 
@@ -111,7 +116,7 @@ helm uninstall <name> -n <namespace>
 
 ## Debugging
 
-When the `pgo-deployer` job does not complete successfully, the resources that 
+When the `pgo-deployer` job does not complete successfully, the resources that
 are created and normally cleaned up by Helm will be left in your
 Kubernetes cluster. This will allow you to use the failed job and its logs to
 debug the issue. The following command will show the logs for the `pgo-deployer`
