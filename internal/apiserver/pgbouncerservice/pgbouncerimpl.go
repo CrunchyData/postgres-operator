@@ -509,7 +509,7 @@ func setPgBouncerPasswordDetail(cluster crv1.Pgcluster, result *msgs.ShowPgBounc
 
 	// attempt to get the secret, but only get the password
 	password, err := util.GetPasswordFromSecret(apiserver.Clientset,
-		cluster.Spec.Namespace, pgBouncerSecretName)
+		cluster.Namespace, pgBouncerSecretName)
 	if err != nil {
 		log.Warn(err)
 	}
@@ -527,7 +527,7 @@ func setPgBouncerServiceDetail(cluster crv1.Pgcluster, result *msgs.ShowPgBounce
 
 	// have to go through a bunch of services because "current design"
 	services, err := apiserver.Clientset.
-		CoreV1().Services(cluster.Spec.Namespace).
+		CoreV1().Services(cluster.Namespace).
 		List(ctx, metav1.ListOptions{LabelSelector: selector})
 		// if there is an error, return without making any adjustments
 	if err != nil {

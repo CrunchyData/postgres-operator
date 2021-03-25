@@ -272,7 +272,7 @@ func DeleteBackup(request msgs.DeleteBackrestBackupRequest) msgs.DeleteBackrestB
 
 	// and execute. if there is an error, return it, otherwise we are done
 	if _, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig,
-		apiserver.Clientset, cmd, containername, podName, cluster.Spec.Namespace, nil); err != nil {
+		apiserver.Clientset, cmd, containername, podName, cluster.Namespace, nil); err != nil {
 		log.Error(stderr)
 		response.Code = msgs.Error
 		response.Msg = stderr
@@ -285,7 +285,6 @@ func getBackupParams(clusterName, taskName, action, podName, containerName, imag
 	var newInstance *crv1.Pgtask
 	spec := crv1.PgtaskSpec{}
 	spec.Name = taskName
-	spec.Namespace = ns
 
 	spec.TaskType = crv1.PgtaskBackrest
 	spec.Parameters = make(map[string]string)
@@ -303,7 +302,8 @@ func getBackupParams(clusterName, taskName, action, podName, containerName, imag
 
 	newInstance = &crv1.Pgtask{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: taskName,
+			Name:      taskName,
+			Namespace: ns,
 		},
 		Spec: spec,
 	}
@@ -577,7 +577,6 @@ func getRestoreParams(cluster *crv1.Pgcluster, request *msgs.RestoreRequest) (*c
 	var newInstance *crv1.Pgtask
 
 	spec := crv1.PgtaskSpec{}
-	spec.Namespace = cluster.Namespace
 	spec.Name = "backrest-restore-" + cluster.Name
 	spec.TaskType = crv1.PgtaskBackrestRestore
 	spec.Parameters = make(map[string]string)
@@ -634,7 +633,6 @@ func createRestoreWorkflowTask(cluster *crv1.Pgcluster) (string, error) {
 
 	// create pgtask CRD
 	spec := crv1.PgtaskSpec{}
-	spec.Namespace = cluster.Namespace
 	spec.Name = cluster.Name + "-" + crv1.PgtaskWorkflowBackrestRestoreType
 	spec.TaskType = crv1.PgtaskWorkflow
 

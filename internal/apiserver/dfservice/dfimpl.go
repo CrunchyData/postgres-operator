@@ -156,7 +156,7 @@ func getClusterDf(cluster *crv1.Pgcluster, clusterResultsChannel chan msgs.DfDet
 		LabelSelector: selector,
 	}
 
-	pods, err := apiserver.Clientset.CoreV1().Pods(cluster.Spec.Namespace).List(ctx, options)
+	pods, err := apiserver.Clientset.CoreV1().Pods(cluster.Namespace).List(ctx, options)
 	// if there is an error attempting to get the pods, just return
 	if err != nil {
 		errorChannel <- err
@@ -304,7 +304,7 @@ func getPodDf(cluster *crv1.Pgcluster, pod *v1.Pod, podResultsChannel chan msgs.
 		cmd := []string{"du", "-s", "--block-size", "1", pvcMountPoint}
 
 		stdout, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig,
-			apiserver.Clientset, cmd, pvcContainerName, pod.Name, cluster.Spec.Namespace, nil)
+			apiserver.Clientset, cmd, pvcContainerName, pod.Name, cluster.Namespace, nil)
 		// if the command fails, exit here
 		if err != nil {
 			err := fmt.Errorf(stderr)
@@ -321,7 +321,7 @@ func getPodDf(cluster *crv1.Pgcluster, pod *v1.Pod, podResultsChannel chan msgs.
 			return
 		}
 
-		if claimSize, err := getClaimCapacity(apiserver.Clientset, result.PVCName, cluster.Spec.Namespace); err != nil {
+		if claimSize, err := getClaimCapacity(apiserver.Clientset, result.PVCName, cluster.Namespace); err != nil {
 			errorChannel <- err
 			return
 		} else {

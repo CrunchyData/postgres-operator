@@ -25,10 +25,9 @@ const PgpolicyResourcePlural = "pgpolicies"
 // PgpolicySpec ...
 // swagger:ignore
 type PgpolicySpec struct {
-	Namespace string `json:"namespace"`
-	Name      string `json:"name"`
-	SQL       string `json:"sql"`
-	Status    string `json:"status"`
+	Name   string `json:"name"`
+	SQL    string `json:"sql"`
+	Status string `json:"status"`
 }
 
 // Pgpolicy ...

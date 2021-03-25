@@ -129,7 +129,7 @@ func AddPgAdmin(
 func AddPgAdminFromPgTask(clientset kubeapi.Interface, restconfig *rest.Config, task *crv1.Pgtask) {
 	ctx := context.TODO()
 	clusterName := task.Spec.Parameters[config.LABEL_PGADMIN_TASK_CLUSTER]
-	namespace := task.Spec.Namespace
+	namespace := task.Namespace
 	storage := task.Spec.StorageSpec
 
 	log.Debugf("add pgAdmin from task called for cluster [%s] in namespace [%s]",
@@ -304,7 +304,7 @@ func DeletePgAdmin(clientset kubeapi.Interface, restconfig *rest.Config, cluster
 func DeletePgAdminFromPgTask(clientset kubeapi.Interface, restconfig *rest.Config, task *crv1.Pgtask) {
 	ctx := context.TODO()
 	clusterName := task.Spec.Parameters[config.LABEL_PGADMIN_TASK_CLUSTER]
-	namespace := task.Spec.Namespace
+	namespace := task.Namespace
 
 	log.Debugf("delete pgAdmin from task called for cluster [%s] in namespace [%s]",
 		clusterName, namespace)
@@ -444,7 +444,7 @@ func publishPgAdminEvent(eventType string, task *crv1.Pgtask) {
 	topics := []string{events.EventTopicPgAdmin}
 	// set up the event header
 	eventHeader := events.EventHeader{
-		Namespace: task.Spec.Namespace,
+		Namespace: task.Namespace,
 		Username:  task.ObjectMeta.Labels[config.LABEL_PGOUSER],
 		Topic:     topics,
 		Timestamp: time.Now(),

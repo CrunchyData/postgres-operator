@@ -37,7 +37,6 @@ type Pgreplica struct {
 // PgreplicaSpec ...
 // swagger:ignore
 type PgreplicaSpec struct {
-	Namespace      string        `json:"namespace"`
 	Name           string        `json:"name"`
 	ClusterName    string        `json:"clustername"`
 	ReplicaStorage PgStorageSpec `json:"replicastorage"`

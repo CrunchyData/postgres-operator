@@ -429,7 +429,6 @@ func buildPgTaskForRestore(taskName string, action string, request *msgs.PgResto
 	spec := crv1.PgtaskSpec{}
 
 	spec.Name = taskName
-	spec.Namespace = request.Namespace
 	spec.TaskType = crv1.PgtaskpgRestore
 	spec.Parameters = make(map[string]string)
 	spec.Parameters[config.LABEL_PGRESTORE_DB] = request.PGDumpDB

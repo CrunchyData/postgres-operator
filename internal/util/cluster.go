@@ -257,8 +257,7 @@ func CreateRMDataTask(clientset kubeapi.Interface, cluster *crv1.Pgcluster, repl
 			},
 		},
 		Spec: crv1.PgtaskSpec{
-			Name:      taskName,
-			Namespace: cluster.Namespace,
+			Name: taskName,
 			Parameters: map[string]string{
 				config.LABEL_DELETE_DATA:    strconv.FormatBool(deleteData),
 				config.LABEL_DELETE_BACKUPS: strconv.FormatBool(deleteBackups),
@@ -346,7 +345,7 @@ func GetPrimaryPod(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (*v1
 	// set up the selector for the primary pod
 	selector := fmt.Sprintf("%s=%s,%s=%s",
 		config.LABEL_PG_CLUSTER, cluster.Spec.Name, config.LABEL_PGHA_ROLE, config.LABEL_PGHA_ROLE_PRIMARY)
-	namespace := cluster.Spec.Namespace
+	namespace := cluster.Namespace
 
 	// query the pods
 	pods, err := clientset.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: selector})

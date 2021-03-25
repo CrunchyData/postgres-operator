@@ -123,7 +123,6 @@ func ScaleCluster(request msgs.ClusterScaleRequest, pgouser string) msgs.Cluster
 	for i := 0; i < request.ReplicaCount; i++ {
 		uniqueName := util.RandStringBytesRmndr(4)
 		labels[config.LABEL_NAME] = cluster.Spec.Name + "-" + uniqueName
-		spec.Namespace = cluster.Namespace
 		spec.Name = labels[config.LABEL_NAME]
 
 		newInstance := &crv1.Pgreplica{
