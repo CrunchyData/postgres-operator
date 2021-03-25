@@ -219,6 +219,7 @@ func (in *PgclusterSpec) DeepCopyInto(out *PgclusterSpec) {
 	out.WALStorage = in.WALStorage
 	out.ReplicaStorage = in.ReplicaStorage
 	out.BackrestStorage = in.BackrestStorage
+	out.PGAdminStorage = in.PGAdminStorage
 	if in.Resources != nil {
 		in, out := &in.Resources, &out.Resources
 		*out = make(corev1.ResourceList, len(*in))
