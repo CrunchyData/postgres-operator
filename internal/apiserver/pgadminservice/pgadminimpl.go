@@ -100,7 +100,6 @@ func CreatePgAdmin(request *msgs.CreatePgAdminRequest, ns, pgouser string) msgs.
 
 		// generate the pgtask, starting with spec
 		spec := crv1.PgtaskSpec{
-			Namespace:   cluster.Namespace,
 			Name:        fmt.Sprintf("%s-%s", config.LABEL_PGADMIN_TASK_ADD, cluster.Name),
 			TaskType:    crv1.PgtaskPgAdminAdd,
 			StorageSpec: cluster.Spec.PGAdminStorage,
@@ -168,9 +167,8 @@ func DeletePgAdmin(request *msgs.DeletePgAdminRequest, ns string) msgs.DeletePgA
 
 		// generate the pgtask, starting with spec
 		spec := crv1.PgtaskSpec{
-			Namespace: cluster.Namespace,
-			Name:      config.LABEL_PGADMIN_TASK_DELETE + "-" + cluster.Name,
-			TaskType:  crv1.PgtaskPgAdminDelete,
+			Name:     config.LABEL_PGADMIN_TASK_DELETE + "-" + cluster.Name,
+			TaskType: crv1.PgtaskPgAdminDelete,
 			Parameters: map[string]string{
 				config.LABEL_PGADMIN_TASK_CLUSTER: cluster.Name,
 			},

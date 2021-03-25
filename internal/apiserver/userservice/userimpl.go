@@ -654,7 +654,7 @@ func UpdateUser(request *msgs.UpdateUserRequest, pgouser string) msgs.UpdateUser
 func deleteUserSecret(cluster crv1.Pgcluster, username string) {
 	ctx := context.TODO()
 	secretName := crv1.UserSecretName(&cluster, username)
-	err := apiserver.Clientset.CoreV1().Secrets(cluster.Spec.Namespace).
+	err := apiserver.Clientset.CoreV1().Secrets(cluster.Namespace).
 		Delete(ctx, secretName, metav1.DeleteOptions{})
 	if err != nil {
 		log.Error(err)

@@ -1044,7 +1044,6 @@ func validateConfigPolicies(clusterName, PoliciesFlag, ns string) error {
 		spec.Parameters[v] = v
 	}
 	spec.Name = clusterName + "-policies"
-	spec.Namespace = ns
 	labels := make(map[string]string)
 	labels[config.LABEL_PG_CLUSTER] = clusterName
 
@@ -1332,7 +1331,6 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, ns string
 	// otherwise, set the value from the global configuration
 	spec.PGOImagePrefix = util.GetValueOrDefault(request.PGOImagePrefix, apiserver.Pgo.Pgo.PGOImagePrefix)
 
-	spec.Namespace = ns
 	spec.Name = name
 	spec.ClusterName = name
 	spec.Port = apiserver.Pgo.Cluster.Port
@@ -1485,6 +1483,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, ns string
 	newInstance := &crv1.Pgcluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        name,
+			Namespace:   ns,
 			Labels:      labels,
 			Annotations: annotations,
 		},
@@ -1571,7 +1570,6 @@ func createWorkflowTask(clusterName, ns, pgouser string) (string, error) {
 
 	// create pgtask CRD
 	spec := crv1.PgtaskSpec{}
-	spec.Namespace = ns
 	spec.Name = clusterName + "-" + crv1.PgtaskWorkflowCreateClusterType
 	spec.TaskType = crv1.PgtaskWorkflow
 
@@ -1673,7 +1671,7 @@ func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluste
 	// if the secret already exists, we can perform an early exit
 	// if there is an error, we'll ignore it
 	if secret, err := apiserver.Clientset.
-		CoreV1().Secrets(cluster.Spec.Namespace).
+		CoreV1().Secrets(cluster.Namespace).
 		Get(ctx, secretName, metav1.GetOptions{}); err == nil {
 		log.Infof("secret exists: [%s] - skipping", secretName)
 
@@ -1692,7 +1690,7 @@ func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluste
 		secretFromSecretName := fmt.Sprintf("%s-%s-secret", request.SecretFrom, username)
 
 		// now attempt to load said secret
-		oldPassword, err := util.GetPasswordFromSecret(apiserver.Clientset, cluster.Spec.Namespace, secretFromSecretName)
+		oldPassword, err := util.GetPasswordFromSecret(apiserver.Clientset, cluster.Namespace, secretFromSecretName)
 		// if there is an error, abandon here, otherwise set the oldPassword as the
 		// current password
 		if err != nil {
@@ -1720,7 +1718,7 @@ func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluste
 
 	// great, now we can create the secret! if we can't, return an error
 	if err := util.CreateSecret(apiserver.Clientset, cluster.Spec.Name, secretName,
-		username, password, cluster.Spec.Namespace); err != nil {
+		username, password, cluster.Namespace); err != nil {
 		return "", err
 	}
 

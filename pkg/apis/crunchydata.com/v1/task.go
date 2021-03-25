@@ -85,7 +85,6 @@ const (
 // PgtaskSpec ...
 // swagger:ignore
 type PgtaskSpec struct {
-	Namespace   string            `json:"namespace"`
 	Name        string            `json:"name"`
 	StorageSpec PgStorageSpec     `json:"storagespec"`
 	TaskType    string            `json:"tasktype"`

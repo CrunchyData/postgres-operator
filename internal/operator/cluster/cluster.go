@@ -693,7 +693,7 @@ func createMissingUserSecret(clientset kubernetes.Interface, cluster *crv1.Pgclu
 
 	// if the secret already exists, skip it
 	// if it returns an error other than "not found" return an error
-	if _, err := clientset.CoreV1().Secrets(cluster.Spec.Namespace).Get(
+	if _, err := clientset.CoreV1().Secrets(cluster.Namespace).Get(
 		ctx, secretName, metav1.GetOptions{}); err == nil {
 		log.Infof("user secret %q exists for user %q for cluster %q",
 			secretName, username, cluster.Spec.Name)
@@ -712,7 +712,7 @@ func createMissingUserSecret(clientset kubernetes.Interface, cluster *crv1.Pgclu
 
 	// great, now we can create the secret! if we can't, return an error
 	return util.CreateSecret(clientset, cluster.Spec.Name, secretName,
-		username, password, cluster.Spec.Namespace)
+		username, password, cluster.Namespace)
 }
 
 // createMissingUserSecrets checks to see if there are secrets for the

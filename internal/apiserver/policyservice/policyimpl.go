@@ -44,7 +44,6 @@ func CreatePolicy(client pgo.Interface, policyName, policyFile, ns, pgouser stri
 
 	// Create an instance of our CRD
 	spec := crv1.PgpolicySpec{}
-	spec.Namespace = ns
 	spec.Name = policyName
 	spec.SQL = policyFile
 

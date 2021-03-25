@@ -216,7 +216,6 @@ func CreateBackup(clientset pgo.Interface, namespace, clusterName, podName strin
 
 	spec := crv1.PgtaskSpec{}
 	spec.Name = taskName
-	spec.Namespace = namespace
 
 	spec.TaskType = crv1.PgtaskBackrest
 	spec.Parameters = make(map[string]string)

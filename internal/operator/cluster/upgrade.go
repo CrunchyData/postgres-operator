@@ -703,7 +703,6 @@ func createClusterRecreateWorkflowTask(clientset pgo.Interface, clusterName, ns,
 
 	// create pgtask CRD
 	spec := crv1.PgtaskSpec{}
-	spec.Namespace = ns
 	spec.Name = clusterName + "-" + crv1.PgtaskWorkflowCreateClusterType
 	spec.TaskType = crv1.PgtaskWorkflow
 

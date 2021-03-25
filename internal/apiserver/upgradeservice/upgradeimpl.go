@@ -121,7 +121,6 @@ func CreateUpgrade(request *msgs.CreateUpgradeRequest, ns, pgouser string) msgs.
 		spec.Parameters[config.LABEL_PGOUSER] = pgouser
 
 		spec.Name = clusterName + "-" + config.LABEL_UPGRADE
-		spec.Namespace = ns
 		labels := make(map[string]string)
 		labels[config.LABEL_PG_CLUSTER] = clusterName
 		labels[config.LABEL_PGOUSER] = pgouser

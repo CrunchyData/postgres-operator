@@ -173,7 +173,6 @@ spec:
   exporterport: "9187"
   limits: {}
   name: ${pgo_cluster_name}
-  namespace: ${cluster_namespace}
   pgDataSource:
     restoreFrom: ""
     restoreOpts: ""

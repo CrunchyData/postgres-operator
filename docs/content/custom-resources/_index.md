@@ -113,7 +113,6 @@ spec:
   exporterport: "9187"
   limits: {}
   name: ${pgo_cluster_name}
-  namespace: ${cluster_namespace}
   pgDataSource:
     restoreFrom: ""
     restoreOpts: ""
@@ -308,7 +307,6 @@ spec:
   exporterport: "9187"
   limits: {}
   name: ${pgo_cluster_name}
-  namespace: ${cluster_namespace}
   pgDataSource:
     restoreFrom: ""
     restoreOpts: ""
@@ -428,7 +426,6 @@ spec:
   exporterport: "9187"
   limits: {}
   name: ${pgo_cluster_name}
-  namespace: ${cluster_namespace}
   pgDataSource:
     restoreFrom: ""
     restoreOpts: ""
@@ -527,7 +524,6 @@ metadata:
 spec:
   clustername: ${pgo_cluster_name}
   name: ${pgo_cluster_name}-${pgo_cluster_replica_suffix}
-  namespace: ${cluster_namespace}
   replicastorage:
     accessmode: ReadWriteMany
     matchLabels: ""
@@ -750,7 +746,6 @@ make changes, as described below.
 | exporterResources | `create`, `update` | Specify the container resource requests that the `crunchy-postgres-exporter` sidecar uses when it is deployed with a PostgreSQL instance. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | limits | `create`, `update` | Specify the container resource limits that the PostgreSQL cluster should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | name | `create` | The name of the PostgreSQL instance that is the primary. On creation, this should be set to be the same as `ClusterName`. |
-| namespace | `create` | The Kubernetes Namespace that the PostgreSQL cluster is deployed in. |
 | nodeAffinity | `create` | Sets the [node affinity rules](/architecture/high-availability/#node-affinity) for the PostgreSQL cluster and associated PostgreSQL instances. Can be overridden on a per-instance (`pgreplicas.crunchydata.com`) basis. Please see the `Node Affinity Specification` section below. |
 | pgBadger | `create`,`update` | If `true`, deploys the `crunchy-pgbadger` sidecar for query analysis. |
 | pgbadgerport | `create` | If the `PGBadger` label is set, then this specifies the port that the pgBadger sidecar runs on (e.g. `10000`) |
@@ -896,7 +891,6 @@ cluster. All of the attributes only affect the replica when it is created.
 |-----------|--------|-------------|
 | clustername | `create` | The name of the PostgreSQL cluster, e.g. `hippo`. This is used to group PostgreSQL instances (primary, replicas) together. |
 | name | `create` | The name of this PostgreSQL replica. It should be unique within a `ClusterName`. |
-| namespace | `create` | The Kubernetes Namespace that the PostgreSQL cluster is deployed in. |
 | nodeAffinity | `create` | Sets the [node affinity rules]({{< relref "/architecture/high-availability/_index.md#node-affinity" >}}) for this PostgreSQL instance. Follows the [Kubernetes standard format for setting node affinity](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#node-affinity). |
 | replicastorage | `create` | A specification that gives information about the storage attributes for any replicas in the PostgreSQL cluster. For details, please see the `Storage Specification` section in the `pgclusters.crunchydata.com` description. This will likely be changed in the future based on the nature of the high-availability system, but presently it is still required that you set it. It is recommended you use similar settings to that of `PrimaryStorage`. |
 | serviceType | `create`, `update` | Sets the Kubernetes [Service](https://kubernetes.io/docs/concepts/services-networking/service/) type to use for this particular instance. If not set, defaults to the value in the related `pgclusters.crunchydata.com` custom resource. |
