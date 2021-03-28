@@ -485,6 +485,26 @@ func UpdateAnnotations(clientset kubeapi.Interface, cluster *crv1.Pgcluster, dep
 	return nil
 }
 
+// UpdateBackrestS3 updates any pgBackRest settings that may have been updated.
+// Presently this is just the bucket name.
+func UpdateBackrestS3(clientset kubeapi.Interface, cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) error {
+	// go through the environmetnal variables on the "database" container and edit
+	// the appropriate S3 related ones
+	for i, container := range deployment.Spec.Template.Spec.Containers {
+		if container.Name != "database" {
+			continue
+		}
+
+		for j, envVar := range deployment.Spec.Template.Spec.Containers[i].Env {
+			if envVar.Name == "PGBACKREST_REPO1_S3_BUCKET" {
+				deployment.Spec.Template.Spec.Containers[i].Env[j].Value = cluster.Spec.BackrestS3Bucket
+			}
+		}
+	}
+
+	return nil
+}
+
 // UpdateResources updates the PostgreSQL instance Deployments to reflect the
 // update resources (i.e. CPU, memory)
 func UpdateResources(clientset kubeapi.Interface, cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) error {

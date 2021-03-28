@@ -424,21 +424,19 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 
 			// get the pgBackRest info using this legacy function
 			info, err := getInfo(storageType, podname, ns, verifyTLS)
+
 			// see if the function returned successfully, and if so, unmarshal the JSON
+			// if there was an error getting the info, log that the error occurred in
+			// the API server logs and have the response added to the list.
 			if err != nil {
 				log.Error(err)
-				response.Status.Code = msgs.Error
-				response.Status.Msg = err.Error()
-
-				return response
-			}
-
-			if err := json.Unmarshal([]byte(info), &detail.Info); err != nil {
-				log.Error(err)
-				response.Status.Code = msgs.Error
-				response.Status.Msg = err.Error()
-
-				return response
+			} else {
+				if err := json.Unmarshal([]byte(info), &detail.Info); err != nil {
+					log.Error(err)
+					response.Status.Code = msgs.Error
+					response.Status.Msg = err.Error()
+					return response
+				}
 			}
 
 			// append the details to the list of items

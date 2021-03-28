@@ -443,5 +443,6 @@ modification to the custom resource:
 - Custom annotation changes
 - Enabling/disabling the monitoring sidecar on a PostgreSQL cluster (`--metrics`)
 - Enabling/disabling the pgBadger sidecar on a PostgreSQL cluster (`--pgbadger`)
+- S3 bucket name updates
 - Tablespace additions
 - Toleration modifications
