@@ -25,12 +25,18 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/util"
+	"github.com/iancoleman/orderedmap"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
+
+	// This yaml package is needed for a specific requirement within this package for maintaining
+	// the order of YAML keys when encoding/decoding.  Outside of this specific use-case, the
+	// 'sigs.k8s.io/yaml' should be leveraged for all other required YAML functionality.
+	goyaml "gopkg.in/yaml.v2"
 )
 
 const (
@@ -170,13 +176,13 @@ func (d *DCS) apply() error {
 		namespace)
 
 	// first grab the DCS config from the PGHA config map
-	dcsConfig, rawDCS, err := d.GetDCSConfig()
+	dcsConfig, dcsConfigJSONOrdered, err := d.GetDCSConfig()
 	if err != nil {
 		return err
 	}
 
 	// next grab the current/live DCS from the "config" annotation of the Patroni configMap
-	clusterDCS, rawClusterDCS, err := d.getClusterDCSConfig()
+	clusterDCS, clusterDCSYAMLOrdered, err := d.getClusterDCSConfig()
 	if err != nil {
 		return err
 	}
@@ -189,17 +195,26 @@ func (d *DCS) apply() error {
 	}
 
 	// ensure the current "pause" setting is not overridden if currently set for the cluster
-	if _, ok := rawClusterDCS["pause"]; ok {
-		rawDCS["pause"] = rawClusterDCS["pause"]
+	var pauseExists bool
+	var pauseVal interface{}
+	for _, v := range clusterDCSYAMLOrdered {
+		if v.Key == "pause" {
+			pauseExists = true
+			pauseVal = v.Value
+			break
+		}
+	}
+	if pauseExists {
+		dcsConfigJSONOrdered.Set("pause", pauseVal)
 	}
 
 	// proceed with updating the DCS with the contents of the configMap
-	dcsConfigJSON, err := json.Marshal(rawDCS)
+	orderedDCSConfigPatch, err := json.Marshal(dcsConfigJSONOrdered)
 	if err != nil {
 		return err
 	}
 
-	if err := d.patchDCSAnnotation(string(dcsConfigJSON)); err != nil {
+	if err := d.patchDCSAnnotation(string(orderedDCSConfigPatch)); err != nil {
 		return err
 	}
 
@@ -212,7 +227,7 @@ func (d *DCS) apply() error {
 // getClusterDCSConfig obtains the configuration that is currently stored in the cluster's DCS.
 // Specifically, it obtains the configuration stored in the "config" annotation of the
 // "<clustername>-config" configMap.
-func (d *DCS) getClusterDCSConfig() (*DCSConfig, map[string]json.RawMessage, error) {
+func (d *DCS) getClusterDCSConfig() (*DCSConfig, goyaml.MapSlice, error) {
 	ctx := context.TODO()
 	clusterDCS := &DCSConfig{}
 
@@ -233,18 +248,18 @@ func (d *DCS) getClusterDCSConfig() (*DCSConfig, map[string]json.RawMessage, err
 		return nil, nil, err
 	}
 
-	var rawJSON map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(config), &rawJSON); err != nil {
+	orderedYAML := goyaml.MapSlice{}
+	if err := goyaml.Unmarshal([]byte(config), &orderedYAML); err != nil {
 		return nil, nil, err
 	}
 
-	return clusterDCS, rawJSON, nil
+	return clusterDCS, orderedYAML, nil
 }
 
 // GetDCSConfig returns the current DCS configuration included in the ClusterConfig's
 // configMap, i.e. the contents of the "<clustername-dcs-config>" configuration unmarshalled
 // into a DCSConfig struct.
-func (d *DCS) GetDCSConfig() (*DCSConfig, map[string]json.RawMessage, error) {
+func (d *DCS) GetDCSConfig() (*DCSConfig, *orderedmap.OrderedMap, error) {
 	dcsYAML, ok := d.configMap.Data[d.configName]
 	if !ok {
 		return nil, nil, ErrMissingClusterConfig
@@ -256,12 +271,13 @@ func (d *DCS) GetDCSConfig() (*DCSConfig, map[string]json.RawMessage, error) {
 		return nil, nil, err
 	}
 
-	var rawJSON map[string]json.RawMessage
-	if err := yaml.Unmarshal([]byte(dcsYAML), &rawJSON); err != nil {
+	orderedJSON := orderedmap.New()
+	orderedJSON.SetEscapeHTML(false)
+	if err := yaml.Unmarshal([]byte(dcsYAML), &orderedJSON); err != nil {
 		return nil, nil, err
 	}
 
-	return dcsConfig, rawJSON, nil
+	return dcsConfig, orderedJSON, nil
 }
 
 // patchDCSAnnotation patches the "config" annotation within the DCS configMap with the
@@ -291,12 +307,12 @@ func (d *DCS) refresh() error {
 	log.Debugf("Cluster Config: refreshing DCS config for cluster %s (namespace %s)", clusterName,
 		namespace)
 
-	clusterDCS, _, err := d.getClusterDCSConfig()
+	_, clusterDCSYAMLOrdered, err := d.getClusterDCSConfig()
 	if err != nil {
 		return err
 	}
 
-	clusterDCSBytes, err := yaml.Marshal(clusterDCS)
+	clusterDCSBytes, err := goyaml.Marshal(clusterDCSYAMLOrdered)
 	if err != nil {
 		return err
 	}
