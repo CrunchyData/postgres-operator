@@ -109,6 +109,15 @@
                     }, {
                         "name": "RESTORE_OPTS",
                         "value": "{{.RestoreOpts}}"
+                    }, {
+                      "name": "LD_PRELOAD",
+                      "value": "/usr/lib64/libnss_wrapper.so"
+                    }, {
+                      "name": "NSS_WRAPPER_PASSWD",
+                      "value": "/tmp/nss_wrapper/postgres/passwd"
+                    }, {
+                      "name": "NSS_WRAPPER_GROUP",
+                      "value": "/tmp/nss_wrapper/postgres/group"
                     }],
                     "volumeMounts": [{
                         "mountPath": "/pgdata",
@@ -134,6 +143,10 @@
                         "name": "sshd",
                         "readOnly": true
                     }, {
+                      "name": "ssh-config",
+                      "mountPath": "/etc/ssh",
+                      "readOnly": true
+                    }, {
                         "mountPath": "/pgconf",
                         "name": "pgconf-volume"
                     }, {
@@ -143,10 +156,6 @@
                     {
                         "mountPath": "/tmp",
                         "name": "tmp"
-                    },
-                    {
-                        "mountPath": "/var/lib/pgsql/.ssh",
-                        "name": "pgbackrest-ssh"
                     }, {
                         "mountPath": "/etc/pgbackrest/conf.d",
                         "name": "pgbackrest-config"
@@ -178,12 +187,16 @@
                     "secret": {
                         "secretName": "{{.RestoreFrom}}-backrest-repo-config"
                     }
-                },
-                {
-                  "name": "pgbackrest-ssh",
-                  "emptyDir": {
-                    "medium": "Memory",
-                    "sizeLimit": "128Ki"
+                }, {
+                    "name": "ssh-config",
+                    "secret": {
+                        "secretName": "{{.RestoreFrom}}-backrest-repo-config",
+                        "items": [
+                          {
+                             "key": "config",
+                             "path": "ssh_config"
+                          }
+                     ]
                   }
                 },
                 {{if .TLSEnabled}}

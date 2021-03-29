@@ -125,3 +125,6 @@ Subsystem	sftp	/usr/libexec/openssh/sftp-server
 #	AllowTcpForwarding no
 #	PermitTTY no
 #	ForceCommand cvs server
+
+# ensure nss_wrapper env vars are set when executing commands as needed for OpenShift compatibility
+ForceCommand NSS_WRAPPER_SUBDIR=ssh . /opt/crunchy/bin/nss_wrapper_env.sh && $SSH_ORIGINAL_COMMAND
