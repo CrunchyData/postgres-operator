@@ -542,6 +542,29 @@ kubectl apply -f "${pgo_cluster_name}-${pgo_cluster_replica_suffix}-pgreplica.ya
 
 Add this time, removing a replica must be handled through the [`pgo` client]({{< relref "/pgo-client/common-tasks.md#high-availability-scaling-up-down">}}).
 
+### Resize PVC
+
+PGO lets you resize the PVCs that the Operator manages, e.g. the Postgres data
+directory, pgBackRest, the WAL volume, etc. The PVC can be resized so long as
+the following conditions are met:
+
+1. The [Storage Class](https://kubernetes.io/docs/concepts/storage/storage-classes/)
+supports resizing.
+2. The new size of the PVC is larger than the old size.
+
+The following sections explain how the different PVC resizing operations work
+and how you can resize the PVCs.
+
+#### Resize the PostgreSQL Cluster PVC
+
+To resize the PVC that stores the PostgreSQL data directory across the entire
+cluster, you will need to edit the `size` attribute of the `PrimaryStorage`
+portion of the `pgclusters.crunchydata.com` custom resource.
+
+The PVC process for a cluster uses a [rolling update]({{< relref "/architecture/high-availability/_index.md">}}#rolling-updates)
+to apply the size changes. During the process, each Deployment is scaled down
+and back to allow for the PVC resize to take effect.
+
 ### Monitoring
 
 To enable the [monitoring]({{< relref "/architecture/monitoring.md">}})
@@ -781,7 +804,7 @@ attribute and how it works.
 | accessmode | `create` | The name of the Kubernetes Persistent Volume [Access Mode](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes) to use. |
 | matchLabels | `create` | Only used with `StorageType` of `create`, used to match a particular subset of provisioned Persistent Volumes. |
 | name | `create` | Only needed for `PrimaryStorage` in `pgclusters.crunchydata.com`.Used to identify the name of the PostgreSQL cluster. Should match `ClusterName`. |
-| size | `create` | The size of the [Persistent Volume Claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) (PVC). Must use a Kubernetes resource value, e.g. `20Gi`. |
+| size | `create`, `update` | The size of the [Persistent Volume Claim](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#persistentvolumeclaims) (PVC). Must use a Kubernetes resource value, e.g. `20Gi`. |
 | storageclass | `create` | The name of the Kubernetes [StorageClass](https://kubernetes.io/docs/concepts/storage/storage-classes/) to use. |
 | storagetype | `create` | Set to `create` if storage is provisioned (e.g. using `hostpath`). Set to `dynamic` if using a dynamic storage provisioner, e.g. via a `StorageClass`. |
 | supplementalgroups | `create` | If provided, a comma-separated list of group IDs to use in case it is needed to interface with a particular storage system. Typically used with NFS or hostpath storage. |

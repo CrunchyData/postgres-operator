@@ -21,6 +21,9 @@ const (
 	ANNOTATION_BACKREST_RESTORE       = "pgo-backrest-restore"
 	ANNOTATION_PGHA_BOOTSTRAP_REPLICA = "pgo-pgha-bootstrap-replica"
 	ANNOTATION_PRIMARY_DEPLOYMENT     = "primary-deployment"
+	// ANNOTATION_CLUSTER_DO_NOT_RESIZE indicates on a custom resource update that
+	// a specific instance should not be resized
+	ANNOTATION_CLUSTER_DO_NOT_RESIZE = "do-not-resize"
 	// ANNOTATION_CLUSTER_KEEP_BACKUPS indicates that if a custom resource is
 	// deleted, ensure the backups are kept
 	ANNOTATION_CLUSTER_KEEP_BACKUPS = "keep-backups"
