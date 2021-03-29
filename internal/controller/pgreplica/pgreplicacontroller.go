@@ -261,6 +261,22 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 			log.Errorf("could not update deployment for pgreplica update: %q", err.Error())
 		}
 	}
+
+	// handle PVC resizing, if needed
+	if oldPgreplica.Spec.ReplicaStorage.Size != newPgreplica.Spec.ReplicaStorage.Size {
+		// first check to see if the resize should occur
+		annotations := newPgreplica.ObjectMeta.GetAnnotations()
+		if annotations != nil {
+			if _, ok := annotations[config.ANNOTATION_CLUSTER_DO_NOT_RESIZE]; ok {
+				delete(newPgreplica.ObjectMeta.Annotations, config.ANNOTATION_CLUSTER_DO_NOT_RESIZE)
+				if _, err := c.Client.CrunchydataV1().Pgreplicas(newPgreplica.Namespace).Update(ctx,
+					newPgreplica, metav1.UpdateOptions{}); err != nil {
+					log.Warnf("could not remove resize annotation from pgreplica: %s", err.Error())
+				}
+				return
+			}
+		}
+	}
 }
 
 // onDelete is called when a pgreplica is deleted

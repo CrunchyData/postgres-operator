@@ -31,6 +31,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -65,10 +66,16 @@ const (
 //
 // If this is not a HA cluster, then the Deployment is just singly restarted
 //
+// If "rescale" is selected, then each Deployment is scaled to 0 after the
+// Postgres cluster is shut down, but before the changes are applied. This is
+// normally not needed, but invoked on operations where an object must be
+// completely unconsumed by a resource (e.g. during a change to a PVC).
+//
 // Erroring during this process can be fun. If an error occurs within the middle
 // of a rolling update, in order to avoid placing the cluster in an
 // indeterminate state, most errors are just logged for later troubleshooting
-func RollingUpdate(clientset kubeapi.Interface, restConfig *rest.Config, cluster *crv1.Pgcluster,
+func RollingUpdate(clientset kubeapi.Interface, restConfig *rest.Config,
+	cluster *crv1.Pgcluster, rescale bool,
 	updateFunc func(kubeapi.Interface, *crv1.Pgcluster, *appsv1.Deployment) error) error {
 	log.Debugf("rolling update for cluster %q", cluster.Name)
 
@@ -95,7 +102,7 @@ func RollingUpdate(clientset kubeapi.Interface, restConfig *rest.Config, cluster
 
 		// Try to apply the update. If it returns an error during the process,
 		// continue on to the next replica
-		if err := applyUpdateToPostgresInstance(clientset, restConfig, cluster, deployment, updateFunc); err != nil {
+		if err := applyUpdateToPostgresInstance(clientset, restConfig, cluster, deployment, rescale, updateFunc); err != nil {
 			log.Error(err)
 			continue
 		}
@@ -109,7 +116,7 @@ func RollingUpdate(clientset kubeapi.Interface, restConfig *rest.Config, cluster
 		}
 
 		// ...followed by wiating for the PostgreSQL instance to come back up
-		if err := waitForPostgresInstance(clientset, restConfig, cluster, deployment,
+		if err := waitForPostgresInstanceReady(clientset, restConfig, cluster, deployment,
 			rollingUpdatePeriod, rollingUpdateTimeout); err != nil {
 			log.Warn(err)
 		}
@@ -135,7 +142,7 @@ func RollingUpdate(clientset kubeapi.Interface, restConfig *rest.Config, cluster
 	// single instance cluster
 	for i := range instances[deploymentTypePrimary] {
 		if err := applyUpdateToPostgresInstance(clientset, restConfig, cluster,
-			instances[deploymentTypePrimary][i], updateFunc); err != nil {
+			instances[deploymentTypePrimary][i], rescale, updateFunc); err != nil {
 			log.Error(err)
 		}
 	}
@@ -148,12 +155,14 @@ func RollingUpdate(clientset kubeapi.Interface, restConfig *rest.Config, cluster
 // safely turn of the PostgreSQL instance before modifying the Deployment
 // template.
 func applyUpdateToPostgresInstance(clientset kubeapi.Interface, restConfig *rest.Config,
-	cluster *crv1.Pgcluster, deployment appsv1.Deployment,
+	cluster *crv1.Pgcluster, deployment *appsv1.Deployment, rescale bool,
 	updateFunc func(kubeapi.Interface, *crv1.Pgcluster, *appsv1.Deployment) error) error {
+	var err error
+	replicas := new(int32)
 	ctx := context.TODO()
 
 	// apply any updates, if they cannot be applied, then return an error here
-	if err := updateFunc(clientset, cluster, &deployment); err != nil {
+	if err := updateFunc(clientset, cluster, deployment); err != nil {
 		return err
 	}
 
@@ -162,20 +171,46 @@ func applyUpdateToPostgresInstance(clientset kubeapi.Interface, restConfig *rest
 	// recovery mode.
 	//
 	// If an error is returned, warn, but proceed with the function
-	if err := stopPostgreSQLInstance(clientset, restConfig, deployment); err != nil {
+	if err := stopPostgreSQLInstance(clientset, restConfig, *deployment); err != nil {
 		log.Warn(err)
 	}
 
-	// Perform the update.
-	_, err := clientset.AppsV1().Deployments(deployment.Namespace).
-		Update(ctx, &deployment, metav1.UpdateOptions{})
+	// if "rescale" is selected, scale the deployment down to 0.
+	if rescale {
+		// store the original total of replicas required for scaling back up
+		replicas = deployment.Spec.Replicas
+		deployment.Spec.Replicas = new(int32)
+	}
 
-	return err
+	// Perform the update.
+	deployment, err = clientset.AppsV1().Deployments(deployment.Namespace).
+		Update(ctx, deployment, metav1.UpdateOptions{})
+
+	// if the update fails, return an error
+	if err != nil {
+		return err
+	}
+
+	// if we're rescaling, ensure that the scale down finished and then scale back
+	// up. if something goes wrong, warn that it did but proceed onward as we may
+	// not know exactly why the scaling failed.
+	if rescale {
+		if err := waitForPostgresInstanceTermination(clientset, cluster, deployment,
+			rollingUpdatePeriod, rollingUpdateTimeout); err != nil {
+			log.Warn(err)
+		}
+
+		if err := scaleDeployment(clientset, deployment, replicas); err != nil {
+			log.Warn(err)
+		}
+	}
+
+	return nil
 }
 
 // generateDeploymentTypeMap takes a list of Deployments and determines what
 // they represent: a primary (hopefully only one) or replicas
-func generateDeploymentTypeMap(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (map[deploymentType][]appsv1.Deployment, error) {
+func generateDeploymentTypeMap(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (map[deploymentType][]*appsv1.Deployment, error) {
 	ctx := context.TODO()
 
 	// get a list of all of the instance deployments for the cluster
@@ -199,7 +234,7 @@ func generateDeploymentTypeMap(clientset kubernetes.Interface, cluster *crv1.Pgc
 
 	// go through each Deployment and make a determination about its type. If we
 	// ultimately cannot do that, treat the deployment as a "replica"
-	instances := map[deploymentType][]appsv1.Deployment{
+	instances := map[deploymentType][]*appsv1.Deployment{
 		deploymentTypePrimary: {},
 		deploymentTypeReplica: {},
 	}
@@ -213,9 +248,9 @@ func generateDeploymentTypeMap(clientset kubernetes.Interface, cluster *crv1.Pgc
 
 			// found matching Pod, determine if it's a primary or replica
 			if pod.ObjectMeta.GetLabels()[config.LABEL_PGHA_ROLE] == config.LABEL_PGHA_ROLE_PRIMARY {
-				instances[deploymentTypePrimary] = append(instances[deploymentTypePrimary], deployments.Items[i])
+				instances[deploymentTypePrimary] = append(instances[deploymentTypePrimary], &deployments.Items[i])
 			} else {
-				instances[deploymentTypeReplica] = append(instances[deploymentTypeReplica], deployments.Items[i])
+				instances[deploymentTypeReplica] = append(instances[deploymentTypeReplica], &deployments.Items[i])
 			}
 
 			// we found the (or at least a) matching Pod, so we can break the loop now
@@ -232,13 +267,10 @@ func generatePostgresReadyCommand(port string) []string {
 	return []string{"pg_isready", "-p", port}
 }
 
-// waitForPostgresInstance waits for a PostgreSQL instance within a Pod is ready
-// to accept connections
-func waitForPostgresInstance(clientset kubernetes.Interface, restConfig *rest.Config,
-	cluster *crv1.Pgcluster, deployment appsv1.Deployment, periodSecs, timeoutSecs time.Duration) error {
+// getPostgresPodsForDeployment attempts to get all of the running Pods (which
+// should only be 0 or 1) that are in a Deployment
+func getPostgresPodsForDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluster, deployment *appsv1.Deployment) (*v1.PodList, error) {
 	ctx := context.TODO()
-
-	// try to find the Pod that should be exec'd into
 	options := metav1.ListOptions{
 		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
 		LabelSelector: fields.AndSelectors(
@@ -247,7 +279,34 @@ func waitForPostgresInstance(clientset kubernetes.Interface, restConfig *rest.Co
 			fields.OneTermEqualSelector(config.LABEL_DEPLOYMENT_NAME, deployment.Name),
 		).String(),
 	}
-	pods, err := clientset.CoreV1().Pods(deployment.Namespace).List(ctx, options)
+	return clientset.CoreV1().Pods(deployment.Namespace).List(ctx, options)
+}
+
+// scaleDeployment scales a deployment to a specified number of replicas. It
+// will also wait to ensure that the Deployment is actually scaled down.
+func scaleDeployment(clientset kubeapi.Interface,
+	deployment *appsv1.Deployment, replicas *int32) error {
+	ctx := context.TODO()
+
+	patch, _ := kubeapi.NewMergePatch().Add("spec", "replicas")(*replicas).Bytes()
+
+	log.Debugf("patching deployment %s: %s", deployment.GetName(), patch)
+
+	// Patch the Deployment with the updated number of replicas, which will
+	// trigger the scaling operation. We store the updated deployment so the
+	// object can be later updated when we scale back up
+	_, err := clientset.AppsV1().Deployments(deployment.Namespace).
+		Patch(ctx, deployment.GetName(), types.MergePatchType, patch, metav1.PatchOptions{})
+
+	return err
+}
+
+// waitForPostgresInstanceReady waits for a PostgreSQL instance within a Pod is ready
+// to accept connections
+func waitForPostgresInstanceReady(clientset kubernetes.Interface, restConfig *rest.Config,
+	cluster *crv1.Pgcluster, deployment *appsv1.Deployment, periodSecs, timeoutSecs time.Duration) error {
+	// try to find the Pod that should be exec'd into
+	pods, err := getPostgresPodsForDeployment(clientset, cluster, deployment)
 
 	// if the Pod selection errors, we can't really proceed
 	if err != nil {
@@ -274,6 +333,26 @@ func waitForPostgresInstance(clientset kubernetes.Interface, restConfig *rest.Co
 		return strings.Contains(s, "accepting connections"), nil
 	}); err != nil {
 		return fmt.Errorf("readiness timeout reached for start up of cluster %q instance %q",
+			cluster.Name, deployment.Name)
+	}
+
+	return nil
+}
+
+// waitForPostgresInstanceTermination waits for the Pod of a Postgres instance
+// to be terminated...i.e. there are no Pods that are running that match the
+// Postgres instance.
+func waitForPostgresInstanceTermination(clientset kubernetes.Interface,
+	cluster *crv1.Pgcluster, deployment *appsv1.Deployment, periodSecs, timeoutSecs time.Duration) error {
+	// start polling to test if the Postgres instance is terminated
+	if err := wait.PollImmediate(periodSecs, timeoutSecs, func() (bool, error) {
+		// determine if there are any active Pods in the cluster. If there are more
+		// than 1, then this instance has not yet terminated
+		pods, err := getPostgresPodsForDeployment(clientset, cluster, deployment)
+
+		return err == nil && len(pods.Items) == 0, nil
+	}); err != nil {
+		return fmt.Errorf("readiness timeout reached for termination of cluster %q instance %q",
 			cluster.Name, deployment.Name)
 	}
 

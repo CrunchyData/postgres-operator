@@ -35,6 +35,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
@@ -177,6 +178,9 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// initialize a slice that may contain functions that need to be executed
 	// as part of a rolling update
 	rollingUpdateFuncs := [](func(kubeapi.Interface, *crv1.Pgcluster, *appsv1.Deployment) error){}
+	// set "rescale" to true if we are adding a rolling update function that
+	// requires the Deployment to be scaled down in order for it to work
+	rescale := false
 
 	log.Debugf("pgcluster onUpdate for cluster %s (namespace %s)", newcluster.ObjectMeta.Namespace,
 		newcluster.ObjectMeta.Name)
@@ -347,6 +351,17 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
+	// check to see if the size of the primary PVC has changed
+	if oldcluster.Spec.PrimaryStorage.Size != newcluster.Spec.PrimaryStorage.Size {
+		// validate that this resize can occur
+		if err := validatePVCResize(oldcluster.Spec.PrimaryStorage.Size, newcluster.Spec.PrimaryStorage.Size); err != nil {
+			log.Error(err)
+		} else {
+			rescale = true
+			rollingUpdateFuncs = append(rollingUpdateFuncs, clusteroperator.ResizeClusterPVC)
+		}
+	}
+
 	// if there is no need to perform a rolling update, exit here
 	if len(rollingUpdateFuncs) == 0 {
 		return
@@ -354,7 +369,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 	// otherwise, create an anonymous function that executes each of the rolling
 	// update functions as part of the rolling update
-	if err := clusteroperator.RollingUpdate(c.Client, c.Client.Config, newcluster,
+	if err := clusteroperator.RollingUpdate(c.Client, c.Client.Config, newcluster, rescale,
 		func(clientset kubeapi.Interface, cluster *crv1.Pgcluster, deployment *appsv1.Deployment) error {
 			for _, fn := range rollingUpdateFuncs {
 				if err := fn(clientset, cluster, deployment); err != nil {
@@ -698,6 +713,30 @@ func updateTablespaces(c *Controller, oldCluster *crv1.Pgcluster, newCluster *cr
 				return err
 			}
 		}
+	}
+
+	return nil
+}
+
+// validatePVCResize ensures that the quantities being used in a PVC resize are
+// valid, and the resize is moving in an increasing direction
+func validatePVCResize(oldSize, newSize string) error {
+	old, err := resource.ParseQuantity(oldSize)
+
+	if err != nil {
+		return fmt.Errorf("cannot resize the cluster PVC due to invalid storage size: %w", err)
+	}
+
+	new, err := resource.ParseQuantity(newSize)
+
+	if err != nil {
+		return fmt.Errorf("cannot resize the cluster PVC due to invalid storage size: %w", err)
+	}
+
+	// the new size *must* be greater than the old size
+	if new.Cmp(old) != 1 {
+		return fmt.Errorf("cannot resize the cluster PVC: new size %q is less than old size %q",
+			new.String(), old.String())
 	}
 
 	return nil

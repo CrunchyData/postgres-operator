@@ -38,6 +38,7 @@ import (
 	apps_v1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
@@ -359,6 +360,90 @@ func AddBootstrapRepo(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (
 	}
 
 	return
+}
+
+// ResizeClusterPVC allows for the resizing of all the PVCs across the cluster.
+// This draws a distinction from PVCs in the cluster that may be sized
+// independently, e.g. replicas.
+//
+// If there are instances that are sized differently than the primary, we ensure
+// that the size is kept consistent. In other words:
+//
+// - If instance is sized consistently with the cluster, we will resize it.
+// - If the instance has its size set independently, we will check to see if
+//   that size is smaller than the cluster PVC resize. if it is smaller, then we
+//   will size it to match the cluster PVC
+func ResizeClusterPVC(clientset kubeapi.Interface, cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) error {
+	log.Debugf("resize cluster PVC on [%s]", deployment.Name)
+	ctx := context.TODO()
+
+	// we can ignore the error here as this has to have been validated before
+	// reaching this step. However, if you reach this step and are getting an
+	// error, you're likely invoking this function improperly. Sorry.
+	clusterSize, _ := resource.ParseQuantity(cluster.Spec.PrimaryStorage.Size)
+
+	// determine if this deployment represents an individual instance
+	if instance, err := clientset.CrunchydataV1().Pgreplicas(cluster.Namespace).Get(ctx,
+		deployment.GetName(), metav1.GetOptions{}); err == nil {
+
+		// get the instanceSize. If there is an error parsing this, then we most
+		// certainly will take the clusterSize
+		if instanceSize, err := resource.ParseQuantity(instance.Spec.ReplicaStorage.Size); err != nil || clusterSize.Cmp(instanceSize) == 1 {
+			// ok, so let's update the instance with the new size, but ensure that we
+			// do not try to resize it a second time
+			annotations := instance.ObjectMeta.GetAnnotations()
+			if annotations == nil {
+				annotations = map[string]string{}
+			}
+			annotations[config.ANNOTATION_CLUSTER_DO_NOT_RESIZE] = config.LABEL_TRUE
+			instance.ObjectMeta.SetAnnotations(annotations)
+
+			// set the size
+			instance.Spec.ReplicaStorage.Size = cluster.Spec.PrimaryStorage.Size
+
+			// and update
+			if _, err := clientset.CrunchydataV1().Pgreplicas(instance.Namespace).Update(ctx,
+				instance, metav1.UpdateOptions{}); err != nil {
+				// if we cannot update the instance spec, we should warn that we were
+				// unable to perform the resize, but not block any other action
+				log.Errorf("could not resize instance %q: %s", deployment.GetName(), err.Error())
+
+				return nil
+			}
+		} else {
+			// we are skipping this. we don't need to error, just inform
+			msg := "instance size is larger than that of cluster size"
+			if err != nil {
+				msg = err.Error()
+			}
+
+			log.Infof("skipping pvc resize of instance %q: %s", deployment.GetName(), msg)
+
+			return nil
+		}
+	}
+
+	// OK, let's now perform the resize. In this case, we need to update the value
+	// on the PVC.
+	pvc, err := clientset.CoreV1().PersistentVolumeClaims(cluster.Namespace).Get(ctx,
+		deployment.GetName(), metav1.GetOptions{})
+
+	// if we can't locate the PVC, we can't resize, and we really need to return
+	// an error
+	if err != nil {
+		return err
+	}
+
+	// alright, update the PVC size
+	pvc.Spec.Resources.Requests[v1.ResourceStorage] = clusterSize
+
+	// and update!
+	if _, err := clientset.CoreV1().PersistentVolumeClaims(pvc.Namespace).Update(ctx,
+		pvc, metav1.UpdateOptions{}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // ScaleBase ...
