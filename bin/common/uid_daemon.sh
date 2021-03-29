@@ -13,14 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if ! whoami &> /dev/null
-then
-    if [[ -w /etc/passwd ]]
-    then
-        sed  "/daemon:x:2:/d" /etc/passwd >> /tmp/uid.tmp
-        cp /tmp/uid.tmp /etc/passwd
-        rm -f /tmp/uid.tmp
-        echo "${USER_NAME:-daemon}:x:$(id -u):0:${USER_NAME:-daemon} user:${HOME}:/bin/bash" >> /etc/passwd
-    fi
-fi
+CRUNCHY_DIR=${CRUNCHY_DIR:-'/opt/cpm'}
+    
+export CRUNCHY_NSS_USERNAME="${USER_NAME:-daemon}"
+export CRUNCHY_NSS_USER_DESC="${USER_NAME:-daemon} user"
+    
+source "${CRUNCHY_DIR}/bin/nss_wrapper.sh"
+
 exec "$@"

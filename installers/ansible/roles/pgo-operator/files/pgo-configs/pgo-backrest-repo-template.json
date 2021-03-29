@@ -95,16 +95,34 @@
                       {
                         "name": "PGBACKREST_DB_HOST",
                         "value": "{{.PGbackrestDBHost}}"
+                      }, 
+                      {
+                        "name": "LD_PRELOAD",
+                        "value": "/usr/lib64/libnss_wrapper.so"
+                      },
+                      {
+                        "name": "NSS_WRAPPER_PASSWD",
+                        "value": "/tmp/nss_wrapper/pgbackrest-repo/passwd"
+                      }, 
+                      {
+                        "name": "NSS_WRAPPER_GROUP",
+                        "value": "/tmp/nss_wrapper/pgbackrest-repo/group"
                       }
                     ],
                     "volumeMounts": [{
-                        "name": "sshd",
-                        "mountPath": "/sshd",
-                        "readOnly": true
-                    }, {
-                        "name": "backrestrepo",
-                        "mountPath": "/backrestrepo",
-                        "readOnly": false
+                      "name": "sshd",
+                      "mountPath": "/sshd",
+                      "readOnly": true
+                    },
+                    {
+                      "name": "ssh-config",
+                      "mountPath": "/etc/ssh",
+                      "readOnly": true
+                    },
+                    {
+                      "name": "backrestrepo",
+                      "mountPath": "/backrestrepo",
+                      "readOnly": false
                     },
                     {
                       "name": "tmp",
@@ -125,7 +143,20 @@
                     "secret": {
                         "secretName": "{{.SshdSecretsName}}"
                     }
-                }, {
+                }, 
+                {
+                  "name": "ssh-config",
+                  "secret": {
+                      "secretName": "{{.SshdSecretsName}}",
+                      "items": [
+                        {
+                           "key": "config",
+                           "path": "ssh_config"
+                        }
+                     ]
+                  }
+                },
+                {
                     "name": "backrestrepo",
                     "persistentVolumeClaim": {
                         "claimName": "{{.BackrestRepoClaimName}}"
