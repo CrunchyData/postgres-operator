@@ -38,6 +38,16 @@ type PostgresClusterSpec struct {
 	// +kubebuilder:validation:Required
 	Archive Archive `json:"archive"`
 
+	// The secret containing the Certificates and Keys to encrypt PostgreSQL
+	// traffic will need to contain the server TLS certificate, TLS key and the
+	// Certificate Authority certificate with the data keys set to tls.crt,
+	// tls.key and ca.crt, respectively. It will then be mounted as a volume
+	// projection to the '/pgconf/tls' directory. For more information on
+	// Kubernetes secret projections, please see
+	// https://k8s.io/docs/concepts/configuration/secret/#projection-of-secret-keys-to-specific-paths
+	// +optional
+	CustomTLSSecret *corev1.SecretProjection `json:"customTLSSecret,omitempty"`
+
 	// The image name to use for PostgreSQL containers
 	// +kubebuilder:validation:Required
 	Image string `json:"image"`

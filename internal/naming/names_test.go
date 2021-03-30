@@ -68,6 +68,7 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 		names := sets.NewString()
 		for _, tt := range []test{
 			{"PostgresUserSecret", PostgresUserSecret(cluster)},
+			{"PostgresTLSSecret", PostgresTLSSecret(cluster)},
 			{"PatroniAuthSecret", PatroniAuthSecret(cluster)},
 		} {
 			t.Run(tt.name, func(t *testing.T) {

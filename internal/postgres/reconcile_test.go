@@ -123,6 +123,73 @@ func TestAddPGDATAInitToPod(t *testing.T) {
 	assert.Assert(t, foundPGDATAInitContainer)
 }
 
+func TestAddCertVolumeToPod(t *testing.T) {
+
+	postgresCluster := &v1alpha1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
+	template := &v1.PodTemplateSpec{
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{{
+				Name: "database",
+			},
+			},
+		},
+	}
+	mode := int32(0600)
+	// example auto-generated secret projection
+	testSecretProjection := &v1.SecretProjection{
+		LocalObjectReference: v1.LocalObjectReference{
+			Name: fmt.Sprintf(naming.ClusterCertSecret, postgresCluster.Name),
+		},
+		Items: []v1.KeyToPath{
+			{
+				Key:  clusterCertFile,
+				Path: clusterCertFile,
+				Mode: &mode,
+			},
+			{
+				Key:  clusterKeyFile,
+				Path: clusterKeyFile,
+				Mode: &mode,
+			},
+			{
+				Key:  rootCertFile,
+				Path: rootCertFile,
+				Mode: &mode,
+			},
+		},
+	}
+
+	err := AddCertVolumeToPod(postgresCluster, template, naming.ContainerDatabase, testSecretProjection)
+	assert.NilError(t, err)
+
+	var foundCertVol bool
+	var certVol *v1.Volume
+	for i, v := range template.Spec.Volumes {
+		if v.Name == naming.CertVolume {
+			foundCertVol = true
+			certVol = &template.Spec.Volumes[i]
+			break
+		}
+	}
+
+	assert.Assert(t, foundCertVol)
+	assert.Assert(t, len(certVol.Projected.Sources) > 0)
+
+	assert.Assert(t, len(certVol.Projected.Sources[0].Secret.Items) == 3)
+
+	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[0].Key, clusterCertFile)
+	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[0].Path, clusterCertFile)
+	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[0].Mode, &mode)
+
+	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[1].Key, clusterKeyFile)
+	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[1].Path, clusterKeyFile)
+	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[1].Mode, &mode)
+
+	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[2].Key, rootCertFile)
+	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[2].Path, rootCertFile)
+	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[2].Mode, &mode)
+}
+
 func getContainerNames(containers []v1.Container) []string {
 	names := make([]string, len(containers))
 	for i, c := range containers {

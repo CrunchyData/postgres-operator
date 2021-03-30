@@ -244,6 +244,45 @@ spec:
     - name: instance2
 ```
 
+## Add Custom Certificates to a Postgres Cluster
+
+Create a Secret containing your TLS certificate, TLS key and the Certificate Authority certificate such that
+the data of the secret in the `postgrescluster`'s namespace that contains the three values, similar to
+
+```
+data:
+  ca.crt: <value>
+  tls.crt: <value>
+  tls.key: <value>
+```
+
+Then, in `examples/postgrescluster/postgrescluster.yaml`, add the following:
+
+```
+spec:
+  customTLSSecret: 
+    name: customcert
+```
+where 'customcert' is the name of your created secret. Your cluster will now use the provided certificate in place of
+a dynamically generated one.
+
+In cases where the key names cannot be controlled, the item key and path values can be specified explicitly, as shown 
+below:
+```
+spec:
+  customTLSSecret: 
+    name: customcert
+    items: 
+      - key: <tls.crt key>
+        path: tls.crt
+      - key: <tls.key key>
+        path: tls.key
+      - key: <ca.crt key>
+        path: ca.crt
+```
+For more information, please see
+https://k8s.io/docs/concepts/configuration/secret/#projection-of-secret-keys-to-specific-paths
+
 ## Delete a Postgres Cluster
 
 ```

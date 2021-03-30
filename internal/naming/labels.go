@@ -32,6 +32,9 @@ const (
 	LabelPatroni = labelPrefix + "patroni"
 	LabelRole    = labelPrefix + "role"
 
+	// LabelClusterCertificate is used to identify a secret containing a cluster certificate
+	LabelClusterCertificate = labelPrefix + "cluster-certificate"
+
 	// LabelPGBackRest is used to indicate that a resource is for pgBackRest
 	LabelPGBackRest = labelPrefix + "pgbackrest"
 

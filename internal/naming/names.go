@@ -41,9 +41,17 @@ const (
 const (
 	// RootCertSecret is the default root certificate secret name
 	RootCertSecret = "pgo-root-cacert" /* #nosec */
+	// ClusterCertSecret is the default cluster leaf certificate secret name
+	ClusterCertSecret = "%s-cluster-cert" /* #nosec */
 )
 
 const (
+	// CertVolume is the name of the Certificate volume and volume mount in a PostgreSQL instance Pod
+	CertVolume = "cert-volume"
+
+	// CertMountPath is the path for mounting the postgrescluster certificates and key
+	CertMountPath = "/pgconf/tls"
+
 	// PGBackRestRepoContainerName is the name assigned to the container used to run pgBackRest and
 	// SSH
 	PGBackRestRepoContainerName = "pgbackrest"
@@ -262,5 +270,14 @@ func PostgresUserSecret(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      cluster.Name + "-pguser",
+	}
+}
+
+// PostgresTLSSecret returns the ObjectMeta necessary to lookup the Secret
+// containing the default Postgres TLS certificates and key
+func PostgresTLSSecret(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Name + "-cluster-cert",
 	}
 }

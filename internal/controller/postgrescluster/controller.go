@@ -147,11 +147,15 @@ func (r *Reconciler) Reconcile(
 	// The "md5" authentication method automatically verifies passwords encrypted
 	// using either MD5 or SCRAM-SHA-256.
 	// - https://www.postgresql.org/docs/current/auth-password.html
-	pgHBAs.Default = append(pgHBAs.Default, *postgres.NewHBA().TCP().Method("md5"))
+	pgHBAs.Default = append(pgHBAs.Default, *postgres.NewHBA().SSL().Method("md5"))
 
 	pgParameters := postgres.Parameters{}
 	pgParameters.Mandatory = postgres.NewParameterSet()
 	pgParameters.Mandatory.Add("wal_level", "logical")
+	pgParameters.Mandatory.Add("ssl", "on")
+	pgParameters.Mandatory.Add("ssl_cert_file", "/pgconf/tls/tls.crt")
+	pgParameters.Mandatory.Add("ssl_key_file", "/pgconf/tls/tls.key")
+	pgParameters.Mandatory.Add("ssl_ca_file", "/pgconf/tls/ca.crt")
 	pgParameters.Default = postgres.NewParameterSet()
 	pgParameters.Default.Add("jit", "off")
 	pgParameters.Default.Add("password_encryption", "scram-sha-256")

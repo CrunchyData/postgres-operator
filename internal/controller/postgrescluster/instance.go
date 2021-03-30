@@ -287,6 +287,7 @@ func (r *Reconciler) reconcileInstance(
 		instanceConfigMap        *v1.ConfigMap
 		instanceCertificates     *v1.Secret
 		clusterPatroniAuthSecret *v1.Secret
+		clusterCertificate       *v1.SecretProjection
 	)
 
 	if err == nil {
@@ -298,6 +299,10 @@ func (r *Reconciler) reconcileInstance(
 	}
 	if err == nil {
 		clusterPatroniAuthSecret, err = r.reconcilePatroniAuthSecret(ctx, cluster)
+	}
+	if err == nil {
+		clusterCertificate, err = r.reconcileClusterCertificate(ctx,
+			rootCA, cluster, patroniLeaderService.Name)
 	}
 	if err == nil {
 		err = r.reconcilePGDATAVolume(ctx, cluster, spec, instance)
@@ -326,7 +331,11 @@ func (r *Reconciler) reconcileInstance(
 		PGDATAInitContainers); err != nil {
 		return err
 	}
-
+	// add the cluster certificate secret volume to the pod to enable Postgres TLS connections
+	if err := postgres.AddCertVolumeToPod(cluster, &instance.Spec.Template, naming.ContainerDatabase,
+		clusterCertificate); err != nil {
+		return errors.WithStack(err)
+	}
 	// add an emptyDir volume to the PodTemplateSpec and an associated '/tmp' volume mount to
 	// all containers included within that spec
 	if err == nil {

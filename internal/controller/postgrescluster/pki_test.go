@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -330,6 +331,128 @@ func TestReconcileCerts(t *testing.T) {
 
 		})
 
+	})
+
+	t.Run("check cluster certificate secret reconciliation", func(t *testing.T) {
+		// example auto-generated secret projection
+		testSecretProjection := &v1.SecretProjection{
+			LocalObjectReference: v1.LocalObjectReference{
+				Name: fmt.Sprintf(naming.ClusterCertSecret, cluster1.Name),
+			},
+			Items: []v1.KeyToPath{
+				{
+					Key:  clusterCertFile,
+					Path: clusterCertFile,
+				},
+				{
+					Key:  clusterKeyFile,
+					Path: clusterKeyFile,
+				},
+				{
+					Key:  rootCertFile,
+					Path: rootCertFile,
+				},
+			},
+		}
+
+		// example custom secret projection
+		customSecretProjection := &v1.SecretProjection{
+			LocalObjectReference: v1.LocalObjectReference{
+				Name: "customsecret",
+			},
+			Items: []v1.KeyToPath{
+				{
+					Key:  clusterCertFile,
+					Path: clusterCertFile,
+				},
+				{
+					Key:  clusterKeyFile,
+					Path: clusterKeyFile,
+				},
+				{
+					Key:  rootCertFile,
+					Path: rootCertFile,
+				},
+			},
+		}
+
+		cluster2.Spec.CustomTLSSecret = customSecretProjection
+
+		initialRoot, err := r.reconcileRootCertificate(ctx, cluster1)
+		assert.NilError(t, err)
+
+		// get patroni leader service
+		patroniLeaderService, err := r.reconcilePatroniLeaderLease(ctx, cluster1)
+		assert.NilError(t, err)
+
+		t.Run("check standard secret projection", func(t *testing.T) {
+			secretCertProj, err := r.reconcileClusterCertificate(ctx, initialRoot, cluster1, patroniLeaderService.Name)
+			assert.NilError(t, err)
+
+			assert.DeepEqual(t, testSecretProjection, secretCertProj)
+		})
+
+		t.Run("check custom secret projection", func(t *testing.T) {
+			customSecretCertProj, err := r.reconcileClusterCertificate(ctx, initialRoot, cluster2, patroniLeaderService.Name)
+			assert.NilError(t, err)
+
+			assert.DeepEqual(t, customSecretProjection, customSecretCertProj)
+		})
+
+		t.Run("check switch to a custom secret projection", func(t *testing.T) {
+			// simulate a new custom secret
+			testSecret := &v1.Secret{}
+			testSecret.Namespace, testSecret.Name = namespace, "newcustomsecret"
+			// simulate cluster spec update
+			cluster2.Spec.CustomTLSSecret.LocalObjectReference.Name = "newcustomsecret"
+
+			// get the expected secret projection
+			testSecretProjection := clusterCertSecretProjection(testSecret)
+
+			// reconcile the secret project using the normal process
+			customSecretCertProj, err := r.reconcileClusterCertificate(ctx, initialRoot, cluster2, patroniLeaderService.Name)
+			assert.NilError(t, err)
+
+			// results should be the same
+			assert.DeepEqual(t, testSecretProjection, customSecretCertProj)
+		})
+
+		t.Run("check cluster certificate secret", func(t *testing.T) {
+			// get the cluster cert secret
+			initialClusterCertSecret := &v1.Secret{}
+			err := tClient.Get(ctx, types.NamespacedName{
+				Name:      fmt.Sprintf(naming.ClusterCertSecret, cluster1.Name),
+				Namespace: namespace,
+			}, initialClusterCertSecret)
+			assert.NilError(t, err)
+
+			// force the generation of a new root cert
+			// create an empty secret and apply the change
+			emptyRootSecret := &v1.Secret{}
+			emptyRootSecret.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+			emptyRootSecret.Namespace, emptyRootSecret.Name = namespace, naming.RootCertSecret
+			emptyRootSecret.Data = make(map[string][]byte)
+			err = errors.WithStack(r.apply(ctx, emptyRootSecret))
+			assert.NilError(t, err)
+
+			// reconcile the root cert secret, creating a new root cert
+			returnedRoot, err := r.reconcileRootCertificate(ctx, cluster1)
+			assert.NilError(t, err)
+
+			// pass in the new root, which should result in a new cluster cert
+			_, err = r.reconcileClusterCertificate(ctx, returnedRoot, cluster1, patroniLeaderService.Name)
+			assert.NilError(t, err)
+
+			// get the new cluster cert secret
+			newClusterCertSecret := &v1.Secret{}
+			err = tClient.Get(ctx, types.NamespacedName{
+				Name:      fmt.Sprintf(naming.ClusterCertSecret, cluster1.Name),
+				Namespace: namespace,
+			}, newClusterCertSecret)
+			assert.NilError(t, err)
+
+			assert.Assert(t, !reflect.DeepEqual(initialClusterCertSecret, newClusterCertSecret))
+		})
 	})
 }
 

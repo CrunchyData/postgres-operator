@@ -24,6 +24,13 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
+const (
+	// https://www.postgresql.org/docs/current/ssl-tcp.html
+	clusterCertFile = "tls.crt"
+	clusterKeyFile  = "tls.key"
+	rootCertFile    = "ca.crt"
+)
+
 // AddPGDATAVolumeToPod adds pgBackRest repository volumes to the provided Pod template spec, while
 // also adding associated volume mounts to the containers and/or init containers specified.
 func AddPGDATAVolumeToPod(postgresCluster *v1alpha1.PostgresCluster, template *v1.PodTemplateSpec,
@@ -99,4 +106,47 @@ func AddPGDATAInitToPod(postgresCluster *v1alpha1.PostgresCluster,
 			Image:   postgresCluster.Spec.Image,
 			Name:    naming.ContainerDatabasePGDATAInit,
 		})
+}
+
+// AddCertVolumeToPod adds the secret containing the TLS certificate, key and the CA certificate
+// as a volume to the provided Pod template spec, while also adding associated volume mounts to
+// the database container specified.
+func AddCertVolumeToPod(postgresCluster *v1alpha1.PostgresCluster, template *v1.PodTemplateSpec,
+	containerName string, inClusterCertificates *v1.SecretProjection) error {
+
+	mode := int32(0o600)
+	certVolume := v1.Volume{Name: naming.CertVolume}
+	certVolume.Projected = &v1.ProjectedVolumeSource{
+		DefaultMode: &mode,
+	}
+
+	// Add the certificate volume projection
+	certVolume.Projected.Sources = append(append(
+		certVolume.Projected.Sources, []v1.VolumeProjection(nil)...),
+		[]v1.VolumeProjection{{
+			Secret: inClusterCertificates}}...)
+
+	template.Spec.Volumes = append(template.Spec.Volumes, certVolume)
+
+	var containerFound bool
+	var index int
+	for index = range template.Spec.Containers {
+		if template.Spec.Containers[index].Name == containerName {
+			containerFound = true
+			break
+		}
+	}
+	if !containerFound {
+		return fmt.Errorf("Unable to find container %q when adding certificate volumes",
+			containerName)
+	}
+
+	template.Spec.Containers[index].VolumeMounts =
+		append(template.Spec.Containers[index].VolumeMounts, v1.VolumeMount{
+			Name:      naming.CertVolume,
+			MountPath: naming.CertMountPath,
+			ReadOnly:  true,
+		})
+
+	return nil
 }

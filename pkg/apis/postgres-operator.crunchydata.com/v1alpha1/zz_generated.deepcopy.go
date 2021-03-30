@@ -229,6 +229,11 @@ func (in *PostgresClusterList) DeepCopyObject() runtime.Object {
 func (in *PostgresClusterSpec) DeepCopyInto(out *PostgresClusterSpec) {
 	*out = *in
 	in.Archive.DeepCopyInto(&out.Archive)
+	if in.CustomTLSSecret != nil {
+		in, out := &in.CustomTLSSecret, &out.CustomTLSSecret
+		*out = new(v1.SecretProjection)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.InstanceSets != nil {
 		in, out := &in.InstanceSets, &out.InstanceSets
 		*out = make([]PostgresInstanceSetSpec, len(*in))

@@ -28,6 +28,13 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
 
+const (
+	// https://www.postgresql.org/docs/current/ssl-tcp.html
+	clusterCertFile = "tls.crt"
+	clusterKeyFile  = "tls.key"
+	rootCertFile    = "ca.crt"
+)
+
 // +kubebuilder:rbac:resources=secrets,verbs=get;patch
 
 // reconcileRootCertificate ensures the root certificate, stored
@@ -98,6 +105,94 @@ func (r *Reconciler) reconcileRootCertificate(
 
 // +kubebuilder:rbac:resources=secrets,verbs=get;patch
 
+// reconcileClusterCertificate first checks if a custom certificate
+// secret is configured. If so, that secret projection is returned.
+// Otherwise, a secret containing a generated leaf certificate, stored in
+// the relevant secret, has been created and is not 'bad' due to being
+// expired, formatted incorrectly, etc. If it is bad for any reason, a new
+// leaf certificate is generated using the current root certificate.
+// In either case, the relevant secret is expected to contain three files:
+// tls.crt, tls.key and ca.crt which are the TLS certificate, private key
+// and CA certificate, respectively.
+func (r *Reconciler) reconcileClusterCertificate(
+	ctx context.Context, rootCACert *pki.RootCertificateAuthority,
+	cluster *v1alpha1.PostgresCluster, leaderService string,
+) (
+	*v1.SecretProjection, error,
+) {
+	// if a custom postgrescluster secret is provided, just return it
+	if cluster.Spec.CustomTLSSecret != nil {
+		return cluster.Spec.CustomTLSSecret, nil
+	}
+
+	const keyCertificate, keyPrivateKey, rootCA = "tls.crt", "tls.key", "ca.crt"
+
+	existing := &v1.Secret{ObjectMeta: naming.PostgresTLSSecret(cluster)}
+	err := errors.WithStack(client.IgnoreNotFound(
+		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
+
+	leaf := pki.NewLeafCertificate("", nil, nil)
+	// TODO(tjmoore4): currently set to the leader service, but this will likely
+	// need to be adjusted when server verification and/or client certificate
+	// authentication is added
+	leaf.DNSNames = []string{leaderService}
+	leaf.CommonName = leaf.DNSNames[0]
+
+	if data, ok := existing.Data[keyCertificate]; err == nil && ok {
+		leaf.Certificate, err = pki.ParseCertificate(data)
+		err = errors.WithStack(err)
+	}
+	if data, ok := existing.Data[keyPrivateKey]; err == nil && ok {
+		leaf.PrivateKey, err = pki.ParsePrivateKey(data)
+		err = errors.WithStack(err)
+	}
+
+	// if there is an error or the leaf certificate is bad, generate a new one
+	if err != nil || pki.LeafCertIsBad(ctx, leaf, rootCACert, cluster.Namespace) {
+		err = errors.WithStack(leaf.Generate(rootCACert))
+	}
+
+	intent := &v1.Secret{ObjectMeta: naming.PostgresTLSSecret(cluster)}
+	intent.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+	intent.Data = make(map[string][]byte)
+	intent.ObjectMeta.OwnerReferences = existing.ObjectMeta.OwnerReferences
+
+	// set labels
+	intent.Labels = map[string]string{
+		naming.LabelCluster:            cluster.Name,
+		naming.LabelClusterCertificate: "postgres-tls",
+	}
+
+	if err == nil {
+		err = errors.WithStack(r.setControllerReference(cluster, intent))
+	}
+
+	if err == nil {
+		intent.Data[keyCertificate], err = leaf.Certificate.MarshalText()
+		err = errors.WithStack(err)
+	}
+	if err == nil {
+		intent.Data[keyPrivateKey], err = leaf.PrivateKey.MarshalText()
+		err = errors.WithStack(err)
+	}
+	if err == nil {
+		intent.Data[rootCA], err = rootCACert.Certificate.MarshalText()
+		err = errors.WithStack(err)
+	}
+
+	// TODO(tjmoore4): The generated postgrescluster secret is only created
+	// when a custom secret is not specified. However, if the secret is
+	// initially created and a custom secret is later used, the generated
+	// secret is currently left in place.
+	if err == nil {
+		err = errors.WithStack(r.apply(ctx, intent))
+	}
+
+	return clusterCertSecretProjection(intent), err
+}
+
+// +kubebuilder:rbac:resources=secrets,verbs=get;patch
+
 // instanceCertificate populates intent with the DNS leaf certificate and
 // returns it. It also ensures the leaf certificate, stored in the relevant
 // secret, has been created and is not 'bad' due to being expired, formatted
@@ -145,4 +240,28 @@ func (*Reconciler) instanceCertificate(
 	}
 
 	return leaf, err
+}
+
+// clusterCertSecretProjection returns a secret projection of the postgrescluster's
+// CA, key, and certificate to include in the instance configuration volume.
+func clusterCertSecretProjection(certificate *v1.Secret) *v1.SecretProjection {
+	return &v1.SecretProjection{
+		LocalObjectReference: v1.LocalObjectReference{
+			Name: certificate.Name,
+		},
+		Items: []v1.KeyToPath{
+			{
+				Key:  clusterCertFile,
+				Path: clusterCertFile,
+			},
+			{
+				Key:  clusterKeyFile,
+				Path: clusterKeyFile,
+			},
+			{
+				Key:  rootCertFile,
+				Path: rootCertFile,
+			},
+		},
+	}
 }
