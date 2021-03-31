@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -49,6 +50,24 @@ const (
 	postgresHAImage    = "crunchy-postgres-ha"
 	postgresGISImage   = "crunchy-postgres-gis"
 	postgresGISHAImage = "crunchy-postgres-gis-ha"
+)
+
+// nssWrapperForceCommand is the string that should be appended to the sshd_config file as
+// needed for nss_wrapper support when upgrading from versions prior to v4.7
+const nssWrapperForceCommand = `# ensure nss_wrapper env vars are set when executing commands as needed for OpenShift compatibility
+ForceCommand NSS_WRAPPER_SUBDIR=ssh . /opt/crunchy/bin/nss_wrapper_env.sh && $SSH_ORIGINAL_COMMAND`
+
+// the following regex expressions are used when upgrading the sshd_config file for a PG cluster
+var (
+	// nssWrapperRegex is the regular expression that is utilized to determine if the nss_wrapper
+	// ForceCommand setting is missing from the sshd_config (as it would be for versions prior to
+	// v4.7)
+	nssWrapperRegex = regexp.MustCompile(nssWrapperForceCommand)
+
+	// nssWrapperRegex is the regular expression that is utilized to determine if the UsePAM
+	// setting is set to 'yes' in the sshd_config (as it might be for versions up to v4.6.1,
+	// v4.5.2 and v4.4.3)
+	usePAMRegex = regexp.MustCompile(`(?im)^UsePAM\s*yes`)
 )
 
 // AddUpgrade implements the upgrade workflow in accordance with the received pgtask
@@ -468,9 +487,18 @@ func recreateBackrestRepoSecret(clientset kubernetes.Interface, clustername, nam
 		}
 	}
 
+	var repoSecret *v1.Secret
 	if err == nil {
-		err = util.CreateBackrestRepoSecrets(clientset, config)
+		repoSecret, err = util.CreateBackrestRepoSecrets(clientset, config)
 	}
+	if err != nil {
+		log.Errorf("error generating new backrest repo secrets during pgcluster upgrade: %v", err)
+	}
+
+	if err := updatePGBackRestSSHDConfig(clientset, repoSecret, namespace); err != nil {
+		log.Errorf("error upgrading pgBackRest sshd_config: %v", err)
+	}
+
 	if err != nil {
 		log.Errorf("error generating new backrest repo secrets during pgcluster upgrade: %v", err)
 	}
@@ -927,4 +955,42 @@ func updateClusterConfig(clientset kubeapi.Interface, pgcluster *crv1.Pgcluster,
 
 	// sync the changes to the configmap to the DCS
 	return pgoconfig.NewDCS(patchedClusterConfig, clientset, pgcluster.GetObjectMeta().GetLabels()[config.LABEL_PGHA_SCOPE]).Sync()
+}
+
+// updatePGBackRestSSHDConfig is responsible for upgrading the sshd_config file as needed across
+// operator versions to ensure proper functionality with pgBackRest
+func updatePGBackRestSSHDConfig(clientset kubernetes.Interface, repoSecret *v1.Secret,
+	namespace string) error {
+
+	ctx := context.TODO()
+	var err error
+	var secretRequiresUpdate bool
+	updatedRepoSecret := repoSecret.DeepCopy()
+
+	// For versions prior to v4.7, the 'ForceCommand' will be missing from the sshd_config as
+	// as needed for nss_wrapper support.  Therefore, check to see if the proper ForceCommand
+	// setting exists in the sshd_config, and if not, add it.
+	if !nssWrapperRegex.MatchString(string(updatedRepoSecret.Data["sshd_config"])) {
+		secretRequiresUpdate = true
+		updatedRepoSecret.Data["sshd_config"] =
+			[]byte(fmt.Sprintf("%s\n%s\n", string(updatedRepoSecret.Data["sshd_config"]),
+				nssWrapperForceCommand))
+	}
+
+	// For versions prior to v4.6.2, the UsePAM setting might be set to 'yes' as previously
+	// required to workaround a known Docker issue.  Since this issue has since been resolved,
+	// we now want to ensure this setting is set to 'no'.
+	if usePAMRegex.MatchString(string(updatedRepoSecret.Data["sshd_config"])) {
+		secretRequiresUpdate = true
+		updatedRepoSecret.Data["sshd_config"] =
+			[]byte(usePAMRegex.ReplaceAllString(string(updatedRepoSecret.Data["sshd_config"]),
+				"UsePAM no"))
+	}
+
+	if secretRequiresUpdate {
+		_, err = clientset.CoreV1().Secrets(namespace).Update(ctx, updatedRepoSecret,
+			metav1.UpdateOptions{})
+	}
+
+	return err
 }

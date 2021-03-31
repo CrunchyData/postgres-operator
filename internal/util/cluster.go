@@ -125,7 +125,7 @@ var cmdStopPostgreSQL = []string{
 // CreateBackrestRepoSecrets creates the secrets required to manage the
 // pgBackRest repo container
 func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
-	backrestRepoConfig BackrestRepoConfig) error {
+	backrestRepoConfig BackrestRepoConfig) (*v1.Secret, error) {
 	ctx := context.TODO()
 
 	// first: determine if a Secret already exists. If it does, we are going to
@@ -138,7 +138,7 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 	// only return an error if this is a **not** a not found error
 	if secretErr != nil && !kerrors.IsNotFound(secretErr) {
 		log.Error(secretErr)
-		return secretErr
+		return nil, secretErr
 	}
 
 	// determine if we need to create a new secret, i.e. this is a not found error
@@ -166,7 +166,7 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 
 	if configErr != nil {
 		log.Error(configErr)
-		return configErr
+		return nil, configErr
 	}
 
 	// set the SSH/SSHD configuration, if it is not presently set
@@ -185,7 +185,7 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 
 		if keyErr != nil {
 			log.Error(keyErr)
-			return keyErr
+			return nil, keyErr
 		}
 
 		secret.Data[backRestRepoSecretKeyAuthorizedKeys] = keys.Public
@@ -225,16 +225,17 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 	}
 
 	// time to create or update the secret!
+	var repoSecret *v1.Secret
+	var err error
 	if newSecret {
-		_, err := clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).Create(
+		repoSecret, err = clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).Create(
 			ctx, secret, metav1.CreateOptions{})
-		return err
+	} else {
+		repoSecret, err = clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).Update(
+			ctx, secret, metav1.UpdateOptions{})
 	}
 
-	_, err := clientset.CoreV1().Secrets(backrestRepoConfig.ClusterNamespace).Update(
-		ctx, secret, metav1.UpdateOptions{})
-
-	return err
+	return repoSecret, err
 }
 
 // CreateRMDataTask is a legacy method that was moved into this file. This
