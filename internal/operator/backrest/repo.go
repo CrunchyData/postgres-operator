@@ -165,12 +165,13 @@ func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 //
 // If the Secret already exists, then missing fields will be overwritten.
 func CreateRepoSecret(clientset kubernetes.Interface, cluster *crv1.Pgcluster) error {
-	return util.CreateBackrestRepoSecrets(clientset,
+	_, err := util.CreateBackrestRepoSecrets(clientset,
 		util.BackrestRepoConfig{
 			ClusterName:       cluster.Name,
 			ClusterNamespace:  cluster.Namespace,
 			OperatorNamespace: operator.PgoNamespace,
 		})
+	return err
 }
 
 // setBootstrapRepoOverrides overrides certain fields used to populate the pgBackRest repository template
