@@ -325,13 +325,10 @@ func TestReconcilerHandleDelete(t *testing.T) {
 			},
 				"60s", // timeout
 				"1s",  // interval
-			).Should(
-				gomega.SatisfyAll(
-					// https://github.com/onsi/gomega/issues/420
-					gomega.Not(gomega.BeNil()),
-					gomega.WithTransform(apierrors.IsNotFound, gomega.BeTrue()),
-				),
-			)
+			).Should(gomega.SatisfyAll(
+				gomega.HaveOccurred(),
+				gomega.WithTransform(apierrors.IsNotFound, gomega.BeTrue()),
+			))
 
 			g.Eventually(func() []v1.Endpoints {
 				list := v1.EndpointsList{}
