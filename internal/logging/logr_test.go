@@ -20,22 +20,20 @@ import (
 	"testing"
 
 	"github.com/go-logr/logr"
-	logrtest "github.com/go-logr/logr/testing"
 	"github.com/wojas/genericr"
 	"go.opentelemetry.io/otel/oteltest"
 	"gotest.tools/v3/assert"
 )
 
 func TestFromContext(t *testing.T) {
-	global = logrtest.NullLogger{}
-	assert.Assert(t, global == logrtest.NullLogger{}, "expected type to be comparable")
+	global = logr.DiscardLogger{}
 
 	// Defaults to global.
 	log := FromContext(context.Background())
 	assert.Equal(t, log, global)
 
 	// Retrieves from NewContext.
-	double := struct{ logr.Logger }{logrtest.NullLogger{}}
+	double := struct{ logr.Logger }{logr.DiscardLogger{}}
 	log = FromContext(NewContext(context.Background(), double))
 	assert.Equal(t, log, double)
 }
