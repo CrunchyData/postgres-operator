@@ -34,7 +34,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -43,8 +42,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/yaml"
 
-	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
 )
@@ -82,9 +81,6 @@ func TestReconcilerHandleDelete(t *testing.T) {
 	assert.NilError(t, cc.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
 
-	// set the operator namespace variable
-	naming.PostgresOperatorNamespace = ns.Name
-
 	// TODO(cbandy): namespace rbac
 	assert.NilError(t, cc.Create(ctx, &v1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{Namespace: ns.Name, Name: "postgres-operator"},
@@ -120,17 +116,24 @@ func TestReconcilerHandleDelete(t *testing.T) {
 
 	for _, test := range []struct {
 		name         string
+		beforeCreate func(*testing.T, *v1alpha1.PostgresCluster)
 		beforeDelete func(*testing.T, *v1alpha1.PostgresCluster)
 		propagation  metav1.DeletionPropagation
+
+		waitForRunningInstances int32
 	}{
+		// Normal delete of a healthly cluster.
 		{
-			name:        "Background",
-			propagation: metav1.DeletePropagationBackground,
+			name: "Background", propagation: metav1.DeletePropagationBackground,
+			waitForRunningInstances: 2,
 		},
 		// TODO(cbandy): metav1.DeletePropagationForeground
+
+		// Normal delete of a healthy cluster after a failover.
 		{
-			name:        "AfterFailover",
-			propagation: metav1.DeletePropagationBackground,
+			name: "AfterFailover", propagation: metav1.DeletePropagationBackground,
+			waitForRunningInstances: 2,
+
 			beforeDelete: func(t *testing.T, cluster *v1alpha1.PostgresCluster) {
 				list := v1.PodList{}
 				selector, err := labels.Parse(strings.Join([]string{
@@ -159,31 +162,42 @@ func TestReconcilerHandleDelete(t *testing.T) {
 				}).ChangePrimary(ctx, primary.Name, replica.Name))
 			},
 		},
+
+		// Normal delete of cluster that could never run PostgreSQL.
+		{
+			name: "NeverRunning", propagation: metav1.DeletePropagationBackground,
+			waitForRunningInstances: 0,
+
+			beforeCreate: func(_ *testing.T, cluster *v1alpha1.PostgresCluster) {
+				cluster.Spec.Image = "example.com/does-not-exist"
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			g := gomega.NewWithT(t)
 
-			replicas := int32(2)
-			cluster := &v1alpha1.PostgresCluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      strings.ToLower(test.name),
-					Namespace: ns.Name,
-				},
-				Spec: v1alpha1.PostgresClusterSpec{
-					Image:           CrunchyPostgresHAImage,
-					PostgresVersion: 12,
-					InstanceSets: []v1alpha1.PostgresInstanceSetSpec{{
-						Replicas: &replicas,
-						VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-							AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteOnce},
-							Resources: v1.ResourceRequirements{
-								Requests: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceStorage: resource.MustParse("1Gi"),
-								},
+			cluster := &v1alpha1.PostgresCluster{}
+			assert.NilError(t, yaml.Unmarshal([]byte(`{
+				spec: {
+					postgresVersion: 12,
+					instances: [
+						{
+							replicas: 2,
+							volumeClaimSpec: {
+								accessModes: [ReadWriteOnce],
+								resources: { requests: { storage: 1Gi } },
 							},
 						},
-					}},
+					],
 				},
+			}`), cluster))
+
+			cluster.Namespace = ns.Name
+			cluster.Name = strings.ToLower(test.name)
+			cluster.Spec.Image = CrunchyPostgresHAImage
+
+			if test.beforeCreate != nil {
+				test.beforeCreate(t, cluster)
 			}
 
 			assert.NilError(t, cc.Create(ctx, cluster))
@@ -221,18 +235,13 @@ func TestReconcilerHandleDelete(t *testing.T) {
 			},
 				"60s", // timeout
 				"1s",  // interval
-			).Should(gstruct.MatchElements(
-				func(interface{}) string { return "each" },
-				gstruct.AllowDuplicates,
-				gstruct.Elements{
-					"each": gomega.WithTransform(
-						func(sts appsv1.StatefulSet) int32 {
-							return sts.Status.ReadyReplicas
-						},
-						gomega.BeEquivalentTo(1),
-					),
-				},
-			))
+			).Should(gomega.WithTransform(func(instances []appsv1.StatefulSet) int {
+				ready := 0
+				for _, sts := range instances {
+					ready += int(sts.Status.ReadyReplicas)
+				}
+				return ready
+			}, gomega.BeNumerically(">=", test.waitForRunningInstances)))
 
 			if test.beforeDelete != nil {
 				test.beforeDelete(t, cluster)
@@ -251,70 +260,74 @@ func TestReconcilerHandleDelete(t *testing.T) {
 			// Stop cluster.
 			result := mustReconcile(t, cluster)
 
-			// Replicas should stop first, leaving just the one primary.
-			g.Eventually(func() (instances []v1.Pod) {
-				if result.Requeue {
-					result = mustReconcile(t, cluster)
-				}
+			// If things started running, then they should stop in a certain order.
+			if test.waitForRunningInstances > 0 {
 
-				list := v1.PodList{}
-				selector, err := labels.Parse(strings.Join([]string{
-					"postgres-operator.crunchydata.com/cluster=" + cluster.Name,
-					"postgres-operator.crunchydata.com/instance",
-				}, ","))
-				assert.NilError(t, err)
-				assert.NilError(t, cc.List(ctx, &list,
-					client.InNamespace(cluster.Namespace),
-					client.MatchingLabelsSelector{Selector: selector}))
-				return list.Items
-			},
-				"60s", // timeout
-				"1s",  // interval
-			).Should(gomega.ConsistOf(
-				gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-					"ObjectMeta": gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
-						"Labels": gstruct.MatchKeys(gstruct.IgnoreExtras, gstruct.Keys{
-							// Patroni doesn't use "primary" to identify the primary.
-							"postgres-operator.crunchydata.com/role": gomega.Equal("master"),
+				// Replicas should stop first, leaving just the one primary.
+				g.Eventually(func() (instances []v1.Pod) {
+					if result.Requeue {
+						result = mustReconcile(t, cluster)
+					}
+
+					list := v1.PodList{}
+					selector, err := labels.Parse(strings.Join([]string{
+						"postgres-operator.crunchydata.com/cluster=" + cluster.Name,
+						"postgres-operator.crunchydata.com/instance",
+					}, ","))
+					assert.NilError(t, err)
+					assert.NilError(t, cc.List(ctx, &list,
+						client.InNamespace(cluster.Namespace),
+						client.MatchingLabelsSelector{Selector: selector}))
+					return list.Items
+				},
+					"60s", // timeout
+					"1s",  // interval
+				).Should(gomega.ConsistOf(
+					gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+						"ObjectMeta": gstruct.MatchFields(gstruct.IgnoreExtras, gstruct.Fields{
+							"Labels": gstruct.MatchKeys(gstruct.IgnoreExtras, gstruct.Keys{
+								// Patroni doesn't use "primary" to identify the primary.
+								"postgres-operator.crunchydata.com/role": gomega.Equal("master"),
+							}),
 						}),
 					}),
-				}),
-			), "expected one instance")
+				), "expected one instance")
 
-			// Patroni DCS objects should not be deleted yet.
-			{
-				list := v1.EndpointsList{}
-				selector, err := labels.Parse(strings.Join([]string{
-					"postgres-operator.crunchydata.com/cluster=" + cluster.Name,
-					"postgres-operator.crunchydata.com/patroni",
-				}, ","))
-				assert.NilError(t, err)
-				assert.NilError(t, cc.List(ctx, &list,
-					client.InNamespace(cluster.Namespace),
-					client.MatchingLabelsSelector{Selector: selector}))
+				// Patroni DCS objects should not be deleted yet.
+				{
+					list := v1.EndpointsList{}
+					selector, err := labels.Parse(strings.Join([]string{
+						"postgres-operator.crunchydata.com/cluster=" + cluster.Name,
+						"postgres-operator.crunchydata.com/patroni",
+					}, ","))
+					assert.NilError(t, err)
+					assert.NilError(t, cc.List(ctx, &list,
+						client.InNamespace(cluster.Namespace),
+						client.MatchingLabelsSelector{Selector: selector}))
 
-				assert.Assert(t, len(list.Items) >= 2, // config + leader
-					"expected Patroni DCS objects to remain, there are %v",
-					len(list.Items))
+					assert.Assert(t, len(list.Items) >= 2, // config + leader
+						"expected Patroni DCS objects to remain, there are %v",
+						len(list.Items))
 
-				// Endpoints are deleted differently than other resources, and
-				// Patroni might have recreated them to stay alive. Check that
-				// they are all from before the cluster delete operation.
-				// - https://issue.k8s.io/99407
-				assert.NilError(t,
-					cc.Get(ctx, client.ObjectKeyFromObject(cluster), cluster))
-				g.Expect(list.Items).To(gstruct.MatchElements(
-					func(interface{}) string { return "each" },
-					gstruct.AllowDuplicates,
-					gstruct.Elements{
-						"each": gomega.WithTransform(
-							func(ep v1.Endpoints) time.Time {
-								return ep.CreationTimestamp.Time
-							},
-							gomega.BeTemporally("<", cluster.DeletionTimestamp.Time),
-						),
-					},
-				))
+					// Endpoints are deleted differently than other resources, and
+					// Patroni might have recreated them to stay alive. Check that
+					// they are all from before the cluster delete operation.
+					// - https://issue.k8s.io/99407
+					assert.NilError(t,
+						cc.Get(ctx, client.ObjectKeyFromObject(cluster), cluster))
+					g.Expect(list.Items).To(gstruct.MatchElements(
+						func(interface{}) string { return "each" },
+						gstruct.AllowDuplicates,
+						gstruct.Elements{
+							"each": gomega.WithTransform(
+								func(ep v1.Endpoints) time.Time {
+									return ep.CreationTimestamp.Time
+								},
+								gomega.BeTemporally("<", cluster.DeletionTimestamp.Time),
+							),
+						},
+					))
+				}
 			}
 
 			// Continue until cluster is gone.

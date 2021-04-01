@@ -105,9 +105,13 @@ func (r *Reconciler) deleteInstances(
 			found = true
 		}
 
-		// TODO(cbandy): An instance has no role label when it is joining or
-		// re-joining the cluster. That blocks progress here but probably
-		// shouldn't. Is there a situation when no instances have the role label?
+		// An instance without a role label is not participating in the Patroni
+		// cluster. It may be unhealthy or has not yet (re-)joined. Go ahead and
+		// stop these as well.
+		if err == nil && len(role) == 0 {
+			err = stop(&pods.Items[i])
+			found = true
+		}
 	}
 
 	// The caller should wait for further events or requeue if we were unable
