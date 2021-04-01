@@ -21,6 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -209,4 +210,49 @@ func (r *Reconciler) reconcilePatroniStatus(
 
 	cluster.Status.Patroni = &status
 	return err
+}
+
+// reconcilePatroniSecret creates a secret containing the auth config yaml
+// for Patroni. Patroni will use this file to create superuser, replication
+// and pg_rewind accounts in Postgres.
+// TODO: Currently only username and password credentials are being created
+// for the replication and pg_rewind users. As part of future work we will
+// use this secret to setup a superuser account and to enable cert authentication
+// for each user (replication, rewind, and superuser)
+func (r *Reconciler) reconcilePatroniAuthSecret(
+	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+) (*v1.Secret, error) {
+
+	// Setup secret to check for or create
+	secret := &v1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: "v1",
+		},
+		ObjectMeta: naming.PatroniAuthSecret(cluster),
+		Type:       "Opaque",
+	}
+
+	if err := errors.WithStack(r.setControllerReference(cluster, secret)); err != nil {
+		return nil, err
+	}
+
+	// Check for existing secret and use that password
+	existing := &v1.Secret{}
+
+	if err := errors.WithStack(client.IgnoreNotFound(r.Client.Get(ctx,
+		client.ObjectKeyFromObject(secret), existing))); err != nil {
+		return nil, err
+	}
+
+	err := patroni.ClusterAuthSecret(ctx, existing, secret)
+
+	if err == nil {
+		err = errors.WithStack(r.apply(ctx, secret))
+	}
+
+	if err == nil {
+		return secret, err
+	}
+	return nil, err
 }

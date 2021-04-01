@@ -280,8 +280,9 @@ func (r *Reconciler) reconcileInstance(
 	}
 
 	var (
-		instanceConfigMap    *v1.ConfigMap
-		instanceCertificates *v1.Secret
+		instanceConfigMap        *v1.ConfigMap
+		instanceCertificates     *v1.Secret
+		clusterPatroniAuthSecret *v1.Secret
 	)
 
 	if err == nil {
@@ -292,11 +293,14 @@ func (r *Reconciler) reconcileInstance(
 			ctx, cluster, instance, rootCA)
 	}
 	if err == nil {
+		clusterPatroniAuthSecret, err = r.reconcilePatroniAuthSecret(ctx, cluster)
+	}
+	if err == nil {
 		err = r.reconcilePGDATAVolume(ctx, cluster, spec, instance)
 	}
 	if err == nil {
 		err = patroni.InstancePod(
-			ctx, cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
+			ctx, cluster, clusterConfigMap, clusterPatroniAuthSecret, clusterPodService, patroniLeaderService,
 			instanceCertificates, instanceConfigMap, &instance.Spec.Template)
 	}
 

@@ -46,6 +46,30 @@ func quoteShellWord(s string) string {
 	return `'` + strings.ReplaceAll(s, `'`, `'"'"'`) + `'`
 }
 
+// authConfigYaml returns PostgreSQL Auth settings used by Patroni to
+// create superuser, replication, and pg_rewind accounts
+func authConfigYAML(username, password string) (string, error) {
+	root := map[string]interface{}{
+		"postgresql": map[string]interface{}{
+			"authentication": map[string]interface{}{
+				// TODO(cbandy): "superuser"
+				"replication": map[string]interface{}{
+					"username": username,
+					"password": password,
+				},
+
+				"rewind": map[string]interface{}{
+					"username": username,
+					"password": password,
+				},
+			},
+		},
+	}
+
+	b, err := yaml.Marshal(root)
+	return string(append([]byte(yamlGeneratedWarning), b...)), err
+}
+
 // clusterYAML returns Patroni settings that apply to the entire cluster.
 func clusterYAML(
 	cluster *v1alpha1.PostgresCluster, pgUser *v1.Secret,
@@ -76,13 +100,6 @@ func clusterYAML(
 		},
 
 		"postgresql": map[string]interface{}{
-			"authentication": map[string]interface{}{
-				// TODO(cbandy): "superuser"
-				// FIXME(cbandy): "replication"
-				"replication": map[string]interface{}{
-					"username": "postgres",
-				},
-			},
 
 			// TODO(cbandy): "callbacks"
 
@@ -379,7 +396,7 @@ func instanceEnvironment(
 
 // instanceConfigFiles returns projections of Patroni's configuration files
 // to include in the instance configuration volume.
-func instanceConfigFiles(cluster, instance *v1.ConfigMap) []v1.VolumeProjection {
+func instanceConfigFiles(cluster, instance *v1.ConfigMap, patroniSecret *v1.Secret) []v1.VolumeProjection {
 	return []v1.VolumeProjection{
 		{
 			ConfigMap: &v1.ConfigMapProjection{
@@ -400,6 +417,17 @@ func instanceConfigFiles(cluster, instance *v1.ConfigMap) []v1.VolumeProjection 
 				Items: []v1.KeyToPath{{
 					Key:  configMapFileKey,
 					Path: "~postgres-operator_instance.yaml",
+				}},
+			},
+		},
+		{
+			Secret: &v1.SecretProjection{
+				LocalObjectReference: v1.LocalObjectReference{
+					Name: patroniSecret.Name,
+				},
+				Items: []v1.KeyToPath{{
+					Key:  configMapFileKey,
+					Path: "~postgres-operator_patroni-secret.yaml",
 				}},
 			},
 		},

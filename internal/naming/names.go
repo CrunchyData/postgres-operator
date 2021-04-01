@@ -60,6 +60,10 @@ const (
 	// PGDATAVMountPath is the path for mounting the PGDATA volume
 	PGDATAVMountPath = "/pgdata"
 
+	// PGReplicationUsername is the user account that will be created by patroni for replication.
+	// The replication account is used for both replication and pg_rewind
+	PGReplicationUsername = "_crunchyrepl"
+
 	// suffix used with postgrescluster name for associated configmap.
 	// for instance, if the cluster is named 'mycluster', the
 	// configmap will be named 'mycluster-pgbackrest-config'
@@ -162,6 +166,15 @@ func InstancePGDataVolume(instance *appsv1.StatefulSet) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:      fmt.Sprintf(pgdataPVCNameSuffix, instance.GetName()),
 		Namespace: instance.GetNamespace(),
+	}
+}
+
+// PatroniAuthSecret returns ObjectMeta necessary to lookup the Secret
+// containing the Patroni authentication config yaml.
+func PatroniAuthSecret(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Name + "-config",
 	}
 }
 

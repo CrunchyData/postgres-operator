@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
@@ -140,7 +141,9 @@ func (r *Reconciler) Reconcile(
 
 	pgHBAs := postgres.HBAs{}
 	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().Local().User("postgres").Method("peer"))
-	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TCP().Replication().Method("trust"))
+	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TCP().User(naming.PGReplicationUsername).Replication().Method("md5"))
+	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TCP().User(naming.PGReplicationUsername).Database("postgres").Method("md5"))
+	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TCP().User(naming.PGReplicationUsername).Method("reject"))
 	// The "md5" authentication method automatically verifies passwords encrypted
 	// using either MD5 or SCRAM-SHA-256.
 	// - https://www.postgresql.org/docs/current/auth-password.html

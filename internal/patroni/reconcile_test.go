@@ -54,6 +54,23 @@ func TestClusterConfigMap(t *testing.T) {
 	assert.DeepEqual(t, config, before)
 }
 
+func TestClusterAuthSecret(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	created := new(v1.Secret)
+	after := new(v1.Secret)
+
+	assert.NilError(t, ClusterAuthSecret(ctx, &v1.Secret{}, created))
+	assert.Assert(t, len(created.Data["password"]) != 0, "expected a generated password")
+	assert.Assert(t, len(created.Data["patroni.yaml"]) != 0, "expected a config file")
+
+	before := created.DeepCopy()
+	assert.NilError(t, ClusterAuthSecret(ctx, created, after))
+	assert.DeepEqual(t, before, after)
+
+}
+
 func TestReconcileInstanceCertificates(t *testing.T) {
 	t.Parallel()
 
@@ -108,6 +125,7 @@ func TestInstancePod(t *testing.T) {
 	cluster.Default()
 	cluster.Name = "some-such"
 	clusterConfigMap := new(v1.ConfigMap)
+	clusterSecret := new(v1.Secret)
 	clusterPodService := new(v1.Service)
 	instanceCertficates := new(v1.Secret)
 	instanceConfigMap := new(v1.ConfigMap)
@@ -116,7 +134,7 @@ func TestInstancePod(t *testing.T) {
 
 	call := func() error {
 		return InstancePod(context.Background(),
-			cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
+			cluster, clusterConfigMap, clusterSecret, clusterPodService, patroniLeaderService,
 			instanceCertficates, instanceConfigMap, template)
 	}
 
@@ -195,6 +213,10 @@ volumes:
         items:
         - key: patroni.yaml
           path: ~postgres-operator_instance.yaml
+    - secret:
+        items:
+        - key: patroni.yaml
+          path: ~postgres-operator_patroni-secret.yaml
     - secret:
         items:
         - key: patroni.ca-roots
