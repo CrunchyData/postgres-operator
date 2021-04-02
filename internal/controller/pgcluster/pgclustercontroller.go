@@ -18,6 +18,7 @@ limitations under the License.
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -332,6 +333,20 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		rollingUpdateFuncs = append(rollingUpdateFuncs, clusteroperator.UpdateTolerations)
 	}
 
+	// check to see if the S3 bucket name has changed. If it has, this requires
+	// both updating the Postgres + pgBackRest Deployments AND reruning the stanza
+	// create Job
+	if oldcluster.Spec.BackrestS3Bucket != newcluster.Spec.BackrestS3Bucket {
+		// first, update the pgBackRest repository
+		if err := updateBackrestS3(c, newcluster); err != nil {
+			log.Errorf("not updating pgBackrest S3 settings: %s", err.Error())
+		} else {
+			// if that is successful, add updating the pgBackRest S3 settings to the
+			// rolling update changes
+			rollingUpdateFuncs = append(rollingUpdateFuncs, clusteroperator.UpdateBackrestS3)
+		}
+	}
+
 	// if there is no need to perform a rolling update, exit here
 	if len(rollingUpdateFuncs) == 0 {
 		return
@@ -350,6 +365,12 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}); err != nil {
 		log.Error(err)
 		return
+	}
+
+	// one follow-up post rolling update: if the S3 bucket changed, issue a
+	// "create stanza" job
+	if oldcluster.Spec.BackrestS3Bucket != newcluster.Spec.BackrestS3Bucket {
+		backrestoperator.StanzaCreate(newcluster.Namespace, newcluster.Name, c.Client)
 	}
 }
 
@@ -506,6 +527,54 @@ func updateAnnotations(c *Controller, oldCluster *crv1.Pgcluster, newCluster *cr
 	}
 
 	return len(annotationsPostgres) != 0, nil
+}
+
+// updateBackrestS3 makes updates to the pgBackRest repo Deployment if any of
+// the S3 specific settings have changed. Presently, this is just the S3 bucket
+// name
+func updateBackrestS3(c *Controller, cluster *crv1.Pgcluster) error {
+	ctx := context.TODO()
+
+	// get the pgBackRest deployment
+	backrestDeploymentName := fmt.Sprintf(util.BackrestRepoDeploymentName, cluster.Name)
+	backrestDeployment, err := c.Client.AppsV1().Deployments(cluster.Namespace).Get(ctx,
+		backrestDeploymentName, metav1.GetOptions{})
+
+	if err != nil {
+		return err
+	}
+
+	// update the environmental variable(s) in the container that is aptly(?)
+	// named database
+	for i, container := range backrestDeployment.Spec.Template.Spec.Containers {
+		if container.Name != "database" {
+			continue
+		}
+
+		for j, envVar := range backrestDeployment.Spec.Template.Spec.Containers[i].Env {
+			if envVar.Name == "PGBACKREST_REPO1_S3_BUCKET" {
+				backrestDeployment.Spec.Template.Spec.Containers[i].Env[j].Value = cluster.Spec.BackrestS3Bucket
+			}
+		}
+	}
+
+	if _, err := c.Client.AppsV1().Deployments(cluster.Namespace).Update(ctx,
+		backrestDeployment, metav1.UpdateOptions{}); err != nil {
+		return err
+	}
+
+	// update the annotation on the pgBackRest Secret too
+	secretName := fmt.Sprintf(util.BackrestRepoSecretName, cluster.Name)
+	patch, _ := kubeapi.NewMergePatch().Add("metadata", "annotations")(map[string]string{
+		config.ANNOTATION_S3_BUCKET: cluster.Spec.BackrestS3Bucket,
+	}).Bytes()
+
+	if _, err := c.Client.CoreV1().Secrets(cluster.Namespace).Patch(ctx,
+		secretName, types.MergePatchType, patch, metav1.PatchOptions{}); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // updatePgBouncer updates the pgBouncer Deployment to reflect any changes that
