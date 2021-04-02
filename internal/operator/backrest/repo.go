@@ -65,6 +65,7 @@ type RepoDeploymentTemplateFields struct {
 	PodAntiAffinityLabelValue string
 	Replicas                  int
 	BootstrapCluster          string
+	BootstrapNamespace        string
 	Tolerations               string
 }
 
@@ -75,12 +76,14 @@ type RepoServiceTemplateFields struct {
 }
 
 // CreateRepoDeployment creates a pgBackRest repository deployment for a PostgreSQL cluster,
-// while also creating the associated Service and PersistentVolumeClaim.
+// while also creating the associated Service and PersistentVolumeClaim.  Namespace is provided
+// as a parameter since is could vary depending on why the repo is being deployed (e.g. for
+// a new cluster, or to bootstrap a new cluster using the backups from a former PG cluster, which
+// could be in a different namespace).
 func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
-	createPVC, bootstrapRepo bool, replicas int) error {
+	createPVC, bootstrapRepo bool, replicas int, namespace string) error {
 	ctx := context.TODO()
 
-	namespace := cluster.GetNamespace()
 	restoreClusterName := cluster.Spec.PGDataSource.RestoreFrom
 
 	repoFields := getRepoDeploymentFields(clientset, cluster, replicas)
@@ -88,7 +91,8 @@ func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 	var repoName, serviceName string
 	// if this is a bootstrap repository then we now override certain fields as needed
 	if bootstrapRepo {
-		if err := setBootstrapRepoOverrides(clientset, cluster, repoFields); err != nil {
+		if err := setBootstrapRepoOverrides(clientset, cluster, repoFields,
+			namespace); err != nil {
 			return err
 		}
 		repoName = fmt.Sprintf(util.BackrestRepoPVCName, restoreClusterName)
@@ -114,11 +118,13 @@ func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 	// if createPVC is set to true, attempt to create the PVC
 	if createPVC {
 		// create backrest repo PVC with same name as repoName
-		_, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, repoName, metav1.GetOptions{})
+		_, err := clientset.CoreV1().PersistentVolumeClaims(namespace).Get(ctx,
+			repoName, metav1.GetOptions{})
 		if err == nil {
 			log.Debugf("pvc [%s] already present, will not recreate", repoName)
 		} else if kerrors.IsNotFound(err) {
-			_, err = pvc.CreatePVC(clientset, &cluster.Spec.BackrestStorage, repoName, cluster.Name, namespace)
+			_, err = pvc.CreatePVC(clientset, &cluster.Spec.BackrestStorage, repoName,
+				cluster.Name, namespace)
 			if err != nil {
 				return err
 			}
@@ -152,7 +158,8 @@ func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 	operator.SetContainerImageOverride(config.CONTAINER_IMAGE_PGO_BACKREST_REPO,
 		&deployment.Spec.Template.Spec.Containers[0])
 
-	if _, err := clientset.AppsV1().Deployments(namespace).Create(ctx, &deployment, metav1.CreateOptions{}); err != nil &&
+	if _, err := clientset.AppsV1().Deployments(namespace).Create(ctx, &deployment,
+		metav1.CreateOptions{}); err != nil &&
 		!kerrors.IsAlreadyExists(err) {
 		return err
 	}
@@ -173,18 +180,22 @@ func CreateRepoSecret(clientset kubernetes.Interface, cluster *crv1.Pgcluster) e
 		})
 }
 
-// setBootstrapRepoOverrides overrides certain fields used to populate the pgBackRest repository template
-// as needed to support the creation of a bootstrap repository need to bootstrap a new cluster from an
-// existing data source.
+// setBootstrapRepoOverrides overrides certain fields in the pgBackRest repository template as
+// as needed to support the creation of a bootstrap repository for bootstrapping a new cluster from
+// an existing data source.  The namespace provided as a parameter corresponds to the namespace
+// containing the cluster that will be utilized as the data source for the new pgcluster (and is
+// therefore utilized to obtain any required resources from that cluster, e.g. its pgBackRest
+// configuration).  This namespace could differ from the namespace for the new pgcluster if
+// bootstrapping/restoring from a cluster in another namespace.
 func setBootstrapRepoOverrides(clientset kubernetes.Interface, cluster *crv1.Pgcluster,
-	repoFields *RepoDeploymentTemplateFields) error {
+	repoFields *RepoDeploymentTemplateFields, namespace string) error {
 	ctx := context.TODO()
 
 	restoreClusterName := cluster.Spec.PGDataSource.RestoreFrom
-	namespace := cluster.GetNamespace()
 
 	repoFields.ClusterName = restoreClusterName
 	repoFields.BootstrapCluster = cluster.GetName()
+	repoFields.BootstrapNamespace = cluster.GetNamespace()
 	repoFields.Name = fmt.Sprintf(util.BackrestRepoServiceName, restoreClusterName)
 	repoFields.SshdSecretsName = fmt.Sprintf(util.BackrestRepoSecretName, restoreClusterName)
 

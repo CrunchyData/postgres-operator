@@ -2335,9 +2335,16 @@ func isMissingExistingDataSourceS3Config(backrestRepoSecret *v1.Secret) bool {
 // to create a new cluster
 func validateDataSourceParms(request *msgs.CreateClusterRequest) error {
 	ctx := context.TODO()
-	namespace := request.Namespace
+
 	restoreClusterName := request.PGDataSource.RestoreFrom
 	restoreOpts := request.PGDataSource.RestoreOpts
+
+	var restoreFromNamespace string
+	if request.PGDataSource.Namespace != "" {
+		restoreFromNamespace = request.PGDataSource.Namespace
+	} else {
+		restoreFromNamespace = request.Namespace
+	}
 
 	if restoreClusterName == "" && restoreOpts == "" {
 		return nil
@@ -2351,21 +2358,23 @@ func validateDataSourceParms(request *msgs.CreateClusterRequest) error {
 	}
 
 	// next verify whether or not a PVC exists for the cluster we are restoring from
-	if _, err := apiserver.Clientset.CoreV1().PersistentVolumeClaims(namespace).Get(ctx,
+	if _, err := apiserver.Clientset.CoreV1().PersistentVolumeClaims(restoreFromNamespace).Get(ctx,
 		fmt.Sprintf(util.BackrestRepoPVCName, restoreClusterName),
 		metav1.GetOptions{}); err != nil {
-		return fmt.Errorf("Unable to find PVC %s for cluster %s, cannot to restore from the "+
-			"specified data source", fmt.Sprintf(util.BackrestRepoPVCName, restoreClusterName),
-			restoreClusterName)
+		return fmt.Errorf("Unable to find PVC %s for cluster %s (namespace %s), cannot restore "+
+			"from the specified data source",
+			fmt.Sprintf(util.BackrestRepoPVCName, restoreClusterName),
+			restoreClusterName, restoreFromNamespace)
 	}
 
 	// now verify that a pgBackRest repo secret exists for the cluster we are restoring from
-	backrestRepoSecret, err := apiserver.Clientset.CoreV1().Secrets(namespace).Get(ctx,
+	backrestRepoSecret, err := apiserver.Clientset.CoreV1().Secrets(restoreFromNamespace).Get(ctx,
 		fmt.Sprintf(util.BackrestRepoSecretName, restoreClusterName), metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("Unable to find secret %s for cluster %s, cannot restore from the "+
-			"specified data source",
-			fmt.Sprintf(util.BackrestRepoSecretName, restoreClusterName), restoreClusterName)
+		return fmt.Errorf("Unable to find secret %s for cluster %s (namespace %s), cannot restore "+
+			"from the specified data source",
+			fmt.Sprintf(util.BackrestRepoSecretName, restoreClusterName),
+			restoreClusterName, restoreFromNamespace)
 	}
 
 	// next perform general validation of the restore options
@@ -2377,13 +2386,13 @@ func validateDataSourceParms(request *msgs.CreateClusterRequest) error {
 	// settings are present in backrest repo secret for the backup being restored from
 	s3Restore := backrest.S3RepoTypeCLIOptionExists(restoreOpts)
 	if s3Restore && isMissingExistingDataSourceS3Config(backrestRepoSecret) {
-		return fmt.Errorf("Secret %s is missing the S3 configuration required to restore "+
-			"from an S3 repository", backrestRepoSecret.GetName())
+		return fmt.Errorf("Secret %s (namespace %s) is missing the S3 configuration required to "+
+			"restore from an S3 repository", backrestRepoSecret.GetName(), restoreFromNamespace)
 	}
 
 	// finally, verify that the cluster being restored from is in the proper status, and that no
 	// other clusters currently being bootstrapping from the same cluster
-	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(namespace).List(ctx, metav1.ListOptions{})
+	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(restoreFromNamespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return fmt.Errorf("%s: %w", ErrInvalidDataSource, err)
 	}
@@ -2391,14 +2400,14 @@ func validateDataSourceParms(request *msgs.CreateClusterRequest) error {
 
 		if cl.GetName() == restoreClusterName &&
 			cl.Status.State == crv1.PgclusterStateShutdown {
-			return fmt.Errorf("Unable to restore from cluster %s because it has a %s "+
-				"status", restoreClusterName, string(cl.Status.State))
+			return fmt.Errorf("Unable to restore from cluster %s (namespace %s) because it has "+
+				"a %s status", restoreClusterName, restoreFromNamespace, string(cl.Status.State))
 		}
 
 		if cl.Spec.PGDataSource.RestoreFrom == restoreClusterName &&
 			cl.Status.State == crv1.PgclusterStateBootstrapping {
-			return fmt.Errorf("Cluster %s is currently bootstrapping from cluster %s, please "+
-				"try again once it is completes", cl.GetName(), restoreClusterName)
+			return fmt.Errorf("Cluster %s (namespace %s) is currently bootstrapping from cluster %s, please "+
+				"try again once it is completes", cl.GetName(), cl.GetNamespace(), restoreClusterName)
 		}
 	}
 

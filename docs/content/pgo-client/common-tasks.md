@@ -645,6 +645,15 @@ execute the following command:
 pgo create cluster newcluster --restore-from=oldcluster
 ```
 
+##### Full Restore Across Namespaces
+
+To create a new PostgreSQL cluster from a backup in another namespace and restore it
+fully, you can execute the following command:
+
+```
+pgo create cluster newcluster --restore-from=oldcluster --restore-from-namespace=oldnamespace
+```
+
 ##### Point-in-time-Recovery (PITR)
 
 To create a new PostgreSQL cluster and restore it to specific point-in-time

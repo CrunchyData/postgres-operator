@@ -71,6 +71,7 @@ var (
 	WALStorageConfig                                                                             string
 	WALPVCSize                                                                                   string
 	RestoreFrom                                                                                  string
+	RestoreFromNamespace                                                                         string
 )
 
 // group the annotation requests
@@ -486,6 +487,9 @@ func init() {
 		"the TLS keypair to use for enabling certificate-based authentication between PostgreSQL instances, "+
 		"particularly for the purpose of replication. Must be used with \"server-tls-secret\" and \"server-ca-secret\".")
 	createClusterCmd.Flags().StringVarP(&RestoreFrom, "restore-from", "", "", "The name of cluster to restore from when bootstrapping a new cluster")
+	createClusterCmd.Flags().StringVarP(&RestoreFromNamespace, "restore-from-namespace", "", "",
+		"The namespace for the cluster specified using --restore-from.  Defaults to the "+
+			"namespace of the cluster being created if not provided.")
 	createClusterCmd.Flags().StringVarP(&BackupOpts, "restore-opts", "", "",
 		"The options to pass into pgbackrest where performing a restore to bootrap the cluster. "+
 			"Only applicable when a \"restore-from\" value is specified")

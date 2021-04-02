@@ -6,6 +6,7 @@
         "labels": {
             {{if .BootstrapCluster}}
             "pgha-bootstrap": "{{.BootstrapCluster}}",
+            "pgha-bootstrap-namespace": "{{.BootstrapNamespace}}",
             {{ end }}
             "name": "{{.Name}}",
             "pg-cluster": "{{.ClusterName}}",
@@ -34,6 +35,7 @@
                 "labels": {
                     {{if .BootstrapCluster}}
                     "pgha-bootstrap": "{{.BootstrapCluster}}",
+                    "pgha-bootstrap-namespace": "{{.BootstrapNamespace}}",
                     {{ end }}
                     "name": "{{.Name}}",
                     "pg-cluster": "{{.ClusterName}}",

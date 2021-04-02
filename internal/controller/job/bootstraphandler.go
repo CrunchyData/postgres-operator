@@ -22,7 +22,9 @@ import (
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/operator"
 	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
+	cl "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
@@ -130,20 +132,22 @@ func (c *Controller) cleanupBootstrapResources(job *apiv1.Job, cluster *crv1.Pgc
 	restore bool) error {
 	ctx := context.TODO()
 
-	namespace := job.GetNamespace()
 	var restoreClusterName string
 	var repoName string
+
+	// get the proper namespace for the bootstrap repo
+	restoreFromNamespace := operator.GetBootstrapNamespace(cluster)
 
 	// clean the repo if a restore, or if a "bootstrap" repo
 	var cleanRepo bool
 	if restore {
 		restoreClusterName = job.GetLabels()[config.LABEL_PG_CLUSTER]
 		repoName = fmt.Sprintf(util.BackrestRepoDeploymentName, restoreClusterName)
-		cleanRepo = true
 	} else {
 		restoreClusterName = cluster.Spec.PGDataSource.RestoreFrom
 		repoName = fmt.Sprintf(util.BackrestRepoDeploymentName, restoreClusterName)
-		repoDeployment, err := c.Client.AppsV1().Deployments(namespace).
+
+		repoDeployment, err := c.Client.AppsV1().Deployments(restoreFromNamespace).
 			Get(ctx, repoName, metav1.GetOptions{})
 		if err != nil {
 			return err
@@ -155,17 +159,24 @@ func (c *Controller) cleanupBootstrapResources(job *apiv1.Job, cluster *crv1.Pgc
 
 	if cleanRepo {
 		// now delete the service for the bootstrap repo
-		if err := c.Client.CoreV1().Services(namespace).Delete(ctx,
+		if err := c.Client.CoreV1().Services(restoreFromNamespace).Delete(ctx,
 			fmt.Sprintf(util.BackrestRepoServiceName, restoreClusterName),
 			metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
 			return err
 		}
 
-		// and finally delete the bootstrap repo deployment
-		if err := c.Client.AppsV1().Deployments(namespace).Delete(ctx, repoName,
+		// and now delete the bootstrap repo deployment
+		if err := c.Client.AppsV1().Deployments(restoreFromNamespace).Delete(ctx, repoName,
 			metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
 			return err
 		}
+	}
+
+	// delete the "bootstrap" version of pgBackRest repo Secret
+	if err := c.Client.CoreV1().Secrets(job.GetNamespace()).Delete(ctx,
+		fmt.Sprintf(cl.BoostrapConfigPrefix, cluster.GetName(), config.LABEL_BACKREST_REPO_SECRET),
+		metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
+		return err
 	}
 
 	return nil

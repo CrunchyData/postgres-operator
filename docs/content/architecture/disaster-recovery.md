@@ -121,6 +121,9 @@ command with several flags:
 - `--restore-from`: specifies the name of a PostgreSQL cluster (either one that
 is active, or a former cluster whose pgBackRest repository still exists) to
 restore from.
+- `--restore-from-namespace` (optional): the namespace of the PostgreSQL cluster specified
+using `--restore-from` (the namespace of the cluster being created is utilized if a namespace
+is not specified using this option)
 - `--restore-opts`: used to specify additional options, similar to the ones that
 are passed into [`pgbackrest restore`](https://pgbackrest.org/command.html#command-restore).
 
@@ -143,7 +146,10 @@ pgo create cluster newcluster \
 
 Note that when using this method, the PostgreSQL Operator can only restore one
 cluster from each pgBackRest repository at a time. Using the above example, one
-can only perform one restore from `oldcluster` at a given time.
+can only perform one restore from `oldcluster` at a given time.  Additionally,
+if the cluster being utilized for restore is in another namespace than the
+cluster being created, the proper namespace can be specified using the
+`--restore-from-namespace` option.
 
 When using the restore to a new cluster method, the PostgreSQL Operator takes
 the following actions:
