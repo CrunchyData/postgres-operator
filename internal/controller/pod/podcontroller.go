@@ -80,7 +80,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		return
 	}
 
-	var clusterName string
+	var clusterName, namespace string
 	bootstrapCluster := newPodLabels[config.LABEL_PGHA_BOOTSTRAP]
 	// Lookup the pgcluster CR for PG cluster associated with this Pod.  Typically we will use the
 	// 'pg-cluster' label, but if a bootstrap pod we use the 'pgha-bootstrap' label.
@@ -89,8 +89,16 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	} else {
 		clusterName = newPodLabels[config.LABEL_PG_CLUSTER]
 	}
-	namespace := newPod.ObjectMeta.Namespace
-	cluster, err := c.Client.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
+	// get the proper namespace for the pgcluster, which could be different than the pod if
+	// restoring across namespaces
+	bootstrapNamespace := newPodLabels[config.LABEL_PGHA_BOOTSTRAP_NAMESPACE]
+	if bootstrapNamespace != "" {
+		namespace = bootstrapNamespace
+	} else {
+		namespace = newPod.ObjectMeta.Namespace
+	}
+	cluster, err := c.Client.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName,
+		metav1.GetOptions{})
 	if err != nil {
 		log.Error(err.Error())
 		return

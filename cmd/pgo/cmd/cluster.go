@@ -332,6 +332,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.WALStorageConfig = WALStorageConfig
 	r.WALPVCSize = WALPVCSize
 	r.PGDataSource.RestoreFrom = RestoreFrom
+	r.PGDataSource.Namespace = RestoreFromNamespace
 	r.PGDataSource.RestoreOpts = BackupOpts
 	// set any annotations
 	r.Annotations = getClusterAnnotations(Annotations, AnnotationsPostgres, AnnotationsBackrest,

@@ -65,6 +65,10 @@ const (
 
 	// pgBadgerContainerName is the name of the pgBadger container
 	pgBadgerContainerName = "pgbadger"
+
+	// BoostrapConfigPrefix is the format of the prefix used for the Secret containing the
+	// pgBackRest configuration required to bootstrap a new cluster using a pgBackRest backup
+	BoostrapConfigPrefix = "%s-bootstrap-%s"
 )
 
 func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace string) {
@@ -285,8 +289,15 @@ func AddClusterBootstrap(clientset kubeapi.Interface, cluster *crv1.Pgcluster) e
 		return err
 	}
 
-	if err := addClusterBootstrapJob(clientset, cluster, namespace, dataVolume,
-		walVolume, tablespaceVolumes); err != nil && !kerrors.IsAlreadyExists(err) {
+	// create a copy of the pgBackRest secret for the cluster being restored from
+	bootstrapSecret, err := createBootstrapBackRestSecret(clientset, cluster)
+	if err != nil {
+		publishClusterCreateFailure(cluster, err.Error())
+		return err
+	}
+
+	if err := addClusterBootstrapJob(clientset, cluster, dataVolume,
+		walVolume, tablespaceVolumes, bootstrapSecret); err != nil && !kerrors.IsAlreadyExists(err) {
 		publishClusterCreateFailure(cluster, err.Error())
 		return err
 	}
@@ -321,8 +332,11 @@ func AddBootstrapRepo(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (
 	restoreClusterName := cluster.Spec.PGDataSource.RestoreFrom
 	repoName := fmt.Sprintf(util.BackrestRepoServiceName, restoreClusterName)
 
+	// get the namespace for the cluster we're restoring from
+	restoreClusterNamespace := operator.GetBootstrapNamespace(cluster)
+
 	found := true
-	repoDeployment, err := clientset.AppsV1().Deployments(cluster.GetNamespace()).
+	repoDeployment, err := clientset.AppsV1().Deployments(restoreClusterNamespace).
 		Get(ctx, repoName, metav1.GetOptions{})
 	if err != nil {
 		if !kerrors.IsNotFound(err) {
@@ -332,12 +346,13 @@ func AddBootstrapRepo(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (
 	}
 
 	if !found {
-		if err = backrest.CreateRepoDeployment(clientset, cluster, false, true, 1); err != nil {
+		if err = backrest.CreateRepoDeployment(clientset, cluster, false, true, 1,
+			restoreClusterNamespace); err != nil {
 			return
 		}
 		repoCreated = true
 	} else if _, ok := repoDeployment.GetLabels()[config.LABEL_PGHA_BOOTSTRAP]; ok {
-		err = fmt.Errorf("Unable to create bootstrap repo %s to bootstrap cluster %s "+
+		err = fmt.Errorf("unable to create bootstrap repo %s to bootstrap cluster %s "+
 			"(namespace %s) because it is already running to bootstrap another cluster",
 			repoName, cluster.GetName(), cluster.GetNamespace())
 		return
@@ -698,6 +713,54 @@ func annotateBackrestSecret(clientset kubernetes.Interface, cluster *crv1.Pgclus
 			Patch(ctx, secretName, types.MergePatchType, patch, metav1.PatchOptions{})
 	}
 	return err
+}
+
+// createBootstrapBackRestSecret creates a copy of the pgBackRest secret from the source cluster
+// being utilized to bootstrap a new cluster.  This ensures the required Secret (and therefore the
+// required pgBackRest cofiguration) as needed to bootstrap a new cluster via a 'pgbackrest
+// restore' is always present in the namespace of the cluster being created (e.g. when
+// bootstrapping from the pgBackRest backups of a cluster in another namespace)
+func createBootstrapBackRestSecret(clientset kubernetes.Interface,
+	cluster *crv1.Pgcluster) (*v1.Secret, error) {
+	ctx := context.TODO()
+
+	restoreFromCluster := cluster.Spec.PGDataSource.RestoreFrom
+
+	// Get the proper namespace depending on where we're restoring from.  If no namespace is
+	// specified in the PGDataSource then assume the same namespace as the pgcluster.
+	restoreFromNamespace := operator.GetBootstrapNamespace(cluster)
+
+	// get a copy of the pgBackRest repo secret for the cluster we're restoring from
+	restoreFromSecretName := fmt.Sprintf("%s-%s", restoreFromCluster,
+		config.LABEL_BACKREST_REPO_SECRET)
+	restoreFromSecret, err := clientset.CoreV1().Secrets(restoreFromNamespace).Get(ctx,
+		restoreFromSecretName, metav1.GetOptions{})
+	if err != nil {
+		publishClusterCreateFailure(cluster, err.Error())
+		return nil, err
+	}
+
+	// Create a copy of the secret for the cluster being recreated.  This ensures a copy of the
+	// required pgBackRest Secret is always present is the namespace of the cluster being created.
+	secretCopyName := fmt.Sprintf(BoostrapConfigPrefix, cluster.GetName(),
+		config.LABEL_BACKREST_REPO_SECRET)
+	secretCopy := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: restoreFromSecret.GetAnnotations(),
+			Labels: map[string]string{
+				config.LABEL_VENDOR:            config.LABEL_CRUNCHY,
+				config.LABEL_PG_CLUSTER:        cluster.GetName(),
+				config.LABEL_PGO_BACKREST_REPO: "true",
+				config.LABEL_PGHA_BOOTSTRAP:    cluster.GetName(),
+			},
+			Name:      secretCopyName,
+			Namespace: cluster.GetNamespace(),
+		},
+		Data: restoreFromSecret.Data,
+	}
+
+	return clientset.CoreV1().Secrets(cluster.GetNamespace()).Create(ctx, secretCopy,
+		metav1.CreateOptions{})
 }
 
 // createMissingUserSecret is the heart of trying to determine if a user secret

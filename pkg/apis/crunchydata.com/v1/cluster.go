@@ -224,6 +224,7 @@ const (
 // directory when bootstrapping a new PostgreSQL cluster
 // swagger:ignore
 type PGDataSourceSpec struct {
+	Namespace   string `json:"namespace"`
 	RestoreFrom string `json:"restoreFrom"`
 	RestoreOpts string `json:"restoreOpts"`
 }

@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -288,14 +289,36 @@ func GetPgbackrestEnvVars(cluster *crv1.Pgcluster, depName, port string) string 
 
 // GetPgbackrestBootstrapEnvVars returns a string containing the pgBackRest environment variables
 // for a bootstrap job
-func GetPgbackrestBootstrapEnvVars(restoreClusterName, depName string,
+func GetPgbackrestBootstrapEnvVars(cluster *crv1.Pgcluster,
 	restoreFromSecret *v1.Secret) (string, error) {
+	ctx := context.TODO()
+
+	depName := cluster.GetAnnotations()[config.ANNOTATION_CURRENT_PRIMARY]
+	restoreClusterName := cluster.Spec.PGDataSource.RestoreFrom
+
+	// get the namespace for the repo we're restoring from
+	restoreFromNamespace := GetBootstrapNamespace(cluster)
+
+	// Lookup an existing Service to determine its fully qualified domain name.
+	// This is inexpensive because the "net" package uses OS-level DNS caching.
+	// - https://golang.org/issue/24796
+	api := "kubernetes.default.svc"
+	cname, err := net.DefaultResolver.LookupCNAME(ctx, api)
+	if err != nil {
+		return "", err
+	}
+	domain := strings.TrimPrefix(cname, api+".")
+
+	// use DNS for the host for bootstrap Jobs since we might be bootstrapping across namespaces
+	repoHost := fmt.Sprintf(util.BackrestRepoDeploymentName, restoreClusterName) + "." +
+		restoreFromNamespace + ".svc." + domain
+
 	fields := PgbackrestEnvVarsTemplateFields{
 		PgbackrestStanza:    "db",
 		PgbackrestDBPath:    fmt.Sprintf("/pgdata/%s", depName),
 		PgbackrestRepo1Path: restoreFromSecret.Annotations[config.ANNOTATION_REPO_PATH],
 		PgbackrestPGPort:    restoreFromSecret.Annotations[config.ANNOTATION_PG_PORT],
-		PgbackrestRepo1Host: fmt.Sprintf(util.BackrestRepoDeploymentName, restoreClusterName),
+		PgbackrestRepo1Host: repoHost,
 		PgbackrestRepo1Type: crv1.BackrestStorageTypePosix, // just set to the default, can be overridden via CLI args
 	}
 
@@ -345,6 +368,19 @@ func GetBadgerAddon(cluster *crv1.Pgcluster, target string) string {
 	}
 
 	return doc.String()
+}
+
+// GetBootstrapNamespace returns the proper namespace to use when looking up and/or creating any
+// resources required to bootstrap a PostgreSQL cluster.  This includes either using the namespace
+// specified by the user in the PGDataSource, or defaulting to the same namespace as the pgcluster.
+func GetBootstrapNamespace(cluster *crv1.Pgcluster) string {
+	var restoreFromNamespace string
+	if cluster.Spec.PGDataSource.Namespace != "" {
+		restoreFromNamespace = cluster.Spec.PGDataSource.Namespace
+	} else {
+		restoreFromNamespace = cluster.Namespace
+	}
+	return restoreFromNamespace
 }
 
 // GetExporterAddon returns the template used to create an exporter container

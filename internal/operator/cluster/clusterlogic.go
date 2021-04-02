@@ -87,13 +87,14 @@ func addClusterCreateMissingService(clientset kubernetes.Interface, cluster *crv
 
 // addClusterBootstrapJob creates a job that will be used to bootstrap a PostgreSQL cluster from an
 // existing data source
-func addClusterBootstrapJob(clientset kubeapi.Interface,
-	cl *crv1.Pgcluster, namespace string, dataVolume, walVolume operator.StorageResult,
-	tablespaceVolumes map[string]operator.StorageResult) error {
+func addClusterBootstrapJob(clientset kubeapi.Interface, cl *crv1.Pgcluster,
+	dataVolume, walVolume operator.StorageResult,
+	tablespaceVolumes map[string]operator.StorageResult, bootstrapSecret *v1.Secret) error {
 	ctx := context.TODO()
+	namespace := cl.GetNamespace()
 
 	bootstrapFields, err := getBootstrapJobFields(clientset, cl, dataVolume,
-		tablespaceVolumes)
+		tablespaceVolumes, bootstrapSecret)
 	if err != nil {
 		return err
 	}
@@ -136,7 +137,7 @@ func addClusterDeployments(clientset kubeapi.Interface,
 	tablespaceVolumes map[string]operator.StorageResult) error {
 	ctx := context.TODO()
 
-	if err := backrest.CreateRepoDeployment(clientset, cl, true, false, 0); err != nil {
+	if err := backrest.CreateRepoDeployment(clientset, cl, true, false, 0, namespace); err != nil {
 		return err
 	}
 
@@ -178,7 +179,8 @@ func addClusterDeployments(clientset kubeapi.Interface,
 // getBootstrapJobFields obtains the fields needed to populate the cluster bootstrap job template
 func getBootstrapJobFields(clientset kubeapi.Interface,
 	cluster *crv1.Pgcluster, dataVolume operator.StorageResult,
-	tablespaceVolumes map[string]operator.StorageResult) (operator.BootstrapJobTemplateFields, error) {
+	tablespaceVolumes map[string]operator.StorageResult,
+	bootstrapSecret *v1.Secret) (operator.BootstrapJobTemplateFields, error) {
 	ctx := context.TODO()
 
 	restoreClusterName := cluster.Spec.PGDataSource.RestoreFrom
@@ -205,15 +207,6 @@ func getBootstrapJobFields(clientset kubeapi.Interface,
 			strings.TrimSpace(bootstrapFields.RestoreOpts + " --target-action=promote")
 	}
 
-	// Grab the pgBackRest secret from the "restore from" cluster to obtain the annotations
-	// containing the additional configuration details needed to bootstrap from the clusters
-	// pgBackRest repository
-	restoreFromSecret, err := clientset.CoreV1().Secrets(cluster.GetNamespace()).Get(ctx,
-		fmt.Sprintf(util.BackrestRepoSecretName, restoreClusterName), metav1.GetOptions{})
-	if err != nil {
-		return bootstrapFields, err
-	}
-
 	// Grab the cluster to restore from to see if it still exists
 	restoreCluster, err := clientset.CrunchydataV1().Pgclusters(cluster.GetNamespace()).
 		Get(ctx, restoreClusterName, metav1.GetOptions{})
@@ -234,8 +227,8 @@ func getBootstrapJobFields(clientset kubeapi.Interface,
 	}
 
 	// Now override any backrest env vars for the bootstrap job
-	bootstrapBackrestVars, err := operator.GetPgbackrestBootstrapEnvVars(restoreClusterName,
-		cluster.GetAnnotations()[config.ANNOTATION_CURRENT_PRIMARY], restoreFromSecret)
+	bootstrapBackrestVars, err := operator.GetPgbackrestBootstrapEnvVars(cluster,
+		bootstrapSecret)
 	if err != nil {
 		return bootstrapFields, err
 	}
@@ -247,7 +240,7 @@ func getBootstrapJobFields(clientset kubeapi.Interface,
 	if s3Restore {
 		// Now override any backrest S3 env vars for the bootstrap job
 		bootstrapFields.PgbackrestS3EnvVars = operator.GetPgbackrestBootstrapS3EnvVars(
-			cluster.Spec.PGDataSource.RestoreFrom, restoreFromSecret)
+			cluster.Spec.PGDataSource.RestoreFrom, bootstrapSecret)
 	} else {
 		bootstrapFields.PgbackrestS3EnvVars = ""
 	}

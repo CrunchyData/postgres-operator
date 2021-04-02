@@ -173,7 +173,9 @@ the existing pgBackRest repository host for that cluster in order to perform the
 restore.  If restoring from a former cluster that has since been deleted, a new pgBackRest
 repository host will be deployed for the sole purpose of bootstrapping the new cluster, and will
 then be destroyed once the restore is complete.  Also, please note that it is only possible for
-one cluster to bootstrap from another cluster (whether running or not) at any given time.
+one cluster to bootstrap from another cluster (whether running or not) at any given time.  And
+finally, if the cluster being utilized for restore is in another namespace than the cluster being
+created, the proper namespace can be specified using the `--restore-from-namespace` option.
 
 ## Deprovisioning
 

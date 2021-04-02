@@ -185,7 +185,7 @@
                 }, {
                     "name": "sshd",
                     "secret": {
-                        "secretName": "{{.RestoreFrom}}-backrest-repo-config"
+                        "secretName": "{{.ClusterName}}-bootstrap-backrest-repo-config"
                     }
                 }, {
                     "name": "ssh-config",
