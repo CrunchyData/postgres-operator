@@ -195,7 +195,7 @@ There is also a `pgo-client` container if you wish to deploy the client directly
   - [set_user](https://github.com/pgaudit/set_user)
   - [wal2json](https://github.com/eulerto/wal2json)
 - [pgBackRest](https://pgbackrest.org/)
-- [pgBouncer](http://pgbouncer.github.io/)
+- [pgBouncer](https://www.pgbouncer.org/)
 - [pgAdmin 4](https://www.pgadmin.org/)
 - [pgMonitor](https://github.com/CrunchyData/pgmonitor)
 - [Patroni](https://patroni.readthedocs.io/)

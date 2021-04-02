@@ -25,6 +25,9 @@ import (
 
 var global = logr.Discard()
 
+// Discard returns a logr.Logger that discards all messages logged to it.
+func Discard() logr.Logger { return logr.DiscardLogger{} }
+
 // SetLogFunc replaces the global logr.Logger with log that gets called when an
 // entry's level is at or below verbosity. (Only the most important entries are
 // passed when verbosity is zero.) Before this is called, the global logr.Logger

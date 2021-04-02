@@ -109,7 +109,7 @@ func InstanceCertificates(ctx context.Context,
 	return err
 }
 
-// InstancePod populates a PodSpec with the fields needed to run Patroni.
+// InstancePod populates a PodTemplateSpec with the fields needed to run Patroni.
 func InstancePod(ctx context.Context,
 	inCluster *v1alpha1.PostgresCluster,
 	inClusterConfigMap *v1.ConfigMap,

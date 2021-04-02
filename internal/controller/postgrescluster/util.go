@@ -16,10 +16,15 @@ package postgrescluster
 */
 
 import (
+	"fmt"
+	"hash/fnv"
+	"io"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
@@ -51,6 +56,18 @@ func addTMPEmptyDir(template *v1.PodTemplateSpec) {
 				MountPath: "/tmp",
 			})
 	}
+}
+
+// safeHash32 runs content and returns a short alphanumeric string that
+// represents everything written to w. The string is unlikely to have bad words
+// and is safe to store in the Kubernetes API. This is the same algorithm used
+// by ControllerRevision's "controller.kubernetes.io/hash".
+func safeHash32(content func(w io.Writer) error) (string, error) {
+	hash := fnv.New32()
+	if err := content(hash); err != nil {
+		return "", err
+	}
+	return rand.SafeEncodeString(fmt.Sprint(hash.Sum32())), nil
 }
 
 // setStatusConditions updates the provided PostgresCluster status with the provided

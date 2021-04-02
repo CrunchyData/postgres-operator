@@ -1,0 +1,68 @@
+/*
+ Copyright 2021 Crunchy Data Solutions, Inc.
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+
+ http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+*/
+
+package postgres
+
+import (
+	"bytes"
+	"context"
+	"io"
+	"sort"
+	"strings"
+)
+
+// Executor provides methods for calling "psql".
+type Executor func(
+	ctx context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
+) error
+
+// ExecInDatabasesFromQuery uses "bash" and "psql" to execute sql in every
+// database returned by the databases query. The sql statement(s) may contain
+// psql variables that are assigned from the variables map.
+// - https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-VARIABLES
+func (exec Executor) ExecInDatabasesFromQuery(
+	ctx context.Context, databases, sql string, variables map[string]string,
+) (string, string, error) {
+	// Use a Bash loop to call `psql` multiple times. The query to run in every
+	// database is passed via standard input while the database query is passed
+	// as the first argument. Remaining arguments are passed through to `psql`.
+	stdin := strings.NewReader(sql)
+	args := []string{databases}
+	for k, v := range variables {
+		args = append(args, "--set="+k+"="+v)
+	}
+
+	// The map iteration above is nondeterministic. Sort the variable arguments
+	// so that calls to exec are deterministic.
+	// - https://golang.org/ref/spec#For_range
+	sort.Strings(args[1:])
+
+	const script = `
+sql_target=$(< /dev/stdin)
+sql_databases="$1"
+shift 1
+
+databases=$(psql "$@" -X -Aqt --file=- <<< "$sql_databases")
+while read -r database; do
+	psql "$@" -X --file=- "$database" <<< "$sql_target"
+done <<< "$databases"
+`
+
+	// Execute the script with some error handling enabled.
+	var stdout, stderr bytes.Buffer
+	err := exec(ctx, stdin, &stdout, &stderr,
+		append([]string{"bash", "-ceu", "--", script, "-"}, args...)...)
+	return stdout.String(), stderr.String(), err
+}

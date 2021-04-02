@@ -37,7 +37,9 @@ func TestLabelsValid(t *testing.T) {
 }
 
 func TestLabelValuesValid(t *testing.T) {
+	assert.Assert(t, nil == validation.IsDNS1123Label(RolePatroniLeader))
 	assert.Assert(t, nil == validation.IsDNS1123Label(RolePatroniReplica))
+	assert.Assert(t, nil == validation.IsDNS1123Label(RolePGBouncer))
 	assert.Assert(t, nil == validation.IsDNS1123Label(RolePrimary))
 	assert.Assert(t, nil == validation.IsDNS1123Label(RoleReplica))
 }

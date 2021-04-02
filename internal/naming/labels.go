@@ -64,8 +64,14 @@ const (
 	RolePrimary = "primary"
 	RoleReplica = "replica"
 
+	// Patroni sets this LabelRole value on the Pod that is currently leader.
+	RolePatroniLeader = "master"
+
 	// Patroni sets this LabelRole value on Pods that are following the leader.
 	RolePatroniReplica = "replica"
+
+	// RolePGBouncer is the LabelRole applied to PgBouncer objects.
+	RolePGBouncer = "pgbouncer"
 )
 
 // PGBackRestLabels provides common labels for pgBackRest resources.

@@ -25,6 +25,10 @@ import (
 	"gotest.tools/v3/assert"
 )
 
+func TestDiscard(t *testing.T) {
+	assert.Equal(t, Discard(), logr.DiscardLogger{})
+}
+
 func TestFromContext(t *testing.T) {
 	global = logr.DiscardLogger{}
 

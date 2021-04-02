@@ -197,7 +197,7 @@ func (r *Reconciler) reconcilePGUserSecret(
 	// TODO(jkatz): user as cluster name? could there be a different default here?
 	intent.Data["user"] = []byte(cluster.Name)
 	intent.Data["dbname"] = []byte(cluster.Name)
-	intent.Data["port"] = []byte(fmt.Sprintf("%d", *cluster.Spec.Port))
+	intent.Data["port"] = []byte(fmt.Sprint(*cluster.Spec.Port))
 
 	hostname := naming.ClusterPrimaryService(cluster).Name + "." +
 		naming.ClusterPrimaryService(cluster).Namespace + ".svc"

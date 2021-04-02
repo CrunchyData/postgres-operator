@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -73,6 +72,10 @@ type PostgresClusterSpec struct {
 	// +kubebuilder:validation:Minimum=10
 	// +kubebuilder:validation:Maximum=13
 	PostgresVersion int `json:"postgresVersion"`
+
+	// The specification of a proxy that connects to PostgreSQL.
+	// +optional
+	Proxy *PostgresProxySpec `json:"proxy,omitempty"`
 }
 
 func (s *PostgresClusterSpec) Default() {
@@ -88,6 +91,10 @@ func (s *PostgresClusterSpec) Default() {
 	if s.Port == nil {
 		s.Port = new(int32)
 		*s.Port = 5432
+	}
+
+	if s.Proxy != nil {
+		s.Proxy.Default()
 	}
 }
 
@@ -198,18 +205,27 @@ type PostgresClusterStatus struct {
 	// +optional
 	PGBackRest *PGBackRestStatus `json:"pgbackrest,omitempty"`
 
+	// Current state of the PostgreSQL proxy.
+	// +optional
+	Proxy PostgresProxyStatus `json:"proxy,omitempty"`
+
 	// observedGeneration represents the .metadata.generation on which the status was based.
 	// +optional
 	// +kubebuilder:validation:Minimum=0
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
 	// conditions represent the observations of postgrescluster's current state.
-	// Known .status.conditions.type are: TODO
+	// Known .status.conditions.type are: "ProxyAvailable"
 	// +optional
 	// +listType=map
 	// +listMapKey=type
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
+
+// PostgresClusterStatus condition types.
+const (
+	ProxyAvailable = "ProxyAvailable"
+)
 
 type PostgresInstanceSetSpec struct {
 	// +optional
@@ -222,7 +238,7 @@ type PostgresInstanceSetSpec struct {
 	Replicas *int32 `json:"replicas,omitempty"`
 
 	// +optional
-	Resources v1.ResourceRequirements `json:"resources,omitempty"`
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 
 	// Defines a PersistentVolumeClaim spec that is utilized to create and/or bind PGDATA volumes
 	// for each PostgreSQL instance
@@ -240,6 +256,23 @@ func (s *PostgresInstanceSetSpec) Default(i int) {
 	}
 }
 
+// PostgresProxySpec is a union of the supported PostgreSQL proxies.
+type PostgresProxySpec struct {
+
+	// Defines a PgBouncer proxy and connection pooler.
+	PGBouncer *PGBouncerPodSpec `json:"pgBouncer"`
+}
+
+func (s *PostgresProxySpec) Default() {
+	if s.PGBouncer != nil {
+		s.PGBouncer.Default()
+	}
+}
+
+type PostgresProxyStatus struct {
+	PGBouncer PGBouncerPodStatus `json:"pgBouncer,omitempty"`
+}
+
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
@@ -247,6 +280,9 @@ func (s *PostgresInstanceSetSpec) Default(i int) {
 type PostgresCluster struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	// NOTE(cbandy): Every PostgresCluster needs a Spec, but it is optional here
+	// so ObjectMeta can be managed independently.
 
 	Spec   PostgresClusterSpec   `json:"spec,omitempty"`
 	Status PostgresClusterStatus `json:"status,omitempty"`

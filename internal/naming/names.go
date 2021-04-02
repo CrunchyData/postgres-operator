@@ -31,10 +31,13 @@ const (
 	// ContainerDatabasePGDATAInit is the name of the initialization container that is responsible
 	// for initializing the PGDATA directory
 	ContainerDatabasePGDATAInit = ContainerDatabase + "-pgdata-init"
-	ContainerPostgreSQL         = ContainerDatabase
+
+	// ContainerPGBouncer is the name of a container running PgBouncer.
+	ContainerPGBouncer = "pgbouncer"
 )
 
 const (
+	PortPGBouncer  = "pgbouncer"
 	PortPostgreSQL = "postgres"
 )
 
@@ -110,6 +113,15 @@ func ClusterConfigMap(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      cluster.Name + "-config",
+	}
+}
+
+// ClusterPGBouncer returns the ObjectMeta necessary to lookup the ConfigMap,
+// Deployment, Secret, or Service that is cluster's PgBouncer proxy.
+func ClusterPGBouncer(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Name + "-pgbouncer",
 	}
 }
 

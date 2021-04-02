@@ -33,3 +33,6 @@ spec:
           resources:
             requests:
               storage: 1Gi
+  proxy:
+    pgBouncer:
+      image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-13.2-4.6.2

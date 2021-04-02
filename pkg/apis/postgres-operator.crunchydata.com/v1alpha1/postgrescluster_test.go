@@ -61,7 +61,9 @@ spec:
     syncPeriodSeconds: 10
   port: 5432
   postgresVersion: 0
-status: {}
+status:
+  proxy:
+    pgBouncer: {}
 		`)+"\n")
 	})
 
@@ -94,7 +96,34 @@ spec:
     syncPeriodSeconds: 10
   port: 5432
   postgresVersion: 0
-status: {}
+status:
+  proxy:
+    pgBouncer: {}
+		`)+"\n")
+	})
+
+	t.Run("empty proxy", func(t *testing.T) {
+		var cluster PostgresCluster
+		cluster.Spec.Proxy = new(PostgresProxySpec)
+		cluster.Default()
+
+		b, err := yaml.Marshal(cluster.Spec.Proxy)
+		assert.NilError(t, err)
+		assert.DeepEqual(t, string(b), "pgBouncer: null\n")
+	})
+
+	t.Run("PgBouncer proxy", func(t *testing.T) {
+		var cluster PostgresCluster
+		cluster.Spec.Proxy = &PostgresProxySpec{PGBouncer: &PGBouncerPodSpec{}}
+		cluster.Default()
+
+		b, err := yaml.Marshal(cluster.Spec.Proxy)
+		assert.NilError(t, err)
+		assert.DeepEqual(t, string(b), strings.TrimSpace(`
+pgBouncer:
+  image: ""
+  port: 5432
+  resources: {}
 		`)+"\n")
 	})
 }

@@ -34,6 +34,24 @@ func TestAsObjectKey(t *testing.T) {
 		client.ObjectKey{Namespace: "ns1", Name: "thing"})
 }
 
+func TestContainerNamesUniqueAndValid(t *testing.T) {
+	// Container names have to be unique within a Pod. The number of containers
+	// we deploy should be few enough that we can name them uniquely across all
+	// pods.
+	// - https://docs.k8s.io/reference/kubernetes-api/workloads-resources/pod-v1/
+
+	names := sets.NewString()
+	for _, name := range []string{
+		ContainerDatabase,
+		ContainerDatabasePGDATAInit,
+		ContainerPGBouncer,
+	} {
+		assert.Assert(t, !names.Has(name), "%q defined already", name)
+		assert.Assert(t, nil == validation.IsDNS1123Label(name))
+		names.Insert(name)
+	}
+}
+
 func TestClusterNamesUniqueAndValid(t *testing.T) {
 	cluster := &v1alpha1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
@@ -50,6 +68,7 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 		names := sets.NewString()
 		for _, tt := range []test{
 			{"ClusterConfigMap", ClusterConfigMap(cluster)},
+			{"ClusterPGBouncer", ClusterPGBouncer(cluster)},
 			{"PatroniDistributedConfiguration", PatroniDistributedConfiguration(cluster)},
 			{"PatroniLeaderConfigMap", PatroniLeaderConfigMap(cluster)},
 			{"PatroniTrigger", PatroniTrigger(cluster)},
@@ -64,9 +83,25 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 		}
 	})
 
+	t.Run("Deployments", func(t *testing.T) {
+		names := sets.NewString()
+		for _, tt := range []test{
+			{"ClusterPGBouncer", ClusterPGBouncer(cluster)},
+		} {
+			t.Run(tt.name, func(t *testing.T) {
+				assert.Equal(t, tt.value.Namespace, cluster.Namespace)
+				assert.Assert(t, tt.value.Name != cluster.Name, "may collide")
+				assert.Assert(t, !names.Has(tt.value.Name), "%q defined already", tt.value.Name)
+				assert.Assert(t, nil == validation.IsDNS1123Label(tt.value.Name))
+				names.Insert(tt.value.Name)
+			})
+		}
+	})
+
 	t.Run("Secrets", func(t *testing.T) {
 		names := sets.NewString()
 		for _, tt := range []test{
+			{"ClusterPGBouncer", ClusterPGBouncer(cluster)},
 			{"PostgresUserSecret", PostgresUserSecret(cluster)},
 			{"PostgresTLSSecret", PostgresTLSSecret(cluster)},
 			{"PatroniAuthSecret", PatroniAuthSecret(cluster)},
@@ -84,6 +119,7 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 	t.Run("Services", func(t *testing.T) {
 		names := sets.NewString()
 		for _, tt := range []test{
+			{"ClusterPGBouncer", ClusterPGBouncer(cluster)},
 			{"ClusterPodService", ClusterPodService(cluster)},
 			{"ClusterPrimaryService", ClusterPrimaryService(cluster)},
 			// Patroni can use Endpoints which relate directly to a Service.

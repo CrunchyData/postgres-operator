@@ -36,6 +36,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/pgbouncer"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
@@ -161,6 +162,9 @@ func (r *Reconciler) Reconcile(
 	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TCP().User(naming.PGReplicationUsername).Replication().Method("md5"))
 	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TCP().User(naming.PGReplicationUsername).Database("postgres").Method("md5"))
 	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TCP().User(naming.PGReplicationUsername).Method("reject"))
+
+	pgbouncer.PostgreSQL(cluster, &pgHBAs)
+
 	// The "md5" authentication method automatically verifies passwords encrypted
 	// using either MD5 or SCRAM-SHA-256.
 	// - https://www.postgresql.org/docs/current/auth-password.html
@@ -221,8 +225,9 @@ func (r *Reconciler) Reconcile(
 	if err == nil {
 		err = updateResult(r.reconcilePGBackRest(ctx, cluster, instancesNames))
 	}
-
-	// TODO reconcile pgBouncer
+	if err == nil {
+		err = r.reconcilePGBouncer(ctx, cluster)
+	}
 
 	// TODO reconcile pgadmin4
 
@@ -290,6 +295,7 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 		Owns(&v1.Endpoints{}).
 		Owns(&v1.Secret{}).
 		Owns(&v1.Service{}).
+		Owns(&appsv1.Deployment{}).
 		Owns(&appsv1.StatefulSet{}).
 		Watches(&source.Kind{Type: &appsv1.StatefulSet{}},
 			r.controllerRefHandlerFuncs()). // watch all StatefulSets
