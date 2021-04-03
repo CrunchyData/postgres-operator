@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -50,6 +51,11 @@ const (
 	postgresGISImage   = "crunchy-postgres-gis"
 	postgresGISHAImage = "crunchy-postgres-gis-ha"
 )
+
+// nssWrapperRegex is the regular expression that is utilized to determine if the UsePAM
+// setting is set to 'yes' in the sshd_config (as it might be for versions up to v4.6.1,
+// v4.5.2 and v4.4.3)
+var usePAMRegex = regexp.MustCompile(`(?im)^UsePAM\s*yes`)
 
 // AddUpgrade implements the upgrade workflow in accordance with the received pgtask
 // the general process is outlined below:
@@ -468,9 +474,18 @@ func recreateBackrestRepoSecret(clientset kubernetes.Interface, clustername, nam
 		}
 	}
 
+	var repoSecret *v1.Secret
 	if err == nil {
-		err = util.CreateBackrestRepoSecrets(clientset, config)
+		repoSecret, err = util.CreateBackrestRepoSecrets(clientset, config)
 	}
+	if err != nil {
+		log.Errorf("error generating new backrest repo secrets during pgcluster upgrade: %v", err)
+	}
+
+	if err := updatePGBackRestSSHDConfig(clientset, repoSecret, namespace); err != nil {
+		log.Errorf("error upgrading pgBackRest sshd_config: %v", err)
+	}
+
 	if err != nil {
 		log.Errorf("error generating new backrest repo secrets during pgcluster upgrade: %v", err)
 	}
@@ -928,4 +943,29 @@ func updateClusterConfig(clientset kubeapi.Interface, pgcluster *crv1.Pgcluster,
 
 	// sync the changes to the configmap to the DCS
 	return pgoconfig.NewDCS(patchedClusterConfig, clientset, pgcluster.GetObjectMeta().GetLabels()[config.LABEL_PGHA_SCOPE]).Sync()
+}
+
+// updatePGBackRestSSHDConfig is responsible for upgrading the sshd_config file as needed across
+// operator versions to ensure proper functionality with pgBackRest
+func updatePGBackRestSSHDConfig(clientset kubernetes.Interface, repoSecret *v1.Secret,
+	namespace string) error {
+
+	ctx := context.TODO()
+	updatedRepoSecret := repoSecret.DeepCopy()
+
+	// For versions prior to v4.6.2, the UsePAM setting might be set to 'yes' as previously
+	// required to workaround a known Docker issue.  Since this issue has since been resolved,
+	// we now want to ensure this setting is set to 'no'.
+	if !usePAMRegex.MatchString(string(updatedRepoSecret.Data["sshd_config"])) {
+		return nil
+	}
+
+	updatedRepoSecret.Data["sshd_config"] =
+		[]byte(usePAMRegex.ReplaceAllString(string(updatedRepoSecret.Data["sshd_config"]),
+			"UsePAM no"))
+
+	_, err := clientset.CoreV1().Secrets(namespace).Update(ctx, updatedRepoSecret,
+		metav1.UpdateOptions{})
+
+	return err
 }
