@@ -114,8 +114,8 @@ func (hba *HostBasedAuthentication) SameNetwork() *HostBasedAuthentication {
 	return hba
 }
 
-// SSL makes hba match connection attempts made using TCP/IP with SSL.
-func (hba *HostBasedAuthentication) SSL() *HostBasedAuthentication {
+// TLS makes hba match connection attempts made using TCP/IP with TLS.
+func (hba *HostBasedAuthentication) TLS() *HostBasedAuthentication {
 	hba.origin = "hostssl"
 	return hba
 }
