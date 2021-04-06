@@ -31,7 +31,7 @@
                     {% if (prometheus_supplemental_groups | default('')) != '' %},{% endif -%}
                     "fsGroup": 26,
                     "runAsUser": 2,
-                    "runAsNonRoot": true,
+                    "runAsNonRoot": true
 {% endif %}
                 },
                 "serviceAccountName": "prometheus-sa",
