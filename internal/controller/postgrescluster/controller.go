@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/pkg/errors"
@@ -110,12 +111,28 @@ func (r *Reconciler) Reconcile(
 	// Keep a copy of cluster prior to any manipulations.
 	before := cluster.DeepCopy()
 
+	// NOTE(cbandy): When a namespace is deleted, objects owned by a
+	// PostgresCluster may be deleted before the PostgresCluster is deleted.
+	// When this happens, any attempt to reconcile those objects is rejected
+	// as Forbidden: "unable to create new content in namespace … because it is
+	// being terminated".
+
 	// Check for and handle deletion of cluster. Return early if it is being
 	// deleted or there was an error.
 	if result, err := r.handleDelete(ctx, cluster); err != nil {
 		span.RecordError(err)
+		log.Error(err, "deleting")
 		return reconcile.Result{}, err
+
 	} else if result != nil {
+		if log := log.V(1); log.Enabled() {
+			if result.RequeueAfter > 0 {
+				// RequeueAfter implies Requeue, but set both to make the next
+				// log message more clear.
+				result.Requeue = true
+			}
+			log.Info("deleting", "result", fmt.Sprintf("%+v", *result))
+		}
 		return *result, nil
 	}
 

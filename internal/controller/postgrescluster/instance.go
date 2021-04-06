@@ -17,6 +17,7 @@ package postgrescluster
 
 import (
 	"context"
+	"time"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
@@ -60,6 +61,16 @@ func (r *Reconciler) deleteInstances(
 		return nil, err
 	}
 
+	if len(pods.Items) == 0 {
+		// There are no instances, so there's nothing to do.
+		// The caller can do what they like.
+		return nil, nil
+	}
+
+	// There are some instances, so the caller should at least wait for further
+	// events.
+	result := reconcile.Result{}
+
 	// stop schedules pod for deletion by scaling its controller to zero.
 	stop := func(pod *v1.Pod) error {
 		instance := &unstructured.Unstructured{}
@@ -81,28 +92,32 @@ func (r *Reconciler) deleteInstances(
 		// apps/v1.Deployment, apps/v1.ReplicaSet, and apps/v1.StatefulSet all
 		// have a "spec.replicas" field with the same meaning.
 		patch := client.RawPatch(client.Merge.Type(), []byte(`{"spec":{"replicas":0}}`))
-		return errors.WithStack(r.patch(ctx, instance, patch))
-	}
+		err := errors.WithStack(r.patch(ctx, instance, patch))
 
-	if len(pods.Items) == 0 {
-		// There are no instances, so there's nothing to do.
-		// The caller can do what they like.
-		return nil, nil
+		// When the pod controller is missing, requeue rather than return an
+		// error. The garbage collector will stop the pod, and it is not our
+		// mistake that something else is deleting objects. Use RequeueAfter to
+		// avoid being rate-limited due to a deluge of delete events.
+		if err != nil {
+			result.RequeueAfter = 10 * time.Second
+		}
+		return client.IgnoreNotFound(err)
 	}
 
 	if len(pods.Items) == 1 {
 		// There's one instance; stop it.
-		// The caller should wait for further events or requeue upon error.
-		return &reconcile.Result{}, stop(&pods.Items[0])
+		return &result, stop(&pods.Items[0])
 	}
 
-	// There are multiple instances; stop the replicas.
-	found := false
+	// There are multiple instances; stop the replicas. When none are found,
+	// requeue to try again.
+
+	result.Requeue = true
 	for i := range pods.Items {
 		role := pods.Items[i].Labels[naming.LabelRole]
 		if err == nil && role == naming.RolePatroniReplica {
 			err = stop(&pods.Items[i])
-			found = true
+			result.Requeue = false
 		}
 
 		// An instance without a role label is not participating in the Patroni
@@ -110,13 +125,11 @@ func (r *Reconciler) deleteInstances(
 		// stop these as well.
 		if err == nil && len(role) == 0 {
 			err = stop(&pods.Items[i])
-			found = true
+			result.Requeue = false
 		}
 	}
 
-	// The caller should wait for further events or requeue if we were unable
-	// to make progress stopping replicas.
-	return &reconcile.Result{Requeue: !found}, err
+	return &result, err
 }
 
 // +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=list
