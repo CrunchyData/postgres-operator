@@ -561,7 +561,7 @@ To resize the PVC that stores the PostgreSQL data directory across the entire
 cluster, you will need to edit the `size` attribute of the `PrimaryStorage`
 portion of the `pgclusters.crunchydata.com` custom resource.
 
-The PVC process for a cluster uses a [rolling update]({{< relref "/architecture/high-availability/_index.md">}}#rolling-updates)
+The PVC resize process for a cluster uses a [rolling update]({{< relref "/architecture/high-availability/_index.md">}}#rolling-updates)
 to apply the size changes. During the process, each Deployment is scaled down
 and back to allow for the PVC resize to take effect.
 
@@ -573,6 +573,16 @@ edit the `size` attribute of the `BackrestStorage` portion of the
 
 The Postgres Operator will apply the PVC size change and scale the pgBackRest
 Deployment down and back up.
+
+#### Resize a WAL PVC
+
+To resize the optional PVC that can be used to store WAL archives, you can edit
+the `size` attribute of the `WALStorage` portion of the
+`pgclusters.crunchydata.com` custom resource.
+
+The PVC resize process for a cluster uses a [rolling update]({{< relref "/architecture/high-availability/_index.md">}}#rolling-updates)
+to apply the size changes. During the process, each Deployment is scaled down
+and back to allow for the PVC resize to take effect.
 
 ### Monitoring
 

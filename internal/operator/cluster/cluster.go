@@ -446,6 +446,40 @@ func ResizeClusterPVC(clientset kubeapi.Interface, cluster *crv1.Pgcluster, depl
 	return nil
 }
 
+// ResizeWALPVC allows for the resizing of the PVCs where WAL are stored.
+func ResizeWALPVC(clientset kubeapi.Interface, cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) error {
+	log.Debugf("resize cluster PVC on [%s]", deployment.Name)
+	ctx := context.TODO()
+
+	// we can ignore the error here as this has to have been validated before
+	// reaching this step. However, if you reach this step and are getting an
+	// error, you're likely invoking this function improperly. Sorry.
+	size, _ := resource.ParseQuantity(cluster.Spec.WALStorage.Size)
+
+	// OK, let's now perform the resize. In this case, we need to update the value
+	// on the PVC.
+	pvcName := deployment.GetName() + "-wal"
+	pvc, err := clientset.CoreV1().PersistentVolumeClaims(cluster.Namespace).Get(ctx,
+		pvcName, metav1.GetOptions{})
+
+	// if we can't locate the PVC, we can't resize, and we really need to return
+	// an error
+	if err != nil {
+		return err
+	}
+
+	// alright, update the PVC size
+	pvc.Spec.Resources.Requests[v1.ResourceStorage] = size
+
+	// and update!
+	if _, err := clientset.CoreV1().PersistentVolumeClaims(pvc.Namespace).Update(ctx,
+		pvc, metav1.UpdateOptions{}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // ScaleBase ...
 func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace string) {
 	ctx := context.TODO()
