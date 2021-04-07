@@ -218,28 +218,10 @@ path.
 in the format `username:password` in a file called `pgouser`
 - `client.crt`, `client.key`, and `pgouser` are all set to be read/write by the
 file owner. All other permissions are removed.
-- Sets the following environmental variables with the following values:
+- Requests you to set some environmental variables.
 
-```shell
-export PGOUSER=$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/pgouser
-export PGO_CA_CERT=$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.crt
-export PGO_CLIENT_CERT=$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.crt
-export PGO_CLIENT_KEY=$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.key
-```
-
-For convenience, after the script has finished, you can permanently at these
-environmental variables to your environment:
-
-
-```shell
-cat <<EOF >> ~/.bashrc
-export PATH="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE:$PATH"
-export PGOUSER="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/pgouser"
-export PGO_CA_CERT="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.crt"
-export PGO_CLIENT_CERT="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.crt"
-export PGO_CLIENT_KEY="$HOME/.pgo/$PGO_OPERATOR_NAMESPACE/client.key"
-EOF
-```
+For convenience, after the script has finished, you can permanently add these
+environmental variables to your environment by adding them into `~/.bashrc`.
 
 By default, the `client-setup.sh` script targets the user that is stored in the
 `pgouser-admin` secret in the `pgo` (`$PGO_OPERATOR_NAMESPACE`) Namespace. If
@@ -254,27 +236,7 @@ please see [Installing the `pgo` client]({{< relref "/installation/pgo-client" >
 One way to verify the installation was successful is to execute the
 [`pgo version`]({{< relref "/pgo-client/reference/pgo_version.md" >}}) command.
 
-In a new console window, run the following command to set up a port forward:
-
-```shell
-kubectl -n pgo port-forward svc/postgres-operator 8443:8443
-```
-
-Next, in another console window, set the following environment variable to configure the API server address:
-
-```bash
-cat <<EOF >> ${HOME?}/.bashrc
-export PGO_APISERVER_URL="https://127.0.0.1:8443"
-EOF
-```
-
-Apply those changes to the current session by running:
-
-```bash
-source ${HOME?}/.bashrc
-```
-
-Now run the `pgo version` command:
+In a new console window, run the `pgo version` command:
 
 ```shell
 pgo version
