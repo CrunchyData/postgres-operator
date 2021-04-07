@@ -25,14 +25,17 @@ import (
 	"path"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/ns"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -292,6 +295,25 @@ func IsLocalAndS3Storage(cluster *crv1.Pgcluster) bool {
 	}
 
 	return i >= 2
+}
+
+// ScaleDeployment scales a deployment to a specified number of replicas. It
+// will also wait to ensure that the Deployment is actually scaled down.
+func ScaleDeployment(clientset kubeapi.Interface,
+	deployment *appsv1.Deployment, replicas *int32) error {
+	ctx := context.TODO()
+
+	patch, _ := kubeapi.NewMergePatch().Add("spec", "replicas")(*replicas).Bytes()
+
+	log.Debugf("patching deployment %s: %s", deployment.GetName(), patch)
+
+	// Patch the Deployment with the updated number of replicas, which will
+	// trigger the scaling operation. We store the updated deployment so the
+	// object can be later updated when we scale back up
+	_, err := clientset.AppsV1().Deployments(deployment.Namespace).
+		Patch(ctx, deployment.GetName(), types.MergePatchType, patch, metav1.PatchOptions{})
+
+	return err
 }
 
 // SetContainerImageOverride determines if there is an override available for

@@ -31,7 +31,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -200,7 +199,7 @@ func applyUpdateToPostgresInstance(clientset kubeapi.Interface, restConfig *rest
 			log.Warn(err)
 		}
 
-		if err := scaleDeployment(clientset, deployment, replicas); err != nil {
+		if err := operator.ScaleDeployment(clientset, deployment, replicas); err != nil {
 			log.Warn(err)
 		}
 	}
@@ -280,25 +279,6 @@ func getPostgresPodsForDeployment(clientset kubernetes.Interface, cluster *crv1.
 		).String(),
 	}
 	return clientset.CoreV1().Pods(deployment.Namespace).List(ctx, options)
-}
-
-// scaleDeployment scales a deployment to a specified number of replicas. It
-// will also wait to ensure that the Deployment is actually scaled down.
-func scaleDeployment(clientset kubeapi.Interface,
-	deployment *appsv1.Deployment, replicas *int32) error {
-	ctx := context.TODO()
-
-	patch, _ := kubeapi.NewMergePatch().Add("spec", "replicas")(*replicas).Bytes()
-
-	log.Debugf("patching deployment %s: %s", deployment.GetName(), patch)
-
-	// Patch the Deployment with the updated number of replicas, which will
-	// trigger the scaling operation. We store the updated deployment so the
-	// object can be later updated when we scale back up
-	_, err := clientset.AppsV1().Deployments(deployment.Namespace).
-		Patch(ctx, deployment.GetName(), types.MergePatchType, patch, metav1.PatchOptions{})
-
-	return err
 }
 
 // waitForPostgresInstanceReady waits for a PostgreSQL instance within a Pod is ready

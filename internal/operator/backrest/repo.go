@@ -25,6 +25,7 @@ import (
 	"strconv"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
 	"github.com/crunchydata/postgres-operator/internal/util"
@@ -34,6 +35,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -268,6 +270,55 @@ func getRepoDeploymentFields(clientset kubernetes.Interface, cluster *crv1.Pgclu
 	}
 
 	return &repoFields
+}
+
+// ResizePVC resizes the pgBackRest PVC. To do this, the pgBackRest Deployment
+// is scaled down to ensure the PVC unmounted, and then scaled back up. This
+// will ensure that the new PVC size is applied to the pgBackRest repository.
+func ResizePVC(clientset kubeapi.Interface, cluster *crv1.Pgcluster) error {
+	log.Debugf("resize pgBackRest PVC on [%s]", cluster.Name)
+	ctx := context.TODO()
+
+	// this should not error as it should be validated before this step.
+	size, err := resource.ParseQuantity(cluster.Spec.BackrestStorage.Size)
+	if err != nil {
+		return err
+	}
+
+	// OK, let's now perform the resize. In this case, we need to update the value
+	// on the PVC.
+	pvcName := fmt.Sprintf(util.BackrestRepoPVCName, cluster.Name)
+	pvc, err := clientset.CoreV1().PersistentVolumeClaims(cluster.Namespace).Get(ctx,
+		pvcName, metav1.GetOptions{})
+
+	// if we can't locate the PVC, we can't resize, and we really need to return
+	// an error
+	if err != nil {
+		return err
+	}
+
+	// alright, update the PVC size
+	pvc.Spec.Resources.Requests[v1.ResourceStorage] = size
+
+	// and update!
+	if _, err := clientset.CoreV1().PersistentVolumeClaims(pvc.Namespace).Update(ctx,
+		pvc, metav1.UpdateOptions{}); err != nil {
+		return err
+	}
+
+	// rescale the pgBackRest Deployment
+	deployment, err := operator.GetBackrestDeployment(clientset, cluster)
+	if err != nil {
+		return err
+	}
+
+	replicas := new(int32)
+	if err := operator.ScaleDeployment(clientset, deployment, replicas); err != nil {
+		return err
+	}
+
+	*replicas = 1
+	return operator.ScaleDeployment(clientset, deployment, replicas)
 }
 
 // UpdateAnnotations updates the annotations in the "template" portion of a

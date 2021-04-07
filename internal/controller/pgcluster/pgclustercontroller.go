@@ -301,6 +301,18 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
+	// see if the pgBackRest PVC size value changed.
+	if oldcluster.Spec.BackrestStorage.Size != newcluster.Spec.BackrestStorage.Size {
+		// validate that this resize can occur
+		if err := validatePVCResize(oldcluster.Spec.BackrestStorage.Size, newcluster.Spec.BackrestStorage.Size); err != nil {
+			log.Error(err)
+		} else {
+			if err := backrestoperator.ResizePVC(c.Client, newcluster); err != nil {
+				log.Error(err)
+			}
+		}
+	}
+
 	// see if any of the pgBouncer values have changed, and if so, update the
 	// pgBouncer deployment
 	if !reflect.DeepEqual(oldcluster.Spec.PgBouncer, newcluster.Spec.PgBouncer) {

@@ -565,6 +565,15 @@ The PVC process for a cluster uses a [rolling update]({{< relref "/architecture/
 to apply the size changes. During the process, each Deployment is scaled down
 and back to allow for the PVC resize to take effect.
 
+#### Resize the pgBackRest PVC
+
+To resize the PVC that stores the backups managed by pgBackRest, you will need to
+edit the `size` attribute of the `BackrestStorage` portion of the
+`pgclusters.crunchydata.com` custom resource.
+
+The Postgres Operator will apply the PVC size change and scale the pgBackRest
+Deployment down and back up.
+
 ### Monitoring
 
 To enable the [monitoring]({{< relref "/architecture/monitoring.md">}})
