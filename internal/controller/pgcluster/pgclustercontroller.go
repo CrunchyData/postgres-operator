@@ -374,6 +374,17 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
+	// check to see if the size of the WAL PVC has changed
+	if oldcluster.Spec.WALStorage.Size != newcluster.Spec.WALStorage.Size {
+		// validate that this resize can occur
+		if err := validatePVCResize(oldcluster.Spec.WALStorage.Size, newcluster.Spec.WALStorage.Size); err != nil {
+			log.Error(err)
+		} else {
+			rescale = true
+			rollingUpdateFuncs = append(rollingUpdateFuncs, clusteroperator.ResizeWALPVC)
+		}
+	}
+
 	// if there is no need to perform a rolling update, exit here
 	if len(rollingUpdateFuncs) == 0 {
 		return
@@ -736,18 +747,18 @@ func validatePVCResize(oldSize, newSize string) error {
 	old, err := resource.ParseQuantity(oldSize)
 
 	if err != nil {
-		return fmt.Errorf("cannot resize the cluster PVC due to invalid storage size: %w", err)
+		return fmt.Errorf("cannot resize PVC due to invalid storage size: %w", err)
 	}
 
 	new, err := resource.ParseQuantity(newSize)
 
 	if err != nil {
-		return fmt.Errorf("cannot resize the cluster PVC due to invalid storage size: %w", err)
+		return fmt.Errorf("cannot resize PVC due to invalid storage size: %w", err)
 	}
 
 	// the new size *must* be greater than the old size
 	if new.Cmp(old) != 1 {
-		return fmt.Errorf("cannot resize the cluster PVC: new size %q is less than old size %q",
+		return fmt.Errorf("cannot resize PVC: new size %q is less than old size %q",
 			new.String(), old.String())
 	}
 
