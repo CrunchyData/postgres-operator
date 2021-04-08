@@ -313,6 +313,18 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		}
 	}
 
+	// see if the pgAdmin PVC size valued changed.
+	if oldcluster.Spec.PGAdminStorage.Size != newcluster.Spec.PGAdminStorage.Size {
+		// validate that this resize can occur
+		if err := validatePVCResize(oldcluster.Spec.PGAdminStorage.Size, newcluster.Spec.PGAdminStorage.Size); err != nil {
+			log.Error(err)
+		} else {
+			if err := clusteroperator.ResizePGAdminPVC(c.Client, newcluster); err != nil {
+				log.Error(err)
+			}
+		}
+	}
+
 	// see if any of the pgBouncer values have changed, and if so, update the
 	// pgBouncer deployment
 	if !reflect.DeepEqual(oldcluster.Spec.PgBouncer, newcluster.Spec.PgBouncer) {
@@ -744,6 +756,11 @@ func updateTablespaces(c *Controller, oldCluster *crv1.Pgcluster, newCluster *cr
 // validatePVCResize ensures that the quantities being used in a PVC resize are
 // valid, and the resize is moving in an increasing direction
 func validatePVCResize(oldSize, newSize string) error {
+	// the old size might be blank. if it is, set it to 0
+	if strings.TrimSpace(oldSize) == "" {
+		oldSize = "0"
+	}
+
 	old, err := resource.ParseQuantity(oldSize)
 
 	if err != nil {

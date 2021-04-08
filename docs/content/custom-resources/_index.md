@@ -559,7 +559,7 @@ and how you can resize the PVCs.
 
 To resize the PVC that stores the PostgreSQL data directory across the entire
 cluster, you will need to edit the `size` attribute of the `PrimaryStorage`
-portion of the `pgclusters.crunchydata.com` custom resource.
+section of the `pgclusters.crunchydata.com` custom resource.
 
 The PVC resize process for a cluster uses a [rolling update]({{< relref "/architecture/high-availability/_index.md">}}#rolling-updates)
 to apply the size changes. During the process, each Deployment is scaled down
@@ -568,7 +568,7 @@ and back to allow for the PVC resize to take effect.
 #### Resize the pgBackRest PVC
 
 To resize the PVC that stores the backups managed by pgBackRest, you will need to
-edit the `size` attribute of the `BackrestStorage` portion of the
+edit the `size` attribute of the `BackrestStorage` section of the
 `pgclusters.crunchydata.com` custom resource.
 
 The Postgres Operator will apply the PVC size change and scale the pgBackRest
@@ -577,12 +577,22 @@ Deployment down and back up.
 #### Resize a WAL PVC
 
 To resize the optional PVC that can be used to store WAL archives, you can edit
-the `size` attribute of the `WALStorage` portion of the
+the `size` attribute of the `WALStorage` section of the
 `pgclusters.crunchydata.com` custom resource.
 
 The PVC resize process for a cluster uses a [rolling update]({{< relref "/architecture/high-availability/_index.md">}}#rolling-updates)
 to apply the size changes. During the process, each Deployment is scaled down
-and back to allow for the PVC resize to take effect.
+and back up to allow for the PVC resize to take effect.
+
+#### Resize the pgAdmin 4 PVC
+
+If you have deployed [pgAdmin 4]({{< relref "/architecture/pgadmin4.md" >}}) and
+need to resize its PVC, you can edit the `size` attribute of the `PGAdmin`
+section of the `pgclusters.crunchydata.com` custom resource.
+
+The PVC resize process for a cluster uses a [rolling update]({{< relref "/architecture/high-availability/_index.md">}}#rolling-updates)
+to apply the size changes. During the process, the pgAdmin 4 Deployment is
+scaled down and back up to allow for the PVC resize to take effect.
 
 ### Monitoring
 
