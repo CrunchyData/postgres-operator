@@ -1014,7 +1014,7 @@ func publishClusterShutdown(cluster crv1.Pgcluster) error {
 // StopPostgreSQLInstance function, as it preps a Deployment to have its
 // PostgreSQL instance shut down. This helps to ensure that a PostgreSQL
 // instance will launch and not be in crash recovery mode
-func stopPostgreSQLInstance(clientset kubernetes.Interface, restConfig *rest.Config, deployment apps_v1.Deployment) error {
+func StopPostgreSQLInstance(clientset kubernetes.Interface, restConfig *rest.Config, deployment apps_v1.Deployment) error {
 	ctx := context.TODO()
 
 	// First, attempt to get the PostgreSQL instance Pod attachd to this

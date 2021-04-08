@@ -574,6 +574,19 @@ edit the `size` attribute of the `BackrestStorage` section of the
 The Postgres Operator will apply the PVC size change and scale the pgBackRest
 Deployment down and back up.
 
+#### Resize a single PostgreSQL instance / read-only replica
+
+To resize the PVC for a read-only replica, you can edit the `size` attribute
+of the `ReplicaStorage` portion of the `pgreplicas.crunchydata.com` custom
+resource.
+
+Note that if a subsequent action resizes the PVCs for all of the instances in a
+Postgres cluster and that new PVC size is larger than the specific instance
+size that is set, then the instance PVC is also resized.
+
+The Postgres Operator will apply the PVC size change and scale the instance
+Deployment down and back up.
+
 #### Resize a WAL PVC
 
 To resize the optional PVC that can be used to store WAL archives, you can edit

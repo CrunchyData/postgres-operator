@@ -22,7 +22,9 @@ import (
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/controller"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
+	"github.com/crunchydata/postgres-operator/internal/operator"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
@@ -30,6 +32,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
@@ -275,6 +278,64 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 				}
 				return
 			}
+		}
+
+		// if we get to this point, then we should resize the PVC
+		// validate that this resize can occur
+		if err := controller.ValidatePVCResize(oldPgreplica.Spec.ReplicaStorage.Size, newPgreplica.Spec.ReplicaStorage.Size); err != nil {
+			log.Error(err)
+			return
+		}
+
+		// find the deployment
+		deployment, err := c.Client.AppsV1().Deployments(newPgreplica.Namespace).Get(ctx,
+			newPgreplica.Name, metav1.GetOptions{})
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		// get the size -- this will not error at this point as we just validated it
+		size, _ := resource.ParseQuantity(newPgreplica.Spec.ReplicaStorage.Size)
+
+		// OK, let's now perform the resize. In this case, we need to update the value
+		// on the PVC.
+		pvc, err := c.Client.CoreV1().PersistentVolumeClaims(newPgreplica.Namespace).Get(ctx,
+			deployment.GetName(), metav1.GetOptions{})
+
+		// if we can't locate the PVC, we can't resize, and we really need to return
+		if err != nil {
+			log.Error(err)
+			return
+		}
+
+		// alright, update the PVC size
+		pvc.Spec.Resources.Requests[v1.ResourceStorage] = size
+
+		// and update!
+		if _, err := c.Client.CoreV1().PersistentVolumeClaims(newPgreplica.Namespace).Update(ctx,
+			pvc, metav1.UpdateOptions{}); err != nil {
+			log.Error(err)
+			return
+		}
+
+		// update the PostgreSQL instance
+		// first, ensure it is stopped. if this errors, just warn
+		if err := clusteroperator.StopPostgreSQLInstance(c.Client, c.Client.Config, *deployment); err != nil {
+			log.Warn(err)
+		}
+
+		// scale down the deployment
+		replicas := new(int32)
+		if err := operator.ScaleDeployment(c.Client, deployment, replicas); err != nil {
+			log.Error(err)
+			return
+		}
+
+		// scale the deployment back up
+		*replicas = 1
+		if err := operator.ScaleDeployment(c.Client, deployment, replicas); err != nil {
+			log.Error(err)
 		}
 	}
 }
