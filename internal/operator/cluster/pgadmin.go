@@ -37,6 +37,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -329,6 +330,58 @@ func DeletePgAdminFromPgTask(clientset kubeapi.Interface, restconfig *rest.Confi
 	if err := clientset.CrunchydataV1().Pgtasks(namespace).Delete(ctx, task.Name, metav1.DeleteOptions{}); err != nil {
 		log.Warn(err)
 	}
+}
+
+// ResizePGAdminPVC resizes the pgAdmin PVC. To do this, the pgAdmin Deployment
+// is scaled down to ensure the PVC unmounted, and then scaled back up. This
+// will ensure that the new PVC size is applied to pgAdmin.
+func ResizePGAdminPVC(clientset kubeapi.Interface, cluster *crv1.Pgcluster) error {
+	log.Debugf("resize pgAdmin PVC on [%s]", cluster.Name)
+	ctx := context.TODO()
+
+	// this should not error as it should be validated before this step.
+	size, err := resource.ParseQuantity(cluster.Spec.PGAdminStorage.Size)
+	if err != nil {
+		return err
+	}
+
+	// OK, let's now perform the resize. In this case, we need to update the value
+	// on the PVC.
+	pvcName := fmt.Sprintf(pgAdminDeploymentFormat, cluster.Name)
+	pvc, err := clientset.CoreV1().PersistentVolumeClaims(cluster.Namespace).Get(ctx,
+		pvcName, metav1.GetOptions{})
+
+	// if we can't locate the PVC, we can't resize, and we really need to return
+	// an error
+	if err != nil {
+		return err
+	}
+
+	// alright, update the PVC size
+	pvc.Spec.Resources.Requests[v1.ResourceStorage] = size
+
+	// and update!
+	if _, err := clientset.CoreV1().PersistentVolumeClaims(pvc.Namespace).Update(ctx,
+		pvc, metav1.UpdateOptions{}); err != nil {
+		return err
+	}
+
+	// rescale the pgAdmin Deployment -- this is the same as the PVC name, but
+	// we'll use a diff variable to make this very clear
+	deploymentName := pvcName
+	deployment, err := clientset.AppsV1().Deployments(cluster.Namespace).Get(ctx,
+		deploymentName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+
+	replicas := new(int32)
+	if err := operator.ScaleDeployment(clientset, deployment, replicas); err != nil {
+		return err
+	}
+
+	*replicas = 1
+	return operator.ScaleDeployment(clientset, deployment, replicas)
 }
 
 // createPgAdminDeployment creates the Kubernetes Deployment for pgAdmin
