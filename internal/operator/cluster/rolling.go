@@ -170,7 +170,7 @@ func applyUpdateToPostgresInstance(clientset kubeapi.Interface, restConfig *rest
 	// recovery mode.
 	//
 	// If an error is returned, warn, but proceed with the function
-	if err := stopPostgreSQLInstance(clientset, restConfig, *deployment); err != nil {
+	if err := StopPostgreSQLInstance(clientset, restConfig, *deployment); err != nil {
 		log.Warn(err)
 	}
 

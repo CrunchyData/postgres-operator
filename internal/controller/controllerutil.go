@@ -19,12 +19,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	pgo "github.com/crunchydata/postgres-operator/pkg/generated/clientset/versioned"
 	log "github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -101,6 +104,35 @@ func SetClusterInitializedStatus(clientset pgo.Interface, clusterName,
 	if err != nil {
 		log.Error(err)
 		return err
+	}
+
+	return nil
+}
+
+// ValidatePVCResize ensures that the quantities being used in a PVC resize are
+// valid, and the resize is moving in an increasing direction
+func ValidatePVCResize(oldSize, newSize string) error {
+	// the old size might be blank. if it is, set it to 0
+	if strings.TrimSpace(oldSize) == "" {
+		oldSize = "0"
+	}
+
+	old, err := resource.ParseQuantity(oldSize)
+
+	if err != nil {
+		return fmt.Errorf("cannot resize PVC due to invalid storage size: %w", err)
+	}
+
+	new, err := resource.ParseQuantity(newSize)
+
+	if err != nil {
+		return fmt.Errorf("cannot resize PVC due to invalid storage size: %w", err)
+	}
+
+	// the new size *must* be greater than the old size
+	if new.Cmp(old) != 1 {
+		return fmt.Errorf("cannot resize PVC: new size %q is less than old size %q",
+			new.String(), old.String())
 	}
 
 	return nil

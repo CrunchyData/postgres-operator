@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
+	"github.com/crunchydata/postgres-operator/internal/controller"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
@@ -35,7 +36,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/types"
@@ -304,7 +304,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// see if the pgBackRest PVC size value changed.
 	if oldcluster.Spec.BackrestStorage.Size != newcluster.Spec.BackrestStorage.Size {
 		// validate that this resize can occur
-		if err := validatePVCResize(oldcluster.Spec.BackrestStorage.Size, newcluster.Spec.BackrestStorage.Size); err != nil {
+		if err := controller.ValidatePVCResize(oldcluster.Spec.BackrestStorage.Size, newcluster.Spec.BackrestStorage.Size); err != nil {
 			log.Error(err)
 		} else {
 			if err := backrestoperator.ResizePVC(c.Client, newcluster); err != nil {
@@ -316,7 +316,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// see if the pgAdmin PVC size valued changed.
 	if oldcluster.Spec.PGAdminStorage.Size != newcluster.Spec.PGAdminStorage.Size {
 		// validate that this resize can occur
-		if err := validatePVCResize(oldcluster.Spec.PGAdminStorage.Size, newcluster.Spec.PGAdminStorage.Size); err != nil {
+		if err := controller.ValidatePVCResize(oldcluster.Spec.PGAdminStorage.Size, newcluster.Spec.PGAdminStorage.Size); err != nil {
 			log.Error(err)
 		} else {
 			if err := clusteroperator.ResizePGAdminPVC(c.Client, newcluster); err != nil {
@@ -378,7 +378,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// check to see if the size of the primary PVC has changed
 	if oldcluster.Spec.PrimaryStorage.Size != newcluster.Spec.PrimaryStorage.Size {
 		// validate that this resize can occur
-		if err := validatePVCResize(oldcluster.Spec.PrimaryStorage.Size, newcluster.Spec.PrimaryStorage.Size); err != nil {
+		if err := controller.ValidatePVCResize(oldcluster.Spec.PrimaryStorage.Size, newcluster.Spec.PrimaryStorage.Size); err != nil {
 			log.Error(err)
 		} else {
 			rescale = true
@@ -389,7 +389,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// check to see if the size of the WAL PVC has changed
 	if oldcluster.Spec.WALStorage.Size != newcluster.Spec.WALStorage.Size {
 		// validate that this resize can occur
-		if err := validatePVCResize(oldcluster.Spec.WALStorage.Size, newcluster.Spec.WALStorage.Size); err != nil {
+		if err := controller.ValidatePVCResize(oldcluster.Spec.WALStorage.Size, newcluster.Spec.WALStorage.Size); err != nil {
 			log.Error(err)
 		} else {
 			rescale = true
@@ -748,35 +748,6 @@ func updateTablespaces(c *Controller, oldCluster *crv1.Pgcluster, newCluster *cr
 				return err
 			}
 		}
-	}
-
-	return nil
-}
-
-// validatePVCResize ensures that the quantities being used in a PVC resize are
-// valid, and the resize is moving in an increasing direction
-func validatePVCResize(oldSize, newSize string) error {
-	// the old size might be blank. if it is, set it to 0
-	if strings.TrimSpace(oldSize) == "" {
-		oldSize = "0"
-	}
-
-	old, err := resource.ParseQuantity(oldSize)
-
-	if err != nil {
-		return fmt.Errorf("cannot resize PVC due to invalid storage size: %w", err)
-	}
-
-	new, err := resource.ParseQuantity(newSize)
-
-	if err != nil {
-		return fmt.Errorf("cannot resize PVC due to invalid storage size: %w", err)
-	}
-
-	// the new size *must* be greater than the old size
-	if new.Cmp(old) != 1 {
-		return fmt.Errorf("cannot resize PVC: new size %q is less than old size %q",
-			new.String(), old.String())
 	}
 
 	return nil
