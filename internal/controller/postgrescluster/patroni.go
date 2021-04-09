@@ -28,6 +28,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
+	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -212,47 +213,106 @@ func (r *Reconciler) reconcilePatroniStatus(
 	return err
 }
 
-// reconcilePatroniSecret creates a secret containing the auth config yaml
-// for Patroni. Patroni will use this file to create superuser, replication
-// and pg_rewind accounts in Postgres.
-// TODO: Currently only username and password credentials are being created
-// for the replication and pg_rewind users. As part of future work we will
-// use this secret to setup a superuser account and to enable cert authentication
-// for each user (replication, rewind, and superuser)
-func (r *Reconciler) reconcilePatroniAuthSecret(
+// reconcileReplicationSecret creates a secret containing the TLS
+// certificate, key and CA certificate for use with the replication and
+// pg_rewind accounts in Postgres.
+// TODO: As part of future work we will use this secret to setup a superuser
+// account and enable cert authentication for that user
+func (r *Reconciler) reconcileReplicationSecret(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
+	rootCACert *pki.RootCertificateAuthority,
 ) (*v1.Secret, error) {
 
-	// Setup secret to check for or create
-	secret := &v1.Secret{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Secret",
-			APIVersion: "v1",
-		},
-		ObjectMeta: naming.PatroniAuthSecret(cluster),
-		Type:       "Opaque",
-	}
-
-	if err := errors.WithStack(r.setControllerReference(cluster, secret)); err != nil {
+	// if a custom postgrescluster secret is provided, just return it
+	if cluster.Spec.CustomReplicationClientTLSSecret != nil {
+		custom := &v1.Secret{ObjectMeta: metav1.ObjectMeta{
+			Name:      cluster.Spec.CustomReplicationClientTLSSecret.Name,
+			Namespace: cluster.Namespace,
+		}}
+		err := errors.WithStack(r.Client.Get(ctx,
+			client.ObjectKeyFromObject(custom), custom))
+		if err == nil {
+			return custom, err
+		}
 		return nil, err
 	}
 
-	// Check for existing secret and use that password
-	existing := &v1.Secret{}
+	existing := &v1.Secret{ObjectMeta: naming.ReplicationClientCertSecret(cluster)}
+	err := errors.WithStack(client.IgnoreNotFound(
+		r.Client.Get(ctx, client.ObjectKeyFromObject(existing), existing)))
 
-	if err := errors.WithStack(client.IgnoreNotFound(r.Client.Get(ctx,
-		client.ObjectKeyFromObject(secret), existing))); err != nil {
+	clientLeaf := pki.NewLeafCertificate("", nil, nil)
+	clientLeaf.DNSNames = []string{naming.PGReplicationUsername}
+	clientLeaf.CommonName = clientLeaf.DNSNames[0]
+
+	if data, ok := existing.Data[naming.ReplicationCert]; err == nil && ok {
+		clientLeaf.Certificate, err = pki.ParseCertificate(data)
+		err = errors.WithStack(err)
+	}
+	if data, ok := existing.Data[naming.ReplicationPrivateKey]; err == nil && ok {
+		clientLeaf.PrivateKey, err = pki.ParsePrivateKey(data)
+		err = errors.WithStack(err)
+	}
+
+	// if there is an error or the client leaf certificate is bad, generate a new one
+	if err != nil || pki.LeafCertIsBad(ctx, clientLeaf, rootCACert, cluster.Namespace) {
+		err = errors.WithStack(clientLeaf.Generate(rootCACert))
+	}
+
+	intent := &v1.Secret{ObjectMeta: naming.ReplicationClientCertSecret(cluster)}
+	intent.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+	intent.Data = make(map[string][]byte)
+
+	// set labels
+	intent.Labels = map[string]string{
+		naming.LabelCluster:            cluster.Name,
+		naming.LabelClusterCertificate: "replication-client-tls",
+	}
+
+	if err := errors.WithStack(r.setControllerReference(cluster, intent)); err != nil {
 		return nil, err
 	}
-
-	err := patroni.ClusterAuthSecret(ctx, existing, secret)
-
 	if err == nil {
-		err = errors.WithStack(r.apply(ctx, secret))
+		intent.Data[naming.ReplicationCert], err = clientLeaf.Certificate.MarshalText()
+		err = errors.WithStack(err)
 	}
-
 	if err == nil {
-		return secret, err
+		intent.Data[naming.ReplicationPrivateKey], err = clientLeaf.PrivateKey.MarshalText()
+		err = errors.WithStack(err)
+	}
+	if err == nil {
+		intent.Data[naming.ReplicationCACert], err = rootCACert.Certificate.MarshalText()
+		err = errors.WithStack(err)
+	}
+	if err == nil {
+		err = errors.WithStack(r.apply(ctx, intent))
+	}
+	if err == nil {
+		return intent, err
 	}
 	return nil, err
+}
+
+// replicationCertSecretProjection returns a secret projection of the postgrescluster's
+// client certificate and key to include in the instance configuration volume.
+func replicationCertSecretProjection(certificate *v1.Secret) *v1.SecretProjection {
+	return &v1.SecretProjection{
+		LocalObjectReference: v1.LocalObjectReference{
+			Name: certificate.Name,
+		},
+		Items: []v1.KeyToPath{
+			{
+				Key:  naming.ReplicationCert,
+				Path: naming.ReplicationCertPath,
+			},
+			{
+				Key:  naming.ReplicationPrivateKey,
+				Path: naming.ReplicationPrivateKeyPath,
+			},
+			{
+				Key:  naming.ReplicationCACert,
+				Path: naming.ReplicationCACertPath,
+			},
+		},
+	}
 }

@@ -38,6 +38,8 @@ var tmpDirSizeLimit = resource.MustParse("16Mi")
 //  * A temporary location for instance PGDATA volumes until real volumes are implemented
 //  * The location of the SSHD pid file
 //  * As the pgBackRest lock directory (this is the default lock location for pgBackRest)
+//  * The location where the replication client certificates can be loaded with the proper
+//    permissions set
 func addTMPEmptyDir(template *v1.PodTemplateSpec) {
 
 	template.Spec.Volumes = append(template.Spec.Volumes, v1.Volume{
@@ -51,6 +53,14 @@ func addTMPEmptyDir(template *v1.PodTemplateSpec) {
 
 	for i := range template.Spec.Containers {
 		template.Spec.Containers[i].VolumeMounts = append(template.Spec.Containers[i].VolumeMounts,
+			v1.VolumeMount{
+				Name:      "tmp",
+				MountPath: "/tmp",
+			})
+	}
+
+	for i := range template.Spec.InitContainers {
+		template.Spec.InitContainers[i].VolumeMounts = append(template.Spec.InitContainers[i].VolumeMounts,
 			v1.VolumeMount{
 				Name:      "tmp",
 				MountPath: "/tmp",

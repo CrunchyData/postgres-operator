@@ -152,6 +152,24 @@ func TestAddPGDATAInitToPod(t *testing.T) {
 	})
 }
 
+func TestCopyClientTLS(t *testing.T) {
+
+	postgresCluster := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
+	template := &v1.PodTemplateSpec{}
+
+	CopyReplicationTLS(postgresCluster, template)
+
+	var foundPGDATAInitContainer bool
+	for _, c := range template.Spec.InitContainers {
+		if c.Name == naming.ContainerClientCertInit {
+			foundPGDATAInitContainer = true
+			break
+		}
+	}
+
+	assert.Assert(t, foundPGDATAInitContainer)
+}
+
 func TestAddCertVolumeToPod(t *testing.T) {
 
 	postgresCluster := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
@@ -161,13 +179,17 @@ func TestAddCertVolumeToPod(t *testing.T) {
 				Name: "database",
 			},
 			},
+			InitContainers: []v1.Container{{
+				Name: "database-client-cert-init",
+			},
+			},
 		},
 	}
 	mode := int32(0o600)
 	// example auto-generated secret projection
-	testSecretProjection := &v1.SecretProjection{
+	testServerSecretProjection := &v1.SecretProjection{
 		LocalObjectReference: v1.LocalObjectReference{
-			Name: fmt.Sprintf(naming.ClusterCertSecret, postgresCluster.Name),
+			Name: naming.PostgresTLSSecret(postgresCluster).Name,
 		},
 		Items: []v1.KeyToPath{
 			{
@@ -188,7 +210,26 @@ func TestAddCertVolumeToPod(t *testing.T) {
 		},
 	}
 
-	err := AddCertVolumeToPod(postgresCluster, template, naming.ContainerDatabase, testSecretProjection)
+	testClientSecretProjection := &v1.SecretProjection{
+		LocalObjectReference: v1.LocalObjectReference{
+			Name: naming.ReplicationClientCertSecret(postgresCluster).Name,
+		},
+		Items: []v1.KeyToPath{
+			{
+				Key:  naming.ReplicationCert,
+				Path: naming.ReplicationCertPath,
+				Mode: &mode,
+			},
+			{
+				Key:  naming.ReplicationPrivateKey,
+				Path: naming.ReplicationPrivateKeyPath,
+				Mode: &mode,
+			},
+		},
+	}
+
+	err := AddCertVolumeToPod(postgresCluster, template, naming.ContainerClientCertInit,
+		naming.ContainerDatabase, testServerSecretProjection, testClientSecretProjection)
 	assert.NilError(t, err)
 
 	var foundCertVol bool
@@ -202,21 +243,48 @@ func TestAddCertVolumeToPod(t *testing.T) {
 	}
 
 	assert.Assert(t, foundCertVol)
-	assert.Assert(t, len(certVol.Projected.Sources) > 0)
+	assert.Assert(t, len(certVol.Projected.Sources) > 1)
 
-	assert.Assert(t, len(certVol.Projected.Sources[0].Secret.Items) == 3)
+	var serverSecret *v1.SecretProjection
+	var clientSecret *v1.SecretProjection
 
-	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[0].Key, clusterCertFile)
-	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[0].Path, clusterCertFile)
-	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[0].Mode, &mode)
+	for _, source := range certVol.Projected.Sources {
 
-	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[1].Key, clusterKeyFile)
-	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[1].Path, clusterKeyFile)
-	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[1].Mode, &mode)
+		if source.Secret.Name == naming.PostgresTLSSecret(postgresCluster).Name {
+			serverSecret = source.Secret
+		}
+		if source.Secret.Name == naming.ReplicationClientCertSecret(postgresCluster).Name {
+			clientSecret = source.Secret
+		}
+	}
 
-	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[2].Key, rootCertFile)
-	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[2].Path, rootCertFile)
-	assert.Equal(t, certVol.Projected.Sources[0].Secret.Items[2].Mode, &mode)
+	if assert.Check(t, serverSecret != nil) {
+		assert.Assert(t, len(serverSecret.Items) == 3)
+
+		assert.Equal(t, serverSecret.Items[0].Key, clusterCertFile)
+		assert.Equal(t, serverSecret.Items[0].Path, clusterCertFile)
+		assert.Equal(t, serverSecret.Items[0].Mode, &mode)
+
+		assert.Equal(t, serverSecret.Items[1].Key, clusterKeyFile)
+		assert.Equal(t, serverSecret.Items[1].Path, clusterKeyFile)
+		assert.Equal(t, serverSecret.Items[1].Mode, &mode)
+
+		assert.Equal(t, serverSecret.Items[2].Key, rootCertFile)
+		assert.Equal(t, serverSecret.Items[2].Path, rootCertFile)
+		assert.Equal(t, serverSecret.Items[2].Mode, &mode)
+	}
+
+	if assert.Check(t, clientSecret != nil) {
+		assert.Assert(t, len(clientSecret.Items) == 2)
+
+		assert.Equal(t, clientSecret.Items[0].Key, naming.ReplicationCert)
+		assert.Equal(t, clientSecret.Items[0].Path, naming.ReplicationCertPath)
+		assert.Equal(t, clientSecret.Items[0].Mode, &mode)
+
+		assert.Equal(t, clientSecret.Items[1].Key, naming.ReplicationPrivateKey)
+		assert.Equal(t, clientSecret.Items[1].Path, naming.ReplicationPrivateKeyPath)
+		assert.Equal(t, clientSecret.Items[1].Mode, &mode)
+	}
 }
 
 func getContainerNames(containers []v1.Container) []string {

@@ -36,6 +36,10 @@ const (
 	ContainerPGBouncer = "pgbouncer"
 	// ContainerPGBouncerConfig is the name of a container supporting PgBouncer.
 	ContainerPGBouncerConfig = "pgbouncer-config"
+	// ContainerClientCertInit is the name of the initialization container that is responsible
+	// for copying and setting proper permissions on the client certificate and key
+	ContainerClientCertInit = ContainerDatabase + "-client-cert-init"
+	ContainerPostgreSQL     = ContainerDatabase
 )
 
 const (
@@ -51,12 +55,42 @@ const (
 )
 
 const (
-	// CertVolume is the name of the Certificate volume and volume mount in a PostgreSQL instance Pod
+	// CertVolume is the name of the Certificate volume and volume mount in a
+	// PostgreSQL instance Pod
 	CertVolume = "cert-volume"
 
-	// CertMountPath is the path for mounting the postgrescluster certificates and key
+	// CertMountPath is the path for mounting the postgrescluster certificates
+	// and key
 	CertMountPath = "/pgconf/tls"
 
+	// ReplicationCert is the secret key to the postgrescluster's
+	// replication/rewind user's client certificate
+	ReplicationCert = "tls.crt"
+
+	// ReplicationCertPath is the path to the postgrescluster's replication/rewind
+	// user's client certificate
+	ReplicationCertPath = "replication/tls.crt"
+
+	// ReplicationPrivateKey is the secret key to the postgrescluster's
+	// replication/rewind user's client private key
+	ReplicationPrivateKey = "tls.key"
+
+	// ReplicationPrivateKeyPath is the path to the postgrescluster's
+	// replication/rewind user's client private key
+	ReplicationPrivateKeyPath = "replication/tls.key"
+
+	// ReplicationCACert is the key name of the postgrescluster's replication/rewind
+	// user's client CA certificate
+	// Note: when using auto-generated certificates, this will be identical to the
+	// server CA cert
+	ReplicationCACert = "ca.crt"
+
+	// ReplicationCACertPath is the path to the postgrescluster's replication/rewind
+	// user's client CA certificate
+	ReplicationCACertPath = "replication/ca.crt"
+)
+
+const (
 	// PGBackRestRepoContainerName is the name assigned to the container used to run pgBackRest and
 	// SSH
 	PGBackRestRepoContainerName = "pgbackrest"
@@ -191,12 +225,12 @@ func InstancePGDataVolume(instance *appsv1.StatefulSet) metav1.ObjectMeta {
 	}
 }
 
-// PatroniAuthSecret returns ObjectMeta necessary to lookup the Secret
-// containing the Patroni authentication config yaml.
-func PatroniAuthSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+// ReplicationClientCertSecret returns ObjectMeta necessary to lookup the Secret
+// containing the Patroni client authentication certificate information.
+func ReplicationClientCertSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
-		Name:      cluster.Name + "-config",
+		Name:      cluster.Name + "-replication-cert",
 	}
 }
 

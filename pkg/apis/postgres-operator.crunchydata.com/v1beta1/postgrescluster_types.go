@@ -44,8 +44,19 @@ type PostgresClusterSpec struct {
 	// projection to the '/pgconf/tls' directory. For more information on
 	// Kubernetes secret projections, please see
 	// https://k8s.io/docs/concepts/configuration/secret/#projection-of-secret-keys-to-specific-paths
+	// NOTE: If CustomTLSSecret is provided, CustomReplicationClientTLSSecret
+	// MUST be provided and the ca.crt provided must be the same.
 	// +optional
 	CustomTLSSecret *corev1.SecretProjection `json:"customTLSSecret,omitempty"`
+
+	// The secret containing the replication client certificates and keys for
+	// secure connections to the PostgreSQL server. It will need to contain the
+	// client TLS certificate, TLS key and the Certificate Authority certificate
+	// with the data keys set to tls.crt, tls.key and ca.crt, respectively.
+	// NOTE: If CustomReplicationClientTLSSecret is provided, CustomTLSSecret
+	// MUST be provided and the ca.crt provided must be the same.
+	// +optional
+	CustomReplicationClientTLSSecret *corev1.SecretProjection `json:"customReplicationTLSSecret,omitempty"`
 
 	// The image name to use for PostgreSQL containers
 	// +kubebuilder:validation:Required

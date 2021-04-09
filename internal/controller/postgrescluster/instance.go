@@ -299,7 +299,7 @@ func (r *Reconciler) reconcileInstance(
 	var (
 		instanceConfigMap        *v1.ConfigMap
 		instanceCertificates     *v1.Secret
-		clusterPatroniAuthSecret *v1.Secret
+		clusterReplicationSecret *v1.Secret
 	)
 
 	if err == nil {
@@ -310,14 +310,14 @@ func (r *Reconciler) reconcileInstance(
 			ctx, cluster, instance, rootCA)
 	}
 	if err == nil {
-		clusterPatroniAuthSecret, err = r.reconcilePatroniAuthSecret(ctx, cluster)
+		clusterReplicationSecret, err = r.reconcileReplicationSecret(ctx, cluster, rootCA)
 	}
 	if err == nil {
 		err = r.reconcilePGDATAVolume(ctx, cluster, spec, instance)
 	}
 	if err == nil {
 		err = patroni.InstancePod(
-			ctx, cluster, clusterConfigMap, clusterPatroniAuthSecret, clusterPodService, patroniLeaderService,
+			ctx, cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
 			instanceCertificates, instanceConfigMap, &instance.Spec.Template)
 	}
 
@@ -327,10 +327,15 @@ func (r *Reconciler) reconcileInstance(
 	}
 
 	postgres.AddPGDATAInitToPod(cluster, &instance.Spec.Template)
+
+	// copy the mounted replication client certificate files to the /tmp directory
+	// and set the proper file permissions
+	postgres.CopyReplicationTLS(cluster, &instance.Spec.Template)
+
 	// Add PGDATA volume to the Pod template and then add PGDATA volume mounts for the
 	// database container, and, if a repo host is enabled, the pgBackRest container
 	PGDATAContainers := []string{naming.ContainerDatabase}
-	PGDATAInitContainers := []string{naming.ContainerDatabasePGDATAInit}
+	PGDATAInitContainers := []string{naming.ContainerDatabasePGDATAInit, naming.ContainerClientCertInit}
 	if pgbackrest.RepoHostEnabled(cluster) {
 		PGDATAContainers = append(PGDATAContainers, naming.PGBackRestRepoContainerName)
 	}
@@ -341,8 +346,9 @@ func (r *Reconciler) reconcileInstance(
 	}
 	// add the cluster certificate secret volume to the pod to enable Postgres TLS connections
 	if err == nil {
-		err = errors.WithStack(postgres.AddCertVolumeToPod(cluster,
-			&instance.Spec.Template, naming.ContainerDatabase, primaryCertificate))
+		err = errors.WithStack(postgres.AddCertVolumeToPod(cluster, &instance.Spec.Template,
+			naming.ContainerClientCertInit, naming.ContainerDatabase, primaryCertificate,
+			replicationCertSecretProjection(clusterReplicationSecret)))
 	}
 	// add an emptyDir volume to the PodTemplateSpec and an associated '/tmp' volume mount to
 	// all containers included within that spec

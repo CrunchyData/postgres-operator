@@ -110,11 +110,34 @@ func AddPGDATAInitToPod(postgresCluster *v1beta1.PostgresCluster,
 		})
 }
 
+// CopyReplicationTLS copies the mounted client certificate, key and CA certificate files
+// from the /pgconf/tls/replication directory to the /tmp/replication directory in order
+// to set proper file permissions. This is required because the group permission settings
+// applied via the defaultMode option are not honored as expected, resulting in incorrect
+// group read permissions.
+// See https://github.com/kubernetes/kubernetes/issues/57923
+// TODO(tjmoore4): remove this implementation when/if defaultMode permissions are set as
+// expected for the mounted volume.
+func CopyReplicationTLS(postgresCluster *v1beta1.PostgresCluster,
+	template *v1.PodTemplateSpec) {
+
+	cmd := fmt.Sprintf(`mkdir -p /tmp/replication `+
+		`&& install -m 0600 %s/{tls.crt,tls.key,ca.crt} /tmp/replication`,
+		naming.CertMountPath+"/replication")
+	template.Spec.InitContainers = append(template.Spec.InitContainers,
+		v1.Container{
+			Command: []string{"bash", "-c", cmd},
+			Image:   postgresCluster.Spec.Image,
+			Name:    naming.ContainerClientCertInit,
+		})
+}
+
 // AddCertVolumeToPod adds the secret containing the TLS certificate, key and the CA certificate
 // as a volume to the provided Pod template spec, while also adding associated volume mounts to
 // the database container specified.
 func AddCertVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
-	containerName string, inClusterCertificates *v1.SecretProjection) error {
+	initContainerName, containerName string, inClusterCertificates,
+	inClientCertificates *v1.SecretProjection) error {
 
 	certVolume := v1.Volume{Name: naming.CertVolume}
 	certVolume.Projected = &v1.ProjectedVolumeSource{
@@ -124,8 +147,9 @@ func AddCertVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.P
 	// Add the certificate volume projection
 	certVolume.Projected.Sources = append(append(
 		certVolume.Projected.Sources, []v1.VolumeProjection(nil)...),
-		[]v1.VolumeProjection{{
-			Secret: inClusterCertificates}}...)
+		[]v1.VolumeProjection{
+			{Secret: inClusterCertificates},
+			{Secret: inClientCertificates}}...)
 
 	template.Spec.Volumes = append(template.Spec.Volumes, certVolume)
 
@@ -144,6 +168,26 @@ func AddCertVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.P
 
 	template.Spec.Containers[index].VolumeMounts =
 		append(template.Spec.Containers[index].VolumeMounts, v1.VolumeMount{
+			Name:      naming.CertVolume,
+			MountPath: naming.CertMountPath,
+			ReadOnly:  true,
+		})
+
+	var initContainerFound bool
+	var initIndex int
+	for initIndex = range template.Spec.InitContainers {
+		if template.Spec.InitContainers[initIndex].Name == initContainerName {
+			initContainerFound = true
+			break
+		}
+	}
+	if !initContainerFound {
+		return fmt.Errorf("Unable to find init container %q when adding certificate volumes",
+			initContainerName)
+	}
+
+	template.Spec.InitContainers[initIndex].VolumeMounts =
+		append(template.Spec.InitContainers[initIndex].VolumeMounts, v1.VolumeMount{
 			Name:      naming.CertVolume,
 			MountPath: naming.CertMountPath,
 			ReadOnly:  true,

@@ -26,7 +26,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	"github.com/crunchydata/postgres-operator/internal/util"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -43,26 +42,6 @@ func ClusterConfigMap(ctx context.Context,
 	initialize.StringMap(&outClusterConfigMap.Data)
 
 	outClusterConfigMap.Data[configMapFileKey], err = clusterYAML(inCluster, inPGUser, inHBAs, inParameters)
-
-	return err
-}
-
-// ClusterAuthSecret populates the shared Secret with PostgreSQL auth fields for Patroni
-func ClusterAuthSecret(ctx context.Context, existing, secret *v1.Secret) error {
-	initialize.ByteMap(&secret.Data)
-
-	if len(existing.Data["password"]) == 0 {
-		password, err := util.GeneratePassword(util.DefaultGeneratedPasswordLength)
-		if err != nil {
-			return err
-		}
-		secret.Data["password"] = []byte(password)
-	} else {
-		secret.Data["password"] = existing.Data["password"]
-	}
-
-	outConfig, err := authConfigYAML(naming.PGReplicationUsername, string(secret.Data["password"]))
-	secret.Data["patroni.yaml"] = []byte(outConfig)
 
 	return err
 }
@@ -105,7 +84,6 @@ func InstanceCertificates(ctx context.Context,
 func InstancePod(ctx context.Context,
 	inCluster *v1beta1.PostgresCluster,
 	inClusterConfigMap *v1.ConfigMap,
-	inClusterAuthSecret *v1.Secret,
 	inClusterPodService *v1.Service,
 	inPatroniLeaderService *v1.Service,
 	inInstanceCertificates *v1.Secret,
@@ -137,7 +115,7 @@ func InstancePod(ctx context.Context,
 	volume.Projected.Sources = append(append(append(
 		// TODO(cbandy): User config will come from the spec.
 		volume.Projected.Sources, []v1.VolumeProjection(nil)...),
-		instanceConfigFiles(inClusterConfigMap, inInstanceConfigMap, inClusterAuthSecret)...),
+		instanceConfigFiles(inClusterConfigMap, inInstanceConfigMap)...),
 		instanceCertificates(inInstanceCertificates)...)
 
 	outInstancePod.Spec.Volumes = mergeVolumes(outInstancePod.Spec.Volumes, volume)

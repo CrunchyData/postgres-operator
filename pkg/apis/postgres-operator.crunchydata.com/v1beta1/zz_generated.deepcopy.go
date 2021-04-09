@@ -336,6 +336,11 @@ func (in *PostgresClusterSpec) DeepCopyInto(out *PostgresClusterSpec) {
 		*out = new(v1.SecretProjection)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.CustomReplicationClientTLSSecret != nil {
+		in, out := &in.CustomReplicationClientTLSSecret, &out.CustomReplicationClientTLSSecret
+		*out = new(v1.SecretProjection)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.InstanceSets != nil {
 		in, out := &in.InstanceSets, &out.InstanceSets
 		*out = make([]PostgresInstanceSetSpec, len(*in))

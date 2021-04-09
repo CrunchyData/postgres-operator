@@ -105,7 +105,7 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 			{"ClusterPGBouncer", ClusterPGBouncer(cluster)},
 			{"PostgresUserSecret", PostgresUserSecret(cluster)},
 			{"PostgresTLSSecret", PostgresTLSSecret(cluster)},
-			{"PatroniAuthSecret", PatroniAuthSecret(cluster)},
+			{"ReplicationClientCertSecret", ReplicationClientCertSecret(cluster)},
 		} {
 			t.Run(tt.name, func(t *testing.T) {
 				assert.Equal(t, tt.value.Namespace, cluster.Namespace)

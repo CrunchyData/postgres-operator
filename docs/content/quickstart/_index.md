@@ -264,7 +264,8 @@ spec:
     name: customcert
 ```
 where 'customcert' is the name of your created secret. Your cluster will now use the provided certificate in place of
-a dynamically generated one.
+a dynamically generated one. Please note, if `CustomTLSSecret` is provided, `CustomReplicationClientTLSSecret` MUST 
+be provided and the `ca.crt` provided must be the same in both.
 
 In cases where the key names cannot be controlled, the item key and path values can be specified explicitly, as shown 
 below:
@@ -280,7 +281,51 @@ spec:
       - key: <ca.crt key>
         path: ca.crt
 ```
-For more information, please see
+The Common Name setting will be expected to include the primary service name. For a `postgrescluster` named 'hippo', the
+expected primary service name will be `hippo-primary`.
+
+## Add Replication Client Certificates to a Postgres Cluster
+
+Similar to the above, to provide your own TLS client certificates for use by the replication system account,
+you will need to create a Secret containing your TLS certificate, TLS key and the Certificate Authority certificate
+such that the data of the secret in the `postgrescluster`'s namespace that contains the three values, similar to
+
+```
+data:
+  ca.crt: <value>
+  tls.crt: <value>
+  tls.key: <value>
+```
+
+Then, in `examples/postgrescluster/postgrescluster.yaml`, add the following:
+
+```
+spec:
+  customReplicationTLSSecret: 
+    name: customReplicationCert
+```
+where 'customReplicationCert' is the name of your created secret. Your cluster will now use the provided certificate in place of
+a dynamically generated one. Please note, if `CustomReplicationClientTLSSecret` is provided, `CustomTLSSecret`
+MUST be provided and the `ca.crt` provided must be the same in both.
+
+In cases where the key names cannot be controlled, the item key and path values can be specified explicitly, as shown 
+below:
+```
+spec:
+  customReplicationTLSSecret: 
+    name: customReplicationCert
+    items: 
+      - key: <tls.crt key>
+        path: tls.crt
+      - key: <tls.key key>
+        path: tls.key
+      - key: <ca.crt key>
+        path: ca.crt
+```
+
+The Common Name setting will be expected to include the replication user name, `_crunchyrepl`.
+
+For more information regarding secret projections, please see
 https://k8s.io/docs/concepts/configuration/secret/#projection-of-secret-keys-to-specific-paths
 
 ## Delete a Postgres Cluster

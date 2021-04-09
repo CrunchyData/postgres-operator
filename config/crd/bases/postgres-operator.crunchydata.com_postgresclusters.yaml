@@ -609,14 +609,69 @@ spec:
                 required:
                 - pgbackrest
                 type: object
+              customReplicationTLSSecret:
+                description: 'The secret containing the replication client certificates
+                  and keys for secure connections to the PostgreSQL server. It will
+                  need to contain the client TLS certificate, TLS key and the Certificate
+                  Authority certificate with the data keys set to tls.crt, tls.key
+                  and ca.crt, respectively. NOTE: If CustomReplicationClientTLSSecret
+                  is provided, CustomTLSSecret MUST be provided and the ca.crt provided
+                  must be the same.'
+                properties:
+                  items:
+                    description: If unspecified, each key-value pair in the Data field
+                      of the referenced Secret will be projected into the volume as
+                      a file whose name is the key and content is the value. If specified,
+                      the listed keys will be projected into the specified paths,
+                      and unlisted keys will not be present. If a key is specified
+                      which is not present in the Secret, the volume setup will error
+                      unless it is marked optional. Paths must be relative and may
+                      not contain the '..' path or start with '..'.
+                    items:
+                      description: Maps a string key to a path within a volume.
+                      properties:
+                        key:
+                          description: The key to project.
+                          type: string
+                        mode:
+                          description: 'Optional: mode bits used to set permissions
+                            on this file. Must be an octal value between 0000 and
+                            0777 or a decimal value between 0 and 511. YAML accepts
+                            both octal and decimal values, JSON requires decimal values
+                            for mode bits. If not specified, the volume defaultMode
+                            will be used. This might be in conflict with other options
+                            that affect the file mode, like fsGroup, and the result
+                            can be other mode bits set.'
+                          format: int32
+                          type: integer
+                        path:
+                          description: The relative path of the file to map the key
+                            to. May not be an absolute path. May not contain the path
+                            element '..'. May not start with the string '..'.
+                          type: string
+                      required:
+                      - key
+                      - path
+                      type: object
+                    type: array
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    type: string
+                  optional:
+                    description: Specify whether the Secret or its key must be defined
+                    type: boolean
+                type: object
               customTLSSecret:
-                description: The secret containing the Certificates and Keys to encrypt
+                description: 'The secret containing the Certificates and Keys to encrypt
                   PostgreSQL traffic will need to contain the server TLS certificate,
                   TLS key and the Certificate Authority certificate with the data
                   keys set to tls.crt, tls.key and ca.crt, respectively. It will then
-                  be mounted as a volume projection to the '/pgconf/tls' directory.
+                  be mounted as a volume projection to the ''/pgconf/tls'' directory.
                   For more information on Kubernetes secret projections, please see
                   https://k8s.io/docs/concepts/configuration/secret/#projection-of-secret-keys-to-specific-paths
+                  NOTE: If CustomTLSSecret is provided, CustomReplicationClientTLSSecret
+                  MUST be provided and the ca.crt provided must be the same.'
                 properties:
                   items:
                     description: If unspecified, each key-value pair in the Data field

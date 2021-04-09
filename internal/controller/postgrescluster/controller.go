@@ -157,12 +157,15 @@ func (r *Reconciler) Reconcile(
 	)
 
 	// TODO(cbandy): Accumulate postgres settings.
-
 	pgHBAs := postgres.HBAs{}
-	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().Local().User("postgres").Method("peer"))
-	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TCP().User(naming.PGReplicationUsername).Replication().Method("md5"))
-	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TCP().User(naming.PGReplicationUsername).Database("postgres").Method("md5"))
-	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TCP().User(naming.PGReplicationUsername).Method("reject"))
+	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().Local().
+		User("postgres").Method("peer"))
+	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TLS().
+		User(naming.PGReplicationUsername).Replication().Method("cert"))
+	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TLS().
+		User(naming.PGReplicationUsername).Database("postgres").Method("cert"))
+	pgHBAs.Mandatory = append(pgHBAs.Mandatory, *postgres.NewHBA().TCP().
+		User(naming.PGReplicationUsername).Method("reject"))
 
 	pgbouncer.PostgreSQL(cluster, &pgHBAs)
 
