@@ -1,0 +1,166 @@
+{
+    "name": "pmm-client",
+    "image": "{{.PMMImage}}",
+    "livenessProbe": {
+      "failureThreshold": 3,
+      "httpGet": {
+          "path": "/local/Status",
+          "port": 7777,
+          "scheme": "HTTP"
+      },
+      "initialDelaySeconds": 60,
+      "periodSeconds": 10,
+      "successThreshold": 1,
+      "timeoutSeconds": 5
+    },
+    "lifecycle": {
+      "preStop": {
+          "exec": {
+              "command": [
+                  "bash",
+                  "-c",
+                  "pmm-admin inventory remove node --force $(pmm-admin status --json | python -c \"import sys, json; print(json.load(sys.stdin)['pmm_agent_status']['node_id'])\")"
+              ]
+          }
+      }
+    },
+    "ports": [{
+          "containerPort": 7777,
+          "protocol": "TCP"
+      },
+      {
+          "containerPort": 30100
+      }, 
+      {
+          "containerPort": 30101
+      }, 
+      {
+          "containerPort": 30102
+      }, 
+      {
+          "containerPort": 30103
+      }, 
+      {
+          "containerPort": 30104
+      }, 
+      {
+          "containerPort": 30105
+      }],
+    {{.PMMContainerResources }}
+    "env": [{
+      "name": "PMM_USER",
+      "value": "{{.PMMServerUser}}"
+    },
+    {
+      "name": "PMM_SERVER",
+      "value": "{{.PMMServerHost}}"
+    },
+    {
+      "name":  "CLIENT_PORT_LISTEN",
+      "value": "7777"
+    },
+    {
+      "name":  "CLIENT_PORT_MIN",
+      "value": "30100"
+    },
+    {
+      "name":  "CLIENT_PORT_MAX",
+      "value": "30105"
+    },
+    {
+      "name": "POD_NAME",
+      "valueFrom": {
+        "fieldRef": {
+            "apiVersion": "v1",
+            "fieldPath": "metadata.name"
+        }
+      }
+    },
+    {
+        "name": "POD_NAMESPASE",
+        "valueFrom": {
+            "fieldRef": {
+                "apiVersion": "v1",
+                "fieldPath": "metadata.namespace"
+            }
+        }
+    },
+    {
+      "name":  "PMM_AGENT_SERVER_ADDRESS",
+      "value": "{{.PMMServerHost}}"
+    },
+    {
+      "name":  "PMM_AGENT_SERVER_USERNAME",
+      "value": "{{.PMMServerUser}}"
+    },
+    {
+      "name": "PMM_AGENT_SERVER_PASSWORD",
+      "valueFrom": {
+        "secretKeyRef": {
+            "name": "{{.PMMSecret}}",
+            "key": "password"
+        }
+      }
+    },
+    {
+      "name":  "PMM_AGENT_LISTEN_PORT",
+      "value": "7777"
+    },
+    {
+      "name":  "PMM_AGENT_PORTS_MIN",
+      "value": "30100"
+    },
+    {
+      "name":  "PMM_AGENT_PORTS_MAX",
+      "value": "30105"
+    },
+    {
+      "name":  "PMM_AGENT_CONFIG_FILE",
+      "value": "/usr/local/percona/pmm2/config/pmm-agent.yaml"
+    },
+    {
+      "name":  "PMM_AGENT_SERVER_INSECURE_TLS",
+      "value": "1"
+    },
+    {
+      "name":  "PMM_AGENT_LISTEN_ADDRESS",
+      "value": "0.0.0.0"
+    },
+    {
+      "name": "PMM_AGENT_SETUP_NODE_NAME",
+      "value": "{{.Name}}"
+    },
+    {
+      "name":  "PMM_AGENT_SETUP_METRICS_MODE",
+      "value": "push"
+    },
+    {
+      "name":  "PMM_AGENT_SETUP",
+      "value": "1"
+    },
+    {
+      "name":  "PMM_AGENT_SETUP_FORCE",
+      "value": "1"
+    },
+    {
+      "name":  "PMM_AGENT_SETUP_NODE_TYPE",
+      "value": "container"
+    },
+    {
+      "name":  "DB_TYPE",
+      "value": "postgresql"
+    },
+    {
+      "name":  "DB_PASS",
+      "valueFrom": {
+        "secretKeyRef": {
+            "name": "{{.RootSecretName}}",
+            "key": "password"
+        }
+      }
+    },
+    {
+      "name":  "PMM_AGENT_PRERUN_SCRIPT",
+      "value": "pmm-admin status --wait=10s; pmm-admin add postgresql --tls-skip-verify --skip-connection-check --metrics-mode=push --username=postgres --password=$(DB_PASS) --service-name=$(PMM_AGENT_SETUP_NODE_NAME) --host=$(POD_NAME) --port=5432 --query-source=none; pmm-admin annotate --service-name=$(PMM_AGENT_SETUP_NODE_NAME) 'Service restarted'"
+    }]
+}

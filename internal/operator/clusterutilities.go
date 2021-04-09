@@ -130,6 +130,17 @@ type PgmonitorEnvVarsTemplateFields struct {
 	ExporterSecret string
 }
 
+type PMMTemplateFields struct {
+	Enabled               bool
+	Name                  string
+	PMMImage              string
+	PMMContainerResources string
+	PMMServerUser         string
+	PMMServerHost         string
+	PMMSecret             string
+	RootSecretName        string
+}
+
 // BootstrapJobTemplateFields defines the fields needed to populate the cluster bootstrap job
 // template
 type BootstrapJobTemplateFields struct {
@@ -207,7 +218,9 @@ type DeploymentTemplateFields struct {
 	ReplicationTLSSecret string
 	// CASecret is the name of the Secret that has the trusted CA that the
 	// PostgreSQL server is using
-	CASecret string
+	CASecret     string
+	PGParams     string
+	PMMContainer string
 }
 
 // tablespaceVolumeFields are the fields used to create the volumes in a
@@ -430,6 +443,37 @@ func GetExporterAddon(spec crv1.PgclusterSpec) string {
 	}
 
 	return exporterDoc.String()
+}
+
+func GetPMMContainer(cl *crv1.Pgcluster, name string) string {
+	if !cl.Spec.PMM.Enabled {
+		return ""
+	}
+
+	log.Debugf("pmm enabled for cluster %q", cl.Name)
+
+	pmmTemplateFields := PMMTemplateFields{
+		Enabled:               cl.Spec.PMM.Enabled,
+		PMMImage:              cl.Spec.PMM.Image,
+		PMMServerHost:         cl.Spec.PMM.ServerHost,
+		PMMServerUser:         cl.Spec.PMM.ServerUser,
+		PMMSecret:             cl.Spec.PMM.PMMSecret,
+		PMMContainerResources: GetResourcesJSON(cl.Spec.PMM.Resources, cl.Spec.PMM.Limits),
+		RootSecretName:        crv1.UserSecretName(cl, crv1.PGUserSuperuser),
+		Name:                  name,
+	}
+
+	if CRUNCHY_DEBUG {
+		_ = config.PMMTemplate.Execute(os.Stdout, pmmTemplateFields)
+	}
+
+	doc := bytes.Buffer{}
+	if err := config.PMMTemplate.Execute(&doc, pmmTemplateFields); err != nil {
+		log.Error(err)
+		return ""
+	}
+
+	return doc.String()
 }
 
 // consolidate with cluster.GetConfVolume
