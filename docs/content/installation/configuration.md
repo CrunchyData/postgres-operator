@@ -5,9 +5,9 @@ draft: false
 weight: 40
 ---
 
-# PostgreSQL Operator Installer Configuration
+# PGO Installer Configuration
 
-When installing the PostgreSQL Operator you have many configuration options, these
+When installing PGO, the Postgres Operator you have many configuration options, these
 options are listed in this section.
 
 ## General Configuration

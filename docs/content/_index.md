@@ -6,7 +6,7 @@ draft: false
 
 # PGO: The Postgres Operator from Crunchy Data
 
- <img width="25%" src="crunchy_logo.png"/>
+ <img width="25%" src="pgo.svg" alt="PGO: The Postgres Operator from Crunchy Data" />
 
 ## Run [Cloud Native PostgreSQL on Kubernetes](https://www.crunchydata.com/products/crunchy-postgresql-for-kubernetes/) with PGO: The [Postgres Operator](https://github.com/CrunchyData/postgres-operator) from [Crunchy Data](https://www.crunchydata.com/)!
 

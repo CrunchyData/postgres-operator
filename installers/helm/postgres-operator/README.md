@@ -1,10 +1,10 @@
-# Crunchy PostgreSQL Operator
+# PGO: The Postgres Operator from Crunchy Data
 
-This Helm chart installs the Crunchy PostgreSQL Operator by using its “pgo-deployer”
-container. Helm will setup the ServiceAccount, RBAC, and ConfigMap needed to run
-the container as a Kubernetes Job. Then a job will be created based on `helm`
-`install`, `upgrade`, or `uninstall`. After the job has completed the RBAC will
-be cleaned up.
+This Helm chart installs PGO: the Postgres Operator from Crunchy Data by using
+its “pgo-deployer” container. Helm will setup the ServiceAccount, RBAC, and
+ConfigMap needed to run the container as a Kubernetes Job. Then a job will
+be created based on `helm` `install`, `upgrade`, or `uninstall`. After the
+job has completed the RBAC will be cleaned up.
 
 ## Prerequisites
 
@@ -39,10 +39,10 @@ cd postgres-operator/installers/helm/postgres-operator
 helm uninstall postgres-operator -n pgo
 ```
 
-## Configuraiton 
+## Configuration
 
 The following shows the configurable parameters that are relevant to the Helm
-Chart. A full list of all Crunchy PostgreSQL Operator configuration options can
+Chart. A full list of all PGO configuration options can
 be found in the [documentation](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/configuration/).
 
 | Name | Default | Description |

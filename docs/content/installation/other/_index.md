@@ -6,6 +6,6 @@ weight: 100
 ---
 
 Though the years, we have built up several other methods for installing the
-PostgreSQL Operator. The next few sections provide some alternative ways of
+PGO. The next few sections provide some alternative ways of
 deploying the PostgreSQL Operator. Some of these methods are deprecated and may
 be removed in a future release.

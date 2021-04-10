@@ -1,11 +1,11 @@
 ---
-title: Install the PostgreSQL Operator
+title: Install PGO the Postgres Operator
 date:
 draft: false
 weight: 20
 ---
 
-# The PostgreSQL Operator Installer
+# Install PGO the Postgres Operator
 
 ## Quickstart
 
@@ -23,7 +23,7 @@ the PostgreSQL Operator.
 
 ## Overview
 
-The PostgreSQL Operator comes with a container called `pgo-deployer` which
+PGO comes with a container called `pgo-deployer` which
 handles a variety of lifecycle actions for the PostgreSQL Operator, including:
 
 - Installation
@@ -52,7 +52,7 @@ environmental requirements.
 By default, the `pgo-deployer` uses a ServiceAccount called `pgo-deployer-sa`
 that has a ClusterRoleBinding (`pgo-deployer-crb`) with several ClusterRole
 permissions. This is required to create the [Custom Resource Definitions](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
-that power the PostgreSQL Operator. While the PostgreSQL Operator itself can be
+that power PGO. While the PostgreSQL Operator itself can be
 scoped to a specific namespace, you will need to have `cluster-admin` for the
 initial deployment, or privileges that allow you to install Custom Resource
 Definitions. The required list of privileges are available in the [postgres-operator.yml](https://raw.githubusercontent.com/CrunchyData/postgres-operator/v{{< param operatorVersion >}}/installers/kubectl/postgres-operator.yml) file:
@@ -120,7 +120,7 @@ PostgreSQL Operator cannot create the RBAC itself.
 ## Configuration - `postgres-operator.yml`
 
 The `postgres-operator.yml` file contains all of the configuration parameters
-for deploying the PostgreSQL Operator. The [example file](https://github.com/CrunchyData/postgres-operator/blob/v{{< param operatorVersion >}}/installers/kubectl/postgres-operator.yml)
+for deploying PGO. The [example file](https://github.com/CrunchyData/postgres-operator/blob/v{{< param operatorVersion >}}/installers/kubectl/postgres-operator.yml)
 contains defaults that should work in most Kubernetes environments, but it may
 require some customization.
 
@@ -174,7 +174,7 @@ oc secrets link <registry-secret> <deployer-sa> --for=pull --namespace=<install-
 
 ## Installation
 
-Once you have configured the PostgreSQL Operator Installer to your
+Once you have configured the PGO Installer to your
 specification, you can install the PostgreSQL Operator with the following
 command:
 
@@ -309,7 +309,7 @@ env:
 
 ### Uninstalling
 
-The following can be used to uninstall the PostgreSQL Operator and metrics 
+The following can be used to uninstall the PostgreSQL Operator and metrics
 infrastructure at the same time.
 ```yaml
 env:
