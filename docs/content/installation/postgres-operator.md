@@ -1,11 +1,11 @@
 ---
-title: Install the PostgreSQL Operator
+title: Install PGO the Postgres Operator
 date:
 draft: false
 weight: 20
 ---
 
-# The PostgreSQL Operator Installer
+# PGO: Postgres Operator Installer
 
 ## Quickstart
 
@@ -23,8 +23,8 @@ the PostgreSQL Operator.
 
 ## Overview
 
-The PostgreSQL Operator comes with a container called `pgo-deployer` which
-handles a variety of lifecycle actions for the PostgreSQL Operator, including:
+PGO comes with a container called `pgo-deployer` which
+handles a variety of lifecycle actions for the Postgres Operator, including:
 
 - Installation
 - Upgrading
@@ -52,7 +52,7 @@ environmental requirements.
 By default, the `pgo-deployer` uses a ServiceAccount called `pgo-deployer-sa`
 that has a ClusterRoleBinding (`pgo-deployer-crb`) with several ClusterRole
 permissions. This is required to create the [Custom Resource Definitions](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
-that power the PostgreSQL Operator. While the PostgreSQL Operator itself can be
+that power PGO. While the Postgres Operator itself can be
 scoped to a specific namespace, you will need to have `cluster-admin` for the
 initial deployment, or privileges that allow you to install Custom Resource
 Definitions. The required list of privileges are available in the [postgres-operator.yml](https://raw.githubusercontent.com/CrunchyData/postgres-operator/v{{< param operatorVersion >}}/installers/kubectl/postgres-operator.yml) file:
@@ -82,7 +82,7 @@ For example, to create the `pgo` namespace:
 kubectl create namespace pgo
 ```
 
-The PostgreSQL Operator has the ability to manage PostgreSQL clusters across
+The Postgres Operator has the ability to manage PostgreSQL clusters across
 multiple Kubernetes [Namespaces](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/),
 including the ability to add and remove Namespaces that it watches. Doing so
 does require the PostgreSQL Operator to have elevated privileges, and as such,
@@ -120,7 +120,7 @@ PostgreSQL Operator cannot create the RBAC itself.
 ## Configuration - `postgres-operator.yml`
 
 The `postgres-operator.yml` file contains all of the configuration parameters
-for deploying the PostgreSQL Operator. The [example file](https://github.com/CrunchyData/postgres-operator/blob/v{{< param operatorVersion >}}/installers/kubectl/postgres-operator.yml)
+for deploying PGO. The [example file](https://github.com/CrunchyData/postgres-operator/blob/v{{< param operatorVersion >}}/installers/kubectl/postgres-operator.yml)
 contains defaults that should work in most Kubernetes environments, but it may
 require some customization.
 
@@ -138,7 +138,7 @@ set to `install`, `update`, and `uninstall`.
 
 ### Image Pull Secrets
 
-If you are pulling the PostgreSQL Operator images from a private registry, you
+If you are pulling PGO images from a private registry, you
 will need to setup an
 [imagePullSecret](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/)
 with access to the registry. The image pull secret will need to be added to the
@@ -174,7 +174,7 @@ oc secrets link <registry-secret> <deployer-sa> --for=pull --namespace=<install-
 
 ## Installation
 
-Once you have configured the PostgreSQL Operator Installer to your
+Once you have configured the PGO Installer to your
 specification, you can install the PostgreSQL Operator with the following
 command:
 
@@ -298,7 +298,7 @@ kubectl delete -f /path/to/postgres-operator.yml
 Note that if you still have the ServiceAccount and ClusterRoleBinding in there,
 you will need to have elevated privileges.
 
-## Installing the PostgreSQL Operator Monitoring Infrastructure
+## Installing the PGO Monitoring Infrastructure
 
 Please see the [PostgreSQL Operator Monitoring installation section]({{< relref "/installation/metrics" >}})
 for instructions on how to install the PostgreSQL Operator Monitoring infrastructure.

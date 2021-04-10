@@ -5,18 +5,18 @@ draft: false
 weight: 100
 ---
 
-A full installation of the Operator includes the following steps:
+A full installation of PGO includes the following steps:
 
- - get the Operator project
+ - get the PGO project
  - configure your environment variables
- - configure Operator templates
+ - configure PGO templates
  - create security resources
  - deploy the operator
- - install pgo CLI (end user command tool)
+ - install `pgo` client (end user command tool)
 
-Operator end-users are only required to install the pgo CLI client on their host and can skip the server-side installation steps.  pgo CLI clients are provided for Linux, Mac, and Windows clients.
+PGO end-users are only required to install the `pgo` client on their host and can skip the server-side installation steps. `pgo` clients are provided for Linux, Mac, and Windows clients.
 
-The Operator can be deployed by multiple methods including:
+PGO can be deployed by multiple methods including:
 
  * default installation
  * Ansible playbook installation
@@ -25,7 +25,7 @@ The Operator can be deployed by multiple methods including:
 
 ## Default Installation - Get Project
 
-The Operator project is hosted on GitHub. You can get a copy using `git clone`:
+The PGO source code is made available on GitHub. You can get a copy using `git clone`:
 
     git clone -b v{{< param operatorVersion >}} https://github.com/CrunchyData/postgres-operator.git
     cd postgres-operator
@@ -53,9 +53,9 @@ for Kubernetes events.  This value is set as follows:
 This means namespaces called *pgouser1* and *pgouser2* will be
 created as part of the default installation.  
 
-{{% notice warning %}}In Kubernetes versions prior to 1.12 (including Openshift up through 3.11), there is a limitation that requires an extra step during installation for the operator to function properly with watched namespaces. This limitation does not exist when using Kubernetes 1.12+. When a list of namespaces are provided through the NAMESPACE environment variable, the setupnamespaces.sh script handles the limitation properly in both the bash and ansible installation.
+{{% notice warning %}}In Kubernetes versions prior to 1.12 (including Openshift up through 3.11), there is a limitation that requires an extra step during installation for PGO to function properly with watched namespaces. This limitation does not exist when using Kubernetes 1.12+. When a list of namespaces are provided through the NAMESPACE environment variable, the setupnamespaces.sh script handles the limitation properly in both the bash and ansible installation.
 
-However, if the user wishes to add a new watched namespace after installation, where the user would normally use pgo create namespace to add the new namespace, they should instead run the add-targeted-namespace.sh script or they may give themselves cluster-admin privileges instead of having to run setupnamespaces.sh script. Again, this is only required when running on a Kubernetes distribution whose version is below 1.12. In Kubernetes version 1.12+ the pgo create namespace command works as expected.
+However, if the user wishes to add a new watched namespace after installation, where the user would normally use `pgo create namespace` to add the new namespace, they should instead run the add-targeted-namespace.sh script or they may give themselves cluster-admin privileges instead of having to run setupnamespaces.sh script. Again, this is only required when running on a Kubernetes distribution whose version is below 1.12. In Kubernetes version 1.12+ the pgo create namespace command works as expected.
 
 {{% /notice %}}
 
@@ -77,13 +77,13 @@ Create the Operator namespaces using the Makefile target:
 The [Design](/design) section of this documentation talks further about
 the use of namespaces within the Operator.
 
-## Default Installation - Configure Operator Templates
+## Default Installation - Configure PGO Templates
 
-Within the Operator [*PGO_CONF_DIR*](/developer-setup/) directory are several configuration files and templates used by the Operator to determine the various resources that it deploys on your Kubernetes cluster, specifically the PostgreSQL clusters it deploys.
+Within PGO's [*PGO_CONF_DIR*](/developer-setup/) directory are several configuration files and templates used by PGO to determine the various resources that it deploys on your Kubernetes cluster, specifically the PostgreSQL clusters it deploys.
 
-When you install the Operator you must make choices as to what kind of storage the Operator has to work with for example.  Storage varies with each installation.  As an installer, you would modify these configuration templates used by the Operator to customize its behavior.
+When you install PGO you must make choices as to what kind of storage the Operator has to work with for example.  Storage varies with each installation.  As an installer, you would modify these configuration templates used by the Operator to customize its behavior.
 
-**Note**:  when you want to make changes to these Operator templates and configuration files after your initial installation, you will need to re-deploy the Operator in order for it to pick up any future configuration changes.
+**Note**:  when you want to make changes to these PGO templates and configuration files after your initial installation, you will need to re-deploy the Operator in order for it to pick up any future configuration changes.
 
 Here are some common examples of configuration changes most installers would make:
 
@@ -104,11 +104,9 @@ Listed above are the *pgo.yaml* sections related to storage choices.  *PrimarySt
 
 This sort of configuration allows for a PostgreSQL primary and replica to use different storage if you want.  Other storage settings like *AccessMode*, *Size*, *StorageType*, and *StorageClass* further define the storage configuration.  Currently, NFS, HostPath, and Storage Classes are supported in the configuration.
 
-As part of the Operator installation, you will need to adjust these storage settings to suit your deployment requirements.  For users wanting to try
+As part of PGO installation, you will need to adjust these storage settings to suit your deployment requirements.  For users wanting to try
 out the Operator on Google Kubernetes Engine you would make the
 following change to the storage configuration in pgo.yaml:
-
-
 
 For NFS Storage, it is assumed that there are sufficient Persistent Volumes (PV) created for the Operator to use when it creates Persistent Volume Claims (PVC).  The creation of Persistent Volumes is something a Kubernetes cluster-admin user would typically provide before installing the Operator.  There is an example script which can be used to create NFS Persistent Volumes located here:
 
@@ -129,11 +127,11 @@ Operator.
 
 Other settings in *pgo.yaml* are described in the [pgo.yaml Configuration](/configuration/pgo-yaml-configuration) section of the documentation.
 
-## Operator Security
+## PGO Security
 
-The Operator implements its own RBAC (Role Based Access Controls) for authenticating Operator users access to the Operator REST API.
+PGO implements its own RBAC (Role Based Access Controls) for authenticating Operator users access to the PGO REST API.
 
-A default admin user is created when the operator is deployed. Create a .pgouser in your home directory and insert the text from below:
+A default admin user is created when PGO is deployed. Create a .pgouser in your home directory and insert the text from below:
 
 ```
 admin:examplepassword
@@ -151,7 +149,7 @@ To create a unique administrator user on deployment of the operator edit this fi
 $PGOROOT/deploy/install-bootstrap-creds.sh
 ```
 
-After installation users can create optional Operator users as follows:
+After installation users can create optional PGO users as follows:
 
 ```
 pgo create pgouser someuser --pgouser-namespaces="pgouser1,pgouser2" --pgouser-password=somepassword --pgouser-roles="somerole,someotherrole"
@@ -160,13 +158,13 @@ pgo create pgouser someuser --pgouser-namespaces="pgouser1,pgouser2" --pgouser-p
 Note, you can also store the pgouser file in alternate locations, see the
 Security documentation for details.
 
-Operator security is discussed in the Security section [Security](/security) of the documentation.
+PGO security is further discussed in the section [Security]({{< relref "security/_index.md" >}}) section of the documentation.
 
 Adjust these settings to meet your local requirements.
 
 ## Default Installation - Create Kubernetes RBAC Controls
 
-The Operator installation requires Kubernetes administrators to create Resources required by the Operator.  These resources are only allowed to be created by a cluster-admin user.  To install on Google Cloud, you will need a user
+PGO installation requires Kubernetes administrators to create Resources required by PGO.  These resources are only allowed to be created by a cluster-admin user.  To install on Google Cloud, you will need a user
 account with cluster-admin privileges.  If you own the GKE cluster you
 are installing on, you can add cluster-admin role to your account as
 follows:
@@ -179,9 +177,9 @@ Tor create the Kubernetes RBAC used by the Operator, run the following as a clus
 
     make installrbac
 
-This set of Resources is created a single time unless a new Operator
+This set of Resources is created a single time unless a new PGO
 release requires these Resources to be recreated.  Note that when you
-run *make installrbac* the set of keys used by the Operator REST API and
+run *make installrbac* the set of keys used by the PGO REST API and
 also the pgbackrest ssh keys are generated.  
 
 Verify the Operator Custom Resource Definitions are created as follows:
@@ -193,14 +191,15 @@ You should see the *pgclusters* CRD among the listed CRD resource types.
 See the Security documentation for a description of the various RBAC
 resources created and used by the Operator.
 
-## Default Installation - Deploy the Operator
+## Default Installation - Deploy PGO
+
 At this point, you as a normal Kubernetes user should be able to deploy the Operator.  To do this, run the following Makefile target:
 
     make deployoperator
 
-This will cause any existing Operator to be removed first, then the configuration to be bundled into a ConfigMap, then the Operator Deployment to be created.
+This will cause any existing PGO installation to be removed first, then the configuration to be bundled into a ConfigMap, then the Operator Deployment to be created.
 
-This will create a postgres-operator Deployment and a postgres-operator Service.Operator administrators needing to make changes to the Operator
+This will create a postgres-operator Deployment and a postgres-operator Service.Operator administrators needing to make changes to the PGO
 configuration would run this make target to pick up any changes to pgo.yaml,
 pgo users/roles,  or the Operator templates.
 
@@ -211,16 +210,19 @@ created using the default installation by running the following:
 
     make cleannamespaces
 
-This will permanently delete each namespace the Operator installation
+This will permanently delete each namespace the PGO installation
 created previously.
 
 
-## pgo CLI Installation
-Most users will work with the Operator using the *pgo* CLI tool.  That tool is downloaded from the GitHub Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases). Crunchy Enterprise Customer can download the pgo binaries from https://access.crunchydata.com/ on the downloads page.
+## `pgo` client Installation
 
-The *pgo* client is provided in Mac, Windows, and Linux binary formats,
+Most users will work with the Operator using the `pgo` client.  That tool is downloaded from the GitHub Releases page for the Operator (https://github.com/crunchydata/postgres-operator/releases). Crunchy Data customers can download the `pgo` binaries from https://access.crunchydata.com/ on the downloads page.
+
+The `pgo` client is provided in Mac, Windows, and Linux binary formats,
 download the appropriate client to your local laptop or workstation to work
 with a remote Operator.
+
+You can also use the `pgo-client` container.
 
 {{% notice info %}}
 
@@ -239,9 +241,9 @@ Prior to using *pgo*, users testing the Operator on a single host can specify th
     pgo version
 ```
 
-That URL address needs to be reachable from your local *pgo* client host.  Your Kubernetes administrator will likely need to create a network route, ingress, or LoadBalancer service to expose the Operator REST API to applications outside of the Kubernetes cluster.  Your Kubernetes administrator might also allow you to run the Kubernetes port-forward command, contact your administrator for details.
+That URL address needs to be reachable from your local `pgo` client host.  Your Kubernetes administrator will likely need to create a network route, ingress, or LoadBalancer service to expose the PGO REST API to applications outside of the Kubernetes cluster.  Your Kubernetes administrator might also allow you to run the Kubernetes port-forward command, contact your administrator for details.
 
-Next, the *pgo* client needs to reference the keys used to secure the Operator REST API:
+Next, the `pgo` client needs to reference the keys used to secure the PGO REST API:
 
 ```
     export PGO_CA_CERT=$PGOROOT/conf/postgres-operator/server.crt
@@ -253,7 +255,7 @@ You can also specify these keys on the command line as follows:
 
     pgo version --pgo-ca-cert=$PGOROOT/conf/postgres-operator/server.crt --pgo-client-cert=$PGOROOT/conf/postgres-operator/server.crt --pgo-client-key=$PGOROOT/conf/postgres-operator/server.key
 
-{{% notice tip %}} if you are running the Operator on Google Cloud, you would open up another terminal and run *kubectl port-forward ...* to forward the Operator pod port 8443 to your localhost where you can access the Operator API from your local workstation.
+{{% notice tip %}} if you are running PGO on Google Cloud, you would open up another terminal and run *kubectl port-forward ...* to forward the Postgres Operator pod port 8443 to your localhost where you can access the PGO API from your local workstation.
 {{% /notice %}}
 
 At this point, you can test connectivity between your laptop or workstation and the Postgres Operator deployed on a Kubernetes cluster as follows:
@@ -264,7 +266,7 @@ You should get back a valid response showing the client and server version numbe
 
 ## Verify the Installation
 
-Now that you have deployed the Operator, you can verify that it is running correctly.
+Now that you have deployed PGO, you can verify that it is running correctly.
 
 You should see a pod running that contains the Operator:
 
@@ -275,10 +277,10 @@ You should see a pod running that contains the Operator:
 
 That pod should show 3 of 3 containers in *running* state and that the operator is installed into the *pgo* namespace.
 
-The sample environment script, examples/env.sh, if used creates some bash functions that you can use to view the Operator logs.  This is useful in case you find one of the Operator containers not in a running status.
+The sample environment script, examples/env.sh, if used creates some bash functions that you can use to view the Postgres Operator logs.  This is useful in case you find one of the PGO containers not in a running status.
 
-Using the pgo CLI, you can verify the versions of the client and server match as follows:
+Using the `pgo` client, you can verify the versions of the client and server match as follows:
 
     pgo version
 
-This also tests connectivity between your pgo client host and the Operator server.
+This also tests connectivity between your `pgo` client host and Postgres Operator container.

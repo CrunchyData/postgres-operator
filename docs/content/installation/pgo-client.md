@@ -1,5 +1,5 @@
 ---
-title: "Install `pgo` Client"
+title: "Install \"pgo\" Client"
 date:
 draft: false
 weight: 30
@@ -8,23 +8,22 @@ weight: 30
 # Install the PostgreSQL Operator (`pgo`) Client
 
 The following will install and configure the `pgo` client on all systems.  For the
-purpose of these instructions it's assumed that the Crunchy PostgreSQL Operator
-is already deployed.
+purpose of these instructions it's assumed that PGO: the Postgres Operator from Crunchy
+Data is already deployed.
 
 ## Prerequisites
 
 * For Kubernetes deployments: [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/) configured to communicate with Kubernetes
 * For OpenShift deployments: [oc](https://docs.openshift.com/container-platform/3.11/cli_reference/get_started_cli.html) configured to communicate with OpenShift
 
-To authenticate with the Crunchy PostgreSQL Operator API:
+To authenticate with the PGO API:
 
 * Client CA Certificate
 * Client TLS Certificate
 * Client Key
 * `pgouser` file containing `<username>:<password>`
 
-All of the requirements above should be obtained from an administrator who installed the Crunchy
-PostgreSQL Operator.
+All of the requirements above should be obtained from an administrator who installed PGO.
 
 ## Linux and macOS
 
@@ -288,5 +287,4 @@ properly by simply running the following:
 pgo version
 ```
 
-If the above command outputs versions of both the client and API server, the Crunchy PostgreSQL
-Operator client has been installed successfully.
+If the above command outputs versions of both the client and API server, the `pgo` client has been installed successfully.

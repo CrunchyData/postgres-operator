@@ -5,26 +5,27 @@ draft: false
 weight: 10
 ---
 
-# PostgreSQL Operator Quickstart
+# PGO: PostgreSQL Operator Quickstart
 
-Can't wait to try out the PostgreSQL Operator? Let us show you the quickest possible path to getting up and running.
+Can't wait to try out PGO, the Postgres Operator from Crunchy Data? Let us show
+you the quickest possible path to getting up and running.
 
-There are two paths to quickly get you up and running with the PostgreSQL Operator:
+There are two paths to quickly get you up and running with PGO:
 
-- [Installation via the PostgreSQL Operator Installer](#postgresql-operator-installer)
+- [Installation via the Postgres Operator Installer](#postgresql-operator-installer)
 - Installation via a Marketplace
   - Installation via [Operator Lifecycle Manager]({{< relref "/installation/other/operator-hub.md" >}})
   - Installation via [Google Cloud Marketplace]({{< relref "/installation/other/google-cloud-marketplace.md" >}})
 
 Marketplaces can help you get more quickly started in your environment as they provide a mostly automated process, but there are a few steps you will need to take to ensure you can fully utilize your PostgreSQL Operator environment. You can find out more information about how to get started with one of those installers in the [Installation]({{< relref "/installation/_index.md" >}}) section.
 
-# PostgreSQL Operator Installer
+# Postgres Operator Installer
 
 Below will guide you through the steps for installing and using the PostgreSQL Operator using an installer that works with Ansible.
 
 ## Installation
 
-### Install the PostgreSQL Operator
+### Install PGO: the PostgreSQL Operator
 
 On environments that have a [default storage class](https://kubernetes.io/docs/tasks/administer-cluster/change-default-storage-class/) set up (which is most modern Kubernetes environments), the below command should work:
 
@@ -39,14 +40,14 @@ If your install is unsuccessful, you may need to modify your configuration. Plea
 
 ### Install the `pgo` Client
 
-During or after the installation of the PostgreSQL Operator, download the `pgo` client set up script. This will help set up your local environment for using the PostgreSQL Operator:
+During or after the installation of PGO: the Postgres Operator, download the `pgo` client set up script. This will help set up your local environment for using the Postgres Operator:
 
 ```
 curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v{{< param operatorVersion >}}/installers/kubectl/client-setup.sh > client-setup.sh
 chmod +x client-setup.sh
 ```
 
-When the PostgreSQL Operator is done installing, run the client setup script:
+When the Postgres Operator is done installing, run the client setup script:
 
 ```
 ./client-setup.sh
@@ -83,9 +84,9 @@ source ~/.bashrc
 
 ### Post-Installation Setup
 
-Below are a few steps to check if the PostgreSQL Operator is up and running.
+Below are a few steps to check if PGO: the Postgres Operator is up and running.
 
-By default, the PostgreSQL Operator installs into a namespace called `pgo`. First, see that the Kubernetes Deployment of the Operator exists and is healthy:
+By default, PGO installs into a namespace called `pgo`. First, see that the Kubernetes Deployment of PGO exists and is healthy:
 
 ```
 kubectl -n pgo get deployments
@@ -111,7 +112,7 @@ NAME                                READY   STATUS    RESTARTS   AGE
 postgres-operator-56d6ccb97-tmz7m   4/4     Running   0          2m
 ```
 
-Finally, let's see if we can connect to the PostgreSQL Operator from the `pgo` command-line client. The Ansible installer installs the `pgo` command line client into your environment, along with the username/password file that allows you to access the PostgreSQL Operator. In order to communicate with the PostgreSQL Operator API server, you will first need to set up a [port forward](https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/) to your local environment.
+Finally, let's see if we can connect to the Postgres Operator from the `pgo` command-line client. The Ansible installer installs the `pgo` command line client into your environment, along with the username/password file that allows you to access the PostgreSQL Operator. In order to communicate with the PostgreSQL Operator API server, you will first need to set up a [port forward](https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/) to your local environment.
 
 In a new console window, run the following command to set up a port forward:
 
@@ -134,7 +135,7 @@ pgo-apiserver version {{< param operatorVersion >}}
 
 ## Create a PostgreSQL Cluster
 
-The quickstart installation method creates a namespace called `pgo` where the PostgreSQL Operator manages PostgreSQL clusters. Try creating a PostgreSQL cluster called `hippo`:
+The quickstart installation method creates a namespace called `pgo` where PGO, the Postgres Operator, manages PostgreSQL clusters. Try creating a PostgreSQL cluster called `hippo`:
 
 ```
 pgo create cluster -n pgo hippo
@@ -155,7 +156,7 @@ created Pgcluster hippo
 workflow id 1cd0d225-7cd4-4044-b269-aa7bedae219b
 ```
 
-This will create a PostgreSQL cluster named `hippo`. It may take a few moments for the cluster to be provisioned. You can see the status of this cluster using the [`pgo test`]({{< relref "pgo-client/reference/pgo_test.md" >}}) command:
+This will create a Postgres cluster named `hippo`. It may take a few moments for the cluster to be provisioned. You can see the status of this cluster using the [`pgo test`]({{< relref "pgo-client/reference/pgo_test.md" >}}) command:
 
 ```
 pgo test -n pgo hippo
@@ -175,7 +176,7 @@ The `pgo test` command provides you the basic information you need to connect to
 
 ## Connect to a PostgreSQL Cluster
 
-By default, the PostgreSQL Operator creates a database inside the cluster with the same name of the cluster, in this case, `hippo`. Below demonstrates how we can connect to `hippo`.
+By default, PGO creates a database inside the cluster with the same name of the cluster, in this case, `hippo`. Below demonstrates how we can connect to `hippo`.
 
 ### How Users Work
 
@@ -193,7 +194,7 @@ CLUSTER USERNAME PASSWORD                 EXPIRES STATUS ERROR
 hippo   testuser datalake                 never   ok
 ```
 
-To get the information about all PostgreSQL users that the PostgreSQL Operator is managing, you will need to use the `--show-system-accounts` flag:
+To get the information about all PostgreSQL users that PGO is managing, you will need to use the `--show-system-accounts` flag:
 
 ```
 pgo show user -n pgo hippo --show-system-accounts
@@ -217,7 +218,7 @@ The `primaryuser` is the used for replication and [high availability]({{< relref
 
 Let's see how we can connect to `hippo` using [`psql`](https://www.postgresql.org/docs/current/app-psql.html), the command-line tool for accessing PostgreSQL. Ensure you have [installed the `psql` client](https://www.crunchydata.com/developers/download-postgres/binaries/postgresql12).
 
-The PostgreSQL Operator creates a service with the same name as the cluster. See for yourself! Get a list of all of the Services available in the `pgo` namespace:
+PGO, the Postgres Operator, creates a service with the same name as the cluster. See for yourself! Get a list of all of the Services available in the `pgo` namespace:
 
 ```
 kubectl -n pgo get svc
@@ -293,7 +294,7 @@ For more information, please see the section on [pgAdmin 4]({{< relref "architec
 
 Some Kubernetes environments may require you to customize the configuration for the PostgreSQL Operator installer. The below provides a guide on the common parameters that require modification, though this may vary based on your installation. For a full reference, please visit the [Installation]({{< relref "/installation/_index.md" >}}) section.
 
-If you already attempted to install the PostgreSQL Operator and that failed, the easiest way to clean up that installation is to delete the [Namespace](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/) that you attempted to install the PostgreSQL Operator into. **Note: This deletes all of the other objects in the Namespace, so please be sure this is OK!**
+If you already attempted to install PGO and that failed, the easiest way to clean up that installation is to delete the [Namespace](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/) that you attempted to install the Postgres Operator into. **Note: This deletes all of the other objects in the Namespace, so please be sure this is OK!**
 
 To delete the namespace, you can run the following command:
 
@@ -301,15 +302,15 @@ To delete the namespace, you can run the following command:
 kubectl delete namespace pgo
 ```
 
-#### Get the PostgreSQL Operator Installer Manifest
+#### Get the Postgres Operator Installer Manifest
 
-You will need to download the PostgreSQL Operator Installer manifest to your environment, which you can do with the following command:
+You will need to download the Postgres Operator Installer manifest to your environment, which you can do with the following command:
 
 ```
 curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v{{< param operatorVersion >}}/installers/kubectl/postgres-operator.yml > postgres-operator.yml
 ```
 
-#### Configure the PostgreSQL Operator Installer
+#### Configure the Postgres Operator Installer
 
 There are many [configuration parameters]({{< relref "/installation/configuration.md">}}) to help you fine tune your installation, but there are a few that you may want to change to get the PostgreSQL Operator to run in your environment. Open up the `postgres-operator.yml` file and edit a few variables.
 
@@ -326,11 +327,11 @@ primary_storage: "nfsstorage"
 replica_storage: "nfsstorage"
 ```
 
-In OpenShift and CodeReady Containers, the PostgreSQL Operator will automatically set `disable_fsgroup` to `true` so that it will deploy PostgreSQL clusters correctly under the `restricted` Security Context Constraint (SCC). Though we recommend using `restricted`, if you are using the `anyuid` SCC, you will need to set `disable_fsgroup` to `false` in order to deploy the PostgreSQL Operator.
+In OpenShift and CodeReady Containers, PGO will automatically set `disable_fsgroup` to `true` so that it will deploy PostgreSQL clusters correctly under the `restricted` Security Context Constraint (SCC). Though we recommend using `restricted`, if you are using the `anyuid` SCC, you will need to set `disable_fsgroup` to `false` in order to deploy the PostgreSQL Operator.
 
 For a full list of available storage types that can be used with this installation method, please review the [configuration parameters]({{< relref "/installation/configuration.md">}}).
 
-When you are done editing the file, you can install the PostgreSQL Operator by running the following commands:
+When you are done editing the file, you can install PGO by running the following commands:
 
 ```
 kubectl create namespace pgo
