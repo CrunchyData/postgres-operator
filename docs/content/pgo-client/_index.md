@@ -6,11 +6,11 @@ weight: 50
 ---
 
 The PostgreSQL Operator Client, aka `pgo`, is the most convenient way to
-interact with the PostgreSQL Operator. `pgo` provides many convenience methods
+interact with the Postgres Operator. `pgo` provides many convenience methods
 for creating, managing, and deleting PostgreSQL clusters through a series of
 simple commands. The `pgo` client interfaces with the API that is provided by
 the PostgreSQL Operator and can leverage the RBAC and TLS systems that are
-provided by the PostgreSQL Operator
+provided by the PGO: PostgreSQL Operator.
 
 ![Architecture](/Operator-Architecture.png)
 
