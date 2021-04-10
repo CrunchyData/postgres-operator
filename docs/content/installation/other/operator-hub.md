@@ -6,7 +6,7 @@ weight: 200
 ---
 
 If your Kubernetes cluster is already running the [Operator Lifecycle Manager][OLM],
-the PostgreSQL Operator can be installed as part of [Crunchy PostgreSQL for Kubernetes][hub-listing]
+then PGO, the Postgres Operator from Crunchy Data, can be installed as part of [Crunchy PostgreSQL for Kubernetes][hub-listing]
 that is available in OperatorHub.io.
 
 [hub-listing]: https://operatorhub.io/operator/postgresql
@@ -15,7 +15,7 @@ that is available in OperatorHub.io.
 
 ## Before You Begin
 
-There are a few manual steps that the cluster administrator must perform prior to installing the PostgreSQL Operator.
+There are a few manual steps that the cluster administrator must perform prior to installing PGO.
 At the very least, it must be provided with an initial configuration.
 
 First, make sure OLM and the OperatorHub.io catalog are installed by running
@@ -59,7 +59,7 @@ kubectl -n "$PGO_OPERATOR_NAMESPACE" create secret generic pgo-backrest-repo-con
 
 ### Certificates (optional)
 
-The PostgreSQL Operator has an API that uses TLS to communicate securely with clients. If you have
+PGO has an API that uses TLS to communicate securely with clients. If you have
 a certificate bundle validated by your organization, you can install it now.  If not, the API will
 automatically generate and use a self-signed certificate.
 
@@ -104,7 +104,7 @@ YAML
 
 ## After You Install
 
-Once the PostgreSQL Operator is installed in your Kubernetes cluster, you will need to do a few things
+Once PGO is installed in your Kubernetes cluster, you will need to do a few things
 to use the [PostgreSQL Operator Client]({{< relref "/pgo-client/_index.md" >}}).
 
 Install the first set of client credentials and download the `pgo` binary and client certificates.
@@ -114,7 +114,7 @@ PGO_CMD=kubectl ./deploy/install-bootstrap-creds.sh
 PGO_CMD=kubectl ./installers/kubectl/client-setup.sh
 ```
 
-The client needs to be able to reach the PostgreSQL Operator API from outside the Kubernetes cluster.
+The client needs to be able to reach the PGO API from outside the Kubernetes cluster.
 Create an external service or forward a port locally.
 
 ```

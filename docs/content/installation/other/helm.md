@@ -5,12 +5,13 @@ draft: false
 weight: 100
 ---
 
-# The PostgreSQL Operator Helm Chart
+# PGO: The Postgres Operator Helm Chart
 
 ## Overview
 
-The PostgreSQL Operator comes with a container called `pgo-deployer` which
-handles a variety of lifecycle actions for the PostgreSQL Operator, including:
+PGO, the Postgres Operator from Crunchy Data, comes with a
+container called `pgo-deployer` which handles a variety of
+lifecycle actions for the PostgreSQL Operator, including:
 
 - Installation
 - Upgrading
@@ -178,11 +179,11 @@ pgo-apiserver version {{< param operatorVersion >}}
 
 ## Upgrade and Uninstall
 
-Once install has be completed using Helm, it will also be used to upgrade and 
+Once install has be completed using Helm, it will also be used to upgrade and
 uninstall your PostgreSQL Operator.
 
 {{% notice tip %}}
-The `name` and `namespace` in the following sections should match the options 
+The `name` and `namespace` in the following sections should match the options
 provided at install.
 {{% /notice %}}
 
@@ -208,7 +209,7 @@ helm uninstall <name> -n <namespace>
 
 ## Debugging
 
-When the `pgo-deployer` job does not complete successfully, the resources that 
+When the `pgo-deployer` job does not complete successfully, the resources that
 are created and normally cleaned up by Helm will be left in your
 Kubernetes cluster. This will allow you to use the failed job and its logs to
 debug the issue. The following command will show the logs for the `pgo-deployer`

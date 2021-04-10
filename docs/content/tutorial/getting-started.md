@@ -6,17 +6,17 @@ weight: 100
 
 ## Installation
 
-If you have not installed the PostgreSQL Operator yet, we recommend you take a look at our [quickstart]({{< relref "quickstart/_index.md" >}}) or the [installation]({{< relref "installation/_index.md" >}}) sections.
+If you have not installed PGO, the Postgres Operator, yet, we recommend you take a look at our [quickstart]({{< relref "quickstart/_index.md" >}}) or the [installation]({{< relref "installation/_index.md" >}}) sections.
 
 ### Customizing an Installation
 
-How to customize a PostgreSQL Operator installation is a lengthy topic. The details are covered in the [installation]({{< relref "installation/postgres-operator.md" >}}) section, as well as a list of all the [configuration variables]({{< relref "installation/configuration.md" >}}) available.
+How to customize a PGO installation is a lengthy topic. The details are covered in the [installation]({{< relref "installation/postgres-operator.md" >}}) section, as well as a list of all the [configuration variables]({{< relref "installation/configuration.md" >}}) available.
 
 ## Setup the `pgo` Client
 
-This tutorial will be using the [`pgo` client]({{< relref "pgo-client/_index.md" >}}) to interact with the PostgreSQL Operator. Please follow the instructions in the [quickstart]({{< relref "quickstart/_index.md" >}}) or the [installation]({{< relref "installation/pgo-client.md" >}}) sections for how to configure the `pgo` client.
+This tutorial will be using the [`pgo` client]({{< relref "pgo-client/_index.md" >}}) to interact with the Postgres Operator. Please follow the instructions in the [quickstart]({{< relref "quickstart/_index.md" >}}) or the [installation]({{< relref "installation/pgo-client.md" >}}) sections for how to configure the `pgo` client.
 
-The PostgreSQL Operator and `pgo` client are designed to work in a [multi-namespace deployment environment]({{< relref "architecture/namespace.md" >}}) and many `pgo` commands require that the namespace flag (`-n`) are passed into it. You can use the `PGO_NAMESPACE` environmental variable to set which namespace a `pgo` command can use. For example:
+The Postgres Operator and `pgo` client are designed to work in a [multi-namespace deployment environment]({{< relref "architecture/namespace.md" >}}) and many `pgo` commands require that the namespace flag (`-n`) are passed into it. You can use the `PGO_NAMESPACE` environmental variable to set which namespace a `pgo` command can use. For example:
 
 ```
 export PGO_NAMESPACE=pgo
@@ -39,13 +39,13 @@ export PGO_NAMESPACE=pgo
 
 ## Next Steps
 
-Before proceeding, please make sure that your `pgo` client setup can communicate with your PostgreSQL Operator. In a separate terminal window, set up a port forward to your PostgreSQL Operator:
+Before proceeding, please make sure that your `pgo` client setup can communicate with your PGO Deployment. In a separate terminal window, set up a port forward to your PostgreSQL Operator:
 
 ```
 kubectl port-forward -n pgo svc/postgres-operator 8443:8443
 ```
 
-The [`pgo version`]({{< relref "pgo-client/reference/pgo_version.md" >}}) command is a great way to check connectivity with the PostgreSQL Operator, as it is a very simple, safe operation. Try it out:
+The [`pgo version`]({{< relref "pgo-client/reference/pgo_version.md" >}}) command is a great way to check connectivity with the Postgres Operator, as it is a very simple, safe operation. Try it out:
 
 ```
 pgo version
@@ -72,4 +72,4 @@ which yields results similar to:
 pgo client version {{< param operatorVersion >}}
 ```
 
-Alright, we're now ready to start our journey with the PostgreSQL Operator!
+Alright, we're now ready to start our journey with PGO!

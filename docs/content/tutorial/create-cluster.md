@@ -143,6 +143,10 @@ has successfully started.
 - The password for the `ccp_monitoring` user has changed. In this case you will
 need to update the Secret with the monitoring credentials.
 
+## Custom Resources
+
+You may also be curious about how to perform the same actions directly with [custom resources]({{< relref "custom-resources/_index.md" >}}). If that is the case, we encourage to skip ahead to the [Custom Resources]({{< relref "custom-resources/_index.md" >}}) section of the documentation.
+
 ## Next Steps
 
 Once your cluster is created, the next step is to [connect to your PostgreSQL cluster]({{< relref "tutorial/connect-cluster.md" >}}). You can also [learn how to customize your PostgreSQL cluster]({{< relref "tutorial/customize-cluster.md" >}})!
