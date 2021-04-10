@@ -1,11 +1,11 @@
-
 This directory contains the files that are used to install [Crunchy PostgreSQL for GKE][gcp-details],
-which uses the PostgreSQL Operator, from the Google Cloud Marketplace.
+which uses PGO: the PostgreSQL Operator from [Crunchy Data][crunchy-data], from the Google Cloud Marketplace.
 
 The integration centers around a container [image](./Dockerfile) that contains an installation
 [schema](./schema.yaml) and an [Application][k8s-app] [manifest](./application.yaml).
 Consult the [technical requirements][gcp-k8s-requirements] when making changes.
 
+[crunchy-data]: https://www.crunchydata.com
 [k8s-app]: https://github.com/kubernetes-sigs/application/
 [gcp-k8s]: https://cloud.google.com/marketplace/docs/kubernetes-apps/
 [gcp-k8s-requirements]: https://cloud.google.com/marketplace/docs/partners/kubernetes-solutions/create-app-package

@@ -6,7 +6,7 @@ draft: false
 
 # Crunchy PostgreSQL Operator
 
- <img width="25%" src="crunchy_logo.png"/>
+ <img width="25%" src="pgo.svg" alt="PGO: The Postgres Operator from Crunchy Data" />
 
 Latest Release: {{< param operatorVersion >}}
 
