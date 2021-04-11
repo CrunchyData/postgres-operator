@@ -16,9 +16,12 @@ package cmd
 */
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -293,6 +296,9 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.PodAntiAffinityPgBackRest = PodAntiAffinityPgBackRest
 	r.PodAntiAffinityPgBouncer = PodAntiAffinityPgBouncer
 	r.BackrestConfig = BackrestConfig
+	r.BackrestGCSBucket = BackrestGCSBucket
+	r.BackrestGCSEndpoint = BackrestGCSEndpoint
+	r.BackrestGCSKeyType = BackrestGCSKeyType
 	r.BackrestS3CASecretName = BackrestS3CASecretName
 	r.BackrestS3Key = BackrestS3Key
 	r.BackrestS3KeySecret = BackrestS3KeySecret
@@ -354,6 +360,28 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 		} else {
 			r.BackrestS3VerifyTLS = msgs.UpdateBackrestS3VerifyTLSDisable
 		}
+	}
+
+	// r.BackrestGCSKey = BackrestGCSKey
+	// if a GCS key is provided, it is a path to the file, so we need to see if
+	// the file exists. and if it does, load it in
+	if BackrestGCSKey != "" {
+		gcsKeyFile, err := filepath.Abs(BackrestGCSKey)
+
+		if err != nil {
+			fmt.Println("invalid filename for --pgbackrest-gcs-key: ", err.Error())
+			os.Exit(1)
+		}
+
+		gcsKey, err := ioutil.ReadFile(gcsKeyFile)
+
+		if err != nil {
+			fmt.Println("could not read GCS Key from file: ", err.Error())
+			os.Exit(1)
+		}
+
+		// now we have a value that can be sent to the API server
+		r.BackrestGCSKey = base64.StdEncoding.EncodeToString(gcsKey)
 	}
 
 	// if the user provided resources for CPU or Memory, validate them to ensure

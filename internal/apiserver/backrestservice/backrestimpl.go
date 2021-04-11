@@ -52,6 +52,10 @@ var (
 	pgBackRestInfoCommand = []string{"pgbackrest", "info", "--output", "json"}
 )
 
+// repoTypeFlagGCS is used for getting the pgBackRest info for a repository that
+// is stored in GCS
+var repoTypeFlagGCS = []string{"--repo1-type", "gcs"}
+
 // repoTypeFlagS3 is used for getting the pgBackRest info for a repository that
 // is stored in S3
 var repoTypeFlagS3 = []string{"--repo1-type", "s3"}
@@ -405,8 +409,9 @@ func ShowBackrest(name, selector, ns string) msgs.ShowBackrestResponse {
 			return response
 		}
 
-		// so we potentially add two "pieces of detail" based on whether or not we
-		// have a local repository, a s3 repository, or both
+		// so we potentially add a few "pieces of detail" based on whether or not we
+		// have a local repository, s3 repository, or a gcs repository, or some
+		// permutation of them
 		storageTypes := c.Spec.BackrestStorageTypes
 		// if this happens to be empty, then the storage type is "posix"
 		if len(storageTypes) == 0 {
@@ -453,12 +458,16 @@ func getInfo(storageType crv1.BackrestStorageType, podname, ns string, verifyTLS
 
 	cmd := pgBackRestInfoCommand
 
-	if storageType == crv1.BackrestStorageTypeS3 {
+	switch storageType {
+	default: // no-op
+	case crv1.BackrestStorageTypeS3:
 		cmd = append(cmd, repoTypeFlagS3...)
 
 		if !verifyTLS {
 			cmd = append(cmd, noRepoS3VerifyTLS)
 		}
+	case crv1.BackrestStorageTypeGCS:
+		cmd = append(cmd, repoTypeFlagGCS...)
 	}
 
 	output, stderr, err := kubeapi.ExecToPodThroughAPI(apiserver.RESTConfig, apiserver.Clientset, cmd, containername, podname, ns, nil)

@@ -76,9 +76,9 @@ Have your PostgreSQL clusters deployed to [Kubernetes Nodes](https://kubernetes.
 
 Choose the type of backup (full, incremental, differential) and [how frequently you want it to occur](/architecture/disaster-recovery/#scheduling-backups) on each PostgreSQL cluster.
 
-#### Backup to S3
+#### Backup to S3 or GCS
 
-[Store your backups in Amazon S3](/architecture/disaster-recovery/#using-s3) or any object storage system that supports the S3 protocol. The PostgreSQL Operator can backup, restore, and create new clusters from these backups.
+[Store your backups in Amazon S3](/architecture/disaster-recovery/#using-s3), any object storage system that supports the S3 protocol, or [GCS](/architecture/disaster-recovery/#using-gcs). The PostgreSQL Operator can backup, restore, and create new clusters from these backups.
 
 #### Multi-Namespace Support
 

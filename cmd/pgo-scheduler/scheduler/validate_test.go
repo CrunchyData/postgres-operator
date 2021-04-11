@@ -85,6 +85,8 @@ func TestValidBackRestSchedule(t *testing.T) {
 		{"pgbackrest", "", "testlabel=label", "diff", "local", true},
 		{"pgbackrest", "testdeployment", "", "full", "s3", true},
 		{"pgbackrest", "", "testlabel=label", "diff", "s3", true},
+		{"pgbackrest", "testdeployment", "", "full", "gcs", true},
+		{"pgbackrest", "", "testlabel=label", "diff", "gcs", true},
 		{"pgbackrest", "", "", "", "local", false},
 		{"pgbackrest", "", "", "full", "local", false},
 		{"pgbackrest", "testdeployment", "", "", "local", false},

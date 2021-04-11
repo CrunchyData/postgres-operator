@@ -25,7 +25,10 @@ Operator.
 | `backrest_aws_s3_region` |  |  | Set to configure the *region* used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3. |
 | `backrest_aws_s3_secret` |  |  | Set to configure the *secret* used by pgBackRest with Amazon Web Service S3 for backups and restoration in S3. |
 | `backrest_aws_s3_uri_style` |  |  | Set to configure whether “host” or “path” style URIs will be used when connecting to S3. |
-| `backrest_aws_s3_verify_tls` |  |  | Set this value to true to enable TLS verification when making a pgBackRest connection to S3.f |
+| `backrest_aws_s3_verify_tls` |  |  | Set this value to true to enable TLS verification when making a pgBackRest connection to S3. |
+| `backrest_gcs_bucket` |  |  | Set to configure the *bucket* used by pgBackRest with Google Cloud Storage (GCS) for backups and restoration. |
+| `backrest_gcs_endpoint` |  |  | Set to configure the *endpoint* used by pgBackRest with Google Cloud Storage (GCS) for backups and restoration. |
+| `backrest_gcs_key_type` |  |  | Set to configure the *key type* used by pgBackRest with Google Cloud Storage (GCS) for backups and restoration. Can be `service` or `token`. Defaults to `service`. |
 | `backrest_port` | 2022 | **Required** | Defines the port where pgBackRest will run. |
 | `badger` | false | **Required** | Set to true enable pgBadger capabilities on all newly created clusters. This can be disabled by the client. |
 | `ccp_image_prefix` | registry.developers.crunchydata.com/crunchydata | **Required** | Configures the image prefix used when creating containers from Crunchy Container Suite. |

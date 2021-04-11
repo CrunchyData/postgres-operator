@@ -57,6 +57,7 @@ type backrestJobTemplateFields struct {
 	PgbackrestDBPath              string
 	PgbackrestRepo1Path           string
 	PgbackrestRepo1Type           crv1.BackrestStorageType
+	BackrestLocalAndGCSStorage    bool
 	BackrestLocalAndS3Storage     bool
 	PgbackrestS3VerifyTLS         string
 	PgbackrestRestoreVolumes      string
@@ -92,7 +93,7 @@ func Backrest(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) 
 	// is specified then this ensures that the stanza is created on the local
 	// repository only.
 	//
-	//The stanza for the S3 repo will have already been created by the cluster
+	//The stanza for the S3/GCS repo will have already been created by the cluster
 	// the standby is replicating from, and therefore does not need to be
 	// attempted again.
 	if cluster.Spec.Standby && cmd == crv1.PgtaskBackrestStanzaCreate {
@@ -117,6 +118,7 @@ func Backrest(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) 
 		PgbackrestRestoreVolumes:      "",
 		PgbackrestRestoreVolumeMounts: "",
 		PgbackrestRepo1Type:           repoType,
+		BackrestLocalAndGCSStorage:    operator.IsLocalAndGCSStorage(cluster),
 		BackrestLocalAndS3Storage:     operator.IsLocalAndS3Storage(cluster),
 		PgbackrestS3VerifyTLS:         task.Spec.Parameters[config.LABEL_BACKREST_S3_VERIFY_TLS],
 		Tolerations:                   util.GetTolerations(cluster.Spec.Tolerations),

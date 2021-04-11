@@ -72,7 +72,7 @@ func init() {
 	restoreCmd.Flags().StringVarP(&BackupPVC, "backup-pvc", "", "", "The PVC containing the pgdump to restore from.")
 	restoreCmd.Flags().StringVarP(&PGDumpDB, "pgdump-database", "d", "postgres", "The name of the database pgdump will restore.")
 	restoreCmd.Flags().StringVarP(&BackupType, "backup-type", "", "", "The type of backup to restore from, default is pgbackrest. Valid types are pgbackrest or pgdump.")
-	restoreCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use for a pgBackRest restore. Either \"posix\", \"s3\". (default \"posix\")")
+	restoreCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use for a pgBackRest restore. Either \"posix\", \"s3\", or \"gcs\". (default \"posix\")")
 }
 
 // restore ....

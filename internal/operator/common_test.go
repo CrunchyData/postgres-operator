@@ -86,6 +86,122 @@ func TestGetRepoType(t *testing.T) {
 	})
 }
 
+func TestIsLocalAndGCSStorage(t *testing.T) {
+	cluster := &crv1.Pgcluster{
+		Spec: crv1.PgclusterSpec{},
+	}
+
+	t.Run("empty list returns false", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = make([]crv1.BackrestStorageType, 0)
+
+		expected := false
+		actual := IsLocalAndGCSStorage(cluster)
+		if expected != actual {
+			t.Fatalf("expected %t, actual %t", expected, actual)
+		}
+	})
+
+	t.Run("posix only returns false", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{
+			crv1.BackrestStorageTypePosix,
+		}
+
+		expected := false
+		actual := IsLocalAndGCSStorage(cluster)
+		if expected != actual {
+			t.Fatalf("expected %t, actual %t", expected, actual)
+		}
+	})
+
+	t.Run("local only returns false", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{
+			crv1.BackrestStorageTypeLocal,
+		}
+
+		expected := false
+		actual := IsLocalAndGCSStorage(cluster)
+		if expected != actual {
+			t.Fatalf("expected %t, actual %t", expected, actual)
+		}
+	})
+
+	t.Run("s3 only returns false", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{
+			crv1.BackrestStorageTypeS3,
+		}
+
+		expected := false
+		actual := IsLocalAndGCSStorage(cluster)
+		if expected != actual {
+			t.Fatalf("expected %t, actual %t", expected, actual)
+		}
+	})
+
+	t.Run("gcs only returns false", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{
+			crv1.BackrestStorageTypeGCS,
+		}
+
+		expected := false
+		actual := IsLocalAndGCSStorage(cluster)
+		if expected != actual {
+			t.Fatalf("expected %t, actual %t", expected, actual)
+		}
+	})
+
+	t.Run("posix and s3 returns false", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{
+			crv1.BackrestStorageTypePosix,
+			crv1.BackrestStorageTypeS3,
+		}
+
+		expected := false
+		actual := IsLocalAndGCSStorage(cluster)
+		if expected != actual {
+			t.Fatalf("expected %t, actual %t", expected, actual)
+		}
+	})
+
+	t.Run("local and s3 returns false", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{
+			crv1.BackrestStorageTypeLocal,
+			crv1.BackrestStorageTypeS3,
+		}
+
+		expected := false
+		actual := IsLocalAndGCSStorage(cluster)
+		if expected != actual {
+			t.Fatalf("expected %t, actual %t", expected, actual)
+		}
+	})
+
+	t.Run("posix and gcs returns true", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{
+			crv1.BackrestStorageTypePosix,
+			crv1.BackrestStorageTypeGCS,
+		}
+
+		expected := true
+		actual := IsLocalAndGCSStorage(cluster)
+		if expected != actual {
+			t.Fatalf("expected %t, actual %t", expected, actual)
+		}
+	})
+
+	t.Run("local and gcs returns true", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{
+			crv1.BackrestStorageTypeLocal,
+			crv1.BackrestStorageTypeGCS,
+		}
+
+		expected := true
+		actual := IsLocalAndGCSStorage(cluster)
+		if expected != actual {
+			t.Fatalf("expected %t, actual %t", expected, actual)
+		}
+	})
+}
+
 func TestIsLocalAndS3Storage(t *testing.T) {
 	cluster := &crv1.Pgcluster{
 		Spec: crv1.PgclusterSpec{},
@@ -137,6 +253,18 @@ func TestIsLocalAndS3Storage(t *testing.T) {
 		}
 	})
 
+	t.Run("gcs only returns false", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{
+			crv1.BackrestStorageTypeGCS,
+		}
+
+		expected := false
+		actual := IsLocalAndS3Storage(cluster)
+		if expected != actual {
+			t.Fatalf("expected %t, actual %t", expected, actual)
+		}
+	})
+
 	t.Run("posix and s3 returns true", func(t *testing.T) {
 		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{
 			crv1.BackrestStorageTypePosix,
@@ -157,6 +285,32 @@ func TestIsLocalAndS3Storage(t *testing.T) {
 		}
 
 		expected := true
+		actual := IsLocalAndS3Storage(cluster)
+		if expected != actual {
+			t.Fatalf("expected %t, actual %t", expected, actual)
+		}
+	})
+
+	t.Run("posix and gcs returns false", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{
+			crv1.BackrestStorageTypePosix,
+			crv1.BackrestStorageTypeGCS,
+		}
+
+		expected := false
+		actual := IsLocalAndS3Storage(cluster)
+		if expected != actual {
+			t.Fatalf("expected %t, actual %t", expected, actual)
+		}
+	})
+
+	t.Run("local and gcs returns false", func(t *testing.T) {
+		cluster.Spec.BackrestStorageTypes = []crv1.BackrestStorageType{
+			crv1.BackrestStorageTypeLocal,
+			crv1.BackrestStorageTypeGCS,
+		}
+
+		expected := false
 		actual := IsLocalAndS3Storage(cluster)
 		if expected != actual {
 			t.Fatalf("expected %t, actual %t", expected, actual)

@@ -74,10 +74,10 @@ Have your PostgreSQL clusters deployed to [Kubernetes Nodes][k8s-nodes] of your 
 
 Choose the type of backup (full, incremental, differential) and [how frequently you want it to occur][disaster-recovery-scheduling] on each PostgreSQL cluster.
 
-#### Backup to S3
+#### Backup to S3 or GCS
 
-[Store your backups in Amazon S3][disaster-recovery-s3] or any object storage system that supports
-the S3 protocol. The PostgreSQL Operator can backup, restore, and create new clusters from these backups.
+[Store your backups in Amazon S3][disaster-recovery-s3], any object storage system that supports
+the S3 protocol, or [GCS][disaster-recovery-gcs]. The PostgreSQL Operator can backup, restore, and create new clusters from these backups.
 
 #### Multi-Namespace Support
 
@@ -107,6 +107,7 @@ deployments, including:
 
 [disaster-recovery]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/
 [disaster-recovery-s3]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/#using-s3
+[disaster-recovery-gcs]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/#using-gcs
 [disaster-recovery-scheduling]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/disaster-recovery/#scheduling-backups
 [high-availability]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/
 [high-availability-node-affinity]: https://access.crunchydata.com/documentation/postgres-operator/latest/architecture/high-availability/#node-affinity

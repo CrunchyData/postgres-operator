@@ -113,15 +113,21 @@ type CreateClusterRequest struct {
 	PodAntiAffinityPgBouncer  string
 	SyncReplication           *bool
 	BackrestConfig            string
-	BackrestS3Key             string
-	BackrestS3KeySecret       string
-	BackrestS3Bucket          string
-	BackrestS3Region          string
-	BackrestS3Endpoint        string
-	BackrestS3URIStyle        string
-	BackrestS3VerifyTLS       UpdateBackrestS3VerifyTLS
-	Standby                   bool
-	BackrestRepoPath          string
+	BackrestGCSBucket         string
+	BackrestGCSEndpoint       string
+	// BackrestGCSKey is a standard base64 encoded string that contains the
+	// information found in a GCS key (typically a JSON file)
+	BackrestGCSKey      string
+	BackrestGCSKeyType  string
+	BackrestS3Key       string
+	BackrestS3KeySecret string
+	BackrestS3Bucket    string
+	BackrestS3Region    string
+	BackrestS3Endpoint  string
+	BackrestS3URIStyle  string
+	BackrestS3VerifyTLS UpdateBackrestS3VerifyTLS
+	Standby             bool
+	BackrestRepoPath    string
 
 	// allow the user to set custom sizes for PVCs
 	// PVCSize applies to the primary/replica storage specs

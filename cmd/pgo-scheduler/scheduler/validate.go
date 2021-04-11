@@ -95,7 +95,7 @@ func ValidateBackRestSchedule(scheduleType, deployment, label, backupType, stora
 			return fmt.Errorf("pgBackRest Backup Type invalid: %s", backupType)
 		}
 
-		validStorageTypes := []string{"local", "s3"}
+		validStorageTypes := []string{"local", "s3", "gcs"}
 		for _, sType := range validStorageTypes {
 			if storageType == sType {
 				valid = true

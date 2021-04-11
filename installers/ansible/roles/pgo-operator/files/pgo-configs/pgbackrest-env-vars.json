@@ -46,3 +46,7 @@
   "name": "PGHA_PGBACKREST_LOCAL_S3_STORAGE",
   "value": "{{.PgbackrestLocalAndS3Storage}}"
 },
+{
+  "name": "PGHA_PGBACKREST_LOCAL_GCS_STORAGE",
+  "value": "{{.PgbackrestLocalAndGCSStorage}}"
+},

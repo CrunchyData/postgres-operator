@@ -234,15 +234,17 @@ func getBootstrapJobFields(clientset kubeapi.Interface,
 	}
 	bootstrapFields.PgbackrestEnvVars = bootstrapBackrestVars
 
-	// if an s3 restore is detected, override or set the pgbackrest S3 env vars, otherwise do
-	// not set the s3 env vars at all
-	s3Restore := backrest.S3RepoTypeCLIOptionExists(cluster.Spec.PGDataSource.RestoreOpts)
-	if s3Restore {
-		// Now override any backrest S3 env vars for the bootstrap job
+	// if an s3 or gcs restore is detected, override or set the pgbackrest S3/GCS
+	// env vars, otherwise do not set the s3/gcs env vars at all
+	bootstrapFields.PgbackrestGCSEnvVars = ""
+	bootstrapFields.PgbackrestS3EnvVars = ""
+
+	if backrest.S3RepoTypeCLIOptionExists(cluster.Spec.PGDataSource.RestoreOpts) {
 		bootstrapFields.PgbackrestS3EnvVars = operator.GetPgbackrestBootstrapS3EnvVars(
 			cluster.Spec.PGDataSource.RestoreFrom, bootstrapSecret)
-	} else {
-		bootstrapFields.PgbackrestS3EnvVars = ""
+	} else if backrest.GCSRepoTypeCLIOptionExists(cluster.Spec.PGDataSource.RestoreOpts) {
+		bootstrapFields.PgbackrestGCSEnvVars = operator.GetPgbackrestBootstrapGCSEnvVars(
+			cluster.Spec.PGDataSource.RestoreFrom, bootstrapSecret)
 	}
 
 	return bootstrapFields, nil
@@ -330,6 +332,7 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 		ScopeLabel:                config.LABEL_PGHA_SCOPE,
 		PgbackrestEnvVars:         operator.GetPgbackrestEnvVars(cl, cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY], cl.Spec.Port),
 		PgbackrestS3EnvVars:       operator.GetPgbackrestS3EnvVars(clientset, *cl),
+		PgbackrestGCSEnvVars:      operator.GetPgbackrestGCSEnvVars(clientset, *cl),
 		ReplicaReinitOnStartFail:  !operator.Pgo.Cluster.DisableReplicaStartFailReinit,
 		SyncReplication:           operator.GetSyncReplication(cl.Spec.SyncReplication),
 		Tablespaces:               operator.GetTablespaceNames(cl.Spec.TablespaceMounts),
@@ -472,6 +475,7 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 		ScopeLabel:                config.LABEL_PGHA_SCOPE,
 		PgbackrestEnvVars:         operator.GetPgbackrestEnvVars(cluster, replica.Spec.Name, cluster.Spec.Port),
 		PgbackrestS3EnvVars:       operator.GetPgbackrestS3EnvVars(clientset, *cluster),
+		PgbackrestGCSEnvVars:      operator.GetPgbackrestGCSEnvVars(clientset, *cluster),
 		ReplicaReinitOnStartFail:  !operator.Pgo.Cluster.DisableReplicaStartFailReinit,
 		SyncReplication:           operator.GetSyncReplication(cluster.Spec.SyncReplication),
 		Tablespaces:               operator.GetTablespaceNames(cluster.Spec.TablespaceMounts),

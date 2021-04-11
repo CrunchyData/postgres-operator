@@ -201,11 +201,12 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 	_, _ = clusteroperator.ScaleClusterDeployments(c.Client, *cluster, 1, false, true, false, false)
 
 	// Proceed with stanza-creation of this is not a standby cluster, or if its
-	// a standby cluster that does not have "s3" storage only enabled.
+	// a standby cluster that does not have s3/gcs storage only enabled.
 	// If this is a standby cluster and the pgBackRest storage type is set
-	// to "s3" for S3 storage only, set the cluster to an initialized status.
+	// to "s3" or "gcs" storage only, set the cluster to an initialized status.
 	if !(len(cluster.Spec.BackrestStorageTypes) == 1 &&
-		cluster.Spec.BackrestStorageTypes[0] == crv1.BackrestStorageTypeS3) {
+		(cluster.Spec.BackrestStorageTypes[0] == crv1.BackrestStorageTypeS3 ||
+			cluster.Spec.BackrestStorageTypes[0] == crv1.BackrestStorageTypeGCS)) {
 		// first try to delete any existing stanza create task and/or job
 		if err := c.Client.CrunchydataV1().Pgtasks(namespace).
 			Delete(ctx, fmt.Sprintf("%s-%s", clusterName, crv1.PgtaskBackrestStanzaCreate),
@@ -226,7 +227,7 @@ func (c *Controller) handleStandbyInit(cluster *crv1.Pgcluster) error {
 			log.Error(err)
 		}
 
-		// If a standby cluster with s3 only initialize the creation of any replicas.  Replicas
+		// If a standby cluster with s3/gcs only initialize the creation of any replicas.  Replicas
 		// can be initialized right away, i.e. there is no dependency on
 		// stanza-creation and/or the creation of any backups, since the replicas
 		// will be generated from the pgBackRest repository of an external PostgreSQL

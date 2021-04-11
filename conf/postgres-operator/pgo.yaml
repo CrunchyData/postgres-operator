@@ -13,6 +13,9 @@ Cluster:
   Replicas:  0
   ServiceType:  ClusterIP
   BackrestPort:  2022
+  BackrestGCSBucket:
+  BackrestGCSEndpoint:
+  BackrestGCSKeyType:
   BackrestS3Bucket:
   BackrestS3Endpoint:
   BackrestS3Region:

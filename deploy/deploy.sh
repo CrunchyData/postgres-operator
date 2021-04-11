@@ -45,12 +45,14 @@ fi
 # credentials for pgbackrest sshd
 pgbackrest_aws_s3_key=$(awsKeySecret "aws-s3-key")
 pgbackrest_aws_s3_key_secret=$(awsKeySecret "aws-s3-key-secret")
+pgbackrest_gcs_key=$(awsKeySecret "gcs-key")
 
-if [[ ! -z $pgbackrest_aws_s3_key ]] || [[ ! -z $pgbackrest_aws_s3_key_secret ]]
+if [[ ! -z $pgbackrest_aws_s3_key ]] || [[ ! -z $pgbackrest_aws_s3_key_secret ]] || [[ ! -z $pgbackrest_gcs_key ]]
 then
 	$PGO_CMD --namespace=$PGO_OPERATOR_NAMESPACE create secret generic pgo-backrest-repo-config \
 		--from-literal=aws-s3-key="${pgbackrest_aws_s3_key}" \
-		--from-literal=aws-s3-key-secret="${pgbackrest_aws_s3_key_secret}"
+		--from-literal=aws-s3-key-secret="${pgbackrest_aws_s3_key_secret}" \
+		--from-literal=gcs-key="${pgbackrest_gcs_key}"
 fi
 
 #
