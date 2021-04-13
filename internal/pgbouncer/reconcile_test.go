@@ -82,11 +82,12 @@ func TestPod(t *testing.T) {
 	t.Parallel()
 
 	cluster := new(v1beta1.PostgresCluster)
-	clusterConfigMap := new(corev1.ConfigMap)
-	clusterSecret := new(corev1.Secret)
+	configMap := new(corev1.ConfigMap)
+	primaryCertificate := new(corev1.SecretProjection)
+	secret := new(corev1.Secret)
 	pod := new(corev1.PodSpec)
 
-	call := func() { Pod(cluster, clusterConfigMap, clusterSecret, pod) }
+	call := func() { Pod(cluster, configMap, primaryCertificate, secret, pod) }
 
 	t.Run("Disabled", func(t *testing.T) {
 		before := pod.DeepCopy()
@@ -123,7 +124,14 @@ containers:
   - mountPath: /etc/pgbouncer
     name: pgbouncer-config
     readOnly: true
+  - mountPath: /etc/pgbouncer/~postgres-operator-backend
+    name: pgbouncer-backend-tls
+    readOnly: true
 volumes:
+- name: pgbouncer-backend-tls
+  projected:
+    sources:
+    - secret: {}
 - name: pgbouncer-config
   projected:
     sources:

@@ -230,9 +230,9 @@ func generateVerifier() ([]byte, error) {
 }
 
 func postgresqlHBA() postgres.HostBasedAuthentication {
-	// PgBouncer connects over the network using an MD5 password.
+	// PgBouncer connects over TLS using an MD5 password.
 	// NOTE(cbandy): It is not possible to use a SCRAM password for the
 	// "auth_user" account.
 	// - https://github.com/pgbouncer/pgbouncer/issues/508#issuecomment-713339834
-	return *postgres.NewHBA().User(postgresqlUser).TCP().Method("md5")
+	return *postgres.NewHBA().User(postgresqlUser).TLS().Method("md5")
 }

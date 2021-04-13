@@ -67,6 +67,8 @@ auth_user = _crunchypgbouncer
 conffile = /etc/pgbouncer/~postgres-operator.ini
 listen_addr = *
 listen_port = 8888
+server_tls_ca_file = /etc/pgbouncer/~postgres-operator-backend/ca.crt
+server_tls_sslmode = verify-full
 unix_socket_dir = 
 	`, "\t\n")+"\n")
 }

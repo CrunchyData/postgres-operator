@@ -66,14 +66,33 @@ func Secret(
 // Pod populates a PodSpec with the container and volumes needed to run PgBouncer.
 func Pod(
 	inCluster *v1beta1.PostgresCluster,
-	inClusterConfigMap *corev1.ConfigMap,
-	inClusterSecret *corev1.Secret,
+	inConfigMap *corev1.ConfigMap,
+	inPostgreSQLCertificate *corev1.SecretProjection,
+	inSecret *corev1.Secret,
 	outPod *corev1.PodSpec,
 ) {
 	if inCluster.Spec.Proxy == nil || inCluster.Spec.Proxy.PGBouncer == nil {
 		// PgBouncer is disabled; there is nothing to do.
 		return
 	}
+
+	backend := corev1.Volume{Name: "pgbouncer-backend-tls"}
+	backend.Projected = &corev1.ProjectedVolumeSource{
+		Sources: []corev1.VolumeProjection{
+			backendAuthority(inPostgreSQLCertificate),
+		},
+	}
+
+	config := corev1.Volume{Name: "pgbouncer-config"}
+	config.Projected = new(corev1.ProjectedVolumeSource)
+
+	// Add our projections after those specified in the CR. Items later in the
+	// list take precedence over earlier items (that is, last write wins).
+	// - https://docs.k8s.io/concepts/storage/volumes/#projected
+	config.Projected.Sources = append(append(
+		// TODO(cbandy): User config will come from the spec.
+		config.Projected.Sources, []corev1.VolumeProjection(nil)...),
+		podConfigFiles(inConfigMap, inSecret)...)
 
 	container := corev1.Container{
 		Name: naming.ContainerPGBouncer,
@@ -98,28 +117,24 @@ func Pod(
 		RunAsNonRoot:             &True,
 	}
 
-	volume := corev1.Volume{Name: "pgbouncer-config"}
-	volume.Projected = new(corev1.ProjectedVolumeSource)
-
-	// Add our projections after those specified in the CR. Items later in the
-	// list take precedence over earlier items (that is, last write wins).
-	// - https://docs.k8s.io/concepts/storage/volumes/#projected
-	volume.Projected.Sources = append(append(
-		// TODO(cbandy): User config will come from the spec.
-		volume.Projected.Sources, []corev1.VolumeProjection(nil)...),
-		podConfigFiles(inClusterConfigMap, inClusterSecret)...)
-
-	container.VolumeMounts = []corev1.VolumeMount{{
-		Name:      volume.Name,
-		MountPath: configDirectory,
-		ReadOnly:  true,
-	}}
+	container.VolumeMounts = []corev1.VolumeMount{
+		{
+			Name:      config.Name,
+			MountPath: configDirectory,
+			ReadOnly:  true,
+		},
+		{
+			Name:      backend.Name,
+			MountPath: certBackendDirectory,
+			ReadOnly:  true,
+		},
+	}
 
 	// TODO container.LivenessProbe?
 	// TODO container.ReadinessProbe?
 
 	outPod.Containers = []corev1.Container{container}
-	outPod.Volumes = []corev1.Volume{volume}
+	outPod.Volumes = []corev1.Volume{backend, config}
 }
 
 // PostgreSQL populates outHBAs with any records needed to run PgBouncer.

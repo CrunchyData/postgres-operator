@@ -138,6 +138,10 @@ func clusterINI(cluster *v1beta1.PostgresCluster) string {
 		"listen_addr": "*",
 		"listen_port": fmt.Sprint(pgBouncerPort),
 
+		// Require TLS encryption on connections to PostgreSQL.
+		"server_tls_sslmode": "verify-full",
+		"server_tls_ca_file": certBackendAuthorityAbsolutePath,
+
 		// Disable Unix sockets to keep the filesystem read-only.
 		"unix_socket_dir": "",
 	}

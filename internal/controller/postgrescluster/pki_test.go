@@ -381,19 +381,15 @@ func TestReconcileCerts(t *testing.T) {
 		initialRoot, err := r.reconcileRootCertificate(ctx, cluster1)
 		assert.NilError(t, err)
 
-		// get patroni leader service
-		patroniLeaderService, err := r.reconcilePatroniLeaderLease(ctx, cluster1)
-		assert.NilError(t, err)
-
 		t.Run("check standard secret projection", func(t *testing.T) {
-			secretCertProj, err := r.reconcileClusterCertificate(ctx, initialRoot, cluster1, patroniLeaderService.Name)
+			secretCertProj, err := r.reconcileClusterCertificate(ctx, initialRoot, cluster1)
 			assert.NilError(t, err)
 
 			assert.DeepEqual(t, testSecretProjection, secretCertProj)
 		})
 
 		t.Run("check custom secret projection", func(t *testing.T) {
-			customSecretCertProj, err := r.reconcileClusterCertificate(ctx, initialRoot, cluster2, patroniLeaderService.Name)
+			customSecretCertProj, err := r.reconcileClusterCertificate(ctx, initialRoot, cluster2)
 			assert.NilError(t, err)
 
 			assert.DeepEqual(t, customSecretProjection, customSecretCertProj)
@@ -410,7 +406,7 @@ func TestReconcileCerts(t *testing.T) {
 			testSecretProjection := clusterCertSecretProjection(testSecret)
 
 			// reconcile the secret project using the normal process
-			customSecretCertProj, err := r.reconcileClusterCertificate(ctx, initialRoot, cluster2, patroniLeaderService.Name)
+			customSecretCertProj, err := r.reconcileClusterCertificate(ctx, initialRoot, cluster2)
 			assert.NilError(t, err)
 
 			// results should be the same
@@ -440,7 +436,7 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			// pass in the new root, which should result in a new cluster cert
-			_, err = r.reconcileClusterCertificate(ctx, returnedRoot, cluster1, patroniLeaderService.Name)
+			_, err = r.reconcileClusterCertificate(ctx, returnedRoot, cluster1)
 			assert.NilError(t, err)
 
 			// get the new cluster cert secret

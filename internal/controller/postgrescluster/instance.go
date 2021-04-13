@@ -144,6 +144,7 @@ func (r *Reconciler) reconcileInstanceSet(
 	rootCA *pki.RootCertificateAuthority,
 	clusterPodService *v1.Service,
 	patroniLeaderService *v1.Service,
+	primaryCertificate *v1.SecretProjection,
 ) (*appsv1.StatefulSetList, error) {
 	log := logging.FromContext(ctx)
 
@@ -180,7 +181,7 @@ func (r *Reconciler) reconcileInstanceSet(
 		if err == nil {
 			err = r.reconcileInstance(
 				ctx, cluster, set, clusterConfigMap, rootCA, clusterPodService,
-				patroniLeaderService, &instances.Items[i])
+				patroniLeaderService, primaryCertificate, &instances.Items[i])
 		}
 	}
 	if err == nil {
@@ -202,6 +203,7 @@ func (r *Reconciler) reconcileInstance(
 	rootCA *pki.RootCertificateAuthority,
 	clusterPodService *v1.Service,
 	patroniLeaderService *v1.Service,
+	primaryCertificate *v1.SecretProjection,
 	instance *appsv1.StatefulSet,
 ) error {
 	log := logging.FromContext(ctx).WithValues("instance", instance.Name)
@@ -300,7 +302,6 @@ func (r *Reconciler) reconcileInstance(
 		instanceConfigMap        *v1.ConfigMap
 		instanceCertificates     *v1.Secret
 		clusterPatroniAuthSecret *v1.Secret
-		clusterCertificate       *v1.SecretProjection
 	)
 
 	if err == nil {
@@ -312,10 +313,6 @@ func (r *Reconciler) reconcileInstance(
 	}
 	if err == nil {
 		clusterPatroniAuthSecret, err = r.reconcilePatroniAuthSecret(ctx, cluster)
-	}
-	if err == nil {
-		clusterCertificate, err = r.reconcileClusterCertificate(ctx,
-			rootCA, cluster, patroniLeaderService.Name)
 	}
 	if err == nil {
 		err = r.reconcilePGDATAVolume(ctx, cluster, spec, instance)
@@ -346,7 +343,7 @@ func (r *Reconciler) reconcileInstance(
 	}
 	// add the cluster certificate secret volume to the pod to enable Postgres TLS connections
 	if err := postgres.AddCertVolumeToPod(cluster, &instance.Spec.Template, naming.ContainerDatabase,
-		clusterCertificate); err != nil {
+		primaryCertificate); err != nil {
 		return errors.WithStack(err)
 	}
 	// add an emptyDir volume to the PodTemplateSpec and an associated '/tmp' volume mount to

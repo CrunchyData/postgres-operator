@@ -150,6 +150,7 @@ func (r *Reconciler) Reconcile(
 		clusterConfigMap     *v1.ConfigMap
 		clusterPodService    *v1.Service
 		patroniLeaderService *v1.Service
+		primaryCertificate   *v1.SecretProjection
 		pgUser               *v1.Secret
 		rootCA               *pki.RootCertificateAuthority
 		err                  error
@@ -203,6 +204,9 @@ func (r *Reconciler) Reconcile(
 		err = r.reconcileClusterPrimaryService(ctx, cluster, patroniLeaderService)
 	}
 	if err == nil {
+		primaryCertificate, err = r.reconcileClusterCertificate(ctx, rootCA, cluster)
+	}
+	if err == nil {
 		err = r.reconcilePatroniDistributedConfiguration(ctx, cluster)
 	}
 	if err == nil {
@@ -215,7 +219,8 @@ func (r *Reconciler) Reconcile(
 		if err == nil {
 			instanceSet, err = r.reconcileInstanceSet(
 				ctx, cluster, &cluster.Spec.InstanceSets[i],
-				clusterConfigMap, rootCA, clusterPodService, patroniLeaderService)
+				clusterConfigMap, rootCA, clusterPodService, patroniLeaderService,
+				primaryCertificate)
 			for _, instance := range instanceSet.Items {
 				instancesNames = append(instancesNames, instance.GetName())
 			}
@@ -226,7 +231,7 @@ func (r *Reconciler) Reconcile(
 		err = updateResult(r.reconcilePGBackRest(ctx, cluster, instancesNames))
 	}
 	if err == nil {
-		err = r.reconcilePGBouncer(ctx, cluster)
+		err = r.reconcilePGBouncer(ctx, cluster, primaryCertificate)
 	}
 
 	// TODO reconcile pgadmin4

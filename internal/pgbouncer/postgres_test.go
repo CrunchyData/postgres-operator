@@ -194,5 +194,5 @@ COMMIT;`))
 }
 
 func TestPostgreSQLHBA(t *testing.T) {
-	assert.Equal(t, postgresqlHBA().String(), `host all "_crunchypgbouncer" all md5`)
+	assert.Equal(t, postgresqlHBA().String(), `hostssl all "_crunchypgbouncer" all md5`)
 }
