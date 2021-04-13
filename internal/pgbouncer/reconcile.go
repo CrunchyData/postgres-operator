@@ -16,9 +16,13 @@
 package pgbouncer
 
 import (
+	"context"
+
+	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -41,10 +45,18 @@ func ConfigMap(
 }
 
 // Secret populates the PgBouncer Secret.
-func Secret(
+func Secret(ctx context.Context,
+	inCluster *v1beta1.PostgresCluster,
+	inRoot *pki.RootCertificateAuthority,
 	inSecret *corev1.Secret,
+	inService *corev1.Service,
 	outSecret *corev1.Secret,
 ) error {
+	if inCluster.Spec.Proxy == nil || inCluster.Spec.Proxy.PGBouncer == nil {
+		// PgBouncer is disabled; there is nothing to do.
+		return nil
+	}
+
 	var err error
 	if outSecret.Data == nil {
 		outSecret.Data = make(map[string][]byte)
@@ -58,6 +70,35 @@ func Secret(
 	if err == nil {
 		outSecret.Data[authFileSecretKey] = authFileContents(verifier)
 		outSecret.Data[credentialSecretKey] = verifier
+	}
+
+	if inCluster.Spec.Proxy.PGBouncer.CustomTLSSecret == nil {
+		leaf := pki.NewLeafCertificate("", nil, nil)
+		leaf.DNSNames = naming.ServiceDNSNames(ctx, inService)
+		leaf.CommonName = leaf.DNSNames[0] // FQDN
+
+		if err == nil {
+			var parse error
+			if data, ok := inSecret.Data[certFrontendSecretKey]; parse == nil && ok {
+				leaf.Certificate, parse = pki.ParseCertificate(data)
+			}
+			if data, ok := inSecret.Data[certFrontendPrivateKeySecretKey]; parse == nil && ok {
+				leaf.PrivateKey, parse = pki.ParsePrivateKey(data)
+			}
+			if parse != nil || pki.LeafCertIsBad(ctx, leaf, inRoot, inCluster.Namespace) {
+				err = errors.WithStack(leaf.Generate(inRoot))
+			}
+		}
+
+		if err == nil {
+			outSecret.Data[certFrontendAuthoritySecretKey], err = inRoot.Certificate.MarshalText()
+		}
+		if err == nil {
+			outSecret.Data[certFrontendPrivateKeySecretKey], err = leaf.PrivateKey.MarshalText()
+		}
+		if err == nil {
+			outSecret.Data[certFrontendSecretKey], err = leaf.Certificate.MarshalText()
+		}
 	}
 
 	return err
@@ -80,6 +121,13 @@ func Pod(
 	backend.Projected = &corev1.ProjectedVolumeSource{
 		Sources: []corev1.VolumeProjection{
 			backendAuthority(inPostgreSQLCertificate),
+		},
+	}
+
+	frontend := corev1.Volume{Name: "pgbouncer-frontend-tls"}
+	frontend.Projected = &corev1.ProjectedVolumeSource{
+		Sources: []corev1.VolumeProjection{
+			frontendCertificate(inCluster.Spec.Proxy.PGBouncer.CustomTLSSecret, inSecret),
 		},
 	}
 
@@ -128,13 +176,18 @@ func Pod(
 			MountPath: certBackendDirectory,
 			ReadOnly:  true,
 		},
+		{
+			Name:      frontend.Name,
+			MountPath: certFrontendDirectory,
+			ReadOnly:  true,
+		},
 	}
 
 	// TODO container.LivenessProbe?
 	// TODO container.ReadinessProbe?
 
 	outPod.Containers = []corev1.Container{container}
-	outPod.Volumes = []corev1.Volume{backend, config}
+	outPod.Volumes = []corev1.Volume{backend, config, frontend}
 }
 
 // PostgreSQL populates outHBAs with any records needed to run PgBouncer.

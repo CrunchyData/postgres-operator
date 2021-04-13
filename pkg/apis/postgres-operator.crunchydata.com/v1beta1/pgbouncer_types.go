@@ -31,6 +31,13 @@ type PGBouncerPodSpec struct {
 	// +optional
 	//Configuration []corev1.VolumeProjection `json:"configuration,omitempty"`
 
+	// A secret projection containing a certificate and key with which to encrypt
+	// connections to PgBouncer. The "tls.crt", "tls.key", and "ca.crt" paths must
+	// be PEM-encoded certificates and keys.
+	// More info: https://kubernetes.io/docs/concepts/configuration/secret/#projection-of-secret-keys-to-specific-paths
+	// +optional
+	CustomTLSSecret *corev1.SecretProjection `json:"customTLSSecret,omitempty"`
+
 	// TODO(cbandy): Make this optional. Derive the name from somewhere else?
 
 	// Name of a container image that can run PgBouncer.
@@ -43,15 +50,15 @@ type PGBouncerPodSpec struct {
 	// +kubebuilder:validation:Minimum=1024
 	Port *int32 `json:"port,omitempty"`
 
-	// Tolerations of a PgBouncer pod.
-	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
-	// +optional
-	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
-
 	// Compute resources of a PgBouncer container.
 	// More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers
 	// +optional
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// Tolerations of a PgBouncer pod.
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration
+	// +optional
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
 }
 
 func (s *PGBouncerPodSpec) Default() {

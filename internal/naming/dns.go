@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // InstancePodDNSNames returns the possible DNS names for instance. The first
@@ -40,6 +41,19 @@ func InstancePodDNSNames(ctx context.Context, instance *appsv1.StatefulSet) []st
 		name + "." + namespace + ".svc",
 		name + "." + namespace,
 		name,
+	}
+}
+
+// ServiceDNSNames returns the possible DNS names for service. The first name
+// is the fully qualified domain name (FQDN).
+func ServiceDNSNames(ctx context.Context, service *corev1.Service) []string {
+	domain := kubernetesClusterDomain(ctx)
+
+	return []string{
+		service.Name + "." + service.Namespace + ".svc." + domain,
+		service.Name + "." + service.Namespace + ".svc",
+		service.Name + "." + service.Namespace,
+		service.Name,
 	}
 }
 

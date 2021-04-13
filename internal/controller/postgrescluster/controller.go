@@ -231,7 +231,7 @@ func (r *Reconciler) Reconcile(
 		err = updateResult(r.reconcilePGBackRest(ctx, cluster, instancesNames))
 	}
 	if err == nil {
-		err = r.reconcilePGBouncer(ctx, cluster, primaryCertificate)
+		err = r.reconcilePGBouncer(ctx, cluster, primaryCertificate, rootCA)
 	}
 
 	// TODO reconcile pgadmin4

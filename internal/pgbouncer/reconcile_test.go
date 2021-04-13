@@ -16,6 +16,7 @@
 package pgbouncer
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -24,6 +25,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
+	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -53,16 +55,21 @@ func TestConfigMap(t *testing.T) {
 func TestSecret(t *testing.T) {
 	t.Parallel()
 
+	ctx := context.Background()
 	cluster := new(v1beta1.PostgresCluster)
+	service := new(corev1.Service)
 	existing := new(corev1.Secret)
 	intent := new(corev1.Secret)
+
+	root := pki.NewRootCertificateAuthority()
+	assert.NilError(t, root.Generate())
 
 	cluster.Spec.Proxy = new(v1beta1.PostgresProxySpec)
 	cluster.Spec.Proxy.PGBouncer = new(v1beta1.PGBouncerPodSpec)
 	cluster.Default()
 
 	constant := existing.DeepCopy()
-	assert.NilError(t, Secret(existing, intent))
+	assert.NilError(t, Secret(ctx, cluster, root, existing, service, intent))
 	assert.DeepEqual(t, constant, existing)
 
 	// A password should be generated.
@@ -74,7 +81,7 @@ func TestSecret(t *testing.T) {
 	// Assuming the intent is written, no change when called again.
 	existing.Data = intent.Data
 	before := intent.DeepCopy()
-	assert.NilError(t, Secret(existing, intent))
+	assert.NilError(t, Secret(ctx, cluster, root, existing, service, intent))
 	assert.DeepEqual(t, before, intent)
 }
 
@@ -127,6 +134,9 @@ containers:
   - mountPath: /etc/pgbouncer/~postgres-operator-backend
     name: pgbouncer-backend-tls
     readOnly: true
+  - mountPath: /etc/pgbouncer/~postgres-operator-frontend
+    name: pgbouncer-frontend-tls
+    readOnly: true
 volumes:
 - name: pgbouncer-backend-tls
   projected:
@@ -143,6 +153,17 @@ volumes:
         items:
         - key: pgbouncer-users.txt
           path: ~postgres-operator/users.txt
+- name: pgbouncer-frontend-tls
+  projected:
+    sources:
+    - secret:
+        items:
+        - key: pgbouncer-frontend.ca-roots
+          path: ca.crt
+        - key: pgbouncer-frontend.key
+          path: tls.key
+        - key: pgbouncer-frontend.crt
+          path: tls.crt
 		`, "\t\n")+"\n"))
 
 		// No change when called again.
@@ -156,11 +177,18 @@ volumes:
 		cluster.Spec.Proxy.PGBouncer.Resources.Requests = corev1.ResourceList{
 			corev1.ResourceCPU: resource.MustParse("100m"),
 		}
+		cluster.Spec.Proxy.PGBouncer.CustomTLSSecret = &corev1.SecretProjection{
+			LocalObjectReference: corev1.LocalObjectReference{Name: "tls-name"},
+			Items: []corev1.KeyToPath{
+				{Key: "k1", Path: "p1"},
+			},
+		}
 
 		call()
 
-		assert.Assert(t, marshalContains(pod.Containers,
+		assert.Assert(t, marshalEquals(pod,
 			strings.Trim(`
+containers:
 - command:
   - pgbouncer
   - /etc/pgbouncer/~postgres-operator.ini
@@ -173,6 +201,45 @@ volumes:
   resources:
     requests:
       cpu: 100m
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgbouncer
+    name: pgbouncer-config
+    readOnly: true
+  - mountPath: /etc/pgbouncer/~postgres-operator-backend
+    name: pgbouncer-backend-tls
+    readOnly: true
+  - mountPath: /etc/pgbouncer/~postgres-operator-frontend
+    name: pgbouncer-frontend-tls
+    readOnly: true
+volumes:
+- name: pgbouncer-backend-tls
+  projected:
+    sources:
+    - secret: {}
+- name: pgbouncer-config
+  projected:
+    sources:
+    - configMap:
+        items:
+        - key: pgbouncer.ini
+          path: ~postgres-operator.ini
+    - secret:
+        items:
+        - key: pgbouncer-users.txt
+          path: ~postgres-operator/users.txt
+- name: pgbouncer-frontend-tls
+  projected:
+    sources:
+    - secret:
+        items:
+        - key: k1
+          path: p1
+        name: tls-name
 			`, "\t\n")+"\n"))
 	})
 }

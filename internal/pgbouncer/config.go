@@ -131,6 +131,12 @@ func clusterINI(cluster *v1beta1.PostgresCluster) string {
 		//"auth_type":     "hba",
 		//"admin_users": "pgbouncer",
 
+		// Require TLS encryption on client connections.
+		"client_tls_sslmode":   "require",
+		"client_tls_cert_file": certFrontendAbsolutePath,
+		"client_tls_key_file":  certFrontendPrivateKeyAbsolutePath,
+		"client_tls_ca_file":   certFrontendAuthorityAbsolutePath,
+
 		// Prevent the user from bypassing the main configuration file.
 		"conffile": iniFileAbsolutePath,
 

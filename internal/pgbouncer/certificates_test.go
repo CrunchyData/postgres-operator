@@ -40,3 +40,38 @@ secret:
   name: some-name
 	`, "\t\n")+"\n"))
 }
+
+func TestFrontendCertificate(t *testing.T) {
+	secret := new(corev1.Secret)
+	secret.Name = "op-secret"
+
+	t.Run("Generated", func(t *testing.T) {
+		assert.Assert(t, marshalEquals(frontendCertificate(nil, secret), strings.Trim(`
+secret:
+  items:
+  - key: pgbouncer-frontend.ca-roots
+    path: ca.crt
+  - key: pgbouncer-frontend.key
+    path: tls.key
+  - key: pgbouncer-frontend.crt
+    path: tls.crt
+  name: op-secret
+		`, "\t\n")+"\n"))
+	})
+
+	t.Run("Custom", func(t *testing.T) {
+		custom := new(corev1.SecretProjection)
+		custom.Name = "some-other"
+		custom.Items = []corev1.KeyToPath{
+			{Key: "any", Path: "thing"},
+		}
+
+		assert.Assert(t, marshalEquals(frontendCertificate(custom, secret), strings.Trim(`
+secret:
+  items:
+  - key: any
+    path: thing
+  name: some-other
+		`, "\t\n")+"\n"))
+	})
+}

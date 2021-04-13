@@ -31,6 +31,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgbouncer"
+	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -39,18 +40,19 @@ import (
 func (r *Reconciler) reconcilePGBouncer(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	primaryCertificate *corev1.SecretProjection,
+	root *pki.RootCertificateAuthority,
 ) error {
 	var (
 		configmap *corev1.ConfigMap
 		secret    *corev1.Secret
 	)
 
-	err := r.reconcilePGBouncerService(ctx, cluster)
+	service, err := r.reconcilePGBouncerService(ctx, cluster)
 	if err == nil {
 		configmap, err = r.reconcilePGBouncerConfigMap(ctx, cluster)
 	}
 	if err == nil {
-		secret, err = r.reconcilePGBouncerSecret(ctx, cluster)
+		secret, err = r.reconcilePGBouncerSecret(ctx, cluster, root, service)
 	}
 	if err == nil {
 		err = r.reconcilePGBouncerDeployment(ctx, cluster, primaryCertificate, configmap, secret)
@@ -199,6 +201,7 @@ func (r *Reconciler) reconcilePGBouncerInPostgreSQL(
 // reconcilePGBouncerSecret writes the Secret for a PgBouncer Pod.
 func (r *Reconciler) reconcilePGBouncerSecret(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
+	root *pki.RootCertificateAuthority, service *corev1.Service,
 ) (*corev1.Secret, error) {
 	existing := &corev1.Secret{ObjectMeta: naming.ClusterPGBouncer(cluster)}
 	err := errors.WithStack(
@@ -231,7 +234,7 @@ func (r *Reconciler) reconcilePGBouncerSecret(
 	}
 
 	if err == nil {
-		err = pgbouncer.Secret(existing, intent)
+		err = pgbouncer.Secret(ctx, cluster, root, existing, service, intent)
 	}
 	if err == nil {
 		err = errors.WithStack(r.apply(ctx, intent))
@@ -245,7 +248,7 @@ func (r *Reconciler) reconcilePGBouncerSecret(
 // reconcilePGBouncerService writes the Service that resolves to PgBouncer.
 func (r *Reconciler) reconcilePGBouncerService(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
-) error {
+) (*corev1.Service, error) {
 	service := &corev1.Service{ObjectMeta: naming.ClusterPGBouncer(cluster)}
 	service.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Service"))
 
@@ -257,7 +260,7 @@ func (r *Reconciler) reconcilePGBouncerService(
 		if err == nil {
 			err = errors.WithStack(r.Client.Delete(ctx, service))
 		}
-		return client.IgnoreNotFound(err)
+		return nil, client.IgnoreNotFound(err)
 	}
 
 	err := errors.WithStack(r.setControllerReference(cluster, service))
@@ -290,7 +293,7 @@ func (r *Reconciler) reconcilePGBouncerService(
 		err = errors.WithStack(r.apply(ctx, service))
 	}
 
-	return err
+	return service, err
 }
 
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;delete;patch
