@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
@@ -329,8 +330,7 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 	podSecurityContext := &v1.PodSecurityContext{SupplementalGroups: []int64{65534}}
 	// set fsGroups if not OpenShift
 	if postgresCluster.Spec.OpenShift == nil || !*postgresCluster.Spec.OpenShift {
-		fsGroup := int64(26)
-		podSecurityContext.FSGroup = &fsGroup
+		podSecurityContext.FSGroup = initialize.Int64(26)
 	}
 	repo.Spec.Template.Spec.SecurityContext = podSecurityContext
 

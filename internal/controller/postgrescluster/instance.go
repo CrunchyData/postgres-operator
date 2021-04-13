@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
@@ -237,7 +238,7 @@ func (r *Reconciler) reconcileInstance(
 
 		// Don't clutter the namespace with extra ControllerRevisions.
 		// The "controller-revision-hash" label still exists on the Pod.
-		instance.Spec.RevisionHistoryLimit = new(int32) // zero
+		instance.Spec.RevisionHistoryLimit = initialize.Int32(0)
 
 		// Give the Pod a stable DNS record based on its name.
 		// - https://docs.k8s.io/concepts/workloads/controllers/statefulset/#stable-network-id
@@ -249,11 +250,10 @@ func (r *Reconciler) reconcileInstance(
 		//instance.Spec.UpdateStrategy.Type = appsv1.OnDeleteStatefulSetStrategyType
 
 		// Match the existing replica count, if any.
-		instance.Spec.Replicas = new(int32)
 		if existing.Spec.Replicas != nil {
-			*instance.Spec.Replicas = *existing.Spec.Replicas
+			instance.Spec.Replicas = initialize.Int32(*existing.Spec.Replicas)
 		} else {
-			*instance.Spec.Replicas = 1 // TODO(cbandy): start at zero, maybe
+			instance.Spec.Replicas = initialize.Int32(1) // TODO(cbandy): start at zero, maybe
 		}
 
 		// Though we use a StatefulSet to keep an instance running, we only ever
@@ -269,8 +269,7 @@ func (r *Reconciler) reconcileInstance(
 		// ShareProcessNamespace makes Kubernetes' pause process PID 1 and lets
 		// containers see each other's processes.
 		// - https://docs.k8s.io/tasks/configure-pod-container/share-process-namespace/
-		instance.Spec.Template.Spec.ShareProcessNamespace = new(bool)
-		*instance.Spec.Template.Spec.ShareProcessNamespace = true
+		instance.Spec.Template.Spec.ShareProcessNamespace = initialize.Bool(true)
 
 		instance.Spec.Template.Spec.ServiceAccountName = "postgres-operator" // TODO
 		instance.Spec.Template.Spec.Containers = []v1.Container{
@@ -292,8 +291,7 @@ func (r *Reconciler) reconcileInstance(
 		podSecurityContext := &v1.PodSecurityContext{SupplementalGroups: []int64{65534}}
 		// set fsGroups if not OpenShift
 		if cluster.Spec.OpenShift == nil || !*cluster.Spec.OpenShift {
-			fsGroup := int64(26)
-			podSecurityContext.FSGroup = &fsGroup
+			podSecurityContext.FSGroup = initialize.Int64(26)
 		}
 		instance.Spec.Template.Spec.SecurityContext = podSecurityContext
 	}

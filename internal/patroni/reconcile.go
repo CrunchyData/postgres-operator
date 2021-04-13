@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
@@ -39,9 +40,7 @@ func ClusterConfigMap(ctx context.Context,
 ) error {
 	var err error
 
-	if outClusterConfigMap.Data == nil {
-		outClusterConfigMap.Data = make(map[string]string)
-	}
+	initialize.StringMap(&outClusterConfigMap.Data)
 
 	outClusterConfigMap.Data[configMapFileKey], err = clusterYAML(inCluster, inPGUser, inHBAs, inParameters)
 
@@ -50,10 +49,7 @@ func ClusterConfigMap(ctx context.Context,
 
 // ClusterAuthSecret populates the shared Secret with PostgreSQL auth fields for Patroni
 func ClusterAuthSecret(ctx context.Context, existing, secret *v1.Secret) error {
-
-	if secret.Data == nil {
-		secret.Data = make(map[string][]byte)
-	}
+	initialize.ByteMap(&secret.Data)
 
 	if len(existing.Data["password"]) == 0 {
 		password, err := util.GeneratePassword(util.DefaultGeneratedPasswordLength)
@@ -79,9 +75,7 @@ func InstanceConfigMap(ctx context.Context,
 ) error {
 	var err error
 
-	if outInstanceConfigMap.Data == nil {
-		outInstanceConfigMap.Data = make(map[string]string)
-	}
+	initialize.StringMap(&outInstanceConfigMap.Data)
 
 	outInstanceConfigMap.Data[configMapFileKey], err = instanceYAML(inCluster, inInstance)
 
@@ -93,9 +87,7 @@ func InstanceCertificates(ctx context.Context,
 	inRoot *pki.Certificate, inDNS *pki.Certificate,
 	inDNSKey *pki.PrivateKey, outInstanceCertificates *v1.Secret,
 ) error {
-	if outInstanceCertificates.Data == nil {
-		outInstanceCertificates.Data = make(map[string][]byte)
-	}
+	initialize.ByteMap(&outInstanceCertificates.Data)
 
 	var err error
 	outInstanceCertificates.Data[certAuthorityFileKey], err =
@@ -120,9 +112,7 @@ func InstancePod(ctx context.Context,
 	inInstanceConfigMap *v1.ConfigMap,
 	outInstancePod *v1.PodTemplateSpec,
 ) error {
-	if outInstancePod.Labels == nil {
-		outInstancePod.Labels = make(map[string]string)
-	}
+	initialize.Labels(outInstancePod)
 
 	// When using Kubernetes for DCS, Patroni discovers members by listing Pods
 	// that have the "scope" label. See the "kubernetes.scope_label" and

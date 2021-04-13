@@ -21,6 +21,7 @@ import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
@@ -37,9 +38,7 @@ func ConfigMap(
 		return
 	}
 
-	if outConfigMap.Data == nil {
-		outConfigMap.Data = make(map[string]string)
-	}
+	initialize.StringMap(&outConfigMap.Data)
 
 	outConfigMap.Data[iniFileConfigMapKey] = clusterINI(inCluster)
 }
@@ -58,9 +57,7 @@ func Secret(ctx context.Context,
 	}
 
 	var err error
-	if outSecret.Data == nil {
-		outSecret.Data = make(map[string][]byte)
-	}
+	initialize.ByteMap(&outSecret.Data)
 
 	verifier := inSecret.Data[credentialSecretKey]
 
@@ -149,20 +146,13 @@ func Pod(
 		Image:     inCluster.Spec.Proxy.PGBouncer.Image,
 		Resources: inCluster.Spec.Proxy.PGBouncer.Resources,
 
+		SecurityContext: initialize.RestrictedSecurityContext(),
+
 		Ports: []corev1.ContainerPort{{
 			Name:          naming.PortPGBouncer,
 			ContainerPort: *inCluster.Spec.Proxy.PGBouncer.Port,
 			Protocol:      corev1.ProtocolTCP,
 		}},
-	}
-
-	False := false
-	True := true
-	container.SecurityContext = &corev1.SecurityContext{
-		AllowPrivilegeEscalation: &False,
-		Privileged:               &False,
-		ReadOnlyRootFilesystem:   &True,
-		RunAsNonRoot:             &True,
 	}
 
 	container.VolumeMounts = []corev1.VolumeMount{

@@ -28,6 +28,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgbouncer"
@@ -369,11 +370,10 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 		naming.LabelRole:    naming.RolePGBouncer,
 	}
 
-	deploy.Spec.Replicas = new(int32)
-	*deploy.Spec.Replicas = 1
+	deploy.Spec.Replicas = initialize.Int32(1)
 
 	// Don't clutter the namespace with extra ReplicaSets.
-	deploy.Spec.RevisionHistoryLimit = new(int32) // zero
+	deploy.Spec.RevisionHistoryLimit = initialize.Int32(0)
 
 	// TODO(cbandy): Consider the desired rollout behavior. The defaults here
 	// with "spec.replicas=1" cause a surge of one before removing the one old
@@ -394,20 +394,16 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 	// ShareProcessNamespace makes Kubernetes' pause process PID 1 and lets
 	// containers see each other's processes.
 	// - https://docs.k8s.io/tasks/configure-pod-container/share-process-namespace/
-	deploy.Spec.Template.Spec.ShareProcessNamespace = new(bool)
-	*deploy.Spec.Template.Spec.ShareProcessNamespace = true
+	deploy.Spec.Template.Spec.ShareProcessNamespace = initialize.Bool(true)
 
 	// There's no need for individual DNS names of PgBouncer pods.
 	deploy.Spec.Template.Spec.Subdomain = ""
 
 	// PgBouncer does not make any Kubernetes API calls. Use the default
 	// ServiceAccount and do not mount its credentials.
-	deploy.Spec.Template.Spec.AutomountServiceAccountToken = new(bool) // false
+	deploy.Spec.Template.Spec.AutomountServiceAccountToken = initialize.Bool(false)
 
-	True := true
-	deploy.Spec.Template.Spec.SecurityContext = &corev1.PodSecurityContext{
-		RunAsNonRoot: &True,
-	}
+	deploy.Spec.Template.Spec.SecurityContext = initialize.RestrictedPodSecurityContext()
 
 	if err == nil {
 		pgbouncer.Pod(cluster, configmap, primaryCertificate, secret, &deploy.Spec.Template.Spec)

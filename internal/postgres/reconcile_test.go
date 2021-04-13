@@ -19,11 +19,12 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"gotest.tools/v3/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestAddPGDATAVolumeToPod(t *testing.T) {
@@ -134,7 +135,7 @@ func TestAddCertVolumeToPod(t *testing.T) {
 			},
 		},
 	}
-	mode := int32(0600)
+	mode := int32(0o600)
 	// example auto-generated secret projection
 	testSecretProjection := &v1.SecretProjection{
 		LocalObjectReference: v1.LocalObjectReference{

@@ -18,10 +18,12 @@ package postgres
 import (
 	"fmt"
 
-	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/crunchydata/postgres-operator/internal/initialize"
+	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 const (
@@ -114,10 +116,9 @@ func AddPGDATAInitToPod(postgresCluster *v1beta1.PostgresCluster,
 func AddCertVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
 	containerName string, inClusterCertificates *v1.SecretProjection) error {
 
-	mode := int32(0o600)
 	certVolume := v1.Volume{Name: naming.CertVolume}
 	certVolume.Projected = &v1.ProjectedVolumeSource{
-		DefaultMode: &mode,
+		DefaultMode: initialize.Int32(0o600),
 	}
 
 	// Add the certificate volume projection

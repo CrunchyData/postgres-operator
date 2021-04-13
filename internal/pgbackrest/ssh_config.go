@@ -21,6 +21,7 @@ import (
 	"crypto/rand"
 	"fmt"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
@@ -73,9 +74,7 @@ func CreateSSHConfigMapIntent(postgresCluster *v1beta1.PostgresCluster) v1.Confi
 	}
 
 	// create an empty map for the config data
-	if cm.Data == nil {
-		cm.Data = make(map[string]string)
-	}
+	initialize.StringMap(&cm.Data)
 
 	// if the SSH config data map is not ok, populate with the configuration string
 	if _, ok := cm.Data[sshConfig]; !ok {
@@ -128,9 +127,7 @@ func CreateSSHSecretIntent(postgresCluster *v1beta1.PostgresCluster,
 	}
 
 	// create an empty map for the key data
-	if secret.Data == nil {
-		secret.Data = make(map[string][]byte)
-	}
+	initialize.ByteMap(&secret.Data)
 	// if the public key data map is not ok, populate with the public key
 	if _, ok := secret.Data[publicKey]; !ok {
 		secret.Data[publicKey] = keys.Public

@@ -18,6 +18,7 @@ package pgbackrest
 import (
 	"fmt"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	v1 "k8s.io/api/core/v1"
@@ -147,13 +148,12 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 			Secret: postgresCluster.Spec.Archive.PGBackRest.RepoHost.SSHSecret,
 		})
 	}
-	mode := int32(0040)
 	template.Spec.Volumes = append(template.Spec.Volumes, v1.Volume{
 		Name: naming.PGBackRestSSHVolume,
 		VolumeSource: v1.VolumeSource{
 			Projected: &v1.ProjectedVolumeSource{
 				Sources:     sshConfigs,
-				DefaultMode: &mode,
+				DefaultMode: initialize.Int32(0o040),
 			},
 		},
 	})
