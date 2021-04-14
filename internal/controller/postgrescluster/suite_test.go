@@ -37,7 +37,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 var suite struct {
@@ -68,7 +68,7 @@ var _ = BeforeSuite(func() {
 
 	suite.Scheme = runtime.NewScheme()
 	Expect(scheme.AddToScheme(suite.Scheme)).To(Succeed())
-	Expect(v1alpha1.AddToScheme(suite.Scheme)).To(Succeed())
+	Expect(v1beta1.AddToScheme(suite.Scheme)).To(Succeed())
 
 	_, err := suite.Environment.Start()
 	Expect(err).ToNot(HaveOccurred())

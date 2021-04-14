@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"gotest.tools/v3/assert"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +28,7 @@ import (
 
 func TestAddPGDATAVolumeToPod(t *testing.T) {
 
-	postgresClusterBase := &v1alpha1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
+	postgresClusterBase := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
 	testClaimName := "test-claim-name"
 
 	testsCases := []struct {
@@ -107,7 +107,7 @@ func TestAddPGDATAVolumeToPod(t *testing.T) {
 
 func TestAddPGDATAInitToPod(t *testing.T) {
 
-	postgresCluster := &v1alpha1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
+	postgresCluster := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
 	template := &v1.PodTemplateSpec{}
 
 	AddPGDATAInitToPod(postgresCluster, template)
@@ -125,7 +125,7 @@ func TestAddPGDATAInitToPod(t *testing.T) {
 
 func TestAddCertVolumeToPod(t *testing.T) {
 
-	postgresCluster := &v1alpha1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
+	postgresCluster := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
 	template := &v1.PodTemplateSpec{
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{{

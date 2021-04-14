@@ -20,7 +20,7 @@ import (
 	"sort"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -64,7 +64,7 @@ const (
 // pgbackrest_job.conf is used by certain jobs, such as stanza create and backup
 // pgbackrest_primary.conf is used by the primary database pod
 // pgbackrest_repo.conf is used by the pgBackRest repository pod
-func CreatePGBackRestConfigMapIntent(postgresCluster *v1alpha1.PostgresCluster,
+func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	repoHostName string, instanceNames []string) *v1.ConfigMap {
 
 	meta := naming.PGBackRestConfig(postgresCluster)
@@ -178,7 +178,7 @@ func JobConfigVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec,
 // populateRepoHostConfigurationMap returns a map representing the pgBackRest configuration for
 // a PostgreSQL instance
 func populatePGInstanceConfigurationMap(serviceName, repoHostName, pgdataDir string,
-	otherPGHostNames []string, repos []v1alpha1.RepoVolume) map[string]map[string]string {
+	otherPGHostNames []string, repos []v1beta1.RepoVolume) map[string]map[string]string {
 
 	pgBackRestConfig := map[string]map[string]string{
 
@@ -227,7 +227,7 @@ func populatePGInstanceConfigurationMap(serviceName, repoHostName, pgdataDir str
 // populateRepoHostConfigurationMap returns a map representing the pgBackRest configuration for
 // a pgBackRest dedicated repository host
 func populateRepoHostConfigurationMap(serviceName, pgdataDir string,
-	pgHosts []string, repos []v1alpha1.RepoVolume) map[string]map[string]string {
+	pgHosts []string, repos []v1beta1.RepoVolume) map[string]map[string]string {
 
 	pgBackRestConfig := map[string]map[string]string{
 

@@ -35,7 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 // TestKeys validates public/private byte slices returned by
@@ -74,7 +74,7 @@ func TestKeys(t *testing.T) {
 func TestSSHDConfiguration(t *testing.T) {
 
 	// set cluster name and namespace values in postgrescluster spec
-	postgresCluster := &v1alpha1.PostgresCluster{
+	postgresCluster := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testclustername,
 			Namespace: "postgres-operator-test-" + rand.String(6),

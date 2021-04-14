@@ -23,7 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 const (
@@ -109,7 +109,7 @@ func AsObjectKey(m metav1.ObjectMeta) client.ObjectKey {
 
 // ClusterConfigMap returns the ObjectMeta necessary to lookup
 // cluster's shared ConfigMap.
-func ClusterConfigMap(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+func ClusterConfigMap(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      cluster.Name + "-config",
@@ -118,7 +118,7 @@ func ClusterConfigMap(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
 
 // ClusterPGBouncer returns the ObjectMeta necessary to lookup the ConfigMap,
 // Deployment, Secret, or Service that is cluster's PgBouncer proxy.
-func ClusterPGBouncer(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+func ClusterPGBouncer(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      cluster.Name + "-pgbouncer",
@@ -127,7 +127,7 @@ func ClusterPGBouncer(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
 
 // ClusterPodService returns the ObjectMeta necessary to lookup the Service
 // that is responsible for the network identity of Pods.
-func ClusterPodService(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+func ClusterPodService(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	// The hyphen below ensures that the DNS name will not be interpreted as a
 	// top-level domain. Partially qualified requests for "{pod}.{cluster}-pods"
 	// should not leave the Kubernetes cluster, and if they do they are less
@@ -140,7 +140,7 @@ func ClusterPodService(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
 
 // ClusterPrimaryService returns the ObjectMeta necessary to lookup the Service
 // that exposes the PostgreSQL primary instance.
-func ClusterPrimaryService(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+func ClusterPrimaryService(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      cluster.Name + "-primary",
@@ -149,7 +149,7 @@ func ClusterPrimaryService(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta 
 
 // GenerateInstance returns a random name for a member of cluster and set.
 func GenerateInstance(
-	cluster *v1alpha1.PostgresCluster, set *v1alpha1.PostgresInstanceSetSpec,
+	cluster *v1beta1.PostgresCluster, set *v1beta1.PostgresInstanceSetSpec,
 ) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
@@ -158,7 +158,7 @@ func GenerateInstance(
 }
 
 // GetPGDATADirectory returns the proper PGDATA directory structure for a specific PostgresCluster
-func GetPGDATADirectory(postgresCluster *v1alpha1.PostgresCluster) string {
+func GetPGDATADirectory(postgresCluster *v1beta1.PostgresCluster) string {
 	return fmt.Sprintf(pgdataDirectory, postgresCluster.Spec.PostgresVersion)
 }
 
@@ -191,7 +191,7 @@ func InstancePGDataVolume(instance *appsv1.StatefulSet) metav1.ObjectMeta {
 
 // PatroniAuthSecret returns ObjectMeta necessary to lookup the Secret
 // containing the Patroni authentication config yaml.
-func PatroniAuthSecret(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+func PatroniAuthSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      cluster.Name + "-config",
@@ -201,7 +201,7 @@ func PatroniAuthSecret(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
 // PatroniDistributedConfiguration returns the ObjectMeta necessary to lookup
 // the DCS created by Patroni for cluster. This same name is used for both
 // ConfigMap and Endpoints. See Patroni DCS "config_path".
-func PatroniDistributedConfiguration(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+func PatroniDistributedConfiguration(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      PatroniScope(cluster) + "-config",
@@ -211,7 +211,7 @@ func PatroniDistributedConfiguration(cluster *v1alpha1.PostgresCluster) metav1.O
 // PatroniLeaderConfigMap returns the ObjectMeta necessary to lookup the
 // ConfigMap created by Patroni for the leader election of cluster.
 // See Patroni DCS "leader_path".
-func PatroniLeaderConfigMap(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+func PatroniLeaderConfigMap(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      PatroniScope(cluster) + "-leader",
@@ -221,7 +221,7 @@ func PatroniLeaderConfigMap(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta
 // PatroniLeaderEndpoints returns the ObjectMeta necessary to lookup the
 // Endpoints created by Patroni for the leader election of cluster.
 // See Patroni DCS "leader_path".
-func PatroniLeaderEndpoints(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+func PatroniLeaderEndpoints(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      PatroniScope(cluster),
@@ -229,14 +229,14 @@ func PatroniLeaderEndpoints(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta
 }
 
 // PatroniScope returns the "scope" Patroni uses for cluster.
-func PatroniScope(cluster *v1alpha1.PostgresCluster) string {
+func PatroniScope(cluster *v1beta1.PostgresCluster) string {
 	return cluster.Name + "-ha"
 }
 
 // PatroniTrigger returns the ObjectMeta necessary to lookup the ConfigMap or
 // Endpoints Patroni creates for cluster to initiate a controlled change of the
 // leader. See Patroni DCS "failover_path".
-func PatroniTrigger(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+func PatroniTrigger(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      PatroniScope(cluster) + "-failover",
@@ -244,7 +244,7 @@ func PatroniTrigger(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
 }
 
 // PGBackRestConfig returns the ObjectMeta for a pgBackRest ConfigMap
-func PGBackRestConfig(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+func PGBackRestConfig(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.GetNamespace(),
 		Name:      fmt.Sprintf(cmNameSuffix, cluster.GetName()),
@@ -252,7 +252,7 @@ func PGBackRestConfig(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
 }
 
 // PGBackRestRepoVolume returns the ObjectMeta for a pgBackRest repository volume
-func PGBackRestRepoVolume(cluster *v1alpha1.PostgresCluster,
+func PGBackRestRepoVolume(cluster *v1beta1.PostgresCluster,
 	repoName string) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:      fmt.Sprintf("%s-%s", cluster.GetName(), repoName),
@@ -261,7 +261,7 @@ func PGBackRestRepoVolume(cluster *v1alpha1.PostgresCluster,
 }
 
 // PGBackRestSSHConfig returns the ObjectMeta for a pgBackRest SSHD ConfigMap
-func PGBackRestSSHConfig(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+func PGBackRestSSHConfig(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:      fmt.Sprintf(sshCMNameSuffix, cluster.GetName()),
 		Namespace: cluster.GetNamespace(),
@@ -269,7 +269,7 @@ func PGBackRestSSHConfig(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
 }
 
 // PGBackRestSSHSecret returns the ObjectMeta for a pgBackRest SSHD Secret
-func PGBackRestSSHSecret(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+func PGBackRestSSHSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Name:      fmt.Sprintf(sshSecretNameSuffix, cluster.GetName()),
 		Namespace: cluster.GetNamespace(),
@@ -278,7 +278,7 @@ func PGBackRestSSHSecret(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
 
 // PostgresUserSecret returns the ObjectMeta necessary to lookup the Secret
 // containing the default Postgres User and connection information
-func PostgresUserSecret(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+func PostgresUserSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      cluster.Name + "-pguser",
@@ -287,7 +287,7 @@ func PostgresUserSecret(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
 
 // PostgresTLSSecret returns the ObjectMeta necessary to lookup the Secret
 // containing the default Postgres TLS certificates and key
-func PostgresTLSSecret(cluster *v1alpha1.PostgresCluster) metav1.ObjectMeta {
+func PostgresTLSSecret(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.Namespace,
 		Name:      cluster.Name + "-cluster-cert",

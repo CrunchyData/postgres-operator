@@ -23,7 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestAuthFileContents(t *testing.T) {
@@ -37,14 +37,14 @@ func TestAuthFileContents(t *testing.T) {
 func TestClusterINI(t *testing.T) {
 	t.Parallel()
 
-	cluster := new(v1alpha1.PostgresCluster)
+	cluster := new(v1beta1.PostgresCluster)
 	cluster.Default()
 
 	cluster.Name = "foo-baz"
 	*cluster.Spec.Port = 9999
 
-	cluster.Spec.Proxy = new(v1alpha1.PostgresProxySpec)
-	cluster.Spec.Proxy.PGBouncer = new(v1alpha1.PGBouncerPodSpec)
+	cluster.Spec.Proxy = new(v1beta1.PostgresProxySpec)
+	cluster.Spec.Proxy.PGBouncer = new(v1beta1.PGBouncerPodSpec)
 	cluster.Spec.Proxy.PGBouncer.Port = new(int32)
 	*cluster.Spec.Proxy.PGBouncer.Port = 8888
 

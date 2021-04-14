@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 // default refresh interval in minutes
@@ -78,7 +78,7 @@ func CreatePostgresOperatorScheme() (*runtime.Scheme, error) {
 	}
 
 	// add custom resource types to the default scheme
-	if err := v1alpha1.AddToScheme(pgoScheme); err != nil {
+	if err := v1beta1.AddToScheme(pgoScheme); err != nil {
 		return nil, err
 	}
 

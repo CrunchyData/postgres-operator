@@ -41,7 +41,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestReconcileCerts(t *testing.T) {
@@ -60,7 +60,7 @@ func TestReconcileCerts(t *testing.T) {
 
 	testScheme := runtime.NewScheme()
 	scheme.AddToScheme(testScheme)
-	v1alpha1.AddToScheme(testScheme)
+	v1beta1.AddToScheme(testScheme)
 
 	r := &Reconciler{
 		Client: tClient,
@@ -71,14 +71,14 @@ func TestReconcileCerts(t *testing.T) {
 	clusterName1 := "hippocluster1"
 
 	// set up test cluster1
-	cluster1 := &v1alpha1.PostgresCluster{
+	cluster1 := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName1,
 			Namespace: namespace,
 		},
-		Spec: v1alpha1.PostgresClusterSpec{
+		Spec: v1beta1.PostgresClusterSpec{
 			PostgresVersion: 12,
-			InstanceSets:    []v1alpha1.PostgresInstanceSetSpec{},
+			InstanceSets:    []v1beta1.PostgresInstanceSetSpec{},
 		},
 	}
 	cluster1.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("postgrescluster"))
@@ -89,14 +89,14 @@ func TestReconcileCerts(t *testing.T) {
 	// set up test cluster2
 	cluster2Name := "hippocluster2"
 
-	cluster2 := &v1alpha1.PostgresCluster{
+	cluster2 := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cluster2Name,
 			Namespace: namespace,
 		},
-		Spec: v1alpha1.PostgresClusterSpec{
+		Spec: v1beta1.PostgresClusterSpec{
 			PostgresVersion: 12,
-			InstanceSets:    []v1alpha1.PostgresInstanceSetSpec{},
+			InstanceSets:    []v1beta1.PostgresInstanceSetSpec{},
 		},
 	}
 	cluster2.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("postgrescluster"))
@@ -121,7 +121,7 @@ func TestReconcileCerts(t *testing.T) {
 			assert.Check(t, len(rootSecret.ObjectMeta.OwnerReferences) == 1, "first owner reference not set")
 
 			expectedOR := metav1.OwnerReference{
-				APIVersion: "postgres-operator.crunchydata.com/v1alpha1",
+				APIVersion: "postgres-operator.crunchydata.com/v1beta1",
 				Kind:       "PostgresCluster",
 				Name:       "hippocluster1",
 				UID:        cluster1.UID,
@@ -140,13 +140,13 @@ func TestReconcileCerts(t *testing.T) {
 			err = tClient.Get(ctx, client.ObjectKeyFromObject(rootSecret), rootSecret)
 			assert.NilError(t, err)
 
-			clist := &v1alpha1.PostgresClusterList{}
+			clist := &v1beta1.PostgresClusterList{}
 			tClient.List(ctx, clist)
 
 			assert.Check(t, len(rootSecret.ObjectMeta.OwnerReferences) == 2, "second owner reference not set")
 
 			expectedOR := metav1.OwnerReference{
-				APIVersion: "postgres-operator.crunchydata.com/v1alpha1",
+				APIVersion: "postgres-operator.crunchydata.com/v1beta1",
 				Kind:       "PostgresCluster",
 				Name:       "hippocluster2",
 				UID:        cluster2.UID,
@@ -178,7 +178,7 @@ func TestReconcileCerts(t *testing.T) {
 			assert.Check(t, len(rootSecret.ObjectMeta.OwnerReferences) == 1, "owner reference not removed")
 
 			expectedOR := metav1.OwnerReference{
-				APIVersion: "postgres-operator.crunchydata.com/v1alpha1",
+				APIVersion: "postgres-operator.crunchydata.com/v1beta1",
 				Kind:       "PostgresCluster",
 				Name:       "hippocluster2",
 				UID:        cluster2.UID,

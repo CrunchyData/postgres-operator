@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestAsObjectKey(t *testing.T) {
@@ -53,7 +53,7 @@ func TestContainerNamesUniqueAndValid(t *testing.T) {
 }
 
 func TestClusterNamesUniqueAndValid(t *testing.T) {
-	cluster := &v1alpha1.PostgresCluster{
+	cluster := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: "ns1", Name: "pg0",
 		},

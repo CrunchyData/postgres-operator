@@ -13,7 +13,7 @@
  limitations under the License.
 */
 
-package v1alpha1
+package v1beta1
 
 import (
 	"reflect"
@@ -45,7 +45,7 @@ func TestPostgresClusterDefault(t *testing.T) {
 		b, err := yaml.Marshal(cluster)
 		assert.NilError(t, err)
 		assert.DeepEqual(t, string(b), strings.TrimSpace(`
-apiVersion: postgres-operator.crunchydata.com/v1alpha1
+apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
   creationTimestamp: null
@@ -75,7 +75,7 @@ status:
 		b, err := yaml.Marshal(cluster)
 		assert.NilError(t, err)
 		assert.DeepEqual(t, string(b), strings.TrimSpace(`
-apiVersion: postgres-operator.crunchydata.com/v1alpha1
+apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
   creationTimestamp: null

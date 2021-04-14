@@ -25,7 +25,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 const (
@@ -43,7 +43,7 @@ const (
 // If it is bad for some reason, a new root certificate is
 // generated for use.
 func (r *Reconciler) reconcileRootCertificate(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) (
 	*pki.RootCertificateAuthority, error,
 ) {
@@ -116,7 +116,7 @@ func (r *Reconciler) reconcileRootCertificate(
 // and CA certificate, respectively.
 func (r *Reconciler) reconcileClusterCertificate(
 	ctx context.Context, rootCACert *pki.RootCertificateAuthority,
-	cluster *v1alpha1.PostgresCluster, leaderService string,
+	cluster *v1beta1.PostgresCluster, leaderService string,
 ) (
 	*v1.SecretProjection, error,
 ) {

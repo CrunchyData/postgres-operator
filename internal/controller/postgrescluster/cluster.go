@@ -29,7 +29,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	pgpassword "github.com/crunchydata/postgres-operator/internal/postgres/password"
 	"github.com/crunchydata/postgres-operator/internal/util"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 // +kubebuilder:rbac:resources=configmaps,verbs=patch
@@ -37,7 +37,7 @@ import (
 // reconcileClusterConfigMap writes the ConfigMap that contains generated
 // files (etc) that apply to the entire cluster.
 func (r *Reconciler) reconcileClusterConfigMap(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	pgHBAs postgres.HBAs, pgParameters postgres.Parameters, pgUser *v1.Secret,
 ) (*v1.ConfigMap, error) {
 	clusterConfigMap := &v1.ConfigMap{ObjectMeta: naming.ClusterConfigMap(cluster)}
@@ -64,7 +64,7 @@ func (r *Reconciler) reconcileClusterConfigMap(
 // reconcileClusterPodService writes the Service that can provide stable DNS
 // names to Pods related to cluster.
 func (r *Reconciler) reconcileClusterPodService(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) (*v1.Service, error) {
 	clusterPodService := &v1.Service{ObjectMeta: naming.ClusterPodService(cluster)}
 	clusterPodService.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Service"))
@@ -98,7 +98,7 @@ func (r *Reconciler) reconcileClusterPodService(
 // reconcileClusterPrimaryService writes the Service and Endpoints that resolve
 // to the PostgreSQL primary instance.
 func (r *Reconciler) reconcileClusterPrimaryService(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster, leader *v1.Service,
+	ctx context.Context, cluster *v1beta1.PostgresCluster, leader *v1.Service,
 ) error {
 	clusterPrimaryService := &v1.Service{ObjectMeta: naming.ClusterPrimaryService(cluster)}
 	clusterPrimaryService.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Service"))
@@ -180,7 +180,7 @@ func (r *Reconciler) reconcileClusterPrimaryService(
 // connection information to use with the postgrescluster
 // TODO(tjmoore4): add updated reconciliation logic
 func (r *Reconciler) reconcilePGUserSecret(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) (*v1.Secret, error) {
 	existing := &v1.Secret{ObjectMeta: naming.PostgresUserSecret(cluster)}
 	err := errors.WithStack(client.IgnoreNotFound(r.Client.Get(ctx,

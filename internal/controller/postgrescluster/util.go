@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 var tmpDirSizeLimit = resource.MustParse("16Mi")
@@ -73,7 +73,7 @@ func safeHash32(content func(w io.Writer) error) (string, error) {
 // setStatusConditions updates the provided PostgresCluster status with the provided
 // conditions. This includes populating the PostgresCluster status with any conditions that
 // do not yet exist, or updating them as needed if they already exist.
-func setStatusConditions(status *v1alpha1.PostgresClusterStatus,
+func setStatusConditions(status *v1beta1.PostgresClusterStatus,
 	conditions ...metav1.Condition) {
 	for i := range conditions {
 		// please note the observedGeneration will not be properly set via SetStatusCondition()

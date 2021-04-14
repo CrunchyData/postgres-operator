@@ -25,7 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestAuthConfigYAML(t *testing.T) {
@@ -48,7 +48,7 @@ postgresql:
 func TestClusterYAML(t *testing.T) {
 	t.Parallel()
 
-	cluster := new(v1alpha1.PostgresCluster)
+	cluster := new(v1beta1.PostgresCluster)
 	cluster.Default()
 	cluster.Namespace = "some-namespace"
 	cluster.Name = "cluster-name"
@@ -118,7 +118,7 @@ func TestDynamicConfiguration(t *testing.T) {
 
 	for _, tt := range []struct {
 		name     string
-		cluster  *v1alpha1.PostgresCluster
+		cluster  *v1beta1.PostgresCluster
 		input    map[string]interface{}
 		hbas     postgres.HBAs
 		params   postgres.Parameters
@@ -154,9 +154,9 @@ func TestDynamicConfiguration(t *testing.T) {
 		},
 		{
 			name: "top-level: spec overrides input",
-			cluster: &v1alpha1.PostgresCluster{
-				Spec: v1alpha1.PostgresClusterSpec{
-					Patroni: &v1alpha1.PatroniSpec{
+			cluster: &v1beta1.PostgresCluster{
+				Spec: v1beta1.PostgresClusterSpec{
+					Patroni: &v1beta1.PatroniSpec{
 						LeaderLeaseDurationSeconds: newInt32(99),
 						SyncPeriodSeconds:          newInt32(8),
 					},
@@ -385,7 +385,7 @@ func TestDynamicConfiguration(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cluster := tt.cluster
 			if cluster == nil {
-				cluster = new(v1alpha1.PostgresCluster)
+				cluster = new(v1beta1.PostgresCluster)
 				cluster.Default()
 			}
 			actual := DynamicConfiguration(cluster, tt.input, tt.hbas, tt.params)
@@ -425,7 +425,7 @@ func TestInstanceConfigFiles(t *testing.T) {
 func TestInstanceEnvironment(t *testing.T) {
 	t.Parallel()
 
-	cluster := new(v1alpha1.PostgresCluster)
+	cluster := new(v1beta1.PostgresCluster)
 	cluster.Default()
 	leaderService := new(v1.Service)
 	podService := new(v1.Service)
@@ -506,7 +506,7 @@ func TestInstanceEnvironment(t *testing.T) {
 func TestInstanceYAML(t *testing.T) {
 	t.Parallel()
 
-	cluster := &v1alpha1.PostgresCluster{Spec: v1alpha1.PostgresClusterSpec{PostgresVersion: 12}}
+	cluster := &v1beta1.PostgresCluster{Spec: v1beta1.PostgresClusterSpec{PostgresVersion: 12}}
 	instance := new(appsv1.StatefulSet)
 
 	data, err := instanceYAML(cluster, instance)
@@ -529,7 +529,7 @@ tags: {}
 func TestProbeTiming(t *testing.T) {
 	t.Parallel()
 
-	defaults := new(v1alpha1.PatroniSpec)
+	defaults := new(v1beta1.PatroniSpec)
 	defaults.Default()
 
 	// Defaults should match the suggested/documented timing.
@@ -547,7 +547,7 @@ func TestProbeTiming(t *testing.T) {
 	}{
 		// The smallest possible values for "loop_wait" and "retry_timeout" are
 		// both 1 sec which makes 3 sec the smallest appropriate value for "ttl".
-		// These are the validation minimums in v1alpha1.PatroniSpec.
+		// These are the validation minimums in v1beta1.PatroniSpec.
 		{lease: 3, sync: 1, expected: v1.Probe{
 			TimeoutSeconds:   1,
 			PeriodSeconds:    1,
@@ -599,7 +599,7 @@ func TestProbeTiming(t *testing.T) {
 			FailureThreshold: 1,
 		}},
 	} {
-		actual := probeTiming(&v1alpha1.PatroniSpec{
+		actual := probeTiming(&v1beta1.PatroniSpec{
 			LeaderLeaseDurationSeconds: &tt.lease,
 			SyncPeriodSeconds:          &tt.sync,
 		})

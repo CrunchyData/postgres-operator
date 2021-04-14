@@ -36,7 +36,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 var _ = Describe("PostgresCluster Reconciler", func() {
@@ -73,10 +73,10 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 		}
 	})
 
-	create := func(clusterYAML string) *v1alpha1.PostgresCluster {
+	create := func(clusterYAML string) *v1beta1.PostgresCluster {
 		ctx := context.Background()
 
-		var cluster v1alpha1.PostgresCluster
+		var cluster v1beta1.PostgresCluster
 		Expect(yaml.Unmarshal([]byte(clusterYAML), &cluster)).To(Succeed())
 
 		cluster.Namespace = test.Namespace.Name
@@ -85,7 +85,7 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 		return &cluster
 	}
 
-	reconcile := func(cluster *v1alpha1.PostgresCluster) reconcile.Result {
+	reconcile := func(cluster *v1beta1.PostgresCluster) reconcile.Result {
 		ctx := context.Background()
 
 		result, err := test.Reconciler.Reconcile(ctx,
@@ -114,11 +114,11 @@ spec: {
 
 		Expect(test.Recorder.Events).To(Not(BeEmpty()))
 		Expect(<-test.Recorder.Events).To(Equal(`Warning InvalidName "postgres" is not allowed` +
-			` involvedObject{kind=PostgresCluster,apiVersion=postgres-operator.crunchydata.com/v1alpha1}`))
+			` involvedObject{kind=PostgresCluster,apiVersion=postgres-operator.crunchydata.com/v1beta1}`))
 	})
 
 	Context("Cluster", func() {
-		var cluster *v1alpha1.PostgresCluster
+		var cluster *v1beta1.PostgresCluster
 
 		BeforeEach(func() {
 			cluster = create(`{
@@ -241,7 +241,7 @@ spec: {
 		})
 
 		Specify("Cluster Status", func() {
-			existing := &v1alpha1.PostgresCluster{}
+			existing := &v1beta1.PostgresCluster{}
 			Expect(suite.Client.Get(
 				context.Background(), client.ObjectKeyFromObject(cluster), existing,
 			)).To(Succeed())
@@ -333,7 +333,7 @@ spec: {
 
 	Context("Instance", func() {
 		var (
-			cluster   *v1alpha1.PostgresCluster
+			cluster   *v1beta1.PostgresCluster
 			instances appsv1.StatefulSetList
 			instance  appsv1.StatefulSet
 		)

@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"gotest.tools/v3/assert"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -29,22 +29,22 @@ import (
 
 func TestAddRepoVolumesToPod(t *testing.T) {
 
-	postgresCluster := &v1alpha1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
+	postgresCluster := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
 
 	testsCases := []struct {
-		repos      []v1alpha1.RepoVolume
+		repos      []v1beta1.RepoVolume
 		containers []v1.Container
 	}{{
-		repos:      []v1alpha1.RepoVolume{{Name: "repo1"}, {Name: "repo2"}},
+		repos:      []v1beta1.RepoVolume{{Name: "repo1"}, {Name: "repo2"}},
 		containers: []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
 	}, {
-		repos:      []v1alpha1.RepoVolume{{Name: "repo1"}, {Name: "repo2"}},
+		repos:      []v1beta1.RepoVolume{{Name: "repo1"}, {Name: "repo2"}},
 		containers: []v1.Container{{Name: "database"}},
 	}, {
-		repos:      []v1alpha1.RepoVolume{{Name: "repo1"}},
+		repos:      []v1beta1.RepoVolume{{Name: "repo1"}},
 		containers: []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
 	}, {
-		repos:      []v1alpha1.RepoVolume{{Name: "repo1"}},
+		repos:      []v1beta1.RepoVolume{{Name: "repo1"}},
 		containers: []v1.Container{{Name: "database"}},
 	}}
 
@@ -94,7 +94,7 @@ func TestAddRepoVolumesToPod(t *testing.T) {
 
 func TestAddConfigsToPod(t *testing.T) {
 
-	postgresCluster := &v1alpha1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
+	postgresCluster := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
 	confFile := "test.conf"
 
 	testCases := []struct {
@@ -203,14 +203,14 @@ func TestAddConfigsToPod(t *testing.T) {
 
 func TestAddSSHToPod(t *testing.T) {
 
-	postgresClusterBase := &v1alpha1.PostgresCluster{
+	postgresClusterBase := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "hippo",
 		},
-		Spec: v1alpha1.PostgresClusterSpec{
-			Archive: v1alpha1.Archive{
-				PGBackRest: v1alpha1.PGBackRestArchive{
-					RepoHost: &v1alpha1.RepoHost{},
+		Spec: v1beta1.PostgresClusterSpec{
+			Archive: v1beta1.Archive{
+				PGBackRest: v1beta1.PGBackRestArchive{
+					RepoHost: &v1beta1.RepoHost{},
 				},
 			},
 		},

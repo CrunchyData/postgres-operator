@@ -32,12 +32,12 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgbouncer"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 // reconcilePGBouncer writes the objects necessary to run a PgBouncer Pod.
 func (r *Reconciler) reconcilePGBouncer(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) error {
 	var (
 		configmap *corev1.ConfigMap
@@ -64,7 +64,7 @@ func (r *Reconciler) reconcilePGBouncer(
 
 // reconcilePGBouncerConfigMap writes the ConfigMap for a PgBouncer Pod.
 func (r *Reconciler) reconcilePGBouncerConfigMap(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) (*corev1.ConfigMap, error) {
 	configmap := &corev1.ConfigMap{ObjectMeta: naming.ClusterPGBouncer(cluster)}
 	configmap.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("ConfigMap"))
@@ -102,7 +102,7 @@ func (r *Reconciler) reconcilePGBouncerConfigMap(
 // reconcilePGBouncerInPostgreSQL writes the user and other objects needed by
 // PgBouncer inside of PostgreSQL.
 func (r *Reconciler) reconcilePGBouncerInPostgreSQL(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster, clusterSecret *corev1.Secret,
+	ctx context.Context, cluster *v1beta1.PostgresCluster, clusterSecret *corev1.Secret,
 ) error {
 	if cluster.Status.Patroni == nil || cluster.Status.Patroni.SystemIdentifier == "" {
 		// Patroni has not yet bootstrapped; there is nothing to do.
@@ -197,7 +197,7 @@ func (r *Reconciler) reconcilePGBouncerInPostgreSQL(
 
 // reconcilePGBouncerSecret writes the Secret for a PgBouncer Pod.
 func (r *Reconciler) reconcilePGBouncerSecret(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) (*corev1.Secret, error) {
 	existing := &corev1.Secret{ObjectMeta: naming.ClusterPGBouncer(cluster)}
 	err := errors.WithStack(
@@ -243,7 +243,7 @@ func (r *Reconciler) reconcilePGBouncerSecret(
 
 // reconcilePGBouncerService writes the Service that resolves to PgBouncer.
 func (r *Reconciler) reconcilePGBouncerService(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) error {
 	service := &corev1.Service{ObjectMeta: naming.ClusterPGBouncer(cluster)}
 	service.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Service"))
@@ -296,7 +296,7 @@ func (r *Reconciler) reconcilePGBouncerService(
 
 // reconcilePGBouncerDeployment writes the Deployment that runs PgBouncer.
 func (r *Reconciler) reconcilePGBouncerDeployment(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	configmap *corev1.ConfigMap, secret *corev1.Secret,
 ) error {
 	deploy := &appsv1.Deployment{ObjectMeta: naming.ClusterPGBouncer(cluster)}
@@ -321,11 +321,11 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 			// Avoid a panic! Fixed in Kubernetes v1.21.0 and controller-runtime v0.9.0-alpha.0.
 			// - https://issue.k8s.io/99714
 			if len(cluster.Status.Conditions) > 0 {
-				meta.RemoveStatusCondition(&cluster.Status.Conditions, v1alpha1.ProxyAvailable)
+				meta.RemoveStatusCondition(&cluster.Status.Conditions, v1beta1.ProxyAvailable)
 			}
 		} else {
 			meta.SetStatusCondition(&cluster.Status.Conditions, metav1.Condition{
-				Type:    v1alpha1.ProxyAvailable,
+				Type:    v1beta1.ProxyAvailable,
 				Status:  metav1.ConditionStatus(available.Status),
 				Reason:  available.Reason,
 				Message: available.Message,

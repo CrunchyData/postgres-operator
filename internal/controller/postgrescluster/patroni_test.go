@@ -22,7 +22,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/util"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	corev1 "k8s.io/api/core/v1"
@@ -41,7 +41,7 @@ func TestPatroniAuthSecret(t *testing.T) {
 
 	testScheme := runtime.NewScheme()
 	scheme.AddToScheme(testScheme)
-	v1alpha1.AddToScheme(testScheme)
+	v1beta1.AddToScheme(testScheme)
 
 	// set up a non-cached client
 	newClient, err := client.New(cfg, client.Options{Scheme: testScheme})
@@ -75,7 +75,7 @@ func TestPatroniAuthSecret(t *testing.T) {
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
 
 	// create a PostgresCluster to test with
-	postgresCluster := &v1alpha1.PostgresCluster{
+	postgresCluster := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
 			Namespace: namespace,

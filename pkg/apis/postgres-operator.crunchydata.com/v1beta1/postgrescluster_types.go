@@ -13,7 +13,7 @@
  limitations under the License.
 */
 
-package v1alpha1
+package v1beta1
 
 import (
 	"fmt"

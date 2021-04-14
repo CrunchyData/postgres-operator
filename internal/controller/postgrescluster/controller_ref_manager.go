@@ -30,12 +30,12 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 // adoptObject adopts the provided Object by adding controller owner refs for the provided
 // PostgresCluster.
-func (r *Reconciler) adoptObject(ctx context.Context, postgresCluster *v1alpha1.PostgresCluster,
+func (r *Reconciler) adoptObject(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
 	obj client.Object) error {
 
 	if err := controllerutil.SetControllerReference(postgresCluster, obj,
@@ -64,7 +64,7 @@ func (r *Reconciler) adoptObject(ctx context.Context, postgresCluster *v1alpha1.
 // TODO do a non-cache based get of the PostgresCluster prior to adopting anything to prevent
 // race conditions with the garbage collector (see
 // https://github.com/kubernetes/kubernetes/issues/42639)
-func (r *Reconciler) claimObject(ctx context.Context, postgresCluster *v1alpha1.PostgresCluster,
+func (r *Reconciler) claimObject(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
 	obj client.Object) error {
 
 	controllerRef := metav1.GetControllerOfNoCopy(obj)
@@ -122,7 +122,7 @@ func (r *Reconciler) claimObject(ctx context.Context, postgresCluster *v1alpha1.
 // getPostgresClusterForObject is responsible for obtaining the PostgresCluster associated
 // with an Object.
 func (r *Reconciler) getPostgresClusterForObject(ctx context.Context,
-	obj client.Object) (bool, *v1alpha1.PostgresCluster, error) {
+	obj client.Object) (bool, *v1beta1.PostgresCluster, error) {
 
 	clusterName := ""
 
@@ -138,7 +138,7 @@ func (r *Reconciler) getPostgresClusterForObject(ctx context.Context,
 		return false, nil, nil
 	}
 
-	postgresCluster := &v1alpha1.PostgresCluster{}
+	postgresCluster := &v1beta1.PostgresCluster{}
 	if err := r.Client.Get(ctx, types.NamespacedName{
 		Name:      clusterName,
 		Namespace: obj.GetNamespace(),
@@ -173,7 +173,7 @@ func (r *Reconciler) manageControllerRefs(ctx context.Context,
 // PostgresCluster.  This is done by removing the PostgresCluster's controller owner
 // refs from the Object.
 func (r *Reconciler) releaseObject(ctx context.Context,
-	postgresCluster *v1alpha1.PostgresCluster, obj client.Object) error {
+	postgresCluster *v1beta1.PostgresCluster, obj client.Object) error {
 
 	// TODO create a strategic merge type in kubeapi instead of using Merge7386
 	patch, err := kubeapi.NewMergePatch().

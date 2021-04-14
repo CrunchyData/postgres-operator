@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 // TestPGBackRestConfiguration goes through the various steps of the current
@@ -40,20 +40,20 @@ import (
 func TestPGBackRestConfiguration(t *testing.T) {
 
 	// set cluster name and namespace values in postgrescluster spec
-	postgresCluster := &v1alpha1.PostgresCluster{
+	postgresCluster := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      testclustername,
 			Namespace: "postgres-operator-test-" + rand.String(6),
 		},
-		Spec: v1alpha1.PostgresClusterSpec{
+		Spec: v1beta1.PostgresClusterSpec{
 			PostgresVersion: 12,
-			Archive: v1alpha1.Archive{
-				PGBackRest: v1alpha1.PGBackRestArchive{
-					Repos: []v1alpha1.RepoVolume{{
+			Archive: v1beta1.Archive{
+				PGBackRest: v1beta1.PGBackRestArchive{
+					Repos: []v1beta1.RepoVolume{{
 						Name: "repo1",
 					}},
-					RepoHost: &v1alpha1.RepoHost{
-						Dedicated: &v1alpha1.DedicatedRepo{},
+					RepoHost: &v1beta1.RepoHost{
+						Dedicated: &v1beta1.DedicatedRepo{},
 					},
 				},
 			},

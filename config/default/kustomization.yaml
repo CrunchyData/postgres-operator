@@ -11,4 +11,4 @@ bases:
 images:
 - name: postgres-operator
   newName: gcr.io/crunchy-dev-test/postgres-operator
-  newTag: centos8-v1alpha1
+  newTag: centos8-v1beta1

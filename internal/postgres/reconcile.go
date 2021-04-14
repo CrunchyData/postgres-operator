@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 )
@@ -33,7 +33,7 @@ const (
 
 // AddPGDATAVolumeToPod adds pgBackRest repository volumes to the provided Pod template spec, while
 // also adding associated volume mounts to the containers and/or init containers specified.
-func AddPGDATAVolumeToPod(postgresCluster *v1alpha1.PostgresCluster, template *v1.PodTemplateSpec,
+func AddPGDATAVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
 	claimName string, containerNames, initContainerNames []string) error {
 
 	if claimName == "" {
@@ -95,7 +95,7 @@ func AddPGDATAVolumeToPod(postgresCluster *v1alpha1.PostgresCluster, template *v
 
 // AddPGDATAInitToPod adds an initialization container to the Pod template that is responsible
 // for properly initializing the PGDATA directory.
-func AddPGDATAInitToPod(postgresCluster *v1alpha1.PostgresCluster,
+func AddPGDATAInitToPod(postgresCluster *v1beta1.PostgresCluster,
 	template *v1.PodTemplateSpec) {
 
 	pgdata := naming.GetPGDATADirectory(postgresCluster)
@@ -111,7 +111,7 @@ func AddPGDATAInitToPod(postgresCluster *v1alpha1.PostgresCluster,
 // AddCertVolumeToPod adds the secret containing the TLS certificate, key and the CA certificate
 // as a volume to the provided Pod template spec, while also adding associated volume mounts to
 // the database container specified.
-func AddCertVolumeToPod(postgresCluster *v1alpha1.PostgresCluster, template *v1.PodTemplateSpec,
+func AddCertVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
 	containerName string, inClusterCertificates *v1.SecretProjection) error {
 
 	mode := int32(0o600)

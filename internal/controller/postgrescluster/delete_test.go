@@ -47,7 +47,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/patroni"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestReconcilerHandleDelete(t *testing.T) {
@@ -68,7 +68,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 	options := client.Options{}
 	options.Scheme = runtime.NewScheme()
 	assert.NilError(t, scheme.AddToScheme(options.Scheme))
-	assert.NilError(t, v1alpha1.AddToScheme(options.Scheme))
+	assert.NilError(t, v1beta1.AddToScheme(options.Scheme))
 
 	config, err := env.Start()
 	assert.NilError(t, err)
@@ -107,7 +107,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 	reconciler.PodExec, err = newPodExecutor(config)
 	assert.NilError(t, err)
 
-	mustReconcile := func(t *testing.T, cluster *v1alpha1.PostgresCluster) reconcile.Result {
+	mustReconcile := func(t *testing.T, cluster *v1beta1.PostgresCluster) reconcile.Result {
 		t.Helper()
 		key := client.ObjectKeyFromObject(cluster)
 		request := reconcile.Request{NamespacedName: key}
@@ -118,8 +118,8 @@ func TestReconcilerHandleDelete(t *testing.T) {
 
 	for _, test := range []struct {
 		name         string
-		beforeCreate func(*testing.T, *v1alpha1.PostgresCluster)
-		beforeDelete func(*testing.T, *v1alpha1.PostgresCluster)
+		beforeCreate func(*testing.T, *v1beta1.PostgresCluster)
+		beforeDelete func(*testing.T, *v1beta1.PostgresCluster)
 		propagation  metav1.DeletionPropagation
 
 		waitForRunningInstances int32
@@ -136,7 +136,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 			name: "AfterFailover", propagation: metav1.DeletePropagationBackground,
 			waitForRunningInstances: 2,
 
-			beforeDelete: func(t *testing.T, cluster *v1alpha1.PostgresCluster) {
+			beforeDelete: func(t *testing.T, cluster *v1beta1.PostgresCluster) {
 				list := v1.PodList{}
 				selector, err := labels.Parse(strings.Join([]string{
 					"postgres-operator.crunchydata.com/cluster=" + cluster.Name,
@@ -170,7 +170,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 			name: "NeverRunning", propagation: metav1.DeletePropagationBackground,
 			waitForRunningInstances: 0,
 
-			beforeCreate: func(_ *testing.T, cluster *v1alpha1.PostgresCluster) {
+			beforeCreate: func(_ *testing.T, cluster *v1beta1.PostgresCluster) {
 				cluster.Spec.Image = "example.com/does-not-exist"
 			},
 		},
@@ -178,7 +178,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			g := gomega.NewWithT(t)
 
-			cluster := &v1alpha1.PostgresCluster{}
+			cluster := &v1beta1.PostgresCluster{}
 			assert.NilError(t, yaml.Unmarshal([]byte(`{
 				spec: {
 					postgresVersion: 12,
@@ -383,7 +383,7 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 	options := client.Options{}
 	options.Scheme = runtime.NewScheme()
 	assert.NilError(t, scheme.AddToScheme(options.Scheme))
-	assert.NilError(t, v1alpha1.AddToScheme(options.Scheme))
+	assert.NilError(t, v1beta1.AddToScheme(options.Scheme))
 
 	config, err := env.Start()
 	assert.NilError(t, err)
@@ -441,7 +441,7 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 	go func() { mm.Error <- mm.Start(mm.Context) }()
 	t.Cleanup(func() { mm.Stop(); assert.Check(t, <-mm.Error) })
 
-	cluster := &v1alpha1.PostgresCluster{}
+	cluster := &v1beta1.PostgresCluster{}
 	assert.NilError(t, yaml.Unmarshal([]byte(`{
 		spec: {
 			postgresVersion: 12,

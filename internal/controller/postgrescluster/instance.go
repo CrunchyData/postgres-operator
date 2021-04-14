@@ -36,7 +36,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 // +kubebuilder:rbac:resources=pods,verbs=list
@@ -45,7 +45,7 @@ import (
 // deleteInstances gracefully stops instances of cluster to avoid failovers and
 // unclean shutdowns of PostgreSQL. It returns (nil, nil) when finished.
 func (r *Reconciler) deleteInstances(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) (*reconcile.Result, error) {
 	// Find all instance pods to determine which to shutdown and in what order.
 	pods := &v1.PodList{}
@@ -138,8 +138,8 @@ func (r *Reconciler) deleteInstances(
 // Kubernetes API.
 func (r *Reconciler) reconcileInstanceSet(
 	ctx context.Context,
-	cluster *v1alpha1.PostgresCluster,
-	set *v1alpha1.PostgresInstanceSetSpec,
+	cluster *v1beta1.PostgresCluster,
+	set *v1beta1.PostgresInstanceSetSpec,
 	clusterConfigMap *v1.ConfigMap,
 	rootCA *pki.RootCertificateAuthority,
 	clusterPodService *v1.Service,
@@ -196,8 +196,8 @@ func (r *Reconciler) reconcileInstanceSet(
 // See Reconciler.reconcileInstanceSet.
 func (r *Reconciler) reconcileInstance(
 	ctx context.Context,
-	cluster *v1alpha1.PostgresCluster,
-	spec *v1alpha1.PostgresInstanceSetSpec,
+	cluster *v1beta1.PostgresCluster,
+	spec *v1beta1.PostgresInstanceSetSpec,
 	clusterConfigMap *v1.ConfigMap,
 	rootCA *pki.RootCertificateAuthority,
 	clusterPodService *v1.Service,
@@ -370,7 +370,7 @@ func (r *Reconciler) reconcileInstance(
 // PostgresCluster spec, mounting pgBackRest repo volumes if a dedicated repository is not
 // configured, and then mounting the proper pgBackRest configuration resources (ConfigMaps
 // and Secrets)
-func addPGBackRestToInstancePodSpec(cluster *v1alpha1.PostgresCluster,
+func addPGBackRestToInstancePodSpec(cluster *v1beta1.PostgresCluster,
 	template *v1.PodTemplateSpec, instance *appsv1.StatefulSet) error {
 
 	addSSH := pgbackrest.RepoHostEnabled(cluster)
@@ -399,8 +399,8 @@ func addPGBackRestToInstancePodSpec(cluster *v1alpha1.PostgresCluster,
 
 // reconcilePGDATAVolume writes instance according to spec of cluster.
 // See Reconciler.reconcileInstanceSet.
-func (r *Reconciler) reconcilePGDATAVolume(ctx context.Context, cluster *v1alpha1.PostgresCluster,
-	spec *v1alpha1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet) error {
+func (r *Reconciler) reconcilePGDATAVolume(ctx context.Context, cluster *v1beta1.PostgresCluster,
+	spec *v1beta1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet) error {
 
 	// generate metadata
 	meta := naming.InstancePGDataVolume(instance)
@@ -437,7 +437,7 @@ func (r *Reconciler) reconcilePGDATAVolume(ctx context.Context, cluster *v1alpha
 // reconcileInstanceConfigMap writes the ConfigMap that contains generated
 // files (etc) that apply to instance of cluster.
 func (r *Reconciler) reconcileInstanceConfigMap(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster, instance *appsv1.StatefulSet,
+	ctx context.Context, cluster *v1beta1.PostgresCluster, instance *appsv1.StatefulSet,
 ) (*v1.ConfigMap, error) {
 	instanceConfigMap := &v1.ConfigMap{ObjectMeta: naming.InstanceConfigMap(instance)}
 	instanceConfigMap.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("ConfigMap"))
@@ -465,7 +465,7 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 // reconcileInstanceCertificates writes the Secret that contains certificates
 // and private keys for instance of cluster.
 func (r *Reconciler) reconcileInstanceCertificates(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	instance *appsv1.StatefulSet, root *pki.RootCertificateAuthority,
 ) (*v1.Secret, error) {
 	existing := &v1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}

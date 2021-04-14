@@ -26,7 +26,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 const (
@@ -72,7 +72,7 @@ func authConfigYAML(username, password string) (string, error) {
 
 // clusterYAML returns Patroni settings that apply to the entire cluster.
 func clusterYAML(
-	cluster *v1alpha1.PostgresCluster, pgUser *v1.Secret,
+	cluster *v1beta1.PostgresCluster, pgUser *v1.Secret,
 	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
 ) (string, error) {
 	root := map[string]interface{}{
@@ -218,7 +218,7 @@ GRANT ALL PRIVILEGES ON DATABASE :"dbname" TO :"user";
 // DynamicConfiguration combines configuration with some PostgreSQL settings
 // and returns a value that can be marshaled to JSON.
 func DynamicConfiguration(
-	cluster *v1alpha1.PostgresCluster,
+	cluster *v1beta1.PostgresCluster,
 	configuration map[string]interface{},
 	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
 ) map[string]interface{} {
@@ -285,7 +285,7 @@ func DynamicConfiguration(
 // instanceEnvironment returns the environment variables needed by Patroni's
 // instance container.
 func instanceEnvironment(
-	cluster *v1alpha1.PostgresCluster,
+	cluster *v1beta1.PostgresCluster,
 	clusterPodService *v1.Service,
 	leaderService *v1.Service,
 	podContainers []v1.Container,
@@ -435,7 +435,7 @@ func instanceConfigFiles(cluster, instance *v1.ConfigMap, patroniSecret *v1.Secr
 }
 
 // instanceYAML returns Patroni settings that apply to instance.
-func instanceYAML(postgresCluster *v1alpha1.PostgresCluster, _ metav1.Object) (string, error) {
+func instanceYAML(postgresCluster *v1beta1.PostgresCluster, _ metav1.Object) (string, error) {
 	root := map[string]interface{}{
 		// Missing here is "name" which cannot be known until the instance Pod is
 		// created. That value should be injected using the downward API and the
@@ -500,7 +500,7 @@ func instanceYAML(postgresCluster *v1alpha1.PostgresCluster, _ metav1.Object) (s
 }
 
 // probeTiming returns a Probe with thresholds and timeouts set according to spec.
-func probeTiming(spec *v1alpha1.PatroniSpec) *v1.Probe {
+func probeTiming(spec *v1beta1.PatroniSpec) *v1.Probe {
 	// "Probes should be configured in such a way that they start failing about
 	// time when the leader key is expiring."
 	// - https://github.com/zalando/patroni/blob/v2.0.1/docs/rest_api.rst

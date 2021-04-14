@@ -36,7 +36,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 const (
@@ -67,7 +67,7 @@ type RepoResources struct {
 // StatefulSet.  Any changes to the deployment spec as a result of synchronization will result in a
 // rollout of the pgBackRest repository host StatefulSet in accordance with its configured
 // strategy.
-func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v1alpha1.PostgresCluster,
+func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v1beta1.PostgresCluster,
 	repoHostName string) (*appsv1.StatefulSet, error) {
 
 	repo, err := r.generateRepoHostIntent(postgresCluster, repoHostName)
@@ -87,7 +87,7 @@ func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v
 // applying the PostgresCluster controller's fully specified intent for the PersistentVolumeClaim
 // representing a repository.
 func (r *Reconciler) applyRepoVolumeIntent(ctx context.Context,
-	postgresCluster *v1alpha1.PostgresCluster, spec *v1.PersistentVolumeClaimSpec,
+	postgresCluster *v1beta1.PostgresCluster, spec *v1.PersistentVolumeClaimSpec,
 	repoName string) (*v1.PersistentVolumeClaim, error) {
 
 	repo, err := r.generateRepoVolumeIntent(postgresCluster, spec, repoName)
@@ -105,7 +105,7 @@ func (r *Reconciler) applyRepoVolumeIntent(ctx context.Context,
 // calculatePGBackRestConditions is responsible for calculating any pgBackRest conditions
 // based on the current pgBackRest status, and then updating the conditions array within
 // the PostgresCluster status with those conditions as needed.
-func calculatePGBackRestConditions(status *v1alpha1.PGBackRestStatus,
+func calculatePGBackRestConditions(status *v1beta1.PGBackRestStatus,
 	postgresClusterGeneration int64, dedicatedEnabled bool) []metav1.Condition {
 
 	conditions := []metav1.Condition{}
@@ -142,7 +142,7 @@ func calculatePGBackRestConditions(status *v1alpha1.PGBackRestStatus,
 // Additionally, and resources identified that no longer correspond to any current configuration
 // are deleted.
 func (r *Reconciler) getPGBackRestResources(ctx context.Context,
-	postgresCluster *v1alpha1.PostgresCluster) (*RepoResources, error) {
+	postgresCluster *v1beta1.PostgresCluster) (*RepoResources, error) {
 
 	repoResources := &RepoResources{}
 
@@ -200,7 +200,7 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 // are no longer associated with any repository configured within the PostgresCluster spec, or any
 // pgBackRest repository host resources if a repository host is no longer configured.
 func (r *Reconciler) cleanupRepoResources(ctx context.Context,
-	postgresCluster *v1alpha1.PostgresCluster,
+	postgresCluster *v1beta1.PostgresCluster,
 	owned []unstructured.Unstructured) []unstructured.Unstructured {
 
 	log := logging.FromContext(ctx)
@@ -242,7 +242,7 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 
 // unstructuredToRepoResources converts unstructred pgBackRest repository resources (specifically
 // unstructured StatefulSetLists and PersistentVolumeClaimList) into their structured equivalent.
-func unstructuredToRepoResources(postgresCluster *v1alpha1.PostgresCluster, kind string,
+func unstructuredToRepoResources(postgresCluster *v1beta1.PostgresCluster, kind string,
 	repoResources *RepoResources, uList *unstructured.UnstructuredList) error {
 
 	switch kind {
@@ -300,7 +300,7 @@ func unstructuredToRepoResources(postgresCluster *v1alpha1.PostgresCluster, kind
 // generateRepoHostIntent creates and populates StatefulSet with the PostgresCluster's full intent
 // as needed to create and reconcile a pgBackRest dedicated repository host within the kubernetes
 // cluster.
-func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1alpha1.PostgresCluster,
+func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresCluster,
 	repoHostName string) (*appsv1.StatefulSet, error) {
 
 	labels := naming.PGBackRestDedicatedLabels(postgresCluster.GetName())
@@ -358,7 +358,7 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1alpha1.PostgresCl
 	return repo, nil
 }
 
-func (r *Reconciler) generateRepoVolumeIntent(postgresCluster *v1alpha1.PostgresCluster,
+func (r *Reconciler) generateRepoVolumeIntent(postgresCluster *v1beta1.PostgresCluster,
 	spec *v1.PersistentVolumeClaimSpec, repoName string) (*v1.PersistentVolumeClaim, error) {
 
 	labels := naming.PGBackRestRepoVolumeLabels(postgresCluster.GetName(), repoName)
@@ -391,14 +391,14 @@ func (r *Reconciler) generateRepoVolumeIntent(postgresCluster *v1alpha1.Postgres
 // also generating the proper Result as needed to ensure proper event requeuing according to
 // the results of any attempts to properly reconcile these resources.
 func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
-	postgresCluster *v1alpha1.PostgresCluster, instanceNames []string) (reconcile.Result, error) {
+	postgresCluster *v1beta1.PostgresCluster, instanceNames []string) (reconcile.Result, error) {
 
 	// add some additional context about what component is being reconciled
 	log := logging.FromContext(ctx).WithValues("reconciler", "pgBackRest")
 
 	// create the pgBackRest status that will be updated when reconciling various pgBackRest
 	// resources
-	postgresCluster.Status.PGBackRest = new(v1alpha1.PGBackRestStatus)
+	postgresCluster.Status.PGBackRest = new(v1beta1.PGBackRestStatus)
 	pgBackRestStatus := postgresCluster.Status.PGBackRest
 
 	repoResources, err := r.getPGBackRestResources(ctx, postgresCluster)
@@ -456,7 +456,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 
 // reconcileRepoHosts is responsible for reconciling the pgBackRest ConfigMaps and Secrets.
 func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
-	postgresCluster *v1alpha1.PostgresCluster, repoHostName string,
+	postgresCluster *v1beta1.PostgresCluster, repoHostName string,
 	instanceNames []string, sshSecret *v1.Secret) error {
 
 	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoConfig")
@@ -507,7 +507,7 @@ func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 // reconcileDedicatedRepoHost is responsible for reconciling a pgBackRest dedicated repository host
 // StatefulSet according to a specific PostgresCluster custom resource.
 func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
-	postgresCluster *v1alpha1.PostgresCluster, status *v1alpha1.PGBackRestStatus,
+	postgresCluster *v1beta1.PostgresCluster, status *v1beta1.PGBackRestStatus,
 	repoResources *RepoResources) (*appsv1.StatefulSet, error) {
 
 	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoHost")
@@ -544,8 +544,8 @@ func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 }
 
 func (r *Reconciler) reconcileRepoVolumes(ctx context.Context,
-	postgresCluster *v1alpha1.PostgresCluster,
-	status *v1alpha1.PGBackRestStatus) error {
+	postgresCluster *v1beta1.PostgresCluster,
+	status *v1beta1.PGBackRestStatus) error {
 
 	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoVolume")
 
@@ -574,9 +574,9 @@ func (r *Reconciler) reconcileRepoVolumes(ctx context.Context,
 
 // getRepoHostStatus is responsible for returning the pgBackRest status for the provided pgBackRest
 // repository host
-func getRepoHostStatus(repoHost *appsv1.StatefulSet) *v1alpha1.RepoHostStatus {
+func getRepoHostStatus(repoHost *appsv1.StatefulSet) *v1beta1.RepoHostStatus {
 
-	repoHostStatus := &v1alpha1.RepoHostStatus{}
+	repoHostStatus := &v1beta1.RepoHostStatus{}
 
 	repoHostStatus.TypeMeta = repoHost.TypeMeta
 
@@ -591,11 +591,11 @@ func getRepoHostStatus(repoHost *appsv1.StatefulSet) *v1alpha1.RepoHostStatus {
 
 // getRepoVolumeStatus is responsible for updating the pgBackRest status for the provided
 // pgBackRest repository volume
-func getRepoVolumeStatus(repoVolumes ...*v1.PersistentVolumeClaim) []v1alpha1.RepoVolumeStatus {
+func getRepoVolumeStatus(repoVolumes ...*v1.PersistentVolumeClaim) []v1beta1.RepoVolumeStatus {
 
-	repoVolStatus := []v1alpha1.RepoVolumeStatus{}
+	repoVolStatus := []v1beta1.RepoVolumeStatus{}
 	for _, repoVol := range repoVolumes {
-		repoVolStatus = append(repoVolStatus, v1alpha1.RepoVolumeStatus{
+		repoVolStatus = append(repoVolStatus, v1beta1.RepoVolumeStatus{
 			Bound:      (repoVol.Status.Phase == v1.ClaimBound),
 			Name:       repoVol.GetName(),
 			VolumeName: repoVol.Spec.VolumeName,

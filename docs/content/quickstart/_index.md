@@ -47,7 +47,7 @@ Build the Postgres Operator:
 ```
 export PGOROOT=`pwd`
 
-export PGO_IMAGE_TAG="centos8-v1alpha1"
+export PGO_IMAGE_TAG="centos8-v1beta1"
 GOOS=linux GOARCH=amd64 make build-postgres-operator
 make postgres-operator-image
 buildah push "${PGO_IMAGE_PREFIX}/postgres-operator:${PGO_IMAGE_TAG}"

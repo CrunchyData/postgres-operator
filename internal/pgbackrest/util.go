@@ -15,17 +15,17 @@
 
 package pgbackrest
 
-import "github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+import "github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 
 // RepoHostEnabled determines whether not a pgBackRest repository host is enabled according to the
 // provided PostgresCluster
-func RepoHostEnabled(postgresCluster *v1alpha1.PostgresCluster) bool {
+func RepoHostEnabled(postgresCluster *v1beta1.PostgresCluster) bool {
 	return (postgresCluster.Spec.Archive.PGBackRest.RepoHost != nil)
 }
 
 // DedicatedRepoHostEnabled determines whether not a pgBackRest dedicated repository host is
 // enabled according to the provided PostgresCluster
-func DedicatedRepoHostEnabled(postgresCluster *v1alpha1.PostgresCluster) bool {
+func DedicatedRepoHostEnabled(postgresCluster *v1beta1.PostgresCluster) bool {
 	return (postgresCluster.Spec.Archive.PGBackRest.RepoHost != nil &&
 		postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated != nil)
 }

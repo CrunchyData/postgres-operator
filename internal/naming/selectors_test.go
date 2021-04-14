@@ -21,7 +21,7 @@ import (
 
 	"gotest.tools/v3/assert"
 
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestAnyCluster(t *testing.T) {
@@ -57,7 +57,7 @@ func TestClusterInstanceSet(t *testing.T) {
 }
 
 func TestClusterPatronis(t *testing.T) {
-	cluster := &v1alpha1.PostgresCluster{}
+	cluster := &v1beta1.PostgresCluster{}
 	cluster.Name = "something"
 
 	s, err := AsSelector(ClusterPatronis(cluster))

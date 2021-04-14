@@ -25,17 +25,17 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestConfigMap(t *testing.T) {
 	t.Parallel()
 
-	cluster := new(v1alpha1.PostgresCluster)
+	cluster := new(v1beta1.PostgresCluster)
 	config := new(corev1.ConfigMap)
 
-	cluster.Spec.Proxy = new(v1alpha1.PostgresProxySpec)
-	cluster.Spec.Proxy.PGBouncer = new(v1alpha1.PGBouncerPodSpec)
+	cluster.Spec.Proxy = new(v1beta1.PostgresProxySpec)
+	cluster.Spec.Proxy.PGBouncer = new(v1beta1.PGBouncerPodSpec)
 	cluster.Default()
 
 	ConfigMap(cluster, config)
@@ -53,12 +53,12 @@ func TestConfigMap(t *testing.T) {
 func TestSecret(t *testing.T) {
 	t.Parallel()
 
-	cluster := new(v1alpha1.PostgresCluster)
+	cluster := new(v1beta1.PostgresCluster)
 	existing := new(corev1.Secret)
 	intent := new(corev1.Secret)
 
-	cluster.Spec.Proxy = new(v1alpha1.PostgresProxySpec)
-	cluster.Spec.Proxy.PGBouncer = new(v1alpha1.PGBouncerPodSpec)
+	cluster.Spec.Proxy = new(v1beta1.PostgresProxySpec)
+	cluster.Spec.Proxy.PGBouncer = new(v1beta1.PGBouncerPodSpec)
 	cluster.Default()
 
 	constant := existing.DeepCopy()
@@ -81,7 +81,7 @@ func TestSecret(t *testing.T) {
 func TestPod(t *testing.T) {
 	t.Parallel()
 
-	cluster := new(v1alpha1.PostgresCluster)
+	cluster := new(v1beta1.PostgresCluster)
 	clusterConfigMap := new(corev1.ConfigMap)
 	clusterSecret := new(corev1.Secret)
 	pod := new(corev1.PodSpec)
@@ -97,8 +97,8 @@ func TestPod(t *testing.T) {
 	})
 
 	t.Run("Defaults", func(t *testing.T) {
-		cluster.Spec.Proxy = new(v1alpha1.PostgresProxySpec)
-		cluster.Spec.Proxy.PGBouncer = new(v1alpha1.PGBouncerPodSpec)
+		cluster.Spec.Proxy = new(v1beta1.PostgresProxySpec)
+		cluster.Spec.Proxy.PGBouncer = new(v1beta1.PGBouncerPodSpec)
 		cluster.Default()
 
 		call()
@@ -172,7 +172,7 @@ volumes:
 func TestPostgreSQL(t *testing.T) {
 	t.Parallel()
 
-	cluster := new(v1alpha1.PostgresCluster)
+	cluster := new(v1beta1.PostgresCluster)
 	hbas := new(postgres.HBAs)
 
 	t.Run("Disabled", func(t *testing.T) {
@@ -183,8 +183,8 @@ func TestPostgreSQL(t *testing.T) {
 	})
 
 	t.Run("Enabled", func(t *testing.T) {
-		cluster.Spec.Proxy = new(v1alpha1.PostgresProxySpec)
-		cluster.Spec.Proxy.PGBouncer = new(v1alpha1.PGBouncerPodSpec)
+		cluster.Spec.Proxy = new(v1beta1.PostgresProxySpec)
+		cluster.Spec.Proxy.PGBouncer = new(v1beta1.PGBouncerPodSpec)
 		cluster.Default()
 
 		PostgreSQL(cluster, hbas)

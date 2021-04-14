@@ -20,12 +20,12 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 // ConfigMap populates the PgBouncer ConfigMap.
 func ConfigMap(
-	inCluster *v1alpha1.PostgresCluster,
+	inCluster *v1beta1.PostgresCluster,
 	outConfigMap *corev1.ConfigMap,
 ) {
 	if inCluster.Spec.Proxy == nil || inCluster.Spec.Proxy.PGBouncer == nil {
@@ -65,7 +65,7 @@ func Secret(
 
 // Pod populates a PodSpec with the container and volumes needed to run PgBouncer.
 func Pod(
-	inCluster *v1alpha1.PostgresCluster,
+	inCluster *v1beta1.PostgresCluster,
 	inClusterConfigMap *corev1.ConfigMap,
 	inClusterSecret *corev1.Secret,
 	outPod *corev1.PodSpec,
@@ -124,7 +124,7 @@ func Pod(
 
 // PostgreSQL populates outHBAs with any records needed to run PgBouncer.
 func PostgreSQL(
-	inCluster *v1alpha1.PostgresCluster,
+	inCluster *v1beta1.PostgresCluster,
 	outHBAs *postgres.HBAs,
 ) {
 	if inCluster.Spec.Proxy == nil || inCluster.Spec.Proxy.PGBouncer == nil {

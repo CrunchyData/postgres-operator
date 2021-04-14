@@ -24,7 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 // handleDelete sets a finalizer on cluster and performs the finalization of
@@ -32,7 +32,7 @@ import (
 // not being deleted. The caller is responsible for returning other values to
 // controller-runtime.
 func (r *Reconciler) handleDelete(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) (*reconcile.Result, error) {
 	finalizers := sets.NewString(cluster.Finalizers...)
 

@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
@@ -42,16 +42,16 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 	pgBackRestImage := "hippo-image"
 
 	// create a PostgresCluster to test with
-	postgresCluster := &v1alpha1.PostgresCluster{
+	postgresCluster := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
 			Namespace: namespace,
 			UID:       clusterUID,
 		},
-		Spec: v1alpha1.PostgresClusterSpec{
-			Archive: v1alpha1.Archive{
-				PGBackRest: v1alpha1.PGBackRestArchive{
-					Repos: []v1alpha1.RepoVolume{{
+		Spec: v1beta1.PostgresClusterSpec{
+			Archive: v1beta1.Archive{
+				PGBackRest: v1beta1.PGBackRestArchive{
+					Repos: []v1beta1.RepoVolume{{
 						Name: "repo1",
 						VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
 							AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
@@ -85,18 +85,18 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 	}
 
 	testCases := []struct {
-		repoHost  *v1alpha1.RepoHost
+		repoHost  *v1beta1.RepoHost
 		sshConfig *v1.ConfigMapProjection
 		sshSecret *v1.SecretProjection
 	}{{
 		repoHost: nil,
 	}, {
-		repoHost: &v1alpha1.RepoHost{
+		repoHost: &v1beta1.RepoHost{
 			Image: pgBackRestImage,
 		},
 	}, {
-		repoHost: &v1alpha1.RepoHost{
-			Dedicated: &v1alpha1.DedicatedRepo{
+		repoHost: &v1beta1.RepoHost{
+			Dedicated: &v1beta1.DedicatedRepo{
 				Resources: &v1.ResourceRequirements{},
 			},
 			Image: pgBackRestImage,
@@ -108,7 +108,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 		sshSecret: &v1.SecretProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
 	}, {
-		repoHost: &v1alpha1.RepoHost{
+		repoHost: &v1beta1.RepoHost{
 			Image: pgBackRestImage,
 		},
 		sshConfig: &v1.ConfigMapProjection{
@@ -116,8 +116,8 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 		sshSecret: &v1.SecretProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
 	}, {
-		repoHost: &v1alpha1.RepoHost{
-			Dedicated: &v1alpha1.DedicatedRepo{
+		repoHost: &v1beta1.RepoHost{
+			Dedicated: &v1beta1.DedicatedRepo{
 				Resources: &v1.ResourceRequirements{},
 			},
 			Image: pgBackRestImage,
@@ -258,7 +258,7 @@ func TestReconcilePGDATAVolume(t *testing.T) {
 
 	storageClassName := "storage-class1"
 	apiGroup := "snapshot.storage.k8s.io"
-	testCases := []v1alpha1.PostgresInstanceSetSpec{{
+	testCases := []v1beta1.PostgresInstanceSetSpec{{
 		Name: "instance1",
 		VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
 			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
@@ -306,7 +306,7 @@ func TestReconcilePGDATAVolume(t *testing.T) {
 
 	clusterName := "hippo"
 	clusterUID := types.UID("hippouid")
-	postgresCluster := &v1alpha1.PostgresCluster{
+	postgresCluster := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{Name: clusterName, Namespace: namespace, UID: clusterUID},
 	}
 

@@ -23,7 +23,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"golang.org/x/crypto/ssh"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,7 +59,7 @@ type sshKey struct {
 
 // CreateSSHConfigMapIntent creates a configmap struct with SSHD service and SSH client
 // configuration settings in the data field.
-func CreateSSHConfigMapIntent(postgresCluster *v1alpha1.PostgresCluster) v1.ConfigMap {
+func CreateSSHConfigMapIntent(postgresCluster *v1beta1.PostgresCluster) v1.ConfigMap {
 
 	meta := naming.PGBackRestSSHConfig(postgresCluster)
 	meta.Labels = naming.PGBackRestRepoHostLabels(postgresCluster.GetName())
@@ -92,7 +92,7 @@ func CreateSSHConfigMapIntent(postgresCluster *v1alpha1.PostgresCluster) v1.Conf
 
 // CreateSSHSecretIntent creates the secret containing the new public private key pair to use
 // when connecting to and from the pgBackRest repo pod.
-func CreateSSHSecretIntent(postgresCluster *v1alpha1.PostgresCluster,
+func CreateSSHSecretIntent(postgresCluster *v1beta1.PostgresCluster,
 	currentSSHSecret *v1.Secret) (v1.Secret, error) {
 
 	meta := naming.PGBackRestSSHSecret(postgresCluster)

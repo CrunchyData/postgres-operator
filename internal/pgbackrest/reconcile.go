@@ -19,14 +19,14 @@ import (
 	"fmt"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // AddRepoVolumesToPod adds pgBackRest repository volumes to the provided Pod template spec, while
 // also adding associated volume mounts to the containers specified.
-func AddRepoVolumesToPod(postgresCluster *v1alpha1.PostgresCluster, template *v1.PodTemplateSpec,
+func AddRepoVolumesToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
 	containerNames ...string) error {
 
 	for _, repoVol := range postgresCluster.Spec.Archive.PGBackRest.Repos {
@@ -65,7 +65,7 @@ func AddRepoVolumesToPod(postgresCluster *v1alpha1.PostgresCluster, template *v1
 
 // AddConfigsToPod populates a Pod template Spec with with pgBackRest configuration volumes while
 // then mounting that configuration to the specified containers.
-func AddConfigsToPod(postgresCluster *v1alpha1.PostgresCluster, template *v1.PodTemplateSpec,
+func AddConfigsToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
 	configName string, containerNames ...string) error {
 
 	// grab user provided configs
@@ -116,7 +116,7 @@ func AddConfigsToPod(postgresCluster *v1alpha1.PostgresCluster, template *v1.Pod
 
 // AddSSHToPod populates a Pod template Spec with with the container and volumes needed to enable
 // SSH within a Pod.  It will also mount the SSH configuration to any additional containers specified.
-func AddSSHToPod(postgresCluster *v1alpha1.PostgresCluster, template *v1.PodTemplateSpec,
+func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
 	additionalVolumeMountContainers ...string) error {
 
 	sshConfigs := []v1.VolumeProjection{}

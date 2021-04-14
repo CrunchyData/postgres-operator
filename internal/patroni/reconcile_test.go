@@ -28,14 +28,14 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestClusterConfigMap(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	cluster := new(v1alpha1.PostgresCluster)
+	cluster := new(v1beta1.PostgresCluster)
 	cluster.Default()
 	config := new(v1.ConfigMap)
 	pgHBAs := postgres.HBAs{}
@@ -103,7 +103,7 @@ func TestInstanceConfigMap(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	cluster := new(v1alpha1.PostgresCluster)
+	cluster := new(v1beta1.PostgresCluster)
 	instance := new(appsv1.StatefulSet)
 	config := new(v1.ConfigMap)
 	data, _ := instanceYAML(cluster, instance)
@@ -121,7 +121,7 @@ func TestInstanceConfigMap(t *testing.T) {
 func TestInstancePod(t *testing.T) {
 	t.Parallel()
 
-	cluster := new(v1alpha1.PostgresCluster)
+	cluster := new(v1beta1.PostgresCluster)
 	cluster.Default()
 	cluster.Name = "some-such"
 	clusterConfigMap := new(v1.ConfigMap)

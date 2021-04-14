@@ -29,13 +29,13 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 // +kubebuilder:rbac:resources=endpoints,verbs=deletecollection
 
 func (r *Reconciler) deletePatroniArtifacts(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) error {
 	// TODO(cbandy): This could also be accomplished by adopting the Endpoints
 	// as Patroni creates them. Would their events cause too many reconciles?
@@ -58,7 +58,7 @@ func (r *Reconciler) deletePatroniArtifacts(
 // reconcilePatroniDistributedConfiguration sets labels and ownership on the
 // objects Patroni creates for its distributed configuration.
 func (r *Reconciler) reconcilePatroniDistributedConfiguration(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) error {
 	// When using Endpoints for DCS, Patroni needs a Service to ensure that the
 	// Endpoints object is not removed by Kubernetes at startup. Patroni will
@@ -95,7 +95,7 @@ func (r *Reconciler) reconcilePatroniDistributedConfiguration(
 // +kubebuilder:rbac:resources=pods,verbs=get;list
 
 func (r *Reconciler) reconcilePatroniDynamicConfiguration(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
 ) error {
 	if cluster.Status.Patroni == nil || cluster.Status.Patroni.SystemIdentifier == "" {
@@ -152,7 +152,7 @@ func (r *Reconciler) reconcilePatroniDynamicConfiguration(
 // creates for its leader elections. When Patroni is using Endpoints for this,
 // the returned Service resolves to the elected leader. Otherwise, it is nil.
 func (r *Reconciler) reconcilePatroniLeaderLease(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) (*v1.Service, error) {
 	// When using Endpoints for DCS, Patroni needs a Service to ensure that the
 	// Endpoints object is not removed by Kubernetes at startup.
@@ -195,9 +195,9 @@ func (r *Reconciler) reconcilePatroniLeaderLease(
 
 // reconcilePatroniStatus populates cluster.Status.Patroni with observations.
 func (r *Reconciler) reconcilePatroniStatus(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) error {
-	var status v1alpha1.PatroniStatus
+	var status v1beta1.PatroniStatus
 
 	dcs := &v1.Endpoints{ObjectMeta: naming.PatroniDistributedConfiguration(cluster)}
 	err := errors.WithStack(client.IgnoreNotFound(
@@ -220,7 +220,7 @@ func (r *Reconciler) reconcilePatroniStatus(
 // use this secret to setup a superuser account and to enable cert authentication
 // for each user (replication, rewind, and superuser)
 func (r *Reconciler) reconcilePatroniAuthSecret(
-	ctx context.Context, cluster *v1alpha1.PostgresCluster,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
 ) (*v1.Secret, error) {
 
 	// Setup secret to check for or create

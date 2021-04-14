@@ -23,7 +23,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 const (
@@ -77,7 +77,7 @@ func authFileContents(password []byte) []byte {
 	return []byte(user1)
 }
 
-func clusterINI(cluster *v1alpha1.PostgresCluster) string {
+func clusterINI(cluster *v1beta1.PostgresCluster) string {
 	var (
 		pgBouncerPort = *cluster.Spec.Proxy.PGBouncer.Port
 		postgresPort  = *cluster.Spec.Port

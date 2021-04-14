@@ -26,12 +26,12 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/internal/util"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 // ClusterConfigMap populates the shared ConfigMap with fields needed to run Patroni.
 func ClusterConfigMap(ctx context.Context,
-	inCluster *v1alpha1.PostgresCluster,
+	inCluster *v1beta1.PostgresCluster,
 	inHBAs postgres.HBAs,
 	inParameters postgres.Parameters,
 	inPGUser *v1.Secret,
@@ -73,7 +73,7 @@ func ClusterAuthSecret(ctx context.Context, existing, secret *v1.Secret) error {
 
 // InstanceConfigMap populates the shared ConfigMap with fields needed to run Patroni.
 func InstanceConfigMap(ctx context.Context,
-	inCluster *v1alpha1.PostgresCluster,
+	inCluster *v1beta1.PostgresCluster,
 	inInstance metav1.Object,
 	outInstanceConfigMap *v1.ConfigMap,
 ) error {
@@ -111,7 +111,7 @@ func InstanceCertificates(ctx context.Context,
 
 // InstancePod populates a PodTemplateSpec with the fields needed to run Patroni.
 func InstancePod(ctx context.Context,
-	inCluster *v1alpha1.PostgresCluster,
+	inCluster *v1beta1.PostgresCluster,
 	inClusterConfigMap *v1.ConfigMap,
 	inClusterAuthSecret *v1.Secret,
 	inClusterPodService *v1.Service,
@@ -164,7 +164,7 @@ func InstancePod(ctx context.Context,
 }
 
 // instanceProbes adds Patroni liveness and readiness probes to container.
-func instanceProbes(cluster *v1alpha1.PostgresCluster, container *v1.Container) {
+func instanceProbes(cluster *v1beta1.PostgresCluster, container *v1.Container) {
 
 	// Patroni uses a watchdog to ensure that PostgreSQL does not accept commits
 	// after the leader lock expires, even if Patroni becomes unresponsive.

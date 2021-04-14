@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestManageControllerRefs(t *testing.T) {
@@ -61,14 +61,14 @@ func TestManageControllerRefs(t *testing.T) {
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
 
 	// create a PostgresCluster to test with
-	postgresCluster := &v1alpha1.PostgresCluster{
+	postgresCluster := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
 			Namespace: namespace,
 		},
-		Spec: v1alpha1.PostgresClusterSpec{
+		Spec: v1beta1.PostgresClusterSpec{
 			PostgresVersion: 12,
-			InstanceSets:    []v1alpha1.PostgresInstanceSetSpec{{Name: "instance1"}},
+			InstanceSets:    []v1beta1.PostgresInstanceSetSpec{{Name: "instance1"}},
 		},
 	}
 

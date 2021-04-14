@@ -39,7 +39,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/pgbouncer"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1alpha1"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 const (
@@ -92,7 +92,7 @@ func (r *Reconciler) Reconcile(
 	}
 
 	// get the postgrescluster from the cache
-	cluster := &v1alpha1.PostgresCluster{}
+	cluster := &v1beta1.PostgresCluster{}
 	if err := r.Client.Get(ctx, request.NamespacedName, cluster); err != nil {
 		// NotFound cannot be fixed by requeuing so ignore it. During background
 		// deletion, we receive delete events from cluster's dependents after
@@ -263,7 +263,7 @@ func (r *Reconciler) patch(
 // Only one OwnerReference can be a controller, so it returns an error if another
 // is already set.
 func (r *Reconciler) setControllerReference(
-	owner *v1alpha1.PostgresCluster, controlled client.Object,
+	owner *v1beta1.PostgresCluster, controlled client.Object,
 ) error {
 	return controllerutil.SetControllerReference(owner, controlled, r.Client.Scheme())
 }
@@ -271,7 +271,7 @@ func (r *Reconciler) setControllerReference(
 // setOwnerReference sets an OwnerReference on the object without setting the
 // owner as a controller. This allows for multiple OwnerReferences on an object.
 func (r *Reconciler) setOwnerReference(
-	owner *v1alpha1.PostgresCluster, controlled client.Object,
+	owner *v1beta1.PostgresCluster, controlled client.Object,
 ) error {
 	return controllerutil.SetOwnerReference(owner, controlled, r.Client.Scheme())
 }
@@ -287,7 +287,7 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 	}
 
 	return builder.ControllerManagedBy(mgr).
-		For(&v1alpha1.PostgresCluster{}).
+		For(&v1beta1.PostgresCluster{}).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: workerCount,
 		}).
