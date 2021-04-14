@@ -17,9 +17,9 @@ set -eu
 
 # fill out these variables if you want to change the
 # default pgo bootstrap user and role
-PGOADMIN_USERNAME=admin
-PGOADMIN_PASSWORD=examplepassword
-PGOADMIN_ROLENAME=pgoadmin
+PGOADMIN_USERNAME="${PGOADMIN_USERNAME:-admin}"
+PGOADMIN_PASSWORD="${PGOADMIN_PASSWORD:-examplepassword}"
+PGOADMIN_ROLENAME="${PGOADMIN_ROLENAME:-pgoadmin}"
 PGOADMIN_PERMS="*"
 
 
