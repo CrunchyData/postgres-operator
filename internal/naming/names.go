@@ -34,6 +34,8 @@ const (
 
 	// ContainerPGBouncer is the name of a container running PgBouncer.
 	ContainerPGBouncer = "pgbouncer"
+	// ContainerPGBouncerConfig is the name of a container supporting PgBouncer.
+	ContainerPGBouncerConfig = "pgbouncer-config"
 )
 
 const (

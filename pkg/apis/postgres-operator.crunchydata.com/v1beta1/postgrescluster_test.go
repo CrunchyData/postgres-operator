@@ -121,6 +121,7 @@ status:
 		assert.NilError(t, err)
 		assert.DeepEqual(t, string(b), strings.TrimSpace(`
 pgBouncer:
+  config: {}
   image: ""
   port: 5432
   resources: {}

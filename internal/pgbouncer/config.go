@@ -29,14 +29,17 @@ import (
 const (
 	configDirectory = "/etc/pgbouncer"
 
-	authFileAbsolutePath = configDirectory + "/" + authFileProjectionPath
-	iniFileAbsolutePath  = configDirectory + "/" + iniFileProjectionPath
+	authFileAbsolutePath  = configDirectory + "/" + authFileProjectionPath
+	emptyFileAbsolutePath = configDirectory + "/" + emptyFileProjectionPath
+	iniFileAbsolutePath   = configDirectory + "/" + iniFileProjectionPath
 
-	authFileProjectionPath = "~postgres-operator/users.txt"
-	iniFileProjectionPath  = "~postgres-operator.ini"
+	authFileProjectionPath  = "~postgres-operator/users.txt"
+	emptyFileProjectionPath = "pgbouncer.ini"
+	iniFileProjectionPath   = "~postgres-operator.ini"
 
 	authFileSecretKey   = "pgbouncer-users.txt" // #nosec G101 this is a name, not a credential
 	credentialSecretKey = "pgbouncer-verifier"  // #nosec G101 this is a name, not a credential
+	emptyConfigMapKey   = "pgbouncer-empty"
 	iniFileConfigMapKey = "pgbouncer.ini"
 )
 
@@ -83,27 +86,7 @@ func clusterINI(cluster *v1beta1.PostgresCluster) string {
 		postgresPort  = *cluster.Spec.Port
 	)
 
-	// For versions of PgBouncer before v1.15, the global "auth_user" setting
-	// must be placed before the first "[databases]" section.
-	// - https://github.com/pgbouncer/pgbouncer/issues/391
-	early := iniValueSet{"auth_user": postgresqlUser}
-
-	// Use a wildcard to automatically create connection pools based on database
-	// names. These pools connect to cluster's primary service. The service name
-	// is an RFC 1123 DNS label so it does not need to be quoted nor escaped.
-	// - https://www.pgbouncer.org/config.html#section-databases
-	//
-	// NOTE(cbandy): PgBouncer only accepts connections to items in this section
-	// and the database "pgbouncer", which is the admin console. For connections
-	// to the wildcard, PgBouncer first checks for the database in PostgreSQL.
-	// When that database does not exist, the client will experience timeouts
-	// or errors that sound like PgBouncer misconfiguration.
-	// - https://github.com/pgbouncer/pgbouncer/issues/352
-	// TODO(cbandy): allow the wildcard to be disabled.
-	databases := fmt.Sprintf("[databases]\n* = host=%s port=%d\n",
-		naming.ClusterPrimaryService(cluster).Name, postgresPort)
-
-	defaults := iniValueSet{
+	global := iniValueSet{
 		// Prior to PostgreSQL v12, the default setting for "extra_float_digits"
 		// does not return precise float values. Applications that want
 		// consistent results from different PostgreSQL versions may connect
@@ -113,9 +96,7 @@ func clusterINI(cluster *v1beta1.PostgresCluster) string {
 		// - https://www.postgresql.org/docs/current/runtime-config-client.html#GUC-EXTRA-FLOAT-DIGITS
 		// - https://github.com/pgjdbc/pgjdbc/blob/REL42.2.19/pgjdbc/src/main/java/org/postgresql/core/v3/ConnectionFactoryImpl.java#L334
 		"ignore_startup_parameters": "extra_float_digits",
-	}
 
-	mandatory := iniValueSet{
 		// Authenticate frontend connections using passwords stored in PostgreSQL.
 		// PgBouncer will connect to the backend database that is requested by
 		// the frontend as the "auth_user" and execute "auth_query". When
@@ -137,9 +118,6 @@ func clusterINI(cluster *v1beta1.PostgresCluster) string {
 		"client_tls_key_file":  certFrontendPrivateKeyAbsolutePath,
 		"client_tls_ca_file":   certFrontendAuthorityAbsolutePath,
 
-		// Prevent the user from bypassing the main configuration file.
-		"conffile": iniFileAbsolutePath,
-
 		// Listen on the PgBouncer port on all addresses.
 		"listen_addr": "*",
 		"listen_port": fmt.Sprint(pgBouncerPort),
@@ -152,22 +130,97 @@ func clusterINI(cluster *v1beta1.PostgresCluster) string {
 		"unix_socket_dir": "",
 	}
 
-	return iniGeneratedWarning +
-		"\n[pgbouncer]\n" + early.String() + databases +
-		"\n[pgbouncer]\n" + defaults.String() +
-		"\n[pgbouncer]\n" + mandatory.String()
+	// Override the above with any specified settings.
+	for k, v := range cluster.Spec.Proxy.PGBouncer.Config.Global {
+		global[k] = v
+	}
+
+	// Prevent the user from bypassing the main configuration file.
+	global["conffile"] = iniFileAbsolutePath
+
+	// Use a wildcard to automatically create connection pools based on database
+	// names. These pools connect to cluster's primary service. The service name
+	// is an RFC 1123 DNS label so it does not need to be quoted nor escaped.
+	// - https://www.pgbouncer.org/config.html#section-databases
+	//
+	// NOTE(cbandy): PgBouncer only accepts connections to items in this section
+	// and the database "pgbouncer", which is the admin console. For connections
+	// to the wildcard, PgBouncer first checks for the database in PostgreSQL.
+	// When that database does not exist, the client will experience timeouts
+	// or errors that sound like PgBouncer misconfiguration.
+	// - https://github.com/pgbouncer/pgbouncer/issues/352
+	databases := iniValueSet{
+		"*": fmt.Sprintf("host=%s port=%d",
+			naming.ClusterPrimaryService(cluster).Name, postgresPort),
+	}
+
+	// Replace the above with any specified databases.
+	if len(cluster.Spec.Proxy.PGBouncer.Config.Databases) > 0 {
+		databases = iniValueSet(cluster.Spec.Proxy.PGBouncer.Config.Databases)
+	}
+
+	users := iniValueSet(cluster.Spec.Proxy.PGBouncer.Config.Users)
+
+	// First, include any custom configuration file with verbosity turned up.
+	// PgBouncer will log a DEBUG message before it processes each line of that
+	// file, providing context when an "%include" is wrong.
+	// - https://github.com/pgbouncer/pgbouncer/issues/584
+	result := iniGeneratedWarning +
+		"\n[pgbouncer]" +
+		"\nverbose = 1" +
+		"\n%include " + emptyFileAbsolutePath
+
+	// Next, apply global settings with verbosity restored.
+	verbose := global["verbose"]
+	delete(global, "verbose")
+	if len(verbose) == 0 {
+		verbose = "0"
+	}
+	result += "\n\n[pgbouncer]\n" +
+		iniValueSet{"verbose": verbose}.String() + "\n" + global.String()
+
+	// Finally, apply pool definitions.
+	result += "\n[databases]\n" + databases.String()
+	if len(users) > 0 {
+		result += "\n[users]\n" + users.String()
+	}
+
+	return result
 }
 
 // podConfigFiles returns projections of PgBouncer's configuration files to
 // include in the configuration volume.
 func podConfigFiles(
-	clusterConfigMap *corev1.ConfigMap, clusterSecret *corev1.Secret,
+	config v1beta1.PGBouncerConfiguration,
+	configmap *corev1.ConfigMap, secret *corev1.Secret,
 ) []corev1.VolumeProjection {
-	return []corev1.VolumeProjection{
+	// Start with an empty file at /etc/pgbouncer/pgbouncer.ini. This file can
+	// be overridden by the user, but it must exist because our configuration
+	// file refers to it.
+	projections := []corev1.VolumeProjection{
 		{
 			ConfigMap: &corev1.ConfigMapProjection{
 				LocalObjectReference: corev1.LocalObjectReference{
-					Name: clusterConfigMap.Name,
+					Name: configmap.Name,
+				},
+				Items: []corev1.KeyToPath{{
+					Key:  emptyConfigMapKey,
+					Path: emptyFileProjectionPath,
+				}},
+			},
+		},
+	}
+
+	// Add any specified projections. These may override the files above.
+	// - https://docs.k8s.io/concepts/storage/volumes/#projected
+	projections = append(projections, config.Files...)
+
+	// Add our non-empty configurations last so that they take precedence.
+	projections = append(projections, []corev1.VolumeProjection{
+		{
+			ConfigMap: &corev1.ConfigMapProjection{
+				LocalObjectReference: corev1.LocalObjectReference{
+					Name: configmap.Name,
 				},
 				Items: []corev1.KeyToPath{{
 					Key:  iniFileConfigMapKey,
@@ -178,7 +231,7 @@ func podConfigFiles(
 		{
 			Secret: &corev1.SecretProjection{
 				LocalObjectReference: corev1.LocalObjectReference{
-					Name: clusterSecret.Name,
+					Name: secret.Name,
 				},
 				Items: []corev1.KeyToPath{{
 					Key:  authFileSecretKey,
@@ -186,5 +239,29 @@ func podConfigFiles(
 				}},
 			},
 		},
-	}
+	}...)
+
+	return projections
+}
+
+// reloadCommand returns an entrypoint that convinces PgBouncer to reload
+// configuration files.
+func reloadCommand() []string {
+	// Use a Bash loop to periodically check the mtime of the mounted
+	// configuration volume. When it changes, signal PgBouncer and print the
+	// observed timestamp.
+	// NOTE(cbandy): Using `sleep & wait` below used over 75Mi of memory on
+	// OpenShift 4.7.2.
+	const script = `
+declare -r directory="$1"
+while sleep 5s; do
+  mounted=$(stat --format=%y "${directory}")
+  if [ "${mounted}" != "${loaded-}" ] && pkill --signal HUP --exact pgbouncer
+  then
+    loaded="${mounted}"
+    echo Loaded configuration dated "${loaded}"
+  fi
+done
+`
+	return []string{"bash", "-ceu", "--", strings.TrimLeft(script, "\n"), "-", configDirectory}
 }

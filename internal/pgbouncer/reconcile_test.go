@@ -36,6 +36,13 @@ func TestConfigMap(t *testing.T) {
 	cluster := new(v1beta1.PostgresCluster)
 	config := new(corev1.ConfigMap)
 
+	t.Run("Disabled", func(t *testing.T) {
+		// Nothing happens when PgBouncer is disabled.
+		constant := config.DeepCopy()
+		ConfigMap(cluster, config)
+		assert.DeepEqual(t, constant, config)
+	})
+
 	cluster.Spec.Proxy = new(v1beta1.PostgresProxySpec)
 	cluster.Spec.Proxy.PGBouncer = new(v1beta1.PGBouncerPodSpec)
 	cluster.Default()
@@ -63,6 +70,13 @@ func TestSecret(t *testing.T) {
 
 	root := pki.NewRootCertificateAuthority()
 	assert.NilError(t, root.Generate())
+
+	t.Run("Disabled", func(t *testing.T) {
+		// Nothing happens when PgBouncer is disabled.
+		constant := intent.DeepCopy()
+		assert.NilError(t, Secret(ctx, cluster, root, existing, service, intent))
+		assert.DeepEqual(t, constant, intent)
+	})
 
 	cluster.Spec.Proxy = new(v1beta1.PostgresProxySpec)
 	cluster.Spec.Proxy.PGBouncer = new(v1beta1.PGBouncerPodSpec)
@@ -137,6 +151,33 @@ containers:
   - mountPath: /etc/pgbouncer/~postgres-operator-frontend
     name: pgbouncer-frontend-tls
     readOnly: true
+- command:
+  - bash
+  - -ceu
+  - --
+  - |
+    declare -r directory="$1"
+    while sleep 5s; do
+      mounted=$(stat --format=%y "${directory}")
+      if [ "${mounted}" != "${loaded-}" ] && pkill --signal HUP --exact pgbouncer
+      then
+        loaded="${mounted}"
+        echo Loaded configuration dated "${loaded}"
+      fi
+    done
+  - '-'
+  - /etc/pgbouncer
+  name: pgbouncer-config
+  resources: {}
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgbouncer
+    name: pgbouncer-config
+    readOnly: true
 volumes:
 - name: pgbouncer-backend-tls
   projected:
@@ -145,6 +186,10 @@ volumes:
 - name: pgbouncer-config
   projected:
     sources:
+    - configMap:
+        items:
+        - key: pgbouncer-empty
+          path: pgbouncer.ini
     - configMap:
         items:
         - key: pgbouncer.ini
@@ -216,6 +261,37 @@ containers:
   - mountPath: /etc/pgbouncer/~postgres-operator-frontend
     name: pgbouncer-frontend-tls
     readOnly: true
+- command:
+  - bash
+  - -ceu
+  - --
+  - |
+    declare -r directory="$1"
+    while sleep 5s; do
+      mounted=$(stat --format=%y "${directory}")
+      if [ "${mounted}" != "${loaded-}" ] && pkill --signal HUP --exact pgbouncer
+      then
+        loaded="${mounted}"
+        echo Loaded configuration dated "${loaded}"
+      fi
+    done
+  - '-'
+  - /etc/pgbouncer
+  image: image-town
+  name: pgbouncer-config
+  resources:
+    limits:
+      cpu: 5m
+      memory: 16Mi
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /etc/pgbouncer
+    name: pgbouncer-config
+    readOnly: true
 volumes:
 - name: pgbouncer-backend-tls
   projected:
@@ -224,6 +300,10 @@ volumes:
 - name: pgbouncer-config
   projected:
     sources:
+    - configMap:
+        items:
+        - key: pgbouncer-empty
+          path: pgbouncer.ini
     - configMap:
         items:
         - key: pgbouncer.ini

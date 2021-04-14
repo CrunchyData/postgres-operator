@@ -20,6 +20,7 @@ import (
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -40,6 +41,7 @@ func ConfigMap(
 
 	initialize.StringMap(&outConfigMap.Data)
 
+	outConfigMap.Data[emptyConfigMapKey] = ""
 	outConfigMap.Data[iniFileConfigMapKey] = clusterINI(inCluster)
 }
 
@@ -124,20 +126,16 @@ func Pod(
 	frontend := corev1.Volume{Name: "pgbouncer-frontend-tls"}
 	frontend.Projected = &corev1.ProjectedVolumeSource{
 		Sources: []corev1.VolumeProjection{
-			frontendCertificate(inCluster.Spec.Proxy.PGBouncer.CustomTLSSecret, inSecret),
+			frontendCertificate(
+				inCluster.Spec.Proxy.PGBouncer.CustomTLSSecret, inSecret),
 		},
 	}
 
 	config := corev1.Volume{Name: "pgbouncer-config"}
-	config.Projected = new(corev1.ProjectedVolumeSource)
-
-	// Add our projections after those specified in the CR. Items later in the
-	// list take precedence over earlier items (that is, last write wins).
-	// - https://docs.k8s.io/concepts/storage/volumes/#projected
-	config.Projected.Sources = append(append(
-		// TODO(cbandy): User config will come from the spec.
-		config.Projected.Sources, []corev1.VolumeProjection(nil)...),
-		podConfigFiles(inConfigMap, inSecret)...)
+	config.Projected = &corev1.ProjectedVolumeSource{
+		Sources: podConfigFiles(
+			inCluster.Spec.Proxy.PGBouncer.Config, inConfigMap, inSecret),
+	}
 
 	container := corev1.Container{
 		Name: naming.ContainerPGBouncer,
@@ -176,7 +174,33 @@ func Pod(
 	// TODO container.LivenessProbe?
 	// TODO container.ReadinessProbe?
 
-	outPod.Containers = []corev1.Container{container}
+	reloader := corev1.Container{
+		Name: naming.ContainerPGBouncerConfig,
+
+		Command: reloadCommand(),
+		Image:   inCluster.Spec.Proxy.PGBouncer.Image,
+
+		SecurityContext: initialize.RestrictedSecurityContext(),
+
+		VolumeMounts: []corev1.VolumeMount{{
+			Name:      config.Name,
+			MountPath: configDirectory,
+			ReadOnly:  true,
+		}},
+	}
+
+	// Let the PgBouncer container drive the QoS of the pod. Set resources only
+	// when that container has some.
+	// - https://docs.k8s.io/tasks/configure-pod-container/quality-service-pod/
+	if len(container.Resources.Limits)+len(container.Resources.Requests) > 0 {
+		// Limits without Requests implies Requests that match.
+		reloader.Resources.Limits = corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("5m"),
+			corev1.ResourceMemory: resource.MustParse("16Mi"),
+		}
+	}
+
+	outPod.Containers = []corev1.Container{container, reloader}
 	outPod.Volumes = []corev1.Volume{backend, config, frontend}
 }
 

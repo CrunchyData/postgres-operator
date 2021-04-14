@@ -45,6 +45,7 @@ func TestContainerNamesUniqueAndValid(t *testing.T) {
 		ContainerDatabase,
 		ContainerDatabasePGDATAInit,
 		ContainerPGBouncer,
+		ContainerPGBouncerConfig,
 	} {
 		assert.Assert(t, !names.Has(name), "%q defined already", name)
 		assert.Assert(t, nil == validation.IsDNS1123Label(name))
