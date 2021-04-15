@@ -60,6 +60,10 @@ An incremental backup is created without specifying any options after a full or 
 
 The PostgreSQL Operator supports creating backups in S3 or any object storage system that uses the S3 protocol. For more information, please read the section on [PostgreSQL Operator Backups with S3]({{< relref "architecture/disaster-recovery.md">}}#using-s3) in the architecture section.
 
+### Creating Backups in GCS
+
+The PostgreSQL Operator supports creating backups in Google Cloud Storage (GCS). For more information, please read the section on [PostgreSQL Operator Backups with GCS]({{< relref "architecture/disaster-recovery.md">}}#using-gcs) in the architecture section.
+
 ## Set Backup Retention
 
 By default, pgBackRest will allow you to keep on creating backups until you run out of disk space. As such, it may be helpful to manage how many backups are retained.

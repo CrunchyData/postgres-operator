@@ -116,6 +116,10 @@ var PgbackrestEnvVarsTemplate *template.Template
 
 const pgbackrestEnvVarsPath = "pgbackrest-env-vars.json"
 
+var PgbackrestGCSEnvVarsTemplate *template.Template
+
+const pgbackrestGCSEnvVarsPath = "pgbackrest-gcs-env-vars.json"
+
 var PgbackrestS3EnvVarsTemplate *template.Template
 
 const pgbackrestS3EnvVarsPath = "pgbackrest-s3-env-vars.json"
@@ -204,6 +208,9 @@ type ClusterStruct struct {
 	Replicas                       string
 	ServiceType                    v1.ServiceType
 	BackrestPort                   int
+	BackrestGCSBucket              string
+	BackrestGCSEndpoint            string
+	BackrestGCSKeyType             string
 	BackrestS3Bucket               string
 	BackrestS3Endpoint             string
 	BackrestS3Region               string
@@ -617,6 +624,11 @@ func (c *PgoConfig) GetConfig(clientset kubernetes.Interface, namespace string) 
 	}
 
 	PgbackrestEnvVarsTemplate, err = c.LoadTemplate(cMap, pgbackrestEnvVarsPath)
+	if err != nil {
+		return err
+	}
+
+	PgbackrestGCSEnvVarsTemplate, err = c.LoadTemplate(cMap, pgbackrestGCSEnvVarsPath)
 	if err != nil {
 		return err
 	}

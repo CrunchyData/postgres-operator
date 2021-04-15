@@ -326,6 +326,123 @@ EOF
 kubectl apply -f "${pgo_cluster_name}-pgcluster.yaml"
 ```
 
+### Create a PostgreSQL Cluster With Backups in GCS
+
+A frequent use case is to create a PostgreSQL cluster with Google Cloud Storage
+(GCS) for storing backups. This requires adding a Secret that contains
+the GCS key for your account, and adding some additional
+information into the custom resource.
+
+#### Step 1: Create the pgBackRest GCS Secrets
+
+As mentioned above, it is necessary to create a Secret containing the GCS key.
+This is a file that you can download from Google.
+
+The below code will help you set up this Secret.
+
+```
+# this variable is the name of the cluster being created
+pgo_cluster_name=hippo
+# this variable is the namespace the cluster is being deployed into
+cluster_namespace=pgo
+# the following variables are your S3 key and key secret
+backrest_gcs_key=/path/to/your/gcs/credential.json
+
+kubectl -n "${cluster_namespace}" create secret generic "${pgo_cluster_name}-backrest-repo-config" \
+  --from-file="gcs-key=${backrest_gcs_key}"
+
+unset backrest_gcs_key
+```
+
+#### Step 2: Create the PostgreSQL Cluster
+
+With the Secrets in place. It is now time to create the PostgreSQL cluster.
+
+The below manifest references the Secrets created in the previous step to add a
+custom resource to the `pgclusters.crunchydata.com` custom resource definition.
+There are some additions in this example specifically for storing backups in
+GCS.
+
+```
+# this variable is the name of the cluster being created
+export pgo_cluster_name=hippo
+# this variable is the namespace the cluster is being deployed into
+export cluster_namespace=pgo
+# the following variables store the information for your S3 cluster. You may
+# need to adjust them for your actual settings
+export backrest_gcs_bucket=your-bucket
+
+cat <<-EOF > "${pgo_cluster_name}-pgcluster.yaml"
+apiVersion: crunchydata.com/v1
+kind: Pgcluster
+metadata:
+  annotations:
+    current-primary: ${pgo_cluster_name}
+  labels:
+    crunchy-pgha-scope: ${pgo_cluster_name}
+    deployment-name: ${pgo_cluster_name}
+    name: ${pgo_cluster_name}
+    pg-cluster: ${pgo_cluster_name}
+    pgo-version: {{< param operatorVersion >}}
+    pgouser: admin
+  name: ${pgo_cluster_name}
+  namespace: ${cluster_namespace}
+spec:
+  BackrestStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ""
+    size: 1G
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  PrimaryStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ${pgo_cluster_name}
+    size: 1G
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  ReplicaStorage:
+    accessmode: ReadWriteMany
+    matchLabels: ""
+    name: ""
+    size: 1G
+    storageclass: ""
+    storagetype: dynamic
+    supplementalgroups: ""
+  annotations: {}
+  backrestStorageTypes:
+  - gcs
+  backrestGCSBucket: ${backrest_gcs_bucket}
+  ccpimage: crunchy-postgres-ha
+  ccpimageprefix: registry.developers.crunchydata.com/crunchydata
+  ccpimagetag: {{< param centosBase >}}-{{< param postgresVersion >}}-{{< param operatorVersion >}}
+  clustername: ${pgo_cluster_name}
+  database: ${pgo_cluster_name}
+  exporterport: "9187"
+  limits: {}
+  name: ${pgo_cluster_name}
+  pgDataSource:
+    restoreFrom: ""
+    restoreOpts: ""
+  pgbadgerport: "10000"
+  pgoimageprefix: registry.developers.crunchydata.com/crunchydata
+  podAntiAffinity:
+    default: preferred
+    pgBackRest: preferred
+    pgBouncer: preferred
+  port: "5432"
+  tolerations: []
+  user: hippo
+  userlabels:
+    pgo-version: {{< param operatorVersion >}}
+EOF
+
+kubectl apply -f "${pgo_cluster_name}-pgcluster.yaml"
+```
+
 ### Create a PostgreSQL Cluster with TLS
 
 There are three items that are required to enable TLS in your PostgreSQL clusters:
@@ -791,7 +908,9 @@ make changes, as described below.
 | backrestLimits | `create`, `update` | Specify the container resource limits that the pgBackRest repository should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | backrestRepoPath | `create` | Optional reference to the location of the pgBackRest repository. |
 | BackrestResources | `create`, `update` | Specify the container resource requests that the pgBackRest repository should use. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
-| backrestS3Bucket | `create`, `update` | An optional parameter that specifies a S3 bucket that pgBackRest should use. If the name is updated, the Postgres Operator will create a new stanza and take an initial backup in the new bucket. |
+| backrestGCSBucket | `create` | An optional parameter (unless you are using GCS for backup storage) that specifies the GCS bucket that pgBackRest should use. |
+| backrestGCSEndpoint | `create` | An optional parameter that specifies a GCS endpoint pgBackRest should use, if not using the default GCS endpoint. |
+| backrestGCSKeyType | `create` | An optional parameter that specifies a GCS key type that pgBackRest should use. Can be either `service` or `token`, and if not specified, pgBackRest will use `service`. |
 | backrestS3Endpoint | `create` | An optional parameter that specifies the S3 endpoint pgBackRest should use. |
 | backrestS3Region | `create` | An optional parameter that specifies a cloud region that pgBackRest should use. |
 | backrestS3URIStyle | `create` | An optional parameter that specifies if pgBackRest should use the `path` or `host` S3 URI style. |

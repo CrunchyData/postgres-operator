@@ -43,6 +43,7 @@ type BackrestRepoConfig struct {
 	BackrestS3CA        []byte
 	BackrestS3Key       string
 	BackrestS3KeySecret string
+	BackrestGCSKey      []byte
 	ClusterName         string
 	ClusterNamespace    string
 	OperatorNamespace   string
@@ -54,6 +55,11 @@ type AWSS3Secret struct {
 	AWSS3CA        []byte
 	AWSS3Key       string
 	AWSS3KeySecret string
+}
+
+// GCSSecret is a structured representation for providing the GCS key
+type GCSSecret struct {
+	Key []byte
 }
 
 const (
@@ -77,6 +83,8 @@ const (
 	BackRestRepoSecretKeyAWSS3KeyAWSS3Key = "aws-s3-key"
 	// #nosec: G101
 	BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret = "aws-s3-key-secret"
+	// #nosec: G101
+	BackRestRepoSecretKeyAWSS3KeyGCSKey = "gcs-key"
 	// the rest are private
 	backRestRepoSecretKeyAuthorizedKeys = "authorized_keys"
 	backRestRepoSecretKeySSHConfig      = "config"
@@ -159,7 +167,7 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 	}
 
 	// next, load the Operator level pgBackRest secret templates, which contain
-	// SSHD(...?) and possible S3 credentials
+	// SSHD(...?) and possible S3 or GCS credentials
 	configs, configErr := clientset.
 		CoreV1().Secrets(backrestRepoConfig.OperatorNamespace).
 		Get(ctx, config.SecretOperatorBackrestRepoConfig, metav1.GetOptions{})
@@ -222,6 +230,15 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 	if len(secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret]) == 0 &&
 		len(configs.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret]) != 0 {
 		secret.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret] = configs.Data[BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret]
+	}
+
+	if len(backrestRepoConfig.BackrestGCSKey) != 0 {
+		secret.Data[BackRestRepoSecretKeyAWSS3KeyGCSKey] = backrestRepoConfig.BackrestGCSKey
+	}
+
+	if len(secret.Data[BackRestRepoSecretKeyAWSS3KeyGCSKey]) == 0 &&
+		len(configs.Data[BackRestRepoSecretKeyAWSS3KeyGCSKey]) != 0 {
+		secret.Data[BackRestRepoSecretKeyAWSS3KeyGCSKey] = configs.Data[BackRestRepoSecretKeyAWSS3KeyGCSKey]
 	}
 
 	// time to create or update the secret!
@@ -363,6 +380,25 @@ func GetPrimaryPod(clientset kubernetes.Interface, cluster *crv1.Pgcluster) (*v1
 	// Grab the first pod from the list as this is presumably the primary pod
 	pod := pods.Items[0]
 	return &pod, nil
+}
+
+// GetGCSCredsFromBackrestRepoSecret retrieves the GCS credentials, i.e. the
+// key "file" from the pgBackRest Secret
+func GetGCSCredsFromBackrestRepoSecret(clientset kubernetes.Interface, namespace, clusterName string) (GCSSecret, error) {
+	ctx := context.TODO()
+	secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
+	gcsSecret := GCSSecret{}
+
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+	if err != nil {
+		log.Error(err)
+		return gcsSecret, err
+	}
+
+	// get the GCS secret credentials out of the secret, and return
+	gcsSecret.Key = secret.Data[BackRestRepoSecretKeyAWSS3KeyGCSKey]
+
+	return gcsSecret, nil
 }
 
 // GetS3CredsFromBackrestRepoSecret retrieves the AWS S3 credentials, i.e. the key and key

@@ -78,6 +78,22 @@ func TestParseBackrestStorageTypes(t *testing.T) {
 		}
 	})
 
+	t.Run("gcs", func(t *testing.T) {
+		storageTypes, err := ParseBackrestStorageTypes("gcs")
+
+		if err != nil {
+			t.Fatalf("expected no error actual %q", err.Error())
+		}
+
+		if len(storageTypes) != 1 {
+			t.Fatalf("multiple storage types returned, expected 1")
+		}
+
+		if storageTypes[0] != BackrestStorageTypeGCS {
+			t.Fatalf("gcs expected but not found")
+		}
+	})
+
 	t.Run("s3", func(t *testing.T) {
 		storageTypes, err := ParseBackrestStorageTypes("s3")
 

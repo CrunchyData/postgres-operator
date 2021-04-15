@@ -218,14 +218,23 @@ func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error
 		return err
 	}
 
-	// override to the repo type to ensure s3 is utilized for standby creation
+	// override to the repo type to ensure s3/gcs is utilized for standby creation
 	pghaConfigMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-pgha-config"
 	pghaConfigMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(ctx, pghaConfigMapName, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("Unable to find configMap %s when attempting to enable standby",
 			pghaConfigMapName)
 	}
-	pghaConfigMap.Data[operator.PGHAConfigReplicaBootstrapRepoType] = "s3"
+
+	repoType := crv1.BackrestStorageTypeS3
+
+	for _, r := range cluster.Spec.BackrestStorageTypes {
+		if r == crv1.BackrestStorageTypeGCS {
+			repoType = crv1.BackrestStorageTypeGCS
+		}
+	}
+
+	pghaConfigMap.Data[operator.PGHAConfigReplicaBootstrapRepoType] = string(repoType)
 
 	// delete the DCS config so that it will refresh with the included standby settings
 	delete(pghaConfigMap.Data, fmt.Sprintf(cfg.PGHADCSConfigName, clusterName))

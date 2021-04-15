@@ -423,10 +423,17 @@ func createUpgradePGHAConfigMap(clientset kubernetes.Interface, cluster *crv1.Pg
 		data[operator.PGHAConfigInitSetting] = "true"
 	}
 
-	// if a standby cluster then we want to create replicas using the S3 pgBackRest repository
-	// (and not the local in-cluster pgBackRest repository)
+	// if a standby cluster then we want to create replicas using the S3 or GCS
+	// pgBackRest repository (and not the local in-cluster pgBackRest repository)
 	if cluster.Spec.Standby {
-		data[operator.PGHAConfigReplicaBootstrapRepoType] = "s3"
+		repoType := crv1.BackrestStorageTypeS3
+
+		for _, r := range cluster.Spec.BackrestStorageTypes {
+			if r == crv1.BackrestStorageTypeGCS {
+				repoType = crv1.BackrestStorageTypeGCS
+			}
+		}
+		data[operator.PGHAConfigReplicaBootstrapRepoType] = string(repoType)
 	}
 
 	configmap := &v1.ConfigMap{

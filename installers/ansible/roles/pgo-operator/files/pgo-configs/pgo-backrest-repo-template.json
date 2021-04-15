@@ -65,6 +65,7 @@
                     }],
                     {{.ContainerResources }}
                     "env": [
+                      {{.PgbackrestGCSEnvVars}}
                       {{.PgbackrestS3EnvVars}}
                       {
                         "name": "MODE",
@@ -97,7 +98,7 @@
                       {
                         "name": "PGBACKREST_DB_HOST",
                         "value": "{{.PGbackrestDBHost}}"
-                      }, 
+                      },
                       {
                         "name": "LD_PRELOAD",
                         "value": "/usr/lib64/libnss_wrapper.so"
@@ -105,7 +106,7 @@
                       {
                         "name": "NSS_WRAPPER_PASSWD",
                         "value": "/tmp/nss_wrapper/pgbackrest-repo/passwd"
-                      }, 
+                      },
                       {
                         "name": "NSS_WRAPPER_GROUP",
                         "value": "/tmp/nss_wrapper/pgbackrest-repo/group"
@@ -145,7 +146,7 @@
                     "secret": {
                         "secretName": "{{.SshdSecretsName}}"
                     }
-                }, 
+                },
                 {
                   "name": "ssh-config",
                   "secret": {

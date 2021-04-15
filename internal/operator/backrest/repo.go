@@ -40,6 +40,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// gcsRepoTypeRegex defines a regex to detect if a GCS restore is specified
+// using the pgBackRest --repo-type option
+var gcsRepoTypeRegex = regexp.MustCompile(`--repo-type=["']?gcs["']?`)
+
 // s3RepoTypeRegex defines a regex to detect if an S3 restore has been specified using the
 // pgBackRest --repo-type option
 var s3RepoTypeRegex = regexp.MustCompile(`--repo-type=["']?s3["']?`)
@@ -58,6 +62,7 @@ type RepoDeploymentTemplateFields struct {
 	SshdPort                  int
 	PgbackrestStanza          string
 	PgbackrestRepo1Type       crv1.BackrestStorageType
+	PgbackrestGCSEnvVars      string
 	PgbackrestS3EnvVars       string
 	Name                      string
 	ClusterName               string
@@ -221,15 +226,19 @@ func setBootstrapRepoOverrides(clientset kubernetes.Interface, cluster *crv1.Pgc
 	}
 	repoFields.SshdPort = sshdPort
 
-	// if an s3 restore is detected, override or set the pgbackrest S3 env vars, otherwise do
-	// not set the s3 env vars at all
-	s3Restore := S3RepoTypeCLIOptionExists(cluster.Spec.PGDataSource.RestoreOpts)
-	if s3Restore {
-		// Now override any backrest S3 env vars for the bootstrap job
+	// if a s3 or gcs restore is detected, override or set the pgbackrest S3/GCS env vars, otherwise do
+	// not set the env vars at all
+	repoFields.PgbackrestS3EnvVars = ""
+	repoFields.PgbackrestGCSEnvVars = ""
+
+	// override any backrest S3/GCS env vars for the bootstrap job if this is
+	// detected
+	if S3RepoTypeCLIOptionExists(cluster.Spec.PGDataSource.RestoreOpts) {
 		repoFields.PgbackrestS3EnvVars = operator.GetPgbackrestBootstrapS3EnvVars(
 			cluster.Spec.PGDataSource.RestoreFrom, restoreFromSecret)
-	} else {
-		repoFields.PgbackrestS3EnvVars = ""
+	} else if GCSRepoTypeCLIOptionExists(cluster.Spec.PGDataSource.RestoreOpts) {
+		repoFields.PgbackrestGCSEnvVars = operator.GetPgbackrestBootstrapGCSEnvVars(
+			cluster.Spec.PGDataSource.RestoreFrom, restoreFromSecret)
 	}
 
 	return nil
@@ -255,6 +264,7 @@ func getRepoDeploymentFields(clientset kubernetes.Interface, cluster *crv1.Pgclu
 		SshdPort:              operator.Pgo.Cluster.BackrestPort,
 		PgbackrestStanza:      "db",
 		PgbackrestRepo1Type:   operator.GetRepoType(cluster),
+		PgbackrestGCSEnvVars:  operator.GetPgbackrestGCSEnvVars(clientset, *cluster),
 		PgbackrestS3EnvVars:   operator.GetPgbackrestS3EnvVars(clientset, *cluster),
 		Name:                  fmt.Sprintf(util.BackrestRepoServiceName, cluster.Name),
 		ClusterName:           cluster.Name,
@@ -409,6 +419,12 @@ func createService(clientset kubernetes.Interface, fields *RepoServiceTemplateFi
 	}
 
 	return err
+}
+
+// GCSRepoTypeCLIOptionExists detects if a GCS restore was requested via the
+// '--repo-type' command line option
+func GCSRepoTypeCLIOptionExists(opts string) bool {
+	return gcsRepoTypeRegex.MatchString(opts)
 }
 
 // S3RepoTypeCLIOptionExists detects if a S3 restore was requested via the '--repo-type'

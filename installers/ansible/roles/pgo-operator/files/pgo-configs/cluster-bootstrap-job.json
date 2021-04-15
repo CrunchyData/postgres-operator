@@ -60,6 +60,7 @@
                         "name": "PATRONI_POSTGRESQL_DATA_DIR",
                         "value": "/pgdata/{{.Name}}"
                     },
+                    {{.PgbackrestGCSEnvVars}}
                     {{.PgbackrestS3EnvVars}}
                     {{.PgbackrestEnvVars}}
                     {

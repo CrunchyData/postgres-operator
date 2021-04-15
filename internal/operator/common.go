@@ -279,6 +279,25 @@ func GetRepoType(cluster *crv1.Pgcluster) crv1.BackrestStorageType {
 	return cluster.Spec.BackrestStorageTypes[0]
 }
 
+// IsLocalAndGCSStorage a boolean indicating whether or not local and gcs
+// storage should be enabled for pgBackRest based on the backrestStorageType
+// string provided
+func IsLocalAndGCSStorage(cluster *crv1.Pgcluster) bool {
+	// this works for the time being. if the counter is two or greater, then we
+	// have both local and GCS storage
+	i := 0
+
+	for _, storageType := range cluster.Spec.BackrestStorageTypes {
+		switch storageType {
+		default: // no-op
+		case crv1.BackrestStorageTypeLocal, crv1.BackrestStorageTypePosix, crv1.BackrestStorageTypeGCS:
+			i += 1
+		}
+	}
+
+	return i >= 2
+}
+
 // IsLocalAndS3Storage a boolean indicating whether or not local and s3 storage should
 // be enabled for pgBackRest based on the backrestStorageType string provided
 func IsLocalAndS3Storage(cluster *crv1.Pgcluster) bool {

@@ -824,6 +824,9 @@ func annotateBackrestSecret(clientset kubernetes.Interface, cluster *crv1.Pgclus
 		config.ANNOTATION_SUPPLEMENTAL_GROUPS: cluster.Spec.BackrestStorage.SupplementalGroups,
 		config.ANNOTATION_S3_URI_STYLE:        cfg(cl.BackrestS3URIStyle, op.BackrestS3URIStyle),
 		config.ANNOTATION_S3_VERIFY_TLS:       cfg(cl.BackrestS3VerifyTLS, op.BackrestS3VerifyTLS),
+		config.ANNOTATION_GCS_BUCKET:          cfg(cl.BackrestGCSBucket, op.BackrestGCSBucket),
+		config.ANNOTATION_GCS_ENDPOINT:        cfg(cl.BackrestGCSEndpoint, op.BackrestGCSEndpoint),
+		config.ANNOTATION_GCS_KEY_TYPE:        cfg(cl.BackrestGCSKeyType, op.BackrestGCSKeyType),
 	}).Bytes()
 
 	if err == nil {

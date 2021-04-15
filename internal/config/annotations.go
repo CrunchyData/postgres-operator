@@ -45,6 +45,15 @@ const (
 	ANNOTATION_REPO_PATH = "repo-path"
 	// ANNOTATION_PG_PORT is for storing the PostgreSQL port for a cluster
 	ANNOTATION_PG_PORT = "pg-port"
+	// ANNOTATION_GCS_BUCKET is for storing the name of the GCS bucket used by
+	// pgBackRest in a cluster
+	ANNOTATION_GCS_BUCKET = "gcs-bucket"
+	// ANNOTATION_GCS_ENDPOINT is for storing the name of the GCS endpoint used by
+	// pgBackRest in a cluster
+	ANNOTATION_GCS_ENDPOINT = "gcs-endpoint"
+	// ANNOTATION_GCS_KEY_TYPE is for storing the GCS key type used by pgBackRest
+	// in a cluster
+	ANNOTATION_GCS_KEY_TYPE = "gcs-key-type"
 	// ANNOTATION_S3_BUCKET is for storing the name of the S3 bucket used by pgBackRest in
 	// a cluster
 	ANNOTATION_S3_BUCKET = "s3-bucket"

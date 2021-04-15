@@ -17,6 +17,7 @@ limitations under the License.
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -919,7 +920,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		resp.Result.Users = append(resp.Result.Users, user)
 	}
 
-	// Create Backrest secret for S3/SSH Keys:
+	// Create Backrest secret for GCS/S3/SSH Keys:
 	// We make this regardless if backrest is enabled or not because
 	// the deployment template always tries to mount /sshd volume
 	secretName := fmt.Sprintf("%s-%s", clusterName, config.LABEL_BACKREST_REPO_SECRET)
@@ -947,6 +948,19 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			backrestS3CACert = backrestSecret.Data[util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert]
 		}
 
+		// if a GCS key is provided, we need to base64 decode it
+		backrestGCSKey := []byte{}
+		if request.BackrestGCSKey != "" {
+			// try to decode the string
+			backrestGCSKey, err = base64.StdEncoding.DecodeString(request.BackrestGCSKey)
+
+			if err != nil {
+				resp.Status.Code = msgs.Error
+				resp.Status.Msg = fmt.Sprintf("could not decode GCS key: %s", err.Error())
+				return resp
+			}
+		}
+
 		// set up the secret for the cluster that contains the pgBackRest
 		// information
 		secret := &v1.Secret{
@@ -962,6 +976,7 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 				util.BackRestRepoSecretKeyAWSS3KeyAWSS3CACert:    backrestS3CACert,
 				util.BackRestRepoSecretKeyAWSS3KeyAWSS3Key:       []byte(request.BackrestS3Key),
 				util.BackRestRepoSecretKeyAWSS3KeyAWSS3KeySecret: []byte(request.BackrestS3KeySecret),
+				util.BackRestRepoSecretKeyAWSS3KeyGCSKey:         backrestGCSKey,
 			},
 		}
 
@@ -1445,6 +1460,22 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, ns string
 		spec.BackrestS3VerifyTLS = apiserver.Pgo.Cluster.BackrestS3VerifyTLS
 	}
 
+	// set the pgBackRest GCS settings
+	spec.BackrestGCSBucket = apiserver.Pgo.Cluster.BackrestGCSBucket
+	if request.BackrestGCSBucket != "" {
+		spec.BackrestGCSBucket = request.BackrestGCSBucket
+	}
+
+	spec.BackrestGCSEndpoint = apiserver.Pgo.Cluster.BackrestGCSEndpoint
+	if request.BackrestGCSEndpoint != "" {
+		spec.BackrestGCSEndpoint = request.BackrestGCSEndpoint
+	}
+
+	spec.BackrestGCSKeyType = apiserver.Pgo.Cluster.BackrestGCSKeyType
+	if request.BackrestGCSKeyType != "" {
+		spec.BackrestGCSKeyType = request.BackrestGCSKeyType
+	}
+
 	// set the data source that should be utilized to bootstrap the cluster
 	spec.PGDataSource = request.PGDataSource
 
@@ -1913,16 +1944,17 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		case msgs.UpdateClusterStandbyDoNothing: // no-op
 		}
 		// return an error if attempting to enable standby for a cluster that does not have the
-		// required S3 settings
+		// required S3/GCS settings
 		if cluster.Spec.Standby {
-			s3Enabled := false
+			blobEnabled := false
 			for _, storageType := range cluster.Spec.BackrestStorageTypes {
-				s3Enabled = s3Enabled || (storageType == crv1.BackrestStorageTypeS3)
+				blobEnabled = blobEnabled ||
+					(storageType == crv1.BackrestStorageTypeS3 || storageType == crv1.BackrestStorageTypeGCS)
 			}
 
-			if !s3Enabled {
+			if !blobEnabled {
 				response.Status.Code = msgs.Error
-				response.Status.Msg = "Backrest storage type 's3' must be enabled in order to enable " +
+				response.Status.Msg = "Backrest storage type 's3' or 'gcs' must be enabled in order to enable " +
 					"standby mode"
 				return response
 			}
@@ -2187,16 +2219,42 @@ func validateBackrestStorageTypeOnCreate(request *msgs.CreateClusterRequest) ([]
 		return nil, err
 	}
 
-	// a special check -- if S3 storage is included, check to see if all of the
-	// appropriate settings are in place
+	// a special check: cannot have both GCS and S3 active at the same time
+	i := 0
 	for _, storageType := range storageTypes {
-		if storageType == crv1.BackrestStorageTypeS3 {
+		if storageType == "s3" || storageType == "gcs" {
+			i += 1
+		}
+	}
+
+	if i == 2 {
+		return nil, fmt.Errorf("Cannot use S3 and GCS at the same time.")
+	}
+
+	// a special check -- if S3 or GCS storage is included, check to see if all
+	// of the appropriate settings are in place
+	for _, storageType := range storageTypes {
+		switch storageType {
+		default: // no-op
+		case crv1.BackrestStorageTypeGCS:
+			if isMissingGCSConfig(request) {
+				return nil, fmt.Errorf("A configuration settings for GCS storage is missing. " +
+					"Values must be provided for the GCS bucket, GCS endpoint, and a GCS key in order " +
+					"to use the GCS storage type with pgBackRest.")
+			}
+		case crv1.BackrestStorageTypeS3:
 			if isMissingS3Config(request) {
 				return nil, fmt.Errorf("A configuration setting for AWS S3 storage is missing. Values must be " +
 					"provided for the S3 bucket, S3 endpoint and S3 region in order to use the 's3' " +
 					"storage type with pgBackRest.")
 			}
-			break
+
+			// a check on the KeyType attribute...if set, it has to be one of two
+			// values
+			if request.BackrestGCSKeyType != "" &&
+				request.BackrestGCSKeyType != "service" && request.BackrestGCSKeyType != "token" {
+				return nil, fmt.Errorf("Invalid GCS key type. Must either be \"service\" or \"token\".")
+			}
 		}
 	}
 
@@ -2297,6 +2355,12 @@ func validateTablespaces(tablespaces []msgs.ClusterTablespaceDetail) error {
 	return nil
 }
 
+// determines if any of the required GCS configuration settings (bucket) are
+// missing from both the incoming request or the pgo.yaml config file
+func isMissingGCSConfig(request *msgs.CreateClusterRequest) bool {
+	return (request.BackrestGCSBucket == "" && apiserver.Pgo.Cluster.BackrestGCSBucket == "")
+}
+
 // determines if any of the required S3 configuration settings (bucket, endpoint
 // and region) are missing from both the incoming request or the pgo.yaml config file
 func isMissingS3Config(request *msgs.CreateClusterRequest) bool {
@@ -2307,6 +2371,20 @@ func isMissingS3Config(request *msgs.CreateClusterRequest) bool {
 		return true
 	}
 	if request.BackrestS3Region == "" && apiserver.Pgo.Cluster.BackrestS3Region == "" {
+		return true
+	}
+	return false
+}
+
+// isMissingExistingDataSourceGCSConfig determines if any of the required GCS
+// configuration settings (bucket, endpoint, key) are missing from the
+// annotations in the pgBackRest repo secret as needed to bootstrap a cluster
+// from an existing GCS repository
+func isMissingExistingDataSourceGCSConfig(backrestRepoSecret *v1.Secret) bool {
+	switch {
+	case backrestRepoSecret.Annotations[config.ANNOTATION_GCS_BUCKET] == "":
+		return true
+	case len(backrestRepoSecret.Data[util.BackRestRepoSecretKeyAWSS3KeyGCSKey]) == 0:
 		return true
 	}
 	return false
@@ -2390,6 +2468,15 @@ func validateDataSourceParms(request *msgs.CreateClusterRequest) error {
 			"restore from an S3 repository", backrestRepoSecret.GetName(), restoreFromNamespace)
 	}
 
+	// now detect if an 'gcs' repo type was specified via the restore opts, and if
+	// so verify that gcs settings are present in backrest repo secret for the
+	// backup being restored from
+	gcsRestore := backrest.GCSRepoTypeCLIOptionExists(restoreOpts)
+	if gcsRestore && isMissingExistingDataSourceGCSConfig(backrestRepoSecret) {
+		return fmt.Errorf("Secret %s (namespace %s) is missing the GCS configuration required to "+
+			"restore from a GCS repository", backrestRepoSecret.GetName(), restoreFromNamespace)
+	}
+
 	// finally, verify that the cluster being restored from is in the proper status, and that no
 	// other clusters currently being bootstrapping from the same cluster
 	clusterList, err := apiserver.Clientset.CrunchydataV1().Pgclusters(restoreFromNamespace).List(ctx, metav1.ListOptions{})
@@ -2416,7 +2503,7 @@ func validateDataSourceParms(request *msgs.CreateClusterRequest) error {
 
 func validateStandbyCluster(request *msgs.CreateClusterRequest) error {
 	switch {
-	case !strings.Contains(request.BackrestStorageType, "s3"):
+	case !(strings.Contains(request.BackrestStorageType, "s3") || strings.Contains(request.BackrestStorageType, "gcs")):
 		return errors.New("Backrest storage type 's3' must be selected in order to create a " +
 			"standby cluster")
 	case request.BackrestRepoPath == "":

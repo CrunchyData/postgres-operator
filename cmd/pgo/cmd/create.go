@@ -58,6 +58,10 @@ var (
 	PodAntiAffinityPgBouncer                                                                     string
 	SyncReplication                                                                              bool
 	BackrestConfig                                                                               string
+	BackrestGCSBucket                                                                            string
+	BackrestGCSEndpoint                                                                          string
+	BackrestGCSKey                                                                               string
+	BackrestGCSKeyType                                                                           string
 	BackrestS3Key                                                                                string
 	BackrestS3KeySecret                                                                          string
 	BackrestS3Bucket                                                                             string
@@ -430,6 +434,18 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&BackrestRepoPath, "pgbackrest-repo-path", "", "",
 		"The pgBackRest repository path that should be utilized instead of the default. Required "+
 			"for standby\nclusters to define the location of an existing pgBackRest repository.")
+	createClusterCmd.Flags().StringVar(&BackrestGCSBucket, "pgbackrest-gcs-bucket", "",
+		"The GCS bucket that should be utilized for the cluster when the \"gcs\" "+
+			"storage type is enabled for pgBackRest.")
+	createClusterCmd.Flags().StringVar(&BackrestGCSEndpoint, "pgbackrest-gcs-endpoint", "",
+		"The GCS endpoint that should be utilized for the cluster when the \"gcs\" "+
+			"storage type is enabled for pgBackRest.")
+	createClusterCmd.Flags().StringVar(&BackrestGCSKey, "pgbackrest-gcs-key", "",
+		"The GCS key that should be utilized for the cluster when the \"gcs\" "+
+			"storage type is enabled for pgBackRest. This must be a path to a file.")
+	createClusterCmd.Flags().StringVar(&BackrestGCSKeyType, "pgbackrest-gcs-key-type", "service",
+		"The GCS key type should be utilized for the cluster when the \"gcs\" "+
+			"storage type is enabled for pgBackRest.")
 	createClusterCmd.Flags().StringVarP(&BackrestS3Key, "pgbackrest-s3-key", "", "",
 		"The AWS S3 key that should be utilized for the cluster when the \"s3\" "+
 			"storage type is enabled for pgBackRest.")
@@ -451,7 +467,7 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&BackrestS3URIStyle, "pgbackrest-s3-uri-style", "", "", "Specifies whether \"host\" or \"path\" style URIs will be used when connecting to S3.")
 	createClusterCmd.Flags().BoolVarP(&BackrestS3VerifyTLS, "pgbackrest-s3-verify-tls", "", true, "This sets if pgBackRest should verify the TLS certificate when connecting to S3. To disable, use \"--pgbackrest-s3-verify-tls=false\".")
 	createClusterCmd.Flags().StringVar(&BackrestStorageConfig, "pgbackrest-storage-config", "", "The name of the storage config in pgo.yaml to use for the pgBackRest local repository.")
-	createClusterCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use with pgBackRest. Either \"posix\", \"s3\" or both, comma separated. (default \"posix\")")
+	createClusterCmd.Flags().StringVarP(&BackrestStorageType, "pgbackrest-storage-type", "", "", "The type of storage to use with pgBackRest. Either \"posix\", \"s3\", \"gcs\", \"posix,s3\" or \"posix,gcs\". (default \"posix\")")
 	createClusterCmd.Flags().BoolVarP(&BadgerFlag, "pgbadger", "", false, "Adds the crunchy-pgbadger container to the database pod.")
 	createClusterCmd.Flags().BoolVarP(&PgbouncerFlag, "pgbouncer", "", false, "Adds a crunchy-pgbouncer deployment to the cluster.")
 	createClusterCmd.Flags().StringVar(&PgBouncerCPURequest, "pgbouncer-cpu", "", "Set the number of millicores to request for CPU "+

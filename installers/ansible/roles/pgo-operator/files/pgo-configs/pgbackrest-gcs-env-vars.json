@@ -1,0 +1,24 @@
+{
+  "name": "PGBACKREST_REPO1_GCS_BUCKET",
+  "value": "{{.PgbackrestGCSBucket}}"
+},
+{{ if .PgbackrestGCSEndpoint }}
+{
+  "name": "PGBACKREST_REPO1_GCS_ENDPOINT",
+  "value": "{{.PgbackrestGCSEndpoint}}"
+},
+{{ end }}
+{{ if .PgbackrestGCSKeyType }}
+{
+  "name": "PGBACKREST_REPO1_GCS_KEY_TYPE",
+  "value": "{{.PgbackrestGCSKeyType}}"
+},
+{{ end }}
+{
+  "name": "PGBACKREST_REPO1_GCS_KEY",
+  "value": "/sshd/gcs-key"
+},
+{
+  "name": "PGBACKREST_REPO1_HOST_CMD",
+  "value": "/usr/local/bin/archive-push-gcs.sh"
+},

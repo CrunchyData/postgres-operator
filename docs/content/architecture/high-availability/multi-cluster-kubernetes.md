@@ -23,7 +23,9 @@ that can span multiple Kubernetes clusters. This can be accomplished with a
 few environmental setups:
 
 - Two Kubernetes clusters
-- S3, or an external storage system that uses the S3 protocol
+- An external storage system, using one of the following:
+  - S3, or an external storage system that uses the S3 protocol OR
+  - GCS
 
 At a high-level, the PostgreSQL Operator follows the "active-standby" data
 center deployment model for managing the PostgreSQL clusters across Kuberntetes
@@ -53,7 +55,7 @@ standby cluster is identical to before: you can use [`pgo scale`]({{< relref "/p
 
 As the architecture diagram above shows, the main difference is that there is
 no primary instance: one PostgreSQL instance is reading in the database changes
-from the S3 repository, while the other replicas are replicas of that instance.
+from the S3 or GCS repository, while the other replicas are replicas of that instance.
 This is known as [cascading replication](https://www.postgresql.org/docs/current/warm-standby.html#CASCADING-REPLICATION).
  replicas are cascading replicas, i.e. replicas replicating from a database server that itself is replicating from another database server.
 
@@ -86,12 +88,22 @@ PostgreSQL cluster initialization.
 - `--pgbackrest-repo-path`: The specific pgBackRest repository path that should
 be utilized by the standby cluster.  Allows a standby cluster to specify a path
 that matches that of the active cluster it is replicating.
-- `--pgbackrest-storage-type`: Must be set to `s3`
+- `--pgbackrest-storage-type`: Must be set to either `s3` or `gcs`
+
+If you are using S3 or an S3-compatible storage system, you will need to set the
+following flags:
+
 - `--pgbackrest-s3-key`: The S3 key to use
 - `--pgbackrest-s3-key-secret`: The S3 key secret to use
 - `--pgbackrest-s3-bucket`: The S3 bucket to use
 - `--pgbackrest-s3-endpoint`: The S3 endpoint to use
 - `--pgbackrest-s3-region`: The S3 region to use
+
+If you are using GCS, you will need to set the following flags:
+
+- `--pgbackrest-gcs-bucket`: The GCS bucket to use
+- `--pgbackrest-gcs-key`: A reference to a file on your local system that
+contains the GCS key information
 
 If you do not want to set the user credentials, you can retrieve them at a later
 time by using the [`pgo show user`]({{< relref "/pgo-client/reference/pgo_show_user.md" >}})
@@ -137,8 +149,10 @@ Let's create a PostgreSQL deployment that has both an active and standby
 cluster! You can try this example either within a single Kubernetes cluster, or
 across multuple Kubernetes clusters.
 
-First, deploy a new active PostgreSQL cluster that is configured to use S3 with
-pgBackRest. For example:
+First, deploy a new active PostgreSQL cluster that is configured to use S3 or
+GCS with pgBackRest.
+
+An example that uses S3:
 
 ```
 pgo create cluster hippo --pgbouncer --replica-count=2 \
@@ -148,6 +162,18 @@ pgo create cluster hippo --pgbouncer --replica-count=2 \
   --pgbackrest-s3-bucket=watering-hole \
   --pgbackrest-s3-endpoint=s3.amazonaws.com \
   --pgbackrest-s3-region=us-east-1 \
+  --password-superuser=supersecrethippo \
+  --password-replication=somewhatsecrethippo \
+  --password=opensourcehippo
+```
+
+An example that uses GCS:
+
+```
+pgo create cluster hippo --pgbouncer --replica-count=2 \
+  --pgbackrest-storage-type=posix,gcs \
+  --pgbackrest-gcs-bucket=watering-hole \
+  --pgbackrest-gcs-key=/path/to/your/gcs/credentials.json \
   --password-superuser=supersecrethippo \
   --password-replication=somewhatsecrethippo \
   --password=opensourcehippo
@@ -174,7 +200,10 @@ deployment (and therefore the same Kubernetes cluster), the `--secret-from` flag
 can also be used in lieu of these passwords. You would specify the name of the
 cluster [e.g. `hippo`] as the value of the `--secret-from` variable.)
 
-With this in mind, create a standby cluster similar to this below:
+With this in mind, create a standby cluster. Below are examples that allow you
+to create a standby cluster using S3 and GCS.
+
+With S3:
 
 ```
 pgo create cluster hippo-standby --standby --pgbouncer --replica-count=2 \
@@ -184,6 +213,19 @@ pgo create cluster hippo-standby --standby --pgbouncer --replica-count=2 \
   --pgbackrest-s3-bucket=watering-hole \
   --pgbackrest-s3-endpoint=s3.amazonaws.com \
   --pgbackrest-s3-region=us-east-1 \
+  --pgbackrest-repo-path=/backrestrepo/hippo-backrest-shared-repo \
+  --password-superuser=supersecrethippo \
+  --password-replication=somewhatsecrethippo \
+  --password=opensourcehippo
+```
+
+With GCS:
+
+```
+pgo create cluster hippo-standby --standby --pgbouncer --replica-count=2 \
+  --pgbackrest-storage-type=gcs \
+  --pgbackrest-gcs-bucket=watering-hole \
+  --pgbackrest-gcs-key=/path/to/your/gcs/credentials.json \
   --pgbackrest-repo-path=/backrestrepo/hippo-backrest-shared-repo \
   --password-superuser=supersecrethippo \
   --password-replication=somewhatsecrethippo \
@@ -287,7 +329,7 @@ pgo update pgbouncer --rotate-password hippo-standby
 With the standby cluster now promoted, the cluster with the original active
 PostgreSQL cluster can now be turned into a standby PostgreSQL cluster.  This is
 done by deleting and recreating all PVCs for the cluster and re-initializing it
-as a standby using the S3 repository.  Being that this is a destructive action
+as a standby using the S3 or GCS repository.  Being that this is a destructive action
 (i.e. data will only be retained if any Storage Classes and/or Persistent
   Volumes have the appropriate reclaim policy configured) a warning is shown
   when attempting to enable standby.
