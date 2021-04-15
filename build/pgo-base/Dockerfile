@@ -1,6 +1,6 @@
-ARG BASEOS
+ARG BASE_IMAGE_OS
 ARG DOCKERBASEREGISTRY
-FROM ${DOCKERBASEREGISTRY}${BASEOS}
+FROM ${DOCKERBASEREGISTRY}${BASE_IMAGE_OS}
 
 ARG BASEOS
 ARG RELVER
@@ -53,10 +53,17 @@ fi
 RUN if  [ "$BASEOS" = "ubi8" ]; then \
     ${PACKAGER} -y update \
     && ${PACKAGER} -y install \
-        --setopt=skip_missing_names_on_install=False \
         glibc-langpack-en \
-    && ${PACKAGER} -y clean all \
-    && ${PACKAGER} -qy module disable postgresql ; \
+    && ${PACKAGER} -y clean all ; \
+fi
+
+# Create module file to disable postgres module, microdnf cannot do this with the current version
+RUN if [ "$BASEOS" = "ubi8" ] ; then \
+        echo "[postgresql]"  >> /etc/dnf/modules.d/postgresql.module \
+        && echo "name=postgresql"  >> /etc/dnf/modules.d/postgresql.module \
+        && echo "stream=10"  >> /etc/dnf/modules.d/postgresql.module \
+        && echo "profiles="  >> /etc/dnf/modules.d/postgresql.module \
+        && echo "state=disabled"  >> /etc/dnf/modules.d/postgresql.module ; \
 fi
 
 # Crunchy PostgreSQL repository
