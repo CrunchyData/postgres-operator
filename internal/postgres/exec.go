@@ -54,10 +54,10 @@ sql_target=$(< /dev/stdin)
 sql_databases="$1"
 shift 1
 
-databases=$(psql "$@" -X -Aqt --file=- <<< "$sql_databases")
+databases=$(psql "$@" -X -Aqt --file=- <<< "${sql_databases}")
 while read -r database; do
-	psql "$@" -X --file=- "$database" <<< "$sql_target"
-done <<< "$databases"
+	psql "$@" -X --file=- "${database}" <<< "${sql_target}"
+done <<< "${databases}"
 `
 
 	// Execute the script with some error handling enabled.

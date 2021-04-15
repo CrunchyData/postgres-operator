@@ -17,6 +17,9 @@ package postgres
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -113,15 +116,40 @@ func TestAddPGDATAInitToPod(t *testing.T) {
 
 	AddPGDATAInitToPod(postgresCluster, template)
 
-	var foundPGDATAInitContainer bool
-	for _, c := range template.Spec.InitContainers {
+	var container *v1.Container
+	for i, c := range template.Spec.InitContainers {
 		if c.Name == naming.ContainerDatabasePGDATAInit {
-			foundPGDATAInitContainer = true
-			break
+			container = &template.Spec.InitContainers[i]
 		}
 	}
 
-	assert.Assert(t, foundPGDATAInitContainer)
+	assert.Assert(t, container != nil)
+
+	t.Run("ShellCheck", func(t *testing.T) {
+		shellcheck, err := exec.LookPath("shellcheck")
+		if err != nil {
+			t.Skip(`requires "shellcheck" executable`)
+		} else {
+			output, err := exec.Command(shellcheck, "--version").CombinedOutput()
+			assert.NilError(t, err)
+			t.Logf("using %q:\n%s", shellcheck, output)
+		}
+
+		// Expect a bash command with an inline script.
+		assert.DeepEqual(t, container.Command[:2], []string{"bash", "-c"})
+		assert.Assert(t, len(container.Command) > 2)
+		script := container.Command[2]
+
+		// Write out that inline script.
+		dir := t.TempDir()
+		file := filepath.Join(dir, "script.bash")
+		assert.NilError(t, ioutil.WriteFile(file, []byte(script), 0o600))
+
+		// Expect shellcheck to be happy.
+		cmd := exec.Command(shellcheck, "--enable=all", file)
+		output, err := cmd.CombinedOutput()
+		assert.NilError(t, err, "%q\n%s", cmd.Args, output)
+	})
 }
 
 func TestAddCertVolumeToPod(t *testing.T) {

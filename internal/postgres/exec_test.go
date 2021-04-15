@@ -21,6 +21,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -40,7 +41,7 @@ func ExampleExecutor_execCmd() {
 
 func TestExecutorExecInDatabasesFromQuery(t *testing.T) {
 	expected := errors.New("splat")
-	exec := func(
+	fn := func(
 		_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string,
 	) error {
 		b, err := ioutil.ReadAll(stdin)
@@ -53,10 +54,10 @@ sql_target=$(< /dev/stdin)
 sql_databases="$1"
 shift 1
 
-databases=$(psql "$@" -X -Aqt --file=- <<< "$sql_databases")
+databases=$(psql "$@" -X -Aqt --file=- <<< "${sql_databases}")
 while read -r database; do
-	psql "$@" -X --file=- "$database" <<< "$sql_target"
-done <<< "$databases"
+	psql "$@" -X --file=- "${database}" <<< "${sql_target}"
+done <<< "${databases}"
 `,
 			"-",
 			`db query`,
@@ -70,14 +71,46 @@ done <<< "$databases"
 		return expected
 	}
 
-	stdout, stderr, err := Executor(exec).ExecInDatabasesFromQuery(
+	stdout, stderr, err := Executor(fn).ExecInDatabasesFromQuery(
 		context.Background(), `db query`, `statements; to run;`, map[string]string{
 			"lots":      "of",
 			"different": "vars",
 			"CASE":      "sEnSiTiVe",
 		})
 
-	assert.Equal(t, expected, err, "expected exec to be called")
+	assert.Equal(t, expected, err, "expected function to be called")
 	assert.Equal(t, stdout, "some stdout")
 	assert.Equal(t, stderr, "and stderr")
+
+	t.Run("ShellCheck", func(t *testing.T) {
+		shellcheck, err := exec.LookPath("shellcheck")
+		if err != nil {
+			t.Skip(`requires "shellcheck" executable`)
+		} else {
+			output, err := exec.Command(shellcheck, "--version").CombinedOutput()
+			assert.NilError(t, err)
+			t.Logf("using %q:\n%s", shellcheck, output)
+		}
+
+		_, _, _ = Executor(func(
+			_ context.Context, _ io.Reader, _, _ io.Writer, command ...string,
+		) error {
+			// Expect a bash command with an inline script.
+			assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})
+			assert.Assert(t, len(command) > 3)
+			script := command[3]
+
+			// Write out that inline script.
+			dir := t.TempDir()
+			file := filepath.Join(dir, "script.bash")
+			assert.NilError(t, ioutil.WriteFile(file, []byte(script), 0o600))
+
+			// Expect shellcheck to be happy.
+			cmd := exec.Command(shellcheck, "--enable=all", file)
+			output, err := cmd.CombinedOutput()
+			assert.NilError(t, err, "%q\n%s", cmd.Args, output)
+
+			return nil
+		}).ExecInDatabasesFromQuery(context.Background(), "", "", nil)
+	})
 }
