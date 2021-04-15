@@ -245,15 +245,15 @@ func podConfigFiles(
 }
 
 // reloadCommand returns an entrypoint that convinces PgBouncer to reload
-// configuration files.
-func reloadCommand() []string {
+// configuration files. The process will appear as name in `ps` and `top`.
+func reloadCommand(name string) []string {
 	// Use a Bash loop to periodically check the mtime of the mounted
 	// configuration volume. When it changes, signal PgBouncer and print the
 	// observed timestamp.
 	// NOTE(cbandy): Using `sleep & wait` below used over 75Mi of memory on
 	// OpenShift 4.7.2.
 	const script = `
-declare -r directory="$1"
+declare -r directory="${directory:-$1}"
 while sleep 5s; do
   mounted=$(stat --format=%y "${directory}")
   if [ "${mounted}" != "${loaded-}" ] && pkill --signal HUP --exact pgbouncer
@@ -263,5 +263,10 @@ while sleep 5s; do
   fi
 done
 `
-	return []string{"bash", "-ceu", "--", strings.TrimLeft(script, "\n"), "-", configDirectory}
+
+	// Elide the above script from `ps` and `top` by wrapping it in a function
+	// and calling that.
+	wrapper := `monitor() {` + script + `}; export directory="$1"; export -f monitor; exec -a "$0" bash -ceu monitor`
+
+	return []string{"bash", "-ceu", "--", wrapper, name, configDirectory}
 }

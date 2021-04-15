@@ -177,7 +177,7 @@ func Pod(
 	reloader := corev1.Container{
 		Name: naming.ContainerPGBouncerConfig,
 
-		Command: reloadCommand(),
+		Command: reloadCommand(naming.ContainerPGBouncerConfig),
 		Image:   inCluster.Spec.Proxy.PGBouncer.Image,
 
 		SecurityContext: initialize.RestrictedSecurityContext(),

@@ -213,7 +213,7 @@ func TestReloadCommand(t *testing.T) {
 		t.Logf("using %q:\n%s", shellcheck, output)
 	}
 
-	command := reloadCommand()
+	command := reloadCommand("some-name")
 
 	// Expect a bash command with an inline script.
 	assert.DeepEqual(t, command[:3], []string{"bash", "-ceu", "--"})

@@ -155,8 +155,9 @@ containers:
   - bash
   - -ceu
   - --
-  - |
-    declare -r directory="$1"
+  - |-
+    monitor() {
+    declare -r directory="${directory:-$1}"
     while sleep 5s; do
       mounted=$(stat --format=%y "${directory}")
       if [ "${mounted}" != "${loaded-}" ] && pkill --signal HUP --exact pgbouncer
@@ -165,7 +166,8 @@ containers:
         echo Loaded configuration dated "${loaded}"
       fi
     done
-  - '-'
+    }; export directory="$1"; export -f monitor; exec -a "$0" bash -ceu monitor
+  - pgbouncer-config
   - /etc/pgbouncer
   name: pgbouncer-config
   resources: {}
@@ -265,8 +267,9 @@ containers:
   - bash
   - -ceu
   - --
-  - |
-    declare -r directory="$1"
+  - |-
+    monitor() {
+    declare -r directory="${directory:-$1}"
     while sleep 5s; do
       mounted=$(stat --format=%y "${directory}")
       if [ "${mounted}" != "${loaded-}" ] && pkill --signal HUP --exact pgbouncer
@@ -275,7 +278,8 @@ containers:
         echo Loaded configuration dated "${loaded}"
       fi
     done
-  - '-'
+    }; export directory="$1"; export -f monitor; exec -a "$0" bash -ceu monitor
+  - pgbouncer-config
   - /etc/pgbouncer
   image: image-town
   name: pgbouncer-config
