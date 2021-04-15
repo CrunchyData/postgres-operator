@@ -124,6 +124,7 @@ pgBouncer:
   config: {}
   image: ""
   port: 5432
+  replicas: 1
   resources: {}
 		`)+"\n")
 	})

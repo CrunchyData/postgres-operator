@@ -370,18 +370,19 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 		naming.LabelRole:    naming.RolePGBouncer,
 	}
 
-	deploy.Spec.Replicas = initialize.Int32(1)
+	deploy.Spec.Replicas = cluster.Spec.Proxy.PGBouncer.Replicas
 
 	// Don't clutter the namespace with extra ReplicaSets.
 	deploy.Spec.RevisionHistoryLimit = initialize.Int32(0)
 
-	// TODO(cbandy): Consider the desired rollout behavior. The defaults here
-	// with "spec.replicas=1" cause a surge of one before removing the one old
-	// pod.
+	// Ensure that the number of Ready pods is never less than the specified
+	// Replicas by starting new pods while old pods are still running.
 	// - https://docs.k8s.io/concepts/workloads/controllers/deployment/#rolling-update-deployment
-	// - https://docs.k8s.io/concepts/workloads/controllers/statefulset/#on-delete
 	deploy.Spec.Strategy.Type = appsv1.RollingUpdateDeploymentStrategyType
-	deploy.Spec.Strategy.RollingUpdate = &appsv1.RollingUpdateDeployment{}
+	deploy.Spec.Strategy.RollingUpdate = &appsv1.RollingUpdateDeployment{
+		MaxUnavailable: new(intstr.IntOrString),
+	}
+	*deploy.Spec.Strategy.RollingUpdate.MaxUnavailable = intstr.FromInt(0)
 
 	// Use scheduling constraints from the cluster spec.
 	deploy.Spec.Template.Spec.Affinity = cluster.Spec.Proxy.PGBouncer.Affinity

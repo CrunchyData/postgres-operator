@@ -182,6 +182,11 @@ func (in *PGBouncerPodSpec) DeepCopyInto(out *PGBouncerPodSpec) {
 		*out = new(int32)
 		**out = **in
 	}
+	if in.Replicas != nil {
+		in, out := &in.Replicas, &out.Replicas
+		*out = new(int32)
+		**out = **in
+	}
 	in.Resources.DeepCopyInto(&out.Resources)
 	if in.Tolerations != nil {
 		in, out := &in.Tolerations, &out.Tolerations

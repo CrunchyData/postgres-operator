@@ -1872,6 +1872,12 @@ spec:
                         format: int32
                         minimum: 1024
                         type: integer
+                      replicas:
+                        default: 1
+                        description: Number of desired PgBouncer pods.
+                        format: int32
+                        minimum: 0
+                        type: integer
                       resources:
                         description: 'Compute resources of a PgBouncer container.
                           Changing this value causes PgBouncer to restart. More info:

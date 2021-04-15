@@ -87,6 +87,12 @@ type PGBouncerPodSpec struct {
 	// +kubebuilder:validation:Minimum=1024
 	Port *int32 `json:"port,omitempty"`
 
+	// Number of desired PgBouncer pods.
+	// +optional
+	// +kubebuilder:default=1
+	// +kubebuilder:validation:Minimum=0
+	Replicas *int32 `json:"replicas,omitempty"`
+
 	// Compute resources of a PgBouncer container. Changing this value causes
 	// PgBouncer to restart.
 	// More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers
@@ -104,6 +110,11 @@ func (s *PGBouncerPodSpec) Default() {
 	if s.Port == nil {
 		s.Port = new(int32)
 		*s.Port = 5432
+	}
+
+	if s.Replicas == nil {
+		s.Replicas = new(int32)
+		*s.Replicas = 1
 	}
 }
 
