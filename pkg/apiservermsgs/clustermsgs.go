@@ -269,6 +269,7 @@ type ShowClusterService struct {
 	ClusterName  string
 	Pgbouncer    bool
 	BackrestRepo bool
+	PGAdmin      bool
 }
 
 const (
@@ -512,6 +513,7 @@ type ClusterTestRequest struct {
 const (
 	ClusterTestInstanceTypePrimary   = "primary"
 	ClusterTestInstanceTypeReplica   = "replica"
+	ClusterTestInstanceTypePGAdmin   = "pgadmin"
 	ClusterTestInstanceTypePGBouncer = "pgbouncer"
 	ClusterTestInstanceTypeBackups   = "backups"
 	ClusterTestInstanceTypeUnknown   = "unknown"
