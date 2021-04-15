@@ -56,7 +56,7 @@ endif
 ifeq ("$(PGO_BASEOS)", "ubi8")
         DFSET=rhel
         PACKAGER=microdnf
-	BASE_IMAGE_OS=ubi8-minimal
+        BASE_IMAGE_OS=ubi8-minimal
 endif
 
 ifeq ("$(PGO_BASEOS)", "centos7")
