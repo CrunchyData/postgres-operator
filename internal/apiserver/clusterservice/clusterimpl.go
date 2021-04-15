@@ -299,11 +299,14 @@ func getServices(cluster *crv1.Pgcluster, ns string) ([]msgs.ShowClusterService,
 	for _, p := range services.Items {
 		d := msgs.ShowClusterService{}
 		d.Name = p.Name
-		if strings.Contains(p.Name, "-backrest-repo") {
+		if strings.HasSuffix(p.Name, "-backrest-repo") {
 			d.BackrestRepo = true
 			d.ClusterName = cluster.Name
-		} else if strings.Contains(p.Name, "-pgbouncer") {
+		} else if strings.HasSuffix(p.Name, "-pgbouncer") {
 			d.Pgbouncer = true
+			d.ClusterName = cluster.Name
+		} else if strings.HasSuffix(p.Name, "-pgadmin") {
+			d.PGAdmin = true
 			d.ClusterName = cluster.Name
 		}
 		d.ClusterIP = p.Spec.ClusterIP
@@ -485,6 +488,8 @@ func TestCluster(name, selector, ns, pgouser string, allFlag bool) msgs.ClusterT
 				endpoint.InstanceType = msgs.ClusterTestInstanceTypePrimary
 			case (strings.HasSuffix(service.Name, "-"+msgs.PodTypeReplica) && strings.Count(service.Name, "-"+msgs.PodTypeReplica) == 1):
 				endpoint.InstanceType = msgs.ClusterTestInstanceTypeReplica
+			case service.PGAdmin:
+				endpoint.InstanceType = msgs.ClusterTestInstanceTypePGAdmin
 			case service.Pgbouncer:
 				endpoint.InstanceType = msgs.ClusterTestInstanceTypePGBouncer
 			case service.BackrestRepo:
