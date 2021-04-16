@@ -1851,6 +1851,31 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 		return response
 	}
 
+	// if any PVC resizing is occurring, ensure that it is a valid quantity
+	if request.PVCSize != "" {
+		if err := apiserver.ValidateQuantity(request.PVCSize); err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+	}
+
+	if request.BackrestPVCSize != "" {
+		if err := apiserver.ValidateQuantity(request.BackrestPVCSize); err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+	}
+
+	if request.WALPVCSize != "" {
+		if err := apiserver.ValidateQuantity(request.WALPVCSize); err != nil {
+			response.Status.Code = msgs.Error
+			response.Status.Msg = err.Error()
+			return response
+		}
+	}
+
 	clusterList := crv1.PgclusterList{}
 
 	// get the clusters list
@@ -1892,6 +1917,38 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 
 	for i := range clusterList.Items {
 		cluster := clusterList.Items[i]
+
+		// validate any PVC resizing. If we are resizing a PVC, ensure that we are
+		// making it larger
+		if request.PVCSize != "" {
+			if err := util.ValidatePVCResize(cluster.Spec.PrimaryStorage.Size, request.PVCSize); err != nil {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = err.Error()
+				return response
+			}
+
+			cluster.Spec.PrimaryStorage.Size = request.PVCSize
+		}
+
+		if request.BackrestPVCSize != "" {
+			if err := util.ValidatePVCResize(cluster.Spec.BackrestStorage.Size, request.BackrestPVCSize); err != nil {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = err.Error()
+				return response
+			}
+
+			cluster.Spec.BackrestStorage.Size = request.BackrestPVCSize
+		}
+
+		if request.WALPVCSize != "" {
+			if err := util.ValidatePVCResize(cluster.Spec.WALStorage.Size, request.WALPVCSize); err != nil {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = err.Error()
+				return response
+			}
+
+			cluster.Spec.WALStorage.Size = request.WALPVCSize
+		}
 
 		// set --enable-autofail / --disable-autofail on each pgcluster CRD
 		// Make the change based on the value of Autofail vis-a-vis UpdateClusterAutofailStatus

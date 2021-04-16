@@ -441,6 +441,8 @@ type UpdateClusterRequest struct {
 	// BackrestMemoryRequest, if specified, is the value of how much RAM should
 	// be requested for the pgBackRest repository.
 	BackrestMemoryRequest string
+	// BackrestPVCSize if set updates the size of the pgBackRest PVC
+	BackrestPVCSize string
 	// ExporterCPULimit, if specified, is the value of the max amount of CPU
 	// to be utilized for a Crunchy Postgres Exporter instance
 	ExporterCPULimit string
@@ -475,6 +477,8 @@ type UpdateClusterRequest struct {
 	// PGBadger allows for the enabling/disabling of the pgBadger sidecar. This can
 	// cause downtime and triggers a rolling update
 	PGBadger UpdateClusterPGBadger
+	// PVC size, if set, updates the size of the data directory.
+	PVCSize string
 	// ServiceType, if specified, will change the service type of a cluster.
 	ServiceType v1.ServiceType
 	Standby     UpdateClusterStandbyStatus
@@ -487,6 +491,8 @@ type UpdateClusterRequest struct {
 	// TolerationsDelete  allows for the removal of Pod tolerations on a
 	// PostgreSQL cluster
 	TolerationsDelete []v1.Toleration `json:"tolerationsDelete"`
+	// WALPVCSize updates the size of the WAL PVC, if there is a WAL PVC
+	WALPVCSize string
 }
 
 // UpdateClusterResponse ...

@@ -23,7 +23,6 @@ import (
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/controller"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
@@ -304,7 +303,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// see if the pgBackRest PVC size value changed.
 	if oldcluster.Spec.BackrestStorage.Size != newcluster.Spec.BackrestStorage.Size {
 		// validate that this resize can occur
-		if err := controller.ValidatePVCResize(oldcluster.Spec.BackrestStorage.Size, newcluster.Spec.BackrestStorage.Size); err != nil {
+		if err := util.ValidatePVCResize(oldcluster.Spec.BackrestStorage.Size, newcluster.Spec.BackrestStorage.Size); err != nil {
 			log.Error(err)
 		} else {
 			if err := backrestoperator.ResizePVC(c.Client, newcluster); err != nil {
@@ -316,7 +315,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// see if the pgAdmin PVC size valued changed.
 	if oldcluster.Spec.PGAdminStorage.Size != newcluster.Spec.PGAdminStorage.Size {
 		// validate that this resize can occur
-		if err := controller.ValidatePVCResize(oldcluster.Spec.PGAdminStorage.Size, newcluster.Spec.PGAdminStorage.Size); err != nil {
+		if err := util.ValidatePVCResize(oldcluster.Spec.PGAdminStorage.Size, newcluster.Spec.PGAdminStorage.Size); err != nil {
 			log.Error(err)
 		} else {
 			if err := clusteroperator.ResizePGAdminPVC(c.Client, newcluster); err != nil {
@@ -378,7 +377,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// check to see if the size of the primary PVC has changed
 	if oldcluster.Spec.PrimaryStorage.Size != newcluster.Spec.PrimaryStorage.Size {
 		// validate that this resize can occur
-		if err := controller.ValidatePVCResize(oldcluster.Spec.PrimaryStorage.Size, newcluster.Spec.PrimaryStorage.Size); err != nil {
+		if err := util.ValidatePVCResize(oldcluster.Spec.PrimaryStorage.Size, newcluster.Spec.PrimaryStorage.Size); err != nil {
 			log.Error(err)
 		} else {
 			rescale = true
@@ -389,7 +388,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 	// check to see if the size of the WAL PVC has changed
 	if oldcluster.Spec.WALStorage.Size != newcluster.Spec.WALStorage.Size {
 		// validate that this resize can occur
-		if err := controller.ValidatePVCResize(oldcluster.Spec.WALStorage.Size, newcluster.Spec.WALStorage.Size); err != nil {
+		if err := util.ValidatePVCResize(oldcluster.Spec.WALStorage.Size, newcluster.Spec.WALStorage.Size); err != nil {
 			log.Error(err)
 		} else {
 			rescale = true

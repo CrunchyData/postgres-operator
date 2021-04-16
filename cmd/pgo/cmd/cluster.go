@@ -717,6 +717,7 @@ func updateCluster(args []string, ns string) {
 	log.Debugf("updateCluster called %v", args)
 
 	r := msgs.UpdateClusterRequest{}
+	r.Clustername = args
 	r.Selector = Selector
 	r.ClientVersion = msgs.PGO_VERSION
 	r.Namespace = ns
@@ -725,16 +726,18 @@ func updateCluster(args []string, ns string) {
 	r.BackrestCPULimit = BackrestCPULimit
 	r.BackrestMemoryRequest = BackrestMemoryRequest
 	r.BackrestMemoryLimit = BackrestMemoryLimit
+	r.BackrestPVCSize = BackrestPVCSize
 	// set the Crunchy Postgres Exporter resource requests
 	r.ExporterCPURequest = ExporterCPURequest
 	r.ExporterCPULimit = ExporterCPULimit
 	r.ExporterMemoryRequest = ExporterMemoryRequest
 	r.ExporterMemoryLimit = ExporterMemoryLimit
 	r.ExporterRotatePassword = ExporterRotatePassword
-	r.Clustername = args
+	r.PVCSize = PVCSize
 	r.ServiceType = v1.ServiceType(ServiceType)
 	r.Startup = Startup
 	r.Shutdown = Shutdown
+	r.WALPVCSize = WALPVCSize
 	// set the container resource requests
 	r.CPURequest = CPURequest
 	r.CPULimit = CPULimit
