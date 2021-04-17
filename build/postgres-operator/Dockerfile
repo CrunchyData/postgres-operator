@@ -7,6 +7,7 @@ ARG PGVERSION
 ARG BACKREST_VERSION
 ARG PACKAGER
 ARG DFSET
+ARG BASEOS
 
 LABEL name="postgres-operator" \
 	summary="Crunchy PostgreSQL Operator" \
@@ -20,11 +21,17 @@ RUN if [ "$DFSET" = "centos" ] ; then \
         && ${PACKAGER} -y clean all ; \
 fi
 
-RUN if [ "$DFSET" = "rhel" ] ; then \
+RUN if [ "$BASEOS" = "ubi8" ] ; then \
 	${PACKAGER} -y install \
-		--setopt=skip_missing_names_on_install=False \
 		postgresql${PGVERSION} \
 	&& ${PACKAGER} -y clean all ; \
+fi
+
+RUN if [ "$BASEOS" = "ubi7" ] ; then \
+        ${PACKAGER} -y install \
+                --setopt=skip_missing_names_on_install=False \
+                postgresql${PGVERSION} \
+        && ${PACKAGER} -y clean all ; \
 fi
 
 ADD bin/postgres-operator /usr/local/bin

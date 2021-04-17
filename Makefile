@@ -3,6 +3,7 @@
 ANSIBLE_VERSION ?= 2.9.*
 PGOROOT ?= $(CURDIR)
 PGO_BASEOS ?= centos8
+BASE_IMAGE_OS ?= $(PGO_BASEOS)
 PGO_IMAGE_PREFIX ?= crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
 PGO_VERSION ?= 4.6.2
@@ -54,7 +55,8 @@ endif
 
 ifeq ("$(PGO_BASEOS)", "ubi8")
         DFSET=rhel
-        PACKAGER=dnf
+        PACKAGER=microdnf
+        BASE_IMAGE_OS=ubi8-minimal
 endif
 
 ifeq ("$(PGO_BASEOS)", "centos7")
@@ -189,6 +191,7 @@ pgo-base-build: $(PGOROOT)/build/pgo-base/Dockerfile
 		--build-arg DFSET=$(DFSET) \
 		--build-arg PACKAGER=$(PACKAGER) \
 		--build-arg DOCKERBASEREGISTRY=$(DOCKERBASEREGISTRY) \
+		--build-arg BASE_IMAGE_OS=$(BASE_IMAGE_OS) \
 		$(PGOROOT)
 
 pgo-base-buildah: pgo-base-build ;

@@ -25,9 +25,17 @@ RUN if [ "$DFSET" = "centos" ] ; then \
     && ${PACKAGER} -y clean all ; \
 fi
 
-RUN if [ "$DFSET" = "rhel" ] ; then \
-	${PACKAGER} install -y \
+RUN if [ "$BASEOS" = "ubi7" ] ; then \
+        ${PACKAGER} install -y \
         --setopt=skip_missing_names_on_install=False \
+        postgresql${PGVERSION} \
+                gettext \
+                nss_wrapper \
+    && ${PACKAGER} -y clean all ; \
+fi
+
+RUN if [ "$BASEOS" = "ubi8" ] ; then \
+	${PACKAGER} install -y \
         postgresql${PGVERSION} \
 		gettext \
 		nss_wrapper \
