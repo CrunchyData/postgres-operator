@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
-	"github.com/crunchydata/postgres-operator/internal/controller"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	clusteroperator "github.com/crunchydata/postgres-operator/internal/operator/cluster"
@@ -282,7 +281,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 
 		// if we get to this point, then we should resize the PVC
 		// validate that this resize can occur
-		if err := controller.ValidatePVCResize(oldPgreplica.Spec.ReplicaStorage.Size, newPgreplica.Spec.ReplicaStorage.Size); err != nil {
+		if err := util.ValidatePVCResize(oldPgreplica.Spec.ReplicaStorage.Size, newPgreplica.Spec.ReplicaStorage.Size); err != nil {
 			log.Error(err)
 			return
 		}

@@ -20,13 +20,13 @@ The goal of this section is to present a few of the common actions that can be t
 
 ## Update CPU / Memory
 
-You can update the CPU and memory resources available to the Pods in your PostgreSQL cluster by using the [`pgo update cluster`]({{< relref "pgo-client/reference/pgo_create_cluster.md" >}}) command. By using this method, the PostgreSQL instances are safely shut down and the new resources are applied in a rolling fashion (though we caution that a brief downtime may still occur).
+You can update the CPU and memory resources available to the Pods in your PostgreSQL cluster by using the [`pgo update cluster`]({{< relref "pgo-client/reference/pgo_create_cluster.md" >}}) command. You can also modify the custom resource attributes to resize these attributes as well. By using this method, the PostgreSQL instances are safely shut down and the new resources are applied in a rolling fashion (though we caution that a brief downtime may still occur).
 
 Customizing CPU and memory does add more resources to your PostgreSQL cluster, but to fully take advantage of additional resources, you will need to [customize your PostgreSQL configuration]({{< relref "advanced/custom-configuration.md" >}}) and tune parameters such as `shared_buffers` and others.
 
 ### Customize CPU / Memory for PostgreSQL
 
-The PostgreSQL Operator provides several flags for [`pgo update cluster`]({{< relref "pgo-client/reference/pgo_create_cluster.md" >}}) to help manage resources for a PostgreSQL instance:
+The PostgreSQL Operator provides several flags for [`pgo update cluster`]({{< relref "pgo-client/reference/pgo_update_cluster.md" >}}) to help manage resources for a PostgreSQL instance:
 
 - `--cpu`: Specify the CPU Request for a PostgreSQL instance
 - `--cpu-limit`: Specify the CPU Limit for a PostgreSQL instance
@@ -86,6 +86,34 @@ kubectl -n pgo edit configmap hippo-pgha-config
 ```
 
 We recommend that you read the section on how to [customize your PostgreSQL configuration]({{< relref "advanced/custom-configuration.md" >}}) to find out how to customize your configuration.
+
+## Update PVC Size
+
+You can update the PVC sizes for your PostgreSQL cluster, the pgBackRest repository, and an optional external WAL PVC by using the [`pgo update cluster`]({{< relref "pgo-client/reference/pgo_update_cluster.md" >}}) command. You can also modify the custom resource attributes to resize these attributes as well. By using this method, the PostgreSQL instances are safely shut down and the new resources are applied in a rolling fashion (though we caution that a brief downtime may still occur).
+
+It is possible to update the PVC size for a replica instance or a pgAdmin 4 instance as well, but you must do this by editing a custom resource directly.
+
+### Update PVC Size for a Postgres Cluster
+
+PGO provides the `--pvc-size` flag on the [`pgo update cluster`]({{< relref "pgo-client/reference/pgo_update_cluster.md" >}}) command to let you update the size of the PVC that stores your PostgreSQL data. To use this feature, the new PVC size **must** be larger than the old PVC size.
+
+For example, let's say your current PostgreSQL cluster named `hippo` has a PVC size of `10Gi`. To update your PostgreSQL cluster to use a `20Gi` PVC, you would use the following command:
+
+```
+pgo update cluster hippo --pvc-size=20Gi
+```
+
+As mentioned above, if you have deployed a HA Postgres cluster, the Postgres Operator will apply the changes using a rolling update to minimize downtime.
+
+### Update PVC Size for a pgBackRest Repository
+
+If you are using pgBackRest repository with `posix` mode (**not** `s3` or `gcs` only modes), you can resize its PVC using the `--pgbackrest-pvc-size` flag on the [`pgo update cluster`]({{< relref "pgo-client/reference/pgo_create_cluster.md" >}}) command.
+
+For example, let's say your current PostgreSQL cluster named `hippo` has a pgBackRest PVC size of `30Gi`. To update your PostgreSQL cluster to use a `60Gi` PVC, you would use the following command:
+
+```
+pgo update cluster hippo --pgbackrest-pvc-size=60Gi
+```
 
 ## Troubleshooting
 

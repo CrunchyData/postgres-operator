@@ -114,6 +114,12 @@ func init() {
 		"the pgBackRest repository.")
 	UpdateClusterCmd.Flags().StringVar(&BackrestMemoryLimit, "pgbackrest-memory-limit", "", "Set the amount of memory to limit for "+
 		"the pgBackRest repository.")
+	UpdateClusterCmd.Flags().StringVar(&BackrestPVCSize, "pgbackrest-pvc-size", "",
+		`The size of the PVC capacity for the pgBackRest repository. Overrides the value set in the storage class. This is ignored if the storage type of "posix" is not used. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
+	UpdateClusterCmd.Flags().StringVar(&PVCSize, "pvc-size", "",
+		`The size of the PVC capacity for primary and replica PostgreSQL instances. Must follow the standard Kubernetes format, e.g. "10.1Gi"`)
+	UpdateClusterCmd.Flags().StringVar(&WALPVCSize, "wal-pvc-size", "",
+		`The size of the capacity for WAL storage, which overrides any value in the storage configuration.  Must follow the standard Kubernetes format, e.g. "10.1Gi".`)
 	UpdateClusterCmd.Flags().StringVar(&ExporterCPURequest, "exporter-cpu", "", "Set the number of millicores to request for CPU "+
 		"for the Crunchy Postgres Exporter sidecar container, e.g. \"100m\" or \"0.1\".")
 	UpdateClusterCmd.Flags().StringVar(&ExporterCPULimit, "exporter-cpu-limit", "", "Set the number of millicores to limit for CPU "+
