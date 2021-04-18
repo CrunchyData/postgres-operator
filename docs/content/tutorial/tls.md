@@ -123,6 +123,28 @@ pgo create cluster hippo \
 
 By default, the PostgreSQL Operator has each replica connect to PostgreSQL using a [PostgreSQL TLS mode](https://www.postgresql.org/docs/current/libpq-ssl.html#LIBPQ-SSL-SSLMODE-STATEMENTS) of `verify-ca`. If you wish to perform TLS mutual authentication between PostgreSQL instances (i.e. certificate-based authentication with SSL mode of `verify-full`), you will need to create a [PostgreSQL custom configuration]({{< relref "/advanced/custom-configuration.md" >}}).
 
+## Add TLS to an Existing PostgreSQL Cluster
+
+You can add TLS to an existing PostgreSQL cluster using the [`pgo update cluster`]({{< relref "/pgo-client/reference/pgo_update_cluster.md" >}}) or by modifying the `pgclusters.crunchydata.com` custom resource directly. `pgo update cluster` provides several flags for TLS management, including:
+
+- `--disable-server-tls`: removes TLS from a cluster
+- `--disable-tls-only`: removes the TLS-only requirement from a cluster
+- `--enable-tls-only`: adds the TLS-only requirement to a cluster
+- `--server-ca-secret`: combined with `--server-tls-secret`, enables TLS in a cluster
+- `--server-tls-secret`: combined with `--server-ca-secret`, enables TLS in a cluster
+- `--replication-tls-secret`: enables certificate-based authentication between Postgres instances.
+
+If you have an existing cluster named `hippo` that does not have TLS, and have a TLS keypair in a Secret named `hippo-tls-keypair` and a CA in a Secret name `postgresql-ca` and want to require all connections to use TLS, you could use the following command:
+
+```
+pgo update cluster hippo \
+  --enable-tls-only \
+  --server-ca-secret=postgresql-ca \
+  --server-tls-secret=hippo-tls-keypair
+```
+
+While PGO attempts to leave any `pg_hba.conf` customizations you have in place, there are circumstance where it can override them when enabling/disabling TLS. If you do have custom `pg_hba.conf` rules, after adding or removing TLS from an existing Posgres cluster, check your `pg_hba.conf` values to ensure it matches your expectations.
+
 ## Troubleshooting
 
 ### Replicas Cannot Connect to Primary
@@ -130,6 +152,10 @@ By default, the PostgreSQL Operator has each replica connect to PostgreSQL using
 If your primary is forcing all connections over TLS, ensure that your replicas are connecting with a `sslmode` of `prefer` or higher.
 
 If using TLS authentication with your replicas, ensure that the common name (`CN`) for the replicas is `primaryuser` or that you have set up an entry in `pg_ident` that provides a mapping from your `CN` to `primaryuser`.
+
+### `pg_hba.conf` Values Have Changed After TLS Update
+
+PGO will attempt to preserve all of your custom TLS rules, but there are cases where it may make modifications. This a normal part of adding/removing TLS from an existing Postgres cluster. You can safely update your `pg_hba.conf` rules after the TLS changes are completed, and they will be preserved.
 
 ## Next Steps
 

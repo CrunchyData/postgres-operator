@@ -40,7 +40,7 @@ Backups and restores leverage the open source [pgBackRest](https://www.pgbackres
 
 #### TLS
 
-Secure communication between your applications and data servers by [enabling TLS for your PostgreSQL servers](/pgo-client/common-tasks/#enable-tls), including the ability to enforce all of your connections to use TLS.
+Secure communication between your applications and data servers by [enabling TLS for your PostgreSQL servers]({{< relref "/tutorial/tls.md" >}}), including the ability to enforce all of your connections to use TLS.
 
 #### [Monitoring]({{< relref "/architecture/monitoring.md" >}})
 

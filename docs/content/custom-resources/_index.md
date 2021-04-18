@@ -455,6 +455,8 @@ It is possible [create a PostgreSQL cluster with TLS]({{< relref "tutorial/tls.m
 
 For a detailed explanation for how TLS works with the PostgreSQL Operator, please see the [TLS tutorial]({{< relref "tutorial/tls.md" >}}).
 
+TLS can be added to an existing cluster, also long as there are values for `tls.caSecret` and `tls.tlsSecret`.
+
 #### Step 1: Create TLS Secrets
 
 There are two Secrets that need to be created:
@@ -947,8 +949,8 @@ make changes, as described below.
 | standby | `create`, `update` | If set to true, indicates that the PostgreSQL cluster is a "standby" cluster, i.e. is in read-only mode entirely. Please see [Kubernetes Multi-Cluster Deployments]({{< relref "/architecture/high-availability/multi-cluster-kubernetes.md" >}}) for more information. |
 | syncReplication | `create` | If set to `true`, specifies the PostgreSQL cluster to use [synchronous replication]({{< relref "/architecture/high-availability/_index.md#how-the-crunchy-postgresql-operator-uses-pod-anti-affinity#synchronous-replication-guarding-against-transactions-loss" >}}).|
 | tablespaceMounts | `create`,`update` | Lists any tablespaces that are attached to the PostgreSQL cluster. Tablespaces can be added at a later time by updating the `TablespaceMounts` entry, but they cannot be removed. Stores a map of information, with the key being the name of the tablespace, and the value being a Storage Specification, defined below. |
-| tls | `create` | Defines the attributes for enabling TLS for a PostgreSQL cluster. See TLS Specification below. |
-| tlsOnly | `create` | If set to true, requires client connections to use only TLS to connect to the PostgreSQL database. |
+| tls | `create`, `update` | Defines the attributes for enabling TLS for a PostgreSQL cluster. See TLS Specification below. |
+| tlsOnly | `create`,`update` | If set to true, requires client connections to use only TLS to connect to the PostgreSQL database. |
 | tolerations | `create`,`update` | Any array of Kubernetes [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Please refer to the [Kubernetes documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) for how to set this field. |
 | user | `create` | The name of the PostgreSQL user that is created when the PostgreSQL cluster is first created. |
 | userlabels | `create` | A set of key-value string pairs that are used as a sort of "catch-all" as well as a way to add custom labels to clusters. This will disappear at some point. |
@@ -1023,9 +1025,9 @@ should be structured, please see [Enabling TLS in a PostgreSQL Cluster]({{< relr
 
 | Attribute | Action | Description |
 |-----------|--------|-------------|
-| caSecret | `create` | A reference to the name of a Kubernetes Secret that specifies a certificate authority for the PostgreSQL cluster to trust. |
-| replicationTLSSecret | `create` | A reference to the name of a Kubernetes TLS Secret that contains a keypair for authenticating the replication user. Must be used with `CASecret` and `TLSSecret`. |
-| tlsSecret | `create` | A reference to the name of a Kubernetes TLS Secret that contains a keypair that is used for the PostgreSQL instance to identify itself and perform TLS communications with PostgreSQL clients. Must be used with `CASecret`. |
+| caSecret | `create`, `update` | A reference to the name of a Kubernetes Secret that specifies a certificate authority for the PostgreSQL cluster to trust. |
+| replicationTLSSecret | `create`, `update` | A reference to the name of a Kubernetes TLS Secret that contains a keypair for authenticating the replication user. Must be used with `CASecret` and `TLSSecret`. |
+| tlsSecret | `create`, `update` | A reference to the name of a Kubernetes TLS Secret that contains a keypair that is used for the PostgreSQL instance to identify itself and perform TLS communications with PostgreSQL clients. Must be used with `CASecret`. |
 
 ##### pgBouncer Specification
 
