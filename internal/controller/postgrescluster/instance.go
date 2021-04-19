@@ -40,7 +40,7 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-// +kubebuilder:rbac:resources=pods,verbs=list
+// +kubebuilder:rbac:groups="",resources=pods,verbs=list
 // +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=patch
 
 // deleteInstances gracefully stops instances of cluster to avoid failovers and
@@ -192,7 +192,7 @@ func (r *Reconciler) reconcileInstanceSet(
 	return instances, err
 }
 
-// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=patch
+// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=create;patch
 
 // reconcileInstance writes instance according to spec of cluster.
 // See Reconciler.reconcileInstanceSet.
@@ -398,6 +398,8 @@ func addPGBackRestToInstancePodSpec(cluster *v1beta1.PostgresCluster,
 	return nil
 }
 
+// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=create;patch
+
 // reconcilePGDATAVolume writes instance according to spec of cluster.
 // See Reconciler.reconcileInstanceSet.
 func (r *Reconciler) reconcilePGDATAVolume(ctx context.Context, cluster *v1beta1.PostgresCluster,
@@ -433,7 +435,7 @@ func (r *Reconciler) reconcilePGDATAVolume(ctx context.Context, cluster *v1beta1
 	return nil
 }
 
-// +kubebuilder:rbac:resources=configmaps,verbs=patch
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=create;patch
 
 // reconcileInstanceConfigMap writes the ConfigMap that contains generated
 // files (etc) that apply to instance of cluster.
@@ -461,7 +463,8 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 	return instanceConfigMap, err
 }
 
-// +kubebuilder:rbac:resources=secrets,verbs=get;patch
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=create;patch
 
 // reconcileInstanceCertificates writes the Secret that contains certificates
 // and private keys for instance of cluster.

@@ -64,7 +64,8 @@ func (r *Reconciler) reconcilePGBouncer(
 	return err
 }
 
-// +kubebuilder:rbac:resources=configmaps,verbs=get;delete;patch
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=create;delete;patch
 
 // reconcilePGBouncerConfigMap writes the ConfigMap for a PgBouncer Pod.
 func (r *Reconciler) reconcilePGBouncerConfigMap(
@@ -101,7 +102,7 @@ func (r *Reconciler) reconcilePGBouncerConfigMap(
 	return configmap, err
 }
 
-// +kubebuilder:rbac:resources=pods,verbs=get;list
+// +kubebuilder:rbac:groups="",resources=pods,verbs=get;list
 
 // reconcilePGBouncerInPostgreSQL writes the user and other objects needed by
 // PgBouncer inside of PostgreSQL.
@@ -197,7 +198,8 @@ func (r *Reconciler) reconcilePGBouncerInPostgreSQL(
 	return err
 }
 
-// +kubebuilder:rbac:resources=secrets,verbs=get;delete;patch
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=create;delete;patch
 
 // reconcilePGBouncerSecret writes the Secret for a PgBouncer Pod.
 func (r *Reconciler) reconcilePGBouncerSecret(
@@ -244,7 +246,8 @@ func (r *Reconciler) reconcilePGBouncerSecret(
 	return intent, err
 }
 
-// +kubebuilder:rbac:resources=services,verbs=get;delete;patch
+// +kubebuilder:rbac:groups="",resources=services,verbs=get
+// +kubebuilder:rbac:groups="",resources=services,verbs=create;delete;patch
 
 // reconcilePGBouncerService writes the Service that resolves to PgBouncer.
 func (r *Reconciler) reconcilePGBouncerService(
@@ -297,7 +300,8 @@ func (r *Reconciler) reconcilePGBouncerService(
 	return service, err
 }
 
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;delete;patch
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=create;delete;patch
 
 // reconcilePGBouncerDeployment writes the Deployment that runs PgBouncer.
 func (r *Reconciler) reconcilePGBouncerDeployment(

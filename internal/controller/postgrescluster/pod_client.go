@@ -39,7 +39,7 @@ func newPodClient(config *rest.Config) (rest.Interface, error) {
 	return apiutil.RESTClientForGVK(gvk, false, config, codecs)
 }
 
-// +kubebuilder:rbac:resources=pods/exec,verbs=create
+// +kubebuilder:rbac:groups="",resources=pods/exec,verbs=create
 
 func newPodExecutor(config *rest.Config) (podExecutor, error) {
 	client, err := newPodClient(config)

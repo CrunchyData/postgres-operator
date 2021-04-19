@@ -33,7 +33,7 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-// +kubebuilder:rbac:resources=endpoints,verbs=deletecollection
+// +kubebuilder:rbac:groups="",resources=endpoints,verbs=deletecollection
 
 func (r *Reconciler) deletePatroniArtifacts(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
@@ -54,7 +54,7 @@ func (r *Reconciler) deletePatroniArtifacts(
 	return err
 }
 
-// +kubebuilder:rbac:resources=services,verbs=patch
+// +kubebuilder:rbac:groups="",resources=services,verbs=create;patch
 
 // reconcilePatroniDistributedConfiguration sets labels and ownership on the
 // objects Patroni creates for its distributed configuration.
@@ -147,7 +147,7 @@ func (r *Reconciler) reconcilePatroniDynamicConfiguration(
 	return err
 }
 
-// +kubebuilder:rbac:resources=services,verbs=patch
+// +kubebuilder:rbac:groups="",resources=services,verbs=create;patch
 
 // reconcilePatroniLeaderLease sets labels and ownership on the objects Patroni
 // creates for its leader elections. When Patroni is using Endpoints for this,
@@ -192,7 +192,7 @@ func (r *Reconciler) reconcilePatroniLeaderLease(
 	return leaderService, err
 }
 
-// +kubebuilder:rbac:resources=endpoints,verbs=get
+// +kubebuilder:rbac:groups="",resources=endpoints,verbs=get
 
 // reconcilePatroniStatus populates cluster.Status.Patroni with observations.
 func (r *Reconciler) reconcilePatroniStatus(

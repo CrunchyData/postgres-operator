@@ -196,6 +196,8 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 	return repoResources, nil
 }
 
+// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=delete
+
 // cleanupRepoResources cleans up pgBackRest repository resources that should no longer be
 // reconciled by deleting them.  This includes deleting repos (i.e. PersistentVolumeClaims) that
 // are no longer associated with any repository configured within the PostgresCluster spec, or any

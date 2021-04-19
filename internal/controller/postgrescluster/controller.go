@@ -71,8 +71,9 @@ type Reconciler struct {
 	) error
 }
 
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 // +kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=postgresclusters,verbs=get;list;watch
-// +kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=postgresclusters/status,verbs=get;patch
+// +kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=postgresclusters/status,verbs=patch
 
 // Reconcile reconciles a ConfigMap in a namespace managed by the PostgreSQL Operator
 func (r *Reconciler) Reconcile(
@@ -267,6 +268,13 @@ func (r *Reconciler) patch(
 	return r.Client.Patch(ctx, object, patch, options...)
 }
 
+// The owner reference created by controllerutil.SetControllerReference blocks
+// deletion. The OwnerReferencesPermissionEnforcement plugin requires that the
+// creator of such a reference have either "delete" permission on the owner or
+// "update" permission on the owner's "finalizers" subresource.
+// - https://docs.k8s.io/reference/access-authn-authz/admission-controllers/
+// +kubebuilder:rbac:groups=postgres-operator.crunchydata.com,resources=postgresclusters/finalizers,verbs=update
+
 // setControllerReference sets owner as a Controller OwnerReference on controlled.
 // Only one OwnerReference can be a controller, so it returns an error if another
 // is already set.
@@ -283,6 +291,14 @@ func (r *Reconciler) setOwnerReference(
 ) error {
 	return controllerutil.SetOwnerReference(owner, controlled, r.Client.Scheme())
 }
+
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=endpoints,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch
+// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch
 
 // SetupWithManager adds the PostgresCluster controller to the provided runtime manager
 func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
@@ -301,6 +317,7 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 		}).
 		Owns(&v1.ConfigMap{}).
 		Owns(&v1.Endpoints{}).
+		Owns(&v1.PersistentVolumeClaim{}).
 		Owns(&v1.Secret{}).
 		Owns(&v1.Service{}).
 		Owns(&appsv1.Deployment{}).

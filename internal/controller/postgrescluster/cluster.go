@@ -32,7 +32,7 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-// +kubebuilder:rbac:resources=configmaps,verbs=patch
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=create;patch
 
 // reconcileClusterConfigMap writes the ConfigMap that contains generated
 // files (etc) that apply to the entire cluster.
@@ -59,7 +59,7 @@ func (r *Reconciler) reconcileClusterConfigMap(
 	return clusterConfigMap, err
 }
 
-// +kubebuilder:rbac:resources=services,verbs=patch
+// +kubebuilder:rbac:groups="",resources=services,verbs=create;patch
 
 // reconcileClusterPodService writes the Service that can provide stable DNS
 // names to Pods related to cluster.
@@ -93,7 +93,13 @@ func (r *Reconciler) reconcileClusterPodService(
 	return clusterPodService, err
 }
 
-// +kubebuilder:rbac:resources=endpoints;services,verbs=patch
+// +kubebuilder:rbac:groups="",resources=endpoints,verbs=create;patch
+// +kubebuilder:rbac:groups="",resources=services,verbs=create;patch
+
+// The OpenShift RestrictedEndpointsAdmission plugin requires special
+// authorization to create Endpoints that contain ClusterIPs.
+// - https://github.com/openshift/origin/pull/9383
+// +kubebuilder:rbac:groups="",resources=endpoints/restricted,verbs=create
 
 // reconcileClusterPrimaryService writes the Service and Endpoints that resolve
 // to the PostgreSQL primary instance.
@@ -174,7 +180,8 @@ func (r *Reconciler) reconcileClusterPrimaryService(
 	return err
 }
 
-// +kubebuilder:rbac:resources=secrets,verbs=patch
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=create;patch
 
 // reconcilePGUserSecret creates the secret that contains the default
 // connection information to use with the postgrescluster

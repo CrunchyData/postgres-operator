@@ -1,4 +1,4 @@
 resources:
-- pgo-sa.yaml
-- pgo-cluster-role.yaml
-- pgo-cluster-role-binding.yaml
+- service_account.yaml
+- cluster/role.yaml
+- cluster/role_binding.yaml

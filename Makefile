@@ -228,20 +228,22 @@ check-envtest: hack/tools/envtest
 
 .PHONY: check-envtest-existing
 check-envtest-existing:
-	${PGO_KUBE_CLIENT} apply -f "$(CURDIR)/config/rbac/pgo-cluster-role.yaml"
+	${PGO_KUBE_CLIENT} apply -k ./config/dev
 	USE_EXISTING_CLUSTER=true $(GO) test -count=1 -tags=envtest ./internal/controller/... ./internal/pgbackrest/...
-	${PGO_KUBE_CLIENT} delete -f "$(CURDIR)/config/rbac/pgo-cluster-role.yaml"
+	${PGO_KUBE_CLIENT} delete -k ./config/dev
 
 
 .PHONY: check-generate
-check-generate: generate-crd generate-deepcopy
+check-generate: generate-crd generate-deepcopy generate-rbac
 	git diff --exit-code -- config/crd
+	git diff --exit-code -- config/rbac
 	git diff --exit-code -- pkg/apis
 
 clean: clean-deprecated
 	rm -f bin/postgres-operator
 	rm -f bin/pgo-backrest/pgo-backrest
 	rm -f bin/pgo-rmdata/pgo-rmdata
+	rm -f config/rbac/role.yaml
 	[ ! -d hack/tools/envtest ] || rm -r hack/tools/envtest
 	[ ! -n "$$(ls hack/tools)" ] || rm hack/tools/*
 	[ ! -d hack/.kube ] || rm -r hack/.kube
@@ -271,7 +273,7 @@ release:  linuxpgo macpgo winpgo
 	cp -r $(PGOROOT)/conf $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
 
-generate: generate-crd generate-deepcopy
+generate: generate-crd generate-deepcopy generate-rbac
 	GOBIN='$(CURDIR)/hack/tools' ./hack/update-codegen.sh
 
 generate-crd:
@@ -284,6 +286,10 @@ generate-deepcopy:
 	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
 		object:headerFile='hack/boilerplate.go.txt' \
 		paths='./pkg/apis/postgres-operator.crunchydata.com/...'
+
+generate-rbac:
+	GOBIN='$(CURDIR)/hack/tools' ./hack/generate-rbac.sh \
+		'./internal/...' 'config/rbac'
 
 # Available versions: curl -s 'https://storage.googleapis.com/kubebuilder-tools/' | grep -o '<Key>[^<]*</Key>'
 # - ENVTEST_K8S_VERSION=1.19.2
