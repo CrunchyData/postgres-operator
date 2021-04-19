@@ -16,13 +16,13 @@
 package pgbackrest
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 // AddRepoVolumesToPod adds pgBackRest repository volumes to the provided Pod template spec, while
@@ -50,7 +50,7 @@ func AddRepoVolumesToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.
 				}
 			}
 			if !containerFound {
-				return fmt.Errorf("Unable to find container %q when adding pgBackRest repo volumes",
+				return errors.Errorf("Unable to find container %q when adding pgBackRest repo volumes",
 					name)
 			}
 			template.Spec.Containers[index].VolumeMounts =
@@ -101,7 +101,7 @@ func AddConfigsToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodT
 			}
 		}
 		if !containerFound {
-			return fmt.Errorf("Unable to find container %q when adding pgBackRest configration",
+			return errors.Errorf("Unable to find container %q when adding pgBackRest configration",
 				name)
 		}
 		template.Spec.Containers[index].VolumeMounts =
@@ -190,7 +190,7 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 			}
 		}
 		if !containerFound {
-			return fmt.Errorf("Unable to find container %q when adding pgBackRest to Pod",
+			return errors.Errorf("Unable to find container %q when adding pgBackRest to Pod",
 				name)
 		}
 		template.Spec.Containers[index].VolumeMounts =

@@ -62,7 +62,7 @@ func AddPGDATAVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1
 			}
 		}
 		if !containerFound {
-			return fmt.Errorf("Unable to find container %q when adding pgBackRest repo volumes",
+			return errors.Errorf("Unable to find container %q when adding pgBackRest repo volumes",
 				name)
 		}
 		template.Spec.Containers[index].VolumeMounts =
@@ -82,7 +82,7 @@ func AddPGDATAVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1
 			}
 		}
 		if !initContainerFound {
-			return fmt.Errorf("Unable to find init container %q when adding pgBackRest repo volumes",
+			return errors.Errorf("Unable to find init container %q when adding pgBackRest repo volumes",
 				name)
 		}
 		template.Spec.InitContainers[initIndex].VolumeMounts =
@@ -138,7 +138,7 @@ func AddCertVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.P
 		}
 	}
 	if !containerFound {
-		return fmt.Errorf("Unable to find container %q when adding certificate volumes",
+		return errors.Errorf("Unable to find container %q when adding certificate volumes",
 			containerName)
 	}
 

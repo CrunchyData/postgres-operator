@@ -334,15 +334,15 @@ func (r *Reconciler) reconcileInstance(
 	if pgbackrest.RepoHostEnabled(cluster) {
 		PGDATAContainers = append(PGDATAContainers, naming.PGBackRestRepoContainerName)
 	}
-	if err := postgres.AddPGDATAVolumeToPod(cluster, &instance.Spec.Template,
-		naming.InstancePGDataVolume(instance).Name, PGDATAContainers,
-		PGDATAInitContainers); err != nil {
-		return err
+	if err == nil {
+		err = postgres.AddPGDATAVolumeToPod(cluster, &instance.Spec.Template,
+			naming.InstancePGDataVolume(instance).Name, PGDATAContainers,
+			PGDATAInitContainers)
 	}
 	// add the cluster certificate secret volume to the pod to enable Postgres TLS connections
-	if err := postgres.AddCertVolumeToPod(cluster, &instance.Spec.Template, naming.ContainerDatabase,
-		primaryCertificate); err != nil {
-		return errors.WithStack(err)
+	if err == nil {
+		err = errors.WithStack(postgres.AddCertVolumeToPod(cluster,
+			&instance.Spec.Template, naming.ContainerDatabase, primaryCertificate))
 	}
 	// add an emptyDir volume to the PodTemplateSpec and an associated '/tmp' volume mount to
 	// all containers included within that spec
