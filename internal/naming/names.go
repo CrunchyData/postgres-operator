@@ -152,6 +152,15 @@ func ClusterConfigMap(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	}
 }
 
+// ClusterInstanceRBAC returns the ObjectMeta necessary to lookup the
+// ServiceAccount, Role, and RoleBinding for cluster's PostgreSQL instances.
+func ClusterInstanceRBAC(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Name + "-instance",
+	}
+}
+
 // ClusterPGBouncer returns the ObjectMeta necessary to lookup the ConfigMap,
 // Deployment, Secret, or Service that is cluster's PgBouncer proxy.
 func ClusterPGBouncer(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {

@@ -65,61 +65,64 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 		value metav1.ObjectMeta
 	}
 
-	t.Run("ConfigMaps", func(t *testing.T) {
+	testUniqueAndValid := func(t *testing.T, tests []test) {
 		names := sets.NewString()
-		for _, tt := range []test{
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				assert.Equal(t, tt.value.Namespace, cluster.Namespace)
+				assert.Assert(t, tt.value.Name != cluster.Name, "may collide")
+				assert.Assert(t, !names.Has(tt.value.Name), "%q defined already", tt.value.Name)
+				assert.Assert(t, nil == validation.IsDNS1123Label(tt.value.Name))
+				names.Insert(tt.value.Name)
+			})
+		}
+	}
+
+	t.Run("ConfigMaps", func(t *testing.T) {
+		testUniqueAndValid(t, []test{
 			{"ClusterConfigMap", ClusterConfigMap(cluster)},
 			{"ClusterPGBouncer", ClusterPGBouncer(cluster)},
 			{"PatroniDistributedConfiguration", PatroniDistributedConfiguration(cluster)},
 			{"PatroniLeaderConfigMap", PatroniLeaderConfigMap(cluster)},
 			{"PatroniTrigger", PatroniTrigger(cluster)},
-		} {
-			t.Run(tt.name, func(t *testing.T) {
-				assert.Equal(t, tt.value.Namespace, cluster.Namespace)
-				assert.Assert(t, tt.value.Name != cluster.Name, "may collide")
-				assert.Assert(t, !names.Has(tt.value.Name), "%q defined already", tt.value.Name)
-				assert.Assert(t, nil == validation.IsDNS1123Label(tt.value.Name))
-				names.Insert(tt.value.Name)
-			})
-		}
+		})
 	})
 
 	t.Run("Deployments", func(t *testing.T) {
-		names := sets.NewString()
-		for _, tt := range []test{
+		testUniqueAndValid(t, []test{
 			{"ClusterPGBouncer", ClusterPGBouncer(cluster)},
-		} {
-			t.Run(tt.name, func(t *testing.T) {
-				assert.Equal(t, tt.value.Namespace, cluster.Namespace)
-				assert.Assert(t, tt.value.Name != cluster.Name, "may collide")
-				assert.Assert(t, !names.Has(tt.value.Name), "%q defined already", tt.value.Name)
-				assert.Assert(t, nil == validation.IsDNS1123Label(tt.value.Name))
-				names.Insert(tt.value.Name)
-			})
-		}
+		})
+	})
+
+	t.Run("RoleBindings", func(t *testing.T) {
+		testUniqueAndValid(t, []test{
+			{"ClusterInstanceRBAC", ClusterInstanceRBAC(cluster)},
+		})
+	})
+
+	t.Run("Roles", func(t *testing.T) {
+		testUniqueAndValid(t, []test{
+			{"ClusterInstanceRBAC", ClusterInstanceRBAC(cluster)},
+		})
 	})
 
 	t.Run("Secrets", func(t *testing.T) {
-		names := sets.NewString()
-		for _, tt := range []test{
+		testUniqueAndValid(t, []test{
 			{"ClusterPGBouncer", ClusterPGBouncer(cluster)},
 			{"PostgresUserSecret", PostgresUserSecret(cluster)},
 			{"PostgresTLSSecret", PostgresTLSSecret(cluster)},
 			{"ReplicationClientCertSecret", ReplicationClientCertSecret(cluster)},
-		} {
-			t.Run(tt.name, func(t *testing.T) {
-				assert.Equal(t, tt.value.Namespace, cluster.Namespace)
-				assert.Assert(t, tt.value.Name != cluster.Name, "may collide")
-				assert.Assert(t, !names.Has(tt.value.Name), "%q defined already", tt.value.Name)
-				assert.Assert(t, nil == validation.IsDNS1123Label(tt.value.Name))
-				names.Insert(tt.value.Name)
-			})
-		}
+		})
+	})
+
+	t.Run("ServiceAccounts", func(t *testing.T) {
+		testUniqueAndValid(t, []test{
+			{"ClusterInstanceRBAC", ClusterInstanceRBAC(cluster)},
+		})
 	})
 
 	t.Run("Services", func(t *testing.T) {
-		names := sets.NewString()
-		for _, tt := range []test{
+		testUniqueAndValid(t, []test{
 			{"ClusterPGBouncer", ClusterPGBouncer(cluster)},
 			{"ClusterPodService", ClusterPodService(cluster)},
 			{"ClusterPrimaryService", ClusterPrimaryService(cluster)},
@@ -127,15 +130,7 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 			{"PatroniDistributedConfiguration", PatroniDistributedConfiguration(cluster)},
 			{"PatroniLeaderEndpoints", PatroniLeaderEndpoints(cluster)},
 			{"PatroniTrigger", PatroniTrigger(cluster)},
-		} {
-			t.Run(tt.name, func(t *testing.T) {
-				assert.Equal(t, tt.value.Namespace, cluster.Namespace)
-				assert.Assert(t, tt.value.Name != cluster.Name, "may collide")
-				assert.Assert(t, !names.Has(tt.value.Name), "%q defined already", tt.value.Name)
-				assert.Assert(t, nil == validation.IsDNS1123Label(tt.value.Name))
-				names.Insert(tt.value.Name)
-			})
-		}
+		})
 	})
 }
 

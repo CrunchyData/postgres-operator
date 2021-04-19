@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -148,13 +149,14 @@ func (r *Reconciler) Reconcile(
 	}
 
 	var (
-		clusterConfigMap     *v1.ConfigMap
-		clusterPodService    *v1.Service
-		patroniLeaderService *v1.Service
-		primaryCertificate   *v1.SecretProjection
-		pgUser               *v1.Secret
-		rootCA               *pki.RootCertificateAuthority
-		err                  error
+		clusterConfigMap       *v1.ConfigMap
+		clusterPodService      *v1.Service
+		instanceServiceAccount *v1.ServiceAccount
+		patroniLeaderService   *v1.Service
+		primaryCertificate     *v1.SecretProjection
+		pgUser                 *v1.Secret
+		rootCA                 *pki.RootCertificateAuthority
+		err                    error
 	)
 
 	// TODO(cbandy): Accumulate postgres settings.
@@ -211,6 +213,9 @@ func (r *Reconciler) Reconcile(
 		primaryCertificate, err = r.reconcileClusterCertificate(ctx, rootCA, cluster)
 	}
 	if err == nil {
+		instanceServiceAccount, err = r.reconcileRBACResources(ctx, cluster)
+	}
+	if err == nil {
 		err = r.reconcilePatroniDistributedConfiguration(ctx, cluster)
 	}
 	if err == nil {
@@ -223,8 +228,8 @@ func (r *Reconciler) Reconcile(
 		if err == nil {
 			instanceSet, err = r.reconcileInstanceSet(
 				ctx, cluster, &cluster.Spec.InstanceSets[i],
-				clusterConfigMap, rootCA, clusterPodService, patroniLeaderService,
-				primaryCertificate)
+				clusterConfigMap, rootCA, clusterPodService, instanceServiceAccount,
+				patroniLeaderService, primaryCertificate)
 			for _, instance := range instanceSet.Items {
 				instancesNames = append(instancesNames, instance.GetName())
 			}
@@ -297,8 +302,11 @@ func (r *Reconciler) setOwnerReference(
 // +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 // +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=get;list;watch
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch
 // +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch
 
 // SetupWithManager adds the PostgresCluster controller to the provided runtime manager
 func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
@@ -320,8 +328,11 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 		Owns(&v1.PersistentVolumeClaim{}).
 		Owns(&v1.Secret{}).
 		Owns(&v1.Service{}).
+		Owns(&v1.ServiceAccount{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&appsv1.StatefulSet{}).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.RoleBinding{}).
 		Watches(&source.Kind{Type: &appsv1.StatefulSet{}},
 			r.controllerRefHandlerFuncs()). // watch all StatefulSets
 		Complete(r)

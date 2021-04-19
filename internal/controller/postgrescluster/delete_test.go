@@ -32,7 +32,6 @@ import (
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -82,20 +81,6 @@ func TestReconcilerHandleDelete(t *testing.T) {
 	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
 	assert.NilError(t, cc.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
-
-	// TODO(cbandy): namespace rbac
-	assert.NilError(t, cc.Create(ctx, &v1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{Namespace: ns.Name, Name: "postgres-operator"},
-	}))
-	assert.NilError(t, cc.Create(ctx, &rbacv1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{Namespace: ns.Name, Name: "postgres-operator"},
-		RoleRef: rbacv1.RoleRef{
-			Kind: "ClusterRole", Name: "postgres-operator-role",
-		},
-		Subjects: []rbacv1.Subject{{
-			Kind: "ServiceAccount", Namespace: ns.Name, Name: "postgres-operator",
-		}},
-	}))
 
 	reconciler := Reconciler{
 		Client:   cc,
@@ -397,20 +382,6 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 	ns.Labels = labels.Set{"postgres-operator-test": t.Name()}
 	assert.NilError(t, cc.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, client.IgnoreNotFound(cc.Delete(ctx, ns))) })
-
-	// TODO(cbandy): namespace rbac
-	assert.NilError(t, cc.Create(ctx, &v1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{Namespace: ns.Name, Name: "postgres-operator"},
-	}))
-	assert.NilError(t, cc.Create(ctx, &rbacv1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{Namespace: ns.Name, Name: "postgres-operator"},
-		RoleRef: rbacv1.RoleRef{
-			Kind: "ClusterRole", Name: "postgres-operator-role",
-		},
-		Subjects: []rbacv1.Subject{{
-			Kind: "ServiceAccount", Namespace: ns.Name, Name: "postgres-operator",
-		}},
-	}))
 
 	var mm struct {
 		manager.Manager

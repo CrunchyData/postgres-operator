@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
@@ -144,6 +143,7 @@ func (r *Reconciler) reconcileInstanceSet(
 	clusterConfigMap *v1.ConfigMap,
 	rootCA *pki.RootCertificateAuthority,
 	clusterPodService *v1.Service,
+	instanceServiceAccount *v1.ServiceAccount,
 	patroniLeaderService *v1.Service,
 	primaryCertificate *v1.SecretProjection,
 ) (*appsv1.StatefulSetList, error) {
@@ -182,7 +182,8 @@ func (r *Reconciler) reconcileInstanceSet(
 		if err == nil {
 			err = r.reconcileInstance(
 				ctx, cluster, set, clusterConfigMap, rootCA, clusterPodService,
-				patroniLeaderService, primaryCertificate, &instances.Items[i])
+				instanceServiceAccount, patroniLeaderService, primaryCertificate,
+				&instances.Items[i])
 		}
 	}
 	if err == nil {
@@ -203,6 +204,7 @@ func (r *Reconciler) reconcileInstance(
 	clusterConfigMap *v1.ConfigMap,
 	rootCA *pki.RootCertificateAuthority,
 	clusterPodService *v1.Service,
+	instanceServiceAccount *v1.ServiceAccount,
 	patroniLeaderService *v1.Service,
 	primaryCertificate *v1.SecretProjection,
 	instance *appsv1.StatefulSet,
@@ -271,7 +273,7 @@ func (r *Reconciler) reconcileInstance(
 		// - https://docs.k8s.io/tasks/configure-pod-container/share-process-namespace/
 		instance.Spec.Template.Spec.ShareProcessNamespace = initialize.Bool(true)
 
-		instance.Spec.Template.Spec.ServiceAccountName = "postgres-operator" // TODO
+		instance.Spec.Template.Spec.ServiceAccountName = instanceServiceAccount.Name
 		instance.Spec.Template.Spec.Containers = []v1.Container{
 			{
 				Name:      naming.ContainerDatabase,
@@ -423,16 +425,13 @@ func (r *Reconciler) reconcilePGDATAVolume(ctx context.Context, cluster *v1beta1
 	}
 
 	// set ownership references
-	if err := controllerutil.SetControllerReference(cluster, pgdataVolume,
-		r.Client.Scheme()); err != nil {
-		return err
+	err := errors.WithStack(r.setControllerReference(cluster, pgdataVolume))
+
+	if err == nil {
+		err = errors.WithStack(r.apply(ctx, pgdataVolume))
 	}
 
-	if err := r.apply(ctx, pgdataVolume); err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=create;patch

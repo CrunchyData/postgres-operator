@@ -44,6 +44,16 @@ operator["rules"].each do |rule|
 	rule["verbs"] = verbs.add("watch").sort if verbs.intersect? Set["get", "list"]
 end
 
+# Combine the other parsed Roles into the ClusterRole.
+rules = operator["rules"] + roles.flat_map { |role| role["rules"] }
+rules = rules.
+	group_by { |rule| rule.slice("apiGroups", "resources") }.
+	map do |(group_resource, rules)|
+		verbs = rules.flat_map { |rule| rule["verbs"] }.to_set.sort
+		group_resource.merge("verbs" => verbs)
+	end
+operator["rules"] = rules.sort_by { |rule| rule.to_a }
+
 # Combine resources that have the same verbs.
 rules = operator["rules"].
 	group_by { |rule| rule.slice("apiGroups", "verbs") }.

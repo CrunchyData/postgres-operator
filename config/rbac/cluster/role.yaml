@@ -46,6 +46,7 @@ rules:
   - ''
   resources:
   - persistentvolumeclaims
+  - serviceaccounts
   verbs:
   - create
   - get
@@ -59,6 +60,7 @@ rules:
   verbs:
   - get
   - list
+  - patch
   - watch
 - apiGroups:
   - apps
@@ -93,3 +95,14 @@ rules:
   - postgresclusters/status
   verbs:
   - patch
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - rolebindings
+  - roles
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - watch
