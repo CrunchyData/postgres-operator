@@ -360,6 +360,20 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		rollingUpdateFuncs = append(rollingUpdateFuncs, clusteroperator.UpdateTolerations)
 	}
 
+	// check to see if there are any modifications to TLS
+	if !reflect.DeepEqual(oldcluster.Spec.TLS, newcluster.Spec.TLS) ||
+		oldcluster.Spec.TLSOnly != newcluster.Spec.TLSOnly {
+		rollingUpdateFuncs = append(rollingUpdateFuncs, clusteroperator.UpdateTLS)
+
+		// if need be, toggle the TLS settings
+		if !reflect.DeepEqual(oldcluster.Spec.TLS, newcluster.Spec.TLS) {
+			if err := clusteroperator.ToggleTLS(c.Client, newcluster); err != nil {
+				log.Error(err)
+				return
+			}
+		}
+	}
+
 	// check to see if the S3 bucket name has changed. If it has, this requires
 	// both updating the Postgres + pgBackRest Deployments AND reruning the stanza
 	// create Job

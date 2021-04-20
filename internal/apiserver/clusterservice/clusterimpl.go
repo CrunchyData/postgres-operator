@@ -1772,14 +1772,6 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 
 	log.Debugf("autofail is [%v]\n", request.Autofail)
 
-	switch {
-	case request.Startup && request.Shutdown:
-		response.Status.Code = msgs.Error
-		response.Status.Msg = fmt.Sprintf("A startup and a shutdown were requested. " +
-			"Please specify one or the other.")
-		return response
-	}
-
 	if request.Startup && request.Shutdown {
 		response.Status.Code = msgs.Error
 		response.Status.Msg = fmt.Sprintf("Both a startup and a shutdown was requested. " +
@@ -1948,6 +1940,60 @@ func UpdateCluster(request *msgs.UpdateClusterRequest) msgs.UpdateClusterRespons
 			}
 
 			cluster.Spec.WALStorage.Size = request.WALPVCSize
+		}
+
+		// validate an TLS settings. This is fun...to leverage a validation we have
+		// on create, we're doing to use a "CreateClusterRequest" struct and fill
+		// in the settings from both the request the current cluster spec.
+		// though, if we're disabling TLS, then we're skipping that
+		if request.DisableTLS {
+			cluster.Spec.TLS.CASecret = ""
+			cluster.Spec.TLS.ReplicationTLSSecret = ""
+			cluster.Spec.TLS.TLSSecret = ""
+			cluster.Spec.TLSOnly = false
+		} else {
+			v := &msgs.CreateClusterRequest{
+				CASecret:             cluster.Spec.TLS.CASecret,
+				Namespace:            cluster.Namespace,
+				ReplicationTLSSecret: cluster.Spec.TLS.ReplicationTLSSecret,
+				TLSOnly:              cluster.Spec.TLSOnly,
+				TLSSecret:            cluster.Spec.TLS.TLSSecret,
+			}
+
+			// while we check for overrides, we can add them to the spec as well. If
+			// there is an error during the validation, we're not going to be updating
+			// the spec anyway
+			if request.CASecret != "" {
+				v.CASecret = request.CASecret
+				cluster.Spec.TLS.CASecret = request.CASecret
+			}
+
+			if request.ReplicationTLSSecret != "" {
+				v.ReplicationTLSSecret = request.ReplicationTLSSecret
+				cluster.Spec.TLS.ReplicationTLSSecret = request.ReplicationTLSSecret
+			}
+
+			if request.TLSSecret != "" {
+				v.TLSSecret = request.TLSSecret
+				cluster.Spec.TLS.TLSSecret = request.TLSSecret
+			}
+
+			switch request.TLSOnly {
+			default: // no-op
+			case msgs.UpdateClusterTLSOnlyEnable:
+				v.TLSOnly = true
+				cluster.Spec.TLSOnly = true
+			case msgs.UpdateClusterTLSOnlyDisable:
+				v.TLSOnly = false
+				cluster.Spec.TLSOnly = false
+			}
+
+			// validate!
+			if err := validateClusterTLS(v); err != nil {
+				response.Status.Code = msgs.Error
+				response.Status.Msg = err.Error()
+				return response
+			}
 		}
 
 		// set --enable-autofail / --disable-autofail on each pgcluster CRD

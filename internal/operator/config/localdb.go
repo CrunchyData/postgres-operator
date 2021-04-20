@@ -191,7 +191,7 @@ func (l *LocalDB) Sync() error {
 
 // Update updates the contents of the configuration for a specific database server in
 // the PG cluster, specifically within the configMap included in the LocalDB.
-func (l *LocalDB) Update(configName string, localDBConfig LocalDBConfig) error {
+func (l *LocalDB) Update(configName string, localDBConfig *LocalDBConfig) error {
 	clusterName := l.configMap.GetObjectMeta().GetLabels()[config.LABEL_PG_CLUSTER]
 	namespace := l.configMap.GetObjectMeta().GetNamespace()
 
@@ -304,7 +304,7 @@ func (l *LocalDB) clean() error {
 
 // getLocalConfigFromCluster obtains the local configuration for a specific database server in the
 // cluster.  It also returns the Pod that is currently running that specific server.
-func (l *LocalDB) getLocalConfigFromCluster(configName string) (*LocalDBConfig, error) {
+func (l *LocalDB) GetLocalConfigFromCluster(configName string) (*LocalDBConfig, error) {
 	ctx := context.TODO()
 	clusterName := l.configMap.GetObjectMeta().GetLabels()[config.LABEL_PG_CLUSTER]
 	namespace := l.configMap.GetObjectMeta().GetNamespace()
@@ -378,7 +378,7 @@ func (l *LocalDB) refresh(configName string) error {
 	log.Debugf("Cluster Config: refreshing local config %s in cluster %s "+
 		"(namespace %s)", configName, clusterName, namespace)
 
-	localConfig, err := l.getLocalConfigFromCluster(configName)
+	localConfig, err := l.GetLocalConfigFromCluster(configName)
 	if err != nil {
 		return err
 	}

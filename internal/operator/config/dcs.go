@@ -182,7 +182,7 @@ func (d *DCS) apply() error {
 	}
 
 	// next grab the current/live DCS from the "config" annotation of the Patroni configMap
-	clusterDCS, clusterDCSYAMLOrdered, err := d.getClusterDCSConfig()
+	clusterDCS, clusterDCSYAMLOrdered, err := d.GetClusterDCSConfig()
 	if err != nil {
 		return err
 	}
@@ -227,7 +227,7 @@ func (d *DCS) apply() error {
 // getClusterDCSConfig obtains the configuration that is currently stored in the cluster's DCS.
 // Specifically, it obtains the configuration stored in the "config" annotation of the
 // "<clustername>-config" configMap.
-func (d *DCS) getClusterDCSConfig() (*DCSConfig, goyaml.MapSlice, error) {
+func (d *DCS) GetClusterDCSConfig() (*DCSConfig, goyaml.MapSlice, error) {
 	ctx := context.TODO()
 	clusterDCS := &DCSConfig{}
 
@@ -307,7 +307,7 @@ func (d *DCS) refresh() error {
 	log.Debugf("Cluster Config: refreshing DCS config for cluster %s (namespace %s)", clusterName,
 		namespace)
 
-	_, clusterDCSYAMLOrdered, err := d.getClusterDCSConfig()
+	_, clusterDCSYAMLOrdered, err := d.GetClusterDCSConfig()
 	if err != nil {
 		return err
 	}

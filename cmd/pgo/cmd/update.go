@@ -33,6 +33,10 @@ var (
 	DisableMetrics bool
 	// DisablePGBadger allows a user to disable pgBadger
 	DisablePGBadger bool
+	// DisableTLS will disable TLS in a cluster
+	DisableTLS bool
+	// DisableTLSOnly will disable TLS enforcement in the cluster
+	DisableTLSOnly bool
 	// EnableLogin allows a user to enable the ability for a PostgreSQL uesr to
 	// log in
 	EnableLogin bool
@@ -40,6 +44,8 @@ var (
 	EnableMetrics bool
 	// EnablePGBadger allows a user to enbale pgBadger
 	EnablePGBadger bool
+	// EnableTLSOnly will enable TLS enforcement in the cluster
+	EnableTLSOnly bool
 	// ExpireUser sets a user to having their password expired
 	ExpireUser bool
 	// ExporterRotatePassword rotates the password for the designed PostgreSQL
@@ -98,6 +104,8 @@ func init() {
 		"Disable the metrics collection sidecar. May cause brief downtime.")
 	UpdateClusterCmd.Flags().BoolVar(&DisablePGBadger, "disable-pgbadger", false,
 		"Disable the pgBadger sidecar. May cause brief downtime.")
+	UpdateClusterCmd.Flags().BoolVar(&DisableTLS, "disable-server-tls", false, "Remove TLS from the cluster.")
+	UpdateClusterCmd.Flags().BoolVar(&DisableTLSOnly, "disable-tls-only", false, "Remove TLS enforcement for the cluster.")
 	UpdateClusterCmd.Flags().BoolVar(&EnableAutofailFlag, "enable-autofail", false, "Enables autofail capabitilies in the cluster.")
 	UpdateClusterCmd.Flags().StringVar(&MemoryRequest, "memory", "", "Set the amount of RAM to request, e.g. "+
 		"1GiB.")
@@ -135,6 +143,10 @@ func init() {
 	UpdateClusterCmd.Flags().BoolVar(&ExporterRotatePassword, "exporter-rotate-password", false, "Used to rotate the password for the metrics collection agent.")
 	UpdateClusterCmd.Flags().BoolVarP(&EnableStandby, "enable-standby", "", false,
 		"Enables standby mode in the cluster(s) specified.")
+	UpdateClusterCmd.Flags().BoolVar(&EnableTLSOnly, "enable-tls-only", false, "Enforce TLS on the cluster.")
+	UpdateClusterCmd.Flags().StringVar(&ReplicationTLSSecret, "replication-tls-secret", "", "The name of the secret that contains "+
+		"the TLS keypair to use for enabling certificate-based authentication between PostgreSQL instances, "+
+		"particularly for the purpose of replication. TLS must be enabled in the cluster.")
 	UpdateClusterCmd.Flags().StringVar(&ServiceType, "service-type", "", "The Service type to use for the PostgreSQL cluster. If not set, the pgo.yaml default will be used.")
 	UpdateClusterCmd.Flags().BoolVar(&Startup, "startup", false, "Restart the database cluster if it "+
 		"is currently shutdown.")
@@ -150,6 +162,12 @@ func init() {
 			"Follows the Kubernetes quantity format.\n\n"+
 			"For example, to create a tablespace with the NFS storage configuration with a PVC of size 10GiB:\n\n"+
 			"--tablespace=name=ts1:storageconfig=nfsstorage:pvcsize=10Gi")
+	UpdateClusterCmd.Flags().StringVar(&CASecret, "server-ca-secret", "", "The name of the secret that contains "+
+		"the certficate authority (CA) to use for enabling the PostgreSQL cluster to accept TLS connections. "+
+		"Must be used with \"server-tls-secret\".")
+	UpdateClusterCmd.Flags().StringVar(&TLSSecret, "server-tls-secret", "", "The name of the secret that contains "+
+		"the TLS keypair to use for enabling the PostgreSQL cluster to accept TLS connections. "+
+		"Must be used with \"server-ca-secret\"")
 	UpdateClusterCmd.Flags().StringSliceVar(&Tolerations, "toleration", []string{},
 		"Set Pod tolerations for each PostgreSQL instance in a cluster.\n"+
 			"The general format is \"key=value:Effect\"\n"+

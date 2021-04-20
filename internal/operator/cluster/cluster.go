@@ -22,13 +22,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	"github.com/crunchydata/postgres-operator/internal/operator/backrest"
+	cfg "github.com/crunchydata/postgres-operator/internal/operator/config"
 	"github.com/crunchydata/postgres-operator/internal/operator/pvc"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
@@ -71,6 +74,38 @@ const (
 	// pgBackRest configuration required to bootstrap a new cluster using a pgBackRest backup
 	BoostrapConfigPrefix = "%s-bootstrap-%s"
 )
+
+// a group of constants that are used as part of the TLS support
+const (
+	tlsEnvVarEnabled        = "PGHA_TLS_ENABLED"
+	tlsEnvVarOnly           = "PGHA_TLS_ONLY"
+	tlsMountPathReplication = "/pgconf/tls-replication"
+	tlsMountPathServer      = "/pgconf/tls"
+	tlsVolumeReplication    = "tls-replication"
+	tlsVolumeServer         = "tls-server"
+)
+
+var (
+	// tlsHBAPattern matches the pattern of what a TLS entry looks like in the
+	// Postgres HBA file
+	tlsHBAPattern = regexp.MustCompile(`^hostssl`)
+
+	// notlsHBAPattern matches the pattern of what a regular host entry looks like
+	// in the Postgres HBA file
+	notlsHBAPattern = regexp.MustCompile(`^(host|hostnossl)\s+`)
+)
+
+// tlsHBARules is a collection of standard TLS rules that PGO adds to our HBA
+// file
+var tlsHBARules = []string{
+	"hostssl replication " + crv1.PGUserReplication + " 0.0.0.0/0 md5",
+	"hostssl all " + crv1.PGUserReplication + " 0.0.0.0/0 reject",
+	"hostssl all all 0.0.0.0/0 md5",
+}
+
+// tlsVolumeReplicationSizeLimit is the size limit for the optional volume
+// for the TLS Secret for replication
+var tlsVolumeReplicationSizeLimit = resource.MustParse("2Mi")
 
 func AddClusterBase(clientset kubeapi.Interface, cl *crv1.Pgcluster, namespace string) {
 	ctx := context.TODO()
@@ -595,6 +630,38 @@ func ScaleDownBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespa
 	}
 }
 
+// ToggleTLS will toggle the appropriate Postgres configuration in a DCS file
+// around the TLS settings
+func ToggleTLS(clientset kubeapi.Interface, cluster *crv1.Pgcluster) error {
+	// get the ConfigMap that stores the configuration
+	cm, err := getClusterConfigMap(clientset, cluster)
+
+	if err != nil {
+		return err
+	}
+
+	dcs, dcsConfig, err := getDCSConfig(clientset, cluster, cm)
+
+	if err != nil {
+		return err
+	}
+
+	// alright, the great toggle.
+	if cluster.Spec.TLS.IsTLSEnabled() {
+		dcsConfig.PostgreSQL.Parameters["ssl"] = "on"
+		dcsConfig.PostgreSQL.Parameters["ssl_cert_file"] = "/pgconf/tls/tls.crt"
+		dcsConfig.PostgreSQL.Parameters["ssl_key_file"] = "/pgconf/tls/tls.key"
+		dcsConfig.PostgreSQL.Parameters["ssl_ca_file"] = "/pgconf/tls/ca.crt"
+	} else {
+		dcsConfig.PostgreSQL.Parameters["ssl"] = "off"
+		delete(dcsConfig.PostgreSQL.Parameters, "ssl_cert_file")
+		delete(dcsConfig.PostgreSQL.Parameters, "ssl_key_file")
+		delete(dcsConfig.PostgreSQL.Parameters, "ssl_ca_file")
+	}
+
+	return dcs.Update(dcsConfig)
+}
+
 // UpdateAnnotations updates the annotations in the "template" portion of a
 // PostgreSQL deployment
 func UpdateAnnotations(clientset kubeapi.Interface, cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) error {
@@ -755,6 +822,35 @@ func UpdateTablespaces(clientset kubeapi.Interface, cluster *crv1.Pgcluster, dep
 	}
 
 	return nil
+}
+
+// UpdateTLS updates whether or not TLS is enabled, and if certain attributes
+// are set (i.e. TLSOnly), ensures that the changes are properly reflected on
+// the containers
+func UpdateTLS(clientset kubeapi.Interface, cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) error {
+	// get the ConfigMap that stores the configuration
+	cm, err := getClusterConfigMap(clientset, cluster)
+
+	// if we can't edit the ConfigMap, we can't proceed as the cluster can end up
+	// in a weird state
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	// it's easier to remove all of the settings associated with a TLS cluster
+	// before applying the new settings. So no matter what remove
+	if err := disableTLS(clientset, deployment, cm); err != nil {
+		log.Error(err)
+		return err
+	}
+
+	// determine if TLS needs to be enabled
+	if !cluster.Spec.TLS.IsTLSEnabled() {
+		return nil
+	}
+
+	return enableTLS(clientset, cluster, deployment, cm)
 }
 
 // UpdateTolerations updates the Toleration definition for a Deployment.
@@ -938,6 +1034,347 @@ func createMissingUserSecrets(clientset kubernetes.Interface, cluster *crv1.Pgcl
 
 	// finally, determine if we need to create a user secret for the regular user
 	return createMissingUserSecret(clientset, cluster, cluster.Spec.User)
+}
+
+// disableTLS unmounts any TLS Secrets from a Postgres cluster and will ensure
+// that TLSOnly is set to false
+func disableTLS(clientset kubeapi.Interface, deployment *apps_v1.Deployment, cm *v1.ConfigMap) error {
+	// first, set the environmental variables that are associated with TLS
+	// enablement to "false"
+	for i, envVar := range deployment.Spec.Template.Spec.Containers[0].Env {
+		switch envVar.Name {
+		default:
+			continue
+		case tlsEnvVarEnabled, tlsEnvVarOnly:
+			deployment.Spec.Template.Spec.Containers[0].Env[i].Value = "false"
+		}
+	}
+
+	// next, remove any of the TLS secrets from the volume mounts
+	volumeMounts := make([]v1.VolumeMount, 0)
+
+	for _, volumeMount := range deployment.Spec.Template.Spec.Containers[0].VolumeMounts {
+		switch volumeMount.Name {
+		default:
+			volumeMounts = append(volumeMounts, volumeMount)
+		case tlsVolumeServer, tlsVolumeReplication:
+			continue
+		}
+	}
+
+	deployment.Spec.Template.Spec.Containers[0].VolumeMounts = volumeMounts
+
+	// finally, remove any of the TLS volumes
+	volumes := make([]v1.Volume, 0)
+
+	for _, volume := range deployment.Spec.Template.Spec.Volumes {
+		switch volume.Name {
+		default:
+			volumes = append(volumes, volume)
+		case tlsVolumeServer, tlsVolumeReplication:
+			continue
+		}
+	}
+
+	deployment.Spec.Template.Spec.Volumes = volumes
+
+	// disable TLS in the instance configuration settings, particularly the HBA
+	// portion
+	localDB, localConfig, err := getLocalConfig(clientset, cm, deployment.GetName())
+
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	// remove any entry that has "hostssl" in it...but check to see if there is a
+	// corresponding entry with "host". So this is kind of a costly operation, but
+	// it's small
+	hba := make([]string, 0)
+
+	for _, rule := range localConfig.PostgreSQL.PGHBA {
+		// if this is not a TLS entry, append and continue on
+		if !strings.HasPrefix(rule, "hostssl") {
+			hba = append(hba, rule)
+			continue
+		}
+
+		// ok, if this is a TLS entry, we are going to remove it as it is, but we
+		// we may need to convert it to a "host" entry if there is no corresponding
+		// entry
+		expectedHostRule := tlsHBAPattern.ReplaceAllLiteralString(rule, "host")
+
+		if !findHBARule(localConfig.PostgreSQL.PGHBA, expectedHostRule) {
+			hba = append(hba, expectedHostRule)
+		}
+	}
+
+	// update the HBA rules for the instance
+	localConfig.PostgreSQL.PGHBA = hba
+
+	// and push the update into the ConfigMap
+	return localDB.Update(getLocalConfigName(deployment.GetName()), localConfig)
+}
+
+// enableTLS performs all of the actions required to add TLS to a Postgres
+// cluster. This includes mounting the Secrets and ensuring that any env vars
+// that are required are set.
+func enableTLS(clientset kubeapi.Interface, cluster *crv1.Pgcluster, deployment *apps_v1.Deployment, cm *v1.ConfigMap) error {
+	// first, set the environmental variables that are associated with TLS
+	// enablement to "true" as needed. if the variables are not set, ensure they
+	// are set
+	var foundEnabled, foundOnly bool
+
+	for i, envVar := range deployment.Spec.Template.Spec.Containers[0].Env {
+		switch envVar.Name {
+		default:
+			continue
+		case tlsEnvVarEnabled:
+			deployment.Spec.Template.Spec.Containers[0].Env[i].Value = "true"
+			foundEnabled = true
+		case tlsEnvVarOnly:
+			deployment.Spec.Template.Spec.Containers[0].Env[i].Value = "false"
+			if cluster.Spec.TLSOnly {
+				deployment.Spec.Template.Spec.Containers[0].Env[i].Value = "true"
+			}
+			foundOnly = true
+		}
+	}
+
+	if !foundEnabled {
+		envVar := v1.EnvVar{
+			Name:  tlsEnvVarEnabled,
+			Value: "true",
+		}
+		deployment.Spec.Template.Spec.Containers[0].Env = append(deployment.Spec.Template.Spec.Containers[0].Env, envVar)
+	}
+
+	if !foundOnly {
+		envVar := v1.EnvVar{
+			Name:  tlsEnvVarOnly,
+			Value: "false",
+		}
+		if cluster.Spec.TLSOnly {
+			envVar.Value = "true"
+		}
+		deployment.Spec.Template.Spec.Containers[0].Env = append(deployment.Spec.Template.Spec.Containers[0].Env, envVar)
+	}
+
+	// next, add the required TLS volume mounts
+	volumeMounts := make([]v1.VolumeMount, 0)
+	volumeMounts = append(volumeMounts,
+		v1.VolumeMount{
+			Name:      tlsVolumeServer,
+			MountPath: tlsMountPathServer,
+		},
+	)
+
+	if cluster.Spec.TLS.ReplicationTLSSecret != "" {
+		volumeMounts = append(volumeMounts,
+			v1.VolumeMount{
+				Name:      tlsVolumeReplication,
+				MountPath: tlsMountPathReplication,
+			},
+		)
+	}
+
+	deployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(
+		deployment.Spec.Template.Spec.Containers[0].VolumeMounts,
+		volumeMounts...,
+	)
+
+	// finally, mount the actual TLS volumes
+	// if there is a replication secret, we mount it as part of the project Secret
+	// and on its own in order to handle the libpq stuff
+	volume := v1.Volume{
+		Name: tlsVolumeServer,
+	}
+	defaultMode := int32(0o440)
+	volume.Projected = &v1.ProjectedVolumeSource{
+		DefaultMode: &defaultMode,
+		Sources: []v1.VolumeProjection{
+			{
+				Secret: &v1.SecretProjection{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: cluster.Spec.TLS.TLSSecret,
+					},
+				},
+			},
+			{
+				Secret: &v1.SecretProjection{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: cluster.Spec.TLS.CASecret,
+					},
+				},
+			},
+		},
+	}
+
+	if cluster.Spec.TLS.ReplicationTLSSecret != "" {
+		volume.Projected.Sources = append(volume.Projected.Sources,
+			v1.VolumeProjection{
+				Secret: &v1.SecretProjection{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: cluster.Spec.TLS.ReplicationTLSSecret,
+					},
+					Items: []v1.KeyToPath{
+						{
+							Key:  "tls.key",
+							Path: "tls-replication.key",
+						},
+						{
+							Key:  "tls.crt",
+							Path: "tls-replication.crt",
+						},
+					},
+				},
+			},
+		)
+	}
+
+	deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, volume)
+
+	if cluster.Spec.TLS.ReplicationTLSSecret != "" {
+		volume := v1.Volume{
+			Name: tlsVolumeReplication,
+		}
+		volume.EmptyDir = &v1.EmptyDirVolumeSource{
+			Medium:    v1.StorageMediumMemory,
+			SizeLimit: &tlsVolumeReplicationSizeLimit,
+		}
+		deployment.Spec.Template.Spec.Volumes = append(deployment.Spec.Template.Spec.Volumes, volume)
+	}
+
+	// enable TLS in the instance configuration settings, particularly the HBA
+	// portion
+	localDB, localConfig, err := getLocalConfig(clientset, cm, deployment.GetName())
+
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
+	// need to break out if this is TLS only mode or not. And order matters in the
+	// HBA file.
+
+	hba := make([]string, 0)
+
+	// first, extract any of the "local" settings and give them priority
+	for _, rule := range localConfig.PostgreSQL.PGHBA {
+		// if this is not a TLS entry, append and continue on
+		if !strings.HasPrefix(rule, "local") {
+			continue
+		}
+
+		hba = append(hba, rule)
+	}
+
+	// now, insert our predefined TLS rules
+	hba = append(hba, tlsHBARules...)
+
+	// OK, insert the rest of the rules, though if this is TLS only, we'll convert
+	// a "host" rule to be TLS.
+	for _, rule := range localConfig.PostgreSQL.PGHBA {
+		// skip local :)
+		if strings.HasPrefix(rule, "local") {
+			continue
+		}
+
+		// if this is rule is already TLS enabled, then add it and continue, though
+		// first check to see if it's already in the list
+		if !notlsHBAPattern.MatchString(rule) {
+			if !findHBARule(hba, rule) {
+				hba = append(hba, rule)
+			}
+
+			continue
+		}
+
+		// so this is now a "host" pattern, so we need to check for TLS only. If this
+		// is not TLS only, we can just add the rule, provided it does not
+		expectedRule := rule
+		if cluster.Spec.TLSOnly {
+			expectedRule = notlsHBAPattern.ReplaceAllLiteralString(rule, "hostssl ")
+		}
+
+		// check to see if this rule already exists in the updated hba list. If
+		// so, then we can ignore, otherwise we convert to TLS
+		if !findHBARule(hba, expectedRule) {
+			hba = append(hba, expectedRule)
+		}
+	}
+
+	// update the HBA rules for the instance
+	localConfig.PostgreSQL.PGHBA = hba
+
+	// and push the update into the ConfigMap
+	return localDB.Update(getLocalConfigName(deployment.GetName()), localConfig)
+}
+
+// findHBARule sees if a HBA rule exists in a list. If it does, return true
+func findHBARule(hba []string, rule string) bool {
+	for _, r := range hba {
+		if r == rule {
+			return true
+		}
+	}
+
+	return false
+}
+
+// getClusterConfigMap returns the configmap that stores the configuration of a
+// cluster
+func getClusterConfigMap(clientset kubeapi.Interface, cluster *crv1.Pgcluster) (*v1.ConfigMap, error) {
+	ctx := context.TODO()
+	return clientset.CoreV1().ConfigMaps(cluster.Namespace).Get(ctx,
+		cluster.Name+"-pgha-config", metav1.GetOptions{})
+}
+
+// getDCSConfig gets the global configuration for a cluster, which can be used
+// to update said configuration
+func getDCSConfig(clientset kubeapi.Interface, cluster *crv1.Pgcluster, cm *v1.ConfigMap) (*cfg.DCS, *cfg.DCSConfig, error) {
+	dcs := cfg.NewDCS(cm, clientset, cluster.Name)
+
+	// now, get the local configuration for that cluster. We get this
+	// from the deployment name
+	dcsConfig, _, err := dcs.GetDCSConfig()
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return dcs, dcsConfig, nil
+}
+
+// getLocalConfig gets the local configuration for a specific instance in a
+// cluster, which can be used to update said configuration
+func getLocalConfig(clientset kubeapi.Interface, cm *v1.ConfigMap, instanceName string) (*cfg.LocalDB, *cfg.LocalDBConfig, error) {
+	// need to load the rest configuration
+	restConfig, err := kubeapi.LoadClientConfig()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	localDB, err := cfg.NewLocalDB(cm, restConfig, clientset)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// now, get the local configuration for that cluster. We get this
+	// from the deployment name
+	localConfig, err := localDB.GetLocalConfigFromCluster(getLocalConfigName(instanceName))
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return localDB, localConfig, nil
+}
+
+// getLocalConfigName gets the name of the entry in the local configuration file
+func getLocalConfigName(instanceName string) string {
+	return fmt.Sprintf(cfg.PGHALocalConfigName, instanceName)
 }
 
 // pghaConigMapHasInitFlag checks to see if the PostgreSQL ConfigMap has the

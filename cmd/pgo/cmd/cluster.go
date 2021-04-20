@@ -752,6 +752,22 @@ func updateCluster(args []string, ns string) {
 	r.Tolerations = getClusterTolerations(Tolerations, false)
 	r.TolerationsDelete = getClusterTolerations(Tolerations, true)
 
+	// most of the TLS settings
+	if DisableTLS {
+		r.DisableTLS = DisableTLS
+	} else {
+		r.TLSSecret = TLSSecret
+		r.ReplicationTLSSecret = ReplicationTLSSecret
+		r.CASecret = CASecret
+
+		// check to see if we need to enable/disable TLS only
+		if EnableTLSOnly {
+			r.TLSOnly = msgs.UpdateClusterTLSOnlyEnable
+		} else if DisableTLSOnly {
+			r.TLSOnly = msgs.UpdateClusterTLSOnlyDisable
+		}
+	}
+
 	// check to see if EnableStandby or DisableStandby is set. If so,
 	// set a value for Standby
 	if EnableStandby {
