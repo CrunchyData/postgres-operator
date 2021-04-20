@@ -118,6 +118,9 @@
                         "name": "PGHA_TLS_ONLY",
                         "value": "{{.TLSOnly}}"
                     }, {
+                        "name": "PGHA_PASSWORD_TYPE",
+                        "value": "{{.PasswordType}}"
+                    }, {
                         "name": "PGHA_STANDBY",
                         "value": "{{.Standby}}"
                     }, {

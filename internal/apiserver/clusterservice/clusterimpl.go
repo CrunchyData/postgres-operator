@@ -792,6 +792,15 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 		}
 	}
 
+	// determine if the the password type is valid
+	if _, err := apiserver.GetPasswordType(request.PasswordType); err != nil {
+		resp.Status.Code = msgs.Error
+		resp.Status.Msg = err.Error()
+		return resp
+	} else if request.PasswordType == "scram" {
+		request.PasswordType = "scram-sha-256"
+	}
+
 	// if the pgBouncer flag is set, validate that replicas is set to a
 	// nonnegative value and the service type.
 	if request.PgbouncerFlag {
@@ -1399,6 +1408,9 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, ns string
 	}
 
 	log.Debugf("username set to [%s]", spec.User)
+
+	// set the password type
+	spec.PasswordType = request.PasswordType
 
 	// set the name of the database. The hierarchy is as such:
 	// 1. Use the name that the user provides in the request

@@ -206,7 +206,7 @@ func init() {
 	UpdateUserCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
 	UpdateUserCmd.Flags().StringVarP(&Password, "password", "", "", "Specifies the user password when updating a user password or creating a new user. If --rotate-password is set as well, --password takes precedence.")
 	UpdateUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 0, "If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.")
-	UpdateUserCmd.Flags().StringVar(&PasswordType, "password-type", "md5", "The type of password hashing to use."+
+	UpdateUserCmd.Flags().StringVar(&PasswordType, "password-type", "", "The type of password hashing to use."+
 		"Choices are: (md5, scram-sha-256). This only takes effect if the password is being changed.")
 	UpdateUserCmd.Flags().BoolVar(&PasswordValidAlways, "valid-always", false, "Sets a password to never expire based on expiration time. Takes precedence over --valid-days")
 	UpdateUserCmd.Flags().BoolVar(&RotatePassword, "rotate-password", false, "Rotates the user's password with an automatically generated password. The length of the password is determine by either --password-length or the value set on the server, in that order.")

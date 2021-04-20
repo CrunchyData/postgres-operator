@@ -269,6 +269,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	r.PasswordSuperuser = PasswordSuperuser
 	r.PasswordReplication = PasswordReplication
 	r.Password = Password
+	r.PasswordType = PasswordType
 	r.SecretFrom = SecretFrom
 	r.UserLabels = getLabels(UserLabels)
 	r.Policies = PoliciesFlag

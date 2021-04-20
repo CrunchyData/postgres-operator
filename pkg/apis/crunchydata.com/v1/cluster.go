@@ -112,6 +112,7 @@ type PgclusterSpec struct {
 	// implementation
 	PgBouncer           PgBouncerSpec         `json:"pgBouncer"`
 	User                string                `json:"user"`
+	PasswordType        string                `json:"passwordType"`
 	Database            string                `json:"database"`
 	Replicas            string                `json:"replicas"`
 	Status              string                `json:"status"`
