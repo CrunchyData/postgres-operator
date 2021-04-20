@@ -124,6 +124,7 @@ The Crunchy PostgreSQL Operator extends Kubernetes to provide a higher-level abs
   - [pgAudit](https://www.pgaudit.org/)
   - [pgAudit Analyze](https://github.com/pgaudit/pgaudit_analyze)
   - [pgnodemx](https://github.com/CrunchyData/pgnodemx)
+  - [pg_partman](https://github.com/pgpartman/pg_partman)
   - [set_user](https://github.com/pgaudit/set_user)
   - [wal2json](https://github.com/eulerto/wal2json)
 - [pgBackRest](https://pgbackrest.org/)
