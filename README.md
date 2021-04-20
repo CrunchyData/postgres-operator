@@ -1,6 +1,6 @@
 <h1 align="center">Crunchy Data PostgreSQL Operator</h1>
 <p align="center">
-  <img width="150" src="./docs/static/pgo.svg" alt="PGO: The Postgres Operator from Crunchy Data"/>
+  <img width="150" src="./docs/static/logos/pgo.svg" alt="PGO: The Postgres Operator from Crunchy Data"/>
 </p>
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/CrunchyData/postgres-operator)](https://goreportcard.com/report/github.com/CrunchyData/postgres-operator)
@@ -292,3 +292,5 @@ When a PostgreSQL Operator general availability (GA) release occurs, the contain
 The image rollout can occur over the course of several days.
 
 To stay up-to-date on when releases are made available in the [Crunchy Data Developer Portal](https://www.crunchydata.com/developers), please sign up for the [Crunchy Data Developer Program Newsletter](https://www.crunchydata.com/developers/newsletter)
+
+The PGO Postgres Operator project source code is available subject to the [Apache 2.0 license](LICENSE.md) with the PGO logo and branding assets covered by [our trademark guidelines](docs/static/logos/TRADEMARKS.md).
