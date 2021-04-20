@@ -1,7 +1,7 @@
 # PGO: Postgres Operator Playbook
 
 <p align="center">
-  <img width="150" src="../../pgo.svg" alt="PGO: The Postgres Operator from Crunchy Data"/>
+  <img width="150" src="../../docs/static/logos/pgo.svg" alt="PGO: The Postgres Operator from Crunchy Data"/>
 </p>
 
 Latest Release: 4.6.2

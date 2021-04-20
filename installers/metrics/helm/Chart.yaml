@@ -5,4 +5,4 @@ type: application
 version: 0.2.0
 appVersion: 4.6.2
 home: https://github.com/CrunchyData/postgres-operator
-icon: https://github.com/CrunchyData/postgres-operator/raw/master/docs/static/pgo.svg
+icon: https://github.com/CrunchyData/postgres-operator/raw/master/docs/static/logos/pgo.svg
