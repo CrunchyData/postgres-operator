@@ -418,6 +418,8 @@ func init() {
 	createClusterCmd.Flags().StringVarP(&NodeLabel, "node-label", "", "", "The node label (key=value) to use in placing the primary database. If not set, any node is used.")
 	createClusterCmd.Flags().StringVarP(&Password, "password", "", "", "The password to use for standard user account created during cluster initialization.")
 	createClusterCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 0, "If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.")
+	createClusterCmd.Flags().StringVar(&PasswordType, "password-type", "", "The default Postgres password type to use for managed users. "+
+		"Either \"scram-sha-256\" or \"md5\". Defaults to \"md5\".")
 	createClusterCmd.Flags().StringVarP(&PasswordSuperuser, "password-superuser", "", "", "The password to use for the PostgreSQL superuser.")
 	createClusterCmd.Flags().StringVarP(&PasswordReplication, "password-replication", "", "", "The password to use for the PostgreSQL replication user.")
 	createClusterCmd.Flags().StringVar(&BackrestCPURequest, "pgbackrest-cpu", "", "Set the number of millicores to request for CPU "+
@@ -595,7 +597,7 @@ func init() {
 	createUserCmd.Flags().StringVarP(&OutputFormat, "output", "o", "", `The output format. Supported types are: "json"`)
 	createUserCmd.Flags().StringVarP(&Password, "password", "", "", "The password to use for creating a new user which overrides a generated password.")
 	createUserCmd.Flags().IntVarP(&PasswordLength, "password-length", "", 0, "If no password is supplied, sets the length of the automatically generated password. Defaults to the value set on the server.")
-	createUserCmd.Flags().StringVar(&PasswordType, "password-type", "md5", "The type of password hashing to use."+
+	createUserCmd.Flags().StringVar(&PasswordType, "password-type", "", "The type of password hashing to use."+
 		"Choices are: (md5, scram-sha-256).")
 	createUserCmd.Flags().StringVarP(&Selector, "selector", "s", "", "The selector to use for cluster filtering.")
 	createUserCmd.Flags().StringVarP(&Username, "username", "", "", "The username to use for creating a new user")

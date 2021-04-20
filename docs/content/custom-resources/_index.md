@@ -933,6 +933,7 @@ make changes, as described below.
 | limits | `create`, `update` | Specify the container resource limits that the PostgreSQL cluster should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | name | `create` | The name of the PostgreSQL instance that is the primary. On creation, this should be set to be the same as `ClusterName`. |
 | nodeAffinity | `create` | Sets the [node affinity rules](/architecture/high-availability/#node-affinity) for the PostgreSQL cluster and associated PostgreSQL instances. Can be overridden on a per-instance (`pgreplicas.crunchydata.com`) basis. Please see the `Node Affinity Specification` section below. |
+| passwordType | `create`, `update` | If set, provides the Postgres password type that is used for creating Postgres users that are managed by PGO. Can be either `md5` or `scram-sha-256`. |
 | pgBadger | `create`,`update` | If `true`, deploys the `crunchy-pgbadger` sidecar for query analysis. |
 | pgbadgerport | `create` | If the `PGBadger` label is set, then this specifies the port that the pgBadger sidecar runs on (e.g. `10000`) |
 | pgBouncer | `create`, `update` | If specified, defines the attributes to use for the pgBouncer connection pooling deployment that can be used in conjunction with this PostgreSQL cluster. Please see the specification defined below. |

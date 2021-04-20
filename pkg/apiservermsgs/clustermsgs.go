@@ -108,6 +108,7 @@ type CreateClusterRequest struct {
 	// Version of API client
 	// required: true
 	ClientVersion             string
+	PasswordType              string
 	PodAntiAffinity           string
 	PodAntiAffinityPgBackRest string
 	PodAntiAffinityPgBouncer  string

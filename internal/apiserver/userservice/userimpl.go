@@ -188,6 +188,13 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 
 		log.Debugf("creating user [%s] on cluster [%s]", result.Username, cluster.Spec.ClusterName)
 
+		// if password type was not explicitly set but the custom resource has it set,
+		// then use that one...if it's valid.
+		pwType := passwordType
+		if request.PasswordType == "" && cluster.Spec.PasswordType != "" {
+			pwType, _ = apiserver.GetPasswordType(cluster.Spec.PasswordType)
+		}
+
 		// first, find the primary Pod
 		pod, err := util.GetPrimaryPod(apiserver.Clientset, cluster)
 		// if the primary Pod cannot be found, we're going to continue on for the
@@ -221,7 +228,7 @@ func CreateUser(request *msgs.CreateUserRequest, pgouser string) msgs.CreateUser
 
 		// Set the password. We want a password to be generated if the user did not
 		// set a password
-		_, password, hashedPassword, err := generatePassword(result.Username, request.Password, passwordType, true, request.PasswordLength)
+		_, password, hashedPassword, err := generatePassword(result.Username, request.Password, pwType, true, request.PasswordLength)
 		// on the off-chance there is an error, record it and continue
 		if err != nil {
 			log.Error(err)
@@ -940,7 +947,12 @@ func rotateExpiredPasswords(request *msgs.UpdateUserRequest, cluster *crv1.Pgclu
 
 		// get the password type. the error is already evaluated in a called
 		// function
-		passwordType, _ := apiserver.GetPasswordType(request.PasswordType)
+		pwType := request.PasswordType
+		if pwType == "" {
+			pwType = cluster.Spec.PasswordType
+		}
+
+		passwordType, _ := apiserver.GetPasswordType(pwType)
 
 		// generate a new password. Check to see if the user passed in a particular
 		// length of the password, or passed in a password to rotate (though that
@@ -1072,7 +1084,12 @@ func updateUser(request *msgs.UpdateUserRequest, cluster *crv1.Pgcluster) msgs.U
 	// Speaking of passwords...let's first determine if the user updated their
 	// password. See generatePassword for how precedence is given for password
 	// updates
-	passwordType, _ := apiserver.GetPasswordType(request.PasswordType)
+	pwType := request.PasswordType
+	if pwType == "" {
+		pwType = cluster.Spec.PasswordType
+	}
+
+	passwordType, _ := apiserver.GetPasswordType(pwType)
 	isChanged, password, hashedPassword, err := generatePassword(result.Username,
 		request.Password, passwordType, request.RotatePassword, request.PasswordLength)
 	// in the off-chance there is an error generating the password, record it

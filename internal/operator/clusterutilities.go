@@ -175,6 +175,7 @@ type DeploymentTemplateFields struct {
 	Replicas                  string
 	IsInit                    bool
 	ReplicaReinitOnStartFail  bool
+	PasswordType              string
 	PodAntiAffinity           string
 	PodAntiAffinityLabelName  string
 	PodAntiAffinityLabelValue string
@@ -523,6 +524,20 @@ func GetNodeAffinity(nodeAffinity *v1.NodeAffinity) string {
 	}
 
 	return string(data)
+}
+
+// GetPasswordType returns the specific password type to use as part of Postgres
+// user management. If it's not "scram-sha-256" or "md5", it will just
+// return "" and use the default set in Postgres
+func GetPasswordType(cluster *crv1.Pgcluster) string {
+	switch cluster.Spec.PasswordType {
+	case "scram":
+		return "scram-sha-256"
+	case "scram-sha-256", "md5":
+		return cluster.Spec.PasswordType
+	}
+
+	return ""
 }
 
 // GetTablespaceNamePVCMap returns a map of the tablespace name to the PVC name
