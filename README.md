@@ -191,6 +191,7 @@ There is also a `pgo-client` container if you wish to deploy the client directly
   - [PL/Python + PL/Python 3](https://www.postgresql.org/docs/current/plpython.html)
   - [pgAudit](https://www.pgaudit.org/)
   - [pgAudit Analyze](https://github.com/pgaudit/pgaudit_analyze)
+  - [pg_partman](https://github.com/pgpartman/pg_partman)
   - [pgnodemx](https://github.com/CrunchyData/pgnodemx)
   - [set_user](https://github.com/pgaudit/set_user)
   - [wal2json](https://github.com/eulerto/wal2json)
