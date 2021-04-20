@@ -349,6 +349,11 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 	// only set SyncReplication in the request if actually provided via the CLI
 	if createClusterCmd.Flag("sync-replication").Changed {
 		r.SyncReplication = &SyncReplication
+
+		// if it is true, ensure there is at least one replica
+		if *r.SyncReplication && r.ReplicaCount < 1 {
+			r.ReplicaCount = 1
+		}
 	}
 	// only set BackrestS3VerifyTLS in the request if actually provided via the CLI
 	// if set, store provided value accordingly
