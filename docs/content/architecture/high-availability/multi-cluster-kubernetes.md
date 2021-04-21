@@ -226,7 +226,7 @@ cluster : standby (crunchy-postgres-ha:{{< param centosBase >}}-{{< param postgr
 
 There comes a time where a standby cluster needs to be promoted to an active
 cluster. Promoting a standby cluster means that a PostgreSQL instance within
-it will become a priary and start accepting both reads and writes. This has the
+it will become a primary and start accepting both reads and writes. This has the
 net effect of pushing WAL (transaction archives) to the pgBackRest repository,
 so we need to take a few steps first to ensure we don't accidentally create a
 split-brain scenario.
