@@ -1437,7 +1437,7 @@ func getClusterParams(request *msgs.CreateClusterRequest, name string, ns string
 	spec.SyncReplication = request.SyncReplication
 
 	replicas, _ := strconv.Atoi(spec.Replicas)
-	if *spec.SyncReplication && replicas < 1 {
+	if spec.SyncReplication != nil && *spec.SyncReplication && replicas < 1 {
 		spec.Replicas = "1"
 		log.Infof("sync replication set. ensuring there is at least one replica.")
 	}

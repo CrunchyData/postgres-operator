@@ -352,7 +352,7 @@ func createCluster(args []string, ns string, createClusterCmd *cobra.Command) {
 		r.SyncReplication = &SyncReplication
 
 		// if it is true, ensure there is at least one replica
-		if *r.SyncReplication && r.ReplicaCount < 1 {
+		if r.SyncReplication != nil && *r.SyncReplication && r.ReplicaCount < 1 {
 			r.ReplicaCount = 1
 		}
 	}
