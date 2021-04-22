@@ -26,6 +26,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -259,6 +260,21 @@ func (r *Reconciler) Reconcile(
 	log.V(1).Info("reconciled cluster")
 
 	return result, err
+}
+
+// deleteControlled safely deletes object when it is controlled by cluster.
+func (r *Reconciler) deleteControlled(
+	ctx context.Context, cluster *v1beta1.PostgresCluster, object client.Object,
+) error {
+	if metav1.IsControlledBy(object, cluster) {
+		uid := object.GetUID()
+		version := object.GetResourceVersion()
+		exactly := client.Preconditions{UID: &uid, ResourceVersion: &version}
+
+		return r.Client.Delete(ctx, object, exactly)
+	}
+
+	return nil
 }
 
 // patch sends patch to object's endpoint in the Kubernetes API and updates

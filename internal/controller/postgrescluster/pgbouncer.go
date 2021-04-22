@@ -78,9 +78,9 @@ func (r *Reconciler) reconcilePGBouncerConfigMap(
 		// PgBouncer is disabled; delete the ConfigMap if it exists. Check the
 		// client cache first using Get.
 		key := client.ObjectKeyFromObject(configmap)
-		err := errors.WithStack(r.Client.Get(ctx, key, &corev1.ConfigMap{}))
+		err := errors.WithStack(r.Client.Get(ctx, key, configmap))
 		if err == nil {
-			err = errors.WithStack(r.Client.Delete(ctx, configmap))
+			err = errors.WithStack(r.deleteControlled(ctx, cluster, configmap))
 		}
 		return nil, client.IgnoreNotFound(err)
 	}
@@ -216,7 +216,7 @@ func (r *Reconciler) reconcilePGBouncerSecret(
 	if cluster.Spec.Proxy == nil || cluster.Spec.Proxy.PGBouncer == nil {
 		// PgBouncer is disabled; delete the Secret if it exists.
 		if err == nil {
-			err = errors.WithStack(r.Client.Delete(ctx, existing))
+			err = errors.WithStack(r.deleteControlled(ctx, cluster, existing))
 		}
 		return nil, client.IgnoreNotFound(err)
 	}
@@ -260,9 +260,9 @@ func (r *Reconciler) reconcilePGBouncerService(
 		// PgBouncer is disabled; delete the Service if it exists. Check the client
 		// cache first using Get.
 		key := client.ObjectKeyFromObject(service)
-		err := errors.WithStack(r.Client.Get(ctx, key, &corev1.Service{}))
+		err := errors.WithStack(r.Client.Get(ctx, key, service))
 		if err == nil {
-			err = errors.WithStack(r.Client.Delete(ctx, service))
+			err = errors.WithStack(r.deleteControlled(ctx, cluster, service))
 		}
 		return nil, client.IgnoreNotFound(err)
 	}
@@ -352,7 +352,7 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 		key := client.ObjectKeyFromObject(deploy)
 		err := errors.WithStack(r.Client.Get(ctx, key, deploy))
 		if err == nil {
-			err = errors.WithStack(r.Client.Delete(ctx, deploy))
+			err = errors.WithStack(r.deleteControlled(ctx, cluster, deploy))
 		}
 		return client.IgnoreNotFound(err)
 	}

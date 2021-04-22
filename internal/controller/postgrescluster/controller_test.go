@@ -20,14 +20,18 @@ package postgrescluster
 import (
 	"context"
 	"fmt"
+	"strings"
+	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
+	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/tools/record"
@@ -38,6 +42,74 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+func TestDeleteControlled(t *testing.T) {
+	ctx := context.Background()
+	tEnv, cc, _ := setupTestEnv(t, t.Name())
+	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+
+	reconciler := Reconciler{Client: cc}
+
+	ns := &v1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	ns.Labels = map[string]string{"postgres-operator-test": t.Name()}
+	assert.NilError(t, cc.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+
+	cluster := &v1beta1.PostgresCluster{}
+	assert.NilError(t, yaml.Unmarshal([]byte(`{
+		spec: {
+			postgresVersion: 12,
+			instances: [],
+		},
+	}`), cluster))
+
+	cluster.Namespace = ns.Name
+	cluster.Name = strings.ToLower(t.Name())
+	cluster.Spec.Image = CrunchyPostgresHAImage
+
+	assert.NilError(t, cc.Create(ctx, cluster))
+
+	t.Run("NoOwnership", func(t *testing.T) {
+		secret := &v1.Secret{}
+		secret.Namespace = ns.Name
+		secret.Name = "solo"
+
+		assert.NilError(t, cc.Create(ctx, secret))
+
+		// No-op when there's no ownership
+		assert.NilError(t, reconciler.deleteControlled(ctx, cluster, secret))
+		assert.NilError(t, cc.Get(ctx, client.ObjectKeyFromObject(secret), secret))
+	})
+
+	t.Run("Owned", func(t *testing.T) {
+		secret := &v1.Secret{}
+		secret.Namespace = ns.Name
+		secret.Name = "owned"
+
+		assert.NilError(t, reconciler.setOwnerReference(cluster, secret))
+		assert.NilError(t, cc.Create(ctx, secret))
+
+		// No-op when not controlled by cluster.
+		assert.NilError(t, reconciler.deleteControlled(ctx, cluster, secret))
+		assert.NilError(t, cc.Get(ctx, client.ObjectKeyFromObject(secret), secret))
+	})
+
+	t.Run("Controlled", func(t *testing.T) {
+		secret := &v1.Secret{}
+		secret.Namespace = ns.Name
+		secret.Name = "controlled"
+
+		assert.NilError(t, reconciler.setControllerReference(cluster, secret))
+		assert.NilError(t, cc.Create(ctx, secret))
+
+		// Deletes when controlled by cluster.
+		assert.NilError(t, reconciler.deleteControlled(ctx, cluster, secret))
+
+		err := cc.Get(ctx, client.ObjectKeyFromObject(secret), secret)
+		assert.Assert(t, apierrors.IsNotFound(err), "expected NotFound, got %#v", err)
+	})
+}
 
 var _ = Describe("PostgresCluster Reconciler", func() {
 	var test struct {
