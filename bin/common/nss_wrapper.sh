@@ -21,6 +21,9 @@ CRUNCHY_DIR=${CRUNCHY_DIR:-'/opt/crunchy'}
 # Define nss_wrapper directory and passwd & group files that will be utilized by nss_wrapper.  The
 # nss_wrapper_env.sh script (which also sets these vars) isn't sourced here since the nss_wrapper
 # has not yet been setup, and we therefore don't yet want the nss_wrapper vars in the environment.
+mkdir /tmp/nss_wrapper
+chmod g+rwx /tmp/nss_wrapper
+
 NSS_WRAPPER_DIR="/tmp/nss_wrapper/${NSS_WRAPPER_SUBDIR}"
 NSS_WRAPPER_PASSWD="${NSS_WRAPPER_DIR}/passwd"
 NSS_WRAPPER_GROUP="${NSS_WRAPPER_DIR}/group"
@@ -49,7 +52,7 @@ if [[ ! $(cat "${NSS_WRAPPER_PASSWD}") =~ ${CRUNCHY_NSS_USERNAME}:x:${USER_ID} ]
     rm "${passwd_tmp}"
 else
     echo "nss_wrapper: user exists"
-fi 
+fi
 
 # if the username (which will be the same as the group name) is missing from group file, then add it
 if [[ ! $(cat "${NSS_WRAPPER_GROUP}") =~ ${CRUNCHY_NSS_USERNAME}:x:${USER_ID} ]]; then
