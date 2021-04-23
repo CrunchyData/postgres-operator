@@ -88,11 +88,11 @@ images = pgo-apiserver \
 	postgres-operator
 
 .PHONY: all installrbac setup setupnamespaces cleannamespaces \
-	deployoperator cli-docs clean push pull release
+	deployoperator cli-docs clean push pull release license
 
 
 #======= Main functions =======
-all: linuxpgo $(images:%=%-image)
+all: linuxpgo license $(images:%=%-image)
 
 installrbac:
 	PGOROOT='$(PGOROOT)' ./deploy/install-rbac.sh
@@ -112,7 +112,7 @@ deployoperator:
 
 
 #======= Binary builds =======
-build: build-postgres-operator build-pgo-apiserver build-pgo-client build-pgo-rmdata build-pgo-scheduler
+build: build-postgres-operator build-pgo-apiserver build-pgo-client build-pgo-rmdata build-pgo-scheduler license
 
 build-pgo-apiserver:
 	$(GO_BUILD) -o bin/apiserver ./cmd/apiserver
@@ -227,6 +227,9 @@ clean-deprecated:
 	[ ! -n '$(GOBIN)' ] || rm -f $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
 	[ ! -d bin/postgres-operator ] || rm -r bin/postgres-operator
 
+license:
+	./bin/license_aggregator.sh
+
 push: $(images:%=push-%) ;
 
 push-%:
@@ -237,7 +240,7 @@ pull: $(images:%=pull-%) ;
 pull-%:
 	$(IMG_PUSHER_PULLER) pull $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
 
-release:  linuxpgo macpgo winpgo
+release:  linuxpgo macpgo winpgo license
 	rm -rf $(RELTMPDIR) $(RELFILE)
 	mkdir $(RELTMPDIR)
 	cp -r $(PGOROOT)/examples $(RELTMPDIR)
