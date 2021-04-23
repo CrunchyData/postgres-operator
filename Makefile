@@ -92,7 +92,7 @@ images = pgo-apiserver \
 
 
 #======= Main functions =======
-all: linuxpgo license $(images:%=%-image)
+all: linuxpgo $(images:%=%-image)
 
 installrbac:
 	PGOROOT='$(PGOROOT)' ./deploy/install-rbac.sh
@@ -176,7 +176,7 @@ endif
 
 %-image: %-img-$(IMGBUILDER) ;
 
-pgo-base: pgo-base-$(IMGBUILDER)
+pgo-base: build pgo-base-$(IMGBUILDER)
 
 pgo-base-build: $(PGOROOT)/build/pgo-base/Dockerfile
 	$(IMGCMDSTEM) \
@@ -240,7 +240,7 @@ pull: $(images:%=pull-%) ;
 pull-%:
 	$(IMG_PUSHER_PULLER) pull $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
 
-release:  linuxpgo macpgo winpgo license
+release:  linuxpgo macpgo winpgo
 	rm -rf $(RELTMPDIR) $(RELFILE)
 	mkdir $(RELTMPDIR)
 	cp -r $(PGOROOT)/examples $(RELTMPDIR)
