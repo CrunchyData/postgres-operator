@@ -5,8 +5,11 @@ commonLabels:
 
 bases:
 - ../crd
-- ../rbac/cluster
+- ../rbac/namespace
 - ../manager
+
+patches:
+- manager-target.yaml
 
 images:
 - name: postgres-operator

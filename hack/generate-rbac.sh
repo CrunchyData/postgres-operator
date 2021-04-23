@@ -66,4 +66,7 @@ operator["rules"] = rules.sort_by { |rule| rule.to_a }
 
 operator["metadata"] = { "name" => "postgres-operator" }
 IO.write(File.join(directory, "cluster", "role.yaml"), YAML.dump(operator))
+
+operator["kind"] = "Role"
+IO.write(File.join(directory, "namespace", "role.yaml"), YAML.dump(operator))
 ' -- "${directory}"
