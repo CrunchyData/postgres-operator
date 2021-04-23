@@ -20,6 +20,7 @@ package postgrescluster
 import (
 	"context"
 	"fmt"
+	"sort"
 	"testing"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -337,4 +338,373 @@ func TestReconcilePGDATAVolume(t *testing.T) {
 		})
 	}
 
+}
+
+func TestPodsToKeep(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		instances []v1.Pod
+		want      map[string]int
+		checks    func(*testing.T, []v1.Pod)
+	}{
+		{
+			name: "RemoveSetWithMasterOnly",
+			instances: []v1.Pod{
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-asdf",
+						Labels: map[string]string{
+							naming.LabelRole:        "master",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+			},
+			want: map[string]int{},
+			checks: func(t *testing.T, p []v1.Pod) {
+				assert.Equal(t, len(p), 0)
+			},
+		}, {
+			name: "RemoveSetWithReplicaOnly",
+			instances: []v1.Pod{
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-asdf",
+						Labels: map[string]string{
+							naming.LabelRole:        "replica",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+			},
+			want: map[string]int{},
+			checks: func(t *testing.T, p []v1.Pod) {
+				assert.Equal(t, len(p), 0)
+			},
+		}, {
+			name: "KeepMasterOnly",
+			instances: []v1.Pod{
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-asdf",
+						Labels: map[string]string{
+							naming.LabelRole:        "master",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+			},
+			want: map[string]int{
+				"daisy": 1,
+			},
+			checks: func(t *testing.T, p []v1.Pod) {
+				assert.Equal(t, len(p), 1)
+			},
+		}, {
+			name: "KeepNoRoleLabels",
+			instances: []v1.Pod{
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-asdf",
+						Labels: map[string]string{
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+			},
+			want: map[string]int{
+				"daisy": 1,
+			},
+			checks: func(t *testing.T, p []v1.Pod) {
+				assert.Equal(t, len(p), 1)
+			},
+		}, {
+			name: "RemoveSetWithNoRoleLabels",
+			instances: []v1.Pod{
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-asdf",
+						Labels: map[string]string{
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+			},
+			want: map[string]int{},
+			checks: func(t *testing.T, p []v1.Pod) {
+				assert.Equal(t, len(p), 0)
+			},
+		}, {
+			name: "KeepUnknownRoleLabel",
+			instances: []v1.Pod{
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-asdf",
+						Labels: map[string]string{
+							naming.LabelRole:        "unknownLabelRole",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+			},
+			want: map[string]int{
+				"daisy": 1,
+			},
+			checks: func(t *testing.T, p []v1.Pod) {
+				assert.Equal(t, len(p), 1)
+			},
+		}, {
+			name: "RemoveSetWithUnknownRoleLabel",
+			instances: []v1.Pod{
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-asdf",
+						Labels: map[string]string{
+							naming.LabelRole:        "unknownLabelRole",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+			},
+			want: map[string]int{},
+			checks: func(t *testing.T, p []v1.Pod) {
+				assert.Equal(t, len(p), 0)
+			},
+		}, {
+			name: "MasterLastInSet",
+			instances: []v1.Pod{
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-asdf",
+						Labels: map[string]string{
+							naming.LabelRole:        "replica",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-poih",
+						Labels: map[string]string{
+							naming.LabelRole:        "master",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+			},
+			want: map[string]int{
+				"daisy": 1,
+			},
+			checks: func(t *testing.T, p []v1.Pod) {
+				assert.Equal(t, len(p), 1)
+				assert.Equal(t, p[0].Labels[naming.LabelRole], "master")
+			},
+		}, {
+			name: "ScaleDownSetWithMaster",
+			instances: []v1.Pod{
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "max-asdf",
+						Labels: map[string]string{
+							naming.LabelRole:        "replica",
+							naming.LabelInstanceSet: "max",
+						},
+					},
+				},
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-poih",
+						Labels: map[string]string{
+							naming.LabelRole:        "master",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-dogs",
+						Labels: map[string]string{
+							naming.LabelRole:        "replica",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "max-dogs",
+						Labels: map[string]string{
+							naming.LabelRole:        "replica",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+			},
+			want: map[string]int{
+				"max":   1,
+				"daisy": 1,
+			},
+			checks: func(t *testing.T, p []v1.Pod) {
+				assert.Equal(t, len(p), 2)
+				assert.Equal(t, p[0].Labels[naming.LabelRole], "master")
+				assert.Equal(t, p[0].Labels[naming.LabelInstanceSet], "daisy")
+				assert.Equal(t, p[1].Labels[naming.LabelRole], "replica")
+				assert.Equal(t, p[1].Labels[naming.LabelInstanceSet], "max")
+			},
+		}, {
+			name: "ScaleDownSetWithoutMaster",
+			instances: []v1.Pod{
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "max-asdf",
+						Labels: map[string]string{
+							naming.LabelRole:        "master",
+							naming.LabelInstanceSet: "max",
+						},
+					},
+				},
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-poih",
+						Labels: map[string]string{
+							naming.LabelRole:        "replica",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-dogs",
+						Labels: map[string]string{
+							naming.LabelRole:        "replica",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "max-dogs",
+						Labels: map[string]string{
+							naming.LabelRole:        "replica",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+			},
+			want: map[string]int{
+				"max":   1,
+				"daisy": 2,
+			},
+			checks: func(t *testing.T, p []v1.Pod) {
+				assert.Equal(t, len(p), 3)
+				assert.Equal(t, p[0].Labels[naming.LabelRole], "master")
+				assert.Equal(t, p[0].Labels[naming.LabelInstanceSet], "max")
+				assert.Equal(t, p[1].Labels[naming.LabelInstanceSet], "daisy")
+				assert.Equal(t, p[1].Labels[naming.LabelRole], "replica")
+				assert.Equal(t, p[2].Labels[naming.LabelInstanceSet], "daisy")
+				assert.Equal(t, p[2].Labels[naming.LabelRole], "replica")
+			},
+		}, {
+			name: "ScaleMasterSetToZero",
+			instances: []v1.Pod{
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "max-asdf",
+						Labels: map[string]string{
+							naming.LabelRole:        "master",
+							naming.LabelInstanceSet: "max",
+						},
+					},
+				},
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-poih",
+						Labels: map[string]string{
+							naming.LabelRole:        "replica",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-dogs",
+						Labels: map[string]string{
+							naming.LabelRole:        "replica",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+			},
+			want: map[string]int{
+				"max":   0,
+				"daisy": 2,
+			},
+			checks: func(t *testing.T, p []v1.Pod) {
+				assert.Equal(t, len(p), 2)
+				assert.Equal(t, p[0].Labels[naming.LabelRole], "replica")
+				assert.Equal(t, p[0].Labels[naming.LabelInstanceSet], "daisy")
+				assert.Equal(t, p[1].Labels[naming.LabelRole], "replica")
+				assert.Equal(t, p[1].Labels[naming.LabelInstanceSet], "daisy")
+			},
+		}, {
+			name: "RemoveMasterInstanceSet",
+			instances: []v1.Pod{
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "max-asdf",
+						Labels: map[string]string{
+							naming.LabelRole:        "master",
+							naming.LabelInstanceSet: "max",
+						},
+					},
+				},
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-poih",
+						Labels: map[string]string{
+							naming.LabelRole:        "replica",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "daisy-dogs",
+						Labels: map[string]string{
+							naming.LabelRole:        "replica",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+				v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "max-dogs",
+						Labels: map[string]string{
+							naming.LabelRole:        "replica",
+							naming.LabelInstanceSet: "daisy",
+						},
+					},
+				},
+			},
+			want: map[string]int{
+				"daisy": 3,
+			},
+			checks: func(t *testing.T, p []v1.Pod) {
+				assert.Equal(t, len(p), 3)
+				assert.Equal(t, p[0].Labels[naming.LabelRole], "replica")
+				assert.Equal(t, p[0].Labels[naming.LabelInstanceSet], "daisy")
+				assert.Equal(t, p[1].Labels[naming.LabelRole], "replica")
+				assert.Equal(t, p[1].Labels[naming.LabelInstanceSet], "daisy")
+				assert.Equal(t, p[2].Labels[naming.LabelRole], "replica")
+				assert.Equal(t, p[2].Labels[naming.LabelInstanceSet], "daisy")
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			keep := podsToKeep(test.instances, test.want)
+			sort.Slice(keep, func(i, j int) bool {
+				return keep[i].Labels[naming.LabelRole] == "master"
+			})
+			test.checks(t, keep)
+		})
+	}
 }

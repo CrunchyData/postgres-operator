@@ -31,6 +31,7 @@ import (
 
 var (
 	CrunchyPostgresHAImage = "gcr.io/crunchy-dev-test/crunchy-postgres-ha:centos8-12.6-multi.dev2"
+	CrunchyPGBackRestImage = "gcr.io/crunchy-dev-test/crunchy-pgbackrest:centos8-12.6-multi.dev2"
 )
 
 // setupTestEnv configures and starts an EnvTest instance of etcd and the Kubernetes API server

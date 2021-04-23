@@ -37,6 +37,16 @@ func AnyCluster() metav1.LabelSelector {
 	}
 }
 
+// ClusterInstance selects things for a single instance in a cluster.
+func ClusterInstance(cluster, instance string) metav1.LabelSelector {
+	return metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			LabelCluster:  cluster,
+			LabelInstance: instance,
+		},
+	}
+}
+
 // ClusterInstances selects things for PostgreSQL instances in cluster.
 func ClusterInstances(cluster string) metav1.LabelSelector {
 	return metav1.LabelSelector{

@@ -25,6 +25,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -132,11 +133,216 @@ func (r *Reconciler) deleteInstances(
 	return &result, err
 }
 
+// deleteInstance will delete all resources related to a single instance
+func (r *Reconciler) deleteInstance(
+	ctx context.Context,
+	cluster *v1beta1.PostgresCluster,
+	instanceName string,
+) error {
+	log := logging.FromContext(ctx)
+	instanceResources, err := r.getInstanceResources(cluster, instanceName)
+	if err != nil {
+		log.Error(err, "unable to get instance resources for PostgresCluster")
+		return err
+	}
+
+	for i := range instanceResources {
+		err = errors.WithStack(r.deleteControlled(ctx, cluster, &instanceResources[i]))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// getInstanceResources returns list of unstructured resources associated with
+// an instance
+func (r *Reconciler) getInstanceResources(
+	cluster *v1beta1.PostgresCluster,
+	instanceName string,
+) ([]unstructured.Unstructured, error) {
+	owned := []unstructured.Unstructured{}
+
+	gvks := []schema.GroupVersionKind{{
+		Group:   v1.SchemeGroupVersion.Group,
+		Version: v1.SchemeGroupVersion.Version,
+		Kind:    "ConfigMapList",
+	}, {
+		Group:   v1.SchemeGroupVersion.Group,
+		Version: v1.SchemeGroupVersion.Version,
+		Kind:    "SecretList",
+	}, {
+		Group:   appsv1.SchemeGroupVersion.Group,
+		Version: appsv1.SchemeGroupVersion.Version,
+		Kind:    "StatefulSetList",
+	}, {
+		Group:   v1.SchemeGroupVersion.Group,
+		Version: v1.SchemeGroupVersion.Version,
+		Kind:    "PersistentVolumeClaimList",
+	}}
+
+	selector, err := naming.AsSelector(naming.ClusterInstance(cluster.Name, instanceName))
+	if err == nil {
+		for _, gvk := range gvks {
+			uList := &unstructured.UnstructuredList{}
+			uList.SetGroupVersionKind(gvk)
+			if err := r.Client.List(context.Background(), uList,
+				client.InNamespace(cluster.GetNamespace()),
+				client.MatchingLabelsSelector{Selector: selector}); err != nil {
+				return nil, errors.WithStack(err)
+			}
+			if len(uList.Items) == 0 {
+				continue
+			}
+
+			for i, u := range uList.Items {
+				if metav1.IsControlledBy(&uList.Items[i], cluster) {
+					owned = append(owned, u)
+				}
+			}
+		}
+	}
+
+	return owned, nil
+}
+
+// reconcileInstanceSets reconciles instance sets in the environment to match
+// the current spec. This is done by scaling up or down instances where necessary
+func (r *Reconciler) reconcileInstanceSets(
+	ctx context.Context,
+	cluster *v1beta1.PostgresCluster,
+	clusterConfigMap *v1.ConfigMap,
+	rootCA *pki.RootCertificateAuthority,
+	clusterPodService *v1.Service,
+	instanceServiceAccount *v1.ServiceAccount,
+	patroniLeaderService *v1.Service,
+	primaryCertificate *v1.SecretProjection,
+) ([]string, error) {
+	instanceNames := []string{}
+
+	// Range over instance sets to scale up and ensure that each set has
+	// at least the number of replicas defined in the spec. The set can
+	// have more replicas than defined
+	for i := range cluster.Spec.InstanceSets {
+		instanceSet, err := r.scaleUpInstances(
+			ctx, cluster, &cluster.Spec.InstanceSets[i],
+			clusterConfigMap, rootCA, clusterPodService,
+			instanceServiceAccount, patroniLeaderService,
+			primaryCertificate)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, instance := range instanceSet.Items {
+			instanceNames = append(instanceNames, instance.GetName())
+		}
+	}
+
+	// Scaledown is called on the whole cluster in order to consider all
+	// instances. This is necessary because we have no way to determine
+	// which instance or instance set contains the primary pod.
+	err := r.scaleDownInstances(ctx, cluster)
+	if err != nil {
+		return nil, err
+	}
+
+	return instanceNames, nil
+}
+
+// scaleDownInstances removes extra instances from a cluster until it matches
+// the spec. This function can delete the primary instance and force the
+// cluster to failover under two conditions:
+// - If the instance set that contains the primary instance is removed from
+//   the spec
+// - If the instance set that contains the primary instance is updated to
+//   have 0 replicas
+// If either of these conditions are met then the primary instance will be
+// marked for deletion and deleted after all other instances
+func (r *Reconciler) scaleDownInstances(
+	ctx context.Context,
+	cluster *v1beta1.PostgresCluster,
+) error {
+	pods := &v1.PodList{}
+	selector, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
+	if err == nil {
+		err = errors.WithStack(
+			r.Client.List(ctx, pods,
+				client.InNamespace(cluster.Namespace),
+				client.MatchingLabelsSelector{Selector: selector},
+			))
+	}
+	if err != nil {
+		return err
+	}
+
+	want := map[string]int{}
+	for _, set := range cluster.Spec.InstanceSets {
+		want[set.Name] = int(*set.Replicas)
+	}
+
+	namesToKeep := sets.NewString()
+	for _, pod := range podsToKeep(pods.Items, want) {
+		namesToKeep.Insert(pod.Labels[naming.LabelInstance])
+	}
+
+	for _, pod := range pods.Items {
+		if !namesToKeep.Has(pod.Labels[naming.LabelInstance]) {
+			err := r.deleteInstance(ctx, cluster, pod.Labels[naming.LabelInstance])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// podsToKeep takes a list of pods and a map containing
+// the number of replicas we want for each instance set
+// then returns a list of the pods that we want to keep
+func podsToKeep(instances []v1.Pod, want map[string]int) []v1.Pod {
+
+	f := func(instances []v1.Pod, want int) []v1.Pod {
+		keep := []v1.Pod{}
+
+		if want > 0 {
+			for _, instance := range instances {
+				if instance.Labels[naming.LabelRole] == "master" {
+					keep = append(keep, instance)
+				}
+			}
+		}
+
+		for _, instance := range instances {
+			if instance.Labels[naming.LabelRole] != "master" && len(keep) < want {
+				keep = append(keep, instance)
+			}
+		}
+
+		return keep
+	}
+
+	keepPodList := []v1.Pod{}
+	for name, num := range want {
+		list := []v1.Pod{}
+		for _, instance := range instances {
+			if instance.Labels[naming.LabelInstanceSet] == name {
+				list = append(list, instance)
+			}
+		}
+		keepPodList = append(keepPodList, f(list, num)...)
+	}
+
+	return keepPodList
+
+}
+
 // +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=list
 
-// reconcileInstanceSet does the work to represent set of cluster in the
-// Kubernetes API.
-func (r *Reconciler) reconcileInstanceSet(
+// scaleUpInstances updates the cluster until the number of instances matches
+// the cluster spec
+func (r *Reconciler) scaleUpInstances(
 	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
 	set *v1beta1.PostgresInstanceSetSpec,

@@ -224,17 +224,11 @@ func (r *Reconciler) Reconcile(
 	}
 
 	instancesNames := []string{}
-	var instanceSet *appsv1.StatefulSetList
-	for i := range cluster.Spec.InstanceSets {
-		if err == nil {
-			instanceSet, err = r.reconcileInstanceSet(
-				ctx, cluster, &cluster.Spec.InstanceSets[i],
-				clusterConfigMap, rootCA, clusterPodService, instanceServiceAccount,
-				patroniLeaderService, primaryCertificate)
-			for _, instance := range instanceSet.Items {
-				instancesNames = append(instancesNames, instance.GetName())
-			}
-		}
+	if err == nil {
+		instancesNames, err = r.reconcileInstanceSets(
+			ctx, cluster, clusterConfigMap, rootCA,
+			clusterPodService, instanceServiceAccount,
+			patroniLeaderService, primaryCertificate)
 	}
 
 	if err == nil {
