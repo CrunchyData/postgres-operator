@@ -143,6 +143,7 @@ func (c *Controller) cleanupBootstrapResources(job *apiv1.Job, cluster *crv1.Pgc
 	if restore {
 		restoreClusterName = job.GetLabels()[config.LABEL_PG_CLUSTER]
 		repoName = fmt.Sprintf(util.BackrestRepoDeploymentName, restoreClusterName)
+		cleanRepo = true
 	} else {
 		restoreClusterName = cluster.Spec.PGDataSource.RestoreFrom
 		repoName = fmt.Sprintf(util.BackrestRepoDeploymentName, restoreClusterName)
