@@ -88,7 +88,7 @@ images = pgo-apiserver \
 	postgres-operator
 
 .PHONY: all installrbac setup setupnamespaces cleannamespaces \
-	deployoperator cli-docs clean push pull release
+	deployoperator cli-docs clean push pull release license
 
 
 #======= Main functions =======
@@ -112,7 +112,7 @@ deployoperator:
 
 
 #======= Binary builds =======
-build: build-postgres-operator build-pgo-apiserver build-pgo-client build-pgo-rmdata build-pgo-scheduler
+build: build-postgres-operator build-pgo-apiserver build-pgo-client build-pgo-rmdata build-pgo-scheduler license
 
 build-pgo-apiserver:
 	$(GO_BUILD) -o bin/apiserver ./cmd/apiserver
@@ -178,7 +178,7 @@ endif
 
 pgo-base: pgo-base-$(IMGBUILDER)
 
-pgo-base-build: $(PGOROOT)/build/pgo-base/Dockerfile
+pgo-base-build: build $(PGOROOT)/build/pgo-base/Dockerfile
 	$(IMGCMDSTEM) \
 		-f $(PGOROOT)/build/pgo-base/Dockerfile \
 		-t $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) \
@@ -226,6 +226,9 @@ clean-deprecated:
 	@# executables used to be compiled into the $GOBIN directory
 	[ ! -n '$(GOBIN)' ] || rm -f $(GOBIN)/postgres-operator $(GOBIN)/apiserver $(GOBIN)/*pgo
 	[ ! -d bin/postgres-operator ] || rm -r bin/postgres-operator
+
+license:
+	./bin/license_aggregator.sh
 
 push: $(images:%=push-%) ;
 
