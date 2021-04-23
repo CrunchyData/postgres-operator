@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Inputs / outputs
-SCAN_DIR=/opt/cdev/pkg/mod
+SCAN_DIR=${GOPATH}/pkg/mod
 OUT_DIR=licenses
 
 # Fail on error
