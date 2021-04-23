@@ -54,9 +54,9 @@ sql_target=$(< /dev/stdin)
 sql_databases="$1"
 shift 1
 
-databases=$(psql "$@" -X -Aqt --file=- <<< "${sql_databases}")
-while read -r database; do
-	psql "$@" -X --file=- "${database}" <<< "${sql_target}"
+databases=$(psql "$@" -Xw -Aqt --file=- <<< "${sql_databases}")
+while IFS= read -r database; do
+	PGDATABASE="${database}" psql "$@" -Xw --file=- <<< "${sql_target}"
 done <<< "${databases}"
 `
 

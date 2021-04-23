@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -54,9 +55,9 @@ sql_target=$(< /dev/stdin)
 sql_databases="$1"
 shift 1
 
-databases=$(psql "$@" -X -Aqt --file=- <<< "${sql_databases}")
-while read -r database; do
-	psql "$@" -X --file=- "${database}" <<< "${sql_target}"
+databases=$(psql "$@" -Xw -Aqt --file=- <<< "${sql_databases}")
+while IFS= read -r database; do
+	PGDATABASE="${database}" psql "$@" -Xw --file=- <<< "${sql_target}"
 done <<< "${databases}"
 `,
 			"-",
@@ -65,6 +66,18 @@ done <<< "${databases}"
 			"--set=different=vars",
 			"--set=lots=of",
 		})
+
+		// Use the PGDATABASE environment variable to ensure the value is not
+		// interpreted as a connection string.
+		//
+		// > $ psql -Xw -d 'host=127.0.0.1'
+		// > psql: error: fe_sendauth: no password supplied
+		// >
+		// > $ PGDATABASE='host=127.0.0.1' psql -Xw
+		// > psql: error: FATAL:  database "host=127.0.0.1" does not exist
+		//
+		// TODO(cbandy): Create a test that actually runs psql.
+		assert.Assert(t, strings.Contains(command[3], `PGDATABASE="${database}" psql`))
 
 		_, _ = io.WriteString(stdout, "some stdout")
 		_, _ = io.WriteString(stderr, "and stderr")
