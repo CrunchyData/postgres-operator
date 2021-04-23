@@ -14,14 +14,22 @@
         state: "directory"
         mode: "0700"
 
-    - name: Set pgmonitor Prometheus Directory Fact
+    - name: Set pgmonitor Alertmanger Directory Fact
       set_fact:
-        pgmonitor_prometheus_dir: "{{ pgmonitor_dir }}/prometheus"
+        pgmonitor_alertmanager_dir: "{{ pgmonitor_dir }}/alertmanager/common"
 
     - name: Copy Alertmanger Config to Output Directory
-      command: "cp {{ pgmonitor_prometheus_dir }}/{{ item.src }} {{ alertmanager_output_dir }}/{{ item.dst }}"
+      command: "cp {{ pgmonitor_alertmanager_dir }}/{{ item.src }} {{ alertmanager_output_dir }}/{{ item.dst }}"
       loop:
         - { src: 'crunchy-alertmanager.yml', dst: 'alertmanager.yml'}
+
+    - name: Set pgmonitor Prometheus Directory Fact
+      set_fact:
+        pgmonitor_prometheus_dir: "{{ pgmonitor_dir }}/prometheus/containers"
+
+    - name: Copy Prometheus-Alertmanger Config to Output Directory
+      command: "cp {{ pgmonitor_prometheus_dir }}/{{ item.src }} {{ alertmanager_output_dir }}/{{ item.dst }}"
+      loop:
         - { src: 'alert-rules.d/crunchy-alert-rules-pg.yml.containers.example', dst: 'crunchy-alert-rules-pg.yml'}
 
     - name: Create Alertmanager Config ConfigMap

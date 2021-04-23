@@ -42,7 +42,8 @@
                         "args": [
                             "--config.file=/etc/alertmanager/alertmanager.yml",
                             "--storage.path=/alertmanager",
-                            "--log.level={{ alertmanager_log_level }}"
+                            "--log.level={{ alertmanager_log_level }}",
+                            "--cluster.advertise-address=0.0.0.0:{{ alertmanager_port }}"
                         ],
                         "ports": [
                             {

@@ -14,7 +14,7 @@
 # limitations under the License.
 
 echo "Getting pgMonitor..."
-PGMONITOR_COMMIT='v4.4'
+PGMONITOR_COMMIT='v4.5-RC2'
 
 # pgMonitor Setup
 if [[ -d ${PGOROOT?}/tools/pgmonitor ]]
