@@ -35,7 +35,7 @@
 
     - name: Set pgmonitor Prometheus Directory Fact
       set_fact:
-        pgmonitor_prometheus_dir: "{{ pgmonitor_dir }}/prometheus"
+        pgmonitor_prometheus_dir: "{{ pgmonitor_dir }}/prometheus/containers"
 
     - name: Copy Prometheus Config to Output Directory
       command: "cp {{ pgmonitor_prometheus_dir }}/{{ item.src }} {{ prom_output_dir }}/{{ item.dst }}"

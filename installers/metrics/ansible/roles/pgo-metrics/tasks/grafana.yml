@@ -50,10 +50,14 @@
       set_fact:
         pgmonitor_grafana_dir: "{{ pgmonitor_dir }}/grafana"
 
-    - name: Copy Grafana Config to Output Directory
-      command: "cp {{ pgmonitor_grafana_dir }}/{{ item }} {{ grafana_output_dir }}"
+    - name: Copy Grafana data source to Output Directory
+      command: "cp {{ pgmonitor_grafana_dir }}/common/{{ item }} {{ grafana_output_dir }}"
       loop:
         - crunchy_grafana_datasource.yml
+
+    - name: Copy Grafana dashboards to Output Directory
+      command: "cp {{ pgmonitor_grafana_dir }}/linux/{{ item }} {{ grafana_output_dir }}"
+      loop:
         - crunchy_grafana_dashboards.yml
 
     - name: Add Grafana Dashboard Configuration
