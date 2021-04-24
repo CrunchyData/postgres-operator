@@ -3,6 +3,7 @@
 ANSIBLE_VERSION ?= 2.9.*
 PGOROOT ?= $(CURDIR)
 PGO_BASEOS ?= centos8
+BASE_IMAGE_OS ?= $(PGO_BASEOS)
 PGO_IMAGE_PREFIX ?= crunchydata
 PGO_IMAGE_TAG ?= $(PGO_BASEOS)-$(PGO_VERSION)
 PGO_VERSION ?= v1beta1
@@ -37,36 +38,25 @@ DFSET=$(PGO_BASEOS)
 # repository using docker (otherwise the images may not be recognized)
 export BUILDAH_FORMAT ?= docker
 
-DOCKERBASEREGISTRY=registry.access.redhat.com/
-
 # Allows simplification of IMGBUILDER switching
 ifeq ("$(IMGBUILDER)","docker")
         IMGCMDSTEM=docker build
 endif
 
-# Allows consolidation of ubi/rhel/centos Dockerfile sets
-ifeq ("$(PGO_BASEOS)", "rhel7")
-        DFSET=rhel
-endif
-
-ifeq ("$(PGO_BASEOS)", "ubi7")
-        DFSET=rhel
-endif
-
+# set the proper packager, registry and base image based on the PGO_BASEOS configured
+DOCKERBASEREGISTRY=
+BASE_IMAGE_OS=
 ifeq ("$(PGO_BASEOS)", "ubi8")
-        DFSET=rhel
-        PACKAGER=dnf
+    BASE_IMAGE_OS=ubi8-minimal
+    DFSET=rhel
+    DOCKERBASEREGISTRY=registry.access.redhat.com/
+    PACKAGER=microdnf
 endif
-
-ifeq ("$(PGO_BASEOS)", "centos7")
-        DFSET=centos
-        DOCKERBASEREGISTRY=centos:
-endif
-
 ifeq ("$(PGO_BASEOS)", "centos8")
-        DFSET=centos
-        PACKAGER=dnf
-        DOCKERBASEREGISTRY=centos:
+    BASE_IMAGE_OS=centos8
+    DFSET=centos
+    DOCKERBASEREGISTRY=centos:
+    PACKAGER=dnf
 endif
 
 DEBUG_BUILD ?= false
@@ -80,20 +70,15 @@ ifeq ("$(DEBUG_BUILD)", "true")
 endif
 
 # To build a specific image, run 'make <name>-image' (e.g. 'make postgres-operator-image')
-images = pgo-backrest \
-	pgo-backrest-repo \
-	pgo-rmdata \
-	pgo-sqlrunner \
-	pgo-deployer \
-	crunchy-postgres-exporter \
-	postgres-operator
+images = postgres-operator \
+	crunchy-postgres-exporter
 
 .PHONY: all installrbac setup setupnamespaces cleannamespaces \
 	deployoperator clean push pull release deploy
 
 
 #======= Main functions =======
-all: linuxpgo $(images:%=%-image)
+all: $(images:%=%-image)
 
 installrbac:
 	PGOROOT='$(PGOROOT)' ./deploy/install-rbac.sh
@@ -174,12 +159,10 @@ $(PGOROOT)/build/%/Dockerfile:
 		-t $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG) \
 		--build-arg BASEOS=$(PGO_BASEOS) \
 		--build-arg BASEVER=$(PGO_VERSION) \
-		--build-arg PREFIX=$(PGO_IMAGE_PREFIX) \
-		--build-arg PGVERSION=$(PGO_PG_VERSION) \
-		--build-arg BACKREST_VERSION=$(PGO_BACKREST_VERSION) \
-		--build-arg ANSIBLE_VERSION=$(ANSIBLE_VERSION) \
 		--build-arg DFSET=$(DFSET) \
 		--build-arg PACKAGER=$(PACKAGER) \
+		--build-arg PGVERSION=$(PGO_PG_VERSION) \
+		--build-arg PREFIX=$(PGO_IMAGE_PREFIX) \
 		$(PGOROOT)
 
 %-img-buildah: %-img-build ;
@@ -198,13 +181,12 @@ pgo-base-build: $(PGOROOT)/build/pgo-base/Dockerfile
 	$(IMGCMDSTEM) \
 		-f $(PGOROOT)/build/pgo-base/Dockerfile \
 		-t $(PGO_IMAGE_PREFIX)/pgo-base:$(PGO_IMAGE_TAG) \
+		--build-arg BASE_IMAGE_OS=$(BASE_IMAGE_OS) \
 		--build-arg BASEOS=$(PGO_BASEOS) \
-		--build-arg RELVER=$(PGO_VERSION) \
-		--build-arg PGVERSION=$(PGO_PG_VERSION) \
-		--build-arg PG_FULL=$(PGO_PG_FULLVERSION) \
-		--build-arg DFSET=$(DFSET) \
-		--build-arg PACKAGER=$(PACKAGER) \
 		--build-arg DOCKERBASEREGISTRY=$(DOCKERBASEREGISTRY) \
+		--build-arg PACKAGER=$(PACKAGER) \
+		--build-arg PG_FULL=$(PGO_PG_FULLVERSION) \
+		--build-arg PGVERSION=$(PGO_PG_VERSION) \
 		$(PGOROOT)
 
 pgo-base-buildah: pgo-base-build ;
