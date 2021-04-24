@@ -3,6 +3,7 @@ ARG BASEVER
 ARG PREFIX
 FROM ${PREFIX}/pgo-base:${BASEOS}-${BASEVER}
 
+ARG BASEOS
 ARG PGVERSION
 ARG BACKREST_VERSION
 ARG PACKAGER
@@ -28,6 +29,13 @@ fi
 RUN if [ "$DFSET" = "rhel" ] ; then \
 	mkdir -p /opt/cpm/bin /opt/cpm/conf /pgo-config \
 	&& chown -R 2:2 /opt/cpm /pgo-config ; \
+fi
+
+RUN if  [ "$BASEOS" = "ubi8" ]; then \
+    ${PACKAGER} -y install \
+        findutils \
+        procps \
+    && ${PACKAGER} -y clean all ; \
 fi
 
 ADD bin/pgo-scheduler /opt/cpm/bin
