@@ -173,6 +173,39 @@ and limit as well as actually utilization.
 device.
 - Container ResourceS: The CPU and memory limits and requests.
 
+### Backups
+
+![PostgreSQL Operator - Monitoring - Backup Health](/images/postgresql-monitoring-backups.png)
+
+There are a variety of reasons why you need to monitoring your backups, starting
+from answering the fundamental question of "do I have backups available?"
+Backups can be used for a variety of situations, from cloning new clusters to
+restoring clusters after a disaster. Additionally, Postgres can run into issues
+if your backup repository is not healthy, e.g. if it cannot push WAL archives.
+If your backups are set up properly and healthy, you will be set up to mitigate
+the risk of data loss!
+
+The backup, or pgBackRest panel, will provide information about the overall
+state of your backups. This includes:
+
+- Recovery Window: This is an indicator of how far back you are able to restore
+your data from. This represents all of the backups and archives available in
+your backup repository. Typically, your recovery window should be close to your
+overall data retention specifications.
+- Time Since Last Backup: this indicates how long it has been since your last
+backup. This is broken down into pgBackRest backup type (full, incremental,
+differential) as well as time since the last WAL archive was pushed.
+- Backup Runtimes: How long the last backup of a given type (full, incremental
+differential) took to execute. If your backups are slow, consider providing more
+resources to the backup jobs and tweaking pgBackRest's performance tuning
+settings.
+- Backup Size: How large the backups of a given type (full, incremental,
+differential).
+- WAL Stats: Shows the metrics around WAL archive pushes. If you have failing
+pushes, you should to see if there is a transient or permanent error that is
+preventing WAL archives from being pushed. If left untreated, this could end up
+causing issues for your Postgres cluster.
+
 ### PostgreSQL Service Health Overview
 
 ![PostgreSQL Operator Monitoring - Service Health Overview](/images/postgresql-monitoring-service.png)
@@ -189,6 +222,43 @@ handling.
 - Errors: Displays the total number of errors occurring at a particular Service.
 - Latency: What the overall network latency is when interfacing with the
 Service.
+
+### Query Runtime
+
+![PostgreSQL Operator Monitoring - Query Performance](/images/postgresql-monitoring-query-total.png)
+
+Looking at the overall performance of queries can help optimize a Postgres
+deployment, both from [providing resources]({{< relref "tutorial/customize-cluster.md" >}}) to query tuning in the application
+itself.
+
+You can get a sense of the overall activity of a PostgreSQL cluster from the
+chart that is visualized above:
+
+- Queries Executed: The total number of queries executed on a system during the
+period.
+- Query runtime: The aggregate runtime of all the queries combined across the
+system that were executed in the period.
+- Query mean runtime: The average query time across all queries executed on the
+system in the given period.
+- Rows retrieved or affected: The total number of rows in a database that were
+either retrieved or had modifications made to them.
+
+PostgreSQL Operator Monitoring also further breaks down the queries so you can
+identify queries that are being executed too frequently or are taking up too
+much time.
+
+![PostgreSQL Operator Monitoring - Query Analysis](/images/postgresql-monitoring-query-topn.png)
+
+- Query Mean Runtime (Top N): This highlights the N number of slowest queries by
+average runtime on the system. This might indicate you are missing an index
+somewhere, or perhaps the query could be rewritten to be more efficient.
+- Query Max Runtime (Top N): This highlights the N number of slowest queries by
+absolute runtime. This could indicate that a specific query or the system as a
+whole may need more resources.
+- Query Total Runtime (Top N): This highlights the N of slowest queres by
+aggregate runtime. This could indicate that a ORM is looping over a single query
+and executing it many times that could possibly be rewritten as a single, faster
+query.
 
 ### Alerts
 
