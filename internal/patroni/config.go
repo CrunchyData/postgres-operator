@@ -167,7 +167,7 @@ func clusterYAML(
 		},
 	}
 
-	if cluster.Status.Patroni == nil || cluster.Status.Patroni.SystemIdentifier == "" {
+	if !ClusterBootstrapped(cluster) {
 		// Patroni has not yet bootstrapped. Populate the "bootstrap.dcs" field to
 		// facilitate it. When Patroni is already bootstrapped, this field is ignored.
 

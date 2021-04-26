@@ -30,13 +30,18 @@ import (
 func AddRepoVolumesToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
 	containerNames ...string) error {
 
-	for _, repoVol := range postgresCluster.Spec.Archive.PGBackRest.Repos {
+	for _, repo := range postgresCluster.Spec.Archive.PGBackRest.Repos {
+		// we only care about repos created using PVCs
+		if repo.Volume == nil {
+			continue
+		}
+		repoVolName := repo.Name
 		template.Spec.Volumes = append(template.Spec.Volumes, v1.Volume{
-			Name: repoVol.Name,
+			Name: repoVolName,
 			VolumeSource: v1.VolumeSource{
 				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
 					ClaimName: naming.PGBackRestRepoVolume(postgresCluster,
-						repoVol.Name).Name},
+						repoVolName).Name},
 			},
 		})
 
@@ -55,8 +60,8 @@ func AddRepoVolumesToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.
 			}
 			template.Spec.Containers[index].VolumeMounts =
 				append(template.Spec.Containers[index].VolumeMounts, v1.VolumeMount{
-					Name:      repoVol.Name,
-					MountPath: "/pgbackrest/" + repoVol.Name,
+					Name:      repoVolName,
+					MountPath: "/pgbackrest/" + repoVolName,
 				})
 		}
 	}
@@ -77,7 +82,10 @@ func AddConfigsToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodT
 			LocalObjectReference: v1.LocalObjectReference{
 				Name: naming.PGBackRestConfig(postgresCluster).Name,
 			},
-			Items: []v1.KeyToPath{{Key: configName, Path: configName}},
+			Items: []v1.KeyToPath{
+				{Key: configName, Path: configName},
+				{Key: ConfigHashKey, Path: ConfigHashKey},
+			},
 		},
 	}
 	pgBackRestConfigs = append(pgBackRestConfigs, defaultConfig)

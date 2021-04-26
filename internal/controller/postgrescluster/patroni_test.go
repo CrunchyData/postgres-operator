@@ -18,19 +18,25 @@ package postgrescluster
 */
 
 import (
+	"context"
+	"fmt"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -161,4 +167,127 @@ func TestPatroniReplicationSecret(t *testing.T) {
 		})
 	})
 
+}
+
+func TestReconcilePatroniStatus(t *testing.T) {
+	ctx := context.Background()
+
+	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	r := &Reconciler{}
+	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+		r = &Reconciler{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor(ControllerName),
+			Tracer:   otel.Tracer(ControllerName),
+			Owner:    ControllerName,
+		}
+	})
+	t.Cleanup(func() { teardownManager(cancel, t) })
+
+	namespace := "test-reconcile-patroni-status"
+	systemIdentifier := "6952526174828511264"
+	createResources := func(index int, readyReplicas, replicas int32,
+		writeAnnotation bool) *v1beta1.PostgresCluster {
+
+		i := strconv.Itoa(index)
+		clusterName := "patroni-status-" + i
+		instanceName := "test-instance-" + i
+		instanceSet := "set-" + i
+
+		labels := map[string]string{
+			naming.LabelCluster:     clusterName,
+			naming.LabelInstanceSet: instanceSet,
+			naming.LabelInstance:    instanceName,
+		}
+
+		postgresCluster := &v1beta1.PostgresCluster{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      clusterName,
+				Namespace: namespace,
+			},
+		}
+
+		instance := &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespace,
+				Name:      instanceName,
+				Labels:    labels,
+			},
+			Spec: appsv1.StatefulSetSpec{
+				Selector: &metav1.LabelSelector{
+					MatchLabels: labels,
+				},
+				Template: corev1.PodTemplateSpec{
+					ObjectMeta: metav1.ObjectMeta{
+						Labels: labels,
+					},
+				},
+			},
+		}
+
+		endpoints := &corev1.Endpoints{
+			ObjectMeta: naming.PatroniDistributedConfiguration(postgresCluster),
+		}
+		if writeAnnotation {
+			endpoints.ObjectMeta.Annotations = make(map[string]string)
+			endpoints.ObjectMeta.Annotations["initialize"] = systemIdentifier
+		}
+		assert.NilError(t, tClient.Create(ctx, endpoints, &client.CreateOptions{}))
+
+		assert.NilError(t, tClient.Create(ctx, instance, &client.CreateOptions{}))
+		instanceWithStatus := instance.DeepCopy()
+		instanceWithStatus.Status = appsv1.StatefulSetStatus{
+			Replicas:      replicas,
+			ReadyReplicas: readyReplicas,
+		}
+		assert.NilError(t,
+			tClient.Status().Patch(ctx, instanceWithStatus, client.MergeFrom(instance)))
+
+		err := wait.Poll(time.Second/2, time.Second*3, func() (bool, error) {
+			sts := &appsv1.StatefulSet{}
+			if err := r.Client.Get(ctx, client.ObjectKeyFromObject(instance), sts); err != nil {
+				return false, nil
+			}
+			if sts.Status.Replicas != replicas || sts.Status.ReadyReplicas != readyReplicas {
+				return false, nil
+			}
+			if err := r.Client.Get(ctx, client.ObjectKeyFromObject(endpoints),
+				&corev1.Endpoints{}); err != nil {
+				return false, nil
+			}
+			return true, nil
+		})
+
+		assert.NilError(t, err)
+
+		return postgresCluster
+	}
+
+	assert.NilError(t, tClient.Create(ctx, &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: namespace}}, &client.CreateOptions{}))
+
+	testsCases := []struct {
+		errorExpected   bool
+		readyReplicas   int32
+		replias         int32
+		writeAnnotation bool
+	}{
+		{errorExpected: false, readyReplicas: 1, replias: 1, writeAnnotation: true},
+		{errorExpected: true, readyReplicas: 1, replias: 1, writeAnnotation: false},
+		{errorExpected: false, readyReplicas: 0, replias: 1, writeAnnotation: false},
+		{errorExpected: false, readyReplicas: 0, replias: 0, writeAnnotation: false},
+	}
+
+	for i, tc := range testsCases {
+		t.Run(fmt.Sprintf("%+v", tc), func(t *testing.T) {
+			postgresCluster := createResources(i, tc.readyReplicas, tc.replias, tc.writeAnnotation)
+			err := r.reconcilePatroniStatus(ctx, postgresCluster)
+			if !tc.errorExpected {
+				assert.NilError(t, err)
+			} else {
+				assert.ErrorContains(t, err, "detected ready instance but no initialize value")
+			}
+		})
+	}
 }

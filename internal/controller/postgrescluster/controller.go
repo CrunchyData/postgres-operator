@@ -38,6 +38,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/pgbouncer"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
@@ -188,6 +189,11 @@ func (r *Reconciler) Reconcile(
 	pgParameters.Default = postgres.NewParameterSet()
 	pgParameters.Default.Add("jit", "off")
 	pgParameters.Default.Add("password_encryption", "scram-sha-256")
+
+	// enable archive mode and set archive command for pgBackRest
+	pgParameters.Mandatory.Add("archive_mode", "on")
+	pgParameters.Mandatory.Add("archive_command",
+		"pgbackrest --stanza="+pgbackrest.DefaultStanzaName+" archive-push %p")
 
 	if err == nil {
 		err = r.reconcilePatroniStatus(ctx, cluster)

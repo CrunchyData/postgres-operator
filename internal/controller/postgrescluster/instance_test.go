@@ -52,23 +52,27 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 		Spec: v1beta1.PostgresClusterSpec{
 			Archive: v1beta1.Archive{
 				PGBackRest: v1beta1.PGBackRestArchive{
-					Repos: []v1beta1.RepoVolume{{
+					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
-						VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-							AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
-							Resources: v1.ResourceRequirements{
-								Requests: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceStorage: resource.MustParse("1Gi"),
+						Volume: &v1beta1.RepoPVC{
+							VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
+								AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
+								Resources: v1.ResourceRequirements{
+									Requests: map[v1.ResourceName]resource.Quantity{
+										v1.ResourceStorage: resource.MustParse("1Gi"),
+									},
 								},
 							},
 						},
 					}, {
 						Name: "repo2",
-						VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-							AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
-							Resources: v1.ResourceRequirements{
-								Requests: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceStorage: resource.MustParse("2Gi"),
+						Volume: &v1beta1.RepoPVC{
+							VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
+								AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
+								Resources: v1.ResourceRequirements{
+									Requests: map[v1.ResourceName]resource.Quantity{
+										v1.ResourceStorage: resource.MustParse("2Gi"),
+									},
 								},
 							},
 						},
@@ -86,17 +90,17 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 	}
 
 	testCases := []struct {
-		repoHost  *v1beta1.RepoHost
+		repoHost  *v1beta1.PGBackRestRepoHost
 		sshConfig *v1.ConfigMapProjection
 		sshSecret *v1.SecretProjection
 	}{{
 		repoHost: nil,
 	}, {
-		repoHost: &v1beta1.RepoHost{
+		repoHost: &v1beta1.PGBackRestRepoHost{
 			Image: pgBackRestImage,
 		},
 	}, {
-		repoHost: &v1beta1.RepoHost{
+		repoHost: &v1beta1.PGBackRestRepoHost{
 			Dedicated: &v1beta1.DedicatedRepo{
 				Resources: &v1.ResourceRequirements{},
 			},
@@ -109,7 +113,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 		sshSecret: &v1.SecretProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
 	}, {
-		repoHost: &v1beta1.RepoHost{
+		repoHost: &v1beta1.PGBackRestRepoHost{
 			Image: pgBackRestImage,
 		},
 		sshConfig: &v1.ConfigMapProjection{
@@ -117,7 +121,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 		sshSecret: &v1.SecretProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
 	}, {
-		repoHost: &v1beta1.RepoHost{
+		repoHost: &v1beta1.PGBackRestRepoHost{
 			Dedicated: &v1beta1.DedicatedRepo{
 				Resources: &v1.ResourceRequirements{},
 			},

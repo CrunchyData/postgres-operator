@@ -19,20 +19,22 @@ spec:
         dedicated: {}
         image: gcr.io/crunchy-dev-test/crunchy-pgbackrest:centos8-12.6-multi.dev2
       repos:
-      - name: repo1
-        volumeClaimSpec:
-          accessModes:
-          - "ReadWriteMany"
-          resources:
-            requests:
-              storage: 1Gi
-      - name: repo2
-        volumeClaimSpec:
-          accessModes:
-          - "ReadWriteMany"
-          resources:
-            requests:
-              storage: 1Gi
+      - volume:
+          name: repo1
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteMany"
+            resources:
+              requests:
+                storage: 1Gi
+      - volume:
+          name: repo2
+          volumeClaimSpec:
+            accessModes:
+            - "ReadWriteMany"
+            resources:
+              requests:
+                storage: 1Gi
   proxy:
     pgBouncer:
       image: registry.developers.crunchydata.com/crunchydata/crunchy-pgbouncer:centos8-13.2-4.6.2

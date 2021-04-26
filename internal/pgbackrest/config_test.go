@@ -49,10 +49,30 @@ func TestPGBackRestConfiguration(t *testing.T) {
 			PostgresVersion: 12,
 			Archive: v1beta1.Archive{
 				PGBackRest: v1beta1.PGBackRestArchive{
-					Repos: []v1beta1.RepoVolume{{
-						Name: "repo1",
+					Global: map[string]string{"repo2-test": "config", "repo4-test": "config",
+						"repo3-test": "config"},
+					Repos: []v1beta1.PGBackRestRepo{{
+						Name:   "repo1",
+						Volume: &v1beta1.RepoPVC{},
+					}, {
+						Name: "repo2",
+						Azure: &v1beta1.RepoAzure{
+							Container: "container",
+						},
+					}, {
+						Name: "repo3",
+						GCS: &v1beta1.RepoGCS{
+							Bucket: "bucket",
+						},
+					}, {
+						Name: "repo4",
+						S3: &v1beta1.RepoS3{
+							Bucket:   "bucket",
+							Endpoint: "endpoint",
+							Region:   "region",
+						},
 					}},
-					RepoHost: &v1beta1.RepoHost{
+					RepoHost: &v1beta1.PGBackRestRepoHost{
 						Dedicated: &v1beta1.DedicatedRepo{},
 					},
 				},
@@ -69,6 +89,7 @@ func TestPGBackRestConfiguration(t *testing.T) {
 
 	testInstanceName := "test-instance-abc"
 	testRepoName := "repo-host"
+	testConfigHash := "abcde12345"
 
 	t.Run("pgbackrest configmap checks", func(t *testing.T) {
 
@@ -84,7 +105,8 @@ func TestPGBackRestConfiguration(t *testing.T) {
 			// create an array of one host string vlaue
 			pghosts := []string{testInstanceName}
 			// create the configmap struct
-			cmInitial = CreatePGBackRestConfigMapIntent(postgresCluster, testRepoName, pghosts)
+			cmInitial = CreatePGBackRestConfigMapIntent(postgresCluster, testRepoName,
+				testConfigHash, pghosts)
 
 			// check that there is configmap data
 			assert.Assert(t, cmInitial.Data != nil)
@@ -126,6 +148,20 @@ func TestPGBackRestConfiguration(t *testing.T) {
 			`[global]
 log-path=/tmp
 repo1-path=/pgbackrest/repo1
+repo2-azure-container=container
+repo2-path=/pgbackrest/repo2
+repo2-test=config
+repo2-type=azure
+repo3-gcs-bucket=bucket
+repo3-path=/pgbackrest/repo3
+repo3-test=config
+repo3-type=gcs
+repo4-path=/pgbackrest/repo4
+repo4-s3-bucket=bucket
+repo4-s3-endpoint=endpoint
+repo4-s3-region=region
+repo4-test=config
+repo4-type=s3
 
 [db]
 pg1-host=`+testInstanceName+`-0.testcluster-pods
@@ -135,7 +171,7 @@ pg1-socket-path=/tmp
 `)
 	})
 
-	t.Run("check pgbackrest configmap primary configuration", func(t *testing.T) {
+	t.Run("check pgbackrest configmap instance configuration", func(t *testing.T) {
 
 		assert.Equal(t, getCMData(cmReturned, testInstanceName+".conf"),
 			`[global]
@@ -143,6 +179,26 @@ log-path=/tmp
 repo1-host=`+testRepoName+`-0.testcluster-pods
 repo1-host-user=postgres
 repo1-path=/pgbackrest/repo1
+repo2-azure-container=container
+repo2-host=repo-host-0.testcluster-pods
+repo2-host-user=postgres
+repo2-path=/pgbackrest/repo2
+repo2-test=config
+repo2-type=azure
+repo3-gcs-bucket=bucket
+repo3-host=repo-host-0.testcluster-pods
+repo3-host-user=postgres
+repo3-path=/pgbackrest/repo3
+repo3-test=config
+repo3-type=gcs
+repo4-host=repo-host-0.testcluster-pods
+repo4-host-user=postgres
+repo4-path=/pgbackrest/repo4
+repo4-s3-bucket=bucket
+repo4-s3-endpoint=endpoint
+repo4-s3-region=region
+repo4-test=config
+repo4-type=s3
 
 [db]
 pg1-path=/pgdata/pg`+strconv.Itoa(postgresCluster.Spec.PostgresVersion)+`

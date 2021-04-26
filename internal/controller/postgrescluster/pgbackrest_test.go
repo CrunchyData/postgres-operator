@@ -18,7 +18,9 @@ package postgrescluster
 */
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"testing"
 	"time"
 
@@ -27,6 +29,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -79,28 +82,39 @@ func TestReconcilePGBackRest(t *testing.T) {
 		Spec: v1beta1.PostgresClusterSpec{
 			Archive: v1beta1.Archive{
 				PGBackRest: v1beta1.PGBackRestArchive{
-					Repos: []v1beta1.RepoVolume{{
+					Global: map[string]string{"repo2-test": "config",
+						"repo3-test": "config", "repo4-test": "config"},
+					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
-						VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-							AccessModes: []v1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-							Resources: v1.ResourceRequirements{
-								Requests: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceStorage: resource.MustParse("1Gi"),
+						Volume: &v1beta1.RepoPVC{
+							VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
+								AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
+								Resources: v1.ResourceRequirements{
+									Requests: map[v1.ResourceName]resource.Quantity{
+										v1.ResourceStorage: resource.MustParse("1Gi"),
+									},
 								},
 							},
 						},
 					}, {
 						Name: "repo2",
-						VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-							AccessModes: []v1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
-							Resources: v1.ResourceRequirements{
-								Requests: map[v1.ResourceName]resource.Quantity{
-									v1.ResourceStorage: resource.MustParse("2Gi"),
-								},
-							},
+						Azure: &v1beta1.RepoAzure{
+							Container: "container",
+						},
+					}, {
+						Name: "repo3",
+						GCS: &v1beta1.RepoGCS{
+							Bucket: "bucket",
+						},
+					}, {
+						Name: "repo4",
+						S3: &v1beta1.RepoS3{
+							Bucket:   "bucket",
+							Endpoint: "endpoint",
+							Region:   "region",
 						},
 					}},
-					RepoHost: &v1beta1.RepoHost{
+					RepoHost: &v1beta1.PGBackRestRepoHost{
 						Dedicated: &v1beta1.DedicatedRepo{
 							Resources: &corev1.ResourceRequirements{},
 						},
@@ -248,9 +262,13 @@ func TestReconcilePGBackRest(t *testing.T) {
 		assert.Assert(t, len(repoVols.Items) > 0)
 
 		for _, r := range postgresCluster.Spec.Archive.PGBackRest.Repos {
+			if r.Volume == nil {
+				continue
+			}
 			var foundRepoVol bool
 			for _, v := range repoVols.Items {
-				if v.GetName() == naming.PGBackRestRepoVolume(postgresCluster, r.Name).Name {
+				if v.GetName() ==
+					naming.PGBackRestRepoVolume(postgresCluster, r.Name).Name {
 					foundRepoVol = true
 					break
 				}
@@ -331,5 +349,122 @@ func TestReconcilePGBackRest(t *testing.T) {
 		assert.Check(t, foundPubKey)
 		assert.Check(t, foundPrivKey)
 		assert.Check(t, foundKnownHosts)
+	})
+
+	t.Run("verify stanza creation", func(t *testing.T) {
+
+		clusterCopy := postgresCluster.DeepCopy()
+
+		stanzaCreateFail := func(namespace, pod, container string, stdin io.Reader, stdout,
+			stderr io.Writer, command ...string) error {
+			return errors.New("fake stanza create failed")
+		}
+
+		stanzaCreateSuccess := func(namespace, pod, container string, stdin io.Reader, stdout,
+			stderr io.Writer, command ...string) error {
+			return nil
+		}
+
+		// first add a fake dedicated repo pod to the env
+		repoHost := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "fake-repo-host",
+				Namespace: namespace,
+				Labels:    naming.PGBackRestDedicatedLabels(clusterName),
+			},
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{{Name: "test", Image: "test"}},
+			},
+		}
+		assert.NilError(t, r.Client.Create(ctx, repoHost))
+
+		err := wait.Poll(time.Second/2, time.Second*3, func() (bool, error) {
+			if err := r.Client.Get(ctx,
+				client.ObjectKeyFromObject(repoHost), &corev1.Pod{}); err != nil {
+				return false, nil
+			}
+			return true, nil
+		})
+
+		// first verify a stanza create success
+		r.PodExec = stanzaCreateSuccess
+		meta.SetStatusCondition(&clusterCopy.Status.Conditions, metav1.Condition{
+			ObservedGeneration: clusterCopy.GetGeneration(),
+			Type:               ConditionRepoHostReady,
+			Status:             metav1.ConditionTrue,
+			Reason:             "RepoHostReady",
+			Message:            "pgBackRest dedicated repository host is ready",
+		})
+		clusterCopy.Status.Patroni = &v1beta1.PatroniStatus{
+			SystemIdentifier: "6952526174828511264",
+		}
+
+		result, err := r.reconcilePGBackRest(ctx, clusterCopy, instanceNames)
+		assert.NilError(t, err)
+		assert.Assert(t, result == (reconcile.Result{}))
+
+		events := &corev1.EventList{}
+		err = wait.Poll(time.Second/2, time.Second*2, func() (bool, error) {
+			if err := tClient.List(ctx, events, &client.MatchingFields{
+				"involvedObject.kind":      "PostgresCluster",
+				"involvedObject.name":      clusterName,
+				"involvedObject.namespace": namespace,
+				"involvedObject.uid":       string(clusterUID),
+				"reason":                   "StanzasCreated",
+			}); err != nil {
+				return false, err
+			}
+			if len(events.Items) != 1 {
+				return false, nil
+			}
+			return true, nil
+		})
+		assert.NilError(t, err)
+
+		// status should indicate stanzas were created
+		for _, r := range clusterCopy.Status.PGBackRest.Repos {
+			assert.Assert(t, r.StanzaCreated)
+		}
+
+		// now verify failure event
+		clusterCopy = postgresCluster.DeepCopy()
+		r.PodExec = stanzaCreateFail
+		meta.SetStatusCondition(&clusterCopy.Status.Conditions, metav1.Condition{
+			ObservedGeneration: clusterCopy.GetGeneration(),
+			Type:               ConditionRepoHostReady,
+			Status:             metav1.ConditionTrue,
+			Reason:             "RepoHostReady",
+			Message:            "pgBackRest dedicated repository host is ready",
+		})
+		clusterCopy.Status.Patroni = &v1beta1.PatroniStatus{
+			SystemIdentifier: "6952526174828511264",
+		}
+
+		result, err = r.reconcilePGBackRest(ctx, clusterCopy, instanceNames)
+		assert.NilError(t, err)
+		assert.Assert(t, result != (reconcile.Result{}))
+
+		events = &corev1.EventList{}
+		err = wait.Poll(time.Second/2, time.Second*2, func() (bool, error) {
+			if err := tClient.List(ctx, events, &client.MatchingFields{
+				"involvedObject.kind":      "PostgresCluster",
+				"involvedObject.name":      clusterName,
+				"involvedObject.namespace": namespace,
+				"involvedObject.uid":       string(clusterUID),
+				"reason":                   "UnableToCreateStanzas",
+			}); err != nil {
+				return false, err
+			}
+			if len(events.Items) != 1 {
+				return false, nil
+			}
+			return true, nil
+		})
+		assert.NilError(t, err)
+
+		// status should indicate stanaza were not created
+		for _, r := range clusterCopy.Status.PGBackRest.Repos {
+			assert.Assert(t, !r.StanzaCreated)
+		}
 	})
 }

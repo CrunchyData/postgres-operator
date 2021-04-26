@@ -31,6 +31,7 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/logging"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/patroni"
 	"github.com/crunchydata/postgres-operator/internal/pgbouncer"
 	"github.com/crunchydata/postgres-operator/internal/pki"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
@@ -109,7 +110,7 @@ func (r *Reconciler) reconcilePGBouncerConfigMap(
 func (r *Reconciler) reconcilePGBouncerInPostgreSQL(
 	ctx context.Context, cluster *v1beta1.PostgresCluster, clusterSecret *corev1.Secret,
 ) error {
-	if cluster.Status.Patroni == nil || cluster.Status.Patroni.SystemIdentifier == "" {
+	if !patroni.ClusterBootstrapped(cluster) {
 		// Patroni has not yet bootstrapped; there is nothing to do.
 		// NOTE(cbandy): "Patroni bootstrapped" may not be the right check here.
 		// The following code needs to be able to execute SQL that writes

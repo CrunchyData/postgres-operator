@@ -117,6 +117,12 @@ func PGBackRestDedicatedLabels(clusterName string) labels.Set {
 	return labels.Merge(repoLabels, operatorConfigLabels)
 }
 
+// PGBackRestDedicatedSelector provides a selector for querying pgBackRest dedicated
+// repository host resources
+func PGBackRestDedicatedSelector(clusterName string) labels.Selector {
+	return PGBackRestDedicatedLabels(clusterName).AsSelector()
+}
+
 // PGBackRestRepoHostLabels the labels for a pgBackRest repository host.
 func PGBackRestRepoHostLabels(clusterName string) labels.Set {
 	commonLabels := PGBackRestLabels(clusterName)

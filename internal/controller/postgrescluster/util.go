@@ -101,8 +101,11 @@ func updateReconcileResult(currResult, newResult reconcile.Result) reconcile.Res
 	if newResult.Requeue {
 		currResult.Requeue = true
 	}
-	if newResult.RequeueAfter < currResult.RequeueAfter {
-		currResult.RequeueAfter = newResult.RequeueAfter
+
+	if newResult.RequeueAfter != 0 {
+		if currResult.RequeueAfter == 0 || newResult.RequeueAfter < currResult.RequeueAfter {
+			currResult.RequeueAfter = newResult.RequeueAfter
+		}
 	}
 
 	return currResult

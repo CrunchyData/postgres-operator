@@ -20,8 +20,10 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
+	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -99,7 +101,7 @@ func (r *Reconciler) reconcilePatroniDynamicConfiguration(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
 	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
 ) error {
-	if cluster.Status.Patroni == nil || cluster.Status.Patroni.SystemIdentifier == "" {
+	if !patroni.ClusterBootstrapped(cluster) {
 		// Patroni has not yet bootstrapped. Dynamic configuration happens through
 		// configuration files during bootstrap, so there's nothing to do here.
 		return nil
@@ -204,12 +206,45 @@ func (r *Reconciler) reconcilePatroniStatus(
 	err := errors.WithStack(client.IgnoreNotFound(
 		r.Client.Get(ctx, client.ObjectKeyFromObject(dcs), dcs)))
 
-	if err == nil {
+	if err == nil && dcs.Annotations["initialize"] != "" {
 		// After bootstrap, Patroni writes the cluster system identifier to DCS.
 		status.SystemIdentifier = dcs.Annotations["initialize"]
+		cluster.Status.Patroni = &status
+		return nil
 	}
 
-	cluster.Status.Patroni = &status
+	// While we typically expect a value for the initialize key to be present in the Endpoints
+	// above by the time the StatefulSet for any instance indicates "ready" (since Patroni writes
+	// this value after successful cluster bootstrap, at which time the initial primary should
+	// transition to "ready"), sometimes this is not the case and the "initialize" key is not yet
+	// present.  Therefore, if a "ready" instance StatefulSet is detected in the cluster (as
+	// determined by its ReadyReplicas) we assume this is the case, and return an error in order to
+	// requeue and try again until the expected value is found.  Please note that another option
+	// would be to watch the Endpoints for the "initialize" value, which may be considered in a
+	// future implementation.
+	var instanceSelector labels.Selector
+	if err == nil {
+		instanceSelector, err = naming.AsSelector(naming.ClusterInstances(cluster.GetName()))
+	}
+
+	instances := &appsv1.StatefulSetList{}
+	if err == nil {
+		err = r.Client.List(ctx, instances, &client.ListOptions{
+			LabelSelector: instanceSelector,
+		})
+	}
+
+	if err == nil {
+		for _, instance := range instances.Items {
+			if instance.Status.ReadyReplicas != 0 {
+				// TODO(andrewlecuyer): Returning an error to address a missing identifier in the
+				// Endpoints (despite a "ready" instance) is a symptom of a missed event.  Consider
+				// watching Endpoints instead to ensure the required events are not missed.
+				return errors.New("detected ready instance but no initialize value")
+			}
+		}
+	}
+
 	return err
 }
 

@@ -35,8 +35,8 @@ const (
 	// defaultRepo1Path stores the default pgBackRest repo path
 	defaultRepo1Path = "/pgbackrest/"
 
-	// stanza pgBackRest default configurations
-	defaultStanzaName = "db"
+	// DefaultStanzaName is the name of the default pgBackRest stanza
+	DefaultStanzaName = "db"
 
 	// default pgBackRest port and socket path
 	defaultPG1Port       = "5432"
@@ -50,6 +50,8 @@ const (
 
 	// ConfigDir is the pgBackRest configuration directory
 	ConfigDir = "/etc/pgbackrest/conf.d"
+	// ConfigHashKey is the name of the file storing the pgBackRest config hash
+	ConfigHashKey = "config-hash"
 	// ConfigVol is the name of the pgBackRest configuration volume
 	ConfigVol = "pgbackrest-config"
 	// configPath is the pgBackRest configuration file path
@@ -67,7 +69,7 @@ const (
 // pgbackrest_primary.conf is used by the primary database pod
 // pgbackrest_repo.conf is used by the pgBackRest repository pod
 func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
-	repoHostName string, instanceNames []string) *v1.ConfigMap {
+	repoHostName, configHash string, instanceNames []string) *v1.ConfigMap {
 
 	meta := naming.PGBackRestConfig(postgresCluster)
 	meta.Labels = naming.PGBackRestConfigLabels(postgresCluster.GetName())
@@ -102,14 +104,18 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 		}
 		cm.Data[name+".conf"] = getConfigString(
 			populatePGInstanceConfigurationMap(serviceName, repoHostName, pgdataDir, otherInstances,
-				postgresCluster.Spec.Archive.PGBackRest.Repos))
+				postgresCluster.Spec.Archive.PGBackRest.Repos,
+				postgresCluster.Spec.Archive.PGBackRest.Global))
 	}
 
 	if addDedicatedHost && repoHostName != "" {
 		cm.Data[CMRepoKey] = getConfigString(
 			populateRepoHostConfigurationMap(serviceName, pgdataDir, instanceNames,
-				postgresCluster.Spec.Archive.PGBackRest.Repos))
+				postgresCluster.Spec.Archive.PGBackRest.Repos,
+				postgresCluster.Spec.Archive.PGBackRest.Global))
 	}
+
+	cm.Data[ConfigHashKey] = configHash
 
 	return cm
 }
@@ -175,10 +181,11 @@ func JobConfigVolumeAndMount(pgBackRestConfigMap *v1.ConfigMap, pod *v1.PodSpec,
 	configVolumeAndMount(pgBackRestConfigMap, pod, containerName, cmJobKey)
 }
 
-// populateRepoHostConfigurationMap returns a map representing the pgBackRest configuration for
+// populatePGInstanceConfigurationMap returns a map representing the pgBackRest configuration for
 // a PostgreSQL instance
 func populatePGInstanceConfigurationMap(serviceName, repoHostName, pgdataDir string,
-	otherPGHostNames []string, repos []v1beta1.RepoVolume) map[string]map[string]string {
+	otherPGHostNames []string, repos []v1beta1.PGBackRestRepo,
+	globalConfig map[string]string) map[string]map[string]string {
 
 	pgBackRestConfig := map[string]map[string]string{
 
@@ -189,16 +196,34 @@ func populatePGInstanceConfigurationMap(serviceName, repoHostName, pgdataDir str
 	}
 
 	// set the default stanza name
-	pgBackRestConfig["stanza"]["name"] = defaultStanzaName
+	pgBackRestConfig["stanza"]["name"] = DefaultStanzaName
 
 	// set global settings, which includes all repos
 	pgBackRestConfig["global"]["log-path"] = defaultLogPath
-	for _, repoVol := range repos {
-		if repoHostName != "" && serviceName != "" {
-			pgBackRestConfig["global"][repoVol.Name+"-host"] = repoHostName + "-0." + serviceName
-			pgBackRestConfig["global"][repoVol.Name+"-host-user"] = "postgres"
+	for _, repo := range repos {
+
+		repoConfigs := make(map[string]string)
+
+		// repo volumes do not contain configuration (unlike other repo types which has actual
+		// pgBackRest settings such as "bucket", "region", etc.), so only grab the name from the
+		// repo if a Volume is detected, and don't attempt to get an configs
+		if repo.Volume == nil {
+			repoConfigs = getExternalRepoConfigs(repo)
 		}
-		pgBackRestConfig["global"][repoVol.Name+"-path"] = defaultRepo1Path + repoVol.Name
+
+		if repoHostName != "" && serviceName != "" {
+			pgBackRestConfig["global"][repo.Name+"-host"] = repoHostName + "-0." + serviceName
+			pgBackRestConfig["global"][repo.Name+"-host-user"] = "postgres"
+		}
+		pgBackRestConfig["global"][repo.Name+"-path"] = defaultRepo1Path + repo.Name
+
+		for option, val := range repoConfigs {
+			pgBackRestConfig["global"][option] = val
+		}
+	}
+
+	for option, val := range globalConfig {
+		pgBackRestConfig["global"][option] = val
 	}
 
 	i := 1
@@ -227,7 +252,8 @@ func populatePGInstanceConfigurationMap(serviceName, repoHostName, pgdataDir str
 // populateRepoHostConfigurationMap returns a map representing the pgBackRest configuration for
 // a pgBackRest dedicated repository host
 func populateRepoHostConfigurationMap(serviceName, pgdataDir string,
-	pgHosts []string, repos []v1beta1.RepoVolume) map[string]map[string]string {
+	pgHosts []string, repos []v1beta1.PGBackRestRepo,
+	globalConfig map[string]string) map[string]map[string]string {
 
 	pgBackRestConfig := map[string]map[string]string{
 
@@ -238,12 +264,28 @@ func populateRepoHostConfigurationMap(serviceName, pgdataDir string,
 	}
 
 	// set the default stanza name
-	pgBackRestConfig["stanza"]["name"] = defaultStanzaName
+	pgBackRestConfig["stanza"]["name"] = DefaultStanzaName
 
 	// set the config for the local repo host
 	pgBackRestConfig["global"]["log-path"] = defaultLogPath
-	for _, repoVol := range repos {
-		pgBackRestConfig["global"][repoVol.Name+"-path"] = defaultRepo1Path + repoVol.Name
+	for _, repo := range repos {
+		var repoConfigs map[string]string
+
+		// repo volumes do not contain configuration (unlike other repo types which has actual
+		// pgBackRest settings such as "bucket", "region", etc.), so only grab the name from the
+		// repo if a Volume is detected, and don't attempt to get an configs
+		if repo.Volume == nil {
+			repoConfigs = getExternalRepoConfigs(repo)
+		}
+		pgBackRestConfig["global"][repo.Name+"-path"] = defaultRepo1Path + repo.Name
+
+		for option, val := range repoConfigs {
+			pgBackRestConfig["global"][option] = val
+		}
+	}
+
+	for option, val := range globalConfig {
+		pgBackRestConfig["global"][option] = val
 	}
 
 	// set the configs for all PG hosts
@@ -277,6 +319,28 @@ func getConfigString(c map[string]map[string]string) string {
 		}
 	}
 	return configString
+}
+
+// getExternalRepoConfigs returns a map containing the configuration settings for an external
+// pgBackRest repository as defined in the PostgresCluster spec
+func getExternalRepoConfigs(repo v1beta1.PGBackRestRepo) map[string]string {
+
+	repoConfigs := make(map[string]string)
+
+	if repo.Azure != nil {
+		repoConfigs[repo.Name+"-type"] = "azure"
+		repoConfigs[repo.Name+"-azure-container"] = repo.Azure.Container
+	} else if repo.GCS != nil {
+		repoConfigs[repo.Name+"-type"] = "gcs"
+		repoConfigs[repo.Name+"-gcs-bucket"] = repo.GCS.Bucket
+	} else if repo.S3 != nil {
+		repoConfigs[repo.Name+"-type"] = "s3"
+		repoConfigs[repo.Name+"-s3-bucket"] = repo.S3.Bucket
+		repoConfigs[repo.Name+"-s3-endpoint"] = repo.S3.Endpoint
+		repoConfigs[repo.Name+"-s3-region"] = repo.S3.Region
+	}
+
+	return repoConfigs
 }
 
 // sortedKeys sorts and returns the keys from a given map

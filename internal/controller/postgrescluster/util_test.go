@@ -17,10 +17,13 @@ package postgrescluster
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"testing"
+	"time"
 
 	"gotest.tools/v3/assert"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
 func TestSafeHash32(t *testing.T) {
@@ -42,4 +45,140 @@ func TestSafeHash32(t *testing.T) {
 	})
 	assert.NilError(t, err)
 	assert.Equal(t, same, stuff, "expected deterministic hash")
+}
+
+func TestUpdateReconcileResult(t *testing.T) {
+
+	testCases := []struct {
+		currResult           reconcile.Result
+		newResult            reconcile.Result
+		requeueExpected      bool
+		expectedRequeueAfter time.Duration
+	}{{
+		currResult:           reconcile.Result{},
+		newResult:            reconcile.Result{},
+		requeueExpected:      false,
+		expectedRequeueAfter: 0,
+	}, {
+		currResult:           reconcile.Result{Requeue: false},
+		newResult:            reconcile.Result{Requeue: true},
+		requeueExpected:      true,
+		expectedRequeueAfter: 0,
+	}, {
+		currResult:           reconcile.Result{Requeue: true},
+		newResult:            reconcile.Result{Requeue: false},
+		requeueExpected:      true,
+		expectedRequeueAfter: 0,
+	}, {
+		currResult:           reconcile.Result{Requeue: true},
+		newResult:            reconcile.Result{Requeue: true},
+		requeueExpected:      true,
+		expectedRequeueAfter: 0,
+	}, {
+		currResult:           reconcile.Result{Requeue: false},
+		newResult:            reconcile.Result{Requeue: false},
+		requeueExpected:      false,
+		expectedRequeueAfter: 0,
+	}, {
+		currResult:           reconcile.Result{},
+		newResult:            reconcile.Result{RequeueAfter: 5 * time.Second},
+		requeueExpected:      false,
+		expectedRequeueAfter: 5 * time.Second,
+	}, {
+		currResult:           reconcile.Result{RequeueAfter: 5 * time.Second},
+		newResult:            reconcile.Result{},
+		requeueExpected:      false,
+		expectedRequeueAfter: 5 * time.Second,
+	}, {
+		currResult:           reconcile.Result{RequeueAfter: 1 * time.Second},
+		newResult:            reconcile.Result{RequeueAfter: 5 * time.Second},
+		requeueExpected:      false,
+		expectedRequeueAfter: 1 * time.Second,
+	}, {
+		currResult:           reconcile.Result{RequeueAfter: 5 * time.Second},
+		newResult:            reconcile.Result{RequeueAfter: 1 * time.Second},
+		requeueExpected:      false,
+		expectedRequeueAfter: 1 * time.Second,
+	}, {
+		currResult:           reconcile.Result{RequeueAfter: 5 * time.Second},
+		newResult:            reconcile.Result{RequeueAfter: 5 * time.Second},
+		requeueExpected:      false,
+		expectedRequeueAfter: 5 * time.Second,
+	}, {
+		currResult: reconcile.Result{
+			Requeue: true, RequeueAfter: 5 * time.Second,
+		},
+		newResult: reconcile.Result{
+			Requeue: true, RequeueAfter: 1 * time.Second,
+		},
+		requeueExpected:      true,
+		expectedRequeueAfter: 1 * time.Second,
+	}, {
+		currResult: reconcile.Result{
+			Requeue: true, RequeueAfter: 1 * time.Second,
+		},
+		newResult: reconcile.Result{
+			Requeue: true, RequeueAfter: 5 * time.Second,
+		},
+		requeueExpected:      true,
+		expectedRequeueAfter: 1 * time.Second,
+	}, {
+		currResult: reconcile.Result{
+			Requeue: false, RequeueAfter: 1 * time.Second,
+		},
+		newResult: reconcile.Result{
+			Requeue: true, RequeueAfter: 5 * time.Second,
+		},
+		requeueExpected:      true,
+		expectedRequeueAfter: 1 * time.Second,
+	}, {
+		currResult: reconcile.Result{
+			Requeue: true, RequeueAfter: 1 * time.Second,
+		},
+		newResult: reconcile.Result{
+			Requeue: false, RequeueAfter: 5 * time.Second,
+		},
+		requeueExpected:      true,
+		expectedRequeueAfter: 1 * time.Second,
+	}, {
+		currResult: reconcile.Result{
+			Requeue: false, RequeueAfter: 5 * time.Second,
+		},
+		newResult: reconcile.Result{
+			Requeue: false, RequeueAfter: 1 * time.Second,
+		},
+		requeueExpected:      false,
+		expectedRequeueAfter: 1 * time.Second,
+	}, {
+		currResult: reconcile.Result{
+			Requeue: false, RequeueAfter: 1 * time.Second,
+		},
+		newResult: reconcile.Result{
+			Requeue: false, RequeueAfter: 5 * time.Second,
+		},
+		requeueExpected:      false,
+		expectedRequeueAfter: 1 * time.Second,
+	}, {
+		currResult: reconcile.Result{},
+		newResult: reconcile.Result{
+			Requeue: true, RequeueAfter: 5 * time.Second,
+		},
+		requeueExpected:      true,
+		expectedRequeueAfter: 5 * time.Second,
+	}, {
+		currResult: reconcile.Result{
+			Requeue: true, RequeueAfter: 5 * time.Second,
+		},
+		newResult:            reconcile.Result{},
+		requeueExpected:      true,
+		expectedRequeueAfter: 5 * time.Second,
+	}}
+
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("curr: %v, new: %v", tc.currResult, tc.newResult), func(t *testing.T) {
+			result := updateReconcileResult(tc.currResult, tc.newResult)
+			assert.Assert(t, result.Requeue == tc.requeueExpected)
+			assert.Assert(t, result.RequeueAfter == tc.expectedRequeueAfter)
+		})
+	}
 }

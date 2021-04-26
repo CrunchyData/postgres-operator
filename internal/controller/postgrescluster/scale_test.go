@@ -100,16 +100,14 @@ func TestScaleDown(t *testing.T) {
 			Image:           CrunchyPostgresHAImage,
 			Archive: v1beta1.Archive{
 				PGBackRest: v1beta1.PGBackRestArchive{
-					RepoHost: &v1beta1.RepoHost{
+					RepoHost: &v1beta1.PGBackRestRepoHost{
 						Dedicated: &v1beta1.DedicatedRepo{},
 						Image:     CrunchyPGBackRestImage,
 					},
-					Repos: []v1beta1.RepoVolume{
-						{
-							Name:            "repo1",
-							VolumeClaimSpec: volumeClaimSpec,
-						},
-					},
+					Repos: []v1beta1.PGBackRestRepo{{
+						Name:   "repo1",
+						Volume: &v1beta1.RepoPVC{VolumeClaimSpec: volumeClaimSpec},
+					}},
 				},
 			},
 		},

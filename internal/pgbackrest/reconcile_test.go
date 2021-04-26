@@ -32,19 +32,25 @@ func TestAddRepoVolumesToPod(t *testing.T) {
 	postgresCluster := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
 
 	testsCases := []struct {
-		repos      []v1beta1.RepoVolume
+		repos      []v1beta1.PGBackRestRepo
 		containers []v1.Container
 	}{{
-		repos:      []v1beta1.RepoVolume{{Name: "repo1"}, {Name: "repo2"}},
+		repos: []v1beta1.PGBackRestRepo{
+			{Name: "repo1", Volume: &v1beta1.RepoPVC{}},
+			{Name: "repo2", Volume: &v1beta1.RepoPVC{}},
+		},
 		containers: []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
 	}, {
-		repos:      []v1beta1.RepoVolume{{Name: "repo1"}, {Name: "repo2"}},
+		repos: []v1beta1.PGBackRestRepo{
+			{Name: "repo1", Volume: &v1beta1.RepoPVC{}},
+			{Name: "repo2", Volume: &v1beta1.RepoPVC{}},
+		},
 		containers: []v1.Container{{Name: "database"}},
 	}, {
-		repos:      []v1beta1.RepoVolume{{Name: "repo1"}},
+		repos:      []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
 		containers: []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
 	}, {
-		repos:      []v1beta1.RepoVolume{{Name: "repo1"}},
+		repos:      []v1beta1.PGBackRestRepo{{Name: "repo1", Volume: &v1beta1.RepoPVC{}}},
 		containers: []v1.Container{{Name: "database"}},
 	}}
 
@@ -131,8 +137,7 @@ func TestAddConfigsToPod(t *testing.T) {
 				},
 			}
 
-			err := AddConfigsToPod(postgresCluster, template, confFile,
-				getContainerNames(tc.containers)...)
+			err := AddConfigsToPod(postgresCluster, template, confFile, getContainerNames(tc.containers)...)
 			assert.NilError(t, err)
 
 			// check that the backrest config volume exists
@@ -155,18 +160,6 @@ func TestAddConfigsToPod(t *testing.T) {
 			for _, s := range configVol.Projected.Sources {
 				if s.ConfigMap != nil && s.ConfigMap.Name == cmName {
 					foundDefaultConfigMapVol = true
-					// check that the ConfigMap for the default configs contains the expected
-					// config file with matching key and path
-					var foundConfFileKey bool
-					for _, i := range s.ConfigMap.Items {
-						if i.Key == confFile && i.Path == confFile {
-							foundConfFileKey = true
-							break
-						}
-					}
-					if !foundConfFileKey {
-						t.Error(fmt.Errorf("key or path %s is missing", confFile))
-					}
 					break
 				}
 			}
@@ -210,7 +203,7 @@ func TestAddSSHToPod(t *testing.T) {
 		Spec: v1beta1.PostgresClusterSpec{
 			Archive: v1beta1.Archive{
 				PGBackRest: v1beta1.PGBackRestArchive{
-					RepoHost: &v1beta1.RepoHost{},
+					RepoHost: &v1beta1.PGBackRestRepoHost{},
 				},
 			},
 		},
