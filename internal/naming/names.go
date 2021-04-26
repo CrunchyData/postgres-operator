@@ -39,6 +39,9 @@ const (
 	// ContainerClientCertInit is the name of the initialization container that is responsible
 	// for copying and setting proper permissions on the client certificate and key
 	ContainerClientCertInit = ContainerDatabase + "-client-cert-init"
+	// ContainerNSSWrapperInit is the name of the init container utilized to configure support
+	// for the nss_wrapper
+	ContainerNSSWrapperInit = "nss-wrapper-init"
 	ContainerPostgreSQL     = ContainerDatabase
 )
 

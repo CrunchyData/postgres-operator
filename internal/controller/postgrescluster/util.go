@@ -27,10 +27,19 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 var tmpDirSizeLimit = resource.MustParse("16Mi")
+
+const (
+	// nssWrapperDir is the directory in a container for the nss_wrapper passwd and group files
+	nssWrapperDir = "/tmp/nss_wrapper/%s/%s"
+	// uidCommand is the command for setting up nss_wrapper in the container
+	nssWrapperCmd = `NSS_WRAPPER_SUBDIR=postgres CRUNCHY_NSS_USERNAME=postgres ` +
+		`CRUNCHY_NSS_USER_DESC="postgres" /opt/crunchy/bin/nss_wrapper.sh`
+)
 
 // addTMPEmptyDir adds a "tmp" EmptyDir volume to the provided Pod template, while then also adding a
 // volume mount at /tmp for all containers defined within the Pod template
@@ -66,6 +75,33 @@ func addTMPEmptyDir(template *v1.PodTemplateSpec) {
 				MountPath: "/tmp",
 			})
 	}
+}
+
+// addNSSWrapper adds nss_wrapper environment variables to the database and pgBackRest
+// containers in the Pod template.  Additionally, an init container is added to the Pod template
+// as needed to setup the nss_wrapper. Please note that the nss_wrapper is required for
+// compatibility with OpenShift: https://access.redhat.com/articles/4859371.
+func addNSSWrapper(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec) {
+
+	for i, c := range template.Spec.Containers {
+		switch c.Name {
+		case naming.ContainerDatabase, naming.PGBackRestRepoContainerName:
+			passwd := fmt.Sprintf(nssWrapperDir, "postgres", "passwd")
+			group := fmt.Sprintf(nssWrapperDir, "postgres", "group")
+			template.Spec.Containers[i].Env = append(template.Spec.Containers[i].Env, []v1.EnvVar{
+				{Name: "LD_PRELOAD", Value: "/usr/lib64/libnss_wrapper.so"},
+				{Name: "NSS_WRAPPER_PASSWD", Value: passwd},
+				{Name: "NSS_WRAPPER_GROUP", Value: group},
+			}...)
+		}
+	}
+
+	template.Spec.InitContainers = append(template.Spec.InitContainers,
+		v1.Container{
+			Command: []string{"bash", "-c", nssWrapperCmd},
+			Image:   postgresCluster.Spec.Image,
+			Name:    naming.ContainerNSSWrapperInit,
+		})
 }
 
 // safeHash32 runs content and returns a short alphanumeric string that

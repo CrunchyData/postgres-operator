@@ -189,6 +189,7 @@ User postgres
 
 		assert.Equal(t, getCMData(sshCMReturned, sshdConfig),
 			`AuthorizedKeysFile /etc/ssh/id_ecdsa.pub
+ForceCommand NSS_WRAPPER_SUBDIR=postgres . /opt/crunchy/bin/nss_wrapper_env.sh && $SSH_ORIGINAL_COMMAND
 HostKey /etc/ssh/id_ecdsa
 PasswordAuthentication no
 PermitRootLogin no

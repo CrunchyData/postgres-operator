@@ -484,7 +484,6 @@ func (r *Reconciler) reconcileInstance(
 			{
 				Name:      naming.ContainerDatabase,
 				Image:     cluster.Spec.Image,
-				Command:   []string{"/opt/crunchy/bin/uid_postgres.sh"},
 				Resources: spec.Resources,
 				Ports: []v1.ContainerPort{
 					{
@@ -557,6 +556,11 @@ func (r *Reconciler) reconcileInstance(
 		err = errors.WithStack(postgres.AddCertVolumeToPod(cluster, &instance.Spec.Template,
 			naming.ContainerClientCertInit, naming.ContainerDatabase, primaryCertificate,
 			replicationCertSecretProjection(clusterReplicationSecret)))
+	}
+	// add nss_wrapper init container and add nss_wrapper env vars to the database and pgbackrest
+	// containers
+	if err == nil {
+		addNSSWrapper(cluster, &instance.Spec.Template)
 	}
 	// add an emptyDir volume to the PodTemplateSpec and an associated '/tmp' volume mount to
 	// all containers included within that spec

@@ -128,7 +128,7 @@ func TestInstancePod(t *testing.T) {
 
 	assert.Assert(t, marshalEquals(template.Spec, strings.TrimSpace(`
 containers:
-- args:
+- command:
   - patroni
   - /etc/patroni
   env:

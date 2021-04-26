@@ -365,6 +365,10 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 		pgbackrest.CMRepoKey, naming.PGBackRestRepoContainerName); err != nil {
 		return nil, errors.WithStack(err)
 	}
+
+	// add nss_wrapper init container and add nss_wrapper env vars to the pgbackrest
+	// container
+	addNSSWrapper(postgresCluster, &repo.Spec.Template)
 	addTMPEmptyDir(&repo.Spec.Template)
 
 	// set ownership references

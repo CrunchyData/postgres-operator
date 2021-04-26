@@ -107,7 +107,7 @@ func InstancePod(ctx context.Context,
 	container := findOrAppendContainer(&outInstancePod.Spec.Containers,
 		naming.ContainerDatabase)
 
-	container.Args = []string{"patroni", configDirectory}
+	container.Command = []string{"patroni", configDirectory}
 
 	container.Env = mergeEnvVars(container.Env,
 		instanceEnvironment(inCluster, inClusterPodService, inPatroniLeaderService,

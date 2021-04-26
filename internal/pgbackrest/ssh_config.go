@@ -210,7 +210,11 @@ func SSHConfigVolumeAndMount(sshConfigMap *v1.ConfigMap, sshSecret *v1.Secret, p
 // for the SSHD service
 func getSSHDConfigString() string {
 
+	// please note that the ForceCommand setting ensures nss_wrapper env vars are set when
+	// executing commands as required for OpenShift compatibility:
+	// https://access.redhat.com/articles/4859371
 	configString := `AuthorizedKeysFile /etc/ssh/id_ecdsa.pub
+ForceCommand NSS_WRAPPER_SUBDIR=postgres . /opt/crunchy/bin/nss_wrapper_env.sh && $SSH_ORIGINAL_COMMAND
 HostKey /etc/ssh/id_ecdsa
 PasswordAuthentication no
 PermitRootLogin no

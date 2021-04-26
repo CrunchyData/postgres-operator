@@ -22,7 +22,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"gotest.tools/v3/assert"
+	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -179,6 +182,99 @@ func TestUpdateReconcileResult(t *testing.T) {
 			result := updateReconcileResult(tc.currResult, tc.newResult)
 			assert.Assert(t, result.Requeue == tc.requeueExpected)
 			assert.Assert(t, result.RequeueAfter == tc.expectedRequeueAfter)
+		})
+	}
+}
+
+func TestAddNSSWrapper(t *testing.T) {
+
+	databaseBackrestContainerCount := func(template *v1.PodTemplateSpec) int {
+		var count int
+		for _, c := range template.Spec.Containers {
+			switch c.Name {
+			case naming.ContainerDatabase:
+				count++
+			case naming.PGBackRestRepoContainerName:
+				count++
+			}
+		}
+		return count
+	}
+
+	image := "test-image"
+	// we only need the image name in the mock postgrescluster
+	postgresCluster := &v1beta1.PostgresCluster{
+		Spec: v1beta1.PostgresClusterSpec{Image: image}}
+
+	expectedEnv := []v1.EnvVar{
+		{Name: "LD_PRELOAD", Value: "/usr/lib64/libnss_wrapper.so"},
+		{Name: "NSS_WRAPPER_PASSWD", Value: "/tmp/nss_wrapper/postgres/passwd"},
+		{Name: "NSS_WRAPPER_GROUP", Value: "/tmp/nss_wrapper/postgres/group"},
+	}
+
+	expectedCmd := `NSS_WRAPPER_SUBDIR=postgres CRUNCHY_NSS_USERNAME=postgres ` +
+		`CRUNCHY_NSS_USER_DESC="postgres" /opt/crunchy/bin/nss_wrapper.sh`
+
+	testCases := []struct {
+		tcName      string
+		podTemplate *v1.PodTemplateSpec
+	}{{
+		tcName: "database and pgbackest containers",
+		podTemplate: &v1.PodTemplateSpec{Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{Name: "database"}, {Name: "pgbackrest"}, {Name: "dontmodify"},
+			}}},
+	}, {
+		tcName: "database container only",
+		podTemplate: &v1.PodTemplateSpec{Spec: v1.PodSpec{
+			Containers: []v1.Container{{Name: "database"}, {Name: "dontmodify"}}}},
+	}, {
+		tcName: "pgbackest container only",
+		podTemplate: &v1.PodTemplateSpec{Spec: v1.PodSpec{
+			Containers: []v1.Container{{Name: "dontmodify"}, {Name: "pgbackrest"}}}},
+	}, {
+		tcName: "other containers",
+		podTemplate: &v1.PodTemplateSpec{Spec: v1.PodSpec{
+			Containers: []v1.Container{
+				{Name: "dontmodify1"}, {Name: "dontmodify2"}}}},
+	}}
+
+	for _, tc := range testCases {
+		t.Run(tc.tcName, func(t *testing.T) {
+
+			template := tc.podTemplate
+
+			beforeAddNSS := template.Spec.Containers
+
+			addNSSWrapper(postgresCluster, template)
+
+			// verify proper nss_wrapper env vars
+			var expectedContainerUpdateCount int
+			for i, c := range template.Spec.Containers {
+				if c.Name == "database" || c.Name == "pgbackrest" {
+					assert.DeepEqual(t, expectedEnv, c.Env)
+					expectedContainerUpdateCount++
+				} else {
+					assert.DeepEqual(t, beforeAddNSS[i], c)
+				}
+			}
+
+			// verify database and/or pgbackrest containers updated
+			assert.Equal(t, expectedContainerUpdateCount,
+				databaseBackrestContainerCount(template))
+
+			var foundInitContainer bool
+			// verify init container command, image & name
+			for _, c := range template.Spec.InitContainers {
+				if c.Name == naming.ContainerNSSWrapperInit {
+					assert.Equal(t, expectedCmd, c.Command[2]) // ignore "bash -c"
+					assert.Assert(t, c.Image == image)
+					foundInitContainer = true
+					break
+				}
+			}
+			// verify init container is present
+			assert.Assert(t, foundInitContainer)
 		})
 	}
 }
