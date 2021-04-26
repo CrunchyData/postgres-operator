@@ -36,9 +36,10 @@ fi
 
 RUN if [ "$BASEOS" = "ubi8" ] ; then \
 	${PACKAGER} install -y \
-        postgresql${PGVERSION} \
+		findutils \
 		gettext \
 		nss_wrapper \
+		postgresql${PGVERSION} \
     && ${PACKAGER} -y clean all ; \
 fi
 
