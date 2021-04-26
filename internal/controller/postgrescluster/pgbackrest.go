@@ -224,10 +224,11 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 		} else {
 			_, isRepoHost := ownedRepo.GetLabels()[naming.LabelPGBackRestRepoHost]
 			repoHostEnabled := pgbackrest.RepoHostEnabled(postgresCluster)
+			_, isPGBackRestConfig := ownedRepo.GetLabels()[naming.LabelPGBackRestConfig]
 			_, isDedicatedRepoHost := ownedRepo.GetLabels()[naming.LabelPGBackRestDedicated]
 			dedicatedRepoEnabled := pgbackrest.DedicatedRepoHostEnabled(postgresCluster)
 			if (!isDedicatedRepoHost && isRepoHost && repoHostEnabled) ||
-				(isDedicatedRepoHost && dedicatedRepoEnabled) {
+				(isDedicatedRepoHost && dedicatedRepoEnabled) || isPGBackRestConfig {
 				found = true
 				ownedNoDelete = append(ownedNoDelete, ownedRepo)
 			}
@@ -466,6 +467,10 @@ func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 
 	backrestConfig := pgbackrest.CreatePGBackRestConfigMapIntent(postgresCluster, repoHostName,
 		instanceNames)
+	if err := controllerutil.SetControllerReference(postgresCluster, backrestConfig,
+		r.Client.Scheme()); err != nil {
+		return err
+	}
 	if err := r.apply(ctx, backrestConfig); err != nil {
 		return errors.WithStack(err)
 	}
