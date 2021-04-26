@@ -61,19 +61,12 @@ oc port-forward -n pgouser1 svc/mycluster 9187:9187
 
 Then, in your local browser, go to `http://127.0.0.1:9187/metrics` to view the available metrics for that cluster.
 
+# Crunchy Postgres Exporter Metrics
 
-
-# Crunchy Postgres Exporter Metrics Detail
-
-Below are details on the various metrics available from the crunchy-postgres-exporter container.
-The name, SQL query and metric details are given for each available item.
-
-{{< exporter_metrics >}}
+You can find more information about the metrics available in the Crunchy Postgres Exporter by visiting the [pgMonitor](https://github.com/CrunchyData/pgmonitor) project and viewing details in the [exporter](https://github.com/CrunchyData/pgmonitor/tree/master/exporter/postgres) folder.
 
 # [pgnodemx](https://github.com/CrunchyData/pgnodemx)
 
 In addition to the metrics above, the [pgnodemx](https://github.com/CrunchyData/pgnodemx) PostgreSQL extension provides SQL functions to allow the capture of node OS metrics via SQL queries. For more information, please see the [pgnodemx](https://github.com/CrunchyData/pgnodemx) project page:
 
 [https://github.com/CrunchyData/pgnodemx](https://github.com/CrunchyData/pgnodemx)
-
-{{< pgnodemx_metrics >}}
