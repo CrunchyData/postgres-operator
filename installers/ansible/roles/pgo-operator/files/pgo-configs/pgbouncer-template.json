@@ -55,7 +55,8 @@
                     },
                     "ports": [{
                         "containerPort": {{.Port}},
-                        "protocol": "TCP"
+                        "protocol": "TCP",
+                        "name": "pgbouncer"
                     }],
                     {{.ContainerResources }}
                     "env": [{
