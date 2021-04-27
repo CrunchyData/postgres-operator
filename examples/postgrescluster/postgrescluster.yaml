@@ -19,16 +19,16 @@ spec:
         dedicated: {}
         image: gcr.io/crunchy-dev-test/crunchy-pgbackrest:centos8-12.6-multi.dev2
       repos:
-      - volume:
-          name: repo1
+      - name: repo1
+        volume:
           volumeClaimSpec:
             accessModes:
             - "ReadWriteMany"
             resources:
               requests:
                 storage: 1Gi
-      - volume:
-          name: repo2
+      - name: repo2
+        volume:
           volumeClaimSpec:
             accessModes:
             - "ReadWriteMany"
