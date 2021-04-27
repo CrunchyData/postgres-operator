@@ -50,7 +50,8 @@
           },
           "ports": [{
             "containerPort": {{.Port}},
-            "protocol": "TCP"
+            "protocol": "TCP",
+            "name": "pgadmin4"
           }],
           "env": [{
             "name": "PGADMIN_SETUP_EMAIL",

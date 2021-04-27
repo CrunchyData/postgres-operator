@@ -40,7 +40,7 @@
                           "readOnlyRootFilesystem": true
                         },
                         "ports": [
-                            { "containerPort": {{ pgo_apiserver_port }} }
+                            { "containerPort": {{ pgo_apiserver_port }}, "name": "api" }
                         ],
                         "readinessProbe": {
                             "httpGet": {

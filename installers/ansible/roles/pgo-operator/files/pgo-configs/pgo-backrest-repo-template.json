@@ -61,7 +61,8 @@
                     },
                     "ports": [{
                         "containerPort": {{.SshdPort}},
-                        "protocol": "TCP"
+                        "protocol": "TCP",
+                        "name": "pgbackrest"
                     }],
                     {{.ContainerResources }}
                     "env": [

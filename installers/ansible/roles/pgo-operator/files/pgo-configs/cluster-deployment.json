@@ -225,10 +225,12 @@
 
                     "ports": [{
                         "containerPort": 5432,
-                        "protocol": "TCP"
+                        "protocol": "TCP",
+                        "name": "postgres"
                     }, {
                         "containerPort": 8009,
-                        "protocol": "TCP"
+                        "protocol": "TCP",
+                        "name": "patroni"
                     }],
                     "imagePullPolicy": "IfNotPresent"
                 }
