@@ -79,8 +79,8 @@ type PGBackRestStatus struct {
 	// +optional
 	RepoHost *RepoHostStatus `json:"repoHost,omitempty"`
 
-	// Status information for the pgBackRest repository host
-	// +kubebuilder:validation:Required
+	// Status information for pgBackRest repositories
+	// +optional
 	Repos []RepoStatus `json:"repos,omitempty"`
 }
 
@@ -181,6 +181,7 @@ type RepoStatus struct {
 	RepoOptionsHash string `json:"repoOptionsHash,omitempty"`
 
 	// Specifies whether or not a stanza has been successfully created for the repository
+	// +optional
 	StanzaCreated bool `json:"stanzaCreated"`
 
 	// The name of the volume the containing the pgBackRest repository

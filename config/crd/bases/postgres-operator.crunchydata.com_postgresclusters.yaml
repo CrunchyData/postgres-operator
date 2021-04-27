@@ -2197,8 +2197,7 @@ spec:
                         type: boolean
                     type: object
                   repos:
-                    description: Status information for the pgBackRest repository
-                      host
+                    description: Status information for pgBackRest repositories
                     items:
                       description: RepoVolumeStatus the status of a pgBackRest repository
                       properties:
@@ -2225,7 +2224,6 @@ spec:
                           type: string
                       required:
                       - name
-                      - stanzaCreated
                       type: object
                     type: array
                 type: object
