@@ -96,7 +96,7 @@ func TestScaleDown(t *testing.T) {
 	// cluster with an expected number of instances
 	baseCluster := v1beta1.PostgresCluster{
 		Spec: v1beta1.PostgresClusterSpec{
-			PostgresVersion: 12,
+			PostgresVersion: 13,
 			Image:           CrunchyPostgresHAImage,
 			Archive: v1beta1.Archive{
 				PGBackRest: v1beta1.PGBackRestArchive{

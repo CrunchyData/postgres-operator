@@ -166,7 +166,7 @@ func TestReconcilerHandleDelete(t *testing.T) {
 			cluster := &v1beta1.PostgresCluster{}
 			assert.NilError(t, yaml.Unmarshal([]byte(`{
 				spec: {
-					postgresVersion: 12,
+					postgresVersion: 13,
 					instances: [
 						{
 							replicas: 2,
@@ -415,7 +415,7 @@ func TestReconcilerHandleDeleteNamespace(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{}
 	assert.NilError(t, yaml.Unmarshal([]byte(`{
 		spec: {
-			postgresVersion: 12,
+			postgresVersion: 13,
 			instances: [
 				{
 					replicas: 2,

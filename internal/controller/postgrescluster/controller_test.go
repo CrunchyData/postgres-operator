@@ -59,7 +59,7 @@ func TestDeleteControlled(t *testing.T) {
 	cluster := &v1beta1.PostgresCluster{}
 	assert.NilError(t, yaml.Unmarshal([]byte(`{
 		spec: {
-			postgresVersion: 12,
+			postgresVersion: 13,
 			instances: [],
 		},
 	}`), cluster))
@@ -178,7 +178,7 @@ var _ = Describe("PostgresCluster Reconciler", func() {
 		cluster := create(`{
 metadata: { name: postgres },
 spec: {
-	postgresVersion: 12,
+	postgresVersion: 13,
 	instances: [],
 },
 		}`)
@@ -196,7 +196,7 @@ spec: {
 			cluster = create(`{
 metadata: { name: carlos },
 spec: {
-	postgresVersion: 12,
+	postgresVersion: 13,
 	instances: [],
 },
 			}`)
@@ -415,7 +415,7 @@ spec: {
 metadata:
   name: carlos
 spec:
-  postgresVersion: 12
+  postgresVersion: 13
   instances:
   - name: samba
     volumeClaimSpec:
