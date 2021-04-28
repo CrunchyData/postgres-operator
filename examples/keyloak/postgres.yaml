@@ -1,13 +1,12 @@
 apiVersion: postgres-operator.crunchydata.com/v1beta1
 kind: PostgresCluster
 metadata:
-  name: keycloak
+  name: keycloakdb
 spec:
   image: us.gcr.io/container-suite/crunchy-postgres-ha:centos8-13.2-4.7.0-beta.2
   postgresVersion: 13
   instances:
-    - name: keycloakdb
-      replicas: 2
+    - replicas: 2
       volumeClaimSpec:
         accessModes:
         - "ReadWriteOnce"

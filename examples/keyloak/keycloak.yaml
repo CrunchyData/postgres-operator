@@ -23,27 +23,27 @@ spec:
         - name: DB_ADDR
           valueFrom:
             secretKeyRef:
-              name: keycloak-pguser
+              name: keycloakdb-pguser
               key: host
         - name: DB_PORT
           valueFrom:
             secretKeyRef:
-              name: keycloak-pguser
+              name: keycloakdb-pguser
               key: port
         - name: DB_DATABASE
           valueFrom:
             secretKeyRef:
-              name: keycloak-pguser
+              name: keycloakdb-pguser
               key: dbname
         - name: DB_USER
           valueFrom:
             secretKeyRef:
-              name: keycloak-pguser
+              name: keycloakdb-pguser
               key: user
         - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: keycloak-pguser
+              name: keycloakdb-pguser
               key: password
         - name: KEYCLOAK_USER
           value: "admin"
