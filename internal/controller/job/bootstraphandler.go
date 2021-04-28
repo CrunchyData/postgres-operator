@@ -24,7 +24,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/operator"
 	backrestoperator "github.com/crunchydata/postgres-operator/internal/operator/backrest"
-	cl "github.com/crunchydata/postgres-operator/internal/operator/cluster"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
@@ -175,7 +174,7 @@ func (c *Controller) cleanupBootstrapResources(job *apiv1.Job, cluster *crv1.Pgc
 
 	// delete the "bootstrap" version of pgBackRest repo Secret
 	if err := c.Client.CoreV1().Secrets(job.GetNamespace()).Delete(ctx,
-		fmt.Sprintf(cl.BoostrapConfigPrefix, cluster.GetName(), config.LABEL_BACKREST_REPO_SECRET),
+		fmt.Sprintf(util.BootstrapConfigPrefix, cluster.GetName(), config.LABEL_BACKREST_REPO_SECRET),
 		metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
 		return err
 	}

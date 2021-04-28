@@ -69,10 +69,6 @@ const (
 
 	// pgBadgerContainerName is the name of the pgBadger container
 	pgBadgerContainerName = "pgbadger"
-
-	// BoostrapConfigPrefix is the format of the prefix used for the Secret containing the
-	// pgBackRest configuration required to bootstrap a new cluster using a pgBackRest backup
-	BoostrapConfigPrefix = "%s-bootstrap-%s"
 )
 
 // a group of constants that are used as part of the TLS support
@@ -960,7 +956,7 @@ func createBootstrapBackRestSecret(clientset kubernetes.Interface,
 
 	// Create a copy of the secret for the cluster being recreated.  This ensures a copy of the
 	// required pgBackRest Secret is always present is the namespace of the cluster being created.
-	secretCopyName := fmt.Sprintf(BoostrapConfigPrefix, cluster.GetName(),
+	secretCopyName := fmt.Sprintf(util.BootstrapConfigPrefix, cluster.GetName(),
 		config.LABEL_BACKREST_REPO_SECRET)
 	secretCopy := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
