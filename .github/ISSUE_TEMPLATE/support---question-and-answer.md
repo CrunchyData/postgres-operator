@@ -1,29 +1,12 @@
 ---
-name: Support - Question and Answer
-about: " Have a quick question, let us know."
-
+name: Support
+about: "Learn how to interact with the PGO community"
 ---
 
-** Which example are you working with? **
+If you believe you have found have found a bug, please open up [Bug Report](https://github.com/CrunchyData/postgres-operator/issues/new?template=bug_report.md)
 
-**What is the current behavior?**
+If you have a feature request, please open up a [Feature Request](https://github.com/CrunchyData/postgres-operator/issues/new?template=feature_request.md)
 
-**What is the expected behavior?**
+You can find information about general PGO [support](https://access.crunchydata.com/documentation/postgres-operator/latest/support/) at:
 
-**Other information** (e.g. detailed explanation, related issues,  etc)
-
-**Please tell us about your environment:**
-
-* Operating System:
-* Where is this running ( Local , Cloud Provider)
-* Storage being used (NFS, Hostpath, Gluster, etc):
-* Container Image Tag:
-* PostgreSQL Version:
-* Platform (Docker, Kubernetes, OpenShift):
-* Platform Version:
-
-If possible please run the following on the kubernetes or OpenShift (oc) commands and provide the result:
- kubectl describe yourPodName
- kubectl describe pvc
- kubectl get nodes
- kubectl log yourPodName
+[https://access.crunchydata.com/documentation/postgres-operator/latest/support/](https://access.crunchydata.com/documentation/postgres-operator/latest/support/)
