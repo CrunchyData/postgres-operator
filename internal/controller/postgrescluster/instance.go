@@ -213,6 +213,7 @@ func (r *Reconciler) reconcileInstanceSets(
 	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
 	clusterConfigMap *v1.ConfigMap,
+	clusterReplicationSecret *v1.Secret,
 	rootCA *pki.RootCertificateAuthority,
 	clusterPodService *v1.Service,
 	instanceServiceAccount *v1.ServiceAccount,
@@ -227,9 +228,9 @@ func (r *Reconciler) reconcileInstanceSets(
 	for i := range cluster.Spec.InstanceSets {
 		instanceSet, err := r.scaleUpInstances(
 			ctx, cluster, &cluster.Spec.InstanceSets[i],
-			clusterConfigMap, rootCA, clusterPodService,
-			instanceServiceAccount, patroniLeaderService,
-			primaryCertificate)
+			clusterConfigMap, clusterReplicationSecret,
+			rootCA, clusterPodService, instanceServiceAccount,
+			patroniLeaderService, primaryCertificate)
 		if err != nil {
 			return nil, err
 		}
@@ -347,6 +348,7 @@ func (r *Reconciler) scaleUpInstances(
 	cluster *v1beta1.PostgresCluster,
 	set *v1beta1.PostgresInstanceSetSpec,
 	clusterConfigMap *v1.ConfigMap,
+	clusterReplicationSecret *v1.Secret,
 	rootCA *pki.RootCertificateAuthority,
 	clusterPodService *v1.Service,
 	instanceServiceAccount *v1.ServiceAccount,
@@ -387,9 +389,10 @@ func (r *Reconciler) scaleUpInstances(
 	for i := range instances.Items {
 		if err == nil {
 			err = r.reconcileInstance(
-				ctx, cluster, set, clusterConfigMap, rootCA, clusterPodService,
-				instanceServiceAccount, patroniLeaderService, primaryCertificate,
-				&instances.Items[i])
+				ctx, cluster, set, clusterConfigMap, clusterReplicationSecret,
+				rootCA, clusterPodService, instanceServiceAccount,
+				patroniLeaderService, primaryCertificate, &instances.Items[i],
+			)
 		}
 	}
 	if err == nil {
@@ -408,6 +411,7 @@ func (r *Reconciler) reconcileInstance(
 	cluster *v1beta1.PostgresCluster,
 	spec *v1beta1.PostgresInstanceSetSpec,
 	clusterConfigMap *v1.ConfigMap,
+	clusterReplicationSecret *v1.Secret,
 	rootCA *pki.RootCertificateAuthority,
 	clusterPodService *v1.Service,
 	instanceServiceAccount *v1.ServiceAccount,
@@ -504,9 +508,8 @@ func (r *Reconciler) reconcileInstance(
 	}
 
 	var (
-		instanceConfigMap        *v1.ConfigMap
-		instanceCertificates     *v1.Secret
-		clusterReplicationSecret *v1.Secret
+		instanceConfigMap    *v1.ConfigMap
+		instanceCertificates *v1.Secret
 	)
 
 	if err == nil {
@@ -515,9 +518,6 @@ func (r *Reconciler) reconcileInstance(
 	if err == nil {
 		instanceCertificates, err = r.reconcileInstanceCertificates(
 			ctx, cluster, instance, rootCA)
-	}
-	if err == nil {
-		clusterReplicationSecret, err = r.reconcileReplicationSecret(ctx, cluster, rootCA)
 	}
 	if err == nil {
 		err = r.reconcilePGDATAVolume(ctx, cluster, spec, instance)

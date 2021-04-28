@@ -151,14 +151,15 @@ func (r *Reconciler) Reconcile(
 	}
 
 	var (
-		clusterConfigMap       *v1.ConfigMap
-		clusterPodService      *v1.Service
-		instanceServiceAccount *v1.ServiceAccount
-		patroniLeaderService   *v1.Service
-		primaryCertificate     *v1.SecretProjection
-		pgUser                 *v1.Secret
-		rootCA                 *pki.RootCertificateAuthority
-		err                    error
+		clusterConfigMap         *v1.ConfigMap
+		clusterReplicationSecret *v1.Secret
+		clusterPodService        *v1.Service
+		instanceServiceAccount   *v1.ServiceAccount
+		patroniLeaderService     *v1.Service
+		primaryCertificate       *v1.SecretProjection
+		pgUser                   *v1.Secret
+		rootCA                   *pki.RootCertificateAuthority
+		err                      error
 	)
 
 	// TODO(cbandy): Accumulate postgres settings.
@@ -208,6 +209,9 @@ func (r *Reconciler) Reconcile(
 		rootCA, err = r.reconcileRootCertificate(ctx, cluster)
 	}
 	if err == nil {
+		clusterReplicationSecret, err = r.reconcileReplicationSecret(ctx, cluster, rootCA)
+	}
+	if err == nil {
 		clusterPodService, err = r.reconcileClusterPodService(ctx, cluster)
 	}
 	if err == nil {
@@ -232,8 +236,8 @@ func (r *Reconciler) Reconcile(
 	instancesNames := []string{}
 	if err == nil {
 		instancesNames, err = r.reconcileInstanceSets(
-			ctx, cluster, clusterConfigMap, rootCA,
-			clusterPodService, instanceServiceAccount,
+			ctx, cluster, clusterConfigMap, clusterReplicationSecret,
+			rootCA, clusterPodService, instanceServiceAccount,
 			patroniLeaderService, primaryCertificate)
 	}
 
