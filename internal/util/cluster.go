@@ -97,6 +97,10 @@ const (
 	backRestRepoSecretKeySSHHostPrivateKey = "ssh_host_ed25519_key"
 )
 
+// BootstrapConfigPrefix is the format of the prefix used for the Secret containing the
+// pgBackRest configuration required to bootstrap a new cluster using a pgBackRest backup
+const BootstrapConfigPrefix = "%s-bootstrap-%s"
+
 const (
 	// SQLValidUntilAlways uses a special PostgreSQL value to ensure a password
 	// is always valid

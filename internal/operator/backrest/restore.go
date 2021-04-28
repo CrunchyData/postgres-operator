@@ -265,6 +265,14 @@ func PrepareClusterForRestore(clientset kubeapi.Interface, cluster *crv1.Pgclust
 	log.Debugf("restore workflow: set 'init' flag to 'true' for cluster %s",
 		clusterName)
 
+	// delete the "bootstrap" pgBackRest repo Secret if it exists, e.g. from a previous restore
+	// attempt
+	if err := clientset.CoreV1().Secrets(namespace).Delete(ctx,
+		fmt.Sprintf(util.BootstrapConfigPrefix, cluster.GetName(), config.LABEL_BACKREST_REPO_SECRET),
+		metav1.DeleteOptions{}); err != nil && !kerrors.IsNotFound(err) {
+		return nil, err
+	}
+
 	return patchedCluster, nil
 }
 
