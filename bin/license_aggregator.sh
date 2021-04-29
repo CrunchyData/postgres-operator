@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # Inputs / outputs
-SCAN_DIR=${GOPATH}/pkg/mod
+SCAN_DIR=${GOPATH:-~/go}/pkg/mod
 OUT_DIR=licenses
 
 # Fail on error
