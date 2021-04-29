@@ -531,7 +531,7 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 		clientset, cluster, namespace, replica.Spec.Name, replica.Spec.ReplicaStorage)
 	if err != nil {
 		log.Error(err)
-		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
+		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster, replica)
 		return
 	}
 
@@ -549,13 +549,13 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 	// create the replica service if it doesnt exist
 	if err = scaleReplicaCreateMissingService(clientset, replica, cluster, namespace); err != nil {
 		log.Error(err)
-		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
+		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster, replica)
 		return
 	}
 
 	// instantiate the replica
 	if err = scaleReplicaCreateDeployment(clientset, replica, cluster, namespace, dataVolume, walVolume, tablespaceVolumes); err != nil {
-		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster)
+		publishScaleError(namespace, replica.ObjectMeta.Labels[config.LABEL_PGOUSER], cluster, replica)
 		return
 	}
 
@@ -582,8 +582,8 @@ func ScaleBase(clientset kubeapi.Interface, replica *crv1.Pgreplica, namespace s
 			Timestamp: time.Now(),
 			EventType: events.EventScaleCluster,
 		},
-		Clustername: cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
-		Replicaname: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
+		Clustername: cluster.Name,
+		Replicaname: replica.Name,
 	}
 
 	if err = events.Publish(f); err != nil {
