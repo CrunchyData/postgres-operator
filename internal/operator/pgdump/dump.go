@@ -54,6 +54,7 @@ type pgDumpJobTemplateFields struct {
 	PgDumpAll        string
 	PgDumpPVC        string
 	Tolerations      string
+	CustomLabels     string
 }
 
 // Dump ...
@@ -61,6 +62,21 @@ func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 	ctx := context.TODO()
 
 	var err error
+
+	// make sure the provided clustername is not empty
+	clusterName := task.Spec.Parameters[config.LABEL_PG_CLUSTER]
+	if clusterName == "" {
+		log.Error("unable to create pgdump job, clustername is empty.")
+		return
+	}
+
+	// get the pgcluster CRD for cases where a CCPImagePrefix is specified
+	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
+	if err != nil {
+		log.Error(err)
+		return
+	}
+
 	// create the Job to run the pgdump command
 
 	cmd := task.Spec.Parameters[config.LABEL_PGDUMP_COMMAND]
@@ -76,26 +92,12 @@ func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 		}
 
 		pvcName, err = pvc.CreatePVC(clientset, &task.Spec.StorageSpec, pvcName,
-			task.Spec.Parameters[config.LABEL_PGDUMP_HOST], namespace)
+			task.Spec.Parameters[config.LABEL_PGDUMP_HOST], namespace, util.GetCustomLabels(cluster))
 		if err != nil {
 			log.Error(err.Error())
 		} else {
 			log.Info("created backup PVC =" + pvcName + " in namespace " + namespace)
 		}
-	}
-
-	// make sure the provided clustername is not empty
-	clusterName := task.Spec.Parameters[config.LABEL_PG_CLUSTER]
-	if clusterName == "" {
-		log.Error("unable to create pgdump job, clustername is empty.")
-		return
-	}
-
-	// get the pgcluster CRD for cases where a CCPImagePrefix is specified
-	cluster, err := clientset.CrunchydataV1().Pgclusters(namespace).Get(ctx, clusterName, metav1.GetOptions{})
-	if err != nil {
-		log.Error(err)
-		return
 	}
 
 	// this task name should match
@@ -121,6 +123,7 @@ func Dump(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) {
 		PgDumpAll:        task.Spec.Parameters[config.LABEL_PGDUMP_ALL],
 		PgDumpPVC:        pvcName,
 		Tolerations:      util.GetTolerations(cluster.Spec.Tolerations),
+		CustomLabels:     operator.GetLabelsFromMap(util.GetCustomLabels(cluster), false),
 	}
 
 	var doc2 bytes.Buffer

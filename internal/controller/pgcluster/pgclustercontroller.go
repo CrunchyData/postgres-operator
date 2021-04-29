@@ -218,8 +218,7 @@ func (c *Controller) onUpdate(oldObj, newObj interface{}) {
 		// take the inverse, as this func checks for autofail being enabled
 		// if we can't toggle autofailover, log the error but continue on
 		if err := util.ToggleAutoFailover(c.Client, !newcluster.Spec.DisableAutofail,
-			newcluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE],
-			newcluster.ObjectMeta.Namespace); err != nil {
+			newcluster.Name, newcluster.Namespace); err != nil {
 			log.Error(err)
 		}
 	}
@@ -757,7 +756,7 @@ func updateTablespaces(c *Controller, oldCluster *crv1.Pgcluster, newCluster *cr
 			// potentially leaves things in an inconsistent state, but at this point
 			// only PVC objects have been created
 			if _, err := pvc.CreateIfNotExists(c.Client, storageSpec, tablespacePVCName,
-				newCluster.Name, newCluster.Namespace); err != nil {
+				newCluster.Name, newCluster.Namespace, util.GetCustomLabels(newCluster)); err != nil {
 				return err
 			}
 		}

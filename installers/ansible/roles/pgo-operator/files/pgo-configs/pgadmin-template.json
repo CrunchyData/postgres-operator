@@ -4,6 +4,9 @@
   "metadata": {
     "name": "{{.Name}}",
     "labels": {
+      {{ if .CustomLabels }}
+      {{ .CustomLabels }}
+      {{ end }}
       "name": "{{.Name}}",
       "crunchy-pgadmin": "true",
       "pg-cluster": "{{.ClusterName}}",
@@ -25,6 +28,9 @@
     "template": {
       "metadata": {
         "labels": {
+          {{ if .CustomLabels }}
+          {{ .CustomLabels }}
+          {{ end }}
           "name": "{{.Name}}",
           "crunchy-pgadmin": "true",
           "pg-cluster": "{{.ClusterName}}",

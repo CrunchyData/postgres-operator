@@ -4,6 +4,9 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
+            {{ if .CustomLabels }}
+            {{ .CustomLabels }}
+            {{ end }}
             {{if .BootstrapCluster}}
             "pgha-bootstrap": "{{.BootstrapCluster}}",
             "pgha-bootstrap-namespace": "{{.BootstrapNamespace}}",
@@ -33,6 +36,9 @@
                 "annotations": {{ .PodAnnotations }},
                 {{ end }}
                 "labels": {
+                    {{ if .CustomLabels }}
+                    {{ .CustomLabels }}
+                    {{ end }}
                     {{if .BootstrapCluster}}
                     "pgha-bootstrap": "{{.BootstrapCluster}}",
                     "pgha-bootstrap-namespace": "{{.BootstrapNamespace}}",

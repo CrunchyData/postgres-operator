@@ -54,6 +54,7 @@ type ServiceTemplateFields struct {
 	Name         string
 	ServiceName  string
 	ClusterName  string
+	CustomLabels string
 	Port         string
 	PGBadgerPort string
 	ExporterPort string
@@ -973,6 +974,10 @@ func createBootstrapBackRestSecret(clientset kubernetes.Interface,
 		Data: restoreFromSecret.Data,
 	}
 
+	for k, v := range util.GetCustomLabels(cluster) {
+		secretCopy.ObjectMeta.Labels[k] = v
+	}
+
 	return clientset.CoreV1().Secrets(cluster.GetNamespace()).Create(ctx, secretCopy,
 		metav1.CreateOptions{})
 }
@@ -1009,7 +1014,7 @@ func createMissingUserSecret(clientset kubernetes.Interface, cluster *crv1.Pgclu
 
 	// great, now we can create the secret! if we can't, return an error
 	return util.CreateSecret(clientset, cluster.Spec.Name, secretName,
-		username, password, cluster.Namespace)
+		username, password, cluster.Namespace, util.GetCustomLabels(cluster))
 }
 
 // createMissingUserSecrets checks to see if there are secrets for the

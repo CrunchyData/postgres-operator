@@ -65,11 +65,12 @@ func addClusterCreateMissingService(clientset kubernetes.Interface, cluster *crv
 
 	// create the primary service
 	serviceFields := ServiceTemplateFields{
-		Name:        cluster.Spec.Name,
-		ServiceName: cluster.Spec.Name,
-		ClusterName: cluster.Spec.Name,
-		Port:        cluster.Spec.Port,
-		ServiceType: serviceType,
+		Name:         cluster.Spec.Name,
+		ServiceName:  cluster.Spec.Name,
+		ClusterName:  cluster.Spec.Name,
+		Port:         cluster.Spec.Port,
+		ServiceType:  serviceType,
+		CustomLabels: operator.GetLabelsFromMap(util.GetCustomLabels(cluster), false),
 	}
 
 	// set the pgBadger port if pgBadger is enabled
@@ -255,32 +256,38 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 	cl *crv1.Pgcluster, dataVolume operator.StorageResult,
 	tablespaceVolumes map[string]operator.StorageResult) operator.DeploymentTemplateFields {
 	namespace := cl.GetNamespace()
+	labels := map[string]string{}
+
+	// copy any of the custom labels that are in user labels.
+	for k, v := range cl.Spec.UserLabels {
+		labels[k] = v
+	}
 
 	log.Infof("creating Pgcluster %s in namespace %s", cl.Name, namespace)
 
-	cl.Spec.UserLabels["name"] = cl.Spec.Name
-	cl.Spec.UserLabels[config.LABEL_PG_CLUSTER] = cl.Spec.ClusterName
+	labels["name"] = cl.Spec.Name
+	labels[config.LABEL_PG_CLUSTER] = cl.Spec.ClusterName
 
 	// if the current deployment label value does not match current primary name
 	// update the label so that the new deployment will match the existing PVC
 	// as determined previously
 	// Note that the use of this value brings the initial deployment creation in line with
 	// the paradigm used during cluster restoration, as in operator/backrest/restore.go
-	if cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY] != cl.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] {
-		cl.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY]
+	if cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY] != labels[config.LABEL_DEPLOYMENT_NAME] {
+		labels[config.LABEL_DEPLOYMENT_NAME] = cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY]
 	}
 
-	cl.Spec.UserLabels[config.LABEL_PGOUSER] = cl.ObjectMeta.Labels[config.LABEL_PGOUSER]
+	labels[config.LABEL_PGOUSER] = cl.ObjectMeta.Labels[config.LABEL_PGOUSER]
 
 	// Set the Patroni scope to the name of the primary deployment.  Replicas will get scope using the
 	// 'crunchy-pgha-scope' label on the pgcluster
-	cl.Spec.UserLabels[config.LABEL_PGHA_SCOPE] = cl.Spec.Name
+	labels[config.LABEL_PGHA_SCOPE] = cl.Name
 
 	// If applicable, set the exporter labels, used for the scrapers, and create
 	// the secret. We don't need to take any additional actions, as the cluster
 	// creation process will handle those. Magic!
 	if cl.Spec.Exporter {
-		cl.Spec.UserLabels[config.LABEL_EXPORTER] = config.LABEL_TRUE
+		labels[config.LABEL_EXPORTER] = config.LABEL_TRUE
 
 		log.Debugf("creating exporter secret for cluster %s", cl.Spec.Name)
 
@@ -310,9 +317,9 @@ func getClusterDeploymentFields(clientset kubernetes.Interface,
 		CCPImage:          cl.Spec.CCPImage,
 		CCPImageTag:       cl.Spec.CCPImageTag,
 		PVCName:           dataVolume.InlineVolumeSource(),
-		DeploymentLabels:  operator.GetLabelsFromMap(cl.Spec.UserLabels),
+		DeploymentLabels:  operator.GetLabelsFromMap(labels, true),
 		PodAnnotations:    operator.GetAnnotations(cl, crv1.ClusterAnnotationPostgres),
-		PodLabels:         operator.GetLabelsFromMap(cl.Spec.UserLabels),
+		PodLabels:         operator.GetLabelsFromMap(labels, true),
 		DataPathOverride:  cl.Annotations[config.ANNOTATION_CURRENT_PRIMARY],
 		Database:          cl.Spec.Database,
 		SecurityContext:   operator.GetPodSecurityContext(supplementalGroups),
@@ -374,11 +381,12 @@ func scaleReplicaCreateMissingService(clientset kubernetes.Interface, replica *c
 
 	serviceName := fmt.Sprintf("%s-replica", replica.Spec.ClusterName)
 	serviceFields := ServiceTemplateFields{
-		Name:        serviceName,
-		ServiceName: serviceName,
-		ClusterName: replica.Spec.ClusterName,
-		Port:        cluster.Spec.Port,
-		ServiceType: serviceType,
+		Name:         serviceName,
+		ServiceName:  serviceName,
+		ClusterName:  replica.Spec.ClusterName,
+		Port:         cluster.Spec.Port,
+		ServiceType:  serviceType,
+		CustomLabels: operator.GetLabelsFromMap(util.GetCustomLabels(cluster), false),
 	}
 
 	// only add references to the exporter / pgBadger ports
@@ -407,23 +415,29 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 	var replicaDoc bytes.Buffer
 
 	serviceName := replica.Spec.ClusterName + "-replica"
+	labels := map[string]string{}
 
-	cluster.Spec.UserLabels["name"] = serviceName
-	cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER] = replica.Spec.ClusterName
+	// copy any of the custom labels that are in user labels.
+	for k, v := range cluster.Spec.UserLabels {
+		labels[k] = v
+	}
+
+	labels["name"] = serviceName
+	labels[config.LABEL_PG_CLUSTER] = replica.Spec.ClusterName
 
 	image := cluster.Spec.CCPImage
 
 	// check for --ccp-image-tag at the command line
 	imageTag := cluster.Spec.CCPImageTag
-	if replica.Spec.UserLabels[config.LABEL_CCP_IMAGE_TAG_KEY] != "" {
-		imageTag = replica.Spec.UserLabels[config.LABEL_CCP_IMAGE_TAG_KEY]
+	if labels[config.LABEL_CCP_IMAGE_TAG_KEY] != "" {
+		imageTag = labels[config.LABEL_CCP_IMAGE_TAG_KEY]
 	}
 
-	cluster.Spec.UserLabels[config.LABEL_DEPLOYMENT_NAME] = replica.Spec.Name
+	labels[config.LABEL_DEPLOYMENT_NAME] = replica.Spec.Name
 
 	// Set the exporter labels, if applicable
 	if cluster.Spec.Exporter {
-		cluster.Spec.UserLabels[config.LABEL_EXPORTER] = config.LABEL_TRUE
+		labels[config.LABEL_EXPORTER] = config.LABEL_TRUE
 	}
 
 	// set up a map of the names of the tablespaces as well as the storage classes
@@ -456,9 +470,9 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 		DataPathOverride:   replica.Spec.Name,
 		Replicas:           "1",
 		ConfVolume:         operator.GetConfVolume(clientset, cluster, namespace),
-		DeploymentLabels:   operator.GetLabelsFromMap(cluster.Spec.UserLabels),
+		DeploymentLabels:   operator.GetLabelsFromMap(labels, true),
 		PodAnnotations:     operator.GetAnnotations(cluster, crv1.ClusterAnnotationPostgres),
-		PodLabels:          operator.GetLabelsFromMap(cluster.Spec.UserLabels),
+		PodLabels:          operator.GetLabelsFromMap(labels, true),
 		SecurityContext:    operator.GetPodSecurityContext(supplementalGroups),
 		RootSecretName:     crv1.UserSecretName(cluster, crv1.PGUserSuperuser),
 		PrimarySecretName:  crv1.UserSecretName(cluster, crv1.PGUserReplication),
@@ -529,8 +543,8 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 
 	// set the replica scope to the same scope as the primary, i.e. the scope defined using label
 	// 'crunchy-pgha-scope'
-	replicaDeployment.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_PGHA_SCOPE]
-	replicaDeployment.Spec.Template.Labels[config.LABEL_PGHA_SCOPE] = cluster.Labels[config.LABEL_PGHA_SCOPE]
+	replicaDeployment.Labels[config.LABEL_PGHA_SCOPE] = cluster.Name
+	replicaDeployment.Spec.Template.Labels[config.LABEL_PGHA_SCOPE] = cluster.Name
 
 	_, err = clientset.AppsV1().Deployments(namespace).
 		Create(ctx, &replicaDeployment, metav1.CreateOptions{})
@@ -631,7 +645,7 @@ func ShutdownCluster(clientset kubeapi.Interface, cluster crv1.Pgcluster) error 
 	}
 
 	// disable autofailover to prevent failovers while shutting down deployments
-	if err := util.ToggleAutoFailover(clientset, false, cluster.Labels[config.LABEL_PGHA_SCOPE],
+	if err := util.ToggleAutoFailover(clientset, false, cluster.Name,
 		cluster.Namespace); err != nil {
 		return fmt.Errorf("Cluster Operator: Unable to toggle autofailover when shutting "+
 			"down cluster %s", cluster.Name)
@@ -660,7 +674,7 @@ func ShutdownCluster(clientset kubeapi.Interface, cluster crv1.Pgcluster) error 
 	}
 
 	if err := clientset.CoreV1().ConfigMaps(cluster.Namespace).
-		Delete(ctx, fmt.Sprintf("%s-leader", cluster.Labels[config.LABEL_PGHA_SCOPE]),
+		Delete(ctx, fmt.Sprintf("%s-leader", cluster.Name),
 			metav1.DeleteOptions{}); err != nil {
 		return err
 	}
@@ -677,7 +691,7 @@ func StartupCluster(clientset kubernetes.Interface, cluster crv1.Pgcluster) erro
 	log.Debugf("Cluster Operator: starting cluster %s", cluster.Name)
 
 	// ensure autofailover is enabled to ensure proper startup of the cluster
-	if err := util.ToggleAutoFailover(clientset, true, cluster.Labels[config.LABEL_PGHA_SCOPE],
+	if err := util.ToggleAutoFailover(clientset, true, cluster.Name,
 		cluster.Namespace); err != nil {
 		return fmt.Errorf("Cluster Operator: Unable to toggle autofailover when starting "+
 			"cluster %s", cluster.Name)

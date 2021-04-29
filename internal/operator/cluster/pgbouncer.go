@@ -64,6 +64,7 @@ type pgBouncerTemplateFields struct {
 	ClusterName               string
 	CCPImagePrefix            string
 	CCPImageTag               string
+	CustomLabels              string
 	DisableFSGroup            bool
 	Port                      string
 	PrimaryServiceName        string
@@ -542,6 +543,10 @@ func createPgbouncerConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcl
 		},
 	}
 
+	for k, v := range util.GetCustomLabels(cluster) {
+		cm.ObjectMeta.Labels[k] = v
+	}
+
 	if _, err := clientset.CoreV1().ConfigMaps(cluster.Namespace).
 		Create(ctx, &cm, metav1.CreateOptions{}); err != nil {
 		log.Error(err)
@@ -567,6 +572,7 @@ func createPgBouncerDeployment(clientset kubernetes.Interface, cluster *crv1.Pgc
 		CCPImagePrefix: util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
 		CCPImageTag: util.GetValueOrDefault(util.GetStandardImageTag(cluster.Spec.CCPImage, cluster.Spec.CCPImageTag),
 			operator.Pgo.Cluster.CCPImageTag),
+		CustomLabels:       operator.GetLabelsFromMap(util.GetCustomLabels(cluster), false),
 		DisableFSGroup:     operator.Pgo.DisableFSGroup(),
 		Port:               cluster.Spec.Port,
 		PGBouncerConfigMap: util.GeneratePgBouncerConfigMapName(cluster.Name),
@@ -655,6 +661,10 @@ func createPgbouncerSecret(clientset kubernetes.Interface, cluster *crv1.Pgclust
 		},
 	}
 
+	for k, v := range util.GetCustomLabels(cluster) {
+		secret.ObjectMeta.Labels[k] = v
+	}
+
 	if _, err := clientset.CoreV1().Secrets(cluster.Namespace).
 		Create(ctx, &secret, metav1.CreateOptions{}); err != nil {
 		log.Error(err)
@@ -677,8 +687,9 @@ func createPgBouncerService(clientset kubernetes.Interface, cluster *crv1.Pgclus
 		ClusterName: cluster.Name,
 		// TODO: I think "port" needs to be evaluated, but I think for now using
 		// the standard PostgreSQL port works
-		Port:        operator.Pgo.Cluster.Port,
-		ServiceType: cluster.Spec.ServiceType,
+		Port:         operator.Pgo.Cluster.Port,
+		ServiceType:  cluster.Spec.ServiceType,
+		CustomLabels: operator.GetLabelsFromMap(util.GetCustomLabels(cluster), false),
 	}
 
 	// override the service type if it is set specifically for pgBouncer

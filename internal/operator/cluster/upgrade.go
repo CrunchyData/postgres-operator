@@ -961,7 +961,7 @@ func updateClusterConfig(clientset kubeapi.Interface, pgcluster *crv1.Pgcluster,
 	}
 
 	// sync the changes to the configmap to the DCS
-	return pgoconfig.NewDCS(patchedClusterConfig, clientset, pgcluster.GetObjectMeta().GetLabels()[config.LABEL_PGHA_SCOPE]).Sync()
+	return pgoconfig.NewDCS(patchedClusterConfig, clientset, pgcluster.Name).Sync()
 }
 
 // updatePGBackRestSSHDConfig is responsible for upgrading the sshd_config file as needed across

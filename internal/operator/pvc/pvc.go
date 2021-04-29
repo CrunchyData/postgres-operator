@@ -25,6 +25,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/operator"
+	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -46,6 +47,7 @@ type TemplateFields struct {
 	Size         string
 	StorageClass string
 	MatchLabels  string
+	CustomLabels string
 }
 
 // CreateMissingPostgreSQLVolumes converts the storage specifications of cluster
@@ -60,11 +62,13 @@ func CreateMissingPostgreSQLVolumes(clientset kubernetes.Interface,
 	err error,
 ) {
 	dataVolume, err = CreateIfNotExists(clientset,
-		dataStorageSpec, pvcNamePrefix, cluster.Spec.Name, namespace)
+		dataStorageSpec, pvcNamePrefix, cluster.Spec.Name, namespace,
+		util.GetCustomLabels(cluster))
 
 	if err == nil {
 		walVolume, err = CreateIfNotExists(clientset,
-			cluster.Spec.WALStorage, pvcNamePrefix+"-wal", cluster.Spec.Name, namespace)
+			cluster.Spec.WALStorage, pvcNamePrefix+"-wal", cluster.Spec.Name, namespace,
+			util.GetCustomLabels(cluster))
 	}
 
 	tablespaceVolumes = make(map[string]operator.StorageResult, len(cluster.Spec.TablespaceMounts))
@@ -72,7 +76,8 @@ func CreateMissingPostgreSQLVolumes(clientset kubernetes.Interface,
 		if err == nil {
 			tablespacePVCName := operator.GetTablespacePVCName(pvcNamePrefix, tablespaceName)
 			tablespaceVolumes[tablespaceName], err = CreateIfNotExists(clientset,
-				storageSpec, tablespacePVCName, cluster.Spec.Name, namespace)
+				storageSpec, tablespacePVCName, cluster.Spec.Name, namespace,
+				util.GetCustomLabels(cluster))
 		}
 	}
 
@@ -81,7 +86,7 @@ func CreateMissingPostgreSQLVolumes(clientset kubernetes.Interface,
 
 // CreateIfNotExists converts a storage specification into a StorageResult. If
 // spec calls for a PVC to be created and pvcName does not exist, it will be created.
-func CreateIfNotExists(clientset kubernetes.Interface, spec crv1.PgStorageSpec, pvcName, clusterName, namespace string) (operator.StorageResult, error) {
+func CreateIfNotExists(clientset kubernetes.Interface, spec crv1.PgStorageSpec, pvcName, clusterName, namespace string, customLabels map[string]string) (operator.StorageResult, error) {
 	result := operator.StorageResult{
 		SupplementalGroups: spec.GetSupplementalGroups(),
 	}
@@ -95,7 +100,7 @@ func CreateIfNotExists(clientset kubernetes.Interface, spec crv1.PgStorageSpec, 
 
 	case "create", "dynamic":
 		result.PersistentVolumeClaimName = pvcName
-		err := Create(clientset, pvcName, clusterName, &spec, namespace)
+		err := Create(clientset, pvcName, clusterName, &spec, namespace, customLabels)
 		if err != nil && !kerrors.IsAlreadyExists(err) {
 			log.Errorf("error in pvc create: %v", err)
 			return result, err
@@ -106,7 +111,7 @@ func CreateIfNotExists(clientset kubernetes.Interface, spec crv1.PgStorageSpec, 
 }
 
 // CreatePVC create a pvc
-func CreatePVC(clientset kubernetes.Interface, storageSpec *crv1.PgStorageSpec, pvcName, clusterName, namespace string) (string, error) {
+func CreatePVC(clientset kubernetes.Interface, storageSpec *crv1.PgStorageSpec, pvcName, clusterName, namespace string, customLabels map[string]string) (string, error) {
 	var err error
 
 	switch storageSpec.StorageType {
@@ -120,7 +125,7 @@ func CreatePVC(clientset kubernetes.Interface, storageSpec *crv1.PgStorageSpec, 
 	case "create", "dynamic":
 		log.Debug("StorageType is create")
 		log.Debugf("pvcname=%s storagespec=%v", pvcName, storageSpec)
-		err = Create(clientset, pvcName, clusterName, storageSpec, namespace)
+		err = Create(clientset, pvcName, clusterName, storageSpec, namespace, customLabels)
 		if err != nil {
 			log.Error("error in pvc create " + err.Error())
 			return pvcName, err
@@ -132,7 +137,7 @@ func CreatePVC(clientset kubernetes.Interface, storageSpec *crv1.PgStorageSpec, 
 }
 
 // Create a pvc
-func Create(clientset kubernetes.Interface, name, clusterName string, storageSpec *crv1.PgStorageSpec, namespace string) error {
+func Create(clientset kubernetes.Interface, name, clusterName string, storageSpec *crv1.PgStorageSpec, namespace string, customLabels map[string]string) error {
 	ctx := context.TODO()
 
 	log.Debug("in createPVC")
@@ -146,6 +151,7 @@ func Create(clientset kubernetes.Interface, name, clusterName string, storageSpe
 		ClusterName:  clusterName,
 		Size:         storageSpec.Size,
 		MatchLabels:  storageSpec.MatchLabels,
+		CustomLabels: operator.GetLabelsFromMap(customLabels, false),
 	}
 
 	if storageSpec.StorageType == "dynamic" {

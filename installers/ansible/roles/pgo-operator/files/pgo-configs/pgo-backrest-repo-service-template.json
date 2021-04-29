@@ -4,6 +4,9 @@
         "metadata": {
             "name": "{{.Name}}",
             "labels": {
+                {{ if .CustomLabels }}
+                {{ .CustomLabels }}
+                {{ end }}
                 "vendor": "crunchydata",
                 "name": "{{.Name}}",
                 "pgo-backrest-repo": "true",

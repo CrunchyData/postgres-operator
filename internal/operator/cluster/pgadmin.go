@@ -53,6 +53,7 @@ type pgAdminTemplateFields struct {
 	ClusterName    string
 	CCPImagePrefix string
 	CCPImageTag    string
+	CustomLabels   string
 	DisableFSGroup bool
 	Port           string
 	ServicePort    string
@@ -103,7 +104,7 @@ func AddPgAdmin(
 	pvcName := fmt.Sprintf(pgAdminDeploymentFormat, cluster.Name)
 
 	// create the pgAdmin storage volume
-	if _, err := pvc.CreateIfNotExists(clientset, *storageClass, pvcName, cluster.Name, ns); err != nil {
+	if _, err := pvc.CreateIfNotExists(clientset, *storageClass, pvcName, cluster.Name, ns, util.GetCustomLabels(cluster)); err != nil {
 		log.Errorf("Error creating PVC: %s", err.Error())
 		return err
 	} else {
@@ -410,6 +411,7 @@ func createPgAdminDeployment(clientset kubernetes.Interface, cluster *crv1.Pgclu
 		CCPImagePrefix: util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, operator.Pgo.Cluster.CCPImagePrefix),
 		CCPImageTag: util.GetValueOrDefault(util.GetStandardImageTag(cluster.Spec.CCPImage, cluster.Spec.CCPImageTag),
 			operator.Pgo.Cluster.CCPImageTag),
+		CustomLabels:   operator.GetLabelsFromMap(util.GetCustomLabels(cluster), false),
 		DisableFSGroup: operator.Pgo.DisableFSGroup(),
 		Port:           defPgAdminPort,
 		InitUser:       defSetupUsername,
@@ -457,9 +459,10 @@ func createPgAdminService(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 
 	// get the fields that will be substituted in the pgAdmin template
 	fields := pgAdminTemplateFields{
-		Name:        pgAdminSvcName,
-		ClusterName: cluster.Name,
-		Port:        defPgAdminPort,
+		Name:         pgAdminSvcName,
+		ClusterName:  cluster.Name,
+		Port:         defPgAdminPort,
+		CustomLabels: operator.GetLabelsFromMap(util.GetCustomLabels(cluster), false),
 	}
 
 	// For debugging purposes, put the template substitution in stdout

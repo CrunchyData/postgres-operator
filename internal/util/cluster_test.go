@@ -20,6 +20,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/crunchydata/postgres-operator/internal/config"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 
 	v1 "k8s.io/api/core/v1"
@@ -114,6 +115,62 @@ func TestGenerateNodeAffinity(t *testing.T) {
 
 		if !reflect.DeepEqual(rule.Values, values) {
 			t.Fatalf("values expected %v actual %v", values, rule.Values)
+		}
+	})
+}
+
+func TestGetCustomLabels(t *testing.T) {
+	cluster := &crv1.Pgcluster{}
+
+	t.Run("labels empty", func(t *testing.T) {
+		if len(GetCustomLabels(cluster)) != 0 {
+			t.Fatal("expected no labels to be returned")
+		}
+
+		cluster.Spec.UserLabels = map[string]string{}
+
+		if len(GetCustomLabels(cluster)) != 0 {
+			t.Fatal("expected no labels to be returned")
+		}
+	})
+
+	t.Run("excluded labels are excluded", func(t *testing.T) {
+		cluster.Spec.UserLabels = map[string]string{
+			config.LABEL_PGO_VERSION: "0.0.1",
+			config.LABEL_WORKFLOW_ID: "abcd",
+			"custom":                 "label",
+			"hippo":                  "cool",
+		}
+		expectedLen := len(cluster.Spec.UserLabels) - 2
+
+		labels := GetCustomLabels(cluster)
+		if len(labels) != expectedLen {
+			t.Fatal("expected only two labels to be returned")
+		}
+
+		for k := range labels {
+			switch k {
+			default:
+				continue
+			case config.LABEL_PGO_VERSION, config.LABEL_WORKFLOW_ID:
+				t.Fatalf("expected label %q to not be present", k)
+			}
+		}
+	})
+
+	t.Run("does not modify original map", func(t *testing.T) {
+		cluster.Spec.UserLabels = map[string]string{
+			config.LABEL_PGO_VERSION: "0.0.1",
+			config.LABEL_WORKFLOW_ID: "abcd",
+			"custom":                 "label",
+			"hippo":                  "cool",
+		}
+		origLen := len(cluster.Spec.UserLabels)
+
+		_ = GetCustomLabels(cluster)
+
+		if len(cluster.Spec.UserLabels) != origLen {
+			t.Fatal("expected custom labels to not be modified")
 		}
 	})
 }
