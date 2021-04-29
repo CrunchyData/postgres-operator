@@ -133,37 +133,17 @@ func (r *Reconciler) deleteInstances(
 	return &result, err
 }
 
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=delete;list
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=delete;list
+// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=delete;list
+// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=delete;list
+
 // deleteInstance will delete all resources related to a single instance
 func (r *Reconciler) deleteInstance(
 	ctx context.Context,
 	cluster *v1beta1.PostgresCluster,
 	instanceName string,
 ) error {
-	log := logging.FromContext(ctx)
-	instanceResources, err := r.getInstanceResources(cluster, instanceName)
-	if err != nil {
-		log.Error(err, "unable to get instance resources for PostgresCluster")
-		return err
-	}
-
-	for i := range instanceResources {
-		err = errors.WithStack(r.deleteControlled(ctx, cluster, &instanceResources[i]))
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// getInstanceResources returns list of unstructured resources associated with
-// an instance
-func (r *Reconciler) getInstanceResources(
-	cluster *v1beta1.PostgresCluster,
-	instanceName string,
-) ([]unstructured.Unstructured, error) {
-	owned := []unstructured.Unstructured{}
-
 	gvks := []schema.GroupVersionKind{{
 		Group:   v1.SchemeGroupVersion.Group,
 		Version: v1.SchemeGroupVersion.Version,
@@ -183,28 +163,27 @@ func (r *Reconciler) getInstanceResources(
 	}}
 
 	selector, err := naming.AsSelector(naming.ClusterInstance(cluster.Name, instanceName))
-	if err == nil {
-		for _, gvk := range gvks {
+	for _, gvk := range gvks {
+		if err == nil {
 			uList := &unstructured.UnstructuredList{}
 			uList.SetGroupVersionKind(gvk)
-			if err := r.Client.List(context.Background(), uList,
-				client.InNamespace(cluster.GetNamespace()),
-				client.MatchingLabelsSelector{Selector: selector}); err != nil {
-				return nil, errors.WithStack(err)
-			}
-			if len(uList.Items) == 0 {
-				continue
-			}
 
-			for i, u := range uList.Items {
-				if metav1.IsControlledBy(&uList.Items[i], cluster) {
-					owned = append(owned, u)
+			err = errors.WithStack(
+				r.Client.List(ctx, uList,
+					client.InNamespace(cluster.GetNamespace()),
+					client.MatchingLabelsSelector{Selector: selector},
+				))
+
+			for i := range uList.Items {
+				if err == nil {
+					err = errors.WithStack(client.IgnoreNotFound(
+						r.deleteControlled(ctx, cluster, &uList.Items[i])))
 				}
 			}
 		}
 	}
 
-	return owned, nil
+	return err
 }
 
 // reconcileInstanceSets reconciles instance sets in the environment to match
