@@ -408,8 +408,6 @@ func scaleReplicaCreateDeployment(clientset kubernetes.Interface,
 
 	serviceName := replica.Spec.ClusterName + "-replica"
 
-	//	replicaLabels := operator.GetPrimaryLabels(serviceName, replica.Spec.ClusterName, replicaFlag, cluster.Spec.UserLabels)
-	cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME] = replica.Spec.Name
 	cluster.Spec.UserLabels["name"] = serviceName
 	cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER] = replica.Spec.ClusterName
 
@@ -556,7 +554,7 @@ func DeleteReplica(clientset kubernetes.Interface, cl *crv1.Pgreplica, namespace
 	return err
 }
 
-func publishScaleError(namespace string, username string, cluster *crv1.Pgcluster) {
+func publishScaleError(namespace string, username string, cluster *crv1.Pgcluster, replica *crv1.Pgreplica) {
 	topics := make([]string, 1)
 	topics[0] = events.EventTopicCluster
 
@@ -568,8 +566,8 @@ func publishScaleError(namespace string, username string, cluster *crv1.Pgcluste
 			Timestamp: time.Now(),
 			EventType: events.EventScaleCluster,
 		},
-		Clustername: cluster.Spec.UserLabels[config.LABEL_REPLICA_NAME],
-		Replicaname: cluster.Spec.UserLabels[config.LABEL_PG_CLUSTER],
+		Clustername: cluster.Name,
+		Replicaname: replica.Name,
 	}
 
 	err := events.Publish(f)
