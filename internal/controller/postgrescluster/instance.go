@@ -17,11 +17,14 @@ package postgrescluster
 
 import (
 	"context"
+	"sort"
 	"time"
 
 	"github.com/pkg/errors"
+	attributes "go.opentelemetry.io/otel/label"
 	"go.opentelemetry.io/otel/trace"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -39,6 +42,237 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+// Instance represents a single PostgreSQL instance of a PostgresCluster.
+type Instance struct {
+	Name   string
+	Pods   []*corev1.Pod
+	Runner *appsv1.StatefulSet
+	Spec   *v1beta1.PostgresInstanceSetSpec
+}
+
+// IsAvailable is used to choose which instances to redeploy during rolling
+// update. It combines information from metadata and status similar to the
+// notion of "available" in corev1.Deployment and "healthy" in appsv1.StatefulSet.
+func (i Instance) IsAvailable() (available bool, known bool) {
+	terminating, knownTerminating := i.IsTerminating()
+	ready, knownReady := i.IsReady()
+
+	return ready && !terminating, knownReady && knownTerminating
+}
+
+// IsPrimary returns whether or not this instance is the Patroni leader.
+func (i Instance) IsPrimary() (primary bool, known bool) {
+	if len(i.Pods) != 1 {
+		return false, false
+	}
+
+	return i.Pods[0].Labels[naming.LabelRole] == naming.RolePatroniLeader, true
+}
+
+// IsReady returns whether or not this instance is ready to receive PostgreSQL
+// connections.
+func (i Instance) IsReady() (ready bool, known bool) {
+	if len(i.Pods) == 1 {
+		for _, condition := range i.Pods[0].Status.Conditions {
+			if condition.Type == corev1.PodReady {
+				return condition.Status == corev1.ConditionTrue, true
+			}
+		}
+	}
+
+	return false, false
+}
+
+// IsTerminating returns whether or not this instance is in the process of not
+// running.
+func (i Instance) IsTerminating() (terminating bool, known bool) {
+	if len(i.Pods) != 1 {
+		return false, false
+	}
+
+	// k8s.io/kubernetes/pkg/registry/core/pod.Strategy implements
+	// k8s.io/apiserver/pkg/registry/rest.RESTGracefulDeleteStrategy so that it
+	// can set DeletionTimestamp to corev1.PodSpec.TerminationGracePeriodSeconds
+	// in the future.
+	// - https://releases.k8s.io/v1.21.0/pkg/registry/core/pod/strategy.go#L135
+	// - https://releases.k8s.io/v1.21.0/staging/src/k8s.io/apiserver/pkg/registry/rest/delete.go
+	return i.Pods[0].DeletionTimestamp != nil, true
+}
+
+// PodMatchesPodTemplate returns whether or not the Pod for this instance
+// matches its specified PodTemplate. When it does not match, the Pod needs to
+// be redeployed.
+func (i Instance) PodMatchesPodTemplate() (matches bool, known bool) {
+	if i.Runner == nil || len(i.Pods) != 1 {
+		return false, false
+	}
+
+	if i.Runner.Status.ObservedGeneration != i.Runner.Generation {
+		return false, false
+	}
+
+	// When the Status is up-to-date, compare the revision of the Pod to that
+	// of the PodTemplate.
+	podRevision := i.Pods[0].Labels[appsv1.StatefulSetRevisionLabel]
+	return podRevision == i.Runner.Status.UpdateRevision, true
+}
+
+// instanceSorter implements sort.Interface for some instance comparison.
+type instanceSorter struct {
+	instances []*Instance
+	less      func(i, j *Instance) bool
+}
+
+func (s *instanceSorter) Len() int {
+	return len(s.instances)
+}
+func (s *instanceSorter) Less(i, j int) bool {
+	return s.less(s.instances[i], s.instances[j])
+}
+func (s *instanceSorter) Swap(i, j int) {
+	s.instances[i], s.instances[j] = s.instances[j], s.instances[i]
+}
+
+// byPriority returns a sort.Interface that sorts instances by how much we want
+// each to keep running. The primary instance, when known, is always the highest
+// priority. Two instances with otherwise-identical priority are ranked by Name.
+func byPriority(instances []*Instance) sort.Interface {
+	return &instanceSorter{instances: instances, less: func(a, b *Instance) bool {
+		// The primary instance is the highest priority.
+		if primary, known := a.IsPrimary(); known && primary {
+			return false
+		}
+		if primary, known := b.IsPrimary(); known && primary {
+			return true
+		}
+
+		// An available instance is a higher priority than not.
+		if available, known := a.IsAvailable(); known && available {
+			return false
+		}
+		if available, known := b.IsAvailable(); known && available {
+			return true
+		}
+
+		return a.Name < b.Name
+	}}
+}
+
+// observedInstances represents all the PostgreSQL instances of a single PostgresCluster.
+type observedInstances struct {
+	byName     map[string]*Instance
+	bySet      map[string][]*Instance
+	forCluster []*Instance
+	setNames   sets.String
+}
+
+// newObservedInstances builds an observedInstances from Kubernetes API objects.
+func newObservedInstances(
+	cluster *v1beta1.PostgresCluster,
+	runners []appsv1.StatefulSet,
+	pods []corev1.Pod,
+) *observedInstances {
+	observed := observedInstances{
+		byName:   make(map[string]*Instance),
+		bySet:    make(map[string][]*Instance),
+		setNames: make(sets.String),
+	}
+
+	sets := make(map[string]*v1beta1.PostgresInstanceSetSpec)
+	for i := range cluster.Spec.InstanceSets {
+		name := cluster.Spec.InstanceSets[i].Name
+		sets[name] = &cluster.Spec.InstanceSets[i]
+		observed.setNames.Insert(name)
+	}
+	for i := range runners {
+		ri := runners[i].Name
+		rs := runners[i].Labels[naming.LabelInstanceSet]
+
+		instance := &Instance{
+			Name:   ri,
+			Runner: &runners[i],
+			Spec:   sets[rs],
+		}
+
+		observed.byName[ri] = instance
+		observed.bySet[rs] = append(observed.bySet[rs], instance)
+		observed.forCluster = append(observed.forCluster, instance)
+		observed.setNames.Insert(rs)
+	}
+	for i := range pods {
+		pi := pods[i].Labels[naming.LabelInstance]
+		ps := pods[i].Labels[naming.LabelInstanceSet]
+
+		instance := observed.byName[pi]
+		if instance == nil {
+			instance = &Instance{
+				Name: pi,
+				Spec: sets[ps],
+			}
+			observed.byName[pi] = instance
+			observed.bySet[ps] = append(observed.bySet[ps], instance)
+			observed.forCluster = append(observed.forCluster, instance)
+			observed.setNames.Insert(ps)
+		}
+		instance.Pods = append(instance.Pods, &pods[i])
+	}
+
+	return &observed
+}
+
+// +kubebuilder:rbac:groups="",resources=pods,verbs=list
+// +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=list
+
+// observeInstances populates cluster.Status.InstanceSets with observations and
+// builds an observedInstances by reading from the Kubernetes API.
+func (r *Reconciler) observeInstances(
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
+) (*observedInstances, error) {
+	pods := &v1.PodList{}
+	runners := &appsv1.StatefulSetList{}
+
+	selector, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
+	if err == nil {
+		err = errors.WithStack(
+			r.Client.List(ctx, pods,
+				client.InNamespace(cluster.Namespace),
+				client.MatchingLabelsSelector{Selector: selector},
+			))
+	}
+	if err == nil {
+		err = errors.WithStack(
+			r.Client.List(ctx, runners,
+				client.InNamespace(cluster.Namespace),
+				client.MatchingLabelsSelector{Selector: selector},
+			))
+	}
+
+	observed := newObservedInstances(cluster, runners.Items, pods.Items)
+
+	// Fill out status sorted by set name.
+	cluster.Status.InstanceSets = cluster.Status.InstanceSets[:0]
+	for _, name := range observed.setNames.List() {
+		status := v1beta1.PostgresInstanceSetStatus{Name: name}
+
+		for _, instance := range observed.bySet[name] {
+			if ready, known := instance.IsReady(); known && ready {
+				status.ReadyReplicas++
+			}
+			if terminating, known := instance.IsTerminating(); known && !terminating {
+				status.Replicas++
+
+				if matches, known := instance.PodMatchesPodTemplate(); known && matches {
+					status.UpdatedReplicas++
+				}
+			}
+		}
+
+		cluster.Status.InstanceSets = append(cluster.Status.InstanceSets, status)
+	}
+
+	return observed, err
+}
 
 // +kubebuilder:rbac:groups="",resources=pods,verbs=list
 // +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=patch
@@ -186,6 +420,8 @@ func (r *Reconciler) deleteInstance(
 	return err
 }
 
+// +kubebuilder:rbac:groups="",resources=pods,verbs=delete
+
 // reconcileInstanceSets reconciles instance sets in the environment to match
 // the current spec. This is done by scaling up or down instances where necessary
 func (r *Reconciler) reconcileInstanceSets(
@@ -196,6 +432,7 @@ func (r *Reconciler) reconcileInstanceSets(
 	rootCA *pki.RootCertificateAuthority,
 	clusterPodService *v1.Service,
 	instanceServiceAccount *v1.ServiceAccount,
+	instances *observedInstances,
 	patroniLeaderService *v1.Service,
 	primaryCertificate *v1.SecretProjection,
 ) ([]string, error) {
@@ -227,7 +464,107 @@ func (r *Reconciler) reconcileInstanceSets(
 		return nil, err
 	}
 
-	return instanceNames, nil
+	// Rollout changes to instances by deleting their Pods. The StatefulSet will
+	// recreate the Pod according to its current PodTemplate.
+	err = r.rolloutInstances(ctx, cluster, instances,
+		func(ctx context.Context, instance *Instance) error {
+
+			// The StatefulSet and number of Pods should have already been
+			// verified, but check again rather than panic.
+			if instance.Runner == nil || len(instance.Pods) != 1 {
+				return errors.Errorf(
+					"unexpected instance state during rollout: %v has %v pods",
+					instance.Name, len(instance.Pods))
+			}
+
+			// NOTE(cbandy): This could return an apierrors.IsConflict() which
+			// should be retried by another reconcile (not ignored).
+			return errors.WithStack(
+				r.Client.Delete(ctx, instance.Pods[0], client.Preconditions{
+					UID:             &instance.Pods[0].UID,
+					ResourceVersion: &instance.Pods[0].ResourceVersion,
+				}))
+		})
+
+	return instanceNames, err
+}
+
+// rolloutInstances compares instances to cluster and calls redeploy on those
+// that need their Pod recreated. It considers the overall availability of
+// cluster and minimizes Patroni failovers.
+func (r *Reconciler) rolloutInstances(
+	ctx context.Context,
+	cluster *v1beta1.PostgresCluster,
+	instances *observedInstances,
+	redeploy func(context.Context, *Instance) error,
+) error {
+	var err error
+	var consider []*Instance
+	var numAvailable int
+	var numSpecified int
+
+	ctx, span := r.Tracer.Start(ctx, "rollout-instances")
+	defer span.End()
+
+	for _, set := range cluster.Spec.InstanceSets {
+		numSpecified += int(*set.Replicas)
+	}
+
+	for _, instance := range instances.forCluster {
+		// Skip instances that have no set in cluster spec. They should not be
+		// redeployed and should not count toward availability.
+		if instance.Spec == nil {
+			continue
+		}
+
+		// Skip instances that are or might be terminating. They should not be
+		// redeployed right now and cannot count toward availability.
+		if terminating, known := instance.IsTerminating(); !known || terminating {
+			continue
+		}
+
+		if available, known := instance.IsAvailable(); known && available {
+			numAvailable++
+		}
+
+		if matches, known := instance.PodMatchesPodTemplate(); known && !matches {
+			consider = append(consider, instance)
+			continue
+		}
+	}
+
+	const maxUnavailable = 1
+	numUnavailable := numSpecified - numAvailable
+
+	// When multiple instances need to redeploy, sort them so the lowest
+	// priority instances are first.
+	if len(consider) > 1 {
+		sort.Sort(byPriority(consider))
+	}
+
+	span.SetAttributes(
+		attributes.Int("instances", len(instances.forCluster)),
+		attributes.Int("specified", numSpecified),
+		attributes.Int("available", numAvailable),
+		attributes.Int("considering", len(consider)),
+	)
+
+	// Redeploy instances up to the allowed maximum while "rolling over" any
+	// unavailable instances.
+	// - https://issue.k8s.io/67250
+	for _, instance := range consider {
+		if err == nil {
+			if available, known := instance.IsAvailable(); known && !available {
+				err = redeploy(ctx, instance)
+			} else if numUnavailable < maxUnavailable {
+				err = redeploy(ctx, instance)
+				numUnavailable++
+			}
+		}
+	}
+
+	span.RecordError(err)
+	return err
 }
 
 // scaleDownInstances removes extra instances from a cluster until it matches
@@ -442,9 +779,11 @@ func (r *Reconciler) reconcileInstance(
 		// - https://docs.k8s.io/concepts/services-networking/dns-pod-service/#pods
 		instance.Spec.ServiceName = clusterPodService.Name
 
-		// TODO(cbandy): let our controller recreate the pod.
+		// Disable StatefulSet's "RollingUpdate" strategy. The rolloutInstances
+		// method considers Pods across the entire PostgresCluster and deletes
+		// them to trigger updates.
 		// - https://docs.k8s.io/concepts/workloads/controllers/statefulset/#on-delete
-		//instance.Spec.UpdateStrategy.Type = appsv1.OnDeleteStatefulSetStrategyType
+		instance.Spec.UpdateStrategy.Type = appsv1.OnDeleteStatefulSetStrategyType
 
 		// Match the existing replica count, if any.
 		if existing.Spec.Replicas != nil {

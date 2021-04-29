@@ -488,10 +488,7 @@ spec:
 				"RevisionHistoryLimit": PointTo(BeEquivalentTo(0)),
 				"ServiceName":          Equal("carlos-pods"),
 				"UpdateStrategy": Equal(appsv1.StatefulSetUpdateStrategy{
-					Type: appsv1.RollingUpdateStatefulSetStrategyType,
-					RollingUpdate: &appsv1.RollingUpdateStatefulSetStrategy{
-						Partition: new(int32),
-					},
+					Type: appsv1.OnDeleteStatefulSetStrategyType,
 				}),
 			}))
 		})

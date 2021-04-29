@@ -23,17 +23,142 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
+
+func TestNewObservedInstances(t *testing.T) {
+	t.Run("Empty", func(t *testing.T) {
+		cluster := new(v1beta1.PostgresCluster)
+		observed := newObservedInstances(cluster, nil, nil)
+
+		assert.Equal(t, len(observed.forCluster), 0)
+		assert.Equal(t, len(observed.byName), 0)
+		assert.Equal(t, len(observed.bySet), 0)
+	})
+
+	t.Run("PodMissingOthers", func(t *testing.T) {
+		cluster := new(v1beta1.PostgresCluster)
+		observed := newObservedInstances(
+			cluster,
+			nil,
+			[]corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "some-pod-name",
+						Labels: map[string]string{
+							"postgres-operator.crunchydata.com/instance-set": "missing",
+							"postgres-operator.crunchydata.com/instance":     "the-name",
+						},
+					},
+				},
+			})
+
+		// Registers as an instance.
+		assert.Equal(t, len(observed.forCluster), 1)
+		assert.Equal(t, len(observed.byName), 1)
+		assert.Equal(t, len(observed.bySet), 1)
+
+		instance := observed.forCluster[0]
+		assert.Equal(t, instance.Name, "the-name")
+		assert.Equal(t, len(instance.Pods), 1)   // The Pod
+		assert.Assert(t, instance.Runner == nil) // No matching StatefulSet
+		assert.Assert(t, instance.Spec == nil)   // No matching PostgresInstanceSetSpec
+
+		// Lookup based on its labels.
+		assert.Equal(t, observed.byName["the-name"], instance)
+		assert.DeepEqual(t, observed.bySet["missing"], []*Instance{instance})
+		assert.DeepEqual(t, observed.setNames.List(), []string{"missing"})
+	})
+
+	t.Run("RunnerMissingOthers", func(t *testing.T) {
+		cluster := new(v1beta1.PostgresCluster)
+		observed := newObservedInstances(
+			cluster,
+			[]appsv1.StatefulSet{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "the-name",
+						Labels: map[string]string{
+							"postgres-operator.crunchydata.com/instance-set": "missing",
+						},
+					},
+				},
+			},
+			nil)
+
+		// Registers as an instance.
+		assert.Equal(t, len(observed.forCluster), 1)
+		assert.Equal(t, len(observed.byName), 1)
+		assert.Equal(t, len(observed.bySet), 1)
+
+		instance := observed.forCluster[0]
+		assert.Equal(t, instance.Name, "the-name")
+		assert.Equal(t, len(instance.Pods), 0)   // No matching Pods
+		assert.Assert(t, instance.Runner != nil) // The StatefulSet
+		assert.Assert(t, instance.Spec == nil)   // No matching PostgresInstanceSetSpec
+
+		// Lookup based on its name and labels.
+		assert.Equal(t, observed.byName["the-name"], instance)
+		assert.DeepEqual(t, observed.bySet["missing"], []*Instance{instance})
+		assert.DeepEqual(t, observed.setNames.List(), []string{"missing"})
+	})
+
+	t.Run("Matching", func(t *testing.T) {
+		cluster := new(v1beta1.PostgresCluster)
+		cluster.Spec.InstanceSets = []v1beta1.PostgresInstanceSetSpec{{Name: "00"}}
+
+		observed := newObservedInstances(
+			cluster,
+			[]appsv1.StatefulSet{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "the-name",
+						Labels: map[string]string{
+							"postgres-operator.crunchydata.com/instance-set": "00",
+						},
+					},
+				},
+			},
+			[]corev1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "some-pod-name",
+						Labels: map[string]string{
+							"postgres-operator.crunchydata.com/instance-set": "00",
+							"postgres-operator.crunchydata.com/instance":     "the-name",
+						},
+					},
+				},
+			})
+
+		// Registers as one instance.
+		assert.Equal(t, len(observed.forCluster), 1)
+		assert.Equal(t, len(observed.byName), 1)
+		assert.Equal(t, len(observed.bySet), 1)
+
+		instance := observed.forCluster[0]
+		assert.Equal(t, instance.Name, "the-name")
+		assert.Equal(t, len(instance.Pods), 1)   // The Pod
+		assert.Assert(t, instance.Runner != nil) // The StatefulSet
+		assert.Assert(t, instance.Spec != nil)   // The PostgresInstanceSetSpec
+
+		// Lookup based on its name and labels.
+		assert.Equal(t, observed.byName["the-name"], instance)
+		assert.DeepEqual(t, observed.bySet["00"], []*Instance{instance})
+		assert.DeepEqual(t, observed.setNames.List(), []string{"00"})
+	})
+}
 
 func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 

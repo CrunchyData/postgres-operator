@@ -122,6 +122,12 @@ type Archive struct {
 // PostgresClusterStatus defines the observed state of PostgresCluster
 type PostgresClusterStatus struct {
 
+	// Current state of PostgreSQL instances.
+	// +listType=map
+	// +listMapKey=name
+	// +optional
+	InstanceSets []PostgresInstanceSetStatus `json:"instances,omitempty"`
+
 	// +optional
 	Patroni *PatroniStatus `json:"patroni,omitempty"`
 
@@ -180,6 +186,22 @@ func (s *PostgresInstanceSetSpec) Default(i int) {
 		s.Replicas = new(int32)
 		*s.Replicas = 1
 	}
+}
+
+type PostgresInstanceSetStatus struct {
+	Name string `json:"name"`
+
+	// Total number of ready pods.
+	// +optional
+	ReadyReplicas int32 `json:"readyReplicas,omitempty"`
+
+	// Total number of non-terminated pods.
+	// +optional
+	Replicas int32 `json:"replicas,omitempty"`
+
+	// Total number of non-terminated pods that have the desired specification.
+	// +optional
+	UpdatedReplicas int32 `json:"updatedReplicas,omitempty"`
 }
 
 // PostgresProxySpec is a union of the supported PostgreSQL proxies.

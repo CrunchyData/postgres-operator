@@ -147,6 +147,7 @@ func (r *Reconciler) Reconcile(
 		clusterReplicationSecret *v1.Secret
 		clusterPodService        *v1.Service
 		instanceServiceAccount   *v1.ServiceAccount
+		instances                *observedInstances
 		patroniLeaderService     *v1.Service
 		primaryCertificate       *v1.SecretProjection
 		pgUser                   *v1.Secret
@@ -189,6 +190,9 @@ func (r *Reconciler) Reconcile(
 		"pgbackrest --stanza="+pgbackrest.DefaultStanzaName+" archive-push %p")
 
 	if err == nil {
+		instances, err = r.observeInstances(ctx, cluster)
+	}
+	if err == nil {
 		err = r.reconcilePatroniStatus(ctx, cluster)
 	}
 	if err == nil {
@@ -229,7 +233,7 @@ func (r *Reconciler) Reconcile(
 	if err == nil {
 		instancesNames, err = r.reconcileInstanceSets(
 			ctx, cluster, clusterConfigMap, clusterReplicationSecret,
-			rootCA, clusterPodService, instanceServiceAccount,
+			rootCA, clusterPodService, instanceServiceAccount, instances,
 			patroniLeaderService, primaryCertificate)
 	}
 

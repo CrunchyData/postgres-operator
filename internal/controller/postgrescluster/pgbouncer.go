@@ -395,9 +395,8 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 	// - https://docs.k8s.io/concepts/workloads/controllers/deployment/#rolling-update-deployment
 	deploy.Spec.Strategy.Type = appsv1.RollingUpdateDeploymentStrategyType
 	deploy.Spec.Strategy.RollingUpdate = &appsv1.RollingUpdateDeployment{
-		MaxUnavailable: new(intstr.IntOrString),
+		MaxUnavailable: intstr.ValueOrDefault(nil, intstr.FromInt(0)),
 	}
-	*deploy.Spec.Strategy.RollingUpdate.MaxUnavailable = intstr.FromInt(0)
 
 	// Use scheduling constraints from the cluster spec.
 	deploy.Spec.Template.Spec.Affinity = cluster.Spec.Proxy.PGBouncer.Affinity

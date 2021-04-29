@@ -2195,6 +2195,32 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              instances:
+                description: Current state of PostgreSQL instances.
+                items:
+                  properties:
+                    name:
+                      type: string
+                    readyReplicas:
+                      description: Total number of ready pods.
+                      format: int32
+                      type: integer
+                    replicas:
+                      description: Total number of non-terminated pods.
+                      format: int32
+                      type: integer
+                    updatedReplicas:
+                      description: Total number of non-terminated pods that have the
+                        desired specification.
+                      format: int32
+                      type: integer
+                  required:
+                  - name
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - name
+                x-kubernetes-list-type: map
               observedGeneration:
                 description: observedGeneration represents the .metadata.generation
                   on which the status was based.
