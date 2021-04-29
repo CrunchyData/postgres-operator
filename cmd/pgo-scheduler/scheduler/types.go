@@ -65,6 +65,7 @@ type PolicyTemplate struct {
 	ClusterName    string
 	CCPImagePrefix string
 	CCPImageTag    string
+	CustomLabels   string
 	PGHost         string
 	PGPort         string
 	PGDatabase     string

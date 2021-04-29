@@ -70,14 +70,13 @@ func DisableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) erro
 
 	log.Debugf("Disable standby: disabling standby for cluster %s", clusterName)
 
-	configMapName := fmt.Sprintf("%s-pgha-config", cluster.Labels[config.LABEL_PGHA_SCOPE])
+	configMapName := fmt.Sprintf("%s-pgha-config", cluster.Name)
 	configMap, err := clientset.CoreV1().ConfigMaps(namespace).
 		Get(ctx, configMapName, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	dcs := cfg.NewDCS(configMap, clientset,
-		cluster.GetObjectMeta().GetLabels()[config.LABEL_PGHA_SCOPE])
+	dcs := cfg.NewDCS(configMap, clientset, cluster.Name)
 	dcsConfig, _, err := dcs.GetDCSConfig()
 	if err != nil {
 		return err
@@ -88,7 +87,7 @@ func DisableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) erro
 	}
 
 	// ensure any repo override is removed
-	pghaConfigMapName := fmt.Sprintf("%s-pgha-config", cluster.Labels[config.LABEL_PGHA_SCOPE])
+	pghaConfigMapName := fmt.Sprintf("%s-pgha-config", cluster.Name)
 	jsonOpBytes, err := kubeapi.NewJSONPatch().Remove("data", operator.PGHAConfigReplicaBootstrapRepoType).Bytes()
 	if err != nil {
 		return err
@@ -164,7 +163,7 @@ func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error
 			storageSpec = cluster.Spec.ReplicaStorage
 		}
 		if err := pvc.Create(clientset, currPVC.Name, clusterName, &storageSpec,
-			namespace); err != nil {
+			namespace, util.GetCustomLabels(&cluster)); err != nil {
 			log.Error(err)
 			return fmt.Errorf("Unable to create primary PVC while enabling standby mode: %w", err)
 		}
@@ -174,7 +173,7 @@ func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error
 		clusterName)
 
 	// find the "config" configMap created by Patroni
-	dcsConfigMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-config"
+	dcsConfigMapName := cluster.Name + "-config"
 	dcsConfigMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(ctx, dcsConfigMapName, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("Unable to find configMap %s when attempting to enable standby",
@@ -209,7 +208,7 @@ func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error
 		return err
 	}
 
-	leaderConfigMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-leader"
+	leaderConfigMapName := cluster.Name + "-leader"
 	// Delete the "leader" configMap
 	if err = clientset.CoreV1().ConfigMaps(namespace).Delete(ctx, leaderConfigMapName, metav1.DeleteOptions{}); err != nil &&
 		!kerrors.IsNotFound(err) {
@@ -219,7 +218,7 @@ func EnableStandby(clientset kubernetes.Interface, cluster crv1.Pgcluster) error
 	}
 
 	// override to the repo type to ensure s3/gcs is utilized for standby creation
-	pghaConfigMapName := cluster.Labels[config.LABEL_PGHA_SCOPE] + "-pgha-config"
+	pghaConfigMapName := cluster.Name + "-pgha-config"
 	pghaConfigMap, err := clientset.CoreV1().ConfigMaps(namespace).Get(ctx, pghaConfigMapName, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("Unable to find configMap %s when attempting to enable standby",

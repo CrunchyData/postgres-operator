@@ -4,6 +4,9 @@
     "metadata": {
         "name": "{{.Name}}",
         "labels": {
+            {{ if .CustomLabels }}
+            {{ .CustomLabels }}
+            {{ end }}
             "name": "{{.Name}}",
             "crunchy-pgbouncer": "true",
             "pg-cluster": "{{.ClusterName}}",
@@ -29,6 +32,9 @@
                 "annotations": {{ .PodAnnotations }},
                 {{ end }}
                 "labels": {
+                    {{ if .CustomLabels }}
+                    {{ .CustomLabels }}
+                    {{ end }}
                     "name": "{{.Name}}",
                     "crunchy-pgbouncer": "true",
                     "pg-cluster": "{{.ClusterName}}",

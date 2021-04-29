@@ -47,6 +47,7 @@ type BackrestRepoConfig struct {
 	BackrestGCSKey      []byte
 	ClusterName         string
 	ClusterNamespace    string
+	CustomLabels        map[string]string
 	OperatorNamespace   string
 }
 
@@ -169,6 +170,10 @@ func CreateBackrestRepoSecrets(clientset kubernetes.Interface,
 			},
 			Data: map[string][]byte{},
 		}
+
+		for k, v := range backrestRepoConfig.CustomLabels {
+			secret.ObjectMeta.Labels[k] = v
+		}
 	}
 
 	// next, load the Operator level pgBackRest secret templates, which contain
@@ -289,7 +294,7 @@ func CreateRMDataTask(clientset kubeapi.Interface, cluster *crv1.Pgcluster, repl
 				config.LABEL_IS_BACKUP:      strconv.FormatBool(isBackup),
 				config.LABEL_PG_CLUSTER:     cluster.Name,
 				config.LABEL_REPLICA_NAME:   replicaName,
-				config.LABEL_PGHA_SCOPE:     cluster.ObjectMeta.GetLabels()[config.LABEL_PGHA_SCOPE],
+				config.LABEL_PGHA_SCOPE:     cluster.Name,
 				config.LABEL_RM_TOLERATIONS: GetTolerations(cluster.Spec.Tolerations),
 			},
 			TaskType: crv1.PgtaskDeleteData,
@@ -358,6 +363,33 @@ func GeneratedPasswordValidUntilDays(configuredValidUntilDays string) int {
 	}
 
 	return validUntilDays
+}
+
+// GetCustomLabels gets a list of the custom labels that a user set so they can
+// be applied to any non-Postgres cluster instance objects. This removes some of
+// the "system labels" that get stuck in the "UserLabels" area.
+//
+// Do **not** use this for the Postgres instance Deployments. Some of those
+// labels are needed there.
+//
+// Returns a map.
+func GetCustomLabels(cluster *crv1.Pgcluster) map[string]string {
+	labels := map[string]string{}
+
+	if cluster.Spec.UserLabels == nil {
+		return labels
+	}
+
+	for k, v := range cluster.Spec.UserLabels {
+		switch k {
+		default:
+			labels[k] = v
+		case config.LABEL_WORKFLOW_ID, config.LABEL_PGO_VERSION:
+			continue
+		}
+	}
+
+	return labels
 }
 
 // GetPrimaryPod gets the Pod of the primary PostgreSQL instance. If somehow

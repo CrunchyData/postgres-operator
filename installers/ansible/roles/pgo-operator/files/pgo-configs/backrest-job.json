@@ -4,6 +4,9 @@
     "metadata": {
                 "name": "{{.JobName}}",
                 "labels": {
+                    {{ if .CustomLabels }}
+                    {{ .CustomLabels }}
+                    {{ end }}
                     "vendor": "crunchydata",
                     "pgo-backrest": "true",
                     "pgo-backrest-job": "true",
@@ -16,6 +19,9 @@
             "metadata": {
                 "name": "{{.JobName}}",
                 "labels": {
+                    {{ if .CustomLabels }}
+                    {{ .CustomLabels }}
+                    {{ end }}
                     "vendor": "crunchydata",
                     "pgo-backrest": "true",
                     "pgo-backrest-job": "true",

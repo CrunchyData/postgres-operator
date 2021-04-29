@@ -52,6 +52,7 @@ type backrestJobTemplateFields struct {
 	PodName                       string
 	CCPImagePrefix                string
 	CCPImageTag                   string
+	CustomLabels                  string
 	SecurityContext               string
 	PgbackrestStanza              string
 	PgbackrestDBPath              string
@@ -112,6 +113,7 @@ func Backrest(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) 
 		CCPImagePrefix:  util.GetValueOrDefault(task.Spec.Parameters[config.LABEL_IMAGE_PREFIX], operator.Pgo.Cluster.CCPImagePrefix),
 		CCPImageTag: util.GetValueOrDefault(util.GetStandardImageTag(cluster.Spec.CCPImage, cluster.Spec.CCPImageTag),
 			operator.Pgo.Cluster.CCPImageTag),
+		CustomLabels:                  operator.GetLabelsFromMap(util.GetCustomLabels(cluster), false),
 		PgbackrestStanza:              task.Spec.Parameters[config.LABEL_PGBACKREST_STANZA],
 		PgbackrestDBPath:              task.Spec.Parameters[config.LABEL_PGBACKREST_DB_PATH],
 		PgbackrestRepo1Path:           task.Spec.Parameters[config.LABEL_PGBACKREST_REPO_PATH],

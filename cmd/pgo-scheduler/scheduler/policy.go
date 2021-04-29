@@ -137,6 +137,7 @@ func (p PolicyJob) Run() {
 		ClusterName:    p.cluster,
 		CCPImagePrefix: util.GetValueOrDefault(cluster.Spec.CCPImagePrefix, p.ccpImagePrefix),
 		CCPImageTag:    p.ccpImageTag,
+		CustomLabels:   operator.GetLabelsFromMap(util.GetCustomLabels(cluster), false),
 		PGHost:         p.cluster,
 		PGPort:         cluster.Spec.Port,
 		PGDatabase:     p.database,

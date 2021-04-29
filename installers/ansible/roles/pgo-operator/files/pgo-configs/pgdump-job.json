@@ -4,6 +4,9 @@
     "metadata": {
         "name": "{{.JobName}}",
         "labels": {
+                {{ if .CustomLabels }}
+                {{ .CustomLabels }}
+                {{ end }}
                 "vendor": "crunchydata",
                 "pgdump": "true",
                 "pg-cluster": "{{.ClusterName}}",
@@ -15,6 +18,9 @@
             "metadata": {
                 "name": "{{.JobName}}",
                 "labels": {
+                    {{ if .CustomLabels }}
+                    {{ .CustomLabels }}
+                    {{ end }}
                     "vendor":"crunchydata",
                     "pgdump":"true",
                     "pg-cluster":"{{.ClusterName}}"

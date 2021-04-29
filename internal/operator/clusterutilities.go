@@ -501,6 +501,10 @@ func CreatePGHAConfigMap(clientset kubernetes.Interface, cluster *crv1.Pgcluster
 		Data: data,
 	}
 
+	for k, v := range util.GetCustomLabels(cluster) {
+		configmap.ObjectMeta.Labels[k] = v
+	}
+
 	if _, err := clientset.CoreV1().ConfigMaps(namespace).Create(ctx, configmap, metav1.CreateOptions{}); err != nil {
 		return err
 	}
@@ -694,7 +698,7 @@ func GetTablespaceVolumeName(tablespaceName string) string {
 
 // needs to be consolidated with cluster.GetLabelsFromMap
 // GetLabelsFromMap ...
-func GetLabelsFromMap(labels map[string]string) string {
+func GetLabelsFromMap(labels map[string]string, trimComma bool) string {
 	var output string
 
 	for key, value := range labels {
@@ -702,8 +706,12 @@ func GetLabelsFromMap(labels map[string]string) string {
 			output += fmt.Sprintf("\"%s\": \"%s\",", key, value)
 		}
 	}
-	// removing the trailing comma from the final label
-	return strings.TrimSuffix(output, ",")
+	// removing the trailing comma from the final label, if request
+	if trimComma {
+		return strings.TrimSuffix(output, ",")
+	}
+
+	return output
 }
 
 // GetPodAntiAffinity returns the populated pod anti-affinity json that should be attached to

@@ -994,6 +994,10 @@ func CreateCluster(request *msgs.CreateClusterRequest, ns, pgouser string) msgs.
 			},
 		}
 
+		for k, v := range util.GetCustomLabels(newInstance) {
+			secret.ObjectMeta.Labels[k] = v
+		}
+
 		if _, err := apiserver.Clientset.CoreV1().Secrets(ns).Create(ctx, secret, metav1.CreateOptions{}); err != nil && !kubeapi.IsAlreadyExists(err) {
 			resp.Status.Code = msgs.Error
 			resp.Status.Msg = fmt.Sprintf("could not create backrest repo secret: %s", err)
@@ -1772,7 +1776,7 @@ func createUserSecret(request *msgs.CreateClusterRequest, cluster *crv1.Pgcluste
 
 	// great, now we can create the secret! if we can't, return an error
 	if err := util.CreateSecret(apiserver.Clientset, cluster.Spec.Name, secretName,
-		username, password, cluster.Namespace); err != nil {
+		username, password, cluster.Namespace, util.GetCustomLabels(cluster)); err != nil {
 		return "", err
 	}
 

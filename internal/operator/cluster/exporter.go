@@ -174,6 +174,10 @@ func CreateExporterSecret(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 		},
 	}
 
+	for k, v := range util.GetCustomLabels(cluster) {
+		secret.ObjectMeta.Labels[k] = v
+	}
+
 	if _, err := clientset.CoreV1().Secrets(cluster.Namespace).
 		Create(ctx, &secret, metav1.CreateOptions{}); err != nil {
 		log.Error(err)

@@ -73,13 +73,15 @@ type RepoDeploymentTemplateFields struct {
 	Replicas                  int
 	BootstrapCluster          string
 	BootstrapNamespace        string
+	CustomLabels              string
 	Tolerations               string
 }
 
 type RepoServiceTemplateFields struct {
-	Name        string
-	ClusterName string
-	Port        string
+	Name         string
+	ClusterName  string
+	Port         string
+	CustomLabels string
 }
 
 // CreateRepoDeployment creates a pgBackRest repository deployment for a PostgreSQL cluster,
@@ -111,9 +113,10 @@ func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 
 	// create backrest repo service
 	serviceFields := RepoServiceTemplateFields{
-		Name:        serviceName,
-		ClusterName: cluster.Name,
-		Port:        "2022",
+		Name:         serviceName,
+		ClusterName:  cluster.Name,
+		Port:         "2022",
+		CustomLabels: operator.GetLabelsFromMap(util.GetCustomLabels(cluster), false),
 	}
 
 	err := createService(clientset, &serviceFields, namespace)
@@ -131,7 +134,7 @@ func CreateRepoDeployment(clientset kubernetes.Interface, cluster *crv1.Pgcluste
 			log.Debugf("pvc [%s] already present, will not recreate", repoName)
 		} else if kerrors.IsNotFound(err) {
 			_, err = pvc.CreatePVC(clientset, &cluster.Spec.BackrestStorage, repoName,
-				cluster.Name, namespace)
+				cluster.Name, namespace, util.GetCustomLabels(cluster))
 			if err != nil {
 				return err
 			}
@@ -183,6 +186,7 @@ func CreateRepoSecret(clientset kubernetes.Interface, cluster *crv1.Pgcluster) e
 		util.BackrestRepoConfig{
 			ClusterName:       cluster.Name,
 			ClusterNamespace:  cluster.Namespace,
+			CustomLabels:      util.GetCustomLabels(cluster),
 			OperatorNamespace: operator.PgoNamespace,
 		})
 	return err
@@ -255,6 +259,7 @@ func getRepoDeploymentFields(clientset kubernetes.Interface, cluster *crv1.Pgclu
 		CCPImageTag: util.GetValueOrDefault(util.GetStandardImageTag(cluster.Spec.CCPImage, cluster.Spec.CCPImageTag),
 			operator.Pgo.Cluster.CCPImageTag),
 		ContainerResources:    operator.GetResourcesJSON(cluster.Spec.BackrestResources, cluster.Spec.BackrestLimits),
+		CustomLabels:          operator.GetLabelsFromMap(util.GetCustomLabels(cluster), false),
 		BackrestRepoClaimName: fmt.Sprintf(util.BackrestRepoPVCName, cluster.Name),
 		SshdSecretsName:       fmt.Sprintf(util.BackrestRepoSecretName, cluster.Name),
 		PGbackrestDBHost:      cluster.Name,

@@ -118,7 +118,7 @@ func (c *Controller) handleCommonInit(cluster *crv1.Pgcluster) error {
 	if cluster.Spec.DisableAutofail {
 		// accepts the inverse
 		if err := util.ToggleAutoFailover(c.Client, !cluster.Spec.DisableAutofail,
-			cluster.ObjectMeta.Labels[config.LABEL_PGHA_SCOPE], cluster.Namespace); err != nil {
+			cluster.Name, cluster.Namespace); err != nil {
 			log.Error(err)
 		}
 	}

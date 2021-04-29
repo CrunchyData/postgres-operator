@@ -71,8 +71,7 @@ func (c *Controller) handleConfigMapSync(key string) error {
 		return nil
 	}
 
-	c.syncPGHAConfig(c.createPGHAConfigs(configMap,
-		cluster.GetObjectMeta().GetLabels()[config.LABEL_PGHA_SCOPE]))
+	c.syncPGHAConfig(c.createPGHAConfigs(configMap, cluster.Name))
 
 	return nil
 }
