@@ -25,7 +25,6 @@ QUERIES=(
     queries_global
     queries_per_db
     queries_nodemx
-    queries_pg_stat_statements_reset
 )
 
 function trap_sigterm() {
@@ -175,6 +174,14 @@ else
         else
           echo_warn "Query file queries_pg_stat_statements.yml not loaded."
         fi
+        # queries_pg_stat_statements_reset is only available in PG12+. This may
+        # need to be updated based on a new path
+        if [[ -f ${CONFIG_DIR?}/queries_pg_stat_statements_reset.yml ]];
+        then
+          cat ${CONFIG_DIR?}/queries_pg_stat_statements_reset.yml >> /tmp/queries.yml
+        else
+          echo_warn "Query file queries_pg_stat_statements_reset.yml not loaded."
+        fi
     elif (( ${VERSION?} >= 130000 ))
     then
         if [[ -f ${CONFIG_DIR?}/pg13/queries_general.yml ]]
@@ -188,6 +195,14 @@ else
           cat ${CONFIG_DIR?}/pg13/queries_pg_stat_statements.yml >> /tmp/queries.yml
         else
           echo_warn "Query file queries_pg_stat_statements.yml not loaded."
+        fi
+        # queries_pg_stat_statements_reset is only available in PG12+. This may
+        # need to be updated based on a new path
+        if [[ -f ${CONFIG_DIR?}/queries_pg_stat_statements_reset.yml ]];
+        then
+          cat ${CONFIG_DIR?}/queries_pg_stat_statements_reset.yml >> /tmp/queries.yml
+        else
+          echo_warn "Query file queries_pg_stat_statements_reset.yml not loaded."
         fi
     else
         echo_err "Unknown or unsupported version of PostgreSQL.  Exiting.."
