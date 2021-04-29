@@ -114,7 +114,9 @@ deployoperator:
 
 
 #======= Binary builds =======
-build: build-postgres-operator build-pgo-apiserver build-pgo-client build-pgo-rmdata build-pgo-scheduler license
+build: build-dev license
+
+build-dev: build-postgres-operator build-pgo-apiserver build-pgo-client build-pgo-rmdata build-pgo-scheduler
 
 build-pgo-apiserver:
 	$(GO_BUILD) -o bin/apiserver ./cmd/apiserver
