@@ -136,7 +136,7 @@ func (b BackRestBackupJob) Run() {
 			"selector":  selector,
 			"error":     err,
 			"podsFound": len(pods.Items),
-		}).Error("pods returned does not equal 1, it should")
+		}).Error("error getting pods from selector: 0 or more than 1 pods present")
 		return
 	}
 

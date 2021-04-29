@@ -100,12 +100,25 @@ func Backrest(namespace string, clientset kubeapi.Interface, task *crv1.Pgtask) 
 	if cluster.Spec.Standby && cmd == crv1.PgtaskBackrestStanzaCreate {
 		repoType = crv1.BackrestStorageTypePosix
 	}
+	selector := fmt.Sprintf("%s=%s,%s", config.LABEL_PG_CLUSTER, cluster.Name, config.LABEL_PGO_BACKREST_REPO)
+	options := metav1.ListOptions{
+		FieldSelector: fields.OneTermEqualSelector("status.phase", string(v1.PodRunning)).String(),
+		LabelSelector: selector,
+	}
 
+	pods, err := clientset.CoreV1().Pods(cluster.Namespace).List(ctx, options)
+	if err != nil {
+		log.Errorf("error getting pods from selector %s: %s", selector, err)
+		return
+	} else if len(pods.Items) != 1 {
+		log.Error("error getting pods from selector: 0 or more than 1 pods present")
+		return
+	}
 	// create the Job to run the backrest command
 	jobFields := backrestJobTemplateFields{
 		JobName:         task.Spec.Parameters[config.LABEL_JOB_NAME],
 		ClusterName:     task.Spec.Parameters[config.LABEL_PG_CLUSTER],
-		PodName:         task.Spec.Parameters[config.LABEL_POD_NAME],
+		PodName:         pods.Items[0].Name,
 		SecurityContext: `{"runAsNonRoot": true}`,
 		Command:         cmd,
 		CommandOpts:     task.Spec.Parameters[config.LABEL_BACKREST_OPTS],
