@@ -17,6 +17,7 @@ package postgrescluster
 
 import (
 	"context"
+	"io"
 	"sort"
 	"time"
 
@@ -420,8 +421,6 @@ func (r *Reconciler) deleteInstance(
 	return err
 }
 
-// +kubebuilder:rbac:groups="",resources=pods,verbs=delete
-
 // reconcileInstanceSets reconciles instance sets in the environment to match
 // the current spec. This is done by scaling up or down instances where necessary
 func (r *Reconciler) reconcileInstanceSets(
@@ -464,29 +463,74 @@ func (r *Reconciler) reconcileInstanceSets(
 		return nil, err
 	}
 
-	// Rollout changes to instances by deleting their Pods. The StatefulSet will
-	// recreate the Pod according to its current PodTemplate.
+	// Rollout changes to instances by calling rolloutInstance.
 	err = r.rolloutInstances(ctx, cluster, instances,
 		func(ctx context.Context, instance *Instance) error {
-
-			// The StatefulSet and number of Pods should have already been
-			// verified, but check again rather than panic.
-			if instance.Runner == nil || len(instance.Pods) != 1 {
-				return errors.Errorf(
-					"unexpected instance state during rollout: %v has %v pods",
-					instance.Name, len(instance.Pods))
-			}
-
-			// NOTE(cbandy): This could return an apierrors.IsConflict() which
-			// should be retried by another reconcile (not ignored).
-			return errors.WithStack(
-				r.Client.Delete(ctx, instance.Pods[0], client.Preconditions{
-					UID:             &instance.Pods[0].UID,
-					ResourceVersion: &instance.Pods[0].ResourceVersion,
-				}))
+			return r.rolloutInstance(ctx, instances, instance)
 		})
 
 	return instanceNames, err
+}
+
+// +kubebuilder:rbac:groups="",resources=pods,verbs=delete
+
+// rolloutInstance redeploys the Pod of instance by deleting it. Its StatefulSet
+// will recreate it according to its current PodTemplate. When instance is the
+// primary of a cluster with failover, it is demoted instead.
+func (r *Reconciler) rolloutInstance(
+	ctx context.Context, instances *observedInstances, instance *Instance,
+) error {
+	// The StatefulSet and number of Pods should have already been verified, but
+	// check again rather than panic.
+	// TODO(cbandy): The check for StatefulSet can go away if we watch Pod deletes.
+	if instance.Runner == nil || len(instance.Pods) != 1 {
+		return errors.Errorf(
+			"unexpected instance state during rollout: %v has %v pods",
+			instance.Name, len(instance.Pods))
+	}
+
+	pod := instance.Pods[0]
+	exec := func(_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string) error {
+		return r.PodExec(pod.Namespace, pod.Name, naming.ContainerDatabase, stdin, stdout, stderr, command...)
+	}
+
+	primary, known := instance.IsPrimary()
+	primary = primary && known
+
+	// When the cluster has more than one instance participating in failover,
+	// perform a controlled switchover to one of those instances. Patroni will
+	// choose the best candidate and demote the primary. It stops PostgreSQL
+	// using what it calls "graceful" mode: it takes an immediate checkpoint in
+	// the background then uses "pg_ctl" to perform a "fast" shutdown when the
+	// checkpoint completes.
+	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/ha.py#L815
+	// - https://www.postgresql.org/docs/current/sql-checkpoint.html
+	//
+	// NOTE(cbandy): The StatefulSet controlling this Pod reflects this change
+	// in its Status and triggers another reconcile.
+	if primary && len(instances.forCluster) > 1 {
+		success, err := patroni.Executor(exec).ChangePrimaryAndWait(ctx, pod.Name, "")
+		if err = errors.WithStack(err); err == nil && !success {
+			err = errors.New("unable to switchover")
+		}
+		return err
+	}
+
+	// TODO(cbandy): Consider taking a checkpoint here when there are no other
+	// instances.
+
+	// Delete the Pod so its controlling StatefulSet will recreate it. Patroni
+	// will receive a SIGTERM and use "pg_ctl" to perform a "fast" shutdown of
+	// PostgreSQL without taking a checkpoint.
+	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/ha.py#L1465
+	//
+	// NOTE(cbandy): This could return an apierrors.IsConflict() which should be
+	// retried by another reconcile (not ignored).
+	return errors.WithStack(
+		r.Client.Delete(ctx, pod, client.Preconditions{
+			UID:             &pod.UID,
+			ResourceVersion: &pod.ResourceVersion,
+		}))
 }
 
 // rolloutInstances compares instances to cluster and calls redeploy on those

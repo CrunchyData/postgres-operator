@@ -20,11 +20,17 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"strings"
 
 	"github.com/crunchydata/postgres-operator/internal/logging"
 )
 
 type API interface {
+	// ChangePrimaryAndWait tries to demote the current Patroni leader. It
+	// returns true when an election completes successfully. When Patroni is
+	// paused, next cannot be blank.
+	ChangePrimaryAndWait(ctx context.Context, current, next string) (bool, error)
+
 	// ReplaceConfiguration replaces Patroni's entire dynamic configuration.
 	ReplaceConfiguration(ctx context.Context, configuration map[string]interface{}) error
 }
@@ -37,10 +43,13 @@ type Executor func(
 // Executor implements API.
 var _ API = Executor(nil)
 
-// ChangePrimary demotes the current Patroni leader by calling "patronictl".
-func (exec Executor) ChangePrimary(
+// ChangePrimaryAndWait tries to demote the current Patroni leader by calling
+// "patronictl". It returns true when an election completes successfully. It
+// waits up to two "loop_wait" or until an error occurs. When Patroni is paused,
+// next cannot be blank.
+func (exec Executor) ChangePrimaryAndWait(
 	ctx context.Context, current, next string,
-) error {
+) (bool, error) {
 	var stdout, stderr bytes.Buffer
 
 	err := exec(ctx, nil, &stdout, &stderr,
@@ -53,7 +62,11 @@ func (exec Executor) ChangePrimary(
 		"stderr", stderr.String(),
 	)
 
-	return err
+	// The command exits zero when it is able to communicate with the Patroni
+	// HTTP API. It exits zero even when the API says switchover did not occur.
+	// Check for the text that indicates success.
+	// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/api.py#L351-L367
+	return strings.Contains(stdout.String(), "switched over"), err
 }
 
 // ReplaceConfiguration replaces Patroni's entire dynamic configuration by
