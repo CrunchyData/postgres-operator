@@ -17,6 +17,7 @@ package postgrescluster
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sort"
 	"time"
@@ -466,7 +467,7 @@ func (r *Reconciler) reconcileInstanceSets(
 	// Rollout changes to instances by calling rolloutInstance.
 	err = r.rolloutInstances(ctx, cluster, instances,
 		func(ctx context.Context, instance *Instance) error {
-			return r.rolloutInstance(ctx, instances, instance)
+			return r.rolloutInstance(ctx, cluster, instances, instance)
 		})
 
 	return instanceNames, err
@@ -478,7 +479,8 @@ func (r *Reconciler) reconcileInstanceSets(
 // will recreate it according to its current PodTemplate. When instance is the
 // primary of a cluster with failover, it is demoted instead.
 func (r *Reconciler) rolloutInstance(
-	ctx context.Context, instances *observedInstances, instance *Instance,
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
+	instances *observedInstances, instance *Instance,
 ) error {
 	// The StatefulSet and number of Pods should have already been verified, but
 	// check again rather than panic.
@@ -509,15 +511,71 @@ func (r *Reconciler) rolloutInstance(
 	// NOTE(cbandy): The StatefulSet controlling this Pod reflects this change
 	// in its Status and triggers another reconcile.
 	if primary && len(instances.forCluster) > 1 {
+		var span trace.Span
+		ctx, span = r.Tracer.Start(ctx, "patroni-change-primary")
+		defer span.End()
+
 		success, err := patroni.Executor(exec).ChangePrimaryAndWait(ctx, pod.Name, "")
 		if err = errors.WithStack(err); err == nil && !success {
 			err = errors.New("unable to switchover")
 		}
+
+		span.RecordError(err)
 		return err
 	}
 
-	// TODO(cbandy): Consider taking a checkpoint here when there are no other
-	// instances.
+	// When the cluster has only one instance for failover, perform a series of
+	// immediate checkpoints to increase the likelihood that a "fast" shutdown
+	// will complete before the SIGKILL near TerminationGracePeriodSeconds.
+	// - https://docs.k8s.io/concepts/workloads/pods/pod-lifecycle/#pod-termination
+	if primary {
+		graceSeconds := int64(corev1.DefaultTerminationGracePeriodSeconds)
+		if pod.Spec.TerminationGracePeriodSeconds != nil {
+			graceSeconds = *pod.Spec.TerminationGracePeriodSeconds
+		}
+
+		checkpoint := func(ctx context.Context) (time.Duration, error) {
+			ctx, span := r.Tracer.Start(ctx, "postgresql-checkpoint")
+			defer span.End()
+
+			start := time.Now()
+			stdout, stderr, err := postgres.Executor(exec).
+				ExecInDatabasesFromQuery(ctx, `SELECT current_database()`,
+					`SET statement_timeout = :'timeout'; CHECKPOINT;`,
+					map[string]string{
+						"timeout":       fmt.Sprintf("%ds", graceSeconds),
+						"ON_ERROR_STOP": "on", // Abort when any one statement fails.
+						"QUIET":         "on", // Do not print successful statements to stdout.
+					})
+			err = errors.WithStack(err)
+			elapsed := time.Since(start)
+
+			logging.FromContext(ctx).V(1).Info("attempted checkpoint",
+				"duration", elapsed, "stdout", stdout, "stderr", stderr)
+
+			span.RecordError(err)
+			return elapsed, err
+		}
+
+		duration, err := checkpoint(ctx)
+		threshold := time.Duration(graceSeconds/2) * time.Second
+
+		// The first checkpoint could be flushing up to "checkpoint_timeout"
+		// or "max_wal_size" worth of data. Try once more to get a sense of
+		// how long "fast" shutdown might take.
+		if err == nil && duration > threshold {
+			duration, err = checkpoint(ctx)
+		}
+
+		// Communicate the lack or slowness of CHECKPOINT and shutdown anyway.
+		if err != nil {
+			r.Recorder.Eventf(cluster, v1.EventTypeWarning, "NoCheckpoint",
+				"Unable to checkpoint primary before shutdown: %v", err)
+		} else if duration > threshold {
+			r.Recorder.Eventf(cluster, v1.EventTypeWarning, "SlowCheckpoint",
+				"Shutting down primary despite checkpoint taking over %v", duration)
+		}
+	}
 
 	// Delete the Pod so its controlling StatefulSet will recreate it. Patroni
 	// will receive a SIGTERM and use "pg_ctl" to perform a "fast" shutdown of

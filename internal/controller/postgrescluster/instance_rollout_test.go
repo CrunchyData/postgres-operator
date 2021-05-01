@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"io/ioutil"
+	"strings"
 	"testing"
 
 	"go.opentelemetry.io/otel/oteltest"
 	"gotest.tools/v3/assert"
+	"gotest.tools/v3/assert/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -22,6 +25,7 @@ import (
 
 func TestReconcilerRolloutInstance(t *testing.T) {
 	ctx := context.Background()
+	cluster := new(v1beta1.PostgresCluster)
 
 	t.Run("Singleton", func(t *testing.T) {
 		instances := []*Instance{
@@ -51,11 +55,34 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 		key := client.ObjectKey{Namespace: "ns1", Name: "one-pod-bruh"}
 		reconciler := &Reconciler{}
 		reconciler.Client = fake.NewClientBuilder().WithObjects(instances[0].Pods[0]).Build()
+		reconciler.Tracer = oteltest.DefaultTracer()
+
+		execCalls := 0
+		reconciler.PodExec = func(
+			namespace, pod, container string, stdin io.Reader, _, _ io.Writer, command ...string,
+		) error {
+			execCalls++
+
+			// Execute on the Pod.
+			assert.Equal(t, namespace, "ns1")
+			assert.Equal(t, pod, "one-pod-bruh")
+			assert.Equal(t, container, "database")
+
+			// Checkpoint with timeout.
+			b, _ := ioutil.ReadAll(stdin)
+			assert.Equal(t, string(b), "SET statement_timeout = :'timeout'; CHECKPOINT;")
+			commandString := strings.Join(command, " ")
+			assert.Assert(t, cmp.Contains(commandString, "psql"))
+			assert.Assert(t, cmp.Contains(commandString, "--set=timeout="))
+
+			return nil
+		}
 
 		assert.NilError(t, reconciler.Client.Get(ctx, key, &corev1.Pod{}),
 			"bug in test: expected pod to exist")
 
-		assert.NilError(t, reconciler.rolloutInstance(ctx, observed, instances[0]))
+		assert.NilError(t, reconciler.rolloutInstance(ctx, cluster, observed, instances[0]))
+		assert.Equal(t, execCalls, 1, "expected PodExec to be called")
 
 		err := reconciler.Client.Get(ctx, key, &corev1.Pod{})
 		assert.Assert(t, apierrors.IsNotFound(err),
@@ -89,6 +116,7 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 		t.Run("Success", func(t *testing.T) {
 			execCalls := 0
 			reconciler := &Reconciler{}
+			reconciler.Tracer = oteltest.DefaultTracer()
 			reconciler.PodExec = func(
 				namespace, pod, container string, _ io.Reader, stdout, _ io.Writer, command ...string,
 			) error {
@@ -110,12 +138,13 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 				return nil
 			}
 
-			assert.NilError(t, reconciler.rolloutInstance(ctx, observed, instances[0]))
+			assert.NilError(t, reconciler.rolloutInstance(ctx, cluster, observed, instances[0]))
 			assert.Equal(t, execCalls, 1, "expected PodExec to be called")
 		})
 
 		t.Run("Failure", func(t *testing.T) {
 			reconciler := &Reconciler{}
+			reconciler.Tracer = oteltest.DefaultTracer()
 			reconciler.PodExec = func(
 				_, _, _ string, _ io.Reader, _, _ io.Writer, _ ...string,
 			) error {
@@ -123,7 +152,7 @@ func TestReconcilerRolloutInstance(t *testing.T) {
 				return nil
 			}
 
-			err := reconciler.rolloutInstance(ctx, observed, instances[0])
+			err := reconciler.rolloutInstance(ctx, cluster, observed, instances[0])
 			assert.ErrorContains(t, err, "switchover")
 		})
 	})
