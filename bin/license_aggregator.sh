@@ -36,3 +36,4 @@ do
 done
 
 sudo chmod -R 755 licenses
+sudo chmod 0644 licenses/LICENSE.txt
