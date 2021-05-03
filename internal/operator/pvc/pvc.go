@@ -198,15 +198,13 @@ func DeleteIfExists(clientset kubernetes.Interface, name string, namespace strin
 	}
 
 	log.Debugf("PVC %s is found", pvc.Name)
+	log.Debugf("delete PVC %s in namespace %s", name, namespace)
 
-	if pvc.ObjectMeta.Labels[config.LABEL_PGREMOVE] == "true" {
-		log.Debugf("delete PVC %s in namespace %s", name, namespace)
-		deletePropagation := metav1.DeletePropagationForeground
-		err = clientset.
-			CoreV1().PersistentVolumeClaims(namespace).
-			Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
-	}
-	return err
+	deletePropagation := metav1.DeletePropagationForeground
+
+	return clientset.
+		CoreV1().PersistentVolumeClaims(namespace).
+		Delete(ctx, name, metav1.DeleteOptions{PropagationPolicy: &deletePropagation})
 }
 
 // Exists test to see if pvc exists

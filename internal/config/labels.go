@@ -34,7 +34,6 @@ const (
 
 const (
 	LABEL_PGPOLICY           = "pgpolicy"
-	LABEL_PGREMOVE           = "pgremove"
 	LABEL_PVCNAME            = "pvcname"
 	LABEL_EXPORTER           = "crunchy-postgres-exporter"
 	LABEL_ARCHIVE            = "archive"

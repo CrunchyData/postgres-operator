@@ -46,10 +46,10 @@ func Status(ns string) msgs.StatusResponse {
 
 func getNumClaims(ns string) int {
 	ctx := context.TODO()
-	// count number of PVCs with pgremove=true
+
 	pvcs, err := apiserver.Clientset.
 		CoreV1().PersistentVolumeClaims(ns).
-		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PGREMOVE})
+		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_VENDOR + "=" + config.LABEL_CRUNCHY})
 	if err != nil {
 		log.Error(err)
 		return 0
@@ -75,7 +75,7 @@ func getVolumeCap(ns string) string {
 	// sum all PVCs storage capacity
 	pvcs, err := apiserver.Clientset.
 		CoreV1().PersistentVolumeClaims(ns).
-		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_PGREMOVE})
+		List(ctx, metav1.ListOptions{LabelSelector: config.LABEL_VENDOR + "=" + config.LABEL_CRUNCHY})
 	if err != nil {
 		log.Error(err)
 		return "error"
