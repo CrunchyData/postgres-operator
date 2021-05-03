@@ -44,10 +44,6 @@
   tags:
     - uninstall
 
-- include_tasks: certs.yml
-  tags:
-    - install
-
 - name: Use kubectl or oc
   set_fact:
     kubectl_or_oc: "{{ openshift_oc_bin if openshift_oc_bin is defined else 'kubectl' }}"
@@ -273,24 +269,6 @@
             - pgo_backrest_repo_config_result.rc == 1
             - (backrest_aws_s3_key | default('') != '') or
               (backrest_aws_s3_secret | default('') != '')
-
-    - name: PGO API Secret
-      tags:
-        - install
-        - update
-      block:
-        - name: Check PGO API Secret
-          shell: "{{ kubectl_or_oc }} get secret pgo.tls -n {{ pgo_operator_namespace }}"
-          register: pgo_tls_result
-          failed_when: false
-
-        - name: Create PGO API Secret
-          command: |
-            {{ kubectl_or_oc }} create secret tls pgo.tls \
-              --cert='{{ output_dir }}/server.crt' \
-              --key='{{ output_dir }}/server.key' \
-              -n {{ pgo_operator_namespace }}
-          when: pgo_tls_result.rc == 1
 
     - name: PGO ConfigMap
       tags:

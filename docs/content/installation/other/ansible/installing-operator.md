@@ -56,37 +56,52 @@ oc get deployments -n <NAMESPACE_NAME>
 oc get pods -n <NAMESPACE_NAME>
 ```
 
-## Configure Environment Variables
-
-After the Crunchy PostgreSQL Operator has successfully been installed we will need
-to configure local environment variables before using the `pgo` client.
+## Install the `pgo` Client
 
 {{% notice info %}}
-
 If TLS authentication was disabled during installation, please see the [TLS Configuration Page] ({{< relref "Configuration/tls.md" >}}) for additional configuration information.
-
 {{% / notice %}}
 
-To configure the environment variables used by `pgo` run the following command:
+During or after the installation of PGO: the Postgres Operator, download the `pgo` client set up script. This will help set up your local environment for using the Postgres Operator:
 
-Note: `<PGO_NAMESPACE>` should be replaced with the namespace the Crunchy PostgreSQL
-Operator was deployed to.
-
-```bash
-cat <<EOF >> ~/.bashrc
-export PGOUSER="${HOME?}/.pgo/<PGO_NAMESPACE>/pgouser"
-export PGO_CA_CERT="${HOME?}/.pgo/<PGO_NAMESPACE>/client.crt"
-export PGO_CLIENT_CERT="${HOME?}/.pgo/<PGO_NAMESPACE>/client.crt"
-export PGO_CLIENT_KEY="${HOME?}/.pgo/<PGO_NAMESPACE>/client.key"
-export PGO_APISERVER_URL='https://127.0.0.1:8443'
-EOF
+```
+curl https://raw.githubusercontent.com/CrunchyData/postgres-operator/v{{< param operatorVersion >}}/installers/kubectl/client-setup.sh > client-setup.sh
+chmod +x client-setup.sh
 ```
 
-Apply those changes to the current session by running:
+When the Postgres Operator is done installing, run the client setup script:
 
-```bash
+```
+./client-setup.sh
+```
+
+This will download the `pgo` client and provide instructions for how to easily use it in your environment. It will prompt you to add some environmental variables for you to set up in your session, which you can do with the following commands:
+
+```
+export PGOUSER="${HOME?}/.pgo/pgo/pgouser"
+export PGO_CA_CERT="${HOME?}/.pgo/pgo/client.crt"
+export PGO_CLIENT_CERT="${HOME?}/.pgo/pgo/client.crt"
+export PGO_CLIENT_KEY="${HOME?}/.pgo/pgo/client.key"
+export PGO_APISERVER_URL='https://127.0.0.1:8443'
+export PGO_NAMESPACE=pgo
+```
+
+If you wish to permanently add these variables to your environment, you can run the following:
+
+```
+cat <<EOF >> ~/.bashrc
+export PGOUSER="${HOME?}/.pgo/pgo/pgouser"
+export PGO_CA_CERT="${HOME?}/.pgo/pgo/client.crt"
+export PGO_CLIENT_CERT="${HOME?}/.pgo/pgo/client.crt"
+export PGO_CLIENT_KEY="${HOME?}/.pgo/pgo/client.key"
+export PGO_APISERVER_URL='https://127.0.0.1:8443'
+export PGO_NAMESPACE=pgo
+EOF
+
 source ~/.bashrc
 ```
+
+**NOTE**: For macOS users, you must use `~/.bash_profile` instead of `~/.bashrc`
 
 ## Verify `pgo` Connection
 
