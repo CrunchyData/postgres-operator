@@ -53,6 +53,10 @@ RUN if  [ "$BASEOS" = "ubi8" ]; then \
     ${PACKAGER} -y update \
     && ${PACKAGER} -y install \
         glibc-langpack-en \
+        procps-ng \
+        less \
+        vim-minimal \
+    && ${PACKAGER} reinstall tzdata -y \
     && ${PACKAGER} -y clean all ; \
 fi
 
