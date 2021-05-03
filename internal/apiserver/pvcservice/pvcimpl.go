@@ -30,9 +30,7 @@ import (
 func ShowPVC(allflag bool, clusterName, ns string) ([]msgs.ShowPVCResponseResult, error) {
 	ctx := context.TODO()
 	pvcList := []msgs.ShowPVCResponseResult{}
-	// note to a future editor...all of our managed PVCs have a label called
-	// called "pgremove"
-	selector := fmt.Sprintf("%s=%s", config.LABEL_PGREMOVE, "true")
+	selector := fmt.Sprintf("%s=%s", config.LABEL_VENDOR, config.LABEL_CRUNCHY)
 
 	// if allflag is not set to true, then update the selector to target the
 	// specific PVCs for a specific cluster

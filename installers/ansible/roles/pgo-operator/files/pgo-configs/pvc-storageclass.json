@@ -5,7 +5,6 @@
         "name": "{{.Name}}",
         "labels": {
             "vendor": "crunchydata",
-            "pgremove": "true",
             "pg-cluster": "{{.ClusterName}}"
         }
     },
