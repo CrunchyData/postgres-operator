@@ -22,7 +22,6 @@ RUN if [ "$DFSET" = "centos" ] ; then \
                 ansible-${ANSIBLE_VERSION} \
                 which \
                 gettext \
-                openssl \
                 nss_wrapper \
         && ${PACKAGER} -y clean all ; \
 fi
@@ -37,7 +36,6 @@ RUN if [ "$BASEOS" = "rhel7" ] ; then \
                 ansible-${ANSIBLE_VERSION} \
                 which \
                 gettext \
-                openssl \
                 nss_wrapper \
         && ${PACKAGER} -y clean all --enablerepo='rhel-7-server-ose-4.4-rpms' ; \
 fi
@@ -52,7 +50,6 @@ RUN if [ "$BASEOS" = "ubi7" ] ; then \
                 ansible-${ANSIBLE_VERSION} \
                 which \
                 gettext \
-                openssl \
                 nss_wrapper \
 	&& ${PACKAGER} -y clean all --enablerepo='rhel-7-server-ose-4.4-rpms' ; \
 fi
@@ -66,7 +63,6 @@ RUN if [ "$BASEOS" = "ubi8" ] ; then \
                 ansible-${ANSIBLE_VERSION} \
                 which \
                 gettext \
-                openssl \
                 nss_wrapper \
 	&& ${PACKAGER} -y clean all --enablerepo='rhocp-4.5-for-rhel-8-x86_64-rpms' ; \
 fi
