@@ -229,9 +229,11 @@ func (r *Reconciler) reconcilePatroniStatus(
 
 	instances := &appsv1.StatefulSetList{}
 	if err == nil {
-		err = r.Client.List(ctx, instances, &client.ListOptions{
-			LabelSelector: instanceSelector,
-		})
+		err = errors.WithStack(
+			r.Client.List(ctx, instances,
+				client.InNamespace(cluster.Namespace),
+				client.MatchingLabelsSelector{Selector: instanceSelector},
+			))
 	}
 
 	if err == nil {
