@@ -19,7 +19,6 @@ import (
 	"context"
 
 	"github.com/crunchydata/postgres-operator/internal/apiserver"
-	"github.com/crunchydata/postgres-operator/internal/config"
 	"github.com/crunchydata/postgres-operator/internal/kubeapi"
 	"github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
@@ -111,7 +110,7 @@ func Label(request *msgs.LabelRequest, ns, pgouser string) msgs.LabelResponse {
 
 func addLabels(items []crv1.Pgcluster, DryRun bool, newLabels map[string]string, ns string) {
 	ctx := context.TODO()
-	patchBytes, err := kubeapi.NewMergePatch().Add("metadata", "labels")(newLabels).Bytes()
+	patchBytes, err := kubeapi.NewMergePatch().Add("spec", "userlabels")(newLabels).Bytes()
 	if err != nil {
 		log.Error(err.Error())
 		return
@@ -128,30 +127,6 @@ func addLabels(items []crv1.Pgcluster, DryRun bool, newLabels map[string]string,
 				log.Error(err.Error())
 			}
 		}
-	}
-
-	for i := 0; i < len(items); i++ {
-		// get deployments for this CRD
-		selector := config.LABEL_PG_CLUSTER + "=" + items[i].Spec.Name
-		deployments, err := apiserver.Clientset.
-			AppsV1().Deployments(ns).
-			List(ctx, metav1.ListOptions{LabelSelector: selector})
-		if err != nil {
-			return
-		}
-
-		for _, d := range deployments.Items {
-			// update Deployment with the label
-			if !DryRun {
-				log.Debugf("patching deployment %s: %s", d.Name, patchBytes)
-				_, err := apiserver.Clientset.AppsV1().Deployments(ns).
-					Patch(ctx, d.Name, types.MergePatchType, patchBytes, metav1.PatchOptions{})
-				if err != nil {
-					log.Error(err.Error())
-				}
-			}
-		}
-
 	}
 }
 
@@ -241,7 +216,7 @@ func deleteLabels(items []crv1.Pgcluster, labelsMap map[string]string, ns string
 	ctx := context.TODO()
 	patch := kubeapi.NewMergePatch()
 	for key := range labelsMap {
-		patch.Remove("metadata", "labels", key)
+		patch.Remove("spec", "userlabels", key)
 	}
 	patchBytes, err := patch.Bytes()
 	if err != nil {
@@ -259,26 +234,5 @@ func deleteLabels(items []crv1.Pgcluster, labelsMap map[string]string, ns string
 		}
 	}
 
-	for i := 0; i < len(items); i++ {
-		// get deployments for this CRD
-		selector := config.LABEL_PG_CLUSTER + "=" + items[i].Spec.Name
-		deployments, err := apiserver.Clientset.
-			AppsV1().Deployments(ns).
-			List(ctx, metav1.ListOptions{LabelSelector: selector})
-		if err != nil {
-			return err
-		}
-
-		for _, d := range deployments.Items {
-			log.Debugf("patching deployment %s: %s", d.Name, patchBytes)
-			_, err = apiserver.Clientset.AppsV1().Deployments(ns).
-				Patch(ctx, d.Name, types.MergePatchType, patchBytes, metav1.PatchOptions{})
-			if err != nil {
-				log.Error(err.Error())
-				return err
-			}
-		}
-
-	}
-	return err
+	return nil
 }

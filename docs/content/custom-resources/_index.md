@@ -854,6 +854,34 @@ spec:
 Save your edits, and in a short period of time, you should see these annotations
 applied to the managed Deployments.
 
+### Manage Custom Labels
+
+Several Kubernetes [Labels](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/)
+are automatically applied by PGO to its managed objects. However, it is possible
+to apply your own custom labels to the objects that PGO manages for a Postgres
+cluster. These objects include:
+
+- ConfigMaps
+- Deployments
+- Jobs
+- Pods
+- PVCs
+- Secrets
+- Services
+
+The custom labels can be managed through the `userlabels` attribute on the
+`pgclusters.crunchydata.com` custom resource spec.
+
+For example, if I want to add a custom label to all of the objects within my
+Postgres cluster with a key of `favorite` and a value of `hippo`, you would
+apply the following to the spec:
+
+```
+spec:
+  userlabels:
+    favorite: hippo
+```
+
 ### Delete a PostgreSQL Cluster
 
 A PostgreSQL cluster can be deleted by simply deleting the `pgclusters.crunchydata.com` resource.
@@ -954,7 +982,7 @@ make changes, as described below.
 | tlsOnly | `create`,`update` | If set to true, requires client connections to use only TLS to connect to the PostgreSQL database. |
 | tolerations | `create`,`update` | Any array of Kubernetes [Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/). Please refer to the [Kubernetes documentation](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/) for how to set this field. |
 | user | `create` | The name of the PostgreSQL user that is created when the PostgreSQL cluster is first created. |
-| userlabels | `create` | A set of key-value string pairs that are used as a sort of "catch-all" as well as a way to add custom labels to clusters. This will disappear at some point. |
+| userlabels | `create`,`update` | A set of key-value string pairs that are used as a sort of "catch-all" as well as a way to add custom labels to clusters. |
 
 ##### Storage Specification
 
