@@ -72,6 +72,21 @@ const (
 	pgBadgerContainerName = "pgbadger"
 )
 
+// systemLabels is a list of the system labels that need to be copied over when
+// also applying the custom labels
+var systemLabels = []string{
+	config.LABEL_PGHA_SCOPE,
+	config.LABEL_DEPLOYMENT_NAME,
+	config.LABEL_NAME,
+	config.LABEL_PG_CLUSTER,
+	config.LABEL_POD_ANTI_AFFINITY,
+	config.LABEL_PG_DATABASE,
+	config.LABEL_PGO_VERSION,
+	config.LABEL_PGOUSER,
+	config.LABEL_VENDOR,
+	config.LABEL_WORKFLOW_ID,
+}
+
 // a group of constants that are used as part of the TLS support
 const (
 	tlsEnvVarEnabled        = "PGHA_TLS_ENABLED"
@@ -699,6 +714,31 @@ func UpdateBackrestS3(clientset kubeapi.Interface, cluster *crv1.Pgcluster, depl
 			}
 		}
 	}
+
+	return nil
+}
+
+// UpdateLabels updates the labels on the template to match those of the custom
+// labels
+func UpdateLabels(clientset kubeapi.Interface, cluster *crv1.Pgcluster, deployment *apps_v1.Deployment) error {
+	log.Debugf("update labels on [%s]", deployment.Name)
+
+	labels := map[string]string{}
+
+	// ...so, try to get all of the "system labels" copied over
+	for _, k := range systemLabels {
+		labels[k] = deployment.Spec.Template.ObjectMeta.Labels[k]
+	}
+
+	// now get the custom labels
+	for k, v := range util.GetCustomLabels(cluster) {
+		labels[k] = v
+	}
+
+	log.Debugf("new labels: %v", labels)
+
+	// set the labels on the deployment object
+	deployment.Spec.Template.ObjectMeta.SetLabels(labels)
 
 	return nil
 }
