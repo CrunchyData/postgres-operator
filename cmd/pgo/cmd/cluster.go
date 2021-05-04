@@ -30,6 +30,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/cmd/pgo/api"
 	"github.com/crunchydata/postgres-operator/cmd/pgo/util"
+	pgoutil "github.com/crunchydata/postgres-operator/internal/util"
 	crv1 "github.com/crunchydata/postgres-operator/pkg/apis/crunchydata.com/v1"
 	msgs "github.com/crunchydata/postgres-operator/pkg/apiservermsgs"
 )
@@ -232,8 +233,13 @@ func printCluster(detail *msgs.ShowClusterDetail) {
 		fmt.Println(TreeBranch + "pgreplica : " + replica.Name)
 	}
 
-	fmt.Printf("%s%s", TreeBranch, "labels : ")
+	labels := pgoutil.GetCustomLabels(&detail.Cluster)
 	for k, v := range detail.Cluster.ObjectMeta.Labels {
+		labels[k] = v
+	}
+
+	fmt.Printf("%s%s", TreeBranch, "labels : ")
+	for k, v := range labels {
 		fmt.Printf("%s=%s ", k, v)
 	}
 	fmt.Println("")
