@@ -176,11 +176,11 @@ else
         fi
         # queries_pg_stat_statements_reset is only available in PG12+. This may
         # need to be updated based on a new path
-        if [[ -f ${CONFIG_DIR?}/queries_pg_stat_statements_reset.yml ]];
+        if [[ -f ${CONFIG_DIR?}/pg12/queries_pg_stat_statements_reset_info.yml ]];
         then
-          cat ${CONFIG_DIR?}/queries_pg_stat_statements_reset.yml >> /tmp/queries.yml
+          cat ${CONFIG_DIR?}/pg12/queries_pg_stat_statements_reset_info.yml >> /tmp/queries.yml
         else
-          echo_warn "Query file queries_pg_stat_statements_reset.yml not loaded."
+          echo_warn "Query file queries_pg_stat_statements_reset_info.yml not loaded."
         fi
     elif (( ${VERSION?} >= 130000 ))
     then
@@ -198,11 +198,11 @@ else
         fi
         # queries_pg_stat_statements_reset is only available in PG12+. This may
         # need to be updated based on a new path
-        if [[ -f ${CONFIG_DIR?}/queries_pg_stat_statements_reset.yml ]];
+        if [[ -f ${CONFIG_DIR?}/pg13/queries_pg_stat_statements_reset_info.yml ]];
         then
-          cat ${CONFIG_DIR?}/queries_pg_stat_statements_reset.yml >> /tmp/queries.yml
+          cat ${CONFIG_DIR?}/pg13/queries_pg_stat_statements_reset_info.yml >> /tmp/queries.yml
         else
-          echo_warn "Query file queries_pg_stat_statements_reset.yml not loaded."
+          echo_warn "Query file queries_pg_stat_statements_reset_info.yml not loaded."
         fi
     else
         echo_err "Unknown or unsupported version of PostgreSQL.  Exiting.."
