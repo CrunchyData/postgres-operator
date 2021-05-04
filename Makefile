@@ -255,7 +255,7 @@ release:  linuxpgo macpgo winpgo
 	cp -r $(PGOROOT)/conf $(RELTMPDIR)
 	tar czvf $(RELFILE) -C $(RELTMPDIR) .
 
-generate: generate-crd generate-deepcopy generate-rbac
+generate: generate-crd generate-crd-docs generate-deepcopy generate-rbac
 	GOBIN='$(CURDIR)/hack/tools' ./hack/update-codegen.sh
 
 generate-crd:
@@ -263,6 +263,13 @@ generate-crd:
 		crd:crdVersions='v1',preserveUnknownFields='false' \
 		paths='./pkg/apis/postgres-operator.crunchydata.com/...' \
 		output:dir='config/crd/bases' # config/crd/bases/{group}_{plural}.yaml
+
+generate-crd-docs:
+	GOBIN='$(CURDIR)/hack/tools' go install github.com/mesh-for-data/crdoc@latest
+	$(CURDIR)/hack/tools/crdoc \
+		--resources $(CURDIR)/config/crd/bases \
+		--output $(CURDIR)/docs/content/references/crd.md \
+		--template $(CURDIR)/hack/api-template.tmpl
 
 generate-deepcopy:
 	GOBIN='$(CURDIR)/hack/tools' ./hack/controller-generator.sh \
