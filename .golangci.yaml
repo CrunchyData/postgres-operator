@@ -22,6 +22,10 @@ linters-settings:
         - gopkg.in/yaml.v2: { recommendations: [sigs.k8s.io/yaml] }
         - gopkg.in/yaml.v3: { recommendations: [sigs.k8s.io/yaml] }
         - gotest.tools: { recommendations: [gotest.tools/v3] }
+        - k8s.io/kubernetes:
+            reason: >
+              k8s.io/kubernetes is for managing dependencies of the Kubernetes
+              project, i.e. building kubelet and kubeadm.
 
 run:
   build-tags:
