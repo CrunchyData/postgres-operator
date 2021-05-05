@@ -440,7 +440,8 @@ func TestReconcilePGDATAVolume(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{Name: clusterName, Namespace: namespace, UID: clusterUID},
 	}
 
-	for _, tc := range testCases {
+	for i := range testCases {
+		tc := testCases[i]
 
 		t.Run(tc.Name, func(t *testing.T) {
 
@@ -479,7 +480,7 @@ func TestPodsToKeep(t *testing.T) {
 		{
 			name: "RemoveSetWithMasterOnly",
 			instances: []v1.Pod{
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-asdf",
 						Labels: map[string]string{
@@ -496,7 +497,7 @@ func TestPodsToKeep(t *testing.T) {
 		}, {
 			name: "RemoveSetWithReplicaOnly",
 			instances: []v1.Pod{
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-asdf",
 						Labels: map[string]string{
@@ -513,7 +514,7 @@ func TestPodsToKeep(t *testing.T) {
 		}, {
 			name: "KeepMasterOnly",
 			instances: []v1.Pod{
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-asdf",
 						Labels: map[string]string{
@@ -532,7 +533,7 @@ func TestPodsToKeep(t *testing.T) {
 		}, {
 			name: "KeepNoRoleLabels",
 			instances: []v1.Pod{
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-asdf",
 						Labels: map[string]string{
@@ -550,7 +551,7 @@ func TestPodsToKeep(t *testing.T) {
 		}, {
 			name: "RemoveSetWithNoRoleLabels",
 			instances: []v1.Pod{
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-asdf",
 						Labels: map[string]string{
@@ -566,7 +567,7 @@ func TestPodsToKeep(t *testing.T) {
 		}, {
 			name: "KeepUnknownRoleLabel",
 			instances: []v1.Pod{
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-asdf",
 						Labels: map[string]string{
@@ -585,7 +586,7 @@ func TestPodsToKeep(t *testing.T) {
 		}, {
 			name: "RemoveSetWithUnknownRoleLabel",
 			instances: []v1.Pod{
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-asdf",
 						Labels: map[string]string{
@@ -602,7 +603,7 @@ func TestPodsToKeep(t *testing.T) {
 		}, {
 			name: "MasterLastInSet",
 			instances: []v1.Pod{
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-asdf",
 						Labels: map[string]string{
@@ -611,7 +612,7 @@ func TestPodsToKeep(t *testing.T) {
 						},
 					},
 				},
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-poih",
 						Labels: map[string]string{
@@ -631,7 +632,7 @@ func TestPodsToKeep(t *testing.T) {
 		}, {
 			name: "ScaleDownSetWithMaster",
 			instances: []v1.Pod{
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "max-asdf",
 						Labels: map[string]string{
@@ -640,7 +641,7 @@ func TestPodsToKeep(t *testing.T) {
 						},
 					},
 				},
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-poih",
 						Labels: map[string]string{
@@ -649,7 +650,7 @@ func TestPodsToKeep(t *testing.T) {
 						},
 					},
 				},
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-dogs",
 						Labels: map[string]string{
@@ -658,7 +659,7 @@ func TestPodsToKeep(t *testing.T) {
 						},
 					},
 				},
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "max-dogs",
 						Labels: map[string]string{
@@ -682,7 +683,7 @@ func TestPodsToKeep(t *testing.T) {
 		}, {
 			name: "ScaleDownSetWithoutMaster",
 			instances: []v1.Pod{
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "max-asdf",
 						Labels: map[string]string{
@@ -691,7 +692,7 @@ func TestPodsToKeep(t *testing.T) {
 						},
 					},
 				},
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-poih",
 						Labels: map[string]string{
@@ -700,7 +701,7 @@ func TestPodsToKeep(t *testing.T) {
 						},
 					},
 				},
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-dogs",
 						Labels: map[string]string{
@@ -709,7 +710,7 @@ func TestPodsToKeep(t *testing.T) {
 						},
 					},
 				},
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "max-dogs",
 						Labels: map[string]string{
@@ -735,7 +736,7 @@ func TestPodsToKeep(t *testing.T) {
 		}, {
 			name: "ScaleMasterSetToZero",
 			instances: []v1.Pod{
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "max-asdf",
 						Labels: map[string]string{
@@ -744,7 +745,7 @@ func TestPodsToKeep(t *testing.T) {
 						},
 					},
 				},
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-poih",
 						Labels: map[string]string{
@@ -753,7 +754,7 @@ func TestPodsToKeep(t *testing.T) {
 						},
 					},
 				},
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-dogs",
 						Labels: map[string]string{
@@ -777,7 +778,7 @@ func TestPodsToKeep(t *testing.T) {
 		}, {
 			name: "RemoveMasterInstanceSet",
 			instances: []v1.Pod{
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "max-asdf",
 						Labels: map[string]string{
@@ -786,7 +787,7 @@ func TestPodsToKeep(t *testing.T) {
 						},
 					},
 				},
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-poih",
 						Labels: map[string]string{
@@ -795,7 +796,7 @@ func TestPodsToKeep(t *testing.T) {
 						},
 					},
 				},
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "daisy-dogs",
 						Labels: map[string]string{
@@ -804,7 +805,7 @@ func TestPodsToKeep(t *testing.T) {
 						},
 					},
 				},
-				v1.Pod{
+				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "max-dogs",
 						Labels: map[string]string{

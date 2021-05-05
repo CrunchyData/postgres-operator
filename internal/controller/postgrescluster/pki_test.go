@@ -34,9 +34,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
@@ -57,10 +55,6 @@ func TestReconcileCerts(t *testing.T) {
 		teardownTestEnv(t, tEnv)
 	})
 	namespace := ns.Name
-
-	testScheme := runtime.NewScheme()
-	scheme.AddToScheme(testScheme)
-	v1beta1.AddToScheme(testScheme)
 
 	r := &Reconciler{
 		Client: tClient,
@@ -141,7 +135,7 @@ func TestReconcileCerts(t *testing.T) {
 			assert.NilError(t, err)
 
 			clist := &v1beta1.PostgresClusterList{}
-			tClient.List(ctx, clist)
+			assert.NilError(t, tClient.List(ctx, clist))
 
 			assert.Check(t, len(rootSecret.ObjectMeta.OwnerReferences) == 2, "second owner reference not set")
 
@@ -300,10 +294,10 @@ func TestReconcileCerts(t *testing.T) {
 
 			// get the existing leaf/instance secret which will receive a new certificate during reconciliation
 			existingInstanceSecret := &v1.Secret{}
-			err = tClient.Get(ctx, types.NamespacedName{
+			assert.NilError(t, tClient.Get(ctx, types.NamespacedName{
 				Name:      instance.GetName() + "-certs",
 				Namespace: namespace,
-			}, existingInstanceSecret)
+			}, existingInstanceSecret))
 
 			// create an empty 'intent' secret for the reconcile function
 			instanceIntentSecret := &v1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}

@@ -33,11 +33,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
@@ -45,28 +43,18 @@ import (
 func TestPatroniReplicationSecret(t *testing.T) {
 	// setup the test environment and ensure a clean teardown
 	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-
-	testScheme := runtime.NewScheme()
-	scheme.AddToScheme(testScheme)
-	v1beta1.AddToScheme(testScheme)
-
-	// set up a non-cached client
-	newClient, err := client.New(cfg, client.Options{Scheme: testScheme})
-	assert.NilError(t, err)
+	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 
 	r := &Reconciler{}
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
-			Client:   newClient,
+			Client:   tClient,
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
 			Tracer:   otel.Tracer(ControllerName),
 			Owner:    ControllerName,
 		}
 	})
-	t.Cleanup(func() {
-		teardownManager(cancel, t)
-		teardownTestEnv(t, tEnv)
-	})
+	t.Cleanup(func() { teardownManager(cancel, t) })
 
 	// test postgrescluster values
 	var (
@@ -93,7 +81,7 @@ func TestPatroniReplicationSecret(t *testing.T) {
 	assert.NilError(t, err)
 
 	t.Run("reconcile", func(t *testing.T) {
-		_, err := r.reconcileReplicationSecret(ctx, postgresCluster, rootCA)
+		_, err = r.reconcileReplicationSecret(ctx, postgresCluster, rootCA)
 		assert.NilError(t, err)
 	})
 
@@ -159,6 +147,7 @@ func TestPatroniReplicationSecret(t *testing.T) {
 		assert.NilError(t, err)
 
 		testReplicationSecret, err := r.reconcileReplicationSecret(ctx, postgresCluster, rootCA)
+		assert.NilError(t, err)
 
 		t.Run("check standard secret projection", func(t *testing.T) {
 			secretCertProj := replicationCertSecretProjection(testReplicationSecret)

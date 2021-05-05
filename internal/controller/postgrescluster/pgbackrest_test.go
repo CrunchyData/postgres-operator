@@ -19,7 +19,6 @@ package postgrescluster
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"testing"
 	"time"
@@ -128,7 +127,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 	instanceNames := []string{"instance1", "instance2", "instance3"}
 	result, err := r.reconcilePGBackRest(ctx, postgresCluster, instanceNames)
 	if err != nil || result != (reconcile.Result{}) {
-		t.Error(fmt.Errorf("unable to reconcile pgBackRest: %v", err))
+		t.Errorf("unable to reconcile pgBackRest: %v", err)
 	}
 
 	// test that the repo was created properly
@@ -378,13 +377,13 @@ func TestReconcilePGBackRest(t *testing.T) {
 		}
 		assert.NilError(t, r.Client.Create(ctx, repoHost))
 
-		err := wait.Poll(time.Second/2, time.Second*3, func() (bool, error) {
+		assert.NilError(t, wait.Poll(time.Second/2, time.Second*3, func() (bool, error) {
 			if err := r.Client.Get(ctx,
 				client.ObjectKeyFromObject(repoHost), &corev1.Pod{}); err != nil {
 				return false, nil
 			}
 			return true, nil
-		})
+		}))
 
 		// first verify a stanza create success
 		r.PodExec = stanzaCreateSuccess

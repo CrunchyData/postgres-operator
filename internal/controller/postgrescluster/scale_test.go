@@ -25,7 +25,6 @@ import (
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
@@ -38,8 +37,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
-
-var count int
 
 func Int32(v int32) *int32 { return &v }
 
@@ -355,13 +352,11 @@ func TestScaleDown(t *testing.T) {
 			// Does each instance set have the correct number of replicas?
 			instances := &appsv1.StatefulSetList{}
 			selector, err := naming.AsSelector(naming.ClusterInstances(cluster.Name))
-			if err == nil {
-				err = errors.WithStack(
-					reconciler.Client.List(ctx, instances,
-						client.InNamespace(cluster.Namespace),
-						client.MatchingLabelsSelector{Selector: selector},
-					))
-			}
+			assert.NilError(t, err)
+			assert.NilError(t, reconciler.Client.List(ctx, instances,
+				client.InNamespace(cluster.Namespace),
+				client.MatchingLabelsSelector{Selector: selector},
+			))
 
 			// Once again we make sure that the number of instances in the
 			// environment reflect the number we expect

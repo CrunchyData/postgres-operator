@@ -141,17 +141,19 @@ func TestReconcilerHandleDelete(t *testing.T) {
 						primary = &list.Items[i]
 					}
 				}
-				assert.Assert(t, primary != nil, "expected to find a primary in %+v", list.Items)
-				assert.Assert(t, replica != nil, "expected to find a replica in %+v", list.Items)
 
-				success, err := patroni.Executor(
-					func(_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string) error {
-						return reconciler.PodExec(replica.Namespace, replica.Name, "database", stdin, stdout, stderr, command...)
-					},
-				).ChangePrimaryAndWait(ctx, primary.Name, replica.Name)
+				if true &&
+					assert.Check(t, primary != nil, "expected to find a primary in %+v", list.Items) &&
+					assert.Check(t, replica != nil, "expected to find a replica in %+v", list.Items) {
+					success, err := patroni.Executor(
+						func(_ context.Context, stdin io.Reader, stdout, stderr io.Writer, command ...string) error {
+							return reconciler.PodExec(replica.Namespace, replica.Name, "database", stdin, stdout, stderr, command...)
+						},
+					).ChangePrimaryAndWait(ctx, primary.Name, replica.Name)
 
-				assert.NilError(t, err)
-				assert.Assert(t, success)
+					assert.NilError(t, err)
+					assert.Assert(t, success)
+				}
 			},
 		},
 

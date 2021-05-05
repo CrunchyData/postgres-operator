@@ -42,7 +42,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -52,28 +51,18 @@ func TestReconcilePGUserSecret(t *testing.T) {
 
 	// setup the test environment and ensure a clean teardown
 	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
-
-	testScheme := runtime.NewScheme()
-	scheme.AddToScheme(testScheme)
-	v1beta1.AddToScheme(testScheme)
-
-	// set up a non-cached client
-	newClient, err := client.New(cfg, client.Options{Scheme: testScheme})
-	assert.NilError(t, err)
+	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
 
 	r := &Reconciler{}
 	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
 		r = &Reconciler{
-			Client:   newClient,
+			Client:   tClient,
 			Recorder: mgr.GetEventRecorderFor(ControllerName),
 			Tracer:   otel.Tracer(ControllerName),
 			Owner:    ControllerName,
 		}
 	})
-	t.Cleanup(func() {
-		teardownManager(cancel, t)
-		teardownTestEnv(t, tEnv)
-	})
+	t.Cleanup(func() { teardownManager(cancel, t) })
 
 	// test postgrescluster values
 	var (
@@ -111,7 +100,7 @@ func TestReconcilePGUserSecret(t *testing.T) {
 
 		pgUserSecret := &v1.Secret{ObjectMeta: naming.PostgresUserSecret(postgresCluster)}
 		pgUserSecret.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
-		err = r.Client.Get(ctx, client.ObjectKeyFromObject(pgUserSecret), pgUserSecret)
+		err := r.Client.Get(ctx, client.ObjectKeyFromObject(pgUserSecret), pgUserSecret)
 		assert.NilError(t, err)
 
 		databasename, ok := pgUserSecret.Data["dbname"]
@@ -305,7 +294,8 @@ func TestCustomGlobalLabels(t *testing.T) {
 			client.InNamespace(cluster.Namespace),
 			client.MatchingLabelsSelector{Selector: selector}))
 
-		for _, u := range uList.Items {
+		for i := range uList.Items {
+			u := uList.Items[i]
 			var resourceLabels map[string]string
 			var templateLabels map[string]string
 
@@ -450,7 +440,8 @@ func TestCustomInstanceLabels(t *testing.T) {
 					client.InNamespace(cluster.Namespace),
 					client.MatchingLabelsSelector{Selector: selector}))
 
-				for _, u := range uList.Items {
+				for i := range uList.Items {
+					u := uList.Items[i]
 					var resourceLabels map[string]string
 					var templateLabels map[string]string
 
@@ -586,7 +577,8 @@ func TestCustomPGBackRestLabels(t *testing.T) {
 			client.InNamespace(cluster.Namespace),
 			client.MatchingLabelsSelector{Selector: selector}))
 
-		for _, u := range uList.Items {
+		for i := range uList.Items {
+			u := uList.Items[i]
 			var resourceLabels map[string]string
 			var templateLabels map[string]string
 
@@ -716,7 +708,8 @@ func TestCustomPGBouncerLabels(t *testing.T) {
 			client.InNamespace(cluster.Namespace),
 			client.MatchingLabelsSelector{Selector: selector}))
 
-		for _, u := range uList.Items {
+		for i := range uList.Items {
+			u := uList.Items[i]
 			var resourceLabels map[string]string
 			var templateLabels map[string]string
 

@@ -92,7 +92,7 @@ func testCluster() *v1beta1.PostgresCluster {
 // setupTestEnv configures and starts an EnvTest instance of etcd and the Kubernetes API server
 // for test usage, as well as creates a new client instance.
 func setupTestEnv(t *testing.T,
-	controllerName string) (*envtest.Environment, client.Client, *rest.Config) {
+	_ string) (*envtest.Environment, client.Client, *rest.Config) {
 
 	testEnv := &envtest.Environment{
 		CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},

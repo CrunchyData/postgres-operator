@@ -24,5 +24,7 @@ linters-settings:
         - gotest.tools: { recommendations: [gotest.tools/v3] }
 
 run:
+  build-tags:
+    - envtest
   skip-dirs:
     - pkg/generated

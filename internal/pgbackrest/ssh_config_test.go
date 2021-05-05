@@ -47,13 +47,14 @@ func TestKeys(t *testing.T) {
 
 	t.Run("test private key", func(t *testing.T) {
 		block, _ := pem.Decode(testKeys.Private)
-		assert.Assert(t, block != nil)
 
-		private, err := x509.ParseECPrivateKey(block.Bytes)
+		if assert.Check(t, block != nil) {
+			private, err := x509.ParseECPrivateKey(block.Bytes)
 
-		assert.NilError(t, err)
-		assert.Equal(t, fmt.Sprintf("%T", private), "*ecdsa.PrivateKey")
-		assert.Equal(t, private.Params().BitSize, 521)
+			assert.NilError(t, err)
+			assert.Equal(t, fmt.Sprintf("%T", private), "*ecdsa.PrivateKey")
+			assert.Equal(t, private.Params().BitSize, 521)
+		}
 	})
 
 	t.Run("test public key", func(t *testing.T) {
