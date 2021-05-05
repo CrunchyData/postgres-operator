@@ -49,14 +49,6 @@ const (
 	// ControllerName is the name of the PostgresCluster controller
 	ControllerName = "postgrescluster-controller"
 
-	// LabelPostgresCluster is used to indicate the name of the PostgresCluster a specific resource
-	// is associated with
-	LabelPostgresCluster = LabelPrefix + "postgrescluster"
-
-	// LabelPrefix the prefix that should be appended to any labels created by the PostgresCluster
-	// controller
-	LabelPrefix = "crunchydata.com/"
-
 	// workerCount defines the number of worker queues for the PostgresCluster controller
 	workerCount = 2
 )

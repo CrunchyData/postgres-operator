@@ -32,6 +32,8 @@ type DedicatedRepo struct {
 
 // PostgresClusterSpec defines the desired state of PostgresCluster
 type PostgresClusterSpec struct {
+	// +optional
+	Metadata Metadata `json:"metadata,omitempty"`
 
 	// PostgreSQL archive configuration
 	// +kubebuilder:validation:Required
@@ -150,6 +152,8 @@ const (
 )
 
 type PostgresInstanceSetSpec struct {
+	Metadata Metadata `json:"metadata,omitempty"`
+
 	// +optional
 	// +kubebuilder:default=""
 	Name string `json:"name"`
@@ -234,4 +238,9 @@ type PostgresClusterList struct {
 
 func init() {
 	SchemeBuilder.Register(&PostgresCluster{}, &PostgresClusterList{})
+}
+
+// Metadata contains metadata for PostgresCluster resources
+type Metadata struct {
+	Labels map[string]string `json:"labels,omitempty"`
 }

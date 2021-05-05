@@ -45,9 +45,10 @@ func (r *Reconciler) reconcileClusterConfigMap(
 
 	err := errors.WithStack(r.setControllerReference(cluster, clusterConfigMap))
 
-	clusterConfigMap.Labels = map[string]string{
-		naming.LabelCluster: cluster.Name,
-	}
+	clusterConfigMap.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+		})
 
 	if err == nil {
 		err = patroni.ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser, clusterConfigMap)
@@ -71,9 +72,10 @@ func (r *Reconciler) reconcileClusterPodService(
 
 	err := errors.WithStack(r.setControllerReference(cluster, clusterPodService))
 
-	clusterPodService.Labels = map[string]string{
-		naming.LabelCluster: cluster.Name,
-	}
+	clusterPodService.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+		})
 
 	// Allocate no IP address (headless) and match any Pod with the cluster
 	// label, regardless of its readiness. Not particularly useful by itself, but
@@ -111,10 +113,11 @@ func (r *Reconciler) reconcileClusterPrimaryService(
 
 	err := errors.WithStack(r.setControllerReference(cluster, clusterPrimaryService))
 
-	clusterPrimaryService.Labels = map[string]string{
-		naming.LabelCluster: cluster.Name,
-		naming.LabelRole:    naming.RolePrimary,
-	}
+	clusterPrimaryService.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+			naming.LabelRole:    naming.RolePrimary,
+		})
 
 	if err == nil && leader == nil {
 		// TODO(cbandy): We need to build a different kind of Service here.
@@ -153,10 +156,11 @@ func (r *Reconciler) reconcileClusterPrimaryService(
 		err = errors.WithStack(r.setControllerReference(cluster, endpoints))
 	}
 
-	endpoints.Labels = map[string]string{
-		naming.LabelCluster: cluster.Name,
-		naming.LabelRole:    naming.RolePrimary,
-	}
+	endpoints.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+			naming.LabelRole:    naming.RolePrimary,
+		})
 
 	// Resolve to the ClusterIP for which Patroni has configured the Endpoints.
 	endpoints.Subsets = []v1.EndpointSubset{{
@@ -246,10 +250,11 @@ func (r *Reconciler) reconcilePGUserSecret(
 	intent.Data["uri"] = []byte(connectionString)
 
 	// set postgrescluster label
-	intent.Labels = map[string]string{
-		naming.LabelCluster:    cluster.Name,
-		naming.LabelUserSecret: cluster.Name,
-	}
+	intent.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster:    cluster.Name,
+			naming.LabelUserSecret: cluster.Name,
+		})
 
 	err = errors.WithStack(r.setControllerReference(cluster, intent))
 

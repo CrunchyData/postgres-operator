@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"gotest.tools/v3/assert"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/validation"
 )
 
@@ -42,6 +43,78 @@ func TestLabelValuesValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsDNS1123Label(RolePGBouncer))
 	assert.Assert(t, nil == validation.IsDNS1123Label(RolePrimary))
 	assert.Assert(t, nil == validation.IsDNS1123Label(RoleReplica))
+}
+
+func TestMerge(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		sets   []map[string]string
+		expect labels.Set
+	}{
+		{
+			name: "two-sets-no-overlap",
+			sets: []map[string]string{{
+				"label.one": "one",
+			}, {
+				"label.two": "two",
+			}},
+			expect: labels.Set{
+				"label.one": "one",
+				"label.two": "two",
+			},
+		}, {
+			name: "two-sets-overlap",
+			sets: []map[string]string{{
+				LabelCluster: "bad",
+				"label.one":  "one",
+			}, {
+				LabelCluster: "good",
+				"label.two":  "two",
+			}},
+			expect: labels.Set{
+				"label.one":  "one",
+				"label.two":  "two",
+				LabelCluster: "good",
+			},
+		}, {
+			name: "three-sets-no-overlap",
+			sets: []map[string]string{{
+				"label.one": "one",
+			}, {
+				"label.two": "two",
+			}, {
+				"label.three": "three",
+			}},
+			expect: labels.Set{
+				"label.one":   "one",
+				"label.two":   "two",
+				"label.three": "three",
+			},
+		}, {
+			name: "three-sets-overlap",
+			sets: []map[string]string{{
+				LabelCluster: "bad-one",
+				"label.one":  "one",
+			}, {
+				LabelCluster: "bad-two",
+				"label.two":  "two",
+			}, {
+				LabelCluster:  "good",
+				"label.three": "three",
+			}},
+			expect: labels.Set{
+				"label.one":   "one",
+				"label.two":   "two",
+				"label.three": "three",
+				LabelCluster:  "good",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			merged := Merge(test.sets...)
+			assert.DeepEqual(t, merged, test.expect)
+		})
+	}
 }
 
 // validate various functions that return pgBackRest labels

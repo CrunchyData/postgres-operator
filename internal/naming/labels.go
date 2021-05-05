@@ -74,6 +74,16 @@ const (
 	RolePGBouncer = "pgbouncer"
 )
 
+// Merge takes sets of labels and merges them. The last set
+// provided will win in case of conflicts.
+func Merge(sets ...map[string]string) labels.Set {
+	merged := labels.Set{}
+	for _, set := range sets {
+		merged = labels.Merge(merged, set)
+	}
+	return merged
+}
+
 // PGBackRestLabels provides common labels for pgBackRest resources.
 func PGBackRestLabels(clusterName string) labels.Set {
 	return map[string]string{

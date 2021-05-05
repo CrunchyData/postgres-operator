@@ -63,7 +63,10 @@ type sshKey struct {
 func CreateSSHConfigMapIntent(postgresCluster *v1beta1.PostgresCluster) v1.ConfigMap {
 
 	meta := naming.PGBackRestSSHConfig(postgresCluster)
-	meta.Labels = naming.PGBackRestRepoHostLabels(postgresCluster.GetName())
+	meta.Labels = naming.Merge(postgresCluster.Spec.Metadata.Labels,
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+		naming.PGBackRestRepoHostLabels(postgresCluster.GetName()),
+	)
 
 	cm := v1.ConfigMap{
 		TypeMeta: metav1.TypeMeta{
@@ -95,7 +98,10 @@ func CreateSSHSecretIntent(postgresCluster *v1beta1.PostgresCluster,
 	currentSSHSecret *v1.Secret) (v1.Secret, error) {
 
 	meta := naming.PGBackRestSSHSecret(postgresCluster)
-	meta.Labels = naming.PGBackRestRepoHostLabels(postgresCluster.GetName())
+	meta.Labels = naming.Merge(postgresCluster.Spec.Metadata.Labels,
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+		naming.PGBackRestRepoHostLabels(postgresCluster.GetName()),
+	)
 
 	secret := v1.Secret{
 		TypeMeta: metav1.TypeMeta{

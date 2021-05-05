@@ -409,11 +409,14 @@ func (r *Reconciler) reconcileInstance(
 	err := errors.WithStack(r.setControllerReference(cluster, instance))
 
 	if err == nil {
-		instance.Labels = map[string]string{
-			naming.LabelCluster:     cluster.Name,
-			naming.LabelInstanceSet: spec.Name,
-			naming.LabelInstance:    instance.Name,
-		}
+		instance.Labels = naming.Merge(
+			cluster.Spec.Metadata.Labels,
+			spec.Metadata.Labels,
+			map[string]string{
+				naming.LabelCluster:     cluster.Name,
+				naming.LabelInstanceSet: spec.Name,
+				naming.LabelInstance:    instance.Name,
+			})
 		instance.Spec.Selector = &metav1.LabelSelector{
 			MatchLabels: map[string]string{
 				naming.LabelCluster:     cluster.Name,
@@ -421,11 +424,14 @@ func (r *Reconciler) reconcileInstance(
 				naming.LabelInstance:    instance.Name,
 			},
 		}
-		instance.Spec.Template.Labels = map[string]string{
-			naming.LabelCluster:     cluster.Name,
-			naming.LabelInstanceSet: spec.Name,
-			naming.LabelInstance:    instance.Name,
-		}
+		instance.Spec.Template.Labels = naming.Merge(
+			cluster.Spec.Metadata.Labels,
+			spec.Metadata.Labels,
+			map[string]string{
+				naming.LabelCluster:     cluster.Name,
+				naming.LabelInstanceSet: spec.Name,
+				naming.LabelInstance:    instance.Name,
+			})
 
 		// Don't clutter the namespace with extra ControllerRevisions.
 		// The "controller-revision-hash" label still exists on the Pod.
@@ -492,11 +498,11 @@ func (r *Reconciler) reconcileInstance(
 	)
 
 	if err == nil {
-		instanceConfigMap, err = r.reconcileInstanceConfigMap(ctx, cluster, instance)
+		instanceConfigMap, err = r.reconcileInstanceConfigMap(ctx, cluster, spec, instance)
 	}
 	if err == nil {
 		instanceCertificates, err = r.reconcileInstanceCertificates(
-			ctx, cluster, instance, rootCA)
+			ctx, cluster, spec, instance, rootCA)
 	}
 	if err == nil {
 		err = r.reconcilePGDATAVolume(ctx, cluster, spec, instance)
@@ -598,11 +604,13 @@ func (r *Reconciler) reconcilePGDATAVolume(ctx context.Context, cluster *v1beta1
 
 	// generate metadata
 	meta := naming.InstancePGDataVolume(instance)
-	meta.Labels = map[string]string{
-		naming.LabelCluster:     cluster.GetName(),
-		naming.LabelInstanceSet: spec.Name,
-		naming.LabelInstance:    instance.GetName(),
-	}
+	meta.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		spec.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster:     cluster.GetName(),
+			naming.LabelInstanceSet: spec.Name,
+			naming.LabelInstance:    instance.GetName(),
+		})
 
 	pgdataVolume := &v1.PersistentVolumeClaim{
 		TypeMeta: metav1.TypeMeta{
@@ -628,7 +636,8 @@ func (r *Reconciler) reconcilePGDATAVolume(ctx context.Context, cluster *v1beta1
 // reconcileInstanceConfigMap writes the ConfigMap that contains generated
 // files (etc) that apply to instance of cluster.
 func (r *Reconciler) reconcileInstanceConfigMap(
-	ctx context.Context, cluster *v1beta1.PostgresCluster, instance *appsv1.StatefulSet,
+	ctx context.Context, cluster *v1beta1.PostgresCluster, spec *v1beta1.PostgresInstanceSetSpec,
+	instance *appsv1.StatefulSet,
 ) (*v1.ConfigMap, error) {
 	instanceConfigMap := &v1.ConfigMap{ObjectMeta: naming.InstanceConfigMap(instance)}
 	instanceConfigMap.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("ConfigMap"))
@@ -636,10 +645,13 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 	// TODO(cbandy): Instance StatefulSet as owner?
 	err := errors.WithStack(r.setControllerReference(cluster, instanceConfigMap))
 
-	instanceConfigMap.Labels = map[string]string{
-		naming.LabelCluster:  cluster.Name,
-		naming.LabelInstance: instance.Name,
-	}
+	instanceConfigMap.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		spec.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster:     cluster.Name,
+			naming.LabelInstanceSet: spec.Name,
+			naming.LabelInstance:    instance.Name,
+		})
 
 	if err == nil {
 		err = patroni.InstanceConfigMap(ctx, cluster, instance, instanceConfigMap)
@@ -658,7 +670,8 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 // and private keys for instance of cluster.
 func (r *Reconciler) reconcileInstanceCertificates(
 	ctx context.Context, cluster *v1beta1.PostgresCluster,
-	instance *appsv1.StatefulSet, root *pki.RootCertificateAuthority,
+	spec *v1beta1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet,
+	root *pki.RootCertificateAuthority,
 ) (*v1.Secret, error) {
 	existing := &v1.Secret{ObjectMeta: naming.InstanceCertificates(instance)}
 	err := errors.WithStack(client.IgnoreNotFound(
@@ -672,10 +685,13 @@ func (r *Reconciler) reconcileInstanceCertificates(
 		err = errors.WithStack(r.setControllerReference(cluster, instanceCerts))
 	}
 
-	instanceCerts.Labels = map[string]string{
-		naming.LabelCluster:  cluster.Name,
-		naming.LabelInstance: instance.Name,
-	}
+	instanceCerts.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		spec.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster:     cluster.Name,
+			naming.LabelInstanceSet: spec.Name,
+			naming.LabelInstance:    instance.Name,
+		})
 
 	// This secret is holding certificates, but the "kubernetes.io/tls" type
 	// expects an *unencrypted* private key. We're also adding other values and

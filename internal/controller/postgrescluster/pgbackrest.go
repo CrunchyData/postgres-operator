@@ -322,7 +322,10 @@ func unstructuredToRepoResources(postgresCluster *v1beta1.PostgresCluster, kind 
 func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresCluster,
 	repoHostName string) (*appsv1.StatefulSet, error) {
 
-	labels := naming.PGBackRestDedicatedLabels(postgresCluster.GetName())
+	labels := naming.Merge(postgresCluster.Spec.Metadata.Labels,
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+		naming.PGBackRestDedicatedLabels(postgresCluster.GetName()),
+	)
 
 	repo := &appsv1.StatefulSet{
 		TypeMeta: metav1.TypeMeta{
@@ -336,7 +339,7 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 		},
 		Spec: appsv1.StatefulSetSpec{
 			Selector: &metav1.LabelSelector{
-				MatchLabels: labels,
+				MatchLabels: naming.PGBackRestDedicatedLabels(postgresCluster.GetName()),
 			},
 			ServiceName: naming.ClusterPodService(postgresCluster).Name,
 			Template: v1.PodTemplateSpec{
@@ -383,7 +386,10 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 func (r *Reconciler) generateRepoVolumeIntent(postgresCluster *v1beta1.PostgresCluster,
 	spec *v1.PersistentVolumeClaimSpec, repoName string) (*v1.PersistentVolumeClaim, error) {
 
-	labels := naming.PGBackRestRepoVolumeLabels(postgresCluster.GetName(), repoName)
+	labels := naming.Merge(postgresCluster.Spec.Metadata.Labels,
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+		naming.PGBackRestRepoVolumeLabels(postgresCluster.GetName(), repoName),
+	)
 
 	// generate metadata
 	meta := naming.PGBackRestRepoVolume(postgresCluster, repoName)

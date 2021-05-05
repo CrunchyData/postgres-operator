@@ -51,9 +51,11 @@ metadata:
   creationTimestamp: null
 spec:
   archive:
-    pgbackrest: {}
+    pgbackrest:
+      metadata: {}
   image: ""
   instances: null
+  metadata: {}
   patroni:
     dynamicConfiguration: null
     leaderLeaseDurationSeconds: 30
@@ -81,14 +83,17 @@ metadata:
   creationTimestamp: null
 spec:
   archive:
-    pgbackrest: {}
+    pgbackrest:
+      metadata: {}
   image: ""
   instances:
-  - name: "00"
+  - metadata: {}
+    name: "00"
     replicas: 1
     resources: {}
     volumeClaimSpec:
       resources: {}
+  metadata: {}
   patroni:
     dynamicConfiguration: null
     leaderLeaseDurationSeconds: 30
@@ -123,6 +128,7 @@ status:
 pgBouncer:
   config: {}
   image: ""
+  metadata: {}
   port: 5432
   replicas: 1
   resources: {}
@@ -137,6 +143,7 @@ func TestPostgresInstanceSetSpecDefault(t *testing.T) {
 	b, err := yaml.Marshal(spec)
 	assert.NilError(t, err)
 	assert.DeepEqual(t, string(b), strings.TrimSpace(`
+metadata: {}
 name: "05"
 replicas: 1
 resources: {}

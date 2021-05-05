@@ -88,10 +88,12 @@ func (r *Reconciler) reconcilePGBouncerConfigMap(
 
 	err := errors.WithStack(r.setControllerReference(cluster, configmap))
 
-	configmap.Labels = map[string]string{
-		naming.LabelCluster: cluster.Name,
-		naming.LabelRole:    naming.RolePGBouncer,
-	}
+	configmap.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		cluster.Spec.Proxy.PGBouncer.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+			naming.LabelRole:    naming.RolePGBouncer,
+		})
 
 	if err == nil {
 		pgbouncer.ConfigMap(cluster, configmap)
@@ -232,10 +234,12 @@ func (r *Reconciler) reconcilePGBouncerSecret(
 		err = errors.WithStack(r.setControllerReference(cluster, intent))
 	}
 
-	intent.Labels = map[string]string{
-		naming.LabelCluster: cluster.Name,
-		naming.LabelRole:    naming.RolePGBouncer,
-	}
+	intent.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		cluster.Spec.Proxy.PGBouncer.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+			naming.LabelRole:    naming.RolePGBouncer,
+		})
 
 	if err == nil {
 		err = pgbouncer.Secret(ctx, cluster, root, existing, service, intent)
@@ -270,10 +274,12 @@ func (r *Reconciler) reconcilePGBouncerService(
 
 	err := errors.WithStack(r.setControllerReference(cluster, service))
 
-	service.Labels = map[string]string{
-		naming.LabelCluster: cluster.Name,
-		naming.LabelRole:    naming.RolePGBouncer,
-	}
+	service.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		cluster.Spec.Proxy.PGBouncer.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+			naming.LabelRole:    naming.RolePGBouncer,
+		})
 
 	// Allocate an IP address and let Kubernetes manage the Endpoints by selecting
 	// Pods with the PgBouncer role.
@@ -360,20 +366,24 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 
 	err := errors.WithStack(r.setControllerReference(cluster, deploy))
 
-	deploy.Labels = map[string]string{
-		naming.LabelCluster: cluster.Name,
-		naming.LabelRole:    naming.RolePGBouncer,
-	}
+	deploy.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		cluster.Spec.Proxy.PGBouncer.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+			naming.LabelRole:    naming.RolePGBouncer,
+		})
 	deploy.Spec.Selector = &metav1.LabelSelector{
 		MatchLabels: map[string]string{
 			naming.LabelCluster: cluster.Name,
 			naming.LabelRole:    naming.RolePGBouncer,
 		},
 	}
-	deploy.Spec.Template.Labels = map[string]string{
-		naming.LabelCluster: cluster.Name,
-		naming.LabelRole:    naming.RolePGBouncer,
-	}
+	deploy.Spec.Template.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		cluster.Spec.Proxy.PGBouncer.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+			naming.LabelRole:    naming.RolePGBouncer,
+		})
 
 	deploy.Spec.Replicas = cluster.Spec.Proxy.PGBouncer.Replicas
 

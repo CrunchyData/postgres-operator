@@ -65,15 +65,18 @@ func (r *Reconciler) reconcileInstanceRBAC(
 		err = errors.WithStack(r.setControllerReference(cluster, role))
 	}
 
-	account.Labels = map[string]string{
-		naming.LabelCluster: cluster.Name,
-	}
-	binding.Labels = map[string]string{
-		naming.LabelCluster: cluster.Name,
-	}
-	role.Labels = map[string]string{
-		naming.LabelCluster: cluster.Name,
-	}
+	account.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+		})
+	binding.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+		})
+	role.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+		})
 
 	account.AutomountServiceAccountToken = initialize.Bool(true)
 	binding.RoleRef = rbacv1.RoleRef{

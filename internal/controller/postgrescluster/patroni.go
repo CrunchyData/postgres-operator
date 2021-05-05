@@ -75,10 +75,11 @@ func (r *Reconciler) reconcilePatroniDistributedConfiguration(
 
 	err := errors.WithStack(r.setControllerReference(cluster, dcsService))
 
-	dcsService.Labels = map[string]string{
-		naming.LabelCluster: cluster.Name,
-		naming.LabelPatroni: naming.PatroniScope(cluster),
-	}
+	dcsService.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+			naming.LabelPatroni: naming.PatroniScope(cluster),
+		})
 
 	// Allocate no IP address (headless) and create no Endpoints.
 	// - https://docs.k8s.io/concepts/services-networking/service/#headless-services
@@ -166,10 +167,11 @@ func (r *Reconciler) reconcilePatroniLeaderLease(
 
 	err := errors.WithStack(r.setControllerReference(cluster, leaderService))
 
-	leaderService.Labels = map[string]string{
-		naming.LabelCluster: cluster.Name,
-		naming.LabelPatroni: naming.PatroniScope(cluster),
-	}
+	leaderService.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster: cluster.Name,
+			naming.LabelPatroni: naming.PatroniScope(cluster),
+		})
 
 	// Allocate an IP address and let Patroni manage the Endpoints. Patroni will
 	// ensure that they always route to the elected leader.
@@ -301,10 +303,11 @@ func (r *Reconciler) reconcileReplicationSecret(
 	intent.Data = make(map[string][]byte)
 
 	// set labels
-	intent.Labels = map[string]string{
-		naming.LabelCluster:            cluster.Name,
-		naming.LabelClusterCertificate: "replication-client-tls",
-	}
+	intent.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+		map[string]string{
+			naming.LabelCluster:            cluster.Name,
+			naming.LabelClusterCertificate: "replication-client-tls",
+		})
 
 	if err := errors.WithStack(r.setControllerReference(cluster, intent)); err != nil {
 		return nil, err
