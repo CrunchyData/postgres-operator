@@ -128,6 +128,10 @@ func TestPGBackRestLabelFuncs(t *testing.T) {
 	assert.Equal(t, pgBackRestLabels.Get(LabelCluster), clusterName)
 	assert.Check(t, pgBackRestLabels.Has(LabelPGBackRest))
 
+	// verify that the labels selector is created as expected
+	pgBackRestSelector := PGBackRestSelector(clusterName)
+	assert.Check(t, pgBackRestSelector.Matches(pgBackRestLabels))
+
 	// verify the labels that identify pgBackRest repo resources
 	pgBackRestRepoLabels := PGBackRestRepoLabels(clusterName, repoName)
 	assert.Equal(t, pgBackRestRepoLabels.Get(LabelCluster), clusterName)
@@ -146,6 +150,10 @@ func TestPGBackRestLabelFuncs(t *testing.T) {
 	assert.Check(t, pgBackRestDedicatedLabels.Has(LabelPGBackRest))
 	assert.Check(t, pgBackRestDedicatedLabels.Has(LabelPGBackRestRepoHost))
 	assert.Check(t, pgBackRestDedicatedLabels.Has(LabelPGBackRestDedicated))
+
+	// verify that the edicated labels selector is created as expected
+	pgBackRestDedicatedSelector := PGBackRestDedicatedSelector(clusterName)
+	assert.Check(t, pgBackRestDedicatedSelector.Matches(pgBackRestDedicatedLabels))
 
 	// verify the labels that identify pgBackRest repository host resources
 	pgBackRestRepoHostLabels := PGBackRestRepoHostLabels(clusterName)

@@ -16,6 +16,8 @@
 package naming
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
@@ -162,6 +164,21 @@ func TestInstanceNamesUniqueAndValid(t *testing.T) {
 		}
 	})
 
+	t.Run("PVCs", func(t *testing.T) {
+		names := sets.NewString()
+		for _, tt := range []test{
+			{"InstancePGDataVolume", InstancePGDataVolume(instance)},
+		} {
+			t.Run(tt.name, func(t *testing.T) {
+				assert.Equal(t, tt.value.Namespace, instance.Namespace)
+				assert.Assert(t, tt.value.Name != instance.Name, "may collide")
+				assert.Assert(t, !names.Has(tt.value.Name), "%q defined already", tt.value.Name)
+				assert.Assert(t, nil == validation.IsDNS1123Label(tt.value.Name))
+				names.Insert(tt.value.Name)
+			})
+		}
+	})
+
 	t.Run("Secrets", func(t *testing.T) {
 		names := sets.NewString()
 		for _, tt := range []test{
@@ -176,4 +193,30 @@ func TestInstanceNamesUniqueAndValid(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestGenerateInstance(t *testing.T) {
+	cluster := &v1beta1.PostgresCluster{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "ns1", Name: "pg0",
+		},
+	}
+	set := &v1beta1.PostgresInstanceSetSpec{Name: "hippos"}
+
+	instance := GenerateInstance(cluster, set)
+
+	assert.Equal(t, cluster.Namespace, instance.Namespace)
+	assert.Assert(t, strings.HasPrefix(instance.Name, cluster.Name+"-"+set.Name+"-"))
+}
+
+func TestGetPGDATADirectory(t *testing.T) {
+	postgresVersion := 13
+
+	cluster := &v1beta1.PostgresCluster{
+		Spec: v1beta1.PostgresClusterSpec{
+			PostgresVersion: postgresVersion,
+		},
+	}
+
+	assert.Equal(t, GetPGDATADirectory(cluster), fmt.Sprintf("/pgdata/pg%d", postgresVersion))
 }
