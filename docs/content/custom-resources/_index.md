@@ -458,7 +458,7 @@ There following modification operations are supported on the
 
 #### Modify Resource Requests & Limits
 
-Modifying the `resources`, `limits`, `backrestResources`, `backRestLimits`,
+Modifying the `resources`, `limits`, `backrestResources`, `backrestLimits`,
 `pgBouncer.resources`, or `pgbouncer.limits` will cause the PostgreSQL Operator
 to apply the new values to the affected [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/).
 
@@ -729,7 +729,7 @@ make changes, as described below.
 | backrestConfig | `create` | Optional references to pgBackRest configuration files |
 | backrestLimits | `create`, `update` | Specify the container resource limits that the pgBackRest repository should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | backrestRepoPath | `create` | Optional reference to the location of the pgBackRest repository. |
-| BackrestResources | `create`, `update` | Specify the container resource requests that the pgBackRest repository should use. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
+| backrestResources | `create`, `update` | Specify the container resource requests that the pgBackRest repository should use. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | backrestS3Bucket | `create` | An optional parameter that specifies a S3 bucket that pgBackRest should use. |
 | backrestS3Endpoint | `create` | An optional parameter that specifies the S3 endpoint pgBackRest should use. |
 | backrestS3Region | `create` | An optional parameter that specifies a cloud region that pgBackRest should use. |
