@@ -91,6 +91,15 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 		})
 	})
 
+	t.Run("CronJobs", func(t *testing.T) {
+		testUniqueAndValid(t, []test{
+			{"PGBackRestCronJon", PGBackRestCronJob(cluster, "full", "repo1")},
+			{"PGBackRestCronJon", PGBackRestCronJob(cluster, "incr", "repo2")},
+			{"PGBackRestCronJon", PGBackRestCronJob(cluster, "diff", "repo3")},
+			{"PGBackRestCronJon", PGBackRestCronJob(cluster, "full", "repo4")},
+		})
+	})
+
 	t.Run("Deployments", func(t *testing.T) {
 		testUniqueAndValid(t, []test{
 			{"ClusterPGBouncer", ClusterPGBouncer(cluster)},

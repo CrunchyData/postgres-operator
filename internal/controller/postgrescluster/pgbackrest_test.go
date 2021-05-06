@@ -18,6 +18,7 @@ package postgrescluster
 */
 
 import (
+	"context"
 	"errors"
 	"io"
 	"testing"
@@ -26,6 +27,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -70,6 +72,7 @@ func TestReconcilePGBackRest(t *testing.T) {
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
 	namespace := ns.Name
+	testCronSchedule := "*/15 * * * *"
 
 	// create a PostgresCluster to test with
 	postgresCluster := &v1beta1.PostgresCluster{
@@ -85,6 +88,9 @@ func TestReconcilePGBackRest(t *testing.T) {
 						"repo3-test": "config", "repo4-test": "config"},
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",
+						BackupSchedules: &v1beta1.PGBackRestBackupSchedules{
+							Full: &testCronSchedule,
+						},
 						Volume: &v1beta1.RepoPVC{
 							VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
 								AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
@@ -129,6 +135,9 @@ func TestReconcilePGBackRest(t *testing.T) {
 	if err != nil || result != (reconcile.Result{}) {
 		t.Errorf("unable to reconcile pgBackRest: %v", err)
 	}
+
+	// repo is the first defined repo
+	repo := postgresCluster.Spec.Archive.PGBackRest.Repos[0]
 
 	// test that the repo was created properly
 	t.Run("verify pgbackrest dedicated repo StatefulSet", func(t *testing.T) {
@@ -466,4 +475,52 @@ func TestReconcilePGBackRest(t *testing.T) {
 			assert.Assert(t, !r.StanzaCreated)
 		}
 	})
+
+	t.Run("verify pgbackrest schedule cronjob", func(t *testing.T) {
+		requeue := r.reconcilePGBackRestCronJob(context.Background(), postgresCluster)
+		assert.Assert(t, !requeue)
+
+		returnedCronJob := &batchv1beta1.CronJob{}
+		if err := tClient.Get(ctx, types.NamespacedName{
+			Name:      postgresCluster.Name + "-pgbackrest-repo1-full",
+			Namespace: postgresCluster.GetNamespace(),
+		}, returnedCronJob); err != nil {
+			assert.NilError(t, err)
+		}
+
+		// check returned cronjob matches set spec
+		assert.Equal(t, returnedCronJob.Name, "hippocluster-pgbackrest-repo1-full")
+		assert.Equal(t, returnedCronJob.Spec.Schedule, testCronSchedule)
+		assert.Equal(t, returnedCronJob.Spec.JobTemplate.Spec.Template.Spec.Containers[0].Name,
+			"pgbackrest")
+
+	})
+
+	t.Run("verify pgbackrest schedule found", func(t *testing.T) {
+
+		assert.Assert(t, backupScheduleFound(repo, "full"))
+
+		testrepo := v1beta1.PGBackRestRepo{
+			Name: "repo1",
+			BackupSchedules: &v1beta1.PGBackRestBackupSchedules{
+				Full:         &testCronSchedule,
+				Differential: &testCronSchedule,
+				Incremental:  &testCronSchedule,
+			}}
+
+		assert.Assert(t, backupScheduleFound(testrepo, "full"))
+		assert.Assert(t, backupScheduleFound(testrepo, "diff"))
+		assert.Assert(t, backupScheduleFound(testrepo, "incr"))
+
+	})
+
+	t.Run("verify pgbackrest schedule not found", func(t *testing.T) {
+
+		assert.Assert(t, !backupScheduleFound(repo, "notabackuptype"))
+
+		noscheduletestrepo := v1beta1.PGBackRestRepo{Name: "repo1"}
+		assert.Assert(t, !backupScheduleFound(noscheduletestrepo, "full"))
+
+	})
+
 }

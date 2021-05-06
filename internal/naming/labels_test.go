@@ -144,6 +144,13 @@ func TestPGBackRestLabelFuncs(t *testing.T) {
 	assert.Check(t, pgBackRestConfigLabels.Has(LabelPGBackRest))
 	assert.Check(t, pgBackRestConfigLabels.Has(LabelPGBackRestConfig))
 
+	// verify the labels that identify pgBackRest repo resources
+	pgBackRestCronJobLabels := PGBackRestCronJobLabels(clusterName, repoName,
+		"testBackupType")
+	assert.Equal(t, pgBackRestCronJobLabels.Get(LabelCluster), clusterName)
+	assert.Check(t, pgBackRestCronJobLabels.Has(LabelPGBackRest))
+	assert.Equal(t, pgBackRestCronJobLabels.Get(LabelPGBackRestRepo), repoName)
+
 	// verify the labels that identify pgBackRest dedicated repository host resources
 	pgBackRestDedicatedLabels := PGBackRestDedicatedLabels(clusterName)
 	assert.Equal(t, pgBackRestDedicatedLabels.Get(LabelCluster), clusterName)

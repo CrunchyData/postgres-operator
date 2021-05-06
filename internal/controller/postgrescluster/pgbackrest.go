@@ -24,6 +24,8 @@ import (
 
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,10 +66,22 @@ const (
 	// EventStanzasCreated is the event reason utilized when a pgBackRest stanza create command
 	// completes successfully
 	EventStanzasCreated = "StanzasCreated"
+
+	// EventUnableToCreatePGBackRestCronJob is the event reason utilized when a pgBackRest backup
+	// CronJob fails to create successfully
+	EventUnableToCreatePGBackRestCronJob = "UnableToCreatePGBackRestCronJob"
+)
+
+// backup types
+const (
+	full         = "full"
+	differential = "diff"
+	incremental  = "incr"
 )
 
 // RepoResources is used to store various resources for pgBackRest repositories
 type RepoResources struct {
+	cronjobs  []*batchv1beta1.CronJob
 	hosts     []*appsv1.StatefulSet
 	pvcs      []*v1.PersistentVolumeClaim
 	sshConfig *v1.ConfigMap
@@ -175,6 +189,10 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 		Group:   appsv1.SchemeGroupVersion.Group,
 		Version: appsv1.SchemeGroupVersion.Version,
 		Kind:    "StatefulSetList",
+	}, {
+		Group:   batchv1beta1.SchemeGroupVersion.Group,
+		Version: batchv1beta1.SchemeGroupVersion.Version,
+		Kind:    "CronJob",
 	}}
 
 	selector := naming.PGBackRestSelector(postgresCluster.GetName())
@@ -197,6 +215,7 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 			}
 		}
 
+		// cleanup here....
 		owned = r.cleanupRepoResources(ctx, postgresCluster, owned)
 		uList.Items = owned
 		if err := unstructuredToRepoResources(postgresCluster, gvk.Kind,
@@ -225,8 +244,17 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 		var found bool
 
 		_, isRepoVolume := ownedRepo.GetLabels()[naming.LabelPGBackRestRepoVolume]
-		if isRepoVolume {
+		backupType, isCronJob := ownedRepo.GetLabels()[naming.LabelPGBackRestCronJob]
+		if isRepoVolume || isCronJob {
 			for _, repo := range postgresCluster.Spec.Archive.PGBackRest.Repos {
+				if isCronJob &&
+					repo.Name == ownedRepo.GetLabels()[naming.LabelPGBackRestRepo] {
+					if backupScheduleFound(repo, backupType) {
+						found = true
+						ownedNoDelete = append(ownedNoDelete, ownedRepo)
+					}
+					break
+				}
 				// we only care about cleaning up local repo volumes (PVCs), and ignore other repo
 				// types (e.g. for external Azure, GCS or S3 repositories)
 				if repo.Volume != nil &&
@@ -248,15 +276,36 @@ func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 				ownedNoDelete = append(ownedNoDelete, ownedRepo)
 			}
 		}
-
 		if !found {
-			if err := r.Client.Delete(ctx, &owned[i]); err != nil {
+			// when deleting the cronjobs, deleting requires the background propagation option
+			// to be set to ensure the associated jobs and pods are deleted as well
+			// https://releases.k8s.io/v1.21.0/pkg/registry/batch/cronjob/strategy.go#L53-L55
+			if err := r.Client.Delete(ctx, &owned[i],
+				client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
 				log.Error(err, "deleting resource during cleanup attempt")
 			}
 		}
 	}
 
 	return ownedNoDelete
+}
+
+// backupScheduleFound returns true if the CronJob in question should be created as
+// defined by the postgrescluster CRD, otherwise it returns false.
+func backupScheduleFound(repo v1beta1.PGBackRestRepo, backupType string) bool {
+	if repo.BackupSchedules != nil {
+		switch backupType {
+		case full:
+			return repo.BackupSchedules.Full != nil
+		case differential:
+			return repo.BackupSchedules.Differential != nil
+		case incremental:
+			return repo.BackupSchedules.Incremental != nil
+		default:
+			return false
+		}
+	}
+	return false
 }
 
 // unstructuredToRepoResources converts unstructred pgBackRest repository resources (specifically
@@ -308,6 +357,15 @@ func unstructuredToRepoResources(postgresCluster *v1beta1.PostgresCluster, kind 
 		}
 		for i := range stsList.Items {
 			repoResources.hosts = append(repoResources.hosts, &stsList.Items[i])
+		}
+	case "CronJob":
+		var cronList batchv1beta1.CronJobList
+		if err := runtime.DefaultUnstructuredConverter.
+			FromUnstructured(uList.UnstructuredContent(), &cronList); err != nil {
+			return errors.WithStack(err)
+		}
+		for i := range cronList.Items {
+			repoResources.cronjobs = append(repoResources.cronjobs, &cronList.Items[i])
 		}
 	default:
 		return fmt.Errorf("unexpected kind %q", kind)
@@ -506,6 +564,20 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	// container.
 	if configHashMismatch {
 		log.Info("pgBackRest config hash mismatch detected, requeuing to reattempt stanza create")
+		return reconcile.Result{
+			RequeueAfter: 10 * time.Second,
+		}, nil
+	}
+
+	// reconcile the pgBackRest backup CronJobs
+	requeue := r.reconcilePGBackRestCronJob(ctx, postgresCluster)
+	// If the pgBackRest backup CronJob reconciliation function has encountered an error, requeue
+	// after 10 seconds. The error will not bubble up to allow the reconcile loop to continue.
+	// An error is not logged because an event was already created.
+	// TODO(tjmoore4): Is this the desired eventing/logging/reconciliation strategy?
+	// A potential option to handle this proactively would be to use a webhook:
+	// https://book.kubebuilder.io/cronjob-tutorial/webhook-implementation.html
+	if requeue {
 		return reconcile.Result{
 			RequeueAfter: 10 * time.Second,
 		}, nil
@@ -854,4 +926,106 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*v1.Pers
 	})
 
 	return updatedRepoStatus
+}
+
+// reconcilePGBackRestCronJob creates a pgBackRest backup CronJob for each backup type defined
+// for each repo
+func (r *Reconciler) reconcilePGBackRestCronJob(
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
+) bool {
+	// requeue if there is an error during creation
+	var requeue bool
+
+	for _, repo := range cluster.Spec.Archive.PGBackRest.Repos {
+		// if the repo level backup schedules block has not been created,
+		// there are no schedules defined
+		if repo.BackupSchedules != nil {
+			// next if the repo level schedule is not nil, create the CronJob.
+			if repo.BackupSchedules.Full != nil {
+				if err := r.createCronJob(ctx, cluster, repo.Name, full,
+					repo.BackupSchedules.Full); err != nil {
+					requeue = true
+				}
+			}
+			if repo.BackupSchedules.Differential != nil {
+				if err := r.createCronJob(ctx, cluster, repo.Name, differential,
+					repo.BackupSchedules.Differential); err != nil {
+					requeue = true
+				}
+			}
+			if repo.BackupSchedules.Incremental != nil {
+				if err := r.createCronJob(ctx, cluster, repo.Name, incremental,
+					repo.BackupSchedules.Incremental); err != nil {
+					requeue = true
+				}
+			}
+		}
+	}
+	return requeue
+}
+
+// +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=create;patch
+
+// createCronJob creates the CronJob for the given repo, pgBackRest backup type and schedule
+func (r *Reconciler) createCronJob(
+	ctx context.Context, cluster *v1beta1.PostgresCluster, repoName,
+	backupType string, schedule *string,
+) error {
+
+	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoCronJob")
+
+	labels := naming.Merge(cluster.Spec.Metadata.Labels,
+		cluster.Spec.Archive.PGBackRest.Metadata.Labels,
+		naming.PGBackRestCronJobLabels(cluster.Name, repoName, backupType),
+	)
+	meta := naming.PGBackRestCronJob(cluster, backupType, repoName)
+	meta.Labels = labels
+
+	pgBackRestCronJob := &batchv1beta1.CronJob{
+		ObjectMeta: meta,
+		Spec: batchv1beta1.CronJobSpec{
+			Schedule: *schedule,
+			JobTemplate: batchv1beta1.JobTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: batchv1.JobSpec{
+					Template: v1.PodTemplateSpec{
+						ObjectMeta: metav1.ObjectMeta{
+							Labels: labels,
+						},
+						Spec: v1.PodSpec{
+							RestartPolicy: "OnFailure",
+							Containers: []v1.Container{
+								{
+									Name: "pgbackrest",
+									// TODO(tjmoore4): This is likely the correct image to use, but the image
+									// value in the spec is currently optional. Should the image be required,
+									// or should this be referencing its own image spec value?
+									Image: cluster.Spec.Archive.PGBackRest.RepoHost.Image,
+									Args:  []string{"/bin/sh", "-c", "date; echo pgBackRest " + backupType + " backup scheduled..."},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// set metadata
+	pgBackRestCronJob.SetGroupVersionKind(batchv1beta1.SchemeGroupVersion.WithKind("CronJob"))
+	err := errors.WithStack(r.setControllerReference(cluster, pgBackRestCronJob))
+	pgBackRestCronJob.Labels = naming.PGBackRestCronJobLabels(cluster.Name, repoName, backupType)
+
+	if err == nil {
+		err = r.apply(ctx, pgBackRestCronJob)
+	}
+	if err != nil {
+		// record and log any errors resulting from trying to create the pgBackRest backup CronJob
+		r.Recorder.Event(cluster, v1.EventTypeWarning, EventUnableToCreatePGBackRestCronJob,
+			err.Error())
+		log.Error(err, "error when attempting to create pgBackRest CronJob")
+	}
+	return err
 }

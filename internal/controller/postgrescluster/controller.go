@@ -23,6 +23,7 @@ import (
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
 	appsv1 "k8s.io/api/apps/v1"
+	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -323,6 +324,7 @@ func (r *Reconciler) setOwnerReference(
 // +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=get;list;watch
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch
+// +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=get;list;watch
 
 // SetupWithManager adds the PostgresCluster controller to the provided runtime manager
 func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
@@ -349,6 +351,7 @@ func (r *Reconciler) SetupWithManager(mgr manager.Manager) error {
 		Owns(&appsv1.StatefulSet{}).
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).
+		Owns(&batchv1beta1.CronJob{}).
 		Watches(&source.Kind{Type: &appsv1.StatefulSet{}},
 			r.controllerRefHandlerFuncs()). // watch all StatefulSets
 		Complete(r)

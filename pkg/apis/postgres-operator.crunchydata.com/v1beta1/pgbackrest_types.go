@@ -73,6 +73,32 @@ type PGBackRestRepoHost struct {
 	SSHSecret *corev1.SecretProjection `json:"sshSecret,omitempty"`
 }
 
+// PGBackRestBackupSchedules defines a pgBackRest scheduled backup
+type PGBackRestBackupSchedules struct {
+	// Validation set to minimum length of six to account for @daily option
+
+	// Defines the Cron schedule for a full pgBackRest backup.
+	// Follows the standard Cron schedule syntax:
+	// https://k8s.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax
+	// +optional
+	// +kubebuilder:validation:MinLength=6
+	Full *string `json:"full,omitempty"`
+
+	// Defines the Cron schedule for a differential pgBackRest backup.
+	// Follows the standard Cron schedule syntax:
+	// https://k8s.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax
+	// +optional
+	// +kubebuilder:validation:MinLength=6
+	Differential *string `json:"differential,omitempty"`
+
+	// Defines the Cron schedule for an incremental pgBackRest backup.
+	// Follows the standard Cron schedule syntax:
+	// https://k8s.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax
+	// +optional
+	// +kubebuilder:validation:MinLength=6
+	Incremental *string `json:"incremental,omitempty"`
+}
+
 // PGBackRestStatus defines the status of pgBackRest within a PostgresCluster
 type PGBackRestStatus struct {
 
@@ -95,6 +121,12 @@ type PGBackRestRepo struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Pattern=^repo[1-4]
 	Name string `json:"name"`
+
+	// Defines the schedules for the pgBackRest backups
+	// Full, Differential and Incremental backup types are supported:
+	// https://pgbackrest.org/user-guide.html#concept/backup
+	// +optional
+	BackupSchedules *PGBackRestBackupSchedules `json:"schedules,omitempty"`
 
 	// Represents a pgBackRest repository that is created using Azure storage
 	// +optional

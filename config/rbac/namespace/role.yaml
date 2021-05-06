@@ -76,6 +76,16 @@ rules:
   - patch
   - watch
 - apiGroups:
+  - batch
+  resources:
+  - cronjobs
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - watch
+- apiGroups:
   - postgres-operator.crunchydata.com
   resources:
   - postgresclusters

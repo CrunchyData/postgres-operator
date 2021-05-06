@@ -57,6 +57,8 @@ const (
 	// repository
 	LabelPGBackRestRepoVolume = labelPrefix + "pgbackrest-volume"
 
+	LabelPGBackRestCronJob = labelPrefix + "pgbackrest-cronjob"
+
 	// LabelUserSecret is used to identify the secret containing the Postgres
 	// user connection information
 	LabelUserSecret = labelPrefix + "pguser"
@@ -116,6 +118,16 @@ func PGBackRestConfigLabels(clusterName string) labels.Set {
 		LabelPGBackRestConfig: "",
 	}
 	return labels.Merge(repoLabels, operatorConfigLabels)
+}
+
+// PGBackRestCronJobLabels provides common labels for pgBackRest CronJobs
+func PGBackRestCronJobLabels(clusterName, repoName, backupType string) labels.Set {
+	commonLabels := PGBackRestLabels(clusterName)
+	cronJobLabels := map[string]string{
+		LabelPGBackRestRepo:    repoName,
+		LabelPGBackRestCronJob: backupType,
+	}
+	return labels.Merge(commonLabels, cronJobLabels)
 }
 
 // PGBackRestDedicatedLabels provides labels for a pgBackRest dedicated repository host

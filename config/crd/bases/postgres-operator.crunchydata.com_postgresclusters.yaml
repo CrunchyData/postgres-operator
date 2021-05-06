@@ -524,6 +524,30 @@ spec:
                               - endpoint
                               - region
                               type: object
+                            schedules:
+                              description: 'Defines the schedules for the pgBackRest
+                                backups Full, Differential and Incremental backup
+                                types are supported: https://pgbackrest.org/user-guide.html#concept/backup'
+                              properties:
+                                differential:
+                                  description: 'Defines the Cron schedule for a differential
+                                    pgBackRest backup. Follows the standard Cron schedule
+                                    syntax: https://k8s.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax'
+                                  minLength: 6
+                                  type: string
+                                full:
+                                  description: 'Defines the Cron schedule for a full
+                                    pgBackRest backup. Follows the standard Cron schedule
+                                    syntax: https://k8s.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax'
+                                  minLength: 6
+                                  type: string
+                                incremental:
+                                  description: 'Defines the Cron schedule for an incremental
+                                    pgBackRest backup. Follows the standard Cron schedule
+                                    syntax: https://k8s.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax'
+                                  minLength: 6
+                                  type: string
+                              type: object
                             volume:
                               description: Represents a pgBackRest repository that
                                 is created using a PersistentVolumeClaim
