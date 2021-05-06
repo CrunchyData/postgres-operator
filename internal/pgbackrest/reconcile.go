@@ -175,7 +175,7 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 	template.Spec.Containers = append(template.Spec.Containers,
 		v1.Container{
 			Command: []string{"/usr/sbin/sshd", "-D", "-e"},
-			Image:   postgresCluster.Spec.Archive.PGBackRest.RepoHost.Image,
+			Image:   postgresCluster.Spec.Archive.PGBackRest.Image,
 			LivenessProbe: &v1.Probe{
 				Handler: v1.Handler{
 					TCPSocket: &v1.TCPSocketAction{

@@ -22,11 +22,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"gotest.tools/v3/assert"
+	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestSafeHash32(t *testing.T) {
@@ -275,6 +277,114 @@ func TestAddNSSWrapper(t *testing.T) {
 			}
 			// verify init container is present
 			assert.Assert(t, foundInitContainer)
+		})
+	}
+}
+
+func TestJobCompleted(t *testing.T) {
+
+	testCases := []struct {
+		job              *batchv1.Job
+		expectSuccessful bool
+		testDesc         string
+	}{{
+		job: &batchv1.Job{
+			Status: batchv1.JobStatus{
+				Conditions: []batchv1.JobCondition{{
+					Type:   batchv1.JobComplete,
+					Status: v1.ConditionTrue,
+				}},
+			},
+		},
+		expectSuccessful: true,
+		testDesc:         "condition present and true",
+	}, {
+		job: &batchv1.Job{
+			Status: batchv1.JobStatus{
+				Conditions: []batchv1.JobCondition{{
+					Type:   batchv1.JobComplete,
+					Status: v1.ConditionFalse,
+				}},
+			},
+		},
+		expectSuccessful: false,
+		testDesc:         "condition present but false",
+	}, {
+		job: &batchv1.Job{
+			Status: batchv1.JobStatus{
+				Conditions: []batchv1.JobCondition{{
+					Type:   batchv1.JobComplete,
+					Status: v1.ConditionUnknown,
+				}},
+			},
+		},
+		expectSuccessful: false,
+		testDesc:         "condition present but unknown",
+	}, {
+		job:              &batchv1.Job{},
+		expectSuccessful: false,
+		testDesc:         "empty conditions",
+	}}
+
+	for _, tc := range testCases {
+		t.Run(tc.testDesc, func(t *testing.T) {
+			// first ensure jobCompleted gives the expected result
+			isCompleted := jobCompleted(tc.job)
+			assert.Assert(t, isCompleted == tc.expectSuccessful)
+		})
+	}
+}
+
+func TestJobFailed(t *testing.T) {
+
+	testCases := []struct {
+		job          *batchv1.Job
+		expectFailed bool
+		testDesc     string
+	}{{
+		job: &batchv1.Job{
+			Status: batchv1.JobStatus{
+				Conditions: []batchv1.JobCondition{{
+					Type:   batchv1.JobFailed,
+					Status: v1.ConditionTrue,
+				}},
+			},
+		},
+		expectFailed: true,
+		testDesc:     "condition present and true",
+	}, {
+		job: &batchv1.Job{
+			Status: batchv1.JobStatus{
+				Conditions: []batchv1.JobCondition{{
+					Type:   batchv1.JobFailed,
+					Status: v1.ConditionFalse,
+				}},
+			},
+		},
+		expectFailed: false,
+		testDesc:     "condition present but false",
+	}, {
+		job: &batchv1.Job{
+			Status: batchv1.JobStatus{
+				Conditions: []batchv1.JobCondition{{
+					Type:   batchv1.JobFailed,
+					Status: v1.ConditionUnknown,
+				}},
+			},
+		},
+		expectFailed: false,
+		testDesc:     "condition present but unknown",
+	}, {
+		job:          &batchv1.Job{},
+		expectFailed: false,
+		testDesc:     "empty conditions",
+	}}
+
+	for _, tc := range testCases {
+		t.Run(tc.testDesc, func(t *testing.T) {
+			// first ensure jobCompleted gives the expected result
+			isCompleted := jobFailed(tc.job)
+			assert.Assert(t, isCompleted == tc.expectFailed)
 		})
 	}
 }

@@ -19,7 +19,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"regexp"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -27,6 +29,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	v1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -47,6 +50,14 @@ import (
 )
 
 const (
+	// ConditionReplicaCreate is the type used in a condition to indicate whether or not
+	// pgBackRest can be utilized for replica creation
+	ConditionReplicaCreate = "PGBackRestReplicaCreate"
+
+	// ConditionReplicaRepoReady is the type used in a condition to indicate whether or not
+	// the pgBackRest repository for creating replicas is ready
+	ConditionReplicaRepoReady = "PGBackRestReplicaRepoReady"
+
 	// ConditionRepoHostReady is the type used in a condition to indicate whether or not a
 	// pgBackRest repository host PostgresCluster is ready
 	ConditionRepoHostReady = "PGBackRestRepoHostReady"
@@ -79,13 +90,18 @@ const (
 	incremental  = "incr"
 )
 
-// RepoResources is used to store various resources for pgBackRest repositories
+// regexRepoIndex is the regex used to obtain the repo index from a pgBackRest repo name
+var regexRepoIndex = regexp.MustCompile(`\d+`)
+
+// RepoResources is used to store various resources for pgBackRest repositories and
+// repository hosts
 type RepoResources struct {
-	cronjobs  []*batchv1beta1.CronJob
-	hosts     []*appsv1.StatefulSet
-	pvcs      []*v1.PersistentVolumeClaim
-	sshConfig *v1.ConfigMap
-	sshSecret *v1.Secret
+	cronjobs                []*batchv1beta1.CronJob
+	replicaCreateBackupJobs []*batchv1.Job
+	hosts                   []*appsv1.StatefulSet
+	pvcs                    []*v1.PersistentVolumeClaim
+	sshConfig               *v1.ConfigMap
+	sshSecret               *v1.Secret
 }
 
 // applyRepoHostIntent ensures the pgBackRest repository host StatefulSet is synchronized with the
@@ -129,40 +145,6 @@ func (r *Reconciler) applyRepoVolumeIntent(ctx context.Context,
 	return repo, nil
 }
 
-// calculatePGBackRestConditions is responsible for calculating any pgBackRest conditions
-// based on the current pgBackRest status, and then updating the conditions array within
-// the PostgresCluster status with those conditions as needed.
-func calculatePGBackRestConditions(status *v1beta1.PGBackRestStatus,
-	postgresClusterGeneration int64, dedicatedEnabled bool) []metav1.Condition {
-
-	conditions := []metav1.Condition{}
-
-	// right now only a single condition exists for repo hosts
-	if !dedicatedEnabled {
-		return conditions
-	}
-
-	repoHostReady := metav1.Condition{
-		ObservedGeneration: postgresClusterGeneration,
-		Type:               ConditionRepoHostReady,
-	}
-	if status.RepoHost == nil {
-		repoHostReady.Status = metav1.ConditionUnknown
-		repoHostReady.Reason = "RepoHostStatusMissing"
-		repoHostReady.Message = "pgBackRest dedicated repository host status is missing"
-	} else if status.RepoHost.Ready {
-		repoHostReady.Status = metav1.ConditionTrue
-		repoHostReady.Reason = "RepoHostReady"
-		repoHostReady.Message = "pgBackRest dedicated repository host is ready"
-	} else {
-		repoHostReady.Status = metav1.ConditionFalse
-		repoHostReady.Reason = "RepoHostNotReady"
-		repoHostReady.Message = "pgBackRest dedicated repository host is not ready"
-	}
-
-	return append(conditions, repoHostReady)
-}
-
 // getPGBackRestResources returns the existing pgBackRest resources that should utilized by the
 // PostgresCluster controller during reconciliation.  Any items returned are verified to be owned
 // by the PostgresCluster controller and still applicable per the current PostgresCluster spec.
@@ -177,6 +159,10 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 		Group:   v1.SchemeGroupVersion.Group,
 		Version: v1.SchemeGroupVersion.Version,
 		Kind:    "ConfigMapList",
+	}, {
+		Group:   batchv1.SchemeGroupVersion.Group,
+		Version: batchv1.SchemeGroupVersion.Version,
+		Kind:    "JobList",
 	}, {
 		Group:   v1.SchemeGroupVersion.Group,
 		Version: v1.SchemeGroupVersion.Version,
@@ -215,8 +201,10 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 			}
 		}
 
-		// cleanup here....
-		owned = r.cleanupRepoResources(ctx, postgresCluster, owned)
+		owned, err := r.cleanupRepoResources(ctx, postgresCluster, owned)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
 		uList.Items = owned
 		if err := unstructuredToRepoResources(postgresCluster, gvk.Kind,
 			repoResources, uList); err != nil {
@@ -227,7 +215,9 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 	return repoResources, nil
 }
 
+// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=delete
 // +kubebuilder:rbac:groups=apps,resources=statefulsets,verbs=delete
+// +kubebuilder:rbac:groups=batch,resources=cronjobs,verbs=delete
 
 // cleanupRepoResources cleans up pgBackRest repository resources that should no longer be
 // reconciled by deleting them.  This includes deleting repos (i.e. PersistentVolumeClaims) that
@@ -235,59 +225,90 @@ func (r *Reconciler) getPGBackRestResources(ctx context.Context,
 // pgBackRest repository host resources if a repository host is no longer configured.
 func (r *Reconciler) cleanupRepoResources(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster,
-	owned []unstructured.Unstructured) []unstructured.Unstructured {
+	ownedResources []unstructured.Unstructured) ([]unstructured.Unstructured, error) {
 
-	log := logging.FromContext(ctx)
-
+	// stores the resources that should not be deleted
 	ownedNoDelete := []unstructured.Unstructured{}
-	for i, ownedRepo := range owned {
-		var found bool
+	for i, owned := range ownedResources {
+		delete := true
 
-		_, isRepoVolume := ownedRepo.GetLabels()[naming.LabelPGBackRestRepoVolume]
-		backupType, isCronJob := ownedRepo.GetLabels()[naming.LabelPGBackRestCronJob]
-		if isRepoVolume || isCronJob {
+		// helper to determine if a label is present in the PostgresCluster
+		hasLabel := func(label string) bool { _, ok := owned.GetLabels()[label]; return ok }
+
+		// this switch identifies the type of pgBackRest resource via its labels, and then
+		// determines whether or not it should be deleted according to the current PostgresCluster
+		// spec
+		switch {
+		case hasLabel(naming.LabelPGBackRestConfig):
+			// Simply add the things we never want to delete (e.g. the pgBackRest configuration)
+			// to the slice and do not delete
+			ownedNoDelete = append(ownedNoDelete, owned)
+			delete = false
+		case hasLabel(naming.LabelPGBackRestDedicated):
+			// If a dedicated repo host resource and a dedicated repo host is enabled, then
+			// add to the slice and do not delete.  Note that dedicated repo host resources are
+			// checked before repo host resources since both share the same "repo-host" label, and
+			// we need to distiguish (and seprately handle) dedicated repo host resources.
+			if pgbackrest.DedicatedRepoHostEnabled(postgresCluster) {
+				ownedNoDelete = append(ownedNoDelete, owned)
+				delete = false
+			}
+		case hasLabel(naming.LabelPGBackRestRepoHost):
+			// If a repo host is enabled and this is a repo host resource, then add to the
+			// slice and do not delete.  Note that dedicated repo host resources are checked
+			// before repo host resources since both share the same "repo-host" label, and
+			// we need to distiguish (and seprately handle) dedicated repo host resources.
+			if pgbackrest.RepoHostEnabled(postgresCluster) {
+				ownedNoDelete = append(ownedNoDelete, owned)
+				delete = false
+			}
+		case hasLabel(naming.LabelPGBackRestRepoVolume):
+			// If a volume (PVC) is identified for a repo that no longer exists in the
+			// spec then delete it.  Otherwise add it to the slice and continue.
+			// If a volume (PVC) is identified for a repo that no longer exists in the
+			// spec then delete it.  Otherwise add it to the slice and continue.
 			for _, repo := range postgresCluster.Spec.Archive.PGBackRest.Repos {
-				if isCronJob &&
-					repo.Name == ownedRepo.GetLabels()[naming.LabelPGBackRestRepo] {
-					if backupScheduleFound(repo, backupType) {
-						found = true
-						ownedNoDelete = append(ownedNoDelete, ownedRepo)
-					}
-					break
-				}
 				// we only care about cleaning up local repo volumes (PVCs), and ignore other repo
 				// types (e.g. for external Azure, GCS or S3 repositories)
 				if repo.Volume != nil &&
-					(repo.Name == ownedRepo.GetLabels()[naming.LabelPGBackRestRepo]) {
-					found = true
-					ownedNoDelete = append(ownedNoDelete, ownedRepo)
+					(repo.Name == owned.GetLabels()[naming.LabelPGBackRestRepo]) {
+					ownedNoDelete = append(ownedNoDelete, owned)
+					delete = false
+				}
+			}
+		case hasLabel(naming.LabelPGBackRestBackup):
+			// If a Job is identified for a repo that no longer exists in the spec then
+			// delete it.  Otherwise add it to the slice and continue.
+			for _, repo := range postgresCluster.Spec.Archive.PGBackRest.Repos {
+				if repo.Name == owned.GetLabels()[naming.LabelPGBackRestRepo] {
+					ownedNoDelete = append(ownedNoDelete, owned)
+					delete = false
+				}
+			}
+		case hasLabel(naming.LabelPGBackRestCronJob):
+			for _, repo := range postgresCluster.Spec.Archive.PGBackRest.Repos {
+				if repo.Name == owned.GetLabels()[naming.LabelPGBackRestRepo] {
+					if backupScheduleFound(repo,
+						owned.GetLabels()[naming.LabelPGBackRestCronJob]) {
+						delete = false
+						ownedNoDelete = append(ownedNoDelete, owned)
+					}
 					break
 				}
 			}
-		} else {
-			_, isRepoHost := ownedRepo.GetLabels()[naming.LabelPGBackRestRepoHost]
-			repoHostEnabled := pgbackrest.RepoHostEnabled(postgresCluster)
-			_, isPGBackRestConfig := ownedRepo.GetLabels()[naming.LabelPGBackRestConfig]
-			_, isDedicatedRepoHost := ownedRepo.GetLabels()[naming.LabelPGBackRestDedicated]
-			dedicatedRepoEnabled := pgbackrest.DedicatedRepoHostEnabled(postgresCluster)
-			if (!isDedicatedRepoHost && isRepoHost && repoHostEnabled) ||
-				(isDedicatedRepoHost && dedicatedRepoEnabled) || isPGBackRestConfig {
-				found = true
-				ownedNoDelete = append(ownedNoDelete, ownedRepo)
-			}
 		}
-		if !found {
-			// when deleting the cronjobs, deleting requires the background propagation option
-			// to be set to ensure the associated jobs and pods are deleted as well
-			// https://releases.k8s.io/v1.21.0/pkg/registry/batch/cronjob/strategy.go#L53-L55
-			if err := r.Client.Delete(ctx, &owned[i],
+
+		// If nothing has specified that the resource should not be deleted, then delete
+		if delete {
+			if err := r.Client.Delete(ctx, &ownedResources[i],
 				client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
-				log.Error(err, "deleting resource during cleanup attempt")
+				return []unstructured.Unstructured{}, errors.WithStack(err)
 			}
 		}
 	}
 
-	return ownedNoDelete
+	// return the remaining resources after properly cleaning up any that should no longer exist
+	return ownedNoDelete, nil
 }
 
 // backupScheduleFound returns true if the CronJob in question should be created as
@@ -325,6 +346,20 @@ func unstructuredToRepoResources(postgresCluster *v1beta1.PostgresCluster, kind 
 			if cm.GetName() == naming.PGBackRestSSHConfig(postgresCluster).Name {
 				repoResources.sshConfig = &cmList.Items[i]
 				break
+			}
+		}
+	case "JobList":
+		var jobList batchv1.JobList
+		if err := runtime.DefaultUnstructuredConverter.
+			FromUnstructured(uList.UnstructuredContent(), &jobList); err != nil {
+			return errors.WithStack(err)
+		}
+		// we only care about replica create backup jobs
+		for i, job := range jobList.Items {
+			val := job.GetLabels()[naming.LabelPGBackRestBackup]
+			if val == string(naming.BackupReplicaCreate) {
+				repoResources.replicaCreateBackupJobs =
+					append(repoResources.replicaCreateBackupJobs, &jobList.Items[i])
 			}
 		}
 	case "PersistentVolumeClaimList":
@@ -471,6 +506,48 @@ func (r *Reconciler) generateRepoVolumeIntent(postgresCluster *v1beta1.PostgresC
 	return repoVol, nil
 }
 
+// generateBackupJobSpecIntent generates a JobSpec for a pgBackRest backup job
+func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster, selector,
+	containerName, repoName, serviceAccountName, configName string,
+	labels map[string]string) (*batchv1.JobSpec, error) {
+
+	repoIndex := regexRepoIndex.FindString(repoName)
+	cmdOpts := []string{
+		"--stanza=" + pgbackrest.DefaultStanzaName,
+		"--repo=" + repoIndex,
+	}
+
+	jobSpec := &batchv1.JobSpec{
+		Template: v1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{Labels: labels},
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{{
+					Command: []string{"/opt/crunchy/bin/pgbackrest"},
+					Env: []v1.EnvVar{
+						{Name: "COMMAND", Value: "backup"},
+						{Name: "COMMAND_OPTS", Value: strings.Join(cmdOpts, " ")},
+						{Name: "COMPARE_HASH", Value: "true"},
+						{Name: "CONTAINER", Value: containerName},
+						{Name: "NAMESPACE", Value: postgresCluster.GetNamespace()},
+						{Name: "SELECTOR", Value: selector},
+					},
+					Image: postgresCluster.Spec.Archive.PGBackRest.Image,
+					Name:  naming.PGBackRestRepoContainerName,
+				}},
+				RestartPolicy:      v1.RestartPolicyNever,
+				ServiceAccountName: serviceAccountName,
+			},
+		},
+	}
+	// add pgBackRest configs to template
+	if err := pgbackrest.AddConfigsToPod(postgresCluster, &jobSpec.Template,
+		configName, naming.PGBackRestRepoContainerName); err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return jobSpec, nil
+}
+
 // reconcilePGBackRest is responsible for reconciling any/all pgBackRest resources owned by a
 // specific PostgresCluster (e.g. Deployments, ConfigMaps, Secrets, etc.).  This function will
 // ensure various reconciliation logic is run as needed for each pgBackRest resource, while then
@@ -488,12 +565,16 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 		postgresCluster.Status.PGBackRest = &v1beta1.PGBackRestStatus{}
 	}
 
+	// create the Result that will be updated while reconciling any/all pgBackRest resources
+	result := reconcile.Result{}
+
+	// Get all currently owned pgBackRest resources in the environment as needed for
+	// reconciliation.  This includes deleting resources that should no longer exist per the
+	// current spec (e.g. if repos, repo hosts, etc. have been removed).
 	repoResources, err := r.getPGBackRestResources(ctx, postgresCluster)
 	if err != nil {
-		log.Error(err, "unable to get repository hosts for PostgresCluster")
-		return reconcile.Result{
-			Requeue: true,
-		}, err
+		// exit early if can't get and clean existing resources as needed to reconcile
+		return reconcile.Result{}, errors.WithStack(err)
 	}
 
 	var repoHost *appsv1.StatefulSet
@@ -505,11 +586,12 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 		repoHost, err = r.reconcileDedicatedRepoHost(ctx, postgresCluster, repoResources)
 		if err != nil {
 			log.Error(err, "unable to reconcile pgBackRest repo host")
-			return reconcile.Result{
-				Requeue: true,
-			}, err
+			result = updateReconcileResult(result, reconcile.Result{Requeue: true})
 		}
 		repoHostName = repoHost.GetName()
+	} else if len(postgresCluster.Status.Conditions) > 0 {
+		// remove the dedicated repo host status if a dedicated host is not enabled
+		meta.RemoveStatusCondition(&postgresCluster.Status.Conditions, ConditionRepoHostReady)
 	}
 
 	// calculate hashes for the external repository configurations in the spec (e.g. for Azure,
@@ -518,29 +600,31 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	configHashes, configHash, err := pgbackrest.CalculateConfigHashes(postgresCluster)
 	if err != nil {
 		log.Error(err, "unable to calculate config hashes")
-		return reconcile.Result{
-			Requeue: true,
-		}, err
+		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
 	}
 
-	// reconcile all pgbackrest repository volumes
-	if err := r.reconcileRepoVolumes(ctx, postgresCluster, configHashes); err != nil {
+	// reconcile all pgbackrest repository repos
+	replicaCreateRepo, err := r.reconcileRepos(ctx, postgresCluster, configHashes)
+	if err != nil {
 		log.Error(err, "unable to reconcile pgBackRest repo host")
-		return reconcile.Result{
-			Requeue: true,
-		}, err
+		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
 	}
 
 	// reconcile all pgbackrest configuration and secrets
 	if err := r.reconcilePGBackRestConfig(ctx, postgresCluster, repoHostName,
 		configHash, instanceNames, repoResources.sshSecret); err != nil {
 		log.Error(err, "unable to reconcile pgBackRest configuration")
-		return reconcile.Result{
-			Requeue: true,
-		}, err
+		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
 	}
 
-	// reconcile all pgbackrest configuration and secrets
+	// reconcile the RBAC required to run pgBackRest Jobs (e.g. for backups)
+	sa, err := r.reconcilePGBackRestRBAC(ctx, postgresCluster)
+	if err != nil {
+		log.Error(err, "unable to create replica creation backup")
+		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
+	}
+
+	// reconcile the pgBackRest stanza for all configuration pgBackRest repos
 	configHashMismatch, err := r.reconcileStanzaCreate(ctx, postgresCluster, configHash)
 	// If a stanza create error then requeue but don't return the error.  This prevents
 	// stanza-create errors from bubbling up to the main Reconcile() function, which would
@@ -555,18 +639,14 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	// custom configuration and ensure stanzas are still created).
 	if err != nil {
 		log.Error(err, "unable to create stanza")
-		return reconcile.Result{
-			RequeueAfter: 10 * time.Second,
-		}, nil
+		result = updateReconcileResult(result, reconcile.Result{RequeueAfter: 10 * time.Second})
 	}
 	// If a config hash mismatch, then log an info message and requeue to try again.  Add some time
 	// to the requeue to give the pgBackRest configuration changes a chance to propagate to the
 	// container.
 	if configHashMismatch {
 		log.Info("pgBackRest config hash mismatch detected, requeuing to reattempt stanza create")
-		return reconcile.Result{
-			RequeueAfter: 10 * time.Second,
-		}, nil
+		result = updateReconcileResult(result, reconcile.Result{RequeueAfter: 10 * time.Second})
 	}
 
 	// reconcile the pgBackRest backup CronJobs
@@ -578,20 +658,18 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	// A potential option to handle this proactively would be to use a webhook:
 	// https://book.kubebuilder.io/cronjob-tutorial/webhook-implementation.html
 	if requeue {
-		return reconcile.Result{
-			RequeueAfter: 10 * time.Second,
-		}, nil
+		result = updateReconcileResult(result, reconcile.Result{RequeueAfter: 10 * time.Second})
 	}
 
-	// remove the dedicated repo host status if a dedicated host is not enabled
-	if len(postgresCluster.Status.Conditions) > 0 && !dedicatedEnabled {
-		meta.RemoveStatusCondition(&postgresCluster.Status.Conditions, ConditionRepoHostReady)
+	// Reconcile the initial backup that is needed to enable replica creation using pgBackRest.
+	// This is done once stanza creation is successful
+	if err := r.reconcileReplicaCreateBackup(ctx, postgresCluster,
+		repoResources.replicaCreateBackupJobs, sa, configHash, replicaCreateRepo); err != nil {
+		log.Error(err, "unable to create replica creation backup")
+		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
 	}
-	// ensure conditions are updated before returning
-	setStatusConditions(&postgresCluster.Status, calculatePGBackRestConditions(
-		postgresCluster.Status.PGBackRest, postgresCluster.GetGeneration(), dedicatedEnabled)...)
 
-	return reconcile.Result{}, nil
+	return result, nil
 }
 
 // reconcileRepoHosts is responsible for reconciling the pgBackRest ConfigMaps and Secrets.
@@ -648,6 +726,68 @@ func (r *Reconciler) reconcilePGBackRestConfig(ctx context.Context,
 	return nil
 }
 
+// +kubebuilder:rbac:groups="",resources=serviceaccounts,verbs=create;patch
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=create;patch
+// +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=create;patch
+
+// reconcileInstanceRBAC reconciles the Role, RoleBinding, and ServiceAccount for
+// pgBackRest
+func (r *Reconciler) reconcilePGBackRestRBAC(ctx context.Context,
+	postgresCluster *v1beta1.PostgresCluster) (*v1.ServiceAccount, error) {
+
+	sa := &v1.ServiceAccount{ObjectMeta: naming.PGBackRestRBAC(postgresCluster)}
+	sa.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("ServiceAccount"))
+
+	role := &rbacv1.Role{ObjectMeta: naming.PGBackRestRBAC(postgresCluster)}
+	role.SetGroupVersionKind(rbacv1.SchemeGroupVersion.WithKind("Role"))
+
+	binding := &rbacv1.RoleBinding{ObjectMeta: naming.PGBackRestRBAC(postgresCluster)}
+	binding.SetGroupVersionKind(rbacv1.SchemeGroupVersion.WithKind("RoleBinding"))
+
+	if err := r.setControllerReference(postgresCluster, sa); err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if err := r.setControllerReference(postgresCluster, binding); err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if err := r.setControllerReference(postgresCluster, role); err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	sa.Labels = naming.Merge(postgresCluster.Spec.Metadata.Labels,
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+		naming.PGBackRestLabels(postgresCluster.GetName()))
+	binding.Labels = naming.Merge(postgresCluster.Spec.Metadata.Labels,
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+		naming.PGBackRestLabels(postgresCluster.GetName()))
+	role.Labels = naming.Merge(postgresCluster.Spec.Metadata.Labels,
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+		naming.PGBackRestLabels(postgresCluster.GetName()))
+
+	binding.RoleRef = rbacv1.RoleRef{
+		APIGroup: rbacv1.SchemeGroupVersion.Group,
+		Kind:     role.Kind,
+		Name:     role.Name,
+	}
+	binding.Subjects = []rbacv1.Subject{{
+		Kind: sa.Kind,
+		Name: sa.Name,
+	}}
+	role.Rules = pgbackrest.Permissions(postgresCluster)
+
+	if err := r.apply(ctx, sa); err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if err := r.apply(ctx, role); err != nil {
+		return nil, errors.WithStack(err)
+	}
+	if err := r.apply(ctx, binding); err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return sa, nil
+}
+
 // reconcileDedicatedRepoHost is responsible for reconciling a pgBackRest dedicated repository host
 // StatefulSet according to a specific PostgresCluster custom resource.
 func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
@@ -655,6 +795,28 @@ func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 	repoResources *RepoResources) (*appsv1.StatefulSet, error) {
 
 	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoHost")
+
+	// ensure conditions are set before returning as needed by subsequent reconcile functions
+	defer func() {
+		repoHostReady := metav1.Condition{
+			ObservedGeneration: postgresCluster.GetGeneration(),
+			Type:               ConditionRepoHostReady,
+		}
+		if postgresCluster.Status.PGBackRest.RepoHost == nil {
+			repoHostReady.Status = metav1.ConditionUnknown
+			repoHostReady.Reason = "RepoHostStatusMissing"
+			repoHostReady.Message = "pgBackRest dedicated repository host status is missing"
+		} else if postgresCluster.Status.PGBackRest.RepoHost.Ready {
+			repoHostReady.Status = metav1.ConditionTrue
+			repoHostReady.Reason = "RepoHostReady"
+			repoHostReady.Message = "pgBackRest dedicated repository host is ready"
+		} else {
+			repoHostReady.Status = metav1.ConditionFalse
+			repoHostReady.Reason = "RepoHostNotReady"
+			repoHostReady.Message = "pgBackRest dedicated repository host is not ready"
+		}
+		meta.SetStatusCondition(&postgresCluster.Status.Conditions, repoHostReady)
+	}()
 
 	var isCreate bool
 	if len(repoResources.hosts) == 0 {
@@ -687,17 +849,216 @@ func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 	return repoHost, nil
 }
 
-// reconcileRepoVolumes is responsible for reconciling any pgBackRest repository volumes
-// (i.e. PVCs) configured for the cluster
-func (r *Reconciler) reconcileRepoVolumes(ctx context.Context,
-	postgresCluster *v1beta1.PostgresCluster, extConfigHashes map[string]string) error {
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=create;patch;update;delete
+
+// reconcileReplicaCreateBackup is responsible for reconciling a full pgBackRest backup for the
+// cluster as required to create replicas
+func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
+	postgresCluster *v1beta1.PostgresCluster, replicaCreateBackupJobs []*batchv1.Job,
+	serviceAccount *v1.ServiceAccount, configHash, replicaCreateRepoName string) error {
+
+	var replicaCreateRepoStatus *v1beta1.RepoStatus
+	for i, r := range postgresCluster.Status.PGBackRest.Repos {
+		if r.Name == replicaCreateRepoName {
+			replicaCreateRepoStatus = &postgresCluster.Status.PGBackRest.Repos[i]
+			break
+		}
+	}
+
+	// ensure condition is set before returning as needed by subsequent reconcile functions
+	defer func() {
+		replicaCreate := metav1.Condition{
+			ObservedGeneration: postgresCluster.GetGeneration(),
+			Type:               ConditionReplicaCreate,
+		}
+		if replicaCreateRepoStatus == nil {
+			replicaCreate.Status = metav1.ConditionUnknown
+			replicaCreate.Reason = "RepoStatusMissing"
+			replicaCreate.Message = "Status is missing for the replica create repo"
+		} else if replicaCreateRepoStatus.ReplicaCreateBackupComplete {
+			replicaCreate.Status = metav1.ConditionTrue
+			replicaCreate.Reason = "RepoBackupComplete"
+			replicaCreate.Message = "pgBackRest replica creation is now possible"
+		} else {
+			replicaCreate.Status = metav1.ConditionFalse
+			replicaCreate.Reason = "RepoBackupNotComplete"
+			replicaCreate.Message = "pgBackRest replica creation is not currently " +
+				"possible"
+		}
+		meta.SetStatusCondition(&postgresCluster.Status.Conditions, replicaCreate)
+	}()
+
+	// if the cluster has yet to be bootstrapped, or if the replicaCreateRepoStatus is nil,
+	// then simply return
+	if !patroni.ClusterBootstrapped(postgresCluster) || replicaCreateRepoStatus == nil {
+		return nil
+	}
+
+	// simply return if the backup is already complete
+	if replicaCreateRepoStatus.ReplicaCreateBackupComplete {
+		return nil
+	}
+
+	// determine if the replica create repo is ready using the "PGBackRestReplicaRepoReady" condition
+	var replicaRepoReady bool
+	condition := meta.FindStatusCondition(postgresCluster.Status.Conditions, ConditionReplicaRepoReady)
+	if condition != nil {
+		replicaRepoReady = (condition.Status == metav1.ConditionTrue)
+	}
+
+	// get pod name and container name as needed to exec into the proper pod and create
+	// the pgBackRest backup
+	selector, containerName, err := getPGBackRestExecSelector(postgresCluster)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	// Find the name of the current primary.  Only proceed if/when the primary can be identified
+	pods := &v1.PodList{}
+	if err := r.Client.List(ctx, pods, client.InNamespace(postgresCluster.GetNamespace()),
+		client.MatchingLabelsSelector{Selector: selector}); err != nil {
+		return errors.WithStack(err)
+	}
+	if len(pods.Items) != 1 {
+		return errors.WithStack(
+			errors.New("invalid number of Pods found when attempting to create replica create " +
+				"backup"))
+	}
+	primaryInstance := pods.Items[0].GetLabels()[naming.LabelInstance]
+
+	// set the name of the pgbackrest config file that will be mounted to the backup Job
+	configName := primaryInstance + ".conf"
+	if pgbackrest.DedicatedRepoHostEnabled(postgresCluster) {
+		configName = pgbackrest.CMRepoKey
+	}
+
+	// determine if the dedicated repository host is ready using the repo host ready status
+	dedicatedRepoReady := true
+	condition = meta.FindStatusCondition(postgresCluster.Status.Conditions, ConditionRepoHostReady)
+	if condition != nil {
+		dedicatedRepoReady = (condition.Status == metav1.ConditionTrue)
+	}
+
+	// grab the current job if one exists, and perform any required Job cleanup or update the
+	// PostgresCluster status as required
+	var job *batchv1.Job
+	if len(replicaCreateBackupJobs) > 0 {
+		job = replicaCreateBackupJobs[0]
+
+		failed := jobFailed(job)
+		completed := jobCompleted(job)
+
+		// Delete a running Job under the following conditions:
+		// - The dedicated repo host is not ready.  Wait for it to become ready, at which point the
+		//   Job will be recreated to try again.
+		// - The replica creation repo is not ready.  Wait for it to be ready (i.e. after
+		//   successful stanza creation) and try again.
+		if (!completed && !failed) && (!dedicatedRepoReady || !replicaRepoReady) {
+			if err := r.Client.Delete(ctx, job,
+				client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
+				return errors.WithStack(err)
+			}
+		}
+
+		// determine if the replica creation repo has changed
+		replicaCreateRepoChanged := true
+		if replicaCreateRepoName == job.GetLabels()[naming.LabelPGBackRestRepo] {
+			replicaCreateRepoChanged = false
+		}
+
+		// Delete an existing Job (whether running or not) under the following conditions:
+		// - The job has failed.  The Job will be deleted and recreated to try again.
+		// - The replica creation repo has changed since the Job was created.  Delete and recreate
+		//   with the Job with the proper repo configured.
+		// - The "config" annotation has changed, indicating there is a new primary.  Delete and
+		//   recreate the Job with the proper config mounted (applicable when a dedicated repo
+		//   host is not enabled).
+		// - The "config hash" annotation has changed, indicating a configuration change has been
+		//   made in the spec (specifically a change to the config for an external repo).  Delete
+		//   and recreate the Job with proper hash per the current config.
+		if failed || replicaCreateRepoChanged ||
+			(job.GetAnnotations()[naming.PGBackRestCurrentConfig] != configName) ||
+			(job.GetAnnotations()[naming.PGBackRestConfigHash] != configHash) {
+			if err := r.Client.Delete(ctx, job,
+				client.PropagationPolicy(metav1.DeletePropagationBackground)); err != nil {
+				return errors.WithStack(err)
+			}
+			return nil
+		}
+
+		// if the Job completed then update status and return
+		if completed {
+			replicaCreateRepoStatus.ReplicaCreateBackupComplete = true
+			return nil
+		}
+	}
+
+	// return if the replica repo or the dedicated repo host is not ready
+	if !dedicatedRepoReady || !replicaRepoReady {
+		return nil
+	}
+
+	var labels map[string]string
+	// create the backup Job, and populate ObjectMeta based on whether or not a Job already exists
+	backupJob := &batchv1.Job{}
+	if job != nil {
+		backupJob.ObjectMeta.Name = job.ObjectMeta.GetName()
+		backupJob.ObjectMeta.Namespace = job.ObjectMeta.GetNamespace()
+		labels = naming.Merge(postgresCluster.Spec.Metadata.Labels,
+			postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+			job.ObjectMeta.GetLabels())
+		backupJob.ObjectMeta.Annotations = job.ObjectMeta.GetAnnotations()
+	} else {
+		backupJob.ObjectMeta = naming.PGBackRestBackupJob(postgresCluster)
+		labels = naming.Merge(postgresCluster.Spec.Metadata.Labels,
+			postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+			naming.PGBackRestBackupJobLabels(postgresCluster.GetName(),
+				postgresCluster.Spec.Archive.PGBackRest.Repos[0].Name, naming.BackupReplicaCreate))
+		backupJob.ObjectMeta.Annotations = map[string]string{
+			naming.PGBackRestCurrentConfig: configName,
+			naming.PGBackRestConfigHash:    configHash,
+		}
+	}
+
+	// set the labels for the Job and generate and set the JobSpec intent
+	backupJob.ObjectMeta.Labels = labels
+	spec, err := generateBackupJobSpecIntent(postgresCluster, selector.String(), containerName,
+		replicaCreateRepoName, serviceAccount.GetName(), configName, labels)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	backupJob.Spec = *spec
+
+	// set gvk and ownership refs
+	backupJob.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("Job"))
+	if err := controllerutil.SetControllerReference(postgresCluster, backupJob,
+		r.Client.Scheme()); err != nil {
+		return errors.WithStack(err)
+	}
+
+	if err := r.apply(ctx, backupJob); err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
+
+// reconcileRepos is responsible for reconciling any pgBackRest repositories configured
+// for the cluster
+func (r *Reconciler) reconcileRepos(ctx context.Context,
+	postgresCluster *v1beta1.PostgresCluster, extConfigHashes map[string]string) (string, error) {
 
 	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoVolume")
 
 	errors := []error{}
 	errMsg := "reconciling repository volume"
 	repoVols := []*v1.PersistentVolumeClaim{}
-	for _, repo := range postgresCluster.Spec.Archive.PGBackRest.Repos {
+	var replicaCreateRepoName string
+	for i, repo := range postgresCluster.Spec.Archive.PGBackRest.Repos {
+		// the repo at index 0 is the replica creation repo
+		if i == 0 {
+			replicaCreateRepoName = repo.Name
+		}
 		// we only care about reconciling repo volumes, so ignore everything else
 		if repo.Volume == nil {
 			continue
@@ -713,13 +1074,14 @@ func (r *Reconciler) reconcileRepoVolumes(ctx context.Context,
 	}
 
 	postgresCluster.Status.PGBackRest.Repos =
-		getRepoVolumeStatus(postgresCluster.Status.PGBackRest.Repos, repoVols, extConfigHashes)
+		getRepoVolumeStatus(postgresCluster.Status.PGBackRest.Repos, repoVols, extConfigHashes,
+			replicaCreateRepoName)
 
 	if len(errors) > 0 {
-		return utilerrors.NewAggregate(errors)
+		return "", utilerrors.NewAggregate(errors)
 	}
 
-	return nil
+	return replicaCreateRepoName, nil
 }
 
 // +kubebuilder:rbac:groups="",resources=pods,verbs=get;list
@@ -734,8 +1096,41 @@ func (r *Reconciler) reconcileRepoVolumes(ctx context.Context,
 func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 	postgresCluster *v1beta1.PostgresCluster, configHash string) (bool, error) {
 
-	clusterName := postgresCluster.GetName()
-	namespace := postgresCluster.GetNamespace()
+	// ensure conditions are set before returning as needed by subsequent reconcile functions
+	defer func() {
+		var replicaCreateRepoStatus *v1beta1.RepoStatus
+		if len(postgresCluster.Spec.Archive.PGBackRest.Repos) == 0 {
+			return
+		}
+		replicaCreateRepoName := postgresCluster.Spec.Archive.PGBackRest.Repos[0].Name
+		for i, r := range postgresCluster.Status.PGBackRest.Repos {
+			if r.Name == replicaCreateRepoName {
+				replicaCreateRepoStatus = &postgresCluster.Status.PGBackRest.Repos[i]
+				break
+			}
+		}
+
+		replicaCreateRepoReady := metav1.Condition{
+			ObservedGeneration: postgresCluster.GetGeneration(),
+			Type:               ConditionReplicaRepoReady,
+		}
+		if replicaCreateRepoStatus == nil {
+			replicaCreateRepoReady.Status = metav1.ConditionUnknown
+			replicaCreateRepoReady.Reason = "RepoStatusMissing"
+			replicaCreateRepoReady.Message = "Status is missing for the replica creation repo"
+		} else if replicaCreateRepoStatus.StanzaCreated {
+			replicaCreateRepoReady.Status = metav1.ConditionTrue
+			replicaCreateRepoReady.Reason = "StanzaCreated"
+			replicaCreateRepoReady.Message = "pgBackRest replica create repo is ready for " +
+				"backups"
+		} else {
+			replicaCreateRepoReady.Status = metav1.ConditionFalse
+			replicaCreateRepoReady.Reason = "StanzaNotCreated"
+			replicaCreateRepoReady.Message = "pgBackRest replica create repo is not ready " +
+				"for backups"
+		}
+		meta.SetStatusCondition(&postgresCluster.Status.Conditions, replicaCreateRepoReady)
+	}()
 
 	// determine if the cluster has been initialized
 	clusterBootstrapped := patroni.ClusterBootstrapped(postgresCluster)
@@ -761,36 +1156,16 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 		return false, nil
 	}
 
-	// create the proper pod selector based on whether or not a a dedicated repository host is
-	// enabled.  If a dedicated repo host is enabled, then the stanza create command will be
-	// run there.  Otherwise it will be run on the current primary.
-	dedicatedEnabled := pgbackrest.DedicatedRepoHostEnabled(postgresCluster)
-	repoHostEnabled := pgbackrest.RepoHostEnabled(postgresCluster)
-	var err error
-	var podSelector labels.Selector
-	var containerName string
-	if dedicatedEnabled {
-		podSelector = naming.PGBackRestDedicatedSelector(clusterName)
-		containerName = naming.PGBackRestRepoContainerName
-	} else {
-		primarySelector := naming.ClusterPrimary(clusterName)
-		podSelector, err = metav1.LabelSelectorAsSelector(&primarySelector)
-		if err != nil {
-			return false, nil
-		}
-		// There will only be a pgBackRest container if using a repo host.  Otherwise
-		// the stanza create command will be run in the database container.
-		if repoHostEnabled {
-			containerName = naming.PGBackRestRepoContainerName
-		} else {
-			containerName = naming.ContainerDatabase
-		}
+	// get pod name and container name as needed to exec into the proper pod and create
+	// pgBackRest stanzas
+	selector, containerName, err := getPGBackRestExecSelector(postgresCluster)
+	if err != nil {
+		return false, errors.WithStack(err)
 	}
 
 	pods := &v1.PodList{}
-	if err := r.Client.List(ctx, pods, &client.ListOptions{
-		LabelSelector: podSelector,
-	}); err != nil {
+	if err := r.Client.List(ctx, pods, client.InNamespace(postgresCluster.GetNamespace()),
+		client.MatchingLabelsSelector{Selector: selector}); err != nil {
 		return false, err
 	}
 
@@ -802,14 +1177,11 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 			errors.New("invalid number of Pods found when attempting to create stanzas"))
 	}
 
-	// var stdout, stderr bytes.Buffer
-	stanzaCreatePodName := pods.Items[0].GetName()
-
 	// create a pgBackRest executor and attempt stanza creation
 	exec := func(ctx context.Context, stdin io.Reader, stdout, stderr io.Writer,
 		command ...string) error {
-		return r.PodExec(namespace, stanzaCreatePodName, containerName, stdin,
-			stdout, stderr, command...)
+		return r.PodExec(postgresCluster.GetNamespace(), pods.Items[0].GetName(), containerName,
+			stdin, stdout, stderr, command...)
 	}
 	configHashMismatch, err := pgbackrest.Executor(exec).StanzaCreate(ctx, configHash)
 	if err != nil {
@@ -817,12 +1189,13 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 		r.Recorder.Event(postgresCluster, v1.EventTypeWarning, EventUnableToCreateStanzas,
 			err.Error())
 
-		return false, err
+		return false, errors.WithStack(err)
 	}
 	// Don't record event or return an error if configHashMismatch is true, since this just means
 	// configuration changes in ConfigMaps/Secrets have not yet propagated to the container.
 	// Therefore, just log an an info message and return an error to requeue and try again.
 	if configHashMismatch {
+
 		return true, nil
 	}
 
@@ -836,6 +1209,43 @@ func (r *Reconciler) reconcileStanzaCreate(ctx context.Context,
 	}
 
 	return false, nil
+}
+
+// getPGBackRestExecSelector returns a selector and container name that allows the proper
+// Pod (along with a specific container within it) to be found within the Kubernetes
+// cluster as needed to exec into the container and run a pgBackRest command.
+func getPGBackRestExecSelector(
+	postgresCluster *v1beta1.PostgresCluster) (labels.Selector, string, error) {
+
+	clusterName := postgresCluster.GetName()
+
+	// create the proper pod selector based on whether or not a a dedicated repository host is
+	// enabled.  If a dedicated repo host is enabled, then the pgBackRest command will be
+	// run there.  Otherwise it will be run on the current primary.
+	dedicatedEnabled := pgbackrest.DedicatedRepoHostEnabled(postgresCluster)
+	repoHostEnabled := pgbackrest.RepoHostEnabled(postgresCluster)
+	var err error
+	var podSelector labels.Selector
+	var containerName string
+	if dedicatedEnabled {
+		podSelector = naming.PGBackRestDedicatedSelector(clusterName)
+		containerName = naming.PGBackRestRepoContainerName
+	} else {
+		primarySelector := naming.ClusterPrimary(clusterName)
+		podSelector, err = metav1.LabelSelectorAsSelector(&primarySelector)
+		if err != nil {
+			return nil, "", err
+		}
+		// There will only be a pgBackRest container if using a repo host.  Otherwise
+		// the pgBackRest command will be run in the database container.
+		if repoHostEnabled {
+			containerName = naming.PGBackRestRepoContainerName
+		} else {
+			containerName = naming.ContainerDatabase
+		}
+	}
+
+	return podSelector, containerName, nil
 }
 
 // getRepoHostStatus is responsible for returning the pgBackRest status for the provided pgBackRest
@@ -860,7 +1270,7 @@ func getRepoHostStatus(repoHost *appsv1.StatefulSet) *v1beta1.RepoHostStatus {
 // (i.e. PVCs) reconciled  for the cluster, and the hashes calculated for the configuration for any
 // external repositories defined for the cluster.
 func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*v1.PersistentVolumeClaim,
-	configHashes map[string]string) []v1beta1.RepoStatus {
+	configHashes map[string]string, replicaCreateRepoName string) []v1beta1.RepoStatus {
 
 	// the new repository status that will be generated and returned
 	updatedRepoStatus := []v1beta1.RepoStatus{}
@@ -875,10 +1285,18 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*v1.Pers
 			if rs.Name == repoName {
 				newRepoVolStatus = false
 
+				// if we find a status with ReplicaCreateBackupComplete set to "true" but the repo name
+				// for that status does not match the current replica create repo name, then reset
+				// ReplicaCreateBackupComplete and StanzaCreate back to false
+				if rs.ReplicaCreateBackupComplete && (rs.Name != replicaCreateRepoName) {
+					rs.ReplicaCreateBackupComplete = false
+				}
+
 				// update binding info if needed
 				if rs.Bound != (rv.Status.Phase == v1.ClaimBound) {
 					rs.Bound = (rv.Status.Phase == v1.ClaimBound)
 				}
+
 				updatedRepoStatus = append(updatedRepoStatus, rs)
 				break
 			}
@@ -889,7 +1307,6 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*v1.Pers
 				Name:       repoName,
 				VolumeName: rv.Spec.VolumeName,
 			})
-			break
 		}
 	}
 
@@ -902,12 +1319,24 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*v1.Pers
 		for _, rs := range repoStatus {
 			if rs.Name == repoName {
 				newExtRepoStatus = false
+
+				// if we find a status with ReplicaCreateBackupComplete set to "true" but the repo name
+				// for that status does not match the current replica create repo name, then reset
+				// ReplicaCreateBackupComplete back to false
+				if rs.ReplicaCreateBackupComplete && (rs.Name != replicaCreateRepoName) {
+					rs.ReplicaCreateBackupComplete = false
+				}
+
 				// Update the hash if needed. Setting StanzaCreated to "false" will force another
-				// run of the  pgBackRest stanza-create command
+				// run of the  pgBackRest stanza-create command, while also setting
+				// ReplicaCreateBackupComplete to false (this will result in a new replica creation
+				// backup if this is the replica creation repo)
 				if rs.RepoOptionsHash != hash {
 					rs.RepoOptionsHash = hash
 					rs.StanzaCreated = false
+					rs.ReplicaCreateBackupComplete = false
 				}
+
 				updatedRepoStatus = append(updatedRepoStatus, rs)
 				break
 			}
@@ -922,7 +1351,7 @@ func getRepoVolumeStatus(repoStatus []v1beta1.RepoStatus, repoVolumes []*v1.Pers
 
 	// sort to ensure repo status always displays in a consistent order according to repo name
 	sort.Slice(updatedRepoStatus, func(i, j int) bool {
-		return updatedRepoStatus[i].Name > updatedRepoStatus[j].Name
+		return updatedRepoStatus[i].Name < updatedRepoStatus[j].Name
 	})
 
 	return updatedRepoStatus
@@ -1002,7 +1431,7 @@ func (r *Reconciler) createCronJob(
 									// TODO(tjmoore4): This is likely the correct image to use, but the image
 									// value in the spec is currently optional. Should the image be required,
 									// or should this be referencing its own image spec value?
-									Image: cluster.Spec.Archive.PGBackRest.RepoHost.Image,
+									Image: cluster.Spec.Archive.PGBackRest.Image,
 									Args:  []string{"/bin/sh", "-c", "date; echo pgBackRest " + backupType + " backup scheduled..."},
 								},
 							},

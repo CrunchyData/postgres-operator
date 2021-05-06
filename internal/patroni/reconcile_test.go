@@ -17,6 +17,7 @@ package patroni
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -33,25 +34,32 @@ import (
 
 func TestClusterConfigMap(t *testing.T) {
 	t.Parallel()
-
 	ctx := context.Background()
+
 	cluster := new(v1beta1.PostgresCluster)
-	cluster.Default()
-	config := new(v1.ConfigMap)
 	pgHBAs := postgres.HBAs{}
 	pgParameters := postgres.Parameters{}
 	pgUser := new(v1.Secret)
 
-	assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser, config))
+	// this array represents the "replicaCreateRepoIndex" value passed to ClusterConfigMap
+	testCases := []string{"", "1"}
 
-	// The output of clusterYAML should go into config.
-	data, _ := clusterYAML(cluster, pgUser, pgHBAs, pgParameters)
-	assert.DeepEqual(t, config.Data["patroni.yaml"], data)
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("ClusterConfigMap: replicaCreateRepoIndex=%s", tc), func(t *testing.T) {
+			cluster.Default()
+			config := new(v1.ConfigMap)
+			assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser, config, tc))
 
-	// No change when called again.
-	before := config.DeepCopy()
-	assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser, config))
-	assert.DeepEqual(t, config, before)
+			// The output of clusterYAML should go into config.
+			data, _ := clusterYAML(cluster, pgUser, pgHBAs, pgParameters, tc)
+			assert.DeepEqual(t, config.Data["patroni.yaml"], data)
+
+			// No change when called again.
+			before := config.DeepCopy()
+			assert.NilError(t, ClusterConfigMap(ctx, cluster, pgHBAs, pgParameters, pgUser, config, tc))
+			assert.DeepEqual(t, config, before)
+		})
+	}
 }
 
 func TestReconcileInstanceCertificates(t *testing.T) {

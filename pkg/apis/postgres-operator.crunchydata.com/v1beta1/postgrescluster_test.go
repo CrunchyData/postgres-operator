@@ -52,6 +52,7 @@ metadata:
 spec:
   archive:
     pgbackrest:
+      image: ""
       metadata: {}
   image: ""
   instances: null
@@ -84,6 +85,7 @@ metadata:
 spec:
   archive:
     pgbackrest:
+      image: ""
       metadata: {}
   image: ""
   instances:

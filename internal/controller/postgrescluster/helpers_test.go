@@ -67,9 +67,9 @@ func testCluster() *v1beta1.PostgresCluster {
 			}},
 			Archive: v1beta1.Archive{
 				PGBackRest: v1beta1.PGBackRestArchive{
+					Image: CrunchyPGBackRestImage,
 					RepoHost: &v1beta1.PGBackRestRepoHost{
 						Dedicated: &v1beta1.DedicatedRepo{},
-						Image:     CrunchyPGBackRestImage,
 					},
 					Repos: []v1beta1.PGBackRestRepo{{
 						Name: "repo1",

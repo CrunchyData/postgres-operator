@@ -38,6 +38,11 @@ type PGBackRestArchive struct {
 	// +optional
 	Global map[string]string `json:"global,omitempty"`
 
+	// The image name to use for pgBackRest containers.  Utilized to run pgBackRest repository
+	// hosts and backups.
+	// +kubebuilder:validation:Required
+	Image string `json:"image"`
+
 	// Defines a pgBackRest repository
 	// +kubebuilder:validation:Required
 	// +listType=map
@@ -55,10 +60,6 @@ type PGBackRestRepoHost struct {
 	// Defines a dedicated repository host configuration
 	// +optional
 	Dedicated *DedicatedRepo `json:"dedicated,omitempty"`
-
-	// The image name to use for pgBackRest containers
-	// +kubebuilder:validation:Required
-	Image string `json:"image"`
 
 	// Resource requirements for a pgBackRest repository host
 	// +optional
@@ -206,6 +207,10 @@ type RepoStatus struct {
 	// The name of the pgBackRest repository
 	// +kubebuilder:validation:Required
 	Name string `json:"name"`
+
+	// ReplicaCreateBackupReady indicates whether a backup exists in the repository as needed
+	// to bootstrap replicas.
+	ReplicaCreateBackupComplete bool `json:"replicaCreateBackupComplete,omitempty"`
 
 	// A hash of the required fields in the spec for defining an Azure, GCS or S3 repository,
 	// Utilizd to detect changes to these fields and then execute pgBackRest stanza-create

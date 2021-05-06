@@ -38,6 +38,9 @@ const (
 	// LabelPGBackRest is used to indicate that a resource is for pgBackRest
 	LabelPGBackRest = labelPrefix + "pgbackrest"
 
+	// LabelPGBackRestBackup is used to indicate that a resource is for a pgBackRest backup
+	LabelPGBackRestBackup = labelPrefix + "pgbackrest-backup"
+
 	// LabelPGBackRestConfig is used to indicate that a ConfigMap is for pgBackRest
 	LabelPGBackRestConfig = labelPrefix + "pgbackrest-config"
 
@@ -76,6 +79,16 @@ const (
 	RolePGBouncer = "pgbouncer"
 )
 
+// BackupJobType represents different types of backups (e.g. ad-hoc backups, scheduled backups,
+// the backup for pgBackRest replica creation, etc.)
+type BackupJobType string
+
+const (
+	// BackupReplicaCreate is the backup type for the backup taken to enable pgBackRest replica
+	// creation
+	BackupReplicaCreate BackupJobType = "replica-create"
+)
+
 // Merge takes sets of labels and merges them. The last set
 // provided will win in case of conflicts.
 func Merge(sets ...map[string]string) labels.Set {
@@ -92,6 +105,25 @@ func PGBackRestLabels(clusterName string) labels.Set {
 		LabelCluster:    clusterName,
 		LabelPGBackRest: "",
 	}
+}
+
+// PGBackRestBackupJobLabels provides common labels for pgBackRest repository
+// resources.
+func PGBackRestBackupJobLabels(clusterName, repoName string,
+	backupType BackupJobType) labels.Set {
+	repoLabels := PGBackRestLabels(clusterName)
+	jobLabels := map[string]string{
+		LabelPGBackRestRepo:   repoName,
+		LabelPGBackRestBackup: string(backupType),
+	}
+	return labels.Merge(jobLabels, repoLabels)
+}
+
+// PGBackRestSelector provides a selector for querying all pgBackRest
+// resources
+func PGBackRestBackupJobSelector(clusterName, repoName string,
+	backupType BackupJobType) labels.Selector {
+	return PGBackRestBackupJobLabels(clusterName, repoName, backupType).AsSelector()
 }
 
 // PGBackRestRepoLabels provides common labels for pgBackRest repository

@@ -299,11 +299,29 @@ func PGBackRestConfig(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
 	}
 }
 
+// PGBackRestBackupJob returns the ObjectMeta for the pgBackRest backup Job utilized
+// to create replicas using pgBackRest
+func PGBackRestBackupJob(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Name:      cluster.GetName() + "-backup-" + rand.String(4),
+		Namespace: cluster.GetNamespace(),
+	}
+}
+
 // PGBackRestCronJob returns the ObjectMeta for a pgBackRest CronJob
 func PGBackRestCronJob(cluster *v1beta1.PostgresCluster, backuptype, repoName string) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
 		Namespace: cluster.GetNamespace(),
 		Name:      cluster.Name + "-pgbackrest-" + repoName + "-" + backuptype,
+	}
+}
+
+// PGBackRestRBAC returns the ObjectMeta necessary to lookup the ServiceAccount, Role, and
+// RoleBinding for pgBackRest Jobs
+func PGBackRestRBAC(cluster *v1beta1.PostgresCluster) metav1.ObjectMeta {
+	return metav1.ObjectMeta{
+		Namespace: cluster.Namespace,
+		Name:      cluster.Name + "-pgbackrest",
 	}
 }
 

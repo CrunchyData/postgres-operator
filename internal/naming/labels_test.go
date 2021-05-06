@@ -30,6 +30,7 @@ func TestLabelsValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPatroni))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelRole))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRest))
+	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestBackup))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestConfig))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestDedicated))
 	assert.Assert(t, nil == validation.IsQualifiedName(LabelPGBackRestRepo))
@@ -43,6 +44,7 @@ func TestLabelValuesValid(t *testing.T) {
 	assert.Assert(t, nil == validation.IsDNS1123Label(RolePGBouncer))
 	assert.Assert(t, nil == validation.IsDNS1123Label(RolePrimary))
 	assert.Assert(t, nil == validation.IsDNS1123Label(RoleReplica))
+	assert.Assert(t, nil == validation.IsDNS1123Label(string(BackupReplicaCreate)))
 }
 
 func TestMerge(t *testing.T) {
@@ -131,6 +133,15 @@ func TestPGBackRestLabelFuncs(t *testing.T) {
 	// verify that the labels selector is created as expected
 	pgBackRestSelector := PGBackRestSelector(clusterName)
 	assert.Check(t, pgBackRestSelector.Matches(pgBackRestLabels))
+
+	// verify the labels that identify pgBackRest backup resources
+	pgBackRestReplicaBackupLabels := PGBackRestBackupJobLabels(clusterName, repoName,
+		BackupReplicaCreate)
+	assert.Equal(t, pgBackRestReplicaBackupLabels.Get(LabelCluster), clusterName)
+	assert.Check(t, pgBackRestReplicaBackupLabels.Has(LabelPGBackRest))
+	assert.Equal(t, pgBackRestReplicaBackupLabels.Get(LabelPGBackRestRepo), repoName)
+	assert.Equal(t, pgBackRestReplicaBackupLabels.Get(LabelPGBackRestBackup),
+		string(BackupReplicaCreate))
 
 	// verify the labels that identify pgBackRest repo resources
 	pgBackRestRepoLabels := PGBackRestRepoLabels(clusterName, repoName)

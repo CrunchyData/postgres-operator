@@ -81,9 +81,22 @@ rules:
   - cronjobs
   verbs:
   - create
+  - delete
   - get
   - list
   - patch
+  - watch
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - postgres-operator.crunchydata.com

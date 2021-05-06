@@ -37,6 +37,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	cruntime "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -223,6 +224,11 @@ func enablePostgresClusterControllers(ctx context.Context) {
 	assertNoError(err)
 
 	cfg.Wrap(otelTransportWrapper())
+
+	// Configure client-go to suppress warnings when warning headers are encountered. This prevents
+	// warnings from being logged over and over again during reconciliation (e.g. this will suppress
+	// deprecation warnings when using an older version of a resource for backwards compatibility).
+	rest.SetDefaultWarningHandler(rest.NoWarnings{})
 
 	mgr, err := runtime.CreateRuntimeManager(os.Getenv("PGO_TARGET_NAMESPACE"), cfg, false)
 	assertNoError(err)

@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/pgbackrest"
 	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
@@ -50,6 +51,7 @@ func quoteShellWord(s string) string {
 func clusterYAML(
 	cluster *v1beta1.PostgresCluster, pgUser *v1.Secret,
 	pgHBAs postgres.HBAs, pgParameters postgres.Parameters,
+	replicaCreateRepoIndex string,
 ) (string, error) {
 	root := map[string]interface{}{
 		// The cluster identifier. This value cannot change during the cluster's
@@ -165,6 +167,19 @@ func clusterYAML(
 			// flexible approximation.
 			"mode": "off",
 		},
+	}
+
+	// if a replica creation repo index is provided, then configure and enable a pgBackRest
+	// replica creation method for that specific repo
+	if replicaCreateRepoIndex != "" {
+		pgConfig := root["postgresql"].(map[string]interface{})
+		pgConfig["create_replica_methods"] = []string{"pgbackrest", "basebackup"}
+		pgConfig["pgbackrest"] = map[string]interface{}{
+			"command": fmt.Sprintf("pgbackrest restore --stanza=%s --repo=%s --delta",
+				pgbackrest.DefaultStanzaName, replicaCreateRepoIndex),
+			"keep_data": true,
+			"no_params": true,
+		}
 	}
 
 	if !ClusterBootstrapped(cluster) {

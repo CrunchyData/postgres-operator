@@ -165,7 +165,6 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 	clusterName := "hippo"
 	clusterUID := types.UID("hippouid")
 	namespace := "test-add-pgbackrest-to-instance-pod-spec"
-	pgBackRestImage := "hippo-image"
 
 	// create a PostgresCluster to test with
 	postgresCluster := &v1beta1.PostgresCluster{
@@ -221,15 +220,12 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 	}{{
 		repoHost: nil,
 	}, {
-		repoHost: &v1beta1.PGBackRestRepoHost{
-			Image: pgBackRestImage,
-		},
+		repoHost: &v1beta1.PGBackRestRepoHost{},
 	}, {
 		repoHost: &v1beta1.PGBackRestRepoHost{
 			Dedicated: &v1beta1.DedicatedRepo{
 				Resources: &v1.ResourceRequirements{},
 			},
-			Image: pgBackRestImage,
 		},
 	}, {
 		repoHost: nil,
@@ -238,9 +234,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 		sshSecret: &v1.SecretProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-secret.conf"}},
 	}, {
-		repoHost: &v1beta1.PGBackRestRepoHost{
-			Image: pgBackRestImage,
-		},
+		repoHost: &v1beta1.PGBackRestRepoHost{},
 		sshConfig: &v1.ConfigMapProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},
 		sshSecret: &v1.SecretProjection{
@@ -250,7 +244,6 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 			Dedicated: &v1beta1.DedicatedRepo{
 				Resources: &v1.ResourceRequirements{},
 			},
-			Image: pgBackRestImage,
 		},
 		sshConfig: &v1.ConfigMapProjection{
 			LocalObjectReference: v1.LocalObjectReference{Name: "cust-ssh-config.conf"}},

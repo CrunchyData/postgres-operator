@@ -20,10 +20,9 @@ import (
 	"hash/fnv"
 	"io"
 
+	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -104,6 +103,29 @@ func addNSSWrapper(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTem
 		})
 }
 
+// jobFailed returns "true" if the Job provided has failed.  Otherwise it returns "false".
+func jobFailed(job *batchv1.Job) bool {
+	conditions := job.Status.Conditions
+	for i := range conditions {
+		if conditions[i].Type == batchv1.JobFailed {
+			return (conditions[i].Status == v1.ConditionTrue)
+		}
+	}
+	return false
+}
+
+// jobCompleted returns "true" if the Job provided completed successfully.  Otherwise it returns
+// "false".
+func jobCompleted(job *batchv1.Job) bool {
+	conditions := job.Status.Conditions
+	for i := range conditions {
+		if conditions[i].Type == batchv1.JobComplete {
+			return (conditions[i].Status == v1.ConditionTrue)
+		}
+	}
+	return false
+}
+
 // safeHash32 runs content and returns a short alphanumeric string that
 // represents everything written to w. The string is unlikely to have bad words
 // and is safe to store in the Kubernetes API. This is the same algorithm used
@@ -114,18 +136,6 @@ func safeHash32(content func(w io.Writer) error) (string, error) {
 		return "", err
 	}
 	return rand.SafeEncodeString(fmt.Sprint(hash.Sum32())), nil
-}
-
-// setStatusConditions updates the provided PostgresCluster status with the provided
-// conditions. This includes populating the PostgresCluster status with any conditions that
-// do not yet exist, or updating them as needed if they already exist.
-func setStatusConditions(status *v1beta1.PostgresClusterStatus,
-	conditions ...metav1.Condition) {
-	for i := range conditions {
-		// please note the observedGeneration will not be properly set via SetStatusCondition()
-		// until apimachinery is updated v0.20
-		meta.SetStatusCondition(&status.Conditions, conditions[i])
-	}
 }
 
 // updateReconcileResult creates a new Result based on the new and existing results provided to it.

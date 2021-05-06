@@ -88,6 +88,8 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 			{"PatroniDistributedConfiguration", PatroniDistributedConfiguration(cluster)},
 			{"PatroniLeaderConfigMap", PatroniLeaderConfigMap(cluster)},
 			{"PatroniTrigger", PatroniTrigger(cluster)},
+			{"PGBackRestConfig", PGBackRestConfig(cluster)},
+			{"PGBackRestSSHConfig", PGBackRestSSHConfig(cluster)},
 		})
 	})
 
@@ -106,15 +108,23 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 		})
 	})
 
+	t.Run("Jobs", func(t *testing.T) {
+		testUniqueAndValid(t, []test{
+			{"ClusterPGBouncer", PGBackRestBackupJob(cluster)},
+		})
+	})
+
 	t.Run("RoleBindings", func(t *testing.T) {
 		testUniqueAndValid(t, []test{
 			{"ClusterInstanceRBAC", ClusterInstanceRBAC(cluster)},
+			{"PGBackRestRBAC", PGBackRestRBAC(cluster)},
 		})
 	})
 
 	t.Run("Roles", func(t *testing.T) {
 		testUniqueAndValid(t, []test{
 			{"ClusterInstanceRBAC", ClusterInstanceRBAC(cluster)},
+			{"PGBackRestRBAC", PGBackRestRBAC(cluster)},
 		})
 	})
 
@@ -124,12 +134,14 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 			{"PostgresUserSecret", PostgresUserSecret(cluster)},
 			{"PostgresTLSSecret", PostgresTLSSecret(cluster)},
 			{"ReplicationClientCertSecret", ReplicationClientCertSecret(cluster)},
+			{"PGBackRestSSHSecret", PGBackRestSSHSecret(cluster)},
 		})
 	})
 
 	t.Run("ServiceAccounts", func(t *testing.T) {
 		testUniqueAndValid(t, []test{
 			{"ClusterInstanceRBAC", ClusterInstanceRBAC(cluster)},
+			{"PGBackRestRBAC", PGBackRestRBAC(cluster)},
 		})
 	})
 

@@ -15,9 +15,9 @@ spec:
             storage: 1Gi
   archive:
     pgbackrest:
+      image: us.gcr.io/container-suite/crunchy-pgbackrest:centos8-13.2-4.7.0-beta.2
       repoHost:
         dedicated: {}
-        image: us.gcr.io/container-suite/crunchy-pgbackrest:centos8-13.2-4.7.0-beta.2
       repos:
       - name: repo1
         volume:

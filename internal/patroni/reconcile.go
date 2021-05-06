@@ -43,12 +43,14 @@ func ClusterConfigMap(ctx context.Context,
 	inParameters postgres.Parameters,
 	inPGUser *v1.Secret,
 	outClusterConfigMap *v1.ConfigMap,
+	replicaCreateRepoIndex string,
 ) error {
 	var err error
 
 	initialize.StringMap(&outClusterConfigMap.Data)
 
-	outClusterConfigMap.Data[configMapFileKey], err = clusterYAML(inCluster, inPGUser, inHBAs, inParameters)
+	outClusterConfigMap.Data[configMapFileKey], err = clusterYAML(inCluster, inPGUser, inHBAs,
+		inParameters, replicaCreateRepoIndex)
 
 	return err
 }
