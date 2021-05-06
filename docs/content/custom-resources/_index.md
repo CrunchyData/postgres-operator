@@ -574,7 +574,7 @@ There following modification operations are supported on the
 
 #### Modify Resource Requests & Limits
 
-Modifying the `resources`, `limits`, `backrestResources`, `backRestLimits`,
+Modifying the `resources`, `limits`, `backrestResources`, `backrestLimits`,
 `pgBouncer.resources`, or `pgbouncer.limits` will cause the PostgreSQL Operator
 to apply the new values to the affected [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/).
 
@@ -937,7 +937,7 @@ make changes, as described below.
 | backrestConfig | `create` | Optional references to pgBackRest configuration files |
 | backrestLimits | `create`, `update` | Specify the container resource limits that the pgBackRest repository should use. Follows the [Kubernetes definitions of resource limits](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | backrestRepoPath | `create` | Optional reference to the location of the pgBackRest repository. |
-| BackrestResources | `create`, `update` | Specify the container resource requests that the pgBackRest repository should use. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
+| backrestResources | `create`, `update` | Specify the container resource requests that the pgBackRest repository should use. Follows the [Kubernetes definitions of resource requests](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#resource-requests-and-limits-of-pod-and-container). |
 | backrestGCSBucket | `create` | An optional parameter (unless you are using GCS for backup storage) that specifies the GCS bucket that pgBackRest should use. |
 | backrestGCSEndpoint | `create` | An optional parameter that specifies a GCS endpoint pgBackRest should use, if not using the default GCS endpoint. |
 | backrestGCSKeyType | `create` | An optional parameter that specifies a GCS key type that pgBackRest should use. Can be either `service` or `token`, and if not specified, pgBackRest will use `service`. |
