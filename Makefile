@@ -247,14 +247,6 @@ pull: $(images:%=pull-%) ;
 pull-%:
 	$(IMG_PUSHER_PULLER) pull $(PGO_IMAGE_PREFIX)/$*:$(PGO_IMAGE_TAG)
 
-release:  linuxpgo macpgo winpgo
-	rm -rf $(RELTMPDIR) $(RELFILE)
-	mkdir $(RELTMPDIR)
-	cp -r $(PGOROOT)/examples $(RELTMPDIR)
-	cp -r $(PGOROOT)/deploy $(RELTMPDIR)
-	cp -r $(PGOROOT)/conf $(RELTMPDIR)
-	tar czvf $(RELFILE) -C $(RELTMPDIR) .
-
 generate: generate-crd generate-crd-docs generate-deepcopy generate-rbac
 	GOBIN='$(CURDIR)/hack/tools' ./hack/update-codegen.sh
 
