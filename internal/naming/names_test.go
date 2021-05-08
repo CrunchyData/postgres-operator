@@ -62,6 +62,7 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 			Namespace: "ns1", Name: "pg0",
 		},
 	}
+	repoName := "hippo-repo"
 
 	type test struct {
 		name  string
@@ -154,6 +155,12 @@ func TestClusterNamesUniqueAndValid(t *testing.T) {
 			{"PatroniDistributedConfiguration", PatroniDistributedConfiguration(cluster)},
 			{"PatroniLeaderEndpoints", PatroniLeaderEndpoints(cluster)},
 			{"PatroniTrigger", PatroniTrigger(cluster)},
+		})
+	})
+
+	t.Run("Volumes", func(t *testing.T) {
+		testUniqueAndValid(t, []test{
+			{"PGBackRestRepoVolume", PGBackRestRepoVolume(cluster, repoName)},
 		})
 	})
 }
