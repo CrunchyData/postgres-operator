@@ -85,7 +85,7 @@ Within this Secret are attributes that provide information to let you log into t
 - `dbname`: The name of the database that the user has access to by default.
 - `host`: The name of the host of the database. This references the [Service](https://kubernetes.io/docs/concepts/services-networking/service/) of the primary Postgres instance.
 - `port`: The port that the database is listening on.
-- `uri`: A [PostgreSQL connection URI](https://www.postgresql.org/docs/current/libpq-connect.html#id-1.7.3.8.3.6) that provides all the information for logging into the Postgres database.
+- `uri`: A [PostgreSQL connection URI](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) that provides all the information for logging into the Postgres database.
 
 Note that **all connections use TLS**. PGO sets up a PKI for your Postgres clusters. You can also choose to bring your own PKI / certificate authority; this is covered later in the documentation.
 
@@ -151,30 +151,15 @@ spec:
         - name: DB_VENDOR
           value: "postgres"
         - name: DB_ADDR
-          valueFrom:
-            secretKeyRef:
-              name: hippo-pguser
-              key: host
+          valueFrom: { secretKeyRef: { name: hippo-pguser, key: host } }
         - name: DB_PORT
-          valueFrom:
-            secretKeyRef:
-              name: hippo-pguser
-              key: port
+          valueFrom: { secretKeyRef: { name: hippo-pguser, key: port } }
         - name: DB_DATABASE
-          valueFrom:
-            secretKeyRef:
-              name: hippo-pguser
-              key: dbname
+          valueFrom: { secretKeyRef: { name: hippo-pguser, key: dbname } }
         - name: DB_USER
-          valueFrom:
-            secretKeyRef:
-              name: hippo-pguser
-              key: user
+          valueFrom: { secretKeyRef: { name: hippo-pguser, key: user } }
         - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: hippo-pguser
-              key: password
+          valueFrom: { secretKeyRef: { name: hippo-pguser, key: password } }
         - name: KEYCLOAK_USER
           value: "admin"
         - name: KEYCLOAK_PASSWORD
