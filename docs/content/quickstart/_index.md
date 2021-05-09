@@ -5,97 +5,73 @@ draft: false
 weight: 10
 ---
 
-# PostgreSQL Operator Quickstart
-
-Can't wait to try out the PostgreSQL Operator? Let us show you the quickest possible path to getting up and running.
+Can't wait to try out the [PGO](https://github.com/CrunchyData/postgres-operator), the [Postgres Operator](https://github.com/CrunchyData/postgres-operator) from [Crunchy Data](https://www.crunchydata.com)? Let us show you the quickest possible path to getting up and running.
 
 ## Prerequisites
 
 Please be sure you have the following utilities installed on your host machine:
 
 - `kubectl`
+- `git`
 
-### Temporary
+## Installation
 
-- [`git`](https://git-scm.com/)
-- [`go`](https://golang.org/) 1.15+
-- [`buildah`](https://buildah.io/)
+### Step 1: Download the Examples
 
-## Build (Temporary) and Install the Postgres Operator
+First, go to GitHub and [fork the Postgres Operator examples](https://github.com/CrunchyData/postgres-operator-examples/fork) repository:
 
-Download the PostgreSQL Operator codebase:
+[https://github.com/CrunchyData/postgres-operator-examples/fork](https://github.com/CrunchyData/postgres-operator-examples/fork)
 
-```
-git clone --depth 1 git@github.com:CrunchyData/savannah.git
-cd savannah
-```
-
-Check out the savannah branch:
+Once you have forked this repo, you can download it to your working environment with a command similar to this:
 
 ```
-git checkout savannah
+YOUR_GITHUB_UN="<your GitHub username>"
+git clone --depth 1 "git@github.com:${YOUR_GITHUB_UN}/postgres-operator-examples.git"
+cd postgres-operator-examples
 ```
+### Step 2: Install PGO, the Postgres Operator
 
-Set an environmental variable to be the registry you are pushing to, e.g.:
-
-```
-export PGO_IMAGE_PREFIX=registry.developers.crunchydata.com/crunchydata
-```
-
-Build the Postgres Operator:
+You can install PGO, the Postgres Operator from Crunchy Data, using the command below:
 
 ```
-export PGOROOT=`pwd`
-
-export PGO_IMAGE_TAG="centos8-v1beta1"
-GOOS=linux GOARCH=amd64 make build-postgres-operator
-make postgres-operator-image
-buildah push "${PGO_IMAGE_PREFIX}/postgres-operator:${PGO_IMAGE_TAG}"
+kubectl apply -k kustomize/install
 ```
 
-Create the namespaces (i.e. `postgres-operator`):
+This will create a namespace called `postgres-operator` and create all of the objects required to deploy PGO.
+
+To check on the status of your installation, you can run the following command:
 
 ```
-make createnamespaces
+kubectl -n postgres-operator get pods \
+  --selector=postgres-operator.crunchydata.com/control-plane=postgres-operator \
+  --field-selector=status.phase=Running
 ```
 
-Install the Postgres Operator RBAC:
+If the PGO Pod is healthy, you should see outpout similar to:
 
 ```
-make install
-```
-
-Modify the file in `config/default/kustomization.yaml` to reference the image you pushed to your repository, e.g.:
-
-```
-namespace: postgres-operator
-
-commonLabels:
-  postgres-operator.crunchydata.com/control-plane: postgres-operator
-
-bases:
-- ../crd
-- ../rbac
-- ../manager
-
-images:
-- name: postgres-operator
-  newName: ${PGO_IMAGE_PREFIX}/postgres-operator
-  newTag: ${PGO_IMAGE_TAG}
-```
-
-Deploy the Postgres Operator:
-
-```
-make deploy
+NAME                                READY   STATUS    RESTARTS   AGE
+postgres-operator-9dd545d64-t4h8d   1/1     Running   0          3s
 ```
 
 ## Create a Postgres Cluster
 
-You can create a Postgres Cluster using the example Kustomization file:
+Let's create a simple Postgres cluster. You can do this by executing the following command:
 
 ```
-kubectl apply -k examples/postgrescluster
+kubectl apply -k kustomize/postgres
+```
+
+If you are on OpenShift, use the following command instead:
+
+```
+kubectl apply -k kustomize/openshfit
+```
+
+This will create a Postgres cluster named `hippo` in the `postgres-operator` namespace. You can track the progress of your cluster using the following command:
+
+```
+kubectl -n postgres-operator describe postgresclusters.postgres-operator.crunchydata.com hippo
 ```
 
 ## Connect to the Postgres cluster
@@ -110,6 +86,8 @@ Within this Secret are attributes that provide information to let you log into t
 - `host`: The name of the host of the database. This references the [Service](https://kubernetes.io/docs/concepts/services-networking/service/) of the primary Postgres instance.
 - `port`: The port that the database is listening on.
 - `uri`: A [PostgreSQL connection URI](https://www.postgresql.org/docs/current/libpq-connect.html#id-1.7.3.8.3.6) that provides all the information for logging into the Postgres database.
+
+Note that **all connections use TLS**. PGO sets up a PKI for your Postgres clusters. You can also choose to bring your own PKI / certificate authority; this is covered later in the documentation.
 
 ### Connect via `psql` in the Terminal
 
@@ -156,7 +134,7 @@ metadata:
   name: keycloak
   namespace: postgres-operator
   labels:
-    app: keycloak
+    app.kubernetes.io/name: keycloak
 spec:
   selector:
     matchLabels:
@@ -164,7 +142,7 @@ spec:
   template:
     metadata:
       labels:
-        app: keycloak
+        app.kubernetes.io/name: keycloak
     spec:
       containers:
       - image: quay.io/keycloak/keycloak:latest
@@ -219,138 +197,16 @@ EOF
 kubectl apply -f keycloak.yaml
 ```
 
-## Scale a Postgres Cluster
+There is a full example for how to deploy Keycloak with the Postgres Operator in the `kustomize/keycloak` folder.
 
-There are two ways to scale a cluster:
+## Next Steps
 
-### Method 1
+Congratulations, you've got your Postgres cluster up and running, perhaps with an application connected to it! &#x1f44f; &#x1f44f; &#x1f44f;
 
-In the `examples/postgrescluster/postgrescluster.yaml` file, add `replicas: 2` to one of the instances entry.
-
-Then run:
+You can find out more about the [`postgresclusters` custom resource definition]({{< relref "references/crd.md" >}}) through the [documentation]({{< relref "references/crd.md" >}}) and through `kubectl explain`, i.e:
 
 ```
-kubectl apply -k examples/postgrescluster
+kubectl explain postgresclusters
 ```
 
-### Method 2
-
-In the `examples/postgrescluster/postgrescluster.yaml` file, add a new array item name `instance2`, e.g.:
-
-```
-spec:
-  instances:
-    - name: instance1
-    - name: instance2
-```
-
-## Add pgBackRest Backup Schedules
-
-Scheduled pgBackRest `full`, `differential` and `incremental` backups can be added for each defined pgBackRest
-repo. This is done by adding, under the `repos` section, a `schedules` section with the designated CronJob 
-schedule defined for each backup type desired. For example, for `repo1`, we defined the following:
-```
-  archive:
-    pgbackrest:
-      repoHost:
-        dedicated: {}
-        image: gcr.io/crunchy-dev-test/crunchy-pgbackrest:centos8-12.6-multi.dev2
-      repos:
-      - name: repo1
-        schedules:
-          full: "* */1 * * *"
-          differential: "*/10 * * * *"
-          incremental: "*/5 * * * *"
-```
-For any type not listed, no CronJob will be created. For more information on CronJobs and the necessary scheduling
-syntax, please see https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/#cron-schedule-syntax.
-
-## Add Custom Certificates to a Postgres Cluster
-
-Create a Secret containing your TLS certificate, TLS key and the Certificate Authority certificate such that
-the data of the secret in the `postgrescluster`'s namespace that contains the three values, similar to
-
-```
-data:
-  ca.crt: <value>
-  tls.crt: <value>
-  tls.key: <value>
-```
-
-Then, in `examples/postgrescluster/postgrescluster.yaml`, add the following:
-
-```
-spec:
-  customTLSSecret: 
-    name: customcert
-```
-where 'customcert' is the name of your created secret. Your cluster will now use the provided certificate in place of
-a dynamically generated one. Please note, if `CustomTLSSecret` is provided, `CustomReplicationClientTLSSecret` MUST 
-be provided and the `ca.crt` provided must be the same in both.
-
-In cases where the key names cannot be controlled, the item key and path values can be specified explicitly, as shown 
-below:
-```
-spec:
-  customTLSSecret: 
-    name: customcert
-    items: 
-      - key: <tls.crt key>
-        path: tls.crt
-      - key: <tls.key key>
-        path: tls.key
-      - key: <ca.crt key>
-        path: ca.crt
-```
-The Common Name setting will be expected to include the primary service name. For a `postgrescluster` named 'hippo', the
-expected primary service name will be `hippo-primary`.
-
-## Add Replication Client Certificates to a Postgres Cluster
-
-Similar to the above, to provide your own TLS client certificates for use by the replication system account,
-you will need to create a Secret containing your TLS certificate, TLS key and the Certificate Authority certificate
-such that the data of the secret in the `postgrescluster`'s namespace that contains the three values, similar to
-
-```
-data:
-  ca.crt: <value>
-  tls.crt: <value>
-  tls.key: <value>
-```
-
-Then, in `examples/postgrescluster/postgrescluster.yaml`, add the following:
-
-```
-spec:
-  customReplicationTLSSecret: 
-    name: customReplicationCert
-```
-where 'customReplicationCert' is the name of your created secret. Your cluster will now use the provided certificate in place of
-a dynamically generated one. Please note, if `CustomReplicationClientTLSSecret` is provided, `CustomTLSSecret`
-MUST be provided and the `ca.crt` provided must be the same in both.
-
-In cases where the key names cannot be controlled, the item key and path values can be specified explicitly, as shown 
-below:
-```
-spec:
-  customReplicationTLSSecret: 
-    name: customReplicationCert
-    items: 
-      - key: <tls.crt key>
-        path: tls.crt
-      - key: <tls.key key>
-        path: tls.key
-      - key: <ca.crt key>
-        path: ca.crt
-```
-
-The Common Name setting will be expected to include the replication user name, `_crunchyrepl`.
-
-For more information regarding secret projections, please see
-https://k8s.io/docs/concepts/configuration/secret/#projection-of-secret-keys-to-specific-paths
-
-## Delete a Postgres Cluster
-
-```
-kubectl delete -k examples/postgrescluster
-```
+Let's work through a tutorial together to better understand the various components of PGO, the Postgres Operator, and how you can fine tune your settings to tailor your Postgres cluster to your application.

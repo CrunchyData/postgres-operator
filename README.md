@@ -1,15 +1,32 @@
-<h1 align="center">Crunchy Data PostgreSQL Operator</h1>
+<h1 align="center">PGO: The Postgres Operator from Crunchy Data</h1>
 <p align="center">
   <img width="150" src="./docs/static/logos/pgo.svg" alt="PGO: The Postgres Operator from Crunchy Data"/>
 </p>
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/CrunchyData/postgres-operator)](https://goreportcard.com/report/github.com/CrunchyData/postgres-operator)
 
-# Run your own production-grade PostgreSQL-as-a-Service on Kubernetes!
+# Production Postgres Made Easy
 
-The [Crunchy PostgreSQL Operator][documentation] automates and simplifies deploying and managing
-open source PostgreSQL clusters on Kubernetes and other Kubernetes-enabled Platforms by providing
-the essential features you need to keep your PostgreSQL clusters up and running, including:
+[PGO](https://github.com/CrunchyData/postgres-operator), the [Postgres Operator](https://github.com/CrunchyData/postgres-operator) from [Crunchy Data](https://www.crunchydata.com), gives you a **declarative Postgres** solution that automatically manages your [PostgreSQL](https://www.postgresql.org) clusters.
+
+Designed for your GitOps workflows, it is [easy to get started](https://access.crunchydata.com/documentation/postgres-operator/latest/quickstart/) with Postgres on Kubernetes with PGO. Within a few moments, you can have a production grade Postgres cluster complete with high availability, disaster recovery, and monitoring, all over secure TLS communications. Even better, PGO lets you easily customize your Postgres cluster to tailor it to your workload!
+
+With conveniences like cloning Postgres clusters to using rolling updates to roll out disruptive changes with minimal downtime, PGO is ready to support your Postgres data at every stage of your release pipeline. Built for resiliency and uptime, PGO will keep your desired Postgres in a desired state so you do not need to worry about it.
+
+PGO is developed with over six years of production experience in automating Postgres management on Kubernetes, providing a seamless cloud native Postgres solution to keep your data always available.
+
+# Installation
+
+We recommend following our [Quickstart](https://access.crunchydata.com/documentation/postgres-operator/latest/quickstart/) for how to install and get up and running with PGO, the Postgres Operator from Crunchy Data. However, if you just can't wait to try it out, here are some instructions to get Postgres up and running on Kubernetes:
+
+1. [Fork the Postgres Operator examples repository](https://github.com/CrunchyData/postgres-operator-examples/fork) and clone it to your host machine.
+1. Go into your directory and run `kubectl apply -k kustomize/install`
+
+For more information please read the [Quickstart](https://access.crunchydata.com/documentation/postgres-operator/latest/quickstart/) and [Tutorial](https://access.crunchydata.com/documentation/postgres-operator/latest/tutorial/).
+
+# Cloud Native Postgres for Kubernetes
+
+PGO, the Postgres Operator from Crunchy Data, comes with all of the features you need for a complete cloud native Postgres experience!
 
 #### PostgreSQL Cluster [Provisioning][provisioning]
 
@@ -30,10 +47,11 @@ Backups and restores leverage the open source [pgBackRest][] utility and
 [includes support for full, incremental, and differential backups as well as efficient delta restores][disaster-recovery].
 Set how long you want your backups retained for. Works great with very large databases!
 
-#### TLS
+#### Security and TLS
 
-Secure communication between your applications and data servers by [enabling TLS for your PostgreSQL servers][pgo-task-tls],
-including the ability to enforce that all of your connections to use TLS.
+PGO enforces that all connections are over TLS. You can also bring your own TLS infrastructure if you do not want to use the defaults provided by PGO.
+
+PGO runs containers with locked-down settings and provides Postgres credentials in a secure, convenient way for connecting your applications to your data.
 
 #### [Monitoring][monitoring]
 
@@ -74,14 +92,6 @@ Choose the type of backup (full, incremental, differential) and [how frequently 
 [Store your backups in Amazon S3][disaster-recovery-s3] or any object storage system that supports
 the S3 protocol. The PostgreSQL Operator can backup, restore, and create new clusters from these backups.
 
-#### Multi-Namespace Support
-
-You can control how the PostgreSQL Operator leverages [Kubernetes Namespaces][k8s-namespaces] with several different deployment models:
-
-- Deploy the PostgreSQL Operator and all PostgreSQL clusters to the same namespace
-- Deploy the PostgreSQL Operator to one namespaces, and all PostgreSQL clusters to a different namespace
-- Deploy the PostgreSQL Operator to one namespace, and have your PostgreSQL clusters managed across multiple namespaces
-- Dynamically add and remove namespaces managed by the PostgreSQL Operator using the `pgo create namespace` and `pgo delete namespace` commands
 
 #### Full Customizability
 
@@ -114,75 +124,7 @@ The Crunchy PostgreSQL Operator makes it easy to get your own PostgreSQL-as-a-Se
 [pgBouncer]: https://access.crunchydata.com/documentation/pgbouncer/
 [pgMonitor]: https://github.com/CrunchyData/pgmonitor
 
-
-## Deployment Requirements
-
-The PostgreSQL Operator is validated for deployment on Kubernetes, OpenShift, and VMware Enterprise PKS clusters.  Some form of storage is required, NFS, hostPath, and Storage Classes are currently supported.
-
-The PostgreSQL Operator includes various components that get deployed to your
-Kubernetes cluster as shown in the following diagram and detailed
-in the Design section of the documentation for the version you are running.
-
-![Reference](https://access.crunchydata.com/documentation/postgres-operator/latest/Operator-Architecture.png)
-
-The PostgreSQL Operator is developed and tested on CentOS and RHEL linux platforms but is known to run on other Linux variants.
-
-### Supported Platforms
-
-The Crunchy PostgreSQL Operator is tested on the following Platforms:
-
-- Kubernetes 1.13+
-- OpenShift 3.11+
-- Google Kubernetes Engine (GKE), including Anthos
-- Amazon EKS
-- VMware Enterprise PKS 1.3+
-
-### Storage
-
-The Crunchy PostgreSQL Operator is tested with a variety of different types of Kubernetes storage and Storage Classes, including:
-
-- Google Compute Engine persistent volumes
-- HostPath
-- NFS
-- Rook
-- StorageOS
-
-and more.
-
-We know there are a variety of different types of [Storage Classes](https://kubernetes.io/docs/concepts/storage/storage-classes/) available for Kubernetes and we do our best to test each one, but due to the breadth of this area we are unable to verify PostgreSQL Operator functionality in each one. With that said, the PostgreSQL Operator is designed to be storage class agnostic and has been demonstrated to work with additional Storage Classes.
-
-## Installation
-
-### PostgreSQL Operator Installation
-
-The PostgreSQL Operator provides a few different methods for installation based on your use case.
-
-Based on your storage settings in your Kubernetes environment, you may be able to start as quickly as:
-
-```shell
-kubectl create namespace pgo
-kubectl apply -f https://raw.githubusercontent.com/CrunchyData/postgres-operator/v4.5.0/installers/kubectl/postgres-operator.yml
-```
-
-Otherwise, we highly recommend following the instructions from our [Quickstart](https://access.crunchydata.com/documentation/postgres-operator/latest/quickstart/).
-
-Installations methods include:
-
-- [Quickstart](https://access.crunchydata.com/documentation/postgres-operator/latest/quickstart/)
-- [PostgreSQL Operator Installer](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/postgres-operator/)
-- [Ansible](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/other/ansible/)
-- [OperatorHub](https://operatorhub.io/operator/postgresql)
-- [Developer Installation](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/other/bash/)
-
-### `pgo` Client Installation
-
-If you have the PostgreSQL Operator installed in your environment, and are interested in installation of the client interface, please start here:
-
-- [pgo Client Install](https://access.crunchydata.com/documentation/postgres-operator/latest/installation/pgo-client/)
-
-There is also a `pgo-client` container if you wish to deploy the client directly to your Kubernetes environment.
-
-### Included Components
+## Included Components
 
 [PostgreSQL containers](https://github.com/CrunchyData/crunchy-containers) deployed with the PostgreSQL Operator include the following components:
 
@@ -223,18 +165,22 @@ Additional containers that are not directly integrated with the PostgreSQL Opera
 
 For more information about which versions of the PostgreSQL Operator include which components, please visit the [compatibility](https://access.crunchydata.com/documentation/postgres-operator/latest/configuration/compatibility/) section of the documentation.
 
-## Using the PostgreSQL Operator
+## Supported Platforms
 
-If you are new to the PostgreSQL Operator, you can follow along the [tutorial](https://access.crunchydata.com/documentation/postgres-operator/latest/tutorial/) to learn how to install the PostgreSQL Operator and how to use many of its features!
+PGO, the Postgres Operator from Crunchy Data, is tested on the following platforms:
 
-- [PostgreSQL Operator Tutorial](https://access.crunchydata.com/documentation/postgres-operator/latest/tutorial/)
+- Kubernetes 1.18+
+- OpenShift 4.4+
+- Google Kubernetes Engine (GKE), including Anthos
+- Amazon EKS
+- Microsoft AKS
+- VMware Tanzu
 
-If you have the PostgreSQL and Client Interface installed in your environment and are interested in guidance on the use of the Crunchy PostgreSQL Operator, please start here:
+This list only includes the platforms that the Postgres Operator is specifically
+tested on as part of the release process: PGO works on other Kubernetes
+distributions as well, such as Rancher.
 
-- [PostgreSQL Operator Documentation](https://access.crunchydata.com/documentation/postgres-operator/)
-- [`pgo` Client User Guide](https://access.crunchydata.com/documentation/postgres-operator/latest/pgo-client/)
-
-## Contributing to the Project
+# Contributing to the Project
 
 Want to contribute to the PostgreSQL Operator project? Great! We've put together
 as set of contributing guidelines that you can review here:
@@ -258,7 +204,7 @@ version branch (e.g. `REL_4_2` for 4.2)
 1. Please be as descriptive in your pull request as possible. If you are
 referencing an issue, please be sure to include the issue in your pull request
 
-## Support
+# Support
 
 If you believe you have found a bug or have detailed feature request, please open a GitHub issue and follow the guidelines for submitting a bug.
 
@@ -266,7 +212,7 @@ For general questions or community support, we welcome you to [join the PostgreS
 
 For other information, please visit the [Support](https://access.crunchydata.com/documentation/postgres-operator/latest/support/) section of the documentation.
 
-## Documentation
+# Documentation
 
 For additional information regarding design, configuration and operation of the
 PostgreSQL Operator, pleases see the [Official Project Documentation][documentation].
@@ -277,11 +223,11 @@ https://crunchydata.github.io/postgres-operator/latest/
 
 [documentation]: https://access.crunchydata.com/documentation/postgres-operator/
 
-### Past Versions
+## Past Versions
 
 Documentation for previous releases can be found at the [Crunchy Data Access Portal](https://access.crunchydata.com/documentation/)
 
-## Releases
+# Releases
 
 When a PostgreSQL Operator general availability (GA) release occurs, the container images are distributed on the following platforms in order:
 
