@@ -34,8 +34,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
+
+	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestPersistentVolumeClaimLimitations(t *testing.T) {
@@ -52,6 +55,12 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 	ns.Labels = map[string]string{"postgres-operator-test": t.Name()}
 	assert.NilError(t, cc.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, cc.Delete(ctx, ns)) })
+
+	// Stub to see that handlePersistentVolumeClaimError returns nil.
+	cluster := new(v1beta1.PostgresCluster)
+	reconciler := &Reconciler{
+		Recorder: new(record.FakeRecorder),
+	}
 
 	apiErrorStatus := func(t testing.TB, err error) metav1.Status {
 		t.Helper()
@@ -100,6 +109,8 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 			assert.Equal(t, status.Details.Causes[0].Field, "spec")
 			assert.Equal(t, status.Details.Causes[0].Type, metav1.CauseType(field.ErrorTypeForbidden))
 
+			assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
+
 			// Not able to grow the storage request.
 			pvc.Spec.Resources.Requests[corev1.ResourceStorage] = resource.MustParse("4Gi")
 
@@ -113,6 +124,8 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 			assert.Assert(t, len(status.Details.Causes) != 0)
 			assert.Equal(t, status.Details.Causes[0].Field, "spec")
 			assert.Equal(t, status.Details.Causes[0].Type, metav1.CauseType(field.ErrorTypeForbidden))
+
+			assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
 		})
 
 		t.Run("Bound", func(t *testing.T) {
@@ -163,6 +176,8 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 			assert.Equal(t, status.Details.Causes[0].Field, "spec.resources.requests.storage")
 			assert.Equal(t, status.Details.Causes[0].Type, metav1.CauseType(field.ErrorTypeForbidden))
 
+			assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
+
 			// Not able to grow the storage request.
 			pvc.Spec.Resources.Requests[corev1.ResourceStorage] = resource.MustParse("4Gi")
 
@@ -170,6 +185,8 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 			assert.Assert(t, apierrors.IsForbidden(err), "expected Forbidden, got\n%#v", err)
 			assert.ErrorContains(t, err, "only dynamic")
 			assert.ErrorContains(t, err, pvc.Name, "expected mention of the object")
+
+			assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
 		})
 	})
 
@@ -246,6 +263,8 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 			assert.Equal(t, status.Details.Causes[0].Field, "spec")
 			assert.Equal(t, status.Details.Causes[0].Type, metav1.CauseType(field.ErrorTypeForbidden))
 
+			assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
+
 			// Not able to grow the storage request.
 			pvc.Spec.Resources.Requests[corev1.ResourceStorage] = resource.MustParse("4Gi")
 
@@ -259,6 +278,8 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 			assert.Assert(t, len(status.Details.Causes) != 0)
 			assert.Equal(t, status.Details.Causes[0].Field, "spec")
 			assert.Equal(t, status.Details.Causes[0].Type, metav1.CauseType(field.ErrorTypeForbidden))
+
+			assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
 		})
 
 		t.Run("Bound", func(t *testing.T) {
@@ -344,6 +365,8 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 				assert.Equal(t, status.Details.Causes[0].Field, "spec.resources.requests.storage")
 				assert.Equal(t, status.Details.Causes[0].Type, metav1.CauseType(field.ErrorTypeForbidden))
 
+				assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
+
 				// Not able to grow the storage request.
 				pvc.Spec.Resources.Requests[corev1.ResourceStorage] = resource.MustParse("4Gi")
 
@@ -351,6 +374,8 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 				assert.Assert(t, apierrors.IsForbidden(err), "expected Forbidden, got\n%#v", err)
 				assert.ErrorContains(t, err, "only dynamic")
 				assert.ErrorContains(t, err, pvc.Name, "expected mention of the object")
+
+				assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
 			})
 
 			t.Run("ExpansionNoShrink", func(t *testing.T) {
@@ -372,6 +397,8 @@ func TestPersistentVolumeClaimLimitations(t *testing.T) {
 				assert.Assert(t, len(status.Details.Causes) != 0)
 				assert.Equal(t, status.Details.Causes[0].Field, "spec.resources.requests.storage")
 				assert.Equal(t, status.Details.Causes[0].Type, metav1.CauseType(field.ErrorTypeForbidden))
+
+				assert.NilError(t, reconciler.handlePersistentVolumeClaimError(cluster, err))
 			})
 
 			t.Run("ExpansionResizeConditions", func(t *testing.T) {

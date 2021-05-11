@@ -125,6 +125,8 @@ func (r *Reconciler) applyRepoHostIntent(ctx context.Context, postgresCluster *v
 	return repo, nil
 }
 
+// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=create;patch
+
 // applyRepoVolumeIntent ensures the pgBackRest repository host deployment is synchronized with the
 // proper configuration according to the provided PostgresCluster custom resource.  This is done by
 // applying the PostgresCluster controller's fully specified intent for the PersistentVolumeClaim
@@ -139,7 +141,8 @@ func (r *Reconciler) applyRepoVolumeIntent(ctx context.Context,
 	}
 
 	if err := r.apply(ctx, repo); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, r.handlePersistentVolumeClaimError(postgresCluster,
+			errors.WithStack(err))
 	}
 
 	return repo, nil

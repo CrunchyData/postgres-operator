@@ -1077,7 +1077,8 @@ func (r *Reconciler) reconcilePGDATAVolume(ctx context.Context, cluster *v1beta1
 	err := errors.WithStack(r.setControllerReference(cluster, pgdataVolume))
 
 	if err == nil {
-		err = errors.WithStack(r.apply(ctx, pgdataVolume))
+		err = r.handlePersistentVolumeClaimError(cluster,
+			errors.WithStack(r.apply(ctx, pgdataVolume)))
 	}
 
 	return err
