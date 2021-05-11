@@ -1040,7 +1040,7 @@ There are a variety of methods available to generate these items: in fact,
 Kubernetes comes with its own [certificate management system](https://kubernetes.io/docs/tasks/tls/managing-tls-in-a-cluster/)!
 It is up to you to decide how you want to manage this for your cluster. The
 PostgreSQL documentation also provides an example for how to
-[generate a TLS certificate](https://www.postgresql.org/docs/current/ssl-tcp.html#SSL-CERTIFICATE-CREATION)
+[generate a TLS certificate](https://blog.crunchydata.com/blog/tls-postgres-kubernetes-openssl)
 as well.
 
 To set up TLS for your PostgreSQL cluster, you have to create two [Secrets](https://kubernetes.io/docs/concepts/configuration/secret/):
@@ -1191,7 +1191,7 @@ pgo create cluster hippo \
 ```
 
 By default, the PostgreSQL Operator has each replica connect to PostgreSQL using
-a [PostgreSQL TLS mode](https://www.postgresql.org/docs/current/libpq-ssl.html#LIBPQ-SSL-SSLMODE-STATEMENTS)
+a [PostgreSQL TLS mode](https://blog.crunchydata.com/blog/tls-postgres-kubernetes-openssl)
 of `verify-ca`. If you wish to perform TLS mutual authentication between
 PostgreSQL instances (i.e. certificate-based authentication with SSL mode of
 `verify-full`), you will need to create a

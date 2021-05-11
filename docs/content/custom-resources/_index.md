@@ -464,7 +464,7 @@ There are two Secrets that need to be created:
 1. A Secret containing the certificate authority (CA). You may only need to create this Secret once, as a CA certificate can be shared amongst your clusters.
 2. A Secret that contains the TLS private key & certificate.
 
-This assumes that you have already [generated your TLS certificates](https://www.postgresql.org/docs/current/ssl-tcp.html#SSL-CERTIFICATE-CREATION) where the CA is named `ca.crt` and the server key and certificate are named `server.key` and `server.crt` respectively.
+This assumes that you have already [generated your TLS certificates](https://blog.crunchydata.com/blog/tls-postgres-kubernetes-openssl) where the CA is named `ca.crt` and the server key and certificate are named `server.key` and `server.crt` respectively.
 
 Substitute the correct values for your environment into the environmental variables in the example below:
 
