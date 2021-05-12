@@ -37,6 +37,15 @@ func AnyCluster() metav1.LabelSelector {
 	}
 }
 
+// Cluster selects things for cluster.
+func Cluster(cluster string) metav1.LabelSelector {
+	return metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			LabelCluster: cluster,
+		},
+	}
+}
+
 // ClusterInstance selects things for a single instance in a cluster.
 func ClusterInstance(cluster, instance string) metav1.LabelSelector {
 	return metav1.LabelSelector{

@@ -2164,7 +2164,8 @@ spec:
             properties:
               conditions:
                 description: 'conditions represent the observations of postgrescluster''s
-                  current state. Known .status.conditions.type are: "ProxyAvailable"'
+                  current state. Known .status.conditions.type are: "PersistentVolumeResizing",
+                  "ProxyAvailable"'
                 items:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct

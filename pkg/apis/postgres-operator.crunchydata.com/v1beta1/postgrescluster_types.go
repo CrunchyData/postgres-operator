@@ -145,7 +145,8 @@ type PostgresClusterStatus struct {
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
 	// conditions represent the observations of postgrescluster's current state.
-	// Known .status.conditions.type are: "ProxyAvailable"
+	// Known .status.conditions.type are: "PersistentVolumeResizing",
+	// "ProxyAvailable"
 	// +optional
 	// +listType=map
 	// +listMapKey=type
@@ -154,7 +155,8 @@ type PostgresClusterStatus struct {
 
 // PostgresClusterStatus condition types.
 const (
-	ProxyAvailable = "ProxyAvailable"
+	PersistentVolumeResizing = "PersistentVolumeResizing"
+	ProxyAvailable           = "ProxyAvailable"
 )
 
 type PostgresInstanceSetSpec struct {

@@ -192,6 +192,9 @@ func (r *Reconciler) Reconcile(
 		"pgbackrest --stanza="+pgbackrest.DefaultStanzaName+" archive-push %p")
 
 	if err == nil {
+		_, err = r.observePersistentVolumeClaims(ctx, cluster)
+	}
+	if err == nil {
 		instances, err = r.observeInstances(ctx, cluster)
 	}
 	if err == nil {

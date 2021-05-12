@@ -32,6 +32,17 @@ func TestAnyCluster(t *testing.T) {
 	}, ","))
 }
 
+func TestCluster(t *testing.T) {
+	s, err := AsSelector(Cluster("something"))
+	assert.NilError(t, err)
+	assert.DeepEqual(t, s.String(), strings.Join([]string{
+		"postgres-operator.crunchydata.com/cluster=something",
+	}, ","))
+
+	_, err = AsSelector(Cluster("--whoa/yikes"))
+	assert.ErrorContains(t, err, "invalid")
+}
+
 func TestClusterInstance(t *testing.T) {
 	s, err := AsSelector(ClusterInstance("daisy", "dog"))
 	assert.NilError(t, err)

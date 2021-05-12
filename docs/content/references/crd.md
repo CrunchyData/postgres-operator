@@ -3246,7 +3246,7 @@ PostgresClusterStatus defines the observed state of PostgresCluster
     <tbody><tr>
         <td><b><a href="#postgresclusterstatusconditionsindex">conditions</a></b></td>
         <td>[]object</td>
-        <td>conditions represent the observations of postgrescluster's current state. Known .status.conditions.type are: "ProxyAvailable"</td>
+        <td>conditions represent the observations of postgrescluster's current state. Known .status.conditions.type are: "PersistentVolumeResizing", "ProxyAvailable"</td>
         <td>false</td>
       </tr><tr>
         <td><b><a href="#postgresclusterstatusinstancesindex">instances</a></b></td>
