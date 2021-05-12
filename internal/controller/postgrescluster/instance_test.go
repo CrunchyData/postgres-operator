@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"sort"
 	"testing"
+	"time"
 
 	"go.opentelemetry.io/otel"
 	"gotest.tools/v3/assert"
@@ -30,11 +31,17 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
+	"github.com/pkg/errors"
 )
 
 func TestNewObservedInstances(t *testing.T) {
@@ -828,6 +835,107 @@ func TestPodsToKeep(t *testing.T) {
 				return keep[i].Labels[naming.LabelRole] == "master"
 			})
 			test.checks(t, keep)
+		})
+	}
+}
+
+func TestDeleteInstance(t *testing.T) {
+	env, cc, config := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, env) })
+
+	reconciler := &Reconciler{}
+	ctx, cancel := setupManager(t, config, func(mgr manager.Manager) {
+		reconciler = &Reconciler{
+			Client:   cc,
+			Owner:    client.FieldOwner(t.Name()),
+			Recorder: mgr.GetEventRecorderFor(ControllerName),
+			Tracer:   otel.Tracer(t.Name()),
+		}
+	})
+	t.Cleanup(func() { teardownManager(cancel, t) })
+
+	ns := &v1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	ns.Labels = map[string]string{"postgres-operator-test": t.Name()}
+	assert.NilError(t, reconciler.Client.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, reconciler.Client.Delete(ctx, ns)) })
+
+	// Define, Create, and Reconcile a cluster to get an instance running in kube
+	cluster := testCluster()
+	cluster.Namespace = ns.Name
+
+	assert.NilError(t, errors.WithStack(reconciler.Client.Create(ctx, cluster)))
+	t.Cleanup(func() {
+		// Remove finalizers, if any, so the namespace can terminate.
+		assert.Check(t, client.IgnoreNotFound(
+			reconciler.Client.Patch(ctx, cluster, client.RawPatch(
+				client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`)))))
+	})
+
+	// Reconcile the entire cluster so that we don't have to create all the
+	// resources needed to reconcile a single instance (cm,secrets,svc, etc.)
+	result, err := reconciler.Reconcile(ctx, reconcile.Request{
+		NamespacedName: client.ObjectKeyFromObject(cluster),
+	})
+	assert.NilError(t, err)
+	assert.Assert(t, result.Requeue == false)
+
+	stsList := &appsv1.StatefulSetList{}
+	assert.NilError(t, reconciler.Client.List(ctx, stsList,
+		client.InNamespace(cluster.Namespace),
+		client.MatchingLabels{
+			naming.LabelCluster:     cluster.Name,
+			naming.LabelInstanceSet: cluster.Spec.InstanceSets[0].Name,
+		}))
+
+	// Grab the instance name off of the instance set at index0
+	instanceName := stsList.Items[0].Labels[naming.LabelInstance]
+
+	// Use the instance name to delete the single instance
+	assert.NilError(t, reconciler.deleteInstance(ctx, cluster, instanceName))
+
+	gvks := []schema.GroupVersionKind{
+		corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim"),
+		corev1.SchemeGroupVersion.WithKind("ConfigMap"),
+		corev1.SchemeGroupVersion.WithKind("Secret"),
+		appsv1.SchemeGroupVersion.WithKind("StatefulSet"),
+	}
+
+	selector, err := naming.AsSelector(metav1.LabelSelector{
+		MatchLabels: map[string]string{
+			naming.LabelCluster:  cluster.Name,
+			naming.LabelInstance: instanceName,
+		}})
+	assert.NilError(t, err)
+
+	for _, gvk := range gvks {
+		t.Run(gvk.Kind, func(t *testing.T) {
+			uList := &unstructured.UnstructuredList{}
+			err := wait.Poll(time.Second*3, time.Second*30, func() (done bool, err error) {
+				uList.SetGroupVersionKind(gvk)
+				assert.NilError(t, errors.WithStack(reconciler.Client.List(ctx, uList,
+					client.InNamespace(cluster.Namespace),
+					client.MatchingLabelsSelector{Selector: selector})))
+
+				if len(uList.Items) == 0 {
+					return true, nil
+				}
+
+				// Check existing objects for deletionTimestamp ensuring they
+				// are staged for delete
+				deleted := true
+				for i := range uList.Items {
+					u := uList.Items[i]
+					if u.GetDeletionTimestamp() == nil {
+						deleted = false
+					}
+				}
+
+				// We have found objects that are not staged for delete
+				// so deleteInstance has failed
+				return deleted, nil
+			})
+			assert.NilError(t, err)
 		})
 	}
 }
