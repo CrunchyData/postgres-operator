@@ -39,6 +39,10 @@ const (
 	// ContainerClientCertInit is the name of the initialization container that is responsible
 	// for copying and setting proper permissions on the client certificate and key
 	ContainerClientCertInit = ContainerDatabase + "-client-cert-init"
+	// ContainerClientCertCopy is the name of the container that is responsible for copying and
+	// setting proper permissions on the client certificate and key after initialization whenever
+	// there is a change in the certificates or key
+	ContainerClientCertCopy = "replication-cert-copy"
 	// ContainerNSSWrapperInit is the name of the init container utilized to configure support
 	// for the nss_wrapper
 	ContainerNSSWrapperInit = "nss-wrapper-init"
@@ -65,6 +69,15 @@ const (
 	// CertMountPath is the path for mounting the postgrescluster certificates
 	// and key
 	CertMountPath = "/pgconf/tls"
+
+	// ReplicationDirectory is the directory at CertMountPath where the replication
+	// certificates and key are mounted
+	ReplicationDirectory = "/replication"
+
+	// ReplicationTmp is the directory where the replication certificates and key can
+	// have the proper permissions set due to:
+	// https://github.com/kubernetes/kubernetes/issues/57923
+	ReplicationTmp = "/tmp/replication"
 
 	// ReplicationCert is the secret key to the postgrescluster's
 	// replication/rewind user's client certificate

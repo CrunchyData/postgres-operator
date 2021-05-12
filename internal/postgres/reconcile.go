@@ -26,13 +26,6 @@ import (
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
-const (
-	// https://www.postgresql.org/docs/current/ssl-tcp.html
-	clusterCertFile = "tls.crt"
-	clusterKeyFile  = "tls.key"
-	rootCertFile    = "ca.crt"
-)
-
 // AddPGDATAVolumeToPod adds pgBackRest repository volumes to the provided Pod template spec, while
 // also adding associated volume mounts to the containers and/or init containers specified.
 func AddPGDATAVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
@@ -110,7 +103,7 @@ func AddPGDATAInitToPod(postgresCluster *v1beta1.PostgresCluster,
 		})
 }
 
-// CopyReplicationTLS copies the mounted client certificate, key and CA certificate files
+// InitCopyReplicationTLS copies the mounted client certificate, key and CA certificate files
 // from the /pgconf/tls/replication directory to the /tmp/replication directory in order
 // to set proper file permissions. This is required because the group permission settings
 // applied via the defaultMode option are not honored as expected, resulting in incorrect
@@ -118,12 +111,13 @@ func AddPGDATAInitToPod(postgresCluster *v1beta1.PostgresCluster,
 // See https://github.com/kubernetes/kubernetes/issues/57923
 // TODO(tjmoore4): remove this implementation when/if defaultMode permissions are set as
 // expected for the mounted volume.
-func CopyReplicationTLS(postgresCluster *v1beta1.PostgresCluster,
+func InitCopyReplicationTLS(postgresCluster *v1beta1.PostgresCluster,
 	template *v1.PodTemplateSpec) {
 
-	cmd := fmt.Sprintf(`mkdir -p /tmp/replication `+
-		`&& install -m 0600 %s/{tls.crt,tls.key,ca.crt} /tmp/replication`,
-		naming.CertMountPath+"/replication")
+	cmd := fmt.Sprintf(`mkdir -p %s && install -m 0600 %s/{%s,%s,%s} %s`,
+		naming.ReplicationTmp, naming.CertMountPath+naming.ReplicationDirectory,
+		naming.ReplicationCert, naming.ReplicationPrivateKey,
+		naming.ReplicationCACert, naming.ReplicationTmp)
 	template.Spec.InitContainers = append(template.Spec.InitContainers,
 		v1.Container{
 			Command: []string{"bash", "-c", cmd},
@@ -136,7 +130,7 @@ func CopyReplicationTLS(postgresCluster *v1beta1.PostgresCluster,
 // as a volume to the provided Pod template spec, while also adding associated volume mounts to
 // the database container specified.
 func AddCertVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
-	initContainerName, containerName string, inClusterCertificates,
+	initContainerName, dbContainerName, sidecarContainerName string, inClusterCertificates,
 	inClientCertificates *v1.SecretProjection) error {
 
 	certVolume := v1.Volume{Name: naming.CertVolume}
@@ -153,25 +147,42 @@ func AddCertVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.P
 
 	template.Spec.Volumes = append(template.Spec.Volumes, certVolume)
 
-	var containerFound bool
+	var dbContainerFound bool
+	var sidecarContainerFound bool
 	var index int
 	for index = range template.Spec.Containers {
-		if template.Spec.Containers[index].Name == containerName {
-			containerFound = true
+		if template.Spec.Containers[index].Name == dbContainerName {
+			dbContainerFound = true
+
+			template.Spec.Containers[index].VolumeMounts =
+				append(template.Spec.Containers[index].VolumeMounts, v1.VolumeMount{
+					Name:      naming.CertVolume,
+					MountPath: naming.CertMountPath,
+					ReadOnly:  true,
+				})
+		}
+		if template.Spec.Containers[index].Name == sidecarContainerName {
+			sidecarContainerFound = true
+
+			template.Spec.Containers[index].VolumeMounts =
+				append(template.Spec.Containers[index].VolumeMounts, v1.VolumeMount{
+					Name:      naming.CertVolume,
+					MountPath: naming.CertMountPath,
+					ReadOnly:  true,
+				})
+		}
+		if dbContainerFound && sidecarContainerFound {
 			break
 		}
 	}
-	if !containerFound {
+	if !dbContainerFound {
 		return errors.Errorf("Unable to find container %q when adding certificate volumes",
-			containerName)
+			dbContainerName)
 	}
-
-	template.Spec.Containers[index].VolumeMounts =
-		append(template.Spec.Containers[index].VolumeMounts, v1.VolumeMount{
-			Name:      naming.CertVolume,
-			MountPath: naming.CertMountPath,
-			ReadOnly:  true,
-		})
+	if !sidecarContainerFound {
+		return errors.Errorf("Unable to find container %q when adding certificate volumes",
+			sidecarContainerName)
+	}
 
 	var initContainerFound bool
 	var initIndex int

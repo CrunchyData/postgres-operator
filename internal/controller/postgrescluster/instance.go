@@ -968,9 +968,9 @@ func (r *Reconciler) reconcileInstance(
 
 	postgres.AddPGDATAInitToPod(cluster, &instance.Spec.Template)
 
-	// copy the mounted replication client certificate files to the /tmp directory
-	// and set the proper file permissions
-	postgres.CopyReplicationTLS(cluster, &instance.Spec.Template)
+	// add the container for the initial copy of the mounted replication client
+	// certificate files to the /tmp directory and set the proper file permissions
+	postgres.InitCopyReplicationTLS(cluster, &instance.Spec.Template)
 
 	// Add PGDATA volume to the Pod template and then add PGDATA volume mounts for the
 	// database container, and, if a repo host is enabled, the pgBackRest container
@@ -987,8 +987,8 @@ func (r *Reconciler) reconcileInstance(
 	// add the cluster certificate secret volume to the pod to enable Postgres TLS connections
 	if err == nil {
 		err = errors.WithStack(postgres.AddCertVolumeToPod(cluster, &instance.Spec.Template,
-			naming.ContainerClientCertInit, naming.ContainerDatabase, primaryCertificate,
-			replicationCertSecretProjection(clusterReplicationSecret)))
+			naming.ContainerClientCertInit, naming.ContainerDatabase, naming.ContainerClientCertCopy,
+			primaryCertificate, replicationCertSecretProjection(clusterReplicationSecret)))
 	}
 	// add nss_wrapper init container and add nss_wrapper env vars to the database and pgbackrest
 	// containers

@@ -191,6 +191,56 @@ containers:
   - mountPath: /etc/patroni
     name: patroni-config
     readOnly: true
+- command:
+  - bash
+  - -c
+  - |2
+
+    declare -r mountDir=/pgconf/tls/replication
+    declare -r tmpDir=/tmp/replication
+    while sleep 5s; do
+      mkdir -p /tmp/replication
+      DIFF=$(diff ${mountDir} ${tmpDir})
+      if [ "$DIFF" != "" ]
+      then
+        date
+        echo Copying replication certificates and key and setting permissions
+        install -m 0600 ${mountDir}/{tls.crt,tls.key,ca.crt} ${tmpDir}
+        patronictl reload some-such-ha --force
+      fi
+    done
+  env:
+  - name: PATRONI_NAME
+    valueFrom:
+      fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.name
+  - name: PATRONI_KUBERNETES_POD_IP
+    valueFrom:
+      fieldRef:
+        apiVersion: v1
+        fieldPath: status.podIP
+  - name: PATRONI_KUBERNETES_PORTS
+    value: |
+      []
+  - name: PATRONI_POSTGRESQL_CONNECT_ADDRESS
+    value: $(PATRONI_NAME).:5432
+  - name: PATRONI_POSTGRESQL_LISTEN
+    value: '*:5432'
+  - name: PATRONI_RESTAPI_CONNECT_ADDRESS
+    value: $(PATRONI_NAME).:8008
+  - name: PATRONI_RESTAPI_LISTEN
+    value: '*:8008'
+  - name: PATRONICTL_CONFIG_FILE
+    value: /etc/patroni
+  - name: PGHOST
+    value: /tmp
+  name: replication-cert-copy
+  resources: {}
+  volumeMounts:
+  - mountPath: /etc/patroni
+    name: patroni-config
+    readOnly: true
 volumes:
 - name: patroni-config
   projected:
@@ -209,7 +259,7 @@ volumes:
           path: ~postgres-operator/patroni.ca-roots
         - key: patroni.crt-combined
           path: ~postgres-operator/patroni.crt+key
-	`)+"\n"))
+`)+"\n"))
 
 	// No change when called again.
 	before := template.DeepCopy()
@@ -217,17 +267,21 @@ volumes:
 	assert.DeepEqual(t, template, before)
 
 	t.Run("ExistingEnvironment", func(t *testing.T) {
-		template.Spec.Containers[0].Env = []v1.EnvVar{
-			{Name: "existed"},
-			{Name: "PATRONI_KUBERNETES_POD_IP"},
-			{Name: "also", Value: "kept"},
-		}
+		// test the env changes are made to both the database
+		// and sidecar container as the sidecar env vars will be
+		// updated to match
+		for i := range template.Spec.Containers {
+			template.Spec.Containers[i].Env = []v1.EnvVar{
+				{Name: "existed"},
+				{Name: "PATRONI_KUBERNETES_POD_IP"},
+				{Name: "also", Value: "kept"},
+			}
 
-		assert.NilError(t, call())
+			assert.NilError(t, call())
 
-		// Correct values are there and in order.
-		assert.Assert(t, marshalContains(template.Spec.Containers[0].Env,
-			strings.TrimSpace(`
+			// Correct values are there and in order.
+			assert.Assert(t, marshalContains(template.Spec.Containers[i].Env,
+				strings.TrimSpace(`
 - name: PATRONI_NAME
   valueFrom:
     fieldRef:
@@ -240,18 +294,19 @@ volumes:
       fieldPath: status.podIP
 			`)+"\n"))
 
-		// Existing values are there and in the original order.
-		assert.Assert(t, marshalContains(template.Spec.Containers[0].Env,
-			strings.TrimSpace(`
+			// Existing values are there and in the original order.
+			assert.Assert(t, marshalContains(template.Spec.Containers[i].Env,
+				strings.TrimSpace(`
 - name: existed
 - name: also
   value: kept
 			`)+"\n"))
 
-		// Correct values can be in the middle somewhere.
-		template.Spec.Containers[0].Env = append(template.Spec.Containers[0].Env,
-			v1.EnvVar{Name: "at", Value: "end"})
-
+			// Correct values can be in the middle somewhere.
+			// Use a merge so a duplicate is not added.
+			template.Spec.Containers[i].Env = mergeEnvVars(template.Spec.Containers[i].Env,
+				v1.EnvVar{Name: "at", Value: "end"})
+		}
 		// No change when already correct.
 		before := template.DeepCopy()
 		assert.NilError(t, call())
@@ -296,31 +351,34 @@ volumes:
 	})
 
 	t.Run("ExistingVolumeMounts", func(t *testing.T) {
-		template.Spec.Containers[0].VolumeMounts = []v1.VolumeMount{
-			{Name: "existing", MountPath: "mount"},
-			{Name: "patroni-config", MountPath: "wrong"},
-		}
+		// run the volume mount tests for all containers in pod
+		for i := range template.Spec.Containers {
+			template.Spec.Containers[i].VolumeMounts = []v1.VolumeMount{
+				{Name: "existing", MountPath: "mount"},
+				{Name: "patroni-config", MountPath: "wrong"},
+			}
 
-		assert.NilError(t, call())
+			assert.NilError(t, call())
 
-		// Correct values are there.
-		assert.Assert(t, marshalContains(template.Spec.Containers[0].VolumeMounts,
-			strings.TrimSpace(`
+			// Correct values are there.
+			assert.Assert(t, marshalContains(template.Spec.Containers[i].VolumeMounts,
+				strings.TrimSpace(`
 - mountPath: /etc/patroni
   name: patroni-config
   readOnly: true
 			`)+"\n"))
 
-		// Existing values are there.
-		assert.Assert(t, marshalContains(template.Spec.Containers[0].VolumeMounts,
-			strings.TrimSpace(`
+			// Existing values are there.
+			assert.Assert(t, marshalContains(template.Spec.Containers[i].VolumeMounts,
+				strings.TrimSpace(`
 - mountPath: mount
   name: existing
 			`)+"\n"))
 
-		// Correct values can be in the middle somewhere.
-		template.Spec.Containers[0].VolumeMounts = append(
-			template.Spec.Containers[0].VolumeMounts, v1.VolumeMount{Name: "later"})
+			// Correct values can be in the middle somewhere.
+			template.Spec.Containers[i].VolumeMounts = append(
+				template.Spec.Containers[i].VolumeMounts, v1.VolumeMount{Name: "later"})
+		}
 
 		// No change when already correct.
 		before := template.DeepCopy()

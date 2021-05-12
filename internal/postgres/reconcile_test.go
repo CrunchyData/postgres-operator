@@ -157,7 +157,7 @@ func TestCopyClientTLS(t *testing.T) {
 	postgresCluster := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
 	template := &v1.PodTemplateSpec{}
 
-	CopyReplicationTLS(postgresCluster, template)
+	InitCopyReplicationTLS(postgresCluster, template)
 
 	var foundPGDATAInitContainer bool
 	for _, c := range template.Spec.InitContainers {
@@ -177,8 +177,9 @@ func TestAddCertVolumeToPod(t *testing.T) {
 		Spec: v1.PodSpec{
 			Containers: []v1.Container{{
 				Name: "database",
-			},
-			},
+			}, {
+				Name: "replication-cert-copy",
+			}},
 			InitContainers: []v1.Container{{
 				Name: "database-client-cert-init",
 			},
@@ -193,18 +194,18 @@ func TestAddCertVolumeToPod(t *testing.T) {
 		},
 		Items: []v1.KeyToPath{
 			{
-				Key:  clusterCertFile,
-				Path: clusterCertFile,
+				Key:  naming.ReplicationCert,
+				Path: naming.ReplicationCert,
 				Mode: &mode,
 			},
 			{
-				Key:  clusterKeyFile,
-				Path: clusterKeyFile,
+				Key:  naming.ReplicationPrivateKey,
+				Path: naming.ReplicationPrivateKey,
 				Mode: &mode,
 			},
 			{
-				Key:  rootCertFile,
-				Path: rootCertFile,
+				Key:  naming.ReplicationCACert,
+				Path: naming.ReplicationCACert,
 				Mode: &mode,
 			},
 		},
@@ -228,8 +229,10 @@ func TestAddCertVolumeToPod(t *testing.T) {
 		},
 	}
 
-	err := AddCertVolumeToPod(postgresCluster, template, naming.ContainerClientCertInit,
-		naming.ContainerDatabase, testServerSecretProjection, testClientSecretProjection)
+	err := AddCertVolumeToPod(postgresCluster, template,
+		naming.ContainerClientCertInit, naming.ContainerDatabase,
+		naming.ContainerClientCertCopy, testServerSecretProjection,
+		testClientSecretProjection)
 	assert.NilError(t, err)
 
 	var foundCertVol bool
@@ -261,16 +264,16 @@ func TestAddCertVolumeToPod(t *testing.T) {
 	if assert.Check(t, serverSecret != nil) {
 		assert.Assert(t, len(serverSecret.Items) == 3)
 
-		assert.Equal(t, serverSecret.Items[0].Key, clusterCertFile)
-		assert.Equal(t, serverSecret.Items[0].Path, clusterCertFile)
+		assert.Equal(t, serverSecret.Items[0].Key, naming.ReplicationCert)
+		assert.Equal(t, serverSecret.Items[0].Path, naming.ReplicationCert)
 		assert.Equal(t, serverSecret.Items[0].Mode, &mode)
 
-		assert.Equal(t, serverSecret.Items[1].Key, clusterKeyFile)
-		assert.Equal(t, serverSecret.Items[1].Path, clusterKeyFile)
+		assert.Equal(t, serverSecret.Items[1].Key, naming.ReplicationPrivateKey)
+		assert.Equal(t, serverSecret.Items[1].Path, naming.ReplicationPrivateKey)
 		assert.Equal(t, serverSecret.Items[1].Mode, &mode)
 
-		assert.Equal(t, serverSecret.Items[2].Key, rootCertFile)
-		assert.Equal(t, serverSecret.Items[2].Path, rootCertFile)
+		assert.Equal(t, serverSecret.Items[2].Key, naming.ReplicationCACert)
+		assert.Equal(t, serverSecret.Items[2].Path, naming.ReplicationCACert)
 		assert.Equal(t, serverSecret.Items[2].Mode, &mode)
 	}
 
