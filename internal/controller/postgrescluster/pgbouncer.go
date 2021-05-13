@@ -88,8 +88,12 @@ func (r *Reconciler) reconcilePGBouncerConfigMap(
 
 	err := errors.WithStack(r.setControllerReference(cluster, configmap))
 
-	configmap.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
-		cluster.Spec.Proxy.PGBouncer.Metadata.Labels,
+	configmap.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		cluster.Spec.Proxy.PGBouncer.Metadata.GetAnnotationsOrNil())
+	configmap.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
+		cluster.Spec.Proxy.PGBouncer.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 			naming.LabelRole:    naming.RolePGBouncer,
@@ -234,8 +238,12 @@ func (r *Reconciler) reconcilePGBouncerSecret(
 		err = errors.WithStack(r.setControllerReference(cluster, intent))
 	}
 
-	intent.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
-		cluster.Spec.Proxy.PGBouncer.Metadata.Labels,
+	intent.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		cluster.Spec.Proxy.PGBouncer.Metadata.GetAnnotationsOrNil())
+	intent.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
+		cluster.Spec.Proxy.PGBouncer.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 			naming.LabelRole:    naming.RolePGBouncer,
@@ -274,8 +282,12 @@ func (r *Reconciler) reconcilePGBouncerService(
 
 	err := errors.WithStack(r.setControllerReference(cluster, service))
 
-	service.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
-		cluster.Spec.Proxy.PGBouncer.Metadata.Labels,
+	service.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		cluster.Spec.Proxy.PGBouncer.Metadata.GetAnnotationsOrNil())
+	service.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
+		cluster.Spec.Proxy.PGBouncer.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 			naming.LabelRole:    naming.RolePGBouncer,
@@ -366,8 +378,12 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 
 	err := errors.WithStack(r.setControllerReference(cluster, deploy))
 
-	deploy.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
-		cluster.Spec.Proxy.PGBouncer.Metadata.Labels,
+	deploy.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		cluster.Spec.Proxy.PGBouncer.Metadata.GetAnnotationsOrNil())
+	deploy.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
+		cluster.Spec.Proxy.PGBouncer.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 			naming.LabelRole:    naming.RolePGBouncer,
@@ -378,8 +394,12 @@ func (r *Reconciler) reconcilePGBouncerDeployment(
 			naming.LabelRole:    naming.RolePGBouncer,
 		},
 	}
-	deploy.Spec.Template.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
-		cluster.Spec.Proxy.PGBouncer.Metadata.Labels,
+	deploy.Spec.Template.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		cluster.Spec.Proxy.PGBouncer.Metadata.GetAnnotationsOrNil())
+	deploy.Spec.Template.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
+		cluster.Spec.Proxy.PGBouncer.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 			naming.LabelRole:    naming.RolePGBouncer,

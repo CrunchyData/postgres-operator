@@ -159,7 +159,9 @@ func (r *Reconciler) reconcileClusterCertificate(
 	intent.Data = make(map[string][]byte)
 	intent.ObjectMeta.OwnerReferences = existing.ObjectMeta.OwnerReferences
 
-	intent.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+	intent.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil())
+	intent.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster:            cluster.Name,
 			naming.LabelClusterCertificate: "postgres-tls",

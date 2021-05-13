@@ -53,10 +53,8 @@ spec:
   archive:
     pgbackrest:
       image: ""
-      metadata: {}
   image: ""
   instances: null
-  metadata: {}
   patroni:
     dynamicConfiguration: null
     leaderLeaseDurationSeconds: 30
@@ -86,16 +84,13 @@ spec:
   archive:
     pgbackrest:
       image: ""
-      metadata: {}
   image: ""
   instances:
-  - metadata: {}
-    name: "00"
+  - name: "00"
     replicas: 1
     resources: {}
     volumeClaimSpec:
       resources: {}
-  metadata: {}
   patroni:
     dynamicConfiguration: null
     leaderLeaseDurationSeconds: 30
@@ -130,7 +125,6 @@ status:
 pgBouncer:
   config: {}
   image: ""
-  metadata: {}
   port: 5432
   replicas: 1
   resources: {}
@@ -145,11 +139,114 @@ func TestPostgresInstanceSetSpecDefault(t *testing.T) {
 	b, err := yaml.Marshal(spec)
 	assert.NilError(t, err)
 	assert.DeepEqual(t, string(b), strings.TrimSpace(`
-metadata: {}
 name: "05"
 replicas: 1
 resources: {}
 volumeClaimSpec:
   resources: {}
 	`)+"\n")
+}
+
+func TestMetadataGetLabels(t *testing.T) {
+	for _, test := range []struct {
+		m           Metadata
+		mp          *Metadata
+		expect      map[string]string
+		description string
+	}{{
+		expect:      map[string]string(nil),
+		description: "meta is defined but unset",
+	}, {
+		m:           Metadata{},
+		mp:          &Metadata{},
+		expect:      map[string]string(nil),
+		description: "metadata is empty",
+	}, {
+		m:           Metadata{Labels: map[string]string{}},
+		mp:          &Metadata{Labels: map[string]string{}},
+		expect:      map[string]string{},
+		description: "metadata contains empty label set",
+	}, {
+		m: Metadata{Labels: map[string]string{
+			"test": "label",
+		}},
+		mp: &Metadata{Labels: map[string]string{
+			"test": "label",
+		}},
+		expect: map[string]string{
+			"test": "label",
+		},
+		description: "metadata contains labels",
+	}, {
+		m: Metadata{Labels: map[string]string{
+			"test":  "label",
+			"test2": "label2",
+		}},
+		mp: &Metadata{Labels: map[string]string{
+			"test":  "label",
+			"test2": "label2",
+		}},
+		expect: map[string]string{
+			"test":  "label",
+			"test2": "label2",
+		},
+		description: "metadata contains multiple labels",
+	}} {
+		t.Run(test.description, func(t *testing.T) {
+			assert.DeepEqual(t, test.m.GetLabelsOrNil(), test.expect)
+			assert.DeepEqual(t, test.mp.GetLabelsOrNil(), test.expect)
+		})
+	}
+}
+
+func TestMetadataGetAnnotations(t *testing.T) {
+	for _, test := range []struct {
+		m           Metadata
+		mp          *Metadata
+		expect      map[string]string
+		description string
+	}{{
+		expect:      map[string]string(nil),
+		description: "meta is defined but unset",
+	}, {
+		m:           Metadata{},
+		mp:          &Metadata{},
+		expect:      map[string]string(nil),
+		description: "metadata is empty",
+	}, {
+		m:           Metadata{Annotations: map[string]string{}},
+		mp:          &Metadata{Annotations: map[string]string{}},
+		expect:      map[string]string{},
+		description: "metadata contains empty annotation set",
+	}, {
+		m: Metadata{Annotations: map[string]string{
+			"test": "annotation",
+		}},
+		mp: &Metadata{Annotations: map[string]string{
+			"test": "annotation",
+		}},
+		expect: map[string]string{
+			"test": "annotation",
+		},
+		description: "metadata contains annotations",
+	}, {
+		m: Metadata{Annotations: map[string]string{
+			"test":  "annotation",
+			"test2": "annotation2",
+		}},
+		mp: &Metadata{Annotations: map[string]string{
+			"test":  "annotation",
+			"test2": "annotation2",
+		}},
+		expect: map[string]string{
+			"test":  "annotation",
+			"test2": "annotation2",
+		},
+		description: "metadata contains multiple annotations",
+	}} {
+		t.Run(test.description, func(t *testing.T) {
+			assert.DeepEqual(t, test.m.GetAnnotationsOrNil(), test.expect)
+			assert.DeepEqual(t, test.mp.GetAnnotationsOrNil(), test.expect)
+		})
+	}
 }

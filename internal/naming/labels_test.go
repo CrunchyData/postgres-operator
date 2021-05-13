@@ -52,66 +52,72 @@ func TestMerge(t *testing.T) {
 		name   string
 		sets   []map[string]string
 		expect labels.Set
-	}{
-		{
-			name: "two-sets-no-overlap",
-			sets: []map[string]string{{
-				"label.one": "one",
-			}, {
-				"label.two": "two",
-			}},
-			expect: labels.Set{
-				"label.one": "one",
-				"label.two": "two",
-			},
-		}, {
-			name: "two-sets-overlap",
-			sets: []map[string]string{{
-				LabelCluster: "bad",
-				"label.one":  "one",
-			}, {
-				LabelCluster: "good",
-				"label.two":  "two",
-			}},
-			expect: labels.Set{
-				"label.one":  "one",
-				"label.two":  "two",
-				LabelCluster: "good",
-			},
-		}, {
-			name: "three-sets-no-overlap",
-			sets: []map[string]string{{
-				"label.one": "one",
-			}, {
-				"label.two": "two",
-			}, {
-				"label.three": "three",
-			}},
-			expect: labels.Set{
-				"label.one":   "one",
-				"label.two":   "two",
-				"label.three": "three",
-			},
-		}, {
-			name: "three-sets-overlap",
-			sets: []map[string]string{{
-				LabelCluster: "bad-one",
-				"label.one":  "one",
-			}, {
-				LabelCluster: "bad-two",
-				"label.two":  "two",
-			}, {
-				LabelCluster:  "good",
-				"label.three": "three",
-			}},
-			expect: labels.Set{
-				"label.one":   "one",
-				"label.two":   "two",
-				"label.three": "three",
-				LabelCluster:  "good",
-			},
+	}{{
+		name:   "no sets",
+		sets:   []map[string]string{},
+		expect: labels.Set{},
+	}, {
+		name: "nil map",
+		sets: []map[string]string{
+			map[string]string(nil),
 		},
-	} {
+		expect: labels.Set{},
+	}, {
+		name: "has empty sets",
+		sets: []map[string]string{
+			{"label.one": "one"},
+			{},
+		},
+		expect: labels.Set{
+			"label.one": "one",
+		},
+	}, {
+		name: "two sets with no overlap",
+		sets: []map[string]string{
+			{"label.one": "one"},
+			{"label.two": "two"},
+		},
+		expect: labels.Set{
+			"label.one": "one",
+			"label.two": "two",
+		},
+	}, {
+		name: "two sets with overlap",
+		sets: []map[string]string{
+			{LabelCluster: "bad", "label.one": "one"},
+			{LabelCluster: "good", "label.two": "two"},
+		},
+		expect: labels.Set{
+			"label.one":  "one",
+			"label.two":  "two",
+			LabelCluster: "good",
+		},
+	}, {
+		name: "three sets with no overlap",
+		sets: []map[string]string{
+			{"label.one": "one"},
+			{"label.two": "two"},
+			{"label.three": "three"},
+		},
+		expect: labels.Set{
+			"label.one":   "one",
+			"label.two":   "two",
+			"label.three": "three",
+		},
+	}, {
+		name: "three sets with overlap",
+		sets: []map[string]string{
+			{LabelCluster: "bad-one", "label.one": "one"},
+			{LabelCluster: "bad-two", "label.two": "two"},
+			{LabelCluster: "good", "label.three": "three"},
+		},
+		expect: labels.Set{
+			"label.one":   "one",
+			"label.two":   "two",
+			"label.three": "three",
+			LabelCluster:  "good",
+		},
+	}} {
 		t.Run(test.name, func(t *testing.T) {
 			merged := Merge(test.sets...)
 			assert.DeepEqual(t, merged, test.expect)

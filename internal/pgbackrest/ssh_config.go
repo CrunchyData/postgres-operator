@@ -63,8 +63,11 @@ type sshKey struct {
 func CreateSSHConfigMapIntent(postgresCluster *v1beta1.PostgresCluster) v1.ConfigMap {
 
 	meta := naming.PGBackRestSSHConfig(postgresCluster)
-	meta.Labels = naming.Merge(postgresCluster.Spec.Metadata.Labels,
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+	meta.Annotations = naming.Merge(
+		postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+	meta.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestRepoHostLabels(postgresCluster.GetName()),
 	)
 
@@ -98,8 +101,11 @@ func CreateSSHSecretIntent(postgresCluster *v1beta1.PostgresCluster,
 	currentSSHSecret *v1.Secret) (v1.Secret, error) {
 
 	meta := naming.PGBackRestSSHSecret(postgresCluster)
-	meta.Labels = naming.Merge(postgresCluster.Spec.Metadata.Labels,
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+	meta.Annotations = naming.Merge(
+		postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+	meta.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestRepoHostLabels(postgresCluster.GetName()),
 	)
 

@@ -292,6 +292,10 @@ spec:
                         description: Metadata contains metadata for PostgresCluster
                           resources
                         properties:
+                          annotations:
+                            additionalProperties:
+                              type: string
+                            type: object
                           labels:
                             additionalProperties:
                               type: string
@@ -827,6 +831,10 @@ spec:
                       description: Metadata contains metadata for PostgresCluster
                         resources
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         labels:
                           additionalProperties:
                             type: string
@@ -1004,6 +1012,10 @@ spec:
               metadata:
                 description: Metadata contains metadata for PostgresCluster resources
                 properties:
+                  annotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                   labels:
                     additionalProperties:
                       type: string
@@ -2041,6 +2053,10 @@ spec:
                         description: Metadata contains metadata for PostgresCluster
                           resources
                         properties:
+                          annotations:
+                            additionalProperties:
+                              type: string
+                            type: object
                           labels:
                             additionalProperties:
                               type: string

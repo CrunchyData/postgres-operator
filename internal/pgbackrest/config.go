@@ -72,8 +72,11 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 	repoHostName, configHash string, instanceNames []string) *v1.ConfigMap {
 
 	meta := naming.PGBackRestConfig(postgresCluster)
-	meta.Labels = naming.Merge(postgresCluster.Spec.Metadata.Labels,
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+	meta.Annotations = naming.Merge(
+		postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+	meta.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestConfigLabels(postgresCluster.GetName()),
 	)
 

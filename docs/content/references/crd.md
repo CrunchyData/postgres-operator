@@ -299,6 +299,11 @@ Metadata contains metadata for PostgresCluster resources
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td></td>
+        <td>false</td>
+      </tr><tr>
         <td><b>labels</b></td>
         <td>map[string]string</td>
         <td></td>
@@ -1749,6 +1754,11 @@ Metadata contains metadata for PostgresCluster resources
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td></td>
+        <td>false</td>
+      </tr><tr>
         <td><b>labels</b></td>
         <td>map[string]string</td>
         <td></td>
@@ -2269,6 +2279,11 @@ Metadata contains metadata for PostgresCluster resources
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td></td>
+        <td>false</td>
+      </tr><tr>
         <td><b>labels</b></td>
         <td>map[string]string</td>
         <td></td>
@@ -2984,6 +2999,11 @@ Metadata contains metadata for PostgresCluster resources
         </tr>
     </thead>
     <tbody><tr>
+        <td><b>annotations</b></td>
+        <td>map[string]string</td>
+        <td></td>
+        <td>false</td>
+      </tr><tr>
         <td><b>labels</b></td>
         <td>map[string]string</td>
         <td></td>
@@ -3262,7 +3282,7 @@ PostgresClusterStatus defines the observed state of PostgresCluster
 
 
 
-Condition contains details for one aspect of the current state of this API Resource. --- This struct is intended for direct use as an array at the field path .status.conditions.  For example, type FooStatus struct{     // Represents the observations of a foo's current state.     // Known .status.conditions.type are: "Available", "Progressing", and "Degraded"     // +patchMergeKey=type     // +patchStrategy=merge     // +listType=map     // +listMapKey=type     Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
+Condition contains details for one aspect of the current state of this API Resource. --- This struct is intended for direct use as an array at the field path .status.conditions.  For example, type FooStatus struct{     // Represents the observations of a foo's current state.     // Known .status.conditions.type are: "Available", "Progressing", and "Degraded"     // +patchMergeKey=type     // +patchStrategy=merge     // +listType=map     // +listMapKey=type     Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"` 
      // other fields }
 
 <table>

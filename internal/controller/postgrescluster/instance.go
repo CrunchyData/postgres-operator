@@ -848,9 +848,12 @@ func (r *Reconciler) reconcileInstance(
 	err := errors.WithStack(r.setControllerReference(cluster, instance))
 
 	if err == nil {
+		instance.Annotations = naming.Merge(
+			cluster.Spec.Metadata.GetAnnotationsOrNil(),
+			spec.Metadata.GetAnnotationsOrNil())
 		instance.Labels = naming.Merge(
-			cluster.Spec.Metadata.Labels,
-			spec.Metadata.Labels,
+			cluster.Spec.Metadata.GetLabelsOrNil(),
+			spec.Metadata.GetLabelsOrNil(),
 			map[string]string{
 				naming.LabelCluster:     cluster.Name,
 				naming.LabelInstanceSet: spec.Name,
@@ -863,9 +866,13 @@ func (r *Reconciler) reconcileInstance(
 				naming.LabelInstance:    instance.Name,
 			},
 		}
+		instance.Spec.Template.Annotations = naming.Merge(
+			cluster.Spec.Metadata.GetAnnotationsOrNil(),
+			spec.Metadata.GetAnnotationsOrNil(),
+		)
 		instance.Spec.Template.Labels = naming.Merge(
-			cluster.Spec.Metadata.Labels,
-			spec.Metadata.Labels,
+			cluster.Spec.Metadata.GetLabelsOrNil(),
+			spec.Metadata.GetLabelsOrNil(),
 			map[string]string{
 				naming.LabelCluster:     cluster.Name,
 				naming.LabelInstanceSet: spec.Name,
@@ -1045,8 +1052,12 @@ func (r *Reconciler) reconcilePGDATAVolume(ctx context.Context, cluster *v1beta1
 
 	// generate metadata
 	meta := naming.InstancePGDataVolume(instance)
-	meta.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
-		spec.Metadata.Labels,
+	meta.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		spec.Metadata.GetAnnotationsOrNil())
+	meta.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
+		spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster:     cluster.GetName(),
 			naming.LabelInstanceSet: spec.Name,
@@ -1086,8 +1097,12 @@ func (r *Reconciler) reconcileInstanceConfigMap(
 	// TODO(cbandy): Instance StatefulSet as owner?
 	err := errors.WithStack(r.setControllerReference(cluster, instanceConfigMap))
 
-	instanceConfigMap.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
-		spec.Metadata.Labels,
+	instanceConfigMap.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		spec.Metadata.GetAnnotationsOrNil())
+	instanceConfigMap.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
+		spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster:     cluster.Name,
 			naming.LabelInstanceSet: spec.Name,
@@ -1126,8 +1141,12 @@ func (r *Reconciler) reconcileInstanceCertificates(
 		err = errors.WithStack(r.setControllerReference(cluster, instanceCerts))
 	}
 
-	instanceCerts.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
-		spec.Metadata.Labels,
+	instanceCerts.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		spec.Metadata.GetAnnotationsOrNil())
+	instanceCerts.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
+		spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster:     cluster.Name,
 			naming.LabelInstanceSet: spec.Name,

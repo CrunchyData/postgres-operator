@@ -415,8 +415,12 @@ func unstructuredToRepoResources(postgresCluster *v1beta1.PostgresCluster, kind 
 func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresCluster,
 	repoHostName string) (*appsv1.StatefulSet, error) {
 
-	labels := naming.Merge(postgresCluster.Spec.Metadata.Labels,
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+	annotations := naming.Merge(
+		postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+	labels := naming.Merge(
+		postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestDedicatedLabels(postgresCluster.GetName()),
 	)
 
@@ -426,9 +430,10 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 			Kind:       "StatefulSet",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      repoHostName,
-			Namespace: postgresCluster.GetNamespace(),
-			Labels:    labels,
+			Name:        repoHostName,
+			Namespace:   postgresCluster.GetNamespace(),
+			Labels:      labels,
+			Annotations: annotations,
 		},
 		Spec: appsv1.StatefulSetSpec{
 			Selector: &metav1.LabelSelector{
@@ -436,7 +441,10 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 			},
 			ServiceName: naming.ClusterPodService(postgresCluster).Name,
 			Template: v1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{Labels: labels},
+				ObjectMeta: metav1.ObjectMeta{
+					Labels:      labels,
+					Annotations: annotations,
+				},
 			},
 		},
 	}
@@ -479,14 +487,19 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 func (r *Reconciler) generateRepoVolumeIntent(postgresCluster *v1beta1.PostgresCluster,
 	spec *v1.PersistentVolumeClaimSpec, repoName string) (*v1.PersistentVolumeClaim, error) {
 
-	labels := naming.Merge(postgresCluster.Spec.Metadata.Labels,
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+	annotations := naming.Merge(
+		postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+	labels := naming.Merge(
+		postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestRepoVolumeLabels(postgresCluster.GetName(), repoName),
 	)
 
 	// generate metadata
 	meta := naming.PGBackRestRepoVolume(postgresCluster, repoName)
 	meta.Labels = labels
+	meta.Annotations = annotations
 
 	repoVol := &v1.PersistentVolumeClaim{
 		TypeMeta: metav1.TypeMeta{
@@ -754,14 +767,20 @@ func (r *Reconciler) reconcilePGBackRestRBAC(ctx context.Context,
 		return nil, errors.WithStack(err)
 	}
 
-	sa.Labels = naming.Merge(postgresCluster.Spec.Metadata.Labels,
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+	sa.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+	sa.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestLabels(postgresCluster.GetName()))
-	binding.Labels = naming.Merge(postgresCluster.Spec.Metadata.Labels,
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+	binding.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+	binding.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestLabels(postgresCluster.GetName()))
-	role.Labels = naming.Merge(postgresCluster.Spec.Metadata.Labels,
-		postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+	role.Annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+	role.Labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestLabels(postgresCluster.GetName()))
 
 	binding.RoleRef = rbacv1.RoleRef{
@@ -1004,20 +1023,26 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 	if job != nil {
 		backupJob.ObjectMeta.Name = job.ObjectMeta.GetName()
 		backupJob.ObjectMeta.Namespace = job.ObjectMeta.GetNamespace()
-		labels = naming.Merge(postgresCluster.Spec.Metadata.Labels,
-			postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+		labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+			postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
 			job.ObjectMeta.GetLabels())
-		backupJob.ObjectMeta.Annotations = job.ObjectMeta.GetAnnotations()
+		backupJob.ObjectMeta.Annotations = naming.Merge(
+			postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+			postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil(),
+			job.ObjectMeta.GetAnnotations())
 	} else {
 		backupJob.ObjectMeta = naming.PGBackRestBackupJob(postgresCluster)
-		labels = naming.Merge(postgresCluster.Spec.Metadata.Labels,
-			postgresCluster.Spec.Archive.PGBackRest.Metadata.Labels,
+		labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+			postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
 			naming.PGBackRestBackupJobLabels(postgresCluster.GetName(),
 				postgresCluster.Spec.Archive.PGBackRest.Repos[0].Name, naming.BackupReplicaCreate))
-		backupJob.ObjectMeta.Annotations = map[string]string{
-			naming.PGBackRestCurrentConfig: configName,
-			naming.PGBackRestConfigHash:    configHash,
-		}
+		backupJob.ObjectMeta.Annotations = naming.Merge(
+			postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+			postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil(),
+			map[string]string{
+				naming.PGBackRestCurrentConfig: configName,
+				naming.PGBackRestConfigHash:    configHash,
+			})
 	}
 
 	// set the labels for the Job and generate and set the JobSpec intent
@@ -1403,12 +1428,17 @@ func (r *Reconciler) createCronJob(
 
 	log := logging.FromContext(ctx).WithValues("reconcileResource", "repoCronJob")
 
-	labels := naming.Merge(cluster.Spec.Metadata.Labels,
-		cluster.Spec.Archive.PGBackRest.Metadata.Labels,
+	annotations := naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil(),
+		cluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil())
+	labels := naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
+		cluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
 		naming.PGBackRestCronJobLabels(cluster.Name, repoName, backupType),
 	)
 	meta := naming.PGBackRestCronJob(cluster, backupType, repoName)
 	meta.Labels = labels
+	meta.Annotations = annotations
 
 	pgBackRestCronJob := &batchv1beta1.CronJob{
 		ObjectMeta: meta,
@@ -1416,12 +1446,14 @@ func (r *Reconciler) createCronJob(
 			Schedule: *schedule,
 			JobTemplate: batchv1beta1.JobTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: labels,
+					Annotations: annotations,
+					Labels:      labels,
 				},
 				Spec: batchv1.JobSpec{
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Labels: labels,
+							Annotations: annotations,
+							Labels:      labels,
 						},
 						Spec: v1.PodSpec{
 							RestartPolicy: "OnFailure",
@@ -1445,7 +1477,6 @@ func (r *Reconciler) createCronJob(
 	// set metadata
 	pgBackRestCronJob.SetGroupVersionKind(batchv1beta1.SchemeGroupVersion.WithKind("CronJob"))
 	err := errors.WithStack(r.setControllerReference(cluster, pgBackRestCronJob))
-	pgBackRestCronJob.Labels = naming.PGBackRestCronJobLabels(cluster.Name, repoName, backupType)
 
 	if err == nil {
 		err = r.apply(ctx, pgBackRestCronJob)

@@ -47,7 +47,8 @@ func (r *Reconciler) reconcileClusterConfigMap(
 
 	err := errors.WithStack(r.setControllerReference(cluster, clusterConfigMap))
 
-	clusterConfigMap.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+	clusterConfigMap.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil())
+	clusterConfigMap.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 		})
@@ -90,7 +91,8 @@ func (r *Reconciler) reconcileClusterPodService(
 
 	err := errors.WithStack(r.setControllerReference(cluster, clusterPodService))
 
-	clusterPodService.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+	clusterPodService.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil())
+	clusterPodService.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 		})
@@ -131,7 +133,8 @@ func (r *Reconciler) reconcileClusterPrimaryService(
 
 	err := errors.WithStack(r.setControllerReference(cluster, clusterPrimaryService))
 
-	clusterPrimaryService.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+	clusterPrimaryService.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil())
+	clusterPrimaryService.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 			naming.LabelRole:    naming.RolePrimary,
@@ -174,7 +177,8 @@ func (r *Reconciler) reconcileClusterPrimaryService(
 		err = errors.WithStack(r.setControllerReference(cluster, endpoints))
 	}
 
-	endpoints.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+	endpoints.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil())
+	endpoints.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 			naming.LabelRole:    naming.RolePrimary,
@@ -267,8 +271,8 @@ func (r *Reconciler) reconcilePGUserSecret(
 	}).String()
 	intent.Data["uri"] = []byte(connectionString)
 
-	// set postgrescluster label
-	intent.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+	intent.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil())
+	intent.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster:    cluster.Name,
 			naming.LabelUserSecret: cluster.Name,

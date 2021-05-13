@@ -33,7 +33,7 @@ type DedicatedRepo struct {
 // PostgresClusterSpec defines the desired state of PostgresCluster
 type PostgresClusterSpec struct {
 	// +optional
-	Metadata Metadata `json:"metadata,omitempty"`
+	Metadata *Metadata `json:"metadata,omitempty"`
 
 	// PostgreSQL archive configuration
 	// +kubebuilder:validation:Required
@@ -158,7 +158,7 @@ const (
 )
 
 type PostgresInstanceSetSpec struct {
-	Metadata Metadata `json:"metadata,omitempty"`
+	Metadata *Metadata `json:"metadata,omitempty"`
 
 	// +optional
 	// +kubebuilder:default=""
@@ -264,5 +264,27 @@ func init() {
 
 // Metadata contains metadata for PostgresCluster resources
 type Metadata struct {
+	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
+
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+}
+
+// GetLabelsOrNil gets labels from a Metadata pointer, if Metadata
+// hasn't been set return nil
+func (meta *Metadata) GetLabelsOrNil() map[string]string {
+	if meta == nil {
+		return nil
+	}
+	return meta.Labels
+}
+
+// GetAnnotationsOrNil gets annotations from a Metadata pointer, if Metadata
+// hasn't been set return nil
+func (meta *Metadata) GetAnnotationsOrNil() map[string]string {
+	if meta == nil {
+		return nil
+	}
+	return meta.Annotations
 }

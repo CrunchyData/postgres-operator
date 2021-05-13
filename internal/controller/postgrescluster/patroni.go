@@ -75,7 +75,10 @@ func (r *Reconciler) reconcilePatroniDistributedConfiguration(
 
 	err := errors.WithStack(r.setControllerReference(cluster, dcsService))
 
-	dcsService.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+	dcsService.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil())
+	dcsService.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 			naming.LabelPatroni: naming.PatroniScope(cluster),
@@ -167,7 +170,10 @@ func (r *Reconciler) reconcilePatroniLeaderLease(
 
 	err := errors.WithStack(r.setControllerReference(cluster, leaderService))
 
-	leaderService.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+	leaderService.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil())
+	leaderService.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 			naming.LabelPatroni: naming.PatroniScope(cluster),
@@ -302,8 +308,11 @@ func (r *Reconciler) reconcileReplicationSecret(
 	intent.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
 	intent.Data = make(map[string][]byte)
 
-	// set labels
-	intent.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+	// set labels and annotations
+	intent.Annotations = naming.Merge(
+		cluster.Spec.Metadata.GetAnnotationsOrNil())
+	intent.Labels = naming.Merge(
+		cluster.Spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster:            cluster.Name,
 			naming.LabelClusterCertificate: "replication-client-tls",

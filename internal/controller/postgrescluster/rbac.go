@@ -65,15 +65,18 @@ func (r *Reconciler) reconcileInstanceRBAC(
 		err = errors.WithStack(r.setControllerReference(cluster, role))
 	}
 
-	account.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+	account.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil())
+	account.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 		})
-	binding.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+	binding.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil())
+	binding.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 		})
-	role.Labels = naming.Merge(cluster.Spec.Metadata.Labels,
+	role.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil())
+	role.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster: cluster.Name,
 		})
