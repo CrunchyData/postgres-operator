@@ -219,7 +219,6 @@ type DeploymentTemplateFields struct {
 	// CASecret is the name of the Secret that has the trusted CA that the
 	// PostgreSQL server is using
 	CASecret     string
-	PGParams     string
 	PMMContainer string
 }
 
