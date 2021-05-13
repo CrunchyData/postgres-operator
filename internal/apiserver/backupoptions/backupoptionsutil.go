@@ -36,7 +36,8 @@ type backupOptions interface {
 // and restore utilities supported by pgo (e.g. pg_dump, pg_restore, pgBackRest, etc.)
 func ValidateBackupOpts(backupOpts string, request interface{}) error {
 	// some quick checks to make sure backup opts string is valid and should be processed and validated
-	if strings.TrimSpace(backupOpts) == "" {
+	backupOpts = strings.TrimSpace(backupOpts)
+	if backupOpts == "" {
 		return nil
 	} else if !strings.HasPrefix(strings.TrimSpace(backupOpts), "-") &&
 		!strings.HasPrefix(strings.TrimSpace(backupOpts), "--") {
@@ -112,7 +113,7 @@ func parseBackupOpts(backupOpts string) []string {
 	var newField string
 	for i, c := range backupOpts {
 		// if another option is found, add current option to newFields array
-		if !(c == ' ' && backupOpts[i+1] == '-') {
+		if !(c == ' ' && i+1 < len(backupOpts) && backupOpts[i+1] == '-') {
 			newField = newField + string(c)
 		}
 
