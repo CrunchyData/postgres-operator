@@ -47,6 +47,17 @@
     "ccpimage": "crunchy-postgres-ha",
     "ccpimagetag": "centos8-13.2-4.7.0-beta.3",
     "clustername": "fromcrd",
+    "pmm": {
+      "enabled": "false",
+      "image": "percona/pmm-client:2.15.1",
+      "serverHost": "monitoring-service",
+      "serverUser": "admin",
+      "pmmSecret": "cluster1-pmm-secret",
+      "resources": {
+        "cpu": "700m",
+        "memory": "1Gi"
+      }
+    },
     "database": "userdb",
     "exporterport": "9187",
     "name": "fromcrd",
