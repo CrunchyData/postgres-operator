@@ -984,7 +984,7 @@ func updatePGBackRestSSHDConfig(clientset kubernetes.Interface, repoSecret *v1.S
 				nssWrapperForceCommand))
 	}
 
-	// For versions prior to v4.7.0-beta.3, the UsePAM setting might be set to 'yes' as previously
+	// For versions prior to v4.7.0-rc.1, the UsePAM setting might be set to 'yes' as previously
 	// required to workaround a known Docker issue.  Since this issue has since been resolved,
 	// we now want to ensure this setting is set to 'no'.
 	if usePAMRegex.MatchString(string(updatedRepoSecret.Data["sshd_config"])) {
