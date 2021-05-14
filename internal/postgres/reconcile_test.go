@@ -16,141 +16,20 @@
 package postgres
 
 import (
-	"fmt"
-	"io/ioutil"
-	"os/exec"
-	"path/filepath"
+	"context"
+	"strings"
 	"testing"
 
 	"gotest.tools/v3/assert"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
-
-func TestAddPGDATAVolumeToPod(t *testing.T) {
-
-	postgresClusterBase := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
-	testClaimName := "test-claim-name"
-
-	testsCases := []struct {
-		claimName      string
-		containers     []v1.Container
-		initContainers []v1.Container
-	}{{
-		claimName:      testClaimName,
-		containers:     []v1.Container{{Name: "database"}, {Name: "pgbackrest"}},
-		initContainers: []v1.Container{{Name: "database-pgdata-init"}},
-	}, {
-		claimName:      testClaimName,
-		containers:     []v1.Container{{Name: "database"}},
-		initContainers: []v1.Container{{Name: "database-pgdata-init"}},
-	}, {
-		claimName:  testClaimName,
-		containers: []v1.Container{},
-	}, {
-		claimName:  "", // should cause error
-		containers: []v1.Container{},
-	}}
-
-	for _, tc := range testsCases {
-		t.Run(fmt.Sprintf("claimName=%s, containers=%d", tc.claimName, len(tc.containers)), func(t *testing.T) {
-
-			postgresCluster := postgresClusterBase.DeepCopy()
-			template := &v1.PodTemplateSpec{
-				Spec: v1.PodSpec{
-					Containers: tc.containers,
-				},
-			}
-
-			err := AddPGDATAVolumeToPod(postgresCluster, template, tc.claimName,
-				getContainerNames(tc.containers), []string{})
-			if tc.claimName == "" {
-				assert.ErrorContains(t, err, "must not be empty")
-				return
-			}
-			assert.NilError(t, err)
-
-			var foundPGDATAVol bool
-			var pgdataVol *v1.Volume
-			for i, v := range template.Spec.Volumes {
-				if v.Name == naming.PGDATAVolume {
-					foundPGDATAVol = true
-					pgdataVol = &template.Spec.Volumes[i]
-					break
-				}
-			}
-			assert.Assert(t, foundPGDATAVol)
-			assert.Assert(t, pgdataVol.PersistentVolumeClaim != nil)
-			assert.Assert(t, (pgdataVol.PersistentVolumeClaim.ClaimName == tc.claimName))
-
-			for _, c := range template.Spec.Containers {
-				var foundVolumeMount bool
-				for _, vm := range c.VolumeMounts {
-					if vm.Name == naming.PGDATAVolume && vm.MountPath == naming.PGDATAVMountPath {
-						foundVolumeMount = true
-					}
-				}
-				assert.Assert(t, foundVolumeMount)
-			}
-
-			for _, c := range template.Spec.InitContainers {
-				var foundVolumeMount bool
-				for _, vm := range c.VolumeMounts {
-					if vm.Name == naming.PGDATAVolume && vm.MountPath == naming.PGDATAVMountPath {
-						foundVolumeMount = true
-					}
-				}
-				assert.Assert(t, foundVolumeMount)
-			}
-		})
-	}
-}
-
-func TestAddPGDATAInitToPod(t *testing.T) {
-
-	postgresCluster := &v1beta1.PostgresCluster{ObjectMeta: metav1.ObjectMeta{Name: "hippo"}}
-	template := &v1.PodTemplateSpec{}
-
-	AddPGDATAInitToPod(postgresCluster, template)
-
-	var container *v1.Container
-	for i, c := range template.Spec.InitContainers {
-		if c.Name == naming.ContainerDatabasePGDATAInit {
-			container = &template.Spec.InitContainers[i]
-		}
-	}
-
-	assert.Assert(t, container != nil)
-
-	t.Run("ShellCheck", func(t *testing.T) {
-		shellcheck, err := exec.LookPath("shellcheck")
-		if err != nil {
-			t.Skip(`requires "shellcheck" executable`)
-		} else {
-			output, err := exec.Command(shellcheck, "--version").CombinedOutput()
-			assert.NilError(t, err)
-			t.Logf("using %q:\n%s", shellcheck, output)
-		}
-
-		// Expect a bash command with an inline script.
-		assert.DeepEqual(t, container.Command[:2], []string{"bash", "-c"})
-		assert.Assert(t, len(container.Command) > 2)
-		script := container.Command[2]
-
-		// Write out that inline script.
-		dir := t.TempDir()
-		file := filepath.Join(dir, "script.bash")
-		assert.NilError(t, ioutil.WriteFile(file, []byte(script), 0o600))
-
-		// Expect shellcheck to be happy.
-		cmd := exec.Command(shellcheck, "--enable=all", file)
-		output, err := cmd.CombinedOutput()
-		assert.NilError(t, err, "%q\n%s", cmd.Args, output)
-	})
-}
 
 func TestCopyClientTLS(t *testing.T) {
 
@@ -290,10 +169,72 @@ func TestAddCertVolumeToPod(t *testing.T) {
 	}
 }
 
-func getContainerNames(containers []v1.Container) []string {
-	names := make([]string, len(containers))
-	for i, c := range containers {
-		names[i] = c.Name
-	}
-	return names
+func TestDataVolumeMount(t *testing.T) {
+	mount := DataVolumeMount()
+
+	assert.DeepEqual(t, mount, corev1.VolumeMount{
+		Name:      "postgres-data",
+		MountPath: "/pgdata",
+		ReadOnly:  false,
+	})
+}
+
+func TestInstancePod(t *testing.T) {
+	cluster := new(v1beta1.PostgresCluster)
+	cluster.Default()
+	cluster.Spec.PostgresVersion = 11
+
+	dataVolume := new(corev1.PersistentVolumeClaim)
+	dataVolume.Name = "dv"
+
+	set := new(v1beta1.PostgresInstanceSetSpec)
+	set.Resources.Requests = corev1.ResourceList{"cpu": resource.MustParse("9m")}
+
+	pod := new(corev1.PodSpec)
+	InstancePod(context.Background(), cluster, dataVolume, set, pod)
+
+	b, err := yaml.Marshal(pod)
+	assert.NilError(t, err)
+	assert.DeepEqual(t, string(b), strings.Trim(`
+containers:
+- env:
+  - name: PGDATA
+    value: /pgdata/pg11
+  name: database
+  ports:
+  - containerPort: 5432
+    name: postgres
+    protocol: TCP
+  resources:
+    requests:
+      cpu: 9m
+  volumeMounts:
+  - mountPath: /pgdata
+    name: postgres-data
+initContainers:
+- command:
+  - install
+  - --directory
+  - --mode=0700
+  - /pgdata/pg11
+  env:
+  - name: PGDATA
+    value: /pgdata/pg11
+  name: postgres-startup
+  resources:
+    requests:
+      cpu: 9m
+  securityContext:
+    allowPrivilegeEscalation: false
+    privileged: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+  volumeMounts:
+  - mountPath: /pgdata
+    name: postgres-data
+volumes:
+- name: postgres-data
+  persistentVolumeClaim:
+    claimName: dv
+	`, "\t\n")+"\n")
 }

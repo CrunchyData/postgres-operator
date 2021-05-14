@@ -371,7 +371,7 @@ func TestAddPGBackRestToInstancePodSpec(t *testing.T) {
 	}
 }
 
-func TestReconcilePGDATAVolume(t *testing.T) {
+func TestReconcilePostgresDataVolume(t *testing.T) {
 	ctx := context.Background()
 
 	// setup the test environment and ensure a clean teardown
@@ -387,19 +387,7 @@ func TestReconcilePGDATAVolume(t *testing.T) {
 	}
 
 	storageClassName := "storage-class1"
-	apiGroup := "snapshot.storage.k8s.io"
-	testCases := []v1beta1.PostgresInstanceSetSpec{{
-		Name: "instance1",
-		VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
-			Resources: v1.ResourceRequirements{
-				Requests: map[v1.ResourceName]resource.Quantity{
-					v1.ResourceStorage: resource.MustParse("1Gi"),
-				},
-			},
-			StorageClassName: new(string),
-		},
-	}, {
+	set := &v1beta1.PostgresInstanceSetSpec{
 		Name: "instance2",
 		VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
 			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
@@ -410,64 +398,28 @@ func TestReconcilePGDATAVolume(t *testing.T) {
 			},
 			StorageClassName: &storageClassName,
 		},
-	}, {
-		Name: "instance3",
-		VolumeClaimSpec: v1.PersistentVolumeClaimSpec{
-			AccessModes: []v1.PersistentVolumeAccessMode{v1.ReadWriteMany},
-			Resources: v1.ResourceRequirements{
-				Requests: map[v1.ResourceName]resource.Quantity{
-					v1.ResourceStorage: resource.MustParse("256Mi"),
-				},
-			},
-			StorageClassName: &storageClassName,
-			DataSource: &v1.TypedLocalObjectReference{
-				APIGroup: &apiGroup,
-				Kind:     "VolumeSnapshot",
-				Name:     "pgdata-snap1",
-			},
-		},
-	}}
+	}
 
 	ns := &v1.Namespace{}
 	ns.GenerateName = "postgres-operator-test-"
 	assert.NilError(t, tClient.Create(ctx, ns))
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
-	namespace := ns.Name
 
-	clusterName := "hippo"
-	clusterUID := types.UID("hippouid")
-	postgresCluster := &v1beta1.PostgresCluster{
-		ObjectMeta: metav1.ObjectMeta{Name: clusterName, Namespace: namespace, UID: clusterUID},
-	}
+	cluster := testCluster()
+	cluster.Namespace = ns.Name
 
-	for i := range testCases {
-		tc := testCases[i]
+	assert.NilError(t, tClient.Create(ctx, cluster))
+	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, cluster)) })
 
-		t.Run(tc.Name, func(t *testing.T) {
+	instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(cluster, set)}
 
-			instance := &appsv1.StatefulSet{ObjectMeta: naming.GenerateInstance(postgresCluster, &tc)}
+	pvc, err := r.reconcilePostgresDataVolume(ctx, cluster, set, instance)
+	assert.NilError(t, err)
 
-			err := r.reconcilePGDATAVolume(ctx, postgresCluster, &tc, instance)
-			assert.NilError(t, err)
-
-			instancePVC := &v1.PersistentVolumeClaim{}
-			err = tClient.Get(ctx, client.ObjectKey{
-				Name:      naming.InstancePGDataVolume(instance).Name,
-				Namespace: namespace,
-			}, instancePVC)
-			assert.NilError(t, err)
-
-			assert.DeepEqual(t, tc.VolumeClaimSpec.AccessModes, instancePVC.Spec.AccessModes)
-			assert.DeepEqual(t, tc.VolumeClaimSpec.DataSource, instancePVC.Spec.DataSource)
-			assert.DeepEqual(t, tc.VolumeClaimSpec.Resources, instancePVC.Spec.Resources)
-			assert.DeepEqual(t, tc.VolumeClaimSpec.Selector, instancePVC.Spec.Selector)
-			assert.DeepEqual(t, tc.VolumeClaimSpec.StorageClassName, instancePVC.Spec.StorageClassName)
-			if tc.VolumeClaimSpec.VolumeMode != nil {
-				assert.DeepEqual(t, tc.VolumeClaimSpec.VolumeMode, instancePVC.Spec.VolumeMode)
-			}
-		})
-	}
-
+	assert.Equal(t, pvc.Labels[naming.LabelCluster], cluster.Name)
+	assert.Equal(t, pvc.Labels[naming.LabelInstance], instance.Name)
+	assert.Equal(t, pvc.Labels[naming.LabelInstanceSet], set.Name)
+	assert.Equal(t, pvc.Labels[naming.LabelRole], "pgdata")
 }
 
 func TestPodsToKeep(t *testing.T) {

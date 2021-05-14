@@ -912,20 +912,6 @@ func (r *Reconciler) reconcileInstance(
 		instance.Spec.Template.Spec.ShareProcessNamespace = initialize.Bool(true)
 
 		instance.Spec.Template.Spec.ServiceAccountName = instanceServiceAccount.Name
-		instance.Spec.Template.Spec.Containers = []v1.Container{
-			{
-				Name:      naming.ContainerDatabase,
-				Image:     cluster.Spec.Image,
-				Resources: spec.Resources,
-				Ports: []v1.ContainerPort{
-					{
-						Name:          naming.PortPostgreSQL,
-						ContainerPort: *cluster.Spec.Port,
-						Protocol:      v1.ProtocolTCP,
-					},
-				},
-			},
-		}
 
 		podSecurityContext := &v1.PodSecurityContext{SupplementalGroups: []int64{65534}}
 		// set fsGroups if not OpenShift
@@ -938,6 +924,7 @@ func (r *Reconciler) reconcileInstance(
 	var (
 		instanceConfigMap    *v1.ConfigMap
 		instanceCertificates *v1.Secret
+		postgresDataVolume   *corev1.PersistentVolumeClaim
 	)
 
 	if err == nil {
@@ -948,9 +935,12 @@ func (r *Reconciler) reconcileInstance(
 			ctx, cluster, spec, instance, rootCA)
 	}
 	if err == nil {
-		err = r.reconcilePGDATAVolume(ctx, cluster, spec, instance)
+		postgresDataVolume, err = r.reconcilePostgresDataVolume(ctx, cluster, spec, instance)
 	}
 	if err == nil {
+		postgres.InstancePod(
+			ctx, cluster, postgresDataVolume, spec, &instance.Spec.Template.Spec)
+
 		err = patroni.InstancePod(
 			ctx, cluster, clusterConfigMap, clusterPodService, patroniLeaderService,
 			instanceCertificates, instanceConfigMap, &instance.Spec.Template)
@@ -961,24 +951,10 @@ func (r *Reconciler) reconcileInstance(
 		err = addPGBackRestToInstancePodSpec(cluster, &instance.Spec.Template, instance)
 	}
 
-	postgres.AddPGDATAInitToPod(cluster, &instance.Spec.Template)
-
 	// add the container for the initial copy of the mounted replication client
 	// certificate files to the /tmp directory and set the proper file permissions
 	postgres.InitCopyReplicationTLS(cluster, &instance.Spec.Template)
 
-	// Add PGDATA volume to the Pod template and then add PGDATA volume mounts for the
-	// database container, and, if a repo host is enabled, the pgBackRest container
-	PGDATAContainers := []string{naming.ContainerDatabase}
-	PGDATAInitContainers := []string{naming.ContainerDatabasePGDATAInit, naming.ContainerClientCertInit}
-	if pgbackrest.RepoHostEnabled(cluster) {
-		PGDATAContainers = append(PGDATAContainers, naming.PGBackRestRepoContainerName)
-	}
-	if err == nil {
-		err = postgres.AddPGDATAVolumeToPod(cluster, &instance.Spec.Template,
-			naming.InstancePGDataVolume(instance).Name, PGDATAContainers,
-			PGDATAInitContainers)
-	}
 	// add the cluster certificate secret volume to the pod to enable Postgres TLS connections
 	if err == nil {
 		err = errors.WithStack(postgres.AddCertVolumeToPod(cluster, &instance.Spec.Template,
@@ -1040,43 +1016,39 @@ func addPGBackRestToInstancePodSpec(cluster *v1beta1.PostgresCluster,
 
 // +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=create;patch
 
-// reconcilePGDATAVolume writes instance according to spec of cluster.
-// See Reconciler.reconcileInstanceSet.
-func (r *Reconciler) reconcilePGDATAVolume(ctx context.Context, cluster *v1beta1.PostgresCluster,
-	spec *v1beta1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet) error {
+// reconcilePostgresDataVolume writes the PersistentVolumeClaim for instance's
+// PostgreSQL data volume.
+func (r *Reconciler) reconcilePostgresDataVolume(
+	ctx context.Context, cluster *v1beta1.PostgresCluster,
+	spec *v1beta1.PostgresInstanceSetSpec, instance *appsv1.StatefulSet,
+) (*corev1.PersistentVolumeClaim, error) {
+	pvc := &corev1.PersistentVolumeClaim{ObjectMeta: naming.InstancePostgresDataVolume(instance)}
+	pvc.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("PersistentVolumeClaim"))
 
-	// generate metadata
-	meta := naming.InstancePGDataVolume(instance)
-	meta.Annotations = naming.Merge(
+	err := errors.WithStack(r.setControllerReference(cluster, pvc))
+
+	pvc.Annotations = naming.Merge(
 		cluster.Spec.Metadata.GetAnnotationsOrNil(),
 		spec.Metadata.GetAnnotationsOrNil())
-	meta.Labels = naming.Merge(
+
+	pvc.Labels = naming.Merge(
 		cluster.Spec.Metadata.GetLabelsOrNil(),
 		spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
 			naming.LabelCluster:     cluster.GetName(),
 			naming.LabelInstanceSet: spec.Name,
 			naming.LabelInstance:    instance.GetName(),
+			naming.LabelRole:        naming.RolePostgresData,
 		})
 
-	pgdataVolume := &v1.PersistentVolumeClaim{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1.SchemeGroupVersion.String(),
-			Kind:       "PersistentVolumeClaim",
-		},
-		ObjectMeta: meta,
-		Spec:       spec.VolumeClaimSpec,
-	}
-
-	// set ownership references
-	err := errors.WithStack(r.setControllerReference(cluster, pgdataVolume))
+	pvc.Spec = spec.VolumeClaimSpec
 
 	if err == nil {
 		err = r.handlePersistentVolumeClaimError(cluster,
-			errors.WithStack(r.apply(ctx, pgdataVolume)))
+			errors.WithStack(r.apply(ctx, pvc)))
 	}
 
-	return err
+	return pvc, err
 }
 
 // +kubebuilder:rbac:groups="",resources=configmaps,verbs=create;patch

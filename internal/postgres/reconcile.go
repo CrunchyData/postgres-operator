@@ -16,92 +16,17 @@
 package postgres
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
-
-// AddPGDATAVolumeToPod adds pgBackRest repository volumes to the provided Pod template spec, while
-// also adding associated volume mounts to the containers and/or init containers specified.
-func AddPGDATAVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec,
-	claimName string, containerNames, initContainerNames []string) error {
-
-	if claimName == "" {
-		return errors.WithStack(errors.New("claimName must not be empty"))
-	}
-
-	pgdataVolume := v1.Volume{
-		Name: naming.PGDATAVolume,
-		VolumeSource: v1.VolumeSource{
-			PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
-				ClaimName: claimName,
-			},
-		},
-	}
-	template.Spec.Volumes = append(template.Spec.Volumes, pgdataVolume)
-
-	for _, name := range containerNames {
-		var containerFound bool
-		var index int
-		for index = range template.Spec.Containers {
-			if template.Spec.Containers[index].Name == name {
-				containerFound = true
-				break
-			}
-		}
-		if !containerFound {
-			return errors.Errorf("Unable to find container %q when adding pgBackRest repo volumes",
-				name)
-		}
-		template.Spec.Containers[index].VolumeMounts =
-			append(template.Spec.Containers[index].VolumeMounts, v1.VolumeMount{
-				Name:      naming.PGDATAVolume,
-				MountPath: naming.PGDATAVMountPath,
-			})
-	}
-
-	for _, name := range initContainerNames {
-		var initContainerFound bool
-		var initIndex int
-		for initIndex = range template.Spec.InitContainers {
-			if template.Spec.InitContainers[initIndex].Name == name {
-				initContainerFound = true
-				break
-			}
-		}
-		if !initContainerFound {
-			return errors.Errorf("Unable to find init container %q when adding pgBackRest repo volumes",
-				name)
-		}
-		template.Spec.InitContainers[initIndex].VolumeMounts =
-			append(template.Spec.InitContainers[initIndex].VolumeMounts, v1.VolumeMount{
-				Name:      naming.PGDATAVolume,
-				MountPath: naming.PGDATAVMountPath,
-			})
-	}
-
-	return nil
-}
-
-// AddPGDATAInitToPod adds an initialization container to the Pod template that is responsible
-// for properly initializing the PGDATA directory.
-func AddPGDATAInitToPod(postgresCluster *v1beta1.PostgresCluster,
-	template *v1.PodTemplateSpec) {
-
-	pgdata := naming.GetPGDATADirectory(postgresCluster)
-	cmd := fmt.Sprintf(`mkdir -p "%s" && chmod 0700 "%s"`, pgdata, pgdata)
-	template.Spec.InitContainers = append(template.Spec.InitContainers,
-		v1.Container{
-			Command: []string{"bash", "-c", cmd},
-			Image:   postgresCluster.Spec.Image,
-			Name:    naming.ContainerDatabasePGDATAInit,
-		})
-}
 
 // InitCopyReplicationTLS copies the mounted client certificate, key and CA certificate files
 // from the /pgconf/tls/replication directory to the /tmp/replication directory in order
@@ -205,4 +130,64 @@ func AddCertVolumeToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.P
 		})
 
 	return nil
+}
+
+// DataVolumeMount returns name and mount path of the PostgreSQL data volume.
+func DataVolumeMount() corev1.VolumeMount {
+	return corev1.VolumeMount{Name: "postgres-data", MountPath: dataMountPath}
+}
+
+// InstancePod initializes outInstancePod with the database container and the
+// volumes needed by PostgreSQL.
+func InstancePod(ctx context.Context,
+	inCluster *v1beta1.PostgresCluster,
+	inDataVolume *corev1.PersistentVolumeClaim,
+	inSet *v1beta1.PostgresInstanceSetSpec,
+	outInstancePod *corev1.PodSpec,
+) {
+	dataVolumeMount := DataVolumeMount()
+	dataVolume := corev1.Volume{
+		Name: dataVolumeMount.Name,
+		VolumeSource: corev1.VolumeSource{
+			PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+				ClaimName: inDataVolume.Name,
+				ReadOnly:  false,
+			},
+		},
+	}
+
+	container := corev1.Container{
+		Name: naming.ContainerDatabase,
+
+		// Patroni will set the command and probes.
+
+		Env:       Environment(inCluster),
+		Image:     inCluster.Spec.Image,
+		Resources: inSet.Resources,
+
+		Ports: []v1.ContainerPort{{
+			Name:          naming.PortPostgreSQL,
+			ContainerPort: *inCluster.Spec.Port,
+			Protocol:      corev1.ProtocolTCP,
+		}},
+
+		VolumeMounts: []corev1.VolumeMount{dataVolumeMount},
+	}
+
+	startup := corev1.Container{
+		Name: naming.ContainerPostgresStartup,
+
+		Command: []string{"install", "--directory", "--mode=0700",
+			DataDirectory(inCluster)},
+		Env:       Environment(inCluster),
+		Image:     inCluster.Spec.Image,
+		Resources: inSet.Resources,
+
+		SecurityContext: initialize.RestrictedSecurityContext(),
+		VolumeMounts:    []corev1.VolumeMount{dataVolumeMount},
+	}
+
+	outInstancePod.Containers = []corev1.Container{container}
+	outInstancePod.InitContainers = []corev1.Container{startup}
+	outInstancePod.Volumes = []corev1.Volume{dataVolume}
 }

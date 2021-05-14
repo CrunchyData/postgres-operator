@@ -22,6 +22,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -172,20 +173,29 @@ func AddSSHToPod(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTempl
 		ReadOnly:  true,
 	}
 
-	template.Spec.Containers = append(template.Spec.Containers,
-		v1.Container{
-			Command: []string{"/usr/sbin/sshd", "-D", "-e"},
-			Image:   postgresCluster.Spec.Archive.PGBackRest.Image,
-			LivenessProbe: &v1.Probe{
-				Handler: v1.Handler{
-					TCPSocket: &v1.TCPSocketAction{
-						Port: intstr.FromInt(2022),
-					},
+	container := v1.Container{
+		Command: []string{"/usr/sbin/sshd", "-D", "-e"},
+		Image:   postgresCluster.Spec.Archive.PGBackRest.Image,
+		LivenessProbe: &v1.Probe{
+			Handler: v1.Handler{
+				TCPSocket: &v1.TCPSocketAction{
+					Port: intstr.FromInt(2022),
 				},
 			},
-			Name:         naming.PGBackRestRepoContainerName,
-			VolumeMounts: []v1.VolumeMount{sshVolumeMount},
-		})
+		},
+		Name:         naming.PGBackRestRepoContainerName,
+		VolumeMounts: []v1.VolumeMount{sshVolumeMount},
+	}
+
+	// Mount the PostgreSQL data volume if it is present in the template.
+	pgdataMount := postgres.DataVolumeMount()
+	for i := range template.Spec.Volumes {
+		if template.Spec.Volumes[i].Name == pgdataMount.Name {
+			container.VolumeMounts = append(container.VolumeMounts, pgdataMount)
+		}
+	}
+
+	template.Spec.Containers = append(template.Spec.Containers, container)
 
 	for _, name := range additionalVolumeMountContainers {
 		var containerFound bool

@@ -16,7 +16,6 @@
 package naming
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -45,10 +44,10 @@ func TestContainerNamesUniqueAndValid(t *testing.T) {
 	names := sets.NewString()
 	for _, name := range []string{
 		ContainerDatabase,
-		ContainerDatabasePGDATAInit,
 		ContainerNSSWrapperInit,
 		ContainerPGBouncer,
 		ContainerPGBouncerConfig,
+		ContainerPostgresStartup,
 	} {
 		assert.Assert(t, !names.Has(name), "%q defined already", name)
 		assert.Assert(t, nil == validation.IsDNS1123Label(name))
@@ -195,7 +194,7 @@ func TestInstanceNamesUniqueAndValid(t *testing.T) {
 	t.Run("PVCs", func(t *testing.T) {
 		names := sets.NewString()
 		for _, tt := range []test{
-			{"InstancePGDataVolume", InstancePGDataVolume(instance)},
+			{"InstancePostgresDataVolume", InstancePostgresDataVolume(instance)},
 		} {
 			t.Run(tt.name, func(t *testing.T) {
 				assert.Equal(t, tt.value.Namespace, instance.Namespace)
@@ -235,16 +234,4 @@ func TestGenerateInstance(t *testing.T) {
 
 	assert.Equal(t, cluster.Namespace, instance.Namespace)
 	assert.Assert(t, strings.HasPrefix(instance.Name, cluster.Name+"-"+set.Name+"-"))
-}
-
-func TestGetPGDATADirectory(t *testing.T) {
-	postgresVersion := 13
-
-	cluster := &v1beta1.PostgresCluster{
-		Spec: v1beta1.PostgresClusterSpec{
-			PostgresVersion: postgresVersion,
-		},
-	}
-
-	assert.Equal(t, GetPGDATADirectory(cluster), fmt.Sprintf("/pgdata/pg%d", postgresVersion))
 }

@@ -77,6 +77,9 @@ const (
 
 	// RolePGBouncer is the LabelRole applied to PgBouncer objects.
 	RolePGBouncer = "pgbouncer"
+
+	// RolePostgresData is the LabelRole applied to PostgreSQL data volumes.
+	RolePostgresData = "pgdata"
 )
 
 // BackupJobType represents different types of backups (e.g. ad-hoc backups, scheduled backups,

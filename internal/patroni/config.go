@@ -381,6 +381,20 @@ func instanceEnvironment(
 			Value: fmt.Sprintf("*:%d", postgresPort),
 		},
 
+		// Set "postgresql.config_dir" to PostgreSQL's $PGDATA directory.
+		// Patroni must be restarted when changing this value.
+		{
+			Name:  "PATRONI_POSTGRESQL_CONFIG_DIR",
+			Value: postgres.ConfigDirectory(cluster),
+		},
+
+		// Set "postgresql.data_dir" to PostgreSQL's "data_directory".
+		// Patroni must be restarted when changing this value.
+		{
+			Name:  "PATRONI_POSTGRESQL_DATA_DIR",
+			Value: postgres.DataDirectory(cluster),
+		},
+
 		// Set "restapi.connect_address" using the Pod's stable DNS name.
 		// Patroni must be reloaded when changing this value.
 		{
@@ -442,7 +456,7 @@ func instanceConfigFiles(cluster, instance *v1.ConfigMap) []v1.VolumeProjection 
 }
 
 // instanceYAML returns Patroni settings that apply to instance.
-func instanceYAML(postgresCluster *v1beta1.PostgresCluster, _ metav1.Object) (string, error) {
+func instanceYAML(_ *v1beta1.PostgresCluster, _ metav1.Object) (string, error) {
 	root := map[string]interface{}{
 		// Missing here is "name" which cannot be known until the instance Pod is
 		// created. That value should be injected using the downward API and the
@@ -459,13 +473,10 @@ func instanceYAML(postgresCluster *v1beta1.PostgresCluster, _ metav1.Object) (st
 
 		"postgresql": map[string]interface{}{
 			// TODO(cbandy): "bin_dir"
-			// TODO(cbandy): "config_dir" so that users cannot override.
 
 			// Missing here is "connect_address" which cannot be known until the
 			// instance Pod is created. That value should be injected using the downward
 			// API and the PATRONI_POSTGRESQL_CONNECT_ADDRESS environment variable.
-
-			"data_dir": naming.GetPGDATADirectory(postgresCluster),
 
 			// Missing here is "listen" which is connascent with "connect_address".
 			// See the PATRONI_POSTGRESQL_LISTEN environment variable.

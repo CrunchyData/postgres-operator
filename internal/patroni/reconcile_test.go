@@ -115,6 +115,7 @@ func TestInstancePod(t *testing.T) {
 	cluster := new(v1beta1.PostgresCluster)
 	cluster.Default()
 	cluster.Name = "some-such"
+	cluster.Spec.PostgresVersion = 11
 	clusterConfigMap := new(v1.ConfigMap)
 	clusterPodService := new(v1.Service)
 	instanceCertficates := new(v1.Secret)
@@ -157,6 +158,10 @@ containers:
     value: $(PATRONI_NAME).:5432
   - name: PATRONI_POSTGRESQL_LISTEN
     value: '*:5432'
+  - name: PATRONI_POSTGRESQL_CONFIG_DIR
+    value: /pgdata/pg11
+  - name: PATRONI_POSTGRESQL_DATA_DIR
+    value: /pgdata/pg11
   - name: PATRONI_RESTAPI_CONNECT_ADDRESS
     value: $(PATRONI_NAME).:8008
   - name: PATRONI_RESTAPI_LISTEN
@@ -227,6 +232,10 @@ containers:
     value: $(PATRONI_NAME).:5432
   - name: PATRONI_POSTGRESQL_LISTEN
     value: '*:5432'
+  - name: PATRONI_POSTGRESQL_CONFIG_DIR
+    value: /pgdata/pg11
+  - name: PATRONI_POSTGRESQL_DATA_DIR
+    value: /pgdata/pg11
   - name: PATRONI_RESTAPI_CONNECT_ADDRESS
     value: $(PATRONI_NAME).:8008
   - name: PATRONI_RESTAPI_LISTEN

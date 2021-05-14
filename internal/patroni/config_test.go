@@ -429,6 +429,7 @@ func TestInstanceEnvironment(t *testing.T) {
 
 	cluster := new(v1beta1.PostgresCluster)
 	cluster.Default()
+	cluster.Spec.PostgresVersion = 12
 	leaderService := new(v1.Service)
 	podService := new(v1.Service)
 	podService.Name = "pod-dns"
@@ -453,6 +454,10 @@ func TestInstanceEnvironment(t *testing.T) {
   value: $(PATRONI_NAME).pod-dns:5432
 - name: PATRONI_POSTGRESQL_LISTEN
   value: '*:5432'
+- name: PATRONI_POSTGRESQL_CONFIG_DIR
+  value: /pgdata/pg12
+- name: PATRONI_POSTGRESQL_DATA_DIR
+  value: /pgdata/pg12
 - name: PATRONI_RESTAPI_CONNECT_ADDRESS
   value: $(PATRONI_NAME).pod-dns:8008
 - name: PATRONI_RESTAPI_LISTEN
@@ -493,6 +498,10 @@ func TestInstanceEnvironment(t *testing.T) {
   value: $(PATRONI_NAME).pod-dns:5432
 - name: PATRONI_POSTGRESQL_LISTEN
   value: '*:5432'
+- name: PATRONI_POSTGRESQL_CONFIG_DIR
+  value: /pgdata/pg12
+- name: PATRONI_POSTGRESQL_DATA_DIR
+  value: /pgdata/pg12
 - name: PATRONI_RESTAPI_CONNECT_ADDRESS
   value: $(PATRONI_NAME).pod-dns:8008
 - name: PATRONI_RESTAPI_LISTEN
@@ -518,7 +527,6 @@ func TestInstanceYAML(t *testing.T) {
 # Your changes will not be saved.
 kubernetes: {}
 postgresql:
-  data_dir: /pgdata/pg12
   parameters:
     unix_socket_directories: /tmp
   pgpass: /tmp/.pgpass

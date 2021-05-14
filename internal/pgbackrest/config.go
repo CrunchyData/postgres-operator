@@ -24,6 +24,7 @@ import (
 
 	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
+	"github.com/crunchydata/postgres-operator/internal/postgres"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
@@ -100,7 +101,7 @@ func CreatePGBackRestConfigMapIntent(postgresCluster *v1beta1.PostgresCluster,
 		serviceName = naming.ClusterPodService(postgresCluster).Name
 	}
 
-	pgdataDir := naming.GetPGDATADirectory(postgresCluster)
+	pgdataDir := postgres.DataDirectory(postgresCluster)
 	for i, name := range instanceNames {
 		otherInstances := make([]string, 0)
 		if addInstanceHosts {

@@ -27,15 +27,19 @@ import (
 )
 
 const (
+	// ContainerDatabase is the name of the container running PostgreSQL and
+	// supporting tools: Patroni, pgBackRest, etc.
 	ContainerDatabase = "database"
-	// ContainerDatabasePGDATAInit is the name of the initialization container that is responsible
-	// for initializing the PGDATA directory
-	ContainerDatabasePGDATAInit = ContainerDatabase + "-pgdata-init"
 
 	// ContainerPGBouncer is the name of a container running PgBouncer.
 	ContainerPGBouncer = "pgbouncer"
 	// ContainerPGBouncerConfig is the name of a container supporting PgBouncer.
 	ContainerPGBouncerConfig = "pgbouncer-config"
+
+	// ContainerPostgresStartup is the name of the initialization container
+	// that prepares the filesystem for PostgreSQL.
+	ContainerPostgresStartup = "postgres-startup"
+
 	// ContainerClientCertInit is the name of the initialization container that is responsible
 	// for copying and setting proper permissions on the client certificate and key
 	ContainerClientCertInit = ContainerDatabase + "-client-cert-init"
@@ -46,7 +50,6 @@ const (
 	// ContainerNSSWrapperInit is the name of the init container utilized to configure support
 	// for the nss_wrapper
 	ContainerNSSWrapperInit = "nss-wrapper-init"
-	ContainerPostgreSQL     = ContainerDatabase
 )
 
 const (
@@ -117,12 +120,6 @@ const (
 	// PGBackRestSSHVolume is the name the SSH volume used when configuring SSH in a pgBackRest Pod
 	PGBackRestSSHVolume = "ssh"
 
-	// PGDATAVolume is the name of the PGDATA volume and volume mount in a PostgreSQL instance Pod
-	PGDATAVolume = "pgdata"
-
-	// PGDATAVMountPath is the path for mounting the PGDATA volume
-	PGDATAVMountPath = "/pgdata"
-
 	// PGReplicationUsername is the user account that will be created by patroni for replication.
 	// The replication account is used for both replication and pg_rewind
 	PGReplicationUsername = "_crunchyrepl"
@@ -131,13 +128,6 @@ const (
 	// for instance, if the cluster is named 'mycluster', the
 	// configmap will be named 'mycluster-pgbackrest-config'
 	cmNameSuffix = "%s-pgbackrest-config"
-
-	// PGDATADirectory defines the directory structure for the PGDATA directory that is mounted to
-	// instance and pgBackRest containers
-	pgdataDirectory = PGDATAVMountPath + "/pg%d"
-
-	// suffix used for naming the PersistentVolumeClaim (PVC) for a PGDATA volume
-	pgdataPVCNameSuffix = "%s-pgdata"
 
 	// suffix used with postgrescluster name for associated configmap.
 	// for instance, if the cluster is named 'mycluster', the
@@ -218,11 +208,6 @@ func GenerateInstance(
 	}
 }
 
-// GetPGDATADirectory returns the proper PGDATA directory structure for a specific PostgresCluster
-func GetPGDATADirectory(postgresCluster *v1beta1.PostgresCluster) string {
-	return fmt.Sprintf(pgdataDirectory, postgresCluster.Spec.PostgresVersion)
-}
-
 // InstanceConfigMap returns the ObjectMeta necessary to lookup
 // instance's shared ConfigMap.
 func InstanceConfigMap(instance metav1.Object) metav1.ObjectMeta {
@@ -241,12 +226,12 @@ func InstanceCertificates(instance metav1.Object) metav1.ObjectMeta {
 	}
 }
 
-// InstancePGDataVolume returns the ObjectMeta for the PGDATA PersistentVolumeClaim associated with
-// a specific instance
-func InstancePGDataVolume(instance *appsv1.StatefulSet) metav1.ObjectMeta {
+// InstancePostgresDataVolume returns the ObjectMeta for the PostgreSQL data
+// volume for instance.
+func InstancePostgresDataVolume(instance *appsv1.StatefulSet) metav1.ObjectMeta {
 	return metav1.ObjectMeta{
-		Name:      fmt.Sprintf(pgdataPVCNameSuffix, instance.GetName()),
 		Namespace: instance.GetNamespace(),
+		Name:      instance.GetName() + "-pgdata",
 	}
 }
 
