@@ -53,6 +53,7 @@ type PGBouncerConfiguration struct {
 
 // PGBouncerPodSpec defines the desired state of a PgBouncer connection pooler.
 type PGBouncerPodSpec struct {
+	// +optional
 	Metadata *Metadata `json:"metadata,omitempty"`
 
 	// Scheduling constraints of a PgBouncer pod. Changing this value causes

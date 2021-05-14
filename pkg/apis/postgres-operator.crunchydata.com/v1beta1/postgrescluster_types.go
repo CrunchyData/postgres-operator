@@ -161,6 +161,7 @@ const (
 )
 
 type PostgresInstanceSetSpec struct {
+	// +optional
 	Metadata *Metadata `json:"metadata,omitempty"`
 
 	// +optional

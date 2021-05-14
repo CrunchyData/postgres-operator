@@ -58,6 +58,7 @@ type PGBackRestManualBackupStatus struct {
 
 // PGBackRestArchive defines a pgBackRest archive configuration
 type PGBackRestArchive struct {
+	// +optional
 	Metadata *Metadata `json:"metadata,omitempty"`
 
 	// Projected volumes containing custom pgBackRest configuration.  These files are mounted
