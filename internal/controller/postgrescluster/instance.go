@@ -993,7 +993,7 @@ func (r *Reconciler) reconcileInstance(
 	// add nss_wrapper init container and add nss_wrapper env vars to the database and pgbackrest
 	// containers
 	if err == nil {
-		addNSSWrapper(cluster, &instance.Spec.Template)
+		addNSSWrapper(cluster.Spec.Image, &instance.Spec.Template)
 	}
 	// add an emptyDir volume to the PodTemplateSpec and an associated '/tmp' volume mount to
 	// all containers included within that spec

@@ -28,7 +28,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 func TestSafeHash32(t *testing.T) {
@@ -204,9 +203,6 @@ func TestAddNSSWrapper(t *testing.T) {
 	}
 
 	image := "test-image"
-	// we only need the image name in the mock postgrescluster
-	postgresCluster := &v1beta1.PostgresCluster{
-		Spec: v1beta1.PostgresClusterSpec{Image: image}}
 
 	expectedEnv := []v1.EnvVar{
 		{Name: "LD_PRELOAD", Value: "/usr/lib64/libnss_wrapper.so"},
@@ -248,7 +244,7 @@ func TestAddNSSWrapper(t *testing.T) {
 
 			beforeAddNSS := template.Spec.Containers
 
-			addNSSWrapper(postgresCluster, template)
+			addNSSWrapper(image, template)
 
 			// verify proper nss_wrapper env vars
 			var expectedContainerUpdateCount int

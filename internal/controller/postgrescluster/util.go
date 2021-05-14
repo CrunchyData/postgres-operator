@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/crunchydata/postgres-operator/internal/naming"
-	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 )
 
 var tmpDirSizeLimit = resource.MustParse("16Mi")
@@ -80,7 +79,7 @@ func addTMPEmptyDir(template *v1.PodTemplateSpec) {
 // containers in the Pod template.  Additionally, an init container is added to the Pod template
 // as needed to setup the nss_wrapper. Please note that the nss_wrapper is required for
 // compatibility with OpenShift: https://access.redhat.com/articles/4859371.
-func addNSSWrapper(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTemplateSpec) {
+func addNSSWrapper(image string, template *v1.PodTemplateSpec) {
 
 	for i, c := range template.Spec.Containers {
 		switch c.Name {
@@ -98,7 +97,7 @@ func addNSSWrapper(postgresCluster *v1beta1.PostgresCluster, template *v1.PodTem
 	template.Spec.InitContainers = append(template.Spec.InitContainers,
 		v1.Container{
 			Command: []string{"bash", "-c", nssWrapperCmd},
-			Image:   postgresCluster.Spec.Image,
+			Image:   image,
 			Name:    naming.ContainerNSSWrapperInit,
 		})
 }

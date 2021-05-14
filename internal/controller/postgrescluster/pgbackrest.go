@@ -472,7 +472,7 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 
 	// add nss_wrapper init container and add nss_wrapper env vars to the pgbackrest
 	// container
-	addNSSWrapper(postgresCluster, &repo.Spec.Template)
+	addNSSWrapper(postgresCluster.Spec.Archive.PGBackRest.Image, &repo.Spec.Template)
 	addTMPEmptyDir(&repo.Spec.Template)
 
 	// set ownership references
