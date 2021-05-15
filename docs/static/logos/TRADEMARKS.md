@@ -26,7 +26,7 @@ PGO
 
 ### 3.2. Our logo (the "Logo"):
 
-<img width="150" src="./docs/static/logos/pgo.svg" alt="PGO: The Postgres Operator from Crunchy Data"/>
+<img width="150" src="./pgo.svg" alt="PGO: The Postgres Operator from Crunchy Data"/>
 
 ### 3.3 And the unique visual styling of our website (the "Trade Dress").
 
