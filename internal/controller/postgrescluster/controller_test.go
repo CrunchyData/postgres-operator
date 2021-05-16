@@ -187,6 +187,16 @@ spec: {
 		Expect(test.Recorder.Events).To(Not(BeEmpty()))
 		Expect(<-test.Recorder.Events).To(Equal(`Warning InvalidName "postgres" is not allowed` +
 			` involvedObject{kind=PostgresCluster,apiVersion=postgres-operator.crunchydata.com/v1beta1}`))
+
+		Expect(client.IgnoreNotFound(
+			suite.Client.Delete(context.Background(), cluster),
+		)).To(Succeed())
+
+		// Remove finalizers, if any, so the namespace can terminate.
+		Expect(client.IgnoreNotFound(
+			suite.Client.Patch(context.Background(), cluster, client.RawPatch(
+				client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`))),
+		)).To(Succeed())
 	})
 
 	Context("Cluster", func() {
@@ -201,6 +211,22 @@ spec: {
 },
 			}`)
 			Expect(reconcile(cluster)).To(BeZero())
+		})
+
+		AfterEach(func() {
+			ctx := context.Background()
+
+			if cluster != nil {
+				Expect(client.IgnoreNotFound(
+					suite.Client.Delete(ctx, cluster),
+				)).To(Succeed())
+
+				// Remove finalizers, if any, so the namespace can terminate.
+				Expect(client.IgnoreNotFound(
+					suite.Client.Patch(ctx, cluster, client.RawPatch(
+						client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`))),
+				)).To(Succeed())
+			}
 		})
 
 		Specify("Cluster ConfigMap", func() {
@@ -437,6 +463,22 @@ spec:
 			Expect(instances.Items).To(HaveLen(1))
 
 			instance = instances.Items[0]
+		})
+
+		AfterEach(func() {
+			ctx := context.Background()
+
+			if cluster != nil {
+				Expect(client.IgnoreNotFound(
+					suite.Client.Delete(ctx, cluster),
+				)).To(Succeed())
+
+				// Remove finalizers, if any, so the namespace can terminate.
+				Expect(client.IgnoreNotFound(
+					suite.Client.Patch(ctx, cluster, client.RawPatch(
+						client.Merge.Type(), []byte(`{"metadata":{"finalizers":[]}}`))),
+				)).To(Succeed())
+			}
 		})
 
 		Specify("Instance ConfigMap", func() {

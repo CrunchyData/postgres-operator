@@ -253,8 +253,9 @@ func TestReconcilePatroniStatus(t *testing.T) {
 		return postgresCluster
 	}
 
-	assert.NilError(t, tClient.Create(ctx, &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{Name: namespace}}, &client.CreateOptions{}))
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
+	assert.NilError(t, tClient.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
 
 	testsCases := []struct {
 		errorExpected   bool
