@@ -456,7 +456,7 @@ func instanceConfigFiles(cluster, instance *v1.ConfigMap) []v1.VolumeProjection 
 }
 
 // instanceYAML returns Patroni settings that apply to instance.
-func instanceYAML(_ *v1beta1.PostgresCluster, _ metav1.Object) (string, error) {
+func instanceYAML(cluster *v1beta1.PostgresCluster, _ metav1.Object) (string, error) {
 	root := map[string]interface{}{
 		// Missing here is "name" which cannot be known until the instance Pod is
 		// created. That value should be injected using the downward API and the
@@ -511,6 +511,36 @@ func instanceYAML(_ *v1beta1.PostgresCluster, _ metav1.Object) (string, error) {
 			// TODO(cbandy): "nofailover"
 			// TODO(cbandy): "nosync"
 		},
+	}
+
+	if !ClusterBootstrapped(cluster) {
+		// Populate some "bootstrap" fields to initialize the cluster.
+		// When Patroni is already bootstrapped, this section is ignored.
+		// - https://github.com/zalando/patroni/blob/v2.0.2/docs/SETTINGS.rst#bootstrap-configuration
+		// - https://github.com/zalando/patroni/blob/v2.0.2/docs/replica_bootstrap.rst#bootstrap
+
+		// The "initdb" bootstrap method is configured differently from others.
+		// Patroni prepends "--" before it calls `initdb`.
+		// - https://github.com/zalando/patroni/blob/v2.0.2/patroni/postgresql/bootstrap.py#L45
+		root["bootstrap"] = map[string]interface{}{
+			"initdb": []string{
+				// Enable checksums on data pages to help detect corruption of
+				// storage that would otherwise be silent. This also enables
+				// "wal_log_hints" which is a prerequisite for using `pg_rewind`.
+				// - https://www.postgresql.org/docs/current/app-initdb.html
+				// - https://www.postgresql.org/docs/current/app-pgrewind.html
+				// - https://www.postgresql.org/docs/current/runtime-config-wal.html
+				//
+				// The benefits of checksums in the Kubernetes storage landscape
+				// outweigh their negligible overhead, and enabling them later
+				// is costly. (Every file of the cluster must be rewritten.)
+				// PostgreSQL v12 introduced the `pg_checksums` utility which
+				// can cheaply disable them while PostgreSQL is stopped.
+				// - https://www.postgresql.org/docs/current/app-pgchecksums.html
+				"data-checksums",
+				"encoding=UTF8",
+			},
+		}
 	}
 
 	b, err := yaml.Marshal(root)
