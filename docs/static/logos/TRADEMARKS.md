@@ -26,7 +26,7 @@ PGO
 
 ### 3.2. Our logo (the "Logo"):
 
-<img width="150" src="./docs/static/logos/pgo.svg" alt="PGO: The Postgres Operator from Crunchy Data"/>
+<img width="150" src="./pgo.svg" alt="PGO: The Postgres Operator from Crunchy Data"/>
 
 ### 3.3 And the unique visual styling of our website (the "Trade Dress").
 
@@ -59,7 +59,7 @@ See universal considerations for all uses, above, which also apply.
 
 #### 5.1.1 Distributing unmodified source code or unmodified executable code we have compiled
 
-When you redistribute our unmodified software, you are not changing its quality or nature. Therefore, you may retain the Word Marks and Logos we have placed on the software, to identify your redistributed software whether you redistribute by optical media, memory stick or download of unmodified source and executable code. This only applies if you are redistributing official software from this Project that you have not changed. You can find the Logo files [here](/).
+When you redistribute our unmodified software, you are not changing its quality or nature. Therefore, you may retain the Word Marks and Logos we have placed on the software, to identify your redistributed software whether you redistribute by optical media, memory stick or download of unmodified source and executable code. This only applies if you are redistributing official software from this Project that you have not changed. You can find the Logo files [here](./).
 
 #### 5.1.2 Distributing executable code you have compiled, or modified code
 
