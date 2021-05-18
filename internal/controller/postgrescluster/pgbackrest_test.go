@@ -20,7 +20,9 @@ package postgrescluster
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"strconv"
 	"testing"
 	"time"
 
@@ -32,11 +34,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	kerr "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -50,8 +54,9 @@ import (
 
 var testCronSchedule string = "*/15 * * * *"
 
-func fakePostgresCluster(clusterName, namespace, clusterUID string) *v1beta1.PostgresCluster {
-	return &v1beta1.PostgresCluster{
+func fakePostgresCluster(clusterName, namespace, clusterUID string,
+	includeDedicatedRepo bool) *v1beta1.PostgresCluster {
+	postgresCluster := &v1beta1.PostgresCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      clusterName,
 			Namespace: namespace,
@@ -98,15 +103,20 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string) *v1beta1.Pos
 							Region:   "region",
 						},
 					}},
-					RepoHost: &v1beta1.PGBackRestRepoHost{
-						Dedicated: &v1beta1.DedicatedRepo{
-							Resources: &corev1.ResourceRequirements{},
-						},
-					},
 				},
 			},
 		},
 	}
+
+	if includeDedicatedRepo {
+		postgresCluster.Spec.Archive.PGBackRest.RepoHost = &v1beta1.PGBackRestRepoHost{
+			Dedicated: &v1beta1.DedicatedRepo{
+				Resources: &corev1.ResourceRequirements{},
+			},
+		}
+	}
+
+	return postgresCluster
 }
 
 func TestReconcilePGBackRest(t *testing.T) {
@@ -135,10 +145,12 @@ func TestReconcilePGBackRest(t *testing.T) {
 	namespace := ns.Name
 
 	// create a PostgresCluster to test with
-	postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID)
+	postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID, true)
 
-	instanceNames := []string{"instance1", "instance2", "instance3"}
-	result, err := r.reconcilePGBackRest(ctx, postgresCluster, instanceNames)
+	instances := &observedInstances{
+		forCluster: []*Instance{{Name: "instance1"}, {Name: "instance2"}, {Name: "instance3"}},
+	}
+	result, err := r.reconcilePGBackRest(ctx, postgresCluster, instances)
 	if err != nil || result != (reconcile.Result{}) {
 		t.Errorf("unable to reconcile pgBackRest: %v", err)
 	}
@@ -303,11 +315,11 @@ func TestReconcilePGBackRest(t *testing.T) {
 		}
 		assert.Assert(t, len(config.Data) > 0)
 
-		for _, n := range instanceNames {
+		for _, instance := range instances.forCluster {
 			var instanceConfFound, dedicatedRepoConfFound bool
 			for k, v := range config.Data {
 				if v != "" {
-					if k == n+".conf" {
+					if k == instance.Name+".conf" {
 						instanceConfFound = true
 					} else if k == pgbackrest.CMRepoKey {
 						dedicatedRepoConfFound = true
@@ -439,7 +451,7 @@ func TestReconcilePGBackRestRBAC(t *testing.T) {
 	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
 
 	// create a PostgresCluster to test with
-	postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID)
+	postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID, true)
 	postgresCluster.Status.PGBackRest = &v1beta1.PGBackRestStatus{
 		Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: false}},
 	}
@@ -507,7 +519,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 	namespace := ns.Name
 
 	// create a PostgresCluster to test with
-	postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID)
+	postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID, true)
 	postgresCluster.Status.PGBackRest = &v1beta1.PGBackRestStatus{
 		Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: false}},
 	}
@@ -585,7 +597,7 @@ func TestReconcileStanzaCreate(t *testing.T) {
 	}
 
 	// now verify failure event
-	postgresCluster = fakePostgresCluster(clusterName, ns.GetName(), clusterUID)
+	postgresCluster = fakePostgresCluster(clusterName, ns.GetName(), clusterUID, true)
 	postgresCluster.Status.PGBackRest = &v1beta1.PGBackRestStatus{
 		Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: false}},
 	}
@@ -723,7 +735,7 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 	namespace := ns.Name
 
 	// create a PostgresCluster to test with
-	postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID)
+	postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), clusterUID, true)
 	// set status for the "replica create" repo, e.g. the repo ad index 0
 	postgresCluster.Status.PGBackRest = &v1beta1.PGBackRestStatus{
 		Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: false}},
@@ -870,6 +882,445 @@ func TestReconcileReplicaCreateBackup(t *testing.T) {
 	}
 	if assert.Check(t, replicaCreateRepoStatus != nil) {
 		assert.Assert(t, replicaCreateRepoStatus.ReplicaCreateBackupComplete)
+	}
+}
+
+func TestReconcileManualBackup(t *testing.T) {
+
+	// setup the test environment and ensure a clean teardown
+	tEnv, tClient, cfg := setupTestEnv(t, ControllerName)
+	t.Cleanup(func() { teardownTestEnv(t, tEnv) })
+	r := &Reconciler{}
+	ctx, cancel := setupManager(t, cfg, func(mgr manager.Manager) {
+		r = &Reconciler{
+			Client:   mgr.GetClient(),
+			Recorder: mgr.GetEventRecorderFor(ControllerName),
+			Tracer:   otel.Tracer(ControllerName),
+			Owner:    ControllerName,
+		}
+	})
+	t.Cleanup(func() { teardownManager(cancel, t) })
+
+	ns := &v1.Namespace{}
+	ns.GenerateName = "postgres-operator-test-"
+	assert.NilError(t, tClient.Create(ctx, ns))
+	t.Cleanup(func() { assert.Check(t, tClient.Delete(ctx, ns)) })
+
+	defaultBackupId := "default-backup-id"
+	backupId := metav1.Now().OpenAPISchemaFormat()
+
+	fakeJob := func(clusterName, repoName string) *batchv1.Job {
+		return &batchv1.Job{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        "manual-backup-" + rand.String(4),
+				Namespace:   ns.GetName(),
+				Annotations: map[string]string{naming.PGBackRestBackup: defaultBackupId},
+				Labels: naming.PGBackRestBackupJobLabels(clusterName, repoName,
+					naming.BackupManual),
+			},
+		}
+	}
+
+	sa := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{Name: "hippo-sa"},
+	}
+
+	instances := &observedInstances{
+		forCluster: []*Instance{{
+			Name: "instance1",
+			Pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{naming.LabelRole: naming.RolePatroniLeader},
+				},
+			}},
+		}},
+	}
+
+	testCases := []struct {
+		// a description of the test
+		testDesc string
+		// whether or not the test only applies to configs with dedicated repo hosts
+		dedicatedOnly bool
+		// whether or not to mock a current job in the env before reonciling (this job is not
+		// actully created, but rather just passed into the reconcile function under test)
+		createCurrentJob bool
+		// conditions to apply to the job if created (these are always set to "true")
+		jobConditions []batchv1.JobConditionType
+		// conditions to apply to the mock postgrescluster
+		clusterConditions map[string]metav1.ConditionStatus
+		// the status to apply to the mock postgrescluster
+		status *v1beta1.PostgresClusterStatus
+		// the ID used to populate the "backup" annotation for the test (can be empty)
+		backupId string
+		// the manual backup field to define in the postgrescluster spec for the test
+		manual *v1beta1.PGBackRestManualBackup
+		// whether or not the test should expect a Job to be reconciled
+		expectReconcile bool
+		// whether or not the test should expect a current job in the env to be deleted
+		expectCurrentJobDeletion bool
+		// the reason associated with the expected event for the test (can be empty if
+		// no event is expected)
+		expectedEventReason string
+	}{{
+		testDesc:         "cluster not bootstrapped should not reconcile",
+		createCurrentJob: false,
+		clusterConditions: map[string]metav1.ConditionStatus{
+			ConditionRepoHostReady: metav1.ConditionTrue,
+			ConditionReplicaCreate: metav1.ConditionTrue,
+		},
+		status: &v1beta1.PostgresClusterStatus{
+			PGBackRest: &v1beta1.PGBackRestStatus{
+				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
+		},
+		backupId:                 backupId,
+		manual:                   &v1beta1.PGBackRestManualBackup{RepoName: "repo1"},
+		expectCurrentJobDeletion: false,
+		expectReconcile:          false,
+	}, {
+		testDesc:          "no conditions should not reconcile",
+		createCurrentJob:  false,
+		clusterConditions: map[string]metav1.ConditionStatus{},
+		status: &v1beta1.PostgresClusterStatus{
+			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+			PGBackRest: &v1beta1.PGBackRestStatus{
+				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
+		},
+		backupId:                 backupId,
+		manual:                   &v1beta1.PGBackRestManualBackup{RepoName: "repo1"},
+		expectCurrentJobDeletion: false,
+		expectReconcile:          false,
+	}, {
+		testDesc:         "no repo host ready condition should not reconcile",
+		dedicatedOnly:    true,
+		createCurrentJob: false,
+		clusterConditions: map[string]metav1.ConditionStatus{
+			ConditionReplicaCreate: metav1.ConditionTrue,
+		},
+		status: &v1beta1.PostgresClusterStatus{
+			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+			PGBackRest: &v1beta1.PGBackRestStatus{
+				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
+		},
+		backupId:                 backupId,
+		manual:                   &v1beta1.PGBackRestManualBackup{RepoName: "repo1"},
+		expectCurrentJobDeletion: false,
+		expectReconcile:          false,
+	}, {
+		testDesc:         "no replica create condition should not reconcile",
+		createCurrentJob: false,
+		clusterConditions: map[string]metav1.ConditionStatus{
+			ConditionRepoHostReady: metav1.ConditionTrue,
+		},
+		status: &v1beta1.PostgresClusterStatus{
+			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+			PGBackRest: &v1beta1.PGBackRestStatus{
+				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
+		},
+		backupId:                 backupId,
+		manual:                   &v1beta1.PGBackRestManualBackup{RepoName: "repo1"},
+		expectCurrentJobDeletion: false,
+		expectReconcile:          false,
+	}, {
+		testDesc:         "false repo host ready condition should not reconcile",
+		dedicatedOnly:    true,
+		createCurrentJob: false,
+		clusterConditions: map[string]metav1.ConditionStatus{
+			ConditionRepoHostReady: metav1.ConditionFalse,
+			ConditionReplicaCreate: metav1.ConditionTrue,
+		},
+		status: &v1beta1.PostgresClusterStatus{
+			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+			PGBackRest: &v1beta1.PGBackRestStatus{
+				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
+		},
+		backupId:                 backupId,
+		manual:                   &v1beta1.PGBackRestManualBackup{RepoName: "repo1"},
+		expectCurrentJobDeletion: false,
+		expectReconcile:          false,
+	}, {
+		testDesc:         "false replica create condition should not reconcile",
+		createCurrentJob: false,
+		clusterConditions: map[string]metav1.ConditionStatus{
+			ConditionRepoHostReady: metav1.ConditionTrue,
+			ConditionReplicaCreate: metav1.ConditionFalse,
+		},
+		status: &v1beta1.PostgresClusterStatus{
+			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+			PGBackRest: &v1beta1.PGBackRestStatus{
+				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
+		},
+		backupId:                 backupId,
+		manual:                   &v1beta1.PGBackRestManualBackup{RepoName: "repo1"},
+		expectCurrentJobDeletion: false,
+		expectReconcile:          false,
+	}, {
+		testDesc:         "no manual backup defined should not reconcile",
+		createCurrentJob: false,
+		clusterConditions: map[string]metav1.ConditionStatus{
+			ConditionRepoHostReady: metav1.ConditionTrue,
+			ConditionReplicaCreate: metav1.ConditionTrue,
+		},
+		status: &v1beta1.PostgresClusterStatus{
+			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+			PGBackRest: &v1beta1.PGBackRestStatus{
+				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
+		},
+		backupId:                 backupId,
+		manual:                   nil,
+		expectCurrentJobDeletion: false,
+		expectReconcile:          false,
+	}, {
+		testDesc:         "manual backup already complete should not reconcile",
+		createCurrentJob: false,
+		clusterConditions: map[string]metav1.ConditionStatus{
+			ConditionRepoHostReady: metav1.ConditionTrue,
+			ConditionReplicaCreate: metav1.ConditionTrue,
+		},
+		status: &v1beta1.PostgresClusterStatus{
+			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+			PGBackRest: &v1beta1.PGBackRestStatus{
+				ManualBackup: &v1beta1.PGBackRestManualBackupStatus{
+					ID: backupId, Finished: true},
+				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
+		},
+		backupId:                 backupId,
+		manual:                   nil,
+		expectCurrentJobDeletion: false,
+		expectReconcile:          false,
+	}, {
+		testDesc:         "empty backup annotation should not reconcile",
+		createCurrentJob: false,
+		clusterConditions: map[string]metav1.ConditionStatus{
+			ConditionRepoHostReady: metav1.ConditionTrue,
+			ConditionReplicaCreate: metav1.ConditionTrue,
+		},
+		status: &v1beta1.PostgresClusterStatus{
+			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+			PGBackRest: &v1beta1.PGBackRestStatus{
+				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
+		},
+		backupId:                 "",
+		manual:                   &v1beta1.PGBackRestManualBackup{RepoName: "repo1"},
+		expectCurrentJobDeletion: false,
+		expectReconcile:          false,
+	}, {
+		testDesc:         "missing repo status should not reconcile",
+		createCurrentJob: false,
+		clusterConditions: map[string]metav1.ConditionStatus{
+			ConditionRepoHostReady: metav1.ConditionTrue,
+			ConditionReplicaCreate: metav1.ConditionTrue,
+		},
+		status: &v1beta1.PostgresClusterStatus{
+			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+			PGBackRest: &v1beta1.PGBackRestStatus{
+				Repos: []v1beta1.RepoStatus{}},
+		},
+		backupId:                 backupId,
+		manual:                   &v1beta1.PGBackRestManualBackup{RepoName: "repo1"},
+		expectCurrentJobDeletion: false,
+		expectReconcile:          false,
+		expectedEventReason:      "InvalidBackupRepo",
+	}, {
+		testDesc:         "reconcile job when no current job exists",
+		createCurrentJob: false,
+		clusterConditions: map[string]metav1.ConditionStatus{
+			ConditionRepoHostReady: metav1.ConditionTrue,
+			ConditionReplicaCreate: metav1.ConditionTrue,
+		},
+		status: &v1beta1.PostgresClusterStatus{
+			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+			PGBackRest: &v1beta1.PGBackRestStatus{
+				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
+		},
+		backupId:                 backupId,
+		manual:                   &v1beta1.PGBackRestManualBackup{RepoName: "repo1"},
+		expectCurrentJobDeletion: false,
+		expectReconcile:          true,
+	}, {
+		testDesc:         "reconcile job when current job exists for id and is in progress",
+		createCurrentJob: true,
+		clusterConditions: map[string]metav1.ConditionStatus{
+			ConditionRepoHostReady: metav1.ConditionTrue,
+			ConditionReplicaCreate: metav1.ConditionTrue,
+		},
+		status: &v1beta1.PostgresClusterStatus{
+			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+			PGBackRest: &v1beta1.PGBackRestStatus{
+				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
+		},
+		backupId:                 defaultBackupId,
+		manual:                   &v1beta1.PGBackRestManualBackup{RepoName: "repo1"},
+		expectCurrentJobDeletion: false,
+		expectReconcile:          true,
+	}, {
+		testDesc:         "reconcile new job when in-progess job exists for another id",
+		createCurrentJob: true,
+		clusterConditions: map[string]metav1.ConditionStatus{
+			ConditionRepoHostReady: metav1.ConditionTrue,
+			ConditionReplicaCreate: metav1.ConditionTrue,
+		},
+		status: &v1beta1.PostgresClusterStatus{
+			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+			PGBackRest: &v1beta1.PGBackRestStatus{
+				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
+		},
+		backupId:                 backupId,
+		manual:                   &v1beta1.PGBackRestManualBackup{RepoName: "repo1"},
+		expectCurrentJobDeletion: false,
+		expectReconcile:          true,
+	}, {
+		testDesc:         "delete current job since job is complete and new backup id",
+		createCurrentJob: true,
+		jobConditions:    []batchv1.JobConditionType{batchv1.JobComplete},
+		clusterConditions: map[string]metav1.ConditionStatus{
+			ConditionRepoHostReady: metav1.ConditionTrue,
+			ConditionReplicaCreate: metav1.ConditionTrue,
+		},
+		status: &v1beta1.PostgresClusterStatus{
+			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+			PGBackRest: &v1beta1.PGBackRestStatus{
+				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
+		},
+		backupId:                 backupId,
+		manual:                   &v1beta1.PGBackRestManualBackup{RepoName: "repo1"},
+		expectCurrentJobDeletion: true,
+		expectReconcile:          false,
+	}, {
+		testDesc:         "delete current job since job is failed and new backup id",
+		createCurrentJob: true,
+		jobConditions:    []batchv1.JobConditionType{batchv1.JobFailed},
+		clusterConditions: map[string]metav1.ConditionStatus{
+			ConditionRepoHostReady: metav1.ConditionTrue,
+			ConditionReplicaCreate: metav1.ConditionTrue,
+		},
+		status: &v1beta1.PostgresClusterStatus{
+			Patroni: &v1beta1.PatroniStatus{SystemIdentifier: "12345abcde"},
+			PGBackRest: &v1beta1.PGBackRestStatus{
+				Repos: []v1beta1.RepoStatus{{Name: "repo1", StanzaCreated: true}}},
+		},
+		backupId:                 backupId,
+		manual:                   &v1beta1.PGBackRestManualBackup{RepoName: "repo1"},
+		expectCurrentJobDeletion: true,
+		expectReconcile:          false,
+	}}
+
+	for _, dedicated := range []bool{true, false} {
+		for i, tc := range testCases {
+			var clusterName string
+			if !dedicated {
+				tc.testDesc = "no repo " + tc.testDesc
+				clusterName = "manual-backup-no-repo-" + strconv.Itoa(i)
+			} else {
+				clusterName = "manual-backup-" + strconv.Itoa(i)
+			}
+			t.Run(tc.testDesc, func(t *testing.T) {
+
+				if tc.dedicatedOnly && !dedicated {
+					t.Skip()
+				}
+
+				ctx := context.Background()
+
+				postgresCluster := fakePostgresCluster(clusterName, ns.GetName(), "", dedicated)
+				postgresCluster.Spec.Archive.PGBackRest.Manual = tc.manual
+				postgresCluster.Status = *tc.status
+				postgresCluster.Annotations = map[string]string{naming.PGBackRestBackup: tc.backupId}
+				for condition, status := range tc.clusterConditions {
+					meta.SetStatusCondition(&postgresCluster.Status.Conditions, metav1.Condition{
+						Type: condition, Reason: "testing", Status: status})
+				}
+				assert.NilError(t, tClient.Create(ctx, postgresCluster))
+				assert.NilError(t, tClient.Status().Update(ctx, postgresCluster))
+
+				currentJobs := []*batchv1.Job{}
+				if tc.createCurrentJob {
+					job := fakeJob(postgresCluster.GetName(), tc.manual.RepoName)
+					job.Status.Conditions = []batchv1.JobCondition{}
+					for _, c := range tc.jobConditions {
+						job.Status.Conditions = append(job.Status.Conditions,
+							batchv1.JobCondition{Type: c, Status: corev1.ConditionTrue})
+					}
+					currentJobs = append(currentJobs, job)
+				}
+
+				err := r.reconcileManualBackup(ctx, postgresCluster, currentJobs, sa, instances)
+
+				if tc.expectReconcile {
+
+					// verify expected behavior when a reconcile is expected
+
+					assert.NilError(t, err)
+
+					jobs := &batchv1.JobList{}
+					err := tClient.List(ctx, jobs, &client.ListOptions{
+						LabelSelector: naming.PGBackRestBackupJobSelector(clusterName,
+							tc.manual.RepoName, naming.BackupManual),
+					})
+					assert.NilError(t, err)
+					assert.Assert(t, len(jobs.Items) == 1)
+
+					var foundOwnershipRef bool
+					for _, r := range jobs.Items[0].GetOwnerReferences() {
+						if r.Kind == "PostgresCluster" && r.Name == clusterName &&
+							r.UID == postgresCluster.GetUID() {
+							foundOwnershipRef = true
+							break
+						}
+					}
+					assert.Assert(t, foundOwnershipRef)
+
+					// verify status is populated with the proper ID
+					assert.Assert(t, postgresCluster.Status.PGBackRest.ManualBackup != nil)
+					assert.Assert(t, postgresCluster.Status.PGBackRest.ManualBackup.ID != "")
+
+					return
+				} else {
+
+					// verify expected results when a reconcile is not expected
+
+					// if a deletion is expected, then an error is expected.  otherwise an error is
+					// not expected.
+					if tc.expectCurrentJobDeletion {
+						assert.Assert(t, kerr.IsNotFound(err))
+						assert.ErrorContains(t, err,
+							fmt.Sprintf(`"%s" not found`, currentJobs[0].GetName()))
+					} else {
+						assert.NilError(t, err)
+					}
+
+					jobs := &batchv1.JobList{}
+					// just use a pgbackrest selector to check for the existence of any job since
+					// we might not have a repo name for tests within a manual backup defined
+					err := tClient.List(ctx, jobs, &client.ListOptions{
+						LabelSelector: naming.PGBackRestSelector(clusterName),
+					})
+					assert.NilError(t, err)
+					assert.Assert(t, len(jobs.Items) == 0)
+
+					// if an event is expected, the check for it
+					if tc.expectedEventReason != "" {
+						events := &corev1.EventList{}
+						err = wait.Poll(time.Second/2, time.Second*2, func() (bool, error) {
+							if err := tClient.List(ctx, events, &client.MatchingFields{
+								"involvedObject.kind":      "PostgresCluster",
+								"involvedObject.name":      clusterName,
+								"involvedObject.namespace": ns.GetName(),
+								"involvedObject.uid":       string(postgresCluster.GetUID()),
+								"reason":                   tc.expectedEventReason,
+							}); err != nil {
+								return false, err
+							}
+							if len(events.Items) != 1 {
+								return false, nil
+							}
+							return true, nil
+						})
+						assert.NilError(t, err)
+					}
+					return
+				}
+			})
+		}
 	}
 }
 

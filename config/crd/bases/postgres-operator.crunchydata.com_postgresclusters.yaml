@@ -288,6 +288,24 @@ spec:
                         description: The image name to use for pgBackRest containers.  Utilized
                           to run pgBackRest repository hosts and backups.
                         type: string
+                      manual:
+                        description: Defines details for manual pgBackRest backup
+                          Jobs
+                        properties:
+                          options:
+                            description: Command line options to include when running
+                              the pgBackRest backup command. https://pgbackrest.org/command.html#command-backup
+                            items:
+                              type: string
+                            type: array
+                          repoName:
+                            description: The name of the pgBackRest repo to run the
+                              backup command against.
+                            pattern: ^repo[1-4]
+                            type: string
+                        required:
+                        - repoName
+                        type: object
                       metadata:
                         description: Metadata contains metadata for PostgresCluster
                           resources
@@ -2278,6 +2296,51 @@ spec:
               pgbackrest:
                 description: Status information for pgBackRest
                 properties:
+                  manualBackup:
+                    description: Status information for manual backups
+                    properties:
+                      active:
+                        description: The number of actively running manual backup
+                          Pods.
+                        format: int32
+                        type: integer
+                      completionTime:
+                        description: Represents the time the manual backup Job was
+                          determined by the Job controller to be completed.  This
+                          field is only set if the backup completed successfully.
+                          Additionally, it is represented in RFC3339 form and is in
+                          UTC.
+                        format: date-time
+                        type: string
+                      failed:
+                        description: The number of Pods for the manual backup Job
+                          that reached the "Failed" phase.
+                        format: int32
+                        type: integer
+                      finished:
+                        description: Specifies whether or not the Job is finished
+                          executing (does not indicate success or failure).
+                        type: boolean
+                      id:
+                        description: A unique identifier for the manual backup as
+                          provided using the "pgbackrest-backup" annotation when initiating
+                          a backup.
+                        type: string
+                      startTime:
+                        description: Represents the time the manual backup Job was
+                          acknowledged by the Job controller. It is represented in
+                          RFC3339 form and is in UTC.
+                        format: date-time
+                        type: string
+                      succeeded:
+                        description: The number of Pods for the manual backup Job
+                          that reached the "Succeeded" phase.
+                        format: int32
+                        type: integer
+                    required:
+                    - finished
+                    - id
+                    type: object
                   repoHost:
                     description: Status information for the pgBackRest dedicated repository
                       host
@@ -2334,6 +2397,9 @@ spec:
                       - name
                       type: object
                     type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
                 type: object
               proxy:
                 description: Current state of the PostgreSQL proxy.

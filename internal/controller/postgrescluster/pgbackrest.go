@@ -50,6 +50,10 @@ import (
 )
 
 const (
+	// ConditionManualBackupSuccessful is the type used in a condition to indicate whether or not
+	// the manual backup for the current backup ID (as provided via annotation) was successful
+	ConditionManualBackupSuccessful = "PGBackRestManualBackupSuccessful"
+
 	// ConditionReplicaCreate is the type used in a condition to indicate whether or not
 	// pgBackRest can be utilized for replica creation
 	ConditionReplicaCreate = "PGBackRestReplicaCreate"
@@ -97,6 +101,7 @@ var regexRepoIndex = regexp.MustCompile(`\d+`)
 // repository hosts
 type RepoResources struct {
 	cronjobs                []*batchv1beta1.CronJob
+	manualBackupJobs        []*batchv1.Job
 	replicaCreateBackupJobs []*batchv1.Job
 	hosts                   []*appsv1.StatefulSet
 	pvcs                    []*v1.PersistentVolumeClaim
@@ -357,12 +362,15 @@ func unstructuredToRepoResources(postgresCluster *v1beta1.PostgresCluster, kind 
 			FromUnstructured(uList.UnstructuredContent(), &jobList); err != nil {
 			return errors.WithStack(err)
 		}
-		// we only care about replica create backup jobs
+		// we care about replica create backup jobs and manual backup jobs
 		for i, job := range jobList.Items {
-			val := job.GetLabels()[naming.LabelPGBackRestBackup]
-			if val == string(naming.BackupReplicaCreate) {
+			switch job.GetLabels()[naming.LabelPGBackRestBackup] {
+			case string(naming.BackupReplicaCreate):
 				repoResources.replicaCreateBackupJobs =
 					append(repoResources.replicaCreateBackupJobs, &jobList.Items[i])
+			case string(naming.BackupManual):
+				repoResources.manualBackupJobs =
+					append(repoResources.manualBackupJobs, &jobList.Items[i])
 			}
 		}
 	case "PersistentVolumeClaimList":
@@ -525,17 +533,18 @@ func (r *Reconciler) generateRepoVolumeIntent(postgresCluster *v1beta1.PostgresC
 // generateBackupJobSpecIntent generates a JobSpec for a pgBackRest backup job
 func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster, selector,
 	containerName, repoName, serviceAccountName, configName string,
-	labels map[string]string) (*batchv1.JobSpec, error) {
+	labels, annotations map[string]string, opts ...string) (*batchv1.JobSpec, error) {
 
 	repoIndex := regexRepoIndex.FindString(repoName)
 	cmdOpts := []string{
 		"--stanza=" + pgbackrest.DefaultStanzaName,
 		"--repo=" + repoIndex,
 	}
+	cmdOpts = append(cmdOpts, opts...)
 
 	jobSpec := &batchv1.JobSpec{
 		Template: v1.PodTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{Labels: labels},
+			ObjectMeta: metav1.ObjectMeta{Labels: labels, Annotations: annotations},
 			Spec: v1.PodSpec{
 				Containers: []v1.Container{{
 					Command: []string{"/opt/crunchy/bin/pgbackrest"},
@@ -550,6 +559,10 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster, selec
 					Image: postgresCluster.Spec.Archive.PGBackRest.Image,
 					Name:  naming.PGBackRestRepoContainerName,
 				}},
+				// Set RestartPolicy to "Never" since we want a new Pod to be created by the Job
+				// controller when there is a failure (instead of the container simply restarting).
+				// This will ensure the Job always has the latest configs mounted following a
+				// failure as needed to successfully verify config hashes and run the Job.
 				RestartPolicy:      v1.RestartPolicyNever,
 				ServiceAccountName: serviceAccountName,
 			},
@@ -570,7 +583,8 @@ func generateBackupJobSpecIntent(postgresCluster *v1beta1.PostgresCluster, selec
 // also generating the proper Result as needed to ensure proper event requeuing according to
 // the results of any attempts to properly reconcile these resources.
 func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
-	postgresCluster *v1beta1.PostgresCluster, instanceNames []string) (reconcile.Result, error) {
+	postgresCluster *v1beta1.PostgresCluster,
+	instances *observedInstances) (reconcile.Result, error) {
 
 	// add some additional context about what component is being reconciled
 	log := logging.FromContext(ctx).WithValues("reconciler", "pgBackRest")
@@ -606,6 +620,7 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 		}
 		repoHostName = repoHost.GetName()
 	} else if len(postgresCluster.Status.Conditions) > 0 {
+		// TODO: remove guard above with move to controller-runtime 0.9.0 https://issue.k8s.io/99714
 		// remove the dedicated repo host status if a dedicated host is not enabled
 		meta.RemoveStatusCondition(&postgresCluster.Status.Conditions, ConditionRepoHostReady)
 	}
@@ -626,7 +641,13 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
 	}
 
-	// reconcile all pgbackrest configuration and secrets
+	// gather instance names and reconcile all pgbackrest configuration and secrets
+	instanceNames := []string{}
+	for _, instance := range instances.forCluster {
+		instanceNames = append(instanceNames, instance.Name)
+	}
+	// sort to ensure consistent ordering of hosts when creating pgBackRest configs
+	sort.Strings(instanceNames)
 	if err := r.reconcilePGBackRestConfig(ctx, postgresCluster, repoHostName,
 		configHash, instanceNames, repoResources.sshSecret); err != nil {
 		log.Error(err, "unable to reconcile pgBackRest configuration")
@@ -681,7 +702,15 @@ func (r *Reconciler) reconcilePGBackRest(ctx context.Context,
 	// This is done once stanza creation is successful
 	if err := r.reconcileReplicaCreateBackup(ctx, postgresCluster,
 		repoResources.replicaCreateBackupJobs, sa, configHash, replicaCreateRepo); err != nil {
-		log.Error(err, "unable to create replica creation backup")
+		log.Error(err, "unable to reconcile replica creation backup")
+		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
+	}
+
+	// Reconcile a manual backup as defined in the spec, and triggered by the end-user via
+	// annotation
+	if err := r.reconcileManualBackup(ctx, postgresCluster, repoResources.manualBackupJobs,
+		sa, instances); err != nil {
+		log.Error(err, "unable to reconcile manual backup")
 		result = updateReconcileResult(result, reconcile.Result{Requeue: true})
 	}
 
@@ -871,7 +900,230 @@ func (r *Reconciler) reconcileDedicatedRepoHost(ctx context.Context,
 	return repoHost, nil
 }
 
-// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=create;patch;update;delete
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=create;patch;delete
+
+// reconcileManualBackup is responsible for reconciling pgBackRest backups that are initiated
+// manually by the end-user
+func (r *Reconciler) reconcileManualBackup(ctx context.Context,
+	postgresCluster *v1beta1.PostgresCluster, manualBackupJobs []*batchv1.Job,
+	serviceAccount *v1.ServiceAccount, instances *observedInstances) error {
+
+	manualAnnotation := postgresCluster.GetAnnotations()[naming.PGBackRestBackup]
+	manualStatus := postgresCluster.Status.PGBackRest.ManualBackup
+
+	// first update status and cleanup according to any existing manual backup Jobs observed in
+	// the environment
+	var currentBackupJob *batchv1.Job
+	if len(manualBackupJobs) > 0 {
+
+		currentBackupJob = manualBackupJobs[0]
+		completed := jobCompleted(currentBackupJob)
+		failed := jobFailed(currentBackupJob)
+		backupID := currentBackupJob.GetAnnotations()[naming.PGBackRestBackup]
+
+		if manualStatus != nil && manualStatus.ID == backupID {
+			if completed {
+				meta.SetStatusCondition(&postgresCluster.Status.Conditions, metav1.Condition{
+					ObservedGeneration: postgresCluster.GetGeneration(),
+					Type:               ConditionManualBackupSuccessful,
+					Status:             metav1.ConditionTrue,
+					Reason:             "ManualBackupComplete",
+					Message:            "Manual backup completed successfully",
+				})
+			} else if failed {
+				meta.SetStatusCondition(&postgresCluster.Status.Conditions, metav1.Condition{
+					ObservedGeneration: postgresCluster.GetGeneration(),
+					Type:               ConditionManualBackupSuccessful,
+					Status:             metav1.ConditionFalse,
+					Reason:             "ManualBackupFailed",
+					Message:            "Manual backup did not complete successfully",
+				})
+			}
+
+			// update the manual backup status based on the current status of the manual backup Job
+			manualStatus.StartTime = currentBackupJob.Status.StartTime
+			manualStatus.CompletionTime = currentBackupJob.Status.CompletionTime
+			manualStatus.Succeeded = currentBackupJob.Status.Succeeded
+			manualStatus.Failed = currentBackupJob.Status.Failed
+			manualStatus.Active = currentBackupJob.Status.Active
+			if completed || failed {
+				manualStatus.Finished = true
+			}
+		}
+
+		// If the Job is finished with a "completed" or "failure" condition, and the Job is not
+		// annotated per the current value of the "pgbackrest-backup" annotation, then delete it so
+		// that a new Job can be generated with the proper (i.e. new) backup ID.  This means any
+		// Jobs that are in progress will complete before being deleted to trigger a new backup
+		// per a new value for the annotation (unless the user manually deletes the Job).
+		if completed || failed {
+			if manualAnnotation != "" && backupID != manualAnnotation {
+				return errors.WithStack(r.Client.Delete(ctx, currentBackupJob,
+					client.PropagationPolicy(metav1.DeletePropagationBackground)))
+			}
+		}
+	}
+
+	// nothing to reconcile if the cluster hasn't bootstrapped, or if a manual backup has not been
+	// requested
+	if !patroni.ClusterBootstrapped(postgresCluster) || manualAnnotation == "" ||
+		postgresCluster.Spec.Archive.PGBackRest.Manual == nil {
+		return nil
+	}
+
+	// if there is an existing status, see if a new backup id has been provided, and if so reset
+	// the status and proceed with reconciling a new backup
+	if manualStatus == nil || manualStatus.ID != manualAnnotation {
+		manualStatus = &v1beta1.PGBackRestManualBackupStatus{
+			ID: manualAnnotation,
+		}
+		// TODO: remove guard with move to controller-runtime 0.9.0 https://issue.k8s.io/99714
+		if len(postgresCluster.Status.Conditions) > 0 {
+			// Remove an existing manual backup condition if present.  It will be
+			// created again as needed based on the newly reconciled backup Job.
+			meta.RemoveStatusCondition(&postgresCluster.Status.Conditions,
+				ConditionManualBackupSuccessful)
+		}
+		postgresCluster.Status.PGBackRest.ManualBackup = manualStatus
+	}
+
+	// if the status shows the Job is no longer in progress, then simply exit (which means a Job
+	// that has reached a "completed" or "failed" status is no longer reconciled)
+	if manualStatus != nil && manualStatus.Finished {
+		return nil
+	}
+
+	// determine if the dedicated repository host is ready (if enabled) using the repo host ready
+	// condition, and return if not
+	if pgbackrest.DedicatedRepoHostEnabled(postgresCluster) {
+		condition := meta.FindStatusCondition(postgresCluster.Status.Conditions, ConditionRepoHostReady)
+		if condition == nil || condition.Status != metav1.ConditionTrue {
+			return nil
+		}
+	}
+
+	// Determine if the replica create backup is complete and return if not. This allows for proper
+	// orchestration of backup Jobs since only one backup can be run at a time.
+	condition := meta.FindStatusCondition(postgresCluster.Status.Conditions,
+		ConditionReplicaCreate)
+	if condition == nil || condition.Status != metav1.ConditionTrue {
+		return nil
+	}
+
+	// Verify that status exists for the repo configured for the manual backup, and that a stanza
+	// has been created, before proceeding.  If either conditions are not true, then simply return
+	// without requeuing and record and event (subsequent events, e.g. successful stanza creation,
+	// writing of the proper repo status, adding a missing reop, etc. will trigger the reconciles
+	// needed to try again).
+	var statusFound, stanzaCreated bool
+	repoName := postgresCluster.Spec.Archive.PGBackRest.Manual.RepoName
+	for _, repo := range postgresCluster.Status.PGBackRest.Repos {
+		if repo.Name == repoName {
+			statusFound = true
+			stanzaCreated = repo.StanzaCreated
+		}
+	}
+	if !statusFound {
+		r.Recorder.Eventf(postgresCluster, v1.EventTypeWarning, "InvalidBackupRepo",
+			"Unable to find status for %q as configured for a manual backup.  Please ensure "+
+				"this repo is defined in the spec.", repoName)
+		return nil
+	}
+	if !stanzaCreated {
+		r.Recorder.Eventf(postgresCluster, v1.EventTypeWarning, "StanzaNotCreated",
+			"Stanza not created for %q as specified for a manual backup", repoName)
+		return nil
+	}
+
+	// Users should specify the repo for the command using the "manual.repoName" field in the spec,
+	// and not using the "--repo" option in the "manual.options" field.  Therefore, record a
+	// warning event and return if a "--repo" option is found.  Reconciliation will then be
+	// reattempted when "--repo" is removed from "manual.options" and the spec is updated.
+	backupOpts := postgresCluster.Spec.Archive.PGBackRest.Manual.Options
+	for _, opt := range backupOpts {
+		if strings.Contains(opt, "--repo") {
+			r.Recorder.Eventf(postgresCluster, v1.EventTypeWarning, "InvalidManualBackup",
+				"Option '--repo' is not allowed: please use the 'repoName' field instead.",
+				repoName)
+			return nil
+		}
+	}
+
+	// get pod name and container name as needed to exec into the proper pod and create
+	// the pgBackRest backup
+	selector, containerName, err := getPGBackRestExecSelector(postgresCluster)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	// Leverage the observedInstances to determine the current primary.  This is needed to
+	// mount the proper configuration file to the backup when running without a dedicated repo
+	// host.  And even when running with a repo host, this ensure a backup is only attempted
+	// when the primary can be properly identified.
+	var primaryInstance string
+	for _, instance := range instances.forCluster {
+		if isPrimary, _ := instance.IsPrimary(); isPrimary {
+			primaryInstance = instance.Name
+			break
+		}
+	}
+	if primaryInstance == "" {
+		// TODO (andrewlecuyer): An error is returned here to ensure we requeue and try again in
+		// case leader election does not result in the event needed to trigger an another
+		// reconcile.  Once we ensure proper reconciliation following leader election, nil can be
+		// returned instead.
+		return errors.WithStack(
+			errors.New("unable to find primary when reconciling manual pgBackRest backup Job"))
+	}
+	// set the name of the pgbackrest config file that will be mounted to the backup Job
+	configName := primaryInstance + ".conf"
+	if pgbackrest.DedicatedRepoHostEnabled(postgresCluster) {
+		configName = pgbackrest.CMRepoKey
+	}
+
+	// create the backup Job
+	backupJob := &batchv1.Job{}
+	backupJob.ObjectMeta = naming.PGBackRestBackupJob(postgresCluster)
+	if currentBackupJob != nil {
+		backupJob.ObjectMeta.Name = currentBackupJob.ObjectMeta.Name
+	}
+
+	var labels, annotations map[string]string
+	labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
+		naming.PGBackRestBackupJobLabels(postgresCluster.GetName(), repoName,
+			naming.BackupManual))
+	annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil(),
+		map[string]string{
+			naming.PGBackRestBackup: manualAnnotation,
+		})
+	backupJob.ObjectMeta.Labels = labels
+	backupJob.ObjectMeta.Annotations = annotations
+
+	spec, err := generateBackupJobSpecIntent(postgresCluster, selector.String(), containerName,
+		repoName, serviceAccount.GetName(), configName, labels, annotations, backupOpts...)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	backupJob.Spec = *spec
+
+	// set gvk and ownership refs
+	backupJob.SetGroupVersionKind(batchv1.SchemeGroupVersion.WithKind("Job"))
+	if err := controllerutil.SetControllerReference(postgresCluster, backupJob,
+		r.Client.Scheme()); err != nil {
+		return errors.WithStack(err)
+	}
+
+	// server-side apply the backup Job intent
+	if err := r.apply(ctx, backupJob); err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
+
+// +kubebuilder:rbac:groups=batch,resources=jobs,verbs=create;patch;delete
 
 // reconcileReplicaCreateBackup is responsible for reconciling a full pgBackRest backup for the
 // cluster as required to create replicas
@@ -1020,38 +1272,29 @@ func (r *Reconciler) reconcileReplicaCreateBackup(ctx context.Context,
 		return nil
 	}
 
-	var labels map[string]string
 	// create the backup Job, and populate ObjectMeta based on whether or not a Job already exists
 	backupJob := &batchv1.Job{}
+	backupJob.ObjectMeta = naming.PGBackRestBackupJob(postgresCluster)
 	if job != nil {
-		backupJob.ObjectMeta.Name = job.ObjectMeta.GetName()
-		backupJob.ObjectMeta.Namespace = job.ObjectMeta.GetNamespace()
-		labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
-			postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
-			job.ObjectMeta.GetLabels())
-		backupJob.ObjectMeta.Annotations = naming.Merge(
-			postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
-			postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil(),
-			job.ObjectMeta.GetAnnotations())
-	} else {
-		backupJob.ObjectMeta = naming.PGBackRestBackupJob(postgresCluster)
-		labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
-			postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
-			naming.PGBackRestBackupJobLabels(postgresCluster.GetName(),
-				postgresCluster.Spec.Archive.PGBackRest.Repos[0].Name, naming.BackupReplicaCreate))
-		backupJob.ObjectMeta.Annotations = naming.Merge(
-			postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
-			postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil(),
-			map[string]string{
-				naming.PGBackRestCurrentConfig: configName,
-				naming.PGBackRestConfigHash:    configHash,
-			})
+		backupJob.ObjectMeta.Name = job.ObjectMeta.Name
 	}
 
-	// set the labels for the Job and generate and set the JobSpec intent
+	var labels, annotations map[string]string
+	labels = naming.Merge(postgresCluster.Spec.Metadata.GetLabelsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetLabelsOrNil(),
+		naming.PGBackRestBackupJobLabels(postgresCluster.GetName(),
+			postgresCluster.Spec.Archive.PGBackRest.Repos[0].Name, naming.BackupReplicaCreate))
+	annotations = naming.Merge(postgresCluster.Spec.Metadata.GetAnnotationsOrNil(),
+		postgresCluster.Spec.Archive.PGBackRest.Metadata.GetAnnotationsOrNil(),
+		map[string]string{
+			naming.PGBackRestCurrentConfig: configName,
+			naming.PGBackRestConfigHash:    configHash,
+		})
 	backupJob.ObjectMeta.Labels = labels
+	backupJob.ObjectMeta.Annotations = annotations
+
 	spec, err := generateBackupJobSpecIntent(postgresCluster, selector.String(), containerName,
-		replicaCreateRepoName, serviceAccount.GetName(), configName, labels)
+		replicaCreateRepoName, serviceAccount.GetName(), configName, labels, annotations)
 	if err != nil {
 		return errors.WithStack(err)
 	}

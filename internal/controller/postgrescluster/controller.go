@@ -234,16 +234,15 @@ func (r *Reconciler) Reconcile(
 		err = r.reconcilePatroniDynamicConfiguration(ctx, cluster, pgHBAs, pgParameters)
 	}
 
-	instancesNames := []string{}
 	if err == nil {
-		instancesNames, err = r.reconcileInstanceSets(
+		err = r.reconcileInstanceSets(
 			ctx, cluster, clusterConfigMap, clusterReplicationSecret,
 			rootCA, clusterPodService, instanceServiceAccount, instances,
 			patroniLeaderService, primaryCertificate)
 	}
 
 	if err == nil {
-		err = updateResult(r.reconcilePGBackRest(ctx, cluster, instancesNames))
+		err = updateResult(r.reconcilePGBackRest(ctx, cluster, instances))
 	}
 	if err == nil {
 		err = r.reconcilePGBouncer(ctx, cluster, primaryCertificate, rootCA)

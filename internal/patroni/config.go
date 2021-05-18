@@ -169,15 +169,22 @@ func clusterYAML(
 		},
 	}
 
-	// if a replica creation repo index is provided, then configure and enable a pgBackRest
-	// replica creation method for that specific repo
+	// If a replica creation repo index is provided, then configure and enable a pgBackRest
+	// replica creation method for that specific repo.
+	//
+	// Note that "no_master" is set to 1 in accordance with the example in the Patroni docs:
+	// https://patroni.readthedocs.io/en/latest/replica_bootstrap.html#building-replicas
+	// This setting allows for bootstrapping replicas even when there is no connection to the
+	// primary (e.g. for standby clusters that simply replay WAL from an archive).
 	if replicaCreateRepoIndex != "" {
 		pgConfig := root["postgresql"].(map[string]interface{})
 		pgConfig["create_replica_methods"] = []string{"pgbackrest", "basebackup"}
 		pgConfig["pgbackrest"] = map[string]interface{}{
 			"command": fmt.Sprintf("pgbackrest restore --stanza=%s --repo=%s --delta",
-				pgbackrest.DefaultStanzaName, replicaCreateRepoIndex),
+				quoteShellWord(pgbackrest.DefaultStanzaName),
+				quoteShellWord(replicaCreateRepoIndex)),
 			"keep_data": true,
+			"no_master": 1,
 			"no_params": true,
 		}
 	}

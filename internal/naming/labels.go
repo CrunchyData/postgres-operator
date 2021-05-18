@@ -84,6 +84,9 @@ const (
 type BackupJobType string
 
 const (
+	// BackupManual is the backup type utilized for manual backups
+	BackupManual BackupJobType = "manual"
+
 	// BackupReplicaCreate is the backup type for the backup taken to enable pgBackRest replica
 	// creation
 	BackupReplicaCreate BackupJobType = "replica-create"
@@ -107,8 +110,7 @@ func PGBackRestLabels(clusterName string) labels.Set {
 	}
 }
 
-// PGBackRestBackupJobLabels provides common labels for pgBackRest repository
-// resources.
+// PGBackRestBackupJobLabels provides labels for pgBackRest backup Jobs.
 func PGBackRestBackupJobLabels(clusterName, repoName string,
 	backupType BackupJobType) labels.Set {
 	repoLabels := PGBackRestLabels(clusterName)

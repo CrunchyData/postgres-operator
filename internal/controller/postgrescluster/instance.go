@@ -435,24 +435,19 @@ func (r *Reconciler) reconcileInstanceSets(
 	instances *observedInstances,
 	patroniLeaderService *v1.Service,
 	primaryCertificate *v1.SecretProjection,
-) ([]string, error) {
-	instanceNames := []string{}
+) error {
 
 	// Range over instance sets to scale up and ensure that each set has
 	// at least the number of replicas defined in the spec. The set can
 	// have more replicas than defined
 	for i := range cluster.Spec.InstanceSets {
-		instanceSet, err := r.scaleUpInstances(
+		_, err := r.scaleUpInstances(
 			ctx, cluster, &cluster.Spec.InstanceSets[i],
 			clusterConfigMap, clusterReplicationSecret,
 			rootCA, clusterPodService, instanceServiceAccount,
 			patroniLeaderService, primaryCertificate)
 		if err != nil {
-			return nil, err
-		}
-
-		for _, instance := range instanceSet.Items {
-			instanceNames = append(instanceNames, instance.GetName())
+			return err
 		}
 	}
 
@@ -461,7 +456,7 @@ func (r *Reconciler) reconcileInstanceSets(
 	// which instance or instance set contains the primary pod.
 	err := r.scaleDownInstances(ctx, cluster)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Rollout changes to instances by calling rolloutInstance.
@@ -470,7 +465,7 @@ func (r *Reconciler) reconcileInstanceSets(
 			return r.rolloutInstance(ctx, cluster, instances, instance)
 		})
 
-	return instanceNames, err
+	return err
 }
 
 // +kubebuilder:rbac:groups="",resources=pods,verbs=delete

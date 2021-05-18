@@ -20,6 +20,42 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type PGBackRestManualBackupStatus struct {
+
+	// A unique identifier for the manual backup as provided using the "pgbackrest-backup"
+	// annotation when initiating a backup.
+	// +kubebuilder:validation:Required
+	ID string `json:"id"`
+
+	// Specifies whether or not the Job is finished executing (does not indicate success or
+	// failure).
+	// +kubebuilder:validation:Required
+	Finished bool `json:"finished"`
+
+	// Represents the time the manual backup Job was acknowledged by the Job controller.
+	// It is represented in RFC3339 form and is in UTC.
+	// +optional
+	StartTime *metav1.Time `json:"startTime,omitempty"`
+
+	// Represents the time the manual backup Job was determined by the Job controller
+	// to be completed.  This field is only set if the backup completed successfully.
+	// Additionally, it is represented in RFC3339 form and is in UTC.
+	// +optional
+	CompletionTime *metav1.Time `json:"completionTime,omitempty"`
+
+	// The number of actively running manual backup Pods.
+	// +optional
+	Active int32 `json:"active,omitempty"`
+
+	// The number of Pods for the manual backup Job that reached the "Succeeded" phase.
+	// +optional
+	Succeeded int32 `json:"succeeded,omitempty"`
+
+	// The number of Pods for the manual backup Job that reached the "Failed" phase.
+	// +optional
+	Failed int32 `json:"failed,omitempty"`
+}
+
 // PGBackRestArchive defines a pgBackRest archive configuration
 type PGBackRestArchive struct {
 	Metadata *Metadata `json:"metadata,omitempty"`
@@ -52,6 +88,22 @@ type PGBackRestArchive struct {
 	// Defines a pgBackRest repository host
 	// +optional
 	RepoHost *PGBackRestRepoHost `json:"repoHost,omitempty"`
+
+	// Defines details for manual pgBackRest backup Jobs
+	// +optional
+	Manual *PGBackRestManualBackup `json:"manual,omitempty"`
+}
+
+type PGBackRestManualBackup struct {
+	// The name of the pgBackRest repo to run the backup command against.
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Pattern=^repo[1-4]
+	RepoName string `json:"repoName"`
+
+	// Command line options to include when running the pgBackRest backup command.
+	// https://pgbackrest.org/command.html#command-backup
+	// +optional
+	Options []string `json:"options,omitempty"`
 }
 
 // PGBackRestRepoHost represents a pgBackRest dedicated repository host
@@ -103,12 +155,18 @@ type PGBackRestBackupSchedules struct {
 // PGBackRestStatus defines the status of pgBackRest within a PostgresCluster
 type PGBackRestStatus struct {
 
+	// Status information for manual backups
+	// +optional
+	ManualBackup *PGBackRestManualBackupStatus `json:"manualBackup,omitempty"`
+
 	// Status information for the pgBackRest dedicated repository host
 	// +optional
 	RepoHost *RepoHostStatus `json:"repoHost,omitempty"`
 
 	// Status information for pgBackRest repositories
 	// +optional
+	// +listType=map
+	// +listMapKey=name
 	Repos []RepoStatus `json:"repos,omitempty"`
 }
 
@@ -200,13 +258,21 @@ type RepoS3 struct {
 // RepoVolumeStatus the status of a pgBackRest repository
 type RepoStatus struct {
 
+	// The name of the pgBackRest repository
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+
 	// Whether or not the pgBackRest repository PersistentVolumeClaim is bound to a volume
 	// +optional
 	Bound bool `json:"bound,omitempty"`
 
-	// The name of the pgBackRest repository
-	// +kubebuilder:validation:Required
-	Name string `json:"name"`
+	// The name of the volume the containing the pgBackRest repository
+	// +optional
+	VolumeName string `json:"volume,omitempty"`
+
+	// Specifies whether or not a stanza has been successfully created for the repository
+	// +optional
+	StanzaCreated bool `json:"stanzaCreated"`
 
 	// ReplicaCreateBackupReady indicates whether a backup exists in the repository as needed
 	// to bootstrap replicas.
@@ -217,12 +283,4 @@ type RepoStatus struct {
 	// commands accordingly.
 	// +optional
 	RepoOptionsHash string `json:"repoOptionsHash,omitempty"`
-
-	// Specifies whether or not a stanza has been successfully created for the repository
-	// +optional
-	StanzaCreated bool `json:"stanzaCreated"`
-
-	// The name of the volume the containing the pgBackRest repository
-	// +optional
-	VolumeName string `json:"volume,omitempty"`
 }

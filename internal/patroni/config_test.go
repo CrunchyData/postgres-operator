@@ -106,8 +106,9 @@ watchdog:
   - pgbackrest
   - basebackup
   pgbackrest:
-    command: pgbackrest restore --stanza=db --repo=1 --delta
+    command: pgbackrest restore --stanza='db' --repo='1' --delta
     keep_data: true
+    no_master: 1
     no_params: true`))
 }
 
