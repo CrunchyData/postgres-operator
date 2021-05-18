@@ -135,6 +135,16 @@ func TestReconcilePGUserSecret(t *testing.T) {
 		}).String()
 
 		assert.Equal(t, returnedConnectionString, testConnectionString)
+
+		// ensure none of the pgBouncer information is set
+		_, ok = pgUserSecret.Data["pgbouncer-host"]
+		assert.Assert(t, !ok)
+
+		_, ok = pgUserSecret.Data["pgbouncer-port"]
+		assert.Assert(t, !ok)
+
+		_, ok = pgUserSecret.Data["pgbouncer-uri"]
+		assert.Assert(t, !ok)
 	})
 
 	t.Run("validate postgres user password is not changed after another reconcile", func(t *testing.T) {
@@ -149,6 +159,35 @@ func TestReconcilePGUserSecret(t *testing.T) {
 
 	})
 
+	t.Run("validate addition of pgbouncer", func(t *testing.T) {
+		postgresCluster.Spec.Proxy = new(v1beta1.PostgresProxySpec)
+		postgresCluster.Spec.Proxy.PGBouncer = new(v1beta1.PGBouncerPodSpec)
+		postgresCluster.Spec.Proxy.PGBouncer.Port = new(int32)
+		*postgresCluster.Spec.Proxy.PGBouncer.Port = 6432
+
+		pgUserSecret2, err := r.reconcilePGUserSecret(ctx, postgresCluster)
+		assert.NilError(t, err)
+
+		host, ok := pgUserSecret2.Data["pgbouncer-host"]
+		assert.Assert(t, ok)
+		assert.Equal(t, string(host), fmt.Sprintf("%s-pgbouncer.%s.svc",
+			postgresCluster.Name, postgresCluster.Namespace))
+
+		port, ok := pgUserSecret2.Data["pgbouncer-port"]
+		assert.Assert(t, ok)
+		assert.Equal(t, string(port), fmt.Sprintf("%d", *postgresCluster.Spec.Proxy.PGBouncer.Port))
+
+		pgBouncerConnectionString := (&url.URL{
+			Scheme: "postgresql",
+			Host: fmt.Sprintf("%s-pgbouncer.%s.svc:%d",
+				postgresCluster.Name, postgresCluster.Namespace, *postgresCluster.Spec.Proxy.PGBouncer.Port),
+			User: url.UserPassword(string(pgUserSecret2.Data["user"]), string(pgUserSecret2.Data["password"])),
+			Path: string(pgUserSecret2.Data["dbname"]),
+		}).String()
+		uri, ok := pgUserSecret2.Data["pgbouncer-uri"]
+		assert.Assert(t, ok)
+		assert.Equal(t, string(uri), pgBouncerConnectionString)
+	})
 }
 
 var gvks = []schema.GroupVersionKind{{

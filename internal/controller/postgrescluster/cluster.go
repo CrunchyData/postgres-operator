@@ -271,6 +271,23 @@ func (r *Reconciler) reconcilePGUserSecret(
 	}).String()
 	intent.Data["uri"] = []byte(connectionString)
 
+	// if there is a pgBouncer instance, apply the pgBouncer settings. Otherwise
+	// remove the pgBouncer settings
+	if cluster.Spec.Proxy != nil && cluster.Spec.Proxy.PGBouncer != nil {
+		pgBouncerHostname := naming.ClusterPGBouncer(cluster).Name + "." +
+			naming.ClusterPGBouncer(cluster).Namespace + ".svc"
+		intent.Data["pgbouncer-host"] = []byte(pgBouncerHostname)
+		intent.Data["pgbouncer-port"] = []byte(fmt.Sprint(*cluster.Spec.Proxy.PGBouncer.Port))
+
+		pgBouncerConnectionString := (&url.URL{
+			Scheme: "postgresql",
+			Host:   fmt.Sprintf("%s:%d", pgBouncerHostname, *cluster.Spec.Proxy.PGBouncer.Port),
+			User:   url.UserPassword(string(intent.Data["user"]), string(intent.Data["password"])),
+			Path:   string(intent.Data["dbname"]),
+		}).String()
+		intent.Data["pgbouncer-uri"] = []byte(pgBouncerConnectionString)
+	}
+
 	intent.Annotations = naming.Merge(cluster.Spec.Metadata.GetAnnotationsOrNil())
 	intent.Labels = naming.Merge(cluster.Spec.Metadata.GetLabelsOrNil(),
 		map[string]string{
