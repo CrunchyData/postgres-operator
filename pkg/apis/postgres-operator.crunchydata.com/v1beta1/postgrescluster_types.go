@@ -28,6 +28,12 @@ type DedicatedRepo struct {
 	// Resource requirements for the dedicated repository host
 	// +optional
 	Resources *corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// Scheduling constraints of the Dedicated repo host pod.
+	// Changing this value causes repo host to restart.
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
+	// +optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 }
 
 // PostgresClusterSpec defines the desired state of PostgresCluster
@@ -167,6 +173,12 @@ type PostgresInstanceSetSpec struct {
 	// +optional
 	// +kubebuilder:default=""
 	Name string `json:"name"`
+
+	// Scheduling constraints of a Instance pod. Changing this value causes
+	// Instance to restart.
+	// More info: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node
+	// +optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
 
 	// +optional
 	// +kubebuilder:default=1
