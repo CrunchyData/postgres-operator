@@ -456,6 +456,9 @@ func (r *Reconciler) generateRepoHostIntent(postgresCluster *v1beta1.PostgresClu
 					Labels:      labels,
 					Annotations: annotations,
 				},
+				Spec: v1.PodSpec{
+					Affinity: postgresCluster.Spec.Archive.PGBackRest.RepoHost.Dedicated.Affinity,
+				},
 			},
 		},
 	}

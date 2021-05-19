@@ -908,7 +908,7 @@ func (r *Reconciler) reconcileInstance(
 	return err
 }
 
-func generateInstanceStatefulSetIntent(ctx context.Context,
+func generateInstanceStatefulSetIntent(_ context.Context,
 	cluster *v1beta1.PostgresCluster,
 	spec *v1beta1.PostgresInstanceSetSpec,
 	clusterPodServiceName string,
@@ -961,6 +961,9 @@ func generateInstanceStatefulSetIntent(ctx context.Context,
 	// them to trigger updates.
 	// - https://docs.k8s.io/concepts/workloads/controllers/statefulset/#on-delete
 	sts.Spec.UpdateStrategy.Type = appsv1.OnDeleteStatefulSetStrategyType
+
+	// Use scheduling constraints from the cluster spec.
+	sts.Spec.Template.Spec.Affinity = spec.Affinity
 
 	// Though we use a StatefulSet to keep an instance running, we only ever
 	// want one Pod from it. This means that Replicas should only ever be

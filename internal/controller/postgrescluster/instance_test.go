@@ -924,6 +924,16 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 			assert.Equal(t, ss.Spec.Template.Spec.ServiceAccountName, "daisy-sa")
 		},
 	}, {
+		name: "custom affinity",
+		ip: intentParams{
+			spec: &v1beta1.PostgresInstanceSetSpec{
+				Affinity: &corev1.Affinity{},
+			},
+		},
+		run: func(t *testing.T, ss *appsv1.StatefulSet) {
+			assert.Assert(t, ss.Spec.Template.Spec.Affinity != nil)
+		},
+	}, {
 		name: "0 existing replicas",
 		ip: intentParams{
 			existingReplicas: initialize.Int32(0),

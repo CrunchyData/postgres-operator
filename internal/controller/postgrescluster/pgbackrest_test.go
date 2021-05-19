@@ -112,6 +112,7 @@ func fakePostgresCluster(clusterName, namespace, clusterUID string,
 		postgresCluster.Spec.Archive.PGBackRest.RepoHost = &v1beta1.PGBackRestRepoHost{
 			Dedicated: &v1beta1.DedicatedRepo{
 				Resources: &corev1.ResourceRequirements{},
+				Affinity:  &corev1.Affinity{},
 			},
 		}
 	}
@@ -219,6 +220,11 @@ func TestReconcilePGBackRest(t *testing.T) {
 		if !expectedLabelsSelector.Matches(labels.Set(repo.GetLabels())) {
 			t.Errorf("dedicated repo host is missing an expected label: found=%v, expected=%v",
 				repo.GetLabels(), expectedLabels)
+		}
+
+		// Ensure Affinity Spec has been added to dedicated repo
+		if repo.Spec.Template.Spec.Affinity == nil {
+			t.Error("dedicated repo host is missing affinity spec")
 		}
 
 		// verify that the repohost container exists and contains the proper env vars
