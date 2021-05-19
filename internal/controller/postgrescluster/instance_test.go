@@ -39,6 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/crunchydata/postgres-operator/internal/initialize"
 	"github.com/crunchydata/postgres-operator/internal/naming"
 	"github.com/crunchydata/postgres-operator/pkg/apis/postgres-operator.crunchydata.com/v1beta1"
 	"github.com/pkg/errors"
@@ -921,6 +922,30 @@ func TestGenerateInstanceStatefulSetIntent(t *testing.T) {
 		},
 		run: func(t *testing.T, ss *appsv1.StatefulSet) {
 			assert.Equal(t, ss.Spec.Template.Spec.ServiceAccountName, "daisy-sa")
+		},
+	}, {
+		name: "0 existing replicas",
+		ip: intentParams{
+			existingReplicas: initialize.Int32(0),
+		},
+		run: func(t *testing.T, ss *appsv1.StatefulSet) {
+			assert.Equal(t, *ss.Spec.Replicas, int32(0))
+		},
+	}, {
+		name: "1 existing replica",
+		ip: intentParams{
+			existingReplicas: initialize.Int32(1),
+		},
+		run: func(t *testing.T, ss *appsv1.StatefulSet) {
+			assert.Equal(t, *ss.Spec.Replicas, int32(1))
+		},
+	}, {
+		name: "more than 1 existing replica",
+		ip: intentParams{
+			existingReplicas: initialize.Int32(99),
+		},
+		run: func(t *testing.T, ss *appsv1.StatefulSet) {
+			assert.Equal(t, *ss.Spec.Replicas, int32(1))
 		},
 	}} {
 		t.Run(test.name, func(t *testing.T) {

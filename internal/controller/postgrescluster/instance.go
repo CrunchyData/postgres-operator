@@ -962,17 +962,13 @@ func generateInstanceStatefulSetIntent(ctx context.Context,
 	// - https://docs.k8s.io/concepts/workloads/controllers/statefulset/#on-delete
 	sts.Spec.UpdateStrategy.Type = appsv1.OnDeleteStatefulSetStrategyType
 
-	// Match the existing replica count, if any.
-	if existingReplicas != nil {
-		sts.Spec.Replicas = initialize.Int32(*existingReplicas)
-	} else {
-		sts.Spec.Replicas = initialize.Int32(1) // TODO(cbandy): start at zero, maybe
-	}
-
 	// Though we use a StatefulSet to keep an instance running, we only ever
-	// want one Pod from it.
-	if *sts.Spec.Replicas > 1 {
-		*sts.Spec.Replicas = 1
+	// want one Pod from it. This means that Replicas should only ever be
+	// 1, the default case, or 0, if existing replicas is set to 0
+	if existingReplicas != nil && *existingReplicas == 0 {
+		sts.Spec.Replicas = initialize.Int32(0)
+	} else {
+		sts.Spec.Replicas = initialize.Int32(1)
 	}
 
 	// Restart containers any time they stop, die, are killed, etc.
